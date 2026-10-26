@@ -22,64 +22,60 @@
 <text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">300</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">400</text>
-<rect class="seg s0" x="74.0" y="311.4" width="38.7" height="12.6"><title>2026W34, kernel/: 19</title></rect>
-<rect class="seg s1" x="74.0" y="256.8" width="38.7" height="54.5"><title>2026W34, crates/: 82</title></rect>
-<path class="seg s5" d="M74.0,256.8 V234.2 Q74.0,230.2 78.0,230.2 H108.6 Q112.6,230.2 112.6,234.2 V256.8 Z"><title>2026W34, every other directory: 40</title></path>
-<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W34</text>
-<text class="fg val" x="93.3" y="225.2" font-size="10" text-anchor="middle">141</text>
-<rect class="seg s0" x="132.6" y="306.7" width="38.7" height="17.3"><title>2026W35, kernel/: 26</title></rect>
-<rect class="seg s1" x="132.6" y="245.5" width="38.7" height="61.2"><title>2026W35, crates/: 92</title></rect>
-<rect class="seg s4" x="132.6" y="244.9" width="38.7" height="0.7"><title>2026W35, xtask/: 1</title></rect>
-<path class="seg s5" d="M132.6,244.9 V217.6 Q132.6,213.6 136.6,213.6 H167.2 Q171.2,213.6 171.2,217.6 V244.9 Z"><title>2026W35, every other directory: 47</title></path>
-<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<text class="fg val" x="151.9" y="208.6" font-size="10" text-anchor="middle">166</text>
-<rect class="seg s0" x="191.2" y="302.7" width="38.7" height="21.3"><title>2026W36, kernel/: 32</title></rect>
-<rect class="seg s1" x="191.2" y="238.2" width="38.7" height="64.5"><title>2026W36, crates/: 97</title></rect>
-<rect class="seg s4" x="191.2" y="235.6" width="38.7" height="2.7"><title>2026W36, xtask/: 4</title></rect>
-<path class="seg s5" d="M191.2,235.6 V205.0 Q191.2,201.0 195.2,201.0 H225.8 Q229.8,201.0 229.8,205.0 V235.6 Z"><title>2026W36, every other directory: 52</title></path>
-<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="fg val" x="210.5" y="196.0" font-size="10" text-anchor="middle">185</text>
-<rect class="seg s0" x="249.8" y="302.1" width="38.7" height="21.9"><title>2026W37, kernel/: 33</title></rect>
-<rect class="seg s1" x="249.8" y="236.2" width="38.7" height="65.8"><title>2026W37, crates/: 99</title></rect>
-<rect class="seg s2" x="249.8" y="212.9" width="38.7" height="23.3"><title>2026W37, components/: 35</title></rect>
-<rect class="seg s4" x="249.8" y="210.3" width="38.7" height="2.7"><title>2026W37, xtask/: 4</title></rect>
-<path class="seg s5" d="M249.8,210.3 V201.0 Q249.8,197.0 253.8,197.0 H284.4 Q288.4,197.0 288.4,201.0 V210.3 Z"><title>2026W37, every other directory: 20</title></path>
-<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="269.1" y="192.0" font-size="10" text-anchor="middle">191</text>
-<rect class="seg s0" x="308.4" y="292.1" width="38.7" height="31.9"><title>2026W38, kernel/: 48</title></rect>
-<rect class="seg s1" x="308.4" y="220.3" width="38.7" height="71.8"><title>2026W38, crates/: 108</title></rect>
-<rect class="seg s2" x="308.4" y="195.7" width="38.7" height="24.6"><title>2026W38, components/: 37</title></rect>
-<rect class="seg s4" x="308.4" y="192.3" width="38.7" height="3.3"><title>2026W38, xtask/: 5</title></rect>
-<path class="seg s5" d="M308.4,192.3 V177.0 Q308.4,173.0 312.4,173.0 H343.0 Q347.0,173.0 347.0,177.0 V192.3 Z"><title>2026W38, every other directory: 29</title></path>
-<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="327.7" y="168.0" font-size="10" text-anchor="middle">227</text>
-<rect class="seg s0" x="367.0" y="286.8" width="38.7" height="37.2"><title>2026W39, kernel/: 56</title></rect>
-<rect class="seg s1" x="367.0" y="203.0" width="38.7" height="83.8"><title>2026W39, crates/: 126</title></rect>
-<rect class="seg s2" x="367.0" y="177.0" width="38.7" height="25.9"><title>2026W39, components/: 39</title></rect>
-<rect class="seg s3" x="367.0" y="171.1" width="38.7" height="6.0"><title>2026W39, system_tests/: 9</title></rect>
-<rect class="seg s4" x="367.0" y="165.1" width="38.7" height="6.0"><title>2026W39, xtask/: 9</title></rect>
-<path class="seg s5" d="M367.0,165.1 V146.5 Q367.0,142.5 371.0,142.5 H401.6 Q405.6,142.5 405.6,146.5 V165.1 Z"><title>2026W39, every other directory: 34</title></path>
-<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="386.3" y="137.5" font-size="10" text-anchor="middle">273</text>
-<rect class="seg s0" x="425.6" y="285.4" width="38.7" height="38.6"><title>2026W40, kernel/: 58</title></rect>
-<rect class="seg s1" x="425.6" y="193.7" width="38.7" height="91.8"><title>2026W40, crates/: 138</title></rect>
-<rect class="seg s2" x="425.6" y="165.7" width="38.7" height="27.9"><title>2026W40, components/: 42</title></rect>
-<rect class="seg s3" x="425.6" y="159.1" width="38.7" height="6.7"><title>2026W40, system_tests/: 10</title></rect>
-<rect class="seg s4" x="425.6" y="152.4" width="38.7" height="6.7"><title>2026W40, xtask/: 10</title></rect>
-<path class="seg s5" d="M425.6,152.4 V133.8 Q425.6,129.8 429.6,129.8 H460.2 Q464.2,129.8 464.2,133.8 V152.4 Z"><title>2026W40, every other directory: 34</title></path>
-<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="444.9" y="124.8" font-size="10" text-anchor="middle">292</text>
-<rect class="seg s0" x="484.2" y="280.8" width="38.7" height="43.2"><title>2026W41, kernel/: 65</title></rect>
-<rect class="seg s1" x="484.2" y="178.4" width="38.7" height="102.4"><title>2026W41, crates/: 154</title></rect>
-<rect class="seg s2" x="484.2" y="147.8" width="38.7" height="30.6"><title>2026W41, components/: 46</title></rect>
-<rect class="seg s3" x="484.2" y="138.5" width="38.7" height="9.3"><title>2026W41, system_tests/: 14</title></rect>
-<rect class="seg s4" x="484.2" y="131.2" width="38.7" height="7.3"><title>2026W41, xtask/: 11</title></rect>
-<path class="seg s5" d="M484.2,131.2 V111.9 Q484.2,107.9 488.2,107.9 H518.8 Q522.8,107.9 522.8,111.9 V131.2 Z"><title>2026W41, every other directory: 35</title></path>
-<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="503.5" y="102.9" font-size="10" text-anchor="middle">325</text>
-<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="mut" x="20" y="368" font-size="10">caps in 2026W43: kernel/ 20, crates/ 40, components/ 40, system_tests/ 40, xtask/ 40, every other directory at most 40</text>
+<rect class="seg s0" x="74.0" y="306.7" width="38.7" height="17.3"><title>2026W35, kernel/: 26</title></rect>
+<rect class="seg s1" x="74.0" y="245.5" width="38.7" height="61.2"><title>2026W35, crates/: 92</title></rect>
+<rect class="seg s4" x="74.0" y="244.9" width="38.7" height="0.7"><title>2026W35, xtask/: 1</title></rect>
+<path class="seg s5" d="M74.0,244.9 V217.6 Q74.0,213.6 78.0,213.6 H108.6 Q112.6,213.6 112.6,217.6 V244.9 Z"><title>2026W35, every other directory: 47</title></path>
+<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="fg val" x="93.3" y="208.6" font-size="10" text-anchor="middle">166</text>
+<rect class="seg s0" x="132.6" y="302.7" width="38.7" height="21.3"><title>2026W36, kernel/: 32</title></rect>
+<rect class="seg s1" x="132.6" y="238.2" width="38.7" height="64.5"><title>2026W36, crates/: 97</title></rect>
+<rect class="seg s4" x="132.6" y="235.6" width="38.7" height="2.7"><title>2026W36, xtask/: 4</title></rect>
+<path class="seg s5" d="M132.6,235.6 V205.0 Q132.6,201.0 136.6,201.0 H167.2 Q171.2,201.0 171.2,205.0 V235.6 Z"><title>2026W36, every other directory: 52</title></path>
+<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="151.9" y="196.0" font-size="10" text-anchor="middle">185</text>
+<rect class="seg s0" x="191.2" y="302.1" width="38.7" height="21.9"><title>2026W37, kernel/: 33</title></rect>
+<rect class="seg s1" x="191.2" y="236.2" width="38.7" height="65.8"><title>2026W37, crates/: 99</title></rect>
+<rect class="seg s2" x="191.2" y="212.9" width="38.7" height="23.3"><title>2026W37, components/: 35</title></rect>
+<rect class="seg s4" x="191.2" y="210.3" width="38.7" height="2.7"><title>2026W37, xtask/: 4</title></rect>
+<path class="seg s5" d="M191.2,210.3 V201.0 Q191.2,197.0 195.2,197.0 H225.8 Q229.8,197.0 229.8,201.0 V210.3 Z"><title>2026W37, every other directory: 20</title></path>
+<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="210.5" y="192.0" font-size="10" text-anchor="middle">191</text>
+<rect class="seg s0" x="249.8" y="292.1" width="38.7" height="31.9"><title>2026W38, kernel/: 48</title></rect>
+<rect class="seg s1" x="249.8" y="220.3" width="38.7" height="71.8"><title>2026W38, crates/: 108</title></rect>
+<rect class="seg s2" x="249.8" y="195.7" width="38.7" height="24.6"><title>2026W38, components/: 37</title></rect>
+<rect class="seg s4" x="249.8" y="192.3" width="38.7" height="3.3"><title>2026W38, xtask/: 5</title></rect>
+<path class="seg s5" d="M249.8,192.3 V177.0 Q249.8,173.0 253.8,173.0 H284.4 Q288.4,173.0 288.4,177.0 V192.3 Z"><title>2026W38, every other directory: 29</title></path>
+<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="269.1" y="168.0" font-size="10" text-anchor="middle">227</text>
+<rect class="seg s0" x="308.4" y="286.8" width="38.7" height="37.2"><title>2026W39, kernel/: 56</title></rect>
+<rect class="seg s1" x="308.4" y="203.0" width="38.7" height="83.8"><title>2026W39, crates/: 126</title></rect>
+<rect class="seg s2" x="308.4" y="177.0" width="38.7" height="25.9"><title>2026W39, components/: 39</title></rect>
+<rect class="seg s3" x="308.4" y="171.1" width="38.7" height="6.0"><title>2026W39, system_tests/: 9</title></rect>
+<rect class="seg s4" x="308.4" y="165.1" width="38.7" height="6.0"><title>2026W39, xtask/: 9</title></rect>
+<path class="seg s5" d="M308.4,165.1 V146.5 Q308.4,142.5 312.4,142.5 H343.0 Q347.0,142.5 347.0,146.5 V165.1 Z"><title>2026W39, every other directory: 34</title></path>
+<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="327.7" y="137.5" font-size="10" text-anchor="middle">273</text>
+<rect class="seg s0" x="367.0" y="285.4" width="38.7" height="38.6"><title>2026W40, kernel/: 58</title></rect>
+<rect class="seg s1" x="367.0" y="193.7" width="38.7" height="91.8"><title>2026W40, crates/: 138</title></rect>
+<rect class="seg s2" x="367.0" y="165.7" width="38.7" height="27.9"><title>2026W40, components/: 42</title></rect>
+<rect class="seg s3" x="367.0" y="159.1" width="38.7" height="6.7"><title>2026W40, system_tests/: 10</title></rect>
+<rect class="seg s4" x="367.0" y="152.4" width="38.7" height="6.7"><title>2026W40, xtask/: 10</title></rect>
+<path class="seg s5" d="M367.0,152.4 V133.8 Q367.0,129.8 371.0,129.8 H401.6 Q405.6,129.8 405.6,133.8 V152.4 Z"><title>2026W40, every other directory: 34</title></path>
+<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="386.3" y="124.8" font-size="10" text-anchor="middle">292</text>
+<rect class="seg s0" x="425.6" y="280.8" width="38.7" height="43.2"><title>2026W41, kernel/: 65</title></rect>
+<rect class="seg s1" x="425.6" y="178.4" width="38.7" height="102.4"><title>2026W41, crates/: 154</title></rect>
+<rect class="seg s2" x="425.6" y="147.8" width="38.7" height="30.6"><title>2026W41, components/: 46</title></rect>
+<rect class="seg s3" x="425.6" y="138.5" width="38.7" height="9.3"><title>2026W41, system_tests/: 14</title></rect>
+<rect class="seg s4" x="425.6" y="131.2" width="38.7" height="7.3"><title>2026W41, xtask/: 11</title></rect>
+<path class="seg s5" d="M425.6,131.2 V111.9 Q425.6,107.9 429.6,107.9 H460.2 Q464.2,107.9 464.2,111.9 V131.2 Z"><title>2026W41, every other directory: 35</title></path>
+<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="444.9" y="102.9" font-size="10" text-anchor="middle">325</text>
+<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="mut" x="20" y="368" font-size="10">caps in 2026W44: kernel/ 20, crates/ 40, components/ 40, system_tests/ 40, xtask/ 40, every other directory at most 40</text>
 <rect class="s5" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">every other directory</tspan></text>
 <rect class="s4" x="672" y="83" width="11" height="11" rx="2"/>
