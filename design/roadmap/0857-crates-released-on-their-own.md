@@ -83,6 +83,10 @@ No per-crate milestone is minted by this block. They come from the reviews below
   and decoders, documented in its README. nife's driver-process layout and block server leave the
   device crates for the programs that drive them. The walks live in `machine_discovery::jh7110`,
   so `jh7110_entropy` and `jh7110_clock_and_reset` became package interfaces.
+- Ruled 2026-10-26 (UTC): `driver_process_contract` stays the one crate for what the kernel and a
+  device-driver process agree on, one module per driver. One crate per driver was declined: every
+  driver program is a binary of the one `components` crate, so no program would link less, and each
+  crate would add a name. Revisit if `components` splits into a crate per program.
 
 ## What every crate clears before it publishes (calef, 2026-10-11)
 
