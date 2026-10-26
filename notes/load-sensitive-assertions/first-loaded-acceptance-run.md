@@ -6,12 +6,12 @@ commit has the text verbatim.)*
 
 ## The acceptance run, 2026-08-17: 45 loaded runs, 36 green, and what the nine reds were
 
-Milestone 62 (tests that assert on time) has said since 2026-08-01 that its own fix cannot be
-verified by running the suite once. A flake that fires one run in six is indistinguishable from a
+Milestone 62 (tests that assert on time) has said since 2026-08-01 that running the suite once
+cannot verify the milestone's own fix. A flake that fires one run in six is indistinguishable from a
 fixed one until you have run it many times. So the evidence it asks for is a repeat count under
 load. Four rounds of the old note produced such a count three times, by hand, and each time the
-number lived in a report. This is that count taken by an instrument that records its own
-conditions, `script/repeat-under-load`.
+number lived in a report. This is that count taken by an instrument that records its own conditions,
+`script/repeat-under-load`.
 
 The result is not the green the milestone hoped for. Nine of forty-five runs went red. Eight were
 two assertions, in perfect ISA symmetry, both already named in the old BUGS section as known
@@ -100,10 +100,10 @@ The symmetry says this is a property of the assertions rather than of either arc
 Both were predicted in the old note, and neither had ever been observed. Its BUGS section said the
 drift test "can still go red on a pathological host, by design", and called that "rarer by orders".
 It also said the taxonomy's cut leaves a one-period-wide window in which a host deschedule "still
-fails, wearing the message that blames this kernel". That had been measured only by a lock-holding
-probe, at 0.83 of an interval. This run is the first time either was seen in the wild. It corrects
-the first claim: at these loads the retry budget is not rare. It fired four times in forty-five
-runs, and one of those was the third run of the loop.
+fails, wearing the message that blames this kernel". Only a lock-holding probe had measured that, at
+0.83 of an interval. This run is the first time either was seen in the wild. It corrects the first
+claim: at these loads the retry budget is not rare. It fired four times in forty-five runs, and one
+of those was the third run of the loop.
 
 The taxonomy red carries its own numbers, which is the 2026-08-15 fix working even as the assertion
 fails. Run 3 reported `last miss re-armed 55810 counter ticks late against an interval of 100000`.

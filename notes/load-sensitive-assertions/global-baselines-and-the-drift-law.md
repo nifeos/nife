@@ -32,9 +32,9 @@ direction of a failure is the diagnosis.
   against something wider than the property"). The BUGS section of `notes/live-replacement.md` is
   the completed analysis of one instance.
 
-The second kind cannot be fixed by margins. Widening a bound that fires on a negative discrepancy
-only hides the defect. That is the reasoning of §61 (a lint is adopted on evidence) about the
-dropped lints, applied to assertions.
+Margins cannot fix the second kind. Widening a bound that fires on a negative discrepancy only hides
+the defect. That is the reasoning of §61 (a lint is adopted on evidence) about the dropped lints,
+applied to assertions.
 
 ## The verdicts
 

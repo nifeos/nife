@@ -114,7 +114,7 @@ it was written to avoid, in 8% of its samples.
   harness's 90 s per-test ceiling has to hold their product, where today only one factor grows.
   Whoever takes it should measure against the table above rather than reason about it.
 - A `TickBudget` that re-anchors on every check never expires, by construction: a thread that
-  changed core is given its budget back. Nothing in the tree can make that happen (a steal moves a
+  changed core gets its budget back. Nothing in the tree can make that happen (a steal moves a
   thread far less often than once per poll). The type is deliberately not the last line of defense:
   the harness's per-test wall-clock ceiling fails the run whatever the ticks say. The alternative,
   subtracting across a migration, compares two unrelated per-core counters. That is the defect
