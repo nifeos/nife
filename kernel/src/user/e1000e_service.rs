@@ -58,7 +58,7 @@ pub struct Wiring {
     /// The PCI device id.
     pub device: u16,
     /// The PHY's identifier as the kernel read it over MDIO, revision masked off.
-    pub phy_id: u32,
+    pub physical_layer_device_id: u32,
     /// The DHCP lease `net_stack` reported, once something has drained [`Wiring::report`]: zero
     /// from [`start_net_server`], the address from the functions that start a client.
     pub lease: u32,
@@ -228,7 +228,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
         confined_by_iommu,
         mac: found.handoff.mac,
         device: found.device,
-        phy_id: found.phy_id,
+        physical_layer_device_id: found.physical_layer_device_id,
         lease: 0,
     }
 }
