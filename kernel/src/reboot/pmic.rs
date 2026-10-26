@@ -19,7 +19,7 @@ fn pmic_bus(
 )> {
     use jh7110_clock_and_reset::{
         I2cClockWords, SYS_SYSCON_BASE, SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT,
-        SYSCLK_STG_AXIAHB, i2c5_ic_clk, one_based_divider, standard_mode_100k,
+        SYSCLK_STG_AXIAHB, i2c5_clock_frequency, one_based_divider, standard_mode_100k,
     };
 
     let (sys, bus) = crate::memory::jh7110_pmic_bus()?;
@@ -44,7 +44,7 @@ fn pmic_bus(
         pll2_postdiv1: word(syscon, 0x30),
         pll2_prediv: word(syscon, 0x34),
     };
-    let ic = i2c5_ic_clk(&words);
+    let ic = i2c5_clock_frequency(&words);
     let mode = standard_mode_100k(ic);
     let fbdiv = (words.pll2_dacpd_dsmpd_fbdiv >> 17) & 0xfff;
     println!(

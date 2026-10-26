@@ -368,7 +368,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         pll2_postdiv1: 0,
         pll2_prediv: 0,
     };
-    assert_eq!(i2c5_ic_clk(&osc), OSC_HZ);
+    assert_eq!(i2c5_clock_frequency(&osc), OSC_HZ);
 
     // bus_root on pll2 in integer mode. The fields are the vendor PLL2 table's 1228.8 MHz row
     // (fbdiv 768, prediv 15, postdiv1 1, dacpd 1, dsmpd 1, from the pll.c this crate cites),
@@ -385,7 +385,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         pll2_postdiv1: 0,
         pll2_prediv: 15,
     };
-    assert_eq!(i2c5_ic_clk(&pll2), 1_228_800_000 / 2 / 2 / 12);
+    assert_eq!(i2c5_clock_frequency(&pll2), 1_228_800_000 / 2 / 2 / 12);
 
     // A zero divider field is treated as divide-by-one rather than a panic, because the words
     // belong to firmware and a print of the computed rate is the transcript's fact.
@@ -398,7 +398,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         pll2_postdiv1: 0,
         pll2_prediv: 0,
     };
-    assert_eq!(i2c5_ic_clk(&zeros), OSC_HZ);
+    assert_eq!(i2c5_clock_frequency(&zeros), OSC_HZ);
 
     // Fractional mode (dacpd 0, dsmpd 0) is the vendor's default rate, not a guess from the
     // fields: 1_188_000_000 divided by the chain.
@@ -411,7 +411,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         pll2_postdiv1: 0,
         pll2_prediv: 15,
     };
-    assert_eq!(i2c5_ic_clk(&frac), PLL2_DEFAULT_HZ);
+    assert_eq!(i2c5_clock_frequency(&frac), PLL2_DEFAULT_HZ);
 }
 
 #[test]
@@ -483,19 +483,19 @@ fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
         pll2_postdiv1: 1 << 28,
         pll2_prediv: 15,
     };
-    assert_eq!(i2c5_ic_clk(&integer), 1_228_800_000 / 2);
+    assert_eq!(i2c5_clock_frequency(&integer), 1_228_800_000 / 2);
     // dacpd alone is fractional mode, which is the vendor's default rate.
     let dacpd_only = I2cClockWords {
         pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (768 << 17),
         ..integer
     };
-    assert_eq!(i2c5_ic_clk(&dacpd_only), PLL2_DEFAULT_HZ);
+    assert_eq!(i2c5_clock_frequency(&dacpd_only), PLL2_DEFAULT_HZ);
     // Integer mode with fbdiv 0 would be a zero rate; it is the default instead.
     let no_fbdiv = I2cClockWords {
         pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (1 << 16),
         ..integer
     };
-    assert_eq!(i2c5_ic_clk(&no_fbdiv), PLL2_DEFAULT_HZ);
+    assert_eq!(i2c5_clock_frequency(&no_fbdiv), PLL2_DEFAULT_HZ);
 }
 
 /// `every_reset_released` compares the two counts, so a plan with one reset that read back still
@@ -557,7 +557,7 @@ fn radon_card_clock_comes_to_the_trees_rate_from_below() {
     };
     let parent = axi_cfg0_hz(&words);
     assert_eq!(parent, 396_000_000);
-    assert_eq!(i2c5_ic_clk(&words), 49_500_000);
+    assert_eq!(i2c5_clock_frequency(&words), 49_500_000);
     let div = sdcard_divider_for(parent, 50_000_000);
     assert_eq!(div, 8);
     assert!(parent / u64::from(div) <= 50_000_000);

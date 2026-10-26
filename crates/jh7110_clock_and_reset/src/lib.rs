@@ -697,19 +697,21 @@ pub const fn one_based_divider(word: u32, width: u32) -> u64 {
     if value == 0 { 1 } else { value }
 }
 
-/// **The I2C input clock of the PMIC's bus**, from the words above: the rate chain
+/// **The I2C input clock of the PMIC's bus**, the frequency the `DesignWare` I2C databook calls
+/// `ic_clk`, from the words above: the rate chain
 /// `bus_root -> axi_cfg0 -> stg_axiahb -> apb_bus_func -> (gate) u5_dw_i2c_clk_apb`. Every step is
 /// the vendor clock driver's own registration; the gates do not divide. PLL2's rate follows the
 /// vendor `pll.c` exactly: integer mode (`dacpd == 1 && dsmpd == 1`) is
 /// `24 MHz * fbdiv / (prediv * postdiv1)`, anything else is the vendor's own default rather than a
 /// guess. The u64 divisions truncate, as the vendor's do.
 #[must_use]
-pub const fn i2c5_ic_clk(w: &I2cClockWords) -> u64 {
+#[doc(alias = "ic_clk")]
+pub const fn i2c5_clock_frequency(w: &I2cClockWords) -> u64 {
     axi_cfg0_hz(w) / one_based_divider(w.stg_axiahb, 2) / one_based_divider(w.apb_bus_func, 4)
 }
 
 /// **`axi_cfg0`'s rate**: `bus_root` (PLL2 or the oscillator, by its mux) over `axi_cfg0`'s own
-/// divider. The parent of both the PMIC bus's clock chain ([`i2c5_ic_clk`]) and the SD/MMC
+/// divider. The parent of both the PMIC bus's clock chain ([`i2c5_clock_frequency`]) and the SD/MMC
 /// controllers' card clocks ([`SYSCLK_SDIO_SDCARD`]), each a registration in the vendor clock driver.
 ///
 #[must_use]
@@ -798,21 +800,22 @@ const IC_CON_SD: u32 = 1 << 6;
 
 /// Count of input-clock ticks that covers `period_ns`, the vendor `calc_counts` (a rounding-up
 /// division: `DIV_ROUND_UP(ic_clk / 1000 * period_ns, NANO_TO_KILO)`).
-const fn counts(ic_clk: u64, period_ns: u64) -> u64 {
-    (ic_clk / 1_000 * period_ns).div_ceil(1_000_000)
+const fn counts(clock_frequency: u64, period_ns: u64) -> u64 {
+    (clock_frequency / 1_000 * period_ns).div_ceil(1_000_000)
 }
 
 /// The formula the vendor driver names `dw_i2c_calc_timing`, standard mode, written as the
-/// four-line derivation its comment carries, with the period fill. Inputs below the spec minima
+/// four-line derivation its comment carries, with the period fill. `clock_frequency` is the
+/// controller's input clock in hertz, the databook's `ic_clk`. Inputs below the spec minima
 /// clamp to the smallest legal counts rather than wrapping.
 #[must_use]
-pub const fn standard_mode_100k(ic_clk: u64) -> StandardMode {
-    let rise = counts(ic_clk, 1_000);
-    let fall = counts(ic_clk, 300);
-    let thigh = counts(ic_clk, 4_000);
-    let tlow = counts(ic_clk, 4_700);
-    let period = if ic_clk >= 100_000 {
-        ic_clk / 100_000
+pub const fn standard_mode_100k(clock_frequency: u64) -> StandardMode {
+    let rise = counts(clock_frequency, 1_000);
+    let fall = counts(clock_frequency, 300);
+    let thigh = counts(clock_frequency, 4_000);
+    let tlow = counts(clock_frequency, 4_700);
+    let period = if clock_frequency >= 100_000 {
+        clock_frequency / 100_000
     } else {
         1
     };
@@ -837,7 +840,7 @@ pub const fn standard_mode_100k(ic_clk: u64) -> StandardMode {
     // computed input clock, so a floored count is visible as one.
     let hcnt = if hcnt == 0 { 1 } else { hcnt };
     let lcnt = if lcnt == 0 { 1 } else { lcnt };
-    let sda_hold = counts(ic_clk, 300);
+    let sda_hold = counts(clock_frequency, 300);
     let sda_hold = if sda_hold == 0 { 1 } else { sda_hold };
     StandardMode {
         con: IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS,

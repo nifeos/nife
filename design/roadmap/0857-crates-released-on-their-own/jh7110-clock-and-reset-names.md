@@ -11,8 +11,9 @@ Ruled 2026-10-26 (UTC): the 59 names not listed below are ratified as they stand
 before the first publish: Window becomes RegisterWindow, Spelling becomes WindowSpelling, Found
 becomes WindowLocation, MAX_WINDOWS becomes MAX_REG_ENTRIES, PmicBus::from_bus becomes
 PmicBus::from_nodes, Report becomes BringUpReport, IcClkWords becomes I2cClockWords, and
-one_based_div becomes one_based_divider. AON_WINDOW, STG_WINDOW, SYS_WINDOW and i2c5_ic_clk keep
-their names.
+one_based_div becomes one_based_divider. AON_WINDOW, STG_WINDOW and SYS_WINDOW keep their names.
+Ruled 2026-10-26 (UTC), on #2760: `i2c5_ic_clk` is `i2c5_clock_frequency`, and the `ic_clk`
+parameters are `clock_frequency`.
 
 Each renamed row names the spelling the ruling turned down and why. A new name in the crate takes a
 row here, `provisional` until a ruling, and `script/lint` fails a module or `pub` item without one.
@@ -80,7 +81,7 @@ covers both `PowerManagementChipBus::plan` and `DevicePlan::plan`.
 | `from_regions` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `from_specifiers` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `has_clocks_running` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `i2c5_ic_clk` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Kept as it stands. | yes |
+| `i2c5_clock_frequency` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `i2c5_ic_clk` (`ic_clk` is the DesignWare databook's signal name, which the doc and `doc(alias)` carry; the function returns the clock's frequency), as `IcClkWords` was refused for `I2cClockWords`. | yes |
 | `is_clock_enabled` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `is_deasserted` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `one_based_divider` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `one_based_div` (`div` abbreviated divider). | yes |
