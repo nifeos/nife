@@ -11,7 +11,10 @@
 //! Name: provisional. A `<program>_service`, as `non_volatile_memory_express_service` is, so its
 //! name is the program's plus the suffix and carries no decision of its own.
 
-use extensible_host_controller_interface::{MAX_REGISTER_PAGES, dma, report};
+use driver_process_contract::extensible_host_controller_interface::{
+    MAX_REGISTER_PAGES, WORK_PAGES,
+};
+use usb_keyboard_report as report;
 
 use super::*;
 use crate::cap::{Rights, irq_cap, rendezvous_cap};
@@ -29,12 +32,12 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const EXTRA_STACK_PAGES: usize = 3;
 
 /// The most mappings one spawn makes: every work page, every register page, and the stack.
-const MAX_MAPS: usize = dma::WORK_PAGES as usize + MAX_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
+const MAX_MAPS: usize = WORK_PAGES as usize + MAX_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
 
 /// What [`start`] hands back.
 pub(crate) struct Wiring {
-    /// The driver's one bring-up report: [`report::KEYBOARD`], [`report::NO_KEYBOARD`] or
-    /// [`report::FAILED`] in word 0.
+    /// The driver's one bring-up report: [`report::KEYBOARD_FOUND`],
+    /// [`report::NO_KEYBOARD_FOUND`] or [`report::BRING_UP_FAILED`] in word 0.
     pub report: [u64; 5],
     /// The attach endpoint. The progenitor is granted `WRITE | GRANT` on it, and delegates the
     /// line discipline's endpoint through it.
@@ -77,14 +80,14 @@ pub(crate) fn start(
         // The work pages, contiguous, normal memory: the controller and the driver share ordinary
         // RAM there. The scratchpad pages after them are not mapped.
         super::fs_service::map_channel(
-            &mut maps[..dma::WORK_PAGES as usize],
+            &mut maps[..WORK_PAGES as usize],
             DMA_VA,
             dma_phys,
-            dma::WORK_PAGES as usize,
+            WORK_PAGES as usize,
         );
         // The register pages the window chose, device-typed: a cached or reordered doorbell write
         // is a command the controller never hears about.
-        let mut n = dma::WORK_PAGES as usize;
+        let mut n = WORK_PAGES as usize;
         for page in 0..MAX_REGISTER_PAGES {
             if registers & (1 << page) != 0 {
                 maps[n] = Mapping {
@@ -130,15 +133,15 @@ pub(crate) fn start(
 /// act on, in the `  usb       :` column every boot line here uses.
 pub(crate) fn describe(w: &[u64; 5]) {
     match w[0] {
-        report::KEYBOARD => {
-            let (port, speed, vendor, product) = report::keyboard_of(w[1]);
+        report::KEYBOARD_FOUND => {
+            let (port, speed, vendor, product) = report::keyboard_report_of(w[1]);
             crate::println!(
                 "  usb       : a keyboard on port {port} ({}, {vendor:04x}:{product:04x}); its keys reach the shell",
                 extensible_host_controller_interface::port::speed_name(speed),
             );
         }
-        report::NO_KEYBOARD => {
-            let (ports, connected, settled) = report::ports_of(w[1]);
+        report::NO_KEYBOARD_FOUND => {
+            let (ports, connected, settled) = report::ports_report_of(w[1]);
             // An unsettled count is a moment in a port that was still changing, so it is not
             // printed as a fact about what is plugged in.
             let seen = if settled {
@@ -146,14 +149,14 @@ pub(crate) fn describe(w: &[u64; 5]) {
             } else {
                 None
             };
-            match (report::refusal_of(w[2]), seen) {
+            match (report::failure_report_of(w[2]), seen) {
                 ((Some(step), port, detail), Some((connected, ports))) => crate::println!(
                     "  usb       : no keyboard yet ({connected} of {ports} ports in use; port {port}: {} ({detail})); one plugged in later is found",
-                    step.describe(),
+                    step.sentence(),
                 ),
                 ((Some(step), port, detail), None) => crate::println!(
                     "  usb       : no keyboard yet (the ports were still settling; port {port}: {} ({detail})); one plugged in later is found",
-                    step.describe(),
+                    step.sentence(),
                 ),
                 ((None, ..), Some((connected, ports))) => crate::println!(
                     "  usb       : no keyboard yet ({connected} of {ports} ports in use); one plugged in later is found"
@@ -163,10 +166,10 @@ pub(crate) fn describe(w: &[u64; 5]) {
                 ),
             }
         }
-        _ => match report::refusal_of(w[1]) {
+        _ => match report::failure_report_of(w[1]) {
             (Some(step), port, detail) => crate::println!(
                 "  usb       : REFUSED. The USB keyboard driver stopped: {} (port {port}, {detail:#x}); keystrokes come over the UART only",
-                step.describe(),
+                step.sentence(),
             ),
             (None, ..) => crate::println!(
                 "  usb       : REFUSED. The USB keyboard driver reported {:#x}; keystrokes come over the UART only",

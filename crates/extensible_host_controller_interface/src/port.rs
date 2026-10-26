@@ -99,41 +99,29 @@ pub const fn speed_name(speed: u8) -> &'static str {
 /// [`DEBOUNCE_STABLE_MS`], read every [`DEBOUNCE_STEP_MS`], giving up at [`DEBOUNCE_TIMEOUT_MS`].
 /// The clock starts when the ports are powered, so nothing is believed before
 /// [`DEBOUNCE_STABLE_MS`] after power either. The numbers are Linux's (`drivers/usb/core/hub.c`).
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Settle {
+pub struct PortDebounce {
     start_ms: u64,
     changed_ms: u64,
     last: Connections,
 }
 
 /// Every root port's `CCS`, one bit per port number: 256 bits, since `HCSPARAMS1.MaxPorts` is a byte.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub type Connections = [u32; 8];
 
 /// USB 2.0's `TATTDB` (section 7.1.7.3), a connection's debounce interval, and Linux's
 /// `HUB_DEBOUNCE_STABLE`. It also covers USB 2.0's `TSIGATT` (a device attaches within 100 ms of
 /// power) and is Linux's floor on a root hub's power-on-to-good time.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub const DEBOUNCE_STABLE_MS: u64 = 100;
 /// Linux's `HUB_DEBOUNCE_STEP`.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub const DEBOUNCE_STEP_MS: u64 = 25;
 /// Linux's `HUB_DEBOUNCE_TIMEOUT`.
-///
-/// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 pub const DEBOUNCE_TIMEOUT_MS: u64 = 2000;
 
-impl Settle {
+impl PortDebounce {
     /// Start at `now_ms`, when the ports were powered, having read `first`.
-    ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
-    pub const fn new(now_ms: u64, first: Connections) -> Settle {
-        Settle {
+    pub const fn new(now_ms: u64, first: Connections) -> PortDebounce {
+        PortDebounce {
             start_ms: now_ms,
             changed_ms: now_ms,
             last: first,
@@ -142,9 +130,7 @@ impl Settle {
 
     /// The ports read `seen` at `now_ms`: `None` to keep reading, `Some(true)` once nothing has
     /// changed for [`DEBOUNCE_STABLE_MS`], `Some(false)` at [`DEBOUNCE_TIMEOUT_MS`].
-    ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
-    pub fn observe(&mut self, now_ms: u64, seen: Connections) -> Option<bool> {
+    pub fn sample(&mut self, now_ms: u64, seen: Connections) -> Option<bool> {
         if seen != self.last {
             self.last = seen;
             self.changed_ms = now_ms;
@@ -260,12 +246,12 @@ mod tests {
                     .1,
             )
         };
-        let mut s = Settle::new(0, at(0));
+        let mut s = PortDebounce::new(0, at(0));
         let mut t = 0;
-        // Bounded, so a broken `observe` fails here rather than hanging the test run.
+        // Bounded, so a broken `sample` fails here rather than hanging the test run.
         while t < DEBOUNCE_TIMEOUT_MS {
             t += DEBOUNCE_STEP_MS;
-            if let Some(settled) = s.observe(t, at(t)) {
+            if let Some(settled) = s.sample(t, at(t)) {
                 return (t, Some(settled), at(t));
             }
         }
@@ -305,7 +291,7 @@ mod tests {
     /// the boot line can say its count is not a fact.
     #[test]
     fn a_port_that_never_holds_still_ends_at_the_timeout() {
-        let mut s = Settle::new(0, ports(&[]));
+        let mut s = PortDebounce::new(0, ports(&[]));
         let mut t = 0;
         let end = loop {
             assert!(t < DEBOUNCE_TIMEOUT_MS, "the wait never ended");
@@ -315,7 +301,7 @@ mod tests {
             } else {
                 ports(&[])
             };
-            if let Some(settled) = s.observe(t, bouncing) {
+            if let Some(settled) = s.sample(t, bouncing) {
                 break settled;
             }
         };

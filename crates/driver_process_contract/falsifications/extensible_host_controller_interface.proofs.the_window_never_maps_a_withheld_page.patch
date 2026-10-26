@@ -1,4 +1,4 @@
-Falsifies `extensible_host_controller_interface::verification::the_window_never_maps_a_withheld_page`.
+Falsifies `driver_process_contract::extensible_host_controller_interface::proofs::the_window_never_maps_a_withheld_page`.
 
 The defect: `register_window` tests a withheld range against a page with `a <= start` in place of
 `a < end`, so a range that begins in the middle of a page (the MSI-X table rarely starts on a page
@@ -7,14 +7,13 @@ boundary) no longer withholds that page. The line still reads as an overlap test
 Expected to fail: the harness's `assert!(!(a < e && s < a + len))`: the mask now contains a page the withheld
 range overlaps, which is the MSI-X table mapped into the driver.
 
-diff --git a/crates/extensible_host_controller_interface/src/window.rs b/crates/extensible_host_controller_interface/src/window.rs
-index 2b6046724..e2862f73d 100644
---- a/crates/extensible_host_controller_interface/src/window.rs
-+++ b/crates/extensible_host_controller_interface/src/window.rs
-@@ -46,7 +46,7 @@ pub fn register_window(
+diff --git a/crates/driver_process_contract/src/extensible_host_controller_interface.rs b/crates/driver_process_contract/src/extensible_host_controller_interface.rs
+--- a/crates/driver_process_contract/src/extensible_host_controller_interface.rs
++++ b/crates/driver_process_contract/src/extensible_host_controller_interface.rs
+@@ -155,7 +155,7 @@
      let mut mask = 0u64;
      for page in 0..pages {
-         let (start, end) = (page * PAGE, (page + 1) * PAGE);
+         let (start, end) = (page * PAGE_BYTES, (page + 1) * PAGE_BYTES);
 -        if !withheld.iter().any(|&(a, b)| a < end && start < b) {
 +        if !withheld.iter().any(|&(a, b)| a <= start && start < b) {
              mask |= 1 << page;

@@ -253,6 +253,7 @@ dependencies = [
  "top",
  "uptime",
  "usb",
+ "usb_keyboard_report",
  "user_mode_runtime",
  "uuid",
  "video_terminal",
@@ -434,6 +435,7 @@ name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "extensible_host_controller_interface",
  "filesystem_contract",
 ]
 
@@ -773,6 +775,7 @@ dependencies = [
  "system_log_contract",
  "test_times",
  "thread_wake_handshake",
+ "usb_keyboard_report",
  "video_terminal",
  "work_steal_slot",
 ]
@@ -1595,6 +1598,10 @@ version = "0.1.0"
 
 [[package]]
 name = "usb"
+version = "0.1.0"
+
+[[package]]
+name = "usb_keyboard_report"
 version = "0.1.0"
 
 [[package]]

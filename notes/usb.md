@@ -141,7 +141,7 @@ only once it has re-detected it. QEMU does that the instant the controller runs;
 controller takes about ten milliseconds. So the boot-time scan waits until no port's connection has
 changed for 100 ms (USB 2.0's `TATTDB`), reading every 25 ms and giving up after 2 s. Those are
 Linux's hub debounce numbers, and no machine's timing is in them
-(`extensible_host_controller_interface::port::Settle`). A scan that gave up says so in the boot
+(`extensible_host_controller_interface::port::PortDebounce`). A scan that gave up says so in the boot
 line instead of printing a count. The scan only names the keyboard early: a device that shows up
 later arrives as a connect change, and its port is debounced the same way before the driver
 resets it.

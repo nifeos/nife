@@ -384,7 +384,7 @@ non_volatile_memory_express	6	the queue rings never index out, and the doorbell/
 e1000e	2	no descriptor word a device writes makes the NIC driver read outside a buffer
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
 usb	170	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
-extensible_host_controller_interface	24	the xHCI driver is never mapped its MSI-X page, and the ring cycle arithmetic stays in bounds
+extensible_host_controller_interface	8	the ring cycle arithmetic stays in bounds
 direct_memory_access_validator	148	the DMA-confinement validator, no descriptor escapes the grant
 network_time_protocol	22	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	47	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
@@ -399,7 +399,7 @@ capability_plan	14	no wiring grants a right its declaration did not ask for
 timetable	41	the scheduler's fire arithmetic: strictly forward, minimal, and a stall costs one fire
 jh7110_entropy	5	the board TRNG's status decode, and that a lockup bit is never overridden
 designware_mobile_storage	4	the SD write test never lands in a partition, the FIFO is never overrun, no admitted block wraps its address
-driver_process_contract	2	no block the SD card server translates leaves the window the kernel chose
+driver_process_contract	18	no block the SD card server translates leaves the window the kernel chose, the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
 kernel	7	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
 components	8	the EL0 components: a bounded append that a configuration page this system did not write feeds
 machine_discovery	690	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string

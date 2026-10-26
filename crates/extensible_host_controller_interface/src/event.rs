@@ -1,6 +1,4 @@
 //! **An event the controller wrote**, decoded.
-//!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
 
@@ -43,25 +41,25 @@ pub enum Event {
 
 impl Event {
     /// Decode an event TRB. Total: every input is some variant.
-    pub const fn decode(t: Trb) -> Event {
+    pub const fn decode(t: TransferRequestBlock) -> Event {
         let d = t.0;
         let pointer = d[0] as u64 | (d[1] as u64) << 32;
         let code = (d[2] >> 24) as u8;
         let slot = (d[3] >> 24) as u8;
         match t.kind() {
-            trb_type::TRANSFER_EVENT => Event::Transfer {
+            transfer_request_block_type::TRANSFER_EVENT => Event::Transfer {
                 trb: pointer,
                 residual: d[2] & 0x00ff_ffff,
                 code,
                 slot,
                 endpoint: ((d[3] >> 16) & 0x1f) as u8,
             },
-            trb_type::COMMAND_COMPLETION => Event::Command {
+            transfer_request_block_type::COMMAND_COMPLETION => Event::Command {
                 trb: pointer,
                 code,
                 slot,
             },
-            trb_type::PORT_STATUS_CHANGE => Event::PortStatus {
+            transfer_request_block_type::PORT_STATUS_CHANGE => Event::PortStatus {
                 port: (d[0] >> 24) as u8,
             },
             kind => Event::Other { kind },

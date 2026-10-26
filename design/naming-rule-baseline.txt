@@ -31,9 +31,6 @@ crates/documentation/src/index.rs::STORE_DIR spelled-out
 crates/e1000e/src/pch/flush.rs::required question-shape
 crates/e1000e/src/pch/ulp.rs::done question-shape
 crates/environment_contract/src/lib.rs::ConfigPage spelled-out
-crates/extensible_host_controller_interface/src/dma.rs::dma spelled-out
-crates/extensible_host_controller_interface/src/regs.rs::CONFIG spelled-out
-crates/extensible_host_controller_interface/src/trb.rs::cycle question-shape
 crates/filesystem_contract/src/dir.rs::dir spelled-out
 crates/filesystem_contract/src/dirent.rs::IS_DIR spelled-out
 crates/filesystem_contract/src/grant.rs::spec spelled-out
