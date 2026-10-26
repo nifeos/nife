@@ -9,8 +9,8 @@ Ratified: 2026-10-25 (#2720).
 
 The ruling of that date ratified every name below but three, and those are provisional. Ruled
 2026-10-26 (UTC), on #2749: the namespace bounds check and the transfer builder become methods on a
-small namespace value carrying the capacity and the logical blocks per transfer, so `transfer_command`
-loses its two positional integers, and the names that value introduces stay provisional until a
+small namespace value carrying the capacity and the logical blocks per transfer. That takes the two
+positional integers off `transfer_command`. The names the value introduces stay provisional until a
 ruling. Each row with a refusal names the spelling the ruling turned down and why. Ruled
 2026-10-26 (UTC), on #2760: five oversights in that ratification take spelled-out names before
 publish, `Capabilities`, `logical_block_address_format_shift` and the fields
