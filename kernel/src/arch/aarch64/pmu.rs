@@ -124,7 +124,8 @@ pub(super) fn is_pmuv3_present() -> bool {
 ///
 /// Called from `timer::initialize`, which every core runs (core 0 from `kernel_main`, each
 /// secondary from `smp::secondary_main`), after `PMUSERENR_EL0` has been closed. Init-time only:
-/// nothing here is on the context-switch path, which milestone 237 measured and keeps clean.
+/// nothing here is on the context-switch path, which milestone 237 (the cycle-counter grant costs
+/// 136 bytes of IPC fastpath) measured and keeps clean.
 pub(crate) fn initialize_this_cpu() {
     let cpu = cpu::id();
     if !is_pmuv3_present() {

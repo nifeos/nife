@@ -142,7 +142,7 @@ pub unsafe fn initialize(gicd: u64, gicc: u64) {
 /// Bring up **this core's** GIC CPU interface. The distributor ([`initialize`]) is machine-wide and
 /// done once; the CPU interface is banked per core (same MMIO address, different hardware behind
 /// it), so each core must enable its own. Called by the boot core inside [`initialize`] and by
-/// every secondary as it comes online (DECISIONS §11).
+/// every secondary as it comes online (DECISIONS §11, SMP: per-CPU run queues).
 pub(crate) fn initialize_this_cpu() {
     let guard = GIC.lock();
     let gic = guard

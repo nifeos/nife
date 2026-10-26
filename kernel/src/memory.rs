@@ -1024,8 +1024,8 @@ static JH7110_STORAGE: IrqSafeMutex<Option<[Option<designware_mobile_storage::jh
     IrqSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's STG clock-and-reset window, from the device tree or from the constant both
-/// published trees agree on (milestone 220). `None` until `initialize`, and on every machine that
-/// is not a JH7110.
+/// published trees agree on (milestone 220 (this kernel drives no clock or reset controller)).
+/// `None` until `initialize`, and on every machine that is not a JH7110.
 static JH7110_CRG: IrqSafeMutex<Option<jh7110_clock_and_reset::WindowLocation>> =
     IrqSafeMutex::new(rank::RAM, None);
 
@@ -1085,8 +1085,9 @@ static AMD_VI_REGIONS: IrqSafeMutex<
 /// The screen the boot handoff described (milestone 243). See [`framebuffer`].
 static FRAMEBUFFER: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
 
-/// The RTC's register block and binding kind (milestone 51). `None` until `initialize` has run, and
-/// on a machine whose device tree describes neither RTC we can drive.
+/// The RTC's register block and binding kind (milestone 51 (wall-clock time, the `date` command,
+/// and an NTP service)). `None` until `initialize` has run, and on a machine whose device tree
+/// describes neither RTC we can drive.
 static RTC_REGION: IrqSafeMutex<Option<(u64, u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
 
 /// The console UART's interrupt line, from the device tree. `None` until `initialize`, and on a

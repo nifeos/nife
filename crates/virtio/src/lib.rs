@@ -83,7 +83,7 @@ const VIRTIO_BLK_T_IN: u32 = 0; // read: the device WRITES the data buffer
 const VIRTIO_BLK_T_OUT: u32 = 1; // write: the device READS the data buffer
 // Flush: no data buffer at all, just the header and the status byte. Legal only once
 // `VIRTIO_BLK_F_FLUSH` is negotiated, which is why the block server probes for it rather than
-// assuming it (virtio 1.2 §5.2.6; see `initialize_with_features` and `blk_flush`).
+// assuming it (virtio 1.2 section 5.2.6; see `initialize_with_features` and `blk_flush`).
 const VIRTIO_BLK_T_FLUSH: u32 = 4;
 
 // Feature bit 9 (low word): VIRTIO_BLK_F_FLUSH, "the device supports a cache flush command". The
