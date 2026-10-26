@@ -32,7 +32,7 @@
 
 use designware_mobile_storage::host::{Host, Registers};
 use designware_mobile_storage::sd::{self, Card};
-use designware_mobile_storage::{command as c, regs};
+use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::{
     Handoff, REGISTER_VIRTUAL_ADDRESS, TRANSFER_VIRTUAL_ADDRESS,
 };
@@ -61,7 +61,7 @@ struct Page;
 
 impl Registers for Page {
     fn read(&mut self, offset: u32) -> u32 {
-        debug_assert!(offset < regs::WINDOW_USED);
+        debug_assert!(offset < registers::WINDOW_USED);
         // SAFETY: the spawner maps one device-typed page of the controller at
         // REGISTER_VIRTUAL_ADDRESS before `_start` runs, and every offset the crate passes is a
         // word-aligned register in it.
@@ -71,7 +71,7 @@ impl Registers for Page {
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        debug_assert!(offset < regs::WINDOW_USED);
+        debug_assert!(offset < registers::WINDOW_USED);
         // SAFETY: as `read`.
         unsafe {
             core::ptr::write_volatile(

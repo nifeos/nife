@@ -10,7 +10,7 @@ diff --git a/crates/designware_mobile_storage/src/host.rs b/crates/designware_mo
 +++ b/crates/designware_mobile_storage/src/host.rs
 @@ -136,7 +136,7 @@
  pub const fn fifo_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
-     let filled = regs::fifo_count(status);
+     let filled = registers::fifo_count(status);
      let filled = if filled > depth { depth } else { filled };
 -    let words = if write { depth - filled } else { filled };
 +    let words = if write { depth } else { filled };

@@ -16,8 +16,8 @@ use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdi
 use designware_mobile_storage::host::{Error, Host, Identity, Registers};
 use designware_mobile_storage::idmac::{DirectMemoryAccessRegion, Idmac, Refusal};
 use designware_mobile_storage::jh7110::Slot;
-use designware_mobile_storage::regs;
-use designware_mobile_storage::sd::{self, BLOCK, InitError, IoError, Kind};
+use designware_mobile_storage::registers;
+use designware_mobile_storage::sd::{self, BLOCK, InitializationError, IoError, Kind};
 
 use crate::designware_mobile_storage::{Region, Window};
 use crate::{arch, println};
@@ -101,7 +101,7 @@ enum Outcome {
     /// The kernel had no pages for a buffer.
     NoMemory,
     /// Identification stopped: no card, or a card that did not finish.
-    NoCard(InitError),
+    NoCard(InitializationError),
     /// A read failed: the block and the error.
     ReadFailed(u64, IoError),
     /// Read-only, and every polled read succeeded: the timed rate in KiB/s, and the IDMAC phase.
@@ -317,7 +317,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         return Outcome::NoMemory;
     };
     let r = match bench::read_only(&mut host, slot.bus_width, buf, TIMED_BLOCKS) {
-        Err(ReadFailure::Init(e)) => {
+        Err(ReadFailure::Initialization(e)) => {
             say!(slot, "identification stopped: {e:?}");
             return Outcome::NoCard(e);
         }
@@ -327,9 +327,9 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
             // is an underrun, the card ahead with a full FIFO is an overrun.
             let r = host.registers();
             let (status, tcb, tbb) = (
-                r.read(regs::STATUS),
-                r.read(regs::TCBCNT),
-                r.read(regs::TBBCNT),
+                r.read(registers::STATUS),
+                r.read(registers::TCBCNT),
+                r.read(registers::TBBCNT),
             );
             say!(
                 slot,
@@ -550,10 +550,10 @@ fn print_identity(slot: &Slot, id: &Identity, depth: u32) {
         id.verid,
         id.hcon,
         id.usrid,
-        regs::fifo_offset(id.verid),
-        regs::fifo_width(id.hcon),
+        registers::fifo_offset(id.verid),
+        registers::fifo_width(id.hcon),
         depth,
-        regs::dma_64bit(id.hcon),
+        registers::uses_64_bit_direct_memory_access(id.hcon),
         id.cdetect,
     );
     say!(
@@ -679,11 +679,11 @@ fn through_idmac(
             say!(
                 slot,
                 "IDMAC read failed: {e:?}; IDSTS {:#x} DSCADDR {:#x} BUFADDR {:#x} STATUS {:#x} TCBCNT {}",
-                w.read(regs::IDSTS),
-                w.read(regs::DSCADDR),
-                w.read(regs::BUFADDR),
-                w.read(regs::STATUS),
-                w.read(regs::TCBCNT),
+                w.read(registers::IDSTS),
+                w.read(registers::DSCADDR),
+                w.read(registers::BUFADDR),
+                w.read(registers::STATUS),
+                w.read(registers::TCBCNT),
             );
             return Dma::Failed(e);
         }

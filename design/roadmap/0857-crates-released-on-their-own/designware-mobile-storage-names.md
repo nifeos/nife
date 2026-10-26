@@ -6,9 +6,9 @@ This file ratifies nothing. Until the line below carries a date, the crate's own
 
 Ratified: not yet.
 
-118 names: 96 no block, 21 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
+118 names: 93 no block, 24 provisional, 1 ratified. A status of `unrecorded` means the crate holds no block for the name. The column `outside` says whether a caller outside the crate can reach the name; 8 sit in private modules without a re-export. Enum variants, fields and trait methods appear only where a block names one, as `script/names` counts them.
 
-The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 30 rows say something other than `clear` or `term`. This file renames nothing.
+The last column reads each name against design/naming.md's tests and 857's Fork 5, which asks for names that stand on their own because the crate may outlive nife. 29 rows say something other than `clear` or `term`. This file renames nothing.
 
 - `clear`: a stranger reads it right.
 - `term`: the specification or databook owns it, and it keeps that spelling, as design/naming.md asks of a name across somebody else's interface.
@@ -28,7 +28,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `jh7110` | module | `src/jh7110.rs` | unrecorded. | yes | scope: one SoC's glue in a host controller crate |
 | `partition` | module | `src/partition.rs` | unrecorded. | yes | scope: partitions |
 | `proofs` | module | `src/proofs.rs` | unrecorded. | no | clear; private |
-| `regs` | module | `src/regs.rs` | unrecorded. | yes | clear |
+| `registers` | module | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): every `regs` module this tree names becomes `registers`; was `regs`. | yes | clear |
 | `sd` | module | `src/sd.rs` | unrecorded. | yes | term |
 | `sim` | module | `src/sim.rs` | unrecorded. | no | clear; private |
 | `tests` | module | `src/tests.rs` | unrecorded. | no | clear; private |
@@ -104,27 +104,27 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `is_used` | item | `src/partition.rs` | unrecorded. | yes | scope: partitions |
 | `parse` | item | `src/partition.rs` | unrecorded. | yes | clear |
 | `scratch` | item | `src/partition.rs` | unrecorded. | yes | scope: partitions |
-| `BMOD` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `BUFADDR` | item | `src/regs.rs` | provisional. | yes | term |
-| `CMD_RESPONSE_EXPECT` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CMD_SEND_INIT` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CMD_START` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `CTRL` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `DSCADDR` | item | `src/regs.rs` | provisional. | yes | term |
-| `IDSTS` | item | `src/regs.rs` | provisional. | yes | term |
-| `RST_N` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `STATUS` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TBBCNT` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `TCBCNT` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `UHS` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `WINDOW_USED` | item | `src/regs.rs` | unrecorded. | yes | nife: nife's own process plan |
-| `WRTPRT` | item | `src/regs.rs` | unrecorded. | yes | term |
-| `dma_64bit` | item | `src/regs.rs` | unrecorded. | yes | unclear: `dma` and a bare width |
-| `fifo_offset` | item | `src/regs.rs` | unrecorded. | yes | clear |
-| `fifo_width` | item | `src/regs.rs` | unrecorded. | yes | clear |
+| `BMOD` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `BUFADDR` | item | `src/registers.rs` | provisional. | yes | term |
+| `CMD_RESPONSE_EXPECT` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CMD_SEND_INIT` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CMD_START` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `CTRL` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `DSCADDR` | item | `src/registers.rs` | provisional. | yes | term |
+| `IDSTS` | item | `src/registers.rs` | provisional. | yes | term |
+| `RST_N` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `STATUS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TBBCNT` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `TCBCNT` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `UHS` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `WINDOW_USED` | item | `src/registers.rs` | unrecorded. | yes | nife: nife's own process plan |
+| `WRTPRT` | item | `src/registers.rs` | unrecorded. | yes | term |
+| `uses_64_bit_direct_memory_access` | item | `src/registers.rs` | provisional. Ruled 2026-10-26 (UTC): `dma` is spelled out wherever this tree authors it; was `dma_64bit`. | yes | clear |
+| `fifo_offset` | item | `src/registers.rs` | unrecorded. | yes | clear |
+| `fifo_width` | item | `src/registers.rs` | unrecorded. | yes | clear |
 | `BLOCK` | item | `src/sd.rs` | unrecorded. | yes | clear |
 | `Card` | item | `src/sd.rs` | unrecorded. | yes | clear |
-| `InitError` | item | `src/sd.rs` | unrecorded. | yes | clear |
+| `InitializationError` | item | `src/sd.rs` | provisional. Ruled 2026-10-26 (UTC): `init` meaning initialize is spelled out wherever this tree authors it; was `InitError`. | yes | clear |
 | `IoError` | item | `src/sd.rs` | unrecorded. | yes | clear |
 | `Kind` | item | `src/sd.rs` | unrecorded. | yes | generic |
 | `address` | item | `src/sd.rs` | unrecorded. | yes | clear |
@@ -141,5 +141,21 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
 - the fields of `ReadReport` (7), `IdmacReport` (3), `Watch` (2), `MatrixRow` (8), `Csd` (2), `Cid` (3), `Data` (3), `Command` (4), `Identity` (6), `Slot` (10), `Entry` (3), `Mbr` (1) and `Card` (10), and those of the private module `sim`'s types;
-- the variants of `ReadFailure` (2), `WriteVerdict` (5), `Response` (7), `host::Error` (12), `Refusal` (5), `Kind` (4), `InitError` (9), `IoError` (4) and the private `Fault` (4);
+- the variants of `ReadFailure` (2), `WriteVerdict` (5), `Response` (7), `host::Error` (12), `Refusal` (5), `Kind` (4), `InitializationError` (9), `IoError` (4) and the private `Fault` (4);
 - the methods of the traits `Registers` (3) and `DirectMemoryAccessRegion` (7).
+
+## Rulings applied before ratification
+
+Each renamed row's status says which ruling renamed it and what it was.
+
+- Ruled 2026-10-26 (UTC): every `regs` module this tree names becomes `registers`, and the
+  constants inside keep the databook's names; a `reg` or a one-letter `r` that holds a register or
+  the register window follows. `dma` is spelled out `direct_memory_access` wherever this tree
+  authors it: the host's region, the `issue` argument, `Error::DirectMemoryAccess`,
+  `fifoth_for_direct_memory_access`, `direct_memory_access_interface` and the simulator's knobs.
+  `dma_64bit` becomes `uses_64_bit_direct_memory_access`, which also reads as the question it
+  answers. Names copied from the databook (`CTRL_DMA_RESET`, `CTRL_USE_INTERNAL_DMAC`) keep
+  their spelling.
+- Ruled 2026-10-26 (UTC): `init` meaning initialize is spelled out wherever this tree authors it.
+  `InitError` becomes `InitializationError`, the noun of the ruled verb, and the bench's
+  `ReadFailure::Init` becomes `ReadFailure::Initialization`.
