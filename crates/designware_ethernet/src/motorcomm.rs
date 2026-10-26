@@ -148,17 +148,17 @@ pub enum Source {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Settings {
     /// The receive delay select, 0 to 15, in 150 ps steps.
-    pub rx_delay: u8,
+    pub receive_delay: u8,
     /// Whether the receive clock's extra fixed delay is on as well.
-    pub rx_fixed_delay: bool,
+    pub receive_fixed_delay: bool,
     /// The transmit delay select, 0 to 15.
-    pub tx_delay: u8,
+    pub transmit_delay: u8,
     /// The receive clock pad's drive.
-    pub rx_clock_drive: Drive,
+    pub receive_clock_drive: Drive,
     /// The receive data pads' drive.
-    pub rx_data_drive: Drive,
+    pub receive_data_drive: Drive,
     /// Whether to invert the transmit clock at 10, 100 and 1000 Mbit/s, in that order.
-    pub tx_clock_inverted: [bool; 3],
+    pub transmit_clock_inverted: [bool; 3],
     /// Which spelling this was read from.
     pub source: Source,
 }
@@ -175,42 +175,44 @@ impl Settings {
     /// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the
     /// device-tree walk that compares against it left the crate.
     pub const FALLBACK_GMAC0: Settings = Settings {
-        rx_delay: 0xa,
-        rx_fixed_delay: false,
-        tx_delay: 0xa,
-        rx_clock_drive: Drive::Code(6),
-        rx_data_drive: Drive::Code(3),
-        tx_clock_inverted: [true, true, true],
+        receive_delay: 0xa,
+        receive_fixed_delay: false,
+        transmit_delay: 0xa,
+        receive_clock_drive: Drive::Code(6),
+        receive_data_drive: Drive::Code(3),
+        transmit_clock_inverted: [true, true, true],
         source: Source::Fallback,
     };
 
     /// **From mainline's quantities**, by OpenBSD's arithmetic: a receive delay at or past 1.9 ns
     /// that the fixed delay plus whole steps can make uses the fixed delay; both selects round to
     /// the nearest step. A select past the 4-bit field saturates rather than spilling into the
-    /// neighboring field, which OpenBSD's shift would do. `tx_inverted` is `None` when the tree
-    /// does not say `motorcomm,tx-clk-adj-enabled`, which means "leave the bit alone" there and
-    /// "not inverted" here: the bit is written either way, so it is decided rather than inherited.
+    /// neighboring field, which OpenBSD's shift would do. `transmit_inverted` is `None` when the
+    /// tree does not say `motorcomm,tx-clk-adj-enabled`, which means "leave the bit alone" there
+    /// and "not inverted" here: the bit is written either way, so it is decided rather than
+    /// inherited.
     pub(crate) fn from_mainline(
-        rx_ps: u32,
-        tx_ps: u32,
-        rx_clock_ua: u32,
-        rx_data_ua: u32,
-        tx_inverted: Option<[bool; 3]>,
+        receive_ps: u32,
+        transmit_ps: u32,
+        receive_clock_ua: u32,
+        receive_data_ua: u32,
+        transmit_inverted: Option<[bool; 3]>,
     ) -> Settings {
-        let (rx_ps, rx_fixed_delay) =
-            if rx_ps >= FIXED_DELAY_PS && (rx_ps - FIXED_DELAY_PS).is_multiple_of(STEP_PS) {
-                (rx_ps - FIXED_DELAY_PS, true)
-            } else {
-                (rx_ps, false)
-            };
+        let (receive_ps, receive_fixed_delay) = if receive_ps >= FIXED_DELAY_PS
+            && (receive_ps - FIXED_DELAY_PS).is_multiple_of(STEP_PS)
+        {
+            (receive_ps - FIXED_DELAY_PS, true)
+        } else {
+            (receive_ps, false)
+        };
         let sel = |ps: u32| ((ps.saturating_add(STEP_PS / 2)) / STEP_PS).min(0xf) as u8;
         Settings {
-            rx_delay: sel(rx_ps),
-            rx_fixed_delay,
-            tx_delay: sel(tx_ps),
-            rx_clock_drive: Drive::Microamps(rx_clock_ua),
-            rx_data_drive: Drive::Microamps(rx_data_ua),
-            tx_clock_inverted: tx_inverted.unwrap_or([false; 3]),
+            receive_delay: sel(receive_ps),
+            receive_fixed_delay,
+            transmit_delay: sel(transmit_ps),
+            receive_clock_drive: Drive::Microamps(receive_clock_ua),
+            receive_data_drive: Drive::Microamps(receive_data_ua),
+            transmit_clock_inverted: transmit_inverted.unwrap_or([false; 3]),
             source: Source::MainlineTree,
         }
     }
@@ -315,15 +317,15 @@ pub fn configure(
     s: &Settings,
 ) -> Result<Applied, management_data_input_output::Error> {
     let saved = bus.read(phy, EXT_ADDR)?;
-    let delay_en = if s.rx_fixed_delay {
+    let delay_en = if s.receive_fixed_delay {
         CHIP_CONFIG_RXC_DLY_EN
     } else {
         0
     };
     let chip = modify_extended(bus, phy, EXT_CHIP_CONFIG, CHIP_CONFIG_RXC_DLY_EN, delay_en)?;
     let volt = voltage_mv(chip);
-    let delays = u16::from(s.rx_delay & 0xf) << RGMII_CONFIG1_RX_DELAY_SHIFT
-        | u16::from(s.tx_delay & 0xf) << RGMII_CONFIG1_TX_DELAY_SHIFT;
+    let delays = u16::from(s.receive_delay & 0xf) << RGMII_CONFIG1_RX_DELAY_SHIFT
+        | u16::from(s.transmit_delay & 0xf) << RGMII_CONFIG1_TX_DELAY_SHIFT;
     let rgmii_config1 = modify_extended(
         bus,
         phy,
@@ -331,8 +333,8 @@ pub fn configure(
         0xf << RGMII_CONFIG1_RX_DELAY_SHIFT | 0xf << RGMII_CONFIG1_TX_DELAY_SHIFT,
         delays,
     )?;
-    let rxc = u16::from(drive_code(volt, s.rx_clock_drive));
-    let rxd = u16::from(drive_code(volt, s.rx_data_drive));
+    let rxc = u16::from(drive_code(volt, s.receive_clock_drive));
+    let rxd = u16::from(drive_code(volt, s.receive_data_drive));
     let pad_drive = modify_extended(
         bus,
         phy,
@@ -360,9 +362,9 @@ pub fn apply_speed(
     speed: Speed,
 ) -> Result<u16, management_data_input_output::Error> {
     let inverted = match speed {
-        Speed::Ten => s.tx_clock_inverted[0],
-        Speed::Hundred => s.tx_clock_inverted[1],
-        Speed::Thousand => s.tx_clock_inverted[2],
+        Speed::Ten => s.transmit_clock_inverted[0],
+        Speed::Hundred => s.transmit_clock_inverted[1],
+        Speed::Thousand => s.transmit_clock_inverted[2],
     };
     let saved = bus.read(phy, EXT_ADDR)?;
     let set = if inverted {
@@ -392,30 +394,30 @@ mod tests {
     fn the_two_trees_spell_the_same_registers_for_radons_gmac0() {
         let mainline = Settings::from_mainline(1500, 1500, 3970, 2910, Some([false, true, true]));
         let fallback = Settings::FALLBACK_GMAC0;
-        assert_eq!(mainline.rx_delay, fallback.rx_delay);
-        assert_eq!(mainline.tx_delay, fallback.tx_delay);
-        assert_eq!(mainline.rx_fixed_delay, fallback.rx_fixed_delay);
-        assert_eq!(drive_code(1800, mainline.rx_clock_drive), 6);
-        assert_eq!(drive_code(1800, mainline.rx_data_drive), 3);
-        assert_eq!(drive_code(1800, fallback.rx_clock_drive), 6);
+        assert_eq!(mainline.receive_delay, fallback.receive_delay);
+        assert_eq!(mainline.transmit_delay, fallback.transmit_delay);
+        assert_eq!(mainline.receive_fixed_delay, fallback.receive_fixed_delay);
+        assert_eq!(drive_code(1800, mainline.receive_clock_drive), 6);
+        assert_eq!(drive_code(1800, mainline.receive_data_drive), 3);
+        assert_eq!(drive_code(1800, fallback.receive_clock_drive), 6);
     }
 
     #[test]
     fn a_receive_delay_the_fixed_delay_can_make_uses_it() {
         // 1.9 ns + 2 steps: OpenBSD's rule takes the fixed delay and leaves 300 ps, select 2.
         let s = Settings::from_mainline(2200, 0, 0, 0, None);
-        assert!(s.rx_fixed_delay);
-        assert_eq!(s.rx_delay, 2);
+        assert!(s.receive_fixed_delay);
+        assert_eq!(s.receive_delay, 2);
         // 2000 ps is not 1900 plus whole steps, so it is all select: (2000 + 75) / 150 = 13.
         let s = Settings::from_mainline(2000, 0, 0, 0, None);
-        assert!(!s.rx_fixed_delay);
-        assert_eq!(s.rx_delay, 13);
+        assert!(!s.receive_fixed_delay);
+        assert_eq!(s.receive_delay, 13);
     }
 
     #[test]
     fn a_delay_too_long_for_the_field_saturates_rather_than_spilling() {
         let s = Settings::from_mainline(10_000, 10_000, 0, 0, None);
-        assert_eq!((s.rx_delay, s.tx_delay), (15, 15));
+        assert_eq!((s.receive_delay, s.transmit_delay), (15, 15));
     }
 
     #[test]
@@ -476,7 +478,7 @@ mod tests {
     fn a_drive_code_with_its_high_bit_set_lands_in_bit_twelve() {
         let mut phy = Phy::yt8531_at_1v8();
         let s = Settings {
-            rx_data_drive: Drive::Code(7),
+            receive_data_drive: Drive::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
         configure(&mut phy, 0, &s).unwrap();
@@ -504,7 +506,7 @@ mod tests {
     fn the_transmit_clock_inverts_per_speed() {
         let mut phy = Phy::yt8531_at_1v8();
         let s = Settings {
-            tx_clock_inverted: [false, false, true],
+            transmit_clock_inverted: [false, false, true],
             ..Settings::FALLBACK_GMAC0
         };
         apply_speed(&mut phy, 0, &s, Speed::Thousand).unwrap();
@@ -564,7 +566,7 @@ mod tests {
     #[test]
     fn a_delay_rounds_to_the_nearest_step() {
         let s = Settings::from_mainline(1450, 1420, 0, 0, None);
-        assert_eq!((s.rx_delay, s.tx_delay), (10, 9));
+        assert_eq!((s.receive_delay, s.transmit_delay), (10, 9));
     }
 
     /// `configure` replaces both delay fields and leaves the rest of the RGMII word, and writes
@@ -575,7 +577,7 @@ mod tests {
         write_extended(&mut phy, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
         write_extended(&mut phy, 0, EXT_PAD_DRIVE, 0).unwrap();
         let s = Settings {
-            rx_data_drive: Drive::Code(7),
+            receive_data_drive: Drive::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
         let a = configure(&mut phy, 0, &s).unwrap();

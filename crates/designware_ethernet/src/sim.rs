@@ -158,10 +158,10 @@ pub(crate) struct TailRegs<'a> {
 }
 
 impl Tails for TailRegs<'_> {
-    fn set_rx_tail(&mut self, addr: u32) {
+    fn set_receive_tail(&mut self, addr: u32) {
         self.regs.insert(regs::CHAN_RX_TAIL, addr);
     }
-    fn set_tx_tail(&mut self, addr: u32) {
+    fn set_transmit_tail(&mut self, addr: u32) {
         self.regs.insert(regs::CHAN_TX_TAIL, addr);
     }
     fn barrier(&mut self) {
@@ -285,7 +285,7 @@ pub(crate) struct NetworkInterfaceController {
     pub phy: Phy,
     reset_polls: u32,
     reset_left: Option<u32>,
-    rx_clock: bool,
+    receive_clock: bool,
     flush_wedged: bool,
     loopback_broken: bool,
     receive_cursor: u16,
@@ -308,7 +308,7 @@ impl NetworkInterfaceController {
             phy: Phy::yt8531_at_1v8(),
             reset_polls: 1,
             reset_left: None,
-            rx_clock: true,
+            receive_clock: true,
             flush_wedged: false,
             loopback_broken: false,
             receive_cursor: 0,
@@ -336,7 +336,7 @@ impl NetworkInterfaceController {
     }
     /// The PHY stops driving the receive clock, and the software reset never completes.
     pub(crate) fn stop_receive_clock(&mut self) {
-        self.rx_clock = false;
+        self.receive_clock = false;
     }
     /// The transmit queue flush never completes.
     pub(crate) fn wedge_transmit_flush(&mut self) {
@@ -351,7 +351,7 @@ impl NetworkInterfaceController {
         self.regs.get(&off).copied().unwrap_or(0)
     }
     /// The receive tail register.
-    pub(crate) fn rx_tail(&self) -> u32 {
+    pub(crate) fn receive_tail(&self) -> u32 {
         self.reg(regs::CHAN_RX_TAIL)
     }
     /// How many barriers the data plane has taken.
@@ -424,13 +424,13 @@ impl NetworkInterfaceController {
     }
 
     /// How many receive descriptors the device could fill right now.
-    pub(crate) fn rx_available(&self) -> usize {
+    pub(crate) fn receive_available(&self) -> usize {
         let (base, n) = self.ring(
             regs::CHAN_RX_BASE,
             regs::CHAN_RX_BASE_HI,
             regs::CHAN_RX_RING_LEN,
         );
-        let tail = self.index_of_tail(base, self.rx_tail(), n);
+        let tail = self.index_of_tail(base, self.receive_tail(), n);
         let mut i = self.receive_cursor;
         let mut count = 0;
         while i != tail && self.descriptor(base + u64::from(i) * 16)[3] & RDES3_OWN != 0 {
@@ -455,7 +455,7 @@ impl NetworkInterfaceController {
             regs::CHAN_RX_BASE_HI,
             regs::CHAN_RX_RING_LEN,
         );
-        let tail = self.index_of_tail(base, self.rx_tail(), n);
+        let tail = self.index_of_tail(base, self.receive_tail(), n);
         let at = base + u64::from(self.receive_cursor) * 16;
         if self.receive_cursor == tail || self.descriptor(at)[3] & RDES3_OWN == 0 {
             self.status(regs::CHAN_STATUS_RBU);
@@ -533,11 +533,11 @@ impl Hardware for NetworkInterfaceController {
         match off {
             regs::DMA_MODE => {
                 if let Some(left) = self.reset_left {
-                    if self.rx_clock && left <= 1 {
+                    if self.receive_clock && left <= 1 {
                         self.reset_left = None;
                         let v = self.reg(off) & !regs::DMA_MODE_SWR;
                         self.regs.insert(off, v);
-                    } else if self.rx_clock {
+                    } else if self.receive_clock {
                         self.reset_left = Some(left - 1);
                     }
                 }

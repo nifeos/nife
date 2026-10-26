@@ -212,12 +212,12 @@ pub fn mainline_phy<'t, E>(
 ) -> Result<(u8, Settings), E> {
     let mut num = |name: &[u8]| prop(name).map(|v| v.and_then(first_cell));
     let address = num(b"reg")?.map_or(0, |r| (r & 0x1f) as u8);
-    let (rx, tx) = (num(b"rx-internal-delay-ps")?, num(b"tx-internal-delay-ps")?);
-    if rx.is_none() && tx.is_none() {
+    let (receive, transmit) = (num(b"rx-internal-delay-ps")?, num(b"tx-internal-delay-ps")?);
+    if receive.is_none() && transmit.is_none() {
         return Ok((address, Settings::FALLBACK_GMAC0));
     }
-    let rx_clock = num(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0);
-    let rx_data = num(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0);
+    let receive_clock = num(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0);
+    let receive_data = num(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0);
     let mut has = |name: &[u8]| prop(name).map(|v| v.is_some());
     let inverted = if has(b"motorcomm,tx-clk-adj-enabled")? {
         Some([
@@ -231,10 +231,10 @@ pub fn mainline_phy<'t, E>(
     Ok((
         address,
         Settings::from_mainline(
-            rx.unwrap_or(DEFAULT_DELAY_PS),
-            tx.unwrap_or(DEFAULT_DELAY_PS),
-            rx_clock,
-            rx_data,
+            receive.unwrap_or(DEFAULT_DELAY_PS),
+            transmit.unwrap_or(DEFAULT_DELAY_PS),
+            receive_clock,
+            receive_data,
             inverted,
         ),
     ))
@@ -254,7 +254,7 @@ pub fn vendor_phy<'t, E>(
     mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<(u8, Settings), E> {
     let mut num = |name: &[u8]| prop(name).map(|v| v.and_then(first_cell));
-    let Some(rx) = num(b"rx_delay_sel")? else {
+    let Some(receive) = num(b"rx_delay_sel")? else {
         return Ok((0, Settings::FALLBACK_GMAC0));
     };
     let f = Settings::FALLBACK_GMAC0;
@@ -262,17 +262,17 @@ pub fn vendor_phy<'t, E>(
     Ok((
         num(b"reg")?.map_or(0, |r| (r & 0x1f) as u8),
         Settings {
-            rx_delay: (rx & 0xf) as u8,
-            rx_fixed_delay: flag(num(b"rxc_dly_en")?, f.rx_fixed_delay),
-            tx_delay: num(b"tx_delay_sel")?.map_or(f.tx_delay, |v| (v & 0xf) as u8),
-            rx_clock_drive: num(b"rgmii_sw_dr_rxc")?
-                .map_or(f.rx_clock_drive, |v| Drive::Code((v & 7) as u8)),
-            rx_data_drive: num(b"rgmii_sw_dr")?
-                .map_or(f.rx_data_drive, |v| Drive::Code((v & 7) as u8)),
-            tx_clock_inverted: [
-                flag(num(b"tx_inverted_10")?, f.tx_clock_inverted[0]),
-                flag(num(b"tx_inverted_100")?, f.tx_clock_inverted[1]),
-                flag(num(b"tx_inverted_1000")?, f.tx_clock_inverted[2]),
+            receive_delay: (receive & 0xf) as u8,
+            receive_fixed_delay: flag(num(b"rxc_dly_en")?, f.receive_fixed_delay),
+            transmit_delay: num(b"tx_delay_sel")?.map_or(f.transmit_delay, |v| (v & 0xf) as u8),
+            receive_clock_drive: num(b"rgmii_sw_dr_rxc")?
+                .map_or(f.receive_clock_drive, |v| Drive::Code((v & 7) as u8)),
+            receive_data_drive: num(b"rgmii_sw_dr")?
+                .map_or(f.receive_data_drive, |v| Drive::Code((v & 7) as u8)),
+            transmit_clock_inverted: [
+                flag(num(b"tx_inverted_10")?, f.transmit_clock_inverted[0]),
+                flag(num(b"tx_inverted_100")?, f.transmit_clock_inverted[1]),
+                flag(num(b"tx_inverted_1000")?, f.transmit_clock_inverted[2]),
             ],
             source: Source::VendorTree,
         },
@@ -451,21 +451,28 @@ mod tests {
         let f = Settings::FALLBACK_GMAC0;
         let (address, s) = vendor_phy(node(table)).unwrap();
         assert_eq!(address, 3);
-        assert_eq!((s.rx_delay, s.tx_delay), (0xb, 0x5), "four-bit selects");
-        assert!(s.rx_fixed_delay);
         assert_eq!(
-            (s.rx_clock_drive, s.rx_data_drive),
+            (s.receive_delay, s.transmit_delay),
+            (0xb, 0x5),
+            "four-bit selects"
+        );
+        assert!(s.receive_fixed_delay);
+        assert_eq!(
+            (s.receive_clock_drive, s.receive_data_drive),
             (Drive::Code(6), Drive::Code(3))
         );
-        assert_eq!(s.tx_clock_inverted, [true, false, f.tx_clock_inverted[2]]);
+        assert_eq!(
+            s.transmit_clock_inverted,
+            [true, false, f.transmit_clock_inverted[2]]
+        );
         assert_eq!(s.source, Source::VendorTree);
         let table: &[(&[u8], &[u8])] = &[(b"rx_delay_sel", ZERO), (b"rxc_dly_en", ZERO)];
         let (address, s) = vendor_phy(node(table)).unwrap();
         assert_eq!(address, 0);
-        assert!(!s.rx_fixed_delay);
+        assert!(!s.receive_fixed_delay);
         assert_eq!(
-            (s.tx_delay, s.rx_clock_drive),
-            (f.tx_delay, f.rx_clock_drive)
+            (s.transmit_delay, s.receive_clock_drive),
+            (f.transmit_delay, f.receive_clock_drive)
         );
         let table: &[(&[u8], &[u8])] = &[(b"reg", ONE)];
         assert_eq!(vendor_phy(node(table)).unwrap(), (0, f));

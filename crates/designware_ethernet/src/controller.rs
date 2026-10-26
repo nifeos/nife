@@ -8,7 +8,7 @@
 //! against `sim`'s controller.
 
 use crate::motorcomm::{Link, Speed};
-use crate::{BUFFER_SIZE, Hardware, RX_ENTRIES, TX_ENTRIES, layout, regs};
+use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, regs};
 
 /// Why the controller was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -161,7 +161,7 @@ pub struct Bus {
 /// The receive operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic: the
 /// queue size in 256-byte units less one, threshold or store-and-forward, and hardware flow control
 /// with its thresholds once the queue is large enough for them to mean anything.
-pub(crate) fn rx_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
+pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
         mode &= !(regs::MTL_RXQ_OP_MODE_RSF | regs::MTL_RXQ_OP_MODE_RTC_MASK);
@@ -182,7 +182,7 @@ pub(crate) fn rx_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
 }
 
 /// The transmit operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic.
-pub(crate) fn tx_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
+pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
         mode &= !(regs::MTL_TXQ_OP_MODE_TSF | regs::MTL_TXQ_OP_MODE_TTC_MASK);
@@ -255,46 +255,48 @@ pub fn configure(
         },
     );
     let pbl = regs::CHAN_PBL_MASK;
-    let tx = hardware.read(regs::CHAN_TX_CONTROL) & !(pbl << regs::CHAN_TX_CONTROL_PBL_SHIFT);
+    let transmit = hardware.read(regs::CHAN_TX_CONTROL) & !(pbl << regs::CHAN_TX_CONTROL_PBL_SHIFT);
     hardware.write(
         regs::CHAN_TX_CONTROL,
-        tx | (bus.transmit_channel_burst_length & pbl) << regs::CHAN_TX_CONTROL_PBL_SHIFT
+        transmit
+            | (bus.transmit_channel_burst_length & pbl) << regs::CHAN_TX_CONTROL_PBL_SHIFT
             | regs::CHAN_TX_CONTROL_OSP,
     );
     // The buffer size is written, not inherited (OpenBSD inherits it): a size left by firmware is
     // a fact about whoever ran last, and the device writes a frame up to it.
     let rbsz = regs::CHAN_RX_CONTROL_RBSZ_MASK << regs::CHAN_RX_CONTROL_RBSZ_SHIFT;
-    let rx =
+    let receive =
         hardware.read(regs::CHAN_RX_CONTROL) & !(pbl << regs::CHAN_RX_CONTROL_PBL_SHIFT | rbsz);
     hardware.write(
         regs::CHAN_RX_CONTROL,
-        rx | (bus.receive_channel_burst_length & pbl) << regs::CHAN_RX_CONTROL_PBL_SHIFT
+        receive
+            | (bus.receive_channel_burst_length & pbl) << regs::CHAN_RX_CONTROL_PBL_SHIFT
             | (BUFFER_SIZE as u32) << regs::CHAN_RX_CONTROL_RBSZ_SHIFT,
     );
 
-    let tx_ring = region + layout::TX_RING;
-    let rx_ring = region + layout::RX_RING;
-    hardware.write(regs::CHAN_TX_BASE_HI, (tx_ring >> 32) as u32);
-    hardware.write(regs::CHAN_TX_BASE, tx_ring as u32);
-    hardware.write(regs::CHAN_TX_RING_LEN, u32::from(TX_ENTRIES) - 1);
-    hardware.write(regs::CHAN_TX_TAIL, tx_ring as u32);
-    hardware.write(regs::CHAN_RX_BASE_HI, (rx_ring >> 32) as u32);
-    hardware.write(regs::CHAN_RX_BASE, rx_ring as u32);
-    hardware.write(regs::CHAN_RX_RING_LEN, u32::from(RX_ENTRIES) - 1);
-    hardware.write(regs::CHAN_RX_TAIL, rx_ring as u32);
+    let transmit_ring = region + layout::TRANSMIT_RING;
+    let receive_ring = region + layout::RECEIVE_RING;
+    hardware.write(regs::CHAN_TX_BASE_HI, (transmit_ring >> 32) as u32);
+    hardware.write(regs::CHAN_TX_BASE, transmit_ring as u32);
+    hardware.write(regs::CHAN_TX_RING_LEN, u32::from(TRANSMIT_ENTRIES) - 1);
+    hardware.write(regs::CHAN_TX_TAIL, transmit_ring as u32);
+    hardware.write(regs::CHAN_RX_BASE_HI, (receive_ring >> 32) as u32);
+    hardware.write(regs::CHAN_RX_BASE, receive_ring as u32);
+    hardware.write(regs::CHAN_RX_RING_LEN, u32::from(RECEIVE_ENTRIES) - 1);
+    hardware.write(regs::CHAN_RX_TAIL, receive_ring as u32);
 
-    let rx_mode = rx_queue_mode(
+    let receive_mode = receive_queue_mode(
         hardware.read(regs::MTL_RXQ0_OP_MODE),
         bus,
         id.receive_queue_bytes(),
     );
-    hardware.write(regs::MTL_RXQ0_OP_MODE, rx_mode);
-    let tx_mode = tx_queue_mode(
+    hardware.write(regs::MTL_RXQ0_OP_MODE, receive_mode);
+    let transmit_mode = transmit_queue_mode(
         hardware.read(regs::MTL_TXQ0_OP_MODE),
         bus,
         id.transmit_queue_bytes(),
     );
-    hardware.write(regs::MTL_TXQ0_OP_MODE, tx_mode);
+    hardware.write(regs::MTL_TXQ0_OP_MODE, transmit_mode);
 
     let flow = hardware.read(regs::MAC_Q0_TX_FLOW_CTRL);
     hardware.write(
@@ -325,7 +327,7 @@ pub fn configure(
 /// probe.
 ///
 /// OpenBSD also sets `JE` (jumbo frames). This does not: a jumbo frame cannot fit a 2048-byte
-/// buffer, would span descriptors, and would be dropped by [`crate::rx_verdict`] anyway, so
+/// buffer, would span descriptors, and would be dropped by [`crate::receive_verdict`] anyway, so
 /// accepting it into the FIFO only spends ring slots on frames that are thrown away.
 pub const fn mac_conf(current: u32, link: Link, loopback: bool) -> u32 {
     let mut conf =
@@ -351,10 +353,10 @@ pub const fn mac_conf(current: u32, link: Link, loopback: bool) -> u32 {
 /// **Start both DMA channels and the MAC** at `link`, OpenBSD's order: receive DMA, transmit DMA,
 /// then the MAC. Nothing moves until the data plane hands the device descriptors.
 pub fn start(hardware: &mut impl Hardware, link: Link, loopback: bool) {
-    let rx = hardware.read(regs::CHAN_RX_CONTROL);
-    hardware.write(regs::CHAN_RX_CONTROL, rx | regs::CHAN_RX_CONTROL_SR);
-    let tx = hardware.read(regs::CHAN_TX_CONTROL);
-    hardware.write(regs::CHAN_TX_CONTROL, tx | regs::CHAN_TX_CONTROL_ST);
+    let receive = hardware.read(regs::CHAN_RX_CONTROL);
+    hardware.write(regs::CHAN_RX_CONTROL, receive | regs::CHAN_RX_CONTROL_SR);
+    let transmit = hardware.read(regs::CHAN_TX_CONTROL);
+    hardware.write(regs::CHAN_TX_CONTROL, transmit | regs::CHAN_TX_CONTROL_ST);
     let conf = hardware.read(regs::MAC_CONF);
     hardware.write(regs::MAC_CONF, mac_conf(conf, link, loopback));
 }
@@ -364,10 +366,10 @@ pub fn start(hardware: &mut impl Hardware, link: Link, loopback: bool) {
 pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
     let conf = hardware.read(regs::MAC_CONF);
     hardware.write(regs::MAC_CONF, conf & !regs::MAC_CONF_RE);
-    let rx = hardware.read(regs::CHAN_RX_CONTROL);
-    hardware.write(regs::CHAN_RX_CONTROL, rx & !regs::CHAN_RX_CONTROL_SR);
-    let tx = hardware.read(regs::CHAN_TX_CONTROL);
-    hardware.write(regs::CHAN_TX_CONTROL, tx & !regs::CHAN_TX_CONTROL_ST);
+    let receive = hardware.read(regs::CHAN_RX_CONTROL);
+    hardware.write(regs::CHAN_RX_CONTROL, receive & !regs::CHAN_RX_CONTROL_SR);
+    let transmit = hardware.read(regs::CHAN_TX_CONTROL);
+    hardware.write(regs::CHAN_TX_CONTROL, transmit & !regs::CHAN_TX_CONTROL_ST);
     let q = hardware.read(regs::MTL_TXQ0_OP_MODE);
     hardware.write(regs::MTL_TXQ0_OP_MODE, q | regs::MTL_TXQ_OP_MODE_FTQ);
     let mut flushed = false;
@@ -456,7 +458,10 @@ mod tests {
         let id = Identity::read(&mut nic);
         configure(&mut nic, &id, &BUS, PHYS, STATION_ADDRESS).unwrap();
         assert_eq!(nic.reg(regs::CHAN_RX_BASE), PHYS as u32);
-        assert_eq!(nic.reg(regs::CHAN_TX_BASE), (PHYS + layout::TX_RING) as u32);
+        assert_eq!(
+            nic.reg(regs::CHAN_TX_BASE),
+            (PHYS + layout::TRANSMIT_RING) as u32
+        );
         assert_eq!(nic.reg(regs::CHAN_RX_TAIL), nic.reg(regs::CHAN_RX_BASE));
         assert_eq!(nic.reg(regs::CHAN_TX_TAIL), nic.reg(regs::CHAN_TX_BASE));
         assert_eq!(nic.reg(regs::CHAN_RX_RING_LEN), 15);
@@ -486,10 +491,10 @@ mod tests {
     fn the_queue_size_comes_from_the_hardware_not_the_vendor_trees_number() {
         // 262144 bytes, the vendor tree's rx-fifo-depth, is 1023 in a 10-bit field: it would fit,
         // and it would be a lie. The hardware's 2048 is 7.
-        let mode = rx_queue_mode(0, &BUS, 2048);
+        let mode = receive_queue_mode(0, &BUS, 2048);
         assert_eq!(mode >> regs::MTL_RXQ_OP_MODE_RQS_SHIFT & 0x3ff, 7);
         assert_eq!(mode & 1 << 7, 0, "no flow control thresholds below 4 KiB");
-        let mode = tx_queue_mode(0, &BUS, 2048);
+        let mode = transmit_queue_mode(0, &BUS, 2048);
         assert_eq!(mode >> regs::MTL_TXQ_OP_MODE_TQS_SHIFT & 0x1ff, 7);
         assert_eq!(
             mode & regs::MTL_TXQ_OP_MODE_TXQEN_MASK,
@@ -669,14 +674,14 @@ mod tests {
             threshold_mode: false,
             ..BUS
         };
-        assert_eq!(rx_queue_mode(0, &BUS, 2048), 0x0070_0018);
-        assert_eq!(rx_queue_mode(u32::MAX, &BUS, 2048), 0xc07f_ffdf);
-        assert_eq!(rx_queue_mode(0, &sf, 8192), 0x01f0_c1a0);
-        assert_eq!(rx_queue_mode(u32::MAX, &sf, 8192), 0xc1f0_c1ff);
-        assert_eq!(tx_queue_mode(0, &BUS, 2048), 0x0007_0078);
-        assert_eq!(tx_queue_mode(u32::MAX, &BUS, 2048), 0xfe07_fff9);
-        assert_eq!(tx_queue_mode(0, &sf, 8192), 0x001f_000a);
-        assert_eq!(tx_queue_mode(u32::MAX, &sf, 8192), 0xfe1f_fffb);
+        assert_eq!(receive_queue_mode(0, &BUS, 2048), 0x0070_0018);
+        assert_eq!(receive_queue_mode(u32::MAX, &BUS, 2048), 0xc07f_ffdf);
+        assert_eq!(receive_queue_mode(0, &sf, 8192), 0x01f0_c1a0);
+        assert_eq!(receive_queue_mode(u32::MAX, &sf, 8192), 0xc1f0_c1ff);
+        assert_eq!(transmit_queue_mode(0, &BUS, 2048), 0x0007_0078);
+        assert_eq!(transmit_queue_mode(u32::MAX, &BUS, 2048), 0xfe07_fff9);
+        assert_eq!(transmit_queue_mode(0, &sf, 8192), 0x001f_000a);
+        assert_eq!(transmit_queue_mode(u32::MAX, &sf, 8192), 0xfe1f_fffb);
     }
 
     /// The MAC word from zero and from all ones: the speed and duplex bits are replaced, every

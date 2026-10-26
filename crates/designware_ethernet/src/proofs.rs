@@ -8,7 +8,7 @@ use super::*;
 fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
     let des3: u32 = kani::any();
     let room: usize = kani::any();
-    if let RxVerdict::Frame(n) = rx_verdict(des3, room) {
+    if let ReceiveVerdict::Frame(n) = receive_verdict(des3, room) {
         assert!(n <= room);
         assert!(n <= MAXIMUM_FRAME);
         assert!(n as u64 + CRC_BYTES as u64 <= BUFFER_SIZE);
@@ -21,8 +21,8 @@ fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
 #[kani::proof]
 fn every_ring_offset_is_inside_the_region() {
     let i: u16 = kani::any();
-    assert!(layout::rx_descriptor(i) + DESCRIPTOR_BYTES <= layout::TX_RING);
-    assert!(layout::tx_descriptor(i) + DESCRIPTOR_BYTES <= layout::RX_BUFFERS);
-    assert!(layout::rx_buffer(i) + BUFFER_SIZE <= layout::TX_BUFFERS);
-    assert!(layout::tx_buffer(i) + BUFFER_SIZE <= layout::BYTES);
+    assert!(layout::receive_descriptor(i) + DESCRIPTOR_BYTES <= layout::TRANSMIT_RING);
+    assert!(layout::transmit_descriptor(i) + DESCRIPTOR_BYTES <= layout::RECEIVE_BUFFERS);
+    assert!(layout::receive_buffer(i) + BUFFER_SIZE <= layout::TRANSMIT_BUFFERS);
+    assert!(layout::transmit_buffer(i) + BUFFER_SIZE <= layout::BYTES);
 }

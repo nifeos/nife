@@ -844,11 +844,9 @@ crates/designware_ethernet/src/controller.rs::stop
 crates/designware_ethernet/src/data_plane.rs::DataPlane
 crates/designware_ethernet/src/data_plane.rs::Region
 crates/designware_ethernet/src/data_plane.rs::Tails
-crates/designware_ethernet/src/data_plane.rs::TxError
 crates/designware_ethernet/src/data_plane.rs::can_transmit
 crates/designware_ethernet/src/data_plane.rs::new
 crates/designware_ethernet/src/data_plane.rs::receive
-crates/designware_ethernet/src/data_plane.rs::rx_cursor
 crates/designware_ethernet/src/data_plane.rs::start
 crates/designware_ethernet/src/data_plane.rs::transmit
 crates/designware_ethernet/src/descriptor.rs::BUFFER_SIZE
@@ -862,8 +860,6 @@ crates/designware_ethernet/src/descriptor.rs::RDES3_IOC
 crates/designware_ethernet/src/descriptor.rs::RDES3_LD
 crates/designware_ethernet/src/descriptor.rs::RDES3_LENGTH
 crates/designware_ethernet/src/descriptor.rs::RDES3_OWN
-crates/designware_ethernet/src/descriptor.rs::RX_ENTRIES
-crates/designware_ethernet/src/descriptor.rs::RxVerdict
 crates/designware_ethernet/src/descriptor.rs::TDES2_BUF1_LEN
 crates/designware_ethernet/src/descriptor.rs::TDES2_IC
 crates/designware_ethernet/src/descriptor.rs::TDES3_ES
@@ -871,10 +867,6 @@ crates/designware_ethernet/src/descriptor.rs::TDES3_FRAME_LEN
 crates/designware_ethernet/src/descriptor.rs::TDES3_FS
 crates/designware_ethernet/src/descriptor.rs::TDES3_LS
 crates/designware_ethernet/src/descriptor.rs::TDES3_OWN
-crates/designware_ethernet/src/descriptor.rs::TX_ENTRIES
-crates/designware_ethernet/src/descriptor.rs::rx_descriptor_words
-crates/designware_ethernet/src/descriptor.rs::rx_verdict
-crates/designware_ethernet/src/descriptor.rs::tx_descriptor_words
 crates/designware_ethernet/src/jh7110.rs
 crates/designware_ethernet/src/jh7110.rs::BUS
 crates/designware_ethernet/src/jh7110.rs::Discovered
@@ -884,8 +876,6 @@ crates/designware_ethernet/src/jh7110.rs::interface
 crates/designware_ethernet/src/layout.rs
 crates/designware_ethernet/src/layout.rs::BYTES
 crates/designware_ethernet/src/layout.rs::PAGES
-crates/designware_ethernet/src/layout.rs::rx_descriptor
-crates/designware_ethernet/src/layout.rs::tx_descriptor
 crates/designware_ethernet/src/management_data_input_output.rs
 crates/designware_ethernet/src/management_data_input_output.rs::BMCR_RESET
 crates/designware_ethernet/src/management_data_input_output.rs::BMSR_ANEG_COMPLETE

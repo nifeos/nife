@@ -60,11 +60,11 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `DataPlane` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `Region` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `Tails` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
-| `TxError` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
+| `TransmitError` | item | `src/data_plane.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `TxError`. | yes | clear |
 | `can_transmit` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `new` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `receive` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
-| `rx_cursor` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
+| `receive_cursor` | item | `src/data_plane.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_cursor`. | yes | clear |
 | `start` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `transmit` | item | `src/data_plane.rs` | unrecorded. | yes | clear |
 | `BUFFER_SIZE` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
@@ -79,8 +79,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `RDES3_LD` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_LENGTH` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `RDES3_OWN` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RX_ENTRIES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `RxVerdict` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
+| `RECEIVE_ENTRIES` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `RX_ENTRIES`. | yes | clear |
+| `ReceiveVerdict` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `RxVerdict`. | yes | clear |
 | `TDES2_BUF1_LEN` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `TDES2_IC` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `TDES3_ES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
@@ -88,10 +88,10 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `TDES3_FS` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `TDES3_LS` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
 | `TDES3_OWN` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `TX_ENTRIES` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `rx_descriptor_words` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `rx_verdict` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
-| `tx_descriptor_words` | item | `src/descriptor.rs` | unrecorded. | yes | clear |
+| `TRANSMIT_ENTRIES` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `TX_ENTRIES`. | yes | clear |
+| `receive_descriptor_words` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_descriptor_words`. | yes | clear |
+| `receive_verdict` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_verdict`. | yes | clear |
+| `transmit_descriptor_words` | item | `src/descriptor.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `tx_descriptor_words`. | yes | clear |
 | `Hardware` | item | `src/hardware.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `Hw`. | yes | clear |
 | `AON_SYSTEM_CONTROLLER_NODE` | item | `src/jh7110.rs` | provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table; was `AON_SYSCON_NODE`. | yes | clear |
 | `BUS` | item | `src/jh7110.rs` | unrecorded. | yes | clear |
@@ -114,8 +114,8 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 | `vendor_phy` | item | `src/jh7110.rs` | provisional. | yes | unclear: reads as a PHY; it reads a PHY node into settings |
 | `BYTES` | item | `src/layout.rs` | unrecorded. | yes | clear |
 | `PAGES` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `rx_descriptor` | item | `src/layout.rs` | unrecorded. | yes | clear |
-| `tx_descriptor` | item | `src/layout.rs` | unrecorded. | yes | clear |
+| `receive_descriptor` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_descriptor`. | yes | clear |
+| `transmit_descriptor` | item | `src/layout.rs` | provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `tx_descriptor`. | yes | clear |
 | `BMCR_RESET` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `BMSR_ANEG_COMPLETE` | item | `src/management_data_input_output.rs` | unrecorded. | yes | clear |
 | `Bus` | item | `src/management_data_input_output.rs` | unrecorded. | yes | generic: two `Bus` types in two modules |
@@ -180,7 +180,7 @@ The last column reads each name against design/naming.md's tests and 857's Fork 
 Every `pub` module and item in the crate's source has a row. `script/names` does not count these as names of their own, so they have none:
 
 - the fields of `Observation` (4), `Identity` (2), `controller::Bus` (8), `DataPlane` (1), `Discovered` (9), `SystemController` (3), `Link` (2), `Settings` (7) and `Applied` (3);
-- the variants of `Payload` (3), `Verdict` (7), `controller::Error` (3), `RxVerdict` (3), `management_data_input_output::Error` (1), `TxError` (2), `Speed` (3), `Drive` (2) and `Source` (3);
+- the variants of `Payload` (3), `Verdict` (7), `controller::Error` (3), `ReceiveVerdict` (3), `management_data_input_output::Error` (1), `TransmitError` (2), `Speed` (3), `Drive` (2) and `Source` (3);
 - the methods of the traits `Region` (4), `Tails` (3), `Hardware` (3) and `ManagementDataInputOutput` (2).
 
 The `pub use` lines re-export items that have rows where they are defined. The one `pub` field in `src/sim.rs` belongs to a crate-private type.
@@ -213,3 +213,7 @@ Each renamed row's status says which ruling renamed it and what it was.
   `pbl_x8` become `receive_channel_burst_length`, `transmit_channel_burst_length` and
   `channel_burst_length_times_8`, with `doc(alias = "pbl")`. `burst_lengths`, the `BLEN` bits, a
   different setting, becomes `bus_burst_lengths`.
+- Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out wherever this crate authors the
+  name (`ReceiveVerdict`, `TransmitError`, `receive_verdict`, `RECEIVE_ENTRIES`, the `layout`
+  offsets, the `Tails` methods, `DataPlane::receive_cursor`, `Settings`' fields). Register and bit
+  names copied from a source (`CHAN_RX_CONTROL`, `TXFIFOSIZE`, `RX_CLK_EN`) keep their spelling.

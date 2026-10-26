@@ -15,7 +15,7 @@ It dereferences no pointer and touches no hardware. You supply register access t
 Two Kani harnesses, in `src/proofs.rs`:
 
 - `a_delivered_frame_always_fits_the_buffer_and_the_room`: for every value a device can write
-  into word 3 of a receive descriptor and every caller buffer size, a frame that `rx_verdict`
+  into word 3 of a receive descriptor and every caller buffer size, a frame that `receive_verdict`
   accepts fits the caller's buffer, is at most `MAXIMUM_FRAME` bytes, and with its CRC fits the
   receive buffer.
 - `every_ring_offset_is_inside_the_region`: for every index, each descriptor and buffer offset
@@ -56,8 +56,8 @@ impl Region for Memory {
 
 struct NoDevice;
 impl Tails for NoDevice {
-    fn set_rx_tail(&mut self, _addr: u32) {}
-    fn set_tx_tail(&mut self, _addr: u32) {}
+    fn set_receive_tail(&mut self, _addr: u32) {}
+    fn set_transmit_tail(&mut self, _addr: u32) {}
     fn barrier(&mut self) {}
 }
 

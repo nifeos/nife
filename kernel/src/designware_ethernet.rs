@@ -408,10 +408,10 @@ impl Hardware for Window {
 struct TailRegs(u64);
 
 impl Tails for TailRegs {
-    fn set_rx_tail(&mut self, addr: u32) {
+    fn set_receive_tail(&mut self, addr: u32) {
         Window(self.0).write(regs::CHAN_RX_TAIL, addr);
     }
-    fn set_tx_tail(&mut self, addr: u32) {
+    fn set_transmit_tail(&mut self, addr: u32) {
         Window(self.0).write(regs::CHAN_TX_TAIL, addr);
     }
     fn barrier(&mut self) {

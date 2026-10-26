@@ -52,10 +52,10 @@ fn mainlines_tree_reaches_the_same_registers_through_phy_handle() {
     assert_eq!(d.compatible, COMPATIBLE_MAINLINE);
     assert_eq!(d.station_address, None);
     assert_eq!(d.phy.source, Source::MainlineTree);
-    assert_eq!(d.phy.rx_delay, 0xa);
-    assert_eq!(d.phy.tx_delay, 0xa);
-    assert!(!d.phy.rx_fixed_delay);
-    assert_eq!(d.phy.tx_clock_inverted, [false, true, true]);
+    assert_eq!(d.phy.receive_delay, 0xa);
+    assert_eq!(d.phy.transmit_delay, 0xa);
+    assert!(!d.phy.receive_fixed_delay);
+    assert_eq!(d.phy.transmit_clock_inverted, [false, true, true]);
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn a_mainline_phy_with_one_delay_is_read_not_replaced_by_the_fallback() {
     let one_delay = tree(ONE_DELAY);
     let d = discover(&one_delay).unwrap().unwrap();
     assert_eq!(d.phy.source, Source::MainlineTree);
-    assert_eq!((d.phy.rx_delay, d.phy.tx_delay), (10, 13));
+    assert_eq!((d.phy.receive_delay, d.phy.transmit_delay), (10, 13));
     assert_eq!(d.phy_address, 3);
     let mainline = tree(MAINLINE);
     assert_eq!(discover(&mainline).unwrap().unwrap().phy_address, 0);

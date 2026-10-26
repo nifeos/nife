@@ -6,10 +6,14 @@
 pub(crate) const PAGE: u64 = 4096;
 
 /// Receive descriptors. Sixteen 16-byte descriptors are 256 bytes, one page with room to grow.
-pub const RX_ENTRIES: u16 = 16;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `RX_ENTRIES`.
+pub const RECEIVE_ENTRIES: u16 = 16;
 
 /// Transmit descriptors.
-pub const TX_ENTRIES: u16 = 16;
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `TX_ENTRIES`.
+pub const TRANSMIT_ENTRIES: u16 = 16;
 
 /// Bytes per descriptor: four little-endian words.
 pub const DESCRIPTOR_BYTES: u64 = 16;
@@ -81,7 +85,9 @@ pub const TDES3_ES: u32 = 1 << 15;
 /// high 32 bits, as OpenBSD and Linux's `dwmac4_set_addr` both write it), word 2 clear, and word 3
 /// owned, interrupt-on-completion, buffer 1 valid. As two little-endian `u64`s: words 0 and 1,
 /// then words 2 and 3.
-pub const fn rx_descriptor_words(buffer_phys: u64) -> [u64; 2] {
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_descriptor_words`.
+pub const fn receive_descriptor_words(buffer_phys: u64) -> [u64; 2] {
     [
         buffer_phys,
         ((RDES3_OWN | RDES3_IOC | RDES3_BUF1V) as u64) << 32,
@@ -91,7 +97,9 @@ pub const fn rx_descriptor_words(buffer_phys: u64) -> [u64; 2] {
 /// **A transmit descriptor for one whole frame in one buffer**: the address, the length with
 /// interrupt-on-completion, and word 3 owned, first and last, with the frame length. The device
 /// inserts the CRC and pads a short frame (checksum and padding control zero).
-pub const fn tx_descriptor_words(buffer_phys: u64, len: u16) -> [u64; 2] {
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `tx_descriptor_words`.
+pub const fn transmit_descriptor_words(buffer_phys: u64, len: u16) -> [u64; 2] {
     let len = len as u32 & TDES3_FRAME_LEN;
     let des2 = (len & TDES2_BUF1_LEN) | TDES2_IC;
     let des3 = TDES3_OWN | TDES3_FS | TDES3_LS | len;
@@ -99,8 +107,10 @@ pub const fn tx_descriptor_words(buffer_phys: u64, len: u16) -> [u64; 2] {
 }
 
 /// What a receive descriptor's word 3 says, judged.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `RxVerdict`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RxVerdict {
+pub enum ReceiveVerdict {
     /// The device still owns it.
     NotYet,
     /// A whole, good frame of this many bytes (CRC removed), which fits the buffer and the room.
@@ -120,28 +130,30 @@ pub enum RxVerdict {
 /// # Examples
 ///
 /// ```
-/// use designware_ethernet::{RxVerdict, rx_verdict, RDES3_FD, RDES3_LD, RDES3_OWN};
+/// use designware_ethernet::{ReceiveVerdict, receive_verdict, RDES3_FD, RDES3_LD, RDES3_OWN};
 ///
 /// // 64 bytes on the wire is 60 of frame and 4 of CRC, which the driver strips.
-/// assert_eq!(rx_verdict(RDES3_FD | RDES3_LD | 64, 1514), RxVerdict::Frame(60));
-/// assert_eq!(rx_verdict(RDES3_OWN | RDES3_FD | RDES3_LD | 64, 1514), RxVerdict::NotYet);
-/// assert_eq!(rx_verdict(RDES3_FD | RDES3_LD | 0x7fff, 1514), RxVerdict::Drop);
+/// assert_eq!(receive_verdict(RDES3_FD | RDES3_LD | 64, 1514), ReceiveVerdict::Frame(60));
+/// assert_eq!(receive_verdict(RDES3_OWN | RDES3_FD | RDES3_LD | 64, 1514), ReceiveVerdict::NotYet);
+/// assert_eq!(receive_verdict(RDES3_FD | RDES3_LD | 0x7fff, 1514), ReceiveVerdict::Drop);
 /// ```
-pub fn rx_verdict(des3: u32, room: usize) -> RxVerdict {
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out; was `rx_verdict`.
+pub fn receive_verdict(des3: u32, room: usize) -> ReceiveVerdict {
     if des3 & RDES3_OWN != 0 {
-        return RxVerdict::NotYet;
+        return ReceiveVerdict::NotYet;
     }
     let whole = des3 & (RDES3_FD | RDES3_LD) == RDES3_FD | RDES3_LD;
     if des3 & RDES3_CTXT != 0 || !whole || des3 & RDES3_ES != 0 {
-        return RxVerdict::Drop;
+        return ReceiveVerdict::Drop;
     }
     let wire = (des3 & RDES3_LENGTH) as usize;
     let Some(len) = wire.checked_sub(CRC_BYTES) else {
-        return RxVerdict::Drop;
+        return ReceiveVerdict::Drop;
     };
     let fits = (14..=MAXIMUM_FRAME).contains(&len) && len <= room && wire as u64 <= BUFFER_SIZE;
     if !fits {
-        return RxVerdict::Drop;
+        return ReceiveVerdict::Drop;
     }
-    RxVerdict::Frame(len)
+    ReceiveVerdict::Frame(len)
 }

@@ -63,13 +63,13 @@ mod data_plane;
 mod descriptor;
 mod hardware;
 
-pub use data_plane::{DataPlane, Region, Tails, TxError};
+pub use data_plane::{DataPlane, Region, Tails, TransmitError};
 use descriptor::*;
 pub use descriptor::{
     BUFFER_SIZE, CRC_BYTES, DESCRIPTOR_BYTES, MAXIMUM_FRAME, RDES3_BUF1V, RDES3_CTXT, RDES3_ES,
-    RDES3_FD, RDES3_IOC, RDES3_LD, RDES3_LENGTH, RDES3_OWN, RX_ENTRIES, RxVerdict, TDES2_BUF1_LEN,
-    TDES2_IC, TDES3_ES, TDES3_FRAME_LEN, TDES3_FS, TDES3_LS, TDES3_OWN, TX_ENTRIES,
-    rx_descriptor_words, rx_verdict, tx_descriptor_words,
+    RDES3_FD, RDES3_IOC, RDES3_LD, RDES3_LENGTH, RDES3_OWN, RECEIVE_ENTRIES, ReceiveVerdict,
+    TDES2_BUF1_LEN, TDES2_IC, TDES3_ES, TDES3_FRAME_LEN, TDES3_FS, TDES3_LS, TDES3_OWN,
+    TRANSMIT_ENTRIES, receive_descriptor_words, receive_verdict, transmit_descriptor_words,
 };
 pub use hardware::Hardware;
 

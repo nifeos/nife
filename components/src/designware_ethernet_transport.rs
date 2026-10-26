@@ -58,10 +58,10 @@ impl Region for Plane {
 struct Channel;
 
 impl Tails for Channel {
-    fn set_rx_tail(&mut self, addr: u32) {
+    fn set_receive_tail(&mut self, addr: u32) {
         DMA.w32(u64::from(regs::CHAN_RX_TAIL - regs::DMA_PAGE), addr);
     }
-    fn set_tx_tail(&mut self, addr: u32) {
+    fn set_transmit_tail(&mut self, addr: u32) {
         DMA.w32(u64::from(regs::CHAN_TX_TAIL - regs::DMA_PAGE), addr);
     }
     fn barrier(&mut self) {
@@ -113,8 +113,9 @@ impl DesignWareNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let des3 = (PLANE.r64(layout::rx_descriptor(self.plane.rx_cursor()) + 8) >> 32) as u32;
-        designware_ethernet::rx_verdict(des3, MAXIMUM_FRAME)
-            != designware_ethernet::RxVerdict::NotYet
+        let des3 =
+            (PLANE.r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8) >> 32) as u32;
+        designware_ethernet::receive_verdict(des3, MAXIMUM_FRAME)
+            != designware_ethernet::ReceiveVerdict::NotYet
     }
 }
