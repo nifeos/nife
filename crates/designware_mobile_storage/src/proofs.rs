@@ -58,12 +58,12 @@ fn a_fifo_step_never_overruns_the_fifo_or_the_buffer() {
 fn an_admitted_range_is_inside_the_card_and_the_address() {
     let blocks: u64 = kani::any();
     let block_addressed: bool = kani::any();
-    let lba: u64 = kani::any();
+    let logical_block_address: u64 = kani::any();
     let count: u64 = kani::any();
-    if in_range(blocks, block_addressed, lba, count) {
+    if in_range(blocks, block_addressed, logical_block_address, count) {
         assert!(count >= 1);
-        assert!(lba + count <= blocks);
-        let last = lba + count - 1;
+        assert!(logical_block_address + count <= blocks);
+        let last = logical_block_address + count - 1;
         if block_addressed {
             assert!(last <= u64::from(u32::MAX));
         } else {

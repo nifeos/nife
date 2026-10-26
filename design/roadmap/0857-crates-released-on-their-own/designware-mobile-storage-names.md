@@ -173,3 +173,6 @@ Each renamed row's status says which ruling renamed it and what it was.
   and `QUEUE_DEPTH`. The host's offset of the data queue is `queue_offset` and the simulator's
   queue is `queue`. `Slot` and the handoff's `fifo_depth` fields become `queue_depth`; the device
   tree's `fifo-depth` property keeps its spelling. The functions named for `FIFOTH` keep it.
+- Ruled 2026-10-26 (UTC): `lba` spells out `logical_block_address`, as the earlier ratifications'
+  `lba_shift` did. The block functions' and the bench's `lba` arguments take it, and so do the
+  simulator's `first_lba` and the window proof in driver_process_contract.

@@ -93,13 +93,13 @@ pub struct Card {
 }
 
 impl Card {
-    /// The command argument that addresses block `lba`.
+    /// The command argument that addresses block `logical_block_address`.
     #[must_use]
-    pub const fn address(&self, lba: u64) -> u32 {
+    pub const fn address(&self, logical_block_address: u64) -> u32 {
         if self.block_addressed {
-            lba as u32
+            logical_block_address as u32
         } else {
-            (lba * BLOCK as u64) as u32
+            (logical_block_address * BLOCK as u64) as u32
         }
     }
 
@@ -117,8 +117,8 @@ fn r1_ok(index: u8, r1: u32) -> Result<(), InitializationError> {
 }
 
 /// **Bring up whatever card is in the slot** and leave it selected, in the transfer state, at
-/// [`TRANSFER_HZ`]. `maximum_bus_width` is the tree's `bus-width` for the slot (4 on radon's SD slot,
-/// 8 on its eMMC slot).
+/// [`TRANSFER_HZ`]. `maximum_bus_width` is the tree's `bus-width` for the slot (4 on radon's SD
+/// slot, 8 on its eMMC slot).
 ///
 /// # Errors
 ///
@@ -399,11 +399,16 @@ pub enum IoError {
     Status(u32),
 }
 
-/// **Can `count` blocks from `lba` be addressed on `card`?** Inside the card, and (on a
-/// byte-addressed card) inside the four gigabytes a 32-bit byte address reaches.
+/// **Can `count` blocks from `logical_block_address` be addressed on `card`?** Inside the card, and
+/// (on a byte-addressed card) inside the four gigabytes a 32-bit byte address reaches.
 #[must_use]
-pub const fn in_range(card_blocks: u64, block_addressed: bool, lba: u64, count: u64) -> bool {
-    let Some(end) = lba.checked_add(count) else {
+pub const fn in_range(
+    card_blocks: u64,
+    block_addressed: bool,
+    logical_block_address: u64,
+    count: u64,
+) -> bool {
+    let Some(end) = logical_block_address.checked_add(count) else {
         return false;
     };
     if count == 0 || end > card_blocks {
@@ -416,7 +421,7 @@ pub const fn in_range(card_blocks: u64, block_addressed: bool, lba: u64, count: 
     }
 }
 
-fn data_command(card: &Card, lba: u64, blocks: u32, write: bool) -> Command {
+fn data_command(card: &Card, logical_block_address: u64, blocks: u32, write: bool) -> Command {
     let index = match (write, blocks) {
         (false, 1) => c::READ_SINGLE_BLOCK,
         (false, _) => c::READ_MULTIPLE_BLOCK,
@@ -425,7 +430,7 @@ fn data_command(card: &Card, lba: u64, blocks: u32, write: bool) -> Command {
     };
     Command::with_data(
         index,
-        card.address(lba),
+        card.address(logical_block_address),
         Response::R1,
         Data {
             block_size: BLOCK as u32,
@@ -435,21 +440,26 @@ fn data_command(card: &Card, lba: u64, blocks: u32, write: bool) -> Command {
     )
 }
 
-fn check(len: usize, card: &Card, lba: u64) -> Result<u32, IoError> {
+fn check(len: usize, card: &Card, logical_block_address: u64) -> Result<u32, IoError> {
     if len == 0 || !len.is_multiple_of(BLOCK) {
         return Err(IoError::Length);
     }
     let blocks = (len / BLOCK) as u64;
     if blocks > u64::from(u32::MAX) / BLOCK as u64
-        || !in_range(card.blocks, card.block_addressed, lba, blocks)
+        || !in_range(
+            card.blocks,
+            card.block_addressed,
+            logical_block_address,
+            blocks,
+        )
     {
         return Err(IoError::Range);
     }
     Ok(blocks as u32)
 }
 
-/// **Read whole blocks from `lba` into `buf`**, one command: `CMD17` for one block, `CMD18` with
-/// the automatic stop for more.
+/// **Read whole blocks from `logical_block_address` into `buf`**, one command: `CMD17` for one
+/// block, `CMD18` with the automatic stop for more.
 ///
 /// # Errors
 ///
@@ -458,12 +468,15 @@ fn check(len: usize, card: &Card, lba: u64) -> Result<u32, IoError> {
 pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
-    lba: u64,
+    logical_block_address: u64,
     buf: &mut [u8],
 ) -> Result<(), IoError> {
-    let blocks = check(buf.len(), card, lba)?;
+    let blocks = check(buf.len(), card, logical_block_address)?;
     let r1 = host
-        .read(&data_command(card, lba, blocks, false), buf)
+        .read(
+            &data_command(card, logical_block_address, blocks, false),
+            buf,
+        )
         .map_err(IoError::Host)?;
     if r1[0] & R1_ERRORS != 0 {
         return Err(IoError::Status(r1[0]));
@@ -471,8 +484,8 @@ pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
     Ok(())
 }
 
-/// **Write whole blocks from `buf` at `lba`**, one command: `CMD24` or `CMD25`, then wait for the
-/// card to finish programming.
+/// **Write whole blocks from `buf` at `logical_block_address`**, one command: `CMD24` or `CMD25`,
+/// then wait for the card to finish programming.
 ///
 /// # Errors
 ///
@@ -480,12 +493,15 @@ pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
 pub fn write_blocks<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
     card: &Card,
-    lba: u64,
+    logical_block_address: u64,
     buf: &[u8],
 ) -> Result<(), IoError> {
-    let blocks = check(buf.len(), card, lba)?;
+    let blocks = check(buf.len(), card, logical_block_address)?;
     let r1 = host
-        .write(&data_command(card, lba, blocks, true), buf)
+        .write(
+            &data_command(card, logical_block_address, blocks, true),
+            buf,
+        )
         .map_err(IoError::Host)?;
     if r1[0] & R1_ERRORS != 0 {
         return Err(IoError::Status(r1[0]));

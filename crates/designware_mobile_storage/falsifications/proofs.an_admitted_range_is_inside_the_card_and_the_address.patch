@@ -5,7 +5,7 @@ bytes is admitted and its byte address wraps in the 32-bit argument: the read or
 the start of the card.
 
 Expected to fail: `assert!((last + 1) * 512 <= 1 << 32)`, on a byte-addressed card larger than 8 Mi
-blocks and an lba at or past 8 Mi.
+blocks and a logical block address at or past 8 Mi.
 
 diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
 --- a/crates/designware_mobile_storage/src/sd.rs
@@ -23,4 +23,4 @@ diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobi
 +    end <= 1 << 32
  }
  
- fn data_command(card: &Card, lba: u64, blocks: u32, write: bool) -> Command {
+ fn data_command(card: &Card, logical_block_address: u64, blocks: u32, write: bool) -> Command {

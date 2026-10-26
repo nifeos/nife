@@ -255,7 +255,11 @@ fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
     let v = bench::scratch_write(&mut h, &r.card, r.mbr.as_ref(), &mut a, &mut b);
     assert_eq!(v, WriteVerdict::Verified(2040, 8, false));
     let sim = h.into_registers();
-    assert!(sim.written.iter().all(|&lba| (2040..2048).contains(&lba)));
+    assert!(
+        sim.written
+            .iter()
+            .all(|&logical_block_address| (2040..2048).contains(&logical_block_address))
+    );
     assert_eq!(sim.written.len(), 16);
     assert_eq!(sim.storage, before);
 }
@@ -577,7 +581,11 @@ fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore
     assert_eq!(v, WriteVerdict::RestoreMismatch(2040));
     // The pattern stayed, inside the gap, and partition 1 was never touched.
     assert!(sim.storage[2040].iter().any(|&b| b != 0));
-    assert!(sim.written.iter().all(|&lba| lba < 2048));
+    assert!(
+        sim.written
+            .iter()
+            .all(|&logical_block_address| logical_block_address < 2048)
+    );
 }
 
 /// What the write test put on the card is the pattern for each sector's own address: seen when
@@ -586,9 +594,16 @@ fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore
 fn the_pattern_left_behind_is_each_sectors_own() {
     let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK);
     assert_eq!(v, WriteVerdict::RestoreMismatch(2040));
-    for lba in 2040..2048u64 {
-        for (i, &b) in sim.storage[lba as usize].iter().enumerate() {
-            assert_eq!(b, bench::pattern(lba, i), "sector {lba} byte {i}");
+    for logical_block_address in 2040..2048u64 {
+        for (i, &b) in sim.storage[logical_block_address as usize]
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(
+                b,
+                bench::pattern(logical_block_address, i),
+                "sector {logical_block_address} byte {i}"
+            );
         }
     }
 }
@@ -622,8 +637,9 @@ fn the_write_test_takes_long_buffers_refuses_either_short_one_and_reports_a_blan
     }
 }
 
-/// The pattern, worked by hand for a few bytes: `i * 31 ^ lba * 7 ^ 0x5a ^ i >> 8`, each in
-/// eight bits. The `i >> 8` term is what makes a sector's two halves differ.
+/// The pattern, worked by hand for a few bytes:
+/// `i * 31 ^ logical_block_address * 7 ^ 0x5a ^ i >> 8`, each in eight bits. The `i >> 8` term is
+/// what makes a sector's two halves differ.
 #[test]
 fn the_write_pattern_is_the_formula_and_its_halves_differ() {
     assert_eq!(bench::pattern(0, 0), 0x5a);
