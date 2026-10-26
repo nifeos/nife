@@ -42,7 +42,7 @@ pub const ROLE_TAG: u64 = 0xe1e0;
 /// let h = Handoff { mac: [0x52, 0x54, 0x00, 0x12, 0x34, 0x57], data_plane_phys: 0x4012_3000 };
 /// let [role, phys] = h.pack();
 /// assert_eq!(Handoff::unpack(role, phys), Some(h));
-/// // Role 0 is the virtio server and 1..=6 are socket clients; neither unpacks as this.
+/// // Role 0 is the virtio server, 1..=13 the socket clients and the squatter; none unpacks here.
 /// assert_eq!(Handoff::unpack(0, phys), None);
 /// assert_eq!(Handoff::unpack(2, phys), None);
 /// // A data plane that is not page aligned was not made by the kernel.
