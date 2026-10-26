@@ -28,7 +28,9 @@ triage row written on Tuesday must still match on Monday. cargo-mutants names a 
 function is what follows the last ` in ` when that tail holds no ` with `; a function-body replacement
 (`replace Foo::bar -> u64 with 0`) has no ` in `, so its function is the name after `replace` and its
 mutation is the whole text; a constant's operator (`replace | with ^`, no enclosing function) has
-function empty. Two mutants with one key (the same operator swapped on two lines of one function) share
+function empty. A crate in `BY_MODULE` keys by its top-level module instead
+(`driver_process_contract::e1000e`), because it holds one module per driver and two drivers'
+`Handoff::pack` are two functions, not one. Two mutants with one key (the same operator swapped on two lines of one function) share
 a row, and a row covers all of them. The crate is resolved through
 notes/project-metrics/mutation-census-renames.csv on both sides of every comparison, so a renamed crate
 is not a vanished one with a new one beside it.
@@ -70,6 +72,9 @@ import tempfile
 DISPOSITIONS = ("killed", "equivalent", "gap")
 TRIAGE_FIELDS = ["crate", "function", "mutation", "disposition", "reason"]
 SNAPSHOT_FIELDS = ["crate", "function", "mutation", "count"]
+# Crates keyed `<crate>::<module>`, by the first path component under `src/`. One module per driver,
+# each with its own `Handoff`, so the crate alone would merge two drivers' survivors under one key.
+BY_MODULE = frozenset({"driver_process_contract"})
 LINE = re.compile(r"^(?P<path>[^:]+):(?P<line>\d+):(?P<col>\d+): (?P<text>.+)$")
 
 
@@ -83,6 +88,10 @@ def parse_mutant(raw):
         raise ValueError(f"not a cargo-mutants line: {raw!r}")
     path, text = m["path"], m["text"]
     crate = path.split("/src/")[0].split("/")[-1]
+    if crate in BY_MODULE and "/src/" in path:
+        module = path.split("/src/", 1)[1].split("/")[0].removesuffix(".rs")
+        if module not in ("lib", "main"):
+            crate = f"{crate}::{module}"
     head, sep, tail = text.rpartition(" in ")
     if sep and " with " not in tail and head.startswith(("replace ", "delete ")):
         function, mutation = tail, head
@@ -146,7 +155,7 @@ def orphans(triage_path, chain, root):
     root = pathlib.Path(root)
     seen = set()
     for row in csv.DictReader(pathlib.Path(triage_path).open()):
-        seen.add(resolve(row["crate"], chain))
+        seen.add(resolve(row["crate"], chain).split("::")[0])
     def present(name):
         return any((d / "Cargo.toml").is_file() and (d / "src").is_dir()
                    for d in [root / name, *root.glob(f"*/{name}")])
@@ -348,6 +357,16 @@ def selftest():
         d.mkdir()
         (d / "missed.txt").write_text("\n".join(lines) + "\n")
         return str(d)
+
+    # A `BY_MODULE` crate keys each driver module apart, so two `Handoff::pack`s are two keys.
+    a = parse_mutant("crates/driver_process_contract/src/e1000e.rs:9:5: replace | with ^ in Handoff::pack")
+    b = parse_mutant("crates/driver_process_contract/src/extensible_host_controller_interface/"
+                     "proofs.rs:3:5: replace | with ^ in Handoff::pack")
+    assert a[0] == "driver_process_contract::e1000e", a
+    assert b[0] == "driver_process_contract::extensible_host_controller_interface", b
+    assert parse_mutant("crates/driver_process_contract/src/lib.rs:1:1: replace f -> u8 with 0")[0] \
+        == "driver_process_contract"
+    assert parse_mutant("crates/e1000e/src/descriptor.rs:9:5: replace | with ^ in f")[0] == "e1000e"
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)

@@ -8,8 +8,15 @@ license.workspace = true
 # What the kernel and a device-driver process agree on: where the process finds each window the
 # kernel maps for it, and the spawn words that describe what it may touch. Both sides link this
 # crate, so the numbers are written once rather than in a "must match" comment on each side. The
-# device crates it serves (`e1000e`, `designware_ethernet`, `designware_mobile_storage`) carry
-# none of it, because they ship on their own and nife's process layout is nife's.
+# device crates it serves (`e1000e`, `designware_ethernet`, `designware_mobile_storage`,
+# `extensible_host_controller_interface`, `non_volatile_memory_express`) carry none of it, because
+# they ship on their own and nife's process layout is nife's.
+
+[features]
+# Exposes `non_volatile_memory_express::ESCAPE_MAGIC`, the sentinel the DMA-escape confinement test
+# uses to select the NVMe server's test-only attacker role. Only `components/confinement_attackers`
+# and the kernel's test build turn it on, so a shipped image cannot name it.
+confinement_attackers = []
 
 [dependencies]
 # Each window is a pair page, checked at compile time against the address-space map.
@@ -18,6 +25,13 @@ address_space_map = { version = "0.1.0", path = "../address_space_map" }
 extensible_host_controller_interface = { version = "0.1.0", path = "../extensible_host_controller_interface" }
 # The block server answers `blk`, and its block size sets how many card sectors a block is.
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+# The NVMe handoff's doorbell stride bound is checked against the crate's doorbell arithmetic.
+non_volatile_memory_express = { version = "0.1.0", path = "../non_volatile_memory_express" }
+
+# The crate's own tests see `confinement_attackers`, so cargo-mutants rebuilds the code it gates;
+# consumers do not get it from here.
+[dev-dependencies]
+driver_process_contract = { version = "0.1.0", path = ".", features = ["confinement_attackers"] }
 
 [lints]
 workspace = true

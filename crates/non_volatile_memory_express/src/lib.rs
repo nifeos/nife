@@ -78,6 +78,11 @@ pub enum Doorbell {
 
 /// The BAR0 offset of queue `qid`'s doorbell. `dstrd` is [`Cap::doorbell_stride`].
 ///
+/// The stride scales the whole doorbell file: `CAP.DSTRD` is four bits, so a controller may space
+/// its doorbells as far as `4 << 15` bytes apart, and queue 1's doorbells then sit hundreds of
+/// kilobytes past `DOORBELL_BASE`. A caller that maps less of BAR0 than the doorbells it rings
+/// refuses the strides that reach past its mapping.
+///
 /// # Examples
 ///
 /// ```
@@ -252,6 +257,73 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
     } else {
         None // would need a PRP list
     }
+}
+
+/// **Is `block` a whole `unit`-byte block inside a namespace of `size_bytes` bytes?** A driver's
+/// own bounds check, run before a command is built rather than left to the controller's status
+/// field, because a driver that asks for an LBA past the end learns about it far from where it
+/// computed it.
+///
+/// `false` for any `block` whose transfer would run past `size_bytes`, for one whose end
+/// overflows a `u64`, and for a `unit` of zero.
+///
+/// # Examples
+///
+/// ```
+/// use non_volatile_memory_express::namespace_holds_block;
+///
+/// // An 8 MiB namespace holds 2048 blocks of 4096 bytes, numbered 0 to 2047.
+/// assert!(namespace_holds_block(8 << 20, 2047, 4096));
+/// assert!(!namespace_holds_block(8 << 20, 2048, 4096));
+/// ```
+pub fn namespace_holds_block(size_bytes: u64, block: u64, unit: u64) -> bool {
+    match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
+        Some(end) => end <= size_bytes,
+        None => false,
+    }
+}
+
+/// **The NVM command for one whole-block transfer**, or `None` when the arithmetic will not
+/// close: a block outside the namespace ([`namespace_holds_block`]), an LBA that overflows, or a buffer that
+/// is not expressible as a PRP pair (which for a page-aligned `unit`-byte buffer with
+/// `unit <= 2 * page_size` it always is; see [`prp_pair`]).
+///
+/// `size_bytes` is the namespace's capacity, `blocks_per` the logical blocks in one `unit`-byte
+/// block ([`IdentifyNamespace::blocks_per_transfer`]), `data_phys` the buffer's bus address, and
+/// `write` picks [`Command::write`] over [`Command::read`].
+///
+/// # Examples
+///
+/// ```
+/// use non_volatile_memory_express::{NVM_READ, transfer_command};
+///
+/// // The last 4096-byte block of an 8 MiB namespace of 512-byte logical blocks.
+/// let cmd = transfer_command(8 << 20, 8, 7, 1, 2047, 4096, 0x4001_5000, 4096, false).unwrap();
+/// assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
+/// assert!(transfer_command(8 << 20, 8, 7, 1, 2048, 4096, 0x4001_5000, 4096, false).is_none());
+/// ```
+#[allow(clippy::too_many_arguments)]
+pub fn transfer_command(
+    size_bytes: u64,
+    blocks_per: u16,
+    cid: u16,
+    nsid: u32,
+    block: u64,
+    unit: u64,
+    data_phys: u64,
+    page_size: u64,
+    write: bool,
+) -> Option<Command> {
+    if !namespace_holds_block(size_bytes, block, unit) {
+        return None;
+    }
+    let slba = block.checked_mul(blocks_per as u64)?;
+    let (prp1, prp2) = prp_pair(data_phys, unit, page_size)?;
+    Some(if write {
+        Command::write(cid, nsid, slba, blocks_per, prp1, prp2)
+    } else {
+        Command::read(cid, nsid, slba, blocks_per, prp1, prp2)
+    })
 }
 
 // --- completions ----------------------------------------------------------------------------
@@ -481,17 +553,6 @@ impl IdentifyNamespace {
     }
 }
 
-/// **The largest `CAP.DSTRD` a one-page doorbell mapping can serve**, a refusal rather than an
-/// assumption.
-///
-/// Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so the stride scales the doorbell *file*. The
-/// EL0 data plane's one page of BAR0 names queues 0 and 1, up to
-/// doorbell index 3, so it fits while `0x1000 + 3 * (4 << DSTRD) + 4 <= 0x2000`, which is
-/// `DSTRD <= 8`. `CAP`'s four-bit field lets a controller report 9 to 15, which this refuses.
-/// Kani found the bound: `DSTRD = 15` puts queue 1's submission tail at `0x41000`, a quarter of a
-/// megabyte past the mapped window, and QEMU reports 0.
-pub const MAX_DSTRD: u32 = 8;
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -682,6 +743,30 @@ mod tests {
         assert_eq!(prp_pair(0x5000, 0, 4096), None, "empty transfers refused");
     }
 
+    /// The last block of the namespace is servable and the one after it is not, which is the
+    /// check that keeps an out-of-range request from becoming a command the controller answers
+    /// with a status the caller has to decode backwards.
+    #[test]
+    fn a_transfer_command_refuses_a_block_the_namespace_does_not_have() {
+        const SIZE: u64 = 8 * 1024 * 1024;
+        const LAST: u64 = SIZE / 4096 - 1;
+        assert!(namespace_holds_block(SIZE, LAST, 4096));
+        assert!(!namespace_holds_block(SIZE, LAST + 1, 4096));
+        assert!(
+            !namespace_holds_block(SIZE, u64::MAX, 4096),
+            "no overflow, no wrap-around"
+        );
+
+        // And the command the last block produces addresses the LBA the geometry says it should.
+        let cmd = transfer_command(SIZE, 8, 7, 1, LAST, 4096, 0x4001_5000, 4096, false)
+            .expect("the last block is servable");
+        assert_eq!(cmd.0[0] & 0xff, NVM_READ as u32);
+        assert_eq!(cmd.0[10] as u64 | (cmd.0[11] as u64) << 32, LAST * 8);
+        assert!(
+            transfer_command(SIZE, 8, 7, 1, LAST + 1, 4096, 0x4001_5000, 4096, false).is_none()
+        );
+    }
+
     #[test]
     fn identify_namespace_yields_size_and_shift() {
         let mut data = [0u8; 4096];
@@ -793,8 +878,9 @@ mod tests {
 /// The ring arithmetic runs forever against a device that writes into the same memory, so the
 /// properties proved are the ones a lapped or hostile ring could otherwise erode: indices stay
 /// inside the ring for every reachable state, the phase discipline is exactly one flip per lap,
-/// and the doorbell/PRP arithmetic is total (no register value the controller reports can make an
-/// offset computation panic or two doorbells collide).
+/// the doorbell/PRP arithmetic is total (no register value the controller reports can make an
+/// offset computation panic or two doorbells collide), and no transfer command addresses a block
+/// outside its namespace.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -892,6 +978,39 @@ mod verification {
                 assert_eq!(prp2 & (page - 1), 0);
                 assert_eq!(prp2, (base & !(page - 1)) + page);
             }
+        }
+    }
+
+    /// **No transfer command is built for a block outside its namespace, and none overflows
+    /// computing one.** This is the bounds check a confined driver leans on: an IOMMU bounds where
+    /// the controller may *write*, and nothing but this bounds *which LBA* is asked for, so a
+    /// caller-supplied `u64` must not be able to wrap into a valid-looking address.
+    /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.a_transfer_command_is_only_built_for_a_block_the_namespace_has.patch`
+    #[kani::proof]
+    fn a_transfer_command_is_only_built_for_a_block_the_namespace_has() {
+        let size_bytes: u64 = kani::any();
+        let blocks_per: u16 = kani::any();
+        kani::assume((1..=8).contains(&blocks_per));
+        let block: u64 = kani::any();
+        let data_phys: u64 = kani::any();
+        kani::assume(data_phys.is_multiple_of(4096) && data_phys < u64::MAX - 8192);
+        if transfer_command(
+            size_bytes,
+            blocks_per,
+            1,
+            1,
+            block,
+            4096,
+            data_phys,
+            4096,
+            kani::any(),
+        )
+        .is_some()
+        {
+            assert!(namespace_holds_block(size_bytes, block, 4096));
+            // The transfer's last byte is inside the namespace, which is the property
+            // `namespace_holds_block` exists to state and the one a wrap would quietly break.
+            assert!((block + 1) * 4096 <= size_bytes);
         }
     }
 

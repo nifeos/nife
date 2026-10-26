@@ -320,18 +320,6 @@ fn the_mac_address_reads_from_entry_zero_and_refuses_an_invalid_one() {
 }
 
 #[test]
-fn the_handoff_role_never_collides_with_net_stacks_other_roles() {
-    for role in 0..=255u64 {
-        assert!(!Handoff::is_role(role));
-    }
-    let h = Handoff {
-        mac: [0x52, 0x54, 0, 0x12, 0x34, 0x56],
-        data_plane_phys: PHYS,
-    };
-    assert!(Handoff::is_role(h.pack()[0]));
-}
-
-#[test]
 fn the_claimed_ids_are_intel_and_qemus_is_among_them() {
     assert!(is_supported(0x8086, 0x10d3));
     assert!(is_supported(0x8086, 0x15b7));
@@ -470,26 +458,4 @@ fn start_clears_the_transmit_ring_and_the_cursor_follows_receive() {
         assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
         assert_eq!(dp.rx_cursor(), n);
     }
-}
-
-/// The handoff refuses each bad field on its own: a role word with a valid-looking MAC but the
-/// wrong tag, and a group MAC under the right tag.
-#[test]
-fn the_handoff_refuses_a_wrong_tag_and_a_group_address_each_alone() {
-    let h = Handoff {
-        mac: [0x52, 0x54, 0, 0x12, 0x34, 0x56],
-        data_plane_phys: PHYS,
-    };
-    let [role, phys] = h.pack();
-    assert_eq!(Handoff::unpack(role, phys), Some(h));
-    assert_eq!(Handoff::unpack(role ^ 1, phys), None, "wrong tag");
-    let group = Handoff {
-        mac: [0x53, 0x54, 0, 0x12, 0x34, 0x56],
-        ..h
-    };
-    assert_eq!(
-        Handoff::unpack(group.pack()[0], phys),
-        None,
-        "group address"
-    );
 }

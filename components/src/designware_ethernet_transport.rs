@@ -21,9 +21,9 @@
 
 use alloc::vec::Vec;
 
-use designware_ethernet::{DataPlane, Handoff, MAX_FRAME, Region, Tails, layout, regs};
+use designware_ethernet::{DataPlane, MAX_FRAME, Region, Tails, layout, regs};
 use driver_process_contract::designware_ethernet::{
-    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS,
+    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, Handoff,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 

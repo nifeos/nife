@@ -240,7 +240,7 @@ anything is staged.
 - The EL0 server cannot read `CSTS`, so a hung controller presents to it as a bounded-out poll
   answered `EIO` rather than as `CSTS.CFS`. The direct price of not mapping the controller register
   page, and a worse diagnostic than the kernel-resident driver gave.
-- A doorbell stride above `non_volatile_memory_express::MAX_DSTRD` (8) is refused rather than
+- A doorbell stride above `driver_process_contract::non_volatile_memory_express::MAX_DSTRD` (8) is refused rather than
   served. Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so a wide stride scales the doorbell
   file past the one page of BAR0 the server is mapped. Kani found this, producing `DSTRD = 15` in
   under a second, which puts queue 1's submission tail at `0x41000`. A real controller reporting it

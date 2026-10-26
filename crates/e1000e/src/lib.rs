@@ -44,7 +44,6 @@ mod control;
 mod data_plane;
 mod descriptor;
 mod device;
-mod handoff;
 
 pub use control::{
     CTRL_ASDE, CTRL_EXT_DRV_LOAD, CTRL_RST, CTRL_SLU, RAH_AV, RFCTL_EXTEN, STATUS_LU,
@@ -58,7 +57,6 @@ pub use descriptor::{
     rx_verdict, tx_word,
 };
 pub use device::{DEVICE_IDS, VENDOR_INTEL, is_supported, model};
-pub use handoff::{Handoff, ROLE_TAG};
 
 #[cfg(kani)]
 mod proofs;

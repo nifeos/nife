@@ -153,7 +153,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
         run_with_own_space(
             image,
             Spawn {
-                arg0, // `designware_ethernet::Handoff`: the role tag and the MAC address
+                arg0, // `driver_process_contract::designware_ethernet::Handoff`: the role tag and the MAC address
                 arg1, // the DMA region's physical base
                 arg2: listen_grant,
                 grants: &[rendezvous_cap(report, Rights::WRITE)], // slot 0
