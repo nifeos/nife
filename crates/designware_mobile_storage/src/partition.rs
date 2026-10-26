@@ -1,5 +1,5 @@
 //! Where on a card a write cannot hurt: the MBR, and the gap before its first partition. radon
-//! boots from its microSD card (notes/visionfive2.md, "The microSD payload"), one FAT32 partition
+//! boots from its microSD card, one FAT32 partition
 //! in an MBR, so the only sectors this crate names for a write are before the first partition and
 //! after sector 0: the alignment gap no filesystem owns and U-Boot does not read when the board
 //! boots from its QSPI flash, as radon does. A card with no MBR signature, a protective MBR (GPT,

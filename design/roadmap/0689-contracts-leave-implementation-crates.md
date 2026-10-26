@@ -24,7 +24,7 @@ check, so only the two driver rows are still exceptions. The finding is unchange
 | `ps::Row`, `ps::collect`, `ps::MAX_ROWS` | `process-tools` | the survey record the kernel writes and `ps` reads |
 | `pmap::Row`, `pmap::Listing` | `process-tools` | the mapping listing, the same shape |
 | `non_volatile_memory_express::Handoff` and its constants | `drivers` | what the kernel hands the NVMe driver |
-| `jh7110_entropy::discover`, `regs` | `drivers` | how the TRNG is found in the device tree |
+| `jh7110_entropy::COMPATIBLES`, `regs` | `drivers` | what the TRNG is called in the device tree |
 
 Each wants its shared half in a crate in `contracts`, leaving the tool or driver with its own logic.
 Rule 7 of `AGENTS.md` already says this ("anything two binaries must agree on is a crate"). These

@@ -1,118 +1,7 @@
-//! The crate's host tests, moved out of `lib.rs` unchanged on 2026-10-12 (UTC) by lane
-//! maintainer/near-ceiling-splits, so the crate root stays under §266 (a Rust source file stays
-//! under 2,000 lines). The SD/MMC test that sat in its own `sdio_tests` module is at the end.
+//! The crate's host tests: the arithmetic, the plans, the report, and the device-tree decoders
+//! on hand-built property values. The SD/MMC test is at the end.
 
 use super::*;
-
-const STGCRG_MAINLINE: &[u8] = include_bytes!("../tests/fixtures/jh7110-stgcrg-mainline.dtb");
-const CLKGEN_VENDOR: &[u8] = include_bytes!("../tests/fixtures/jh7110-clkgen-vendor.dtb");
-const CLKGEN_VENDOR_UNNAMED: &[u8] =
-    include_bytes!("../tests/fixtures/jh7110-clkgen-vendor-unnamed.dtb");
-const CLKGEN_VENDOR_MISMATCHED: &[u8] =
-    include_bytes!("../tests/fixtures/jh7110-clkgen-vendor-mismatched-names.dtb");
-/// The blob `crates/device_tree_blob`'s own tests boot-verify against, so a change to QEMU's
-/// `virt` board is caught here rather than surfacing as a mystery at the bench.
-const QEMU_RISCV64_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
-
-const PMIC_BUS_RADON: &[u8] = include_bytes!("../tests/fixtures/jh7110-pmic-bus-radon.dtb");
-const PMIC_BUS_MAINLINE: &[u8] = include_bytes!("../tests/fixtures/jh7110-pmic-bus-mainline.dtb");
-const PMIC_BUS_FOREIGN: &[u8] = include_bytes!("../tests/fixtures/jh7110-pmic-bus-foreign.dtb");
-const PMIC_BUS_OVERFULL: &[u8] = include_bytes!("../tests/fixtures/jh7110-pmic-bus-overfull.dtb");
-
-#[test]
-fn radons_pmic_bus_is_one_real_gate_and_one_reset_and_the_virtual_clock_is_skipped() {
-    // The fixture is radon's own U-Boot tree. Its bus names clock 298 first, which is a
-    // divide-by-one child of 143 with no register: writing "word 298" would be a store to
-    // 0x4a8 of the SYS window, past every clock and reset word. It must be skipped, counted,
-    // and the plan must still be the tree's own.
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_RADON).unwrap();
-    let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(
-        bus.plan(),
-        &[
-            Step::EnableClock(SYSCLK_I2C5_APB),
-            Step::DeassertReset(SYSRST_I2C5_APB)
-        ]
-    );
-    assert!(bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_VENDOR));
-    assert_eq!(bus.skipped, 1, "clock 298, and nothing else");
-    assert!(!bus.truncated);
-}
-
-#[test]
-fn radons_sys_window_is_the_vendor_nodes_first_entry_found_by_name() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_RADON).unwrap();
-    let found = discover_sys(&tree).unwrap();
-    assert_eq!((found.base, found.size), (SYS_BASE, SYS_SIZE));
-    assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLKGEN));
-    // And STG, from the same node, is still its second window.
-    assert_eq!(discover(&tree).unwrap().base, STG_BASE);
-}
-
-#[test]
-fn mainlines_pmic_bus_gives_the_same_plan_through_syscrg() {
-    // Two trees that spell everything differently converge on 143 and 81, which is the
-    // agreement that lets the constant fallback exist at all.
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_MAINLINE).unwrap();
-    let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
-    assert!(bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_MAINLINE));
-    assert_eq!(bus.skipped, 0);
-    let found = discover_sys(&tree).unwrap();
-    assert_eq!(found.base, SYS_BASE);
-    assert_eq!(found.compatible, Some(COMPATIBLE_SYSCRG));
-}
-
-#[test]
-fn a_bus_naming_only_foreign_specifiers_falls_back_and_says_so() {
-    // Wrong domain, out of bounds twice, and a two-cell provider that makes the rest of its
-    // list unreadable (the trailing `<&syscrg 143>` included: refusing is the safe direction).
-    // Nothing usable is left, so the constant plan is used, and `from_tree` says it was.
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_FOREIGN).unwrap();
-    let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
-    assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_MAINLINE));
-    // aoncrg 3, syscrg 190, then 36 - 16 = 20 bytes read as three eight-byte strides, then
-    // syscrg 126 in `resets`.
-    assert_eq!(bus.skipped, 2 + 3 + 1);
-}
-
-/// More usable gates than the plan holds: the first four are kept in order, the rest are
-/// counted as cut off and not as foreign, and a bus that names clocks but no resets is still
-/// read (the absence of one property is not the absence of the bus).
-#[test]
-fn a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_and_says_so() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_OVERFULL).unwrap();
-    let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(
-        bus.plan(),
-        &[
-            Step::EnableClock(140),
-            Step::EnableClock(141),
-            Step::EnableClock(142),
-            Step::EnableClock(143)
-        ]
-    );
-    assert_eq!(bus.plan().len(), MAX_PMIC_BUS_STEPS);
-    assert!(bus.truncated);
-    assert!(bus.from_tree);
-    assert_eq!(bus.skipped, 0);
-}
-
-#[test]
-fn qemus_virt_board_has_no_pmic_and_gets_the_constant_plan_unclaimed() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT).unwrap();
-    let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
-    assert!(!bus.from_tree);
-    assert_eq!(bus.pmic, None);
-    assert!(!discover_sys(&tree).unwrap().from_tree);
-}
 
 #[test]
 fn i2c5s_clock_and_reset_land_where_linux_puts_them() {
@@ -149,69 +38,6 @@ fn the_pmic_plan_ungates_before_it_releases() {
         PMIC_BUS_BRING_UP[PMIC_BUS_BRING_UP.len() - 1],
         Step::DeassertReset(_)
     ));
-}
-
-#[test]
-fn mainline_stgcrg_is_read_from_its_single_reg() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(STGCRG_MAINLINE).unwrap();
-    let found = discover(&tree).unwrap();
-    assert_eq!(found.base, 0x1023_0000);
-    assert_eq!(found.size, 0x1_0000);
-    assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_STGCRG));
-}
-
-#[test]
-fn the_vendor_clkgens_stg_window_is_found_by_name() {
-    // The whole point of the vendor arm: `reg[0]` is the SYS domain at 0x13020000, and a
-    // driver that took it would enable clock 15 of the wrong controller.
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(CLKGEN_VENDOR).unwrap();
-    let found = discover(&tree).unwrap();
-    assert_eq!(found.base, STG_BASE, "the second window, not the first");
-    assert_eq!(found.size, 0x1_0000);
-    assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLKGEN));
-}
-
-#[test]
-fn a_multi_window_node_without_reg_names_falls_back_rather_than_guessing() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(CLKGEN_VENDOR_UNNAMED).unwrap();
-    let found = discover(&tree).unwrap();
-    assert_eq!(found.base, STG_BASE);
-    assert!(
-        !found.from_tree,
-        "the address is right and nothing in the tree said so; the transcript must say which"
-    );
-    assert_eq!(found.compatible, None);
-}
-
-#[test]
-fn qemus_virt_board_has_no_clock_controller_at_all() {
-    // This is the path every machine this repository's CI boots takes, and it is why this
-    // milestone cannot be gated in an emulator: `virt` has no clock or reset controller to
-    // program, so what runs here is the fallback and the arithmetic, never a device.
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT).unwrap();
-    let found = discover(&tree).unwrap();
-    assert!(!found.from_tree);
-    assert_eq!(found.compatible, None);
-    assert_eq!(found.base, STG_BASE);
-}
-
-#[test]
-fn a_reg_names_entry_past_the_end_of_reg_is_refused_rather_than_read() {
-    // `reg-names` lists three names but `reg` has only two windows, with "stg" at index 2: an
-    // index `regions` was never filled at. `discover_as`'s `i < n` guard exists for exactly
-    // this: a tree this malformed must fall back to the corroborated constant rather than
-    // read the zeroed slot an off-by-one would land on. Kills the `i < n -> true` and
-    // `< -> <=` mutants, neither of which any other fixture reaches.
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(CLKGEN_VENDOR_MISMATCHED).unwrap();
-    let found = discover(&tree).unwrap();
-    assert!(
-        !found.from_tree,
-        "the named window does not exist; this must not be trusted"
-    );
-    assert_eq!(found.base, STG_BASE);
-    assert_eq!(found.compatible, None);
 }
 
 #[test]
@@ -315,9 +141,9 @@ fn a_reset_word_past_the_first_multiplies_the_word_index_by_four() {
 
 #[test]
 fn the_firmware_having_already_done_it_is_a_distinguishable_outcome() {
-    // The one result that would refute this milestone's premise: the clocks were already on
-    // and the reset already released before anything here ran, so the TRNG's zeros have some
-    // other cause. A bench transcript has to be able to say this, which is why the report
+    // The one result that would refute the premise that the clocks were gated: the clocks were
+    // already on and the reset already released before anything here ran, so the TRNG's zeros have
+    // some other cause. A bench transcript has to be able to say this, which is why the report
     // keeps `before` words at all.
     let up = Report {
         clock_before: [CLOCK_ENABLE | 4, CLOCK_ENABLE | 4, 0, 0],
@@ -457,23 +283,6 @@ fn reg_names_index_by_name_not_by_position() {
 }
 
 #[test]
-fn radons_aon_window_is_the_vendor_nodes_third_entry_found_by_name() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(CLKGEN_VENDOR).unwrap();
-    let found = discover_aon(&tree).unwrap();
-    assert_eq!((found.base, found.size), (AON_BASE, AON_SIZE));
-    assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLKGEN));
-}
-
-#[test]
-fn a_tree_naming_no_aon_controller_gets_the_constant_and_says_so() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(STGCRG_MAINLINE).unwrap();
-    let found = discover_aon(&tree).unwrap();
-    assert_eq!(found.base, AON_BASE);
-    assert!(!found.from_tree);
-}
-
-#[test]
 fn gmac0s_plans_ungate_every_clock_before_either_reset_and_pick_the_parent_while_gated() {
     let first_reset = GMAC0_AON_BRING_UP
         .iter()
@@ -533,31 +342,7 @@ fn selecting_a_parent_keeps_the_enable_bit_and_the_divider() {
     assert_eq!(with_parent(0, 0xff) & CLOCK_ENABLE, 0);
 }
 
-// ===== Option B: the rate chain, the timing formula, and the two tree facts (milestone 592) =====
-
-#[test]
-fn radons_pmic_bus_also_names_the_controller_window_and_the_pmic_address() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_RADON).unwrap();
-    let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
-    assert_eq!(bus.pmic_address, Some(0x36));
-}
-
-#[test]
-fn the_mainline_tree_names_the_same_controller_and_address() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_MAINLINE).unwrap();
-    let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
-    assert_eq!(bus.pmic_address, Some(0x36));
-}
-
-#[test]
-fn the_foreign_tree_names_neither() {
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(PMIC_BUS_FOREIGN).unwrap();
-    let bus = pmic_bus(&tree).unwrap();
-    assert_eq!(bus.controller, None);
-    assert_eq!(bus.pmic_address, None);
-}
+// ===== The direct reset write: the rate chain and the timing formula =====
 
 #[test]
 fn a_one_based_divider_field_reading_zero_divides_by_one() {
@@ -729,9 +514,7 @@ fn every_reset_released_counts_the_released_against_the_planned() {
     assert!(both.every_reset_released());
 }
 
-// The SD/MMC bring-up plans (milestone 53 (the board's own peripherals: network and storage on
-// real silicon)), which sat in their own test module beside `SDIO_BRING_UP` until the tests moved
-// out of lib.rs.
+// The SD/MMC bring-up plans.
 
 #[test]
 fn each_sdio_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_sys_domain() {
@@ -780,4 +563,331 @@ fn radon_card_clock_comes_to_the_trees_rate_from_below() {
     // A parent read as zero (a gated or unreadable chain) still gives a divider the field allows.
     assert_eq!(sdcard_divider_for(0, 50_000_000), 1);
     assert_eq!(with_divider(0x8000_0002, 8), 0x8000_0008);
+}
+
+// ===== The device-tree decoders, on hand-built property values =====
+
+/// A big-endian `<phandle id>` list, as a node's `clocks` or `resets` holds it.
+fn specs(pairs: &[(u32, u32)]) -> Vec<u8> {
+    pairs
+        .iter()
+        .flat_map(|&(phandle, id)| [phandle.to_be_bytes(), id.to_be_bytes()])
+        .flatten()
+        .collect()
+}
+
+/// A tree's providers by phandle: 1 is mainline's `syscrg` (one cell for clocks and resets), 2 the
+/// vendor `clkgen` (one clock cell), 3 the vendor `rstgen` (one reset cell), 4 mainline's
+/// `aoncrg` (another domain), 5 a two-cell provider, and 6 a one-cell provider naming no
+/// `compatible`.
+#[allow(clippy::unnecessary_wraps)]
+fn provider(phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
+    const ONE: &[u8] = &[0, 0, 0, 1];
+    const TWO: &[u8] = &[0, 0, 0, 2];
+    Ok(match (phandle, name) {
+        (1 | 4 | 6, b"#clock-cells") | (1 | 4, b"#reset-cells") => Some(ONE),
+        (2, b"#clock-cells") | (3, b"#reset-cells") => Some(ONE),
+        (5, b"#clock-cells" | b"#reset-cells") => Some(TWO),
+        (1, b"compatible") => Some(b"starfive,jh7110-syscrg\0"),
+        (2, b"compatible") => Some(b"starfive,jh7110-clkgen\0"),
+        (3, b"compatible") => Some(b"starfive,jh7110-reset\0"),
+        (4, b"compatible") => Some(b"starfive,jh7110-aoncrg\0"),
+        _ => None,
+    })
+}
+
+/// `<0x0 0x12050000 0x0 0x10000>`, the PMIC bus's `reg` in both trees.
+const BUS_REG: [u8; 16] = [0, 0, 0, 0, 0x12, 0x05, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0];
+
+#[test]
+fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_reset() {
+    // The vendor tree names clock 298 first, a divide-by-one child of 143 with no register:
+    // writing "word 298" would be a store past every clock and reset word.
+    let clocks = specs(&[(2, 298), (2, 143)]);
+    let resets = specs(&[(3, 81)]);
+    let bus = PmicBus::from_bus(
+        COMPATIBLE_PMIC_VENDOR,
+        Some(&[0, 0, 0, 0x36]),
+        Some(&BUS_REG),
+        Some(&clocks),
+        Some(&resets),
+        provider,
+    )
+    .unwrap();
+    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert!(bus.from_tree);
+    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_VENDOR));
+    assert_eq!(bus.skipped, 1);
+    assert!(!bus.truncated);
+    assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
+    assert_eq!(bus.pmic_address, Some(0x36));
+}
+
+#[test]
+fn a_mainline_shaped_bus_gives_the_same_plan_through_syscrg() {
+    let bus = PmicBus::from_bus(
+        COMPATIBLE_PMIC_MAINLINE,
+        None,
+        None,
+        Some(&specs(&[(1, 143)])),
+        Some(&specs(&[(1, 81)])),
+        provider,
+    )
+    .unwrap();
+    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert!(bus.from_tree);
+    assert_eq!(bus.skipped, 0);
+    assert_eq!((bus.controller, bus.pmic_address), (None, None));
+}
+
+#[test]
+fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
+    // Another domain, an id past SYS's bounds, then a two-cell provider that makes the rest of
+    // its list unreadable (the trailing `<&syscrg 143>` included). In `resets`, an id past the
+    // bounds, a provider naming no `compatible`, and a clock provider asked for a reset.
+    let clocks = specs(&[(4, 3), (1, 190), (5, 143), (1, 143)]);
+    let resets = specs(&[(1, 126), (6, 81), (2, 81)]);
+    let bus = PmicBus::from_bus(
+        COMPATIBLE_PMIC_MAINLINE,
+        Some(&[0, 0, 0, 0x36]),
+        Some(&BUS_REG),
+        Some(&clocks),
+        Some(&resets),
+        provider,
+    )
+    .unwrap();
+    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert!(!bus.from_tree);
+    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_MAINLINE));
+    // aoncrg 3, syscrg 190, then the two strides from the two-cell provider on; syscrg 126,
+    // the provider without `compatible`, then the clkgen node asked for `#reset-cells`.
+    assert_eq!(bus.skipped, 2 + 2 + 3);
+    assert_eq!((bus.controller, bus.pmic_address), (None, None));
+}
+
+#[test]
+fn a_short_tail_is_unreadable_and_the_specifiers_before_it_still_count() {
+    let mut clocks = specs(&[(1, 143)]);
+    clocks.extend_from_slice(&[0, 0, 0, 1]);
+    let bus = PmicBus::from_bus(
+        COMPATIBLE_PMIC_MAINLINE,
+        None,
+        None,
+        Some(&clocks),
+        None,
+        provider,
+    )
+    .unwrap();
+    assert_eq!(bus.plan(), &[Step::EnableClock(143)]);
+    assert_eq!(bus.skipped, 1);
+    assert!(bus.from_tree);
+}
+
+#[test]
+fn a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so() {
+    let clocks = specs(&[(1, 140), (1, 141), (1, 142), (1, 143), (1, 144)]);
+    let bus = PmicBus::from_bus(
+        COMPATIBLE_PMIC_MAINLINE,
+        None,
+        None,
+        Some(&clocks),
+        None,
+        provider,
+    )
+    .unwrap();
+    assert_eq!(
+        bus.plan(),
+        &[
+            Step::EnableClock(140),
+            Step::EnableClock(141),
+            Step::EnableClock(142),
+            Step::EnableClock(143)
+        ]
+    );
+    assert!(bus.truncated);
+    assert_eq!(bus.skipped, 0);
+}
+
+#[test]
+fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() {
+    let bus = PmicBus::from_bus(
+        COMPATIBLE_PMIC_VENDOR,
+        Some(&[0, 0, 0, 0x36]),
+        Some(&BUS_REG),
+        None,
+        None,
+        provider,
+    )
+    .unwrap();
+    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert!(!bus.from_tree);
+    assert_eq!(bus.pmic, Some(COMPATIBLE_PMIC_VENDOR));
+    assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
+    assert_eq!(bus.pmic_address, Some(0x36));
+    // A `reg` too short to hold its value is not stated.
+    let short = PmicBus::from_bus(
+        COMPATIBLE_PMIC_VENDOR,
+        Some(&[0, 0, 0x36]),
+        Some(&BUS_REG[..7]),
+        None,
+        None,
+        provider,
+    )
+    .unwrap();
+    assert_eq!((short.controller, short.pmic_address), (None, None));
+}
+
+#[test]
+fn a_tree_without_a_pmic_gets_the_constant_plan_unclaimed() {
+    let bus = PmicBus::without_pmic();
+    assert_eq!(bus.plan(), PMIC_BUS_BRING_UP);
+    assert!(!bus.from_tree);
+    assert_eq!(bus.pmic, None);
+    assert_eq!(bus.skipped, 0);
+    assert_eq!(
+        PMIC_COMPATIBLES,
+        [COMPATIBLE_PMIC_MAINLINE, COMPATIBLE_PMIC_VENDOR]
+    );
+}
+
+#[test]
+fn a_provider_error_stops_the_walk_and_reaches_the_caller() {
+    let failing = |_: u32, _: &[u8]| -> Result<Option<&'static [u8]>, u8> { Err(7) };
+    let clocks = specs(&[(1, 143)]);
+    assert_eq!(
+        PmicBus::from_bus(
+            COMPATIBLE_PMIC_MAINLINE,
+            None,
+            None,
+            Some(&clocks),
+            None,
+            failing
+        ),
+        Err(7)
+    );
+    assert_eq!(
+        DevicePlan::from_specifiers(Some(&clocks), None, failing),
+        Err(7)
+    );
+}
+
+#[test]
+fn a_device_plan_takes_its_clocks_before_its_resets_and_has_no_fallback() {
+    let plan = DevicePlan::from_specifiers(
+        Some(&specs(&[(2, 123), (1, 122)])),
+        Some(&specs(&[(3, 110), (1, 109)])),
+        provider,
+    )
+    .unwrap();
+    assert_eq!(
+        plan.plan(),
+        &[
+            Step::EnableClock(123),
+            Step::EnableClock(122),
+            Step::DeassertReset(110),
+            Step::DeassertReset(109)
+        ]
+    );
+    assert_eq!((plan.skipped, plan.truncated), (0, false));
+    let empty = DevicePlan::from_specifiers(None, None, provider).unwrap();
+    assert!(empty.plan().is_empty());
+    assert_eq!((empty.skipped, empty.truncated), (0, false));
+    let over = DevicePlan::from_specifiers(
+        Some(&specs(&[(1, 1), (1, 2), (1, 3), (1, 4), (4, 5)])),
+        Some(&specs(&[(1, 6)])),
+        provider,
+    )
+    .unwrap();
+    assert_eq!(over.plan().len(), MAX_DEVICE_STEPS);
+    assert_eq!((over.skipped, over.truncated), (1, true));
+}
+
+#[test]
+fn a_single_window_node_answers_with_its_one_reg() {
+    let found =
+        Found::from_regions(&STG_WINDOW.spellings[0], &[(0x1023_0000, 0x1_0000)], None).unwrap();
+    assert_eq!(
+        found,
+        Found {
+            base: 0x1023_0000,
+            size: 0x1_0000,
+            from_tree: true,
+            compatible: Some(COMPATIBLE_STGCRG),
+        }
+    );
+    assert_eq!(
+        Found::from_regions(&STG_WINDOW.spellings[0], &[], None),
+        None
+    );
+}
+
+#[test]
+fn a_vendor_node_window_is_found_by_name_not_position() {
+    // `reg[0]` is the SYS window: a driver that took it would enable clock 15 of the wrong
+    // controller.
+    let regions = [
+        (SYS_BASE, SYS_SIZE),
+        (STG_BASE, STG_SIZE),
+        (AON_BASE, AON_SIZE),
+    ];
+    let names: &[u8] = b"sys\0stg\0aon\0";
+    let stg = Found::from_regions(&STG_WINDOW.spellings[1], &regions, Some(names)).unwrap();
+    assert_eq!(
+        (stg.base, stg.compatible),
+        (STG_BASE, Some(COMPATIBLE_VENDOR_CLKGEN))
+    );
+    let aon = Found::from_regions(&AON_WINDOW.spellings[1], &regions, Some(names)).unwrap();
+    assert_eq!((aon.base, aon.size), (AON_BASE, AON_SIZE));
+    let sys = Found::from_regions(&SYS_WINDOW.spellings[1], &regions, Some(names)).unwrap();
+    assert_eq!(sys.base, SYS_BASE);
+    let rst = Found::from_regions(
+        &STG_WINDOW.spellings[2],
+        &regions,
+        Some(b"syscrg\0stgcrg\0aoncrg\0"),
+    )
+    .unwrap();
+    assert_eq!(
+        (rst.base, rst.compatible),
+        (STG_BASE, Some(COMPATIBLE_VENDOR_RSTGEN))
+    );
+}
+
+#[test]
+fn a_multi_window_node_refuses_rather_than_guesses() {
+    let regions = [(SYS_BASE, SYS_SIZE), (STG_BASE, STG_SIZE)];
+    let vendor = &STG_WINDOW.spellings[1];
+    // No `reg-names`, and `reg-names` without the entry.
+    assert_eq!(Found::from_regions(vendor, &regions, None), None);
+    assert_eq!(
+        Found::from_regions(vendor, &regions, Some(b"sys\0aon\0")),
+        None
+    );
+    // "stg" names index 2 of a two-entry `reg`: one past the end, never read.
+    assert_eq!(
+        Found::from_regions(vendor, &regions, Some(b"sys\0aon\0stg\0")),
+        None
+    );
+}
+
+#[test]
+fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
+    for (window, mainline, base) in [
+        (STG_WINDOW, COMPATIBLE_STGCRG, STG_BASE),
+        (AON_WINDOW, COMPATIBLE_AONCRG, AON_BASE),
+        (SYS_WINDOW, COMPATIBLE_SYSCRG, SYS_BASE),
+    ] {
+        assert_eq!(window.spellings[0].compatible, mainline);
+        assert_eq!(window.spellings[0].window, None);
+        assert_eq!(window.spellings[1].compatible, COMPATIBLE_VENDOR_CLKGEN);
+        assert_eq!(window.spellings[2].compatible, COMPATIBLE_VENDOR_RSTGEN);
+        assert_eq!(
+            window.fallback(),
+            Found {
+                base,
+                size: 0x1_0000,
+                from_tree: false,
+                compatible: None,
+            }
+        );
+    }
 }

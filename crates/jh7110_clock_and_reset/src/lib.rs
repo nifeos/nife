@@ -1,16 +1,23 @@
 #![cfg_attr(not(test), no_std)]
 //! The `StarFive` JH7110's clock and reset generator, as pure logic: register offsets, bit
-//! positions, the bring-up plans and the device-tree queries that find each domain's window.
+//! positions, the bring-up plans, and what each of the chip's two device trees calls the
+//! controllers.
 //!
 //! This never dereferences a pointer, so it is host-testable and Kani-reachable; the volatile
-//! shell is `kernel/src/drivers/jh7110_clock_and_reset.rs`. Every number is transcribed from Linux
-//! mainline ([mainline-dts], [mainline-trng], [mainline-ids], [mainline-clk], [mainline-rst]) and
-//! the vendor U-Boot ([vendor-dts], [vendor-ids]), which agree. One word per clock at
-//! `base + 4 * idx` with enable bit 31; a set reset-status bit means out of reset
-//! ([`is_deasserted`]). Nothing here has run on a JH7110. See notes/jh7110-clock-and-reset.md.
+//! stores are the caller's. Every number is transcribed from Linux mainline ([mainline-dts],
+//! [mainline-trng], [mainline-ids], [mainline-clk], [mainline-rst]) and the vendor U-Boot
+//! ([vendor-dts], [vendor-ids]), which agree. One word per clock at `base + 4 * idx` with enable
+//! bit 31; a set reset-status bit means out of reset ([`is_deasserted`]).
 //!
-//! Name: ratified 2026-09-13 (calef), replacing `jh7110_crg`; kept as the crates.io name
-//! (#1806).
+//! # The two device trees
+//!
+//! The crate reads no device tree. The caller finds a node and hands this crate its property
+//! values. Mainline names one controller node per domain (`starfive,jh7110-stgcrg`, `-aoncrg`,
+//! `-syscrg`); the vendor U-Boot names one clock node (`starfive,jh7110-clkgen`) and one reset
+//! node (`starfive,jh7110-reset`), each carrying several windows told apart by `reg-names`. Each
+//! [`Window`] lists its spellings in the order to try them, and [`Found::from_regions`] picks the
+//! window out of a matched node's `reg`. [`PmicBus::from_bus`] and [`DevicePlan::from_specifiers`]
+//! turn a node's `clocks` and `resets` into steps, asking the caller to look each phandle up.
 //!
 //! [mainline-dts]: https://github.com/torvalds/linux/blob/master/arch/riscv/boot/dts/starfive/jh7110.dtsi
 //! [mainline-trng]: https://github.com/torvalds/linux/blob/master/drivers/char/hw_random/jh7110-trng.c
@@ -19,6 +26,16 @@
 //! [mainline-rst]: https://github.com/torvalds/linux/blob/master/drivers/reset/starfive/reset-starfive-jh7110.c
 //! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
 //! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/include/dt-bindings/clock/starfive-jh7110-clkgen.h
+//!
+//! Name: ratified 2026-09-13 (calef), replacing `jh7110_crg`; kept as the crates.io name (#1806).
+//! The argument when the name `jh7110_crg` was minted (the lane of milestone 220 (this kernel
+//! drives no clock or reset controller, and the first real device will need one), 2026-09-04):
+//! `crg` is the JH7110's own word for the thing, not an abbreviation this project coined: both
+//! device trees that describe this chip spell the blocks `syscrg`, `stgcrg` and `aoncrg`
+//! (mainline's `starfive,jh7110-stgcrg` compatible, the vendor U-Boot's `reg-names = "syscrg",
+//! "stgcrg", ...`), so it is the AGENTS.md "standard term a reader already knows from outside" case
+//! rather than the `capsh`/`uheap` case. Chip-qualified for the reason `jh7110_entropy` is: a bare
+//! `crg` would name almost anything.
 
 /// The bit that turns a clock on, in every one of this controller's per-clock words
 /// (\[mainline-clk\], `#define JH71X0_CLK_ENABLE BIT(31)`).
@@ -40,8 +57,7 @@ pub enum Step {
     DeassertReset(u32),
     /// **Choose a multiplexed clock's parent**: replace the [`CLOCK_MUX_MASK`] field of this
     /// clock's word with `parent`, as \[mainline-clk\]'s `jh71x0_clk_set_parent` writes
-    /// `index << JH71X0_CLK_MUX_SHIFT` under `JH71X0_CLK_MUX_MASK` (milestone 53 (the board's own
-    /// peripherals: network and storage on real silicon)). Taken before the same clock's
+    /// `index << JH71X0_CLK_MUX_SHIFT` under `JH71X0_CLK_MUX_MASK`. Taken before the same clock's
     /// `EnableClock`, so the switch happens while the clock is gated rather than glitching a
     /// running one.
     SelectParent {
@@ -119,7 +135,7 @@ pub(crate) const STGCLK_SEC_MISC_AHB: u32 = 16;
 pub const STGRST_SEC_AHB: u32 = 3;
 
 /// **The AON (always-on) domain**, where `gmac0`'s bus clocks, its transmit clock mux and both
-/// of its resets live (milestone 53, the JH7110's Ethernet).
+/// of its resets live.
 ///
 /// Offsets from \[mainline-rst\]'s `jh7110_aon_info` (`.assert_offset = 0x38, .status_offset =
 /// 0x3C`, read 2026-10-06); the counts from \[mainline-ids\]'s `JH7110_AONRST_END` (8) and
@@ -140,7 +156,9 @@ pub(crate) const AON_BASE: u64 = 0x1700_0000;
 pub(crate) const AON_SIZE: u64 = 0x1_0000;
 
 /// Mainline's dedicated AON clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
-pub(crate) const COMPATIBLE_AONCRG: &[u8] = b"starfive,jh7110-aoncrg";
+///
+/// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone.
+pub const COMPATIBLE_AONCRG: &[u8] = b"starfive,jh7110-aoncrg";
 
 /// The `reg-names` entry naming the AON window in each vendor node's spelling (`"aon"` in
 /// `clkgen`, `"aoncrg"` in `rstgen`; \[vendor-dts\]).
@@ -173,8 +191,8 @@ pub(crate) const SYSCLK_GMAC0_PTP: u32 = 109;
 /// `JH7110_SYSCLK_GMAC0_GTXC`: a gate, `gmac0`'s `gtx`. Word `0x1bc`.
 pub(crate) const SYSCLK_GMAC0_GTXC: u32 = 111;
 
-/// **`gmac0`'s SYS-domain clocks**, the half of its clocks that are not in the AON domain
-/// (milestone 53). Every clock mainline's `&gmac0` node names that lives in SYS, with the parent
+/// **`gmac0`'s SYS-domain clocks**, the half of its clocks that are not in the AON domain.
+/// Every clock mainline's `&gmac0` node names that lives in SYS, with the parent
 /// of `gtxc` first because enabling a gate under a gated parent turns nothing on. Run before
 /// [`GMAC0_AON_BRING_UP`], whose resets must be released with every clock already running.
 pub const GMAC0_SYS_BRING_UP: &[Step] = &[
@@ -183,8 +201,8 @@ pub const GMAC0_SYS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_GMAC0_PTP),
 ];
 
-/// **`gmac0`'s AON-domain clocks, its transmit clock's parent, and both its resets** (milestone
-/// 53), in Linux's probe order: OpenBSD's `dwqe_fdt_attach` and mainline's `dwmac-starfive.c`
+/// **`gmac0`'s AON-domain clocks, its transmit clock's parent, and both its resets**, in Linux's
+/// probe order: OpenBSD's `dwqe_fdt_attach` and mainline's `dwmac-starfive.c`
 /// both enable every clock before deasserting either reset. The transmit clock's inverted twin
 /// (`gmac0_tx_inv`, index 6) and both receive clocks (7, 8) have no gate to enable (they are
 /// \[mainline-clk\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
@@ -245,17 +263,18 @@ pub const STG: Domain = Domain {
 
 /// **The STG domain's register window, as both published trees give it.**
 ///
-/// The fallback [`discover`] answers with when the tree names no controller, and
+/// The fallback [`STG_WINDOW`] answers with when the tree names no controller, and
 /// [`Found::from_tree`] says which happened. A firmware tree may omit or misdescribe the
-/// controller, and two independently published trees agree on this number; see
-/// notes/jh7110-clock-and-reset.md ("The one genuinely dangerous thing here, and what stops it").
+/// controller, and two independently published trees agree on this number. A caller must not
+/// store through a fallback on a machine that is not a JH7110: QEMU's riscv64 `virt` has nothing
+/// mapped there.
 pub(crate) const STG_BASE: u64 = 0x1023_0000;
 
 /// The STG window's size, `0x10000` in both trees.
 pub(crate) const STG_SIZE: u64 = 0x1_0000;
 
-/// **The SYS domain** (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write), provisional), which is where I2C5's clock and reset live,
-/// and so where the only road to radon's PMIC starts.
+/// **The SYS domain**, which is where I2C5's clock and reset live, and so where the only road to
+/// a VisionFive 2's PMIC starts.
 ///
 /// Offsets from \[mainline-rst\]'s `jh7110_sys_info` (`.assert_offset = 0x2F8, .status_offset =
 /// 0x308`, fetched 2026-09-25); the counts from \[mainline-ids\]'s `JH7110_SYSRST_END` (126) and
@@ -295,21 +314,19 @@ pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 /// `reset_release_bulk`, whose `reset_release_all` *asserts* every reset before freeing it. Radon's
 /// OpenSBI re-enables a clock before its I2C transfer and never touches a reset. A controller held
 /// in reset reads `IC_STATUS` as zero, so its transmit-FIFO-empty poll can never succeed, which is
-/// the ten `i2c read: write daddr 36 to` lines in radon's 2026-09-04 log. See
-/// `design/roadmap/0592-radons-reboot-dies-in-opensbis-pmic-write.md` for every source.
+/// the ten `i2c read: write daddr 36 to` lines in radon's 2026-09-04 log.
 pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 
-/// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say (milestone
-/// 592). Clock first, then reset, for [`TRNG_BRING_UP`]'s reason: Linux's reset driver warns that
-/// a deassert against a gated clock "might otherwise hang forever".
+/// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say. Clock first,
+/// then reset, for [`TRNG_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
+/// gated clock "might otherwise hang forever".
 pub(crate) const PMIC_BUS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_I2C5_APB),
     Step::DeassertReset(SYSRST_I2C5_APB),
 ];
 
 /// `JH7110_SYSCLK_SDIO0_AHB` \[mainline-ids\], the vendor header's `JH7110_SDIO0_CLK_AHB`, both
-/// **91**: the eMMC socket's controller's bus clock, `biu` in both trees (milestone 53 (the
-/// board's own peripherals: network and storage on real silicon)). Word `0x16c`.
+/// **91**: the eMMC socket's controller's bus clock, `biu` in both trees. Word `0x16c`.
 pub(crate) const SYSCLK_SDIO0_AHB: u32 = 91;
 /// `JH7110_SYSCLK_SDIO1_AHB`, vendor `JH7110_SDIO1_CLK_AHB`, both **92**: the microSD slot's
 /// controller's bus clock. Word `0x170`.
@@ -326,9 +343,9 @@ pub(crate) const SYSRST_SDIO0_AHB: u32 = 64;
 /// `JH7110_SYSRST_SDIO1_AHB`: the microSD controller's one reset. Bit 1 of the word at `0x300`.
 pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 
-/// **What each SD/MMC controller needs before its registers answer** (milestone 53), slot 0 (the
-/// eMMC socket) then slot 1 (the microSD slot): both clocks mainline's node names, then its reset,
-/// in [`TRNG_BRING_UP`]'s order and for its reason. OpenBSD's `dwmmc_attach` takes the same order
+/// **What each SD/MMC controller needs before its registers answer**, slot 0 (the eMMC socket) then
+/// slot 1 (the microSD slot): both clocks mainline's node names, then its reset, in
+/// [`TRNG_BRING_UP`]'s order and for its reason. OpenBSD's `dwmmc_attach` takes the same order
 /// (`clock_enable_all`, then `reset_deassert_all`). Every step is idempotent, which matters here:
 /// radon's U-Boot has already brought the microSD controller up to load the boot script, and the
 /// bench step reads whether it left it that way before it walks the plan.
@@ -356,24 +373,34 @@ pub const fn clock_divider(word: u32) -> u32 {
 /// The PMIC as radon's vendor tree spells it (U-Boot SDK `VF2_v2.10.4`, `starfive_visionfive2.dts`:
 /// `pmic: axp15060_reg@36 { compatible = "stf,axp15060-regulator"; reg = <0x36>; }` under
 /// `&i2c5`). This is also the string radon's OpenSBI matches to find its reset device.
-pub(crate) const COMPATIBLE_PMIC_VENDOR: &[u8] = b"stf,axp15060-regulator";
+///
+/// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone.
+pub const COMPATIBLE_PMIC_VENDOR: &[u8] = b"stf,axp15060-regulator";
 
 /// The same PMIC in mainline's `jh7110-common.dtsi`: `axp15060: pmic@36 { compatible =
 /// "x-powers,axp15060"; }` under `&i2c5`.
-pub(crate) const COMPATIBLE_PMIC_MAINLINE: &[u8] = b"x-powers,axp15060";
+///
+/// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone.
+pub const COMPATIBLE_PMIC_MAINLINE: &[u8] = b"x-powers,axp15060";
+
+/// Both PMIC spellings, in the order to try them: mainline's first.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after
+/// `jh7110_entropy::COMPATIBLES`: both spellings, in the order to try them.
+pub const PMIC_COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_PMIC_MAINLINE, COMPATIBLE_PMIC_VENDOR];
 
 /// How many steps a tree-derived plan can hold. Radon's tree names two clocks and one reset, one
 /// of those clocks virtual; four is slack, and a bus naming more is recorded as truncated.
 pub(crate) const MAX_PMIC_BUS_STEPS: usize = 4;
 
-/// **The plan for the PMIC's bus, and where it came from** (milestone 592, provisional).
+/// **The plan for the PMIC's bus, and where it came from.**
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PmicBus {
     steps: [Step; MAX_PMIC_BUS_STEPS],
     len: usize,
     /// **True when the plan is the tree's own `clocks` and `resets` of the PMIC's parent bus**,
-    /// false when it is [`PMIC_BUS_BRING_UP`]. The field a bench transcript must carry, for
-    /// [`Found::from_tree`]'s reason.
+    /// false when it is the constant I2C5 plan (its clock 143, then its reset 81). The field a
+    /// bench transcript must carry, for [`Found::from_tree`]'s reason.
     pub from_tree: bool,
     /// Which PMIC `compatible` was found, or `None` when the tree names no known PMIC.
     pub pmic: Option<&'static [u8]>,
@@ -384,8 +411,8 @@ pub struct PmicBus {
     /// True when the bus named more usable steps than [`MAX_PMIC_BUS_STEPS`].
     pub truncated: bool,
     /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
-    /// tree states it. Option B's write needs it; a plan without one (the constant fallback, or a
-    /// tree that names no `reg`) leaves it `None` and the kernel does not attempt the write.
+    /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
+    /// or a tree that names no `reg`) leaves it `None` and the kernel does not attempt the write.
     pub controller: Option<(u64, u64)>,
     /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both of radon's
     /// trees. `None` when the tree names no known PMIC at all.
@@ -437,54 +464,58 @@ fn parse_reg(cells: &[u8]) -> Option<(u64, u64)> {
     }
 }
 
-/// Read the two option-B facts out of `tree` for the PMIC `pmic`: the PMIC node's own `reg` (its
-/// I2C address) and its parent bus node's `reg` (the controller's window). Both are optional in the
-/// tree, so both are `Option`, and neither affects the clocks-and-resets plan.
-fn fill_pmic_address_and_bus(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-    pmic: &[u8],
-    bus: &mut PmicBus,
-) {
-    // The PMIC's own `reg` is an I2C child address: one cell, size zero by `#size-cells 0`, which
-    // `node_reg_compatible`'s Region shape cannot carry (it skips zero-size regions on purpose).
-    // So read the raw cells and take the first, which both of radon's trees spell `<0x36>`.
-    if let Ok(Some(cells)) = tree.node_prop_compatible(pmic, b"reg")
-        && cells.len() >= 4
-    {
-        bus.pmic_address = Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
+impl PmicBus {
+    /// **The plan when the tree names no known PMIC**: the constant I2C5 plan, with `from_tree`
+    /// false and `pmic` `None`.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, for the case it
+    /// answers.
+    #[must_use]
+    pub fn without_pmic() -> Self {
+        PmicBus::fallback(None, 0)
     }
-    if let Ok(Some(cells)) = tree.parent_prop_compatible(pmic, b"reg") {
-        bus.controller = parse_reg(cells);
-    }
-}
 
-/// **Read the PMIC's I2C bus's clocks and resets out of `tree`** (milestone 592, provisional):
-/// the `clocks` and `resets` of the AXP15060's parent bus, mainline's `compatible` tried first.
-/// A `<phandle id>` pair becomes a step only for a known one-cell SYS provider and an id inside
-/// [`SYS`]'s bounds (the vendor numbers SYS first, so one bound serves both trees); the rest are
-/// counted in [`PmicBus::skipped`]. With no usable step it returns [`PMIC_BUS_BRING_UP`] with
-/// `from_tree: false`. Like [`discover`], an answer is not evidence of a JH7110.
-/// # Errors
-///
-/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
-pub fn pmic_bus(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-) -> Result<PmicBus, device_tree_blob::Error> {
-    for pmic in [COMPATIBLE_PMIC_MAINLINE, COMPATIBLE_PMIC_VENDOR] {
-        let clocks = tree.parent_prop_compatible(pmic, b"clocks")?;
-        let resets = tree.parent_prop_compatible(pmic, b"resets")?;
+    /// **The plan for the PMIC `pmic`, from what its node and its parent bus node say.**
+    ///
+    /// `pmic` is the [`PMIC_COMPATIBLES`] entry the caller matched. `pmic_reg` is the PMIC node's
+    /// own `reg` (its I2C address, one cell), and `bus_reg`, `clocks` and `resets` are its parent
+    /// bus node's properties; each is `None` when the tree does not state it. A `<phandle id>`
+    /// pair becomes a step only for a known one-cell SYS provider and an id inside [`SYS`]'s
+    /// bounds (the vendor numbers SYS first, so one bound serves both trees); the rest are counted
+    /// in [`PmicBus::skipped`]. `provider(phandle, name)` returns the property `name` of the node
+    /// carrying `phandle`, as the caller's device-tree reader finds it. With no usable step the
+    /// answer is the constant plan with `from_tree` false. An answer is not evidence of a JH7110.
+    ///
+    /// # Errors
+    ///
+    /// Propagates the first error `provider` returns.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, when the device-tree
+    /// walk left the crate: the plan from what the PMIC's bus node says.
+    pub fn from_bus<'t, E>(
+        pmic: &'static [u8],
+        pmic_reg: Option<&[u8]>,
+        bus_reg: Option<&[u8]>,
+        clocks: Option<&[u8]>,
+        resets: Option<&[u8]>,
+        mut provider: impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
+    ) -> Result<Self, E> {
+        let mut bus = PmicBus::fallback(Some(pmic), 0);
+        // The PMIC's own `reg` is an I2C child address: one cell, size zero by `#size-cells 0`.
+        // Both of radon's trees spell it `<0x36>`.
+        if let Some(cells) = pmic_reg
+            && cells.len() >= 4
+        {
+            bus.pmic_address = Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
+        }
+        if let Some(cells) = bus_reg {
+            bus.controller = parse_reg(cells);
+        }
         if clocks.is_none() && resets.is_none() {
-            // Either no such PMIC (try the next spelling), or a bus that names nothing.
-            if tree.node_prop_compatible(pmic, b"compatible")?.is_none() {
-                continue;
-            }
-            let mut bus = PmicBus::fallback(Some(pmic), 0);
-            fill_pmic_address_and_bus(tree, pmic, &mut bus);
+            // A bus that names nothing keeps the constant plan, and the addresses it does state.
             return Ok(bus);
         }
-        let mut bus = PmicBus::fallback(Some(pmic), 0);
-        fill_pmic_address_and_bus(tree, pmic, &mut bus);
-        let collected = collect_sys_steps(tree, clocks, resets, &mut bus.steps)?;
+        let collected = collect_sys_steps(clocks, resets, &mut bus.steps, &mut provider)?;
         bus.len = collected.len;
         bus.skipped = collected.skipped;
         bus.truncated = collected.truncated;
@@ -492,9 +523,8 @@ pub fn pmic_bus(
             return Ok(PmicBus::fallback(Some(pmic), bus.skipped));
         }
         bus.from_tree = true;
-        return Ok(bus);
+        Ok(bus)
     }
-    Ok(PmicBus::fallback(None, 0))
 }
 
 /// What [`collect_sys_steps`] filled in and what it left out.
@@ -505,14 +535,15 @@ struct Collected {
 }
 
 /// **Turn a node's `clocks` and `resets` into SYS-domain steps**, clocks first, into `steps`.
-/// The one walk [`pmic_bus`] and [`device_plan`] share, so a specifier is classified the same way
-/// whichever device named it: see [`Spec`] for what is kept, counted or abandoned.
-fn collect_sys_steps(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
+/// The one walk [`PmicBus::from_bus`] and [`DevicePlan::from_specifiers`] share, so a specifier
+/// is classified the same way whichever device named it: see [`Spec`] for what is kept, counted
+/// or abandoned.
+fn collect_sys_steps<'t, E>(
     clocks: Option<&[u8]>,
     resets: Option<&[u8]>,
     steps: &mut [Step],
-) -> Result<Collected, device_tree_blob::Error> {
+    provider: &mut impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
+) -> Result<Collected, E> {
     let mut out = Collected {
         len: 0,
         skipped: 0,
@@ -523,7 +554,7 @@ fn collect_sys_steps(
         let specs = list.chunks(8);
         let total = specs.len();
         for (i, spec) in specs.enumerate() {
-            match sys_step(tree, spec, is_clock)? {
+            match sys_step(spec, is_clock, provider)? {
                 Spec::Step(step) if out.len < steps.len() => {
                     steps[out.len] = step;
                     out.len += 1;
@@ -546,9 +577,9 @@ fn collect_sys_steps(
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 pub const MAX_DEVICE_STEPS: usize = 4;
 
-/// **A device's own SYS-domain clocks and resets, as its node names them** (milestone 593 (a
-/// wedged kernel resets itself), provisional). Unlike [`PmicBus`] there is no constant fallback:
-/// an empty plan means the tree named nothing usable, and the caller decides what that costs.
+/// **A device's own SYS-domain clocks and resets, as its node names them.** Unlike [`PmicBus`]
+/// there is no constant fallback: an empty plan means the tree named nothing usable, and the
+/// caller decides what that costs.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -569,45 +600,45 @@ impl DevicePlan {
     pub fn plan(&self) -> &[Step] {
         &self.steps[..self.len]
     }
+
+    /// **A device node's `clocks` and `resets`, as SYS-domain steps.** Either property may be
+    /// `None`, and a node naming neither gives an empty plan. Specifiers are classified exactly
+    /// as [`PmicBus::from_bus`] classifies its bus's, so a vendor `clkgen`/`rstgen` pair and
+    /// mainline's `syscrg` both answer; `provider` is the same phandle lookup.
+    ///
+    /// # Errors
+    ///
+    /// Propagates the first error `provider` returns.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, when the device-tree
+    /// walk left the crate: a plan built from a node's clock and reset specifiers.
+    pub fn from_specifiers<'t, E>(
+        clocks: Option<&[u8]>,
+        resets: Option<&[u8]>,
+        mut provider: impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
+    ) -> Result<Self, E> {
+        let mut plan = DevicePlan {
+            steps: [Step::EnableClock(0); MAX_DEVICE_STEPS],
+            len: 0,
+            skipped: 0,
+            truncated: false,
+        };
+        let collected = collect_sys_steps(clocks, resets, &mut plan.steps, &mut provider)?;
+        plan.len = collected.len;
+        plan.skipped = collected.skipped;
+        plan.truncated = collected.truncated;
+        Ok(plan)
+    }
 }
 
-/// **Read the `clocks` and `resets` of the first node whose `compatible` names `compatible`**, as
-/// SYS-domain steps (milestone 593, provisional). A node that is absent, or names neither
-/// property, gives an empty plan. Specifiers are classified exactly as [`pmic_bus`] classifies its
-/// bus's, so a vendor `clkgen`/`rstgen` pair and mainline's `syscrg` both answer.
-///
-/// Name: provisional (milestone 593's lane, 2026-10-20 UTC). calef names public functions.
-///
-/// # Errors
-///
-/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
-pub fn device_plan(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-    compatible: &[u8],
-) -> Result<DevicePlan, device_tree_blob::Error> {
-    let mut plan = DevicePlan {
-        steps: [Step::EnableClock(0); MAX_DEVICE_STEPS],
-        len: 0,
-        skipped: 0,
-        truncated: false,
-    };
-    let clocks = tree.node_prop_compatible(compatible, b"clocks")?;
-    let resets = tree.node_prop_compatible(compatible, b"resets")?;
-    let collected = collect_sys_steps(tree, clocks, resets, &mut plan.steps)?;
-    plan.len = collected.len;
-    plan.skipped = collected.skipped;
-    plan.truncated = collected.truncated;
-    Ok(plan)
-}
-
-// ===== Option B: the direct reset write, and the numbers it needs (milestone 592, 2026-10-10) =====
+// ===== The direct reset write, and the numbers it needs =====
 //
-// The 2026-10-10 bench (keep that transcript beside this) put radon's reset in the outcome table's
-// fourth row: the bus provably up (`running`, `released`), and OpenSBI's read of the PMIC still
-// failing ten times. Option B is this kernel writing the AXP15060 itself over a DesignWare I2C
-// master, which needs three numbers the tree and the CRG hold: the controller's base, the PMIC's
-// address, and the I2C input clock that scales every timing count. Everything here is host-testable
-// arithmetic over words the kernel reads; the sources are the same vendor trees 592 already pinned.
+// On a VisionFive 2 whose firmware cannot reset the board, the bus can be provably up (clocks
+// running, reset released) while OpenSBI's read of the PMIC still fails. The remedy is the kernel
+// writing the AXP15060 itself over a DesignWare I2C master, which needs three numbers the tree and
+// the CRG hold: the controller's base, the PMIC's address, and the I2C input clock that scales
+// every timing count. Everything here is host-testable arithmetic over words the caller reads; the
+// sources are the vendor trees cited in the crate's header.
 
 /// The SYS **syscon** window, `0x1303_0000`: where the PLL control words live, distinct from
 /// [`SYS_BASE`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` of the pinned tree
@@ -642,7 +673,7 @@ pub(crate) const OSC_HZ: u64 = 24_000_000;
 pub(crate) const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
 
 /// **The words the I2C input-clock chain reads**, one struct so the kernel can read them in one
-/// place and the arithmetic can be tested without a device (milestone 592, provisional). The CRG
+/// place and the arithmetic can be tested without a device. The CRG
 /// words come from [`SYS`]'s window at the offsets the ids above give; the PLL2 words from
 /// [`SYS_SYSCON_BASE`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
 /// (POSTDIV1 bits 29:28) and `0x34` (PREDIV bits 5:0), exactly the vendor `pll.c` masks.
@@ -692,6 +723,7 @@ pub const fn i2c5_ic_clk(w: &IcClkWords) -> u64 {
 /// **`axi_cfg0`'s rate**: `bus_root` (PLL2 or the oscillator, by its mux) over `axi_cfg0`'s own
 /// divider. The parent of both the PMIC bus's clock chain ([`i2c5_ic_clk`]) and the SD/MMC
 /// controllers' card clocks ([`SYSCLK_SDIO_SDCARD`]), each a registration in the vendor clock driver.
+///
 ///
 /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
 #[must_use]
@@ -756,15 +788,15 @@ pub const fn with_divider(word: u32, divider: u32) -> u32 {
 }
 
 /// **The 100 kHz standard-mode programming for a `DesignWare` I2C controller**, from the timing
-/// formula in the vendor U-Boot `drivers/i2c/designware_i2c.c` this board's firmware was built from
-/// (fetched 2026-10-10, same tree 592 pinned): counts of the input clock for the standard mode's
+/// formula in the vendor U-Boot's `DesignWare` I2C driver (`designware_i2c.c`, fetched 2026-10-10)
+/// this board's firmware was built from: counts of the input clock for the standard mode's
 /// minimum high (4000 ns) and low (4700 ns) times, the default rise (1000 ns) and fall (300 ns)
 /// times, no spike count, then the formula's period fill toward `ic_clk / 100_000`. U-Boot's own
 /// init constants give the control word: master mode, restart enable, slave disable, standard speed.
 ///
 /// 100 kHz rather than the fast mode U-Boot defaults to, because the AXP15060's datasheet timing is
-/// met by every standard-mode controller and the 2026-10-10 failure this answers was OpenSBI
-/// trusting a controller at reset defaults; slower than the spec floor is safe, faster is not.
+/// met by every standard-mode controller and the failure this answers was OpenSBI trusting a
+/// controller at reset defaults; slower than the spec floor is safe, faster is not.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StandardMode {
     /// The `IC_CON` word: `IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS`.
@@ -838,8 +870,8 @@ pub const fn standard_mode_100k(ic_clk: u64) -> StandardMode {
 }
 
 /// The AXP15060 register OpenSBI's reset and shutdown both go through, `0x32`, and the bit that
-/// resets: bit 6 (bit 7 powers off). The 2026-10-09 and 2026-10-10 benches on radon, and 592's
-/// block, carry the reading; this kernel writes the reset bit alone, read-modify-write, so the
+/// resets: bit 6 (bit 7 powers off), as read on a VisionFive 2 bench on 2026-10-09 and 2026-10-10.
+/// The caller writes the reset bit alone, read-modify-write, so the
 /// register's other bits keep whatever the PMIC already holds.
 pub const PMIC_RESET_REG: u8 = 0x32;
 
@@ -853,7 +885,7 @@ enum Spec {
     /// A well-formed specifier for something else: another provider, or an id past [`SYS`]'s
     /// bounds (radon's virtual clock 298).
     Foreign,
-    /// A provider without exactly one cell per specifier, or a short tail. `pmic_bus` walks in
+    /// A provider without exactly one cell per specifier, or a short tail. The walk takes
     /// eight-byte strides, so everything from here on in the list is unreadable and skipped: the
     /// safe direction, since a skipped specifier costs a fallback and a misread one would be a
     /// store.
@@ -861,11 +893,11 @@ enum Spec {
 }
 
 /// Classify one specifier; see [`Spec`].
-fn sys_step(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
+fn sys_step<'t, E>(
     spec: &[u8],
     is_clock: bool,
-) -> Result<Spec, device_tree_blob::Error> {
+    provider: &mut impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
+) -> Result<Spec, E> {
     let [p0, p1, p2, p3, i0, i1, i2, i3] = *spec else {
         return Ok(Spec::Unreadable);
     };
@@ -876,10 +908,10 @@ fn sys_step(
     } else {
         &b"#reset-cells"[..]
     };
-    if tree.phandle_prop(phandle, cells)? != Some(&[0, 0, 0, 1][..]) {
+    if provider(phandle, cells)? != Some(&[0, 0, 0, 1][..]) {
         return Ok(Spec::Unreadable);
     }
-    let Some(compatible) = tree.phandle_prop(phandle, b"compatible")? else {
+    let Some(compatible) = provider(phandle, b"compatible")? else {
         return Ok(Spec::Foreign);
     };
     let known = [
@@ -998,8 +1030,8 @@ pub struct Report {
     /// disagree: a programming error, not a hardware condition. Nonzero here invalidates the rest.
     pub rejected: usize,
     /// How many `DeassertReset` steps the plan took. The fields above describe the last of them;
-    /// this and [`Report::resets_released`] cover a plan with more than one (milestone 53's
-    /// `gmac0` has two).
+    /// this and [`Report::resets_released`] cover a plan with more than one (`gmac0`'s
+    /// has two).
     pub resets: u32,
     /// How many of those read as released before the poll gave up.
     pub resets_released: u32,
@@ -1050,32 +1082,40 @@ impl Report {
     }
 }
 
-/// What [`discover`] or [`discover_sys`] concluded about where a domain's registers are.
+/// Where a domain's registers are, as a caller concluded from a tree or from [`Window::fallback`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Found {
-    /// Physical base of the STG register window.
+    /// Physical base of the register window.
     pub base: u64,
     /// Its size in bytes.
     pub size: u64,
-    /// **True when the device tree said so, false when this is [`STG_BASE`].** The one field a
-    /// bench transcript must carry: a base that came from a constant is a base nobody on that
-    /// machine confirmed, and a reader three months later cannot re-derive which it was.
+    /// **True when the device tree said so, false when this is the window's constant.** The one
+    /// field a bench transcript must carry: a base that came from a constant is a base nobody on
+    /// that machine confirmed, and a reader three months later cannot re-derive which it was.
     pub from_tree: bool,
     /// Which `compatible` string matched, or `None` when nothing did and the constant was used.
     pub compatible: Option<&'static [u8]>,
 }
 
 /// Mainline's dedicated STG clock-and-reset controller node \[mainline-dts\].
-pub(crate) const COMPATIBLE_STGCRG: &[u8] = b"starfive,jh7110-stgcrg";
+///
+/// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone when the device-tree
+/// walk left the crate. The binding's own word for the property it holds, as for every
+/// `COMPATIBLE_` constant below.
+pub const COMPATIBLE_STGCRG: &[u8] = b"starfive,jh7110-stgcrg";
 
 /// The vendor U-Boot's single clock controller covering sys, stg and aon \[vendor-dts\]. This is
 /// the one radon's firmware actually serves, if it serves either.
-pub(crate) const COMPATIBLE_VENDOR_CLKGEN: &[u8] = b"starfive,jh7110-clkgen";
+///
+/// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone.
+pub const COMPATIBLE_VENDOR_CLKGEN: &[u8] = b"starfive,jh7110-clkgen";
 
 /// The vendor U-Boot's separate reset controller, whose `reg` list covers the same windows
 /// \[vendor-dts\]. Tried last: it names the same address as the clkgen node, so it is only
 /// reached by a tree that carries one and not the other.
-pub(crate) const COMPATIBLE_VENDOR_RSTGEN: &[u8] = b"starfive,jh7110-reset";
+///
+/// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone.
+pub const COMPATIBLE_VENDOR_RSTGEN: &[u8] = b"starfive,jh7110-reset";
 
 /// The `reg-names` entry naming the STG window, in each vendor node's own spelling
 /// (`"stg"` in `clkgen`, `"stgcrg"` in `rstgen`; \[vendor-dts\]).
@@ -1083,141 +1123,175 @@ const VENDOR_CLKGEN_STG_NAME: &[u8] = b"stg";
 const VENDOR_RSTGEN_STG_NAME: &[u8] = b"stgcrg";
 
 /// Mainline's dedicated SYS clock-and-reset controller node, `syscrg: clock-controller@13020000`
-/// (\[mainline-dts\]; milestone 592).
-pub(crate) const COMPATIBLE_SYSCRG: &[u8] = b"starfive,jh7110-syscrg";
+/// (\[mainline-dts\]).
+///
+/// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone.
+pub const COMPATIBLE_SYSCRG: &[u8] = b"starfive,jh7110-syscrg";
 
 /// The `reg-names` entry naming the SYS window, in each vendor node's own spelling (`"sys"` in
 /// `clkgen`, `"syscrg"` in `rstgen`; \[vendor-dts\]). Window 0 in both today, found by name anyway
-/// for the reason [`discover`] gives.
+/// for the reason [`Window`] gives.
 const VENDOR_CLKGEN_SYS_NAME: &[u8] = b"sys";
 const VENDOR_RSTGEN_SYS_NAME: &[u8] = b"syscrg";
 
-/// **Find the STG clock and reset window in `tree`.**
+/// One way a device tree names a domain's window: a node's `compatible`, and the `reg-names`
+/// entry that selects the window when the node carries several.
 ///
-/// Never fails to produce an address: a tree that names no controller gets [`STG_BASE`] with
-/// `from_tree: false`. Three spellings are tried, mainline's first, as `jh7110_entropy::discover`
-/// does; the two vendor nodes carry several windows and are indexed by `reg-names`, not position.
-/// An answer is not evidence that the machine is a JH7110.
-///
-/// # Errors
-///
-/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
-pub fn discover(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-) -> Result<Found, device_tree_blob::Error> {
-    discover_window(
-        tree,
-        &[
-            (COMPATIBLE_STGCRG, None),
-            (COMPATIBLE_VENDOR_CLKGEN, Some(VENDOR_CLKGEN_STG_NAME)),
-            (COMPATIBLE_VENDOR_RSTGEN, Some(VENDOR_RSTGEN_STG_NAME)),
-        ],
-        STG_BASE,
-        STG_SIZE,
-    )
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after the word the
+/// crate's docs already used for one tree's way of naming a controller.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Spelling {
+    /// The node's `compatible` string.
+    pub compatible: &'static [u8],
+    /// The `reg-names` entry naming the window, or `None` for a node whose single `reg` is it.
+    pub window: Option<&'static [u8]>,
 }
 
-/// **Find the AON clock and reset window in `tree`** (milestone 53, the JH7110's Ethernet), the
-/// domain holding `gmac0`'s bus clocks, transmit clock and resets. [`discover`]'s twin, under its
-/// rules, falling back to [`AON_BASE`] with `from_tree: false`.
+/// How many `reg` entries a matched node may carry. Five, because the vendor `rstgen` node names
+/// five windows and a short buffer would silently truncate the list `reg-names` is indexing into.
 ///
-/// Name: provisional (milestone 53's lane, 2026-10-06 UTC), after [`discover_sys`].
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after `MAX_DEVICE_STEPS`.
+pub const MAX_WINDOWS: usize = 5;
+
+/// **Where one domain's registers are, in every spelling the two trees use.**
 ///
-/// # Errors
+/// A caller tries [`Window::spellings`] in order, mainline's first, and asks
+/// [`Found::from_regions`] about the first node that matches; a tree that names none of them gets
+/// [`Window::fallback`], the constant both published trees agree on, with `from_tree` false. The
+/// two vendor nodes carry several windows and are indexed by `reg-names`, not position. An answer
+/// is not evidence that the machine is a JH7110.
 ///
-/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
-pub fn discover_aon(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-) -> Result<Found, device_tree_blob::Error> {
-    discover_window(
-        tree,
-        &[
-            (COMPATIBLE_AONCRG, None),
-            (COMPATIBLE_VENDOR_CLKGEN, Some(VENDOR_CLKGEN_AON_NAME)),
-            (COMPATIBLE_VENDOR_RSTGEN, Some(VENDOR_RSTGEN_AON_NAME)),
-        ],
-        AON_BASE,
-        AON_SIZE,
-    )
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after the register window
+/// it locates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Window {
+    /// The spellings to try, in order.
+    pub spellings: [Spelling; 3],
+    /// The window's base in both published trees.
+    pub base: u64,
+    /// The window's size in both published trees.
+    pub size: u64,
 }
 
-/// **Find the SYS clock and reset window in `tree`** (milestone 592, provisional), the domain
-/// holding I2C5's clock and reset. [`discover`]'s twin, under its rules, falling back to
-/// [`SYS_BASE`] with `from_tree: false`.
-///
-/// Name: provisional (milestone 592), 2026-09-25. calef names public functions.
-///
-/// # Errors
-///
-/// Propagates [`device_tree_blob::Error`] if the blob is malformed.
-pub fn discover_sys(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-) -> Result<Found, device_tree_blob::Error> {
-    discover_window(
-        tree,
-        &[
-            (COMPATIBLE_SYSCRG, None),
-            (COMPATIBLE_VENDOR_CLKGEN, Some(VENDOR_CLKGEN_SYS_NAME)),
-            (COMPATIBLE_VENDOR_RSTGEN, Some(VENDOR_RSTGEN_SYS_NAME)),
-        ],
-        SYS_BASE,
-        SYS_SIZE,
-    )
-}
-
-/// The walk both `discover` functions share: each spelling in order, then the constant.
-fn discover_window(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-    spellings: &[(&'static [u8], Option<&[u8]>)],
-    base: u64,
-    size: u64,
-) -> Result<Found, device_tree_blob::Error> {
-    for &(compatible, name) in spellings {
-        if let Some(found) = discover_as(tree, compatible, name)? {
-            return Ok(found);
+impl Window {
+    /// The answer for a tree that names none of [`Window::spellings`].
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, after the word the
+    /// crate's docs already used for the constant answer.
+    #[must_use]
+    pub const fn fallback(&self) -> Found {
+        Found {
+            base: self.base,
+            size: self.size,
+            from_tree: false,
+            compatible: None,
         }
     }
-    Ok(Found {
-        base,
-        size,
-        from_tree: false,
-        compatible: None,
-    })
 }
 
-/// One spelling's worth of [`discover`]. `window` is the `reg-names` entry to select, or `None`
-/// for a node whose single `reg` is the answer.
-fn discover_as(
-    tree: &device_tree_blob::DeviceTreeBlob<'_>,
-    compatible: &'static [u8],
-    window: Option<&[u8]>,
-) -> Result<Option<Found>, device_tree_blob::Error> {
-    // Five, because the vendor `rstgen` node names five windows and a short buffer would silently
-    // truncate the list `reg-names` is indexing into.
-    let mut regions = [device_tree_blob::Region { start: 0, size: 0 }; 5];
-    let n = tree.node_reg_compatible(compatible, &mut regions)?;
-    if n == 0 {
-        return Ok(None);
-    }
-    let index = match window {
-        None => 0,
-        Some(want) => {
-            let names = tree.node_prop_compatible(compatible, b"reg-names")?;
-            // A multi-window node with no `reg-names` is not something this crate will guess at:
-            // picking window 1 because the tree we read said so is exactly the "a fact nobody
-            // wrote down" case, and the constant fallback is the honest answer instead.
-            match names.and_then(|bytes| name_index(bytes, want)) {
-                Some(i) if i < n => i,
-                _ => return Ok(None),
-            }
+/// **The STG window**, where the TRNG's clocks and reset live.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, beside the domain
+/// constant `STG`.
+pub const STG_WINDOW: Window = Window {
+    spellings: [
+        Spelling {
+            compatible: COMPATIBLE_STGCRG,
+            window: None,
+        },
+        Spelling {
+            compatible: COMPATIBLE_VENDOR_CLKGEN,
+            window: Some(VENDOR_CLKGEN_STG_NAME),
+        },
+        Spelling {
+            compatible: COMPATIBLE_VENDOR_RSTGEN,
+            window: Some(VENDOR_RSTGEN_STG_NAME),
+        },
+    ],
+    base: STG_BASE,
+    size: STG_SIZE,
+};
+
+/// **The AON window**, where `gmac0`'s bus clocks, transmit clock and resets live.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, beside the domain
+/// constant `AON`.
+pub const AON_WINDOW: Window = Window {
+    spellings: [
+        Spelling {
+            compatible: COMPATIBLE_AONCRG,
+            window: None,
+        },
+        Spelling {
+            compatible: COMPATIBLE_VENDOR_CLKGEN,
+            window: Some(VENDOR_CLKGEN_AON_NAME),
+        },
+        Spelling {
+            compatible: COMPATIBLE_VENDOR_RSTGEN,
+            window: Some(VENDOR_RSTGEN_AON_NAME),
+        },
+    ],
+    base: AON_BASE,
+    size: AON_SIZE,
+};
+
+/// **The SYS window**, where I2C5's clock and reset live.
+///
+/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone, beside the domain
+/// constant `SYS`.
+pub const SYS_WINDOW: Window = Window {
+    spellings: [
+        Spelling {
+            compatible: COMPATIBLE_SYSCRG,
+            window: None,
+        },
+        Spelling {
+            compatible: COMPATIBLE_VENDOR_CLKGEN,
+            window: Some(VENDOR_CLKGEN_SYS_NAME),
+        },
+        Spelling {
+            compatible: COMPATIBLE_VENDOR_RSTGEN,
+            window: Some(VENDOR_RSTGEN_SYS_NAME),
+        },
+    ],
+    base: SYS_BASE,
+    size: SYS_SIZE,
+};
+
+impl Found {
+    /// **One spelling's answer**, from the matched node's `reg` entries as `(base, size)` pairs
+    /// and, for a spelling with a [`Spelling::window`], its `reg-names`. `None` when the node
+    /// has no `reg`, or when a multi-window node's `reg-names` is absent, lacks the entry, or
+    /// names one past the end of `reg`: picking a window by position because one tree happened
+    /// to put it there is a fact nobody wrote down, and [`Window::fallback`] is the honest answer
+    /// instead.
+    ///
+    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone: a window picked out
+    /// of a matched node's `reg` entries.
+    #[must_use]
+    pub fn from_regions(
+        spelling: &Spelling,
+        regions: &[(u64, u64)],
+        reg_names: Option<&[u8]>,
+    ) -> Option<Found> {
+        if regions.is_empty() {
+            return None;
         }
-    };
-    Ok(Some(Found {
-        base: regions[index].start,
-        size: regions[index].size,
-        from_tree: true,
-        compatible: Some(compatible),
-    }))
+        let index = match spelling.window {
+            None => 0,
+            Some(want) => match reg_names.and_then(|bytes| name_index(bytes, want)) {
+                Some(i) if i < regions.len() => i,
+                _ => return None,
+            },
+        };
+        let (base, size) = regions[index];
+        Some(Found {
+            base,
+            size,
+            from_tree: true,
+            compatible: Some(spelling.compatible),
+        })
+    }
 }
 
 /// The position of `want` in a device-tree string list (NUL-separated, NUL-terminated).

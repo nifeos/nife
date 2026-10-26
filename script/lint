@@ -1596,6 +1596,16 @@ command -v cargo >/dev/null || { echo "lint: the trust-boundary check needs carg
 python3 helpers/trust_boundary.py --selftest
 python3 helpers/trust_boundary.py --check
 
+echo "==> the unsafe listing of the crates the kernel links matches Cargo.lock"
+# §46 (thin primitives or whole subsystems; we write everything in between), in its kernel bar,
+# asks each registry crate the kernel links to list its `unsafe` and what checks it.
+# notes/kernel-dependency-unsafe/sites.tsv is that list, regenerated from the pinned source, so a
+# bump that moves a site or adds a crate fails here until the table is rewritten and the note reread.
+# The same run checks the upstream facts a nife claim rests on (spin's lock orderings).
+command -v cargo >/dev/null || { echo "lint: the kernel dependency unsafe check needs cargo" >&2; exit 1; }
+python3 helpers/kernel_dependency_unsafe.py --selftest
+python3 helpers/kernel_dependency_unsafe.py --check
+
 # The same failure one level down: a TARGET the host build never selects.
 #
 # The gate above derives what cannot compile for the host from the dependency graph, which is the

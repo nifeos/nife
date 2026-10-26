@@ -6,8 +6,7 @@
 //! `sdio0@16010000` and `sdio1@16020000`, `compatible = "snps,dw-mshc"`, and no `interrupts`. On a
 //! VisionFive 2 `mmc0` is the 8-bit eMMC socket and `mmc1` the 4-bit microSD slot, both at 50 MHz.
 //! The part is `DW_mshc` (Linux's `dw_mmc`), not the SDHCI-compatible `DWC_mshc`
-//! (`sdhci-of-dwcmshc`). Every node, clock, reset and log line is in
-//! notes/designware-mobile-storage/driver.md.
+//! (`sdhci-of-dwcmshc`).
 
 use device_tree_blob::{DeviceTreeBlob, Region};
 

@@ -77,6 +77,13 @@ record of what was weighed, and its heading says how it was ruled.
 
 No per-crate milestone is minted by this block. They come from the reviews below.
 
+- Ruled 2026-10-25 (UTC): the crates take plain values (a register base and size, and a small
+  settings type), and the device-tree walk moves to nife. The knowledge of the vendor and mainline
+  JH7110 trees (compatible strings, node names, property differences) stays in each crate as data
+  and decoders, documented in its README. nife's driver-process layout and block server leave the
+  device crates for the programs that drive them. The walks live in `machine_discovery::jh7110`,
+  so `jh7110_entropy` and `jh7110_clock_and_reset` became package interfaces.
+
 ## What every crate clears before it publishes (calef, 2026-10-11)
 
 calef, 2026-10-11 (UTC): *"As a gate for each of these milestones, I want to ensure that we're
@@ -91,7 +98,10 @@ falsifications for our crates?"* This adds to Forks 3 and 4 and changes neither.
 - Standalone. `script/crate-standalone <crate>` (provisional name) copies the crate alone and
   builds and tests it on stable for the host and its targets. It refuses this tree's citations and
   provenance, requires a README, both license files and a `rust-version`, and replays the
-  falsifications. It runs while the crate is still here; all eight fail it today.
+  falsifications. It runs while the crate is still here.
+- Provenance. Ruled 2026-10-25 (UTC): crate and item names are ratified before a crate breaks
+  out, and its `Name:` blocks stay in its source until then. Each milestone's section "What the
+  crate no longer cites" keeps every other link the source carried.
 - Gates. Milestone 887 (crate repositories share one CI template) adapts nife's gates row by row.
   It also dual licenses each crate as nife is: *"nife is MIT OR Apache-2.0, so we should dual
   license our crates as well."*
@@ -123,24 +133,9 @@ close the list as one sitting, since each needs only a line.
 
 ## What is already on the record
 
-Milestone 39 (repository structure for a loosely-coupled OS) answered a narrower form of this on
-2026-07-31. It found that `cargo publish -p` works from a workspace, so publishing needs no split. It
-set a trigger: publish a crate only after it has an in-tree consumer, because the first caller finds
-the API's shape wrong. And it framed publication as evidence for the verified-Rust claim, not as a
-product line. Three things have moved since:
-
-- calef now wants release as a goal. §151 (the goal of the repository split is independent release)
-  already says a piece earns separation when it can ship on its own schedule.
-- The trigger is met. Every one of the 30 crates classed A or B has at least one consumer in this
-  tree, counted from the `Cargo.toml` files.
-- §46 (thin primitives or whole subsystems) says take first outside the kernel and the proven
-  crates. That rule cuts both ways here. Where a maintained crate exists, it argues
-  for offering our proofs to it rather than publishing a rival.
-
-And one thing has not moved. §235 (the OS is built and updated from packages, and the tree divides
-by what releases together) was amended to size a home by what changes together. Under it, no package
-moves to a new repository before milestone 610 (the interface's stability is measured weekly)
-carries its per-package co-change column. Fork 1 has to respect that.
+Milestone 39 (repository structure for a loosely-coupled OS) and three decisions framed this
+question first; [what-was-already-on-the-record.md](0857-crates-released-on-their-own/what-was-already-on-the-record.md)
+says what each settled and what has moved since.
 
 The survey shrank the question. Of the 31 candidates, eight are "publish ours": the FAT crate, six
 device-logic crates (NVMe, e1000e, two DesignWare controllers, two JH7110 blocks), and xHCI if

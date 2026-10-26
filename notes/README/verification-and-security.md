@@ -23,6 +23,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The mutation census record](../mutation-census.md): per-crate mutation scores for every census, comparable. Names provisional.
 - [Where an unsafe obligation is written, and where it is only implied](../unsafe-obligations.md).
 - [nife's dependencies, held to nife's own standards](../dependency-standards-census.md): the 99 shipped crate versions against each internal code standard, and which should bind a dependency. Name provisional.
+- [The unsafe code in the crates the kernel links](../kernel-dependency-unsafe.md): the listing §46 (thin primitives or whole subsystems; we write everything in between) asks for in its kernel bar. It names each `unsafe` site in `spin`, `tock-registers`, `aarch64-cpu` and `uuid`, which the kernel reaches, what checks them, and the claims that rest on them. Name provisional.
 - [What nife claims a confined component cannot do](../confinement-claims.md).
 - [A second outsider pass over the confinement claims](../confinement-outsider-pass-2.md): each claim attacked, and where each attack landed.
 - [A third outsider pass over the confinement claims](../confinement-outsider-pass-3.md): every claim attacked again, counted only when booted on three ISAs, and the one escape it found.

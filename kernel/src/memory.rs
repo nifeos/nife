@@ -252,15 +252,18 @@ fn record_jh7110_storage(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 #[inline(never)]
 #[cfg(not(target_arch = "x86_64"))] // the device-tree front end
 fn record_jh7110(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
-    let crg = jh7110_clock_and_reset::discover(dtb).ok();
-    let has_trng = matches!(jh7110_entropy::discover(dtb), Ok(Some(_)));
+    let crg = machine_discovery::jh7110::clock_and_reset::discover(dtb).ok();
+    let has_trng = matches!(
+        machine_discovery::jh7110::entropy::discover(dtb),
+        Ok(Some(_))
+    );
     if let Some(found) = crg
         && (found.from_tree || has_trng)
     {
         *JH7110_CRG.lock() = Some(found);
         if let (Ok(sys), Ok(bus)) = (
-            jh7110_clock_and_reset::discover_sys(dtb),
-            jh7110_clock_and_reset::pmic_bus(dtb),
+            machine_discovery::jh7110::clock_and_reset::discover_sys(dtb),
+            machine_discovery::jh7110::clock_and_reset::pmic_bus(dtb),
         ) {
             *JH7110_PMIC_BUS.lock() = Some((sys, bus));
         }
@@ -284,8 +287,8 @@ fn record_jh7110_ethernet(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         return;
     };
     if let (Ok(aon), Ok(sys), Ok(syscon)) = (
-        jh7110_clock_and_reset::discover_aon(dtb),
-        jh7110_clock_and_reset::discover_sys(dtb),
+        machine_discovery::jh7110::clock_and_reset::discover_aon(dtb),
+        machine_discovery::jh7110::clock_and_reset::discover_sys(dtb),
         designware_ethernet::jh7110::discover_aon_syscon(dtb),
     ) {
         *JH7110_ETHERNET.lock() = Some(Jh7110Ethernet {
@@ -307,7 +310,7 @@ fn record_jh7110_ethernet(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 fn record_jh7110_watchdog(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     if let (Ok(Some(watchdog)), Ok(sys)) = (
         jh7110_watchdog::discover(dtb),
-        jh7110_clock_and_reset::discover_sys(dtb),
+        machine_discovery::jh7110::clock_and_reset::discover_sys(dtb),
     ) {
         *JH7110_WATCHDOG.lock() = Some((watchdog, sys));
     }

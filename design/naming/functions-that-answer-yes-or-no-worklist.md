@@ -154,7 +154,7 @@ A finite verb or a quantifier already says "this is a question" (see
 `allows` (twice), `survey_includes`, `denies_all`, `carries_len`, `takes_name`, `mutates`, `fits`
 (twice), `is`, `matches_with`, `opens_with_a_literal_dot`, `overlaps` (twice), `overlaps_ram`.
 `all_distinct_ids`, `all_distinct_names`, `any_core_running_real_work`, `file_name_fits`,
-`component_fits`, `was_already_up`, `status_says_okay`, `repeats_newest`, `stack_works`,
+`component_fits`, `was_already_up`, `status_okay`, `repeats_newest`, `stack_works`,
 `holds_block`, `holds`, `holds_the_system`, `selects`. `kernel_refuses`, `progenitor_refuses`,
 `grant_allows`, `udp_grant_allows`, `runs_after`, `page_is_clean`, `pwd_is`, `userspace_ran`,
 `reached_the_goal`, `user_can_read` and `user_can_write` (twice each), `asid_tagging_is_trusted`,

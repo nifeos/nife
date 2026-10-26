@@ -2,21 +2,20 @@
 name = "designware_mobile_storage"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "Synopsys DesignWare Mobile Storage Host (dw-mshc) SD and eMMC driver logic behind one small trait, proven with Kani"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "kani", "driver"]
+categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# no_std for the kernel, std for host tests, the §7 (the testing harness) pure-logic split every
-# driver crate here uses. It is the whole SD and eMMC driver for the JH7110's Synopsys DesignWare
-# Mobile Storage Host Controller (milestone 53 (the board's own peripherals: network and storage on
-# real silicon)): the register map, the command encoding, the polled controller sequences behind one
-# small `Registers` trait, card identification and block I/O, the card registers' decoding, the MBR
-# rule for where a write test may land, the bench step's two sequences, and the device-tree query.
-# Host-tested against a simulated controller and card; nothing here dereferences a pointer.
-#
-# Name: PROVISIONAL (milestone 53's storage lane, 2026-10-06 UTC). The Synopsys databook's own
-# name for the part, spelled out as `designware_ethernet` (the same lane's network half) spells
-# its own. An architect may prefer `designware_mmc` (Linux's `dw_mmc`) or a name for what it does
-# rather than whose IP it is.
+# no_std for a kernel, std for host tests. It is the whole SD and eMMC driver for the Synopsys
+# DesignWare Mobile Storage Host Controller: the register map, the command encoding, the polled
+# controller sequences behind one small `Registers` trait, card identification and block I/O, the
+# card registers' decoding, the MBR rule for where a write test may land, and what each JH7110
+# device tree says. Host-tested against a simulated controller and card; nothing here dereferences
+# a pointer.
 
 [dependencies]
 # The two windows the kernel maps and the block server reads, which rule 7 puts in one crate
@@ -27,5 +26,16 @@ filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # The device-tree query in `jh7110`, read against the same parser every other JH7110 crate uses.
 device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

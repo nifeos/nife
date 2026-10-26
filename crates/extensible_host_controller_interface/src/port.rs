@@ -98,8 +98,7 @@ pub const fn speed_name(speed: u8) -> &'static str {
 /// does it at once. A boot-time scan therefore waits until no port's `CCS` has changed for
 /// [`DEBOUNCE_STABLE_MS`], read every [`DEBOUNCE_STEP_MS`], giving up at [`DEBOUNCE_TIMEOUT_MS`].
 /// The clock starts when the ports are powered, so nothing is believed before
-/// [`DEBOUNCE_STABLE_MS`] after power either. The numbers are Linux's (`drivers/usb/core/hub.c`);
-/// see notes/usb.md, "The ports settle before the scan".
+/// [`DEBOUNCE_STABLE_MS`] after power either. The numbers are Linux's (`drivers/usb/core/hub.c`).
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by maintainer/xenon-usb-no-ports.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

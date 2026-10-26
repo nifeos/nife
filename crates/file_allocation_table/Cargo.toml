@@ -2,18 +2,31 @@
 name = "file_allocation_table"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "FAT32 volume layout as pure computation: lays out an EFI system partition, with Kani-proven long file name entries"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "fat32", "filesystem", "kani"]
+categories = ["no-std", "filesystem"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# Enough of FAT32 (Microsoft's "FAT: General Overview of On-Disk Format", version 1.03) to CREATE
-# an EFI system partition holding one boot file, as pure computation. No I/O of any kind, the same
-# rule `globally_unique_identifier_partition_table` keeps: this crate says what every sector of the
-# volume must contain and the caller writes them. So it compiles for the host and its tests run in
-# milliseconds. It reads nothing; the FAT32 stratum of milestone 140 (mount a drive this system did
-# not create) is the read half and is not this.
-# See notes/file-allocation-table.md.
-
-[lints]
-workspace = true
+# Enough of FAT32 (Microsoft's "FAT: General Overview of On-Disk Format", version 1.03) to create
+# an EFI system partition holding one boot file, as pure computation. No I/O of any kind: this
+# crate says what every sector of the volume must contain and the caller writes them. So it
+# compiles for the host and its tests run in milliseconds.
 
 [dependencies]
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

@@ -161,8 +161,9 @@ impl Volume {
         // **Rounded up until the data area starts on a cluster boundary**, as every modern
         // `mkfs.vfat` does: the installer writes whole 4096-byte `filesystem_contract::blk`
         // blocks, so a cluster can only start where a block does, and the specification's sizing
-        // leaves that to chance (`32 + 2 * 1023` is not a multiple of eight). notes/installing.md,
-        // section 3; `the_data_area_begins_on_a_cluster_boundary`.
+        // leaves that to chance (`32 + 2 * 1023` is not a multiple of eight). Unaligned, a 512 MiB
+        // volume put its file six sectors early on disk.
+        // `the_data_area_begins_on_a_cluster_boundary` checks it.
         let fat_sectors = after_reserved
             .div_ceil(per_fat_sector)
             .next_multiple_of(CLUSTER_SECTORS / FATS);
