@@ -182,3 +182,23 @@ per farm on nightly-2026-10-06) and keeps everything else hard-linked. Measured 
 sysroot` named a copying farm 60 times of 60 and named the nightly 15 times of 60 against a linking
 one. A host test, `the_farm_copies_rustc_and_its_driver_and_links_the_rest`, pins which files are
 copies.
+
+## What the pin and the farm trust
+
+Two limits stand under every std program this tree builds. This tree accepts both, and no gate holds either. The [2026-10-26 security audit](../../design/audit-reports/2026-10-26-the-compiler.md)
+records the reasoning (findings 6 and 7).
+
+- **`rust-toolchain.toml` names a nightly by date, not by digest.** rustup fetches that date's
+  channel manifest from `static.rust-lang.org` over TLS and checks each component against the
+  manifest's SHA-256, and nothing here records what the manifest or `rustc -vV` said. Two machines
+  that install the same name trust the same server, not the same bytes. The bump workflow defaults
+  to merge (ruled 2026-09-24 UTC), so a new nightly reaches `main`, CI and every developer machine
+  within about a day, with this tree's own CI as its only reader. That is the ordinary trust of a
+  Rust nightly, and recording the commit hash would detect a swapped manifest only after the build
+  had already run it.
+- **The farm's stamp does not hash the `rust-src` it patches.** It keys on `rustc -vV`, the
+  overlay's files and `STD_SRC_PATCH_VERSION`, a number a person bumps by hand when the patch logic
+  in `xtask/src/farm/patch.rs` or `generate.rs` changes. A change there without the bump leaves a
+  warm farm on the old patched std while the build passes; `rm -rf target/nife-farm` is the cure,
+  and CI builds every farm cold. The stamp skips a missing input rather than refusing it. rust-src's
+  integrity is rustup's check at install time and nothing after it.

@@ -1,6 +1,9 @@
 # Calibration against L4 and seL4
 
-*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and is written so a reader can act without opening this file. This one holds what the IPC numbers mean next to seL4's published cycles, and why sel4bench cannot run on this host, with the dates, tables and corrections behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
+*An appendix to [`notes/benchmarks.md`](../benchmarks.md), which carries the current numbers and
+lets a reader act without opening this file. This one holds what the IPC numbers mean next to seL4's
+published cycles, and why sel4bench cannot run on this host, with the dates, tables and corrections
+behind them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 ## The first real numbers, for the record (2026-07-23, M-series host, HVF, debug build)
 
@@ -108,9 +111,9 @@ That is the same class of mistake in the other direction: a debug number in a re
 - We run under a hypervisor and they do not. The tax on this path is small: no devices touched, so
   essentially no VM exits. The cost is indirect, via stage-2 TLB pressure and host cache pollution,
   which is why the bench loops keep devices out. Small is not zero.
-- The clock is assumed. Every cycle figure above inherits a ~1.5x uncertainty from not knowing which
-  core type the vCPU thread ran on. Milestone 74 (cycle counters) exists to retire this. Until it
-  lands, quote no cycle ratio from these notes tighter than "same order".
+- The clock is an assumption. Every cycle figure above inherits a ~1.5x uncertainty from not knowing
+  which core type the vCPU thread ran on. Milestone 74 (cycle counters) exists to retire this. Until
+  it lands, quote no cycle ratio from these notes tighter than "same order".
 - Both sides will be measured in a benchmarking build, and ours is the slower one (milestone 237 (the cycle-counter grant),
   which made it a measurement build). Reading `PMCCNTR_EL0` at EL0 needs milestone
   229's per-thread grant, which the context switch enforces. That grant sits behind
@@ -180,7 +183,7 @@ passes through, and time a loop of thousands of operations per sample, so the 41
 away. A same-machine seL4 number would need either a rewrite of sel4bench to our method (CNTVCT plus
 batched loops, real surgery on its measurement core) or a real PMU.
 
-So the seL4 comparison is deferred to real hardware. The seL4 machine is argon, the Jetson TX1 of
+So the seL4 comparison waits for real hardware. The seL4 machine is argon, the Jetson TX1 of
 seL4's own published figures. Milestone 127 (the seL4 machine) tracks it; see
 [notes/bench-runbook.md](../bench-runbook.md). The build recipe, via the official
 seL4 Podman image, with the board's `PLATFORM` in place of `qemu-arm-virt`:

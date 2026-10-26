@@ -29,7 +29,7 @@ x86_64's `map_new` is the row nearest the 10% tripwire, not riscv64's. Its floor
 ## How it was measured
 
 Debug icount, QEMU 11.1.1, `RUSTUP_TOOLCHAIN=nightly-2026-09-30` forced at every point so the
-compiler term is held at zero. That is sound here: the floor commit measures 2,369 for `map_new`
+compiler term stays at zero. That is sound here: the floor commit measures 2,369 for `map_new`
 on both its own pin and `nightly-2026-09-30`, and every row agrees within 0.01% except
 `ipc_rtt_el0` (0.24%). All 124 first-parent commits in the range were measured (26 s each), then
 the two series that held a step were bisected inside. One run at a time, nothing else heavy beside
@@ -97,7 +97,7 @@ removes the layers and the gate's -O0 build keeps them.
 
 `7a90fcc59` adds 43 ticks to `map_new` whether the bench maps 64 pages or 128, so the per-map cost
 did not change. That commit changes no kernel code on the `map_new` path (constants and the image
-band check), so something it moved is paid once inside the timed window. It is recorded rather than
+band check), so something it moved costs once inside the timed window. It is recorded rather than
 found (BUGS below).
 
 ## Why riscv64 looked singled out
