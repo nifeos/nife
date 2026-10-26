@@ -321,7 +321,7 @@ mod radon {
         match r.coherence {
             Some((v, o)) => println!(
                 "network-bench: coherence : {v:?} (rx des3 {:#010x}, tx des3 {:#010x}, channel status {:#010x}, payload {:?})",
-                o.rx_des3, o.tx_des3, o.status, o.payload
+                o.receive_descriptor_word_3, o.transmit_descriptor_word_3, o.status, o.payload
             ),
             None => println!("network-bench: coherence : not reached"),
         }
