@@ -7,19 +7,19 @@
 //
 //   offset  source                    kind
 //   0x000   Current EL, SP_EL0        Synchronous
-//   0x080                             interrupt
+//   0x080                             IRQ
 //   0x100                             FIQ
 //   0x180                             SError
 //   0x200   Current EL, SP_ELx        Synchronous   <- a kernel bug lands HERE
-//   0x280                             interrupt           <- the timer, milestone 5
+//   0x280                             IRQ           <- the timer, milestone 5 (the GIC and the timer)
 //   0x300                             FIQ
 //   0x380                             SError
 //   0x400   Lower EL, AArch64         Synchronous   <- `svc` lands HERE, milestone 7
-//   0x480                             interrupt
+//   0x480                             IRQ
 //   0x500                             FIQ
 //   0x580                             SError
 //   0x600   Lower EL, AArch32         Synchronous
-//   0x680                             interrupt
+//   0x680                             IRQ
 //   0x700                             FIQ
 //   0x780                             SError
 //

@@ -91,7 +91,7 @@ static TSC_HZ: AtomicU64 = AtomicU64::new(0);
 static TSC_HZ_FROM_CPUID: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
-/// The local APIC timer's frequency in hertz, at the divider `interrupt` programs. Zero until measured.
+/// The local APIC timer's frequency in hertz, at the divider `interrupt_controller` programs. Zero until measured.
 static APIC_TIMER_HZ: AtomicU64 = AtomicU64::new(0);
 
 /// Every window's implied TSC rate, in the order timed; only the first [`CALIBRATION_TAKEN`] mean
@@ -404,7 +404,7 @@ pub(crate) fn apic_timer_frequency() -> u64 {
     APIC_TIMER_HZ.load(Ordering::Relaxed)
 }
 
-/// **Arm the periodic tick.** The local APIC timer, at [`TICK_HZ`], on the vector `interrupt` chose.
+/// **Arm the periodic tick.** The local APIC timer, at [`TICK_HZ`], on the vector `interrupt_controller` chose.
 ///
 /// # Panics
 /// If [`initialize_frequency`] has not run, for the same reason [`frequency`] does.

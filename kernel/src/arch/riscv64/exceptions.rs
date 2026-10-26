@@ -172,6 +172,8 @@ pub unsafe fn set_user_arg(stack_top: u64, i: usize, v: u64) {
 }
 
 /// Interrupts routed to a userspace handler (delegated interrupts). Bumped by the trap dispatcher.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub static ROUTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 

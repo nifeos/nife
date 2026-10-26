@@ -149,7 +149,7 @@ thread_trampoline:
     // fact, stated where the unwinder reads it.)
     .cfi_undefined lr
     // We arrive here with interrupts masked (from the `schedule()` that switched to us, or the timer
-    // Interrupt it ran inside). A brand-new thread has no SPSR to restore its interrupt state from, so
+    // interrupt it ran inside). A brand-new thread has no SPSR to restore its interrupt state from, so
     // it must unmask by hand, but **`thread_entry` does that, AFTER `finish_switch`**, not here.
     //
     // Enabling interrupts *here*, before `finish_switch`, was a real, intermittent hang. `finish_switch`

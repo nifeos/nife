@@ -14,7 +14,7 @@ Every serious kernel does scheduler queues this way (Linux `list_head`, seL4's T
 because of what it removes:
 
 - Allocation. A push writes two pointers. It cannot allocate, so it cannot fail, so it is
-  legal anywhere, including the paths where allocation is forbidden (our §9: interrupt context). The
+  legal anywhere, including the paths where allocation is forbidden (our §9 (locking: IrqSafeMutex, plus a discipline): interrupt context). The
   scheduler used to pre-reserve VecDeque capacity so a push from the timer interrupt could never
   reallocate; that standing apology is gone, because the rule became structural.
 - The lookup. The old queues held thread ids; every pop paid a table lookup to reach the thread.

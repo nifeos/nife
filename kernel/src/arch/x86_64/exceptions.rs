@@ -221,6 +221,8 @@ unsafe extern "C" {
 /// satisfy a test waiting for a device's completion (notes/load-sensitive-assertions.md). Ticks are
 /// `arch::timer::ticks()`; a device vector is [`DEVICE_INTERRUPTS`], and one with no route
 /// [`SPURIOUS_INTERRUPTS`].
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub static ROUTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 

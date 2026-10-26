@@ -172,7 +172,7 @@ pub(super) fn install_port_grant(grant: Option<(u16, u16)>) {
 /// Pick another thread and go there.
 ///
 /// May be called from normal context (a voluntary `yield_now`) or from the tail of the timer
-/// Interrupt handler (a preemption); the two paths are identical from here down. Returns when some
+/// interrupt handler (a preemption); the two paths are identical from here down. Returns when some
 /// later switch comes back to this thread. See notes/scheduler/switch.md.
 ///
 /// Context: takes `IPC_TABLES`, never across the switch; masks interrupts across the decision

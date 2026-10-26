@@ -373,6 +373,8 @@ pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub static USER_FAULTS: AtomicUsize = AtomicUsize::new(0);
 
 /// How many device/SGI interrupts were routed to a userspace endpoint. Bring-up diagnostic.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub static ROUTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 

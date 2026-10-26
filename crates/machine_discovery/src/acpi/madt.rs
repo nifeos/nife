@@ -1,5 +1,5 @@
 //! **The MADT** (signature `APIC`): where the interrupt controllers are, and how the legacy ISA
-//! Interrupts reach them once its interrupt source overrides are applied.
+//! interrupts reach them once its interrupt source overrides are applied.
 //!
 //! Name: provisional (milestone 875's lane, 2026-10-12 UTC).
 
@@ -55,7 +55,7 @@ pub enum MadtEntry {
     /// **A legacy interrupt has been rewired.** The ISA interrupt `source` actually arrives as global
     /// system interrupt `gsi`, with `flags` giving polarity and trigger mode. This is the entry that
     /// makes "COM1 is interrupt 4" not mean "COM1 is IO APIC input 4": on almost every machine the timer's
-    /// Interrupt 0 is remapped, and reading this wrong arms the wrong line.
+    /// interrupt 0 is remapped, and reading this wrong arms the wrong line.
     InterruptSourceOverride {
         bus: u8,
         source: u8,
@@ -299,6 +299,8 @@ const INTI_TRIGGER_LEVEL: u16 = 0b11 << 2;
 pub const ISA_BUS: u8 = 0;
 
 /// How many legacy ISA interrupts there are: two cascaded 8259s, eight lines each.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub const ISA_INTERRUPT_COUNT: usize = 16;
 
@@ -358,6 +360,8 @@ impl IsaInterruptRouting {
 ///
 /// An override naming a source outside 0..16 is ignored: the field is a legacy interrupt number and there
 /// are sixteen of those, so a larger one is a malformed table rather than a seventeenth interrupt.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub fn isa_interrupt_table(body: &[u8]) -> [IsaInterruptRouting; ISA_INTERRUPT_COUNT] {
     let mut table = core::array::from_fn(|interrupt_number| {

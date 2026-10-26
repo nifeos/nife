@@ -9,7 +9,7 @@
 // `arch::interrupt_controller`, not `drivers::gic`, so the only things that reach the GIC are aarch64 arch code
 // (exceptions, timer) and the aarch64 `arch::interrupt_controller` adapter. RISC-V's analog is `plic`. This gating is
 // the last of the HAL leaks closed: a new ISA is a new `arch/` directory, not a diff across the
-// kernel (DECISIONS §4, §17). aarch64 interrupt tests in portable files stay `cfg(test)`, aarch64-only.
+// kernel (DECISIONS §4 (kernel shape: monolithic, deferred, with two cheap rules), §17 (the second architecture: RISC-V, and the page-table format trait)). aarch64 interrupt tests in portable files stay `cfg(test)`, aarch64-only.
 #[cfg(target_arch = "aarch64")]
 pub mod gic;
 // Its GICv3 sibling (milestone 227): the distributor and redistributors, memory-mapped. The GICv3

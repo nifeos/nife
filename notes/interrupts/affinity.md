@@ -70,7 +70,7 @@ boot (`arch::interrupt_controller::initialize_contexts`, backed by `isa::plic`).
   masked it (an interrupt storm on that hart). So `enable`/`disable` go through one helper holding an
   `InterruptSafeMutex` at `rank::INTERRUPT_CONTROLLER`, the same rank the GIC's lock takes.
 
-  It has to be `InterruptSafeMutex` rather than a plain lock, and that is the §9 deadlock rather than
+  It has to be `InterruptSafeMutex` rather than a plain lock, and that is the §9 (locking: IrqSafeMutex, plus a discipline) deadlock rather than
   caution. `disable` runs *in the handler* while `enable` runs in thread context with interrupts on.
   A plain spinlock would let a thread take the word on a hart and then have that hart's own
   handler spin on it forever. Nothing else in the driver takes the lock, deliberately.
@@ -149,7 +149,7 @@ Two things were wrong, and only one of them was scheduling:
    its wait by smoltcp's own next-poll deadline.
 2. Serialization on one core. With the deadlock gone the pipeline ran, but slowly: its threads
    are woken by a mix of device interrupt and IPC rendezvous, and both wakes pinned to one core. DECISIONS
-   §28's wake split fixed the half that mattered (device-interrupt wakes go load-aware, IPC rendezvous
+   §28 (SMP placement: two random choices at spawn, message-shaped stealing)'s wake split fixed the half that mattered (device-interrupt wakes go load-aware, IPC rendezvous
    wakes stay local, because a rendezvous partner is about to run on the caller's core and moving it
    only adds a migration).
 

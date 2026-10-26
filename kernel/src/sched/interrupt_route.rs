@@ -25,6 +25,8 @@ pub(super) static INTERRUPT_ROUTES: [AtomicU64; MAX_INTID] =
 /// (`Rendezvous::bind_to_interrupt`), so it holds however the endpoint was created; `SEND`,
 /// `SEND_CAP` and `CALL` answer [`abi::Error::NotPermitted`]. Marked before the route is published,
 /// so no instant exists where the line is live and the endpoint accepts a send.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub fn bind_interrupt(intid: u32, ep: RendezvousId) {
     assert!((intid as usize) < MAX_INTID, "intid {intid} out of range");
@@ -39,6 +41,8 @@ pub fn bind_interrupt(intid: u32, ep: RendezvousId) {
 }
 
 /// The rendezvous an interrupt is routed to, if any. Read from the interrupt handler; lock-free.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub fn interrupt_route(intid: u32) -> Option<RendezvousId> {
     if (intid as usize) >= MAX_INTID {
@@ -56,6 +60,8 @@ pub fn interrupt_route(intid: u32) -> Option<RendezvousId> {
 ///
 /// Context: interrupt context. Takes `IPC_TABLES`, which the interrupted code cannot hold, because
 /// `InterruptSafeMutex` masks interrupts while held (§9 (locking)); sends any SGI after releasing it.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub fn interrupt_notify(ep: RendezvousId) {
     // Counted for `vmstat`'s `in` column.

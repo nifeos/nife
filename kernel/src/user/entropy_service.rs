@@ -210,7 +210,7 @@ fn is_instruction_backend_available() -> bool {
 }
 
 /// Wire and spawn the entropy service in instruction mode: no virtio device, no DMA page, no
-/// Interrupt. `None` if this machine does not implement the instruction its architecture would use (see
+/// interrupt. `None` if this machine does not implement the instruction its architecture would use (see
 /// [`is_instruction_backend_available`]), the same "no source, no service" answer the virtio path
 /// gives for a missing device.
 fn start_instruction(image: &'static [u8]) -> Option<Wiring> {

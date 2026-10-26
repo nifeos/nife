@@ -152,7 +152,7 @@ under the previous headline, 246 of them the filesystem test fixture moving to i
 | W31 to W33 | 1 | 5 | |
 | W34 to W36 | 29 | 34 | the naming sweeps: `endpoint` to `rendezvous`, `untyped` to `memory_region`, the `_proto` crates |
 | W37 to W39 | 0 | 17 | |
-| W40 to W42 | 10 | 33 | `interrupt` to `interrupt` and three register spellings spelled out |
+| W40 to W42 | 10 | 33 | `irq` to `interrupt` and three register spellings spelled out |
 
 The one format bump in the history is `crickerfs`' magic going from `CRKR0001` to `CRKR0002` on
 2026-08-01. Contract API churn peaked at 158 items in 2026W41, the week the crate-root split

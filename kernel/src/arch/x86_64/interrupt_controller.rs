@@ -603,7 +603,7 @@ pub(crate) fn record_isa_routing(table: &[IsaInterruptRouting; ISA_INTERRUPT_COU
     }
 }
 
-/// How legacy interrupt `interrupt` reaches this machine's IO APIC, falling back to the ISA bus's own defaults
+/// How legacy interrupt `interrupt_number` reaches this machine's IO APIC, falling back to the ISA bus's own defaults
 /// when [`record_isa_routing`] has not run or the number is not a legacy interrupt.
 pub(crate) fn isa_routing(interrupt_number: u32) -> IsaInterruptRouting {
     let fallback = IsaInterruptRouting::isa_default(interrupt_number as u8);

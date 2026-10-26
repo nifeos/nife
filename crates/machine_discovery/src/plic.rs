@@ -38,6 +38,8 @@ pub const MAX_CONTEXT_HARTS: usize = crate::riscv64::MAX_HARTS;
 /// The interrupt a PLIC raises into a hart's `riscv,cpu-intc` for **supervisor** external
 /// interrupts: `scause` 9. Its machine twin is 11; those are the only two that appear in a PLIC's
 /// `interrupts-extended`.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub const SUPERVISOR_EXTERNAL_INTERRUPT: u32 = 9;
 

@@ -305,7 +305,7 @@ handlers:
 
 - Milestone 4: data aborts become page faults, and most become *recoverable* (the page
   was swapped out, or copy-on-write needs to duplicate it).
-- Milestone 5: interrupt stops being fatal and becomes the timer tick that drives preemption.
+- Milestone 5 (the GIC and the timer): interrupt stops being fatal and becomes the timer tick that drives preemption.
 - Milestone 7: EC `0x15` (`svc`) stops being fatal and becomes the syscall dispatcher.
 
 The plumbing is already there. Those milestones are mostly a matter of adding arms to a

@@ -683,6 +683,8 @@ pub fn msix_cap(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<Msi
 /// // And one device's four pins also spread, so a multi-function card does not self-collide.
 /// assert_eq!(intx_interrupt_number(base, 0, 4), 35);
 /// ```
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub fn intx_interrupt_number(base: u32, dev: u8, pin: u8) -> u32 {
     // Total for every input, proved in the verification module. Pins are 1-based (1=INTA); the

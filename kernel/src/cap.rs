@@ -302,6 +302,8 @@ pub fn rendezvous_cap_badged(ep: crate::sched::RendezvousId, rights: Rights, bad
 }
 
 /// A capability naming a hardware interrupt. `READ` lets the holder `WAIT` and `ACK` it.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub fn interrupt_cap(intid: u32) -> Cap {
     Cap {
@@ -312,6 +314,8 @@ pub fn interrupt_cap(intid: u32) -> Cap {
 
 /// An interrupt capability with explicit rights (milestone 19d.2b): the progenitor holds one with `GRANT`
 /// so it can delegate the interrupt to a driver it builds.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[doc(alias = "irq")]
 pub fn interrupt_cap_rights(intid: u32, rights: Rights) -> Cap {

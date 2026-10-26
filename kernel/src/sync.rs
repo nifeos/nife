@@ -73,6 +73,8 @@ pub mod rank {
     /// The interrupt controller: the GIC on aarch64, the PLIC on RISC-V. Taken by the interrupt handler,
     /// which may print while holding it. One rank for two drivers that never coexist; `x86_64`
     /// never takes it. See notes/locking.md.
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
     #[cfg_attr(target_arch = "x86_64", allow(dead_code))] // the GIC and PLIC drivers are its only takers
     #[doc(alias = "irq")]
     pub const INTERRUPT_CONTROLLER: u32 = 20;
@@ -143,6 +145,8 @@ fn lock_order_violation(rank: u32, held: u32) -> ! {
 ///
 /// Every lock in the kernel should be one of these. Keep the critical section short: interrupts are
 /// off for the whole of it (DECISIONS §9).
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub struct InterruptSafeMutex<T> {
     inner: spin_lock::SpinLock<T>,
@@ -240,6 +244,7 @@ pub(crate) fn lock_found<'a, T>(
     }
 }
 
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub struct InterruptSafeGuard<'a, T> {
     guard: ManuallyDrop<spin_lock::SpinLockGuard<'a, T>>,
