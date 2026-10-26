@@ -47,16 +47,16 @@ covers both `PowerManagementChipBus::plan` and `DevicePlan::plan`.
 | `GMAC0_ALWAYS_ON_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_AON_BRING_UP` (the domain spelled out). | yes |
 | `GMAC0_SYSTEM_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_SYS_BRING_UP` (the domain spelled out). | yes |
 | `I2cClockWords` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `IcClkWords` (three abbreviations; these are the I2C controller's clock words). | yes |
-| `MAX_DEVICE_STEPS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `MAX_RECORDED_CLOCKS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `MAX_REG_ENTRIES` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `MAX_WINDOWS` (it bounds a node's `reg` entries, not windows). | yes |
+| `MAXIMUM_DEVICE_STEPS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `MAX_DEVICE_STEPS` (max spelled out, as the tree-wide ruling asks). | yes |
+| `MAXIMUM_RECORDED_CLOCKS` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `MAX_RECORDED_CLOCKS` (max spelled out, as the tree-wide ruling asks). | yes |
+| `MAXIMUM_REG_ENTRIES` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `MAX_REG_ENTRIES` (max spelled out, as the tree-wide ruling asks). Refused `MAX_WINDOWS` (it bounds a node's `reg` entries, not windows). | yes |
 | `POWER_MANAGEMENT_CHIP_COMPATIBLES` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_COMPATIBLES` (PMIC spelled out; `chip` for integrated circuit, and not `power_management_bus`, which is the PMBus standard's name). | yes |
 | `POWER_MANAGEMENT_CHIP_RESET_BIT` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_RESET_BIT` (PMIC spelled out). | yes |
 | `POWER_MANAGEMENT_CHIP_RESET_REGISTER` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_RESET_REG` (PMIC and `reg` spelled out) and `PMIC_RESET_REGISTER` (PMIC spelled out). | yes |
 | `PowerManagementChipBus` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `PmicBus` (PMIC spelled out) and `PowerManagementBus` (it collides with the PMBus standard's name). | yes |
 | `RegisterWindow` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). Refused `Window` (a register window, which the name did not say). | yes |
 | `ResetBit` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
-| `SDCARD_DIVIDER_MAX` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
+| `SDCARD_DIVIDER_MAXIMUM` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `SDCARD_DIVIDER_MAX` (max spelled out, as the tree-wide ruling asks). | yes |
 | `SDIO_BRING_UP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |
 | `SYSTEM_TOP_GROUP` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `STG` (the chip's abbreviation for System-Top-Group, kept as an alias). | yes |
 | `STGRST_SEC_AHB` | item | `src/lib.rs` | ratified 2026-10-26 (UTC). | yes |

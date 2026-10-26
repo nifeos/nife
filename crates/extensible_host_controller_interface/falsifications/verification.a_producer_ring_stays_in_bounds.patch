@@ -11,7 +11,7 @@ diff --git a/crates/extensible_host_controller_interface/src/ring.rs b/crates/ex
 --- a/crates/extensible_host_controller_interface/src/ring.rs
 +++ b/crates/extensible_host_controller_interface/src/ring.rs
 @@ -89,7 +89,7 @@
-         let placed = trb.with_cycle(self.cycle);
+         let placed = transfer_request_block.with_cycle(self.cycle);
          self.enqueue += 1;
          let mut link = None;
 -        if self.enqueue == self.entries - 1 {

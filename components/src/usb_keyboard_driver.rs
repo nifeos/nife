@@ -76,7 +76,7 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const REGS: MappedWindow = unsafe {
     MappedWindow::new(
         REGS_VA,
-        driver_process_contract::extensible_host_controller_interface::MAX_REGISTER_PAGES
+        driver_process_contract::extensible_host_controller_interface::MAXIMUM_REGISTER_PAGES
             * PAGE_BYTES,
     )
 };
@@ -562,10 +562,10 @@ impl Host {
             REGS.r32(registers::DBOFF),
             REGS.r32(registers::RTSOFF),
         );
-        let phys = |page: u64| h.direct_memory_access_phys + page * PAGE_BYTES;
+        let phys = |page: u64| h.direct_memory_access_physical_address + page * PAGE_BYTES;
         let host = Host {
             capabilities,
-            dma_phys: h.direct_memory_access_phys,
+            dma_phys: h.direct_memory_access_physical_address,
             commands: ProducerRing::new(
                 phys(direct_memory_access::COMMAND_RING),
                 direct_memory_access::RING_ENTRIES,
@@ -714,7 +714,7 @@ impl Host {
 
     /// Power every port that is not powered (only on a controller with port power control).
     fn power_ports(&self) {
-        for n in 1..=self.capabilities.max_ports {
+        for n in 1..=self.capabilities.maximum_ports {
             let sc = self.reg(self.capabilities.portsc(n));
             if sc & port::POWER == 0 {
                 self.set_reg(
@@ -766,7 +766,7 @@ impl Host {
     /// Every root port's `CCS`, one bit per port.
     fn connections(&self) -> port::Connections {
         let mut bits = [0u32; 8];
-        for n in 1..=self.capabilities.max_ports {
+        for n in 1..=self.capabilities.maximum_ports {
             if self.reg(self.capabilities.portsc(n)) & port::CONNECTED != 0 {
                 bits[usize::from(n / 32)] |= 1 << (n % 32);
             }
@@ -778,7 +778,7 @@ impl Host {
     fn scan(&mut self) -> (u8, u64) {
         let mut connected = 0;
         let mut refused = 0;
-        for n in 1..=self.capabilities.max_ports {
+        for n in 1..=self.capabilities.maximum_ports {
             if self.reg(self.capabilities.portsc(n)) & port::CONNECTED == 0 {
                 continue;
             }
@@ -797,7 +797,7 @@ impl Host {
     /// **A port changed**: give back the slot of a keyboard that left, and look at a port that
     /// gained a device when nothing is being served.
     fn service_ports(&mut self) {
-        for n in 1..=self.capabilities.max_ports {
+        for n in 1..=self.capabilities.maximum_ports {
             let at = self.capabilities.portsc(n);
             let sc = self.reg(at);
             let changed = sc & port::CHANGES;
@@ -958,7 +958,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         _ => send(
             REPORT,
             report::NO_KEYBOARD_FOUND,
-            report::ports_report(host.capabilities.max_ports, connected, settled),
+            report::ports_report(host.capabilities.maximum_ports, connected, settled),
             refused,
         ),
     };

@@ -261,7 +261,7 @@ mod radon {
             },
         );
         let words = |c: &jh7110_clock_and_reset::BringUpReport| {
-            let mut s = [(0u32, 0u32); jh7110_clock_and_reset::MAX_RECORDED_CLOCKS];
+            let mut s = [(0u32, 0u32); jh7110_clock_and_reset::MAXIMUM_RECORDED_CLOCKS];
             for (k, w) in s.iter_mut().enumerate().take(c.clocks) {
                 *w = (c.clock_before[k], c.clock_after[k]);
             }

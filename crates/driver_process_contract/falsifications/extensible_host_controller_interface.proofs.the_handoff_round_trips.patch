@@ -16,4 +16,4 @@ diff --git a/crates/driver_process_contract/src/extensible_host_controller_inter
 -            && registers & 1 != 0
              && w[2] == 0;
          ok.then_some(Handoff {
-             direct_memory_access_phys: w[0],
+             direct_memory_access_physical_address: w[0],

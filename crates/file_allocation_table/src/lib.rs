@@ -14,10 +14,10 @@
 //! loop, and every read it makes lies inside the volume the boot sector describes.
 //!
 //! The writer is a `mkfs` for one shape: a FAT32 EFI system partition holding one boot file at
-//! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]).
-//! A name that is not 8.3 gets VFAT long-name entries ahead of a `~1` alias (see `long_name.rs`).
-//! A volume below [`FAT32_MIN_CLUSTERS`] is refused, because the specification types a volume by
-//! its data clusters, and the data area is rounded up to start on a cluster boundary.
+//! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT
+//! long-name entries ahead of a `~1` alias (see `long_name.rs`). A volume below
+//! [`FAT32_MINIMUM_CLUSTERS`] is refused, because the specification types a volume by its data
+//! clusters, and the data area is rounded up to start on a cluster boundary.
 
 //! # BUGS
 //!
@@ -52,6 +52,6 @@ pub use reader::{Chain, ChainError, Volume};
 pub use sector::{SectorDevice, SectorSize};
 pub use table::TableEntry;
 pub use volume::{
-    CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MIN_CLUSTERS, LayoutError, RESERVED_SECTORS,
+    CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MINIMUM_CLUSTERS, LayoutError, RESERVED_SECTORS,
     ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT, VolumeLayout,
 };

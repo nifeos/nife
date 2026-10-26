@@ -419,11 +419,11 @@ fn a_table_one_sector_short_of_every_cluster_is_refused() {
 
 #[test]
 fn more_clusters_than_fat32_numbers_are_refused() {
-    let max = 0x0FFF_FFF4u32;
-    let table = (max + 2).div_ceil(128);
-    let mut shape = Shape::fat32(32 + table + max, table);
+    let maximum = 0x0FFF_FFF4u32;
+    let table = (maximum + 2).div_ceil(128);
+    let mut shape = Shape::fat32(32 + table + maximum, table);
     shape.tables = 1;
-    assert_eq!(parse(&shape.bytes()).unwrap().clusters(), max);
+    assert_eq!(parse(&shape.bytes()).unwrap().clusters(), maximum);
     shape.total += 1;
     assert_eq!(parse(&shape.bytes()), Err(ParseError::TooManyClusters));
 }

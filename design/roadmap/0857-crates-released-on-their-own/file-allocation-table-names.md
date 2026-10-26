@@ -108,7 +108,7 @@ stranger meets have no row because `script/names` does not count them: the field
 | `RESERVED_SECTORS` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). | yes |
 | `TABLE_COUNT` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). Refused `FATS` (the acronym in a crate that spells it out). | yes |
 | `ROOT_CLUSTER` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). | yes |
-| `FAT32_MIN_CLUSTERS` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). Refused `MIN_CLUSTERS` (it is FAT32's floor alone). | yes |
+| `FAT32_MINIMUM_CLUSTERS` | item | `src/volume.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `FAT32_MIN_CLUSTERS` (min spelled out, as the tree-wide ruling asks). Refused `MIN_CLUSTERS` (it is FAT32's floor alone). | yes |
 | `LayoutError` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). Refused `Error` (the writer's refusal, beside the reader's errors). | yes |
 | `NotFat32` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). | yes |
 | `TooLarge` | item | `src/volume.rs` | ratified 2026-10-25 (#2720). | yes |

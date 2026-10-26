@@ -18,7 +18,7 @@ publish, `Capabilities`, `logical_block_address_format_shift` and the fields
 
 nife's process plan sits outside the crate. It lives in the `non_volatile_memory_express` module of
 `driver_process_contract`, a nife-internal crate that does not publish (ruled 2026-10-26 UTC). The
-plan is the client windows, `client_window` and `MAX_DOORBELL_STRIDE`, the stride one mapped page of BAR0 can
+plan is the client windows, `client_window` and `MAXIMUM_DOORBELL_STRIDE`, the stride one mapped page of BAR0 can
 serve. It is also `ESCAPE_MAGIC`, `Handoff` with `pack` and `unpack`, and the
 `confinement_attackers` feature. `can_write` sits in nife's NVMe server. Those names follow nife's
 ordinary naming and have no row here. A new name in this crate takes a row here. It stays
@@ -43,10 +43,10 @@ The fields of `Namespace` (`size_bytes`, `blocks_per_transfer`) are provisional 
 | `CSTS_RDY` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `CSTS_CFS` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `Capabilities` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `Cap` (an abbreviation of the register's name). | yes |
-| `max_queue_entries` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
+| `maximum_queue_entries` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `max_queue_entries` (max spelled out, as the tree-wide ruling asks). | yes |
 | `doorbell_stride` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `timeout_500ms` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | no |
-| `min_page_size` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
+| `minimum_page_size` | item | `src/lib.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `min_page_size` (min spelled out, as the tree-wide ruling asks). | yes |
 | `enabled_controller_configuration` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). Refused `cc_enabled` (it returns the Controller Configuration value that enables the controller, which `cc_enabled` did not say). | yes |
 | `Doorbell` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |
 | `doorbell` | item | `src/lib.rs` | ratified 2026-10-25 (#2720). | yes |

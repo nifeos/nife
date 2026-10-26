@@ -9,14 +9,14 @@
 use crate::sector::{SectorDevice, SectorSize};
 
 /// The cluster count below which a volume is FAT12, by the specification's rule.
-const FAT16_MIN_CLUSTERS: u32 = 4085;
+const FAT16_MINIMUM_CLUSTERS: u32 = 4085;
 
 /// The cluster count below which a volume is FAT16, and at or above which it is FAT32.
-const FAT32_MIN_CLUSTERS: u32 = 65_525;
+const FAT32_MINIMUM_CLUSTERS: u32 = 65_525;
 
 /// The most clusters a FAT32 volume may hold: its highest cluster number, `clusters + 1`, must stay
 /// below the bad-cluster marker `0x0FFF_FFF7` with the specification's margin.
-const FAT32_MAX_CLUSTERS: u32 = 0x0FFF_FFF5 - 1;
+const FAT32_MAXIMUM_CLUSTERS: u32 = 0x0FFF_FFF5 - 1;
 
 /// The bytes of a sector the parse reads: the BPB at the start and the signature at 510.
 const PARSED: usize = 512;
@@ -46,9 +46,9 @@ pub enum FileAllocationTableType {
 impl FileAllocationTableType {
     /// The type the specification assigns to a volume of `clusters` data clusters.
     pub const fn from_clusters(clusters: u32) -> FileAllocationTableType {
-        if clusters < FAT16_MIN_CLUSTERS {
+        if clusters < FAT16_MINIMUM_CLUSTERS {
             FileAllocationTableType::Fat12
-        } else if clusters < FAT32_MIN_CLUSTERS {
+        } else if clusters < FAT32_MINIMUM_CLUSTERS {
             FileAllocationTableType::Fat16
         } else {
             FileAllocationTableType::Fat32
@@ -278,7 +278,7 @@ impl BootSector {
         if !layout_agrees(file_allocation_table_type, table_sectors_16, root_entries) {
             return Err(ParseError::LayoutContradictsClusterCount);
         }
-        if clusters > FAT32_MAX_CLUSTERS {
+        if clusters > FAT32_MAXIMUM_CLUSTERS {
             return Err(ParseError::TooManyClusters);
         }
         // Clusters 0 and 1 have table entries too, which is why the table needs `clusters + 2`.

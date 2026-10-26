@@ -11,8 +11,8 @@
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 use jh7110_clock_and_reset::{
-    ALWAYS_ON_WINDOW, MAX_REG_ENTRIES, POWER_MANAGEMENT_CHIP_COMPATIBLES, PowerManagementChipBus,
-    RegisterWindow, SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, WindowLocation,
+    ALWAYS_ON_WINDOW, MAXIMUM_REG_ENTRIES, POWER_MANAGEMENT_CHIP_COMPATIBLES,
+    PowerManagementChipBus, RegisterWindow, SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, WindowLocation,
 };
 
 /// **Find the STG clock and reset window in `tree`**, where the TRNG's clocks and reset live.
@@ -64,7 +64,7 @@ fn discover_window(
     window: &RegisterWindow,
 ) -> Result<WindowLocation, Error> {
     for spelling in &window.spellings {
-        let mut regions = [Region { start: 0, size: 0 }; MAX_REG_ENTRIES];
+        let mut regions = [Region { start: 0, size: 0 }; MAXIMUM_REG_ENTRIES];
         let n = tree.node_reg_compatible(spelling.compatible, &mut regions)?;
         if n == 0 {
             continue;
@@ -73,7 +73,7 @@ fn discover_window(
             None => None,
             Some(_) => tree.node_prop_compatible(spelling.compatible, b"reg-names")?,
         };
-        let mut pairs = [(0, 0); MAX_REG_ENTRIES];
+        let mut pairs = [(0, 0); MAXIMUM_REG_ENTRIES];
         for (pair, region) in pairs.iter_mut().zip(&regions[..n]) {
             *pair = (region.start, region.size);
         }

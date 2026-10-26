@@ -572,7 +572,7 @@ fn radon_card_clock_comes_to_the_trees_rate_from_below() {
     let div = sdcard_divider_for(parent, 50_000_000);
     assert_eq!(div, 8);
     assert!(parent / u64::from(div) <= 50_000_000);
-    assert_eq!(sdcard_divider_for(parent, 1), SDCARD_DIVIDER_MAX);
+    assert_eq!(sdcard_divider_for(parent, 1), SDCARD_DIVIDER_MAXIMUM);
     assert_eq!(sdcard_divider_for(parent, 1_000_000_000), 1);
     // A parent read as zero (a gated or unreadable chain) still gives a divider the field allows.
     assert_eq!(sdcard_divider_for(0, 50_000_000), 1);
@@ -833,7 +833,7 @@ fn a_device_plan_takes_its_clocks_before_its_resets_and_has_no_fallback() {
         provider,
     )
     .unwrap();
-    assert_eq!(over.plan().len(), MAX_DEVICE_STEPS);
+    assert_eq!(over.plan().len(), MAXIMUM_DEVICE_STEPS);
     assert_eq!((over.skipped, over.truncated), (1, true));
 }
 

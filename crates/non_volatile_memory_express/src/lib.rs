@@ -38,7 +38,7 @@ pub struct Capabilities(pub u64);
 impl Capabilities {
     /// Maximum Queue Entries Supported, converted from the register's 0-based field to a count.
     /// Every queue this driver creates must be no deeper than this.
-    pub fn max_queue_entries(self) -> u32 {
+    pub fn maximum_queue_entries(self) -> u32 {
         (self.0 as u32 & 0xffff) + 1
     }
     /// Doorbell Stride: doorbell N is at `0x1000 + N * (4 << DSTRD)` (a 4-bit field, so the shift
@@ -52,7 +52,7 @@ impl Capabilities {
     }
     /// Memory Page Size Minimum, as a byte count (the field is `2^(12+MPSMIN)`). This driver runs
     /// with CC.MPS = 0, i.e. 4 KiB pages, so bring-up checks this is at most 4096.
-    pub fn min_page_size(self) -> u64 {
+    pub fn minimum_page_size(self) -> u64 {
         1u64 << (12 + ((self.0 >> 48) & 0xf))
     }
 }
@@ -312,8 +312,8 @@ impl Namespace {
     /// or a buffer that is not expressible as a PRP pair (which for a page-aligned `unit`-byte
     /// buffer with `unit <= 2 * page_size` it always is; see [`prp_pair`]).
     ///
-    /// `cid` and `nsid` go to the command as they are, `data_phys` is the buffer's bus address,
-    /// and `write` picks [`Command::write`] over [`Command::read`].
+    /// `cid` and `nsid` go to the command as they are, `data_physical_address` is the buffer's bus
+    /// address, and `write` picks [`Command::write`] over [`Command::read`].
     #[allow(clippy::too_many_arguments)]
     pub fn transfer_command(
         &self,
@@ -321,7 +321,7 @@ impl Namespace {
         nsid: u32,
         block: u64,
         unit: u64,
-        data_phys: u64,
+        data_physical_address: u64,
         page_size: u64,
         write: bool,
     ) -> Option<Command> {
@@ -329,7 +329,7 @@ impl Namespace {
             return None;
         }
         let slba = block.checked_mul(self.blocks_per_transfer as u64)?;
-        let (prp1, prp2) = prp_pair(data_phys, unit, page_size)?;
+        let (prp1, prp2) = prp_pair(data_physical_address, unit, page_size)?;
         let blocks = self.blocks_per_transfer;
         Some(if write {
             Command::write(cid, nsid, slba, blocks, prp1, prp2)
@@ -531,8 +531,8 @@ pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
 /// the structure is too short to carry the format table.
 ///
 /// It exists so a refusal can say what it refused. A drive on the bench must be formatted so that
-/// `blocks_per` falls in `1..=8`, and a namespace this driver declines has to print its LBA size
-/// rather than arrive at the bench as a server that never started and a test that reads "skipped".
+/// `blocks_per_transfer` falls in `1..=8`, and a namespace this driver declines has to print its
+/// LBA size rather than arrive at the bench as a server that never started and a test that reads "skipped".
 pub fn logical_block_address_format_shift(data: &[u8]) -> Option<u8> {
     if data.len() < 384 {
         return None;
@@ -575,10 +575,10 @@ mod tests {
         // QEMU's real CAP value for a default nvme device is in this family: MQES=0x7ff,
         // TO=0xf, DSTRD=0, MPSMIN=0. Build one by hand and read every field back.
         let cap = Capabilities(0x7ffu64 | (0xf << 24) | (2 << 32) | (1 << 48));
-        assert_eq!(cap.max_queue_entries(), 0x800);
+        assert_eq!(cap.maximum_queue_entries(), 0x800);
         assert_eq!(cap.timeout_500ms(), 0xf);
         assert_eq!(cap.doorbell_stride(), 2);
-        assert_eq!(cap.min_page_size(), 8192);
+        assert_eq!(cap.minimum_page_size(), 8192);
     }
 
     #[test]
@@ -887,10 +887,10 @@ mod tests {
 
     #[test]
     fn blocks_per_transfer_masks_by_the_actual_block_size() {
-        // `identify_namespace_yields_size_and_shift`'s only `blocks_per` call is 4096, which is a
-        // multiple of every mask this function could plausibly compute (511, 512, or 513: none
+        // `identify_namespace_yields_size_and_shift`'s only `blocks_per_transfer` call is 4096, which
+        // is a multiple of every mask this function could plausibly compute (511, 512, or 513: none
         // of their low bits reach as high as bit 12), so it cannot tell them apart, and it never
-        // calls `blocks_per(0)` either.
+        // calls `blocks_per_transfer(0)` either.
         let id = IdentifyNamespace {
             blocks: 1,
             logical_block_address_shift: 9, // 512-byte blocks; mask is 511
@@ -1028,10 +1028,12 @@ mod verification {
         };
         kani::assume((1..=8).contains(&namespace.blocks_per_transfer));
         let block: u64 = kani::any();
-        let data_phys: u64 = kani::any();
-        kani::assume(data_phys.is_multiple_of(4096) && data_phys < u64::MAX - 8192);
+        let data_physical_address: u64 = kani::any();
+        kani::assume(
+            data_physical_address.is_multiple_of(4096) && data_physical_address < u64::MAX - 8192,
+        );
         if namespace
-            .transfer_command(1, 1, block, 4096, data_phys, 4096, kani::any())
+            .transfer_command(1, 1, block, 4096, data_physical_address, 4096, kani::any())
             .is_some()
         {
             assert!(namespace.holds_block(block, 4096));
@@ -1043,7 +1045,7 @@ mod verification {
 
     /// **Identify parsing is total for any device response.** The 4096 bytes come from the
     /// controller's DMA; no contents may panic the parse, and an accepted answer always carries a
-    /// shift the block driver's arithmetic (`blocks_per(4096)`) can serve.
+    /// shift the block driver's arithmetic (`blocks_per_transfer(4096)`) can serve.
     /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.identify_parse_is_total_and_bounds_the_shift.patch`
     #[kani::proof]
     fn identify_parse_is_total_and_bounds_the_shift() {

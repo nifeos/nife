@@ -82,7 +82,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         &dev.withheld,
     )
     .map_err(Absent::Window)?;
-    if caps.scratchpads > direct_memory_access::MAX_SCRATCHPADS {
+    if caps.scratchpads > direct_memory_access::MAXIMUM_SCRATCHPADS {
         return Err(Absent::TooManyScratchpads(caps.scratchpads));
     }
     let pages = driver_process_contract::extensible_host_controller_interface::region_pages(
@@ -111,9 +111,9 @@ pub fn bring_up() -> Result<Found, Absent> {
     Ok(Found {
         bar0: dev.bar0,
         handoff: Handoff {
-            direct_memory_access_phys: dma,
+            direct_memory_access_physical_address: dma,
             direct_memory_access_pages: pages as u32,
-            // `register_window` never sets a bit at or above `MAX_REGISTER_PAGES` (16).
+            // `register_window` never sets a bit at or above `MAXIMUM_REGISTER_PAGES` (16).
             registers: registers as u16,
         },
         intid: dev.intid,

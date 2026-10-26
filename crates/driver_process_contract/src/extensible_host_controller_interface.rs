@@ -22,8 +22,9 @@ use ::extensible_host_controller_interface::{Capabilities, PAGE_BYTES};
 /// larger BAR is mapped this far and no further, and [`register_window`] refuses a controller
 /// whose needed registers lie beyond it.
 ///
-/// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
-pub const MAX_REGISTER_PAGES: u64 = 16;
+/// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC). Ruled 2026-10-26
+/// (UTC), on #2760: max is spelled out, which refused `MAX_REGISTER_PAGES`.
+pub const MAXIMUM_REGISTER_PAGES: u64 = 16;
 
 /// How many pages of the DMA region the driver is mapped: every page of
 /// `extensible_host_controller_interface::direct_memory_access`'s layout, through its scratchpad array. Scratchpad
@@ -47,14 +48,14 @@ const INTERRUPTER_BYTES: u64 = 0x20;
 /// [`register_window`] checks the mapped pages against.
 const fn needed_ranges(capabilities: &Capabilities) -> [(u64, u64); 3] {
     [
-        (0, capabilities.portsc(capabilities.max_ports) + 0x0f),
+        (0, capabilities.portsc(capabilities.maximum_ports) + 0x0f),
         (
             capabilities.interrupter(0),
             capabilities.interrupter(0) + INTERRUPTER_BYTES - 1,
         ),
         (
             capabilities.doorbell(0),
-            capabilities.doorbell(capabilities.max_slots) + 3,
+            capabilities.doorbell(capabilities.maximum_slots) + 3,
         ),
     ]
 }
@@ -68,7 +69,7 @@ const fn needed_ranges(capabilities: &Capabilities) -> [(u64, u64); 3] {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Handoff {
     /// The DMA region's physical base. Page aligned.
-    pub direct_memory_access_phys: u64,
+    pub direct_memory_access_physical_address: u64,
     /// The region's length in pages: [`WORK_PAGES`] plus the controller's scratchpads.
     pub direct_memory_access_pages: u32,
     /// The register pages mapped, [`register_window`]'s mask.
@@ -81,7 +82,7 @@ impl Handoff {
     /// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
     pub const fn pack(&self) -> [u64; 3] {
         [
-            self.direct_memory_access_phys,
+            self.direct_memory_access_physical_address,
             self.direct_memory_access_pages as u64 | (self.registers as u64) << 32,
             0,
         ]
@@ -101,7 +102,7 @@ impl Handoff {
             && registers & 1 != 0
             && w[2] == 0;
         ok.then_some(Handoff {
-            direct_memory_access_phys: w[0],
+            direct_memory_access_physical_address: w[0],
             direct_memory_access_pages,
             registers,
         })
@@ -114,7 +115,7 @@ impl Handoff {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WindowRefusal {
     /// A register the driver must reach (named by its byte offset) is past
-    /// [`MAX_REGISTER_PAGES`] or past the end of the BAR.
+    /// [`MAXIMUM_REGISTER_PAGES`] or past the end of the BAR.
     BeyondWindow {
         /// The register's byte offset into the BAR.
         offset: u64,
@@ -131,7 +132,7 @@ pub enum WindowRefusal {
 /// **Which pages of the register file a confined driver is mapped**, as a mask (bit `n` is the
 /// page at byte `n * 4096`), or why none can be.
 ///
-/// Every page of the BAR up to [`MAX_REGISTER_PAGES`] is mapped except any page that overlaps a
+/// Every page of the BAR up to [`MAXIMUM_REGISTER_PAGES`] is mapped except any page that overlaps a
 /// `withheld` byte range, where the kernel passes the MSI-X table and pending-bit array. A page the
 /// driver needs ([`Capabilities`]' registers through the last `PORTSC`, interrupter 0, every
 /// doorbell) that is withheld or out of reach is refused.
@@ -158,7 +159,7 @@ pub fn register_window(
     bar_bytes: u64,
     withheld: &[(u64, u64)],
 ) -> Result<u64, WindowRefusal> {
-    let pages = (bar_bytes / PAGE_BYTES).min(MAX_REGISTER_PAGES);
+    let pages = (bar_bytes / PAGE_BYTES).min(MAXIMUM_REGISTER_PAGES);
     let mut mask = 0u64;
     for page in 0..pages {
         let (start, end) = (page * PAGE_BYTES, (page + 1) * PAGE_BYTES);
@@ -419,7 +420,7 @@ mod tests {
     #[test]
     fn the_handoff_round_trips_and_refuses_what_no_kernel_sends() {
         let h = Handoff {
-            direct_memory_access_phys: 0x4000_0000,
+            direct_memory_access_physical_address: 0x4000_0000,
             direct_memory_access_pages: 12,
             registers: 0b0111,
         };
@@ -483,8 +484,8 @@ mod tests {
         assert_eq!(region_pages(0), WORK_PAGES);
         // The last scratchpad of the largest accepted set is the region's last page.
         assert_eq!(
-            region_pages(MAX_SCRATCHPADS) - 1,
-            WORK_PAGES + u64::from(MAX_SCRATCHPADS) - 1
+            region_pages(MAXIMUM_SCRATCHPADS) - 1,
+            WORK_PAGES + u64::from(MAXIMUM_SCRATCHPADS) - 1
         );
     }
 

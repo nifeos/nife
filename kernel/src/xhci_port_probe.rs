@@ -123,7 +123,7 @@ fn dump(when: &str, regs_va: u64, capabilities: &Capabilities, mut last: Option<
         read(regs_va, capabilities.interrupter(registers::ERDP)),
     );
     let mut connected = 0;
-    for n in 1..=capabilities.max_ports {
+    for n in 1..=capabilities.maximum_ports {
         let sc = read(regs_va, capabilities.portsc(n));
         connected += sc & 1;
         if let Some(last) = last.as_deref_mut() {
@@ -147,7 +147,7 @@ fn dump(when: &str, regs_va: u64, capabilities: &Capabilities, mut last: Option<
     }
     crate::println!(
         "xhci-probe: {when} {connected} of {} connected",
-        capabilities.max_ports
+        capabilities.maximum_ports
     );
 }
 

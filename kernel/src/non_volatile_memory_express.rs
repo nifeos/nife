@@ -41,7 +41,8 @@ pub use ::driver_process_contract::non_volatile_memory_express::{
 const ADMIN_SQ_PAGE: u64 = 0;
 const ADMIN_CQ_PAGE: u64 = 1;
 const IDENTIFY_PAGE: u64 = 2;
-/// The first page of the data plane's run, and the base [`Handoff::data_plane_phys`] carries.
+/// The first page of the data plane's run, and the base [`Handoff::data_plane_physical_address`]
+/// carries.
 pub(crate) const DATA_PLANE_PAGE: u64 = 3;
 const IO_SQ_PAGE: u64 = 3;
 const IO_CQ_PAGE: u64 = 4;
@@ -100,7 +101,7 @@ pub enum Error {
     /// CAP describes a controller this driver cannot drive: queues too shallow, a minimum page
     /// size above the kernel's 4 KiB frames, or a doorbell stride whose file would not fit the
     /// one page of BAR0 an EL0 data plane is mapped
-    /// (`driver_process_contract::non_volatile_memory_express::MAX_DOORBELL_STRIDE`).
+    /// (`driver_process_contract::non_volatile_memory_express::MAXIMUM_DOORBELL_STRIDE`).
     UnsupportedController,
 }
 
@@ -152,11 +153,12 @@ impl NonVolatileMemoryExpress {
         };
         let cap = Capabilities(c.reg64(registers::CAP));
         // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
-        // naming the controller, not in a process that cannot reach its doorbells (`MAX_DOORBELL_STRIDE`).
-        if cap.max_queue_entries() < ENTRIES as u32
-            || cap.min_page_size() > page_frames::FRAME_SIZE
+        // naming the controller, not in a process that cannot reach its doorbells
+        // (`MAXIMUM_DOORBELL_STRIDE`).
+        if cap.maximum_queue_entries() < ENTRIES as u32
+            || cap.minimum_page_size() > page_frames::FRAME_SIZE
             || cap.doorbell_stride()
-                > driver_process_contract::non_volatile_memory_express::MAX_DOORBELL_STRIDE
+                > driver_process_contract::non_volatile_memory_express::MAXIMUM_DOORBELL_STRIDE
         {
             return Err(Error::UnsupportedController);
         }
@@ -271,12 +273,12 @@ impl NonVolatileMemoryExpress {
         Handoff {
             dstrd: self.dstrd,
             // `new` refused a namespace this returns `None` for, so the unwrap cannot fire.
-            blocks_per: self
+            blocks_per_transfer: self
                 .ns
                 .blocks_per_transfer(BLOCK_SIZE as u64)
                 .expect("new() refuses a namespace whose format 4096 is not a multiple of"),
             entries: ENTRIES,
-            data_plane_phys: self.direct_memory_access_phys
+            data_plane_physical_address: self.direct_memory_access_phys
                 + DATA_PLANE_PAGE * page_frames::FRAME_SIZE,
             size_bytes: self.size_bytes(),
         }

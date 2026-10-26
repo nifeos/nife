@@ -82,9 +82,12 @@ impl ProducerRing {
     }
 
     /// **Place one TRB**, and the link if this fills the lap.
-    pub fn enqueue(&mut self, trb: TransferRequestBlock) -> TransferRequestBlockPlacement {
+    pub fn enqueue(
+        &mut self,
+        transfer_request_block: TransferRequestBlock,
+    ) -> TransferRequestBlockPlacement {
         let index = self.enqueue;
-        let placed = trb.with_cycle(self.cycle);
+        let placed = transfer_request_block.with_cycle(self.cycle);
         self.enqueue += 1;
         let mut link = None;
         if self.enqueue == self.entries - 1 {
@@ -132,10 +135,10 @@ impl EventRing {
         self.dequeue
     }
 
-    /// Whether `trb`, read at [`index`](Self::index), is an event the controller has written
-    /// this lap.
-    pub const fn is_ready(&self, trb: &TransferRequestBlock) -> bool {
-        trb.cycle() == self.cycle
+    /// Whether `transfer_request_block`, read at [`index`](Self::index), is an event the controller
+    /// has written this lap.
+    pub const fn is_ready(&self, transfer_request_block: &TransferRequestBlock) -> bool {
+        transfer_request_block.cycle() == self.cycle
     }
 
     /// Consume the entry at [`index`](Self::index).

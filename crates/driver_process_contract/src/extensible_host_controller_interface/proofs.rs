@@ -24,13 +24,13 @@ fn the_window_never_maps_a_withheld_page() {
     let len: u64 = kani::any();
     kani::assume(len > 0 && len <= 0x1_0000 && a <= u64::MAX - len);
     if let Ok(mask) = register_window(&capabilities, bar, &[(a, a + len)]) {
-        for page in 0..MAX_REGISTER_PAGES {
+        for page in 0..MAXIMUM_REGISTER_PAGES {
             if mask & (1 << page) != 0 {
                 let (s, e) = (page * PAGE_BYTES, (page + 1) * PAGE_BYTES);
                 assert!(!(a < e && s < a + len));
             }
         }
-        assert!(mask >> MAX_REGISTER_PAGES == 0);
+        assert!(mask >> MAXIMUM_REGISTER_PAGES == 0);
     }
 }
 

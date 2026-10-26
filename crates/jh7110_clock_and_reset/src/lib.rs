@@ -393,14 +393,14 @@ pub const POWER_MANAGEMENT_CHIP_COMPATIBLES: [&[u8]; 2] = [
 
 /// How many steps a tree-derived plan can hold. Radon's tree names two clocks and one reset, one
 /// of those clocks virtual; four is slack, and a bus naming more is recorded as truncated.
-pub(crate) const MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
+pub(crate) const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 
 /// **The plan for the PMIC's bus, and where it came from.** The PMIC (power management integrated
 /// circuit) is radon's AXP15060, on I2C5.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "pmic")]
 pub struct PowerManagementChipBus {
-    steps: [Step; MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS],
+    steps: [Step; MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS],
     len: usize,
     /// **True when the plan is the tree's own `clocks` and `resets` of the PMIC's parent bus**,
     /// false when it is the constant I2C5 plan (its clock 143, then its reset 81). The field a
@@ -413,7 +413,7 @@ pub struct PowerManagementChipBus {
     /// this crate does not recognise, or an id past [`SYSTEM`]'s bounds, lands here, never in a
     /// store.
     pub skipped: usize,
-    /// True when the bus named more usable steps than [`MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS`].
+    /// True when the bus named more usable steps than [`MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS`].
     pub truncated: bool,
     /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
     /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
@@ -433,7 +433,7 @@ impl PowerManagementChipBus {
 
     fn fallback(power_management_chip: Option<&'static [u8]>, skipped: usize) -> Self {
         let mut bus = PowerManagementChipBus {
-            steps: [Step::EnableClock(0); MAX_POWER_MANAGEMENT_CHIP_BUS_STEPS],
+            steps: [Step::EnableClock(0); MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS],
             len: POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len(),
             from_tree: false,
             power_management_chip,
@@ -580,18 +580,18 @@ fn collect_system_steps<'t, E>(
 }
 
 /// How many steps a [`DevicePlan`] holds. The watchdog names two clocks and two resets.
-pub const MAX_DEVICE_STEPS: usize = 4;
+pub const MAXIMUM_DEVICE_STEPS: usize = 4;
 
 /// **A device's own SYS-domain clocks and resets, as its node names them.** Unlike
 /// [`PowerManagementChipBus`] there is no constant fallback: an empty plan means the tree named
 /// nothing usable, and the caller decides what that costs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DevicePlan {
-    steps: [Step; MAX_DEVICE_STEPS],
+    steps: [Step; MAXIMUM_DEVICE_STEPS],
     len: usize,
     /// Specifiers that are not a SYS-domain gate or line, counted and never written.
     pub skipped: usize,
-    /// True when the node named more usable steps than [`MAX_DEVICE_STEPS`].
+    /// True when the node named more usable steps than [`MAXIMUM_DEVICE_STEPS`].
     pub truncated: bool,
 }
 
@@ -616,7 +616,7 @@ impl DevicePlan {
         mut provider: impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
     ) -> Result<Self, E> {
         let mut plan = DevicePlan {
-            steps: [Step::EnableClock(0); MAX_DEVICE_STEPS],
+            steps: [Step::EnableClock(0); MAXIMUM_DEVICE_STEPS],
             len: 0,
             skipped: 0,
             truncated: false,
@@ -752,22 +752,22 @@ pub const fn axi_cfg0_hz(w: &I2cClockWords) -> u64 {
 pub const SYSCLK_SDIO_SDCARD: [u32; 2] = [SYSCLK_SDIO0_SDCARD, SYSCLK_SDIO1_SDCARD];
 
 /// The card clocks' largest divider (the vendor driver registers them with a maximum of 15).
-pub const SDCARD_DIVIDER_MAX: u32 = 15;
+pub const SDCARD_DIVIDER_MAXIMUM: u32 = 15;
 
 /// **The divider that brings a card clock to at most `want_hz`** from `parent_hz`: the smallest
 /// that does, so the rate is as close below the ask as the divider allows, clamped to
-/// `1..=`[`SDCARD_DIVIDER_MAX`]. The tree's `assigned-clock-rates` is a rate the OS is asked to
+/// `1..=`[`SDCARD_DIVIDER_MAXIMUM`]. The tree's `assigned-clock-rates` is a rate the OS is asked to
 /// program, and radon's firmware leaves this divider at 2, four times the tree's 50 MHz.
 #[must_use]
 pub const fn sdcard_divider_for(parent_hz: u64, want_hz: u64) -> u32 {
     if want_hz == 0 {
-        return SDCARD_DIVIDER_MAX;
+        return SDCARD_DIVIDER_MAXIMUM;
     }
     let div = parent_hz.div_ceil(want_hz);
     if div < 1 {
         1
-    } else if div > SDCARD_DIVIDER_MAX as u64 {
-        SDCARD_DIVIDER_MAX
+    } else if div > SDCARD_DIVIDER_MAXIMUM as u64 {
+        SDCARD_DIVIDER_MAXIMUM
     } else {
         div as u32
     }
@@ -985,7 +985,7 @@ pub const fn is_clock_enabled(clock_word: u32) -> bool {
 /// How many `EnableClock` steps a report keeps words for. Two is what the TRNG needs; four is
 /// slack for the next device, and a plan with more simply stops recording rather than growing the
 /// report, which is what [`BringUpReport::truncated`] says out loud.
-pub const MAX_RECORDED_CLOCKS: usize = 4;
+pub const MAXIMUM_RECORDED_CLOCKS: usize = 4;
 
 /// What the hardware said, in enough detail that a bench transcript is diagnosable without a
 /// second trip to the machine.
@@ -997,12 +997,12 @@ pub const MAX_RECORDED_CLOCKS: usize = 4;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct BringUpReport {
     /// Each `EnableClock` step's word as it read *before* anything was written, in plan order.
-    pub clock_before: [u32; MAX_RECORDED_CLOCKS],
+    pub clock_before: [u32; MAXIMUM_RECORDED_CLOCKS],
     /// The same words read back *after* the enable bit was stored.
-    pub clock_after: [u32; MAX_RECORDED_CLOCKS],
+    pub clock_after: [u32; MAXIMUM_RECORDED_CLOCKS],
     /// How many entries of the two arrays above are meaningful.
     pub clocks: usize,
-    /// True when the plan had more clock steps than [`MAX_RECORDED_CLOCKS`]. They were still
+    /// True when the plan had more clock steps than [`MAXIMUM_RECORDED_CLOCKS`]. They were still
     /// performed; only the recording stopped.
     pub truncated: bool,
     /// The reset-assert word as it read *before* the plan's last `DeassertReset` step wrote it.
@@ -1138,7 +1138,7 @@ pub struct WindowSpelling {
 
 /// How many `reg` entries a matched node may carry. Five, because the vendor `rstgen` node names
 /// five windows and a short buffer would silently truncate the list `reg-names` is indexing into.
-pub const MAX_REG_ENTRIES: usize = 5;
+pub const MAXIMUM_REG_ENTRIES: usize = 5;
 
 /// **Where one domain's registers are, in every spelling the two trees use.**
 ///

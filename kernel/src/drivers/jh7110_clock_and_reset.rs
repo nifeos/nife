@@ -16,7 +16,7 @@
 //! or a JH7110 TRNG, so QEMU's `virt` never reaches this driver.
 
 use jh7110_clock_and_reset::{
-    BringUpReport, CLOCK_ENABLE, Domain, MAX_RECORDED_CLOCKS, Step, is_deasserted, with_parent,
+    BringUpReport, CLOCK_ENABLE, Domain, MAXIMUM_RECORDED_CLOCKS, Step, is_deasserted, with_parent,
 };
 
 /// How many times [`bring_up`] reads the status word before giving up on a deassert.
@@ -55,7 +55,7 @@ pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> BringUpRe
                 // SAFETY: as above. Read back rather than assumed: a window with nothing behind
                 // it accepts the store and reads zero, and that is the case this exists to catch.
                 let after = unsafe { core::ptr::read_volatile(reg) };
-                if report.clocks < MAX_RECORDED_CLOCKS {
+                if report.clocks < MAXIMUM_RECORDED_CLOCKS {
                     report.clock_before[report.clocks] = before;
                     report.clock_after[report.clocks] = after;
                     report.clocks += 1;

@@ -1,16 +1,21 @@
 Falsifies `driver_process_contract::non_volatile_memory_express::proofs::an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page`.
 
-The defect: `Handoff::unpack` stops refusing a stride above `MAX_DOORBELL_STRIDE`. A stride the spec permits
-and QEMU never reports then computes a doorbell offset outside the one page of BAR0 the EL0 data
-plane is mapped, the case the constant exists to prevent.
+The defect: `Handoff::unpack` stops refusing a stride above `MAXIMUM_DOORBELL_STRIDE`. A stride the
+spec permits and QEMU never reports then computes a doorbell offset outside the one page of BAR0 the
+EL0 data plane is mapped, the case the constant exists to prevent.
 
 Expected to fail: the harness's `assert!((0x1000..0x2000).contains(&off))`.
 
 diff --git a/crates/driver_process_contract/src/non_volatile_memory_express.rs b/crates/driver_process_contract/src/non_volatile_memory_express.rs
 --- a/crates/driver_process_contract/src/non_volatile_memory_express.rs
 +++ b/crates/driver_process_contract/src/non_volatile_memory_express.rs
-@@ -154,3 +154,3 @@ impl Handoff {
+@@ -157,8 +157,7 @@
+         let dstrd = (words[0] >> 32) as u32;
+         let blocks_per_transfer = (words[0] >> 16) as u16;
          let entries = words[0] as u16;
--        if dstrd > MAX_DOORBELL_STRIDE || !(1..=8).contains(&blocks_per) || entries < 2 {
-+        if !(1..=8).contains(&blocks_per) || entries < 2 {
+-        if dstrd > MAXIMUM_DOORBELL_STRIDE || !(1..=8).contains(&blocks_per_transfer) || entries < 2
+-        {
++        if !(1..=8).contains(&blocks_per_transfer) || entries < 2 {
              return None;
+         }
+         Some(Handoff {

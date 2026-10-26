@@ -10,7 +10,7 @@ Ratified: 2026-10-25 (#2720).
 The ruling of that date ratified every name below; register names keep the specification's
 spelling. Each row with a refusal names the spelling the ruling turned down and why. The same ruling
 moved nife's process plan out of the crate. `Handoff`, `register_window`, `WindowRefusal`,
-`MAX_REGISTER_PAGES`, `WORK_PAGES`, `region_pages` and the driver's bring-up report sit in the
+`MAXIMUM_REGISTER_PAGES`, `WORK_PAGES`, `region_pages` and the driver's bring-up report sit in the
 module `extensible_host_controller_interface` of the nife-internal crate `driver_process_contract`,
 which does not publish. Their names follow nife's ordinary naming, with no row here. A new name in this crate takes a row here, `provisional` until a ruling, and `script/lint`
 fails a module or `pub` item without one.
@@ -61,7 +61,7 @@ spelling, and the `USBCMD`, `USBSTS` and `USBLEGCTLSTS` bits spell out what this
 | `EVENT_SEGMENT_TABLE` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
 | `INPUT_CONTEXT` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
 | `INTERRUPT_RING` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
-| `MAX_SCRATCHPADS` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
+| `MAXIMUM_SCRATCHPADS` | item | `src/direct_memory_access.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `MAX_SCRATCHPADS` (max spelled out, as the tree-wide ruling asks). | yes |
 | `REPORTS_QUEUED` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
 | `REPORT_BUFFERS` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
 | `REPORT_SLOT` | item | `src/direct_memory_access.rs` | ratified 2026-10-25 (#2720). | yes |
@@ -111,7 +111,7 @@ spelling, and the `USBCMD`, `USBSTS` and `USBLEGCTLSTS` bits spell out what this
 | `IMAN_PENDING` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
 | `IMOD` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | no |
 | `LEGACY_BIOS_OWNED` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
-| `LEGACY_OS_OWNED` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | no |
+| `LEGACY_OPERATING_SYSTEM_OWNED` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_OS_OWNED` (os spelled out, as the tree-wide ruling asks). | no |
 | `LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_ENABLES` (`smi` spelled out, as the acronym test asks). | yes |
 | `LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS` | item | `src/registers.rs` | ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_EVENTS` (`smi` spelled out, as the acronym test asks). | yes |
 | `PAGESIZE` | item | `src/registers.rs` | ratified 2026-10-25 (#2720). | yes |
