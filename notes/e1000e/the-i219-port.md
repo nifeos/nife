@@ -8,8 +8,9 @@ a provisional name.
 ## Where the crate's facts come from
 
 The crate's README, under "Sources", says what was read for its register facts and its PCH port,
-and when. Each item in `pch` names the FreeBSD function it follows. `pch::phy`'s module doc gives
-the PHY layer's two deliberate divergences, and `pch::nvm`'s says that the NVM port is read only.
+and when. Each item in `pch` names the FreeBSD function it follows. `pch::physical_layer_device`'s
+module doc gives the PHY layer's two deliberate divergences, and `pch::non_volatile_memory`'s says
+that the NVM port is read only.
 
 ## Why the I219 needs a port at all
 
@@ -23,16 +24,18 @@ FreeBSD's, adapted, and each adapted file carries Intel's license as its first c
 ## The three passes
 
 `kernel/src/e1000e.rs`'s `bring_up` calls `pch::sequence`'s three passes in FreeBSD's order:
-`init_phy_workarounds` at attach, `global_reset` after the kernel's `flush_descriptor_rings`, and
-`init_hw` before the rings are programmed, with `transmit_errata` once `TCTL` is written.
-`pch::sequence`'s module doc gives that order. Each function's doc says what it does and names the
-FreeBSD function it follows. Only the branches for FreeBSD's `e1000_pch_spt` class are carried,
-because every I219 the crate claims is in it (`pch::is_pch`).
+`initialize_physical_layer_device_workarounds` at attach, `global_reset` after the kernel's
+`flush_descriptor_rings`, and `initialize_hardware` before the rings are programmed, with
+`transmit_errata` once `TCTL` is written. `pch::sequence`'s module doc gives that order. Each
+function's doc says what it does and names the FreeBSD function it follows. Only the branches for
+FreeBSD's `e1000_pch_spt` class are carried, because every I219 the crate claims is in it
+(`pch::is_pch`).
 
-Every sequence is generic over `pch::Hw`, so it runs on the host against a simulated I219
+Every sequence is generic over `pch::Hardware`, so it runs on the host against a simulated I219
 (`pch/sim.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
-`sequence`. It does reach `phy::id_at`, which shares `phy::read_mdic` with everything here, so the
-MDIO primitive is the one piece the QEMU gates prove.
+`sequence`. It does reach `physical_layer_device::id_at`, which shares
+`physical_layer_device::read_mdic` with everything here, so the MDIO primitive is the one piece the
+QEMU gates prove.
 
 ## BUGS
 

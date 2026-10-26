@@ -1,15 +1,20 @@
-Falsifies `driver_process_contract::non_volatile_memory_express::proofs::the_spawn_handoff_round_trips`.
+Falsifies
+`driver_process_contract::non_volatile_memory_express::proofs::the_spawn_handoff_round_trips`.
 
-The defect: `Handoff::pack` shifts `blocks_per` by 17 where `unpack` reads from bit 16. The data
-plane then addresses twice the LBA it was told, and nothing between the two halves notices.
+The defect: `Handoff::pack` shifts `blocks_per_transfer` by 17 where `unpack` reads from bit 16. The
+data plane then addresses twice the LBA it was told, and nothing between the two halves notices.
 
 Expected to fail: the harness's `assert_eq!(Handoff::unpack(h.pack()), Some(h))`.
 
 diff --git a/crates/driver_process_contract/src/non_volatile_memory_express.rs b/crates/driver_process_contract/src/non_volatile_memory_express.rs
 --- a/crates/driver_process_contract/src/non_volatile_memory_express.rs
 +++ b/crates/driver_process_contract/src/non_volatile_memory_express.rs
-@@ -137,3 +137,3 @@ impl Handoff {
+@@ -139,7 +139,7 @@
+     pub fn pack(&self) -> [u64; 3] {
          [
--            (self.dstrd as u64) << 32 | (self.blocks_per as u64) << 16 | self.entries as u64,
-+            (self.dstrd as u64) << 32 | (self.blocks_per as u64) << 17 | self.entries as u64,
-             self.data_plane_phys,
+             (self.dstrd as u64) << 32
+-                | (self.blocks_per_transfer as u64) << 16
++                | (self.blocks_per_transfer as u64) << 17
+                 | self.entries as u64,
+             self.data_plane_physical_address,
+             self.size_bytes,

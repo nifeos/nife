@@ -14,7 +14,7 @@ milestone 165 (x86_64 PCI enumeration), milestone 195 (finish the UEFI boot path
 
 `machine_discovery::x86_64` decodes `hvm_start_info`, host-tested, for the same reason `crates/device_tree_blob`
 exists rather than a device-tree reader living in `arch/aarch64/`: a parser proved only inside a
-booting kernel is proved by nothing that runs in milliseconds. The kernel side
+booting kernel has no proof that runs in milliseconds. The kernel side
 (`arch/x86_64/machine.rs`) does nothing but turn a physical address into bytes through the direct
 map.
 
@@ -42,7 +42,7 @@ eventually come from ACPI's MCFG table; until then the memory map is a second wi
 is better than the constant standing alone.
 
 `rsdp 0x0`: QEMU's PVH loader does not fill the ACPI root pointer in. The field exists and is
-zero, which means the RSDP has to be found the older way, by scanning for the `"RSD PTR "`
+zero, which means the kernel has to find the RSDP the older way, by scanning for the `"RSD PTR "`
 signature. That is what `arch::x86_64::machine::find_rsdp` does, and it finds one at `0xf52e0`, in
 the third reserved region above.
 
@@ -53,12 +53,12 @@ host-tested with thirteen tests. It sits beside the arch records rather than ins
 module for the reason `cpu_list` does: ACPI is not an x86 standard, and milestone 20's own text
 expects the machine after the VisionFive 2 to be a UEFI/ACPI one.
 
-The checksum is the whole defense and it is worth being explicit about why. The RSDP is found by
-scanning memory for an eight-byte string, so without the checksum any sixteen bytes that happen to
-spell `RSD PTR ` would be believed and the kernel would follow a pointer into somebody's data. Every
-table is checksummed on the way in, and one that fails is reported as absent rather than used: a
-corrupt MADT would hand out an APIC address and there is nothing downstream that could notice it was
-wrong.
+The checksum is the whole defense and it is worth being explicit about why. The kernel finds the
+RSDP by scanning memory for an eight-byte string, so without the checksum any sixteen bytes that
+happen to spell `RSD PTR ` would be believed and the kernel would follow a pointer into somebody's
+data. Every table is checksummed on the way in, and one that fails is reported as absent rather than
+used: a corrupt MADT would hand out an APIC address and there is nothing downstream that could
+notice it was wrong.
 
 What q35 actually has, read on 2026-08-23:
 
@@ -82,13 +82,13 @@ which is now confirmed twice over (the PVH memory map reports the same range as 
 answer, the same static `kernel/src/pci.rs`'s probes already read on the other two architectures, so
 `PCI_ECAM_PHYS` is now only the print-time reference value above rather than what gets mapped.
 
-The window also has to be decoding, and `arch::x86_64::machine::enable_pcie_ecam` is where that is
-settled, through the legacy `0xcf8`/`0xcfc` ports, which are the only way to bootstrap: nothing can
-read the ECAM window to turn the ECAM window on. It reads the host bridge's `PCIEXBAR` register
-before writing it, and writes only when the register is not already enabled at the base the MCFG
-itself reports. Firmware may have sized the window at 128 or 64 MiB where an unconditional write puts
-256, and that write then widens the chipset's decode over whatever physical addresses sit above it.
-Some chipsets also lock the register once firmware has written it, so the value read back is the only
+The window also has to be decoding, and `arch::x86_64::machine::enable_pcie_ecam` settles that,
+through the legacy `0xcf8`/`0xcfc` ports, which are the only way to bootstrap: nothing can read the
+ECAM window to turn the ECAM window on. It reads the host bridge's `PCIEXBAR` register before
+writing it, and writes only when the register is not already enabled at the base the MCFG itself
+reports. Firmware may have sized the window at 128 or 64 MiB where an unconditional write puts 256,
+and that write then widens the chipset's decode over whatever physical addresses sit above it. Some
+chipsets also lock the register once firmware has written it, so the value read back is the only
 thing that would ever have said the write was dropped.
 
 And the complication that function was written for does not reproduce, which is a correction rather
@@ -119,14 +119,14 @@ driver" below.
 ## The discovery seam
 
 Milestone 20's deliverable had two abstraction shapes in it. The first, "a generic level-walk plus a
-per-arch entry codec", was built and holds: `crates/paging` needed no change for a third format.
+per-arch entry codec", exists and holds: `crates/paging` needed no change for a third format.
 The second, "put device discovery behind a 'here is the hardware' interface (device tree today,
 ACPI/PCI later)", is not an interface. It is one boot step, `memory::initialize`, with a front end
 per description, and the shared bring-up (`boot.rs`'s `bring_up_machine`) is the same on all three.
 
-The narrow half is split out (`memory::bring_up_page_frames`): it takes a RAM slice and a forbidden
-slice and does not care where they came from. `memory::initialize` is one step with two front ends
-that feed it. On the device-tree machines it is `initialize_from_device_tree`. Here it is
+The narrow half has its own function (`memory::bring_up_page_frames`): it takes a RAM slice and a
+forbidden slice and does not care where they came from. `memory::initialize` is one step with two
+front ends that feed it. On the device-tree machines it is `initialize_from_device_tree`. Here it is
 `arch::x86_64::discovery::initialize`, which reads the PVH handoff, walks ACPI, records the device
 windows and the PCIe topology, and calls `machine::bring_up_memory` with the PVH map.
 
@@ -168,7 +168,7 @@ loudly. It would pass every gate on this machine and be wrong on the OptiPlex, a
 would discover it at a null modem. That is the most expensive place in this project to discover
 anything.
 
-*MSI-X.* The device is handed the address to write and the value to write there, so there is no
+*MSI-X.* The device receives the address to write and the value to write there, so there is no
 board-specific routing table to be wrong about. It is more code than the hardcode and much less
 than the interpreter, every device this port would ever attach has it (virtio-pci, NVMe), and it is
 the direction real x86 systems went twenty years ago. It won on the OptiPlex risk, not on effort;
@@ -232,9 +232,10 @@ case.
 
 `top_of_low_dram` reads Intel's `TOLUD` at `0xbc`. The older 82G33/Q35-era chipsets put a 16-bit
 `TOLUD` at `0xb0`, and a register that means something else there would answer with a plausible
-address, so only `0xbc` is read. QEMU models neither offset (both read zero, measured 2026-09-04 on
-QEMU 11.1.1 under PVH and OVMF), so under emulation the firmware memory map is the only source.
-Zero reads as "not reported", since a running machine has DRAM below the hole. `TOLUD` is a
-configuration register, not AML, which is why the legacy ports reach it without an interpreter.
-[Milestone 256 (x86_64 places PCI BARs in a hardcoded window)](../../design/roadmap/0256-a-bar-window-the-machine-agreed-to.md)
-has the design and `arch::x86_64::mmu::memory_mapped_io_window` the consumer.
+address, so `top_of_low_dram` reads only `0xbc`. QEMU models neither offset (both read zero,
+measured 2026-09-04 on QEMU 11.1.1 under PVH and OVMF), so under emulation the firmware memory map
+is the only source. Zero reads as "not reported", since a running machine has DRAM below the hole.
+`TOLUD` is a configuration register, not AML, which is why the legacy ports reach it without an
+interpreter. [Milestone 256 (x86_64 places PCI BARs in a hardcoded
+window)](../../design/roadmap/0256-a-bar-window-the-machine-agreed-to.md) has the design and
+`arch::x86_64::mmu::memory_mapped_io_window` the consumer.

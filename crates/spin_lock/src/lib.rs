@@ -18,8 +18,8 @@
 //! - [`SpinLock::force_unlock`] is outside the models: it exists to break a lock whose holder will
 //!   never release it, which is a broken invariant by construction.
 //!
-//! Name: provisional, minted 2026-10-25 (UTC) by the lane lock-crate. Considered: `kernel_lock`
-//! (names the user, not the thing) and `test_and_set_lock` (exact, longer than the field's word).
+//! Name: ratified 2026-10-26 (UTC), on #2760, as it stood. Considered: `kernel_lock` (names the
+//! user, not the thing) and `test_and_set_lock` (exact, longer than the field's word).
 
 #![cfg_attr(not(test), no_std)]
 
@@ -46,7 +46,7 @@ use loom::sync::atomic::{AtomicBool, Ordering};
 /// `repr(C)` keeps the flag at offset 0 and the data after it. Left to itself the compiler puts the
 /// flag after a large `T`, and every inlined `lock` then builds the offset in instructions.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
+/// Name: ratified 2026-10-26 (UTC), on #2760.
 #[repr(C)]
 pub struct SpinLock<T> {
     locked: AtomicBool,
@@ -63,7 +63,7 @@ unsafe impl<T: Send> Sync for SpinLock<T> {}
 /// The `PhantomData` makes the guard `Sync` only when `T` is, since a shared guard shares the `T`,
 /// and `Send` only when `T` is.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
+/// Name: ratified 2026-10-26 (UTC), on #2760.
 #[must_use = "dropping the guard releases the lock at once"]
 pub struct SpinLockGuard<'a, T> {
     lock: &'a SpinLock<T>,
@@ -108,7 +108,7 @@ impl<T> SpinLock<T> {
     /// `const` off the loom path so a kernel static can hold one. Loom's atomics and cells have no
     /// const constructor, which is why this is written twice; the kernel only compiles this one.
     ///
-    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
+    /// Name: ratified 2026-10-26 (UTC), on #2760.
     #[cfg(not(loom))]
     pub const fn new(value: T) -> Self {
         Self {
@@ -119,7 +119,7 @@ impl<T> SpinLock<T> {
 
     /// An unlocked lock holding `value`. See the `const` twin above for why there are two.
     ///
-    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
+    /// Name: ratified 2026-10-26 (UTC), on #2760.
     #[cfg(loom)]
     pub fn new(value: T) -> Self {
         Self {
@@ -133,7 +133,7 @@ impl<T> SpinLock<T> {
     /// The weak compare-exchange may fail spuriously, which the loop absorbs; while the flag is
     /// set it spins on a Relaxed load, so waiters read a shared line rather than fight for it.
     ///
-    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
+    /// Name: ratified 2026-10-26 (UTC), on #2760.
     #[inline(always)]
     pub fn lock(&self) -> SpinLockGuard<'_, T> {
         // Acquire on success pairs with the previous holder's Release store in the guard's drop.
@@ -153,7 +153,7 @@ impl<T> SpinLock<T> {
     ///
     /// Strong, not weak: a [`None`] is always a refusal, never a spurious failure.
     ///
-    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
+    /// Name: ratified 2026-10-26 (UTC), on #2760.
     #[inline(always)]
     pub fn try_lock(&self) -> Option<SpinLockGuard<'_, T>> {
         self.locked
@@ -171,7 +171,7 @@ impl<T> SpinLock<T> {
     /// For a panic or fault path only. Whatever the holder was doing is half-finished, and if the
     /// holder's guard is still live, two guards can now reach the data at once.
     ///
-    /// Name: provisional, minted 2026-10-25 (UTC) by lock-crate.
+    /// Name: ratified 2026-10-26 (UTC), on #2760.
     pub unsafe fn force_unlock(&self) {
         self.unlock(Ordering::Release);
     }

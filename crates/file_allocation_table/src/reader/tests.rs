@@ -146,18 +146,18 @@ fn entries_decode_by_their_markers() {
     image.set(5, 0xFFF);
     image.set(6, 0x123);
     let mut volume = Volume::open(image).unwrap();
-    assert_eq!(volume.entry(2), Ok(TableEntry::Free));
-    assert_eq!(volume.entry(3), Ok(TableEntry::Reserved));
-    assert_eq!(volume.entry(4), Ok(TableEntry::Bad));
-    assert_eq!(volume.entry(5), Ok(TableEntry::EndOfChain));
-    assert_eq!(volume.entry(6), Ok(TableEntry::Next(0x123)));
+    assert_eq!(volume.table_entry(2), Ok(TableEntry::Free));
+    assert_eq!(volume.table_entry(3), Ok(TableEntry::Reserved));
+    assert_eq!(volume.table_entry(4), Ok(TableEntry::Bad));
+    assert_eq!(volume.table_entry(5), Ok(TableEntry::EndOfChain));
+    assert_eq!(volume.table_entry(6), Ok(TableEntry::Next(0x123)));
     for cluster in [0, 1, CLUSTERS + 2, u32::MAX] {
         assert_eq!(
-            volume.entry(cluster),
+            volume.table_entry(cluster),
             Err(ChainError::NotADataCluster(cluster))
         );
     }
-    assert!(volume.entry(CLUSTERS + 1).is_ok());
+    assert!(volume.table_entry(CLUSTERS + 1).is_ok());
 }
 
 #[test]
@@ -240,7 +240,7 @@ fn an_entry_inside_one_sector_reads_only_that_sector() {
     image.set(2, 0xFFF);
     image.refuse = Some(2);
     let mut volume = Volume::open(image).unwrap();
-    assert_eq!(volume.entry(2), Ok(TableEntry::EndOfChain));
+    assert_eq!(volume.table_entry(2), Ok(TableEntry::EndOfChain));
 }
 
 #[test]

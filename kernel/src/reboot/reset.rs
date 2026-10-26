@@ -72,12 +72,12 @@ pub fn prepare_reset_route(marker: &str) {
         );
         // SAFETY: `memory::initialize` recorded this window only for a machine whose tree names a
         // JH7110, and `mmu::map_everything` mapped exactly it, device-typed, in the direct map.
-        // The plan's identifiers were bounded by `SYS` when it was built, and `bring_up` bounds
+        // The plan's identifiers were bounded by `SYSTEM` when it was built, and `bring_up` bounds
         // them again.
         let report = unsafe {
             crate::drivers::jh7110_clock_and_reset::bring_up(
                 crate::arch::mmu::phys_to_virt(sys.base) as usize,
-                &jh7110_clock_and_reset::SYS,
+                &jh7110_clock_and_reset::SYSTEM,
                 bus.plan(),
             )
         };
