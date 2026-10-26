@@ -30,9 +30,9 @@ so one copy shares all of it. The entries point at the kernel's own intermediate
 shares the map rather than a snapshot: a page the kernel maps afterwards appears in every process,
 which is what a shared half has to mean.
 
-Where x86 is neither: the ASID. PCID lives in `CR3[11:0]` and is honored only with `CR4.PCIDE`
+Where x86 is neither: the ASID. PCID lives in `CR3[11:0]` and works only with `CR4.PCIDE`
 set, and it is not set here. So `ttbr0_value` drops the tag `crates/address_space_identifier` hands it, because with
-PCIDE clear those bits are reserved-zero and `root | asid` would `#GP` rather than tag anything; and
+PCIDE clear those bits must be zero and `root | asid` would `#GP` rather than tag anything. And
 `flush_asid` flushes the whole TLB, because there is no tag for it to select on. Both say so
 where a reader meets them. Over-flushing is correct and slow; under-flushing would be one process
 reading another's memory with nothing to announce it, which is the failure that function exists to
@@ -85,12 +85,12 @@ Four MSRs are its entire configuration and none has a useful default:
 | `IA32_FMASK` | the `RFLAGS` bits cleared on entry, `IF` among them |
 | `IA32_EFER.SCE` | whether `syscall` is a legal instruction at all, rather than `#UD` |
 
-`SCE` is enabled last, so the instruction becomes legal only after the address it jumps to and
-the flags it clears are already in place. Three `const` assertions in `exceptions.rs` tie
+The kernel enables `SCE` last, so the instruction is legal only after the address it jumps to
+and the flags it clears are already in place. Three `const` assertions in `exceptions.rs` tie
 `SYSRET_SELECTOR_BASE` to the selectors in `segments.rs`, so changing one file without the other
 stops the build rather than landing a program on the kernel's data segment.
 
-The entry path is where the difference from a trap gate is felt: `syscall` does not switch stacks
+The entry path is where the difference from a trap gate shows: `syscall` does not switch stacks
 and pushes nothing. `rsp` still names the user's stack and every register still holds a user value,
 so the first three instructions are `swapgs`, park the user's `rsp` in a static, and load the
 kernel's. `segments::set_kernel_stack` writes `TSS.RSP0` and that static together, so the two doors
@@ -109,8 +109,8 @@ workload here to measure.
 
 There was no ELF built for `x86_64-unknown-none` and no scheduler on this architecture, so the proof
 was a hand-assembled probe (`arch/x86_64/ring3_probe.s`) entered straight from the boot thread. That
-is the shape both other ports shipped on their first day and then deleted, and it was deleted here
-for the same reason by roadmap item 4; the transcript below is what it printed while it existed.
+is the shape both other ports shipped on their first day and then deleted, and roadmap item 4
+deleted it here for the same reason; the transcript below is what it printed while it existed.
 
 ```
   ring 3      : a program ran at cpl 3 (cs 0x0023, ss 0x001b) and made 2 syscalls
@@ -144,26 +144,26 @@ re-walk the tables to find out.
 `enter_user` never returns, and the boot tour had to print what happened. So `trap.s` grew
 `x86_enter_user_and_wait` and `x86_leave_user`. Together they park the six callee-saved registers and the call's
 own return address on the current stack, record that block's address, enter ring 3, and resume it
-from the trap handler when the probe was done. It was `switch_to`'s two halves with a ring change in
+from the trap handler when the probe finished. It was `switch_to`'s two halves with a ring change in
 the middle, which was not a coincidence.
 
-Both, and `ring3_probe.s` with them, were deleted by roadmap item 4, which is what the paragraph
+Roadmap item 4 deleted both, and `ring3_probe.s` with them, which is what the paragraph
 above predicted: a scheduler does with two threads what that pair did with one. What replaced them
 as the tour's proof is a pair of real processes; see [scheduler.md](scheduler.md).
 
 ### Two latent bugs on a path nothing had ever executed
 
 Found by reading `context.s` against `context.rs` while wiring this up, and worth recording because
-neither could have been caught earlier and both were in code that looked finished:
+neither could have shown up earlier and both were in code that looked finished:
 
 - The child's arguments were in the wrong registers. `Context::for_user_thread` wrote them to
   `r13`/`r14`/`r15`; `user_entry_trampoline` read them from `r12`/`r13`/`r14`. A child would have
   received `(0, arg0, arg1)` and `arg2` would have vanished. Both files were internally consistent
-  and neither was executed.
+  and neither ran.
 - The trampoline did not reserve a trap frame's worth of stack. Milestone 71 established that
   both other architectures need one. The thread's `TrapFrame` lives at `top - 176` for the life of the
   thread, and the entry path's own frames start at the same top.
 
-Both are fixed and both are still unexecuted: that trampoline is the *scheduler's* entry path,
+Both have fixes and neither has run yet: that trampoline is the *scheduler's* entry path,
 and the self test enters through `enter_user` directly. They are the argument for reading the two
 halves of a context switch side by side rather than one at a time.

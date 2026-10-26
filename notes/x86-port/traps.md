@@ -20,7 +20,7 @@ Every vector has a present gate, including the ones no hardware drives. A gate t
 turns an unexpected vector into a general protection fault whose error code is the vector, a second
 puzzle on top of the first. A present gate that prints "vector 87, unexpected" costs 4 KiB.
 
-The IDT is built once, by the first core to reach `exceptions::init`, which is the boot core.
+The first core to reach `exceptions::init`, which is the boot core, builds the IDT once.
 `smp::bring_up_secondaries` starts no core before the boot core's `arch::init` returns. Every core
 still loads its own IDTR, since `lidt` writes a per-core register. A secondary that rewrote the 256
 gates would race the boot core's interrupt delivery, which stays enabled across bring-up so its
@@ -129,8 +129,9 @@ never reaches 0x20. The vector bands are disjoint by construction:
 
 The 8259s are still wired on a PC (`PCAT_COMPAT`). At power-on they raise interrupts on vectors
 8..15, the CPU's own exception vectors, so a PIC IRQ 0 reads as a double fault. They also see every
-line the IO APIC routes. `irq::init_local_apic` masks both before enabling the local APIC. They are
-masked, not remapped, because a live 8259 would deliver a second copy of every routed interrupt.
+line the IO APIC routes. `irq::init_local_apic` masks both before enabling the local APIC. The
+kernel masks them and does not remap them, because a live 8259 would deliver a second copy of every
+routed interrupt.
 
 ### Proving a device line at boot
 
@@ -192,10 +193,11 @@ the TSS limit and every ring-3 `in`/`out` faults.
 `set_port_range_grant` installs a grant on switch-in, lazily. When the grant is unchanged, which is
 nearly every switch on nearly every machine, it costs a load and a branch. The refinement of §121
 (x86 port I/O) found that the naive always-write threw that property away, at about 2,682 ns per
-switch. When the grant changes, only the moving bits are written: for a 16550's eight ports, one byte and the
-`iomap_base` word. The function is `#[cold]` because its effect is rare though it is called on every
-switch. `script/fastpath-footprint` follows non-cold calls out of `schedule()`, and cold keeps this
-body out of the IPC fastpath's hot footprint for the price of a call and a compare.
+switch. When the grant changes, `set_port_range_grant` writes only the moving bits: for a 16550's
+eight ports, one byte and the `iomap_base` word. The function is `#[cold]` because its effect is
+rare though it is called on every switch. `script/fastpath-footprint` follows non-cold calls out of
+`schedule()`, and cold keeps this body out of the IPC fastpath's hot footprint for the price of a
+call and a compare.
 
 Revocation must reach other cores. A revoked holder can be running elsewhere when its capability is
 deleted, and clearing the cached grant under `sched::IPC_TABLES` tells no hardware. At `NIFE_SMP=2`,
