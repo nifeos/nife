@@ -122,7 +122,7 @@ fn a_transfer_that_does_not_fit_the_card_or_the_buffer_is_refused_before_anythin
 }
 
 #[test]
-fn a_controller_before_2_40a_reads_through_its_fifo_at_0x100_and_gets_no_threshold_write() {
+fn a_controller_before_2_40a_reads_through_its_queue_at_0x100_and_gets_no_threshold_write() {
     let sim = Sim::new(CardKind::SdHighCapacity, 8192, 32).with_verid(0x5342_230a);
     let (mut h, id) = Host::new(sim, 50_000_000, Some(32)).unwrap();
     assert_eq!(crate::registers::queue_offset(id.verid), 0x100);
@@ -291,7 +291,7 @@ fn a_card_with_no_gap_is_refused_and_not_written() {
 }
 
 #[test]
-fn a_sixteen_bit_fifo_is_refused_at_the_door() {
+fn a_sixteen_bit_queue_is_refused_at_the_door() {
     // A controller whose HCON says 16-bit, over the sim.
     struct Narrow(Sim);
     impl crate::host::Registers for Narrow {
@@ -317,7 +317,7 @@ fn a_sixteen_bit_fifo_is_refused_at_the_door() {
 }
 
 #[test]
-fn without_a_tree_depth_the_fifo_depth_is_read_from_its_reset_watermark() {
+fn without_a_tree_depth_the_queue_depth_is_read_from_its_reset_watermark() {
     let (h, _) = Host::new(
         Sim::new(CardKind::SdHighCapacity, 1024, 16),
         50_000_000,
@@ -359,7 +359,7 @@ fn a_wrong_interface_echo_is_refused_rather_than_guessed_at() {
 }
 
 #[test]
-fn a_card_that_never_finishes_power_up_is_reported_with_its_last_ocr() {
+fn a_card_that_never_finishes_power_up_is_reported_with_its_last_operation_conditions() {
     for kind in [CardKind::SdHighCapacity, CardKind::MultimediaCard] {
         let mut sim = Sim::new(kind, 16_384, 32);
         sim.busy_polls = u32::MAX;
@@ -476,7 +476,7 @@ fn an_error_bit_in_a_status_answer_stops_identification_at_that_command() {
 }
 
 #[test]
-fn a_csd_this_driver_cannot_size_is_refused_with_its_structure() {
+fn a_card_specific_data_this_driver_cannot_size_is_refused_with_its_structure() {
     let mut sim = Sim::new(CardKind::SdHighCapacity, 8192, 32);
     sim.zero_capacity = true;
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
@@ -722,7 +722,7 @@ fn the_timed_reads_stop_at_the_end_of_the_card() {
 /// the `APP_CMD` before `ACMD6` among them; its CID is decoded with the SD layout and its
 /// ACMD41 argument asks for high capacity only of a card that answered CMD8.
 #[test]
-fn an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd() {
+fn an_sd_card_is_addressed_by_the_relative_card_address_it_chose_and_decoded_as_sd() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
     assert_eq!(
@@ -745,7 +745,7 @@ fn an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd() {
 /// An eMMC of 2 GB or less is byte addressed and sized by its CSD; `EXT_CSD`'s count, which
 /// such a part need not fill in, is not trusted for it. A larger one is sized by `EXT_CSD`.
 #[test]
-fn an_emmc_is_sized_by_ext_csd_only_when_it_is_sector_addressed() {
+fn an_emmc_is_sized_by_extended_card_specific_data_only_when_it_is_sector_addressed() {
     let mut sim = Sim::new(CardKind::MultimediaCard, 4096, 32);
     sim.multimedia_card_byte_addressed = true;
     sim.extended_card_specific_data_sectors = Some(99_999);

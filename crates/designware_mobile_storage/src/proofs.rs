@@ -35,9 +35,9 @@ fn the_scratch_range_never_touches_a_partition_or_sector_zero() {
 /// A FIFO step never moves more than is owed, and a write step never more than the FIFO has
 /// room for, whatever `STATUS` says.
 ///
-/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_fifo_step_never_overruns_the_fifo_or_the_buffer.patch`
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_queue_step_never_overruns_the_queue_or_the_buffer.patch`
 #[kani::proof]
-fn a_fifo_step_never_overruns_the_fifo_or_the_buffer() {
+fn a_queue_step_never_overruns_the_queue_or_the_buffer() {
     let status: u32 = kani::any();
     let depth: u32 = kani::any();
     kani::assume((1..=4096).contains(&depth));

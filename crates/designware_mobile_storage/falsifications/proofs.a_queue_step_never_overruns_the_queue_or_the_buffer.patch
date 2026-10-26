@@ -1,4 +1,4 @@
-Falsifies `designware_mobile_storage::proofs::a_fifo_step_never_overruns_the_fifo_or_the_buffer`.
+Falsifies `designware_mobile_storage::proofs::a_queue_step_never_overruns_the_queue_or_the_buffer`.
 
 The defect: a write step offers the whole FIFO instead of the room left in it, so a write into a
 FIFO that still holds words overruns it (the controller raises FRUN and the block is lost).

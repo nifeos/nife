@@ -613,7 +613,7 @@ mod tests {
     }
 
     #[test]
-    fn a_fifo_step_moves_what_is_there_and_never_more_than_is_owed() {
+    fn a_queue_step_moves_what_is_there_and_never_more_than_is_owed() {
         let filled = |n: u32| n << 17;
         assert_eq!(queue_step(filled(8), 32, false, 4096), 32);
         assert_eq!(queue_step(filled(8), 32, true, 4096), 96);
@@ -778,7 +778,7 @@ mod tests {
     /// read. Bit 8 of `CTRL`, left by firmware, makes a wait that tested anything but the reset
     /// bits never finish.
     #[test]
-    fn a_data_command_resets_the_fifo_and_leaves_the_threshold_off() {
+    fn a_data_command_resets_the_queue_and_leaves_the_threshold_off() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         h.registers().write(registers::CTRL, 1 << 8);
         let card = sd::identify(&mut h, 4).unwrap();
@@ -863,7 +863,7 @@ mod tests {
     /// than the FIFO: each step must move what is owed, not what fits. The read half is with a
     /// `STATUS` that says the FIFO is full whatever it holds, which `queue_step` exists to survive.
     #[test]
-    fn the_last_fifo_step_moves_only_what_is_owed() {
+    fn the_last_queue_step_moves_only_what_is_owed() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 48));
         let card = sd::identify(&mut h, 4).unwrap();
         let data: Vec<u8> = (0..512).map(|i| (i % 253) as u8).collect();

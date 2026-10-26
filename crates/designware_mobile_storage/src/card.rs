@@ -268,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn a_cid_names_its_maker_and_product() {
+    fn a_card_identification_names_its_maker_and_product() {
         let mut r = [0u32; 4];
         put(&mut r, 120, 8, 0x03);
         for (i, b) in b"SN32G".iter().enumerate() {
@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn ext_csd_sector_count_is_little_endian_and_short_buffers_read_zero() {
+    fn extended_card_specific_data_sector_count_is_little_endian_and_short_buffers_read_zero() {
         let mut e = [0u8; 512];
         e[212..216].copy_from_slice(&0x01d2_0000u32.to_le_bytes());
         assert_eq!(extended_card_specific_data_sectors(&e), 0x01d2_0000);
@@ -323,7 +323,7 @@ mod tests {
     /// `READ_BL_LEN` 9 (512-byte blocks) is the case where the shift's `- 9` is zero, and
     /// `C_SIZE_MULT` 3 the one where the multiplier's `+ 2` matters: (100 + 1) * 2^(3 + 2) blocks.
     #[test]
-    fn a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone() {
+    fn a_card_specific_data_with_512_byte_blocks_is_sized_from_its_multiplier_alone() {
         let mut r = [0u32; 4];
         put(&mut r, 62, 12, 100);
         put(&mut r, 47, 3, 3);
