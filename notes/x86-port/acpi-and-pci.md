@@ -91,7 +91,7 @@ and that write then widens the chipset's decode over whatever physical addresses
 chipsets also lock the register once firmware has written it, so the value read back is the only
 thing that would ever have said the write was dropped.
 
-And the complication that function exists to handle does not reproduce, which is a correction rather
+And the complication that function was written for does not reproduce, which is a correction rather
 than a detail. Milestone 165's block records QEMU's monitor answering "Cannot access memory" at the
 MCFG's base before the kernel ran, read as the decode being off under PVH. Re-measured 2026-09-02 on
 QEMU 11.1.1 from inside the guest, which is the side being served: the register reads

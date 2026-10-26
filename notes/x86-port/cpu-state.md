@@ -43,8 +43,8 @@ a user page non-executable in supervisor mode, were true only with this bit on.
 SMEP costs nothing on any path. The fetch unit checks it against the leaf's `U/S` bit, with no
 per-access software toggle. That is what separates it from SMAP, which needs `stac` and `clac`
 around every kernel access to user memory and stays off (`mmu::permit_kernel_access_to_user_pages`
-has the BUGS). SMEP forbids nothing this kernel does: every kernel page has `U/S` clear, and the
-kernel enters user code only through `iretq` or `sysret` at ring 3.
+has the BUGS). SMEP forbids nothing this kernel does: every kernel page has `U/S` clear, and user
+code is only entered through `iretq` or `sysret` at ring 3.
 
 The feature bit is `CPUID.(EAX=7,ECX=0):EBX[7]`: Ivy Bridge and every Intel part since, AMD from
 Excavator, and QEMU's `-cpu max`, HVF and the `q35` defaults. A machine without it gets a boot line

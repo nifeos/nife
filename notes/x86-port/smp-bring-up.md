@@ -25,7 +25,7 @@ second writable alias. And the gap lies between two mapped sections rather than 
 the general rules miss. The destination is the low megabyte, which `map_firmware_regions` maps
 writable and the frame allocator never hands out (`machine::LOW_MEGABYTE`).
 
-Because the linker places `secondary_boot` at that low address, its own address already is the
+Because `secondary_boot` is linked at that low address, its own address already is the
 physical page. On aarch64 and RISC-V, `secondary_boot` is an ordinary high-linked label and
 `smp::bring_up_secondaries` converts it with `virt_to_phys`. Doing that here computes
 `secondary_boot - DIRECT_MAP_BASE`, an underflow. `arch::secondary_boot_entry` is therefore the

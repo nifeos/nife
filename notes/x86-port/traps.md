@@ -129,9 +129,8 @@ never reaches 0x20. The vector bands are disjoint by construction:
 
 The 8259s are still wired on a PC (`PCAT_COMPAT`). At power-on they raise interrupts on vectors
 8..15, the CPU's own exception vectors, so a PIC IRQ 0 reads as a double fault. They also see every
-line the IO APIC routes. `irq::init_local_apic` masks both before enabling the local APIC. The
-kernel masks them and does not remap them, because a live 8259 would deliver a second copy of every
-routed interrupt.
+line the IO APIC routes. `irq::init_local_apic` masks both before enabling the local APIC. They are
+masked, not remapped, because a live 8259 would deliver a second copy of every routed interrupt.
 
 ### Proving a device line at boot
 

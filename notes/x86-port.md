@@ -5,9 +5,9 @@ Milestone 161, the third architecture, and the one milestone 20 named as the rea
 RISC-V share a device tree, weak memory ordering, a boot handoff in the width the kernel runs in,
 and a page-table shape. x86_64 shares none of those.
 
-This note is what the port learned, in the order a reader needs it. That is how to enter the machine
-and what had to change above `arch/` (very little, with the exceptions listed). Then the three
-things that genuinely do not fit the existing seam, and an honest account of what exists.
+This note is what the port learned, in the order a reader needs it. That is how the machine is
+entered and what had to change above `arch/` (very little, with the exceptions listed). Then the
+three things that genuinely do not fit the existing seam, and an honest account of what exists.
 
 ## Status, and it is a partial port
 
@@ -129,8 +129,8 @@ milestone 161 (the x86_64 kernel port), one file each. None of them is needed to
 
 - Multiboot is still not an option, and nothing here added a header. The refusal in [boot.md](x86-port/boot.md) is a
   property of QEMU's loader rather than of this kernel, so it stands. GRUB Multiboot 2 remains the
-  path for a BIOS-only machine and would cost a header plus a second handoff decoder; it lost on
-  testability when priced against UEFI (`brew info grub`: no formula on this machine at all). See
+  path for a BIOS-only machine and would cost a header plus a second handoff decoder; it was priced
+  against UEFI and lost on testability (`brew info grub`: no formula on this machine at all). See
   notes/x86-uefi-boot.md's fork.
 - The four places the `arch/` contract does not fit x86 are recorded in
   [what-does-not-fit.md](x86-port/what-does-not-fit.md). Two of them are names, and names are

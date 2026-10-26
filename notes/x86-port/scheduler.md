@@ -34,7 +34,7 @@ with the deferral one frame out.
 ### `TSS.RSP0` is recomputed from the frame on every return to ring 3
 
 x86 has two doors into the kernel from ring 3 and they find their stack differently: a trap reads
-`TSS.RSP0`, and `syscall` reads nothing at all and has to learn it separately. With one user program
+`TSS.RSP0`, and `syscall` reads nothing at all and has to be told separately. With one user program
 there was one kernel stack and `ring3_self_test` set both by hand. With a scheduler there is one per
 thread, and the pair has to be re-pointed every time the thread that would come through them changes.
 
@@ -76,8 +76,8 @@ of two answers and is silently wrong when a third exists.
   `arch::mmu::THREAD_STACK_AREA`, and x86's is Linux's `VMALLOC_START`. Found by reading; it would
   have surfaced as `kmem: no memory to wire one`, arbitrarily far from the cause.
 - `crates/elf`'s `EXPECTED_MACHINE`. `#[cfg(not(target_arch = "riscv64"))] EM_AARCH64`, and
-  `not(riscv64)` catches x86_64: the x86 kernel compiled to accept aarch64 binaries and refuse its
-  own. Now a three-arm `cfg`.
+  `not(riscv64)` catches x86_64: the x86 kernel was compiled to accept aarch64 binaries and refuse
+  its own. Now a three-arm `cfg`.
 - `xtask`'s `ArchLegs`. `fn aarch64(self) { self != Riscv64 }`, which answers `true` for every
   leg the moment there is a third variant. Now explicit `matches!`.
 - `smp::bring_up_secondaries`. It computed the secondary entry with `virt_to_phys` *before*
@@ -103,11 +103,11 @@ set empty while `online_count` said one, which the suite caught on its first run
                 two children cost 0 frames the first round and 0 the second (steady state)
 ```
 
-Two children, because the two halves of "a process" fail differently. One comes out of a single
-untyped region (address space, code page, stack page, TCB, two endpoints), receives a capability,
-runs at ring 3 once the scheduler dispatches it, invokes that capability, and exits. The other loads
-from an unmapped address and its death arrives on its supervision endpoint naming the thread, the pc
-and the address. Then both regions are destroyed and the frame count is compared.
+Two children, because the two halves of "a process" fail differently. One is built out of a single
+untyped region (address space, code page, stack page, TCB, two endpoints), granted a capability,
+dispatched to ring 3 by the scheduler, invokes that capability, and exits. The other loads from an
+unmapped address and its death arrives on its supervision endpoint naming the thread, the pc and the
+address. Then both regions are destroyed and the frame count is compared.
 
 The round runs twice, and that is what makes the frame number evidence. A first round pays
 first-use carves that are not leaks; a system in steady state charges the second round zero. Two

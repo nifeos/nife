@@ -85,7 +85,7 @@ Four MSRs are its entire configuration and none has a useful default:
 | `IA32_FMASK` | the `RFLAGS` bits cleared on entry, `IF` among them |
 | `IA32_EFER.SCE` | whether `syscall` is a legal instruction at all, rather than `#UD` |
 
-The kernel enables `SCE` last, so the instruction is legal only after the address it jumps to
+The kernel enables `SCE` last, so the instruction becomes legal only after the address it jumps to
 and the flags it clears are already in place. Three `const` assertions in `exceptions.rs` tie
 `SYSRET_SELECTOR_BASE` to the selectors in `segments.rs`, so changing one file without the other
 stops the build rather than landing a program on the kernel's data segment.
@@ -147,9 +147,9 @@ own return address on the current stack, record that block's address, enter ring
 from the trap handler when the probe finished. It was `switch_to`'s two halves with a ring change in
 the middle, which was not a coincidence.
 
-Roadmap item 4 deleted both, and `ring3_probe.s` with them, which is what the paragraph
-above predicted: a scheduler does with two threads what that pair did with one. What replaced them
-as the tour's proof is a pair of real processes; see [scheduler.md](scheduler.md).
+Roadmap item 4 deleted both, and `ring3_probe.s` with them. That is what the paragraph above
+predicted: a scheduler does with two threads what that pair did with one. What replaced them as the
+tour's proof is a pair of real processes; see [scheduler.md](scheduler.md).
 
 ### Two latent bugs on a path nothing had ever executed
 
@@ -164,6 +164,6 @@ neither could have shown up earlier and both were in code that looked finished:
   both other architectures need one. The thread's `TrapFrame` lives at `top - 176` for the life of the
   thread, and the entry path's own frames start at the same top.
 
-Both have fixes and neither has run yet: that trampoline is the *scheduler's* entry path,
+Both are fixed and both are still unexecuted: that trampoline is the *scheduler's* entry path,
 and the self test enters through `enter_user` directly. They are the argument for reading the two
 halves of a context switch side by side rather than one at a time.
