@@ -37,19 +37,20 @@ the crates the 2026-09-21 triage never reached come first.
 - `pmap` (5, killed): the `MAP_RO` arm, the two refusal arms, and `write_va`'s two comparisons.
   Zero is the case that needed its own test: with `start <= 17` the strip loop eats the last digit
   and prints `0x` alone.
-- `pgrep` (6): `Selector::mask` returning a constant and `selects`'s `state < 64` bound are killed
-  by `the_mask_is_the_named_bits_and_a_wild_code_selects_nothing` (the `<=` mutant shifts by 64 and
-  overflows). The three `|` to `^` mutants in `state::EVERY` are equivalent: the four state bits
-  are disjoint, so OR and XOR agree.
+- `pgrep` (6): `the_mask_is_the_named_bits_and_a_wild_code_selects_nothing` kills `Selector::mask`
+  returning a constant and `selects`'s `state < 64` bound (the `<=` mutant shifts by 64 and
+  overflows). The three `|` to `^` mutants in `state::EVERY` are equivalent: the four state bits are
+  disjoint, so OR and XOR agree.
 
 ## firmware_configuration and sealed_pair
 
 8 missed: 4 killed, 4 equivalent.
 
-- `firmware_configuration`: `DirectoryEntry::is`'s `>` against `>=` is killed by a name that fills
-  all 56 bytes (`a_name_that_fills_the_field_is_compared_without_reading_past_it`; the mutant
-  indexes past the field). The four `|` to `^` mutants in `DmaCommand::read` and `write` are
-  equivalent: `key << 16`, `SELECT` and `READ` or `WRITE` occupy disjoint bits.
+- `firmware_configuration`: a name that fills all 56 bytes
+  (`a_name_that_fills_the_field_is_compared_without_reading_past_it`; the mutant indexes past the
+  field) kills `DirectoryEntry::is`'s `>` against `>=`. The four `|` to `^` mutants in
+  `DmaCommand::read` and `write` are equivalent: `key << 16`, `SELECT` and `READ` or `WRITE` occupy
+  disjoint bits.
 - `sealed_pair` (3, killed): `Unreadable`'s `Display` returning an empty string, `explain`'s
   vouched count (`== Vouch::Yes` against `!=`), and the `!disagreements.is_empty()` guard replaced
   by `true`. The tests are `an_unreadable_pair_says_which_way`, an assertion on the sealed line's
@@ -59,10 +60,10 @@ the crates the 2026-09-21 triage never reached come first.
 
 3 missed: 2 killed, 1 equivalent.
 
-- `uptime`'s `Writer::push_bytes` bound (`<` against `<=`) is killed by writing past the buffer
-  directly; `format` itself can never get there (29 bytes of 40).
-- `loaded_image_check::verify` replaced by `()` is killed by reading the `.bss` marker back, which
-  `verify` sets to 1 and nothing else touches.
+- Writing past the buffer directly kills `uptime`'s `Writer::push_bytes` bound (`<` against `<=`);
+  `format` itself can never get there (29 bytes of 40).
+- Reading back the `.bss` marker, which `verify` sets to 1 and nothing else touches, kills
+  `loaded_image_check::verify` replaced by `()`.
 - `stack_works -> true` is equivalent as a value: every path of the function returns true, and its
   job is to touch stack, which only a run inside the guest can show.
 
