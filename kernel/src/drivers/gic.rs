@@ -198,7 +198,10 @@ pub(crate) fn send_sgi(intid: u32, target_cpu: usize) {
     let guard = GIC.lock();
     let gic = guard.as_ref().expect("gic::send_sgi before gic::init");
 
-    gic.distributor_write32(GICD_SGIR, (1 << (GICD_SGIR_TARGET_SHIFT + target_cpu as u32)) | intid);
+    gic.distributor_write32(
+        GICD_SGIR,
+        (1 << (GICD_SGIR_TARGET_SHIFT + target_cpu as u32)) | intid,
+    );
 }
 
 /// Take the interrupt. **Reading `IAR` is what acknowledges it**, so this has a side effect

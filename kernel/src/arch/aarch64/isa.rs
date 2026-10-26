@@ -10,7 +10,6 @@ use core::sync::atomic::{AtomicU8, AtomicU32, Ordering};
 use machine_discovery::aarch64::{Conduit, Isa, Psci};
 
 use super::instructions;
-
 use crate::sync::{IrqSafeMutex, rank};
 use crate::{print, println};
 

@@ -10,7 +10,6 @@
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use super::instructions;
-
 use crate::cpu::{self, MAX_CPUS};
 
 /// The EL1 **virtual** timer, as a GIC interrupt ID.

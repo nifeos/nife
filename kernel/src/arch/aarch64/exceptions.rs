@@ -5,9 +5,7 @@
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
-use super::instructions;
-
-use super::{irq, timer};
+use super::{instructions, irq, timer};
 use crate::arch::{UserFault, UserFaultAccess};
 use crate::println;
 
@@ -603,7 +601,11 @@ mod tests {
         }
         let expected = (&raw const exception_vectors) as u64;
 
-        assert_eq!(instructions::read_vbar(), expected, "VBAR_EL1 not installed");
+        assert_eq!(
+            instructions::read_vbar(),
+            expected,
+            "VBAR_EL1 not installed"
+        );
         assert_eq!(expected % 2048, 0, "vector table misaligned: {expected:#x}");
     }
 

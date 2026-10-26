@@ -282,7 +282,10 @@ pub(crate) fn init_this_cpu(slot: usize, affinity: u32) {
 
     // Wake it: clear ProcessorSleep, then wait for ChildrenAsleep to clear (Linux
     // `gic_enable_redist`). Until then the redistributor forwards nothing to this core.
-    ctl.write(GICR_WAKER, ctl.read::<u32>(GICR_WAKER) & !GICR_WAKER_PROCESSOR_SLEEP);
+    ctl.write(
+        GICR_WAKER,
+        ctl.read::<u32>(GICR_WAKER) & !GICR_WAKER_PROCESSOR_SLEEP,
+    );
     wait_for_rwp(
         || ctl.read(GICR_WAKER),
         GICR_WAKER_CHILDREN_ASLEEP,
@@ -344,7 +347,11 @@ pub(crate) fn disable(slot: usize, intid: u32) {
     if intid < 32 {
         let (ctl, private) = rd(slot);
         private.write(GICR_ICENABLER0, bit);
-        wait_for_rwp(|| ctl.read(GICR_CTLR), GICR_CTLR_RWP, "redistributor disable");
+        wait_for_rwp(
+            || ctl.read(GICR_CTLR),
+            GICR_CTLR_RWP,
+            "redistributor disable",
+        );
         return;
     }
     let d = gicd();

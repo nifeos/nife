@@ -19,7 +19,6 @@
 use core::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
 use super::instructions;
-
 use crate::cpu::{self, MAX_CPUS};
 
 /// **The value written to `PMCCFILTR_EL0` on every core: zero, so EL0 and EL1 are counted and EL2
