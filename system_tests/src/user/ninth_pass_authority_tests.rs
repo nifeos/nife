@@ -15,10 +15,8 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Object, Rights, memory_region_cap_rights as memory_region_capability_rights};
-use crate::sched::{
-    self, current_cap as current_capability, delete_current_cap as delete_current_capability,
-};
+use crate::capability_object::{Object, Rights, memory_region_capability_rights};
+use crate::sched::{self, current_capability, delete_current_capability};
 use crate::syscall::invoke;
 
 /// `invoke` through the real dispatcher. Copied in shape from `ninth_pass_confinement_tests::call`.

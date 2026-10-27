@@ -16,7 +16,7 @@ use driver_process_contract::extensible_host_controller_interface::{
 };
 
 use super::*;
-use crate::cap::{Rights, interrupt_cap, rendezvous_cap};
+use crate::capability_object::{Rights, interrupt_capability, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Where the driver's register pages are mapped, page `n` of BAR0 at `REGS_VA + n * 4096`. Must
@@ -118,9 +118,9 @@ pub(crate) fn start(
                 arg1: words[1], // its length in pages, and the register page mask
                 arg2: words[2],
                 grants: &[
-                    interrupt_cap(intid),                  // slot 0: the controller's interrupt
-                    rendezvous_cap(attach, Rights::READ),  // slot 1: receive where keystrokes go
-                    rendezvous_cap(report, Rights::WRITE), // slot 2: the one bring-up report
+                    interrupt_capability(intid), // slot 0: the controller's interrupt
+                    rendezvous_capability(attach, Rights::READ), // slot 1: receive where keystrokes go
+                    rendezvous_capability(report, Rights::WRITE), // slot 2: the one bring-up report
                 ],
                 maps: &maps[..n],
             },

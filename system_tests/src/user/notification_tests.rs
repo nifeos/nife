@@ -13,7 +13,7 @@ use abi::Error;
 
 use super::{Spawn, program, run, wait_for};
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Object, Rights};
+use crate::capability_object::{Object, Rights};
 use crate::sched;
 use crate::thread::{Wait, WaitRole};
 
@@ -162,7 +162,7 @@ fn a_signal_counted_while_elsewhere_ends_the_next_receive_at_once() {
         while GO.load(Ordering::SeqCst) == 1 {
             sched::yield_now();
         }
-        let m = sched::ipc_receive_cap(ep);
+        let m = sched::inter_process_communication_receive_capability(ep);
         for (slot, w) in WITH_CAP.iter().zip(m) {
             slot.store(w, Ordering::Relaxed);
         }
@@ -320,21 +320,30 @@ fn bind_is_once_per_side_and_a_destroyed_binding_frees_the_thread() {
 #[test_case]
 fn the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification() {
     let r = region();
-    let ut = sched::grant(crate::cap::memory_region_root_cap(r)).expect("grant the region");
+    let ut = sched::grant(crate::capability_object::memory_region_root_capability(r))
+        .expect("grant the region");
     let (minted, _) = invoke(
         ut,
         abi::memory_region::RETYPE_OBJ,
         abi::objtype::NOTIFICATION,
     );
     let full = minted.expect("RETYPE_OBJ(NOTIFICATION)") as u64;
-    let cap = sched::current_cap(full).expect("the minted slot");
+    let cap = sched::current_capability(full).expect("the minted slot");
     let Object::Notification(id) = cap.object else {
         panic!("RETYPE_OBJ(NOTIFICATION) minted {:?}", cap.object);
     };
     assert_eq!(cap.rights, Rights::ALL);
 
-    let read = sched::grant(crate::cap::notification_cap(id, Rights::READ)).expect("read view");
-    let write = sched::grant(crate::cap::notification_cap(id, Rights::WRITE)).expect("write view");
+    let read = sched::grant(crate::capability_object::notification_capability(
+        id,
+        Rights::READ,
+    ))
+    .expect("read view");
+    let write = sched::grant(crate::capability_object::notification_capability(
+        id,
+        Rights::WRITE,
+    ))
+    .expect("write view");
 
     assert_eq!(
         invoke(read, abi::notification::SIGNAL, 1).0,
@@ -365,7 +374,7 @@ fn the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification() {
     );
 
     for slot in [write, read, full, ut] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     reclaim(r);
 }
@@ -401,13 +410,16 @@ fn a_kernel_signal_ends_an_interrupt_wait_with_the_word_in_x1_and_the_tag_in_x4(
     };
 
     let driver = sched::spawn(move || {
-        let slot = sched::grant(crate::cap::interrupt_cap_rights(QUIET_INTID, Rights::READ))
-            .expect("grant the interrupt");
+        let slot = sched::grant(crate::capability_object::interrupt_capability_rights(
+            QUIET_INTID,
+            Rights::READ,
+        ))
+        .expect("grant the interrupt");
         let (answer, frame) = invoke(slot, abi::interrupt::WAIT, 0);
         RESULT[0].store(answer.map_or(u64::MAX - 1, |v| v as u64), Ordering::SeqCst);
         RESULT[1].store(frame.arg(1), Ordering::SeqCst);
         RESULT[2].store(frame.arg(4), Ordering::SeqCst);
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     })
     .expect("spawn the driver");
 
@@ -455,10 +467,10 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    crate::cap::memory_region_lending_capability(budget),
-                    crate::cap::thread_control_block_cap(me, Rights::WRITE),
-                    crate::cap::rendezvous_cap(ep, Rights::READ),
-                    crate::cap::rendezvous_cap(report, Rights::WRITE),
+                    crate::capability_object::memory_region_lending_capability(budget),
+                    crate::capability_object::thread_control_block_capability(me, Rights::WRITE),
+                    crate::capability_object::rendezvous_capability(ep, Rights::READ),
+                    crate::capability_object::rendezvous_capability(report, Rights::WRITE),
                 ],
                 maps: &[],
             },
@@ -467,13 +479,13 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
     .expect("spawn the binder");
 
     // The delegation: a WRITE-only notification capability, landed in this thread's table.
-    let [_, slot, ..] = sched::ipc_receive_cap(report);
+    let [_, slot, ..] = sched::inter_process_communication_receive_capability(report);
     assert_ne!(
         slot,
         abi::rendezvous::NO_CAP,
         "the binder's checks failed before delegating"
     );
-    let cap = sched::current_cap(slot).expect("delegated slot");
+    let cap = sched::current_capability(slot).expect("delegated slot");
     let Object::Notification(n) = cap.object else {
         panic!("the binder delegated {:?}", cap.object);
     };
@@ -500,7 +512,7 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
         [abi::notification::BOUND, 0xbad, 0],
         "a sender that put BOUND in w0 was taken for a notification"
     );
-    let _ = sched::delete_current_cap(slot);
+    let _ = sched::delete_current_capability(slot);
     let _ = n;
     reclaim(budget);
 }

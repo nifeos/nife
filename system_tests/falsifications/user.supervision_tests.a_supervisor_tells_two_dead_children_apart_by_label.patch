@@ -23,7 +23,7 @@ index a2b41ef76..676c60bf3 100644
 --- a/kernel/src/sched/thread_control_block.rs
 +++ b/kernel/src/sched/thread_control_block.rs
 @@ -171,7 +171,7 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
-         && let crate::cap::Object::Rendezvous(ep, label) = fault_cap.object
+         && let crate::capability_object::Object::Rendezvous(ep, label) = fault_capability.object
      {
          t.fault_ep = Some(ep);
 -        t.fault_label = label;

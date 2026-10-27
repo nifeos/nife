@@ -131,23 +131,30 @@ fn spawn_swapper(role: u64) -> (sched::RendezvousId, u64, u64, u64) {
     let started = spawn_progenitor_shaped(
         "swapper",
         SWAPPER_BUDGET_PAGES,
-        crate::cap::Rights::ALL,
+        crate::capability_object::Rights::ALL,
         report,
-        crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+        crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
         &[
             (
-                crate::cap::device_frame_cap(
+                crate::capability_object::device_frame_capability(
                     UART_PHYS,
-                    crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+                    crate::capability_object::Rights::WRITE
+                        .union(crate::capability_object::Rights::GRANT),
                 ),
                 "device capability",
             ),
             (
-                crate::cap::notification_cap(wake, crate::cap::Rights::ALL),
+                crate::capability_object::notification_capability(
+                    wake,
+                    crate::capability_object::Rights::ALL,
+                ),
                 "notification",
             ),
             (
-                crate::cap::timer_cap(retransmit, crate::cap::Rights::ALL),
+                crate::capability_object::timer_capability(
+                    retransmit,
+                    crate::capability_object::Rights::ALL,
+                ),
                 "timer",
             ),
         ],

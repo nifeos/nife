@@ -33,7 +33,7 @@
 mod arch;
 #[cfg(feature = "bench")]
 mod bench;
-mod cap;
+mod capability_object;
 mod console;
 mod cpu;
 mod drivers;
@@ -196,8 +196,8 @@ pub mod system_test_access {
     pub mod arch {
         pub use crate::arch::*;
     }
-    pub mod cap {
-        pub use crate::cap::*;
+    pub mod capability_object {
+        pub use crate::capability_object::*;
     }
     pub mod console {
         pub use crate::console::*;

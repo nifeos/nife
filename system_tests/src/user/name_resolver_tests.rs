@@ -21,7 +21,9 @@ use domain_name_resolution_contract::{
 };
 
 use super::*;
-use crate::cap::{Rights, memory_region_lending_capability, rendezvous_cap, rendezvous_cap_badged};
+use crate::capability_object::{
+    Rights, memory_region_lending_capability, rendezvous_capability, rendezvous_capability_badged,
+};
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
@@ -129,10 +131,10 @@ pub(super) fn start_resolver(
                 // own capability)).
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(service, Rights::READ), // slot 0: grants and requests
-                    rendezvous_cap(stack, Rights::WRITE),  // slot 1: the network
-                    memory_region_lending_capability(budget), // slot 2: the pages
-                    rendezvous_cap(entropy, Rights::WRITE), // slot 3: transaction ids
+                    rendezvous_capability(service, Rights::READ), // slot 0: grants and requests
+                    rendezvous_capability(stack, Rights::WRITE),  // slot 1: the network
+                    memory_region_lending_capability(budget),     // slot 2: the pages
+                    rendezvous_capability(entropy, Rights::WRITE), // slot 3: transaction ids
                 ],
                 maps: &maps[..RESOLVER_STACK_PAGES as usize],
             },
@@ -175,10 +177,10 @@ fn start_client(
     let image = image("name_resolver_test_client");
     let tid = crate::sched::spawn(move || {
         let grants = [
-            rendezvous_cap(report, Rights::WRITE), // slot 0
-            rendezvous_cap_badged(service, Rights::WRITE, badge as u64), // slot 1
-            memory_region_lending_capability(budget), // slot 2
-            rendezvous_cap(stack.unwrap_or(report), Rights::WRITE), // slot 3
+            rendezvous_capability(report, Rights::WRITE), // slot 0
+            rendezvous_capability_badged(service, Rights::WRITE, badge as u64), // slot 1
+            memory_region_lending_capability(budget),     // slot 2
+            rendezvous_capability(stack.unwrap_or(report), Rights::WRITE), // slot 3
         ];
         run(
             image,

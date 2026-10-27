@@ -654,26 +654,30 @@ fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> 
 /// Address and data first, enable last, so no half-written message is ever live; one vector
 /// (Multiple Message Enable left 0), because one is what every driver here asks for.
 fn program_msi(bdf: Bdf, target: pci::MsiTarget) -> bool {
-    let Some(cap) = pci::msi_capability(bdf, &mut |b, o| cfg_read32(b, o)) else {
+    let Some(capability) = pci::msi_capability(bdf, &mut |b, o| cfg_read32(b, o)) else {
         return false;
     };
-    cfg_write32(bdf, cap.address_low(), target.address as u32);
-    if cap.is_64 {
-        cfg_write32(bdf, cap.address_low() + 4, (target.address >> 32) as u32);
+    cfg_write32(bdf, capability.address_low(), target.address as u32);
+    if capability.is_64 {
+        cfg_write32(
+            bdf,
+            capability.address_low() + 4,
+            (target.address >> 32) as u32,
+        );
     }
     // The data register is 16 bits, and the dword holding it has the (64-bit) layout's reserved
     // half or the next register above it; a read-modify-write keeps whichever it is.
-    let old = cfg_read32(bdf, cap.data());
+    let old = cfg_read32(bdf, capability.data());
     cfg_write32(
         bdf,
-        cap.data(),
+        capability.data(),
         (old & 0xffff_0000) | (target.data & 0xffff),
     );
-    let head = cfg_read32(bdf, cap.capability_offset);
+    let head = cfg_read32(bdf, capability.capability_offset);
     let control = ((head >> 16) as u16 & !(0x7 << 4)) | pci::MSI_ENABLE;
     cfg_write32(
         bdf,
-        cap.capability_offset,
+        capability.capability_offset,
         (head & 0xffff) | (control as u32) << 16,
     );
     true
@@ -710,7 +714,7 @@ fn intx_intid(bdf: Bdf) -> Option<u32> {
 /// Function Mask cleared explicitly because some parts set it at reset. See notes/pcie.md,
 /// "Placing BARs, and routing interrupts".
 fn program_msix(bdf: Bdf, bars: &[Option<Bar>; 6], target: pci::MsiTarget) -> Option<u16> {
-    let Some(cap) = pci::msix_capability(bdf, &mut |b, o| cfg_read32(b, o)) else {
+    let Some(capability) = pci::msix_capability(bdf, &mut |b, o| cfg_read32(b, o)) else {
         crate::println!(
             "  pci: the function at {:02x}:{:02x}.{} declares no MSI-X, and this machine has no \
              other route for a PCI interrupt",
@@ -722,19 +726,19 @@ fn program_msix(bdf: Bdf, bars: &[Option<Bar>; 6], target: pci::MsiTarget) -> Op
     };
 
     // Entry 0: every device this tree attaches uses a single queue's completion.
-    let bar = bars.get(cap.table_bar as usize)?.as_ref()?;
-    let entry = u64::from(cap.table_offset);
+    let bar = bars.get(capability.table_bar as usize)?.as_ref()?;
+    let entry = u64::from(capability.table_offset);
     if entry + pci::MSIX_ENTRY_BYTES > bar.size {
         crate::println!(
             "  pci: the MSI-X table of the function at {:02x} does not fit its own BAR{}",
             bdf.dev,
-            cap.table_bar,
+            capability.table_bar,
         );
         return None;
     }
     let at = mmu::phys_to_virt(bar.base + entry);
 
-    // SAFETY: `at` is inside BAR `cap.table_bar`, which `place_bars` put inside the window
+    // SAFETY: `at` is inside BAR `capability.table_bar`, which `place_bars` put inside the window
     // `mmu::map_everything` maps as device memory, and the bounds check above keeps all sixteen
     // bytes inside it. The four words are the specified layout of one MSI-X table entry.
     unsafe {
@@ -747,11 +751,11 @@ fn program_msix(bdf: Bdf, bars: &[Option<Bar>; 6], target: pci::MsiTarget) -> Op
     // Message Control is the upper half of the capability's first dword, so it is written back
     // with the (read-only) id and next-pointer bytes underneath it, which is what a 32-bit config
     // write to a capability header means.
-    let head = cfg_read32(bdf, cap.capability_offset);
+    let head = cfg_read32(bdf, capability.capability_offset);
     let control = ((head >> 16) as u16 | pci::MSIX_ENABLE) & !pci::MSIX_FUNCTION_MASK;
     cfg_write32(
         bdf,
-        cap.capability_offset,
+        capability.capability_offset,
         (head & 0xffff) | ((control as u32) << 16),
     );
 
@@ -905,15 +909,18 @@ pub(crate) fn find_xhci_device() -> Option<PciXhciDevice> {
     // uses MSI-X: a driver that could write the table could enable and aim it, whatever this
     // kernel chose.
     let mut withheld = [(0, 0); 2];
-    if let Some(cap) = pci::msix_capability(bdf, &mut |b, o| cfg_read32(b, o)) {
-        if cap.table_bar == 0 {
-            let at = u64::from(cap.table_offset);
-            withheld[0] = (at, at + u64::from(cap.table_size) * pci::MSIX_ENTRY_BYTES);
+    if let Some(capability) = pci::msix_capability(bdf, &mut |b, o| cfg_read32(b, o)) {
+        if capability.table_bar == 0 {
+            let at = u64::from(capability.table_offset);
+            withheld[0] = (
+                at,
+                at + u64::from(capability.table_size) * pci::MSIX_ENTRY_BYTES,
+            );
         }
-        if cap.pba_bar == 0 {
-            let at = u64::from(cap.pba_offset);
+        if capability.pba_bar == 0 {
+            let at = u64::from(capability.pba_offset);
             // One bit per entry, in whole quadwords.
-            withheld[1] = (at, at + u64::from(cap.table_size).div_ceil(64) * 8);
+            withheld[1] = (at, at + u64::from(capability.table_size).div_ceil(64) * 8);
         }
     }
 

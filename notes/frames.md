@@ -146,7 +146,7 @@ else, and the program is handed a budget to reach it with:
 
 ```rust
 crate::sched::grant_at(SURVEY_SLOT_BUDGET, untyped_cap(budget))?;
-crate::sched::grant_at(SURVEY_SLOT_ROSTER, page_frame_cap(roster_phys, Rights::READ))?;
+crate::sched::grant_at(SURVEY_SLOT_ROSTER, page_frame_capability(roster_phys, Rights::READ))?;
 run(surveyor_image, Spawn { arg0: ROLE_SURVEY, grants: &[], maps: &stack, .. })
 ```
 

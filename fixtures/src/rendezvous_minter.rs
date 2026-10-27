@@ -12,7 +12,7 @@
 //! Name: provisional (milestone 291). This was `hello`'s `EP_MAKER` role, number 17. `ep` is an
 //! abbreviation that needs a decoder, which is the first of AGENTS.md's three naming failure
 //! modes, and the object's own name in this tree is `RENDEZVOUS` (`abi::objtype::RENDEZVOUS`,
-//! `rendezvous_cap`). Refused `rendezvous_maker`: "minting" is the word this tree already uses for
+//! `rendezvous_capability`). Refused `rendezvous_maker`: "minting" is the word this tree already uses for
 //! creating a capability out of a budget, and it appears in the kernel test's own sentence.
 
 #![no_std]

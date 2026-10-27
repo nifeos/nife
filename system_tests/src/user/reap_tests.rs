@@ -3,7 +3,7 @@ use abi::fault::{EVENT_EXIT, EVENT_FAULT};
 
 use super::supervision_tests::{FAULT_STUB, REPORT_STUB, REPORT_WORD, build_child_in};
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Object, Rights};
+use crate::capability_object::{Object, Rights};
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -47,7 +47,11 @@ fn rendezvous(region: u64) -> sched::RendezvousId {
 /// receive deaths here. No `WRITE` (it is not a sender on its own children's death channel) and
 /// no `GRANT`.
 fn hold_rendezvous(ep: sched::RendezvousId) -> u64 {
-    sched::grant(crate::cap::rendezvous_cap(ep, Rights::READ)).expect("grant the rendezvous")
+    sched::grant(crate::capability_object::rendezvous_capability(
+        ep,
+        Rights::READ,
+    ))
+    .expect("grant the rendezvous")
 }
 
 /// `invoke(cap, REAP, tid, _, _)`, through the real dispatcher.
@@ -97,7 +101,7 @@ fn receive_death(slot: u64) -> [u64; 5] {
 /// process a capability lands it in a slot.
 fn occupied_slots() -> usize {
     (0..abi::CAPABILITY_TABLE_SLOTS)
-        .filter(|&s| sched::current_cap(s).is_ok())
+        .filter(|&s| sched::current_capability(s).is_ok())
         .count()
 }
 
@@ -114,7 +118,7 @@ fn occupied_slots() -> usize {
 fn assert_can_only_supervise(expected: &[u64]) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     for slot in 0..abi::CAPABILITY_TABLE_SLOTS {
-        match sched::current_cap(slot) {
+        match sched::current_capability(slot) {
             Err(_) => {
                 for objtype in [
                     abi::objtype::THREAD_CONTROL_BLOCK,
@@ -156,7 +160,7 @@ fn assert_can_only_supervise(expected: &[u64]) {
 /// attached to.
 fn tidy(budget: u64, rendezvous_region: u64, slots: &[u64]) {
     for &s in slots {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     sched::reclaim_region(budget).expect("the builder's own budget did not come back");
     sched::reclaim_region(rendezvous_region)

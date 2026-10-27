@@ -25,7 +25,7 @@ use abi::Error;
 use abi::fault::{EVENT_FAULT, FAULT_EP_SLOT};
 
 use super::*;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -105,10 +105,22 @@ fn count(page: u64) -> u64 {
 fn start_reader(region: u64) -> (u64, u64, u64, u64, u64) {
     let name = user_address_space_create(region).expect("no address space");
     let page = lay_out(region, name, READER_STUB, true);
-    let kept = sched::grant(crate::cap::address_space_cap(name, Rights::WRITE)).expect("grant");
-    let given = sched::grant(crate::cap::address_space_cap(name, Rights::WRITE)).expect("grant");
+    let kept = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::WRITE,
+    ))
+    .expect("grant");
+    let given = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::WRITE,
+    ))
+    .expect("grant");
     let tid = sched::create_thread_control_block(region).expect("no tcb");
-    let tcb = sched::grant(crate::cap::thread_control_block_cap(tid, Rights::ALL)).expect("grant");
+    let tcb = sched::grant(crate::capability_object::thread_control_block_capability(
+        tid,
+        Rights::ALL,
+    ))
+    .expect("grant");
     assert_eq!(
         call(
             tcb,
@@ -121,7 +133,7 @@ fn start_reader(region: u64) -> (u64, u64, u64, u64, u64) {
         "premise: CONFIGURE refused the reader's space, or did not answer its current-CPU page",
     );
     assert!(
-        sched::current_cap(given).is_err(),
+        sched::current_capability(given).is_err(),
         "CONFIGURE no longer consumes the capability it is passed, which §249 kept",
     );
     sched::start_thread_control_block(tid, [VA, 0, 0]).expect("start");
@@ -170,7 +182,7 @@ fn unmap_through_a_copy_made_before_configure_faults_the_running_thread() {
     );
 
     for s in [kept, tcb] {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     sched::reclaim_region(region).expect("the reader's region did not come back");
 }
@@ -227,12 +239,15 @@ fn unmap_on_another_core_faults_a_reader_spinning_on_the_page() {
                 UNMAP_RESULT.store(STOOD_DOWN, Ordering::Release);
                 return;
             }
-            let slot = sched::grant(crate::cap::address_space_cap(name, Rights::WRITE))
-                .expect("grant the unmapper its capability");
+            let slot = sched::grant(crate::capability_object::address_space_capability(
+                name,
+                Rights::WRITE,
+            ))
+            .expect("grant the unmapper its capability");
             READER_CPU_AT_UNMAP.store(theirs.map_or(u64::MAX - 1, |c| c as u64), Ordering::Relaxed);
             UNMAPPER_CPU.store(me as u64, Ordering::Relaxed);
             let r = call(slot, abi::address_space::UNMAP, VA, 0, 0);
-            let _ = sched::delete_current_cap(slot);
+            let _ = sched::delete_current_capability(slot);
             UNMAP_RESULT.store(if r == Ok(0) { 0 } else { 1 }, Ordering::Release);
         })
         .expect("spawn the unmapper");
@@ -278,7 +293,7 @@ fn unmap_on_another_core_faults_a_reader_spinning_on_the_page() {
     );
 
     for s in [kept, tcb] {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     sched::reclaim_region(region).expect("the reader's region did not come back");
 }
@@ -296,12 +311,24 @@ fn unmap_on_another_core_faults_a_reader_spinning_on_the_page() {
 fn a_second_bind_of_a_bound_space_is_refused() {
     let region = crate::memory_region::create(16).expect("no region");
     let name = user_address_space_create(region).expect("no address space");
-    let first = sched::grant(crate::cap::address_space_cap(name, Rights::WRITE)).expect("grant");
-    let second = sched::grant(crate::cap::address_space_cap(name, Rights::WRITE)).expect("grant");
+    let first = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::WRITE,
+    ))
+    .expect("grant");
+    let second = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::WRITE,
+    ))
+    .expect("grant");
     let mut tcbs = [0; 2];
     for t in tcbs.iter_mut() {
         let tid = sched::create_thread_control_block(region).expect("no tcb");
-        *t = sched::grant(crate::cap::thread_control_block_cap(tid, Rights::ALL)).expect("grant");
+        *t = sched::grant(crate::capability_object::thread_control_block_capability(
+            tid,
+            Rights::ALL,
+        ))
+        .expect("grant");
     }
     let configure = |tcb, aspace| {
         call(
@@ -324,12 +351,12 @@ fn a_second_bind_of_a_bound_space_is_refused() {
         "a second holder was bound to a space that already has one",
     );
     assert!(
-        sched::current_cap(second).is_ok(),
+        sched::current_capability(second).is_ok(),
         "a refused CONFIGURE consumed the capability it refused",
     );
 
     for s in [second, tcbs[0], tcbs[1]] {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     sched::reclaim_region(region).expect("the region did not come back");
     assert!(
@@ -355,7 +382,7 @@ fn a_bound_space_dies_with_its_thread_not_with_its_capabilities() {
     let region = crate::memory_region::create(16).expect("no region");
     let (tid, name, kept, tcb, page) = start_reader(region);
 
-    let _ = sched::delete_current_cap(kept);
+    let _ = sched::delete_current_capability(kept);
     let after = count(page);
     assert!(
         wait_for(2, || count(page) > after),
@@ -378,7 +405,11 @@ fn a_bound_space_dies_with_its_thread_not_with_its_capabilities() {
         user_address_space_root(name).is_none(),
         "a space outlived the thread it was bound to: the reaper did not take it from the registry",
     );
-    let late = sched::grant(crate::cap::address_space_cap(name, Rights::WRITE)).expect("grant");
+    let late = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::WRITE,
+    ))
+    .expect("grant");
     assert_eq!(
         call(late, abi::address_space::UNMAP, VA, 0, 0),
         Err(Error::BadPointer),
@@ -386,7 +417,7 @@ fn a_bound_space_dies_with_its_thread_not_with_its_capabilities() {
     );
 
     for s in [late, tcb] {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     sched::reclaim_region(region).expect("the reader's region did not come back");
 }
@@ -418,9 +449,9 @@ fn a_corpse_does_not_keep_a_space_rooted_in_a_destroyed_region() {
         false,
     );
     let tid = sched::create_thread_control_block(tcb_region).expect("no tcb");
-    sched::thread_control_block_insert_cap(
+    sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::rendezvous_cap(supervisor, Rights::READ),
+        crate::capability_object::rendezvous_capability(supervisor, Rights::READ),
         Some(FAULT_EP_SLOT),
     )
     .expect("insert the supervision endpoint");
@@ -513,19 +544,19 @@ fn start_witness(own_space: bool) -> (u64, sched::RendezvousId, [u64; 4]) {
     let tcb_region = crate::memory_region::create(2).expect("no tcb region");
     let tid = sched::create_thread_control_block(tcb_region).expect("no tcb");
     let caps = [
-        crate::cap::memory_region_lending_capability(budget),
-        crate::cap::rendezvous_cap(report, Rights::WRITE),
-        crate::cap::memory_region_cap(tables),
+        crate::capability_object::memory_region_lending_capability(budget),
+        crate::capability_object::rendezvous_capability(report, Rights::WRITE),
+        crate::capability_object::memory_region_capability(tables),
     ];
     for (want, cap) in caps.into_iter().enumerate() {
-        let slot = sched::thread_control_block_insert_cap(tid, cap, Some(want as u64))
+        let slot = sched::thread_control_block_insert_capability(tid, cap, Some(want as u64))
             .expect("insert a witness capability");
         assert_eq!(slot, want as u64);
     }
     if own_space {
-        sched::thread_control_block_insert_cap(
+        sched::thread_control_block_insert_capability(
             tid,
-            crate::cap::address_space_cap(name, Rights::WRITE),
+            crate::capability_object::address_space_capability(name, Rights::WRITE),
             Some(3),
         )
         .expect("insert the witness's own space");

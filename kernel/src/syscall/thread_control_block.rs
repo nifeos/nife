@@ -7,7 +7,7 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Object, Rights};
+use crate::capability_object::{Object, Rights};
 use crate::sched;
 
 /// Decode a `ThreadControlBlock` method on the thread `tid` and run it, out of line like every
@@ -39,7 +39,7 @@ pub(super) fn thread_control_block_invoke(
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
-            thread_control_block_cap_insert(tid, a0, a1, a2)
+            thread_control_block_capability_insert(tid, a0, a1, a2)
         }
         abi::thread_control_block::START => {
             if !rights.allows(Rights::WRITE) {
@@ -78,7 +78,7 @@ fn thread_control_block_configure(
     aspace_slot: u64,
     thread_pointer: u64,
 ) -> Result<i64, Error> {
-    let aspace = sched::current_cap(aspace_slot).map_err(|_| Error::NoSuchSlot)?;
+    let aspace = sched::current_capability(aspace_slot).map_err(|_| Error::NoSuchSlot)?;
     let aspace_name = match aspace.object {
         Object::AddressSpace(name) => name,
         Object::Process(pid) => {
@@ -110,7 +110,7 @@ fn thread_control_block_configure(
     // space stays nameable)), and keeping one past `START` is retaining authority over the child
     // (§142 (what a spawner retains over a child after `START`)). A second bind through another
     // copy is refused by the registry.
-    let _ = sched::delete_current_cap(aspace_slot);
+    let _ = sched::delete_current_capability(aspace_slot);
     Ok(page as i64)
 }
 
@@ -130,7 +130,7 @@ fn thread_control_block_set_thread_pointer(
 /// to `rights`, at `target` (0 the first free slot, n slot n - 1, so a supervisor can place a fault
 /// endpoint in the reserved slot). Needs `GRANT` and only narrows, as `SEND_CAP`. Returns the slot.
 #[inline(never)]
-fn thread_control_block_cap_insert(
+fn thread_control_block_capability_insert(
     tid: crate::thread::ThreadId,
     src_slot: u64,
     rights: u64,
@@ -140,7 +140,7 @@ fn thread_control_block_cap_insert(
     // Read and checked inside `sched`, under the hold that files the copy (`sched::Delegation`).
     #[cfg(feature = "system_tests")]
     crate::delegation_pause::here(); // no lock held
-    let child_slot = sched::thread_control_block_delegate_cap(
+    let child_slot = sched::thread_control_block_delegate_capability(
         tid,
         sched::Delegation {
             slot: src_slot,

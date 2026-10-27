@@ -67,7 +67,7 @@ honors that (`split_never_widens_rights`), and milestone 824 (a retype mints no 
 lacks) makes `RETYPE` and `RETYPE_OBJ` honor it too.
 
 The test uses two `GRANT`-less budgets: `WRITE` alone, and `SPEND_ONLY`, which is every right but
-`GRANT` and is what `memory_region_cap` hands a leaf. The frame and every object kind come back with
+`GRANT` and is what `memory_region_capability` hands a leaf. The frame and every object kind come back with
 exactly the budget's rights. The process is retyped around the address space just made. The frame
 cannot be passed on: `PageFrame::SLICE` is the one delegating method that does not block, and it is
 refused `NotPermitted` for want of `GRANT`.

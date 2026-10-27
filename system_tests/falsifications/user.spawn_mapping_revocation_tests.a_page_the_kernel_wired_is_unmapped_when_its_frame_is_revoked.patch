@@ -81,7 +81,7 @@ index cfbbee0b7..f3a7b8f9b 100644
 +            "record B",
 +        );
  
-         let slot = crate::sched::grant(page_frame_run_cap(
+         let slot = crate::sched::grant(page_frame_run_capability(
              run[0],
 @@ -1188,6 +1196,15 @@ mod tests {
                  PageMapSource::Capability(run[0]),
@@ -156,7 +156,7 @@ index cfbbee0b7..f3a7b8f9b 100644
 +            "record",
 +        );
  
-         let run_slot = crate::sched::grant(page_frame_run_cap(
+         let run_slot = crate::sched::grant(page_frame_run_capability(
              run[0],
 @@ -1359,6 +1407,14 @@ mod tests {
              PageMapSource::NoCapability,
