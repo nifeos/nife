@@ -313,7 +313,7 @@ fn shell_grants(
 /// testing a terminal nobody has.
 pub fn transcript(w: &Wiring, sentinel: &[u8], out: &mut [u8]) -> usize {
     loop {
-        let m = crate::sched::ipc_receive_capability(w.term);
+        let m = crate::sched::inter_process_communication_receive_capability(w.term);
         let (w0, slot) = (m[0], m[1]);
         let crate::capability_object::Object::Reply(caller) =
             crate::sched::current_capability(slot)
@@ -458,7 +458,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         // one, and receiving it anyway is what keeps the two sides in lockstep if one ever
         // does. `user/src/system_initializer.rs` is where a budget actually reaches a child.
         if grant_plan::spawnproto::memory_grant_pages(w2) > 0 {
-            let m = crate::sched::ipc_receive_capability(spawn_ep);
+            let m = crate::sched::inter_process_communication_receive_capability(spawn_ep);
             let _ = crate::sched::delete_current_capability(m[1]);
         }
 
@@ -527,7 +527,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
 /// away: what the progenitor needs is the *name* of the rendezvous, and holding the capability
 /// afterwards would fill a capability table over a long session for nothing.
 fn take_rendezvous(ep: RendezvousId) -> Option<RendezvousId> {
-    let m = crate::sched::ipc_receive_capability(ep);
+    let m = crate::sched::inter_process_communication_receive_capability(ep);
     let slot = m[1];
     let cap = crate::sched::current_capability(slot).ok()?;
     let _ = crate::sched::delete_current_capability(slot);

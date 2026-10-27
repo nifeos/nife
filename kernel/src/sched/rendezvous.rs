@@ -419,7 +419,7 @@ pub(super) fn hand_over_label(receiver: &crate::thread::Thread, label: u64) {
 /// `CALL` server can tell a Reply from a delegation), DECISIONS §245 (a `CALL` server tells a Reply
 /// from a delegation)): `abi::rendezvous::REPLY_DELIVERED` when the Reply was installed, `0` when
 /// the receiver's table was full and there is no Reply to name. Written only on the two paths a
-/// `CALL` reaches a receiver (`ipc_call_badged`'s rendezvous and `ipc_receive_capability`'s collect of a
+/// `CALL` reaches a receiver (`ipc_call_badged`'s rendezvous and `inter_process_communication_receive_capability`'s collect of a
 /// parked caller), so a `SEND_CAP` delegation, which reaches the same `x1`, never carries it.
 #[inline(always)]
 pub(super) fn reply_tag(slot: u64) -> u64 {
@@ -435,19 +435,20 @@ pub(super) fn reply_tag(slot: u64) -> u64 {
 /// A receiver parked in `RECEIVE_CAP` gets the capability filed in its table and the slot in its
 /// mailbox, and is woken; a plain `RECEIVE` gets the data word and no capability. Otherwise the
 /// word and the capability are parked for a later receiver. A full receiver table drops the
-/// capability and reports `NO_CAP`. A copy of a held capability goes through [`ipc_delegate_capability`]
+/// capability and reports `NO_CAP`. A copy of a held capability goes through [`inter_process_communication_delegate_capability`]
 /// ([`Delegation`]); only system tests call this, hence the `allow`.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
-/// `ipc_send_capability` under the capability ruling of 2026-10-06 (UTC).
+/// `inter_process_communication_send_capability` under the capability ruling of 2026-10-06 (UTC).
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn ipc_send_capability(
+pub fn inter_process_communication_send_capability(
     ep: RendezvousId,
     data: u64,
     capability: crate::capability_object::Cap,
     badge: u64,
 ) {
-    let sent = ipc_send_capability_from(ep, data, badge, |_, _| Ok(capability));
+    let sent =
+        inter_process_communication_send_capability_from(ep, data, badge, |_, _| Ok(capability));
     debug_assert!(sent.is_ok(), "a minted capability has no source to lose");
 }
 
@@ -456,13 +457,13 @@ pub fn ipc_send_capability(
 /// revocation sweep can fall between the read and the filing ([`Delegation`]). `Err` is the source's
 /// answer (`NoSuchSlot`, `NotPermitted`), with nothing sent; a stale or refusing rendezvous is
 /// reported as before, through `take_ipc_aborted`. Name provisional.
-pub(crate) fn ipc_delegate_capability(
+pub(crate) fn inter_process_communication_delegate_capability(
     ep: RendezvousId,
     data: u64,
     delegation: Delegation,
     badge: u64,
 ) -> Result<(), abi::Error> {
-    ipc_send_capability_from(ep, data, badge, |sched, current| {
+    inter_process_communication_send_capability_from(ep, data, badge, |sched, current| {
         let table = sched
             .threads
             .capabilities(current)
@@ -471,10 +472,10 @@ pub(crate) fn ipc_delegate_capability(
     })
 }
 
-/// The body [`ipc_send_capability`] and [`ipc_delegate_capability`] share. `source` runs first, under the hold,
+/// The body [`inter_process_communication_send_capability`] and [`inter_process_communication_delegate_capability`] share. `source` runs first, under the hold,
 /// and its error returns before the rendezvous is touched, which is the order the syscall layer
 /// answered in when it read the source itself.
-pub(super) fn ipc_send_capability_from(
+pub(super) fn inter_process_communication_send_capability_from(
     ep: RendezvousId,
     data: u64,
     badge: u64,
@@ -544,8 +545,8 @@ pub(super) fn ipc_send_capability_from(
 /// table is full (the receiver still gets the data words). Caller holds `IPC_TABLES`; this takes the
 /// table's own lock beneath it (rank 60 then 57, `sync::rank::CAPABILITY_TABLE`).
 ///
-/// **Out of line, one copy for the three delivering paths** (`ipc_send_capability`, `ipc_call`'s hand-off
-/// to a waiting server, and `ipc_receive_capability`'s collect): inlined, the second lock's mask, rank
+/// **Out of line, one copy for the three delivering paths** (`inter_process_communication_send_capability`, `ipc_call`'s hand-off
+/// to a waiting server, and `inter_process_communication_receive_capability`'s collect): inlined, the second lock's mask, rank
 /// check and release grew both fastpath closures past their band. Name provisional.
 #[inline(never)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
@@ -560,7 +561,7 @@ pub(super) fn deliver_capability(
     table.lock().insert(capability).unwrap_or(NO_CAP)
 }
 
-/// **Receive a data word and, if one was sent, a capability.** The mirror of [`ipc_send_capability`], and
+/// **Receive a data word and, if one was sent, a capability.** The mirror of [`inter_process_communication_send_capability`], and
 /// the receiver's half of delegation. Returns `[data, received_slot, w1, badge]`, where
 /// `received_slot` is where an incoming capability landed in *our* capability table, or [`NO_CAP`]
 /// if the message carried none, and `badge` is the badge on the endpoint capability the sender
@@ -570,12 +571,12 @@ pub(super) fn deliver_capability(
 /// may arrive first, exactly as with the plain path.
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
-/// `ipc_receive_capability` under the capability ruling of 2026-10-06 (UTC).
+/// `inter_process_communication_receive_capability` under the capability ruling of 2026-10-06 (UTC).
 #[cfg_attr(
     target_os = "none",
-    unsafe(link_section = ".text.hot.sched.ipc_receive_capability")
+    unsafe(link_section = ".text.hot.sched.inter_process_communication_receive_capability")
 )]
-pub fn ipc_receive_capability(ep: RendezvousId) -> [u64; 5] {
+pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64; 5] {
     let immediate = {
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().expect("no scheduler");
@@ -691,7 +692,7 @@ pub fn ipc_receive_capability(ep: RendezvousId) -> [u64; 5] {
 /// **Call: send two words `msg` to `ep` and block until replied**, returning the reply's words.
 ///
 /// The kernel mints a one-shot `Reply` naming this caller and hands it to the server through
-/// [`ipc_receive_capability`], and the caller is reachable only through it (DECISIONS §12). See
+/// [`inter_process_communication_receive_capability`], and the caller is reachable only through it (DECISIONS §12). See
 /// notes/scheduler/rendezvous.md.
 ///
 /// # BUGS
@@ -707,7 +708,7 @@ pub fn ipc_call(ep: RendezvousId, msg: [u64; 2]) -> [u64; 3] {
 }
 
 /// [`ipc_call`] carrying the invoked endpoint capability's `badge`, which reaches the server's
-/// [`ipc_receive_capability`] in word 3; a plain [`ipc_call`] passes 0. A separate name, so the many
+/// [`inter_process_communication_receive_capability`] in word 3; a plain [`ipc_call`] passes 0. A separate name, so the many
 /// `ipc_call(ep, msg)` sites and the fastpath's shape are unchanged.
 ///
 /// Context: takes `IPC_TABLES`, and the server's capability-table lock beneath it. Blocks until
@@ -753,7 +754,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
                 // Word 3 is the caller's badge (milestone 599): the same store as before with a
                 // value instead of a zero, so the server's RECEIVE_CAP surfaces which client called.
                 // Word 4 says x1 is a Reply (milestone 706), which only this path and the collect
-                // in `ipc_receive_capability` may say; a SEND_CAP's delivery leaves it 0.
+                // in `inter_process_communication_receive_capability` may say; a SEND_CAP's delivery leaves it 0.
                 r.mailbox = [msg[0], slot, msg[1], badge, reply_tag(slot)];
                 // A Reply capability was installed, so RECEIVE_CAP's x1 is a real slot (milestone 634).
                 r.capability_delivered = true;
@@ -764,7 +765,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
             inter_process_communication::Send::Blocked => {
                 // No server yet; `send` queued us as a sender. Park the words and ride the reply cap
                 // in `outgoing_capability` so the eventual RECEIVE_CAP hands it over and, seeing a Reply, leaves
-                // us blocked (see ipc_receive_capability).
+                // us blocked (see inter_process_communication_receive_capability).
                 // Park the words with the badge at word 3 (milestone 599), where the eventual
                 // RECEIVE_CAP reads it back out of this caller's mailbox.
                 let me = sched.threads.get_mut(current).unwrap();

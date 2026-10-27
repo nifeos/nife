@@ -369,9 +369,9 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
     let (region, tid) = child_blocked_on(ep, crate::capability_object::Rights::WRITE, CALL_STUB);
     let run = crate::testing::RegionRun::of(region); // this region's frames, not the machine's
 
-    // Collecting the request leaves the caller reply-parked on nothing. `ipc_receive_capability` does not
+    // Collecting the request leaves the caller reply-parked on nothing. `inter_process_communication_receive_capability` does not
     // wake a caller: only the reply may, and this server never sends one.
-    let [_word, slot, _w1, _badge, ..] = sched::ipc_receive_capability(ep);
+    let [_word, slot, _w1, _badge, ..] = sched::inter_process_communication_receive_capability(ep);
     assert_ne!(
         slot,
         abi::rendezvous::NO_CAP,

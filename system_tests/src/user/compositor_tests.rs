@@ -53,7 +53,7 @@ pub(super) fn kernel_display() -> (sched::RendezvousId, u64, u64) {
     let ep = sched::create_rendezvous_from(region).expect("no display rendezvous");
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_capability(ep);
+            let m = sched::inter_process_communication_receive_capability(ep);
             if sched::take_ipc_aborted() {
                 return; // `retire_kernel_display` reclaimed the endpoint: this display is gone
             }
@@ -105,7 +105,7 @@ fn wait_for_compositor(w: &Wiring) {
 
 /// Take a `CALL` a client parked on its report endpoint: `(the caller, the reply slot, its word)`.
 fn take_call(ep: sched::RendezvousId, want: u64) -> (u64, u64, u64) {
-    let m = sched::ipc_receive_capability(ep);
+    let m = sched::inter_process_communication_receive_capability(ep);
     assert_eq!(
         m[0], want,
         "a client reported {:#x} where {want:#x} was expected (a 0xDEAD_.. word's low byte names \

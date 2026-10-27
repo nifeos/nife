@@ -368,20 +368,20 @@ pub struct Thread {
     pub outgoing_capability: Option<crate::capability_object::Cap>,
 
     /// Did the delivery this thread is about to read install a capability? Set by the paths that
-    /// put one in this thread's table while it was parked in `RECEIVE_CAP` (`ipc_send_capability`,
-    /// `ipc_call_badged`), cleared when it parks there. `ipc_receive_capability` reads it to decide `x1`:
+    /// put one in this thread's table while it was parked in `RECEIVE_CAP` (`inter_process_communication_send_capability`,
+    /// `ipc_call_badged`), cleared when it parks there. `inter_process_communication_receive_capability` reads it to decide `x1`:
     /// a delivery that installed nothing returns `NO_CAP`, never the sender's data word, which a
-    /// `CALL` server would read as a reply slot (fatal risk 7). See `sched::ipc_receive_capability`.
+    /// `CALL` server would read as a reply slot (fatal risk 7). See `sched::inter_process_communication_receive_capability`.
     ///
     /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
     /// `capability_delivered` under the capability ruling of 2026-10-06 (UTC).
     pub capability_delivered: bool,
 
-    /// Is the receive this thread is parked in a `RECEIVE_CAP`? Set at `ipc_receive_capability`'s park and
+    /// Is the receive this thread is parked in a `RECEIVE_CAP`? Set at `inter_process_communication_receive_capability`'s park and
     /// cleared at its resume, so a plain `RECEIVE` parks with it `false`. A sender meeting a parked
     /// receiver reads it: a plain `RECEIVE` never takes a capability, whichever side arrived first
     /// (§246 (a plain `RECEIVE` never takes a capability)). Meaningful only while the thread is
-    /// parked as a receiver. See `sched::ipc_send_capability`.
+    /// parked as a receiver. See `sched::inter_process_communication_send_capability`.
     // Name: provisional, this lane's; calef names public items.
     /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
     /// `receiving_capability` under the capability ruling of 2026-10-06 (UTC).

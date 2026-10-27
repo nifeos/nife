@@ -44,7 +44,7 @@ diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
 +    }
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
--    sched::ipc_delegate_capability(
+-    sched::inter_process_communication_delegate_capability(
 +    sched::ipc_send_cap(
          ep,
          word,

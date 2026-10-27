@@ -29,7 +29,7 @@
 # essentially no service in this tree: a client issues `CALL` and a server issues `RECEIVE_CAP` then
 # `REPLY`, and `kernel/src/bench/ipc.rs`'s own `call_reply` doc calls that "the one-endpoint shape
 # real services use". Measured on the same binary, the CALL/reply closure is **29% larger** on
-# aarch64 (7,576 against 5,888), because `ipc_receive_capability` and `ipc_call` carry the one-shot Reply
+# aarch64 (7,576 against 5,888), because `inter_process_communication_receive_capability` and `ipc_call` carry the one-shot Reply
 # mint, the capability-table insert and the `WaitRole::Reply` parking that DECISIONS §12 (Call/Reply
 # IPC: a one-shot reply capability) requires. Averaging them would hide both, and reporting only the
 # smaller one understated the number this gate exists to bound. `ipc_fastpath` is the max rather
@@ -164,7 +164,7 @@
 #     closure, so it inherits the closure's blind spots: a callee reached only through a conditional
 #     branch or a function pointer is on the path, outside the section, and not reported.
 #   - **`ipc_call_reply` is still an upper bound and a loose one**, for the reason the whole gate is:
-#     whole symbol sizes, so a cold tail inside `ipc_call` or `ipc_receive_capability` counts. Milestone 188
+#     whole symbol sizes, so a cold tail inside `ipc_call` or `inter_process_communication_receive_capability` counts. Milestone 188
 #     phase 3 outlined the cold tails it could find; the rest are inside branches this script cannot
 #     see, because its `CALL` regex deliberately does not follow conditional branches.
 

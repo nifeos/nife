@@ -4,7 +4,7 @@
 //!
 //! The host crate proves both claims (`capability::derive_never_widens_rights`,
 //! `from_bits_cannot_forge_a_right`), and `confinement_attack_tests` drives neither case; this
-//! drives `SEND_CAP`'s `a1` rights register through `syscall::invoke`. `ipc_send_capability_from` refuses
+//! drives `SEND_CAP`'s `a1` rights register through `syscall::invoke`. `inter_process_communication_send_capability_from` refuses
 //! before touching the rendezvous, so a refusal parks nothing, and a regression parks the test
 //! thread and fails by the watchdog's dump. See notes/confinement-outsider-pass-7.md.
 

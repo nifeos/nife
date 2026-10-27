@@ -104,7 +104,7 @@ pub(super) fn call_reply() {
 
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_capability(ep); // [word, reply_slot, word2]
+            let m = sched::inter_process_communication_receive_capability(ep); // [word, reply_slot, word2]
             if m[0] == u64::MAX {
                 break;
             }
@@ -148,7 +148,7 @@ pub(super) fn broker_rtt() {
     // server in `call_reply` does.
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_capability(back);
+            let m = sched::inter_process_communication_receive_capability(back);
             if m[0] == u64::MAX {
                 break;
             }
@@ -160,7 +160,7 @@ pub(super) fn broker_rtt() {
     // The broker: both ends are up, so it buffers nothing.
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_capability(front);
+            let m = sched::inter_process_communication_receive_capability(front);
             if m[0] == u64::MAX {
                 sched::ipc_send(back, [u64::MAX, 0, 0]);
                 break;

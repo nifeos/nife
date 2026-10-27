@@ -79,7 +79,7 @@ pub(super) fn rendezvous_send_capability(
     // copy, so no revocation sweep falls between the read and the filing (`sched::Delegation`).
     #[cfg(feature = "system_tests")]
     crate::delegation_pause::here(); // no lock held
-    sched::ipc_delegate_capability(
+    sched::inter_process_communication_delegate_capability(
         ep,
         word,
         sched::Delegation {
@@ -106,7 +106,7 @@ pub(super) fn rendezvous_receive_capability(
     if !rights.allows(Rights::READ) {
         return Err(Error::NotPermitted);
     }
-    let msg = sched::ipc_receive_capability(ep);
+    let msg = sched::inter_process_communication_receive_capability(ep);
     if sched::take_ipc_aborted() {
         return Err(Error::Gone); // endpoint revoked; the message is a placeholder
     }

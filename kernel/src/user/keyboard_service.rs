@@ -156,7 +156,7 @@ impl Wiring {
     /// Answer the driver's `COMMIT`, the way a compositor would after compositing. Returns the
     /// counter reading taken as the `COMMIT` arrived, before the reply, for `bench::keyboard`.
     pub fn answer_doorbell(&self) -> u64 {
-        let m = crate::sched::ipc_receive_capability(self.doorbell);
+        let m = crate::sched::inter_process_communication_receive_capability(self.doorbell);
         let arrived = crate::arch::timer::now();
         let crate::capability_object::Object::Reply(caller) =
             crate::sched::current_capability(m[1])

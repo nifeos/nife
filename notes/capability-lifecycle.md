@@ -29,7 +29,7 @@ and a domain names its members rather than acting on them.
 
 ## `SEND_CAP` is share, not move
 
-Delegating a capability over IPC (`SEND_CAP`, whose body is `sched::ipc_delegate_capability`) reads the
+Delegating a capability over IPC (`SEND_CAP`, whose body is `sched::inter_process_communication_delegate_capability`) reads the
 sender's cap and delivers a *new* one to the receiver:
 
 ```rust
@@ -42,7 +42,7 @@ Ok(Cap { object: src.object, rights: self.rights })
 
 **The read and the filing are one critical section, and that is a revocation property, not a
 tidiness one** (2026-10-04 UTC). Until then the syscall layer read the source with `current_capability`
-and handed the copy to `ipc_send_capability`, which filed it under a second hold of the lock. A
+and handed the copy to `inter_process_communication_send_capability`, which filed it under a second hold of the lock. A
 `PageFrame::REVOKE` or `MemoryRegion::DESTROY` sweep could run between the two, delete the source,
 and pass by before the copy was filed, so the copy survived the revoke. `CAP_INSERT` and `SLICE`
 had the same shape. `sched::Delegation` carries the argument and
@@ -225,7 +225,7 @@ the caller.
 A `Delegation` names a source slot and the rights the copy keeps, not a capability. A copy is safe
 only if its source is read in the same critical section that files it, and that critical section
 excludes every sweep. A delegation into another thread holds `IPC_TABLES` across both
-(`ipc_delegate_capability`, `thread_control_block_delegate_capability`). A derivation into the running thread's
+(`inter_process_communication_delegate_capability`, `thread_control_block_delegate_capability`). A derivation into the running thread's
 own table (`grant_derived`) holds that table's lock across both. A sweep then falls wholly before
 (the source is gone, and the delegation answers `NoSuchSlot`) or wholly after (the copy is in a
 table it walks). A copy read in one critical section and filed in another could be filed after a

@@ -123,7 +123,7 @@ fn a_reply_parked_caller_wakes_with_an_error_when_its_rendezvous_is_reclaimed() 
     // away; a server that returned here would depart, which is the *other* trigger and the
     // next test's subject.
     crate::sched::spawn(move || {
-        let m = crate::sched::ipc_receive_capability(ep);
+        let m = crate::sched::inter_process_communication_receive_capability(ep);
         let slot = m[1];
         HELD_BEFORE.store(
             crate::sched::current_capability(slot).is_ok(),
@@ -215,7 +215,7 @@ fn a_server_that_exits_frees_the_caller_it_never_answered() {
     // server exits holding it, which is the case the survey found this kernel alone in
     // stranding.
     crate::sched::spawn(move || {
-        let m = crate::sched::ipc_receive_capability(ep);
+        let m = crate::sched::inter_process_communication_receive_capability(ep);
         HELD.store(
             crate::sched::current_capability(m[1]).is_ok(),
             Ordering::SeqCst,
@@ -574,7 +574,7 @@ fn a_call_gets_a_reply() {
     let ep = super::create_rendezvous_from(region).expect("no rendezvous from region");
 
     let server = super::spawn(move || {
-        let m = super::ipc_receive_capability(ep); // [n, reply_slot, second_word]
+        let m = super::inter_process_communication_receive_capability(ep); // [n, reply_slot, second_word]
         let slot = m[1];
         let crate::capability_object::Object::Reply(caller) =
             super::current_capability(slot).unwrap().object
@@ -624,7 +624,7 @@ fn a_reply_reaches_the_caller_that_called() {
     // The server: field two calls, reply each caller its own word + 11, via its own cap.
     let server = super::spawn(move || {
         for _ in 0..2 {
-            let m = super::ipc_receive_capability(ep);
+            let m = super::inter_process_communication_receive_capability(ep);
             let (word, slot) = (m[0], m[1]);
             let crate::capability_object::Object::Reply(caller) =
                 super::current_capability(slot).unwrap().object

@@ -447,7 +447,7 @@ fn the_terminal_is_a_sink_like_any_other_and_the_writer_cannot_tell() {
     let mut got = [0u8; fixture::TRANSCRIPT.len()];
     let mut n = 0usize;
     while n < fixture::TRANSCRIPT.len() {
-        let m = crate::sched::ipc_receive_capability(term_ep);
+        let m = crate::sched::inter_process_communication_receive_capability(term_ep);
         let (w0, slot, w1) = (m[0], m[1], m[2]);
         let crate::capability_object::Object::Reply(caller) =
             crate::sched::current_capability(slot)

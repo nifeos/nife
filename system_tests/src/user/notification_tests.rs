@@ -162,7 +162,7 @@ fn a_signal_counted_while_elsewhere_ends_the_next_receive_at_once() {
         while GO.load(Ordering::SeqCst) == 1 {
             sched::yield_now();
         }
-        let m = sched::ipc_receive_capability(ep);
+        let m = sched::inter_process_communication_receive_capability(ep);
         for (slot, w) in WITH_CAP.iter().zip(m) {
             slot.store(w, Ordering::Relaxed);
         }
@@ -479,7 +479,7 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
     .expect("spawn the binder");
 
     // The delegation: a WRITE-only notification capability, landed in this thread's table.
-    let [_, slot, ..] = sched::ipc_receive_capability(report);
+    let [_, slot, ..] = sched::inter_process_communication_receive_capability(report);
     assert_ne!(
         slot,
         abi::rendezvous::NO_CAP,

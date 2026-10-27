@@ -148,7 +148,7 @@ with no guard, so a chosen slot deletes one of the server's own capabilities.
   straight into a parked receiver's mailbox, which is why the receiver-first order is the one at
   risk. For the interrupt and the death message the word is the kernel's, not a sender's, so the
   hazard there is order-dependence and a fail-open default rather than a chosen value.
-- `capability_delivered` does not cover the sender-first order. There `ipc_receive_capability`'s `FromSender`
+- `capability_delivered` does not cover the sender-first order. There `inter_process_communication_receive_capability`'s `FromSender`
   path takes `Thread::outgoing_capability` unconditionally. So a delegation must never stay staged after a
   plain `RECEIVE` collects its sender, or the sender's next plain `SEND` hands it to whoever
   receives there.

@@ -272,7 +272,7 @@ fn badge_of_every_message(ep: RendezvousId) -> u64 {
     let mut bytes = 0;
     for i in 0.. {
         let m = if i % 2 == 0 {
-            let m = crate::sched::ipc_receive_capability(ep);
+            let m = crate::sched::inter_process_communication_receive_capability(ep);
             // Only x0 and x3 are read here. Which word lands in x1 for a plain SEND depends on
             // who reached the rendezvous first (`abi::rendezvous::RECEIVE_CAP`'s BUGS), so a test
             // that asserted it would be asserting the scheduler's order.

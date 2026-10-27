@@ -210,10 +210,10 @@ pub fn object_page(object: &Object) -> Option<u64> {
 
 /// One service move on a rendezvous that never parks the caller (test support, milestone 779,
 /// provisional name). The confined fuzzer's conductor judges every fuzzer and must never block;
-/// a check-then-act around `ipc_send` or `ipc_receive_capability` races on a multicore machine.
+/// a check-then-act around `ipc_send` or `inter_process_communication_receive_capability` races on a multicore machine.
 ///
 /// Under one hold of `IPC_TABLES`: deliver `word` to a parked receiver; else collect one queued
-/// sender as `ipc_receive_capability` would (a carried capability is filed in the caller's table); else
+/// sender as `inter_process_communication_receive_capability` would (a carried capability is filed in the caller's table); else
 /// nothing. A speculative queue position is taken straight back under the same hold.
 #[cfg(feature = "system_tests")]
 pub enum ConductorMove {
@@ -288,7 +288,7 @@ pub fn conductor_move(ep: RendezvousId, word: u64) -> ConductorMove {
                     let tag = if is_reply { reply_tag(slot) } else { 0 };
                     ConductorMove::Took([msg[0], slot, msg[1], msg[3], tag])
                 }
-                // A pending interrupt signal, as `ipc_receive_capability` would report it.
+                // A pending interrupt signal, as `inter_process_communication_receive_capability` would report it.
                 inter_process_communication::Receive::Signal(token) => {
                     hold_token(token);
                     ConductorMove::Took([1, NO_CAP, 0, 0, 0])

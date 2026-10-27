@@ -128,7 +128,7 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
     let delivered = if RETURNED.load(Ordering::SeqCst) {
         None
     } else {
-        let [_word, slot, ..] = sched::ipc_receive_capability(ep);
+        let [_word, slot, ..] = sched::inter_process_communication_receive_capability(ep);
         let got = (slot != abi::rendezvous::NO_CAP)
             .then(|| sched::current_capability(slot).ok())
             .flatten();

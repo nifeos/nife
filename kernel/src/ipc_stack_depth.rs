@@ -199,7 +199,7 @@ fn call_reply_kernel() {
         let span = own_span();
         loop {
             let m = measured(&K_CR_SERVER_RECEIVE_CAP, span, || {
-                sched::ipc_receive_capability(ep)
+                sched::inter_process_communication_receive_capability(ep)
             });
             if m[0] == u64::MAX {
                 break;

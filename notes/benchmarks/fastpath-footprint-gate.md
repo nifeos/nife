@@ -158,7 +158,7 @@ argument and the phase-4 recommendation.*
 The roots were `ipc_send` and `ipc_receive`, which is the shape of `ipc_rtt_el0` and of essentially no
 service in this tree. A service is a client `CALL` and a server `RECEIVE_CAP` then `REPLY`.
 `kernel/src/bench.rs`'s own `call_reply` doc already calls that "the one-endpoint shape real services
-use". Measured on the same binaries, the shape userspace runs is larger everywhere. `ipc_receive_capability`
+use". Measured on the same binaries, the shape userspace runs is larger everywhere. `inter_process_communication_receive_capability`
 and `ipc_call` carry the one-shot Reply mint, the capability-table insert into the server and the
 `WaitRole::Reply` parking DECISIONS §12 (call/Reply IPC) requires, and none of that is on a bare `SEND` or `RECEIVE`.
 The gate now reports and checks both shapes.

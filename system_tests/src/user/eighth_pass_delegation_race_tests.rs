@@ -154,7 +154,8 @@ fn the_same_seam_without_a_revoke_delivers(region: u64, ep: sched::RendezvousId)
         super::wait_for(|| sched::rendezvous_waiting_senders(ep) == 1),
         "the control delegation never parked, so the refused run's emptiness proved nothing",
     );
-    let [_word, slot, _second, _badge, ..] = sched::ipc_receive_capability(ep);
+    let [_word, slot, _second, _badge, ..] =
+        sched::inter_process_communication_receive_capability(ep);
     assert_ne!(
         slot,
         abi::rendezvous::NO_CAP,
@@ -208,7 +209,7 @@ fn a_port_capability_revoked_while_in_flight_does_not_reach_the_receiver() {
             .expect("the sender could not be granted the range");
         let capability = sched::current_capability(slot).expect("the grant did not land");
         PARKED.store(true, Ordering::SeqCst);
-        sched::ipc_send_capability(ep, 0, capability, 0);
+        sched::inter_process_communication_send_capability(ep, 0, capability, 0);
         SOURCE_SURVIVED.store(sched::current_capability(slot).is_ok(), Ordering::SeqCst);
     })
     .expect("no sender thread");
@@ -222,7 +223,8 @@ fn a_port_capability_revoked_while_in_flight_does_not_reach_the_receiver() {
 
     crate::revoke::revoke_port_range(PORT_BASE, PORT_COUNT);
 
-    let [_word, slot, _second, _badge, ..] = sched::ipc_receive_capability(ep);
+    let [_word, slot, _second, _badge, ..] =
+        sched::inter_process_communication_receive_capability(ep);
     let delivered = if slot == abi::rendezvous::NO_CAP {
         None
     } else {

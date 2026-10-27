@@ -28,7 +28,7 @@ use crate::capability_object::{
     page_frame_run_len, rendezvous_capability,
 };
 use crate::sched;
-use crate::sched::ipc_send_capability as send_capability;
+use crate::sched::inter_process_communication_send_capability as send_capability;
 use crate::user::holding::Holding;
 
 /// `display_terminal`'s image is the largest, about 220 pages: its `Vt` is initialized to
