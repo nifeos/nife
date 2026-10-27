@@ -63,7 +63,7 @@ SELF = 'helpers/cap_abbreviation.py'
 
 # The count on 2026-10-06, and since lowered by the sweep's `--bank`. Never raise it by hand: a new
 # `cap` is spelled out, not admitted.
-CEILING = 711
+CEILING = 681
 
 # Identifiers that keep `cap`, by file, each group with its reason. See the header before adding one.
 _CEILING = 'cap is the English word for a limit or a capacity here, not an abbreviation'

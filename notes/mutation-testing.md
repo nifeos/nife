@@ -151,11 +151,14 @@ appendices from 2026-09-19 on. A recorded gap is written beside the crate's acco
 would close it.
 
 **From milestone 740 (the survivors a merged pull request adds are checked against a triage record), a triage lane also writes a row per survivor** into
-`notes/project-metrics/mutation-triage.csv` (`crate,function,mutation,disposition,reason`), in
+`notes/project-metrics/mutation-triage.csv` (`crate,function,mutation,disposition,reason,kind,verified,home`), in
 addition to the prose. The prose is for a reader; the row is what the weekly `inflow` job reads, and
 a survivor a merged pull request adds with no row fails that job. The key is the mutant as
 cargo-mutants names it without its line number (`helpers/mutation_inflow.py` has the exact form),
 the disposition is `killed`, `equivalent` or `gap`, and the reason names the test or the argument.
+A row also carries a `kind`, a `verified` date and, for a gap, a `home`. The docstring of
+`helpers/mutation_survivor_rows.py` defines them, and `script/lint` holds them to a baseline.
+[Row expiry](mutation-testing/row-expiry-replay.md) has its own measurement.
 The 2026-10-03 backfill is partial and says what it covers
 ([the milestone](../design/roadmap/0740-the-inflow-check.md)).
 
