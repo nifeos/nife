@@ -50,7 +50,7 @@ use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use paging::Flags;
 use soak_page::MAXIMUM_WORKERS;
 
-use crate::cap::{Rights, interrupt_cap, rendezvous_cap};
+use crate::capability_object::{Rights, interrupt_capability, rendezvous_capability};
 use crate::user::{self, Mapping, Spawn};
 use crate::{arch, memory, println, sched, smp};
 
@@ -138,11 +138,11 @@ fn spawn_workers(
             let role = role_of(member);
             let index = worker_index(group, member);
             let grant = if role == ROLE_WAITER {
-                interrupt_cap(tick_intid(group))
+                interrupt_capability(tick_intid(group))
             } else if role == ROLE_RESPONDER {
-                rendezvous_cap(endpoint, Rights::READ)
+                rendezvous_capability(endpoint, Rights::READ)
             } else {
-                rendezvous_cap(endpoint, Rights::WRITE)
+                rendezvous_capability(endpoint, Rights::WRITE)
             };
             let started = sched::spawn_reporting_placement(move || {
                 user::run(

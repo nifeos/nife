@@ -84,7 +84,7 @@ fn serve(page: ClockPage) -> ! {
     loop {
         let req = receive_request(PROPOSE_EP);
         let (w0, w1) = (req.w0, req.w1);
-        let Some(cap) = req.delivered.into_reply() else {
+        let Some(capability) = req.delivered.into_reply() else {
             // A plain SEND, or a SEND_CAP, on a CALL-only contract. Nobody is waiting for an
             // answer, so there is nothing to do and nothing to report; drop it (a delegation's slot
             // is deleted by `into_reply`, milestone 706 (a `CALL` server can tell a Reply from a
@@ -104,13 +104,13 @@ fn serve(page: ClockPage) -> ! {
                         clock_contract::offset_for(w1, monotonic_ns()),
                     );
                 }
-                reply(cap, verdict, wall_now(&page));
+                reply(capability, verdict, wall_now(&page));
             }
             propose::STATE => {
-                reply(cap, page.read().state, wall_now(&page));
+                reply(capability, page.read().state, wall_now(&page));
             }
             _ => {
-                reply(cap, status::BAD_REQUEST, 0);
+                reply(capability, status::BAD_REQUEST, 0);
             }
         }
     }

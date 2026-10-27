@@ -27,12 +27,12 @@ diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_sp
      let va = a0;
      // The frame is read under the hold that maps and records it, so no sweep falls between the
      // read and the record (`revoke::MappingHold`). The space registry ranks above that hold.
-+    let frame = sched::current_cap(a1).map_err(|_| Error::NoSuchSlot)?;
++    let frame = sched::current_capability(a1).map_err(|_| Error::NoSuchSlot)?;
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
      crate::user::with_user_address_space(name, |space| {
          let mut hold = crate::revoke::hold();
--        let frame = hold.current_cap(a1).map_err(|_| Error::NoSuchSlot)?;
+-        let frame = hold.current_capability(a1).map_err(|_| Error::NoSuchSlot)?;
          let (phys, count, flags) = match frame.object {
              Object::DeviceFrame(phys) => {
                  if !frame.rights.allows(Rights::WRITE) {

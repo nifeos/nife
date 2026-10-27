@@ -56,7 +56,9 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
    their recorded hashes. Built:
    [stage-4-directories-and-long-names.md](0813-a-proven-fat-crate-released-on-its-own/stage-4-directories-and-long-names.md)
    has what landed.
-5. File read and the MBR. Milestone 140's read-only FAT stratum can start here.
+5. File read and the MBR. Milestone 140's read-only stratum can start here. Built:
+   [stage-5-reading-files-and-the-partition-table.md](0813-a-proven-fat-crate-released-on-its-own/stage-5-reading-files-and-the-partition-table.md)
+   has what landed.
 6. Allocation, write, extend, truncate and delete, with FSInfo and the dirty bit, and the
    round-trip harness. Two pull requests.
 7. Make and remove directories, rename, and long-name creation with alias numbering.
@@ -144,8 +146,8 @@ carries a machine-replayable falsification record) and `script/falsifications` r
 
 | property | harness |
 |---|---|
-| No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run) takes a symbolic sector and returns a value or an error | boot sector and BPB: `boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`, `the_fat_type_is_the_cluster_counts`, `the_table_has_an_entry_for_every_cluster`, `only_a_data_cluster_has_sectors`; FAT entry: `table::verification::every_entry_lies_inside_the_table`, `an_entry_decodes_by_its_markers`; directory entry: `directory::verification::every_slot_parses_as_its_bytes_say`, `a_directory_reads_only_its_own_sectors`; long-name run: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed`; FSInfo: none yet |
-| Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | `reader::verification::no_chain_walk_outlasts_the_volume`, on volumes of one to eight clusters |
+| No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run, partition table) takes a symbolic sector and returns a value or an error | boot sector and BPB: `boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`, `the_fat_type_is_the_cluster_counts`, `the_table_has_an_entry_for_every_cluster`, `only_a_data_cluster_has_sectors`; FAT entry: `table::verification::every_entry_lies_inside_the_table`, `an_entry_decodes_by_its_markers`; directory entry: `directory::verification::every_slot_parses_as_its_bytes_say`, `a_directory_reads_only_its_own_sectors`; long-name run: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed`; partition table: `master_boot_record::verification::every_sector_parses_to_a_sound_table_or_an_error`; FSInfo: none yet |
+| Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | `reader::verification::no_chain_walk_outlasts_the_volume`, on volumes of one to eight clusters; file reads: `file::verification::a_file_read_stays_inside_its_size_and_its_clusters`; partitions: `master_boot_record::verification::a_partition_device_reads_only_its_partition` |
 | Write then read round-trips on a small symbolic volume, byte for byte, with the FAT and directory consistent | none yet |
 | Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`; reader: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed` |
 
@@ -284,9 +286,8 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** Stages 5 to 9. Checked 2026-10-27 (UTC): `crates/file_allocation_table/src/`
-  reads the boot sector, the table, chains, directory slots and long names, and holds the `mkfs`;
-  nothing reads a file's bytes or an MBR.
+- **Outstanding.** Stages 6 to 9. Checked 2026-10-27 (UTC): the crate reads volumes, files and an
+  MBR, and holds the `mkfs`; nothing writes to a volume.
 
 ## BUGS
 

@@ -9,7 +9,7 @@ growth arrives on lines a pull request touched) met and whose two objections mil
 its own findings. The rule the block states, and this module enforces:
 
     python3 helpers/mutation_diff_gate.py gate --run-dir mutants.out --triage CSV \\
-        [--renames CSV] [--summary FILE]
+        [--renames CSV] [--summary FILE] [--base-ref REV]
     python3 helpers/mutation_diff_gate.py cap --summary FILE
     python3 helpers/mutation_diff_gate.py --selftest      # fixtures, no git, no cargo; script/lint
 
@@ -17,6 +17,14 @@ its own findings. The rule the block states, and this module enforces:
 when a survivor of the diff has no row that clears it. `cap` is what the workflow runs when the
 diff's own mutant run hits the 20-minute cap, and always fails: a cap is a failure, never a pass.
 The workflow that wires both to a pull request is .github/workflows/mutation-gate.yml.
+
+A ROW EXPIRES WHEN ITS CODE CHANGES (part 2 of the proposal a survivor accepted once is not accepted
+forever). With `--base-ref REV` the gate also reads the triage file as it stood at REV, and a survivor
+on a changed line is cleared only by a row this pull request added or changed. The row said something
+true of the function as it stood before the pull request rewrote it; the author reads it again, and
+the proof that someone did is a diff in the row, normally its `verified` date. An unchanged row fails
+as `stale`, and the summary says what clears it. Without `--base-ref` the rule is off, which is how
+the workflow runs until the replay in notes/mutation-testing/row-expiry-replay.md has been read.
 
 EXIT CODES. 0: every survivor has an `equivalent` or `gap` row, or the diff produced none. 1:
 some survivor has no row, only a `killed` one, or the cap fired. 2: bad input, which fails the
@@ -45,6 +53,7 @@ Name: provisional, minted 2026-10-15 for milestone 924; calef has not ruled on i
 import argparse
 import collections
 import pathlib
+import subprocess
 import sys
 import tempfile
 
@@ -80,10 +89,11 @@ def read_survivors(run_dir):
     return out
 
 
-def decide(survivors, triage, chain):
+def decide(survivors, triage, chain, base=None):
     """Split survivors into (cleared, untriaged, keys). A row clears a key only at `equivalent` or
     `gap`; `killed` names a verdict the gate's own run just disproved, and no row names one nobody
-    made."""
+    made. With a `base` ledger (the triage file at the pull request's base), a live row identical to
+    the base's is `stale`: it was written for the function before this pull request changed it."""
     by_key = collections.OrderedDict()
     for (crate, function, mutation, _path, _line), kind in sorted(
         survivors, key=lambda s: (resolve(s[0][0], chain), s[0][1], s[0][2], s[1])
@@ -94,7 +104,10 @@ def decide(survivors, triage, chain):
     for key, kinds in by_key.items():
         row = triage.get(key)
         if row is not None and row[0] in ("equivalent", "gap"):
-            cleared += 1
+            if base is not None and base.get(key) == row:
+                untriaged.append((key, kinds, "stale"))
+            else:
+                cleared += 1
         elif row is not None and row[0] == "killed":
             untriaged.append((key, kinds, "killed"))
         else:
@@ -116,20 +129,33 @@ def render(untriaged, keys, cleared):
         "|---|---|---|---|---|",
     ]
     for (crate, function, mutation), kinds, why in untriaged:
-        missing = (
-            "a row in notes/project-metrics/mutation-triage.csv (`equivalent` or `gap`), or a test that kills it"
-            if why == "none"
-            else "the gate ran this mutant and saw it live, so its `killed` row is false here: kill it with a test, or write the `equivalent` or `gap` row"
-        )
+        missing = {
+            "none": "a row in notes/project-metrics/mutation-triage.csv (`equivalent` or `gap`), or a test that kills it",
+            "killed": "the gate ran this mutant and saw it live, so its `killed` row is false here: kill it with a test, or write the `equivalent` or `gap` row",
+            "stale": "its row is unchanged, and this pull request changed the function it describes: read the row against the new code and update it (`verified` to today's UTC date, with a new `kind` or reason if it changed), or kill the mutant with a test",
+        }[why]
         out.append(f"| {crate} | `{function}` | `{mutation}` | {', '.join(sorted(kinds))} | {missing} |")
     return "\n".join(out) + "\n"
 
 
-def run_gate(run_dir, triage_path, renames_path):
+def base_triage(rev, triage_path, chain):
+    """The triage ledger as it stood at `rev`, read leniently (the base may predate a column), or an
+    empty ledger when the base has no such file."""
+    r = subprocess.run(["git", "show", f"{rev}:{triage_path}"], capture_output=True, text=True)
+    if r.returncode != 0:
+        return {}
+    with tempfile.NamedTemporaryFile("w", suffix=".csv") as fh:
+        fh.write(r.stdout)
+        fh.flush()
+        return read_triage(fh.name, chain, strict=False)
+
+
+def run_gate(run_dir, triage_path, renames_path, base_ref=None):
     chain = load_renames(renames_path)
     triage = read_triage(triage_path, chain)
     survivors = read_survivors(run_dir)
-    cleared, untriaged, keys = decide(survivors, triage, chain)
+    base = base_triage(base_ref, triage_path, chain) if base_ref else None
+    cleared, untriaged, keys = decide(survivors, triage, chain, base)
     if not untriaged:
         text = (
             "### Mutation gate: clean\n\n"
@@ -150,6 +176,7 @@ def main(argv):
     gate_p.add_argument("--triage", default="notes/project-metrics/mutation-triage.csv")
     gate_p.add_argument("--renames", default="notes/project-metrics/mutation-census-renames.csv")
     gate_p.add_argument("--summary")
+    gate_p.add_argument("--base-ref", help="a revision whose triage file a cleared row must differ from")
     cap_p = sub.add_parser("cap", help="report the cap failure; always exits 1")
     cap_p.add_argument("--summary")
     args = ap.parse_args(argv)
@@ -158,7 +185,7 @@ def main(argv):
         if args.cmd == "cap":
             code, text = 1, CAP_TEXT
         else:
-            code, text = run_gate(args.run_dir, args.triage, args.renames)
+            code, text = run_gate(args.run_dir, args.triage, args.renames, args.base_ref)
     except (ValueError, FileNotFoundError) as e:
         print(f"mutation_diff_gate: {e}", file=sys.stderr)
         return 2
@@ -185,10 +212,10 @@ def selftest():
         root = pathlib.Path(tmp)
         tri = root / "triage.csv"
         tri.write_text(
-            "crate,function,mutation,disposition,reason\n"
-            "fresh,checked,replace == with !=,equivalent,both arms refuse\n"
-            "fresh,loader,replace ! with =,gap,needs a clock\n"
-            "fresh,dup,replace * with /,killed,a census on another host saw it die\n"
+            "crate,function,mutation,disposition,reason,kind,verified,home\n"
+            "fresh,checked,replace == with !=,equivalent,both arms refuse,algebraic,2026-10-01,\n"
+            "fresh,loader,replace ! with =,gap,needs a clock,,,\n"
+            "fresh,dup,replace * with /,killed,a census on another host saw it die,,,\n"
         )
         renames = root / "renames.csv"
         renames.write_text("old,new,commit,date\nstale,fresh,abc,2026-10-01\n")
@@ -212,12 +239,12 @@ def selftest():
 
         full = root / "full.csv"
         full.write_text(
-            "crate,function,mutation,disposition,reason\n"
-            "fresh,checked,replace == with !=,equivalent,both arms refuse\n"
-            "fresh,loader,replace ! with =,gap,needs a clock\n"
-            "fresh,dup,replace * with /,equivalent,both orders refuse\n"
-            "fresh,strict,replace < with <=,equivalent,disjoint arms\n"
-            "fresh,plus,replace + with -,equivalent,wraps anyway\n"
+            "crate,function,mutation,disposition,reason,kind,verified,home\n"
+            "fresh,checked,replace == with !=,equivalent,both arms refuse,algebraic,2026-10-01,\n"
+            "fresh,loader,replace ! with =,gap,needs a clock,,,\n"
+            "fresh,dup,replace * with /,equivalent,both orders refuse,algebraic,2026-10-01,\n"
+            "fresh,strict,replace < with <=,equivalent,disjoint arms,algebraic,2026-10-01,\n"
+            "fresh,plus,replace + with -,equivalent,wraps anyway,algebraic,2026-10-01,\n"
         )
         code, text = run_gate(run, str(full), no_renames)
         assert code == 0 and "clean" in text, text
@@ -231,7 +258,7 @@ def selftest():
         assert code == 1 and "timeout" in text, text
         code, text = run_gate(hung, str(full), no_renames)
         assert code == 1, text
-        full.write_text(full.read_text() + "fresh,walks,replace < with <=,gap,guards a real hang\n")
+        full.write_text(full.read_text() + "fresh,walks,replace < with <=,gap,guards a real hang,,,\n")
         code, text = run_gate(hung, str(full), no_renames)
         assert code == 0, text
 
@@ -249,8 +276,26 @@ def selftest():
         assert main(["gate", "--run-dir", mk_run(root, "clean"),
                      "--triage", str(tri), "--renames", no_renames]) == 0
         bad = root / "bad.csv"
-        bad.write_text("crate,function,mutation,disposition,reason\nx,f,m,fixed,because\n")
+        bad.write_text("crate,function,mutation,disposition,reason,kind,verified,home\nx,f,m,fixed,because\n")
         assert main(["gate", "--run-dir", run, "--triage", str(bad), "--renames", no_renames]) == 2
+
+        # An expiring row: with a base ledger, a live row identical to the base's is stale, and a
+        # row the pull request added or changed clears. `decide` takes the ledgers directly, so no git.
+        chain = {}
+        now = read_triage(str(full), chain)
+        survivors = read_survivors(run)
+        assert decide(survivors, now, chain, None)[1] == []
+        _c, stale, _k = decide(survivors, now, chain, dict(now))
+        assert {w for _k2, _kinds, w in stale} == {"stale"} and len(stale) == 5, stale
+        older = dict(now)
+        key = ("fresh", "strict", "replace < with <=")
+        older[key] = now[key]._replace(verified="2026-09-01")
+        _c, stale, _k = decide(survivors, now, chain, older)
+        assert key not in [k for k, _kinds, _w in stale] and len(stale) == 4, stale
+        del older[("fresh", "plus", "replace + with -")]
+        _c, stale, _k = decide(survivors, now, chain, older)
+        assert len(stale) == 3, stale
+        assert "its row is unchanged" in render(stale, 5, 2)
 
         # The cap always fails, with the message that names the two ways out.
         assert main(["cap"]) == 1

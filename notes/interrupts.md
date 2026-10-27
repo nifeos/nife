@@ -195,7 +195,7 @@ So the interrupt reaches the driver as something it *can* receive: a message.
                                                 │
                        reads the device, quiets its interrupt
                                                 │
-                       invoke(interrupt_cap, ACK)  ──►  kernel: re-enable INTID at the GIC
+                       invoke(interrupt_capability, ACK)  ──►  kernel: re-enable INTID at the GIC
 ```
 
 The kernel's half does nothing device-specific, and everything that knows what a *virtio block

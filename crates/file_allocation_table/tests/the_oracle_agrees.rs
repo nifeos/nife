@@ -16,8 +16,8 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    NamedEntry, SECTOR_BYTES, SectorDevice, SectorSize, ShortEntry, TableEntry, Volume,
-    VolumeLayout,
+    LookupError, MasterBootRecord, NamedEntry, SECTOR_BYTES, SectorDevice, SectorSize, ShortEntry,
+    TableEntry, Volume, VolumeLayout,
 };
 use lamfat::{Read, Write};
 
@@ -238,12 +238,66 @@ fn our_records(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32) -> Vec
         if short.is_directory() {
             record.children = our_records(volume, image, short.first_cluster());
         } else {
-            record.bytes = read_file(volume, image, short.first_cluster(), record.size);
+            let raw = read_file(volume, image, short.first_cluster(), record.size);
+            let mut file = volume.open_file(&entry).expect("a file opens");
+            let mut bytes = vec![0u8; record.size as usize];
+            assert_eq!(file.read(&mut bytes).expect("the file reads"), bytes.len());
+            assert!(matches!(file.read(&mut [0u8; 1]), Ok(0)));
+            assert_eq!(
+                bytes, raw,
+                "{}: the reader and the raw chain differ",
+                record.short
+            );
+            record.bytes = bytes;
         }
         out.push(record);
     }
     out.sort();
     out
+}
+
+/// Find every record under `first` by path, in the spelling rust-fatfs lists, in upper case and in
+/// lower case, and by its short name.
+fn check_lookups(
+    volume: &mut Volume<Memory<'_>>,
+    records: &[Record],
+    prefix: &str,
+    short_prefix: &str,
+    label: &str,
+) {
+    for record in records {
+        let long = record
+            .long
+            .as_ref()
+            .map(|units| String::from_utf16(units).unwrap());
+        let name = long.clone().unwrap_or_else(|| record.short.clone());
+        for path in [
+            format!("{prefix}{name}"),
+            format!("{prefix}{}", name.to_uppercase()),
+            format!("/{prefix}{}", name.to_lowercase()),
+            format!("{short_prefix}{}", record.short),
+            format!("{short_prefix}{}", record.short.to_lowercase()),
+        ] {
+            let entry = volume
+                .lookup(&path)
+                .unwrap_or_else(|e| panic!("{label}: {path}: {e:?}"));
+            assert_eq!(entry.is_directory(), record.directory, "{label}: {path}");
+            assert_eq!(
+                u64::from(entry.size_bytes()),
+                record.size,
+                "{label}: {path}"
+            );
+        }
+        if record.directory {
+            check_lookups(
+                volume,
+                &record.children,
+                &format!("{prefix}{name}/"),
+                &format!("{short_prefix}{}/", record.short),
+                label,
+            );
+        }
+    }
 }
 
 /// The `fsck` this host has, if any, and its name.
@@ -319,6 +373,57 @@ fn agree(label: &str, mebibytes: usize, fat_type: lamfat::FatType, sector: u16) 
         .filter(|&c| volume.table_entry(c).unwrap() == TableEntry::Free)
         .count();
     assert_eq!(our_free as u32, free, "{label}: the free counts differ");
+
+    check_lookups(&mut volume, &expected, "", "", label);
+    assert!(matches!(
+        volume.lookup("A Long Directory Name/no such file"),
+        Err(LookupError::NotFound)
+    ));
+
+    // The same volume inside a whole-disk image: an MBR, 2048 sectors of nothing, then the volume.
+    let mut disk = vec![0u8; 2048 * sector as usize];
+    disk.extend_from_slice(&image);
+    let entry = 446;
+    disk[entry + 4] = if matches!(fat_type, lamfat::FatType::Fat32) {
+        0x0C
+    } else {
+        0x06
+    };
+    disk[entry + 8..entry + 12].copy_from_slice(&(2048u32).to_le_bytes());
+    let sectors = (image.len() / sector as usize) as u32;
+    disk[entry + 12..entry + 16].copy_from_slice(&sectors.to_le_bytes());
+    disk[510] = 0x55;
+    disk[511] = 0xAA;
+    if sector == 512 {
+        // An MBR holds sector numbers in 512-byte units here; a 4096-byte-sector image is read
+        // bare above, and its partition arithmetic is the same.
+        let mut device = Memory { bytes: &disk, size };
+        let table = MasterBootRecord::read(&mut device).expect("the table parses");
+        let partition = table.partition(0).expect("one partition");
+        assert!(partition.holds_file_allocation_table());
+        assert_eq!(partition.first_sector(), 2048);
+        let mut inside = Volume::open(partition.device(device)).expect("the partition opens");
+        let mut whole = Vec::new();
+        for entry in inside.root_entries() {
+            whole.push(entry.unwrap().short_name());
+        }
+        let mut bare = Vec::new();
+        for entry in volume.root_entries() {
+            bare.push(entry.unwrap().short_name());
+        }
+        assert_eq!(whole, bare, "{label}: the partition lists a different root");
+        let file = inside
+            .lookup("A Long Directory Name/nested two/third level deep/Spans Many Clusters.bin")
+            .expect("the large file is found inside the partition");
+        let mut reader = inside.open_file(&file).unwrap();
+        let mut bytes = vec![0u8; file.size_bytes() as usize];
+        assert_eq!(reader.read(&mut bytes).unwrap(), bytes.len());
+        assert_eq!(
+            bytes,
+            big(),
+            "{label}: the large file differs through the partition"
+        );
+    }
 }
 
 #[test]
@@ -387,6 +492,19 @@ fn rust_fatfs_reads_what_this_crate_wrote() {
         Some(&"BOOTRISCV64.EFI".encode_utf16().collect::<Vec<_>>()[..])
     );
     assert_eq!(file.bytes, body);
+    // The file by path, case and all, through the crate's own reader.
+    let entry = volume
+        .lookup("/efi/boot/bootriscv64.efi")
+        .expect("the long name is found");
+    assert_eq!(entry.size_bytes() as usize, FILE_LEN);
+    let mut reader = volume.open_file(&entry).unwrap();
+    let mut read_back = vec![0u8; FILE_LEN];
+    assert_eq!(reader.read(&mut read_back).unwrap(), FILE_LEN);
+    assert_eq!(read_back, body);
+    let by_alias = volume
+        .lookup("EFI\\BOOT\\BOOTRI~1.EFI")
+        .expect("the alias is found");
+    assert_eq!(by_alias, entry);
     let clusters = volume.boot_sector().clusters();
     let our_free = (2..clusters + 2)
         .filter(|&c| volume.table_entry(c).unwrap() == TableEntry::Free)

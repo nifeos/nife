@@ -18,7 +18,7 @@ handed out as a page table or another process's stack. That is the use-after-fre
 widening's name on it.
 
 Reclamation now sweeps by overlap over the whole range
-(`sched::delete_page_frame_caps_overlapping`). That closes an older hole the same way. A
+(`sched::delete_page_frame_capabilities_overlapping`). That closes an older hole the same way. A
 capability to a page nobody had *mapped* was never a candidate before, because the sweep was
 driven by the mapping log and the log had no record of it. `PageFrame::REVOKE` deliberately keeps
 the exact-object sweep; see the next entry.
@@ -103,7 +103,7 @@ in this milestone at all. `display_terminal` therefore maps its own page frames 
 and still receives spawn-time mappings in `MODE_WINDOW`.
 
 `date` keeps its `Spawn::maps` clock page in the kernel's test wiring. It is the one place in the
-tree where both mechanisms appear in a single spawn literal: a `page_frame_cap` whose only job is to
+tree where both mechanisms appear in a single spawn literal: a `page_frame_capability` whose only job is to
 be probed for presence, beside a `Mapping` that does the actual work. Migrating it means touching
 the shell's spawn path and the grant manifest of §67 (a program's second stream is a declaration), which is a bigger change than the wart. Note that
 the *shell* spawns `date` through `AddressSpace::MAP_INTO`, which is recorded. So the revocability

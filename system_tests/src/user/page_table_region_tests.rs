@@ -14,7 +14,7 @@ use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Rights, page_frame_run_cap, page_frame_run_len};
+use crate::capability_object::{Rights, page_frame_run_capability, page_frame_run_len};
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -135,12 +135,16 @@ fn a_destroyed_region_takes_no_live_spaces_page_tables_with_it() {
         let mapper = sched::spawn(move || {
             sched::adopt_address_space(crate::user::AddressSpace::new(2).expect("no space"));
             let root = crate::arch::mmu::current_user_root();
-            let r_slot = sched::grant(crate::cap::memory_region_cap(r)).expect("grant R");
-            let r2_slot = sched::grant(crate::cap::memory_region_cap(r2)).expect("grant R2");
+            let r_slot = sched::grant(crate::capability_object::memory_region_capability(r))
+                .expect("grant R");
+            let r2_slot = sched::grant(crate::capability_object::memory_region_capability(r2))
+                .expect("grant R2");
             let rights = Rights::ALL;
             let one = page_frame_run_len(1);
-            let f1 = sched::grant(page_frame_run_cap(first_frame, one, rights)).expect("grant f1");
-            let f2 = sched::grant(page_frame_run_cap(second_frame, one, rights)).expect("grant f2");
+            let f1 = sched::grant(page_frame_run_capability(first_frame, one, rights))
+                .expect("grant f1");
+            let f2 = sched::grant(page_frame_run_capability(second_frame, one, rights))
+                .expect("grant f2");
 
             let map = |frame: u64, region: u64, va: u64| match path {
                 Path::PageFrame => call(frame, abi::page_frame::MAP, va, 1, region),
@@ -172,7 +176,7 @@ fn a_destroyed_region_takes_no_live_spaces_page_tables_with_it() {
                 .store(spent(r2) - before - path.leaves(), Ordering::SeqCst);
             REPORT.returned.store(true, Ordering::SeqCst);
             for slot in [r_slot, r2_slot, f1, f2] {
-                let _ = sched::delete_current_cap(slot);
+                let _ = sched::delete_current_capability(slot);
             }
         })
         .expect("no mapper thread");

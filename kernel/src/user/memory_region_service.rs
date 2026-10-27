@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, memory_region_cap, rendezvous_cap};
+use crate::capability_object::{Rights, memory_region_capability, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// The program this wires, `fixtures/src/memory_region_depleter.rs`, which reads nothing from
@@ -31,8 +31,8 @@ pub fn start(
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    memory_region_cap(region),             // slot 0: the memory budget
-                    rendezvous_cap(report, Rights::WRITE), // slot 1: report the result
+                    memory_region_capability(region), // slot 0: the memory budget
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: report the result
                 ],
                 maps: &[],
             },

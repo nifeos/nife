@@ -21,7 +21,7 @@ index 611a21980..a612c5de7 100644
              // Slot 2 must stay empty: this client's attempt to receive input is `NoSuchSlot`, not
              // anyone's refusal. See ROLE_PROBE_INPUT.
 -            2
-+            grants[2] = rendezvous_cap(self.client_report[i], Rights::WRITE);
++            grants[2] = rendezvous_capability(self.client_report[i], Rights::WRITE);
 +            3
          };
  

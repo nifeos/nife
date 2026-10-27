@@ -201,8 +201,8 @@ pub(super) fn try_initiate_steal() {
 pub fn run_idle() -> ! {
     loop {
         // Gauges, here because this is where the kernel reaches after every phase of a boot with
-        // nothing else to do (`cap::report_peak`).
-        crate::cap::report_peak();
+        // nothing else to do (`capability_object::report_peak`).
+        crate::capability_object::report_peak();
         crate::progenitor_stack::report_peak();
         try_initiate_steal();
         crate::arch::wait_for_interrupt();

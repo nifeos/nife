@@ -80,7 +80,7 @@ whether it can be done.
 This is a live correctness bug that no current code path can reach, and the first proposal that
 wakes a reply-parked caller reaches it.
 
-`cap::reply_cap` mints `Object::Reply(tid)`. The payload is a generational `ThreadId` and nothing else:
+`cap::reply_capability` mints `Object::Reply(tid)`. The payload is a generational `ThreadId` and nothing else:
 there is no call sequence number, no endpoint, no nonce. `generational_table` bumps a slot's generation when the
 *thread* is removed, not per call.
 
@@ -96,10 +96,10 @@ The `_` is the endpoint, and it is discarded. Today this is sound, and the reaso
 because it is what an abort would invalidate. There are three ways out of a reply park, and no
 server holds an unconsumed `Reply(tid)` at the end of any of them:
 
-- The reply arrives. `abi::reply::REPLY` calls `ipc_reply` and then `delete_current_cap(slot)`,
+- The reply arrives. `abi::reply::REPLY` calls `ipc_reply` and then `delete_current_capability(slot)`,
   "so a second reply is `NoSuchSlot`". The cap is gone whether or not the delivery landed.
 - The caller is drained off a sender queue. A `CALL` that met no receiver leaves the caller
-  *both* Reply-parked and queued as a sender, with the reply cap riding in `outgoing_cap` rather than
+  *both* Reply-parked and queued as a sender, with the reply cap riding in `outgoing_capability` rather than
   in anyone's capability table, so `drain_waiters` reaches it and `Gone` does resolve. No server ever held
   that cap, because no server ever collected the message.
 - The caller dies. The `generational_table` generation bumps and every `Reply(tid)` naming it goes stale on its
@@ -269,7 +269,7 @@ did not already imply.
 
 **The stale-reply-capability hazard was unreachable when this note was written. Milestone 254 made
 it reachable and tested; milestone 133 is the one design here that does not reach it at all.** It
-was established here by reading `cap::reply_cap`, the generational naming, and `ipc_reply`'s guard,
+was established here by reading `cap::reply_capability`, the generational naming, and `ipc_reply`'s guard,
 and by enumerating the exits from a reply park: an argument, not a proof. Two milestones then took
 seL4's two fixes, one each and for different reasons. 254 wakes a stranded caller and so must delete
 the outstanding capability before the wake (`cteDeleteOne(callerCap)` from `cancelIPC`), which two

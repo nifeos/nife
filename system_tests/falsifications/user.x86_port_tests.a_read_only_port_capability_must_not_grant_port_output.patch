@@ -23,14 +23,16 @@ diff --git a/kernel/src/sched/thread_control_block.rs b/kernel/src/sched/thread_
 index b75859040..213bca5f7 100644
 --- a/kernel/src/sched/thread_control_block.rs
 +++ b/kernel/src/sched/thread_control_block.rs
-@@ -91,9 +91,7 @@ pub(super) fn thread_control_block_insert_from(
+@@ -93,11 +93,7 @@
      // bitmap cannot permit `in` without `out` (§121 (what a device capability is when the device
      // has no page)); the capability still lands.
      #[cfg(target_arch = "x86_64")]
--    if let crate::cap::Object::PortRange(base, count) = capability.object
--        && capability.rights.allows(crate::cap::Rights::WRITE)
+-    if let crate::capability_object::Object::PortRange(base, count) = capability.object
+-        && capability
+-            .rights
+-            .allows(crate::capability_object::Rights::WRITE)
 -    {
-+    if let crate::cap::Object::PortRange(base, count) = capability.object {
++    if let crate::capability_object::Object::PortRange(base, count) = capability.object {
          t.port_range_grant = Some((base, count));
      }
      Ok(landed)

@@ -95,7 +95,7 @@ scans. A `MAP` that read its capability, then mapped and recorded in separate cr
 would let a sweep run wholly in between. That is the use-after-free again.
 
 `MappingHold` is the registry held across the whole operation, which is seL4's answer: a
-mapping-database lock. `MappingHold::current_cap` reads the running thread's capability under the
+mapping-database lock. `MappingHold::current_capability` reads the running thread's capability under the
 hold, taking its table lock beneath the registry (`CAPABILITY_TABLE`, 57, under `MAPPINGS`, 59). A
 sweep deletes from the table before it takes the registry. So the sweep is either wholly before
 the read, and the `MAP` answers `NoSuchSlot` as if it had started after the revoke, or its unmap
@@ -107,7 +107,7 @@ The cost is page-table construction under the hold. Tables come from a region (`
 58, beneath this), and a run maps every page under one hold, so every other mapping and unmap pass
 waits. `MAP` is spawn-time and setup work, never a step of the IPC round trip. The cost under
 contention is not measured. The read is protected by convention, not by type: a caller can still
-read a capability with `sched::current_cap` outside a hold and map with it. The `MAP` handlers
+read a capability with `sched::current_capability` outside a hold and map with it. The `MAP` handlers
 receive only the slot, which is the same defense `sched::Delegation` uses.
 
 A page table is recorded before the mapper links it, under the same hold. `revoke_region`'s cut

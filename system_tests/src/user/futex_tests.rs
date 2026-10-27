@@ -18,7 +18,7 @@ use abi::Error;
 use abi::futex::{PRIVATE, SIZE_U32, SIZE_U64};
 
 use super::*;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -136,9 +136,9 @@ fn start_waiter(region: u64) -> (u64, u64, u64) {
     user_address_space_map(name, VA, page, Flags::user_data(), none).expect("map the word");
 
     let tid = sched::create_thread_control_block(region).expect("no tcb");
-    sched::thread_control_block_insert_cap(
+    sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::address_space_cap(name, Rights::READ),
+        crate::capability_object::address_space_capability(name, Rights::READ),
         Some(0),
     )
     .expect("give the waiter its own space");
@@ -266,8 +266,16 @@ fn a_waiter_whose_region_is_destroyed_leaves_the_futex_table() {
 fn the_reserved_futex_forms_and_foreign_words_are_refused() {
     let region = crate::memory_region::create(16).expect("no region");
     let name = user_address_space_create(region).expect("no address space");
-    let reader = sched::grant(crate::cap::address_space_cap(name, Rights::READ)).expect("grant");
-    let writer = sched::grant(crate::cap::address_space_cap(name, Rights::WRITE)).expect("grant");
+    let reader = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::READ,
+    ))
+    .expect("grant");
+    let writer = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::WRITE,
+    ))
+    .expect("grant");
     let good = PRIVATE | SIZE_U32;
     let kernel_half = mmu::phys_to_virt(0);
 
@@ -306,7 +314,7 @@ fn the_reserved_futex_forms_and_foreign_words_are_refused() {
     }
 
     for slot in [reader, writer] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     sched::reclaim_region(region).expect("the region did not come back");
 }

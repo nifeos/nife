@@ -65,7 +65,7 @@ does.
 - A slice escapes its source's revocation, for the reason above. Nothing revokes the pool: the
   kernel never takes it back and the progenitor holds its `GRANT` only to delegate. So this is a
   record, not a hole. The day something revokes a pool, it must also revoke the slices, and the way
-  is §132's overlap sweep (`delete_page_frame_caps_overlapping`), which reclamation already uses.
+  is §132's overlap sweep (`delete_page_frame_capabilities_overlapping`), which reclamation already uses.
   The derivation tree does not give it for free, because this tree has no derivation tree: an
   object's identity is its base and length.
 - The progenitor is not told when a job dies, so a window goes back into rotation after seven more

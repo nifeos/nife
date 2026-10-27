@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Where the tool expects the caller to have staged the identity and secret, in
@@ -79,9 +79,9 @@ pub fn provision(
                 arg1: secret_len,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(prov, Rights::WRITE), // slot 0: PUT the credential
-                    rendezvous_cap(fs_ep, Rights::WRITE), // slot 1: MKDIR the home subtree
-                    rendezvous_cap(report, Rights::WRITE), // slot 2: say what happened
+                    rendezvous_capability(prov, Rights::WRITE), // slot 0: PUT the credential
+                    rendezvous_capability(fs_ep, Rights::WRITE), // slot 1: MKDIR the home subtree
+                    rendezvous_capability(report, Rights::WRITE), // slot 2: say what happened
                 ],
                 maps: &maps,
             },

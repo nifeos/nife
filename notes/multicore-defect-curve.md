@@ -136,7 +136,7 @@ only on silicon") is a claim about this column, and the `silicon-only` column is
 | D9 | 2026-08-26 | x86_64 | qemu-tcg (about half of runs) | multicore | no | 2026-09-18, milestone 316 | `arch::x86_64::ap_boot`'s `BUGS` #3 (which core booted) |
 | D10 | 2026-08-26 | x86_64 | qemu-tcg (26 of 40 at `-smp 4`) | race | no | 2026-09-19, milestone 161 | `arch::x86_64::ap_boot`'s `BUGS` #1 (the lost check-in) |
 | D11 | 2026-09-02 | riscv64, and a loaded host | qemu-tcg | instrument | no | 2026-09-02, milestone 221 | [`soak.md`](soak.md), "Two bugs this mechanism had" (both) |
-| D12 | 2026-09-17 | x86_64 | audit (milestone 313), then qemu-tcg (7 of 12) | race | no | 2026-09-23, milestone 315 | `sched::delete_port_range_caps_impl`, the per-core port revoke |
+| D12 | 2026-09-17 | x86_64 | audit (milestone 313), then qemu-tcg (7 of 12) | race | no | 2026-09-23, milestone 315 | `sched::delete_port_range_capabilities_impl`, the per-core port revoke |
 | D13 | 2026-09-19 | aarch64, riscv64 | hvf, 5 of 9 recorded full runs; qemu-tcg, the CPU matrix twice in about 9,000 boots | race | no | 2026-10-12, milestone 514 | [`hvf-leg.md`](hvf-leg.md), `a_std_program_serves_a_granted_listening_port` |
 
 The milestones in the `fixed` column: milestone 80 (Loom: the hand-rolled atomic protocols,

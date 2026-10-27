@@ -22,7 +22,7 @@ use abi::Error;
 use super::wait_for;
 use crate::arch::exceptions::TrapFrame;
 use crate::arch::timer::{frequency, now};
-use crate::cap::{Object, Rights};
+use crate::capability_object::{Object, Rights};
 use crate::sched;
 use crate::thread::{Wait, WaitRole};
 
@@ -232,7 +232,8 @@ fn a_cancelled_or_rearmed_timer_never_fires_stale() {
 #[test_case]
 fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     let r = region();
-    let ut = sched::grant(crate::cap::memory_region_root_cap(r)).expect("grant the region");
+    let ut = sched::grant(crate::capability_object::memory_region_root_capability(r))
+        .expect("grant the region");
     let full = invoke(
         ut,
         abi::memory_region::RETYPE_OBJ,
@@ -241,7 +242,7 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
         0,
     )
     .expect("RETYPE_OBJ(TIMER)") as u64;
-    let cap = sched::current_cap(full).expect("the minted slot");
+    let cap = sched::current_capability(full).expect("the minted slot");
     let Object::Timer(t) = cap.object else {
         panic!("RETYPE_OBJ(TIMER) minted {:?}", cap.object);
     };
@@ -254,11 +255,16 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
         0,
     )
     .expect("RETYPE_OBJ(NOTIFICATION)") as u64;
-    let Object::Notification(n) = sched::current_cap(n_slot).expect("slot").object else {
+    let Object::Notification(n) = sched::current_capability(n_slot).expect("slot").object else {
         panic!("not a notification");
     };
-    let n_read = sched::grant(crate::cap::notification_cap(n, Rights::READ)).expect("read view");
-    let t_read = sched::grant(crate::cap::timer_cap(t, Rights::READ)).expect("read view");
+    let n_read = sched::grant(crate::capability_object::notification_capability(
+        n,
+        Rights::READ,
+    ))
+    .expect("read view");
+    let t_read = sched::grant(crate::capability_object::timer_capability(t, Rights::READ))
+        .expect("read view");
 
     let later = now() + ms(10_000);
     assert_eq!(
@@ -311,7 +317,7 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     );
 
     for slot in [t_read, n_read, n_slot, full, ut] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     reclaim(r);
 }
