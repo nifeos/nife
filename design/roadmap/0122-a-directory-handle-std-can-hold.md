@@ -177,9 +177,10 @@ is §82's stated failure mode.
   is what prices it, and the answer is the input to whether the contract should grow a
   multi-component resolve.
 - **Decision.** `design/decisions/0098-opendir-cannot-attenuate.md` holds it: `OPENDIR` has no way to
-  say "attenuate to whatever you have", so a held directory asks for `dir::ALL` and, when a narrowed
-  grant refuses, probes one right at a time. The workaround ships and is recorded where a reader
-  meets it; the replacement is a sentinel in the rights word, which is a wire change.
+  say "attenuate to whatever you have", so a held directory asked for `dir::ALL` and, when a narrowed
+  grant refused, probed one right at a time. On 2026-10-27 (UTC) §98 ruled that a sentinel in the
+  rights word means "the parent's rights, whatever they are", and it deletes the probe and the same
+  trap in `MKDIR`.
 - **Milestone 108.** Lifetime and revocation of a retained directory handle: when it is closed, and
   what a program observes if the directory it holds is revoked underneath it. 108 asks the same
   question one level up.
