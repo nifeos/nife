@@ -7,16 +7,16 @@ outsider pass attacks the confinement claim). Reviewer: GLM 5.3 through opencode
 launcher from milestone 920 (an outsider pass is launched pinned and floor-checked), unchanged.
 
 Status: **escape on a shipped path, fix mandatory.** calef ruled it on 2026-10-27 (UTC). The
-escape sits on claim 11, where an alias defeats W^X. The lane's count is `booted 11 of 29, floor
-short by 18`. The pass does not count toward criterion (c): a pass that finds an escape is not
-clean, and it misses the floor.
+escape sits on claim 11, where an alias defeats W^X. Counted from the tests in this tree, the pass
+reads `booted 2 of 29, floor short by 27`. The pass does not count toward criterion (c): a pass
+that finds an escape is not clean, and it misses the floor.
 
 ## The ruling
 
-calef ruled on 2026-10-27 (UTC): "We need the mandatory fix milestone." The fork put to him
-offered shipped path or coverage gap, with both readings stated; the mandatory fix accepts the
-shipped-path reading. The facts he ruled on sit below: the mechanism, its reachability through
-ordinary capabilities, and the lane's independent reproduction on all three ISAs.
+On 2026-10-27 (UTC) calef ruled that the escape needs a fix milestone and that the fix is mandatory.
+The fork put to him offered shipped path or coverage gap, with both readings stated; a mandatory fix
+accepts the shipped-path reading. The facts he ruled on sit below: the mechanism, its reachability
+through ordinary capabilities, and the lane's independent reproduction on all three ISAs.
 
 The lane proposed the fix milestone in
 [`design/roadmap/proposals/a-map-into-refuses-a-frame-mapped-twice-with-different-flags.md`](../design/roadmap/proposals/a-map-into-refuses-a-frame-mapped-twice-with-different-flags.md);
@@ -35,17 +35,19 @@ row cites survive; the claim as published, "no page is both writable and executa
 
 The reviewer's witness is
 `system_tests::user::tenth_pass_map_gate_tests::one_physical_page_is_never_writable_here_and_executable_there`,
-opt-in under `NIFE_ESCAPE_WITNESS=1` so the red test stays out of the default suite. The reviewer
-booted it red on aarch64 at its head. The lane replayed it red the same day on all three
+committed in `system_tests/src/user/tenth_pass_map_gate_tests.rs` beside its two boundary tests,
+and opt-in under `NIFE_ESCAPE_WITNESS=1` so the red test stays out of the default suite. The
+reviewer booted it red on aarch64 at its head. The lane replayed it red the same day on all three
 architectures: aarch64 (writable at 0xffffffffe000, executable at 0xfffffffff000), riscv64
 (0x3fffffe000, 0x3ffffff000), and x86_64 (0x7fffffffe000, 0x7ffffffff000). The alias lives in the
 shared dispatcher, so one fix covers every ISA.
 
 The falsification patch is
-`system_tests/falsifications/user.tenth_pass_map_gate_tests.one_physical_page_is_never_writable_here_and_executable_there.patch`,
-cut from the reviewer's escape commit against the pass's pin; it applies clean and carries the two
-green boundary-edge tests with the witness. No fix exists yet, so the witness stands as the
-failing test committed before any fix, as the block's Done-means asks.
+`system_tests/falsifications/user.tenth_pass_map_gate_tests.one_physical_page_is_never_writable_here_and_executable_there.patch`.
+The defect is in the kernel already, so the patch introduces none: it turns the witness's opt-in
+on, and the sweep replays the escape as it stands, red at the witness assertion on all three
+architectures. No fix exists yet, so the witness stands as the failing test committed before any
+fix, as the block's Done-means asks.
 
 ## The launch, and the key ruling
 
@@ -75,9 +77,14 @@ The launcher then crashed after that turn: `helpers/launch_pass.py`'s `models()`
 check the exit status and fail soft, so a finished session can never stick.
 
 The reviewer's turn ended before it wrote `results.md`, before its own count, and before the
-completion round. What it produced: 17 boot logs, two commits on its branch (`616eb0437`, the
-escape with the boundary tests; `07d1555d1`, five dispatcher attack modules), and the attack
-stream.
+completion round. It produced 17 boot logs, the attack stream and two commits on its branch: the
+escape with the boundary tests, and five dispatcher attack modules. Neither commit reached a
+remote, and no copy of either survives. The escape module survives whole because the
+falsification patch carried it, and it is committed here. The five dispatcher modules, and three
+further modules (`tenth_pass_authority_return_tests`, `tenth_pass_session_usurper_tests` and
+`tenth_pass_revocation_coverage_tests`) of which only a one-paragraph doc comment survives, are
+not in the tree. Recreating them from that little would put the lane's attacks in the reviewer's
+name, so the lane did not.
 
 ## The refusal log
 
@@ -87,26 +94,24 @@ turn.
 
 ## The lane's reproduction
 
-The lane reproduced every booted row itself, one ISA's QEMU at a time, in the same container
-recipe with no key in the environment: the six attack modules on all three ISAs, plus the witness
-on all three. That gives revocation coverage and session usurpation one more ISA each than the
-reviewer reached before its container died. The lane re-ran one leg (consumption, aarch64) after a
-flaky cargo archive error left no verdict, and counted nothing from a log without one.
+The lane replayed the committed module itself on 2026-10-27 (UTC), one ISA's QEMU at a time
+under QEMU 11.1.2, with the falsification patch applied: the witness red at its assertion and the
+two boundary tests green, on aarch64, riscv64 and x86_64. Those three logs are the count's input.
 
 ## The count
 
-`script/booted-rows`, over the lane's 21 reproduction logs against the pin:
+`script/booted-rows`, over the lane's three replay logs of the committed module against the pin:
 
 ```
 row 1: no pass-written test
 row 2: no pass-written test
 row 3: no pass-written test
-row 4: booted aarch64, riscv64, x86_64
-row 5: booted aarch64, riscv64, x86_64
-row 6: booted aarch64, riscv64, x86_64
-row 7: booted aarch64, riscv64, x86_64
-row 8: booted aarch64, riscv64, x86_64
-row 9: booted aarch64, riscv64, x86_64
+row 4: no pass-written test
+row 5: no pass-written test
+row 6: no pass-written test
+row 7: no pass-written test
+row 8: no pass-written test
+row 9: no pass-written test
 row 10: booted aarch64, riscv64, x86_64
 row 11: booted aarch64, riscv64, x86_64
 row 12: host (exempt)
@@ -120,31 +125,33 @@ row 19: no pass-written test
 row 20: no pass-written test
 row 21: no pass-written test
 row 22: no pass-written test
-row 23: booted aarch64, riscv64, x86_64
+row 23: no pass-written test
 row 24: no pass-written test
 row 25: no pass-written test
-row 26: booted aarch64, riscv64, x86_64
+row 26: no pass-written test
 row 27: no pass-written test
 row 28: no pass-written test
 row 29: no pass-written test
-row 30: booted aarch64, riscv64, x86_64
+row 30: no pass-written test
 row 31: no pass-written test
 row 32: no pass-written test
 row 33: no pass-written test
 row 34: no pass-written test
 row 35: no pass-written test
 row 36: no pass-written test
-booted 11 of 29, floor short by 18
+booted 2 of 29, floor short by 27
 ```
 
-Rows 4 to 11, 23, 26 and 30 booted, each on all three ISAs. Rows 12 to 18 are host-exempt. The
-reviewer died before it could widen its attack, so 18 bootable rows have no pass-written test.
-The brief's floor block, which governs, reads 29 bootable of 36; this block's prose still said 28
-of 35, and the same pull request corrects it.
+Rows 10 and 11 booted, each on all three ISAs. Rows 12 to 18 are host-exempt. The lane's earlier
+reproduction also booted rows 4 to 9, 23, 26 and 30, from the reviewer's other modules; those
+modules and their logs are not in the tree, so the nine rows are unverified and stay out of the
+count.
 
-The lane did not run the completion round. Its purpose lifts a below-floor clean pass over the
-floor, and no round can make this pass clean after an escape; calef's ruling directs the
-fix-first cycle instead.
+The lane did not run the completion round. That was the lane's own judgement, and no ruling waives
+the round. The reason: the round exists to lift a below-floor clean pass over the floor, and this
+pass cannot be clean after an escape, so a round would spend the reviewer's tokens and a fresh key
+on a count that cannot change the pass's standing. Whether that waiver stands is calef's call, and
+the pull request asks it.
 
 ## What the pass leaves
 
@@ -155,4 +162,7 @@ fix-first cycle instead.
   slot's liveness check then always finds the holder alive; the scripts manual's BUGS records it.
 - Risk 7's appendix cites this pass through the maintainer under §216 (fatal-risk facts are
   correctable, and verdicts are the architect's). Moving the color stays calef's.
+- The completion-round waiver above, put to calef on the pull request.
+- Rows 4 to 9, 23, 26 and 30 have no committed pass-written test; the next pass's floor covers
+  them again.
 - The key rotation, calef's, once this note merges.

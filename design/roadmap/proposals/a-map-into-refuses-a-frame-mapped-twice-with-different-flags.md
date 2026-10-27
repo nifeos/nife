@@ -25,9 +25,20 @@ falsification, and the replayable patch sits beside
 `system_tests/src/user/tenth_pass_map_gate_tests.rs`.
 
 The fix: `address_space_map_into`, or the mapping hold beneath it, refuses a second mapping of a
-frame the space already maps when the flags would differ. One check covers every path that
-installs a leaf, so the riscv64 and x86_64 instances come free with the shared code. The witness
-drops its opt-out and joins the default suite green on all three architectures.
+frame the space already maps when the flags would differ. The check covers every path that
+installs a leaf only if it lives in the mapping hold (`map_physical_held`); in the dispatcher it
+covers `MAP_INTO` alone, and the other paths that install a leaf (`PageFrame::MAP`,
+`MemoryRegion::MAP`, the kernel's loader) stay open. Either way it sees one address space at a
+time. The code is shared, so the riscv64 and x86_64 instances come with it. The witness drops its
+opt-in and joins the default suite green on all three architectures.
 
-An architect rules the refusal's exact shape before the lane starts: any flag difference, or only
-the writable-and-executable pair; and the check's home, the dispatcher or the hold.
+A check inside one space leaves a second alias open: the same frame writable in the builder's own
+space, or in any other space, and executable in the child. A loader writes code through a
+writable mapping in its scratch and then maps the frame as code into the child, so some
+cross-space alias is the shipped design for loading; what is open is whether the writable side may
+outlive the child's start. The mapping log records every mapping of a frame in any space, so a
+check there could see it.
+
+An architect rules three things before the lane starts: the refusal's shape (any flag difference,
+or only the writable-and-executable pair); the check's home (the dispatcher or the hold); and
+whether claim 11 covers the cross-space alias, and if so what the fix refuses there.

@@ -29,7 +29,7 @@ outsider pass attacks the confinement claim), was by GLM 5.3 and did not count.
 
 ## What it needs
 
-- A commit: `main` with row 35 and its test, so the table has 35 rows.
+- A commit: `main` with row 35 and its test. The table has 36 rows.
 - From calef: GLM 5.3 tokens (the pass waits for his weekly allowance to reset), an API key made
   for the pass and revoked after, in the launcher's environment, and patagonia's podman machine at
   6 CPUs and 8 GiB or more.
