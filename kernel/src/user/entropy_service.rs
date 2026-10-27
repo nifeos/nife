@@ -1,5 +1,7 @@
 use super::*;
-use crate::cap::{Rights, interrupt_cap, rendezvous_cap, virtio_cap};
+use crate::capability_object::{
+    Rights, interrupt_capability, rendezvous_capability, virtio_capability,
+};
 use crate::sched::RendezvousId;
 
 /// Where the service maps its DMA page. Must match components/src/entropy.rs.
@@ -166,10 +168,10 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
                 arg1: dma, // the DMA region's PHYSICAL base: descriptors speak physical
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(request, Rights::READ), // slot 0: RECEIVE client requests
-                    interrupt_cap(intid),                  // slot 1: the completion interrupt
-                    virtio_cap(vid),                       // slot 2: the confined transport
-                    rendezvous_cap(ready, Rights::WRITE),  // slot 3: signal readiness once
+                    rendezvous_capability(request, Rights::READ), // slot 0: RECEIVE client requests
+                    interrupt_capability(intid), // slot 1: the completion interrupt
+                    virtio_capability(vid),      // slot 2: the confined transport
+                    rendezvous_capability(ready, Rights::WRITE), // slot 3: signal readiness once
                 ],
                 maps: &maps,
             },
@@ -230,8 +232,8 @@ fn start_instruction(image: &'static [u8]) -> Option<Wiring> {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(request, Rights::READ), // slot 0: RECEIVE client requests
-                    rendezvous_cap(ready, Rights::WRITE),  // slot 1: signal readiness once
+                    rendezvous_capability(request, Rights::READ), // slot 0: RECEIVE client requests
+                    rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &[],
             },
@@ -308,8 +310,8 @@ fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(request, Rights::READ), // slot 0: RECEIVE client requests
-                    rendezvous_cap(ready, Rights::WRITE),  // slot 1: signal readiness once
+                    rendezvous_capability(request, Rights::READ), // slot 0: RECEIVE client requests
+                    rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &maps,
             },

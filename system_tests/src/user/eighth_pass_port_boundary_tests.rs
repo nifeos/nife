@@ -11,9 +11,7 @@
 
 use super::supervision_tests::{CODE_VA, build_child_with};
 use super::x86_programs;
-use crate::cap::{
-    Rights, port_range_cap as port_range_capability, rendezvous_cap as rendezvous_capability,
-};
+use crate::capability_object::{Rights, port_range_capability, rendezvous_capability};
 use crate::sched;
 
 const COM1_BASE: u16 = crate::user::X86_COM1_PORT_BASE;
@@ -42,7 +40,11 @@ fn endpoints() -> Endpoints {
 
 /// Build a child from `stub` with `capabilities` in slots 0, 1, ... and the supervision endpoint in the
 /// reserved fault slot, in its own region. Returns `(tid, region)` for the reaping retry.
-fn child(stub: &[u32], capabilities: &[crate::cap::Cap], fault: sched::RendezvousId) -> (u64, u64) {
+fn child(
+    stub: &[u32],
+    capabilities: &[crate::capability_object::Cap],
+    fault: sched::RendezvousId,
+) -> (u64, u64) {
     let region = crate::memory_region::create(16).expect("no region for the child");
     let tid = build_child_with(
         region,
@@ -239,7 +241,7 @@ fn a_revoked_range_stops_its_holder_and_an_unrelated_revoke_stops_no_one() {
 ///
 /// The first leg characterizes near miss 2 of the eighth pass, asserted as the tree behaves so a
 /// fix turns it red: deleting one twin clears the thread's cached TSS grant, so the survivor's
-/// `out` faults. That fails closed, at claim 5's corner (`sched::delete_current_cap`'s `BUGS`).
+/// `out` faults. That fails closed, at claim 5's corner (`sched::delete_current_capability`'s `BUGS`).
 /// The second leg is the claim's: with both deleted, the `out` faults at the `out` itself.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it

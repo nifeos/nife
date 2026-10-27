@@ -23,13 +23,12 @@ use video_terminal::handoff::HANDOFF_BYTES;
 use video_terminal::script::{COLS, ROWS};
 
 use super::*;
-use crate::cap::{
-    Rights, memory_region_root_cap as memory_region_root_capability,
-    page_frame_cap as page_frame_capability, page_frame_run_cap as page_frame_run_capability,
-    page_frame_run_len, rendezvous_cap as rendezvous_capability,
+use crate::capability_object::{
+    Rights, memory_region_root_capability, page_frame_capability, page_frame_run_capability,
+    page_frame_run_len, rendezvous_capability,
 };
 use crate::sched;
-use crate::sched::ipc_send_cap as send_capability;
+use crate::sched::inter_process_communication_send_capability as send_capability;
 use crate::user::holding::Holding;
 
 /// `display_terminal`'s image is the largest, about 220 pages: its `Vt` is initialized to

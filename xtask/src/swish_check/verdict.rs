@@ -34,7 +34,7 @@ pub(super) const X86_HAND_OVER_START: &str =
 
 /// How long to wait for the banner. Generous, because a gate that flakes on a busy laptop is a
 /// gate people learn to ignore.
-pub(super) const SWISH_CHECK_BOOT_SECS: u64 = 120;
+pub(super) const SWISH_CHECK_BOOT_SECONDS: u64 = 120;
 /// How long to wait for one line's echo, on the legs that are not emulated `x86_64`.
 ///
 /// # BUGS
@@ -42,17 +42,17 @@ pub(super) const SWISH_CHECK_BOOT_SECS: u64 = 120;
 /// - It is a per-echo budget, not a per-line one, and it flakes under load: a failure after a
 ///   partial echo is a load report until the one leg is rerun. How long an echo takes under load
 ///   is not measured. See notes/swish-check-harness.md, "Timeouts and what a leg costs".
-pub(super) const SWISH_CHECK_LINE_SECS: u64 = 30;
+pub(super) const SWISH_CHECK_LINE_SECONDS: u64 = 30;
 
 /// **The `x86_64` leg's per-line bound under TCG, half again the others'**, measured rather than
 /// chosen (milestone 628 (provisional), 2026-10-03 UTC). Under KVM the leg keeps
-/// [`SWISH_CHECK_LINE_SECS`]; this bound is for every Mac and any host without `/dev/kvm`.
+/// [`SWISH_CHECK_LINE_SECONDS`]; this bound is for every Mac and any host without `/dev/kvm`.
 ///
 /// The slowest emulated line was 10.8 s on patagonia and 14.2 s on CI's arm64 runner (run
 /// 37089120726), so 45 s is 3.2 times CI's slowest. The difference from the other legs is the
 /// screen path, each store through TCG. The tables, and the earlier tick-paced runs that are not
 /// this bound's evidence, are in notes/swish-check-harness.md, "Timeouts and what a leg costs".
-pub(super) const SWISH_CHECK_X86_LINE_SECS: u64 = 45;
+pub(super) const SWISH_CHECK_X86_LINE_SECONDS: u64 = 45;
 
 /// **What one leg's median line costs when it is healthy, per architecture and accelerator**
 /// (milestone 722 (swish-check fails a leg that costs five times the others per line),
@@ -88,8 +88,8 @@ pub(super) struct LegCost {
 
 /// Judge one boot's per-line times against [`LEG_COST_BASELINE`]. Pure, so the rule is tested on
 /// the host without a boot. `accel` is `"kvm"` or `"tcg"`.
-pub(super) fn leg_cost_verdict(arch: &str, accel: &str, secs: &[f64]) -> LegCost {
-    let mut sorted = secs.to_vec();
+pub(super) fn leg_cost_verdict(arch: &str, accel: &str, seconds: &[f64]) -> LegCost {
+    let mut sorted = seconds.to_vec();
     sorted.sort_by(|a, b| a.partial_cmp(b).expect("a duration is a number"));
     let median = match sorted.len() {
         0 => 0.0,
@@ -100,7 +100,7 @@ pub(super) fn leg_cost_verdict(arch: &str, accel: &str, secs: &[f64]) -> LegCost
         .iter()
         .find(|(a, x, _)| *a == arch && *x == accel)
         .map(|(_, _, s)| *s);
-    let over = secs.len() >= LEG_COST_MINIMUM_LINES
+    let over = seconds.len() >= LEG_COST_MINIMUM_LINES
         && baseline.is_some_and(|b| median > b * LEG_COST_FACTOR);
     LegCost {
         median,

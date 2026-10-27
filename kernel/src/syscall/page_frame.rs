@@ -27,7 +27,9 @@ pub(super) fn page_frame_map(
     #[cfg(feature = "system_tests")]
     crate::delegation_pause::here(); // no lock held
     let mut hold = crate::revoke::hold();
-    let frame = hold.current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
+    let frame = hold
+        .current_capability(slot)
+        .map_err(|_| Error::NoSuchSlot)?;
     let Object::PageFrame(phys, count) = frame.object else {
         return Err(Error::NoSuchSlot);
     };
@@ -55,7 +57,7 @@ pub(super) fn page_frame_map(
     };
     // Under the hold only for the refusal order: a region destroyed after this read refuses to
     // retype, because it is generational (§16 (object revocation)).
-    let ut = sched::current_cap(ut_slot).map_err(|_| Error::NoSuchSlot)?;
+    let ut = sched::current_capability(ut_slot).map_err(|_| Error::NoSuchSlot)?;
     let Object::MemoryRegion(region) = ut.object else {
         return Err(Error::WrongObject);
     };
@@ -125,7 +127,9 @@ pub(super) fn page_frame_slice(slot: u64, first: u64, len: u64) -> Result<i64, E
             return Err(Error::BadPointer);
         }
         let base = phys + first * page_frames::FRAME_SIZE;
-        Ok(crate::cap::page_frame_run_cap(base, len, src.rights))
+        Ok(crate::capability_object::page_frame_run_capability(
+            base, len, src.rights,
+        ))
     })?;
     Ok(slot as i64)
 }

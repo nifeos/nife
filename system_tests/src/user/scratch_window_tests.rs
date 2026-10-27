@@ -21,7 +21,9 @@
 //! notes/unmap.md, "The scratch window test", has each in full.
 
 use super::*;
-use crate::cap::{Rights, memory_region_cap, memory_region_lending_capability, rendezvous_cap};
+use crate::capability_object::{
+    Rights, memory_region_capability, memory_region_lending_capability, rendezvous_capability,
+};
 use crate::sched;
 
 /// The exerciser's building budget: 7 extra stack pages and 720 for one child at a time, with 33
@@ -39,7 +41,7 @@ const BUILDS: u64 = 40;
 /// How long to wait for the report, run by name: 5 s measured on aarch64 alone, so twelve times
 /// that. In the whole suite it took 104 s (see this module's BUGS), which is why it does not run
 /// there.
-const WAIT_SECS: u64 = 60;
+const WAIT_SECONDS: u64 = 60;
 
 /// Why the whole suite skips this test.
 const OPT_IN: &str = "opt-in: 104 s in CI's whole aarch64 suite, and past x86_64's leg timeout, \
@@ -75,8 +77,8 @@ fn a_builder_reuses_scratch_its_reaped_children_gave_back() {
                 arg2: 0,
                 grants: &[
                     memory_region_lending_capability(region), // slot 0: the budget
-                    rendezvous_cap(report, Rights::WRITE),    // slot 1: the report
-                    memory_region_cap(tables),                // slot 2: its own page tables
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: the report
+                    memory_region_capability(tables),         // slot 2: its own page tables
                 ],
                 maps: &[],
             },
@@ -86,14 +88,14 @@ fn a_builder_reuses_scratch_its_reaped_children_gave_back() {
 
     // Bounded, so a builder that faults says so here rather than as the suite's watchdog.
     let start = crate::arch::timer::now();
-    let deadline = start + WAIT_SECS * crate::arch::timer::frequency();
+    let deadline = start + WAIT_SECONDS * crate::arch::timer::frequency();
     while sched::rendezvous_waiting_senders(report) == 0 && crate::arch::timer::now() < deadline {
         sched::yield_now();
     }
     assert!(
         sched::rendezvous_waiting_senders(report) > 0,
         "the exerciser never reported: it faulted ({} faults) or is still building after \
-         {WAIT_SECS} s",
+         {WAIT_SECONDS} s",
         USER_FAULTS.load(Ordering::Relaxed) - faults,
     );
     let [built, pages, window, ..] = sched::ipc_receive(report);

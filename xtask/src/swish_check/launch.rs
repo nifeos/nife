@@ -58,7 +58,7 @@ pub(super) fn reboot_phase(
 ) -> Result<String, String> {
     use RebootPhase as P;
     let mut phase = RebootPhase { seen, stdin };
-    if !phase.wait_prompt(P::LINE_SECS) {
+    if !phase.wait_prompt(P::LINE_SECONDS) {
         return Err(P::failure(
             "the first boot was not at a bare prompt when the phase began",
         ));
@@ -66,9 +66,9 @@ pub(super) fn reboot_phase(
     let at = phase.len();
     phase.type_line(P::WRITE_LINE)?;
     if phase
-        .wait_after(at, &format!("{}\n", P::WRITE_LINE), P::LINE_SECS)
+        .wait_after(at, &format!("{}\n", P::WRITE_LINE), P::LINE_SECONDS)
         .is_none()
-        || !phase.wait_prompt(P::LINE_SECS)
+        || !phase.wait_prompt(P::LINE_SECONDS)
     {
         return Err(P::failure(&format!(
             "`{}` never came back to a prompt",
@@ -77,7 +77,7 @@ pub(super) fn reboot_phase(
     }
     let typed = phase.len();
     phase.type_line("reboot")?;
-    let Some(asked) = phase.wait_after(typed, P::KERNEL_ASKED, P::LINE_SECS) else {
+    let Some(asked) = phase.wait_after(typed, P::KERNEL_ASKED, P::LINE_SECONDS) else {
         return Err(P::failure(
             "the kernel never said it was asked to restart the machine",
         ));
@@ -94,7 +94,10 @@ pub(super) fn reboot_phase(
     phase.come_back(arch, asked)?;
     let at = phase.len();
     phase.type_line(P::READ_LINE)?;
-    if phase.wait_after(at, P::READ_ANSWER, P::LINE_SECS).is_none() {
+    if phase
+        .wait_after(at, P::READ_ANSWER, P::LINE_SECONDS)
+        .is_none()
+    {
         return Err(P::failure(&format!(
             "`{}` after the reset did not answer {:?}: the file the first boot \
              wrote is not there",
@@ -123,8 +126,8 @@ struct RebootPhase<'a> {
 }
 
 impl RebootPhase<'_> {
-    const BOOT_SECS: u64 = SWISH_CHECK_BOOT_SECS;
-    const LINE_SECS: u64 = SWISH_CHECK_X86_LINE_SECS;
+    const BOOT_SECONDS: u64 = SWISH_CHECK_BOOT_SECONDS;
+    const LINE_SECONDS: u64 = SWISH_CHECK_X86_LINE_SECONDS;
     const WRITE_LINE: &str = "echo survives a reboot > reboot.txt";
     const READ_LINE: &str = "wc reboot.txt";
     // `survives a reboot` and its newline: 18 bytes, 3 words, 1 line.
@@ -149,9 +152,9 @@ impl RebootPhase<'_> {
         self.text().len()
     }
 
-    /// Where `needle` first appears after `from` in the degauged transcript, waiting up to `secs`.
-    fn wait_after(&self, from: usize, needle: &str, secs: u64) -> Option<usize> {
-        let deadline = Instant::now() + Duration::from_secs(secs);
+    /// Where `needle` first appears after `from` in the degauged transcript, waiting up to `seconds`.
+    fn wait_after(&self, from: usize, needle: &str, seconds: u64) -> Option<usize> {
+        let deadline = Instant::now() + Duration::from_secs(seconds);
         while Instant::now() < deadline {
             let t = self.text();
             if let Some(at) = t.get(from..).and_then(|rest| rest.find(needle)) {
@@ -162,8 +165,8 @@ impl RebootPhase<'_> {
         None
     }
 
-    fn wait_prompt(&self, secs: u64) -> bool {
-        let deadline = Instant::now() + Duration::from_secs(secs);
+    fn wait_prompt(&self, seconds: u64) -> bool {
+        let deadline = Instant::now() + Duration::from_secs(seconds);
         while Instant::now() < deadline {
             if self.seen.lock().expect("transcript lock").ends_with("$ ") {
                 return true;
@@ -183,7 +186,7 @@ impl RebootPhase<'_> {
     /// where there is firmware, no refusal, a second banner, and its prompt.
     fn come_back(&mut self, arch: &str, asked: usize) -> Result<(), String> {
         let resumed = match firmware_marker(arch) {
-            Some(fw) => match self.wait_after(asked, fw, Self::BOOT_SECS) {
+            Some(fw) => match self.wait_after(asked, fw, Self::BOOT_SECONDS) {
                 Some(at) => at,
                 None => {
                     let refused = self.text()[asked..].contains(Self::KERNEL_REFUSED);
@@ -200,15 +203,15 @@ impl RebootPhase<'_> {
             return Err(Self::failure("the firmware refused every reset route"));
         }
         if self
-            .wait_after(resumed, "nife capability shell", Self::BOOT_SECS)
+            .wait_after(resumed, "nife capability shell", Self::BOOT_SECONDS)
             .is_none()
         {
             return Err(Self::failure(&format!(
                 "no second prompt banner within {}s of the reset",
-                Self::BOOT_SECS
+                Self::BOOT_SECONDS
             )));
         }
-        if !self.wait_prompt(Self::LINE_SECS) {
+        if !self.wait_prompt(Self::LINE_SECONDS) {
             return Err(Self::failure("the second boot never reached a bare prompt"));
         }
         Ok(())
@@ -284,7 +287,7 @@ pub(super) fn launch_graphical_terminal(
     // `$ ` decoded off the scanout at all disproves one. The deadline covers the session's whole
     // build, not just its first paint.
     let shot = workspace_root().join(format!("target/gpu-swish-check-{arch}.ppm"));
-    let deadline = Instant::now() + Duration::from_secs(SWISH_CHECK_BOOT_SECS);
+    let deadline = Instant::now() + Duration::from_secs(SWISH_CHECK_BOOT_SECONDS);
     let mut prompt_row: Option<String> = None;
     while Instant::now() < deadline && prompt_row.is_none() {
         if screendump(sock, &shot)
@@ -298,7 +301,7 @@ pub(super) fn launch_graphical_terminal(
     let Some(before) = prompt_row else {
         return Err(format!(
             "`graphical_terminal` was launched but no `$ ` prompt reached the scanout within \
-             {SWISH_CHECK_BOOT_SECS}s (see {}). A capability-slot collision fails in silence, so \
+             {SWISH_CHECK_BOOT_SECONDS}s (see {}). A capability-slot collision fails in silence, so \
              this is the check's central assertion. The UART after the launch: {:?}",
             shot.display(),
             &seen.lock().expect("transcript lock")[launched_at..],
@@ -317,7 +320,7 @@ pub(super) fn launch_graphical_terminal(
     }
 
     let want = format!("$ {}", video_terminal::script::HOST_KEY);
-    let deadline = Instant::now() + Duration::from_secs(SWISH_CHECK_LINE_SECS);
+    let deadline = Instant::now() + Duration::from_secs(SWISH_CHECK_LINE_SECONDS);
     let mut typed_row: Option<String> = None;
     while Instant::now() < deadline && typed_row.is_none() {
         if screendump(sock, &shot)
@@ -357,7 +360,7 @@ pub(super) fn launch_graphical_terminal(
             };
             Err(format!(
                 "the session's prompt appeared ({before:?}) but the key press ({:?}) never echoed \
-                 back within {SWISH_CHECK_LINE_SECS}s (see {}): {blame}",
+                 back within {SWISH_CHECK_LINE_SECONDS}s (see {}): {blame}",
                 video_terminal::script::HOST_KEY,
                 shot.display(),
             ))
@@ -400,14 +403,14 @@ pub(super) const RG_WALK_CD: &str = "cd /search";
 /// under load on 2026-10-07 UTC; ten minutes covers it with room, and a hang still reports inside
 /// one CI job. The table, and why `x86_64` is slower, are in notes/swish-check-harness.md, "The
 /// `rg` walk".
-pub(super) const RG_WALK_SECS: u64 = 600;
+pub(super) const RG_WALK_SECONDS: u64 = 600;
 
 /// **How long any other line naming `rg` may take**, the install from basalt included. Loading
 /// or fetching a 2.8 MiB image is most of it: up to 38.7 s to load and 46.1 s to fetch on `x86_64`
 /// under TCG on patagonia, so the shared 30 s bound is too short. Where the time goes inside a
 /// spawn of that size is not measured (milestone 121's BUGS). The figures and their dates are in
 /// notes/swish-check-harness.md, "The `rg` walk".
-pub(super) const RG_LINE_SECS: u64 = 90;
+pub(super) const RG_LINE_SECONDS: u64 = 90;
 
 /// **Whether `rg`'s answer at the prompt is the host's answer**, as a set of lines: every line the
 /// host's `rg` printed must appear exactly as often in `answer`, and nothing else may. A set and

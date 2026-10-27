@@ -128,7 +128,7 @@ endpoints, so the test picks the instant to revoke. One wakes after its exact ra
 must fault. The other wakes after an unheld range was revoked and must still write; a sweep that
 matched too widely would stop it. A sub-range revoke is not a leg. The sweep matches by exact
 `(base, count)`, and `PortRange::REVOKE` takes its range from the capability, so no syscall can name
-a narrower one. The frame sweep's overlap matching (`delete_page_frame_caps_overlapping`) is the
+a narrower one. The frame sweep's overlap matching (`delete_page_frame_capabilities_overlapping`) is the
 deliberate contrast. This is near miss 1 of the pass: one design change away from an escape if a
 sub-range revoke ever becomes expressible.
 
@@ -164,7 +164,7 @@ the same error word for word. Every probe is non-blocking or aimed at a settled 
 Claim 4 says a consumed capability cannot be used again. Claim 5 says dropping one capability does
 not disturb the others. The host crate proves both on pure logic
 (`capability::a_deleted_capability_stays_deleted`, `delete_touches_only_its_slot`). This module
-drives the live kernel paths instead: `SYS_CAP_DELETE`'s kernel half, `delete_current_cap`, followed
+drives the live kernel paths instead: `SYS_CAP_DELETE`'s kernel half, `delete_current_capability`, followed
 by invokes through `syscall::invoke`. It tries three angles a host crate cannot reach. One is a
 stale slot number, held by a program that watched its capability be deleted. One is an out-of-range
 index forged in a register. One is a deleted slot whose number the table later hands out again. The

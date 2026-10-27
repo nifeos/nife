@@ -168,7 +168,7 @@ legs. It is worth recording which kind of evidence each one rests on.
    consuming one caller's Reply cannot disturb another's.
 3. The capability cannot be duplicated or delegated. This leg is structural, not a harness. There is
    no syscall that copies a capability within a capability table (`CapabilityTable::derive` is
-   kernel-internal). The only cap-moving syscall, `SEND_CAP`, requires `GRANT`, which `reply_cap`
+   kernel-internal). The only cap-moving syscall, `SEND_CAP`, requires `GRANT`, which `reply_capability`
    deliberately never mints. This leg lives in the shape of the syscall surface (§4 (kernel shape): narrow and
    explicit), so it is an inspection argument. It is backed end to end by the QEMU test in which the
    call server invokes its Reply twice and the kernel refuses the second (`fixtures/src/hello.rs`,

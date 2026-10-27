@@ -5,7 +5,7 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -24,16 +24,22 @@ fn arena_space() -> (u64, u64) {
 
 /// Hold the space **the way a builder holds it**: `WRITE`, the authority `MAP_INTO` takes.
 fn hold_builder(name: u64) -> u64 {
-    sched::grant(crate::cap::address_space_cap(name, Rights::WRITE))
-        .expect("grant the address space")
+    sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::WRITE,
+    ))
+    .expect("grant the address space")
 }
 
 /// Hold the space **the way `pmap` holds it**: `ENUMERATE` and nothing else. Not that a viewer is
 /// refused `MAP_INTO`; it cannot name it, because that takes `WRITE` and this capability does not
 /// carry it.
 fn hold_viewer(name: u64) -> u64 {
-    sched::grant(crate::cap::address_space_cap(name, Rights::ENUMERATE))
-        .expect("grant the address space")
+    sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::ENUMERATE,
+    ))
+    .expect("grant the address space")
 }
 
 /// A fresh frame, from its own one-page region, granted into a fresh capability table slot with `rights`.
@@ -41,7 +47,10 @@ fn hold_viewer(name: u64) -> u64 {
 fn page_frame(rights: Rights) -> (u64, u64) {
     let region = crate::memory_region::create(1).expect("no frame region");
     let phys = crate::memory_region::retype_page(region).expect("no frame");
-    let slot = sched::grant(crate::cap::page_frame_cap(phys, rights)).expect("grant the frame");
+    let slot = sched::grant(crate::capability_object::page_frame_capability(
+        phys, rights,
+    ))
+    .expect("grant the frame");
     (slot, region)
 }
 
@@ -54,14 +63,14 @@ fn page_frame(rights: Rights) -> (u64, u64) {
 /// later in the same run, which is what this comment is here to stop recurring.
 fn tidy(slots: &[u64], regions: &[u64]) {
     for &s in slots {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     for &r in regions {
         sched::reclaim_region(r).expect("a region this test carved did not come back");
     }
 }
 
-/// `invoke(cap, MAP_INTO, va, frame_slot, mode)`, through the real dispatcher.
+/// `invoke(capability, MAP_INTO, va, frame_slot, mode)`, through the real dispatcher.
 fn map_into(aspace_slot: u64, va: u64, frame_slot: u64, mode: u64) -> Result<i64, Error> {
     let mut fr = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(
@@ -74,7 +83,7 @@ fn map_into(aspace_slot: u64, va: u64, frame_slot: u64, mode: u64) -> Result<i64
     )
 }
 
-/// `invoke(cap, LIST, cursor, _, _)`, through the real dispatcher, returning the three words a
+/// `invoke(capability, LIST, cursor, _, _)`, through the real dispatcher, returning the three words a
 /// userspace caller would read out of its registers.
 fn list(slot: u64, cursor: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
@@ -212,7 +221,7 @@ fn an_empty_space_is_a_real_answer_not_a_refusal() {
 /// nothing there", not "permission denied": `survey_tests`'s distinction, one object type over.
 #[test_case]
 fn an_empty_slot_holds_no_capability_at_all() {
-    // A slot nothing has ever granted into: `sched::current_cap` finds nothing there, the same
+    // A slot nothing has ever granted into: `sched::current_capability` finds nothing there, the same
     // fact `abi::address_space::LIST`'s dispatch checks before it ever looks at rights. Nothing to tidy:
     // this test grants nothing and carves no region.
     let mut fr = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);

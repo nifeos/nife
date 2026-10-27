@@ -63,7 +63,7 @@ SELF = 'helpers/cap_abbreviation.py'
 
 # The count on 2026-10-06, and since lowered by the sweep's `--bank`. Never raise it by hand: a new
 # `cap` is spelled out, not admitted.
-CEILING = 2_034
+CEILING = 681
 
 # Identifiers that keep `cap`, by file, each group with its reason. See the header before adding one.
 _CEILING = 'cap is the English word for a limit or a capacity here, not an abbreviation'
@@ -104,73 +104,34 @@ KEPT = {
     # outsider pass's fixture and test call these APIs by their existing names and mint no
     # cap-named identifier of their own.
     'components/src/socket_squatter.rs': ({'receive_cap'}, _CALLS),
-    'system_tests/src/user/net_confinement_tests.rs': ({'cap', 'rendezvous_cap'}, _CALLS),
     # The same pass's chatty reshape: `spawn_swapper`'s two new slots call the same family.
-    'system_tests/src/user/live_swap_tests.rs':
-        ({'cap', 'device_frame_cap', 'notification_cap', 'timer_cap'}, _CALLS),
     # Milestone 801 (packages over the internet), 2026-10-09 (UTC): a std program's resolver badge
     # is minted by the existing constructor, and nothing cap-named is minted here.
-    'system_tests/src/user/std_service.rs': ({'rendezvous_cap_badged'}, _CALLS),
     # Milestone 812 (`std::thread::spawn` runs real threads in one address space), 2026-10-10
     # (UTC): the thread-pointer and futex tests call these APIs by their existing names and mint
     # none, and the `ThreadControlBlock` methods moved out of `kernel/src/syscall.rs` unchanged
     # (the split §266 (a Rust source file stays under 2,000 lines) asks for), names and all.
-    'system_tests/src/user/futex_tests.rs':
-        ({'cap', 'address_space_cap', 'thread_control_block_insert_cap', 'delete_current_cap'},
-         _CALLS),
-    'system_tests/src/user/thread_pointer_tests.rs':
-        ({'cap', 'address_space_cap', 'thread_control_block_cap', 'thread_control_block_insert_cap',
-          'current_cap', 'delete_current_cap'}, _CALLS),
-    'kernel/src/syscall/thread_control_block.rs':
-        ({'cap', 'CAP_INSERT', 'thread_control_block_cap_insert', 'current_cap',
-          'delete_current_cap', 'thread_control_block_delegate_cap'}, _CALLS),
+    'kernel/src/syscall/thread_control_block.rs': ({'CAP_INSERT'}, _CALLS),
     # The same lane's `RETYPE_OBJ` moved out of `kernel/src/syscall.rs` the same way, and its
     # process and `std` thread tests call the existing APIs; the one name it minted for a process
     # is spelled out (`process_capability`).
-    'kernel/src/syscall/retype.rs': ({'cap', 'current_cap', 'delete_current_cap'}, _CALLS),
-    'system_tests/src/user/process_tests.rs':
-        ({'cap', 'Cap', 'CAP_INSERT', 'address_space_cap', 'current_cap', 'delete_current_cap',
-          'memory_region_cap', 'rendezvous_cap', 'thread_control_block_cap',
-          'thread_control_block_insert_cap'}, _CALLS),
+    'system_tests/src/user/process_tests.rs': ({'Cap', 'CAP_INSERT'}, _CALLS),
     # Milestone 836 (a C library, stage 2: threads), 2026-10-12 (UTC), added `page_frame_cap`: a
     # threaded C program's argument and clock pages are granted by the existing constructor.
-    'system_tests/src/user/std_threads_tests.rs':
-        ({'cap', 'address_space_cap', 'memory_region_cap', 'page_frame_cap', 'rendezvous_cap',
-          'thread_control_block_cap', 'thread_control_block_insert_cap'}, _CALLS),
     # Milestone 913 (an eighth outsider pass attacks the confinement claim), 2026-10-13 (UTC): the
     # pass's tests call these APIs by their existing names, and the names they minted are spelled
     # out (`theirs_capability`, `two_capability_deletes_then_port_out`).
-    'system_tests/src/user/eighth_pass_delegation_race_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'ipc_receive_cap', 'ipc_send_cap', 'NO_CAP',
-          'page_frame_run_cap', 'port_range_cap', 'rendezvous_cap', 'SEND_CAP'}, _CALLS),
+    'system_tests/src/user/eighth_pass_delegation_race_tests.rs': ({'NO_CAP', 'SEND_CAP'}, _CALLS),
     'system_tests/src/user/eighth_pass_endpoint_usurper_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'RECEIVE_CAP', 'rendezvous_cap', 'SEND_CAP'},
-         _CALLS),
+        ({'RECEIVE_CAP', 'SEND_CAP'}, _CALLS),
     'system_tests/src/user/eighth_pass_port_boundary_tests.rs':
-        ({'cap', 'Cap', 'cap_delete_then_port_out', 'CAP_DELETE_THEN_PORT_OUT_PC_OFFSET',
-          'port_range_cap', 'rendezvous_cap'}, _CALLS),
-    'system_tests/src/user/eighth_pass_slot_lifecycle_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'rendezvous_cap'}, _CALLS),
-    'system_tests/src/user/eighth_pass_spawn_audit_tests.rs':
-        ({'cap', 'page_frame_run_cap', 'rendezvous_cap'}, _CALLS),
+        ({'Cap', 'cap_delete_then_port_out', 'CAP_DELETE_THEN_PORT_OUT_PC_OFFSET'}, _CALLS),
     'kernel/src/user/x86_programs.rs': ({'SYS_CAP_DELETE'}, _CALLS),
     # Milestone 914 (a ninth outsider pass attacks the confinement claim): the pass's tests call
     # these APIs by their existing names and mint none of their own.
-    'system_tests/src/user/ninth_pass_authority_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'memory_region_cap_rights'}, _CALLS),
-    'system_tests/src/user/ninth_pass_confinement_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'memory_region_cap_rights',
-          'rendezvous_cap'}, _CALLS),
-    'system_tests/src/user/ninth_pass_mapping_tests.rs':
-        ({'cap', 'delete_current_cap', 'memory_region_cap_rights'}, _CALLS),
     'system_tests/src/user/ninth_pass_port_tests.rs':
-        ({'cap', 'cap_delete_then_port_out', 'CAP_DELETE_THEN_PORT_OUT_PC_OFFSET', 'port_range_cap',
-          'rendezvous_cap', 'thread_control_block_insert_cap'}, _CALLS),
-    'system_tests/src/user/ninth_pass_revocation_tests.rs':
-        ({'cap', 'current_cap', 'delete_port_range_caps', 'device_frame_cap', 'ipc_receive_cap',
-          'ipc_send_cap', 'NO_CAP', 'port_range_cap'}, _CALLS),
-    'system_tests/src/user/ninth_pass_supervision_tests.rs':
-        ({'cap', 'delete_current_cap', 'rendezvous_cap'}, _CALLS),
+        ({'cap_delete_then_port_out', 'CAP_DELETE_THEN_PORT_OUT_PC_OFFSET'}, _CALLS),
+    'system_tests/src/user/ninth_pass_revocation_tests.rs': ({'NO_CAP'}, _CALLS),
 }
 
 EXCLUDED_PREFIXES = ('vendor/', 'patches/', 'target/')

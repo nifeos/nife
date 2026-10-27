@@ -48,9 +48,9 @@ pub fn start_file_sink(
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(sink, Rights::READ), // slot 0: the byte sink it serves
-                    rendezvous_cap(file_ep, Rights::WRITE), // slot 1: CALL the FS server
-                    rendezvous_cap(report, Rights::WRITE), // slot 2: readiness and the total
+                    rendezvous_capability(sink, Rights::READ), // slot 0: the byte sink it serves
+                    rendezvous_capability(file_ep, Rights::WRITE), // slot 1: CALL the FS server
+                    rendezvous_capability(report, Rights::WRITE), // slot 2: readiness and the total
                 ],
                 maps: &[Mapping {
                     va: FILE_VA_CLIENT,
@@ -92,9 +92,9 @@ pub fn start_file_source(
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(out, Rights::WRITE), // slot 0: where the file's bytes go
-                    rendezvous_cap(file_ep, Rights::WRITE), // slot 1: CALL the FS server
-                    rendezvous_cap(report, Rights::WRITE), // slot 2: the size it found
+                    rendezvous_capability(out, Rights::WRITE), // slot 0: where the file's bytes go
+                    rendezvous_capability(file_ep, Rights::WRITE), // slot 1: CALL the FS server
+                    rendezvous_capability(report, Rights::WRITE), // slot 2: the size it found
                 ],
                 maps: &[Mapping {
                     va: FILE_VA_CLIENT,

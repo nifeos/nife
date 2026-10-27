@@ -182,7 +182,7 @@ boot pass must stop at one as well.
 ### Widening the table
 
 `CAPABILITY_TABLE_SLOTS` is one constant for every thread. A slot is 32 bytes, asserted in
-`kernel/src/cap.rs`, and `kernel::sched::MAXIMUM_THREADS` is 256, so each slot added costs 8 KiB of
+`kernel/src/capability_object.rs`, and `kernel::sched::MAXIMUM_THREADS` is 256, so each slot added costs 8 KiB of
 kernel memory. Holding N durable sessions needs 19 + 4N slots:
 
 | Durable sessions | Slots needed | Table raise | Kernel memory |
@@ -212,7 +212,7 @@ B's re-deriver would need its own 640 pages per session from the progenitor inst
 
 ### Boot latency
 
-`Durable::restore` waits up to `END_WAIT_SECS` (5 seconds) for the timetable's reply. Under A that
+`Durable::restore` waits up to `END_WAIT_SECONDS` (5 seconds) for the timetable's reply. Under A that
 wait sits before `login`'s front door opens, once per re-derived identity. Nobody has measured the usual wait, in the suite or on a board.
 
 ### Code

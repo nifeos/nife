@@ -113,7 +113,7 @@ retry by an owner that already has a retry loop.
   it call a second server while a hung server's `Reply` still names it, and that stale reply would
   pass `ipc_reply`'s role check and answer the wrong conversation. A `Finished` thread makes no
   second `CALL`.
-- The reply capabilities are swept anyway, through `delete_reply_caps_naming`, the function
+- The reply capabilities are swept anyway, through `delete_reply_capabilities_naming`, the function
   `strand_reply_caller` runs before its wake. Both keep one invariant: no unconsumed reply
   capability names a thread that has left its park. A `Reply` outliving its thread would otherwise
   go stale only on its next use, through a slot generation nobody reading `ipc_reply` sees.

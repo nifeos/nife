@@ -105,7 +105,7 @@ s against 0.032 s): the 8,192-byte write per switch-in is 31 MiB of stores acros
 code through this TCG runs ~3.8x slower per instruction than arithmetic.
 
 The swish-check x86_64 leg is store-heavy by construction and is already attributed
-(`xtask/src/swish_check/verdict.rs`, the `SWISH_CHECK_X86_LINE_SECS` table). The console server blocks on
+(`xtask/src/swish_check/verdict.rs`, the `SWISH_CHECK_X86_LINE_SECONDS` table). The console server blocks on
 every screen paint. `display_terminal` repaints the whole 924x344 surface per scroll, and
 `framebuffer_driver` copies into an uncacheable aperture one word at a time, in debug builds, every
 store through TCG. Measured there: 321.1 s for the leg against 6.9 s (aarch64) and 7.3 s (riscv64),

@@ -12,7 +12,9 @@
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use super::*;
-use crate::cap::{Rights, memory_region_cap, page_frame_cap, rendezvous_cap};
+use crate::capability_object::{
+    Rights, memory_region_capability, page_frame_capability, rendezvous_capability,
+};
 use crate::sched::RendezvousId;
 
 /// Which mmio block device the surveyor is given. The runners attach the GPT-partitioned image as
@@ -159,22 +161,28 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
                 .expect("no frame for the surveyor's stack")
                 .addr();
         }
-        crate::sched::grant_at(SURVEY_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
-            .expect("surveyor slot 0 was occupied");
-        crate::sched::grant_at(SURVEY_SLOT_BLK, rendezvous_cap(blk_ep, Rights::WRITE))
-            .expect("surveyor slot 1 was occupied");
-        crate::sched::grant_at(SURVEY_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(
+            SURVEY_SLOT_REPORT,
+            rendezvous_capability(report, Rights::WRITE),
+        )
+        .expect("surveyor slot 0 was occupied");
+        crate::sched::grant_at(
+            SURVEY_SLOT_BLK,
+            rendezvous_capability(blk_ep, Rights::WRITE),
+        )
+        .expect("surveyor slot 1 was occupied");
+        crate::sched::grant_at(SURVEY_SLOT_BUDGET, memory_region_capability(budget))
             .expect("surveyor slot 2 was occupied");
         // `WRITE`, because a read is a round trip through the shared page in both directions.
         crate::sched::grant_at(
             SURVEY_SLOT_BLK_PAGE,
-            page_frame_cap(blk_shared, Rights::READ.union(Rights::WRITE)),
+            page_frame_capability(blk_shared, Rights::READ.union(Rights::WRITE)),
         )
         .expect("surveyor slot 3 was occupied");
         // `READ` alone: `PageFrame::MAP` refuses a writable mapping of it ([`start_probe`]).
         crate::sched::grant_at(
             SURVEY_SLOT_ROSTER,
-            page_frame_cap(roster_phys, Rights::READ),
+            page_frame_capability(roster_phys, Rights::READ),
         )
         .expect("surveyor slot 4 was occupied");
         run(
@@ -210,13 +218,16 @@ pub fn start_probe(surveyor_image: &'static [u8]) -> RendezvousId {
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the probe");
 
     crate::sched::spawn(move || {
-        crate::sched::grant_at(SURVEY_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
-            .expect("probe slot 0 was occupied");
-        crate::sched::grant_at(SURVEY_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(
+            SURVEY_SLOT_REPORT,
+            rendezvous_capability(report, Rights::WRITE),
+        )
+        .expect("probe slot 0 was occupied");
+        crate::sched::grant_at(SURVEY_SLOT_BUDGET, memory_region_capability(budget))
             .expect("probe slot 2 was occupied");
         crate::sched::grant_at(
             SURVEY_SLOT_ROSTER,
-            page_frame_cap(roster_phys, Rights::READ),
+            page_frame_capability(roster_phys, Rights::READ),
         )
         .expect("probe slot 4 was occupied");
         run(
@@ -259,17 +270,23 @@ pub fn start_holder(surveyor_image: &'static [u8]) -> HolderWiring {
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the holder");
 
     crate::sched::spawn(move || {
-        crate::sched::grant_at(SURVEY_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
-            .expect("holder slot 0 was occupied");
-        crate::sched::grant_at(SURVEY_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(
+            SURVEY_SLOT_REPORT,
+            rendezvous_capability(report, Rights::WRITE),
+        )
+        .expect("holder slot 0 was occupied");
+        crate::sched::grant_at(SURVEY_SLOT_BUDGET, memory_region_capability(budget))
             .expect("holder slot 2 was occupied");
         crate::sched::grant_at(
             SURVEY_SLOT_ROSTER,
-            page_frame_cap(roster_phys, Rights::READ),
+            page_frame_capability(roster_phys, Rights::READ),
         )
         .expect("holder slot 4 was occupied");
-        crate::sched::grant_at(SURVEY_SLOT_RESUME, rendezvous_cap(resume, Rights::READ))
-            .expect("holder slot 5 was occupied");
+        crate::sched::grant_at(
+            SURVEY_SLOT_RESUME,
+            rendezvous_capability(resume, Rights::READ),
+        )
+        .expect("holder slot 5 was occupied");
         run(
             surveyor_image,
             Spawn {
@@ -411,19 +428,28 @@ pub fn start_partitioner(
                 .expect("no frame for the partitioner's stack")
                 .addr();
         }
-        crate::sched::grant_at(PARTITION_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
-            .expect("partitioner slot 0 was occupied");
-        crate::sched::grant_at(PARTITION_SLOT_BLK, rendezvous_cap(blk_ep, Rights::WRITE))
-            .expect("partitioner slot 1 was occupied");
+        crate::sched::grant_at(
+            PARTITION_SLOT_REPORT,
+            rendezvous_capability(report, Rights::WRITE),
+        )
+        .expect("partitioner slot 0 was occupied");
+        crate::sched::grant_at(
+            PARTITION_SLOT_BLK,
+            rendezvous_capability(blk_ep, Rights::WRITE),
+        )
+        .expect("partitioner slot 1 was occupied");
         if entropy.is_some() {
-            crate::sched::grant_at(PARTITION_SLOT_ENTROPY, rendezvous_cap(ep, Rights::WRITE))
-                .expect("partitioner slot 2 was occupied");
+            crate::sched::grant_at(
+                PARTITION_SLOT_ENTROPY,
+                rendezvous_capability(ep, Rights::WRITE),
+            )
+            .expect("partitioner slot 2 was occupied");
         }
-        crate::sched::grant_at(PARTITION_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(PARTITION_SLOT_BUDGET, memory_region_capability(budget))
             .expect("partitioner slot 3 was occupied");
         crate::sched::grant_at(
             PARTITION_SLOT_BLK_PAGE,
-            page_frame_cap(blk_shared, Rights::READ.union(Rights::WRITE)),
+            page_frame_capability(blk_shared, Rights::READ.union(Rights::WRITE)),
         )
         .expect("partitioner slot 4 was occupied");
         run(
@@ -489,23 +515,26 @@ pub fn start_maker(
         }
         // Every slot placed with `grant_at`, so a withheld capability leaves a hole rather than
         // renumbering the slots above it (notes/abi.md, section 4).
-        crate::sched::grant_at(MAKER_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(MAKER_SLOT_BUDGET, memory_region_capability(budget))
             .expect("mkfs slot 0 was occupied");
         if with_disk {
-            crate::sched::grant_at(MAKER_SLOT_BLK, rendezvous_cap(blk_ep, Rights::WRITE))
+            crate::sched::grant_at(MAKER_SLOT_BLK, rendezvous_capability(blk_ep, Rights::WRITE))
                 .expect("mkfs slot 1 was occupied");
         }
         if has_entropy {
-            crate::sched::grant_at(MAKER_SLOT_ENTROPY, rendezvous_cap(ep, Rights::WRITE))
+            crate::sched::grant_at(MAKER_SLOT_ENTROPY, rendezvous_capability(ep, Rights::WRITE))
                 .expect("mkfs slot 2 was occupied");
         }
-        crate::sched::grant_at(MAKER_SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
-            .expect("mkfs slot 3 was occupied");
+        crate::sched::grant_at(
+            MAKER_SLOT_REPORT,
+            rendezvous_capability(report, Rights::WRITE),
+        )
+        .expect("mkfs slot 3 was occupied");
         // Granted in every run, even those meant to be refused, so a missing page cannot explain a
         // refusal. Its tables come out of slot 0, the program's own heap budget.
         crate::sched::grant_at(
             MAKER_SLOT_BLK_PAGE,
-            page_frame_cap(blk_shared, Rights::READ.union(Rights::WRITE)),
+            page_frame_capability(blk_shared, Rights::READ.union(Rights::WRITE)),
         )
         .expect("mkfs slot 4 was occupied");
         run(

@@ -441,7 +441,7 @@ impl Nav {
             None => None,
             Some(text) => match calendar::DateTime::parse_rfc3339_bytes(text) {
                 Ok(dt) => match u64::try_from(dt.to_unix()) {
-                    Ok(secs) => Some(secs),
+                    Ok(seconds) => Some(seconds),
                     Err(_) => return Say::NotAnInstant,
                 },
                 Err(_) => return Say::NotAnInstant,
@@ -468,7 +468,7 @@ impl Nav {
 
             let r = match at_seconds {
                 None => nav.name_call_in(t, fs::SETMTIME, handle, name, 0),
-                Some(secs) => nav.name_call_in(t, fs::SETMTIME_AT, handle, name, secs),
+                Some(seconds) => nav.name_call_in(t, fs::SETMTIME_AT, handle, name, seconds),
             };
             if r < 0 {
                 return Say::Failed(-r as i32);

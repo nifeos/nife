@@ -7,6 +7,7 @@
 
 use crate::boot_sector::{BootSector, ReadError};
 use crate::directory::Directory;
+use crate::named_entry::Entries;
 use crate::sector::{SectorDevice, SectorSize};
 use crate::table::{self, TableEntry};
 
@@ -189,6 +190,20 @@ impl<D: SectorDevice> Volume<D> {
     /// which says where it lives.
     pub fn root_directory(&mut self) -> Directory<'_, D> {
         Directory::root(self)
+    }
+
+    /// **The root directory as named entries**: each short entry with its checked long name.
+    ///
+    /// Name: provisional. [`Volume::root_directory`] with the names joined.
+    pub fn root_entries(&mut self) -> Entries<'_, D> {
+        Entries::new(self.root_directory())
+    }
+
+    /// **The directory whose first cluster is `first`, as named entries.** Cluster 0 is the root.
+    ///
+    /// Name: provisional. [`Volume::directory`] with the names joined.
+    pub fn entries(&mut self, first: u32) -> Entries<'_, D> {
+        Entries::new(self.directory(first))
     }
 
     /// **The directory whose first cluster is `first`**, as a short entry's

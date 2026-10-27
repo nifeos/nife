@@ -1,7 +1,7 @@
 use super::*;
-use crate::cap::{
-    Rights, memory_region_cap, memory_region_lending_capability, page_frame_cap, rendezvous_cap,
-    rendezvous_cap_badged,
+use crate::capability_object::{
+    Rights, memory_region_capability, memory_region_lending_capability, page_frame_capability,
+    rendezvous_capability, rendezvous_capability_badged,
 };
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
@@ -249,6 +249,28 @@ pub fn start_networked_resolving(
     }
 }
 
+/// Grants the clock page, the config page and the entropy request at their named slots, before
+/// `run` grants in order. The clock and config pages are `READ` only: the whole point of each is
+/// that a reader cannot write it. See `grant_at`.
+fn grant_std_clock_config_entropy(
+    clock_page: u64,
+    config_phys: u64,
+    entropy_request: RendezvousId,
+) {
+    crate::sched::grant_at(CLOCK_SLOT, page_frame_capability(clock_page, Rights::READ))
+        .expect("the std clock slot was already occupied");
+    crate::sched::grant_at(
+        CONFIG_SLOT,
+        page_frame_capability(config_phys, Rights::READ),
+    )
+    .expect("the std config slot was already occupied");
+    crate::sched::grant_at(
+        ENTROPY_SLOT,
+        rendezvous_capability(entropy_request, Rights::WRITE),
+    )
+    .expect("the std entropy slot was already occupied");
+}
+
 /// The spawn every function above shares: [`start_on_full`]'s, and the network when one is given.
 fn spawn_std(
     image: &'static [u8],
@@ -353,16 +375,11 @@ fn spawn_std(
         // (2 and 3 hold the network when one was given, below).
         // The clock and config pages are `READ` only: the whole point of each is that a reader
         // cannot write it. See `grant_at`.
-        crate::sched::grant_at(CLOCK_SLOT, page_frame_cap(clock.page_phys, Rights::READ))
-            .expect("the std clock slot was already occupied");
-        crate::sched::grant_at(CONFIG_SLOT, page_frame_cap(config_phys, Rights::READ))
-            .expect("the std config slot was already occupied");
-        crate::sched::grant_at(ENTROPY_SLOT, rendezvous_cap(entropy.request, Rights::WRITE))
-            .expect("the std entropy slot was already occupied");
+        grant_std_clock_config_entropy(clock.page_phys, config_phys, entropy.request);
         // The network, at its named slots, only when the caller gave one. Without it the PAL's
         // every `std::net` call answers `Unsupported`, which is "no ambient network" in one line.
         if let Some(net) = net {
-            crate::sched::grant_at(STACK_SLOT, rendezvous_cap(net.stack, Rights::WRITE))
+            crate::sched::grant_at(STACK_SLOT, rendezvous_capability(net.stack, Rights::WRITE))
                 .expect("the std stack slot was already occupied");
             // Lending, because the socket pages retyped from it are lent to the stack, and since
             // milestone 824 (a retype mints no right its budget lacks) a page carries its budget's
@@ -377,7 +394,7 @@ fn spawn_std(
                 for (slot, badge) in std_runtime_contract::RESOLVER_SLOTS.iter().zip(badges) {
                     crate::sched::grant_at(
                         *slot,
-                        rendezvous_cap_badged(resolver, Rights::WRITE, *badge as u64),
+                        rendezvous_capability_badged(resolver, Rights::WRITE, *badge as u64),
                     )
                     .expect("a std resolver slot was already occupied");
                 }
@@ -390,8 +407,8 @@ fn spawn_std(
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    memory_region_cap(budget),             // slot 0: the heap's budget
-                    rendezvous_cap(report, Rights::WRITE), // slot 1: stdout/stderr
+                    memory_region_capability(budget), // slot 0: the heap's budget
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: stdout/stderr
                 ],
                 maps: &maps,
             },

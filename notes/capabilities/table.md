@@ -23,7 +23,7 @@ An empty slot answers `NoSuchSlot` even when the caller asked for rights. "You m
 is nothing there" are different answers, and the second leaks less.
 
 The table is a const-generic array, so its size is part of its type and creating one touches no
-heap. The kernel picks the size once, in `kernel/src/cap.rs`; tests and proofs pick small ones.
+heap. The kernel picks the size once, in `kernel/src/capability_object.rs`; tests and proofs pick small ones.
 
 ## Rights only narrow
 
@@ -59,7 +59,7 @@ All of them go through `Cap::mint_child`, which takes no rights argument and cop
 relation the rest of the model is stated in.
 
 Equality is the precise claim because of §16's amendment, which has `SPLIT` pass `GRANT` down only
-when the parent holds it, so delegability comes from the root's mint. `memory_region_root_cap` mints
+when the parent holds it, so delegability comes from the root's mint. `memory_region_root_capability` mints
 once with `Rights::ALL`, `SPLIT` inherits, and `CAP_INSERT` narrows on the way into a child. Rights
 down a budget tree never increase, and a spend-only (`GRANT`-less) budget cannot split itself a
 `GRANT`-bearing child.

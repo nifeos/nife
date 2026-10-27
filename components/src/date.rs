@@ -90,13 +90,13 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
 
     // Nanoseconds to seconds, truncating towards zero, which is exact here: the wall clock is a
     // `u64` count of nanoseconds since 1970 and this calendar's second is the smallest unit it has.
-    let unix_secs = (clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
+    let unix_seconds = (clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
         / clock_contract::NS_PER_SECOND) as i64;
 
     // Out of range is not reachable from a clock the service believed (its sanity window is 2026 to
     // 2100 and the calendar's is 0000 to 9999), and it is still an answer rather than a panic,
     // because "unreachable" is a claim about today's policy and this is a claim about arithmetic.
-    let Ok(dt) = DateTime::from_unix(unix_secs, offset) else {
+    let Ok(dt) = DateTime::from_unix(unix_seconds, offset) else {
         complain(b"date: the clock reads a time outside the calendar's range");
         end();
     };

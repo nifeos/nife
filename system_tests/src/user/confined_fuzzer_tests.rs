@@ -27,19 +27,15 @@ use confined_syscall_fuzzer_contract as proto;
 use confined_syscall_fuzzer_contract::report;
 
 use super::*;
-// The `cap` module and these constructors still carry their pre-sweep names
+// The `capability` module and these constructors still carry their pre-sweep names
 // (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
 // this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{
-    Cap as Capability, Object, Rights, address_space_cap as address_space_capability,
-    memory_region_cap_rights as memory_region_capability_rights,
-    notification_cap as notification_capability, page_frame_cap as page_frame_capability,
-    rendezvous_cap as rendezvous_capability, rendezvous_cap_badged as rendezvous_capability_badged,
+use crate::capability_object::{
+    Cap as Capability, Object, Rights, address_space_capability, memory_region_capability_rights,
+    notification_capability, page_frame_capability, rendezvous_capability,
+    rendezvous_capability_badged,
 };
-use crate::sched::{
-    self, RendezvousId, current_cap as current_capability,
-    delete_current_cap as delete_current_capability,
-};
+use crate::sched::{self, RendezvousId, current_capability, delete_current_capability};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
 
 const SLOTS: usize = abi::CAPABILITY_TABLE_SLOTS as usize;
@@ -66,7 +62,7 @@ const SUITE_SEEDS: u64 = 32;
 const CORPUS: &[u64] = &[52, 202_643_000_066];
 /// The sweep's guest-time capability (752's), so a weekly run with a large count stops between seeds
 /// inside the per-test budget.
-const SWEEP_SECS: u64 = 60;
+const SWEEP_SECONDS: u64 = 60;
 /// The fuzzers' badges on the server endpoint. Nonzero, distinct, and never mintable by a call.
 const BADGE_A: u64 = 0x779A;
 const BADGE_B: u64 = 0x779B;
@@ -1423,7 +1419,7 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             crate::println!("    confined fuzzer: seeds 0..{SUITE_SEEDS} and corpus {CORPUS:?}");
         }
         Some((first, count)) => {
-            let capability = start + SWEEP_SECS * hz;
+            let capability = start + SWEEP_SECONDS * hz;
             for seed in first..first.saturating_add(count) {
                 if crate::arch::timer::now() > capability {
                     break;
@@ -1433,7 +1429,7 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             }
             crate::println!(
                 "    confined fuzzer: sweep of seeds {first}..{} ({ran} of {count} asked; a time \
-                 capability of {SWEEP_SECS} s stops it early)",
+                 capability of {SWEEP_SECONDS} s stops it early)",
                 first + ran
             );
         }

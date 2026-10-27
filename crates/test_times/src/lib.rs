@@ -126,10 +126,10 @@ pub fn parse(line: &str) -> Result<Line<'_>, Malformed> {
 /// kernel's per-test ceiling enforces it in guest time, and `xtask`'s host watchdog
 /// (`time_record::bound_for`) enforces it plus a grace in host time, for the guest that can no
 /// longer enforce anything. One table, so a test that declares a longer budget gets it from both.
-pub const DEFAULT_BUDGET_SECS: u64 = 90;
+pub const DEFAULT_BUDGET_SECONDS: u64 = 90;
 
 /// **The known-slow tests, each declaring its own cost.** A test whose honest runtime exceeds
-/// [`DEFAULT_BUDGET_SECS`] must say so here, with the reason, so the exception is visible and
+/// [`DEFAULT_BUDGET_SECONDS`] must say so here, with the reason, so the exception is visible and
 /// reviewable. Matched as a substring of the full test path, so the entry covers a test on every
 /// architecture. Keep budgets roughly 2x the measured time, taken from the kernel's report of any
 /// test over 5 s or from the `time per test` record. Empty since 2026-10-11 (UTC); the measurement
@@ -137,24 +137,24 @@ pub const DEFAULT_BUDGET_SECS: u64 = 90;
 pub const SLOW_TESTS: &[(&str, u64)] = &[];
 
 /// The budget for a test, in seconds, by its full path: its [`SLOW_TESTS`] entry if it has one,
-/// else [`DEFAULT_BUDGET_SECS`]. When two entries match, the later one wins.
+/// else [`DEFAULT_BUDGET_SECONDS`]. When two entries match, the later one wins.
 ///
 /// # EXAMPLES
 ///
 /// ```
-/// use test_times::{DEFAULT_BUDGET_SECS, budget_seconds_for};
+/// use test_times::{DEFAULT_BUDGET_SECONDS, budget_seconds_for};
 ///
-/// assert_eq!(budget_seconds_for("kernel::memory::tests::frames_are_zeroed"), DEFAULT_BUDGET_SECS);
+/// assert_eq!(budget_seconds_for("kernel::memory::tests::frames_are_zeroed"), DEFAULT_BUDGET_SECONDS);
 /// ```
 #[must_use]
 pub fn budget_seconds_for(path: &str) -> u64 {
-    let mut secs = DEFAULT_BUDGET_SECS;
+    let mut seconds = DEFAULT_BUDGET_SECONDS;
     for &(needle, allowed) in SLOW_TESTS {
         if path.contains(needle) {
-            secs = allowed;
+            seconds = allowed;
         }
     }
-    secs
+    seconds
 }
 
 /// Counter ticks to whole milliseconds, rounding down.
@@ -240,11 +240,11 @@ mod tests {
 
     #[test]
     fn a_declared_slow_test_gets_its_own_budget_and_every_other_test_the_default() {
-        assert_eq!(budget_seconds_for("kernel::a::b"), DEFAULT_BUDGET_SECS);
-        for &(needle, secs) in SLOW_TESTS {
+        assert_eq!(budget_seconds_for("kernel::a::b"), DEFAULT_BUDGET_SECONDS);
+        for &(needle, seconds) in SLOW_TESTS {
             assert_eq!(
                 budget_seconds_for(&std::format!("system_tests::x::{needle}")),
-                secs
+                seconds
             );
         }
     }

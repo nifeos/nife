@@ -262,7 +262,7 @@ Options and reasoning are in [notes/durable-delegation.md](../../notes/durable-d
   through RedoxFS: what a directory grant has to answer) is the likely grant.
   `components/src/timetable.rs`'s BUGS has the store-mode limits.
 - **Recorded.** No liveness watchdog for the start-up pass. It is bounded instead: each re-derived
-  session waits at most `END_WAIT_SECS` for its timetable, before the front door opens.
+  session waits at most `END_WAIT_SECONDS` for its timetable, before the front door opens.
   `components/src/login.rs`'s BUGS.
 - **Recorded.** `login` keeps one durable session, at start-up and at login alike. The table limit
   derives from `abi::CAPABILITY_TABLE_SLOTS` and rises to three with PR #1360's 32 slots. The

@@ -150,7 +150,7 @@ block has the rest of the measurement. The install needs no `unsafe`, since the 
 memory. A wrong value opens or closes a counter, and hands no thread a stranger's pages.
 
 The switch installs the port grant under `IPC_TABLES`, not after it drops. It is the one per-core
-fact a revocation must take back from a core it is not running on. `delete_port_range_caps_impl`
+fact a revocation must take back from a core it is not running on. `delete_port_range_capabilities_impl`
 does that by NMI while holding the lock. Installing outside the lock left two windows the broadcast
 could not close. A core could install a grant the sweep had already cleared, and the NMI could land
 mid-install. Both close when every writer of a bitmap holds the lock. The cost is one compare inside

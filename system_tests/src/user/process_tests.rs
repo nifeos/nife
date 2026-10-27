@@ -19,7 +19,7 @@ use abi::fault::{EVENT_EXIT, FAULT_EP_SLOT};
 use abi::futex::{PRIVATE, SIZE_U32};
 
 use super::*;
-use crate::cap::{Object, Rights};
+use crate::capability_object::{Object, Rights};
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -120,8 +120,8 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
-fn wait_for(secs: u64, mut cond: impl FnMut() -> bool) -> bool {
-    let deadline = crate::arch::timer::now() + secs * crate::arch::timer::frequency();
+fn wait_for(seconds: u64, mut cond: impl FnMut() -> bool) -> bool {
+    let deadline = crate::arch::timer::now() + seconds * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline {
         if cond() {
             return true;
@@ -164,9 +164,15 @@ fn lay_out(region: u64, programs: &[&[u32]]) -> (u64, u64) {
 /// budget's rights (milestone 824 (a retype mints no right its budget lacks)) and the joins below
 /// need `BIND`.
 fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId) {
-    let untyped =
-        sched::grant(crate::cap::memory_region_lending_capability(region)).expect("grant");
-    let given = sched::grant(crate::cap::address_space_cap(space, Rights::WRITE)).expect("grant");
+    let untyped = sched::grant(crate::capability_object::memory_region_lending_capability(
+        region,
+    ))
+    .expect("grant");
+    let given = sched::grant(crate::capability_object::address_space_capability(
+        space,
+        Rights::WRITE,
+    ))
+    .expect("grant");
     let slot = call(
         untyped,
         abi::memory_region::RETYPE_OBJ,
@@ -179,16 +185,16 @@ fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId) {
     // not be there any more is the space.
     assert!(
         !matches!(
-            sched::current_cap(given).map(|c| c.object),
+            sched::current_capability(given).map(|c| c.object),
             Ok(Object::AddressSpace(_))
         ),
         "the address-space capability a process was created with was not consumed",
     );
-    let _ = sched::delete_current_cap(untyped);
-    let Ok(crate::cap::Cap {
+    let _ = sched::delete_current_capability(untyped);
+    let Ok(crate::capability_object::Cap {
         object: Object::Process(pid),
         ..
-    }) = sched::current_cap(slot)
+    }) = sched::current_capability(slot)
     else {
         panic!("RETYPE_OBJ of a process did not hand back a process capability");
     };
@@ -216,7 +222,11 @@ fn try_join(
     stack: u64,
 ) -> (u64, u64, Result<i64, Error>) {
     let tid = sched::create_thread_control_block(region).expect("no tcb");
-    let tcb = sched::grant(crate::cap::thread_control_block_cap(tid, Rights::ALL)).expect("grant");
+    let tcb = sched::grant(crate::capability_object::thread_control_block_capability(
+        tid,
+        Rights::ALL,
+    ))
+    .expect("grant");
     let page = call(
         tcb,
         abi::thread_control_block::CONFIGURE,
@@ -250,10 +260,10 @@ fn two_threads_of_one_process_share_its_space_its_table_and_a_futex() {
 
     let (waiter, waiter_tcb) = join(region, process, 0, STACK_VA);
     assert!(
-        sched::current_cap(process).is_ok(),
+        sched::current_capability(process).is_ok(),
         "CONFIGURE consumed the process capability it joined through",
     );
-    let reader = sched::grant(crate::cap::address_space_cap(
+    let reader = sched::grant(crate::capability_object::address_space_capability(
         space,
         Rights::READ.union(Rights::GRANT),
     ))
@@ -328,7 +338,7 @@ fn two_threads_of_one_process_share_its_space_its_table_and_a_futex() {
     );
 
     for slot in [process, waiter_tcb, waker_tcb, reader] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     sched::reclaim_region(region).expect("the process's region did not come back");
 }
@@ -350,9 +360,9 @@ fn a_members_exit_ends_its_process_and_the_supervisor_hears() {
     let (process, pid) = create_process(region, space);
 
     let (spinner, spinner_tcb) = join(region, process, 0, STACK_VA);
-    sched::thread_control_block_insert_cap(
+    sched::thread_control_block_insert_capability(
         spinner,
-        crate::cap::rendezvous_cap(supervisor, Rights::READ),
+        crate::capability_object::rendezvous_capability(supervisor, Rights::READ),
         Some(FAULT_EP_SLOT),
     )
     .expect("insert the supervision endpoint");
@@ -399,7 +409,7 @@ fn a_members_exit_ends_its_process_and_the_supervisor_hears() {
         "the space outlived its region"
     );
     for slot in [process, spinner_tcb, exiter_tcb] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
@@ -523,7 +533,7 @@ fn each_member_of_a_process_has_its_own_current_cpu_page() {
         .into_iter()
         .chain(embryos.into_iter().filter(|&s| s != 0))
     {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     sched::reclaim_region(region).expect("the region did not come back");
 }
@@ -540,8 +550,13 @@ fn a_process_refuses_what_its_contract_refuses() {
     let region = crate::memory_region::create(32).expect("no region");
     let (space, _) = lay_out(region, &[SPINNER]);
     let (process, pid) = create_process(region, space);
-    let tcb_of =
-        |tid| sched::grant(crate::cap::thread_control_block_cap(tid, Rights::ALL)).expect("grant");
+    let tcb_of = |tid| {
+        sched::grant(crate::capability_object::thread_control_block_capability(
+            tid,
+            Rights::ALL,
+        ))
+        .expect("grant")
+    };
     let configure = |tcb, through| {
         call(
             tcb,
@@ -552,7 +567,7 @@ fn a_process_refuses_what_its_contract_refuses() {
         )
     };
 
-    let unbound = sched::grant(crate::cap::process_capability(
+    let unbound = sched::grant(crate::capability_object::process_capability(
         pid,
         Rights::ALL.intersect(Rights::from_bits(!Rights::BIND.bits())),
     ))
@@ -565,8 +580,13 @@ fn a_process_refuses_what_its_contract_refuses() {
         "a process capability without BIND joined a thread",
     );
 
-    let untyped = sched::grant(crate::cap::memory_region_cap(region)).expect("grant");
-    let again = sched::grant(crate::cap::address_space_cap(space, Rights::WRITE)).expect("grant");
+    let untyped =
+        sched::grant(crate::capability_object::memory_region_capability(region)).expect("grant");
+    let again = sched::grant(crate::capability_object::address_space_capability(
+        space,
+        Rights::WRITE,
+    ))
+    .expect("grant");
     assert_eq!(
         call(
             untyped,
@@ -582,16 +602,24 @@ fn a_process_refuses_what_its_contract_refuses() {
     // b joins carrying slot 5 in its own table, which moves into the process's.
     let b = sched::create_thread_control_block(region).expect("no tcb");
     let b_tcb = tcb_of(b);
-    sched::thread_control_block_insert_cap(b, crate::cap::memory_region_cap(region), Some(5))
-        .expect("insert into b's own table");
+    sched::thread_control_block_insert_capability(
+        b,
+        crate::capability_object::memory_region_capability(region),
+        Some(5),
+    )
+    .expect("insert into b's own table");
     assert!(configure(b_tcb, process).is_ok(), "premise: a clean join");
     assert!(
         sched::with_capability_table(b, |t| t.get(5).is_ok()).unwrap_or(false),
         "a joining embryo's capability did not move into its process's table",
     );
     // a, carrying slot 5 too, would put two capabilities in one slot of the shared table.
-    sched::thread_control_block_insert_cap(a, crate::cap::memory_region_cap(region), Some(5))
-        .expect("insert into a's own table");
+    sched::thread_control_block_insert_capability(
+        a,
+        crate::capability_object::memory_region_capability(region),
+        Some(5),
+    )
+    .expect("insert into a's own table");
     assert_eq!(
         configure(a_tcb, process),
         Err(Error::WrongObject),
@@ -616,7 +644,7 @@ fn a_process_refuses_what_its_contract_refuses() {
     );
 
     for slot in [process, unbound, untyped, again, a_tcb, b_tcb, c_tcb] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     sched::reclaim_region(region).expect("the region did not come back");
 }
@@ -660,7 +688,7 @@ fn a_destroyed_region_ends_the_process_in_it_and_its_members() {
         "the space outlived its process"
     );
     for slot in [process, member_tcb] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     sched::reclaim_region(threads).expect("the thread region did not come back");
 }
@@ -680,7 +708,7 @@ fn a_member_stranded_killed_on_a_futex_is_finished_and_reaped() {
     let (space, _) = lay_out(region, &[super::futex_tests::WAITER]);
     let (process, pid) = create_process(region, space);
     let (waiter, waiter_tcb) = join(region, process, 0, STACK_VA);
-    let reader = sched::grant(crate::cap::address_space_cap(
+    let reader = sched::grant(crate::capability_object::address_space_capability(
         space,
         Rights::READ.union(Rights::GRANT),
     ))
@@ -724,7 +752,7 @@ fn a_member_stranded_killed_on_a_futex_is_finished_and_reaped() {
     );
 
     for slot in [process, waiter_tcb, reader] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     assert!(
         wait_for(5, || sched::reclaim_region(region).is_ok()),

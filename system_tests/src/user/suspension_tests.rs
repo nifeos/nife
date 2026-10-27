@@ -12,10 +12,10 @@
 use abi::Error;
 
 use super::*;
-// The `cap` module still carries its pre-sweep names (design/naming/capability-spelling-worklist.md);
+// The `capability` module still carries its pre-sweep names (design/naming/capability-spelling-worklist.md);
 // aliased so this file spells `capability` out (calef, 2026-10-06).
-use crate::cap::{Cap as Capability, Object, Rights};
-use crate::sched::{self, delete_current_cap as delete_current_capability};
+use crate::capability_object::{Cap as Capability, Object, Rights};
+use crate::sched::{self, delete_current_capability};
 use crate::syscall::invoke;
 
 const CODE_VA: u64 = address_space_map::IMAGE_BASE;
@@ -65,8 +65,8 @@ fn word(page: u64, i: usize) -> u64 {
     unsafe { core::ptr::read_volatile((mmu::phys_to_virt(page) as *const u64).add(i)) }
 }
 
-fn wait_for(secs: u64, mut cond: impl FnMut() -> bool) -> bool {
-    let deadline = crate::arch::timer::now() + secs * crate::arch::timer::frequency();
+fn wait_for(seconds: u64, mut cond: impl FnMut() -> bool) -> bool {
+    let deadline = crate::arch::timer::now() + seconds * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline {
         if cond() {
             return true;

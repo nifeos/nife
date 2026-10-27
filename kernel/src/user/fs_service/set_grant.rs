@@ -118,9 +118,9 @@ pub fn start_granted_set(
                 arg1: hi,
                 arg2: spec,
                 grants: &[
-                    rendezvous_cap(file_ep, Rights::WRITE), // slot 0: CALL the FS server
-                    rendezvous_cap(narrow_ep, Rights::READ), // slot 1: serve the narrowed capability
-                    rendezvous_cap(caretaker_ready, Rights::WRITE), // slot 2: readiness, once
+                    rendezvous_capability(file_ep, Rights::WRITE), // slot 0: CALL the FS server
+                    rendezvous_capability(narrow_ep, Rights::READ), // slot 1: serve the narrowed capability
+                    rendezvous_capability(caretaker_ready, Rights::WRITE), // slot 2: readiness, once
                 ],
                 maps: &maps,
             },

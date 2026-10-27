@@ -11,7 +11,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 
-// The per-test budget table lives in `crates/test_times` (`DEFAULT_BUDGET_SECS`, `SLOW_TESTS`),
+// The per-test budget table lives in `crates/test_times` (`DEFAULT_BUDGET_SECONDS`, `SLOW_TESTS`),
 // because `xtask`'s host watchdog reads the same numbers (rule 7).
 use test_times::budget_seconds_for;
 

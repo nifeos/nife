@@ -34,9 +34,9 @@ fn spawn_tree() -> (sched::RendezvousId, u64) {
     spawn_progenitor_shaped(
         "root_supervisor",
         ROOT_BUDGET_PAGES,
-        crate::cap::Rights::ALL,
+        crate::capability_object::Rights::ALL,
         report,
-        crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+        crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
         &[],
         None,
         0,

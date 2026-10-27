@@ -25,7 +25,7 @@ use login_service as ls;
 
 use super::login_tests::{free_terminal, wired};
 use super::*;
-use crate::cap::Object;
+use crate::capability_object::Object;
 use crate::{retype_fault, sched};
 
 /// A sweep that has not reached the end of a login by this N has found a program that retypes
@@ -52,7 +52,7 @@ const MAXIMUM_REGIONS_HELD: usize = 8;
 fn census(tid: crate::thread::ThreadId) -> Census {
     let mut regions = [(0, 0, 0); MAXIMUM_REGIONS_HELD];
     let mut held = 0;
-    for slot in 0..crate::cap::CAPABILITY_TABLE_SLOTS {
+    for slot in 0..crate::capability_object::CAPABILITY_TABLE_SLOTS {
         // One slot per lock acquisition: `memory_region::usage` takes a lock of higher rank than the
         // capability table's, so it must run after the table is released (the lock-order check
         // panicked on exactly this at the first push).
@@ -78,7 +78,7 @@ fn census(tid: crate::thread::ThreadId) -> Census {
 }
 
 /// What `tid` holds in `slot`, read under the capability table's lock and nothing else.
-fn slot_of(tid: crate::thread::ThreadId, slot: usize) -> Option<crate::cap::Cap> {
+fn slot_of(tid: crate::thread::ThreadId, slot: usize) -> Option<crate::capability_object::Cap> {
     sched::with_capability_table(tid, |table| table.get(slot as u64).ok())
         .expect("login's thread is gone")
 }
@@ -151,7 +151,7 @@ fn login_gives_back_everything_when_any_retype_of_a_login_fails() {
         let after = census(w.tid);
         if after != before {
             crate::println!("    login's table after failing retype {n}:");
-            for slot in 0..crate::cap::CAPABILITY_TABLE_SLOTS {
+            for slot in 0..crate::capability_object::CAPABILITY_TABLE_SLOTS {
                 if let Some(cap) = slot_of(w.tid, slot) {
                     crate::println!("      slot {slot}: {:?}", cap.object);
                 }
@@ -205,7 +205,10 @@ const SCRIPT: [(u64, u64, u64); 3] = {
 fn run_script() -> ([Result<i64, abi::Error>; 3], u64) {
     let mut trap = crate::arch::exceptions::TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     let region = crate::memory_region::create(8).expect("a region to retype from");
-    let slot = sched::grant(crate::cap::memory_region_root_cap(region)).expect("grant it");
+    let slot = sched::grant(crate::capability_object::memory_region_root_capability(
+        region,
+    ))
+    .expect("grant it");
     let answers =
         SCRIPT.map(|(method, a0, _)| crate::syscall::invoke(&mut trap, slot, method, a0, 0, 0));
     let spent = crate::memory_region::usage(region)
@@ -213,14 +216,14 @@ fn run_script() -> ([Result<i64, abi::Error>; 3], u64) {
         .0;
     for &answer in answers.iter().flatten() {
         // The split child goes first: a parent with a live child is not reclaimable.
-        if let Ok(cap) = sched::current_cap(answer as u64)
+        if let Ok(cap) = sched::current_capability(answer as u64)
             && let Object::MemoryRegion(child) = cap.object
         {
             crate::memory_region::destroy(child);
         }
-        let _ = sched::delete_current_cap(answer as u64);
+        let _ = sched::delete_current_capability(answer as u64);
     }
-    let _ = sched::delete_current_cap(slot);
+    let _ = sched::delete_current_capability(slot);
     sched::reclaim_region(region).expect("the script's region did not reclaim");
     (answers, spent)
 }
