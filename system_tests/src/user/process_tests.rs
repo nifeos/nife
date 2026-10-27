@@ -120,8 +120,8 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
-fn wait_for(secs: u64, mut cond: impl FnMut() -> bool) -> bool {
-    let deadline = crate::arch::timer::now() + secs * crate::arch::timer::frequency();
+fn wait_for(seconds: u64, mut cond: impl FnMut() -> bool) -> bool {
+    let deadline = crate::arch::timer::now() + seconds * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline {
         if cond() {
             return true;

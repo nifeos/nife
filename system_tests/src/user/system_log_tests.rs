@@ -340,11 +340,11 @@ fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_cap() 
     );
 }
 
-/// Busy-wait `nanos` on the kernel's own clock: long enough for the ring to call its drainer
+/// Busy-wait `ns` on the kernel's own clock: long enough for the ring to call its drainer
 /// stalled, without a sleep primitive the test harness would have to provide.
-fn spin_for(nanos: u64) {
+fn spin_for(ns: u64) {
     let hz = crate::arch::timer::frequency();
-    let until = crate::arch::timer::now() + nanos * hz / 1_000_000_000;
+    let until = crate::arch::timer::now() + ns * hz / 1_000_000_000;
     while crate::arch::timer::now() < until {
         core::hint::spin_loop();
     }

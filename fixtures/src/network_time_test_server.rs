@@ -93,7 +93,7 @@ pub mod srv {
 /// This server's turnaround in its reply: T3 - T2. Small but not zero, so the delay arithmetic is
 /// exercised on a value that has to be subtracted rather than one that cannot go wrong. Far under
 /// the client's own round trip, which is two IPC exchanges.
-const SERVER_TURNAROUND_NANOS: u64 = 1_000;
+const SERVER_TURNAROUND_NS: u64 = 1_000;
 
 /// Where this server maps the client's shared frame in its own address space. The client picks its
 /// own, and the two do not have to agree: what they share is the frame's *layout*, which is
@@ -188,7 +188,7 @@ fn server(variant: u64, claimed_ns: u64) -> ! {
 /// Build the reply for `variant`. Returns how many bytes of `out` are the reply.
 fn build_reply(request: &Packet, variant: u64, claimed_ns: u64, out: &mut [u8]) -> usize {
     let t2 = stamp(claimed_ns).unwrap_or(Timestamp::ZERO);
-    let t3 = stamp(claimed_ns + SERVER_TURNAROUND_NANOS).unwrap_or(Timestamp::ZERO);
+    let t3 = stamp(claimed_ns + SERVER_TURNAROUND_NS).unwrap_or(Timestamp::ZERO);
 
     let mut p = Packet {
         leap: leap::NONE,

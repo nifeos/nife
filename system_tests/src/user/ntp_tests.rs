@@ -432,7 +432,7 @@ fn the_nonce_on_the_wire_is_random_and_is_not_the_clock() {
     let claimed = clock.wall_ns() + NS_PER_SECOND / 2;
 
     // A time in the NTP era the transmit field would carry if it were a clock reading.
-    let now_ntp_secs = clock.wall_ns() / NS_PER_SECOND + network_time_protocol::UNIX_DELTA;
+    let now_ntp_seconds = clock.wall_ns() / NS_PER_SECOND + network_time_protocol::UNIX_DELTA;
 
     let mut nonces = [0u64; 2];
     for slot in nonces.iter_mut() {
@@ -447,10 +447,10 @@ fn the_nonce_on_the_wire_is_random_and_is_not_the_clock() {
         "two exchanges put the same nonce on the wire: the transmit field is not random",
     );
     for (i, &nonce) in nonces.iter().enumerate() {
-        let secs = nonce >> 32;
+        let seconds = nonce >> 32;
         assert!(
-            secs.abs_diff(now_ntp_secs) > 3600,
-            "nonce {i} decodes to {secs}, within an hour of the clock ({now_ntp_secs}): the \
+            seconds.abs_diff(now_ntp_seconds) > 3600,
+            "nonce {i} decodes to {seconds}, within an hour of the clock ({now_ntp_seconds}): the \
              transmit field is a timestamp, not 64 random bits",
         );
     }
