@@ -9,8 +9,8 @@ ratified_by: calef
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote
 down)'s lane. That lane found that milestone 52 (subshells without `fork`, and what copying an
-endowment means) had carried a `DECISION` gate since it was recorded and named no decision anywhere
-a reader can open. The fork itself is calef's and older: the block asked for it to be designed
+endowment means) had carried a `DECISION` gate since its first draft and named no decision anywhere
+a reader can open. The fork itself is calef's and older: the block asked to design it
 together with him. Ruled 2026-10-27 (UTC). Beside it, §312 (swish has one way to do each job in its
 language) rules the language rule that this mechanism falls under.
 
@@ -23,7 +23,7 @@ mechanisms, and each does one job.
   entry (working directory, variables, options) and restores it on exit, including when the group
   fails. It never touches a capability, so the non-duplicable case does not arise inside it.
 - Refusing what cannot be restored. A scoped block refuses, out loud and before it runs, any change
-  it cannot restore: a capability the shell holds that the group would consume or hand off (today,
+  that it cannot undo: a capability the shell holds that the group would consume or hand off (today,
   a background job started or torn down). The refusal names the isolation form. That refusal is
   the answer to the silent downgrade that §42 (no silent degradation) forbids.
 - Isolation. Running `swish` again explicitly (as `fish -c` does) starts a real child. The child's
