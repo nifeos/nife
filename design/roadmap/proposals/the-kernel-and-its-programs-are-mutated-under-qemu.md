@@ -118,10 +118,10 @@ already keys on, and execution stays with the driver that already knows how to b
 3. The diff-scoped check, advisory, sharded so each job stays under 20 minutes. At about 150
    seconds per mutant and two jobs per runner, one job holds about 16 mutants. A larger diff takes
    more shards, never a longer job. One lane.
-4. The rolling census, one workflow with a slice list and a cap on concurrent jobs. The slices go
-   in order of what a wrong line costs: `syscall/`, `revoke`, `cap`, `memory_region`, `sched/`,
-   then `arch/` per architecture, then `user/`, then `components` against the system tests. One
-   lane.
+4. The rolling census, one workflow with a slice list, two jobs a night and the schedule below. The
+   slices go in order of what a wrong line costs: `syscall/`, `revoke`, `cap`, `memory_region`,
+   `sched/`, then `arch/` per architecture, then `user/`, then `components` against the system
+   tests. One lane.
 5. Triage, one lane per slice as each lands, under the companion proposals' rules for accepted and
    hanging survivors.
 
@@ -152,8 +152,28 @@ GitHub-hosted runners cost this public repository no money. The limit is the org
 concurrency. Milestone 741's first scaled run queued 40 jobs on those runners, and the maintainer
 cancelled it. And `gating-ci-rents-more-concurrency-before-it-owns-a-runner.md` is the open proposal
 about that limit. The rolling census therefore runs at a capped `max-parallel`, outside the hours
-the merge queue is busy. The diff-scoped check on pull requests runs on hosted runners only, never
-on owned hardware, since pull requests from forks never run there.
+the merge queue is busy. The diff-scoped check on pull requests runs on hosted runners only,
+never on owned hardware, since pull requests from forks never run there.
+
+## When the rolling census runs
+
+calef set the window on 2026-10-27 (UTC): the middle of the night, Pacific time, roughly 00:00 to
+06:00. GitHub's cron reads UTC and knows no time zone, so the window is 07:00 to 13:00 UTC under
+daylight time and 08:00 to 14:00 UTC under standard time, which begins 2026-11-01. One schedule
+fits both: start at 08:00 UTC and stop by 13:00 UTC, which is 01:00 to 06:00 Pacific in daylight
+time and 00:00 to 05:00 in standard time.
+
+The 60 hours spread across nights rather than one run, so the census never fills the concurrency
+pool. Each night runs two jobs for five hours, ten runner-hours, on six nights a week, with cron
+`0 8 * * 0,2-6`. Monday stays free for the host census. That census's cron says 05:00 UTC Monday,
+but GitHub starts scheduled runs late: the 2026-10-26 run started at 10:55 UTC and finished at
+13:01, and the 2026-10-19 run started at 10:39. So it already falls inside the window, with eight
+shards, and a kernel night beside it would put ten jobs in the pool at once.
+
+A late start is the normal case, not an exception. Each job reads the wall clock and stops its slice
+cleanly at 13:00 UTC, whatever time it began, so a late night is a short night and never an overrun
+into the working day. The slice resumes from where it stopped on the next night. Sixty runner-hours
+is therefore a ceiling, and the census record shows what each week actually got.
 
 Reuse: cargo-mutants generates every mutant (`--list --diff`), `script/falsifications` runs each
 one under QEMU, and `helpers/mutation_diff_gate.py` and the triage ledger judge the result. The
