@@ -125,8 +125,8 @@ and a comment naming only the FAT32 writer); both now name both halves.
 
 ### 3. FIXED: installing.md named the wrong process for the survey
 
-"The looking is done by ... the `disk_partitioner` verify role of milestone 57." Milestone 57 is partitioning and formatting
-a real drive. The kernel's
+"The looking is done by ... the `disk_partitioner` verify role of milestone 57." (Milestone 57 (partitioning and formatting
+a real drive) built that role.) The kernel's
 offer spawns `system_installer` with `ROLE_SURVEY` (`install_service.rs`, `spawn_system_installer`),
 and the page's own table says so two paragraphs earlier. The sentence now names the role and keeps
 milestone 57's role as the shape it follows.

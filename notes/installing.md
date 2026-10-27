@@ -136,8 +136,8 @@ Nothing in this tree could write a FAT volume. Every path around it (QEMU's `vvf
 `diskutil`, Linux's `mkfs.vfat`) is a host tool the target cannot reach.
 `crates/file_allocation_table`'s writer closes it: it creates one volume holding one file at one
 path, as pure computation with no I/O. The rest of that crate, a reader and a general writer for
-FAT12, FAT16 and FAT32, is milestone 813 (a proven FAT crate, released on its own), and milestone
-140 (mount a drive this system did not create) builds its FAT32 stratum on it.
+FAT12, FAT16 and FAT32, is milestone 813 (a proven FAT crate, released on its own). Milestone 140
+(mount a drive this system did not create) builds its FAT32 stratum on it.
 
 Two numbers in it are load-bearing and neither is obvious.
 
@@ -218,7 +218,7 @@ The `BUGS` in `xtask/src/install.rs` are one line each. Here is what stands behi
 - The disk is one 1 GiB image. The installer's layout arithmetic has a floor and a rounding step
   that nothing varies, and a disk under about 700 MiB is refused by code no test exercises.
 - The gate takes about 42 seconds warm. It is not in `script/test`'s default legs, and nothing
-  schedules it (milestone 712, the install gates run nowhere).
+  schedules it (milestone 712 (the install gates run nowhere)).
 - Boot 3 proves the stick left the disk alone under OVMF, and only there. What keeps it so is the
   `boot_slot::medium` token above. The loader writes it only when its file is on an NVMe namespace.
   A real firmware that built that device path differently would leave an installed machine without

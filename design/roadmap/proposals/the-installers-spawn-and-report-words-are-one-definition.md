@@ -32,7 +32,7 @@ things that each spells for itself:
 
 Each side carries a "Must match" comment, which is the whole of what keeps them in step. A changed
 role value or slot on one side builds, boots, and fails at the first install or confirm, and the
-install gate (`cargo xtask install-boot`) runs on no schedule (milestone 712, the install gates run nowhere). `install_service.rs`
+install gate (`cargo xtask install-boot`) runs on no schedule (milestone 712 (the install gates run nowhere)). `install_service.rs`
 records a reason for the duplication: the words are the kernel's own convention with a program it
 spawns. Rule 7 of `AGENTS.md` and ruling 55a (2026-10-26 UTC) both say a word two binaries agree on
 is code, and `hot_swap_contract` is the tree's existing answer to the same kind of convention.
