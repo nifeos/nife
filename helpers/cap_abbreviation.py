@@ -63,7 +63,7 @@ SELF = 'helpers/cap_abbreviation.py'
 
 # The count on 2026-10-06, and since lowered by the sweep's `--bank`. Never raise it by hand: a new
 # `cap` is spelled out, not admitted.
-CEILING = 2_827
+CEILING = 2_282
 
 # Identifiers that keep `cap`, by file, each group with its reason. See the header before adding one.
 _CEILING = 'cap is the English word for a limit or a capacity here, not an abbreviation'
@@ -113,12 +113,10 @@ KEPT = {
     # outsider pass's fixture and test call these APIs by their existing names and mint no
     # cap-named identifier of their own.
     'components/src/socket_squatter.rs': ({'receive_cap'}, _CALLS),
-    'system_tests/src/user/net_confinement_tests.rs':
-        ({'cap', 'memory_region_cap', 'rendezvous_cap'}, _CALLS),
+    'system_tests/src/user/net_confinement_tests.rs': ({'cap', 'rendezvous_cap'}, _CALLS),
     # The same pass's chatty reshape: `spawn_swapper`'s two new slots call the same family.
     'system_tests/src/user/live_swap_tests.rs':
-        ({'cap', 'device_frame_cap', 'memory_region_root_cap', 'notification_cap', 'rendezvous_cap',
-          'thread_control_block_insert_cap', 'timer_cap'}, _CALLS),
+        ({'cap', 'device_frame_cap', 'notification_cap', 'timer_cap'}, _CALLS),
     # Milestone 801 (packages over the internet), 2026-10-09 (UTC): a std program's resolver badge
     # is minted by the existing constructor, and nothing cap-named is minted here.
     'system_tests/src/user/std_service.rs': ({'rendezvous_cap_badged'}, _CALLS),
@@ -138,9 +136,7 @@ KEPT = {
     # The same lane's `RETYPE_OBJ` moved out of `kernel/src/syscall.rs` the same way, and its
     # process and `std` thread tests call the existing APIs; the one name it minted for a process
     # is spelled out (`process_capability`).
-    'kernel/src/syscall/retype.rs':
-        ({'cap', 'address_space_cap', 'current_cap', 'delete_current_cap', 'notification_cap',
-          'rendezvous_cap', 'thread_control_block_cap', 'timer_cap'}, _CALLS),
+    'kernel/src/syscall/retype.rs': ({'cap', 'current_cap', 'delete_current_cap'}, _CALLS),
     'system_tests/src/user/process_tests.rs':
         ({'cap', 'Cap', 'CAP_INSERT', 'address_space_cap', 'current_cap', 'delete_current_cap',
           'memory_region_cap', 'rendezvous_cap', 'thread_control_block_cap',
@@ -166,7 +162,6 @@ KEPT = {
         ({'cap', 'current_cap', 'delete_current_cap', 'rendezvous_cap'}, _CALLS),
     'system_tests/src/user/eighth_pass_spawn_audit_tests.rs':
         ({'cap', 'page_frame_run_cap', 'rendezvous_cap'}, _CALLS),
-    'crates/capability_plan/src/lib.rs': ({'CapNeed', 'caps'}, _CALLS),
     'kernel/src/user/x86_programs.rs': ({'SYS_CAP_DELETE'}, _CALLS),
     # Milestone 914 (a ninth outsider pass attacks the confinement claim): the pass's tests call
     # these APIs by their existing names and mint none of their own.

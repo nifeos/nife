@@ -1091,7 +1091,7 @@ fn open_schedule(
         keeper,
         &elf,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (ready, abi::rights::WRITE),
                 // `GRANT` too: a region split off this one inherits its rights, and the session
                 // process hands its timetable a split of it, which `CAP_INSERT` refuses without
@@ -1185,7 +1185,7 @@ fn store_caretaker(
         region,
         care,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (badged, abi::rights::WRITE),
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
@@ -1316,7 +1316,7 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
         region,
         care,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (FS_EP, abi::rights::WRITE),
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),

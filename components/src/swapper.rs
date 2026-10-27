@@ -353,7 +353,7 @@ fn build_without_devices(
         region,
         elf,
         &ChildEndowment {
-            caps: component.caps(),
+            capabilities: component.capabilities(),
             maps: component.maps_without_devices(),
             blobs: &[],
             fault: Some(faultep),
@@ -689,7 +689,7 @@ fn build_unstarted(
         region,
         elf,
         &ChildEndowment {
-            caps: plan.caps(),
+            capabilities: plan.capabilities(),
             maps: plan.maps(),
             blobs: &[],
             fault: Some(faultep),
@@ -1278,7 +1278,7 @@ fn start_child_keeping_region(
         bail(stage)
     };
     let endow = ChildEndowment {
-        caps: plan.caps(),
+        capabilities: plan.capabilities(),
         maps: plan.maps(),
         blobs: &[],
         fault: Some(faultep),
@@ -1306,7 +1306,7 @@ fn start_bound(
         bail(stage)
     };
     let endow = ChildEndowment {
-        caps: plan.caps(),
+        capabilities: plan.capabilities(),
         maps: plan.maps(),
         blobs: &[],
         fault: Some(faultep),

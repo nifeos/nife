@@ -138,7 +138,7 @@ pub fn parse(line: &[u8]) -> Command<'_> {
     match first {
         b"help" => Command::Help,
         b"echo" => Command::Echo(rest),
-        b"caps" => Command::Caps(rest),
+        b"caps" => Command::Capabilities(rest),
         b"time" => Command::Time(rest),
         b"xargs" => Command::Xargs(rest),
         // A path operand is one designation however many slashes it has, so `trim` is all the

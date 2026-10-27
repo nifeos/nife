@@ -14,7 +14,7 @@
 /// - **The child holds `WRITE` on the region it is built in**, which is also `SPLIT`, so a program
 ///   that splits its own heap pins its job region until reboot (notes/system-initializer.md).
 pub(super) struct StdLayout {
-    pub(super) caps: [(u64, u64); 2],
+    pub(super) capabilities: [(u64, u64); 2],
     placed: [(u64, u64, u64); 24],
     placed_n: usize,
     maps: [(u64, u64, u64); 6],
@@ -50,7 +50,7 @@ pub(super) struct StdGrants {
     pub(super) source: Option<u64>,
 }
 
-// `caps` lands in order from slot 0, so the two in-order slots must be 0 and 1. Checked here rather
+// `capabilities` lands in order from slot 0, so the two in-order slots must be 0 and 1. Checked here rather
 // than assumed, because the contract crate could renumber them and this would build a child whose
 // heap and output were swapped.
 const _: () = assert!(
@@ -114,7 +114,7 @@ impl StdLayout {
             abi::rights::SPEND_ONLY
         };
         let mut l = StdLayout {
-            caps: [(region, heap), out],
+            capabilities: [(region, heap), out],
             placed: [(0, 0, 0); 24],
             placed_n: 0,
             maps: [(0, 0, 0); 6],
@@ -175,13 +175,13 @@ impl StdLayout {
         l
     }
 
-    fn place(&mut self, slot: u64, cap: u64, rights: u64) {
-        self.placed[self.placed_n] = (slot, cap, rights);
+    fn place(&mut self, slot: u64, capability: u64, rights: u64) {
+        self.placed[self.placed_n] = (slot, capability, rights);
         self.placed_n += 1;
     }
 
-    fn map(&mut self, va: u64, cap: u64, mode: u64) {
-        self.maps[self.maps_n] = (va, cap, mode);
+    fn map(&mut self, va: u64, capability: u64, mode: u64) {
+        self.maps[self.maps_n] = (va, capability, mode);
         self.maps_n += 1;
     }
 

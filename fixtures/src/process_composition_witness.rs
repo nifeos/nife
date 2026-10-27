@@ -85,7 +85,7 @@ fn compose(initial_ramdisk_len: u64) -> u64 {
     let answer = answer as u64;
     let caps = [(answer, abi::rights::WRITE)];
     let endow = ChildEndowment {
-        caps: &caps,
+        capabilities: &caps,
         ..ChildEndowment::new(Retention::Nothing)
     };
     // One budget pays for both the child and our own scratch mappings: there is only the one, and

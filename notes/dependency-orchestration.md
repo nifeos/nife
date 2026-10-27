@@ -21,12 +21,12 @@ principle.
 
 ## Why the graph cannot live where the roadmap's own wording suggests
 
-The natural first reading is "a `CapNeed` should say which contract satisfies it." That does not
+The natural first reading is "a `CapabilityNeed` should say which contract satisfies it." That does not
 survive contact with a manifest already in this tree. `hot_swap_contract::CLIENT` declares one `Use`
 need named `service`. The supervisor routes that name to a console (or backend) instance on the
 direct channel and to `broker`'s front endpoint on the queued one, per
 `notes/component-manifest.md`'s own rule (the name is the component's and the object is the
-supervisor's). A `CapNeed` that named its supplier would be wrong on one of the two wirings, every
+supervisor's). A `CapabilityNeed` that named its supplier would be wrong on one of the two wirings, every
 time, by construction. Role resolution is the supervisor's business and a capability-level
 dependency claim cannot be, on pain of contradicting the manifest mechanism's own reason for
 existing.
@@ -126,8 +126,8 @@ for id in order.quiesce_order().iter().rev() {
 pub const CACHE: Requirements = Requirements {
     contract: "cache",
     caps: &[
-        CapNeed { role: "requests", direction: Direction::Serve },
-        CapNeed { role: "origin", direction: Direction::Use },
+        CapabilityNeed { role: "requests", direction: Direction::Serve },
+        CapabilityNeed { role: "origin", direction: Direction::Use },
     ],
     maps: &[],
     pages: 32,

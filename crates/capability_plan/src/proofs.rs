@@ -10,19 +10,19 @@
 
 use super::*;
 
-const SERVE_A: CapNeed = CapNeed {
+const SERVE_A: CapabilityNeed = CapabilityNeed {
     role: "a",
     direction: Direction::Serve,
 };
-const USE_A: CapNeed = CapNeed {
+const USE_A: CapabilityNeed = CapabilityNeed {
     role: "a",
     direction: Direction::Use,
 };
-const SERVE_B: CapNeed = CapNeed {
+const SERVE_B: CapabilityNeed = CapabilityNeed {
     role: "b",
     direction: Direction::Serve,
 };
-const USE_B: CapNeed = CapNeed {
+const USE_B: CapabilityNeed = CapabilityNeed {
     role: "b",
     direction: Direction::Use,
 };
@@ -32,7 +32,7 @@ const USE_B: CapNeed = CapNeed {
 const SHAPES: [Requirements; 4] = [
     Requirements {
         contract: "c",
-        caps: &[SERVE_A, SERVE_B],
+        capabilities: &[SERVE_A, SERVE_B],
         maps: &[],
         pages: 1,
         depends_on: &[],
@@ -40,7 +40,7 @@ const SHAPES: [Requirements; 4] = [
     },
     Requirements {
         contract: "c",
-        caps: &[SERVE_A, USE_B],
+        capabilities: &[SERVE_A, USE_B],
         maps: &[],
         pages: 1,
         depends_on: &[],
@@ -48,7 +48,7 @@ const SHAPES: [Requirements; 4] = [
     },
     Requirements {
         contract: "c",
-        caps: &[USE_A, SERVE_B],
+        capabilities: &[USE_A, SERVE_B],
         maps: &[],
         pages: 1,
         depends_on: &[],
@@ -56,7 +56,7 @@ const SHAPES: [Requirements; 4] = [
     },
     Requirements {
         contract: "c",
-        caps: &[USE_A, USE_B],
+        capabilities: &[USE_A, USE_B],
         maps: &[],
         pages: 1,
         depends_on: &[],
@@ -81,7 +81,7 @@ fn any_slot() -> u64 {
 
 /// No routing table ever gives a component a right its declaration did not ask for. For every
 /// declaration of two needs and every pair of slot numbers a supervisor could route, the rights
-/// word at slot `i` is exactly `caps[i].direction.rights()`: no `Use` becomes a `READ` (§41 (the
+/// word at slot `i` is exactly `capabilities[i].direction.rights()`: no `Use` becomes a `READ` (§41 (the
 /// endpoint is the broker)), and nothing carries `GRANT`, which no declaration can ask for.
 /// The unwind bound is a termination proof: ten, against real bounds of two capability needs, two
 /// page needs, two routed names and a one-byte role name.
@@ -92,7 +92,7 @@ fn a_plan_never_grants_a_right_the_declaration_did_not_ask_for() {
     let held: [(&str, u64); 2] = [("a", any_slot()), ("b", any_slot())];
     for reqs in &SHAPES {
         let p = plan(reqs, &Provisions { held: &held }).expect("both roles are routed");
-        assert!(p.caps().len() == 2);
+        assert!(p.capabilities().len() == 2);
         let mut i = 0;
         while i < 2 {
             // **The mapping written out, not `rights()` compared with itself** (milestone
@@ -103,12 +103,12 @@ fn a_plan_never_grants_a_right_the_declaration_did_not_ask_for() {
             // were already independent, and they are what caught the defect; this makes the
             // first one independent too, so the harness states the whole claim rather than
             // two thirds of it.
-            let expected = match reqs.caps[i].direction {
+            let expected = match reqs.capabilities[i].direction {
                 Direction::Serve => abi::rights::READ,
                 Direction::Use => abi::rights::WRITE,
             };
             assert!(
-                p.caps()[i].1 == expected,
+                p.capabilities()[i].1 == expected,
                 "a plan granted a right the declaration did not ask for",
             );
             // **The two assertions that used to follow are gone, and which one they were is
@@ -121,7 +121,7 @@ fn a_plan_never_grants_a_right_the_declaration_did_not_ask_for() {
             // defect, and 211's fix turned the rescue assertion into the decoration. That
             // inversion is worth more than the line was.
 
-            assert!(p.caps()[i].0 == held[i].1);
+            assert!(p.capabilities()[i].0 == held[i].1);
             i += 1;
         }
     }
@@ -148,7 +148,7 @@ fn a_missing_route_refuses_rather_than_falling_through_to_a_slot() {
                 // Wired at all only if both names were routed, and then to those slots and no
                 // others.
                 assert!(n0 == "a" && n1 == "b");
-                assert!(p.caps()[0].0 == s0 && p.caps()[1].0 == s1);
+                assert!(p.capabilities()[0].0 == s0 && p.capabilities()[1].0 == s1);
             }
             Err(r) => {
                 assert!(n0 != "a" || n1 != "b");
@@ -184,7 +184,7 @@ const DEVICE_Q: MapNeed = MapNeed {
 const PAGE_SHAPES: [Requirements; 4] = [
     Requirements {
         contract: "c",
-        caps: &[],
+        capabilities: &[],
         maps: &[SHARED_P, SHARED_Q],
         pages: 1,
         depends_on: &[],
@@ -192,7 +192,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
     },
     Requirements {
         contract: "c",
-        caps: &[],
+        capabilities: &[],
         maps: &[DEVICE_P, SHARED_Q],
         pages: 1,
         depends_on: &[],
@@ -200,7 +200,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
     },
     Requirements {
         contract: "c",
-        caps: &[],
+        capabilities: &[],
         maps: &[SHARED_P, DEVICE_Q],
         pages: 1,
         depends_on: &[],
@@ -208,7 +208,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
     },
     Requirements {
         contract: "c",
-        caps: &[],
+        capabilities: &[],
         maps: &[DEVICE_P, DEVICE_Q],
         pages: 1,
         depends_on: &[],
@@ -265,7 +265,7 @@ fn the_device_split_partitions_the_mappings() {
 
 const TARGET_SELF: Requirements = Requirements {
     contract: "a",
-    caps: &[],
+    capabilities: &[],
     maps: &[],
     pages: 1,
     depends_on: &[],
@@ -273,7 +273,7 @@ const TARGET_SELF: Requirements = Requirements {
 };
 const OTHER_NODEP: Requirements = Requirements {
     contract: "other",
-    caps: &[],
+    capabilities: &[],
     maps: &[],
     pages: 1,
     depends_on: &[],
@@ -281,7 +281,7 @@ const OTHER_NODEP: Requirements = Requirements {
 };
 const OTHER_DEP: Requirements = Requirements {
     contract: "other",
-    caps: &[],
+    capabilities: &[],
     maps: &[],
     pages: 1,
     depends_on: &["a"],

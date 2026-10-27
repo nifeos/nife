@@ -11,13 +11,16 @@ use super::*;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Route<'a> {
     /// `caps`, with everything after it. The tail is a **whole command line**, operators included.
-    Caps(&'a [u8]),
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+    /// `Capabilities` under the capability ruling of 2026-10-06 (UTC).
+    Capabilities(&'a [u8]),
     /// `time`, with everything after it (milestone 86). The tail is a whole command line for
-    /// [`Caps`](Route::Caps)'s reason, and the shell re-dispatches it, so what is timed is the line
+    /// [`Capabilities`](Route::Capabilities)'s reason, and the shell re-dispatches it, so what is timed is the line
     /// taking the path it would have taken untimed.
     Time(&'a [u8]),
     /// `xargs`, with everything after it (milestone 109). The tail is a whole command line for
-    /// [`Caps`](Route::Caps)'s reason, and the shell re-dispatches it **once per batch** of what its
+    /// [`Capabilities`](Route::Capabilities)'s reason, and the shell re-dispatches it **once per batch** of what its
     /// pattern matched. The name is provisional.
     Xargs(&'a [u8]),
     /// One command, with no operators on it.
@@ -38,7 +41,7 @@ pub enum Route<'a> {
 /// use swish::{Route, route};
 ///
 /// // The tail keeps the pipe. `caps` will preview two stages, not one.
-/// assert!(matches!(route(b"caps date | wc"), Route::Caps(b"date | wc")));
+/// assert!(matches!(route(b"caps date | wc"), Route::Capabilities(b"date | wc")));
 /// // And `time` keeps it for the same reason: it times the pipeline, not its first word.
 /// assert!(matches!(route(b"time date | wc"), Route::Time(b"date | wc")));
 /// // The third prefix word (milestone 109), which batches a whole line for the same reason.
@@ -51,7 +54,7 @@ pub enum Route<'a> {
 /// ```
 pub fn route(cmd: &[u8]) -> Route<'_> {
     match grant_plan::parse(cmd) {
-        Command::Caps(tail) => return Route::Caps(tail),
+        Command::Capabilities(tail) => return Route::Capabilities(tail),
         Command::Time(tail) => return Route::Time(tail),
         Command::Xargs(tail) => return Route::Xargs(tail),
         _ => {}

@@ -154,5 +154,5 @@ pub(super) fn send_cap(slot: u64) {
 /// end goes as `WRITE|GRANT` and its read end as `READ|GRANT`, so the child on the right of a `|`
 /// cannot write back up its own input, by the narrowing rather than by convention.
 pub(super) fn delegate(slot: u64, rights: u64) {
-    user_mode_runtime::send_capability(SPAWN, slot, rights, spawnproto::CAP_TAG);
+    user_mode_runtime::send_capability(SPAWN, slot, rights, spawnproto::CAPABILITY_TAG);
 }

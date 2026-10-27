@@ -305,7 +305,7 @@ fn what_echo_shows_is_what_rm_would_transfer() {
     );
     // And `caps rm *.txt` previews the identical endowment, because the preview re-parses the
     // command you would have typed and plans it against the same expansion.
-    let Command::Caps(tail) = parse(b"caps rm *.txt") else {
+    let Command::Capabilities(tail) = parse(b"caps rm *.txt") else {
         panic!()
     };
     let Command::Run(previewed) = parse(tail) else {
