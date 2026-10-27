@@ -201,8 +201,20 @@ pub fn run() {
     // records both `clock` and `trng`, and `entropy` runs after it because on a JH7110 it draws
     // from the service that bring-up wired.
     let runs: [fn(&mut Tally); RUNS] = [
-        exceptions, mapping, frames, timer, scheduler, preemption, userspace, budget, supervised,
-        teardown, blockdev, deviceirq, jh7110, entropy,
+        exceptions,
+        mapping,
+        frames,
+        timer,
+        scheduler,
+        preemption,
+        userspace,
+        budget,
+        supervised,
+        teardown,
+        blockdev,
+        device_interrupt,
+        jh7110,
+        entropy,
     ];
     for (stage, check) in (FIRST_STAGE..).zip(runs) {
         sched::note_boot_stage(stage);
@@ -908,23 +920,25 @@ fn blockdev(tally: &mut Tally) {
 ///
 /// Different from [`fn@timer`]'s claim, which is about an interrupt the CPU's own timer raises:
 /// this one comes from a device outside the CPU, through the controller's routing. `x86_64` proves
-/// the PIT's line through the IO APIC at bring-up (`arch::irq::initialize`, the only window where
+/// the PIT's line through the IO APIC at bring-up (`arch::interrupt_controller::initialize`, the
+/// only window where
 /// the scheduler is up and the tick not yet armed) and this reads the count it took. **Absent on
 /// aarch64 and riscv64**, which have no device the kernel can make interrupt without input or a
 /// disk; there the line is proved by the input driver at the hand-over and by [`blockdev`].
-fn deviceirq(tally: &mut Tally) {
-    match arch::irq::device_line_interrupts() {
+#[doc(alias = "irq")]
+fn device_interrupt(tally: &mut Tally) {
+    match arch::interrupt_controller::device_line_interrupts() {
         Some(n) => tally.record(
-            "deviceirq",
+            "device_interrupt",
             n > 0,
             format_args!("{n} interrupts from a device line in ~0.2s at bring-up"),
         ),
         None if cfg!(target_arch = "x86_64") => tally.absent(
-            "deviceirq",
+            "device_interrupt",
             format_args!("the MADT named no IO APIC, so no device line was routed"),
         ),
         None => tally.absent(
-            "deviceirq",
+            "device_interrupt",
             format_args!(
                 "no device on this port interrupts without input or a disk; the input driver and blockdev prove a line where one exists"
             ),

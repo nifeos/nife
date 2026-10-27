@@ -28,10 +28,10 @@ into one that loses on a shared runner.
 
 ### `holding_a_lock_masks_the_timer` (both ISAs): the window moved inside the lock
 
-The claim is "no timer interrupt lands while an `IrqSafeMutex` is held". The measurement was
+The claim is "no timer interrupt lands while an `InterruptSafeMutex` is held". The measurement was
 `before = ticks()` outside the critical section, then `ticks()` inside it. So the window included the
 handful of instructions between the read and `M.lock()`. A tick landing there is charged to the
-lock, and the run goes red with a message accusing `IrqSafeMutex` of not masking.
+lock, and the run goes red with a message accusing `InterruptSafeMutex` of not masking.
 
 That window is where a descheduled vCPU resumes. A resuming vCPU has a deadline already in the past,
 so it takes the interrupt at the first instruction it executes. Hence "left: 41, right: 40", one

@@ -151,9 +151,9 @@ pub(in crate::user) fn spawn_block_server(
     let blk_ep = crate::sched::create_rendezvous(); // FS server WRITE (CALL) -> block server READ
     let blk_ready = crate::sched::create_rendezvous(); // block server WRITE -> the kernel test receives
 
-    let irq_ep = crate::sched::create_rendezvous();
-    crate::sched::bind_irq(dev.intid, irq_ep);
-    crate::arch::irq::enable(dev.intid);
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(dev.intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(dev.intid);
     let vid = crate::virtio::register(
         dev.transport,
         dma,
@@ -181,7 +181,7 @@ pub(in crate::user) fn spawn_block_server(
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(blk_ep, Rights::READ), // slot 0: RECEIVE blk requests
-                    irq_cap(dev.intid),                   // slot 1: the device interrupt
+                    interrupt_cap(dev.intid),             // slot 1: the device interrupt
                     virtio_cap(vid),                      // slot 2: the confined transport
                     rendezvous_cap(blk_ready, Rights::WRITE), // slot 3: signal readiness once
                 ],

@@ -142,7 +142,7 @@ pub(super) fn expire_timers() {
     }
     for cpu in 0..cpu::MAXIMUM_CPUS {
         if poke & (1 << cpu) != 0 {
-            crate::arch::irq::send_reschedule(cpu);
+            crate::arch::interrupt_controller::send_reschedule(cpu);
         }
     }
 }

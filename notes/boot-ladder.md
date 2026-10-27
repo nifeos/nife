@@ -90,7 +90,7 @@ child twice, and the second round moves the frame count by zero. The last five n
 | Check | Its claim | Where it can run |
 |---|---|---|
 | `blockdev` | a user-level driver reads `motd` off a virtio disk, woken by its interrupt | a machine with a virtio disk |
-| `deviceirq` | a device's line reaches the CPU through the interrupt controller | `x86_64`: the PIT through the IO APIC |
+| `device_interrupt` | a device's line reaches the CPU through the interrupt controller | `x86_64`: the PIT through the IO APIC |
 | `clock` | the JH7110's clock controller ungates its TRNG | radon |
 | `trng` | the JH7110 TRNG serves two different draws, timed | radon |
 | `entropy` | the machine's entropy source serves a client | a TRNG or a seed instruction |
@@ -99,7 +99,8 @@ A machine without the device reports the check `absent`, with its reason, and th
 it: `nife self-test: 12 of 15 passed, 3 absent: blockdev clock trng`. Absent is not a failure on
 its own. Each `serial_console` board profile names the checks its board has the device for, and an
 absence of one of those is FAILED: radon may not be without `entropy`, `trng` or `clock`, and
-xenon not without `entropy` or `deviceirq`. The emulator profile `boot-check` uses forbids none.
+xenon not without `entropy` or `device_interrupt`. The emulator profile `boot-check` uses forbids
+none.
 
 **A failure prints and the boot carries on.** calef, 2026-09-09: *"I could see building tools to
 diagnose what broke but we can only run them if there is a prompt"*. A machine you cannot log into
@@ -135,7 +136,7 @@ names it). About 26 seconds against a warm target directory:
 $ script/boot-check
 boot-check (aarch64): reached shell prompt (3867 bytes in 2.9s)
 boot-check (aarch64): nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz
-boot-check (aarch64): nife self-test: 10 of 15 passed, 5 absent: blockdev deviceirq clock trng entropy
+boot-check (aarch64): nife self-test: 10 of 15 passed, 5 absent: blockdev device_interrupt clock trng entropy
 ...
 boot-check: every architecture climbed the ladder to a shell prompt, and the self-test verdict on
 the way was green
@@ -151,7 +152,7 @@ Prove the gate has teeth, by making one check fail and requiring the run to come
 
 ```
 $ script/boot-check --inject
-boot-check (aarch64): nife self-test: 4 of 15 passed, 5 absent: blockdev deviceirq clock trng entropy, 6 FAILED: exceptions timer userspace budget supervised teardown
+boot-check (aarch64): nife self-test: 4 of 15 passed, 5 absent: blockdev device_interrupt clock trng entropy, 6 FAILED: exceptions timer userspace budget supervised teardown
 ...
 boot-check: every architecture's self-test verdict came back RED, as the injection asked
 ```
@@ -166,7 +167,8 @@ board-console: self-test: nife self-test: 5 of 5 passed
 ```
 
 That capture is of a kernel with five checks. Today's kernel on radon should report `blockdev` and
-`deviceirq` absent and nothing else, and `serial_console` fails it if `entropy`, `trng` or `clock`
+`device_interrupt` absent and nothing else, and `serial_console` fails it if `entropy`, `trng` or
+`clock`
 is absent. No board has run it yet.
 
 Replay a capture through the same recognizer, which is how every marker in it is tested:

@@ -422,13 +422,13 @@ mod tests {
         assert!(boot.row(&Meta::default()).contains("NOT CLEAN"));
     }
 
-    /// radon has no device that interrupts on its own, so `deviceirq` absent is its normal
+    /// radon has no device that interrupts on its own, so `device_interrupt` absent is its normal
     /// verdict, and only xenon's profile makes that absence a failure. A reader that judged every
     /// capture by one board's list would call each radon soak NOT CLEAN.
     #[test]
     fn an_absence_fails_the_boot_only_on_the_board_that_has_the_device() {
         let log = format!(
-            "nife on x\nnife self-test: 11 of 13 passed, 2 absent: blockdev deviceirq\n\
+            "nife on x\nnife self-test: 11 of 13 passed, 2 absent: blockdev device_interrupt\n\
              soak-test: started\n{}",
             beat(5, 400, 9, 2000, (0, 0, 0))
         );

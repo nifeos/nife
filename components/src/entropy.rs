@@ -37,8 +37,9 @@ use user_mode_runtime::{
 /// Capability slots for the virtio backend, by convention with `kernel/src/user/entropy_service.rs`.
 /// Slot 0, the request endpoint (RECEIVE).
 const REQ: u64 = 0;
-/// Slot 1, the device's `Irq`.
-const IRQ: u64 = 1;
+/// Slot 1, the device's `Interrupt`.
+#[doc(alias = "irq")]
+const INTERRUPT: u64 = 1;
 /// Slot 2, the confined `Virtio` transport.
 const VIRTIO: u64 = 2;
 /// Slot 3, a readiness endpoint (WRITE).
@@ -51,7 +52,7 @@ const READY: u64 = 3;
 const MODE_VIRTIO: u64 = 0;
 const MODE_INSTRUCTION: u64 = 1;
 
-/// Capability slots for the instruction backend: two, not four. No `Irq`, no `Virtio`, no DMA
+/// Capability slots for the instruction backend: two, not four. No `Interrupt`, no `Virtio`, no DMA
 /// mapping at all, because `RNDRRS`/`RDSEED` need none of them. Smaller authority than the virtio
 /// backend's, which is itself already minimal.
 const I_REQ: u64 = 0;
@@ -208,8 +209,10 @@ impl Pool {
 
         // **The completion is the used ring advancing, not the wakeup**, so look before blocking.
         // QEMU completes a request inside `NOTIFY`, and PCI INTx lines are shared four ways on both
-        // `virt` boards (`pci::intx_irq` swizzles modulo 4) while the kernel routes an intid to one
-        // endpoint (`sched::bind_irq`): with five PCI functions no unshared line is left. A wakeup
+        // `virt` boards (`pci::intx_interrupt_number` swizzles modulo 4) while the kernel routes an
+        // intid to one
+        // endpoint (`sched::bind_interrupt`): with five PCI functions no unshared line is left. A
+        // wakeup
         // can be stale, coalesced or a previous operator's, so the loop re-checks the ring, and it
         // is bounded so a silent device is an honest "no entropy" rather than a hang.
         let mut len = 0;
@@ -223,13 +226,14 @@ impl Pool {
                 self.seen = self.seen.wrapping_add(1);
                 break;
             }
-            interrupt_wait(IRQ);
+            interrupt_wait(INTERRUPT);
             self.quiet();
         }
         // Quiet the device and re-enable the line even on the path that never waited: the device
         // raised its line when it completed and the kernel masked it, and a line left masked is one
         // the *next* holder of a shared intid never hears from. `interrupt::ACK` is
-        // `arch::irq::enable`, which is idempotent, so this is safe when nothing fired.
+        // `arch::interrupt_controller::enable`, which is idempotent, so this is safe when nothing
+        // fired.
         self.quiet();
         len
     }
@@ -239,7 +243,7 @@ impl Pool {
     fn quiet(&self) {
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(IRQ); // re-enable the line the kernel masked when it fired
+        interrupt_acknowledge(INTERRUPT); // re-enable the line the kernel masked when it fired
     }
 
     /// Refill the buffer, retrying a device that returned nothing. `false` when the device gave us
@@ -289,7 +293,7 @@ user_mode_runtime::program_entry!(start);
 
 fn start(mode: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
     if mode == MODE_INSTRUCTION {
-        // No virtio device, no DMA page, no IRQ: the kernel would not have spawned this mode
+        // No virtio device, no DMA page, no interrupt: the kernel would not have spawned this mode
         // unless it already confirmed the instruction's feature bit (aarch64's `ID_AA64ISAR0_EL1`,
         // checked at EL1 because EL0 cannot read it). This process trusts that the same way it
         // trusts a granted `Virtio` capability to name a real device.

@@ -41,7 +41,12 @@ pub const MAXIMUM_CONTEXT_HARTS: usize = crate::riscv64::MAXIMUM_HARTS;
 /// The interrupt a PLIC raises into a hart's `riscv,cpu-intc` for **supervisor** external
 /// interrupts: `scause` 9. Its machine twin is 11; those are the only two that appear in a PLIC's
 /// `interrupts-extended`.
-pub const IRQ_S_EXT: u32 = 9;
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling. Linux
+/// calls this `IRQ_S_EXT`; the RISC-V specification calls cause 9 a supervisor external interrupt.
+#[doc(alias = "irq")]
+#[doc(alias = "IRQ_S_EXT")]
+pub const SUPERVISOR_EXTERNAL_INTERRUPT: u32 = 9;
 
 /// **Each hart's S-mode PLIC context**, as the device tree lays it out.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -137,8 +142,8 @@ impl PlicContexts {
         // 0xffff_ffff "no interrupt" some SiFive trees write) defines no S context.
         for (context, entry) in entries.as_chunks::<8>().0.iter().enumerate() {
             let phandle = u32::from_be_bytes([entry[0], entry[1], entry[2], entry[3]]);
-            let irq = u32::from_be_bytes([entry[4], entry[5], entry[6], entry[7]]);
-            if irq != IRQ_S_EXT {
+            let interrupt_number = u32::from_be_bytes([entry[4], entry[5], entry[6], entry[7]]);
+            if interrupt_number != SUPERVISOR_EXTERNAL_INTERRUPT {
                 continue;
             }
             for i in 0..n {

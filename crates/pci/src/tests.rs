@@ -565,14 +565,18 @@ fn a_cyclic_capability_list_terminates() {
     assert!(n <= 64, "the walk did not terminate promptly on a cycle");
 }
 
-/// The INTx swizzle, pinned: on QEMU virt the PCI irq base is 32 (riscv) and the four lines
+/// The INTx swizzle, pinned: on QEMU virt the PCI interrupt base is 32 (riscv) and the four lines
 /// rotate by device. Device 1 pin INTA is base+1; device 4 wraps back to base+0.
 #[test]
 fn the_intx_swizzle_rotates_by_device() {
-    assert_eq!(intx_irq(32, 1, 1), 33);
-    assert_eq!(intx_irq(32, 2, 1), 34);
-    assert_eq!(intx_irq(32, 4, 1), 32);
-    assert_eq!(intx_irq(32, 1, 2), 34, "pin B advances the rotation too");
+    assert_eq!(intx_interrupt_number(32, 1, 1), 33);
+    assert_eq!(intx_interrupt_number(32, 2, 1), 34);
+    assert_eq!(intx_interrupt_number(32, 4, 1), 32);
+    assert_eq!(
+        intx_interrupt_number(32, 1, 2),
+        34,
+        "pin B advances the rotation too"
+    );
 }
 
 /// The two command-register bits, pinned to their spec positions. This crate never reads

@@ -93,7 +93,7 @@ is a jump; a cold method pays one table read for that.
 | `ThreadControlBlock` | every method | `WRITE` |
 | `Timer` | `ARM`, `CANCEL` | `WRITE` (`ARM` also `WRITE` on its notification) |
 | `Process` | `DESTROY` | `WRITE` |
-| `Irq` | `WAIT`, `ACK` | `READ` |
+| `Interrupt` | `WAIT`, `ACK` | `READ` |
 | `Virtio` | every method | `WRITE` |
 | `Reboot` | `REBOOT` | none: holding it is the authority |
 

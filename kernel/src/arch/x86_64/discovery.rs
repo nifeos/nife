@@ -12,11 +12,11 @@
 
 use super::machine::{self, Acpi};
 use crate::println;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 /// The ACPI walk [`initialize`] made, for the bring-up steps after `mmu::initialize` that cannot
 /// repeat it.
-static ACPI: IrqSafeMutex<Option<Acpi>> = IrqSafeMutex::new(rank::ACPI, None);
+static ACPI: InterruptSafeMutex<Option<Acpi>> = InterruptSafeMutex::new(rank::ACPI, None);
 
 /// **Read `f`'s answer out of the ACPI walk.** The lock is held only for `f`, so `f` copies out
 /// what it needs and must take no lock ranked above [`rank::ACPI`]; the IOMMUs' tables are copied
@@ -33,7 +33,7 @@ pub(crate) fn with_acpi<R>(f: impl FnOnce(&Acpi) -> R) -> R {
 
 /// The local APIC's physical address, as the MADT stated it, or `None` before [`initialize`] or on
 /// a machine whose MADT did not say. Read by the fine map and the BAR window, which both run before
-/// `arch::irq` has brought anything up.
+/// `arch::interrupt_controller` has brought anything up.
 pub(crate) fn local_apic_phys() -> Option<u64> {
     ACPI.lock().as_ref().and_then(|a| a.local_apic)
 }
@@ -67,9 +67,10 @@ pub(crate) fn initialize() {
     let acpi = machine::read_acpi(info.rsdp);
     machine::print_acpi_summary(&acpi);
 
-    // COM1's interrupt line, as the legacy number 4 and not its GSI: `arch::irq::enable` resolves a
-    // legacy IRQ through the MADT's overrides, so recording the GSI would resolve it twice.
-    crate::memory::record_uart_irq(crate::user::UART_RECEIVE_INTID);
+    // COM1's interrupt line, as the legacy number 4 and not its GSI:
+    // `arch::interrupt_controller::enable` resolves a
+    // legacy interrupt through the MADT's overrides, so recording the GSI would resolve it twice.
+    crate::memory::record_uart_interrupt_number(crate::user::UART_RECEIVE_INTID);
 
     // The IOMMUs' register windows, recorded now because `mmu::map_everything` maps them
     // device-typed and the BAR window below must not overlap them; the units themselves come up

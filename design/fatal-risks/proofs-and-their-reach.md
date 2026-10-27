@@ -148,7 +148,8 @@ index, not by its own number). That block is
 [roadmap/0308-route-gsi-by-index.md](../roadmap/0308-route-gsi-by-index.md). The fix does not add to
 this risk's evidence and slightly complicates it: the harness's `kani::assume(base == 0)` is gone.
 So a standing proof now covers the case. But no machine here can execute the path, which
-`kernel/src/arch/x86_64/irq.rs`'s module `BUGS` records where a reader meets the feature. A proof
+`kernel/src/arch/x86_64/interrupt_controller.rs`'s module `BUGS` records where a reader meets the
+feature. A proof
 that catches a regression on hardware nobody owns is still the honest shape of what this risk asks
 about.
 

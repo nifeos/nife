@@ -50,7 +50,8 @@ capability. The flag sits in the padding after the pending count, so the object 
 
 The refusal is tested before a receiver is popped. The receiver on an interrupt's rendezvous is
 the driver, and handing it a sender's words is the forgery. Binding has no inverse because the
-kernel has none: `bind_irq` in `kernel/src/sched/interrupt_route.rs` only ever overwrites a route.
+kernel has none: `bind_interrupt` in `kernel/src/sched/interrupt_route.rs` only ever overwrites a
+route.
 A rendezvous that once carried an interrupt is safer left refusing than reopened to senders a
 driver does not expect.
 

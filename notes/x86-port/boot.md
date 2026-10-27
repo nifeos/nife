@@ -111,7 +111,7 @@ nife on x86_64 (long mode, ring 0, 4-level paging)
   clocks      : tsc 1001 MHz, apic timer 62 MHz (both measured against the PIT)
   timer       : 20 ticks in ~0.2s at 100 Hz (20 routed, 0 spurious)
   io apic     : id 0 at 0xfec00000 up, version 0x20, 24 redirection entries, gsi base 0
-  device irq  : pit irq 0 -> gsi 2 on vector 0x32: 20 interrupts in ~0.2s at 100 Hz
+  device interrupt  : pit interrupt 0 -> gsi 2 on vector 0x32: 20 interrupts in ~0.2s at 100 Hz
   frames      : allocator up over 1 ram region(s) (first frame 0x21e000)
   memory          : 254 MiB total, 253 MiB free (1148 KiB in use)
   mmu         : fine W^X 4-level map installed (cr3 0x21f000), image 0xffffffff80000000, direct map 0xffff888000000000

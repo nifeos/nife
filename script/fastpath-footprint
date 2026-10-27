@@ -485,7 +485,8 @@ COLD = re.compile(
 # alignment. 16 entries x 128 bytes = 2048." Each entry is self-contained (SAVE_CONTEXT inline, then
 # `bl exception_dispatch`, then `b exception_restore`), so an `svc` from EL0 lands in exactly one of
 # them, index 8 (lower EL AArch64 synchronous), and fetches **at most 128 bytes**. The other 1,892
-# are page faults, IRQs, kernel-mode traps and the AArch32 entries this kernel will never support.
+# are page faults, IRQ entries, kernel-mode traps and the AArch32 entries this kernel will never
+# support.
 #
 # 128 and not the ~104 bytes of instructions the macro actually emits, because the entry occupies an
 # aligned 128-byte slot and the fetch is of cache lines rather than of instructions. This stays an

@@ -13,7 +13,8 @@
 //! I/O rings and one window of [`TRANSFER_BLOCKS`] pages per client); and BAR0's doorbell page at
 //! [`DOORBELL_VA`]. Denied, each by decision: BAR0's register page (`CC`, `CSTS`, the admin ring
 //! registers), which NVMe 1.4 puts on its own page so this split costs no syscall; the admin
-//! plane's pages; every admin command, so where the rings live is the kernel's statement; an `Irq`;
+//! plane's pages; every admin command, so where the rings live is the kernel's statement; an
+//! `Interrupt`;
 //! a `Virtio`; any name for the two windows, installed before `_start`; and everything else.
 
 //! # BUGS

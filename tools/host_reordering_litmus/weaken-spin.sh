@@ -1,6 +1,7 @@
 #!/bin/sh
 # weaken-spin.sh: weakens the orderings of the kernel's lock, `crates/spin_lock`, in place, so the
-# kernel suite runs with every IrqSafeMutex (kernel/src/sync.rs wraps spin_lock::SpinLock) broken.
+# kernel suite runs with every InterruptSafeMutex (kernel/src/sync.rs wraps spin_lock::SpinLock)
+# broken.
 #
 #   release  the unlock store is Relaxed instead of Release (the guard's drop and force_unlock)
 #   both     that, and the lock's compare-exchanges are Relaxed instead of Acquire on success

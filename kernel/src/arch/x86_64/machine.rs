@@ -220,9 +220,9 @@ pub(crate) fn print_memory_map(info: &BootInfo) {
 
 use machine_discovery::acpi::ivrs::IvrsUnits;
 use machine_discovery::acpi::{
-    self, DmarUnits, ISA_IRQ_COUNT, IsaIrqRouting, MADT_PCAT_COMPAT, MadtEntry, Rsdp, SdtHeader,
-    isa_irq_table, madt_entries, mcfg_entry, parse_dmar, parse_fadt_reset, parse_madt, parse_rsdp,
-    parse_sdt_header, root_entry, root_entry_count,
+    self, DmarUnits, ISA_INTERRUPT_COUNT, IsaInterruptRouting, MADT_PCAT_COMPAT, MadtEntry, Rsdp,
+    SdtHeader, isa_interrupt_table, madt_entries, mcfg_entry, parse_dmar, parse_fadt_reset,
+    parse_madt, parse_rsdp, parse_sdt_header, root_entry, root_entry_count,
 };
 
 /// The BIOS area the RSDP is required to be in when it is not in the EBDA: `0xe0000..0x100000`,
@@ -251,20 +251,21 @@ const MAXIMUM_ACPI_CPUS: usize = 32;
 ///
 /// Every field is `Option` because a machine is allowed not to have the table it comes from, and
 /// "the firmware did not say" has to be distinguishable from "the firmware said zero". That is the
-/// same posture `memory::uart_irq` takes on the other two architectures.
+/// same posture `memory::uart_interrupt_number` takes on the other two architectures.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Acpi {
     /// The local APIC's physical address, from the MADT (with any address-override applied).
     pub local_apic: Option<u64>,
     /// The first IO APIC's id, physical address and global-interrupt base.
     pub io_apic: Option<(u8, u32, u32)>,
-    /// **The sixteen legacy ISA IRQs, resolved through the MADT's interrupt source overrides.**
+    /// **The sixteen legacy ISA interrupts, resolved through the MADT's interrupt source
+    /// overrides.**
     ///
     /// Not an `Option`, unlike everything around it, and for a reason worth stating: a machine with
     /// no overrides at all is not a machine with no answer. The ISA bus's own convention (identity
     /// onto the global interrupt space, active high, edge triggered) *is* the answer in that case,
-    /// which is what `IsaIrqRouting::isa_default` encodes.
-    pub isa_irqs: [IsaIrqRouting; ISA_IRQ_COUNT],
+    /// which is what `IsaInterruptRouting::isa_default` encodes.
+    pub isa_interrupts: [IsaInterruptRouting; ISA_INTERRUPT_COUNT],
     /// How many processors the MADT lists as enabled.
     pub enabled_cpus: usize,
     /// How many it lists as present but not enabled.
@@ -301,7 +302,9 @@ impl Default for Acpi {
         Self {
             local_apic: None,
             io_apic: None,
-            isa_irqs: core::array::from_fn(|irq| IsaIrqRouting::isa_default(irq as u8)),
+            isa_interrupts: core::array::from_fn(|interrupt_number| {
+                IsaInterruptRouting::isa_default(interrupt_number as u8)
+            }),
             enabled_cpus: 0,
             disabled_cpus: 0,
             cpus: [(0, false); MAXIMUM_ACPI_CPUS],
@@ -481,9 +484,10 @@ fn read_madt(body: &[u8], into: &mut Acpi) {
     into.local_apic = Some(madt.local_apic as u64);
     into.has_8259 = madt.flags & MADT_PCAT_COMPAT != 0;
     // The overrides in one pass of their own, in the crate, because resolving them is pure logic
-    // over bytes and belongs where a host test can prove it. See its `the_timers_irq_0_resolves_to
+    // over bytes and belongs where a host test can prove it. See its
+    // `the_timers_interrupt_0_resolves_to
     // _gsi_2` test for the case this whole table exists for.
-    into.isa_irqs = isa_irq_table(body);
+    into.isa_interrupts = isa_interrupt_table(body);
 
     for entry in madt_entries(body).take(MAXIMUM_MADT_ENTRIES) {
         match entry {
@@ -725,20 +729,22 @@ pub(crate) fn print_acpi_summary(found: &Acpi) {
     }
 }
 
-/// **Print every legacy IRQ the MADT rewired**, and only those.
+/// **Print every legacy interrupt the MADT rewired**, and only those.
 ///
 /// Sixteen lines of identity mapping would be noise; the ones that moved are the whole reason this
 /// table is read, and the first of them is always the timer. A boot that printed nothing here on a
 /// PC would itself be the finding.
 fn print_isa_overrides(found: &Acpi) {
     let moved = found
-        .isa_irqs
+        .isa_interrupts
         .iter()
         .enumerate()
-        .filter(|(irq, r)| **r != IsaIrqRouting::isa_default(*irq as u8));
-    for (irq, routing) in moved {
+        .filter(|(interrupt_number, r)| {
+            **r != IsaInterruptRouting::isa_default(*interrupt_number as u8)
+        });
+    for (interrupt_number, routing) in moved {
         crate::println!(
-            "                isa irq {irq} -> gsi {} ({}, {})",
+            "                isa interrupt {interrupt_number} -> gsi {} ({}, {})",
             routing.gsi,
             if routing.active_low {
                 "active low"

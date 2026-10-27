@@ -597,7 +597,7 @@ pub const MSIX_FUNCTION_MASK: u16 = 1 << 14;
 pub const MSIX_ENTRY_BYTES: u64 = 16;
 
 /// Vector control bit 0: this entry is masked. An entry powers on masked, so unmasking is a
-/// deliberate act, the same posture `arch::x86_64::irq::initialize_io_apic` takes with its own table.
+/// deliberate act, the same posture `arch::x86_64::interrupt_controller::initialize_io_apic` takes with its own table.
 pub const MSIX_ENTRY_MASKED: u32 = 1;
 
 /// The virtio-pci "no vector" value for `config_msix_vector` and `queue_msix_vector` (virtio 1.1
@@ -671,19 +671,22 @@ pub fn msix_cap(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<Msi
 /// # Examples
 ///
 /// ```
-/// use pci::intx_irq;
+/// use pci::intx_interrupt_number;
 ///
 /// // Four devices, each on INTA, spread across four interrupt inputs rather than sharing one.
 /// let base = 32;
-/// let spread: Vec<u32> = (0..4).map(|dev| intx_irq(base, dev, 1)).collect();
+/// let spread: Vec<u32> = (0..4).map(|dev| intx_interrupt_number(base, dev, 1)).collect();
 /// assert_eq!(spread, vec![32, 33, 34, 35]);
 ///
 /// // The swizzle wraps, which is what makes it a swizzle rather than an offset.
-/// assert_eq!(intx_irq(base, 4, 1), 32);
+/// assert_eq!(intx_interrupt_number(base, 4, 1), 32);
 /// // And one device's four pins also spread, so a multi-function card does not self-collide.
-/// assert_eq!(intx_irq(base, 0, 4), 35);
+/// assert_eq!(intx_interrupt_number(base, 0, 4), 35);
 /// ```
-pub fn intx_irq(base: u32, dev: u8, pin: u8) -> u32 {
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+#[doc(alias = "irq")]
+pub fn intx_interrupt_number(base: u32, dev: u8, pin: u8) -> u32 {
     // Total for every input, proved in the verification module. Pins are 1-based (1=INTA); the
     // saturating_sub means a (contract-violating) pin of 0 behaves as INTA instead of
     // underflowing, and the saturating_add means a nonsense base cannot wrap. The callers all
@@ -760,18 +763,20 @@ mod verification {
         assert!(bdf.ecam_offset() + 0xfff < 0x1000_0000);
     }
 
-    /// **`intx_irq` is total and lands on one of the four lines.** For any base, device, and
+    /// **`intx_interrupt_number` is total and lands on one of the four lines.** For any base,
+    /// device, and
     /// pin, no underflow (the pin-0 case that used to panic in debug builds) and no overflow,
     /// and the result is within `base..=base+3` whenever that range exists.
-    /// Falsification: replayable `crates/pci/falsifications/verification.intx_irq_is_total_and_bounded.patch`
+    /// Falsification: replayable `crates/pci/falsifications/verification.intx_interrupt_number_is_total_and_bounded.patch`
     #[kani::proof]
-    fn intx_irq_is_total_and_bounded() {
+    #[doc(alias = "irq")]
+    fn intx_interrupt_number_is_total_and_bounded() {
         let base: u32 = kani::any();
         let dev: u8 = kani::any();
         let pin: u8 = kani::any();
-        let irq = intx_irq(base, dev, pin);
-        assert!(irq >= base || irq == u32::MAX);
-        assert!(irq.saturating_sub(base) <= 3 || irq == u32::MAX);
+        let interrupt_number = intx_interrupt_number(base, dev, pin);
+        assert!(interrupt_number >= base || interrupt_number == u32::MAX);
+        assert!(interrupt_number.saturating_sub(base) <= 3 || interrupt_number == u32::MAX);
     }
 
     /// **`read_bars` is total for any device responses.** The closures return arbitrary values

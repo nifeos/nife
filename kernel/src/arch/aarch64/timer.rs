@@ -76,7 +76,7 @@ pub fn initialize() {
     let interval = freq / TICK_HZ;
     INTERVAL.store(interval, Ordering::Relaxed);
 
-    super::irq::enable(TIMER_INTID); // PPI: enabled on this core, no target
+    super::interrupt_controller::enable(TIMER_INTID); // PPI: enabled on this core, no target
 
     start(interval);
 }
@@ -289,7 +289,7 @@ pub mod miss_detail {
 
 /// The tick handler: count, re-arm, return. Re-arming is what lowers the line.
 ///
-/// Context: interrupt context, IRQs masked; records and defers (DECISIONS §9).
+/// Context: interrupt context, interrupts masked; records and defers (DECISIONS §9).
 pub(crate) fn tick() {
     TICKS[cpu::id()].fetch_add(1, Ordering::Relaxed);
     // Test builds: fail fast on a hung test rather than block the run.
@@ -547,14 +547,14 @@ mod tests {
     /// **The cost of masking, made visible.**
     ///
     /// A lock held across more than one tick period loses a tick, which is why DECISIONS §9 keeps
-    /// critical sections short. If it stopped costing one, `IrqSafeMutex` would have stopped
+    /// critical sections short. If it stopped costing one, `InterruptSafeMutex` would have stopped
     /// masking. See notes/interrupts.md.
     #[test_case]
     fn a_long_critical_section_costs_a_tick() {
         use crate::arch::timer;
-        use crate::sync::{IrqSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutex, rank};
 
-        static M: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
 
         // Read inside the critical section, where this thread cannot be preempted or migrated.
         let (cpu, before) = {
@@ -569,7 +569,7 @@ mod tests {
         assert!(
             within_periods(20, || timer::missed_ticks_on(cpu) > before),
             "holding a lock across two tick periods did NOT lose a tick, which means \
-             IrqSafeMutex is not masking interrupts and the deadlock is live"
+             InterruptSafeMutex is not masking interrupts and the deadlock is live"
         );
     }
 
@@ -599,9 +599,9 @@ mod tests {
     #[test_case]
     fn holding_a_lock_masks_the_timer() {
         use crate::arch::{interrupts, timer};
-        use crate::sync::{IrqSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutex, rank};
 
-        static M: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
 
         assert!(
             interrupts::is_enabled(),
@@ -629,7 +629,7 @@ mod tests {
             assert_eq!(
                 timer::ticks_on(cpu),
                 before,
-                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. IrqSafeMutex is not masking, \
+                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutex is not masking, \
                  and the deadlock in notes/locking.md is live: a handler that touched this lock \
                  would spin forever waiting for code that cannot run."
             );
@@ -645,7 +645,7 @@ mod tests {
             assert_eq!(
                 timer::ticks_on(cpu),
                 before,
-                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. IrqSafeMutex is not masking, \
+                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutex is not masking, \
                  and the deadlock in notes/locking.md is live: a handler that touched this lock \
                  would spin forever waiting for code that cannot run."
             );

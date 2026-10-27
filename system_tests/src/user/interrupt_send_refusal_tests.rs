@@ -1,5 +1,6 @@
 //! **An endpoint that carries an interrupt refuses every send** (milestone 603 (provisional),
-//! DECISIONS §101 (notification objects) ruling B, calef 2026-09-26). See `mod irq_send_refusal_tests` in `system_tests/src/user.rs` for why
+//! DECISIONS §101 (notification objects) ruling B, calef 2026-09-26). See `mod
+//! interrupt_send_refusal_tests` in `system_tests/src/user.rs` for why
 //! this is cross-ISA and what it drives.
 
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -15,7 +16,8 @@ use crate::syscall::invoke;
 /// route. aarch64 and riscv64 deliver a routed interrupt only if something enabled it at the
 /// controller, and nothing enables this one; on `x86_64` it is near the top of the MSI band, which
 /// is allocated upward from `MSI_VECTOR_BASE` (0xc0) and would need fifty-eight devices to reach
-/// it. Not 251 (the quiet interrupt of milestone 151 (notification objects)) and not the soak's band, which counts down from
+/// it. Not 251 (the quiet interrupt of milestone 151 (notification objects)) and not the soak's
+/// band, which counts down from
 /// 255 and exists only in soak builds.
 const QUIET_INTID: u32 = 250;
 
@@ -29,22 +31,24 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> (Result<i64, Error
 /// A program holding `WRITE` on an interrupt's endpoint cannot put anything in front of the driver.
 ///
 /// `SEND`, `SEND_CAP` and `CALL` are refused with `NotPermitted`, and the driver parked in
-/// `Irq::WAIT` stays parked with nothing queued. The test grants itself `Rights::ALL`, §101's named
+/// `Interrupt::WAIT` stays parked with nothing queued. The test grants itself `Rights::ALL`, §101's
+/// named
 /// mis-wiring, so only the kernel's rule stands between send and driver. The positive control comes
 /// last: the real interrupt reaches the driver as `w0 = 1`, proving it was really parked.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.irq_send_refusal_tests.a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it.patch`
+/// Falsification: replayable `system_tests/falsifications/user.interrupt_send_refusal_tests.a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it.patch`
 #[test_case]
 fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
-    // What the driver's `Irq::WAIT` returned: x0, x1, x4. `u64::MAX` until it returns.
+    // What the driver's `Interrupt::WAIT` returned: x0, x1, x4. `u64::MAX` until it returns.
     static WOKE_WITH: [AtomicU64; 3] = [const { AtomicU64::new(u64::MAX) }; 3];
 
     let region = crate::memory_region::create(2).expect("no region for the endpoint");
     let ep = sched::create_rendezvous_from(region).expect("no rendezvous");
-    sched::bind_irq(QUIET_INTID, ep);
+    sched::bind_interrupt(QUIET_INTID, ep);
 
     let driver = sched::spawn(|| {
-        let slot = sched::grant(crate::cap::irq_cap(QUIET_INTID)).expect("grant the interrupt");
+        let slot =
+            sched::grant(crate::cap::interrupt_cap(QUIET_INTID)).expect("grant the interrupt");
         let (answer, frame) = call(slot, abi::interrupt::WAIT, 0, 0, 0);
         WOKE_WITH[1].store(frame.arg(1), Ordering::SeqCst);
         WOKE_WITH[2].store(frame.arg(4), Ordering::SeqCst);
@@ -54,7 +58,7 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
     .expect("spawn the driver");
     assert!(
         super::wait_for(|| sched::rendezvous_waiting_receivers(ep) == 1),
-        "the driver never parked in Irq::WAIT"
+        "the driver never parked in Interrupt::WAIT"
     );
 
     // The mis-wiring: every right there is, GRANT included, so SEND_CAP has something to delegate.
@@ -106,18 +110,31 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
     assert!(sched::is_thread_present(driver));
 
     // The positive control: the interrupt itself still gets through, and is all the driver saw.
-    sched::irq_notify(ep);
+    sched::interrupt_notify(ep);
     assert!(
         super::wait_for(|| WOKE_WITH[0].load(Ordering::SeqCst) != u64::MAX),
         "the real interrupt never reached the driver"
     );
-    assert_eq!(WOKE_WITH[0].load(Ordering::SeqCst), 1, "Irq::WAIT's x0");
-    assert_eq!(WOKE_WITH[1].load(Ordering::SeqCst), 0, "Irq::WAIT's x1");
-    assert_eq!(WOKE_WITH[2].load(Ordering::SeqCst), 0, "Irq::WAIT's x4");
+    assert_eq!(
+        WOKE_WITH[0].load(Ordering::SeqCst),
+        1,
+        "Interrupt::WAIT's x0"
+    );
+    assert_eq!(
+        WOKE_WITH[1].load(Ordering::SeqCst),
+        0,
+        "Interrupt::WAIT's x1"
+    );
+    assert_eq!(
+        WOKE_WITH[2].load(Ordering::SeqCst),
+        0,
+        "Interrupt::WAIT's x4"
+    );
 
     let _ = sched::delete_current_cap(forger);
     assert!(super::wait_for(|| !sched::is_thread_present(driver)));
-    // The route to QUIET_INTID outlives this: `bind_irq` has no unbind. Reclaiming the region makes
-    // it a stale name, which `irq_notify` drops, and nothing raises this interrupt anyway.
+    // The route to QUIET_INTID outlives this: `bind_interrupt` has no unbind. Reclaiming the region
+    // makes
+    // it a stale name, which `interrupt_notify` drops, and nothing raises this interrupt anyway.
     sched::reclaim_region(region).expect("the endpoint's region did not come back");
 }

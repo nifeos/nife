@@ -44,7 +44,7 @@ pub fn suspend_thread_control_block(tid: ThreadId) -> Result<(), abi::Error> {
         // The flag before the interrupt, so the handler's `preempt_if_needed` sees it. A lost race
         // costs one tick at most: that core's timer sets the same flag.
         cpu::of(core).need_resched.store(true, Ordering::SeqCst);
-        crate::arch::irq::send_reschedule(core);
+        crate::arch::interrupt_controller::send_reschedule(core);
         wait_until_off_core(tid);
     }
     Ok(())
@@ -79,7 +79,7 @@ pub fn resume_thread_control_block(tid: ThreadId) -> Result<(), abi::Error> {
         }
     };
     if let Some(target) = remote {
-        crate::arch::irq::send_reschedule(target);
+        crate::arch::interrupt_controller::send_reschedule(target);
     }
     Ok(())
 }

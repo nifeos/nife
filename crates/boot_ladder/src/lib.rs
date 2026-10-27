@@ -79,6 +79,8 @@ pub const SELF_TEST_ABSENT: &str = "absent: ";
 /// this list's length. See notes/boot-ladder.md, "One list of checks, for every architecture".
 ///
 /// Names provisional (milestone 268): they are printed, and matched, so they are a contract.
+/// `device_interrupt` (spelled `deviceirq` until 2026-10-26 (UTC)) awaits a ruling, and so does
+/// reading older logs that print the old spelling.
 pub const SELF_TEST_CHECKS: &[&str] = &[
     "exceptions",
     "mapping",
@@ -91,7 +93,7 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
     "supervised",
     "teardown",
     "blockdev",
-    "deviceirq",
+    "device_interrupt",
     "clock",
     "trng",
     "entropy",

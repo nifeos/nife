@@ -82,8 +82,8 @@ pub(super) fn largest_leaf() -> PageSize {
 
 /// Serializes edits to the kernel's live tables: two CPUs must not mutate them at once. Same role
 /// and lock rank as the other two architectures' `KERNEL_MMU`.
-static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
-    crate::sync::IrqSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
+static KERNEL_MMU: crate::sync::InterruptSafeMutex<()> =
+    crate::sync::InterruptSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
 
 /// **Replace the boot map with a fine-grained one**: W^X kernel sections, the guard pages
 /// unmapped, device registers device-typed, a direct map over all of physical memory, and no

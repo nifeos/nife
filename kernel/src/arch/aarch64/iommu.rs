@@ -10,7 +10,7 @@
 //! two arch drivers, structural twins", and its honest limits.
 
 use crate::arch::mmu::phys_to_virt;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 // --- Register file (offsets from the SMMU page; Arm IHI 0070, and QEMU's smmuv3-common.h) ---
 const IDR1: u64 = 0x04;
@@ -87,7 +87,7 @@ struct Smmu {
     evtq_cons: u32,
 }
 
-static SMMU: IrqSafeMutex<Option<Smmu>> = IrqSafeMutex::new(rank::IOMMU, None);
+static SMMU: InterruptSafeMutex<Option<Smmu>> = InterruptSafeMutex::new(rank::IOMMU, None);
 
 fn r32(base: u64, off: u64) -> u32 {
     // SAFETY: the SMMU register page is device-mapped (mmu::map_everything region 9, gated on the

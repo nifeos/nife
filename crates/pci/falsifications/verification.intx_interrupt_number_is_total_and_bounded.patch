@@ -1,4 +1,4 @@
-Falsifies `pci::verification::intx_irq_is_total_and_bounded`.
+Falsifies `pci::verification::intx_interrupt_number_is_total_and_bounded`.
 
 The defect: the pin is decremented without saturating, `pin as u32 - 1` in place of
 `(pin as u32).saturating_sub(1)`. This is the defect the property was written against rather
@@ -14,7 +14,7 @@ vetted.
 diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
 --- a/crates/pci/src/lib.rs
 +++ b/crates/pci/src/lib.rs
-@@ -648,3 +648,3 @@ pub fn intx_irq(base: u32, dev: u8, pin: u8) -> u32 {
+@@ -648,3 +648,3 @@ pub fn intx_interrupt_number(base: u32, dev: u8, pin: u8) -> u32 {
      // check pin == 0 before calling; this is defence in depth, not an invitation.
 -    base.saturating_add((dev as u32 + (pin as u32).saturating_sub(1)) % 4)
 +    base.saturating_add((dev as u32 + (pin as u32 - 1)) % 4)

@@ -55,7 +55,8 @@ at seed 19, step 63, inside the suite's range. Revocation in flight went red onl
   `TrapFrame` has no setter for the syscall number, so a kernel thread cannot build a frame
   `dispatch` would read as `SYS_CAP_DELETE`. `dispatch`'s arm is that one call and `Ok(0)`.
 - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
-  `Timer`, `Irq`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages. No actor
+  `Timer`, `Interrupt`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages. No
+  actor
   holds a TCB capability, so `BIND` reaches only its refusals. Each is a model extension, not a
   rewrite. A timer needs the model to reason about time, which is why it was left.
 - Unexpected wakes are seen late. An actor the model says is parked is checked for a stray

@@ -36,11 +36,11 @@ architecture.
 
 | starter | call site | spawns | arch | what the process is handed |
 |---|---|---|---|---|
-| `fs_service::root_directory` | `boot_progenitor` (`user/progenitor_boot.rs`) | `block_driver` (`spawn_block_server`, `fs_service/wiring.rs`), `redoxfs_server` (`spawn_fs_server`, `fs_service/wiring.rs`) | all | virtio: a `Virtio` cap, an `Irq`, DMA pages as spawn-time mappings; the FS server gets a `MemoryRegion` budget and the channel pages |
+| `fs_service::root_directory` | `boot_progenitor` (`user/progenitor_boot.rs`) | `block_driver` (`spawn_block_server`, `fs_service/wiring.rs`), `redoxfs_server` (`spawn_fs_server`, `fs_service/wiring.rs`) | all | virtio: a `Virtio` cap, an `Interrupt`, DMA pages as spawn-time mappings; the FS server gets a `MemoryRegion` budget and the channel pages |
 | the NVMe arm of the above | `nvme_disk` (`fs_service/wiring.rs`), only when booted from NVMe | `non_volatile_memory_express` (§86's data plane) | all (exercised on `x86_64`) | BAR0's doorbell page and a DMA run, as mappings; the kernel keeps the admin plane |
 | `boot_clock_page` | `boot_progenitor`; starter in `user/device_starters.rs` | `clock` (`clock_service.rs:58`) | all | the clock page, and the RTC page as a mapping on aarch64 and riscv64; on `x86_64` a CMOS reading as an argument (§130) |
 | `boot_instruction_entropy` | `boot_progenitor`; starter in `user/device_starters.rs` | `entropy` in instruction mode | `x86_64`, aarch64 with `FEAT_RNG`; riscv64 answers `None` | two endpoints; no device |
-| `boot_usb_keyboard` | `boot_progenitor`; starter in `user/device_starters.rs` | `usb_keyboard_driver` | all | an `Irq`, about a dozen xHCI register pages and eleven DMA pages as mappings |
+| `boot_usb_keyboard` | `boot_progenitor`; starter in `user/device_starters.rs` | `usb_keyboard_driver` | all | an `Interrupt`, about a dozen xHCI register pages and eleven DMA pages as mappings |
 | `boot_screen_terminal` | `boot_progenitor`; starter in `user/device_starters.rs` | `framebuffer_driver`, `display_terminal` | all, UEFI boots only | the firmware screen's aperture |
 | `boot_e1000e_network` | `boot_progenitor`; starter in `user/device_starters.rs` | `net_stack` over an `e1000e` | all (a PCIe part; exercised on `x86_64`) | BAR0's two queue pages and an 18-page DMA region as mappings |
 | `boot_designware_network` | `boot_progenitor`; starter in `user/device_starters.rs` | `net_stack` over radon's GMAC | riscv64 | nothing until `PROVEN_ON_SILICON` |
@@ -82,7 +82,7 @@ the driver, not the boot.
 
 | device authority | capability kind | exists? | needed by |
 |---|---|---|---|
-| virtio transport, interrupt, DMA run | `Virtio`, `Irq`, `PageFrame` run (§102) | yes, granted today for rng, net, gpu, keyboard | `block_driver` |
+| virtio transport, interrupt, DMA run | `Virtio`, `Interrupt`, `PageFrame` run (§102) | yes, granted today for rng, net, gpu, keyboard | `block_driver` |
 | file-service channel pages, a budget | `PageFrame` run, `MemoryRegion` | yes | `redoxfs_server` |
 | one MMIO page | `DeviceFrame` | yes | RTC for `clock`, NVMe doorbell, e1000e's two queue pages |
 | a DMA run for a PCIe device | `PageFrame` run | yes (unverified that the IOMMU binding survives a grant rather than a kernel-built mapping) | NVMe, e1000e, xHCI |

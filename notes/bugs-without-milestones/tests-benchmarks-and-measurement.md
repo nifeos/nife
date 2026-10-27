@@ -75,5 +75,5 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  system_tests/src/user/spawn_mapping_revocation_tests.rs | `DeviceFrame::REVOKE` and `revoke_region` sweeps with a wired mapping not driven | (same milestone: one test for every revoking sweep) | S  |
 |  system_tests/src/user/std_tests.rs | callers without the writer's thread still hang forever when a program aborts | Make every std test sink end on program abort | S  |
 |  system_tests/src/user/syscall_fuzzer_tests.rs (corpus) | corpus seeds can rot green when the kernel's walk changes (seed 342); roadmap 0752 replay table still names 342 | Check that each corpus seed still reaches its defect | M  |
-|  system_tests/src/user/syscall_fuzzer_tests.rs (model) | fuzzer does not generate REAP, SURVEY, MemoryRegion, AddressSpace, Timer, Irq, MAP/SLICE, BIND, death messages | Extend the syscall fuzzer model to the ungenerated calls | L  |
+|  system_tests/src/user/syscall_fuzzer_tests.rs (model) | fuzzer does not generate REAP, SURVEY, MemoryRegion, AddressSpace, Timer, Interrupt, MAP/SLICE, BIND, death messages | Extend the syscall fuzzer model to the ungenerated calls | L  |
 |  system_tests/src/user/thread_pointer_tests.rs | each thread has its own space for the same reason; 812 (BUILT) now allows one space | Test thread pointers with two threads of one space | S  |

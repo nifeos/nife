@@ -20,7 +20,8 @@ table.
 
 What is per-core already. The SMP work of §11 (SMP: per-CPU run queues) and §28 (SMP placement)
 gives each core its own run queue, `current` and held rank. A thread crosses cores through the
-target's inbox (rank 59) and a reschedule interrupt from `arch::irq::send_reschedule`. That
+target's inbox (rank 59) and a reschedule interrupt from
+`arch::interrupt_controller::send_reschedule`. That
 interrupt is a GIC SGI on aarch64, an SBI IPI on riscv64 and a local APIC IPI on x86_64. No core
 locks another core's run queue. Each thread's capability table has its own lock, from milestone 761
 (capability lookup off the global lock), so the running thread's lookups never take `IPC_TABLES`.

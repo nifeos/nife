@@ -141,7 +141,7 @@ fn the_progenitor_reporting_the_failing_answer_is_a_failure_however_shuffled_the
 #[test]
 fn a_silent_progenitor_fails_when_nothing_else_was_writing() {
     let quiet = "\
-  uart irq: source 10 (machine description)
+  uart interrupt: source 10 (machine description)
 progenitor: every program measured against the archive table
 
 nife capability shell. naming a resource in a command IS granting it.

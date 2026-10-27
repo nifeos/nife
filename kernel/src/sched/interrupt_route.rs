@@ -13,7 +13,8 @@ use super::*;
 /// the destination would be one more thing to go wrong. 256 covers every INTID in use (SGIs 0-15,
 /// the timer PPI at 30, virtio SPIs in the 40s).
 pub(super) const MAXIMUM_INTID: usize = 256;
-pub(super) static IRQ_ROUTES: [AtomicU64; MAXIMUM_INTID] =
+#[doc(alias = "irq")]
+pub(super) static INTERRUPT_ROUTES: [AtomicU64; MAXIMUM_INTID] =
     [const { AtomicU64::new(0) }; MAXIMUM_INTID];
 
 /// Route hardware interrupt `intid` to the rendezvous `ep`: when it fires, whoever is blocked on
@@ -24,7 +25,10 @@ pub(super) static IRQ_ROUTES: [AtomicU64; MAXIMUM_INTID] =
 /// (`Rendezvous::bind_to_interrupt`), so it holds however the endpoint was created; `SEND`,
 /// `SEND_CAP` and `CALL` answer [`abi::Error::NotPermitted`]. Marked before the route is published,
 /// so no instant exists where the line is live and the endpoint accepts a send.
-pub fn bind_irq(intid: u32, ep: RendezvousId) {
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+#[doc(alias = "irq")]
+pub fn bind_interrupt(intid: u32, ep: RendezvousId) {
     assert!(
         (intid as usize) < MAXIMUM_INTID,
         "intid {intid} out of range"
@@ -36,15 +40,18 @@ pub fn bind_irq(intid: u32, ep: RendezvousId) {
         }
     }
     // +1 so 0 keeps meaning "not routed"; a name is never u64::MAX, so this cannot wrap.
-    IRQ_ROUTES[intid as usize].store(ep + 1, Ordering::Release);
+    INTERRUPT_ROUTES[intid as usize].store(ep + 1, Ordering::Release);
 }
 
-/// The rendezvous an interrupt is routed to, if any. Read from the IRQ handler; lock-free.
-pub fn irq_route(intid: u32) -> Option<RendezvousId> {
+/// The rendezvous an interrupt is routed to, if any. Read from the interrupt handler; lock-free.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+#[doc(alias = "irq")]
+pub fn interrupt_route(intid: u32) -> Option<RendezvousId> {
     if (intid as usize) >= MAXIMUM_INTID {
         return None;
     }
-    match IRQ_ROUTES[intid as usize].load(Ordering::Acquire) {
+    match INTERRUPT_ROUTES[intid as usize].load(Ordering::Acquire) {
         0 => None,
         n => Some(n - 1),
     }
@@ -55,8 +62,12 @@ pub fn irq_route(intid: u32) -> Option<RendezvousId> {
 /// never lost while the receiver is busy. A stale `ep` drops it.
 ///
 /// Context: interrupt context. Takes `IPC_TABLES`, which the interrupted code cannot hold, because
-/// `IrqSafeMutex` masks interrupts while held (§9 (locking)); sends any SGI after releasing it.
-pub fn irq_notify(ep: RendezvousId) {
+/// `InterruptSafeMutex` masks interrupts while held (§9 (locking)); sends any SGI after releasing
+/// it.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+#[doc(alias = "irq")]
+pub fn interrupt_notify(ep: RendezvousId) {
     // Counted for `vmstat`'s `in` column.
     crate::machine_statistics::interrupt();
     #[cfg(feature = "bench")]
@@ -85,12 +96,13 @@ pub fn irq_notify(ep: RendezvousId) {
         }
     };
     if let Some(target) = remote {
-        crate::arch::irq::send_reschedule(target);
+        crate::arch::interrupt_controller::send_reschedule(target);
     }
 }
 
-/// The rendezvous whose interrupts [`irq_notify`] timestamps for a bench row, plus one (0 means
-/// none). See [`watch_irq`].
+/// The rendezvous whose interrupts [`interrupt_notify`] timestamps for a bench row, plus one (0
+/// means
+/// none). See [`watch_interrupt`].
 #[cfg(feature = "bench")]
 static WATCHED: AtomicU64 = AtomicU64::new(0);
 /// The counter reading at the last interrupt delivered to the watched rendezvous.
@@ -103,11 +115,13 @@ static WATCHED_AT: AtomicU64 = AtomicU64::new(0);
 ///
 /// Name: provisional, minted 2026-10-24 (UTC) for `bench::keyboard`.
 #[cfg(feature = "bench")]
-pub fn watch_irq(ep: RendezvousId) {
+#[doc(alias = "irq")]
+pub fn watch_interrupt(ep: RendezvousId) {
     WATCHED.store(ep + 1, Ordering::Relaxed);
 }
 
-/// The counter reading at the last interrupt [`irq_notify`] delivered to the watched rendezvous.
+/// The counter reading at the last interrupt [`interrupt_notify`] delivered to the watched
+/// rendezvous.
 ///
 /// Relaxed on both sides: a reader learns that the interrupt happened through an IPC the driver
 /// sent after waking from it, and that IPC passes through `IPC_TABLES`, which orders this load
@@ -115,6 +129,7 @@ pub fn watch_irq(ep: RendezvousId) {
 ///
 /// Name: provisional, minted 2026-10-24 (UTC) for `bench::keyboard`.
 #[cfg(feature = "bench")]
-pub fn watched_irq_at() -> u64 {
+#[doc(alias = "irq")]
+pub fn watched_interrupt_at() -> u64 {
     WATCHED_AT.load(Ordering::Relaxed)
 }

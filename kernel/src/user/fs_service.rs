@@ -1,7 +1,7 @@
 use super::*;
 use crate::cap::{
-    Rights, irq_cap, memory_region_cap, page_frame_cap, rendezvous_cap, rendezvous_cap_badged,
-    virtio_cap,
+    Rights, interrupt_cap, memory_region_cap, page_frame_cap, rendezvous_cap,
+    rendezvous_cap_badged, virtio_cap,
 };
 use crate::sched::RendezvousId;
 

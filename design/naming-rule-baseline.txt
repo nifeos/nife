@@ -122,8 +122,8 @@ kernel/src/arch/riscv64/mmu.rs::flush_asid spelled-out
 kernel/src/arch/x86_64/exceptions.rs::arg spelled-out
 kernel/src/arch/x86_64/exceptions.rs::set_arg spelled-out
 kernel/src/arch/x86_64/exceptions.rs::set_user_arg spelled-out
-kernel/src/arch/x86_64/irq.rs::send_ipi spelled-out
-kernel/src/arch/x86_64/irq.rs::send_nmi spelled-out
+kernel/src/arch/x86_64/interrupt_controller.rs::send_ipi spelled-out
+kernel/src/arch/x86_64/interrupt_controller.rs::send_nmi spelled-out
 kernel/src/arch/x86_64/ist.rs::an_nmi_finds_its_per_cpu_block_whatever_the_gs_base_held spelled-out
 kernel/src/arch/x86_64/ist.rs::an_nmi_leaves_the_gs_base_it_found spelled-out
 kernel/src/arch/x86_64/ist.rs::ist spelled-out

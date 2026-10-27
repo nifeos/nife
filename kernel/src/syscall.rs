@@ -28,8 +28,8 @@ use memory_region::memory_region_invoke;
 #[cfg(target_arch = "x86_64")]
 use object_methods::port_range_invoke;
 use object_methods::{
-    aborted_send_error, irq_ack, irq_wait, notification_invoke, process_invoke, reboot_invoke,
-    rendezvous_badge, rendezvous_reap, reply_other, timer_invoke, virtio_invoke,
+    aborted_send_error, interrupt_acknowledge, interrupt_wait, notification_invoke, process_invoke,
+    reboot_invoke, rendezvous_badge, rendezvous_reap, reply_other, timer_invoke, virtio_invoke,
 };
 use page_frame::{page_frame_map, page_frame_revoke, page_frame_slice};
 use rendezvous::{
@@ -219,18 +219,18 @@ pub fn invoke(
             virtio_invoke(id, method, a0, a1)
         }
 
-        Object::Irq(intid) => match method {
+        Object::Interrupt(intid) => match method {
             abi::interrupt::WAIT => {
                 if !cap.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }
-                irq_wait(frame, intid)
+                interrupt_wait(frame, intid)
             }
             abi::interrupt::ACK => {
                 if !cap.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }
-                irq_ack(intid)
+                interrupt_acknowledge(intid)
             }
             _ => Err(Error::BadMethod),
         },

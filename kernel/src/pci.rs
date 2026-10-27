@@ -14,7 +14,7 @@ use core::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 use paging::PAGE_SIZE;
 use pci::{Bar, Bdf, VirtioCap};
 
-use crate::arch::mmu::{self, PCI_BAR_MAPPED, PCI_ECAM_BUSES, PCI_IRQ_BASE};
+use crate::arch::mmu::{self, PCI_BAR_MAPPED, PCI_ECAM_BUSES, PCI_INTERRUPT_NUMBER_BASE};
 
 /// One bus of ECAM configuration space: 32 devices of 8 functions of 4 KiB.
 const BUS_BYTES: u64 = 0x10_0000;
@@ -348,8 +348,9 @@ pub(crate) struct PciVirtioDevice {
     /// The ISR byte (read-to-ack), physical.
     pub isr: u64,
     /// The interrupt a driver binds and waits on: the PLIC/GIC input the INTx pin swizzles to (see
-    /// `pci::intx_irq`) on the two device-tree boards, the MSI-X vector
-    /// `arch::irq::alloc_msi_vector` reserved on `x86_64`. An `Irq` capability names it and the
+    /// `pci::intx_interrupt_number`) on the two device-tree boards, the MSI-X vector
+    /// `arch::interrupt_controller::alloc_msi_vector` reserved on `x86_64`. An `Interrupt`
+    /// capability names it and the
     /// arch layer resolves it.
     pub intid: u32,
     /// Which MSI-X table entry [`intid`](Self::intid) was programmed into, or
@@ -619,16 +620,18 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
 }
 
 /// How this function's interrupt reaches a driver: `(intid, msix_vector)`. MSI-X where
-/// `arch::irq::alloc_msi_vector` answers `Some`, the INTx swizzle where it answers `None`.
+/// `arch::interrupt_controller::alloc_msi_vector` answers `Some`, the INTx swizzle where it answers
+/// `None`.
 ///
 /// `msi_fallback` lets a function with MSI and no MSI-X (the xHCI on an Intel PCH) take plain MSI;
 /// virtio functions pass `false`, since a virtio queue names its vector by MSI-X table index.
 /// `msix_vector` is `pci::VIRTIO_MSIX_NO_VECTOR` whenever the answer was not MSI-X. `None` when no
 /// route exists. See notes/pcie.md, "Placing BARs, and routing interrupts".
 fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> Option<(u32, u16)> {
-    match crate::arch::irq::alloc_msi_vector() {
+    match crate::arch::interrupt_controller::alloc_msi_vector() {
         Some((intid, target)) => {
-            // No fallback to INTx: on a machine that answered `Some`, `PCI_IRQ_BASE` is 0 and the
+            // No fallback to INTx: on a machine that answered `Some`, `PCI_INTERRUPT_NUMBER_BASE`
+            // is 0 and the
             // swizzle would resolve to the PIT's line, arming the driver on the timer.
             if msi_fallback
                 && pci::msix_cap(bdf, &mut |b, o| cfg_read32(b, o)).is_none()
@@ -678,7 +681,7 @@ fn program_msi(bdf: Bdf, target: pci::MsiTarget) -> bool {
 ///
 /// `None`, loudly, for a function that declares no pin at all, because on a board that routes INTx
 /// a device with no pin has no way to interrupt anybody and a driver bound to whatever
-/// `intx_irq(base, dev, 0)` returned would wait forever on a line nothing drives.
+/// `intx_interrupt_number(base, dev, 0)` returned would wait forever on a line nothing drives.
 fn intx_intid(bdf: Bdf) -> Option<u32> {
     // config 0x3d; 1=INTA..4=INTD, 0=none. The dtb fixture test holds the swizzle against the
     // machine's own interrupt-map.
@@ -690,7 +693,11 @@ fn intx_intid(bdf: Bdf) -> Option<u32> {
         );
         return None;
     }
-    Some(pci::intx_irq(PCI_IRQ_BASE, bdf.dev, pin))
+    Some(pci::intx_interrupt_number(
+        PCI_INTERRUPT_NUMBER_BASE,
+        bdf.dev,
+        pin,
+    ))
 }
 
 /// Point entry 0 of this function's MSI-X table at `target` and arm it. Returns the table index

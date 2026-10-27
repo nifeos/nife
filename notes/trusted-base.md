@@ -146,7 +146,7 @@ not longer**, and every deletion has a reason in the architecture rather than in
 | **Memory-mapped I/O and structures** | yes | `kernel/src/drivers/` (`pl011.rs`, `ns16550.rs`, `gic.rs`, `gicv3.rs`, `plic.rs`, `ramfb.rs`): volatile accesses at named offsets, each under a `SAFETY` comment, and no register crate |
 | **The memory allocator** | **no. The kernel has no allocator** | there is no `#[global_allocator]` anywhere in `kernel/src`. milestone 14 (kernel objects from untyped: remove the kernel heap) is the decision; `kernel/src/kmem.rs` is a fixed carve, not a heap; `notes/kernel-budget.md` has the one draw it missed and how 19c.1 closed it |
 | **Userspace buffers** | **no. No pointer crosses the boundary** | `kernel/src/syscall.rs`'s own header: *"Today every argument is a scalar in a register ... so the kernel follows no user pointer and there is no deputy to confuse."* The console is a userspace server, milestone 8 (the console driver leaves the kernel). The primitive is kept (`mmu::user_can_read`) for the next syscall that needs it |
-| **Interrupt and exception handlers** | yes | `kernel/src/arch/<isa>/exceptions.rs` (10 `unsafe` blocks on aarch64), `vectors.s`, `irq.rs` |
+| **Interrupt and exception handlers** | yes | `kernel/src/arch/<isa>/exceptions.rs` (10 `unsafe` blocks on aarch64), `vectors.s`, `interrupt_controller.rs` |
 | **`TakeCell`** | **no, and the reason is the whole difference** | see the next section |
 
 Two of their six do not exist here, and neither absence is an accident. The allocator is gone
@@ -194,7 +194,7 @@ to run something else and no other core to wait for. `TakeCell` is the mutual ex
 with when blocking is not available.
 
 nife has both. It has threads, a scheduler and up to `MAXIMUM_CPUS` cores, so it takes a lock:
-`kernel/src/sync.rs`'s `IrqSafeSpinLock`, which masks interrupts before acquiring and restores on
+`kernel/src/sync.rs`'s `InterruptSafeSpinLock`, which masks interrupts before acquiring and restores on
 release. A global lock ranking is enforced by the type (DECISIONS §9 (locking: IrqSafeMutex, plus a
 discipline) governs both halves). A lock
 hands out `&mut` through its guard. No copy is made, and no closure indirection is needed, so

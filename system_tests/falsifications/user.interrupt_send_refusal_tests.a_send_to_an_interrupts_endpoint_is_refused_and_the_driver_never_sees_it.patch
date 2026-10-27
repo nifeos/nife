@@ -1,11 +1,11 @@
-Falsifies `system_tests::user::irq_send_refusal_tests::a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it`.
+Falsifies `system_tests::user::interrupt_send_refusal_tests::a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it`.
 
 The defect: `Rendezvous::send` forgets DECISIONS §101 (notification objects)'s ruling B and decides as it did before it.
-`bind_irq` still marks the endpoint and nothing reads the mark, so the kernel compiles, every
+`bind_interrupt` still marks the endpoint and nothing reads the mark, so the kernel compiles, every
 `Send::Refused` arm is simply never reached, and every other test stays green.
 
 Expected to fail: the `SEND` assertion, which gets `Ok(0)` where it wants `NotPermitted`,
-because the send rendezvouses with the driver parked in `Irq::WAIT`. That driver wakes holding
+because the send rendezvouses with the driver parked in `Interrupt::WAIT`. That driver wakes holding
 `1`, which is exactly what its interrupt looks like.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs

@@ -148,13 +148,17 @@ thread_trampoline:
     // marks this thread's faked x29 as "no caller: the backtrace ends here"; this is the same
     // fact, stated where the unwinder reads it.)
     .cfi_undefined lr
-    // We arrive here with IRQs masked (from the `schedule()` that switched to us, or the timer
-    // IRQ it ran inside). A brand-new thread has no SPSR to restore its interrupt state from, so
+    // We arrive here with interrupts masked (from the `schedule()` that switched to us, or the
+    // timer
+    // interrupt it ran inside). A brand-new thread has no SPSR to restore its interrupt state from,
+    // so
     // it must unmask by hand, but **`thread_entry` does that, AFTER `finish_switch`**, not here.
     //
-    // Enabling IRQs *here*, before `finish_switch`, was a real, intermittent hang. `finish_switch`
+    // Enabling interrupts *here*, before `finish_switch`, was a real, intermittent hang.
+    // `finish_switch`
     // reaps the predecessor and completes any wake it deferred, reading this core's `switched_from`.
-    // A timer IRQ landing between an early unmask and `finish_switch` would run `schedule()`, which
+    // A timer interrupt landing between an early unmask and `finish_switch` would run `schedule()`,
+    // which
     // overwrites `switched_from` with *us*, and the predecessor is stranded: its `on_cpu` never
     // clears, so every future wake for it is deferred forever. `finish_switch` must run masked.
     mov     x0,  x19            // the closure, on this thread's own stack
@@ -195,7 +199,7 @@ user_entry_trampoline:
     .cfi_def_cfa_offset 272
     // No early unmask here either (see thread_trampoline for the hang it caused). `finish_switch`
     // runs masked inside `user_thread_entry`; the `eret` that drops us to EL0 restores an SPSR
-    // with IRQs enabled, so the EL0 thread is preemptible from its first instruction.
+    // with interrupts enabled, so the EL0 thread is preemptible from its first instruction.
     mov     x0,  x19            // the EL0 entry address
     mov     x1,  x20            // the user stack pointer
     mov     x2,  x21            // the child's initial x0 (19d)

@@ -6,7 +6,7 @@
 //! the ring addresses and the "go", and validates every descriptor before the device sees it. See
 //! notes/virtio.md, "The kernel's half", and notes/dma.md.
 
-use crate::arch::mmu::{self, VIRTIO_IRQ_BASE, VIRTIO_MMIO_BASE, VIRTIO_SLOT_STRIDE};
+use crate::arch::mmu::{self, VIRTIO_INTERRUPT_NUMBER_BASE, VIRTIO_MMIO_BASE, VIRTIO_SLOT_STRIDE};
 
 /// The virtio-mmio slot stride, from the arch: aarch64's `virt` has 32 slots 0x200 apart, RISC-V's
 /// has 8 slots 0x1000 apart. The probe walks `mmu::virtio_slots()` of them, which is zero on a
@@ -33,7 +33,7 @@ const REG_DEVICE_ID: u64 = 0x008;
 pub(crate) struct VirtioMmioDevice {
     /// Physical address of this slot's registers. Handed to the driver as a device mapping.
     pub mmio_phys: u64,
-    /// The interrupt this device raises. Handed to the driver as an `Irq` capability.
+    /// The interrupt this device raises. Handed to the driver as an `Interrupt` capability.
     pub intid: u32,
 }
 
@@ -65,7 +65,7 @@ fn find_by_device_id(device_id: u32) -> Option<VirtioMmioDevice> {
 
         return Some(VirtioMmioDevice {
             mmio_phys: VIRTIO_MMIO_BASE + slot * SLOT_STRIDE,
-            intid: VIRTIO_IRQ_BASE + slot as u32,
+            intid: VIRTIO_INTERRUPT_NUMBER_BASE + slot as u32,
         });
     }
     None
@@ -148,7 +148,7 @@ fn mmio_block_device_n(n: usize) -> Option<VirtioMmioDevice> {
         if seen == n {
             return Some(VirtioMmioDevice {
                 mmio_phys: VIRTIO_MMIO_BASE + slot * SLOT_STRIDE,
-                intid: VIRTIO_IRQ_BASE + slot as u32,
+                intid: VIRTIO_INTERRUPT_NUMBER_BASE + slot as u32,
             });
         }
         seen += 1;
@@ -161,7 +161,7 @@ fn mmio_block_device_n(n: usize) -> Option<VirtioMmioDevice> {
 // and validates every descriptor against the driver's DMA region first. See notes/dma.md.
 // ---------------------------------------------------------------------------------------------
 
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 // virtio-mmio v2 registers the kernel drives.
 const REG_DEVICE_FEATURES_SEL: u64 = 0x014;
@@ -511,7 +511,7 @@ impl Devices {
     }
 }
 
-static DEVICES: IrqSafeMutex<Devices> = IrqSafeMutex::new(
+static DEVICES: InterruptSafeMutex<Devices> = InterruptSafeMutex::new(
     rank::VIRTIO,
     Devices {
         entries: [const { None }; MAXIMUM_DEVICES],

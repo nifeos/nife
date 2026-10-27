@@ -24,15 +24,17 @@ send only single-block requests, so the region's growth leaves them unchanged.
 ## It waits on the completion interrupt
 
 This is the milestone-9 discipline (`complete_blk`, `crates/virtio`). The kernel turns the device's
-completion IRQ into a message on the block server's `Irq` endpoint. The server WAITs for it, quiets
+completion interrupt into a message on the block server's `Interrupt` endpoint. The server WAITs for
+it, quiets
 the device, ACKs the line, and lets `used.idx` decide when the completion is really its own. A
 wakeup can be stale or coalesced. It is the same loop the read driver uses.
 
-This is a correction (fix/irq-delivery, 2026-07-29). The earlier note here claimed interrupt-driven
+This is a correction (fix/interrupt-delivery, 2026-07-29). The earlier note here claimed
+interrupt-driven
 completion "overran the watchdog" and forced a poll of the used ring. It does not. Booted with the
 WAIT path, the redoxfs_server test passes on both ISAs at the 4-core SMP boot (aarch64 141 tests,
 riscv64 84 tests). The mount's hundreds of WAIT-driven completions all land well inside the 60 s
-watchdog. The completion IRQ reaches the block server's endpoint exactly as it reaches any
+watchdog. The completion interrupt reaches the block server's endpoint exactly as it reaches any
 milestone-9 driver's. The whole-block reads above are what keep the reschedule count affordable.
 
 The prior "hangs on the first read" report did not reproduce; the machine overruled the note. QEMU

@@ -445,7 +445,7 @@ fn uefi_serial_transcript_holds(transcript: &str) -> bool {
         // loader asked for was actually usable. See the `NIFE_SMP` comment above.
         "smp: 2 core(s) online",
         // And a device interrupt still landing on the boot core with two local APICs present.
-        "device irq  : pit irq 0 -> gsi 2",
+        "device interrupt  : pit interrupt 0 -> gsi 2",
         // The screen went to a userspace terminal and both halves came up; said on the UART, since
         // the screen is handed away by then. OVMF's 1280x800 at the 14x26 cell is scale one, 91x30.
         "1280x800 pixels of it at scale 1 served by framebuffer_driver, a 91x30 terminal on it",

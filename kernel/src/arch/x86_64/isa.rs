@@ -13,7 +13,7 @@ use core::arch::x86_64::CpuidResult;
 
 use machine_discovery::x86_64::{CpuidWords, Gate, HYPERVISOR_CITE, Isa, TABLE};
 
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 use crate::{print, println};
 
 /// **`CPUID`, spelled so that two toolchains a year apart both accept it** (milestone 304
@@ -51,7 +51,7 @@ pub(super) fn cpuid_count(leaf: u32, sub_leaf: u32) -> CpuidResult {
 /// records keep, and the reason this stopped being a `static mut` with a zeroed initializer: the
 /// zeroed value decodes as a machine that would have been refused, which is the worst possible
 /// thing for a missed initialization to look like.
-static ISA: IrqSafeMutex<Option<Isa>> = IrqSafeMutex::new(rank::ISA, None);
+static ISA: InterruptSafeMutex<Option<Isa>> = InterruptSafeMutex::new(rank::ISA, None);
 
 /// One `CpuidResult` as the four words the decoder takes.
 fn words(r: CpuidResult) -> [u32; 4] {

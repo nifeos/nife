@@ -7,16 +7,16 @@ closing finding 3, the PLIC enable-bit race, and what the tests can and cannot p
 
 ## Three things decided along the way
 
-`enable` and `disable` now share one helper that holds an `IrqSafeMutex` across the
+`enable` and `disable` now share one helper that holds an `InterruptSafeMutex` across the
 read-modify-write.
 
-**It must be `IrqSafeMutex`, and that is not belt-and-braces.** `disable` is called *from the
+**It must be `InterruptSafeMutex`, and that is not belt-and-braces.** `disable` is called *from the
 external-interrupt handler* and `enable` from thread context with interrupts on. A plain spinlock
 would let a thread take the word on hart H, take an external interrupt on H, and spin in the handler
 forever on a lock only the interrupted code can release. One hart, no SMP needed, permanent. This is the
 opening paragraph of §9 (locking: IrqSafeMutex, plus a discipline), arrived at in a new place.
 
-The rank is `rank::IRQ_CONTROLLER`, one name for both controllers rather than a duplicate.
+The rank is `rank::INTERRUPT_CONTROLLER`, one name for both controllers rather than a duplicate.
 The two drivers are mutually exclusive at *compile* time (`drivers/mod.rs` gates each to its ISA).
 So they are not two locks needing an order between them. They are one lock role with two
 implementations, and two names at rank 20 would invite the reader to work out a precedence that does
@@ -25,7 +25,8 @@ never-nested.)
 
 The placement is a leaf with slack in both directions. The body is two MMIO accesses and no calls,
 so nothing is taken beneath it. It is always taken holding nothing. The handler holds nothing by
-§9's record-and-defer rule, and every `enable` caller has already dropped `SCHED` (`bind_irq` and
+§9's record-and-defer rule, and every `enable` caller has already dropped `SCHED` (`bind_interrupt`
+and
 `create_endpoint` take and release it first).
 
 The lock is scoped to the one register that needs it, verified register by register rather than
@@ -52,4 +53,4 @@ A second test pins the irqsave/irqrestore behavior at the two real call-site sha
 the fix into a hang is the more likely way to get this wrong later. The serialization itself is
 attested by the suite it runs inside rather than by an assertion. Every riscv virtio test calls
 `enable` from thread context and `disable` from the handler. A misplaced rank would panic with LOCK
-ORDER VIOLATION, and a non-IRQ-safe lock would hang.
+ORDER VIOLATION, and a non-interrupt-safe lock would hang.

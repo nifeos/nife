@@ -62,7 +62,7 @@ pub(super) unsafe fn set_current(tid: ThreadId, tcb: *mut Thread) {
 /// [`crate::sync::lock_found`] for why the entry is read with interrupts masked.
 #[inline]
 pub(super) fn current_capabilities()
--> Option<crate::sync::IrqSafeGuard<'static, crate::cap::CapabilityTable>> {
+-> Option<crate::sync::InterruptSafeGuard<'static, crate::cap::CapabilityTable>> {
     crate::sync::lock_found(|| {
         let table = CURRENT_CAPABILITIES
             .get(cpu::id())?

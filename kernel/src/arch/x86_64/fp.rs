@@ -94,7 +94,8 @@ const CR0_EM: u64 = 1 << 2;
 /// `CR0.TS`, task switched. Set means the next FP or SSE instruction raises `#NM`.
 const CR0_TS: u64 = 1 << 3;
 /// `CR0.NE`, native x87 exception reporting: an unmasked x87 exception arrives as `#MF` rather than
-/// through the ancient external `FERR#`/IRQ 13 route, which no machine this kernel runs on wires.
+/// through the ancient external `FERR#`/interrupt 13 route, which no machine this kernel runs on
+/// wires.
 const CR0_NE: u64 = 1 << 5;
 /// `CR4.OSFXSR`: `fxsave`/`fxrstor` and the `xmm` registers are available.
 const CR4_OSFXSR: u64 = 1 << 9;

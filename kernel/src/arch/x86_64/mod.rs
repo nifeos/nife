@@ -21,9 +21,10 @@ pub mod discovery;
 pub mod exceptions;
 pub mod fp;
 mod instructions;
+#[doc(alias = "irq")]
+pub mod interrupt_controller;
 pub mod interrupts;
 pub mod iommu;
-pub mod irq;
 pub mod isa;
 // The NMI, double-fault and machine-check stacks the TSS's IST names: milestone 915 (NMI, double
 // fault and machine check run on their own stacks), provisional.

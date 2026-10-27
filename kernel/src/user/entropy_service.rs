@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, irq_cap, rendezvous_cap, virtio_cap};
+use crate::cap::{Rights, interrupt_cap, rendezvous_cap, virtio_cap};
 use crate::sched::RendezvousId;
 
 /// Where the service maps its DMA page. Must match components/src/entropy.rs.
@@ -141,9 +141,9 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
         .expect("no DMA region for the entropy service")
         .addr();
 
-    let irq_ep = crate::sched::create_rendezvous();
-    crate::sched::bind_irq(intid, irq_ep);
-    crate::arch::irq::enable(intid);
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(intid);
 
     // Asked of the unit that owns the device, not of "is any IOMMU up": on a VT-d machine with
     // more than one unit those differ (`iommu::scope_of`).
@@ -167,7 +167,7 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(request, Rights::READ), // slot 0: RECEIVE client requests
-                    irq_cap(intid),                        // slot 1: the completion interrupt
+                    interrupt_cap(intid),                  // slot 1: the completion interrupt
                     virtio_cap(vid),                       // slot 2: the confined transport
                     rendezvous_cap(ready, Rights::WRITE),  // slot 3: signal readiness once
                 ],
@@ -210,7 +210,8 @@ fn is_instruction_backend_available() -> bool {
 }
 
 /// Wire and spawn the entropy service in instruction mode: no virtio device, no DMA page, no
-/// IRQ. `None` if this machine does not implement the instruction its architecture would use (see
+/// interrupt. `None` if this machine does not implement the instruction its architecture would use
+/// (see
 /// [`is_instruction_backend_available`]), the same "no source, no service" answer the virtio path
 /// gives for a missing device.
 fn start_instruction(image: &'static [u8]) -> Option<Wiring> {

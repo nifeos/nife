@@ -11,7 +11,7 @@ use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering
 
 use intrusive_queue::Queue;
 
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 use crate::thread::{Thread, ThreadId};
 
 /// A `current`/`idle` slot holding no thread. Tids are small integers from 0 up, so `u64::MAX`
@@ -49,7 +49,8 @@ pub struct PerCpu {
     /// is empty. Each core gets its own, so an idle core parks in its *own* `wfi`.
     pub idle: AtomicU64,
 
-    /// Set by this core's timer tick, read on this core's return from the IRQ, so one core's tick
+    /// Set by this core's timer tick, read on this core's return from the interrupt, so one core's
+    /// tick
     /// cannot make another reschedule (DECISIONS §9 (locking)'s record-and-defer).
     pub need_resched: AtomicBool,
 
@@ -75,7 +76,7 @@ pub struct PerCpu {
     /// The one cross-core scheduler structure. A remote core locks it, pushes the TCB and sends a
     /// reschedule SGI; this core drains it in the handler. See [`inbox_of`] and
     /// `sched::drain_inbox`.
-    pub inbox: IrqSafeMutex<Queue<Thread>>,
+    pub inbox: InterruptSafeMutex<Queue<Thread>>,
 
     /// This core's run-queue length, mirrored so other cores may read it (§28 (SMP placement)).
     /// Kept exact by the owner after every [`with_runq`](Self::with_runq); read relaxed and
@@ -162,7 +163,7 @@ impl PerCpu {
             need_resched: AtomicBool::new(false),
             switched_from: AtomicU64::new(NO_TID),
             runq: UnsafeCell::new(Queue::new()),
-            inbox: IrqSafeMutex::new(rank::INBOX, Queue::new()),
+            inbox: InterruptSafeMutex::new(rank::INBOX, Queue::new()),
             runq_len: AtomicUsize::new(0),
             inbox_len: AtomicUsize::new(0),
             steal_request: work_steal_slot::Slot::new(),
@@ -329,7 +330,7 @@ pub fn id() -> usize {
 
 /// Another core's migration inbox, by id. This is the one place a core reaches into a *different*
 /// core's `PerCpu` block, and only the inbox (a real lock), never the run queue. See DECISIONS §11.
-pub(crate) fn inbox_of(id: usize) -> &'static IrqSafeMutex<Queue<Thread>> {
+pub(crate) fn inbox_of(id: usize) -> &'static InterruptSafeMutex<Queue<Thread>> {
     &PERCPU[id].inbox
 }
 

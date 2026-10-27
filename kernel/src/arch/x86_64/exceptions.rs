@@ -214,19 +214,24 @@ unsafe extern "C" {
 }
 
 /// How many interrupts became a message to a userspace endpoint: the trap handler took one,
-/// `sched::irq_route` found an endpoint bound to it, and `sched::irq_notify` was called. The
+/// `sched::interrupt_route` found an endpoint bound to it, and `sched::interrupt_notify` was
+/// called. The
 /// portable counter every architecture's interrupt tests read.
 ///
 /// The timer, the reschedule IPI and unclaimed device vectors are not counted, so a tick cannot
 /// satisfy a test waiting for a device's completion (notes/load-sensitive-assertions.md). Ticks are
-/// `arch::timer::ticks()`; a device vector is [`DEVICE_IRQS`], and one with no route
-/// [`SPURIOUS_IRQS`].
-pub static ROUTED_IRQS: AtomicUsize = AtomicUsize::new(0);
+/// `arch::timer::ticks()`; a device vector is [`DEVICE_INTERRUPTS`], and one with no route
+/// [`SPURIOUS_INTERRUPTS`].
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+#[doc(alias = "irq")]
+pub static ROUTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// **How many interrupts arrived with nothing to route them to.** A spurious interrupt is normal on
 /// x86 in a way it is not elsewhere: the 8259 PIC manufactures vector 7 (or 15) when a line drops
 /// between assertion and acknowledgement, and the local APIC has a dedicated spurious vector.
-pub(crate) static SPURIOUS_IRQS: AtomicUsize = AtomicUsize::new(0);
+#[doc(alias = "irq")]
+pub(crate) static SPURIOUS_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// **How many NMIs arrived that the TLB shootdown did not claim.** Vector 2 is this kernel's
 /// shootdown message (`mmu::shoot_down_others`) and nothing else on this machine sends one, so this
@@ -237,7 +242,8 @@ pub(crate) static NMIS_UNCLAIMED: AtomicUsize = AtomicUsize::new(0);
 /// **How many *device* interrupts arrived through the IO APIC**, as distinct from the local APIC's
 /// own timer. Counted separately because the two prove different things: the timer proves the local
 /// APIC delivers and the trap path returns, and this proves a line outside the CPU reached it.
-pub(crate) static DEVICE_IRQS: AtomicUsize = AtomicUsize::new(0);
+#[doc(alias = "irq")]
+pub(crate) static DEVICE_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// **System calls served, counted for the system tests only** (`system_tests/src/user/el0_boundary_tests.rs`
 /// proves a program reached user mode and came back by watching it rise). Every syscall on every
@@ -356,13 +362,14 @@ fn entered_user_with_no_entry_point(user_sp: u64) -> ! {
 
 /// Unmask external interrupts at the controller, which on x86 is nothing: its one gate is
 /// `RFLAGS.IF` (`arch::interrupts::enable`), where RISC-V also has `sie.SEIE`. The per-source masks
-/// are the IO APIC's (`irq::enable`) and the TPR, which `irq::initialize_local_apic` zeroes.
+/// are the IO APIC's (`interrupt_controller::enable`) and the TPR, which
+/// `interrupt_controller::initialize_local_apic` zeroes.
 ///
 /// # Panics
 /// If the local APIC is not up, so no caller believes interrupts unmasked when nothing can deliver.
 pub(crate) fn enable_external() {
     assert!(
-        super::irq::is_local_apic_ready(),
+        super::interrupt_controller::is_local_apic_ready(),
         "external interrupts are the local APIC's to deliver, and it is not up yet",
     );
 }
@@ -654,89 +661,94 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
 
         // The local APIC timer. Record and defer (§9 (locking)): `on_tick` marks a reschedule due,
         // and the switch happens in `x86_trap_dispatch` on the thread's own stack, after the EOI.
-        v if v == super::irq::TIMER_VECTOR as u64 => {
+        v if v == super::interrupt_controller::TIMER_VECTOR as u64 => {
             super::timer::tick();
             crate::sched::on_tick();
-            super::irq::end_of_interrupt();
+            super::interrupt_controller::end_of_interrupt();
             true
         }
-        // A reschedule IPI (`irq::send_reschedule`): the sender may have put a thread in our inbox,
+        // A reschedule IPI (`interrupt_controller::send_reschedule`): the sender may have put a
+        // thread in our inbox,
         // or an idle CPU may want work. Both are served, and the deferred `schedule()` runs
         // whatever arrived. Not a routed interrupt, and not spurious.
-        v if v == super::irq::RESCHEDULE_VECTOR as u64 => {
+        v if v == super::interrupt_controller::RESCHEDULE_VECTOR as u64 => {
             crate::sched::drain_inbox();
             crate::sched::serve_steal_request();
-            super::irq::end_of_interrupt();
+            super::interrupt_controller::end_of_interrupt();
             true
         }
         // A self-directed interrupt, which becomes a message; the local APIC delivers it through
-        // the ICR, IRR, ISR and EOI. Its intid is its vector, where a device line's is a legacy IRQ
+        // the ICR, IRR, ISR and EOI. Its intid is its vector, where a device line's is a legacy
+        // interrupt
         // (0..15), so the two cannot collide. See notes/x86-port/traps.md.
-        v if v == super::irq::SELF_TEST_VECTOR as u64
-            || v == super::irq::SELF_TEST_VECTOR_B as u64 =>
+        v if v == super::interrupt_controller::SELF_TEST_VECTOR as u64
+            || v == super::interrupt_controller::SELF_TEST_VECTOR_B as u64 =>
         {
-            match crate::sched::irq_route(v as u32) {
+            match crate::sched::interrupt_route(v as u32) {
                 Some(ep) => {
-                    ROUTED_IRQS.fetch_add(1, Ordering::Relaxed);
+                    ROUTED_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
                     // Nothing to mask: a self-IPI is one-shot, with no asserted line to hold off.
-                    crate::sched::irq_notify(ep);
+                    crate::sched::interrupt_notify(ep);
                 }
                 None => {
-                    SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
+                    SPURIOUS_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
                 }
             }
-            super::irq::end_of_interrupt();
+            super::interrupt_controller::end_of_interrupt();
             true
         }
         // A PCI function's MSI-X message, which becomes a driver's wakeup (milestone 215 (a PCI
         // function's interrupt reaches nothing on x86_64)). An MSI vector is its intid
-        // (`irq::MSI_VECTOR_BASE`). Nothing is masked: the message is a posted write that already
-        // happened, so the driver's `Irq::ACK` is a no-op.
-        v if super::irq::is_msi_vector(v) => {
-            match crate::sched::irq_route(v as u32) {
+        // (`interrupt_controller::MSI_VECTOR_BASE`). Nothing is masked: the message is a posted
+        // write that already
+        // happened, so the driver's `Interrupt::ACK` is a no-op.
+        v if super::interrupt_controller::is_msi_vector(v) => {
+            match crate::sched::interrupt_route(v as u32) {
                 Some(ep) => {
-                    DEVICE_IRQS.fetch_add(1, Ordering::Relaxed);
-                    ROUTED_IRQS.fetch_add(1, Ordering::Relaxed);
-                    crate::sched::irq_notify(ep);
+                    DEVICE_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
+                    ROUTED_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
+                    crate::sched::interrupt_notify(ep);
                 }
                 None => {
-                    SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
+                    SPURIOUS_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
                 }
             }
-            super::irq::end_of_interrupt();
+            super::interrupt_controller::end_of_interrupt();
             true
         }
-        // A device line on `irq::GSI_VECTOR_BASE` plus its redirection index, which becomes a
+        // A device line on `interrupt_controller::GSI_VECTOR_BASE` plus its redirection index,
+        // which becomes a
         // driver's message (milestone 505 (an x86_64 input driver that never lets the core idle)).
-        // `irq::intid_of_vector` recovers the intid a driver bound. `irq::disable` holds off only a
+        // `interrupt_controller::intid_of_vector` recovers the intid a driver bound.
+        // `interrupt_controller::disable` holds off only a
         // level-triggered line: an IO APIC drops an edge that arrives while its entry is masked. A
         // line nothing bound is counted and acknowledged.
-        v if super::irq::is_device_vector(v) => {
-            DEVICE_IRQS.fetch_add(1, Ordering::Relaxed);
-            let routed = super::irq::intid_of_vector(v)
-                .and_then(|intid| crate::sched::irq_route(intid).map(|ep| (intid, ep)));
+        v if super::interrupt_controller::is_device_vector(v) => {
+            DEVICE_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
+            let routed = super::interrupt_controller::intid_of_vector(v)
+                .and_then(|intid| crate::sched::interrupt_route(intid).map(|ep| (intid, ep)));
             if let Some((intid, ep)) = routed {
-                ROUTED_IRQS.fetch_add(1, Ordering::Relaxed);
-                super::irq::disable(intid);
-                crate::sched::irq_notify(ep);
+                ROUTED_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
+                super::interrupt_controller::disable(intid);
+                crate::sched::interrupt_notify(ep);
             }
-            super::irq::end_of_interrupt();
+            super::interrupt_controller::end_of_interrupt();
             true
         }
         // A spurious interrupt: the local APIC had to deliver something and had nothing real. It
         // is **not** acknowledged, and that is architecture rather than an oversight: the APIC does
         // not set an in-service bit for a spurious interrupt, so an EOI here would acknowledge
         // whatever genuinely is in service and lose it.
-        v if v == super::irq::SPURIOUS_VECTOR as u64 => {
-            SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
+        v if v == super::interrupt_controller::SPURIOUS_VECTOR as u64 => {
+            SPURIOUS_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
             false
         }
         // Any other vector at or above 32 is a device interrupt nothing has claimed. Counted and
         // acknowledged rather than fatal: an unowned interrupt that is not acknowledged wedges the
         // local APIC, which turns a stray line into a dead machine.
         v if v >= 32 => {
-            SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
-            super::irq::end_of_interrupt();
+            SPURIOUS_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
+            super::interrupt_controller::end_of_interrupt();
             true
         }
         // An exception taken in ring 3 is the program's fault, recorded rather than fatal. Only

@@ -2554,13 +2554,11 @@ crates/machine_discovery/src/acpi/ivrs.rs::unity_regions
 crates/machine_discovery/src/acpi/madt.rs::INTI_POLARITY_MASK
 crates/machine_discovery/src/acpi/madt.rs::INTI_TRIGGER_MASK
 crates/machine_discovery/src/acpi/madt.rs::ISA_BUS
-crates/machine_discovery/src/acpi/madt.rs::ISA_IRQ_COUNT
 crates/machine_discovery/src/acpi/madt.rs::MADT_PCAT_COMPAT
 crates/machine_discovery/src/acpi/madt.rs::Madt
 crates/machine_discovery/src/acpi/madt.rs::MadtEntries
 crates/machine_discovery/src/acpi/madt.rs::MadtEntry
 crates/machine_discovery/src/acpi/madt.rs::isa_default
-crates/machine_discovery/src/acpi/madt.rs::isa_irq_table
 crates/machine_discovery/src/acpi/madt.rs::madt_entries
 crates/machine_discovery/src/acpi/madt.rs::parse_madt
 crates/machine_discovery/src/acpi/mcfg.rs::McfgEntry
@@ -2615,7 +2613,6 @@ crates/machine_discovery/src/gic.rs::second_region
 crates/machine_discovery/src/gic.rs::version
 crates/machine_discovery/src/interrupt_id.rs::of_node
 crates/machine_discovery/src/plic.rs::COMPATIBLES
-crates/machine_discovery/src/plic.rs::IRQ_S_EXT
 crates/machine_discovery/src/plic.rs::PlicContexts
 crates/machine_discovery/src/plic.rs::from_device_tree
 crates/machine_discovery/src/plic.rs::is_empty
@@ -3127,7 +3124,6 @@ crates/pci/src/lib.rs::bridge_buses
 crates/pci/src/lib.rs::data
 crates/pci/src/lib.rs::ecam_offset
 crates/pci/src/lib.rs::enumerate
-crates/pci/src/lib.rs::intx_irq
 crates/pci/src/lib.rs::mem32_window
 crates/pci/src/lib.rs::msi_cap
 crates/pci/src/lib.rs::msix_cap
@@ -4213,7 +4209,6 @@ kernel/src/arch/aarch64/context.rs
 kernel/src/arch/aarch64/context.rs::Context
 kernel/src/arch/aarch64/context.rs::switch_to
 kernel/src/arch/aarch64/exceptions.rs
-kernel/src/arch/aarch64/exceptions.rs::ROUTED_IRQS
 kernel/src/arch/aarch64/exceptions.rs::SVC_COUNT
 kernel/src/arch/aarch64/exceptions.rs::TrapFrame
 kernel/src/arch/aarch64/exceptions.rs::USER_FAULTS
@@ -4244,9 +4239,8 @@ kernel/src/arch/aarch64/iommu.rs::Fault
 kernel/src/arch/aarch64/iommu.rs::attach
 kernel/src/arch/aarch64/iommu.rs::is_active
 kernel/src/arch/aarch64/iommu.rs::take_fault
-kernel/src/arch/aarch64/irq.rs
-kernel/src/arch/aarch64/irq.rs::enable
-kernel/src/arch/aarch64/irq.rs::send_sgi
+kernel/src/arch/aarch64/interrupt_controller.rs::enable
+kernel/src/arch/aarch64/interrupt_controller.rs::send_sgi
 kernel/src/arch/aarch64/isa.rs
 kernel/src/arch/aarch64/isa.rs::get
 kernel/src/arch/aarch64/isa.rs::psci
@@ -4306,7 +4300,6 @@ kernel/src/arch/riscv64/context.rs
 kernel/src/arch/riscv64/context.rs::Context
 kernel/src/arch/riscv64/context.rs::switch_to
 kernel/src/arch/riscv64/exceptions.rs
-kernel/src/arch/riscv64/exceptions.rs::ROUTED_IRQS
 kernel/src/arch/riscv64/exceptions.rs::SVC_COUNT
 kernel/src/arch/riscv64/exceptions.rs::TrapFrame
 kernel/src/arch/riscv64/exceptions.rs::USER_FAULTS
@@ -4335,8 +4328,7 @@ kernel/src/arch/riscv64/iommu.rs::Fault
 kernel/src/arch/riscv64/iommu.rs::attach
 kernel/src/arch/riscv64/iommu.rs::is_active
 kernel/src/arch/riscv64/iommu.rs::take_fault
-kernel/src/arch/riscv64/irq.rs
-kernel/src/arch/riscv64/irq.rs::enable
+kernel/src/arch/riscv64/interrupt_controller.rs::enable
 kernel/src/arch/riscv64/isa.rs
 kernel/src/arch/riscv64/isa.rs::get
 kernel/src/arch/riscv64/mmu.rs
@@ -4400,7 +4392,6 @@ kernel/src/arch/x86_64/context.rs
 kernel/src/arch/x86_64/context.rs::Context
 kernel/src/arch/x86_64/context.rs::switch_to
 kernel/src/arch/x86_64/exceptions.rs
-kernel/src/arch/x86_64/exceptions.rs::ROUTED_IRQS
 kernel/src/arch/x86_64/exceptions.rs::SVC_COUNT
 kernel/src/arch/x86_64/exceptions.rs::TrapFrame
 kernel/src/arch/x86_64/exceptions.rs::USER_FAULTS
@@ -4423,8 +4414,7 @@ kernel/src/arch/x86_64/iommu.rs::Fault
 kernel/src/arch/x86_64/iommu.rs::attach
 kernel/src/arch/x86_64/iommu.rs::is_active
 kernel/src/arch/x86_64/iommu.rs::take_fault
-kernel/src/arch/x86_64/irq.rs
-kernel/src/arch/x86_64/irq.rs::enable
+kernel/src/arch/x86_64/interrupt_controller.rs::enable
 kernel/src/arch/x86_64/isa.rs
 kernel/src/arch/x86_64/isa.rs::get
 kernel/src/arch/x86_64/ist.rs::install
@@ -4432,8 +4422,6 @@ kernel/src/arch/x86_64/machine.rs
 kernel/src/arch/x86_64/mmu.rs
 kernel/src/arch/x86_64/mmu.rs::Format
 kernel/src/arch/x86_64/mmu/device_windows.rs::PCI_BAR_MAPPED
-kernel/src/arch/x86_64/mmu/device_windows.rs::PCI_IRQ_BASE
-kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_IRQ_BASE
 kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_MMIO_BASE
 kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_SLOTS
 kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_SLOT_STRIDE
@@ -4496,8 +4484,6 @@ kernel/src/cap.rs::Object
 kernel/src/cap.rs::SPEND_ONLY
 kernel/src/cap.rs::address_space_cap
 kernel/src/cap.rs::device_frame_cap
-kernel/src/cap.rs::irq_cap
-kernel/src/cap.rs::irq_cap_rights
 kernel/src/cap.rs::memory_region_cap
 kernel/src/cap.rs::memory_region_cap_rights
 kernel/src/cap.rs::memory_region_root_cap
@@ -4681,9 +4667,6 @@ kernel/src/sched/inspection.rs::thread_space_root
 kernel/src/sched/inspection.rs::user_pc_of
 kernel/src/sched/inspection.rs::wake_without_delivery
 kernel/src/sched/inspection.rs::with_capability_table
-kernel/src/sched/interrupt_route.rs::bind_irq
-kernel/src/sched/interrupt_route.rs::irq_notify
-kernel/src/sched/interrupt_route.rs::irq_route
 kernel/src/sched/ipc_outcome.rs::take_ipc_aborted
 kernel/src/sched/ipc_tables.rs::RendezvousId
 kernel/src/sched/ipc_tables.rs::rendezvous_pressure
@@ -4760,9 +4743,6 @@ kernel/src/sync.rs::CONSOLE
 kernel/src/sync.rs::INBOX
 kernel/src/sync.rs::IOMMU
 kernel/src/sync.rs::IPC_TABLES
-kernel/src/sync.rs::IRQ_CONTROLLER
-kernel/src/sync.rs::IrqSafeGuard
-kernel/src/sync.rs::IrqSafeMutex
 kernel/src/sync.rs::KMEM
 kernel/src/sync.rs::MAPPINGS
 kernel/src/sync.rs::MEMORY_REGION
@@ -5563,7 +5543,7 @@ system_tests/src/user/futex_tests.rs
 system_tests/src/user/glob_grant_tests.rs
 system_tests/src/user/heap_tests.rs
 system_tests/src/user/identity_provisioning_tests.rs
-system_tests/src/user/irq_send_refusal_tests.rs
+system_tests/src/user/interrupt_send_refusal_tests.rs
 system_tests/src/user/job_undertaker_tests.rs
 system_tests/src/user/language_tests.rs
 system_tests/src/user/live_swap_tests.rs

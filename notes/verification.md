@@ -169,7 +169,8 @@ script/verify
 It self-installs Kani on first run (its own nightly toolchain and a CBMC backend), then runs
 `cargo kani` over every package carrying harnesses. The harness count is generated weekly into
 `notes/project-metrics.md`; the harnesses sit across 39 packages <!--count:harness-crates-->. Not
-every host compiles all of them: two in `kernel/src/arch/x86_64/irq.rs` run only on an x86_64 host.
+every host compiles all of them: two in `kernel/src/arch/x86_64/interrupt_controller.rs` run only on
+an x86_64 host.
 
 Harnesses within a crate verify in parallel, `-j 4` by default (`VERIFY_JOBS` overrides). In CI the
 suite runs as three `prove` shards behind one required check, `verify (Kani proofs)`, which calef

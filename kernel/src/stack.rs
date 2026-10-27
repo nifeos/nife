@@ -443,7 +443,7 @@ pub(crate) fn report_high_water() {
         maximum_interrupt = maximum_interrupt.max(used);
         if used > 0 {
             crate::println!(
-                "stack high-water: irq{id}   {used}/{} bytes ({}%)",
+                "stack high-water: interrupt{id}   {used}/{} bytes ({}%)",
                 t - b,
                 used * 100 / (t - b),
             );

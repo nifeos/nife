@@ -23,8 +23,8 @@ index 20b68dd66..313b2d125 100644
      // Masked for the whole round, whatever the caller held: `flush_asid` calls this unmasked, and a
      // tick in the ack wait could preempt the holder of `SHOOTDOWN_LOCK` into a reap that comes back
      // here and spins on it. Masking also pins the `cpu::id()` read below to this core.
--    let irqs_were_enabled = crate::arch::interrupts::disable();
-+    let irqs_were_enabled = crate::arch::interrupts::is_enabled();
+-    let interrupts_were_enabled = crate::arch::interrupts::disable();
++    let interrupts_were_enabled = crate::arch::interrupts::is_enabled();
      #[cfg(test)]
      if crate::arch::interrupts::is_enabled() {
          ROUND_RAN_UNMASKED.store(true, Ordering::Relaxed);

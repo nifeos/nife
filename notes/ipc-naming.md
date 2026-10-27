@@ -64,8 +64,9 @@ capabilities exist to avoid.
 
 ## Two corollaries the code already shows
 
-- A hardware interrupt also names a rendezvous. `bind_irq(intid, ep)` routes an IRQ to a
-  rendezvous; `irq_notify` delivers it, or bumps `pending` if nobody is waiting. So the naming of a
+- A hardware interrupt also names a rendezvous. `bind_interrupt(intid, ep)` routes an interrupt to a
+  rendezvous; `interrupt_notify` delivers it, or bumps `pending` if nobody is waiting. So the naming
+  of a
   device event is the *same* as the naming of a peer's message: a rendezvous. "An interrupt becomes
   a message" is literal. See [interrupts.md](interrupts.md).
 - The name is transferable. `SEND_CAP` / `RECEIVE_CAP` let one process hand a rendezvous

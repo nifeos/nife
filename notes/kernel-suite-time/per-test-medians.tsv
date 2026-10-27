@@ -2,8 +2,8 @@ test	aarch64_ms	riscv64_ms	x86_64_ms
 kernel::arch::aarch64::exceptions::tests::breakpoint_is_caught_and_execution_resumes	0		
 kernel::arch::aarch64::exceptions::tests::registers_survive_an_exception	0		
 kernel::arch::aarch64::exceptions::tests::vbar_el1_points_at_our_vector_table	0		
-kernel::arch::aarch64::irq::tests::every_online_cpu_takes_its_own_timer_ticks	4		
-kernel::arch::aarch64::irq::tests::the_driven_gic_is_the_one_the_tree_names	0		
+kernel::arch::aarch64::interrupt_controller::tests::every_online_cpu_takes_its_own_timer_ticks	4		
+kernel::arch::aarch64::interrupt_controller::tests::the_driven_gic_is_the_one_the_tree_names	0		
 kernel::arch::aarch64::isa::tests::the_asid_width_supports_the_allocator	0		
 kernel::arch::aarch64::isa::tests::the_configured_physical_address_size_is_the_one_the_part_reported	0		
 kernel::arch::aarch64::isa::tests::the_entry_exception_level_was_recorded	0		
@@ -34,7 +34,7 @@ kernel::arch::aarch64::timer::tests::uptime_advances_monotonically	20
 kernel::arch::riscv64::exceptions::tests::breakpoint_is_caught_and_execution_resumes		0	
 kernel::arch::riscv64::exceptions::tests::registers_survive_a_trap		0	
 kernel::arch::riscv64::exceptions::tests::stvec_points_at_our_trap_entry		0	
-kernel::arch::riscv64::irq::tests::the_context_table_is_the_machines_own_and_matches_the_formula_here		14	
+kernel::arch::riscv64::interrupt_controller::tests::the_context_table_is_the_machines_own_and_matches_the_formula_here		14	
 kernel::arch::riscv64::isa::tests::every_online_hart_is_one_the_tree_described		0	
 kernel::arch::riscv64::isa::tests::the_asid_probe_reached_the_record		0	
 kernel::arch::riscv64::isa::tests::the_declared_mmu_is_wide_enough		0	
@@ -77,7 +77,7 @@ kernel::arch::x86_64::amd_vi::tests::two_devices_behind_one_alias_never_share_a_
 kernel::arch::x86_64::iommu::tests::a_device_no_unit_owns_gets_no_context_entry			2
 kernel::arch::x86_64::iommu::tests::every_unit_the_dmar_names_is_translating			0
 kernel::arch::x86_64::iommu::tests::interrupt_remapping_is_reported_and_never_enabled			0
-kernel::arch::x86_64::irq::tests::a_gsi_on_a_second_io_apic_routes_inside_the_band			0
+kernel::arch::x86_64::interrupt_controller::tests::a_gsi_on_a_second_io_apic_routes_inside_the_band			0
 kernel::arch::x86_64::isa::tests::the_part_described_itself			0
 kernel::arch::x86_64::isa::tests::the_part_has_what_the_kernel_refuses_to_run_without			0
 kernel::arch::x86_64::isa::tests::the_rdseed_bit_agrees_with_rdseed			0
@@ -187,8 +187,8 @@ kernel::smp::tests::the_secondary_stack_region_is_the_size_the_linker_reserved	0
 kernel::smp::tests::work_can_be_placed_on_every_cpu	7	13	6
 kernel::stack::tests::stack_canary_is_intact_and_we_have_headroom	0	0	0
 kernel::sync::tests::holding_nothing_permits_any_rank	0	0	0
-kernel::sync::tests::irq_safe_mutex_masks_interrupts_while_held	0	0	0
-kernel::sync::tests::irq_safe_mutex_restores_rather_than_enables	0	0	0
+kernel::sync::tests::interrupt_safe_mutex_masks_interrupts_while_held	0	0	0
+kernel::sync::tests::interrupt_safe_mutex_restores_rather_than_enables	0	0	0
 kernel::sync::tests::nested_locks_restore_correctly	0	0	0
 kernel::sync::tests::releasing_an_inner_lock_restores_the_outer_rank	0	0	0
 kernel::sync::tests::taking_a_lock_records_its_rank	0	0	0
@@ -377,7 +377,7 @@ system_tests::user::init_tests::userspace_init_brings_up_the_console_server	228	
 system_tests::user::init_tests::userspace_init_builds_a_driver_that_reads_real_hardware	222		
 system_tests::user::init_tests::userspace_init_delegates_an_interrupt_to_a_child	220		
 system_tests::user::init_tests::userspace_init_parses_an_elf_and_builds_a_running_child	219	338	305
-system_tests::user::irq_send_refusal_tests::a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it	10	14	14
+system_tests::user::interrupt_send_refusal_tests::a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it	10	14	14
 system_tests::user::job_undertaker_tests::job_undertaker_returns_every_finished_job_to_the_pool	107	146	156
 system_tests::user::job_undertaker_tests::job_undertaker_says_which_job_it_reaped_and_only_then_is_its_window_free	36	54	57
 system_tests::user::job_undertaker_tests::without_a_collector_a_bounded_job_pool_runs_out	30	44	46
@@ -467,7 +467,7 @@ system_tests::user::ninth_pass_supervision_tests::a_foreign_endpoint_cannot_reap
 system_tests::user::non_volatile_memory_express_tests::a_confined_el0_process_serves_the_block_interface_end_to_end	27	44	46
 system_tests::user::non_volatile_memory_express_tests::a_confined_el0_server_cannot_dma_outside_its_region	42	63	59
 system_tests::user::notification_tests::a_bound_receiver_is_woken_out_of_receive_and_the_endpoint_still_works	11	17	15
-system_tests::user::notification_tests::a_kernel_signal_ends_an_irq_wait_with_the_word_in_x1_and_the_tag_in_x4	10	15	14
+system_tests::user::notification_tests::a_kernel_signal_ends_an_interrupt_wait_with_the_word_in_x1_and_the_tag_in_x4	10	15	14
 system_tests::user::notification_tests::a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery	22	31	30
 system_tests::user::notification_tests::a_signal_counted_while_elsewhere_ends_the_next_receive_at_once	10	15	14
 system_tests::user::notification_tests::bind_is_once_per_side_and_a_destroyed_binding_frees_the_thread	17	27	25

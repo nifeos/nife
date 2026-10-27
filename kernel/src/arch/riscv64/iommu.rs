@@ -16,7 +16,7 @@
 //! Details in notes/riscv-port/iommu.md, BUGS.
 
 use crate::arch::mmu::phys_to_virt;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 // --- Register file (offsets into BAR 0; RISC-V IOMMU spec ch. 5, QEMU's riscv-iommu-bits.h) ---
 const CAPS: u64 = 0x00; // 64-bit
@@ -94,7 +94,7 @@ struct Iommu {
     fq_head: u32,
 }
 
-static IOMMU: IrqSafeMutex<Option<Iommu>> = IrqSafeMutex::new(rank::IOMMU, None);
+static IOMMU: InterruptSafeMutex<Option<Iommu>> = InterruptSafeMutex::new(rank::IOMMU, None);
 
 fn r32(base: u64, off: u64) -> u32 {
     // SAFETY: the IOMMU's BAR lies inside the PCI window mapped device-typed by

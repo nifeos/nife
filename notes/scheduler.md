@@ -41,11 +41,12 @@ is warm, and a serial pipeline (net_stack<->std) stays co-located and fast. `wak
 IPC path, supervision, and revocation uses it.
 
 A device interrupt is different: it carries no locality, and pinning the woken driver to the
-IRQ-handling core re-concentrates a pipeline or drops it on a busy core. So `irq_notify` wakes
+Interrupt-handling core re-concentrates a pipeline or drops it on a busy core. So `interrupt_notify`
+wakes
 load-aware through `wake_load_aware` / `pick_wake_target`: the least-loaded core, ties won by
 the current core so a driver taking a completion interrupt every request (the block server at a
 RedoxFS mount) is not migrated each time. The device-line affinity that spreads which core takes
-each IRQ in the first place is the companion mechanism, in notes/interrupts.md.
+each interrupt in the first place is the companion mechanism, in notes/interrupts.md.
 
 ## The undelivered-wake gate (boot 8, VisionFive 2)
 
@@ -101,7 +102,7 @@ bit us, and each has a fix and a test:
   which then runs in a stranger's space, and its caller resumes U-mode on the reserved root
   ([mmu.md](mmu.md), BUGS). So `sched::current_thread_id` reads through
   `arch::read_current_thread`: one load relative to the per-CPU register on riscv64 and `x86_64`,
-  and a read with IRQs masked on aarch64, which has no such addressing mode. Any other field a
+  and a read with interrupts masked on aarch64, which has no such addressing mode. Any other field a
   preemptible caller reads through `cpu::current()` describes a core it may have left.
 
 - The hang watchdog counts progress, not test starts. A slow-but-live workload (std_net once spent
@@ -153,7 +154,8 @@ helpers/qemu-bounded.sh 200 cargo test -p kernel \
     --features watchdog_probe --target aarch64-unknown-none-softfloat
 ```
 
-The outermost backstop is on the host. Both guest watchdogs run off the boot core's timer IRQ, so a
+The outermost backstop is on the host. Both guest watchdogs run off the boot core's timer interrupt,
+so a
 kernel that loses it loses both. No kernel leg of `script/test` runs through
 `helpers/qemu-bounded.sh`, so xtask watches the transcript for the running test's name and kills QEMU at that test's budget plus `HOST_GRACE_SECS` (60 s), 150
 s by default. The failure line names the leg, the image, the test and how long it ran:

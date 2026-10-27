@@ -2,7 +2,7 @@ Falsifies `kernel::sched::tests::an_interrupt_raised_while_its_line_is_masked_is
 
 Architecture: riscv64
 
-The defect is an ACK that forgets its claim: `arch::irq::enable` drops the claimed context and
+The defect is an ACK that forgets its claim: `arch::interrupt_controller::enable` drops the claimed context and
 enables the source instead of completing it. The PLIC's gateway then waits for a completion that
 never comes, so the source stays claimed and nothing it raises again is delivered. It is the same
 outcome as a completion written where the PLIC ignores it, which QEMU cannot show directly because
@@ -15,10 +15,10 @@ transmit-empty line is never routed.
 riscv64 only. aarch64's GIC and x86_64's self-IPI have no claim to forget, and this file is
 riscv64's, which neither of their kernels compiles.
 
-diff --git a/kernel/src/arch/riscv64/irq.rs b/kernel/src/arch/riscv64/irq.rs
+diff --git a/kernel/src/arch/riscv64/interrupt_controller.rs b/kernel/src/arch/riscv64/interrupt_controller.rs
 index 0342c41d0..6a5dcaf33 100644
---- a/kernel/src/arch/riscv64/irq.rs
-+++ b/kernel/src/arch/riscv64/irq.rs
+--- a/kernel/src/arch/riscv64/interrupt_controller.rs
++++ b/kernel/src/arch/riscv64/interrupt_controller.rs
 @@ -116,10 +116,8 @@ pub(crate) fn hold_claim(source: u32, context: usize) {
  /// With a claim outstanding, completes it on the claiming context, so the gateway forwards the next
  /// interrupt. Otherwise enables the source at its stable target hart (see [`target_context`]).

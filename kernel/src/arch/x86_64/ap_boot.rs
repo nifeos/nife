@@ -2,7 +2,8 @@
 //!
 //! x86 has no firmware call for this (aarch64 has PSCI `CPU_ON`, RISC-V SBI `hart_start`): an
 //! INIT resets the target into wait-for-SIPI, and a STARTUP IPI names a physical page below 1 MiB
-//! where it begins in 16-bit real mode (`irq::send_init`, `irq::send_startup`, `boot.s`'s
+//! where it begins in 16-bit real mode (`interrupt_controller::send_init`,
+//! `interrupt_controller::send_startup`, `boot.s`'s
 //! `secondary_boot`). This module copies the trampoline onto that page and hands it the one
 //! per-core value, the stack top. `NIFE_SMP` defaults to 2. See notes/x86-port/smp-bring-up.md.
 

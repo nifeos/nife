@@ -1,7 +1,8 @@
 #![no_std]
 //! A virtio driver, block and net, at EL0.
 //!
-//! The kernel hands the process a DMA page, an `Irq` capability (slot 1) and a `Virtio` transport
+//! The kernel hands the process a DMA page, an `Interrupt` capability (slot 1) and a `Virtio`
+//! transport
 //! capability (slot 2); the device registers are not mapped, so every access goes through the
 //! kernel, which confines the device to the DMA page. Modern virtio-mmio (version 2), virtio 1.x
 //! sections 4.2 (MMIO), 5.1 (net) and 5.2 (block).
@@ -39,7 +40,8 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
 
 /// Capability slots the kernel handed us, by convention.
 const REPORT: u64 = 0; // SEND: report the result back to the kernel
-const IRQ: u64 = 1; // WAIT/ACK the device interrupt
+#[doc(alias = "irq")]
+const INTERRUPT: u64 = 1; // WAIT/ACK the device interrupt
 const VIRTIO: u64 = 2; // the device transport: read/write registers, set up the queue, submit
 
 // --- virtio-mmio v2 register offsets (bytes from the slot base) ---
@@ -486,13 +488,13 @@ fn complete_block(used_before: u16) {
     loop {
         // The kernel masks the line and delivers the interrupt as a notification; its pending count
         // returns WAIT at once if the interrupt fired before this call.
-        interrupt_wait(IRQ);
+        interrupt_wait(INTERRUPT);
 
         // Quiet the device (read its interrupt-status, acknowledge it), then re-enable the line at
         // the controller, which the kernel masked when it fired.
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(IRQ);
+        interrupt_acknowledge(INTERRUPT);
 
         virtio_ring_barrier();
         if direct_memory_access_read::<u16>(OFF_USED + 2) != used_before {
@@ -800,11 +802,11 @@ fn build_dhcp_discover() -> u64 {
 fn wait_receive(receive_used_before: u16) -> bool {
     for _ in 0..64 {
         // Blocks until the device raises its line.
-        interrupt_wait(IRQ);
+        interrupt_wait(INTERRUPT);
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
         // Re-enable the line the kernel masked when it fired.
-        interrupt_acknowledge(IRQ);
+        interrupt_acknowledge(INTERRUPT);
         virtio_ring_barrier();
         if direct_memory_access_read::<u16>(NET_RECEIVE_USED + 2) != receive_used_before {
             return true;
@@ -903,7 +905,8 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
 // ---------------------------------------------------------------------------------------------
 
 /// The block server's request endpoint (slot 0): the FS server CALLs here; this role `RECEIVE_CAPs` the
-/// request plus the one-shot Reply that names the caller. IRQ (1) and VIRTIO (2) are as every role.
+/// request plus the one-shot Reply that names the caller. Interrupt (1) and VIRTIO (2) are as every
+/// role.
 const BLK_REQ: u64 = 0;
 
 /// Where the kernel maps the data region shared with the FS server (the block buffer). Distinct
@@ -989,10 +992,10 @@ fn complete_blk(used_before: u16) {
     // pending-signal count (milestone 9 (a virtio-blk driver at EL0, and an interrupt becomes a
     // message)) returns this WAIT at once.
     loop {
-        interrupt_wait(IRQ);
+        interrupt_wait(INTERRUPT);
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(IRQ);
+        interrupt_acknowledge(INTERRUPT);
         virtio_ring_barrier();
         if direct_memory_access_read::<u16>(OFF_USED + 2) != used_before {
             break; // our request is on the used ring; this wakeup was really ours
@@ -1087,10 +1090,10 @@ fn submit_flush(direct_memory_access_phys: u64) -> u16 {
 /// [`blk_flush`] for why the difference is deliberate.
 fn complete_flush(used_before: u16) -> bool {
     loop {
-        interrupt_wait(IRQ);
+        interrupt_wait(INTERRUPT);
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(IRQ);
+        interrupt_acknowledge(INTERRUPT);
         virtio_ring_barrier();
         if direct_memory_access_read::<u16>(OFF_USED + 2) != used_before {
             break; // our request is on the used ring; this wakeup was really ours

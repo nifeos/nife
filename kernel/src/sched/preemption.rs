@@ -24,7 +24,8 @@ pub(super) static PREEMPTIONS_PER_CPU: [AtomicU64; cpu::MAXIMUM_CPUS] =
 /// `script/fastpath-footprint` counts flat, so inlined bytes here would be charged to every
 /// syscall (notes/benchmarks/fastpath-footprint-gate.md).
 ///
-/// Context: interrupt context, from the timer IRQ. Takes `IPC_TABLES` only when a timer is due.
+/// Context: interrupt context, from the timer interrupt. Takes `IPC_TABLES` only when a timer is
+/// due.
 #[inline(never)]
 pub fn on_tick() {
     cpu::current().need_resched.store(true, Ordering::Relaxed);
@@ -35,7 +36,7 @@ pub fn on_tick() {
     // machine and your share)).
     count_tick();
     // The corruption tripwire, one relaxed load when unarmed. Its println is safe here because the
-    // console's `IrqSafeMutex` masks interrupts; its answer is ignored, because a sampling
+    // console's `InterruptSafeMutex` masks interrupts; its answer is ignored, because a sampling
     // instrument may skip a beat and the tick must never spin in interrupt context.
     let _ = canary::check();
 
@@ -50,8 +51,8 @@ pub fn on_tick() {
     }
 
     // A soak build signals a rendezvous from the tick, the one event a saturated workload cannot
-    // starve, so its waiters cross cores through `irq_notify` (§138 (how a saturated workload is
-    // made to hand threads across cores) option D; kernel/src/soak.rs).
+    // starve, so its waiters cross cores through `interrupt_notify` (§138 (how a saturated
+    // workload is made to hand threads across cores) option D; kernel/src/soak.rs).
     #[cfg(feature = "soak_test")]
     crate::soak::signal_waiters();
 

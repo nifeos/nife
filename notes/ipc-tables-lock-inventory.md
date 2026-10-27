@@ -19,7 +19,7 @@ for that question.
 
 | Class | Functions | Why it matters |
 |---|---|---|
-| **Hot: every IPC, every core** | `ipc_send`, `ipc_receive`, `ipc_call`, `ipc_reply`, `ipc_send_cap`, `ipc_receive_cap`, `irq_notify` | The `call_reply` fast path this project benchmarks and wins on takes `IPC_TABLES` at least once per operation. At 4 cores on radon this is most of what is left of the lock's wait ([below](#what-the-measurement-found-2026-10-04)); whether partitioning it pays past 4 is THE milestone 17 question |
+| **Hot: every IPC, every core** | `ipc_send`, `ipc_receive`, `ipc_call`, `ipc_reply`, `ipc_send_cap`, `ipc_receive_cap`, `interrupt_notify` | The `call_reply` fast path this project benchmarks and wins on takes `IPC_TABLES` at least once per operation. At 4 cores on radon this is most of what is left of the lock's wait ([below](#what-the-measurement-found-2026-10-04)); whether partitioning it pays past 4 is THE milestone 17 question |
 | **Hot: every reschedule** | `schedule` (twice), `depart` | Runs on the core's own queue, but takes the global lock to touch the thread table |
 | **Warm: per capability operation** | `delete_current_cap`, `take_ipc_aborted` | `current_cap`, `grant` and `grant_at` take only the running thread's own CapabilityTable lock (milestone 761, finding 2 below). These two still take `IPC_TABLES` |
 | **Cold: lifecycle** | `create_tcb`, `configure_tcb`, `start_tcb`, `tcb_insert_cap`, `spawn_on`, `spawn_with_quota`, `kill_thread`, `reap_supervised`, `reap_region_objects`, `create_endpoint`, `try_create_endpoint_from`, `adopt_address_space`, `adopt_secondary_idle`, `init` | Dozens per boot, not thousands per second. No plausible contention at any scale this project names |
@@ -75,7 +75,7 @@ holding `IPC_TABLES`, and that drop frees: the kernel stack's pages go back thro
 lock, and its address range to its free list. Freeing takes the locks allocating does. Nothing
 under the lock allocates from a heap. A TCB page comes from a region or from `kmem`'s fixed pool,
 and the queues are intrusive, so a queue operation is a few pointer writes. §9 (locking)'s
-no-allocation-in-IRQ rule holds by construction.
+no-allocation-in-interrupt rule holds by construction.
 
 ### `MAXIMUM_THREADS`
 

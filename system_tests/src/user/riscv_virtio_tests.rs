@@ -145,17 +145,18 @@ fn the_page_tables_say_u_mode_cannot_read_the_kernels_memory() {
 
 /// The headline, on the second ISA: an unprivileged process drives a real block device over
 /// DMA and reads a file off it, with the kernel owning only the confinement. Interrupt
-/// delivery is asserted too: the completion reached the driver as a message through its Irq
+/// delivery is asserted too: the completion reached the driver as a message through its Interrupt
 /// capability, via the PLIC rather than the GIC.
 #[test_case]
 fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
-    use crate::arch::exceptions::ROUTED_IRQS;
+    use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
-    // Sampled before the device is wired, not after: `ROUTED_IRQS` is bumped ahead of the
-    // `irq_notify` that wakes the driver, so a report proves the counter moved, and the only way
+    // Sampled before the device is wired, not after: `ROUTED_INTERRUPTS` is bumped ahead of the
+    // `interrupt_notify` that wakes the driver, so a report proves the counter moved, and the only
+    // way
     // this assertion can fail is a baseline taken after the completion. See
     // notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
-    let irqs_before = ROUTED_IRQS.load(Ordering::Relaxed);
+    let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
     let Some(report) = virtio_service::start(blk_image()) else {
         // No disk attached to this run. Nothing to test; do not fail.
@@ -169,11 +170,12 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
         b"nife: re",
         "the driver reported the wrong file contents",
     );
-    let irqs_after = ROUTED_IRQS.load(Ordering::Relaxed);
+    let interrupts_after = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     assert!(
-        irqs_after > irqs_before,
+        interrupts_after > interrupts_before,
         "the read completed but no device interrupt was delivered as a message \
-         ({irqs_before} routed before the device was wired, {irqs_after} after the report)",
+         ({interrupts_before} routed before the device was wired, {interrupts_after} after the \
+         report)",
     );
 }
 
@@ -750,13 +752,14 @@ fn the_kernel_refuses_an_indirect_descriptor_escape() {
 /// behaviour on both sides.
 #[test_case]
 fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
-    use crate::arch::exceptions::ROUTED_IRQS;
+    use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
-    // Sampled before the device is wired, not after: `ROUTED_IRQS` is bumped ahead of the
-    // `irq_notify` that wakes the driver, so a report proves the counter moved, and the only way
+    // Sampled before the device is wired, not after: `ROUTED_INTERRUPTS` is bumped ahead of the
+    // `interrupt_notify` that wakes the driver, so a report proves the counter moved, and the only
+    // way
     // this assertion can fail is a baseline taken after the completion. See
     // notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
-    let irqs_before = ROUTED_IRQS.load(Ordering::Relaxed);
+    let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
     let Some(report) = virtio_service::start_pci(blk_image()) else {
         crate::testing::skip!("no virtio-pci disk on the bus");
@@ -769,11 +772,12 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
         b"nife: re",
         "the driver reported the wrong file contents over pci",
     );
-    let irqs_after = ROUTED_IRQS.load(Ordering::Relaxed);
+    let interrupts_after = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     assert!(
-        irqs_after > irqs_before,
+        interrupts_after > interrupts_before,
         "the read completed but no INTx interrupt was delivered through the PLIC \
-         ({irqs_before} routed before the device was wired, {irqs_after} after the report)",
+         ({interrupts_before} routed before the device was wired, {interrupts_after} after the \
+         report)",
     );
 }
 

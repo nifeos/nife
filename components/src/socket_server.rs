@@ -8,7 +8,8 @@ use super::*;
 
 pub(crate) const REPORT: u64 = 0;
 
-pub(crate) const IRQ: u64 = 1;
+#[doc(alias = "irq")]
+pub(crate) const INTERRUPT: u64 = 1;
 
 pub(crate) const MEMORY_REGION: u64 = 3;
 

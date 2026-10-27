@@ -13,7 +13,7 @@ use intrusive_queue::Unqueued;
 use thread_wake_handshake::{SwitchOutVerdict, WakeVerdict};
 
 use crate::cpu;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 use crate::thread::{
     CapabilityTableLock, Context, QuotaToken, State, Thread, ThreadId, Wait, WaitRole, switch_to,
 };

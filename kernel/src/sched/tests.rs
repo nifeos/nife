@@ -87,29 +87,34 @@ pub(super) fn spin_until(mut cond: impl FnMut() -> bool) -> bool {
 
 /// The interrupt `an_interrupt_becomes_a_message` raises.
 #[cfg(target_arch = "aarch64")]
-fn delivery_irq() -> u32 {
+#[doc(alias = "irq")]
+fn delivery_interrupt_number() -> u32 {
     1 // an SGI: software-triggerable, no hardware behind it
 }
 /// The interrupt `an_interrupt_that_arrives_before_the_wait_is_not_lost` raises. A different SGI
-/// from `delivery_irq` so the two tests cannot see each other's routes.
+/// from `delivery_interrupt_number` so the two tests cannot see each other's routes.
 #[cfg(target_arch = "aarch64")]
-fn pending_irq() -> u32 {
+#[doc(alias = "irq")]
+fn pending_interrupt_number() -> u32 {
     2
 }
 
 /// The console UART's PLIC source, read from the device tree as the rest of the kernel reads it
-/// (`user::uart_irq_and_source`): 10 on QEMU `virt` (the `UART_RECEIVE_INTID` fallback), 32 on the
+/// (`user::uart_interrupt_number_and_source`): 10 on QEMU `virt` (the `UART_RECEIVE_INTID`
+/// fallback), 32 on the
 /// VisionFive 2.
 #[cfg(target_arch = "riscv64")]
-fn delivery_irq() -> u32 {
-    crate::user::uart_irq_and_source().0
+#[doc(alias = "irq")]
+fn delivery_interrupt_number() -> u32 {
+    crate::user::uart_interrupt_number_and_source().0
 }
 /// **The same source, deliberately.** RISC-V has exactly one line these tests can assert by
 /// hand, so unlike aarch64's two SGIs the two tests share it. They do not collide: each rebinds
 /// the route to its own rendezvous before raising, and each quiets the line before it returns.
 #[cfg(target_arch = "riscv64")]
-fn pending_irq() -> u32 {
-    crate::user::uart_irq_and_source().0
+#[doc(alias = "irq")]
+fn pending_interrupt_number() -> u32 {
+    crate::user::uart_interrupt_number_and_source().0
 }
 
 /// **x86 is aarch64's case, not RISC-V's.** The local APIC delivers any vector to its own CPU on
@@ -117,82 +122,94 @@ fn pending_irq() -> u32 {
 /// needed and there are two independent sources. The number is the vector; see
 /// `arch::x86_64::exceptions::x86_trap_body`.
 #[cfg(target_arch = "x86_64")]
-fn delivery_irq() -> u32 {
-    crate::arch::irq::SELF_TEST_VECTOR as u32
+#[doc(alias = "irq")]
+fn delivery_interrupt_number() -> u32 {
+    crate::arch::interrupt_controller::SELF_TEST_VECTOR as u32
 }
 /// A second vector, so the two tests cannot see each other's routes. aarch64's two SGIs.
 #[cfg(target_arch = "x86_64")]
-fn pending_irq() -> u32 {
-    crate::arch::irq::SELF_TEST_VECTOR_B as u32
+#[doc(alias = "irq")]
+fn pending_interrupt_number() -> u32 {
+    crate::arch::interrupt_controller::SELF_TEST_VECTOR_B as u32
 }
 
 /// Enable the test interrupt at the controller. Nothing is raised yet.
 #[cfg(target_arch = "aarch64")]
-fn arm_test_irq(intid: u32) {
-    crate::arch::irq::enable(intid); // SGI: per-core, no target
+#[doc(alias = "irq")]
+fn arm_test_interrupt(intid: u32) {
+    crate::arch::interrupt_controller::enable(intid); // SGI: per-core, no target
 }
 
 #[cfg(target_arch = "riscv64")]
-fn arm_test_irq(intid: u32) {
+#[doc(alias = "irq")]
+fn arm_test_interrupt(intid: u32) {
     // The affinity policy picks (and remembers) which hart's PLIC context this source lands on,
     // exactly as it does for a real driver's line. The handler masks the source when it fires,
     // so this also re-enables it for the second of the two tests.
-    crate::arch::irq::enable(intid);
+    crate::arch::interrupt_controller::enable(intid);
 }
 
 /// **Nothing to arm.** An IPI is not a line: it has no mask bit at any controller, because
-/// nothing outside the CPU asserts it. `irq::enable` here takes a *legacy IRQ* and writes an IO
+/// nothing outside the CPU asserts it. `interrupt_controller::enable` here takes a *legacy
+/// interrupt* and writes an IO
 /// APIC redirection entry, which is the wrong device entirely for this source.
 #[cfg(target_arch = "x86_64")]
-fn arm_test_irq(intid: u32) {
+#[doc(alias = "irq")]
+fn arm_test_interrupt(intid: u32) {
     let _ = intid;
 }
 
 /// Raise it.
 #[cfg(target_arch = "aarch64")]
-fn raise_test_irq(intid: u32) {
+#[doc(alias = "irq")]
+fn raise_test_interrupt(intid: u32) {
     // Self, by asking rather than by assuming core 0: the test thread runs wherever the
     // scheduler put it, and a fixed target is the count-as-index disease in miniature.
-    crate::arch::irq::send_sgi(intid, crate::cpu::id());
+    crate::arch::interrupt_controller::send_sgi(intid, crate::cpu::id());
 }
 
 #[cfg(target_arch = "riscv64")]
-fn raise_test_irq(intid: u32) {
+#[doc(alias = "irq")]
+fn raise_test_interrupt(intid: u32) {
     // The console UART's line is the only one this ISA can assert by hand, so a caller naming
     // any other source would silently raise the wrong interrupt and then wait for one that
     // never came, which reads as a kernel bug rather than a test bug.
     debug_assert_eq!(
         intid,
-        delivery_irq(),
+        delivery_interrupt_number(),
         "riscv can only raise the console UART's own line by hand"
     );
     crate::console::raise_uart_interrupt();
 }
 
 #[cfg(target_arch = "x86_64")]
-fn raise_test_irq(intid: u32) {
+#[doc(alias = "irq")]
+fn raise_test_interrupt(intid: u32) {
     debug_assert!(
-        intid == delivery_irq() || intid == pending_irq(),
+        intid == delivery_interrupt_number() || intid == pending_interrupt_number(),
         "only the two self-IPI test vectors are raisable this way; {intid} is not one"
     );
-    crate::arch::irq::raise_self_interrupt(intid as u8);
+    crate::arch::interrupt_controller::raise_self_interrupt(intid as u8);
 }
 
 /// Lower it again, so the next test starts from a quiet line.
 #[cfg(target_arch = "aarch64")]
-fn quiet_test_irq() {
+#[doc(alias = "irq")]
+fn quiet_test_interrupt() {
     // An SGI is edge-triggered and one-shot: there is no line to lower.
 }
 
 #[cfg(target_arch = "riscv64")]
-fn quiet_test_irq() {
+#[doc(alias = "irq")]
+fn quiet_test_interrupt() {
     crate::console::quiet_uart_interrupt();
 }
 
 /// An IPI is edge-delivered and one-shot: there is no asserted line to lower, which is aarch64's
 /// SGI case rather than RISC-V's held UART line.
 #[cfg(target_arch = "x86_64")]
-fn quiet_test_irq() {}
+#[doc(alias = "irq")]
+fn quiet_test_interrupt() {}
 
 /// A spawned thread actually runs, and its closure's captured state comes with it.
 #[test_case]
@@ -768,7 +785,7 @@ fn other_threads_run_while_one_is_blocked() {
 ///
 /// A thread blocks on a rendezvous bound to an interrupt, the test raises it from software, the
 /// handler signals the rendezvous, and the thread wakes: the path a userspace driver takes. The
-/// raise differs per ISA ([`raise_test_irq`]), and RISC-V's leg also covers the PLIC's
+/// raise differs per ISA ([`raise_test_interrupt`]), and RISC-V's leg also covers the PLIC's
 /// claim, mask and complete.
 #[test_case]
 fn an_interrupt_becomes_a_message() {
@@ -776,8 +793,8 @@ fn an_interrupt_becomes_a_message() {
 
     let region = crate::memory_region::create(1).expect("no region for a test rendezvous");
     let ep = super::create_rendezvous_from(region).expect("no rendezvous from region");
-    super::bind_irq(delivery_irq(), ep);
-    arm_test_irq(delivery_irq());
+    super::bind_interrupt(delivery_interrupt_number(), ep);
+    arm_test_interrupt(delivery_interrupt_number());
 
     let tid = super::spawn(move || {
         super::ipc_receive(ep); // blocks until the interrupt fires
@@ -795,10 +812,10 @@ fn an_interrupt_becomes_a_message() {
     );
 
     // Fire it. The controller delivers it, the handler routes it to `ep`, the waiter wakes.
-    raise_test_irq(delivery_irq());
+    raise_test_interrupt(delivery_interrupt_number());
 
     let woke = spin_until(|| WOKE.load(Ordering::SeqCst));
-    quiet_test_irq();
+    quiet_test_interrupt();
     assert!(
         woke,
         "a hardware interrupt fired and the thread waiting on it never woke",
@@ -874,24 +891,24 @@ fn a_spawn_quota_caps_live_children_and_replenishes_on_reap() {
 /// see it. The `pending` count is what closes that window.
 ///
 /// Raised the same two ways as `an_interrupt_becomes_a_message`, with the same caveat about
-/// what each ISA's raise does and does not cost (see [`raise_test_irq`]).
+/// what each ISA's raise does and does not cost (see [`raise_test_interrupt`]).
 #[test_case]
 fn an_interrupt_that_arrives_before_the_wait_is_not_lost() {
-    use crate::arch::exceptions::ROUTED_IRQS;
+    use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     let region = crate::memory_region::create(1).expect("no region for a test rendezvous");
     let ep = super::create_rendezvous_from(region).expect("no rendezvous from region");
-    super::bind_irq(pending_irq(), ep);
-    arm_test_irq(pending_irq());
+    super::bind_interrupt(pending_interrupt_number(), ep);
+    arm_test_interrupt(pending_interrupt_number());
 
     // Fire it with NOBODY waiting. The signal must be counted.
-    let routed = ROUTED_IRQS.load(Ordering::Relaxed);
-    raise_test_irq(pending_irq());
+    let routed = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
+    raise_test_interrupt(pending_interrupt_number());
     // Wait for the handler to have actually run, rather than for a fixed number of yields: a
     // yield elapses in no real time on an idle core (DECISIONS §28), and under SMP the interrupt
     // may be taken on another core entirely, so counting yields here would be counting nothing.
-    let delivered = spin_until(|| ROUTED_IRQS.load(Ordering::Relaxed) > routed);
-    quiet_test_irq();
+    let delivered = spin_until(|| ROUTED_INTERRUPTS.load(Ordering::Relaxed) > routed);
+    quiet_test_interrupt();
     assert!(
         delivered,
         "the interrupt was raised but the handler never routed it, so this test could not \
@@ -917,7 +934,7 @@ fn an_interrupt_that_arrives_before_the_wait_is_not_lost() {
 }
 
 /// **An interrupt raised while its line is masked is delivered when the driver ACKs.** The
-/// handler masks a routed line when it fires and `Irq::ACK` unmasks it, so the ACK alone must
+/// handler masks a routed line when it fires and `Interrupt::ACK` unmasks it, so the ACK alone must
 /// deliver anything raised meanwhile. On the PLIC the claim is the mask and the ACK the completion
 /// (`drivers::plic`), the leg this test exists for. The line is lowered and raised again while
 /// masked because QEMU's PLIC latches pending only on a rising edge. On x86_64 the self-IPI has no
@@ -928,23 +945,24 @@ fn an_interrupt_that_arrives_before_the_wait_is_not_lost() {
 /// Falsification: replayable `kernel/falsifications/sched.tests.an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack.patch`
 #[test_case]
 fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
-    use crate::arch::exceptions::ROUTED_IRQS;
+    use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     let region = crate::memory_region::create(1).expect("no region for a test rendezvous");
     let ep = super::create_rendezvous_from(region).expect("no rendezvous from region");
-    super::bind_irq(pending_irq(), ep);
-    arm_test_irq(pending_irq());
+    super::bind_interrupt(pending_interrupt_number(), ep);
+    arm_test_interrupt(pending_interrupt_number());
 
     // The first raise: the handler claims and routes it, and the claim holds the line until an ACK.
-    let routed = ROUTED_IRQS.load(Ordering::Relaxed);
-    raise_test_irq(pending_irq());
-    let first = spin_until(|| ROUTED_IRQS.load(Ordering::Relaxed) > routed);
-    quiet_test_irq();
+    let routed = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
+    raise_test_interrupt(pending_interrupt_number());
+    let first = spin_until(|| ROUTED_INTERRUPTS.load(Ordering::Relaxed) > routed);
+    quiet_test_interrupt();
     assert!(
         first,
         "the first interrupt was never routed, so this test could not reach its question",
     );
-    // **Let the first handler finish.** `ROUTED_IRQS` moves before the handler is done with the
+    // **Let the first handler finish.** `ROUTED_INTERRUPTS` moves before the handler is done with
+    // the
     // interrupt (the GIC's end-of-interrupt, for one). If that hart's last write landed after the
     // ACK below, it could deliver the second interrupt itself and the test would pass for a reason
     // that is not the ACK. The handler is a few instructions behind the count; 20 ms is margin,
@@ -955,12 +973,13 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
     }
 
     // The second raise lands while the line is masked: the device spoke while its driver was
-    // busy. Then the driver's ACK, which is `arch::irq::enable`, the same call `Irq::ACK` makes.
-    let routed = ROUTED_IRQS.load(Ordering::Relaxed);
-    raise_test_irq(pending_irq());
-    arm_test_irq(pending_irq());
-    let second = spin_until(|| ROUTED_IRQS.load(Ordering::Relaxed) > routed);
-    quiet_test_irq();
+    // busy. Then the driver's ACK, which is `arch::interrupt_controller::enable`, the same call
+    // `Interrupt::ACK` makes.
+    let routed = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
+    raise_test_interrupt(pending_interrupt_number());
+    arm_test_interrupt(pending_interrupt_number());
+    let second = spin_until(|| ROUTED_INTERRUPTS.load(Ordering::Relaxed) > routed);
+    quiet_test_interrupt();
     assert!(
         second,
         "an interrupt raised while its line was masked was never delivered after the ACK \

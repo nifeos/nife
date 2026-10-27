@@ -197,7 +197,8 @@ pub fn notification_signal(id: NotificationId, bits: u64) -> Result<(), abi::Err
 }
 
 /// Signal a notification from interrupt context, placed load-aware: safe from a handler for
-/// [`irq_notify`]'s reason. A stale name is dropped silently, as `irq_notify` drops a revoked
+/// [`interrupt_notify`]'s reason. A stale name is dropped silently, as `interrupt_notify` drops a
+/// revoked
 /// route.
 ///
 /// Only a kernel test calls it: the timer expiry walk ([`expire_timers`]) calls [`signal_locked`]
@@ -212,7 +213,7 @@ pub fn signal_notification_from_interrupt(id: NotificationId, bits: u64) {
             .flatten()
     };
     if let Some(target) = remote {
-        crate::arch::irq::send_reschedule(target);
+        crate::arch::interrupt_controller::send_reschedule(target);
     }
 }
 

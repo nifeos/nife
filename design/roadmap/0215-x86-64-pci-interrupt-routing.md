@@ -183,7 +183,8 @@ arriving on a machine whose firmware turns it on.
   leaves interrupt remapping off. A real function's MSI-X table is reachable once firmware
   rather than this kernel has placed its BARs. A machine with more than one local APIC
   still delivers to the boot core's id.
-- **Recorded.** `kernel/src/arch/x86_64/irq.rs`'s `BUGS`: a VT-d unit with `intremap=on` rejects
+- **Recorded.** `kernel/src/arch/x86_64/interrupt_controller.rs`'s `BUGS`: a VT-d unit with
+  `intremap=on` rejects
   the compatibility-format message this builds, so it is the first thing to check if MSI stops
   arriving on a machine whose firmware turns remapping on.
 - **Recorded.** `kernel/src/arch/x86_64/exceptions.rs`'s `BUGS`: the vector-to-intid inversion is

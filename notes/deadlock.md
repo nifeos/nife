@@ -46,7 +46,7 @@ you see that, the subject collapses into something tractable.
 |---|---|
 | **Lock ordering** (global order, always) | **4, circular wait.** A cycle needs A-before-B *and* B-before-A. A global order makes that unrepresentable. |
 | **Never allocate while holding a lock** | **2, hold and wait.** |
-| **`IrqSafeMutex`** (mask IRQs while held) | **4.** The handler cannot *enter*, so it can never become the other half of the cycle. |
+| **`InterruptSafeMutex`** (mask interrupts while held) | **4.** The handler cannot *enter*, so it can never become the other half of the cycle. |
 | **`console::force_unlock()`** in the panic path | **3, no preemption.** We rip the lock away from whoever held it. |
 
 Stare at that last row. `force_unlock` is a deliberate violation of the no-preemption

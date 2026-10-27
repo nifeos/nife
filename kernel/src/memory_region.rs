@@ -13,7 +13,7 @@ use memory_regions::{PageUse, RegionTable};
 use page_frames::{FRAME_SIZE, PageFrame};
 
 use crate::memory;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 /// The most untyped regions that can be live **at once**. Slots are reused (the table is
 /// generational), so this bounds concurrent regions, not creations over the kernel's lifetime.
@@ -50,8 +50,8 @@ pub(crate) fn peak_region_count() -> usize {
 ///
 /// **Page units inside, byte addresses outside.** The crate is `FRAME_SIZE`-agnostic on purpose, so
 /// every conversion happens here, at the boundary where the constant is already in scope.
-static REGIONS: IrqSafeMutex<RegionTable<MAXIMUM_REGIONS>> =
-    IrqSafeMutex::new(rank::MEMORY_REGION, RegionTable::new());
+static REGIONS: InterruptSafeMutex<RegionTable<MAXIMUM_REGIONS>> =
+    InterruptSafeMutex::new(rank::MEMORY_REGION, RegionTable::new());
 
 /// Carve `pages` of physical memory out of the frame allocator, once, and make it an untyped
 /// region. **This is the kernel's one allocation for this memory**: the seL4 boundary, where all

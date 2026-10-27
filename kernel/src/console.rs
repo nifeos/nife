@@ -1,6 +1,6 @@
 //! The kernel console, and `print!` / `println!`.
 //!
-//! One `IrqSafeMutex` holds the console UART and, where the machine has one, the screen, so a
+//! One `InterruptSafeMutex` holds the console UART and, where the machine has one, the screen, so a
 //! `print!` from an interrupt handler cannot splice into another writer's line. See
 //! notes/kernel-console.md.
 
@@ -24,7 +24,7 @@ type ConsoleUart = crate::drivers::ns16550::Ns16550<crate::arch::PortIo>;
 use machine_discovery::framebuffer::Framebuffer;
 use screen_console::{Cells, PixelSink, ScreenConsole};
 
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 /// The console UART's **physical** address on QEMU's `virt` machine.
 #[cfg(target_arch = "aarch64")]
@@ -146,7 +146,7 @@ impl core::fmt::Write for KernelConsole {
 ///
 /// SAFETY: `UART_BASE` is the documented UART address on QEMU `virt`, and nothing else in the kernel
 /// touches it.
-static CONSOLE: IrqSafeMutex<KernelConsole> = IrqSafeMutex::new(
+static CONSOLE: InterruptSafeMutex<KernelConsole> = InterruptSafeMutex::new(
     rank::CONSOLE,
     KernelConsole {
         // SAFETY: `UART_BASE` is the documented console address on every machine this kernel is
@@ -174,7 +174,7 @@ pub fn initialize() {
     allow(dead_code)
 )]
 pub(crate) fn print_summary() {
-    let irq = crate::memory::uart_irq();
+    let interrupt_number = crate::memory::uart_interrupt_number();
     // Copied out and released before printing, because printing takes the lock again.
     let screen = CONSOLE.lock().screen.as_ref().map(|s| (s.pixels, s.len));
 
@@ -182,7 +182,7 @@ pub(crate) fn print_summary() {
     crate::print!("  console         : 16550 at i/o port {UART_BASE:#06x}");
     #[cfg(not(target_arch = "x86_64"))]
     crate::print!("  console         : {CONSOLE_KIND} at {UART_BASE:#018x}");
-    match irq {
+    match interrupt_number {
         Some(line) => crate::print!(", interrupt line {line}"),
         // Not a failure: the x86 console is polled, and a tree may name no UART interrupt.
         None => crate::print!(", no interrupt line recorded"),
@@ -302,7 +302,8 @@ pub fn hold_screen_at_handover() {
 ///
 /// Bounded twice, and either bound ends the wait: `HOLD_TICKS` (ten seconds of ticks) and
 /// `HOLD_POLLS` (register reads, for a machine whose timer is not ticking). Runs outside the
-/// console lock, an `IrqSafeMutex`, which it takes per poll: holding it for seconds would hold
+/// console lock, an `InterruptSafeMutex`, which it takes per poll: holding it for seconds would
+/// hold
 /// interrupts off, and the `println!` here would deadlock on it. See notes/kernel-console.md, "The
 /// screen hold".
 fn hold_screen_for_host() {

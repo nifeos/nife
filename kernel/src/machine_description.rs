@@ -62,7 +62,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
 
     // 4. The interrupt controller, in each architecture's own vocabulary: a GICv2, a PLIC, or the
     //    local-APIC/IO-APIC pair.
-    arch::irq::print_summary();
+    arch::interrupt_controller::print_summary();
 
     // 5. The timer, and whether interrupts are unmasked: with them off nothing ever preempts.
     {

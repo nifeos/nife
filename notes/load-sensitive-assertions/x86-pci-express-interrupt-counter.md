@@ -26,16 +26,19 @@ the answer rather than raced for it, which is unusual for a family that usually 
 
 Three links, none of them timing-dependent:
 
-1. `Irq::WAIT` is not a poll. `syscall::irq_wait` is `sched::irq_route(intid)` followed by
+1. `Interrupt::WAIT` is not a poll. `syscall::interrupt_wait` is `sched::interrupt_route(intid)`
+   followed by
    `sched::ipc_receive(ep)`. It returns only when that endpoint is signaled or has a counted pending
-   signal, and both come from `sched::irq_notify`.
-2. Every architecture's trap handler bumps `ROUTED_IRQS` immediately before calling `irq_notify`,
+   signal, and both come from `sched::interrupt_notify`.
+2. Every architecture's trap handler bumps `ROUTED_INTERRUPTS` immediately before calling
+   `interrupt_notify`,
    never after (`arch/aarch64/exceptions.rs`, `arch/riscv64/exceptions.rs`,
    `arch/x86_64/exceptions.rs`).
 3. `crates/virtio`'s `complete_block` cannot leave its loop without a `WAIT` returning. The driver
    cannot reach its `send` without `complete_block` returning, twice.
 
-So a report on the wire proves that `ROUTED_IRQS` has already moved. The interrupt cannot be lost in
+So a report on the wire proves that `ROUTED_INTERRUPTS` has already moved. The interrupt cannot be
+lost in
 a way that produces this failure. A lost interrupt leaves the driver blocked in `WAIT` forever, so it
 never reports, and the leg dies at the QEMU watchdog with no output from this test at all. It does
 not come back with the right bytes and a still counter. The only remaining way to observe a zero
@@ -44,13 +47,15 @@ delta is a baseline sampled after the increments, and the test sampled it in exa
 ```rust
 let Some(report) = virtio_service::start_pci(init_image()) else { ... };
 
-let irqs_before = ROUTED_IRQS.load(Ordering::Relaxed);   // <- after the driver is spawned
+let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);   // <- after the driver is
+spawned
 let word = sched::ipc_receive(report)[0];
 ```
 
 `start_pci` ends by spawning the driver. Suppose a tick preempts the test thread after that spawn,
 and it does not get the CPU back before the driver has finished both reads and reported. Then
-`irqs_before` is sampled past both completions, `ipc_receive` returns the already-queued report at
+`interrupts_before` is sampled past both completions, `ipc_receive` returns the already-queued
+report at
 once, and the delta is zero. The window looks like a handful of instructions when you read it, and
 it is not. The measurements below show the sample point drifting by tens of milliseconds from run to
 run.
@@ -72,7 +77,7 @@ The one red was a different, already-recorded defect: the UEFI tour's two-core A
 time.
 
 What the same runs did show, on every one, is the race made visible. A temporary diagnostic sampled
-`ROUTED_IRQS` three times: on entry to the test, at the old baseline, and at the assertion.
+`ROUTED_INTERRUPTS` three times: on entry to the test, at the old baseline, and at the assertion.
 
 ```
 [DIAG] pcie read: entry=544 before=545 after=549
@@ -114,7 +119,7 @@ proof the flake is gone, and this register has said so before about greener numb
 control above and the ordering the fix rests on. The run confirms the two changes broke nothing else
 on the leg that carries them.
 
-### The other half: `ROUTED_IRQS` did not mean the same thing here
+### The other half: `ROUTED_INTERRUPTS` did not mean the same thing here
 
 Chasing this showed why the margin existed at all. On aarch64 and riscv64 the counter is bumped only
 in the branch that found a userspace endpoint for the interrupt. On x86_64 it was also bumped by the
@@ -127,9 +132,9 @@ It matters for the fix as well as for the record. Sampling the baseline earlier,
 have widened the window until a timer tick was guaranteed. That makes an assertion green by giving it
 more of something unrelated. Milestone 62 (tests that assert on time) forbids that by name, and
 §61 (a lint is adopted on evidence) records three lints dropped for the same shape. So both went in
-together, and `arch::x86_64::exceptions::ROUTED_IRQS` now counts what its two siblings count.
+together, and `arch::x86_64::exceptions::ROUTED_INTERRUPTS` now counts what its two siblings count.
 `arch::timer::ticks()` already counted the ticks the bring-up tour prints, and
-`DEVICE_IRQS`/`SPURIOUS_IRQS` already counted the rest, so no number was lost.
+`DEVICE_INTERRUPTS`/`SPURIOUS_INTERRUPTS` already counted the rest, so no number was lost.
 
 Two `sched` tests read this counter through the same portable name
 (`an_interrupt_becomes_a_message`, `an_interrupt_that_arrives_before_the_wait_is_not_lost`). Both
@@ -146,7 +151,8 @@ Both halves are ordering arguments rather than margins, which is what this regis
   the report.
 - The assertion stays. It is now implied by the first one rather than racing it, and that is the
   reason to keep it: it guards the implication. A driver rewritten to poll the used ring breaks the
-  chain, and so does a handler that counted after `irq_notify` instead of before it; either way this
+  chain, and so does a handler that counted after `interrupt_notify` instead of before it; either
+  way this
   fires. The first assertion alone would pass on a polled driver, which is the
   confinement-adjacent failure this test exists to catch.
 
@@ -162,11 +168,12 @@ twin. None was ever observed to flake, and all had the same window.
 
 ### BUGS
 
-`ROUTED_IRQS` is still a global, and the assertion is still not device-specific. It says an
+`ROUTED_INTERRUPTS` is still a global, and the assertion is still not device-specific. It says an
 interrupt became some driver's message in this window, not that this device's completion did. The
 ordering argument above makes it sound for this test. It would stop being sound if a second driver
 were running concurrently in the same window. Saying exactly the narrow thing wants a per-intid
-delivery count. That cannot simply live in `sched::irq_route`, because `syscall::irq_wait` and
+delivery count. That cannot simply live in `sched::interrupt_route`, because
+`syscall::interrupt_wait` and
 `soak.rs` both call it outside the handler, so counting there would count lookups rather than
 deliveries. So it wants the three arch handlers to route through one portable call. That is a
 refactor rather than a patch, and it is not done here.

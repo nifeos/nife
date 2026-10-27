@@ -30,14 +30,14 @@ use super::*;
 ///
 /// fn init(uart_shape: u64, initial_ramdisk_len: u64, fs_rights: u64) -> ! {
 ///     let endowment = BootEndowment {
-///         untyped: 2, uart_dev: 3, uart_irq: 4, clock_page: 5, config_page: 6,
+///         untyped: 2, uart_dev: 3, uart_interrupt: 4, clock_page: 5, config_page: 6,
 ///         fs_ep: 7, fs_page: 8,
-///         virtio_rng: 9, virtio_rng_irq: 10, virtio_rng_dma: 11,
+///         virtio_rng: 9, virtio_rng_interrupt: 10, virtio_rng_dma: 11,
 ///         disp_term_ep: 12, disp_term_page: 13,
-///         virtio_net: 15, virtio_net_irq: 16, virtio_net_dma: 17,
+///         virtio_net: 15, virtio_net_interrupt: 16, virtio_net_dma: 17,
 ///         entropy_ep: 18,
-///         gpu_surface: 14, gpu: 19, gpu_irq: 20, gpu_dma: 21,
-///         keyboard: 22, keyboard_irq: 23, keyboard_dma: 1,
+///         gpu_surface: 14, gpu: 19, gpu_interrupt: 20, gpu_dma: 21,
+///         keyboard: 22, keyboard_interrupt: 23, keyboard_dma: 1,
 ///         machine_page: 0,
 ///         kernel_ring: 24, kernel_ring_cursor: 25, kernel_ring_notification: 26,
 ///         usb_keyboard_attach: 27, own_space: 28,

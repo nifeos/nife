@@ -11,7 +11,8 @@
 //   0x100                             FIQ
 //   0x180                             SError
 //   0x200   Current EL, SP_ELx        Synchronous   <- a kernel bug lands HERE
-//   0x280                             IRQ           <- the timer, milestone 5
+//   0x280                             IRQ           <- the timer, milestone 5 (the GIC and the
+// timer)
 //   0x300                             FIQ
 //   0x380                             SError
 //   0x400   Lower EL, AArch64         Synchronous   <- `svc` lands HERE, milestone 7

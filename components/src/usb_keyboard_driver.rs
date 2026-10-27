@@ -11,7 +11,7 @@
 
 //! # Its whole authority
 //!
-//! - slot 0, the controller's **interrupt** (`Irq`);
+//! - slot 0, the controller's **interrupt** (`Interrupt`);
 //! - slot 1, an **attach** endpoint (READ): one message ever arrives, carrying `WRITE` on the
 //!   terminal endpoint from the progenitor, the only destination this program can name;
 //! - slot 2, a **report** endpoint (WRITE): one bring-up report to the kernel;
@@ -61,7 +61,8 @@ use user_mode_runtime::{
 use video_terminal::keymap::{EV_KEY, Keyboard};
 
 /// Capability slots, by convention with `kernel/src/user/usb_keyboard_service.rs`.
-const IRQ: u64 = 0;
+#[doc(alias = "irq")]
+const INTERRUPT: u64 = 0;
 const ATTACH: u64 = 1;
 const REPORT: u64 = 2;
 
@@ -969,7 +970,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     let (_, out, _) = receive_cap(ATTACH);
 
     loop {
-        interrupt_wait(IRQ);
+        interrupt_wait(INTERRUPT);
         // Clear the pending bits before draining, so an event that lands after the drain raises
         // the interrupt again rather than waiting for the next one.
         host.set_reg(
@@ -998,7 +999,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
                 _ => {}
             }
         }
-        interrupt_acknowledge(IRQ);
+        interrupt_acknowledge(INTERRUPT);
         if host.ports_changed {
             host.ports_changed = false;
             host.service_ports();

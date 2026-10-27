@@ -51,7 +51,8 @@ every boundary at every counter rate this tree runs on.
 
 - `std::thread::sleep` blocks. The yield loop survives only as a fallback, for a process whose
   untyped cannot pay the two pages.
-- `net_stack`'s retransmit window. Its `Irq::WAIT` ends on a frame or on smoltcp's next deadline,
+- `net_stack`'s retransmit window. Its `Interrupt::WAIT` ends on a frame or on smoltcp's next
+  deadline,
   through a notification its spawner binds.
 - `swish`'s `^C` watch sleeps 10 ms per look instead of yielding. That is an interim; the
   destination belongs to milestone 103 (`^C` stops spinning: the shell's interrupt watch, blocking).
@@ -78,7 +79,7 @@ endpoint at once.
 
 The threads that need one are blocked on an endpoint and also want a deadline:
 
-- `net_stack`, in `Irq::WAIT`;
+- `net_stack`, in `Interrupt::WAIT`;
 - `timetable`, in `receive_fault` on its supervision endpoint;
 - the liveness watch of milestone 23 (a capability-routed component OS with live replacement);
 - milestone 103's real `^C` watch.

@@ -4,7 +4,8 @@
 //! It owns the UART's receive side and its interrupt and forwards every byte that arrives,
 //! interpreting nothing. Bytes travel up to 8 per `OPERATION_BYTES` `CALL`
 //! (notes/terminal-contract.md), whose rendezvous is the flow control. Its whole authority is
-//! `WRITE` on the terminal endpoint ([`TERM`]), the receive interrupt ([`IRQ`]) and the device: the
+//! `WRITE` on the terminal endpoint ([`TERM`]), the receive interrupt ([`INTERRUPT`]) and the
+//! device: the
 //! UART registers mapped device-typed on aarch64 and riscv64, and on x86 a `PortRange` capability for COM1 (slot 2, milestone 299 (the x86 port-range
 //! capability: the serial console becomes a userspace driver)). See notes/uart.md.
 //!
@@ -29,7 +30,8 @@ use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait};
 const UART_VA: u64 = address_space_map::pair_page(0x0000_0000_00a0_0000);
 
 const TERM: u64 = 0; // CALL: forward raw wire bytes to the line discipline
-const IRQ: u64 = 1; // WAIT / ACK the receive interrupt
+#[doc(alias = "irq")]
+const INTERRUPT: u64 = 1; // WAIT / ACK the receive interrupt
 
 /// The UART, the one arch-specific part of an input driver. aarch64's `virt` has a PL011 (32-bit
 /// registers, RX-FIFO-empty and TX-FIFO-full flags in the Flag Register, a maskable RX interrupt in
@@ -192,8 +194,10 @@ mod uart {
 /// progenitor delegated it, so the kernel's TSS I/O bitmap permits these eight ports and no others.
 ///
 /// **Interrupt-driven since milestone 505 (an x86_64 input driver that never lets the core
-/// idle).** COM1's receive line is legacy IRQ 4, which the kernel routes through the IO APIC to the
-/// `Irq` capability in slot 1, so this arm needs only what the riscv64 NS16550 arm has: a receive
+/// idle).** COM1's receive line is legacy interrupt 4, which the kernel routes through the IO APIC
+/// to the
+/// `Interrupt` capability in slot 1, so this arm needs only what the riscv64 NS16550 arm has: a
+/// receive
 /// enable to set and nothing to clear, since reading RBR clears the condition.
 #[cfg(target_arch = "x86_64")]
 mod uart {
@@ -252,7 +256,7 @@ fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
     uart::arm_receive_interrupt();
 
     loop {
-        interrupt_wait(IRQ);
+        interrupt_wait(INTERRUPT);
         // Clear, then drain, never the other way round. QEMU's PL011 raises its receive interrupt
         // only when the FIFO goes from empty to one byte (`read_trigger` is 1), and `ICR` lowers it
         // whatever the FIFO holds, so a clear after the drain can wipe the interrupt of a byte that
@@ -261,7 +265,7 @@ fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
         uart::clear_interrupt(); // PL011: ICR; 16550: nothing, reading RBR clears it
         drain();
         hold_after_drain();
-        interrupt_acknowledge(IRQ); // re-enable the line at the controller
+        interrupt_acknowledge(INTERRUPT); // re-enable the line at the controller
     }
 }
 
