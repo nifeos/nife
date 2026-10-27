@@ -11,9 +11,6 @@
 use core::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 
 use crate::arch::exceptions::TrapFrame;
-// The `capability` module and these names still carry their pre-sweep spelling
-// (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
-// this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
 use crate::capability_object::{
     Object, Rights, page_frame_run_capability, page_frame_run_len, rendezvous_capability,
 };

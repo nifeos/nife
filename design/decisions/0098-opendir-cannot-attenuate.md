@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-08-18
+decided: 2026-10-27
+ratified_by: calef
 ---
 
 # 98. `OPENDIR` cannot be asked to attenuate, so a held directory probes for its own rights
@@ -9,8 +11,15 @@ Raised 2026-08-18 by milestone 122 (`OPENDIR` reaches the PAL)'s lane, which shi
 said so rather than presenting it as a design. What is proposed is the replacement, and it is a
 wire change, which is why it is calef's and not a lane's.
 
-What is blocked: nothing. Milestone 122 is built and correct. The cost of leaving this is that
-the tree carries a workaround in the place a reader meets the type.
+Nothing was blocked: milestone 122 is built and correct. The cost of leaving the workaround was that
+the tree carried it in the place a reader meets the type.
+
+## The ruling
+
+Decided 2026-10-27 (UTC), yes, in the same sitting as §173 (narrowing the root of the shell's
+namespace). `OPENDIR`'s rights word accepts a sentinel meaning "the parent's rights, whatever they
+are". The ruling deletes the `Dir::held_rights` probe and the same trap in `MKDIR`. The sentinel
+cannot widen anything, because the result is `parent & parent`.
 
 ## The rule this collides with
 
@@ -46,21 +55,17 @@ today. Every "six" below means one per right, and the question this section asks
 - Hold a path and re-walk when a new right is first needed. The same TOCTOU, and it is the
   generic fallback wearing a capability's clothes.
 
-## The proposal, priced
+## The sentinel, priced
 
 A sentinel in `OPENDIR`'s rights word meaning "the parent's, whatever they are." It cannot widen
 anything, because the result is `parent & parent`. About thirty lines across `fs_proto`, `fs_server`
 and the PAL, and it deletes both the probe and the same trap in `MKDIR`.
 
-## Why this is calef's
+## Why this was an architect's
 
 It is a thing two programs agree on, which the *move fast on what can be undone* tenet puts in the
 irreversible column alongside names, dependencies and the syscall surface. The code is a morning; the
 un-shipping is not.
-
-**If the answer is no**, the probe stands. It costs six messages per `Dir::open` under a narrowed
-grant, which nothing measurable cares about today, and the standing cost is a workaround where a
-reader meets the type rather than a wrong behavior.
 
 ## BUGS
 
