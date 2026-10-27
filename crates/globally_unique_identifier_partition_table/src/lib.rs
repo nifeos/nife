@@ -33,15 +33,13 @@ use uuid::Uuid;
 
 /// The smallest logical block a GPT disk can have, and what almost every disk reports.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MIN_BLOCK_SIZE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MINIMUM_BLOCK_SIZE: usize = 512;
 
 /// The largest logical block this crate handles. 4096 is what a native-4K drive reports, and the
 /// header still occupies exactly one block, so the only thing that changes is the LBA arithmetic.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_BLOCK_SIZE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_BLOCK_SIZE: usize = 4096;
 
 /// The primary header always lives at LBA 1, immediately after the protective MBR. Not a

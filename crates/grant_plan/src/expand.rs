@@ -12,8 +12,7 @@ use crate::nav::{self, Step};
 
 /// The longest name a grant can carry, which is [`crate::MAXIMUM_FILE_NAME`].
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_NAME`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
 
 /// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set
@@ -23,8 +22,7 @@ pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
 /// [`Refusal::TooManyNames`] at the prompt, never a truncation. See notes/glob-grant/xargs.md
 /// ("Why the bound is eight").
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_NAMES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAMES: usize = 8;
 
 /// **The most bytes of name one expansion may grant, all its names together**, for

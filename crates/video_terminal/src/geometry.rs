@@ -26,26 +26,23 @@ pub const CELL_H: u32 = glyph_atlas::CELL_H;
 /// `screen_console::ScreenConsole::scale_for_cell`'s scale for [`CELL_W`], which never gives a
 /// screen `2 * screen_console::MINIMUM_COLUMNS` (240) columns or more. See notes/video-terminal.md.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_COLS`.
-pub const MAXIMUM_COLS: usize = 240;
-/// The tallest grid this engine can hold, in cells. See [`MAXIMUM_COLS`]. **Not every pair is
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_COLUMNS: usize = 240;
+/// The tallest grid this engine can hold, in cells. See [`MAXIMUM_COLUMNS`]. **Not every pair is
 /// reachable**: a grid also fits in [`MAXIMUM_CELLS`], so 240 columns get 40 rows and 150 rows need
 /// 64 columns or fewer.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_ROWS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_ROWS: usize = 150;
 /// Cells in the largest possible **live** grid, the on-screen viewport, paid once per terminal
 /// instance from that program's own region.
 ///
-/// A budget rather than `MAXIMUM_COLS * MAXIMUM_ROWS`: the grid is stored at its own width, so any
+/// A budget rather than `MAXIMUM_COLUMNS * MAXIMUM_ROWS`: the grid is stored at its own width, so any
 /// shape up to this many cells fits. Chosen with [`SCROLLBACK_CELLS`] so a `Vt`'s cells stay 164
 /// page frames and `handoff::HANDOFF_PAGES` stays 132, which `component::SWAP_PAGES` is built on.
 /// The arithmetic is in notes/video-terminal.md, "The grid's capacity".
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CELLS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CELLS: usize = 9_600;
 
 /// **Off-screen history**, in whole rows, kept alongside the live grid: a fixed ring, because this

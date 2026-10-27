@@ -45,14 +45,12 @@ pub const TARGET_SUFFIX: &str = ".nifepkg";
 /// The longest path a request may carry. `http_response::get_request` writes the request line
 /// into a 512-byte buffer beside the host header, so a path near that would not fit a request.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `PATH_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const PATH_MAXIMUM: usize = 256;
 
 /// The longest channel name.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `CHANNEL_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const CHANNEL_MAXIMUM: usize = 32;
 
 /// **A TUF repository on a host: one channel of one distribution** (Q4). The image carries two,
@@ -128,8 +126,7 @@ pub fn public_address(ip: [u8; 4]) -> bool {
 /// index may list. Name: provisional, minted 2026-10-13 (UTC) by lane
 /// `lane/basalt-on-pages-and-releases`.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `REDIRECT_PATH_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const REDIRECT_PATH_MAXIMUM: usize = 2048;
 
 /// **How many redirects a fetch from a listed location follows: one** (calef, 2026-10-12 UTC, on
@@ -138,8 +135,7 @@ pub const REDIRECT_PATH_MAXIMUM: usize = 2048;
 /// anywhere further than one step from where the signed index pointed. Name: provisional, as
 /// above.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_REDIRECTS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_REDIRECTS: usize = 1;
 
 /// **One place the index says a package's bytes may be fetched**: optionally the name of the root
@@ -865,15 +861,13 @@ pub const IMAGE_INDEX_COPY: &str = "image";
 
 /// The largest index copy, in bytes: less than a page, so the end of the text is in it.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `COPY_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const COPY_MAXIMUM: usize = 4095;
 
 /// The most repositories an image may name: the index's address and a backup (Q2), and room for
 /// one more. A fixed bound so the reader allocates nothing.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_REPOSITORIES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_REPOSITORIES: usize = 4;
 
 /// One index address the image names, with where to connect for it when the image says.
@@ -931,8 +925,7 @@ pub struct Sources<'a> {
 /// Releases (calef's C2 on #2048, 2026-10-12 UTC), and room for one more. Name: provisional,
 /// minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_LOCATION_ROOTS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_LOCATION_ROOTS: usize = 2;
 
 /// Why [`Sources::parse`] refused the text, with the line's number from 1 where one line is why.

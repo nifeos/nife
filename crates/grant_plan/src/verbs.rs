@@ -96,8 +96,7 @@ pub struct VerbGrant {
 
 /// The longest verb a verb table may hold, in bytes: `capability_manifest_note`'s record gives each sixteen.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_VERB`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_VERB: usize = 16;
 
 /// **`jig`'s verbs** (milestone 809; the spellings are apt's, ruled 2026-10-10 by calef), sorted

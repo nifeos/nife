@@ -5,8 +5,7 @@
 //! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4 (kernel shape:
 //! monolithic, deferred)). See notes/riscv-port/traps.md.
 //!
-//! Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling. Spelled
-//! out from `irq`; `interrupts` already names the masking module, so this one names the controller.
+//! Name: ratified 2026-10-27 (#2797). `interrupts` already names the masking module, so this one names the controller.
 
 use core::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
 

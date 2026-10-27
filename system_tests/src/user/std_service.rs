@@ -300,11 +300,13 @@ fn spawn_std(
     // wants this page through `grant_plan::Manifest`, which none does today.
     let config_bytes = environment_contract::PageBuilder::new()
         .tz("UTC")
-        .expect("UTC is not a recognized environment_contract::domain::KNOWN_TZ member")
+        .expect("UTC is not a recognized environment_contract::domain::KNOWN_TIME_ZONES member")
         .lang("C")
-        .expect("C is not a recognized environment_contract::domain::KNOWN_LANG member")
+        .expect("C is not a recognized environment_contract::domain::KNOWN_LOCALES member")
         .term("dumb")
-        .expect("dumb is not a recognized environment_contract::domain::KNOWN_TERM member")
+        .expect(
+            "dumb is not a recognized environment_contract::domain::KNOWN_TERMINAL_TYPES member",
+        )
         .build();
     // Zeroed, so nothing left behind by a previous occupant of this physical page is visible
     // through the reserved tail past `PAGE_BYTES` (`ConfigPage` only ever reads the first

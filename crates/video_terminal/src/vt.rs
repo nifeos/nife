@@ -98,7 +98,7 @@ pub struct Vt {
 }
 
 impl Vt {
-    /// A blank terminal of `cols` by `rows` cells, clamped to [`MAXIMUM_COLS`] and
+    /// A blank terminal of `cols` by `rows` cells, clamped to [`MAXIMUM_COLUMNS`] and
     /// [`MAXIMUM_ROWS`].
     ///
     /// Clamped rather than refused, because the alternative in a `no_std` component is a panic it
@@ -143,8 +143,8 @@ impl Vt {
     const fn clamp_cols(cols: u32) -> u32 {
         if cols == 0 {
             1
-        } else if cols > MAXIMUM_COLS as u32 {
-            MAXIMUM_COLS as u32
+        } else if cols > MAXIMUM_COLUMNS as u32 {
+            MAXIMUM_COLUMNS as u32
         } else {
             cols
         }

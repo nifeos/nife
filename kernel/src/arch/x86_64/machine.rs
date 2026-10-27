@@ -43,7 +43,7 @@ pub(crate) fn boot_info(at: usize) -> Option<BootInfo> {
 ///
 /// A NUL-terminated string at a physical address a previous stage chose, so the terminator is a
 /// claim rather than a guarantee, and the loop below has to stop somewhere whether or not it finds
-/// one. `Framebuffer::MAXIMUM_LEN` is the only thing written there today and is well under this.
+/// one. `Framebuffer::MAXIMUM_BYTES` is the only thing written there today and is well under this.
 const MAXIMUM_CMDLINE: usize = 256;
 
 /// The boot command line the loader wrote, or `None` when this boot chain did not write one.

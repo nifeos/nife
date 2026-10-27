@@ -89,7 +89,7 @@ struct State {
     /// The slot of the page frame mapped in each window, while one is: what a forget unmaps and
     /// deletes.
     attached: [Option<u64>; protocol::GRANTS_MAXIMUM],
-    request: [u8; 2 + domain_name_system::UDP_MESSAGE_MAXIMUM],
+    request: [u8; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES],
     reply: [u8; TCP_REPLY_MAXIMUM],
     chunk: [u8; socket::DATA_MAXIMUM],
 }
@@ -97,7 +97,7 @@ struct State {
 static mut STATE: State = State {
     grants: Grants::new(),
     attached: [None; protocol::GRANTS_MAXIMUM],
-    request: [0; 2 + domain_name_system::UDP_MESSAGE_MAXIMUM],
+    request: [0; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES],
     reply: [0; TCP_REPLY_MAXIMUM],
     chunk: [0; socket::DATA_MAXIMUM],
 };

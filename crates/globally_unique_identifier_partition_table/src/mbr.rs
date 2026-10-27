@@ -4,9 +4,7 @@ use crate::{Error, MbrProblem, is_block_size_ok};
 /// sign. UEFI calls the field `OSType` in its legacy MBR partition record, and `0xEE` is the value
 /// it reserves for a protective MBR.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `PROTECTIVE_OS_TYPE`; the alias and the citation follow the
-/// ruling of 2026-10-27 (UTC).
+/// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "OSType")]
 pub const PROTECTIVE_OPERATING_SYSTEM_TYPE: u8 = 0xEE;
 

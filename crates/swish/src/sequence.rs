@@ -21,8 +21,7 @@ use crate::Status;
 /// truncated, and a line that wants more is better written as several lines. Must match the count
 /// in [`Refusal::TooManySegments`]'s message.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_SEGMENTS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_SEGMENTS: usize = 8;
 
 /// **How a segment is joined to the one before it**, which is the whole of what a connector says.

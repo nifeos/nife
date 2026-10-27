@@ -25,7 +25,10 @@
 pub mod domain {
     /// A non-exhaustive but real subset of IANA timezone identifiers. Grown on demand; see the
     /// crate's `BUGS` section.
-    pub const KNOWN_TZ: &[&str] = &[
+    ///
+    /// Name: ratified 2026-10-27 (#2797).
+    #[doc(alias = "TZ")]
+    pub const KNOWN_TIME_ZONES: &[&str] = &[
         "UTC",
         "America/New_York",
         "America/Chicago",
@@ -49,7 +52,10 @@ pub mod domain {
     ];
 
     /// A non-exhaustive but real subset of POSIX/glibc locale identifiers.
-    pub const KNOWN_LANG: &[&str] = &[
+    ///
+    /// Name: ratified 2026-10-27 (#2797).
+    #[doc(alias = "LANG")]
+    pub const KNOWN_LOCALES: &[&str] = &[
         "C",
         "POSIX",
         "en_US",
@@ -65,7 +71,10 @@ pub mod domain {
     ];
 
     /// A non-exhaustive but real subset of terminfo terminal type names.
-    pub const KNOWN_TERM: &[&str] = &[
+    ///
+    /// Name: ratified 2026-10-27 (#2797).
+    #[doc(alias = "TERM")]
+    pub const KNOWN_TERMINAL_TYPES: &[&str] = &[
         "dumb",
         "vt100",
         "vt220",
@@ -79,19 +88,19 @@ pub mod domain {
         "tmux-256color",
     ];
 
-    /// Whether `s` is a member of [`KNOWN_TZ`].
+    /// Whether `s` is a member of [`KNOWN_TIME_ZONES`].
     pub fn is_valid_tz(s: &str) -> bool {
-        KNOWN_TZ.contains(&s)
+        KNOWN_TIME_ZONES.contains(&s)
     }
 
-    /// Whether `s` is a member of [`KNOWN_LANG`].
+    /// Whether `s` is a member of [`KNOWN_LOCALES`].
     pub fn is_valid_lang(s: &str) -> bool {
-        KNOWN_LANG.contains(&s)
+        KNOWN_LOCALES.contains(&s)
     }
 
-    /// Whether `s` is a member of [`KNOWN_TERM`].
+    /// Whether `s` is a member of [`KNOWN_TERMINAL_TYPES`].
     pub fn is_valid_term(s: &str) -> bool {
-        KNOWN_TERM.contains(&s)
+        KNOWN_TERMINAL_TYPES.contains(&s)
     }
 }
 
@@ -100,41 +109,41 @@ pub mod domain {
 /// straight in a hex dump the way `clock_contract::MAGIC` does.
 pub const MAGIC: [u8; 8] = *b"ENVCONF1";
 
-/// The most bytes a `TZ` value may occupy. Longer than every entry in [`domain::KNOWN_TZ`]
+/// The most bytes a `TZ` value may occupy. Longer than every entry in [`domain::KNOWN_TIME_ZONES`]
 /// today (the longest IANA identifiers, like `America/Argentina/ComodRivadavia`, run to about
 /// 33 bytes), so a curated list can grow toward the real database's longer names without a
 /// layout change.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `TZ_MAX`.
-pub const TZ_MAXIMUM: usize = 40;
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "TZ")]
+pub const MAXIMUM_TIME_ZONE_BYTES: usize = 40;
 
-/// The most bytes a `LANG` value may occupy. Covers every entry in [`domain::KNOWN_LANG`] with
+/// The most bytes a `LANG` value may occupy. Covers every entry in [`domain::KNOWN_LOCALES`] with
 /// headroom for a codeset suffix this crate does not carry yet (`en_US.ISO8859-1` is 16 bytes).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `LANG_MAX`.
-pub const LANG_MAXIMUM: usize = 24;
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "LANG")]
+pub const MAXIMUM_LOCALE_BYTES: usize = 24;
 
-/// The most bytes a `TERM` value may occupy. Covers every entry in [`domain::KNOWN_TERM`]
+/// The most bytes a `TERM` value may occupy. Covers every entry in [`domain::KNOWN_TERMINAL_TYPES`]
 /// (`screen-256color` is the longest at 15) with headroom to grow.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `TERM_MAX`.
-pub const TERM_MAXIMUM: usize = 24;
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "TERM")]
+pub const MAXIMUM_TERMINAL_TYPE_BYTES: usize = 24;
 
 const OFF_MAGIC: usize = 0;
 const OFF_TZ_LEN: usize = OFF_MAGIC + 8;
 const OFF_TZ: usize = OFF_TZ_LEN + 1;
-const OFF_LANG_LEN: usize = OFF_TZ + TZ_MAXIMUM;
+const OFF_LANG_LEN: usize = OFF_TZ + MAXIMUM_TIME_ZONE_BYTES;
 const OFF_LANG: usize = OFF_LANG_LEN + 1;
-const OFF_TERM_LEN: usize = OFF_LANG + LANG_MAXIMUM;
+const OFF_TERM_LEN: usize = OFF_LANG + MAXIMUM_LOCALE_BYTES;
 const OFF_TERM: usize = OFF_TERM_LEN + 1;
 
 /// The whole page's size in bytes: magic, then one length-prefixed field per declared key. Well
 /// under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
-pub const PAGE_BYTES: usize = OFF_TERM + TERM_MAXIMUM;
+pub const PAGE_BYTES: usize = OFF_TERM + MAXIMUM_TERMINAL_TYPE_BYTES;
 
 /// Why [`PageBuilder`] refused a value: it does not parse as a member of its key's [`domain`].
 ///
@@ -144,11 +153,11 @@ pub const PAGE_BYTES: usize = OFF_TERM + TERM_MAXIMUM;
 /// this tree, as a refusal at the point of assembly rather than a value silently dropped.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Refused {
-    /// The `TZ` value is not in [`domain::KNOWN_TZ`].
+    /// The `TZ` value is not in [`domain::KNOWN_TIME_ZONES`].
     UnknownTz,
-    /// The `LANG` value is not in [`domain::KNOWN_LANG`].
+    /// The `LANG` value is not in [`domain::KNOWN_LOCALES`].
     UnknownLang,
-    /// The `TERM` value is not in [`domain::KNOWN_TERM`].
+    /// The `TERM` value is not in [`domain::KNOWN_TERMINAL_TYPES`].
     UnknownTerm,
 }
 
@@ -200,7 +209,7 @@ impl<'a> PageBuilder<'a> {
         }
     }
 
-    /// Declare `TZ`. Refused if `value` is not a member of [`domain::KNOWN_TZ`].
+    /// Declare `TZ`. Refused if `value` is not a member of [`domain::KNOWN_TIME_ZONES`].
     pub fn tz(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_valid_tz(value) {
             self.tz = Some(value);
@@ -210,7 +219,7 @@ impl<'a> PageBuilder<'a> {
         }
     }
 
-    /// Declare `LANG`. Refused if `value` is not a member of [`domain::KNOWN_LANG`].
+    /// Declare `LANG`. Refused if `value` is not a member of [`domain::KNOWN_LOCALES`].
     pub fn lang(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_valid_lang(value) {
             self.lang = Some(value);
@@ -220,7 +229,7 @@ impl<'a> PageBuilder<'a> {
         }
     }
 
-    /// Declare `TERM`. Refused if `value` is not a member of [`domain::KNOWN_TERM`].
+    /// Declare `TERM`. Refused if `value` is not a member of [`domain::KNOWN_TERMINAL_TYPES`].
     pub fn term(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_valid_term(value) {
             self.term = Some(value);
@@ -235,9 +244,27 @@ impl<'a> PageBuilder<'a> {
     pub fn build(&self) -> [u8; PAGE_BYTES] {
         let mut page = [0u8; PAGE_BYTES];
         page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
-        write_field(&mut page, OFF_TZ_LEN, OFF_TZ, TZ_MAXIMUM, self.tz);
-        write_field(&mut page, OFF_LANG_LEN, OFF_LANG, LANG_MAXIMUM, self.lang);
-        write_field(&mut page, OFF_TERM_LEN, OFF_TERM, TERM_MAXIMUM, self.term);
+        write_field(
+            &mut page,
+            OFF_TZ_LEN,
+            OFF_TZ,
+            MAXIMUM_TIME_ZONE_BYTES,
+            self.tz,
+        );
+        write_field(
+            &mut page,
+            OFF_LANG_LEN,
+            OFF_LANG,
+            MAXIMUM_LOCALE_BYTES,
+            self.lang,
+        );
+        write_field(
+            &mut page,
+            OFF_TERM_LEN,
+            OFF_TERM,
+            MAXIMUM_TERMINAL_TYPE_BYTES,
+            self.term,
+        );
         page
     }
 }
@@ -373,24 +400,24 @@ mod tests {
     /// here rather than silently truncating a real value at assembly time.
     #[test]
     fn every_domain_member_fits_its_field() {
-        for tz in domain::KNOWN_TZ {
+        for tz in domain::KNOWN_TIME_ZONES {
             assert!(
-                tz.len() <= TZ_MAXIMUM,
-                "{tz:?} is {} bytes, over TZ_MAXIMUM",
+                tz.len() <= MAXIMUM_TIME_ZONE_BYTES,
+                "{tz:?} is {} bytes, over MAXIMUM_TIME_ZONE_BYTES",
                 tz.len()
             );
         }
-        for lang in domain::KNOWN_LANG {
+        for lang in domain::KNOWN_LOCALES {
             assert!(
-                lang.len() <= LANG_MAXIMUM,
-                "{lang:?} is {} bytes, over LANG_MAXIMUM",
+                lang.len() <= MAXIMUM_LOCALE_BYTES,
+                "{lang:?} is {} bytes, over MAXIMUM_LOCALE_BYTES",
                 lang.len()
             );
         }
-        for term in domain::KNOWN_TERM {
+        for term in domain::KNOWN_TERMINAL_TYPES {
             assert!(
-                term.len() <= TERM_MAXIMUM,
-                "{term:?} is {} bytes, over TERM_MAXIMUM",
+                term.len() <= MAXIMUM_TERMINAL_TYPE_BYTES,
+                "{term:?} is {} bytes, over MAXIMUM_TERMINAL_TYPE_BYTES",
                 term.len()
             );
         }
@@ -527,11 +554,11 @@ mod tests {
     fn the_layout_offsets_do_not_overlap() {
         assert_eq!(OFF_TZ_LEN, 8);
         assert_eq!(OFF_TZ, 9);
-        assert_eq!(OFF_LANG_LEN, 9 + TZ_MAXIMUM);
+        assert_eq!(OFF_LANG_LEN, 9 + MAXIMUM_TIME_ZONE_BYTES);
         assert_eq!(OFF_LANG, OFF_LANG_LEN + 1);
-        assert_eq!(OFF_TERM_LEN, OFF_LANG + LANG_MAXIMUM);
+        assert_eq!(OFF_TERM_LEN, OFF_LANG + MAXIMUM_LOCALE_BYTES);
         assert_eq!(OFF_TERM, OFF_TERM_LEN + 1);
-        assert_eq!(PAGE_BYTES, OFF_TERM + TERM_MAXIMUM);
+        assert_eq!(PAGE_BYTES, OFF_TERM + MAXIMUM_TERMINAL_TYPE_BYTES);
         assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
     }
 }

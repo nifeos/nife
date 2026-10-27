@@ -392,8 +392,7 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
 /// argument and a file); the headroom exists so a third token is *refused* rather than dropped
 /// before anything looks at it.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_POSITIONALS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_POSITIONALS: usize = 4;
 
 /// The parsed form of a program invocation, before the manifest check. [`plan`](crate::plan) turns it into an

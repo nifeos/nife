@@ -12,7 +12,7 @@
 //! # BUGS
 //!
 //! - IPv4 only: `net_stack` builds `smoltcp` with `proto-ipv4` alone.
-//! - No EDNS(0), so UDP replies stop at [`UDP_MESSAGE_MAXIMUM`] and a larger answer costs a TCP
+//! - No EDNS(0), so UDP replies stop at [`MAXIMUM_UDP_MESSAGE_BYTES`] and a larger answer costs a TCP
 //!   retry.
 //! - No DNSSEC: an on-path attacker can forge the reply, id and all. No "0x20" case randomisation.
 //! - At most [`MAXIMUM_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
@@ -31,22 +31,19 @@ mod proofs;
 /// The port a name server listens on, over UDP and TCP alike (RFC 1035 section 4.2).
 pub const PORT: u16 = 53;
 
-/// The largest message RFC 1035 lets travel over UDP without EDNS (section 4.2.1). A reply that would be
-/// larger arrives truncated, with [`FLAG_TC`] set.
+/// The largest message RFC 1035 lets travel over the User Datagram Protocol (UDP) without EDNS
+/// (section 4.2.1). A reply that would be larger arrives truncated, with [`FLAG_TC`] set.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `UDP_MESSAGE_MAX`.
-pub const UDP_MESSAGE_MAXIMUM: usize = 512;
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_UDP_MESSAGE_BYTES: usize = 512;
 
 /// A name in wire form is at most 255 bytes, length bytes and the root label included (section 2.3.4).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_NAME_LEN`.
-pub const MAXIMUM_NAME_LEN: usize = 255;
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_NAME_BYTES: usize = 255;
 /// A label is at most 63 bytes; the two top bits of a longer count are the compression-pointer tag.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_LABEL_LEN`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_LABEL_LEN: usize = 63;
 
 /// The header every DNS message starts with.
@@ -82,14 +79,12 @@ pub const CLASS_IN: u16 = 1;
 /// links (a CDN alias, sometimes a second); eight leaves room for that and stops a reply that chains
 /// a name through itself from costing more than eight scans of its own answer section.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CHAIN`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CHAIN: usize = 8;
 
 /// How many addresses an [`Answer`] keeps (see the crate's BUGS).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_ADDRESSES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_ADDRESSES: usize = 8;
 
 /// What is wrong with some bytes, as a parser sees them.
@@ -198,7 +193,7 @@ impl Header {
 /// same name. `Debug` prints the dotted form.
 #[derive(Clone, Copy)]
 pub struct Name {
-    bytes: [u8; MAXIMUM_NAME_LEN],
+    bytes: [u8; MAXIMUM_NAME_BYTES],
     len: u8,
 }
 
@@ -206,7 +201,7 @@ impl Name {
     /// The root, the name every other name ends in: one empty label.
     pub const fn root() -> Name {
         Name {
-            bytes: [0; MAXIMUM_NAME_LEN],
+            bytes: [0; MAXIMUM_NAME_BYTES],
             len: 1,
         }
     }
@@ -231,7 +226,7 @@ impl Name {
     /// ```
     pub fn from_dotted(text: &str) -> Result<Name> {
         let mut out = Name {
-            bytes: [0; MAXIMUM_NAME_LEN],
+            bytes: [0; MAXIMUM_NAME_BYTES],
             len: 0,
         };
         let body = text.strip_suffix('.').unwrap_or(text);
@@ -357,7 +352,7 @@ impl core::fmt::Debug for Name {
 /// [`Error::PointerForward`] rather than a hang. `src/proofs.rs` checks that claim with Kani.
 pub fn decode_name(msg: &[u8], off: usize) -> Result<(Name, usize)> {
     let mut out = Name {
-        bytes: [0; MAXIMUM_NAME_LEN],
+        bytes: [0; MAXIMUM_NAME_BYTES],
         len: 0,
     };
     let (len, resume) = decode_name_into(msg, off, &mut out.bytes)?;

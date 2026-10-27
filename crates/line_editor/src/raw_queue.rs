@@ -11,8 +11,7 @@
 /// generous for a keystroke-at-a time reader (`kilo`'s own event loop reads one key, redraws, reads
 /// the next) and still covers a terminal-paste dumped in one go.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `RAW_QUEUE_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const RAW_QUEUE_MAXIMUM: usize = 64;
 
 /// **Raw-mode byte delivery** (milestone 169 (`kilo`, the smallest real text editor, as the forcing function for raw terminal input), `OPERATION_READRAW`): a plain FIFO of wire bytes, with no

@@ -498,7 +498,7 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
         die(E_GEOMETRY);
     }
     let (cols, rows) = (w / video_terminal::CELL_W, h / video_terminal::CELL_H);
-    if cols as usize > video_terminal::MAXIMUM_COLS
+    if cols as usize > video_terminal::MAXIMUM_COLUMNS
         || rows as usize > video_terminal::MAXIMUM_ROWS
         || cols as usize * rows as usize > video_terminal::MAXIMUM_CELLS
     {

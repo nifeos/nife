@@ -22,8 +22,7 @@ use device_tree_blob::{DeviceTreeBlob, Error};
 /// and costs 24 bytes each. A machine with more is reported as truncated ([`CpuList::described`]
 /// keeps counting) rather than silently half-read.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CPU_NODES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CPU_NODES: usize = 16;
 
 /// How firmware says a core is started, from `enable-method`.

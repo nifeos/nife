@@ -22,7 +22,7 @@
 //!
 //! - **No terminal size negotiation**: the serial contract carries none
 //!   (`notes/terminal-contract.md`), so [`SCREEN_COLS`]/[`SCREEN_ROWS`] are a fixed 80x24.
-//! - **A bounded document.** [`MAXIMUM_ROWS`] rows of [`MAXIMUM_COLS`] bytes, fixed arrays and no
+//! - **A bounded document.** [`MAXIMUM_ROWS`] rows of [`MAXIMUM_COLUMNS`] bytes, fixed arrays and no
 //!   allocator; a file past either bound is silently truncated on load.
 //! - **No incremental search (`^F`), no syntax highlighting.** `^C` is a literal byte in raw mode
 //!   and bound to nothing; quit is `^Q`, as in `kilo`.
@@ -56,7 +56,11 @@ const TEXT_ROWS: usize = SCREEN_ROWS - 2;
 
 /// The document's fixed capacity; see the module doc's honest limit.
 const MAXIMUM_ROWS: usize = 32;
-const MAXIMUM_COLS: usize = 100;
+
+/// The widest row of the document, in bytes.
+///
+/// Name: ratified 2026-10-27 (#2797).
+const MAXIMUM_COLUMNS: usize = 100;
 
 /// The terminal's own output page, mapped read/write here and read-only on the terminal's side
 /// (`components/src/line_editor.rs`'s `APP_OUT_VA`). Chosen not to collide with [`FS_VA`] below, in the
@@ -146,14 +150,14 @@ fn close(handle: u64) {
 
 #[derive(Clone, Copy)]
 struct Row {
-    buf: [u8; MAXIMUM_COLS],
+    buf: [u8; MAXIMUM_COLUMNS],
     len: usize,
 }
 
 impl Row {
     const fn empty() -> Self {
         Row {
-            buf: [0; MAXIMUM_COLS],
+            buf: [0; MAXIMUM_COLUMNS],
             len: 0,
         }
     }
@@ -220,7 +224,7 @@ impl Editor {
 
     fn insert_char(&mut self, b: u8) {
         let row = &mut self.rows[self.cy];
-        if row.len >= MAXIMUM_COLS {
+        if row.len >= MAXIMUM_COLUMNS {
             return; // the row's own bound; see the module doc's honest limit
         }
         row.buf.copy_within(self.cx..row.len, self.cx + 1);
@@ -266,7 +270,7 @@ impl Editor {
         } else if self.cy > 0 {
             let prev_len = self.rows[self.cy - 1].len;
             let cur_len = self.rows[self.cy].len;
-            if prev_len + cur_len <= MAXIMUM_COLS {
+            if prev_len + cur_len <= MAXIMUM_COLUMNS {
                 let cur = self.rows[self.cy].buf;
                 self.rows[self.cy - 1].buf[prev_len..prev_len + cur_len]
                     .copy_from_slice(&cur[..cur_len]);
@@ -311,13 +315,13 @@ impl Editor {
 /// **The `+ 1` is the row separator**: [`save`] joins the rows with `\n`, so a full document costs
 /// `MAXIMUM_ROWS - 1` bytes more than its text, and one separator per row covers that for one byte.
 /// notes/user-proofs.md has the defect leaving it out caused (milestone 197).
-const FILE_SCRATCH_LEN: usize = MAXIMUM_ROWS * (MAXIMUM_COLS + 1);
+const FILE_SCRATCH_LEN: usize = MAXIMUM_ROWS * (MAXIMUM_COLUMNS + 1);
 
 // **Rung one, and deliberately not a proof** (AGENTS.md's ladder; milestone 197): raise
-// `MAXIMUM_ROWS` or `MAXIMUM_COLS` without raising the buffer and this build stops at the wrong
+// `MAXIMUM_ROWS` or `MAXIMUM_COLUMNS` without raising the buffer and this build stops at the wrong
 // line. A Kani harness over a symbolic document is a bounded sum CBMC did not finish
 // (notes/user-proofs.md).
-const _: () = assert!(FILE_SCRATCH_LEN >= MAXIMUM_ROWS * MAXIMUM_COLS + (MAXIMUM_ROWS - 1));
+const _: () = assert!(FILE_SCRATCH_LEN >= MAXIMUM_ROWS * MAXIMUM_COLUMNS + (MAXIMUM_ROWS - 1));
 
 static mut FILE_SCRATCH: [u8; FILE_SCRATCH_LEN] = [0; FILE_SCRATCH_LEN];
 
@@ -356,7 +360,7 @@ fn load(ed: &mut Editor, name: &[u8]) {
                 if row >= MAXIMUM_ROWS {
                     break;
                 }
-            } else if col < MAXIMUM_COLS {
+            } else if col < MAXIMUM_COLUMNS {
                 ed.rows[row].buf[col] = b;
                 col += 1;
             }

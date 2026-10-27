@@ -45,8 +45,7 @@ const EMPTY: u32 = 0;
 /// reach this (`MAXIMUM_CPUS` is single digits), which is exactly why the refusal is written down
 /// rather than left to the arithmetic.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_REQUESTER`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_REQUESTER: u32 = u32::MAX - 1;
 
 /// One core's work-steal request slot: at most one pending request, first come first served.

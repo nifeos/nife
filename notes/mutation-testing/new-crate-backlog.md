@@ -177,7 +177,7 @@ Before: 29 caught, 8 missed, 5 unviable (78.4%). After: 37 caught, 0 missed (100
 
 Six were a `>` that could become `>=` with nothing noticing, and they are one blind spot. Every
 refusal test in this crate hands the code a value one past the limit: a name of
-`MAXIMUM_IDENTITY_LEN + 1` bytes, `MAXIMUM_IDENTITIES + 1` identities, a three-byte buffer for a
+`MAXIMUM_IDENTITY_BYTES + 1` bytes, `MAXIMUM_IDENTITIES + 1` identities, a three-byte buffer for a
 five-byte name. A value one past the limit is refused either way. Nothing asked what happens *at*
 the limit. A store that quietly lost the 64th byte of a name would have passed the whole suite. So
 would one that lost the eighth identity, or the last byte a buffer had room for. Closed by

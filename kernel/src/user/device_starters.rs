@@ -294,11 +294,13 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
 pub(super) fn boot_config_page() -> u64 {
     let bytes = environment_contract::PageBuilder::new()
         .tz("UTC")
-        .expect("UTC is not a recognized environment_contract::domain::KNOWN_TZ member")
+        .expect("UTC is not a recognized environment_contract::domain::KNOWN_TIME_ZONES member")
         .lang("C")
-        .expect("C is not a recognized environment_contract::domain::KNOWN_LANG member")
+        .expect("C is not a recognized environment_contract::domain::KNOWN_LOCALES member")
         .term("dumb")
-        .expect("dumb is not a recognized environment_contract::domain::KNOWN_TERM member")
+        .expect(
+            "dumb is not a recognized environment_contract::domain::KNOWN_TERMINAL_TYPES member",
+        )
         .build();
     // Zeroed, so a previous occupant's bytes are not visible through the tail past `PAGE_BYTES`.
     let phys = crate::memory::alloc_zeroed()

@@ -81,8 +81,7 @@ pub const MEMBER_ALIGN: usize = 8;
 /// the largest thing anyone has proposed packaging is one program, its license, its manifest and
 /// its documentation bundle, which is four. Raising it costs nothing but the bound in this line.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_MEMBERS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_MEMBERS: usize = 64;
 
 /// What a package says about itself: the identity §197 rules it is named by, plus the architecture,
