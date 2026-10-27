@@ -581,10 +581,10 @@ crates/clock_contract/src/lib.rs::CMOS
 crates/clock_contract/src/lib.rs::ClockPage
 crates/clock_contract/src/lib.rs::GOLDFISH
 crates/clock_contract/src/lib.rs::MAGIC
-crates/clock_contract/src/lib.rs::NS_PER_SECOND
 crates/clock_contract/src/lib.rs::NONE
 crates/clock_contract/src/lib.rs::NOT_AFTER_NS
 crates/clock_contract/src/lib.rs::NOT_BEFORE_NS
+crates/clock_contract/src/lib.rs::NS_PER_SECOND
 crates/clock_contract/src/lib.rs::OPERATION_SHIFT
 crates/clock_contract/src/lib.rs::PL031
 crates/clock_contract/src/lib.rs::PROPOSE
@@ -2851,16 +2851,16 @@ crates/network_time_protocol/src/lib.rs::from_ticks
 crates/network_time_protocol/src/lib.rs::from_unix
 crates/network_time_protocol/src/lib.rs::is_negative
 crates/network_time_protocol/src/lib.rs::is_zero
-crates/network_time_protocol/src/lib.rs::micros
-crates/network_time_protocol/src/lib.rs::nanos
-crates/network_time_protocol/src/lib.rs::nanos
+crates/network_time_protocol/src/lib.rs::microseconds
 crates/network_time_protocol/src/lib.rs::new
 crates/network_time_protocol/src/lib.rs::nonce
+crates/network_time_protocol/src/lib.rs::ns
+crates/network_time_protocol/src/lib.rs::ns
 crates/network_time_protocol/src/lib.rs::parse
 crates/network_time_protocol/src/lib.rs::randomise_low
 crates/network_time_protocol/src/lib.rs::request
 crates/network_time_protocol/src/lib.rs::seconds
-crates/network_time_protocol/src/lib.rs::secs
+crates/network_time_protocol/src/lib.rs::seconds
 crates/network_time_protocol/src/lib.rs::sent
 crates/network_time_protocol/src/lib.rs::since
 crates/network_time_protocol/src/lib.rs::ticks
@@ -4223,6 +4223,8 @@ kernel/src/arch/aarch64/fp.rs::new
 kernel/src/arch/aarch64/fp.rs::set_pattern
 kernel/src/arch/aarch64/fp.rs::touch
 kernel/src/arch/aarch64/instructions.rs
+kernel/src/arch/aarch64/interrupt_controller.rs::enable
+kernel/src/arch/aarch64/interrupt_controller.rs::send_sgi
 kernel/src/arch/aarch64/interrupts.rs
 kernel/src/arch/aarch64/interrupts.rs::disable
 kernel/src/arch/aarch64/interrupts.rs::enable
@@ -4232,8 +4234,6 @@ kernel/src/arch/aarch64/iommu.rs::Fault
 kernel/src/arch/aarch64/iommu.rs::attach
 kernel/src/arch/aarch64/iommu.rs::is_active
 kernel/src/arch/aarch64/iommu.rs::take_fault
-kernel/src/arch/aarch64/interrupt_controller.rs::enable
-kernel/src/arch/aarch64/interrupt_controller.rs::send_sgi
 kernel/src/arch/aarch64/isa.rs
 kernel/src/arch/aarch64/isa.rs::get
 kernel/src/arch/aarch64/isa.rs::psci
@@ -4312,6 +4312,7 @@ kernel/src/arch/riscv64/harts.rs::cpu_start
 kernel/src/arch/riscv64/harts.rs::print_bring_up_mechanism
 kernel/src/arch/riscv64/harts.rs::sbi_send_ipi
 kernel/src/arch/riscv64/instructions.rs
+kernel/src/arch/riscv64/interrupt_controller.rs::enable
 kernel/src/arch/riscv64/interrupts.rs
 kernel/src/arch/riscv64/interrupts.rs::disable
 kernel/src/arch/riscv64/interrupts.rs::enable
@@ -4321,7 +4322,6 @@ kernel/src/arch/riscv64/iommu.rs::Fault
 kernel/src/arch/riscv64/iommu.rs::attach
 kernel/src/arch/riscv64/iommu.rs::is_active
 kernel/src/arch/riscv64/iommu.rs::take_fault
-kernel/src/arch/riscv64/interrupt_controller.rs::enable
 kernel/src/arch/riscv64/isa.rs
 kernel/src/arch/riscv64/isa.rs::get
 kernel/src/arch/riscv64/mmu.rs
@@ -4398,6 +4398,7 @@ kernel/src/arch/x86_64/fp.rs::disable
 kernel/src/arch/x86_64/fp.rs::enable
 kernel/src/arch/x86_64/fp.rs::new
 kernel/src/arch/x86_64/instructions.rs
+kernel/src/arch/x86_64/interrupt_controller.rs::enable
 kernel/src/arch/x86_64/interrupts.rs
 kernel/src/arch/x86_64/interrupts.rs::disable
 kernel/src/arch/x86_64/interrupts.rs::enable
@@ -4407,7 +4408,6 @@ kernel/src/arch/x86_64/iommu.rs::Fault
 kernel/src/arch/x86_64/iommu.rs::attach
 kernel/src/arch/x86_64/iommu.rs::is_active
 kernel/src/arch/x86_64/iommu.rs::take_fault
-kernel/src/arch/x86_64/interrupt_controller.rs::enable
 kernel/src/arch/x86_64/isa.rs
 kernel/src/arch/x86_64/isa.rs::get
 kernel/src/arch/x86_64/ist.rs::install

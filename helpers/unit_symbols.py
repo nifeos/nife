@@ -135,6 +135,39 @@ def _after_number(identifier, comp, index):
     return False
 
 
+SPELLED = {'nanos': 'ns', 'millis': 'ms', 'micros': 'microseconds', 'us': 'microseconds',
+           'usec': 'microseconds', 'usecs': 'microseconds', 'secs': 'seconds', 'sec': 'second',
+           'mins': 'minutes'}
+_COMPONENT = re.compile(r'[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[A-Z]+')
+
+
+def respell(identifier):
+    """The identifier the ruling asks for in place of this one; the same string when none."""
+    out, last = [], 0
+    comps = [(m.start(), m.end(), m.group(0)) for m in _COMPONENT.finditer(identifier)]
+    parts = [c[2].lower() for c in comps]
+    for i, (a, b, text) in enumerate(comps):
+        low, prev, new = text.lower(), (parts[i - 1] if i else ''), None
+        if low in SPELLED:
+            new = SPELLED[low]
+        elif low == 'min' and prev == 'per':
+            new = 'minute'
+        elif low == 's' and i:
+            if prev == 'per':
+                new = 'second'
+            elif _after_number(identifier, text, i):
+                new = 'seconds'
+        if new:
+            if text.isupper():
+                new = new.upper()
+            elif text[0].isupper():
+                new = new.capitalize()
+            out.append(identifier[last:a] + new)
+            last = b
+    out.append(identifier[last:])
+    return ''.join(out)
+
+
 def counts_as_hit(identifier, path=''):
     if identifier in STD:
         return False
@@ -285,9 +318,16 @@ def selftest():
     if [w for _, w in unclear_hits('let nsec = 1; let kb = 2; let ns = 3;')] != ['nsec', 'kb']:
         failed += 1
         print('unit selftest: unclear lookalikes', file=sys.stderr)
+    for old, new in (('NANOS_PER_SEC', 'NS_PER_SECOND'), ('SECS_PER_MIN', 'SECONDS_PER_MINUTE'),
+                     ('unix_nanos', 'unix_ns'), ('delay_us', 'delay_microseconds'),
+                     ('within_30_s', 'within_30_seconds'), ('cpu_millis', 'cpu_ms'),
+                     ('hz', 'hz')):
+        if respell(old) != new:
+            failed += 1
+            print(f'unit selftest: respell({old!r}) is {respell(old)!r}, wanted {new!r}', file=sys.stderr)
     if failed:
         return 1
-    print(f'unit selftest: {len(cases) + 3} fixtures')
+    print(f'unit selftest: {len(cases) + 4} fixtures')
     return 0
 
 

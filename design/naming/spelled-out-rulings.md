@@ -207,7 +207,7 @@ Ruled 2026-10-27 (UTC), recorded here and applied by its own sweep:
 - Rust standard-library names such as `as_nanos` keep their spelling.
 - `NANOS_PER_SEC` gets one definition, `clock_contract::NS_PER_SECOND`. `network_time_protocol`,
   `timetable`, `uptime` and `user_mode_runtime` import it.
-- `MAXIMUM_STEP_FORWARD_NS` and `MAXIMUM_STEP_BACKWARD_NS` are ratified (2026-10-27 UTC).
+- `MAXIMUM_STEP_FORWARD_NS` and `MAXIMUM_STEP_BACKWARD_NS` carry ratified Name blocks (2026-10-27 UTC).
 - `helpers/unit_symbols.py` counts the identifiers that break this ruling and holds the count to a
   ceiling that only falls; `script/lint` runs it. It leaves `nsec`, `msec`, `kb`, `mb`, `gb`, `tb`,
   `bps` and `ppm` uncounted, since the list above does not settle them.

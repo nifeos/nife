@@ -11,6 +11,6 @@ index 332ce0020..1796e0c4d 100644
 +++ b/crates/calendar/src/lib.rs
 @@ -384,3 +384,3 @@ impl Civil {
          // way a date library gets 1969-12-31 wrong.
--        let days = secs.div_euclid(SECONDS_PER_DAY);
-+        let days = secs / SECONDS_PER_DAY;
-         let sod = secs.rem_euclid(SECONDS_PER_DAY);
+-        let days = seconds.div_euclid(SECONDS_PER_DAY);
++        let days = seconds / SECONDS_PER_DAY;
+         let sod = seconds.rem_euclid(SECONDS_PER_DAY);
