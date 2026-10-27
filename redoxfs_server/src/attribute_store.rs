@@ -36,7 +36,7 @@ pub(crate) fn find_store<D: Disk>(
 
 /// One node's attribute blob, or empty if it has none. Never partial: a blob longer than the layer
 /// can hold is `EIO`, because the alternative is reading whatever is in the first
-/// [`xattr::store::MAXIMUM_BYTES`] of a file this layer did not write.
+/// [`xattr::store::MAX_BYTES`] of a file this layer did not write.
 pub(crate) fn read_attrs<D: Disk>(
     transaction: &mut Transaction<D>,
     node_id: u32,
@@ -52,7 +52,7 @@ pub(crate) fn read_attrs<D: Disk>(
         Err(e) => return Err(e),
     };
     let size = node.data().size() as usize;
-    if size > xattr::store::MAXIMUM_BYTES {
+    if size > xattr::store::MAX_BYTES {
         return Err(Error::new(EIO));
     }
     let mut blob = alloc::vec![0u8; size];

@@ -50,9 +50,9 @@ pub(super) fn real_single_hart_or_skip(name: &str) -> bool {
 /// Fixed so every run compares with the published ones; change it only if the knee moves. See
 /// notes/benchmarks/kernel-bench-harness.md.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-pub(super) const SCALE_MAXIMUM_PAIRS: usize = 48;
+pub(super) const SCALE_MAX_PAIRS: usize = 48;
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-pub(super) const SCALE_PAIRS: &[usize] = &[1, 2, 4, 8, 16, 32, SCALE_MAXIMUM_PAIRS];
+pub(super) const SCALE_PAIRS: &[usize] = &[1, 2, 4, 8, 16, 32, SCALE_MAX_PAIRS];
 
 /// E1: IPC round-trip latency against thread count, on one real hart.
 ///
@@ -66,9 +66,9 @@ pub(super) fn ipc_thread_scaling() {
         return;
     }
 
-    let mut req = [0u64; SCALE_MAXIMUM_PAIRS];
-    let mut reply = [0u64; SCALE_MAXIMUM_PAIRS];
-    for i in 0..SCALE_MAXIMUM_PAIRS {
+    let mut req = [0u64; SCALE_MAX_PAIRS];
+    let mut reply = [0u64; SCALE_MAX_PAIRS];
+    for i in 0..SCALE_MAX_PAIRS {
         req[i] = sched::create_rendezvous();
         reply[i] = sched::create_rendezvous();
     }

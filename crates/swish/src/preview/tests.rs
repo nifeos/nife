@@ -517,8 +517,8 @@ fn the_arg_line_follows_the_manifest_for_every_program() {
         let m = prog.manifest();
         let takes_arg = m.program_argument == ProgramArgumentDeclaration::Required;
         let mut line = String::from(prog.name());
-        if let MemoryGrantDeclaration::Required { minimum, .. } = m.memory_grant {
-            line.push_str(&std::format!(" --mem {minimum}"));
+        if let MemoryGrantDeclaration::Required { min, .. } = m.memory_grant {
+            line.push_str(&std::format!(" --mem {min}"));
         }
         line.push_str(" 21");
         let wants_a_name = matches!(m.input, InputDeclaration::Required { .. })

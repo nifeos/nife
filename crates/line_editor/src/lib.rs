@@ -16,7 +16,7 @@
 //! # BUGS
 //!
 //! - The redraw math assumes one row, so a line that wraps past the margin redraws wrongly;
-//!   [`LINE_MAXIMUM`] keeps that rare (notes/line-discipline.md).
+//!   [`LINE_MAX`] keeps that rare (notes/line-discipline.md).
 
 #![no_std]
 
@@ -28,9 +28,9 @@ mod line_disc;
 mod output;
 mod raw_queue;
 
-pub use line_disc::{Event, HIST, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM};
+pub use line_disc::{Event, HIST, LINE_MAX, LineDisc, PROMPT_MAX};
 pub use output::{Sink, expand_output};
-pub use raw_queue::{RAW_QUEUE_MAXIMUM, RawQueue};
+pub use raw_queue::{RAW_QUEUE_MAX, RawQueue};
 
 /// The IPC framing of the terminal contract (notes/terminal-contract.md): opcodes, flags, and
 /// limits shared by the discipline server, its clients, and the kernel-side tests. This is a

@@ -12,7 +12,7 @@
 //! # Report
 //!
 //! Both reads, plus [`current_cpu_contract::CPU_ID_BOUND`], the one number in this contract two
-//! binaries must agree on: the kernel's `cpu::MAXIMUM_CPUS` is that constant, and carrying it back
+//! binaries must agree on: the kernel's `cpu::MAX_CPUS` is that constant, and carrying it back
 //! across the boundary would catch them drifting. A CPU it could not learn is reported as
 //! `u64::MAX`, the protocol's `UNSCHEDULED`, never a small number: zero is a real core, and a wrong
 //! number is worse than no number.

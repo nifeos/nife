@@ -23,7 +23,7 @@ person to edit that table will read it.
 
 Then came the documentation of this very check, in `notes/scripts.md`'s `script/lint` table row.
 The addition took that row from 1835 bytes to 2108. That overflowed
-`documentation::render::LINE_MAXIMUM`, which is 2048 because 1835 was the measurement it was sized
+`documentation::render::LINE_MAX`, which is 2048 because 1835 was the measurement it was sized
 against.
 
 The renderer truncated. The failure arrived as a `manual` render test asserting that no character

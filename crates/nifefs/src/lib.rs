@@ -3,10 +3,10 @@
 //! tool writes an image with [`write_image`] and the userspace filesystem server reads it with
 //! [`Fs::parse`], so one definition of the format serves both. Pure logic, host-tested, no `std`.
 //!
-//! The directory is [`DIR_BLOCKS`] blocks, holding up to [`MAXIMUM_FILES`] entries. `start_block`
-//! is absolute, so a reader never needs `DIR_BLOCKS` to find data; only the writer places it. A
-//! name is at most [`NAME_LEN`] bytes and unterminated when full, so readers compare `NAME_LEN`
-//! bytes and stop at the first NUL. See notes/nifefs.md.
+//! The directory is [`DIR_BLOCKS`] blocks, holding up to [`MAX_FILES`] entries. `start_block` is
+//! absolute, so a reader never needs `DIR_BLOCKS` to find data; only the writer places it. A name
+//! is at most [`NAME_LEN`] bytes and unterminated when full, so readers compare `NAME_LEN` bytes and
+//! stop at the first NUL. See notes/nifefs.md.
 
 //! ```text
 //!   blocks 0..DIR_BLOCKS   the superblock and directory
@@ -23,7 +23,7 @@
 //! - A name over [`NAME_LEN`] ([`Error::NameTooLong`]) or holding a NUL ([`Error::NameHasNul`]) is
 //!   refused, never truncated: two names agreeing up to the cut would become one.
 //! - A duplicate name is not an error, and the first wins; only the disk tool keeps names unique.
-//! - [`MAXIMUM_FILES`] grows with the suite, not the system, so a resize lands on whoever merges.
+//! - [`MAX_FILES`] grows with the suite, not the system, so a resize lands on whoever merges.
 //! - `a_short_image_is_refused_not_indexed`'s falsification takes tens of minutes and gigabytes of
 //!   solver memory, the same shape as `package_archive`'s `a_short_file_is_refused`.
 //! - The EL0 blk driver (`crates/virtio`) buffers block 0 only, so it sees the first
@@ -49,7 +49,7 @@ pub const MAGIC: [u8; 8] = *b"CRKR0002";
 
 /// How many blocks the superblock-and-directory occupies. File data starts after it.
 ///
-/// 14, which puts [`MAXIMUM_FILES`] at 178: fifty entries clear of the x86_64 kernel-suite archive,
+/// 14, which puts [`MAX_FILES`] at 178: fifty entries clear of the x86_64 kernel-suite archive,
 /// because lanes that cannot see each other cross this ceiling. A raise needs no magic bump. Its
 /// one cost besides image bytes is `a_short_image_is_refused_not_indexed`, which proves over a
 /// symbolic array of `DIR_BLOCKS * BLOCK - 1` bytes; watch that harness's own time on a raise. See
@@ -80,17 +80,14 @@ pub const ENTRIES_IN_FIRST_BLOCK: usize = (BLOCK - HEADER_LEN) / ENTRY_LEN;
 /// The most files an archive can hold: the directory blocks, past the header, in whole entries.
 /// **178 at `DIR_BLOCKS = 14` and `ENTRY_LEN = 40`.** It costs image bytes and no kernel stack,
 /// because [`Fs`] holds no entry array.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_FILES`.
-pub const MAXIMUM_FILES: usize = (DIR_BLOCKS * BLOCK - HEADER_LEN) / ENTRY_LEN;
+pub const MAX_FILES: usize = (DIR_BLOCKS * BLOCK - HEADER_LEN) / ENTRY_LEN;
 
 /// Why [`Fs::parse`] refused an image.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// The first eight bytes are not the archive magic.
     BadMagic,
-    /// The directory claims more entries than [`MAXIMUM_FILES`] allows.
+    /// The directory claims more entries than [`MAX_FILES`] allows.
     TooManyFiles,
     /// A name longer than [`NAME_LEN`] bytes. Refused rather than truncated: two names agreeing in
     /// their first `NAME_LEN` bytes would otherwise become one entry, and the loader would fetch
@@ -135,9 +132,9 @@ impl Entry {
 
 /// A parsed superblock. Borrows the whole image so file lookups can return slices into it.
 ///
-/// Holds no entry array: entries decode from the borrowed image on demand, so [`MAXIMUM_FILES`]
-/// costs no kernel stack, where `Fs` is a local on the boot and spawn paths.
-/// `fs_does_not_grow_with_maximum_files` keeps it that way. See notes/nifefs.md.
+/// Holds no entry array: entries decode from the borrowed image on demand, so [`MAX_FILES`] costs
+/// no kernel stack, where `Fs` is a local on the boot and spawn paths. `fs_does_not_grow_with_max_files`
+/// keeps it that way. See notes/nifefs.md.
 pub struct Fs<'a> {
     image: &'a [u8],
     count: usize,
@@ -149,7 +146,7 @@ impl<'a> Fs<'a> {
     /// trust this pass completely.
     pub fn parse(image: &'a [u8]) -> Result<Self, Error> {
         // The directory blocks must be present before any entry offset (up to HEADER_LEN +
-        // MAXIMUM_FILES*ENTRY_LEN, which sits inside DIR_BLOCKS) is read; this guard is what makes
+        // MAX_FILES*ENTRY_LEN, which sits inside DIR_BLOCKS) is read; this guard is what makes
         // those reads sound.
         if image.len() < DIR_BLOCKS * BLOCK {
             return Err(Error::Truncated);
@@ -159,7 +156,7 @@ impl<'a> Fs<'a> {
         }
 
         let count = u32le(image, 8) as usize;
-        if count > MAXIMUM_FILES {
+        if count > MAX_FILES {
             return Err(Error::TooManyFiles);
         }
 
@@ -195,8 +192,7 @@ impl<'a> Fs<'a> {
         }
     }
 
-    /// The directory, decoded lazily. One `Entry` exists at a time rather than [`MAXIMUM_FILES`] of
-    /// them.
+    /// The directory, decoded lazily. One `Entry` exists at a time rather than [`MAX_FILES`] of them.
     pub fn entries(&self) -> impl Iterator<Item = Entry> + '_ {
         (0..self.count).map(|i| Self::entry_at(self.image, i))
     }
@@ -253,7 +249,7 @@ fn u32le(b: &[u8], at: usize) -> u32 {
 /// assert_eq!(fs.len(), 2);
 /// ```
 pub fn write_image(files: &[(&str, &[u8])], out: &mut [u8]) -> Result<usize, Error> {
-    if files.len() > MAXIMUM_FILES {
+    if files.len() > MAX_FILES {
         return Err(Error::TooManyFiles);
     }
     // Every name is checked before a byte is written, so a rejected archive is not a half-written
@@ -349,13 +345,13 @@ mod tests {
     /// them: every other test compares an image against the same constant it was built from, so an
     /// operator slip in the formula moves both sides together and no round trip notices. The values
     /// are load-bearing outside this crate (the EL0 blk driver stops at `ENTRIES_IN_FIRST_BLOCK`;
-    /// the initial ramdisk build fails at `MAXIMUM_FILES`), so a wrong one is a wrong bound in
-    /// another program. A deliberate resize of `DIR_BLOCKS` or `ENTRY_LEN` updates this test in the
-    /// same commit. The values: `(512 - 12) / 40 = 12` and `(7168 - 12) / 40 = 178`.
+    /// the initial ramdisk build fails at `MAX_FILES`), so a wrong one is a wrong bound in another
+    /// program. A deliberate resize of `DIR_BLOCKS` or `ENTRY_LEN` updates this test in the same
+    /// commit. The values: `(512 - 12) / 40 = 12` and `(7168 - 12) / 40 = 178`.
     #[test]
     fn the_capacity_constants_are_the_documented_values() {
         assert_eq!(ENTRIES_IN_FIRST_BLOCK, 12);
-        assert_eq!(MAXIMUM_FILES, 178);
+        assert_eq!(MAX_FILES, 178);
     }
 
     /// A full-directory-sized image, so the truncation guard passes and the magic check refuses it.
@@ -426,19 +422,19 @@ mod tests {
         assert_eq!(Fs::parse(&img).err(), Some(Error::OutOfBounds));
     }
 
-    /// **A full directory is an archive, not an error**: exactly [`MAXIMUM_FILES`] entries write,
+    /// **A full directory is an archive, not an error**: exactly [`MAX_FILES`] entries write,
     /// parse, and read back by name, the last one included. With `too_many_files_is_refused` below
     /// it pins the ceiling from both sides, so a `DIR_BLOCKS` change that miscounts fails here.
     #[test]
-    fn exactly_maximum_files_is_written_and_every_entry_reads_back() {
+    fn exactly_max_files_is_written_and_every_entry_reads_back() {
         let names: vec::Vec<std::string::String> =
-            (0..MAXIMUM_FILES).map(|i| std::format!("f{i}")).collect();
+            (0..MAX_FILES).map(|i| std::format!("f{i}")).collect();
         let files: vec::Vec<(&str, &[u8])> =
             names.iter().map(|n| (n.as_str(), n.as_bytes())).collect();
         let mut img = vec![0u8; image_size(&files)];
         write_image(&files, &mut img).unwrap();
         let fs = Fs::parse(&img).unwrap();
-        assert_eq!(fs.len(), MAXIMUM_FILES);
+        assert_eq!(fs.len(), MAX_FILES);
         for n in &names {
             assert_eq!(fs.read(n), Some(n.as_bytes()), "{n} did not read back");
         }
@@ -447,7 +443,7 @@ mod tests {
     #[test]
     fn too_many_files_is_refused() {
         let data: &[u8] = b"x";
-        let files: vec::Vec<(&str, &[u8])> = (0..MAXIMUM_FILES + 1).map(|_| ("f", data)).collect();
+        let files: vec::Vec<(&str, &[u8])> = (0..MAX_FILES + 1).map(|_| ("f", data)).collect();
         let mut img = vec![0u8; image_size(&files) + BLOCK];
         assert_eq!(
             write_image(&files, &mut img).err(),
@@ -505,12 +501,12 @@ mod tests {
         assert_eq!(Fs::parse(&img).unwrap().read(""), Some(data));
     }
 
-    /// **`MAXIMUM_FILES` costs no kernel stack, and this is what keeps it that way.** `Fs` is a
-    /// stack local on the kernel's boot and spawn paths; when it held a `[Entry; MAXIMUM_FILES]`,
-    /// raising the limit overflowed a 4-page kernel stack the same day. Reintroducing the array
-    /// would make this fail rather than making a boot fault on a guard page.
+    /// **`MAX_FILES` costs no kernel stack, and this is what keeps it that way.** `Fs` is a stack
+    /// local on the kernel's boot and spawn paths; when it held a `[Entry; MAX_FILES]`, raising the
+    /// limit overflowed a 4-page kernel stack the same day. Reintroducing the array would make this
+    /// fail rather than making a boot fault on a guard page.
     #[test]
-    fn fs_does_not_grow_with_maximum_files() {
+    fn fs_does_not_grow_with_max_files() {
         assert_eq!(
             core::mem::size_of::<Fs>(),
             core::mem::size_of::<&[u8]>() + core::mem::size_of::<usize>(),
@@ -519,19 +515,19 @@ mod tests {
         assert_eq!(core::mem::size_of::<Entry>(), ENTRY_LEN);
     }
 
-    /// Exactly [`MAXIMUM_FILES`] files write and parse back, so the directory's last entry (offset
-    /// `12 + (MAXIMUM_FILES - 1) * 40`) is honored, not silently past the header's reach.
+    /// Exactly [`MAX_FILES`] files write and parse back, so the directory's last entry (offset
+    /// `12 + (MAX_FILES - 1) * 40`) is honored, not silently past the header's reach.
     #[test]
     fn a_full_directory_round_trips() {
         let data: &[u8] = b"z";
         let names: vec::Vec<std::string::String> =
-            (0..MAXIMUM_FILES).map(|i| std::format!("f{i}")).collect();
+            (0..MAX_FILES).map(|i| std::format!("f{i}")).collect();
         let files: vec::Vec<(&str, &[u8])> = names.iter().map(|n| (n.as_str(), data)).collect();
         let mut img = vec![0u8; image_size(&files)];
         write_image(&files, &mut img).unwrap();
         let fs = Fs::parse(&img).unwrap();
-        assert_eq!(fs.len(), MAXIMUM_FILES);
-        assert_eq!(fs.read(&names[MAXIMUM_FILES - 1]), Some(data));
+        assert_eq!(fs.len(), MAX_FILES);
+        assert_eq!(fs.read(&names[MAX_FILES - 1]), Some(data));
     }
 
     /// **A directory that spills past one block round-trips, every file with distinct contents.**
@@ -621,7 +617,7 @@ mod verification {
 
     /// **A short image is always `Truncated`, never indexed**: for any image under the directory
     /// span, parse refuses at the length check, which keeps the entry reads (up to [`HEADER_LEN`] +
-    /// [`MAXIMUM_FILES`] * [`ENTRY_LEN`], inside [`DIR_BLOCKS`]) in bounds.
+    /// [`MAX_FILES`] * [`ENTRY_LEN`], inside [`DIR_BLOCKS`]) in bounds.
     ///
     /// `#[kani::unwind(9)]` lets a weakened guard reach a verdict and removes no path on the correct
     /// tree; 9 lets the 8-byte magic compare finish. Measurements are in notes/nifefs.md.

@@ -33,7 +33,7 @@ static ALLOCATOR: IrqSafeMutex<Option<PageFrameAllocator<'static>>> =
 /// more, and a fixed-size array is the right shape here because **we have no heap yet**.
 /// The `Vec` we'd reach for in userspace is precisely the thing this milestone is a
 /// prerequisite for.
-const MAXIMUM_REGIONS: usize = 16;
+const MAX_REGIONS: usize = 16;
 
 /// **Find out where RAM is and which devices the machine has, and bring the frame allocator up.**
 ///
@@ -60,14 +60,14 @@ fn initialize_from_device_tree() {
     let dtb_phys = crate::DTB.load(core::sync::atomic::Ordering::Relaxed) as u64;
     let dtb = crate::device_tree().expect("device tree is unreadable");
 
-    let mut ram = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
+    let mut ram = [Region { start: 0, size: 0 }; MAX_REGIONS];
     let ram_count = dtb
         .memory_regions(&mut ram)
         .expect("cannot read the memory map");
     let ram = &ram[..ram_count];
     assert!(!ram.is_empty(), "the device tree describes no RAM at all");
 
-    let mut reserved = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
+    let mut reserved = [Region { start: 0, size: 0 }; MAX_REGIONS];
     let reserved_count = dtb
         .reserved_regions(&mut reserved)
         .expect("cannot read the memory reservations");
@@ -78,8 +78,8 @@ fn initialize_from_device_tree() {
 
     // Everything already spoken for, which must never be allocated: the image, the tree and the
     // initial ramdisk (3; nobody else protects the ramdisk), then the legacy reservation block and
-    // /reserved-memory (up to MAXIMUM_REGIONS each).
-    let mut forbidden = [Region { start: 0, size: 0 }; 2 * MAXIMUM_REGIONS + 3];
+    // /reserved-memory (up to MAX_REGIONS each).
+    let mut forbidden = [Region { start: 0, size: 0 }; 2 * MAX_REGIONS + 3];
     let mut n = 0;
 
     let mut claim = |r: Region| {
@@ -108,7 +108,7 @@ fn initialize_from_device_tree() {
     // The /reserved-memory node's children, distinct from the legacy reservation block above. This
     // is where RISC-V firmware (OpenSBI) reserves its own region below the kernel; without it the
     // allocator would hand out OpenSBI's PMP-protected memory and the first write would fault.
-    let mut resv_mem = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
+    let mut resv_mem = [Region { start: 0, size: 0 }; MAX_REGIONS];
     let resv_mem_count = dtb
         .reserved_memory_regions(&mut resv_mem)
         .expect("cannot read /reserved-memory");
@@ -330,7 +330,7 @@ fn record_jh7110_watchdog(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 ///
 /// # BUGS
 /// - The seam's type is still `device_tree_blob::Region`, a device-tree type on every machine.
-/// - At most `MAXIMUM_REGIONS` RAM regions; more indexes past the map.
+/// - At most `MAX_REGIONS` RAM regions; more indexes past the map.
 pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
     assert!(!ram.is_empty(), "the machine describes no RAM at all");
 
@@ -745,7 +745,7 @@ pub(crate) fn smmu_region() -> Option<(u64, u64)> {
 /// each window, the same role [`smmu_region`] plays for the SMMU. Every unit and not only one
 /// since milestone 594 (every VT-d unit translates its own devices), which brings every unit up. Name: provisional.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn vtd_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_DRHDS] {
+pub(crate) fn vtd_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::MAX_DRHDS] {
     *VTD_REGIONS.lock()
 }
 
@@ -769,8 +769,7 @@ pub(crate) fn record_vtd_region(base: u64, size: u64) {
 /// named, in table order; `None` past the last. [`vtd_regions`]' counterpart on an AMD machine,
 /// and read by `mmu::map_everything` for the same reason. Name: provisional (lane `amd-vi`).
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn amd_vi_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS]
-{
+pub(crate) fn amd_vi_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAX_IVHDS] {
     *AMD_VI_REGIONS.lock()
 }
 
@@ -998,14 +997,14 @@ use core::sync::atomic::AtomicUsize;
 /// heap.
 #[derive(Clone, Copy)]
 struct RamMap {
-    regions: [(u64, u64); MAXIMUM_REGIONS],
+    regions: [(u64, u64); MAX_REGIONS],
     count: usize,
 }
 
 static RAM: IrqSafeMutex<RamMap> = IrqSafeMutex::new(
     rank::RAM,
     RamMap {
-        regions: [(0, 0); MAXIMUM_REGIONS],
+        regions: [(0, 0); MAX_REGIONS],
         count: 0,
     },
 );
@@ -1073,18 +1072,15 @@ static SMMU_REGION: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::R
 /// file is a mapped device window before `arch::iommu::initialize` ever reads it
 /// (`arch::x86_64::iommu`'s own accessors go through `phys_to_virt`, which is arithmetic, not a
 /// promise the address is mapped).
-static VTD_REGIONS: IrqSafeMutex<[Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_DRHDS]> =
-    IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::MAXIMUM_DRHDS]);
+static VTD_REGIONS: IrqSafeMutex<[Option<(u64, u64)>; machine_discovery::acpi::MAX_DRHDS]> =
+    IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::MAX_DRHDS]);
 
 /// AMD-Vi's register blocks (base, size), one per IVHD the IVRS names (lane `amd-vi`). The same
 /// role as [`VTD_REGIONS`] on an AMD machine, kept apart rather than shared because the two are
 /// named for the hardware they hold and a machine has one kind or the other.
 static AMD_VI_REGIONS: IrqSafeMutex<
-    [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS],
-> = IrqSafeMutex::new(
-    rank::RAM,
-    [None; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS],
-);
+    [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAX_IVHDS],
+> = IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::ivrs::MAX_IVHDS]);
 
 /// The screen the boot handoff described (milestone 243). See [`framebuffer`].
 static FRAMEBUFFER: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);

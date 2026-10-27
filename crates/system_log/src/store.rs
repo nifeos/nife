@@ -11,7 +11,7 @@ pub(crate) struct Store {
     /// Where a line is rendered before it is copied into the ring. Here rather than on the stack
     /// because a program the kernel spawns has one 4 KiB stack page, and half of it is too much to
     /// spend on one buffer.
-    pub(crate) scratch: [u8; json::LINE_MAXIMUM],
+    pub(crate) scratch: [u8; json::LINE_MAX],
 }
 
 impl Store {

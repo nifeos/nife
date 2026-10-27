@@ -134,11 +134,11 @@ The blob comes from firmware, and firmware is the trust boundary here, so these 
 robustness rather than confinement. Each one costs a comparison and turns a crash on the boot path
 into an `Error`.
 
-- `MAXIMUM_TOTALSIZE` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize`
-  before anything else is checked, and the magic says only that the pointer is at a blob. A
-  `totalsize` of `0xffff_ffff` would otherwise become a 4 GiB slice that the walkers read past the
-  end of RAM. The figure is Linux's `MAX_FDT_SIZE` for the same slot. The largest blob this tree has
-  met is QEMU `virt`'s, under 64 KiB, and a VisionFive 2's U-Boot tree is under 32 KiB.
+- `MAX_TOTALSIZE` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize` before
+  anything else is checked, and the magic says only that the pointer is at a blob. A `totalsize`
+  of `0xffff_ffff` would otherwise become a 4 GiB slice that the walkers read past the end of RAM.
+  The figure is Linux's `MAX_FDT_SIZE` for the same slot. The largest blob this tree has met is
+  QEMU `virt`'s, under 64 KiB, and a VisionFive 2's U-Boot tree is under 32 KiB.
 - `be32` and `be64` add with `checked_add`, because every offset comes out of the blob. The
   verification module proves both total.
 - A `reg` pair whose `start + size` wraps is `Error::RegionOverflow`. `Region::end` still
@@ -242,7 +242,7 @@ only ACPI, and its BUGS keep one line per loss. The full accounts:
   never its length, because the GIC architecture fixes the frame at 64 KiB. The same goes for the
   GICv2 CPU interface and the PL011's page. A machine whose frames differ would need this told
   rather than assumed, and nothing here would notice.
-- One `/memory` node per merged run, capped at `MAXIMUM_RAM`. A machine with more runs than that is
+- One `/memory` node per merged run, capped at `MAX_RAM`. A machine with more runs than that is
   described short, and nothing says so.
 
 ---

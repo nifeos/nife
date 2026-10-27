@@ -87,7 +87,7 @@ to the graph, or a decisions edit):
     abi-surface      2      1  #1584 rename, value unchanged
     dependency       1      1  #1597 redox_syscall 0.9.0, already in three manifests
     format-crate     2      7  `//!` prose (#1289 #1369 #1374 #1443 #1511 #1527), a diagram (#1584); now quiet, #1402 still fires
-    spawnproto       3      3  #1377 #1419 #1421: IMAGE_MAXIMUM_PAGES, not in those PRs' diffs (not reproduced)
+    spawnproto       3      3  #1377 #1419 #1421: IMAGE_MAX_PAGES, not in those PRs' diffs (not reproduced)
     decisions       23      0  by definition; about 7 are link or rename sweeps (#1369 #1371 #1374 #1427 #1510 #1527 #1289)
 
 Narrowed on this evidence: rules 1, 2, 3 and 4 (above). Decisions was left alone that day, on the

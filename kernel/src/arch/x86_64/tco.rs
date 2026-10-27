@@ -120,7 +120,7 @@ const TCO_TMR_HALT: u16 = 1 << 11;
 /// `TCO_TMR` bits 9:0.
 const TMR_MASK: u16 = 0x3ff;
 /// "Values of 0000h or 0001h will be ignored" (datasheet); Linux refuses below 4.
-const TMR_MINIMUM: u16 = 4;
+const TMR_MIN: u16 = 4;
 
 /// Tenths of a second per tick, so the arithmetic stays in integers.
 const TENTHS_PER_TICK: u64 = 6;
@@ -389,7 +389,7 @@ impl Tco {
     pub(crate) fn arm(&self, reset_after_seconds: u64) -> Result<Armed, ArmError> {
         // Two counts to a reset, so each count is half the time.
         let ticks = reset_after_seconds * 10 / 2 / TENTHS_PER_TICK;
-        if ticks < u64::from(TMR_MINIMUM) || ticks > u64::from(TMR_MASK) {
+        if ticks < u64::from(TMR_MIN) || ticks > u64::from(TMR_MASK) {
             return Err(ArmError::OutOfRange {
                 seconds: reset_after_seconds,
             });

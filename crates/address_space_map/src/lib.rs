@@ -5,7 +5,7 @@
 //! page (`counter_frequency_contract::PAGE_VA`) is assigned. A new page goes in the first band that
 //! fits, asked in the order the note gives, and a pair page is checked at compile time by
 //! [`pair_page`]. The image band ends at 2 GiB because `x86_64` builds with `code-model: small`
-//! ([`CODE_MODEL_CEILING`]), and [`STACK`]'s lowest page is never mapped ([`MAXIMUM_STACK_PAGES`]).
+//! ([`CODE_MODEL_CEILING`]), and [`STACK`]'s lowest page is never mapped ([`MAX_STACK_PAGES`]).
 //! See notes/address-space-map.md for the table of bands and why each number is what it is.
 
 //! # BUGS
@@ -78,7 +78,7 @@ pub const RUNTIME_WINDOWS: Band = Band {
 };
 
 /// **The heap.** `std_runtime_contract::HEAP_BASE` and `memory_region_heap::DEFAULT_BASE` are
-/// its start, and std's `HEAP_MAXIMUM` is its width. A program with no heap still leaves it empty.
+/// its start, and std's `HEAP_MAX` is its width. A program with no heap still leaves it empty.
 pub const HEAP: Band = Band {
     start: RUNTIME_WINDOWS.end,
     end: 0x5000_0000,
@@ -140,10 +140,7 @@ pub const STACK_TOP_PAGE: u64 = STACK_TOP - PAGE;
 /// **The most stack pages a loader may map**, down from [`STACK_TOP_PAGE`]. One fewer than the band
 /// holds: the lowest page is a guard, so a stack at its limit faults before it can touch the last
 /// page of a maximal image.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_STACK_PAGES`.
-pub const MAXIMUM_STACK_PAGES: u64 = STACK.bytes() / PAGE - 1;
+pub const MAX_STACK_PAGES: u64 = STACK.bytes() / PAGE - 1;
 
 /// **Where the kernel maps the current-CPU page** (`current_cpu_contract::PAGE_VA`): the last page
 /// of [`PROCESS_PAGES`], in the same 2 MiB page-table window as [`STACK_TOP_PAGE`].
@@ -324,7 +321,7 @@ const _: () = {
 const _: () = assert!(IMAGE_BASE.is_multiple_of(2 * 1024 * 1024));
 const _: () = assert!(STACK_TOP_PAGE >> 21 == CURRENT_CPU_PAGE >> 21);
 const _: () = assert!(STACK.contains(STACK_TOP_PAGE) && STACK_TOP_PAGE.is_multiple_of(PAGE));
-const _: () = assert!(STACK_TOP_PAGE - (MAXIMUM_STACK_PAGES - 1) * PAGE == STACK.start + PAGE);
+const _: () = assert!(STACK_TOP_PAGE - (MAX_STACK_PAGES - 1) * PAGE == STACK.start + PAGE);
 const _: () =
     assert!(PROCESS_PAGES.bytes() == 16 * PAGE && PROCESS_PAGES.contains(CURRENT_CPU_PAGE));
 
@@ -431,11 +428,11 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_stack_keeps_a_guard_page_between_it_and_a_full_image() {
-        let lowest = STACK_TOP_PAGE - (MAXIMUM_STACK_PAGES - 1) * PAGE;
+        let lowest = STACK_TOP_PAGE - (MAX_STACK_PAGES - 1) * PAGE;
         assert_eq!(lowest, STACK.start + PAGE);
         assert!(IMAGE.end < lowest);
         // Linux's default main-thread stack, 8 MiB, fits.
-        assert!(MAXIMUM_STACK_PAGES * PAGE >= 8 << 20);
+        assert!(MAX_STACK_PAGES * PAGE >= 8 << 20);
     }
 
     #[test]

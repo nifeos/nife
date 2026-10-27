@@ -1,8 +1,7 @@
 # Intrusive queues
 
-*(Milestone 14 (kernel objects from untyped) phase A.2. The mechanism behind
-`crates/intrusive_queue`, which the per-CPU run queues and migration inboxes are built on. See
-design/kernel-objects-from-untyped.md, decision D1.)*
+*(Milestone 14 phase A.2. The mechanism behind `crates/intrusive_queue`, which the per-CPU run queues
+and migration inboxes are built on. See design/kernel-objects-from-untyped.md, decision D1.)*
 
 ## The idea
 

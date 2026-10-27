@@ -263,10 +263,10 @@ fn allocate_handoff(services: &BootServices) -> Result<Handoff, &'static str> {
     let start_info_at = handoff_base;
     let module_list_at = handoff_base + START_INFO_LEN as u64;
     // **The boot command line lives in the same page**, after the 56-byte structure and the 32-byte
-    // module list, which together end at 88. It is at most `Framebuffer::MAXIMUM_LEN` plus a NUL
-    // and there are four kilobytes here, so it costs no allocation and adds no failure path: one
-    // more `AllocatePages` for sixty bytes would be one more thing that can be refused on
-    // somebody's firmware, in the middle of the one sequence in this loader whose order is rigid.
+    // module list, which together end at 88. It is at most `Framebuffer::MAX_LEN` plus a NUL and
+    // there are four kilobytes here, so it costs no allocation and adds no failure path: one more
+    // `AllocatePages` for sixty bytes would be one more thing that can be refused on somebody's
+    // firmware, in the middle of the one sequence in this loader whose order is rigid.
     let cmdline_at = handoff_base + CMDLINE_OFFSET;
     let memmap_at = handoff_base + PAGE;
     let raw_map_at = memmap_at + entries_bytes.next_multiple_of(PAGE);

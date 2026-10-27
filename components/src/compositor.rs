@@ -263,7 +263,7 @@ fn serve_frame(
 /// **empty** source, so it is not drawn: before anyone has painted, the screen is the background, not
 /// whatever the surfaces happened to hold.
 fn paint(n: usize, damage: Rect, committed: &[bool]) {
-    let mut srcs: [&[u32]; compositor::MAXIMUM_WINDOWS] = [&[]; compositor::MAXIMUM_WINDOWS];
+    let mut srcs: [&[u32]; compositor::MAX_WINDOWS] = [&[]; compositor::MAX_WINDOWS];
     for (i, s) in srcs.iter_mut().enumerate().take(n) {
         if committed[i] {
             *s = source(i);
@@ -278,12 +278,12 @@ user_mode_runtime::program_entry!(start);
 fn start(windows: u64, focusable: u64, _arg2: u64) -> ! {
     let n = windows as usize;
     let focusable = focusable as usize;
-    if n > SCENE.len() || n > compositor::MAXIMUM_WINDOWS || focusable > n {
+    if n > SCENE.len() || n > compositor::MAX_WINDOWS || focusable > n {
         die(E_TOO_MANY_WINDOWS);
     }
     let mut focus: u32 = 0;
-    let mut last_seq = [0u32; compositor::MAXIMUM_WINDOWS];
-    let mut committed = [false; compositor::MAXIMUM_WINDOWS];
+    let mut last_seq = [0u32; compositor::MAX_WINDOWS];
+    let mut committed = [false; compositor::MAX_WINDOWS];
 
     // The screen: one `PageFrame` capability naming the whole run (DECISIONS §102), mapped here
     // instead of arriving as `Spawn::maps` entries. Before `publish`/`paint`, both of which touch

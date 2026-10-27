@@ -352,11 +352,11 @@ fn fetch_host_ripgrep() -> Result<String, String> {
     if rg.exists() {
         return Ok(format!("host rg already at {}", rg.display()));
     }
-    let (operating_system, arch) = (std::env::consts::OS, std::env::consts::ARCH);
+    let (os, arch) = (std::env::consts::OS, std::env::consts::ARCH);
     let (_, _, triple, want) = HOST_RIPGREP
         .iter()
-        .find(|(o, a, _, _)| *o == operating_system && *a == arch)
-        .ok_or_else(|| format!("ripgrep publishes no {operating_system} {arch} build this pins"))?;
+        .find(|(o, a, _, _)| *o == os && *a == arch)
+        .ok_or_else(|| format!("ripgrep publishes no {os} {arch} build this pins"))?;
     let name = format!("ripgrep-{HOST_RIPGREP_VERSION}-{triple}");
     let url = format!(
         "https://github.com/BurntSushi/ripgrep/releases/download/{HOST_RIPGREP_VERSION}/{name}.tar.gz"

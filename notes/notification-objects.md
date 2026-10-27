@@ -185,18 +185,18 @@ thread a word counted while it was elsewhere. It is `#[cold]` and out of line. T
 tests `bound_notification.is_some()` on the thread it holds, §101's "one load and one compare", so
 only a bound thread pays for the body.
 
-`MAXIMUM_NOTIFICATIONS` is 256, half of `MAXIMUM_RENDEZVOUS`, because a notification is a per-thread
-or per-service doorbell where a rendezvous is per conversation. The pages come from the creators'
-own regions, so it bounds only the 16-byte-a-slot name table. Raise it when a real workload refuses
-a `RETYPE_OBJ` here.
+`MAX_NOTIFICATIONS` is 256, half of `MAX_RENDEZVOUS`, because a notification is a per-thread or
+per-service doorbell where a rendezvous is per conversation. The pages come from the creators' own
+regions, so it bounds only the 16-byte-a-slot name table. Raise it when a real workload refuses a
+`RETYPE_OBJ` here.
 
 ## BUGS
 
-- The notification and timer registries are machine-wide (`MAXIMUM_NOTIFICATIONS` and
-  `MAXIMUM_TIMERS`, 256 each, `kernel/src/sched.rs`), and a full registry answers every creator with
-  one flat `OutOfMemory`. A victim cannot tell a full registry from its own empty region. One domain
+- The notification and timer registries are machine-wide (`MAX_NOTIFICATIONS` and `MAX_TIMERS`,
+  256 each, `kernel/src/sched.rs`), and a full registry answers every creator with one flat
+  `OutOfMemory`. A victim cannot tell a full registry from its own empty region. One domain
   holding 256 pages of untyped can deny notification and timer creation to every other domain
-  for the rest of the boot. This copies the rendezvous registry's shape (`MAXIMUM_RENDEZVOUS`, 512,
+  for the rest of the boot. This copies the rendezvous registry's shape (`MAX_RENDEZVOUS`, 512,
   which one test suite actually filled), and the recorded stance is to raise the bound when a
   real workload refuses, not before. Recorded by the 2026-09-29 security audit, which weighed a
   per-domain quota and left it unproposed: nothing multi-domain has asked for the objects yet.

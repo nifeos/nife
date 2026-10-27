@@ -240,4 +240,4 @@ this closes.
 
 - `script/stack-depth-check` does not measure these stacks. They are the size of the per-CPU
   interrupt stack, which carries the same panic path and is measured.
-- They cost 3 x 20 KiB x `MAXIMUM_CPUS` (480 KiB) of address space whether or not the cores exist.
+- They cost 3 x 20 KiB x `MAX_CPUS` (480 KiB) of address space whether or not the cores exist.

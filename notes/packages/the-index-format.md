@@ -120,7 +120,7 @@ listed locations to the test authority now, which is R1's shape. If no: R2 or R3
 as clauses 11 to 13, and milestone 801's block has what was built. The boot test's six redirect
 probes were falsified on aarch64 on 2026-10-13 (UTC), twice. With the redirect pinned to the
 location's root instead of the index's, the off-root probe was fetched and the good one refused.
-With `MAXIMUM_REDIRECTS` at 2, the second redirect was followed. Both went red, and green again
+With `MAX_REDIRECTS` at 2, the second redirect was followed. Both went red, and green again
 reverted. The question as it was put follows.
 
 calef ruled on 2026-10-12 (UTC) that basalt's packages are GitHub Release assets and its index is
@@ -150,7 +150,7 @@ root.
 |---|---|---|
 | C1. `jig` carries a second root, Sectigo E46, for every listed location, and follows one redirect | One root (about 600 bytes, recalled) in every image. The redirect: a request buffer larger than 512 bytes, a `Location` header read, Q1's address check again on the new host. A listed location then has two roots, which §196 clause 4 refuses | Works, but wider than it needs to be |
 | C2. The index names each listed location's root, from the roots `jig` carries by name (`isrg-root-x1`, and E46 under a provisional name); unnamed means X1. One redirect is followed, HTTPS only, its target held to Q1's address check and to X1 | C1's code plus one token per location in the stand-in format. This is the per-location root clause 10 left open as "a later field", and it keeps one root per source | Recommended |
-| C3. The index lists the redirected URL | It lasts under an hour, its path is 930 bytes against `PATH_MAXIMUM`'s 256, and fetching it is not counted | Refused |
+| C3. The index lists the redirected URL | It lasts under an hour, its path is 930 bytes against `PATH_MAX`'s 256, and fetching it is not counted | Refused |
 | C4. Keep X1 only; `jig` fetches from Pages, and counting waits for a host with logs | Nothing to build. The Release counts then show only downloads made by hand, which undoes the measurement half of the 2026-10-12 ruling | The answer if no |
 | C5. No certificate check for listed locations, since the digest decides | Already refused in B: it voids the HTTPS-only safeguard | Refused |
 

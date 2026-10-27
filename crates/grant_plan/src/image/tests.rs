@@ -120,10 +120,7 @@ fn an_image_is_endowed_from_its_note_only_when_vouched() {
         "a note that asks more than its vouch allows is refused"
     );
     let asks_memory = Manifest {
-        memory_grant: MemoryGrantDeclaration::Required {
-            minimum: 1,
-            maximum: 4,
-        },
+        memory_grant: MemoryGrantDeclaration::Required { min: 1, max: 4 },
         ..NO_NOTE_MANIFEST
     };
     assert_eq!(
@@ -186,10 +183,7 @@ fn an_image_request_that_does_not_fit_its_manifest_is_refused() {
         "memory the manifest forbids"
     );
     let mem = Manifest {
-        memory_grant: MemoryGrantDeclaration::Required {
-            minimum: 2,
-            maximum: 4,
-        },
+        memory_grant: MemoryGrantDeclaration::Required { min: 2, max: 4 },
         ..none
     };
     assert!(image_request_fits(&mem, 0, 2, false));

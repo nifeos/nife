@@ -4,7 +4,7 @@
 //! console needs from this service. Milestone 342 (the kernel and the `console` server drive one
 //! UART from two address spaces) rests on it: the splice cannot happen with the drainer alive.
 
-use system_log_contract::record::TEXT_MAXIMUM;
+use system_log_contract::record::TEXT_MAX;
 
 /// How many writers can be mid-line at once. See the crate's BUGS for the ninth.
 pub const SLOTS: usize = 8;
@@ -15,12 +15,12 @@ pub struct Line {
     /// The writer's badge.
     pub badge: u64,
     /// The text, without its newline.
-    pub text: [u8; TEXT_MAXIMUM],
+    pub text: [u8; TEXT_MAX],
     /// How much of `text` is the line.
     pub len: usize,
     /// The most severe level any of the line's chunks carried, if any did.
     pub severity: Option<u8>,
-    /// The line did not end in a newline: it filled [`TEXT_MAXIMUM`], or its writer ended or was
+    /// The line did not end in a newline: it filled [`TEXT_MAX`], or its writer ended or was
     /// crowded out first.
     pub cut: bool,
 }
@@ -37,7 +37,7 @@ const FREE: Partial = Partial {
     badge: 0,
     line: Line {
         badge: 0,
-        text: [0; TEXT_MAXIMUM],
+        text: [0; TEXT_MAX],
         len: 0,
         severity: None,
         cut: false,
@@ -115,7 +115,7 @@ impl Assembler {
             }
             slot.line.text[slot.line.len] = b;
             slot.line.len += 1;
-            if slot.line.len == TEXT_MAXIMUM {
+            if slot.line.len == TEXT_MAX {
                 slot.line.cut = true;
                 emit(&slot.line);
                 reset(&mut slot.line);

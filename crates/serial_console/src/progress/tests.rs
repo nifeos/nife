@@ -608,17 +608,17 @@ fn the_captured_sweep_runs_to_its_done_line() {
             tasks: 32,
             jobs: 4096,
             repeats: 21,
-            ticks_minimum: 228_108_401,
+            ticks_min: 228_108_401,
             ticks_median: 233_958_411,
-            ticks_maximum: 249_234_771,
+            ticks_max: 249_234_771,
             jpm_median: 65_652,
         },
         "the last point is the top of job_mix::TASK_SWEEP"
     );
     assert_eq!(
-        u64::from(u32::try_from(job_mix::MAXIMUM_TASKS).expect("the sweep tops out in a u32")),
+        u64::from(u32::try_from(job_mix::MAX_TASKS).expect("the sweep tops out in a u32")),
         point.tasks,
-        "the last point is job_mix::MAXIMUM_TASKS, and the two agree by the kernel reading it"
+        "the last point is job_mix::MAX_TASKS, and the two agree by the kernel reading it"
     );
     assert_eq!(point.jobs, point.tasks * job_mix::JOBS_PER_TASK);
     // **The field the parse is most likely to be silently wrong about.** Every other number
@@ -631,7 +631,7 @@ fn the_captured_sweep_runs_to_its_done_line() {
         "the kernel prints job_mix::REPEATS and this build reads the same constant"
     );
     assert!(
-        point.ticks_minimum <= point.ticks_median && point.ticks_median <= point.ticks_maximum,
+        point.ticks_min <= point.ticks_median && point.ticks_median <= point.ticks_max,
         "the three ticks fields are a sorted spread, and reading them out of order is how a \
          near-miss parse would look"
     );

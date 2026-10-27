@@ -14,7 +14,7 @@
  *          exercises that arm.
  *   cpu@11 reg is TWO BYTES, short of the one cell `#address-cells` implies, so its hardware id
  *          cannot be decoded and is reported as zero (cpu_list's own documented direction).
- *   EIGHTEEN cpu@ nodes, which is two more than MAXIMUM_CPU_NODES. `described` keeps counting and
+ *   EIGHTEEN cpu@ nodes, which is two more than MAX_CPU_NODES. `described` keeps counting and
  *          `cpus` holds the prefix that fit, which is what `CpuList::truncated` is for and what
  *          no other fixture can show.
  *

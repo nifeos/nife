@@ -7,7 +7,7 @@ use super::*;
 
 pub(super) const PAGE: u64 = 4096;
 
-pub(super) const MINIMUM_GROW_PAGES: u64 = 8;
+pub(super) const MIN_GROW_PAGES: u64 = 8;
 
 pub(super) type Talc = talc::base::Talc<talc::source::Manual, talc::base::binning::DefaultBinning>;
 
@@ -65,13 +65,13 @@ impl Guard {
 
 /// Map at least `need` more contiguous bytes at the top of the committed range, from the
 /// untyped in slot 0. Same growth policy as `memory_region_heap`: geometric, floor of 8 pages,
-/// capped by `rt::HEAP_MAXIMUM`; only a fresh run big enough for the request counts as success.
+/// capped by `rt::HEAP_MAX`; only a fresh run big enough for the request counts as success.
 pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
     let need_pages = need.div_ceil(PAGE);
     let want_pages = need_pages
         .max(inner.committed / PAGE)
-        .max(MINIMUM_GROW_PAGES)
-        .min((rt::HEAP_MAXIMUM - inner.committed) / PAGE);
+        .max(MIN_GROW_PAGES)
+        .min((rt::HEAP_MAX - inner.committed) / PAGE);
     if want_pages < need_pages {
         return false;
     }

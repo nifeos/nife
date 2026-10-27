@@ -15,7 +15,7 @@
 //! - The reader forms an `&AtomicU64` over read-only memory, which Miri rejects; see the note.
 //! - At most [`THREAD_PAGE_SLOTS`] threads a process (§269 fork 6); see notes/current-cpu-page.md.
 //! - An address space never bound to a TCB has no page, so `current_cpu` there faults.
-//! - [`CPU_ID_BOUND`] is the compile-time `MAXIMUM_CPUS`: right for sizing, useless for iterating.
+//! - [`CPU_ID_BOUND`] is the compile-time `MAX_CPUS`: right for sizing, useless for iterating.
 //!
 //! Name: ratified 2026-10-18 (calef): "Yes". `current_cpu` is the field's own word for this
 //! quantity (`cpu` is ruled in design/naming.md, 2026-10-03); the suffix follows its sibling.
@@ -57,7 +57,7 @@ pub const MAGIC: [u8; 8] = *b"CURRCPU1";
 pub const UNSCHEDULED: u64 = u64::MAX;
 
 /// One past the highest CPU id this kernel will ever hand out: the size of a per-CPU array in
-/// userspace. The kernel's `cpu::MAXIMUM_CPUS` is this constant (AGENTS.md rule 7). Not the online
+/// userspace. The kernel's `cpu::MAX_CPUS` is this constant (AGENTS.md rule 7). Not the online
 /// count; see the crate's `BUGS` section, and `crates/cpu_set` for why counting is not indexing.
 ///
 /// # Examples

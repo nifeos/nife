@@ -212,7 +212,7 @@ pub fn run_idle() -> ! {
 
 /// Which core a device-interrupt wake should place its driver on (§28.2): the least-loaded online
 /// core, with this core winning ties, so a driver that takes an interrupt per request stays put
-/// until a core is strictly lighter. A full scan is fine: `MAXIMUM_CPUS` is small.
+/// until a core is strictly lighter. A full scan is fine: `MAX_CPUS` is small.
 pub(super) fn pick_wake_target() -> usize {
     let here = cpu::id();
     let mut best = here;

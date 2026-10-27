@@ -61,8 +61,8 @@ The stacks live in their own `.secondary_stacks` section for two reasons.
   region is `(NOLOAD)`, so nothing zeroes it; a stack does not need zeroing, and the high-water
   instrument paints every usable byte in a test build anyway.
 
-`MAXIMUM_CPUS` is stated once, in Rust. The linker scripts only anchor `__secondary_stacks_start`
-and `__secondary_stacks_end` around whatever the section holds, and
+`MAX_CPUS` is stated once, in Rust. The linker scripts only anchor `__secondary_stacks_start` and
+`__secondary_stacks_end` around whatever the section holds, and
 `the_secondary_stack_region_is_the_size_the_linker_reserved` holds the two together. On the coarse
 boot map the guards sit inside a 2 MiB block and are mapped; a secondary is on that map only
 between `secondary_boot` and `mmu::initialize_secondary`, the same window the boot stack's guard has
@@ -88,14 +88,14 @@ Two consequences follow.
 - An excluded core costs no other core its seat. On the VisionFive 2 the unusable S7 occupies slot
   0, its own, and U74 hart 4 sits at slot 4.
 - A machine with sparse but small ids (harts {0, 2}) seats {0, 2} and works; nothing between them is
-  started or counted. A core whose id is at or past `MAXIMUM_CPUS` cannot be seated. That includes
-  every id on a clustered aarch64 board, where `MPIDR_EL1.Aff1` is in use. It gets a named line at
-  roster time and stays parked rather than being remapped.
+  started or counted. A core whose id is at or past `MAX_CPUS` cannot be seated. That includes every
+  id on a clustered aarch64 board, where `MPIDR_EL1.Aff1` is in use. It gets a named line at roster
+  time and stays parked rather than being remapped.
 
 `u64::MAX` marks an empty slot. It is safe as well as convenient: an aarch64 affinity value is 40
-bits by architecture and cannot reach it, and a hart id that could is past `MAXIMUM_CPUS` and is
-never seated. Two nodes claiming one id (a malformed tree, or `cpu_list`'s missing-`reg` fallback of
-zero colliding with the real hart 0) keep the first.
+bits by architecture and cannot reach it, and a hart id that could is past `MAX_CPUS` and is never
+seated. Two nodes claiming one id (a malformed tree, or `cpu_list`'s missing-`reg` fallback of zero
+colliding with the real hart 0) keep the first.
 
 A core is **startable** unless firmware marked it `status = "disabled"`, its own `riscv,isa`
 disclaims supervisor mode, or its `enable-method` is one this kernel does not speak (`spin-table`, a

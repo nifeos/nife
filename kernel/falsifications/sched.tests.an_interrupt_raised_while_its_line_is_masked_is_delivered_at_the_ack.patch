@@ -23,11 +23,11 @@ index 0342c41d0..6a5dcaf33 100644
  /// With a claim outstanding, completes it on the claiming context, so the gateway forwards the next
  /// interrupt. Otherwise enables the source at its stable target hart (see [`target_context`]).
  pub fn enable(intid: u32) {
--    match CLAIM_CTX[intid as usize % MAXIMUM_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire) {
+-    match CLAIM_CTX[intid as usize % MAX_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire) {
 -        CTX_UNASSIGNED => crate::drivers::plic::enable(intid, target_context(intid)),
 -        claimed => crate::drivers::plic::complete(intid, claimed as usize),
 -    }
-+    let _ = CLAIM_CTX[intid as usize % MAXIMUM_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire);
++    let _ = CLAIM_CTX[intid as usize % MAX_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire);
 +    crate::drivers::plic::enable(intid, target_context(intid));
  }
  

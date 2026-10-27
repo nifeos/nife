@@ -31,7 +31,7 @@ use crate::{retype_fault, sched};
 /// A sweep that has not reached the end of a login by this N has found a program that retypes
 /// without bound, which is a finding of its own. A clean login was measured at well under this (the
 /// roadmap block has the count).
-const MAXIMUM_N: u64 = 256;
+const MAX_N: u64 = 256;
 
 /// What a failed retype must leave unchanged: the occupied slots of `login`'s table, and for each
 /// region it holds, how many pages that region has spent.
@@ -42,15 +42,15 @@ struct Census {
     /// `held` entries. Bounded small and not per-slot: a `[Option<_>; CAPABILITY_TABLE_SLOTS]` here
     /// is a 1.5 KiB value at 64 slots, copied through every frame (milestone 754 (the capability
     /// table grows to 64 slots)).
-    regions: [(usize, u64, u64); MAXIMUM_REGIONS_HELD],
+    regions: [(usize, u64, u64); MAX_REGIONS_HELD],
     held: usize,
 }
 
 /// More memory regions than `login` has ever held at once, with room; `census` panics past it.
-const MAXIMUM_REGIONS_HELD: usize = 8;
+const MAX_REGIONS_HELD: usize = 8;
 
 fn census(tid: crate::thread::ThreadId) -> Census {
-    let mut regions = [(0, 0, 0); MAXIMUM_REGIONS_HELD];
+    let mut regions = [(0, 0, 0); MAX_REGIONS_HELD];
     let mut held = 0;
     for slot in 0..crate::cap::CAPABILITY_TABLE_SLOTS {
         // One slot per lock acquisition: `memory_region::usage` takes a lock of higher rank than the
@@ -62,8 +62,8 @@ fn census(tid: crate::thread::ThreadId) -> Census {
         {
             let spent = crate::memory_region::usage(region).map_or(u64::MAX, |(spent, _)| spent);
             assert!(
-                held < MAXIMUM_REGIONS_HELD,
-                "login holds more than {MAXIMUM_REGIONS_HELD} regions"
+                held < MAX_REGIONS_HELD,
+                "login holds more than {MAX_REGIONS_HELD} regions"
             );
             regions[held] = (slot, region, spent);
             held += 1;
@@ -141,8 +141,8 @@ fn login_gives_back_everything_when_any_retype_of_a_login_fails() {
     let mut n = 1;
     let steady = loop {
         assert!(
-            n <= MAXIMUM_N,
-            "login was still retyping at N = {MAXIMUM_N}; a clean login made {}",
+            n <= MAX_N,
+            "login was still retyping at N = {MAX_N}; a clean login made {}",
             clean.seen
         );
         retype_fault::arm(w.tid, n);

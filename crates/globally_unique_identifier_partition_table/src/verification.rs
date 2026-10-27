@@ -99,7 +99,7 @@ fn a_headers_fields_survive_the_round_trip() {
         entry_size: kani::any(),
         entry_array_crc: kani::any(),
     };
-    let mut block = [0u8; MINIMUM_BLOCK_SIZE];
+    let mut block = [0u8; MIN_BLOCK_SIZE];
     header.encode_fields(&mut block);
     assert_eq!(Header::decode_fields(&block), header);
 }
@@ -116,8 +116,8 @@ fn a_headers_fields_survive_the_round_trip() {
 #[kani::proof]
 #[kani::unwind(513)]
 fn the_header_fields_partition_the_block() {
-    let block: [u8; MINIMUM_BLOCK_SIZE] = kani::any();
-    let mut round_tripped = [0u8; MINIMUM_BLOCK_SIZE];
+    let block: [u8; MIN_BLOCK_SIZE] = kani::any();
+    let mut round_tripped = [0u8; MIN_BLOCK_SIZE];
     Header::decode_fields(&block).encode_fields(&mut round_tripped);
     assert_eq!(round_tripped[24..92], block[24..92]);
 }
@@ -172,7 +172,7 @@ fn create_never_lays_out_a_table_parse_would_reject() {
     let mut array = [0u8; entry::SIZE];
     let Ok(table) = GloballyUniqueIdentifierPartitionTable::create(
         Uuid::from_bytes([3; 16]),
-        MINIMUM_BLOCK_SIZE,
+        MIN_BLOCK_SIZE,
         blocks,
         &[part],
         &mut array,

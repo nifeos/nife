@@ -31,7 +31,7 @@ pub fn write_holdings(
     // The heap is mapped from that budget first, so this row counts it (milestone 47 (navigation
     // and naming), calef's ruling).
     out(b"           the first ");
-    write_num(HEAP_MAXIMUM_BYTES / 1024, out);
+    write_num(HEAP_MAX_BYTES / 1024, out);
     out(b" KiB of them, and their page tables, are the shell's own heap\n");
     match (&holdings.mounted, holdings.directory) {
         (Some(sd), _) => {
@@ -41,7 +41,7 @@ pub fn write_holdings(
             out(b"    cap ");
             write_num(grant_plan::spawnproto::MOUNTED_TREE_SLOT, out);
             out(b" endpoint  directory  a second tree, mounted at ");
-            let mut buf = [0u8; nav::RENDER_MAXIMUM];
+            let mut buf = [0u8; nav::RENDER_MAX];
             let n = sd.mount().render(&mut buf);
             out(&buf[..n]);
             out(b"\n");
@@ -112,7 +112,7 @@ fn write_bind_row(entry: &nav::BindEntry, out: &mut dyn FnMut(&[u8])) {
     out(b"      bind ");
     out(entry.name());
     out(b" -> ");
-    let mut buf = [0u8; nav::RENDER_MAXIMUM];
+    let mut buf = [0u8; nav::RENDER_MAX];
     let n = entry.pos().render(&mut buf);
     out(&buf[..n]);
     out(b"\n");

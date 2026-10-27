@@ -12,7 +12,7 @@
 //!   against the referenced node.
 //! - A `cpu@` node without a `riscv,cpu-intc` child breaks the alignment for every later hart,
 //!   which then has no mapping.
-//! - A hart id at or above [`MAXIMUM_CONTEXT_HARTS`] is not recorded.
+//! - A hart id at or above [`MAX_CONTEXT_HARTS`] is not recorded.
 //!
 //! Name: provisional (`plic` for the module, `PlicContexts` for the record), named for the
 //! controller whose property it decodes; the naming tenet's "standard terms are already right"
@@ -32,11 +32,8 @@ use crate::cpu_list::CpuList;
 ///   driver's; see `notes/machine-discovery.md`.
 pub const COMPATIBLES: [&[u8]; 3] = [b"sifive,plic-1.0.0", b"riscv,plic0", b"thead,c900-plic"];
 
-/// The most harts a context map records; matches [`crate::riscv64::MAXIMUM_HARTS`].
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CONTEXT_HARTS`.
-pub const MAXIMUM_CONTEXT_HARTS: usize = crate::riscv64::MAXIMUM_HARTS;
+/// The most harts a context map records; matches [`crate::riscv64::MAX_HARTS`].
+pub const MAX_CONTEXT_HARTS: usize = crate::riscv64::MAX_HARTS;
 
 /// The interrupt a PLIC raises into a hart's `riscv,cpu-intc` for **supervisor** external
 /// interrupts: `scause` 9. Its machine twin is 11; those are the only two that appear in a PLIC's
@@ -48,20 +45,20 @@ pub const IRQ_S_EXT: u32 = 9;
 pub struct PlicContexts {
     /// `s[hart]` is hart `hart`'s S-mode context number, or `None` when the tree named none
     /// (an M-only hart, like the JH7110's S7; or a tree with no PLIC at all).
-    s: [Option<u16>; MAXIMUM_CONTEXT_HARTS],
+    s: [Option<u16>; MAX_CONTEXT_HARTS],
 }
 
 impl Default for PlicContexts {
     fn default() -> Self {
         Self {
-            s: [None; MAXIMUM_CONTEXT_HARTS],
+            s: [None; MAX_CONTEXT_HARTS],
         }
     }
 }
 
 impl PlicContexts {
     /// Hart `hart`'s S-mode context, or `None` when the tree did not say (no PLIC node, no
-    /// `interrupts-extended`, an M-only hart, or a hart past [`MAXIMUM_CONTEXT_HARTS`]).
+    /// `interrupts-extended`, an M-only hart, or a hart past [`MAX_CONTEXT_HARTS`]).
     pub fn s_context(&self, hart: usize) -> Option<usize> {
         self.s.get(hart).copied().flatten().map(usize::from)
     }
@@ -99,16 +96,16 @@ impl PlicContexts {
         // it that way (the JH7110 does), so the parallel `compatible` read is what keeps only the
         // per-hart intcs, in tree order.
         let cpus = CpuList::from_device_tree(dt)?;
-        let mut phandles = [None; MAXIMUM_CONTEXT_HARTS];
-        let mut compats = [None; MAXIMUM_CONTEXT_HARTS];
+        let mut phandles = [None; MAX_CONTEXT_HARTS];
+        let mut compats = [None; MAX_CONTEXT_HARTS];
         dt.node_props(b"interrupt-controller", b"phandle", &mut phandles)?;
         dt.node_props(b"interrupt-controller", b"compatible", &mut compats)?;
 
         // hart_of[i]: the hart id whose intc carries phandle intc_phandle[i], for the i-th
         // `riscv,cpu-intc` seen. The i-th such intc belongs to the i-th `cpu@` node (see module
         // docs on why tree order aligns them).
-        let mut intc_phandle = [0u32; MAXIMUM_CONTEXT_HARTS];
-        let mut hart_of = [0u64; MAXIMUM_CONTEXT_HARTS];
+        let mut intc_phandle = [0u32; MAX_CONTEXT_HARTS];
+        let mut hart_of = [0u64; MAX_CONTEXT_HARTS];
         let mut n = 0usize;
         for (ph, comp) in phandles.iter().zip(compats.iter()) {
             let Some(comp) = comp else { continue };
@@ -122,7 +119,7 @@ impl PlicContexts {
                 continue;
             };
             if ph.len() >= 4
-                && n < MAXIMUM_CONTEXT_HARTS
+                && n < MAX_CONTEXT_HARTS
                 && let Some(cpu) = cpus.cpus().get(n)
             {
                 intc_phandle[n] = u32::from_be_bytes([ph[0], ph[1], ph[2], ph[3]]);
@@ -130,7 +127,7 @@ impl PlicContexts {
             }
             n += 1;
         }
-        let n = n.min(MAXIMUM_CONTEXT_HARTS).min(cpus.len);
+        let n = n.min(MAX_CONTEXT_HARTS).min(cpus.len);
 
         // Walk 2's payoff: entry k is context k. Two big-endian cells per entry, phandle then
         // interrupt number; an entry whose interrupt is not 9 (the machine externals, and the
@@ -144,7 +141,7 @@ impl PlicContexts {
             for i in 0..n {
                 if intc_phandle[i] == phandle {
                     let hart = hart_of[i] as usize;
-                    if hart < MAXIMUM_CONTEXT_HARTS && context <= u16::MAX as usize {
+                    if hart < MAX_CONTEXT_HARTS && context <= u16::MAX as usize {
                         out.s[hart] = Some(context as u16);
                     }
                 }

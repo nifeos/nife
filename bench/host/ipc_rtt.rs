@@ -63,7 +63,6 @@ fn main() {
     }
     let ns = t.elapsed().as_nanos() as f64 / iters as f64;
     unsafe { close(p2c[1]) }; // let the child see EOF and exit
-    let operating_system = if cfg!(target_os = "macos") { "macOS" } else { "linux" };
-    println!("{operating_system} ipc_rtt (pipe round trip, 2 processes): {ns:.1} ns/iter  \
-    (iters={iters})");
+    let os = if cfg!(target_os = "macos") { "macOS" } else { "linux" };
+    println!("{os} ipc_rtt (pipe round trip, 2 processes): {ns:.1} ns/iter  (iters={iters})");
 }

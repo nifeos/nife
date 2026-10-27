@@ -62,7 +62,7 @@ const _: () = {
 
 /// Every socket open at once, each a TCP connection, must leave a quarter of the heap for smoltcp's
 /// own state and the frames in flight; allocation failure panics the whole stack.
-const _: () = assert!(SOCKETS * (TCP_RECEIVE_BUF + SOCK_BUF) <= HEAP_MAXIMUM as usize / 4 * 3);
+const _: () = assert!(SOCKETS * (TCP_RECEIVE_BUF + SOCK_BUF) <= HEAP_MAX as usize / 4 * 3);
 
 /// **The open sockets of every client, keyed by the badge on each one's capability** (§255 (each
 /// socket is its own capability)). An entry is a place in this table and a window VA, never a

@@ -1,7 +1,7 @@
 //! The multi-tasking workload benchmark's supervisor, and the thing that times it.
 //!
 //! With `--features job_mix`, [`run`] replaces the boot tour's halt: it builds a pool of
-//! [`job_mix::MAXIMUM_TASKS`] tasks (`fixtures/src/job_mix_task.rs`) once, releases the first N per
+//! [`job_mix::MAX_TASKS`] tasks (`fixtures/src/job_mix_task.rs`) once, releases the first N per
 //! subrun over [`job_mix::TASK_SWEEP`], prints each point, then [`job_mix::DONE`], and halts. The
 //! number feeds §96 (process kernel or event kernel, and how to decide it). See notes/job-mix.md
 //! and notes/job-mix/supervisor.md.
@@ -18,7 +18,7 @@
 #[cfg(feature = "lock_wait")]
 use job_mix::LOCK;
 use job_mix::{
-    CENSUS, DONE, ECHO_SERVERS, FAILED, JOB_KINDS, KIND, MAXIMUM_TASKS, POINT, REPEATS, STARTED,
+    CENSUS, DONE, ECHO_SERVERS, FAILED, JOB_KINDS, KIND, MAX_TASKS, POINT, REPEATS, STARTED,
     SUBRUN, TASK_SWEEP,
 };
 
@@ -40,7 +40,7 @@ pub fn run() -> ! {
     let pool = build_pool();
 
     // Where each thread was placed at spawn, servers first, for the census.
-    let mut placed = [u8::MAX; ECHO_SERVERS + MAXIMUM_TASKS];
+    let mut placed = [u8::MAX; ECHO_SERVERS + MAX_TASKS];
 
     // Servers first, so the first subrun does not time a server's spawn.
     spawn_echo_servers(image, &pool.echo, &mut placed);
@@ -60,9 +60,9 @@ pub fn run() -> ! {
 /// The supervisor's endpoints and budgets, built once with the pool rather than per subrun.
 struct Pool {
     report: sched::RendezvousId,
-    go: [sched::RendezvousId; MAXIMUM_TASKS],
-    budget: [u64; MAXIMUM_TASKS],
-    child_done: [sched::RendezvousId; MAXIMUM_TASKS],
+    go: [sched::RendezvousId; MAX_TASKS],
+    budget: [u64; MAX_TASKS],
+    child_done: [sched::RendezvousId; MAX_TASKS],
     echo: [sched::RendezvousId; ECHO_SERVERS],
 }
 
@@ -70,11 +70,11 @@ struct Pool {
 /// echo servers' endpoints. Halts the boot if a budget cannot be created.
 fn build_pool() -> Pool {
     let report = sched::create_rendezvous();
-    let mut go = [0u64; MAXIMUM_TASKS];
+    let mut go = [0u64; MAX_TASKS];
     for slot in &mut go {
         *slot = sched::create_rendezvous();
     }
-    let mut budget = [0u64; MAXIMUM_TASKS];
+    let mut budget = [0u64; MAX_TASKS];
     for (i, slot) in budget.iter_mut().enumerate() {
         let Some(region) = crate::memory_region::create(job_mix::TASK_BUDGET_PAGES) else {
             println!(
@@ -85,7 +85,7 @@ fn build_pool() -> Pool {
         };
         *slot = region;
     }
-    let mut child_done = [0u64; MAXIMUM_TASKS];
+    let mut child_done = [0u64; MAX_TASKS];
     for slot in &mut child_done {
         *slot = sched::create_rendezvous();
     }
@@ -106,7 +106,7 @@ fn build_pool() -> Pool {
 fn spawn_echo_servers(
     image: &'static [u8],
     echo: &[sched::RendezvousId; ECHO_SERVERS],
-    placed: &mut [u8; ECHO_SERVERS + MAXIMUM_TASKS],
+    placed: &mut [u8; ECHO_SERVERS + MAX_TASKS],
 ) {
     for (i, &ep) in echo.iter().enumerate() {
         let grant = rendezvous_cap(ep, Rights::READ);
@@ -134,7 +134,7 @@ fn spawn_echo_servers(
 ///
 /// The grants are in `crates/job_mix`'s slot order, each the least its use needs. See
 /// notes/job-mix/supervisor.md.
-fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS + MAXIMUM_TASKS]) {
+fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS + MAX_TASKS]) {
     let &Pool {
         report,
         ref go,
@@ -142,7 +142,7 @@ fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS
         ref child_done,
         ref echo,
     } = pool;
-    for i in 0..MAXIMUM_TASKS {
+    for i in 0..MAX_TASKS {
         let grants = [
             rendezvous_cap(report, Rights::WRITE),
             rendezvous_cap(go[i], Rights::READ),
@@ -169,7 +169,7 @@ fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS
             )
         });
         let Some((_tid, cpu)) = started else {
-            println!("{FAILED}could not spawn task {i} of {MAXIMUM_TASKS}");
+            println!("{FAILED}could not spawn task {i} of {MAX_TASKS}");
             arch::halt(arch::HaltReason::measurement_boot());
         };
         placed[ECHO_SERVERS + i] = u8::try_from(cpu).unwrap_or(u8::MAX);
@@ -177,10 +177,10 @@ fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS
 }
 
 /// The start marker, what the run measures and does not, and the spawn census.
-fn print_preamble(cpus: usize, hz: u64, placed: &[u8; ECHO_SERVERS + MAXIMUM_TASKS]) {
+fn print_preamble(cpus: usize, hz: u64, placed: &[u8; ECHO_SERVERS + MAX_TASKS]) {
     println!();
     println!(
-        "{STARTED} {MAXIMUM_TASKS} tasks and {ECHO_SERVERS} servers on {cpus} online core(s), \
+        "{STARTED} {MAX_TASKS} tasks and {ECHO_SERVERS} servers on {cpus} online core(s), \
          cntfrq={hz} Hz"
     );
     println!(
@@ -212,7 +212,7 @@ fn print_preamble(cpus: usize, hz: u64, placed: &[u8; ECHO_SERVERS + MAXIMUM_TAS
 /// breakdown.
 fn measure_point(
     report: sched::RendezvousId,
-    go: &[sched::RendezvousId; MAXIMUM_TASKS],
+    go: &[sched::RendezvousId; MAX_TASKS],
     tasks: usize,
     hz: u64,
 ) {
@@ -234,9 +234,9 @@ fn measure_point(
     println!(
         "{POINT}{tasks} jobs={jobs} repeats={REPEATS} ticks_min={} ticks_median={} \
          ticks_max={} jpm_median={}",
-        spread.minimum,
+        spread.min,
         spread.median,
-        spread.maximum,
+        spread.max,
         job_mix::jobs_per_minute(jobs, spread.median, hz)
     );
     // Totals over every task and repeat at this point, so the per-job division can be re-derived.

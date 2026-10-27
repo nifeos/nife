@@ -119,7 +119,7 @@ fn boot_hart_from_device_tree(device_tree: *const u8) -> Option<u64> {
     let total = u32::from_be_bytes([header[4], header[5], header[6], header[7]]) as usize;
     // The same ceiling `DeviceTreeBlob::from_ptr` applies, for the same reason: the header's
     // length is believed before anything is checked, and a lying one must not become a slice.
-    if total > device_tree_blob::MAXIMUM_TOTALSIZE {
+    if total > device_tree_blob::MAX_TOTALSIZE {
         return None;
     }
     // SAFETY: as above, and `total` is now bounded.

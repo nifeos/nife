@@ -96,7 +96,7 @@ location-root sectigo-root-e46
   whole certificate in DER, for a root no client carries, such as the test authority.
 - `location-root <name> [<root>]` names a further root the signed index may name for a listed
   location (calef's C2 on #2048). A bare name is one the client carries, such as
-  `sectigo-root-e46`. At most `MAXIMUM_LOCATION_ROOTS` may appear.
+  `sectigo-root-e46`. At most `MAX_LOCATION_ROOTS` may appear.
 
 Every line must be read or the whole text is refused, `Index::parse`'s rule. There must be at least
 one repository and exactly one root. Every name in this format, the entry's and the keywords

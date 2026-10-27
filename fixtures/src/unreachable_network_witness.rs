@@ -109,7 +109,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     });
     let (r0, _) = call(
         grant_plan::ENTROPY_SLOT,
-        entropy_contract::req(entropy_contract::GET, entropy_contract::MAXIMUM_BYTES),
+        entropy_contract::req(entropy_contract::GET, entropy_contract::MAX_BYTES),
         0,
     );
     say(match r0 as i64 {

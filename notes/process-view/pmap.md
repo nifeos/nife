@@ -134,9 +134,8 @@ The parts:
   thread death. Both must refuse `MAP_INTO` on a bound space, or re-arm it deliberately.
 - A walk that cannot outlive the space. `address_space_list` reads the root and drops the lock
   before walking. A bound space can die mid-walk, which today's unbound spaces rarely do.
-- Registry size. `MAXIMUM_USER_SPACES` is 32 and `sched::MAXIMUM_THREADS` is 256. The registry holds
-  only unbound spaces today. Holding every live one may need it raised. The live count is
-  unmeasured.
+- Registry size. `MAX_USER_SPACES` is 32 and `sched::MAX_THREADS` is 256. The registry holds only
+  unbound spaces today. Holding every live one may need it raised. The live count is unmeasured.
 - Slots. One retained capability per live job in the progenitor, against one spare slot. This forces
   `CAPABILITY_TABLE_SLOTS` up, which milestone 230 (the shell check is red) last raised.
 - A way to ask for job N's view. Either a spawn-request field on the shell's wire, or the progenitor

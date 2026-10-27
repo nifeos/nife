@@ -9,7 +9,7 @@ commit too.*
 
 `SUITE_PAGE_FRAME_BUDGET` is what the whole system-test suite may leave unreturned, in frames,
 checked once at the end of the run by `report_frame_ledger`. The gate's other half,
-`SUITE_MINIMUM_FREE_RUN`, is documented at that constant. The objects themselves are
+`SUITE_MIN_FREE_RUN`, is documented at that constant. The objects themselves are
 [notes/frames.md](frames.md)'s subject; this note prices the ones the suite keeps.
 
 ## What the suite legitimately keeps

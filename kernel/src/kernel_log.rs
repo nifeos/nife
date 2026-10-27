@@ -22,7 +22,7 @@
 use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicU64, Ordering};
 
 use system_log_contract::kernel_ring::{self, Cursor, DETACHED, Read, Ring};
-use system_log_contract::record::{TEXT_MAXIMUM, flags};
+use system_log_contract::record::{TEXT_MAX, flags};
 use system_log_contract::severity;
 
 /// How long the oldest unread line may wait before the kernel decides its drainer has stopped.
@@ -40,7 +40,7 @@ static SIGNAL_PENDING: AtomicBool = AtomicBool::new(false);
 
 /// The line being assembled, kept in the console's own struct so the console lock guards it.
 pub struct Line {
-    buf: [u8; TEXT_MAXIMUM],
+    buf: [u8; TEXT_MAX],
     len: usize,
     /// Decided at the line's first byte: whether this line goes to the UART as it is printed.
     direct: bool,
@@ -53,7 +53,7 @@ impl Line {
     /// Nothing assembled.
     pub const fn new() -> Self {
         Line {
-            buf: [0; TEXT_MAXIMUM],
+            buf: [0; TEXT_MAX],
             len: 0,
             direct: true,
             fallback: false,
@@ -158,7 +158,7 @@ fn draining(r: &Ring<'_>) -> bool {
     if unread >= kernel_ring::SLOTS / 2 {
         return false;
     }
-    let mut scratch = [0u8; TEXT_MAXIMUM];
+    let mut scratch = [0u8; TEXT_MAX];
     match r.read(consumed, &mut scratch) {
         Read::Record(h, _) => now_nanos().saturating_sub(h.time) < STALL_NANOS,
         _ => false,
@@ -194,7 +194,7 @@ fn catch_up(r: &Ring<'_>, out: &mut impl FnMut(&str)) {
     if consumed == DETACHED {
         return;
     }
-    let mut scratch = [0u8; TEXT_MAXIMUM];
+    let mut scratch = [0u8; TEXT_MAX];
     for seq in consumed.max(r.oldest())..r.next_seq() {
         if let Read::Record(h, n) = r.read(seq, &mut scratch)
             && h.flags & flags::DIRECT == 0
@@ -234,7 +234,7 @@ pub(crate) fn route(line: &mut Line, s: &str, mut out: impl FnMut(&str)) {
             }
             line.buf[line.len] = b;
             line.len += 1;
-            if line.len == TEXT_MAXIMUM {
+            if line.len == TEXT_MAX {
                 commit(&r, line, true, &mut out);
             }
         }
@@ -379,7 +379,7 @@ pub fn test_set_cursor(next: u64) {
 
 /// **Test support**: the ring's next sequence number and a copy of record `seq`.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn test_read(seq: u64, out: &mut [u8; TEXT_MAXIMUM]) -> (u64, Option<(u8, usize)>) {
+pub fn test_read(seq: u64, out: &mut [u8; TEXT_MAX]) -> (u64, Option<(u8, usize)>) {
     let Some(r) = ring() else {
         return (0, None);
     };

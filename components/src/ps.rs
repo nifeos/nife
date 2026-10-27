@@ -74,9 +74,9 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 
     // **Walk first, complain second, print third.** A survey cannot know its complaints up front,
     // and §67's reader drains diagnostics to end-of-stream *before* it reads a byte of output.
-    // `MAXIMUM_ROWS` is the kernel's whole thread table, so truncation is unreachable: two
-    // kilobytes on a twelve-page stack.
-    let mut rows = [ps::Row::default(); ps::MAXIMUM_ROWS];
+    // `MAX_ROWS` is the kernel's whole thread table, so truncation is unreachable: two kilobytes on
+    // a twelve-page stack.
+    let mut rows = [ps::Row::default(); ps::MAX_ROWS];
     let mut found = ps::collect(&mut rows, &mut |cursor| survey(DOMAIN_SLOT, cursor));
     // **The `TIME` column is a second walk** (milestone 282 (a thread's CPU time, and the `top` it
     // makes possible)): `SURVEY` answers one record per call, so the two facts are two walks joined

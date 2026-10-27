@@ -65,7 +65,7 @@ bytes on aarch64 and riscv64, so the alignment costs no padding there.
 
 ## How many seats
 
-`MAXIMUM_CPUS` is the number of seats, not the number of cores a machine has. A fixed bound lets the
+`MAX_CPUS` is the number of seats, not the number of cores a machine has. A fixed bound lets the
 blocks be a static array, reachable from a core's first Rust instruction before any heap exists.
 `smp::read_cpu_list` seats each core at the slot its hart id names, so the bound is on ids, not
 counts. It is eight. The VisionFive 2 describes five harts (an S7 monitor and four U74s), and the

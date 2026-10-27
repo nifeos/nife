@@ -66,7 +66,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 
     // Collect first, complain second, print third (DECISIONS §67), `ps`'s shape verbatim: a
     // listing cannot know its complaints up front, so it is all buffered before either stream.
-    let mut rows = [pmap::Row::default(); pmap::MAXIMUM_ROWS];
+    let mut rows = [pmap::Row::default(); pmap::MAX_ROWS];
     let found = pmap::collect(&mut rows, &mut |cursor| list(ADDRESS_SPACE_SLOT, cursor));
 
     found.write_diagnostics(&mut |bytes| write_on(diag_slot(), bytes));

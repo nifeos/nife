@@ -397,7 +397,7 @@ fn the_protective_mbr_round_trips_and_saturates() {
     mbr::write(&mut block, BLOCKS).unwrap();
     mbr::validate(&block, BLOCKS).unwrap();
     assert_eq!(block[510..], [0x55, 0xAA]);
-    assert_eq!(block[450], mbr::PROTECTIVE_OPERATING_SYSTEM_TYPE);
+    assert_eq!(block[450], mbr::PROTECTIVE_OS_TYPE);
 
     // A disk bigger than 32 bits of blocks: the size field saturates, and validation accepts the
     // saturated value on ANY disk, because at that point the field has stopped carrying

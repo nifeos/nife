@@ -38,7 +38,7 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
 +++ b/crates/system_initializer/src/spawn_loop.rs
 @@ -249,6 +249,7 @@ struct Resolved {
      image_digest: Option<measured_boot::Digest>,
-     verb: [u8; grant_plan::MAXIMUM_VERB],
+     verb: [u8; grant_plan::MAX_VERB],
      verb_len: Option<usize>,
 +    unvouched: bool,
  }

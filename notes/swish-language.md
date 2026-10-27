@@ -272,7 +272,7 @@ against run, so a shell that ignored the feature fails both halves.
   person who wanted the chain timed has no spelling for it until grouping exists.
 - `&` backgrounds only a line of one supervised job; bash's `a & b` has no spelling.
 - A sequence is at most eight commands and a pipeline at most four stages. Past either the line
-  is refused rather than truncated, which is the same posture `line::MAXIMUM_STAGES` already took.
+  is refused rather than truncated, which is the same posture `line::MAX_STAGES` already took.
 - `xargs <program>` still stops after planning batch one, unchanged by this milestone: the shell
   cannot yet ask the progenitor to mint a per-batch caretaker, which is milestone 47's delegation chain. A
   sweep that stops is a segment that did not succeed, so `xargs rm *.txt && echo done` will not print

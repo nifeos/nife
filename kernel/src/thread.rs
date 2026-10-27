@@ -58,16 +58,16 @@ static FREE_STACK_ADDRESS_SPACE: IrqSafeMutex<FreeAddressSpace> =
 
 /// A fixed stack of reusable stack-VA ranges. A range is pushed when a thread dies and popped when
 /// one spawns, so the count never exceeds the most threads alive at once; the array is sized from
-/// [`crate::sched::MAXIMUM_THREADS`], and the debug assert is the cross-check.
+/// [`crate::sched::MAX_THREADS`], and the debug assert is the cross-check.
 struct FreeAddressSpace {
-    vas: [u64; crate::sched::MAXIMUM_THREADS],
+    vas: [u64; crate::sched::MAX_THREADS],
     len: usize,
 }
 
 impl FreeAddressSpace {
     const fn new() -> Self {
         Self {
-            vas: [0; crate::sched::MAXIMUM_THREADS],
+            vas: [0; crate::sched::MAX_THREADS],
             len: 0,
         }
     }
@@ -83,7 +83,7 @@ impl FreeAddressSpace {
     fn push(&mut self, va: u64) {
         debug_assert!(
             self.len < self.vas.len(),
-            "more dead stack ranges than MAXIMUM_THREADS"
+            "more dead stack ranges than MAX_THREADS"
         );
         if self.len < self.vas.len() {
             self.vas[self.len] = va;

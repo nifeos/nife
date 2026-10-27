@@ -54,13 +54,13 @@ pub struct Wiring {
     /// The input ring page, shared with the input source and nobody else.
     pub ring: u64,
     /// Each client's frames: its control page, then its surface.
-    pub client: [u64; compositor::MAXIMUM_WINDOWS],
+    pub client: [u64; compositor::MAX_WINDOWS],
     /// Each client's report endpoint. One per client, so the kernel knows who is speaking: the
     /// kernel is the spawner and may hold per-client channels, which is exactly the identity the
     /// compositor deliberately does not have.
-    pub client_report: [RendezvousId; compositor::MAXIMUM_WINDOWS],
+    pub client_report: [RendezvousId; compositor::MAX_WINDOWS],
     /// Each focusable client's input endpoint (the compositor holds WRITE, the client READ).
-    pub input: [RendezvousId; compositor::MAXIMUM_WINDOWS],
+    pub input: [RendezvousId; compositor::MAX_WINDOWS],
     pub n: usize,
     pub focusable: usize,
     image: &'static [u8],
@@ -77,7 +77,7 @@ pub struct Wiring {
 /// arrives on [`Wiring::report`], since a client's first act is a content-free `HELLO`. See
 /// notes/compositor/kernel-wiring.md.
 pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> Wiring {
-    assert!(n <= SCENE.len() && n <= compositor::MAXIMUM_WINDOWS && focusable <= n);
+    assert!(n <= SCENE.len() && n <= compositor::MAX_WINDOWS && focusable <= n);
     let image = program("compositor").expect("no compositor program in the initial ramdisk");
     let client_image = program("window").expect("no window program in the initial ramdisk");
     let term_image =
@@ -90,7 +90,7 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
 
     // One contiguous run for every client's frames, so a client's neighbour's pixels are the frames
     // physically after its own grant and the neighbour attack is a real one.
-    let mut per_client = [0u64; compositor::MAXIMUM_WINDOWS];
+    let mut per_client = [0u64; compositor::MAX_WINDOWS];
     let mut total = 0u64;
     for (i, win) in SCENE.iter().take(n).enumerate() {
         per_client[i] = 1 + win.page_frames() as u64; // a control page, then the surface
@@ -101,9 +101,9 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
         .expect("no contiguous run for the compositor's client surfaces")
         .addr();
 
-    let mut client = [0u64; compositor::MAXIMUM_WINDOWS];
-    let mut client_report = [0; compositor::MAXIMUM_WINDOWS];
-    let mut input = [0; compositor::MAXIMUM_WINDOWS];
+    let mut client = [0u64; compositor::MAX_WINDOWS];
+    let mut client_report = [0; compositor::MAX_WINDOWS];
+    let mut input = [0; compositor::MAX_WINDOWS];
     let mut at = run_base;
     for i in 0..n {
         client[i] = at;
@@ -119,7 +119,7 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
     let budget =
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the compositor");
 
-    let mut grants = [rendezvous_cap(report, Rights::WRITE); MAXIMUM_COMP_GRANTS];
+    let mut grants = [rendezvous_cap(report, Rights::WRITE); MAX_COMP_GRANTS];
     grants[1] = rendezvous_cap(display, Rights::WRITE);
     grants[2] = rendezvous_cap(doorbell, Rights::READ);
     grants[3] = page_frame_run_cap(
@@ -173,14 +173,14 @@ fn compositor_maps(
     wlist: u64,
     ring: u64,
     n: usize,
-    per_client: &[u64; compositor::MAXIMUM_WINDOWS],
-    client: &[u64; compositor::MAXIMUM_WINDOWS],
-) -> ([Mapping; MAXIMUM_COMP_MAPS], usize) {
+    per_client: &[u64; compositor::MAX_WINDOWS],
+    client: &[u64; compositor::MAX_WINDOWS],
+) -> ([Mapping; MAX_COMP_MAPS], usize) {
     let mut maps = [Mapping {
         va: 0,
         phys: 0,
         flags: Flags::user_data(),
-    }; MAXIMUM_COMP_MAPS];
+    }; MAX_COMP_MAPS];
     let mut m = 0;
     maps[m] = Mapping {
         va: WLIST_VA,
@@ -228,7 +228,7 @@ impl Wiring {
             va: 0,
             phys: 0,
             flags: Flags::user_data(),
-        }; MAXIMUM_CLIENT_MAPS];
+        }; MAX_CLIENT_MAPS];
         let mut m = 0;
         maps[m] = Mapping {
             va: CTL_VA,
@@ -432,7 +432,7 @@ impl Wiring {
             va: 0,
             phys: 0,
             flags: Flags::user_data(),
-        }; MAXIMUM_CLIENT_MAPS];
+        }; MAX_CLIENT_MAPS];
         let mut m = 0;
         maps[m] = Mapping {
             va: T_CTL_VA,
@@ -504,28 +504,28 @@ impl TermClient {
 
 /// The most mappings a compositor can need: the list, the ring, and every client's control page
 /// and surface. The screen is a `PageFrame` grant instead.
-const MAXIMUM_COMP_MAPS: usize = 2 + compositor::MAXIMUM_WINDOWS * (1 + MAXIMUM_SURFACE_PAGES);
+const MAX_COMP_MAPS: usize = 2 + compositor::MAX_WINDOWS * (1 + MAX_SURFACE_PAGES);
 /// The most page frames a client's surface may take: one `Mapping` each, beside its control page.
 /// The tables are sized from it, and they must fit the 1 KiB a spawn closure may capture
 /// (`kernel/src/thread.rs` asserts that), so a window too big for it is refused below, at build
 /// time, rather than as an index out of bounds when the compositor is wired.
-const MAXIMUM_SURFACE_PAGES: usize = 4;
+const MAX_SURFACE_PAGES: usize = 4;
 const _: () = {
     let mut i = 0;
     while i < compositor::SCENE.len() {
         assert!(
-            compositor::SCENE[i].page_frames() as usize <= MAXIMUM_SURFACE_PAGES,
-            "a SCENE window's surface needs more page frames than MAXIMUM_SURFACE_PAGES",
+            compositor::SCENE[i].page_frames() as usize <= MAX_SURFACE_PAGES,
+            "a SCENE window's surface needs more page frames than MAX_SURFACE_PAGES",
         );
         i += 1;
     }
 };
 /// The most a client can need: its control page, its surface, and (capture only) the window list.
 /// A capture client maps the screen itself, out of its `SCREEN_FRAME` and `BUDGET` grants.
-const MAXIMUM_CLIENT_MAPS: usize = 1 + MAXIMUM_SURFACE_PAGES + 1;
+const MAX_CLIENT_MAPS: usize = 1 + MAX_SURFACE_PAGES + 1;
 /// Report, display, doorbell, the screen `PageFrame`, its map budget, then one input endpoint per
 /// focusable client starting at [`COMP_INPUT_BASE`].
-const MAXIMUM_COMP_GRANTS: usize = COMP_INPUT_BASE as usize + compositor::MAXIMUM_WINDOWS;
+const MAX_COMP_GRANTS: usize = COMP_INPUT_BASE as usize + compositor::MAX_WINDOWS;
 /// The first of the compositor's per-client input-endpoint grant slots. Must match
 /// `components/src/compositor.rs`'s own `INPUT` constant.
 const COMP_INPUT_BASE: u64 = 5;

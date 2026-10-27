@@ -36,9 +36,8 @@ pub mod ivrs;
 use bytes::{u16, u32, u64};
 pub use dmar::{
     DeviceScope, Dmar, DmarEntry, DmarStructures, DmarUnits, Drhd, InterruptRemappingClaims,
-    MAXIMUM_DRHDS, MAXIMUM_RMRR_SCOPES, MAXIMUM_RMRRS, MAXIMUM_SCOPE_PATH, MAXIMUM_SCOPES,
-    Ownership, ReservedRegion, SCOPE_PCI_ENDPOINT, SCOPE_PCI_SUBHIERARCHY, dmar_structures,
-    first_drhd, parse_dmar,
+    MAX_DRHDS, MAX_RMRR_SCOPES, MAX_RMRRS, MAX_SCOPE_PATH, MAX_SCOPES, Ownership, ReservedRegion,
+    SCOPE_PCI_ENDPOINT, SCOPE_PCI_SUBHIERARCHY, dmar_structures, first_drhd, parse_dmar,
 };
 pub use fadt::{ArmBoot, ResetRegister, ResetSpace, parse_arm_boot, parse_fadt_reset};
 pub use gtdt::{GTDT_ACTIVE_LOW, GTDT_EDGE_TRIGGERED, Gtdt, parse_gtdt};

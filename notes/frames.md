@@ -193,7 +193,7 @@ the boot ended with 216 free page frames and no free run longer than 117.
 
 `kernel/src/testing.rs` now keeps a page frame ledger. It reads free page frames once per test, so
 each test is charged the drop to the next reading. Two ceilings fail the run:
-`SUITE_PAGE_FRAME_BUDGET` catches the total residue growing, and `SUITE_MINIMUM_FREE_RUN` requires a
+`SUITE_PAGE_FRAME_BUDGET` catches the total residue growing, and `SUITE_MIN_FREE_RUN` requires a
 free run of at least 1024 page frames at the end. The second is the real gate.
 
 The fix was wiring, not mechanism. `user::holding::Holding` (name provisional) gives back what the

@@ -8,7 +8,7 @@ use super::*;
 
 /// The most timers that can exist at once, whole machine: the notification registry's bound, since
 /// a timer is per waiter. The expiry walk is O(this) at worst, and runs only on a due tick.
-pub(super) const MAXIMUM_TIMERS: usize = 256;
+pub(super) const MAX_TIMERS: usize = 256;
 
 /// A timer's name: a generational name over the timer registry, what an `Object::Timer`
 /// capability carries. *(Provisional, as the object type is.)*
@@ -44,7 +44,7 @@ pub(super) fn timer_of(sched: &IpcTables, id: TimerId) -> Option<&'static mut Ti
 pub fn create_timer_from(region: u64) -> Option<TimerId> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut()?;
-    if sched.timer_table.len() >= MAXIMUM_TIMERS {
+    if sched.timer_table.len() >= MAX_TIMERS {
         return None;
     }
     let phys =
@@ -140,7 +140,7 @@ pub(super) fn expire_timers() {
         }));
         EARLIEST_DEADLINE.store(cached, Ordering::Relaxed);
     }
-    for cpu in 0..cpu::MAXIMUM_CPUS {
+    for cpu in 0..cpu::MAX_CPUS {
         if poke & (1 << cpu) != 0 {
             crate::arch::irq::send_reschedule(cpu);
         }

@@ -83,7 +83,7 @@ large for an audit lane and too specific to leave as prose.
 
 ```rust
 if filtered && v.takes_name() && v.operand == verb::Operand::Name {
-    let mut buf = [0u8; grant::MAXIMUM_NAME];
+    let mut buf = [0u8; grant::MAX_NAME];
     let n = name_at(0, len, &mut buf);          // read the name OUT of the shared page
     if !nameset::contains(set, &buf[..n]) {     // check it against the granted set
         reply(reply_slot, reply_err(ENOENT));

@@ -445,8 +445,8 @@ fn the_outer_walk_stays_inside_the_rings_and_terminates() {
 fn distinct_queues_occupy_disjoint_blocks() {
     let q1: u16 = kani::any();
     let q2: u16 = kani::any();
-    kani::assume((q1 as u64) < MAXIMUM_QUEUES);
-    kani::assume((q2 as u64) < MAXIMUM_QUEUES);
+    kani::assume((q1 as u64) < MAX_QUEUES);
+    kani::assume((q2 as u64) < MAX_QUEUES);
     kani::assume(q1 < q2);
     // The lower queue's ring area ends at or before the higher queue's block begins: disjoint.
     assert!(queue_block(q1) + RING_END <= queue_block(q2));

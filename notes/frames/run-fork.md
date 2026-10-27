@@ -74,12 +74,12 @@ below). Nothing else on this path is short. Only the slots are.
 
 The constants a reader would quote should be the current ones (updated 2026-09-02, milestones 230
 and 231). The table is twenty-four slots rather than sixteen, `Option<Cap<Object>>` is 32 bytes
-rather than 24, and `MAXIMUM_THREADS` is 256 rather than 128. The paragraphs above are left as
-written, because they are the record of an investigation on the day it was done. None of the
-arithmetic's *conclusions* survive being updated any differently. 469 page frames does not fit in
-twenty-four slots either, and option 2 now prices 512 slots at 16 KiB a thread across twice as many
-threads. `kernel::cap::CAPABILITY_TABLE_SLOTS`' own doc carries why it moved, which is worth reading
-before quoting any figure here.
+rather than 24, and `MAX_THREADS` is 256 rather than 128. The paragraphs above are left as written,
+because they are the record of an investigation on the day it was done. None of the arithmetic's
+*conclusions* survive being updated any differently. 469 page frames does not fit in twenty-four
+slots either, and option 2 now prices 512 slots at 16 KiB a thread across twice as many threads.
+`kernel::cap::CAPABILITY_TABLE_SLOTS`' own doc carries why it moved, which is worth reading before
+quoting any figure here.
 
 A boot now says what it used, which is the thing this argument was conducted without.
 `kernel::cap::report_peak` prints `capability slots: N of M at peak` from the scheduler's idle loop,
@@ -104,7 +104,7 @@ headroom are left.
    boundary rather than a habit (`AGENTS.md`, DECISIONS §10 (process model) and §16 (object revocation)).
 2. Grow `CAPABILITY_TABLE_SLOTS`. One number in `kernel/src/cap.rs` and its twin in `crates/abi`,
    paid in TCB size. `Option<Cap<Object>>` is 24 bytes, so 512 slots is 12 KiB of capability table
-   per thread against today's 384 bytes, and `MAXIMUM_THREADS` is 128. It moves
+   per thread against today's 384 bytes, and `MAX_THREADS` is 128. It moves
    `abi::fault::FAULT_EP_SLOT`, which is defined as `CAPABILITY_TABLE_SLOTS - 1` and which every
    supervised program agrees on. It leaves 469 `MAP` calls and 469 mapping records in place, so it
    buys the pixels without buying any of the elegance.

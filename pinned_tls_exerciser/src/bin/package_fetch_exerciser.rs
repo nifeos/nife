@@ -24,7 +24,7 @@ use package_index::fixture::{
     ABSENT, BACKUP_HOST, GENUINE, INDEX_PORT, PRIMARY_HOST, REBOUND, TAMPERED,
 };
 use package_index::{
-    AddressRefusal, Entry, Index, Location, Miss, PATH_MAXIMUM, PROVISIONAL_CHANNEL, Repository,
+    AddressRefusal, Entry, Index, Location, Miss, PATH_MAX, PROVISIONAL_CHANNEL, Repository,
     STAND_IN_INDEX_FILE, Source, accept,
 };
 use pinned_tls_client::listed::{self, root_der};
@@ -75,7 +75,7 @@ fn from_repository(repo: &Repository<'_>, path: &str) -> Result<Vec<u8>, String>
 /// The index from the first of the image's addresses that answers (Q2).
 fn fetch_index<'r>(addresses: &'r [Repository<'r>]) -> (String, &'r Repository<'r>) {
     for repo in addresses {
-        let mut buf = [0u8; PATH_MAXIMUM];
+        let mut buf = [0u8; PATH_MAX];
         let path = repo.metadata_path(STAND_IN_INDEX_FILE, &mut buf).unwrap();
         match from_repository(repo, path) {
             Ok(body) => {
@@ -122,7 +122,7 @@ fn install_check(index: &Index<'_>, from: &Repository<'_>, name: &str, architect
                 }
             },
             Source::Repository(repo) => {
-                let mut buf = [0u8; PATH_MAXIMUM];
+                let mut buf = [0u8; PATH_MAX];
                 let path = repo.target_path(entry.stem, &mut buf).unwrap();
                 match from_repository(repo, path) {
                     Ok(bytes) => (bytes, format!("{}'s targets", repo.host)),

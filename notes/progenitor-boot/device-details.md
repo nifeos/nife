@@ -28,7 +28,7 @@ framebuffer in `kernel/src/screen.rs`'s own `.bss`, and mapping that range into 
 userspace process a window onto kernel statics. The check is a range test made before the yield,
 so a refusal leaves the kernel painting, and milestone 157 (real display output on the board)'s U-Boot aperture passes it unchanged.
 
-A refusal after the yield (a screen too large to map, `display_service`'s `MAXIMUM_APERTURE_PAGES`)
+A refusal after the yield (a screen too large to map, `display_service`'s `MAX_APERTURE_PAGES`)
 leaves the screen blank, and the boot goes on over the UART. That is a bound no screen in the fleet
 is near, so it has no second handover path. When the function returns, the driver and terminal are
 running and the terminal has painted its blank grid.

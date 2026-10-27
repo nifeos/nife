@@ -80,7 +80,7 @@ pub(crate) fn guard_page_at(addr: u64) -> Option<GuardPage> {
         return Some(GuardPage::Boot);
     }
 
-    for id in 0..crate::cpu::MAXIMUM_CPUS {
+    for id in 0..crate::cpu::MAX_CPUS {
         let g = crate::smp::secondary_stack_guard(id);
         if (g..g + PAGE).contains(&addr) {
             return Some(GuardPage::Secondary(id));
@@ -381,9 +381,9 @@ pub(crate) fn paint_boot_stack() {
 /// (scanned in its `Drop`) and, at report time, every live one. One number, because every kernel
 /// thread stack is the same size.
 #[cfg(any(test, feature = "system_tests"))]
-static THREAD_STACK_MAXIMUM: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+static THREAD_STACK_MAX: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
 
-/// How many thread stacks fed [`THREAD_STACK_MAXIMUM`], so the report says how much evidence the
+/// How many thread stacks fed [`THREAD_STACK_MAX`], so the report says how much evidence the
 /// number rests on.
 #[cfg(any(test, feature = "system_tests"))]
 static THREAD_STACK_SCANS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
@@ -393,7 +393,7 @@ static THREAD_STACK_SCANS: core::sync::atomic::AtomicU64 = core::sync::atomic::A
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn note_thread_stack_use(used: u64) {
     use core::sync::atomic::Ordering;
-    THREAD_STACK_MAXIMUM.fetch_max(used, Ordering::Relaxed);
+    THREAD_STACK_MAX.fetch_max(used, Ordering::Relaxed);
     THREAD_STACK_SCANS.fetch_add(1, Ordering::Relaxed);
 }
 
@@ -416,8 +416,8 @@ pub(crate) fn report_high_water() {
     );
 
     let boot_cpu = crate::arch::boot_cpu_id();
-    let mut maximum_secondary = 0u64;
-    for id in 0..crate::cpu::MAXIMUM_CPUS {
+    let mut max_secondary = 0u64;
+    for id in 0..crate::cpu::MAX_CPUS {
         if id == boot_cpu || crate::smp::online_harts_mask() & (1 << id) == 0 {
             continue; // the boot core runs on the linker-script stack; its slot was never painted
         }
@@ -425,7 +425,7 @@ pub(crate) fn report_high_water() {
         // SAFETY: the span of an online core's `.bss` stack slot, which `bring_up_secondaries`
         // painted whole before any `CPU_ON`. The `continue` above skipped every slot that was not.
         let cpu_used = unsafe { high_water(b, t) };
-        maximum_secondary = maximum_secondary.max(cpu_used);
+        max_secondary = max_secondary.max(cpu_used);
         crate::println!(
             "stack high-water: core{id}  {cpu_used}/{} bytes ({}%)",
             t - b,
@@ -434,13 +434,13 @@ pub(crate) fn report_high_water() {
     }
 
     // Every seat: `interrupt_stack::initialize` painted each slot, so an unused one reads 0.
-    let mut maximum_interrupt = 0u64;
-    for id in 0..crate::cpu::MAXIMUM_CPUS {
+    let mut max_interrupt = 0u64;
+    for id in 0..crate::cpu::MAX_CPUS {
         let (b, t) = crate::interrupt_stack::span(id);
         // SAFETY: a slot of the region `interrupt_stack::initialize` mapped and painted before any
         // core could switch to one.
         let used = unsafe { high_water(b, t) };
-        maximum_interrupt = maximum_interrupt.max(used);
+        max_interrupt = max_interrupt.max(used);
         if used > 0 {
             crate::println!(
                 "stack high-water: irq{id}   {used}/{} bytes ({}%)",
@@ -452,7 +452,7 @@ pub(crate) fn report_high_water() {
 
     // Live thread stacks too, so threads nothing ever reaps are counted.
     crate::sched::scan_live_thread_stacks();
-    let tmax = THREAD_STACK_MAXIMUM.load(Ordering::Relaxed);
+    let tmax = THREAD_STACK_MAX.load(Ordering::Relaxed);
     let tsize = (crate::thread::STACK_PAGES * 4096) as u64;
     crate::println!(
         "stack high-water: thread {tmax}/{tsize} bytes ({}%, deepest of {} stacks)",
@@ -468,16 +468,16 @@ pub(crate) fn report_high_water() {
          past its measured depth and is within a page of the guard (notes/stack-high-water.md)",
     );
     assert!(
-        maximum_secondary <= 16384,
-        "a secondary stack's high-water {maximum_secondary} exceeded 16384, ~2x anything measured; \
+        max_secondary <= 16384,
+        "a secondary stack's high-water {max_secondary} exceeded 16384, ~2x anything measured; \
          the guard page below it (smp.rs) would still catch a real overflow, but something is \
          running much deeper on an idle-and-traps stack than the suite has ever measured",
     );
     // Half the 16 KiB slot, above the ~4 KiB chain `script/stack-depth-check` finds and far below
     // the guard. A trip means a handler chain grew, not that the stack is too small.
     assert!(
-        maximum_interrupt <= 8192,
-        "an interrupt stack's high-water {maximum_interrupt} exceeded 8192, half its slot: a trap \
+        max_interrupt <= 8192,
+        "an interrupt stack's high-water {max_interrupt} exceeded 8192, half its slot: a trap \
          handler's chain has grown past anything measured (notes/stack/interrupt-stack.md, \
          script/stack-depth-check)",
     );

@@ -388,9 +388,9 @@ fn plan_memory_grant(run: &ParsedInvocation<'_>, m: &Manifest) -> Result<u64, Re
         (MemoryGrantDeclaration::Required { .. }, None) => {
             return Err(Refusal::MemoryGrantRequired);
         }
-        (MemoryGrantDeclaration::Required { minimum, maximum }, Some(n)) => {
-            if n < minimum || n > maximum {
-                return Err(Refusal::MemoryGrantOutOfRange { minimum, maximum });
+        (MemoryGrantDeclaration::Required { min, max }, Some(n)) => {
+            if n < min || n > max {
+                return Err(Refusal::MemoryGrantOutOfRange { min, max });
             }
             n
         }

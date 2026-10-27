@@ -17,10 +17,7 @@ pub const WRITE: u64 = 1 << 1;
 /// [`WORDS_NAME`], and a name over that travels on a page: a name set's frame, or the bytes the
 /// shell opens itself. [`pack_name`] refuses rather than truncates, so nothing can put a long name in
 /// two words by mistake.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_NAME`.
-pub const MAXIMUM_NAME: usize = 252;
+pub const MAX_NAME: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, eight per word. A
 /// caretaker's granted directory, `rm`'s operand, a `login` identity's subtree and an activation
@@ -28,8 +25,8 @@ pub const MAXIMUM_NAME: usize = 252;
 /// mapped before it runs. Anything longer is refused where it would be packed ([`pack_name`]
 /// answers `None`), never truncated, because a truncated name is a different file.
 ///
-/// Name: provisional (milestone 946), for "what two words can hold" beside [`MAXIMUM_NAME`]'s "what
-/// a grant can name".
+/// Name: provisional (milestone 946), for "what two words can hold" beside [`MAX_NAME`]'s "what a
+/// grant can name".
 pub const WORDS_NAME: usize = 16;
 
 /// `EROFS`, the reply to a write through a read-only grant. Chosen over `EACCES` on purpose:
@@ -76,9 +73,9 @@ pub fn unpack_name(lo: u64, hi: u64, len: usize, buf: &mut [u8; WORDS_NAME]) -> 
     len.min(WORDS_NAME)
 }
 
-/// Whether a name can be granted at all: one to [`MAXIMUM_NAME`] bytes.
+/// Whether a name can be granted at all: one to [`MAX_NAME`] bytes.
 pub const fn fits(name: &[u8]) -> bool {
-    !name.is_empty() && name.len() <= MAXIMUM_NAME
+    !name.is_empty() && name.len() <= MAX_NAME
 }
 
 /// Whether a name fits in two `START` argument words: one to [`WORDS_NAME`] bytes.

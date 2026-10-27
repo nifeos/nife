@@ -7,7 +7,7 @@ use crate::sched;
 
 /// The most messages one run may send before the harness stops reading. A `rm` that never sent
 /// its verdict would otherwise hang the boot; this turns it into a failed assertion.
-const MAXIMUM_MESSAGES: usize = 64;
+const MAX_MESSAGES: usize = 64;
 
 /// What one run of the program reported.
 struct Outcome {
@@ -53,7 +53,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
     // the verdict arm returns *before* the increment, so on the iteration that sees it, the
     // index is the number of text frames that arrived first. That is the quantity being
     // reported, so this is not merely appeasing the lint.
-    for (printed, _) in (0..MAXIMUM_MESSAGES).enumerate() {
+    for (printed, _) in (0..MAX_MESSAGES).enumerate() {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
         // The stream's end carries the verdict: `rm` speaks the sink contract it declares, so the
         // last message is `byte_sink_contract::eof()` with the status and the count in the two
@@ -71,7 +71,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
         // stream. That is what makes "it printed nothing" an assertion rather than a hope.
         assert!(w0 <= 16, "neither a verdict nor a text frame: {w0:#x}");
     }
-    panic!("rm sent {MAXIMUM_MESSAGES} messages and never a verdict");
+    panic!("rm sent {MAX_MESSAGES} messages and never a verdict");
 }
 
 /// `rm -r` removes the subtree it was granted, and a narrower capability cannot begin.

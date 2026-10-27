@@ -116,10 +116,7 @@ const fn memory_grant_depleter_manifest() -> Manifest {
         // A budget between 1 and 64 pages. The lower bound makes "memory_grant_depleter with no --mem"
         // a refusal (it exists to spend memory); the upper bound is a sanity ceiling the
         // shell's own budget can actually back.
-        memory_grant: MemoryGrantDeclaration::Required {
-            minimum: 1,
-            maximum: 64,
-        },
+        memory_grant: MemoryGrantDeclaration::Required { min: 1, max: 64 },
         file: FileGrantDeclaration::Forbidden,
         directory: DirectoryGrantDeclaration::Forbidden,
         short_options: NO_SHORT_OPTIONS,
@@ -567,10 +564,7 @@ const fn uptime_manifest() -> Manifest {
 const fn network_echo_client_manifest() -> Manifest {
     Manifest {
         program_argument: ProgramArgumentDeclaration::Forbidden,
-        memory_grant: MemoryGrantDeclaration::Required {
-            minimum: 4,
-            maximum: 16,
-        },
+        memory_grant: MemoryGrantDeclaration::Required { min: 4, max: 16 },
         file: FileGrantDeclaration::Forbidden,
         directory: DirectoryGrantDeclaration::Forbidden,
         short_options: NO_SHORT_OPTIONS,

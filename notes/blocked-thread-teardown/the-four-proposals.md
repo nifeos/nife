@@ -107,7 +107,7 @@ behavior and Zircon's. Two independent pieces, and they can be taken separately:
    trigger would be the destruction of the server's region or of the endpoint the call went to, both
    of which the kernel already witnesses. This makes case (b) work for callers the way it already
    works for waiters, and it needs a way to find reply-parked callers of a given endpoint: their
-   `wait_on` records `(ep, WaitRole::Reply)`, so a scan over `MAXIMUM_THREADS` answers it.
+   `wait_on` records `(ep, WaitRole::Reply)`, so a scan over `MAX_THREADS` answers it.
 2. A deadline on `CALL`, which is L4's answer and is milestone 106's fork rather than this one's.
 
 Authority: none new for piece 1. It rides on authorities already exercised (destroying a region,

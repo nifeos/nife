@@ -13,8 +13,8 @@ panic there is a crafted binary halting the kernel. It did not work, and the rea
 Two things put it past bounded model checking:
 
 1. A loop Kani bounds too loosely. `parse` has an `O(n^2)` overlap check over up to
-   `MAXIMUM_PHNUM = 64` program headers. The real bound is far tighter. The header table must fit in
-   the file, which at any small input size allows one or two headers. But that bound is *nonlinear*
+   `MAX_PHNUM = 64` program headers. The real bound is far tighter. The header table must fit in the
+   file, which at any small input size allows one or two headers. But that bound is *nonlinear*
    (`phoff + phnum * phentsize <= len`). Kani uses the *linear* `phnum <= 64` cap it can see for the
    unwinding assertion, so it insists on unrolling 64 deep. `unwind(65)` did not return in 7+
    minutes.
@@ -36,7 +36,7 @@ it was for, so the story is worth following to its end rather than stopping at t
   faithful.
 - A loop-invariant tool (Verus), if the *loop itself* (the `O(n^2)` overlap check) ever needs
   proving rather than just the arithmetic inside it. Not needed yet.
-- Shrink `MAXIMUM_PHNUM`. That is changing product code to suit the prover, and it is still the last
+- Shrink `MAX_PHNUM`. That is changing product code to suit the prover, and it is still the last
   resort.
 
 The lesson, kept: BMC blunted against the loop and the symbolic slice base, and the fix was not a

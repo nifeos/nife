@@ -132,7 +132,7 @@ Two fixes exist, and both have prior art below:
 - Delete the outstanding reply capability at abort, sweeping every capability table for `Object::Reply(tid)`
   the way `sched::delete_frame_caps` sweeps for `Object::Frame(phys)`. This is seL4 non-MCS's
   `cteDeleteOne(callerCap)`, reached from `cancelIPC`. Cost is O(threads x 16 slots) on a teardown
-  path, which is 2048 comparisons at `MAXIMUM_THREADS = 128` and `CAPABILITY_TABLE_SLOTS = 16`.
+  path, which is 2048 comparisons at `MAX_THREADS = 128` and `CAPABILITY_TABLE_SLOTS = 16`.
 - Do not wake the caller at all, so no second call can exist. This is seL4's `ThreadState_Inactive`
   and is discussed under proposal A.
 
@@ -300,8 +300,7 @@ unblocks a REPLY-blocked client (rather than the client discovering the death la
 documentation's word and not verified.
 
 **No number in this note was measured.** The line counts ("about thirty lines") are estimates from
-reading, the sweep cost is arithmetic from `MAXIMUM_THREADS` and `CAPABILITY_TABLE_SLOTS`, and no
-benchmark was run.
+reading, the sweep cost is arithmetic from `MAX_THREADS` and `CAPABILITY_TABLE_SLOTS`, and no benchmark was run.
 
 **No number in the survey table was re-checked at build time.** The prior art was fetched and read on
 2026-08-17 and none of those systems was consulted again while milestone 133 was written.

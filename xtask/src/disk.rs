@@ -244,8 +244,8 @@ pub(crate) const DOWNLOADED_NOTELESS: &str = "downloads/noteless.nifepkg";
 /// the path's).
 ///
 /// The version is a directory because the shell types a component of at most sixteen bytes
-/// (`grant_plan`'s `MAXIMUM_NAME`, the grant wire's width), and `greeting-0.2.0.nifepkg` is
-/// twenty-two. The name stays inside the wire rather than the wire growing, as the install path
+/// (`grant_plan`'s `MAX_NAME`, the grant wire's width), and `greeting-0.2.0.nifepkg` is twenty-two.
+/// The name stays inside the wire rather than the wire growing, as the install path
 /// (`packages/greeting/0.2.0/greeting`) and the 614 block's BUGS already do.
 pub(crate) const DOWNLOADED_GREETING_0_2_0: &str = "downloads/0.2.0/greeting.nifepkg";
 
@@ -336,7 +336,7 @@ pub(crate) const INSTALLED_RIPGREP: &str = "installed/rg";
 pub(crate) const INSTALLED_STD_ECHO_LARGE: &str = "installed/std-echo-large";
 
 /// How large [`INSTALLED_STD_ECHO_LARGE`] is: 3 MiB, 768 pages, about `rg` 14.1.1's image
-/// (`notes/ripgrep-on-nife.md`) and under `spawnproto::IMAGE_MAXIMUM_PAGES`.
+/// (`notes/ripgrep-on-nife.md`) and under `spawnproto::IMAGE_MAX_PAGES`.
 const LARGE_IMAGE_BYTES: usize = 3 * 1024 * 1024;
 
 /// **Where the shell stands to search [`RIPGREP_CORPUS`]**: a directory at the image root holding
@@ -464,11 +464,10 @@ fn stage_ripgrep_corpus(tree: &std::path::Path) -> Result<String, String> {
 
 /// **A program with no symbol table, for the disk** ([`INSTALLED_RIPGREP`]). `read_stripped` takes
 /// only the debug sections, and keeps the symbols for whoever reads the archive later; `rg` 14.1.1's
-/// are 1.7 MiB of its 4.6, which put it over `spawnproto::IMAGE_MAXIMUM_PAGES` (4 MiB) and the
-/// shell refused it as "larger than an image may be" (found 2026-10-07 on aarch64). Run by path,
-/// nothing reads them. Without them it is 2.7 to 2.9 MiB on all three architectures, and
-/// `--strip-all` keeps the `PT_NOTE`, since that is a loaded segment's content and not a section
-/// the tool drops.
+/// are 1.7 MiB of its 4.6, which put it over `spawnproto::IMAGE_MAX_PAGES` (4 MiB) and the shell
+/// refused it as "larger than an image may be" (found 2026-10-07 on aarch64). Run by path, nothing
+/// reads them. Without them it is 2.7 to 2.9 MiB on all three architectures, and `--strip-all`
+/// keeps the `PT_NOTE`, since that is a loaded segment's content and not a section the tool drops.
 fn without_symbols(path: &std::path::Path, architecture: &str) -> Result<Vec<u8>, String> {
     let objcopy = crate::host::llvm_tool("llvm-objcopy")
         .ok_or("llvm-objcopy not found; the llvm-tools rustup component provides it")?;

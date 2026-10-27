@@ -35,7 +35,7 @@ pub fn filled<T: Copy>(n: usize, x: T) -> Result<Room<T>, swish::Say> {
 }
 
 /// **This shell's heap** (milestone 47 (navigation and naming), calef's ruling of 2026-09-26).
-/// Capped at [`swish::HEAP_MAXIMUM_BYTES`] and mapped from [`BUDGET`] before any other carve, so a
+/// Capped at [`swish::HEAP_MAX_BYTES`] and mapped from [`BUDGET`] before any other carve, so a
 /// leak exhausts the heap and never the budget children are built from.
 #[global_allocator]
 static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
@@ -49,7 +49,7 @@ pub(super) fn initialize_heap() {
     HEAP.initialize(
         BUDGET,
         memory_region_heap::DEFAULT_BASE,
-        swish::HEAP_MAXIMUM_BYTES,
+        swish::HEAP_MAX_BYTES,
     );
     HEAP.commit_all();
 }

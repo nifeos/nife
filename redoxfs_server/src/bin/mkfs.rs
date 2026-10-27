@@ -64,7 +64,7 @@ const BLK_PAGE_FRAME: u64 = 4;
 
 /// Where this program puts the page it shares with the block server. **Its choice**: it holds the
 /// frame and maps it (milestone 108). Clear of the heap, which runs from
-/// `memory_region_heap::DEFAULT_BASE` (1 GiB) for [`HEAP_MAXIMUM`].
+/// `memory_region_heap::DEFAULT_BASE` (1 GiB) for [`HEAP_MAX`].
 const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
 
 /// One filesystem block / one shared page, in bytes. RedoxFS's `BLOCK_SIZE` and the blk wire's
@@ -80,7 +80,7 @@ const LBA: u64 = blank::LBA;
 /// rewrite) plus block buffers and
 /// small tree structures; creation touches fewer of them than a mount does. The untyped the kernel
 /// grants is the real ceiling.
-const HEAP_MAXIMUM: u64 = 8 * 1024 * 1024;
+const HEAP_MAX: u64 = 8 * 1024 * 1024;
 
 #[global_allocator]
 static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
@@ -119,11 +119,7 @@ pub const R_NO_FILE: u64 = 0x_4E_4F_46_4C_45;
 user_mode_runtime::program_entry!(start);
 
 fn start(role: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.initialize(
-        MEMORY_REGION,
-        memory_region_heap::DEFAULT_BASE,
-        HEAP_MAXIMUM,
-    );
+    HEAP.initialize(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     // The shared page, mapped out of the same budget the heap draws on (milestone 108). It is
     // granted in all three wirings, so a failure here is a broken kernel rather than a control.

@@ -22,20 +22,17 @@ const END: (u8, u8) = (0x7F, 0xFF);
 
 /// The longest path walked before giving up. Real ones are under a hundred bytes; the bound is what
 /// keeps a corrupt length from walking the firmware's memory.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_LEN`.
-pub const MAXIMUM_LEN: usize = 1024;
+pub const MAX_LEN: usize = 1024;
 
 /// **How many bytes of nodes come before the end node**, reading each 4-byte header through
 /// `header_at(offset)`. `None` for a malformed path: a node shorter than its own header, a header
-/// that cannot be read, or no end within [`MAXIMUM_LEN`].
+/// that cannot be read, or no end within [`MAX_LEN`].
 ///
 /// A closure rather than a slice because the caller holds a firmware pointer of unknown length, and
 /// reading past the end node to make a slice would read memory the firmware never promised.
 pub fn length(mut header_at: impl FnMut(usize) -> Option<[u8; 4]>) -> Option<usize> {
     let mut at = 0;
-    while at <= MAXIMUM_LEN {
+    while at <= MAX_LEN {
         let h = header_at(at)?;
         if (h[0], h[1]) == END {
             return Some(at);
@@ -162,7 +159,7 @@ mod tests {
         // No end node before the data runs out.
         assert_eq!(measure(&pci(3)), None);
         // No end node within the bound.
-        let long = path(&vec![pci(3); MAXIMUM_LEN / 6 + 2]);
+        let long = path(&vec![pci(3); MAX_LEN / 6 + 2]);
         assert_eq!(measure(&[long, end()].concat()), None);
         // The empty path is just an end node.
         assert_eq!(measure(&end()), Some(0));

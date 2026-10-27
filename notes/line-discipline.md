@@ -46,7 +46,7 @@ Three things it leaves out on purpose:
 
 - It tracks no terminal size. The redraw math assumes one row, so a wrapped long line redraws
   wrongly past the margin. Probing the terminal would block the discipline on a terminal that may
-  never answer, such as a piped boot script, and `LINE_MAXIMUM` keeps the wrap rare.
+  never answer, such as a piped boot script, and `LINE_MAX` keeps the wrap rare.
 - It does no tab completion, because that needs the command namespace. Tab comes back as
   `Event::Tab` and the terminal ignores it. The shell runs this engine itself in raw mode and
   answers Tab with `LineDisc::pending` and `LineDisc::insert_text` (§227 (how Tab reaches the

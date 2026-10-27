@@ -39,7 +39,7 @@ const REPORT: u64 = 3; // WRITE: what we saw and what we decided
 /// because a deterministic fault restarts into the same fault forever; this is the crash-loop guard
 /// that §26 refused to put in the kernel. Two is enough to prove the shape and small enough that a
 /// broken child does not spin the machine.
-const MAXIMUM_RESTARTS: u64 = 2;
+const MAX_RESTARTS: u64 = 2;
 
 user_mode_runtime::program_entry!(start);
 
@@ -88,7 +88,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         }
 
         child.restarts += 1;
-        if child.restarts > MAXIMUM_RESTARTS {
+        if child.restarts > MAX_RESTARTS {
             send(REPORT, REPORT_SUP_GAVE_UP, child.restarts, 0);
             continue;
         }

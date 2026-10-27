@@ -1,7 +1,7 @@
 //! Planning tests: `rm` and the directory it is granted, globbing, and programs that hear
 //! words.
 
-use crate::expand::{Expander, Expansion, MAXIMUM_NAMES};
+use crate::expand::{Expander, Expansion, MAX_NAMES};
 use crate::test_support::{READS_A_FILE, WITH_DIRECTORY, plan, plan_against};
 use crate::*;
 
@@ -385,7 +385,7 @@ fn an_empty_match_and_an_oversized_one_are_both_refused_before_anything_spawns()
     // Too many matched: the grant is refused whole. Sixteen of seventeen names would have been
     // a preview and a transfer that disagreed.
     let mut over = Expander::new(b"*");
-    let mut names = [[b'n'; 4]; MAXIMUM_NAMES + 1];
+    let mut names = [[b'n'; 4]; MAX_NAMES + 1];
     for (i, n) in names.iter_mut().enumerate() {
         n[2] = b'0' + (i / 10) as u8;
         n[3] = b'0' + (i % 10) as u8;
@@ -463,25 +463,22 @@ fn a_pattern_is_resolved_where_the_shell_was_standing() {
     assert_eq!(g.directory.depth(), 2, "the grant followed the shell");
 }
 
-/// The set bound is one number spelled in two crates, for [`MAXIMUM_FILE_NAME`]'s reason:
-/// `grant_plan` must be able to check a command line without linking the filesystem contract, so
-/// the pair is pinned here rather than shared.
+/// The set bound is one number spelled in two crates, for [`MAX_FILE_NAME`]'s reason: `grant_plan`
+/// must be able to check a command line without linking the filesystem contract, so the pair is
+/// pinned here rather than shared.
 #[test]
 fn the_set_bound_matches_the_contract_that_carries_the_set() {
-    assert_eq!(MAXIMUM_NAMES, filesystem_contract::nameset::MAXIMUM_NAMES);
+    assert_eq!(MAX_NAMES, filesystem_contract::nameset::MAX_NAMES);
     assert_eq!(expand::NAME_BYTES, filesystem_contract::nameset::NAME_BYTES);
-    assert_eq!(
-        expand::MAXIMUM_NAME,
-        filesystem_contract::grant::MAXIMUM_NAME
-    );
+    assert_eq!(expand::MAX_NAME, filesystem_contract::grant::MAX_NAME);
     // And the widest set this crate can plan must fit the buffer that contract sizes for it: every
     // name it may hold, sharing every byte it may hold.
-    let wide = [b'w'; expand::NAME_BYTES / MAXIMUM_NAMES];
-    let widest: [(&[u8], bool); MAXIMUM_NAMES] = [(&wide[..], false); MAXIMUM_NAMES];
+    let wide = [b'w'; expand::NAME_BYTES / MAX_NAMES];
+    let widest: [(&[u8], bool); MAX_NAMES] = [(&wide[..], false); MAX_NAMES];
     let mut buf = [0u8; filesystem_contract::nameset::BYTES];
     assert!(filesystem_contract::nameset::encode(&widest, &mut buf).is_some());
     let mut set = expand::NameSet::empty();
-    for i in 0..MAXIMUM_NAMES {
+    for i in 0..MAX_NAMES {
         let mut name = wide;
         name[0] = b'a' + i as u8;
         assert!(set.push(&name, false), "name {i} fits the set's bytes");
@@ -521,8 +518,7 @@ fn a_program_that_hears_words_places_no_positional_grant() {
 
 /// **The planner lets a program that hears words have its whole line** (§170): a flag-shaped
 /// token is not `Unexpected`, a letter is not `NoSuchOption`, and five words are not past
-/// `MAXIMUM_POSITIONALS`. Nothing is placed, so the endowment carries no argument and no short
-/// options.
+/// `MAX_POSITIONALS`. Nothing is placed, so the endowment carries no argument and no short options.
 #[test]
 fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
     let e = plan(

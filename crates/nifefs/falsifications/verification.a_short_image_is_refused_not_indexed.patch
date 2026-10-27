@@ -19,7 +19,7 @@ diff --git a/crates/nifefs/src/lib.rs b/crates/nifefs/src/lib.rs
 +++ b/crates/nifefs/src/lib.rs
 @@ -262,7 +262,7 @@ impl<'a> Fs<'a> {
          // The directory blocks must be present before any entry offset (up to HEADER_LEN +
-         // MAXIMUM_FILES*ENTRY_LEN, which sits inside DIR_BLOCKS) is read; this guard is what makes
+         // MAX_FILES*ENTRY_LEN, which sits inside DIR_BLOCKS) is read; this guard is what makes
          // those reads sound.
 -        if image.len() < DIR_BLOCKS * BLOCK {
 +        if image.len() < BLOCK {

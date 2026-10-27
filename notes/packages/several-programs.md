@@ -50,6 +50,6 @@ $ alto
 - A generation is one 4,096-byte page, and a program's row and pointer take about 170 bytes. So
   the live set holds about two dozen installed programs, by arithmetic on `installed_programs`'s
   writer rather than measured.
-- Every program of a package shares the 4 MiB staging limit (`spawnproto::IMAGE_MAXIMUM_PAGES`).
+- Every program of a package shares the 4 MiB staging limit (`spawnproto::IMAGE_MAX_PAGES`).
 - A holder's name longer than 32 bytes, which only a hand-written table holds, is cut at that
   width in the refusal.

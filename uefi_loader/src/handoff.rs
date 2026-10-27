@@ -161,19 +161,19 @@ pub fn encode_module(addr: u64, size: u64) -> [u8; MODULE_ENTRY_LEN] {
 /// **How many bytes the kernel's boot command line may occupy**, NUL included: the one place the
 /// line's vocabulary is added up, though its tokens belong to two crates.
 ///
-/// `Framebuffer::MAXIMUM_LEN` is the screen token; then a space and
+/// `Framebuffer::MAX_LEN` is the screen token; then a space and
 /// `machine_discovery::framebuffer::SCREEN_HOLD`, which the `screen_hold` feature adds for
 /// milestone 445 (the screen check stops sampling and starts asking), counted whether or not that
 /// feature is on so a caller's buffer has one length rather than two; then
-/// `boot_slot::cmdline::MAXIMUM_LEN`, the slot token an installed machine's chooser writes and
-/// every other boot leaves off.
-pub const CMDLINE_LEN: usize = machine_discovery::framebuffer::Framebuffer::MAXIMUM_LEN
+/// `boot_slot::cmdline::MAX_LEN`, the slot token an installed machine's chooser writes and every
+/// other boot leaves off.
+pub const CMDLINE_LEN: usize = machine_discovery::framebuffer::Framebuffer::MAX_LEN
     + 1
     + machine_discovery::framebuffer::SCREEN_HOLD.len()
     + 1
-    + boot_slot::cmdline::MAXIMUM_LEN
+    + boot_slot::cmdline::MAX_LEN
     + 1
-    + boot_slot::medium::MAXIMUM_LEN
+    + boot_slot::medium::MAX_LEN
     + 1;
 
 /// **Write the kernel's boot command line**, NUL-terminated; returns its length without the NUL,
@@ -341,7 +341,7 @@ mod tests {
             order: PixelOrder::Bgrx,
         };
         // The loader's own buffer, at the address it would have allocated for it.
-        let mut line = [0u8; Framebuffer::MAXIMUM_LEN];
+        let mut line = [0u8; Framebuffer::MAX_LEN];
         let written = screen.encode(&mut line);
 
         let info = StartInfo {
@@ -467,7 +467,7 @@ mod tests {
         use machine_discovery::framebuffer::{Framebuffer, PixelOrder};
 
         // The widest screen token this encoder can produce, by the fields that are printed in
-        // full: the assertion is against `MAXIMUM_LEN`, which is that crate's own claim.
+        // full: the assertion is against `MAX_LEN`, which is that crate's own claim.
         let screen = Framebuffer {
             base: u64::MAX,
             width: u32::MAX,
@@ -483,13 +483,13 @@ mod tests {
         );
         assert_eq!(out[n], 0);
         // Nothing is left over that nobody accounted for: every token but the screen's counts at
-        // its exact length, the screen's at that crate's own rounded-up `MAXIMUM_LEN`, and the NUL
+        // its exact length, the screen's at that crate's own rounded-up `MAX_LEN`, and the NUL
         // once. The line above carries `screen-hold`, because Cargo.toml's self-dependency builds
         // this package's tests with that feature on.
-        let screen_len = screen.encode(&mut [0u8; Framebuffer::MAXIMUM_LEN]);
+        let screen_len = screen.encode(&mut [0u8; Framebuffer::MAX_LEN]);
         assert_eq!(
             CMDLINE_LEN,
-            n + (Framebuffer::MAXIMUM_LEN - screen_len) + 1,
+            n + (Framebuffer::MAX_LEN - screen_len) + 1,
             "CMDLINE_LEN is the sum of its tokens and the NUL"
         );
     }

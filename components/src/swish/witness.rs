@@ -497,7 +497,7 @@ fn probe_bind(
             // `/<dirname>`, the real parent's own path: built once, so the check below compares
             // against the *real* tree rather than the alias, which a position has no memory of
             // having been reached through.
-            let mut want = [0u8; nav::RENDER_MAXIMUM];
+            let mut want = [0u8; nav::RENDER_MAX];
             want[0] = b'/';
             want[1..1 + dirname.1].copy_from_slice(name_of(dirname));
             let want = &want[..1 + dirname.1];
@@ -835,7 +835,7 @@ fn run_line(nav: &mut Nav, cmd: &[u8]) -> Option<Say> {
 
 /// Whether `pwd` would print exactly this.
 fn pwd_is(nav: &Nav, want: &[u8]) -> bool {
-    let mut buf = [0u8; nav::RENDER_MAXIMUM];
+    let mut buf = [0u8; nav::RENDER_MAX];
     let n = nav.holds.cwd.render(&mut buf);
     &buf[..n] == want
 }

@@ -116,7 +116,7 @@ impl Table {
 /// because a first component longer than that is in no set and [`name_at`] refuses it anyway.
 fn first_component(len: usize) -> usize {
     let mut b = [0u8; 1];
-    for i in 0..len.min(grant::MAXIMUM_NAME + 1) {
+    for i in 0..len.min(grant::MAX_NAME + 1) {
         get_at(i, &mut b);
         if b[0] == b'/' {
             return i;
@@ -130,8 +130,8 @@ fn first_component(len: usize) -> usize {
 /// A name longer than a grant can carry is truncated to nothing rather than clamped, because the set
 /// holds no such name and a clamped name is a *different* name: comparing a prefix against the set
 /// is how a filter accidentally admits `gl-one.txtXXX`.
-fn name_at(off: usize, len: usize, buf: &mut [u8; grant::MAXIMUM_NAME]) -> usize {
-    if len == 0 || len > grant::MAXIMUM_NAME || off + len > PAGE {
+fn name_at(off: usize, len: usize, buf: &mut [u8; grant::MAX_NAME]) -> usize {
+    if len == 0 || len > grant::MAX_NAME || off + len > PAGE {
         return 0;
     }
     get_at(off, &mut buf[..len]);
@@ -176,7 +176,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         // A name outside the set is refused before anything is forwarded, so the refusal cannot
         // be told apart from a name not on the disk. `RENAME` needs both halves, below.
         if filtered && v.takes_name() && v.operand == verb::Operand::Name {
-            let mut buf = [0u8; grant::MAXIMUM_NAME];
+            let mut buf = [0u8; grant::MAX_NAME];
             // `OPEN` and `OPENDIR` may carry a relative path (milestone 606 (a directory walk
             // costs what it does on Linux), ruling A). Only its first component is a name in this
             // directory, so only it is checked and written back.
@@ -216,8 +216,8 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             // destroys a name this capability was never granted. So a set capability cannot move a
             // name out of the set, and `mv *.txt` is not expressible (notes/glob-grant.md).
             let dst_len = fs::dst_len(w1).min(PAGE);
-            let mut src = [0u8; grant::MAXIMUM_NAME];
-            let mut dst = [0u8; grant::MAXIMUM_NAME];
+            let mut src = [0u8; grant::MAX_NAME];
+            let mut dst = [0u8; grant::MAX_NAME];
             let sn = name_at(0, len, &mut src);
             let dn = name_at(len, dst_len, &mut dst);
             let dst_handle = table.get(fs::dst_handle(w1));
@@ -270,7 +270,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
 /// afterwards is listed as it was designated, and the verb that acts on it answers for what it is.
 fn list(set: &[u8], cursor: usize) -> i64 {
     let mut off = 0usize;
-    let mut rec = [0u8; dirent::record_len(grant::MAXIMUM_NAME)];
+    let mut rec = [0u8; dirent::record_len(grant::MAX_NAME)];
     for (name, is_dir) in nameset::iter(set).skip(cursor) {
         let Some(n) = dirent::encode(&mut rec, name, is_dir) else {
             break;

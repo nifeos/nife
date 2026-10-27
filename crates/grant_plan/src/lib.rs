@@ -42,7 +42,7 @@ mod test_support;
 mod tests;
 
 pub use command::{
-    Command, DirectoryGrant, Endowment, FileGrant, Holdings, MAXIMUM_SHORT_OPTIONS, MountedTree,
+    Command, DirectoryGrant, Endowment, FileGrant, Holdings, MAX_SHORT_OPTIONS, MountedTree,
     TouchOperands, rmopt,
 };
 pub use escalation::{Action, COOP_GRACE_TICKS, Escalation};
@@ -53,15 +53,15 @@ pub use image::{
 pub use manifest::{
     CATALOG_SLOT, DIAGNOSTICS_SLOT, DOMAIN_SLOT, DirectoryGrantDeclaration, ENTROPY_SLOT,
     FileGrantDeclaration, INDEX_SOURCES_SLOT, INSTALLER_REPLY_SLOT, INSTALLER_SLOT,
-    IndexStoreDeclaration, InputDeclaration, MACHINE_SLOT, MAXIMUM_DECLARED_SHORT_OPTIONS,
-    Manifest, MemoryGrantDeclaration, NETWORK_SLOT, NO_SHORT_OPTIONS, OutputDeclaration,
+    IndexStoreDeclaration, InputDeclaration, MACHINE_SLOT, MAX_DECLARED_SHORT_OPTIONS, Manifest,
+    MemoryGrantDeclaration, NETWORK_SLOT, NO_SHORT_OPTIONS, OutputDeclaration,
     ProgramArgumentDeclaration, REBOOT_SLOT, SHARE_SLOT, SHELL_CONFIGURATION_SLOT,
     SHELL_CONFIGURATION_VIRTUAL_ADDRESS, STD_REGION_PAGES, SYNC_SLOT, ShortOptions,
     StartupContract, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST, WordGrant, image_region_pages,
     named_std_region_pages,
 };
 pub use parsing::{
-    BUILTINS, MAXIMUM_POSITIONALS, ParsedInvocation, UserVerb, argv, check_words, each_word,
+    BUILTINS, MAX_POSITIONALS, ParsedInvocation, UserVerb, argv, check_words, each_word,
     job_operand, kill_operands, parse, parse_run, tokenize, user_verb, vouch_verb, vouched_name,
 };
 pub(crate) use planning::nav_refusal;
@@ -70,13 +70,11 @@ pub use planning::{
 };
 pub use program::{PROGRAM_COUNT, Program};
 pub use refusal::{CapabilityKind, Refusal};
-pub use verbs::{
-    MAXIMUM_VERB, ManifestAuthorities, VerbGrant, narrow_by_verb, verb_of, verb_of_page,
-};
+pub use verbs::{MAX_VERB, ManifestAuthorities, VerbGrant, narrow_by_verb, verb_of, verb_of_page};
 
 mod lexing;
 
 use lexing::*;
-pub use lexing::{MAXIMUM_FILE_NAME, WORDS_NAME, file_name_fits, parse_u64, trim};
+pub use lexing::{MAX_FILE_NAME, WORDS_NAME, file_name_fits, parse_u64, trim};
 
 // ---- small byte helpers (no_std, no alloc) ----

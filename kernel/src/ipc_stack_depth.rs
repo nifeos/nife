@@ -263,14 +263,14 @@ pub(crate) fn kernel_thread_shapes() -> usize {
         *dst = src.load(Ordering::Relaxed);
     }
     null.sort_unstable();
-    let (null_median, null_maximum) = (u64::from(null[SAMPLES / 2]), u64::from(null[SAMPLES - 1]));
+    let (null_median, null_max) = (u64::from(null[SAMPLES / 2]), u64::from(null[SAMPLES - 1]));
     // `<=`, not `==`: whether the median reads exactly the floor depends on when the first trap
     // frame overwrites the ceiling word (notes/stack-high-water/per-ipc-depth.md). Too small a
     // margin reads deeper than the floor, which this still catches.
     let null_clean = null_median <= null_floor;
     println!(
         "ipc-stack-depth: kernel null (the instrument alone) floor {null_floor} median \
-         {null_median} max {null_maximum} margin {MARGIN} {}",
+         {null_median} max {null_max} margin {MARGIN} {}",
         if null_clean {
             "clean"
         } else {
@@ -663,19 +663,18 @@ fn report(plane: &str, shape: &str, role: &str, operation: &str, s: &Series) -> 
         println!("ipc-stack-depth: {plane} {shape} {role} {operation} NO SAMPLES");
         return 1;
     }
-    let (minimum, median, maximum) = (v[0] as u64, v[n / 2] as u64, v[n - 1] as u64);
+    let (min, median, max) = (v[0] as u64, v[n / 2] as u64, v[n - 1] as u64);
     if median <= floor {
         // Not a depth: the operation stayed inside the instrument's own frames, so print the bound.
         println!(
             "ipc-stack-depth: {plane} {shape} {role} {operation} AT FLOOR: at most {floor}, shallower than \
-             the instrument can see (max {maximum}, samples {n})"
+             the instrument can see (max {max}, samples {n})"
         );
         return 1;
     }
     // Below the measuring frame: the operation's own cost. Zero caller offset for EL0.
     println!(
-        "ipc-stack-depth: {plane} {shape} {role} {operation} median {median} min {minimum} max \
-        {maximum} \
+        "ipc-stack-depth: {plane} {shape} {role} {operation} median {median} min {min} max {max} \
          below-caller {} floor {floor} samples {n}",
         median - caller,
     );

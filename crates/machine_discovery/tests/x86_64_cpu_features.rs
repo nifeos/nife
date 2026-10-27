@@ -27,7 +27,7 @@ fn qemu_max() -> CpuidWords {
         leaf1_ecx: 1 << 31,
         // Leaf 7 subleaf 0. EBX bit 18 is RDSEED, which this model reports.
         leaf7_0: [0, 1 << 18, 0, 0],
-        extended_maximum_leaf: 0x8000_0021,
+        extended_max_leaf: 0x8000_0021,
         // EDX bit 20 NX, bit 11 SYSCALL, plus the bits every long-mode part sets that this
         // decoder does not read.
         extended_leaf1_edx: (1 << 20) | (1 << 11) | (1 << 29),
@@ -47,7 +47,7 @@ fn xenon() -> CpuidWords {
         leaf0: [0x16, 0x756e_6547, 0x6c65_746e, 0x4965_6e69],
         leaf1_ecx: 0,
         leaf7_0: [0, 1 << 18, 0, 0],
-        extended_maximum_leaf: 0x8000_0008,
+        extended_max_leaf: 0x8000_0008,
         extended_leaf1_edx: (1 << 20) | (1 << 11) | (1 << 29),
         extended_leaf7_edx: 1 << 8,
         brand: brand_words("Intel(R) Core(TM) i5-7500T CPU @ 2.70GHz"),
@@ -78,7 +78,7 @@ fn the_machine_this_project_boots_on_can_run_this_kernel() {
 
     assert_eq!(&cpu.vendor, b"AuthenticAMD");
     assert_eq!(cpu.brand_str(), Some("QEMU TCG CPU version 2.5+"));
-    assert_eq!(cpu.maximum_leaf, 0xd);
+    assert_eq!(cpu.max_leaf, 0xd);
     assert!(cpu.features.contains(REQUIRED));
     assert!(
         cpu.has_random_seed_instruction(),
@@ -195,7 +195,7 @@ fn a_part_below_leaf_one_is_not_taken_for_a_guest() {
 #[test]
 fn a_part_with_no_extended_leaves_reports_no_features_rather_than_another_leaf_bits() {
     let mut w = qemu_max();
-    w.extended_maximum_leaf = 0;
+    w.extended_max_leaf = 0;
     let cpu = Isa::decode(&w);
 
     assert_eq!(cpu.features, Features::NONE.union(RDSEED));

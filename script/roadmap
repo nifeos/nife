@@ -1347,7 +1347,7 @@ elif _base.strip() != (_git("rev-parse", "HEAD") or "").strip():
 # all of them, the list closed to zero, and an empty list that permits parking is exactly the
 # hiding place its own BUGS section had called a foot gun. So it is gone rather than kept at zero.
 # **What counts as a path claim, and this had to be tightened twice.** A backticked span in this
-# tree is usually prose (`MAXIMUM_CPUS`, `scounteren.CY`), sometimes a command (`script/names
+# tree is usually prose (`MAX_CPUS`, `scounteren.CY`), sometimes a command (`script/names
 # --unratified`), sometimes a shell example (`rm a/b/c.txt`), and only sometimes a file. Checking
 # every span that held a slash fired on all four. So a span is a path claim only when it has no
 # whitespace and begins with a directory this repository actually has, which still catches the rot
@@ -1474,8 +1474,8 @@ for mid, fname in sorted(ids.items()):
             # **A path is checked when one is named, and never demanded.** The first draft of this
             # required every `Recorded.` bullet to name an existing file, and three lanes hit it
             # within the hour on bullets that were correct: a backticked identifier is ordinary
-            # prose here (`MAXIMUM_CPUS`, `scounteren.CY`, `display_terminal`), and the common case
-            # is a limitation recorded in the block the reader is already holding, where repeating
+            # prose here (`MAX_CPUS`, `scounteren.CY`, `display_terminal`), and the common case is
+            # a limitation recorded in the block the reader is already holding, where repeating
             # the block's own path in five consecutive bullets is noise.
             #
             # It is also the BUGS convention's own boundary, which this gate must not cross. "This

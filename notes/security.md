@@ -46,7 +46,7 @@ overflow-checks on (the shipping dev profile) that is a panic, i.e. a hostile in
 the kernel, which is precisely the denial of service the ELF crate exists to prevent. Fixed with a
 `checked_add` on `vaddr + memsz` (new `Error::AddressOverflow`), saturating arithmetic in the
 `pub` `page_range`, and two tests (`u64::MAX` memsz, and 65-header count). Also capped the program
-header count (`MAXIMUM_PHNUM = 64`), because 65535 headers turned the O(n²) overlap check into a
+header count (`MAX_PHNUM = 64`), because 65535 headers turned the O(n²) overlap check into a
 multi-second stall.
 
 2. A spawn flood could panic the kernel (`shell_service`). The process service did

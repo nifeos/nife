@@ -68,7 +68,7 @@ const CAPACITY: usize = 6;
 
 /// The heap's virtual cap. It holds one allocation, the Argon2 scratch, plus the slack an
 /// allocator needs to place it; the untyped behind it is the real ceiling either way.
-const HEAP_MAXIMUM: u64 = 6 * 1024 * 1024;
+const HEAP_MAX: u64 = 6 * 1024 * 1024;
 
 /// The startup report's first word, so a reader of the endpoint knows this is the credential
 /// service speaking. ASCII-ish, so a hex dump of a report reads.
@@ -83,8 +83,8 @@ const E_SCRATCH: u64 = 0x02;
 /// both are in scope to be compared (AGENTS.md codebase rule 7: anything two binaries must agree on
 /// is a crate). A page offset that disagreed here would put a client's blob where the service
 /// reads a proof.
-const _: () = assert!(proto::MAXIMUM_IDENTITY == credentialer::MAXIMUM_IDENTITY);
-const _: () = assert!(proto::MAXIMUM_SECRET == credentialer::MAXIMUM_SECRET);
+const _: () = assert!(proto::MAX_IDENTITY == credentialer::MAX_IDENTITY);
+const _: () = assert!(proto::MAX_SECRET == credentialer::MAX_SECRET);
 
 #[global_allocator]
 static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
@@ -92,7 +92,7 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.initialize(BUDGET, memory_region_heap::DEFAULT_BASE, HEAP_MAXIMUM);
+    HEAP.initialize(BUDGET, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
 
     let cost = Cost::DEFAULT;
 
@@ -231,16 +231,15 @@ fn wipe(window: MappedWindow) {
     proto::wipe(page);
 }
 
-/// Fill `out` with bytes from the entropy service, `entropy_contract::MAXIMUM_BYTES` at a time.
-/// `false` when the service could not supply them, which every caller treats as fatal to the
-/// request.
+/// Fill `out` with bytes from the entropy service, `entropy_contract::MAX_BYTES` at a time. `false`
+/// when the service could not supply them, which every caller treats as fatal to the request.
 ///
 /// A short reply is a refusal here, not something to pad out. The entropy contract is explicit
 /// that a count below what was asked means the device went dry, and half a salt is not a salt.
 fn fill(out: &mut [u8]) -> bool {
     let mut done = 0;
     while done < out.len() {
-        let want = (out.len() - done).min(entropy_contract::MAXIMUM_BYTES as usize);
+        let want = (out.len() - done).min(entropy_contract::MAX_BYTES as usize);
         let (r0, r1) = call(
             ENTROPY,
             entropy_contract::req(entropy_contract::GET, want as u64),

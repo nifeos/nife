@@ -43,9 +43,9 @@ it under, and a client that wants one opens the file first exactly as `fgetxattr
 
 | Limit | Value | Why that number |
 |---|---|---|
-| `xattr::MAXIMUM_NAME` | 255 bytes | Linux's `XATTR_NAME_MAX`. Nothing Samba writes is refused for its name; `user.com.apple.metadata:_kMDItemUserTags` is 40 |
-| `xattr::MAXIMUM_VALUE` | 3072 bytes | A `SETXATTR` carries a name and a value in **one page**, so `MAXIMUM_NAME + MAXIMUM_VALUE` must leave 4096 visible room |
-| `xattr::MAXIMUM_COUNT` | 16 per node | 16 names of 255 bytes plus their length prefixes is **4096 exactly**, which is what lets `LISTXATTR` have no cursor |
+| `xattr::MAX_NAME` | 255 bytes | Linux's `XATTR_NAME_MAX`. Nothing Samba writes is refused for its name; `user.com.apple.metadata:_kMDItemUserTags` is 40 |
+| `xattr::MAX_VALUE` | 3072 bytes | A `SETXATTR` carries a name and a value in **one page**, so `MAX_NAME + MAX_VALUE` must leave 4096 visible room |
+| `xattr::MAX_COUNT` | 16 per node | 16 names of 255 bytes plus their length prefixes is **4096 exactly**, which is what lets `LISTXATTR` have no cursor |
 
 Each ceiling answers its own errno: `ERANGE` for a name
 this store cannot hold, `E2BIG` for an over-long value, `ENOSPC` for the seventeenth attribute. A
@@ -274,7 +274,7 @@ counted and named. See [notes/host-recovery.md](host-recovery.md).
   emulable above a store only racily, and §42 forbids offering a verb whose guarantee we cannot
   meet. An attribute has no handle and no identity of its own, so "it already had a value" is not a
   fact a caller can act on differently.
-- `MAXIMUM_VALUE` is 3 KiB, and Samba's `streams_xattr` can be asked to hold whole alternate data
+- `MAX_VALUE` is 3 KiB, and Samba's `streams_xattr` can be asked to hold whole alternate data
   streams. A resource fork larger than 3 KiB is refused with `E2BIG`, loudly. Lifting the limit
   means chunking the transfer across requests, which this contract does not do for anything today.
   Whether Time Machine over `fruit:metadata = stream` ever exceeds it is unmeasured, and the board

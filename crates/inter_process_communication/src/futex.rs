@@ -84,21 +84,16 @@ impl<T: Node, const B: usize> Futexes<T, B> {
         self.buckets[Self::bucket(key)].push_back(waiter);
     }
 
-    /// **Take up to `maximum` waiters parked under `key`**, first parked first, and hand them back
-    /// as a queue of their own so the caller can wake each one without holding a borrow of this
-    /// table. Waiters under other keys in the same bucket stay, in their order.
-    pub fn take(
-        &mut self,
-        key: Key,
-        maximum: usize,
-        key_of: impl Fn(NonNull<T>) -> Key,
-    ) -> Queue<T> {
+    /// **Take up to `max` waiters parked under `key`**, first parked first, and hand them back as a
+    /// queue of their own so the caller can wake each one without holding a borrow of this table.
+    /// Waiters under other keys in the same bucket stay, in their order.
+    pub fn take(&mut self, key: Key, max: usize, key_of: impl Fn(NonNull<T>) -> Key) -> Queue<T> {
         let bucket = &mut self.buckets[Self::bucket(key)];
         let mut kept = Queue::new();
         let mut taken = Queue::new();
         let mut count = 0;
         while let Some(waiter) = bucket.pop_front() {
-            if count < maximum && key_of(waiter.as_non_null()) == key {
+            if count < max && key_of(waiter.as_non_null()) == key {
                 taken.push_back(waiter);
                 count += 1;
             } else {
@@ -198,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn a_wake_takes_only_its_own_key_in_order_and_at_most_maximum() {
+    fn a_wake_takes_only_its_own_key_in_order_and_at_most_max() {
         let a = key(1, 0x1000);
         let b = key(1, 0x1004);
         let c = key(2, 0x1000); // the same address in another space is another futex

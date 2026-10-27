@@ -71,7 +71,7 @@ order, `max`, and removal.
   Not shown reachable; the 2026-10-20 security audit proposes the walk-and-store under the
   revocation lock for both paths.
 - A wake walks its whole bucket, so its cost is the bucket's length, not `count`. Bounded by
-  `MAXIMUM_THREADS / 64` on average; measure before enlarging.
+  `MAX_THREADS / 64` on average; measure before enlarging.
 - Wakes place the woken thread on the waker's core, as a notification's do. That is right for a
   lock handoff, where the waker is about to block, and wrong for a broadcast to many threads. Not
   measured.

@@ -239,12 +239,12 @@ fn line_endings_cr_lf_crlf() {
 #[test]
 fn overflow_rings_the_bell() {
     let (mut d, mut s) = (LineDisc::new(), Screen::new());
-    for _ in 0..LINE_MAXIMUM + 3 {
+    for _ in 0..LINE_MAX + 3 {
         d.feed(b'a', &mut s);
     }
     assert_eq!(s.bells, 3);
     feed_all(&mut d, &mut s, b"\r");
-    assert_eq!(d.line().len(), LINE_MAXIMUM);
+    assert_eq!(d.line().len(), LINE_MAX);
 }
 
 /// ^L repaints the prompt and the line after clearing, with the cursor where it was:
@@ -468,7 +468,7 @@ fn yank_truncates_to_the_room_left() {
     }
     feed_all(&mut d, &mut s, b"\x19\r"); // ^Y: only 246 of the 250 fit
     assert_eq!(s.bells, 0);
-    assert_eq!(d.line().len(), LINE_MAXIMUM);
+    assert_eq!(d.line().len(), LINE_MAX);
     assert_eq!(&d.line()[..10], b"bbbbbbbbbb");
     assert!(d.line()[10..].iter().all(|&b| b == b'a'));
 }
@@ -482,7 +482,7 @@ fn yank_bell_needs_a_kill_and_a_full_line() {
     feed_all(&mut d, &mut s, b"\x19"); // empty kill buffer: nothing, no bell
     assert_eq!(s.bells, 0);
     feed_all(&mut d, &mut s, b"x\x15"); // kill buffer now holds "x"
-    for _ in 0..LINE_MAXIMUM {
+    for _ in 0..LINE_MAX {
         d.feed(b'a', &mut s);
     }
     feed_all(&mut d, &mut s, b"\x19"); // no room at all

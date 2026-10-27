@@ -139,14 +139,14 @@ fn a_mem_flag_consumes_its_value_and_nothing_after_it() {
 /// so an off-by-one here is a write past the end, not a smaller refusal.
 #[test]
 fn the_flag_and_positional_ceilings_refuse_rather_than_overflow() {
-    // Nine letters in one cluster, and MAXIMUM_SHORT_OPTIONS is eight.
+    // Nine letters in one cluster, and MAX_SHORT_OPTIONS is eight.
     let r = parse_run(b"rm -abcdefghi x");
     assert_eq!(r.options(), b"");
     assert_eq!(r.unexpected, Some(&b"-abcdefghi"[..]));
 
-    // Five operands, and MAXIMUM_POSITIONALS is four.
+    // Five operands, and MAX_POSITIONALS is four.
     let r = parse_run(b"prog a b c d e");
-    assert_eq!(r.positionals().len(), MAXIMUM_POSITIONALS);
+    assert_eq!(r.positionals().len(), MAX_POSITIONALS);
     assert_eq!(r.unexpected, Some(&b"e"[..]));
 }
 
@@ -472,7 +472,7 @@ fn a_quoted_word_is_known_by_its_position_and_the_last_slot_is_readable() {
     assert!(spec.is_quoted(0));
     assert!(!spec.is_quoted(1));
     assert!(
-        !spec.is_quoted(MAXIMUM_POSITIONALS),
+        !spec.is_quoted(MAX_POSITIONALS),
         "past the end was not quoted"
     );
 }

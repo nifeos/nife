@@ -10,7 +10,7 @@ struct Watch {
     shadow_off: usize,
 }
 
-const MAXIMUM_RANGES: usize = 4;
+const MAX_RANGES: usize = 4;
 /// Both registries today total ~13 KiB (128 `Option<ThreadControlBlockPointer>` at 16 bytes, 512 `Option<u64>`
 /// at 16 bytes, plus generations); 24 KiB leaves room for growth and the test's scratch.
 const SHADOW_BYTES: usize = 24 * 1024;
@@ -30,12 +30,12 @@ unsafe impl<T> Sync for Racy<T> {}
 static GATE: Gate = Gate::new();
 static DIVERGED: AtomicU64 = AtomicU64::new(0);
 static PRINTED: AtomicU64 = AtomicU64::new(0);
-static WATCHES: Racy<([Watch; MAXIMUM_RANGES], usize)> = Racy(core::cell::UnsafeCell::new((
+static WATCHES: Racy<([Watch; MAX_RANGES], usize)> = Racy(core::cell::UnsafeCell::new((
     [Watch {
         base: 0,
         len: 0,
         shadow_off: 0,
-    }; MAXIMUM_RANGES],
+    }; MAX_RANGES],
     0,
 )));
 static SHADOW: Racy<[u8; SHADOW_BYTES]> = Racy(core::cell::UnsafeCell::new([0; SHADOW_BYTES]));
@@ -56,7 +56,7 @@ pub(crate) fn arm(ranges: &[(usize, usize)]) {
     let shadow = unsafe { &mut *SHADOW.0.get() };
     let mut off = 0usize;
     let mut n = 0usize;
-    for &(base, len) in ranges.iter().take(MAXIMUM_RANGES) {
+    for &(base, len) in ranges.iter().take(MAX_RANGES) {
         assert!(off + len <= SHADOW_BYTES, "canary shadow too small");
         for i in 0..len {
             // SAFETY: caller promises base..base+len readable; volatile because another

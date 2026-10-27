@@ -14,7 +14,7 @@ const APPDISP_WORKINGSET_KIB: &[usize] = &[4, 16, 32, 64, 128];
 const APPDISP_WORD_BYTES: usize = 8;
 /// The largest working set above, in words: the static scratch buffer's size.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-const APPDISP_MAXIMUM_WORDS: usize = 128 * 1024 / APPDISP_WORD_BYTES;
+const APPDISP_MAX_WORDS: usize = 128 * 1024 / APPDISP_WORD_BYTES;
 /// Roughly this many word-touches per measurement, regardless of working-set size, so every point
 /// in the sweep takes about the same wall time: `passes = TARGET / words`.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
@@ -23,10 +23,10 @@ const APPDISP_TARGET_TOUCHES: u64 = 8_000_000;
 /// sweep.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 const APPDISP_IPC_PAIRS: usize = 8;
-/// Background IPC pairs for the higher-load condition: [`SCALE_MAXIMUM_PAIRS`], 96 threads, past
-/// E1's knee. See notes/benchmarks/kernel-bench-harness.md.
+/// Background IPC pairs for the higher-load condition: [`SCALE_MAX_PAIRS`], 96 threads, past E1's
+/// knee. See notes/benchmarks/kernel-bench-harness.md.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-const APPDISP_IPC_PAIRS_HIGH: usize = SCALE_MAXIMUM_PAIRS;
+const APPDISP_IPC_PAIRS_HIGH: usize = SCALE_MAX_PAIRS;
 
 /// Interior-mutable scratch the workload reads and writes, one thread at a time, serialized by the
 /// caller rather than by a lock that would join the cost being measured.
@@ -40,8 +40,8 @@ struct Racy<T>(core::cell::UnsafeCell<T>);
 unsafe impl<T> Sync for Racy<T> {}
 
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-static APPDISP_BUFFER: Racy<[u64; APPDISP_MAXIMUM_WORDS]> =
-    Racy(core::cell::UnsafeCell::new([0; APPDISP_MAXIMUM_WORDS]));
+static APPDISP_BUFFER: Racy<[u64; APPDISP_MAX_WORDS]> =
+    Racy(core::cell::UnsafeCell::new([0; APPDISP_MAX_WORDS]));
 
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 static APPDISP_STOP: AtomicBool = AtomicBool::new(false);
@@ -79,7 +79,7 @@ fn appdisp_background_pair(rq: sched::RendezvousId, rp: sched::RendezvousId) {
 fn appdisp_workload(words: usize, passes: u64) -> u64 {
     // SAFETY: the caller (`appdisp_batch`) guarantees this thread is the only one with a reference
     // into the buffer for the duration of this call; see `Racy`'s doc.
-    let whole: &mut [u64; APPDISP_MAXIMUM_WORDS] = unsafe { &mut *APPDISP_BUFFER.0.get() };
+    let whole: &mut [u64; APPDISP_MAX_WORDS] = unsafe { &mut *APPDISP_BUFFER.0.get() };
     let buf = &mut whole[..words];
     let yield_every = (passes / 64).max(1);
     let mut sum: u64 = 0;

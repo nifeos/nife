@@ -27,14 +27,14 @@ use crate::thread::ThreadId;
 
 /// The most threads one holding covers. The widest service this boot builds holds two (a
 /// `net_stack` and its socket client), and four keeps margin. A fifth panics rather than dropping
-/// one silently. Raise this and [`MAXIMUM_REGIONS`] together: each client costs one thread, one
-/// region before death and two after.
-const MAXIMUM_THREADS: usize = 4;
+/// one silently. Raise this and [`MAX_REGIONS`] together: each client costs one thread, one region
+/// before death and two after.
+const MAX_THREADS: usize = 4;
 
 /// The most untyped regions one holding covers, in **each** phase. The widest service holds two
-/// endpoint regions before death and four after it, and eight keeps [`MAXIMUM_THREADS`]'s margin. A
+/// endpoint regions before death and four after it, and eight keeps [`MAX_THREADS`]'s margin. A
 /// ninth panics rather than leaking memory that looks reclaimed.
-const MAXIMUM_REGIONS: usize = 8;
+const MAX_REGIONS: usize = 8;
 
 /// How long [`Holding::release`] waits for a teardown to land, in seconds of wall clock.
 ///
@@ -66,31 +66,31 @@ fn reclaim(region: u64, deadline: u64) -> bool {
 /// this 320-byte value per link at `opt-level=0`, which put `start_net_std`'s frame past the 4 KiB
 /// guard page under every kernel thread stack (notes/stack-high-water.md).
 pub struct Holding {
-    threads: [Option<ThreadId>; MAXIMUM_THREADS],
-    regions: [Option<u64>; MAXIMUM_REGIONS],
-    after: [Option<u64>; MAXIMUM_REGIONS],
+    threads: [Option<ThreadId>; MAX_THREADS],
+    regions: [Option<u64>; MAX_REGIONS],
+    after: [Option<u64>; MAX_REGIONS],
 }
 
 impl Holding {
     pub const fn new() -> Self {
         Holding {
-            threads: [None; MAXIMUM_THREADS],
-            regions: [None; MAXIMUM_REGIONS],
-            after: [None; MAXIMUM_REGIONS],
+            threads: [None; MAX_THREADS],
+            regions: [None; MAX_REGIONS],
+            after: [None; MAX_REGIONS],
         }
     }
 
     /// Remember a thread this service runs, so [`release`](Self::release) can end it.
     ///
     /// # Panics
-    /// If more than [`MAXIMUM_THREADS`] are added, because a silently dropped thread is a leak that
+    /// If more than [`MAX_THREADS`] are added, because a silently dropped thread is a leak that
     /// looks like a fix.
     pub fn add_thread(&mut self, tid: ThreadId) {
         let slot = self
             .threads
             .iter_mut()
             .find(|s| s.is_none())
-            .expect("a holding holds at most MAXIMUM_THREADS threads");
+            .expect("a holding holds at most MAX_THREADS threads");
         *slot = Some(tid);
     }
 
@@ -103,13 +103,13 @@ impl Holding {
     /// another: the child must go first, because a parent with live children refuses.
     ///
     /// # Panics
-    /// If more than [`MAXIMUM_REGIONS`] are added; see [`add_thread`](Self::add_thread).
+    /// If more than [`MAX_REGIONS`] are added; see [`add_thread`](Self::add_thread).
     pub fn add_region(&mut self, region: u64) {
         let slot = self
             .regions
             .iter_mut()
             .find(|s| s.is_none())
-            .expect("a holding holds at most MAXIMUM_REGIONS regions");
+            .expect("a holding holds at most MAX_REGIONS regions");
         *slot = Some(region);
     }
 
@@ -121,13 +121,13 @@ impl Holding {
     /// fault.
     ///
     /// # Panics
-    /// If more than [`MAXIMUM_REGIONS`] are added; see [`add_thread`](Self::add_thread).
+    /// If more than [`MAX_REGIONS`] are added; see [`add_thread`](Self::add_thread).
     pub fn add_region_after_death(&mut self, region: u64) {
         let slot = self
             .after
             .iter_mut()
             .find(|s| s.is_none())
-            .expect("a holding holds at most MAXIMUM_REGIONS after-death regions");
+            .expect("a holding holds at most MAX_REGIONS after-death regions");
         *slot = Some(region);
     }
 

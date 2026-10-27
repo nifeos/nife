@@ -55,10 +55,7 @@ pub const PAGE: u64 = 4096;
 /// the kernel builds one group of six per online core, so 64 covers a ten-core board with room to
 /// spare, and the cap exists so that the kernel's own fixed-size arrays have a bound rather than
 /// because anything is near it.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_WORKERS`.
-pub const MAXIMUM_WORKERS: usize = 64;
+pub const MAX_WORKERS: usize = 64;
 
 /// Byte offset of worker `i`'s completed-round-trip counter.
 ///
@@ -76,7 +73,7 @@ pub const fn rounds(i: usize) -> u64 {
 /// would most like to produce. Nonzero here fails the run.
 #[must_use]
 pub const fn mismatches(i: usize) -> u64 {
-    ((MAXIMUM_WORKERS + i) as u64) * 8
+    ((MAX_WORKERS + i) as u64) * 8
 }
 
 /// Byte offset of worker `i`'s tick-wake counter (milestone 221).
@@ -91,7 +88,7 @@ pub const fn mismatches(i: usize) -> u64 {
 /// without holding a table of who plays which role.
 #[must_use]
 pub const fn wakes(i: usize) -> u64 {
-    ((2 * MAXIMUM_WORKERS + i) as u64) * 8
+    ((2 * MAX_WORKERS + i) as u64) * 8
 }
 
 /// The transform a responder applies to the word a caller sent.
@@ -115,7 +112,7 @@ mod tests {
     /// a soak failure with a misleading cause.
     #[test]
     fn every_offset_fits_in_the_page() {
-        for i in 0..MAXIMUM_WORKERS {
+        for i in 0..MAX_WORKERS {
             assert!(rounds(i) + 8 <= PAGE, "rounds({i}) escapes the page");
             assert!(
                 mismatches(i) + 8 <= PAGE,
@@ -129,8 +126,8 @@ mod tests {
     /// exactly once and then reports as a workload that never makes progress.
     #[test]
     fn the_three_counter_arrays_are_disjoint() {
-        assert!(rounds(MAXIMUM_WORKERS - 1) + 8 <= mismatches(0));
-        assert!(mismatches(MAXIMUM_WORKERS - 1) + 8 <= wakes(0));
+        assert!(rounds(MAX_WORKERS - 1) + 8 <= mismatches(0));
+        assert!(mismatches(MAX_WORKERS - 1) + 8 <= wakes(0));
     }
 
     /// **Every one of the 192 slots is its own aligned word**, which is the contract the two
@@ -144,11 +141,11 @@ mod tests {
     /// crate's seven mutation survivors were offsets that collide.
     #[test]
     fn every_slot_is_its_own_aligned_word() {
-        let mut offset = [0u64; 3 * MAXIMUM_WORKERS];
-        for i in 0..MAXIMUM_WORKERS {
+        let mut offset = [0u64; 3 * MAX_WORKERS];
+        for i in 0..MAX_WORKERS {
             offset[i] = rounds(i);
-            offset[MAXIMUM_WORKERS + i] = mismatches(i);
-            offset[2 * MAXIMUM_WORKERS + i] = wakes(i);
+            offset[MAX_WORKERS + i] = mismatches(i);
+            offset[2 * MAX_WORKERS + i] = wakes(i);
         }
 
         for a in 0..offset.len() {

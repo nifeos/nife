@@ -111,7 +111,7 @@ the symbol-level working are in [second-scaffold.md](timer-capability/second-sca
 - One finding is not about timers. Growing `IpcTables` made riscv64 alone materialize a 25,680-byte
   `.rodata` template, so the same source cost it 37,061 data bytes against aarch64's 10,980. It is a
   cliff rather than a slope, and it prices every future addition to the scheduler's tables. It also
-  makes `MAXIMUM_TIMERS` a real decision rather than a constant copied from `MAXIMUM_RENDEZVOUS`.
+  makes `MAX_TIMERS` a real decision rather than a constant copied from `MAX_RENDEZVOUS`.
 
 ## The dependency on milestone 151, stated
 
@@ -153,7 +153,7 @@ assumes about it:
 - The reap sweep was priced, not proved. There is no test that destroys a region holding an
   armed timer, which is precisely the use-after-free the second-scaffold summary above says the sweep exists to
   close. Whoever builds this owes that test before the sweep is believed.
-- `MAXIMUM_TIMERS = 512` is this lane's guess and it drives the only figure here that is large.
+- `MAX_TIMERS = 512` is this lane's guess and it drives the only figure here that is large.
   See the `IpcTables` finding above.
 - Nothing here was run on hardware. The aarch64 refutation is a register specification plus this
   tree's own code, not an EL0 program that armed `CNTP_CVAL_EL0` and took the interrupt. The cheap

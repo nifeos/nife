@@ -24,7 +24,7 @@ pub const PROGENITOR_ENTRY: &str = "progenitor";
 /// Name: ratified 2026-10-18 (calef: "Progenitors numbers are ratified."), replacing `INIT_STACK_PAGES`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub const PROGENITOR_STACK_PAGES: u64 = 14;
-const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_map::MAXIMUM_STACK_PAGES);
+const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_map::MAX_STACK_PAGES);
 
 /// **Boot the system: load the progenitor and start it as the first process, on every
 /// architecture.**

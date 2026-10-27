@@ -10,7 +10,7 @@ use super::*;
 /// the whole 16 KiB entry array on a 4Kn drive and covers them eight times over on a 512-byte one.
 /// One read, then both candidate block sizes are tried against the same bytes.
 pub(crate) const TABLE_BYTES: usize =
-    34 * globally_unique_identifier_partition_table::MAXIMUM_BLOCK_SIZE;
+    34 * globally_unique_identifier_partition_table::MAX_BLOCK_SIZE;
 
 /// Read the front of a device: enough for the protective MBR, the primary header and the entry
 /// array at either candidate block size. A short file is not an error here, because the parse below
@@ -52,8 +52,8 @@ pub(crate) fn parse_table<'a>(
 ) -> Result<(GloballyUniqueIdentifierPartitionTable<'a>, usize), String> {
     let mut first: Option<(usize, globally_unique_identifier_partition_table::Error)> = None;
     for block_size in [
-        globally_unique_identifier_partition_table::MINIMUM_BLOCK_SIZE,
-        globally_unique_identifier_partition_table::MAXIMUM_BLOCK_SIZE,
+        globally_unique_identifier_partition_table::MIN_BLOCK_SIZE,
+        globally_unique_identifier_partition_table::MAX_BLOCK_SIZE,
     ] {
         let Some(header_block) = head.get(block_size..2 * block_size) else {
             continue;

@@ -160,9 +160,9 @@ fn report_sweep(session: &serial_console::watch::Session, log_path: &std::path::
             point.tasks,
             point.jobs,
             point.repeats,
-            point.ticks_minimum,
+            point.ticks_min,
             point.ticks_median,
-            point.ticks_maximum,
+            point.ticks_max,
             point.jpm_median
         ),
         // Said out loud rather than left as an absence, because an empty tail is exactly what a

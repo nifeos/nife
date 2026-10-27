@@ -411,7 +411,7 @@ pub(super) fn intr_count() -> u64 {
 /// The most background jobs this shell holds at once. Each costs [`JOB_UNTYPED_PAGES`] plus a frame
 /// of this shell's budget for as long as it runs, so the budget is the real bound; this is the
 /// table's.
-pub(super) const MAXIMUM_JOBS: usize = 8;
+pub(super) const MAX_JOBS: usize = 8;
 
 /// **What this shell holds for one supervised job**: the shared frame it signals and reads, the
 /// region the job was built from, the frame's capability and the job's TCB. Nothing else is needed
@@ -440,14 +440,14 @@ impl Held {
 /// **The background jobs**, numbered from one as `jobs` prints them. A finished job keeps its number
 /// until it is reported, so `[2]` never silently becomes another job.
 pub(super) struct Jobs {
-    held: [Option<Held>; MAXIMUM_JOBS],
+    held: [Option<Held>; MAX_JOBS],
     started: u64,
 }
 
 impl Jobs {
     pub(super) const fn new() -> Self {
         Jobs {
-            held: [None; MAXIMUM_JOBS],
+            held: [None; MAX_JOBS],
             started: 0,
         }
     }
@@ -461,7 +461,7 @@ impl Jobs {
     }
 
     fn newest(&self) -> Option<usize> {
-        (1..=MAXIMUM_JOBS)
+        (1..=MAX_JOBS)
             .filter_map(|n| self.get(n).map(|h| (h.started, n)))
             .max()
             .map(|(_, n)| n)
@@ -551,7 +551,7 @@ pub(super) fn list_jobs(jobs: &mut Jobs) {
         print(b"  no jobs\n");
         return;
     }
-    for n in 1..=MAXIMUM_JOBS {
+    for n in 1..=MAX_JOBS {
         let Some(h) = jobs.get(n) else { continue };
         print_job(n, &h);
         if h.done() {
@@ -589,7 +589,7 @@ pub(super) fn wait_jobs(jobs: &mut Jobs, tail: &[u8]) {
     print(b"  waiting. ^C interrupts it.\n");
     loop {
         let mut left = 0;
-        for n in (1..=MAXIMUM_JOBS).filter(|&n| waited(n)) {
+        for n in (1..=MAX_JOBS).filter(|&n| waited(n)) {
             let Some(h) = jobs.get(n) else { continue };
             // A stopped job will not finish until it is resumed, so it is not waited for.
             if h.stopped {
@@ -685,7 +685,7 @@ pub(super) fn foreground(jobs: &mut Jobs, tail: &[u8]) {
 pub(super) fn resume_in_background(jobs: &mut Jobs, tail: &[u8]) {
     let n = match grant_plan::job_operand(tail) {
         Ok(Some(n)) => Some(n),
-        Ok(None) => (1..=MAXIMUM_JOBS)
+        Ok(None) => (1..=MAX_JOBS)
             .filter_map(|n| jobs.get(n).filter(|h| h.stopped).map(|h| (h.started, n)))
             .max()
             .map(|(_, n)| n),

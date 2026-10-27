@@ -97,9 +97,9 @@ const ESP_SECTORS: u64 = 512 * 1024 * 1024 / 512;
 /// **How big one boot slot is**, in logical blocks: 64 MiB.
 ///
 /// The image is about 10 MiB for the tour build and about 19 for the test build, and
-/// `uefi_loader`'s own `BOOT_FILE_MAXIMUM` refuses anything over 64 as not being this file at all.
-/// So 64 MiB is that ceiling exactly: a slot that cannot hold an image the loader would agree to
-/// read is a slot that would fail at the worst possible moment.
+/// `uefi_loader`'s own `BOOT_FILE_MAX` refuses anything over 64 as not being this file at all. So
+/// 64 MiB is that ceiling exactly: a slot that cannot hold an image the loader would agree to read
+/// is a slot that would fail at the worst possible moment.
 const SLOT_SECTORS: u64 = 64 * 1024 * 1024 / 512;
 
 /// **How many boot slots an install lays out.** Two, which is the smallest number that can hold a
@@ -109,7 +109,7 @@ const SLOTS: usize = 2;
 /// **The smallest nife data partition this program will leave behind.** A disk that cannot spare
 /// this after the EFI system partition and the boot slots is refused, rather than installed onto
 /// and then found to be full.
-const DATA_MINIMUM_SECTORS: u64 = 64 * 1024 * 1024 / 512;
+const DATA_MIN_SECTORS: u64 = 64 * 1024 * 1024 / 512;
 
 /// How many logical blocks the backup table needs at the far end of the disk: the entry array plus
 /// its header.
@@ -255,9 +255,9 @@ fn read_primary() -> bool {
 
 /// How many used partition entries [`confirm`] will decode and write back. A table with more than
 /// this is read and refused rather than rewritten, so a table this program cannot reproduce
-/// exactly is one it never touches. `uefi_loader::chooser`'s own `MAXIMUM_PARTITIONS`, and the same
+/// exactly is one it never touches. `uefi_loader::chooser`'s own `MAX_PARTITIONS`, and the same
 /// reasoning.
-const MAXIMUM_PARTITIONS: usize = 16;
+const MAX_PARTITIONS: usize = 16;
 
 /// **Say that this boot worked**, by setting `boot_slot::State::successful` on the slot the
 /// machine started from. Answers [`R_CONFIRMED`], [`R_NO_SLOT`] having written nothing, or
@@ -285,7 +285,7 @@ fn confirm(slot: u64) -> ! {
     // Everything needed to rebuild the table, taken while the parse is still borrowed from the
     // staging buffer: `array()` is a different buffer, but the entries themselves are decoded
     // copies and the disk's identity and geometry come from the table it already has.
-    let mut parts = [Entry::UNUSED; MAXIMUM_PARTITIONS];
+    let mut parts = [Entry::UNUSED; MAX_PARTITIONS];
     let mut used = 0usize;
     let mut at = usize::MAX;
     let mut slots = 0u64;
@@ -305,7 +305,7 @@ fn confirm(slot: u64) -> ! {
             // used entries are not contiguous from zero would be renumbered by a rewrite. Ours
             // never are; a disk whose are not is refused rather than silently rearranged. The same
             // check the chooser makes, for the same reason.
-            if index != used || used == MAXIMUM_PARTITIONS {
+            if index != used || used == MAX_PARTITIONS {
                 send(REPORT, R_NO_SLOT, slots, 0);
                 user_mode_runtime::exit()
             }
@@ -486,7 +486,7 @@ impl Layout {
             above = slot_first[i];
         }
 
-        if above < ALIGN + DATA_MINIMUM_SECTORS {
+        if above < ALIGN + DATA_MIN_SECTORS {
             return None;
         }
         let data_first = ALIGN;

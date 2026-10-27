@@ -30,7 +30,7 @@ const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
 const VA: u64 = address_space_map::pair_page(0x0060_0000);
 
 /// Word `i` of the page holds `1 << i`, and spinner `i`'s thread pointer is `VA + 8 * i`.
-const SPINNERS: usize = 2 * crate::cpu::MAXIMUM_CPUS;
+const SPINNERS: usize = 2 * crate::cpu::MAX_CPUS;
 /// Where each spinner accumulates what it read, past the words it reads from.
 const RESULT_OFFSET: u64 = 8 * 64;
 /// A word holding only bit 63, which a self-setting spinner's first pointer names: if its own

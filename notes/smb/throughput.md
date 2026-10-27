@@ -23,10 +23,10 @@ So a Mac writing 64 KiB arrived at the store as sixteen separate 4 KiB writes. I
 fixed term that milestone 138 step 1 measured at 87% of a 4 KiB write. The contract had permitted a
 bigger request since step 3; this program had not asked for one.
 
-The fix is two `min`s and a mapping. Both clamps read `fs::TRANSFER_MAXIMUM` from the contract
-rather than a number of their own. So a future change to `fs::TRANSFER_PAGES` reaches this program
-without anyone editing it. The kernel wiring maps all sixteen pages at `FS_VA`, because nothing
-checks that a client asked for no more than it mapped (that constant's marked foot gun).
+The fix is two `min`s and a mapping. Both clamps read `fs::TRANSFER_MAX` from the contract rather than
+a number of their own. So a future change to `fs::TRANSFER_PAGES` reaches this program without anyone
+editing it. The kernel wiring maps all sixteen pages at `FS_VA`, because nothing checks that a client
+asked for no more than it mapped (that constant's marked foot gun).
 
 The other three places this program uses `fs_proto::PAGE` are untouched, and must stay so. A name, a
 `READDIR` page, a `statfs` record and a rename's two names are lengths the *server* chooses. Step 3's
@@ -52,7 +52,7 @@ are taken from the means.
 
 ## Where the rest went, and it is one number in a different contract
 
-The socket contract chunks at 4080 bytes. `socket_contract::DATA_MAXIMUM` is `4096 - OFF_PAYLOAD`,
+The socket contract chunks at 4080 bytes. `socket_contract::DATA_MAX` is `4096 - OFF_PAYLOAD`,
 because a client and `net_stack` share exactly one frame. So `send_all` and `recv_into` in
 `smb_server` cross that contract about seventeen times in each direction per 64 KiB SMB message. That
 did not change, and is now what a transfer costs. A 64 KiB write went from ~985 ms to ~206 ms per

@@ -133,7 +133,7 @@ SECTIONS
      * hole: a secondary that ran deep did not fault, it scribbled on whatever `.bss` sat below.
      *
      * The slots and their guards are laid out by `SECONDARY_STACKS` in kernel/src/smp.rs, which is
-     * where MAXIMUM_CPUS lives; this script only anchors the region, page-aligned, so each slot's
+     * where MAX_CPUS lives; this script only anchors the region, page-aligned, so each slot's
      * bottom page can be left unmapped. Deliberately NOT a second copy of the core count.
      *
      * (NOLOAD) because these are stacks: nothing needs to be in the file for them, and without it

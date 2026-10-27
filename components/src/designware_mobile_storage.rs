@@ -91,7 +91,7 @@ fn transfer() -> &'static mut [u8] {
     // before `_start` runs; this process is single-threaded, so this is the only reference at a
     // time.
     unsafe {
-        core::slice::from_raw_parts_mut(TRANSFER_VIRTUAL_ADDRESS as *mut u8, blk::TRANSFER_MAXIMUM)
+        core::slice::from_raw_parts_mut(TRANSFER_VIRTUAL_ADDRESS as *mut u8, blk::TRANSFER_MAX)
     }
 }
 

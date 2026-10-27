@@ -23,7 +23,7 @@
 //!   invalidation is the refinement, once something measures that workload.
 //! - No eviction policy: a full budget drops that whole half and refills it, so a working set
 //!   larger than the budget thrashes.
-//! - Bytes, not pages: a file is memoized whole, up to [`FILE_MAXIMUM`], or not at all.
+//! - Bytes, not pages: a file is memoized whole, up to [`FILE_MAX`], or not at all.
 //!
 //! Name: provisional 2026-09-26 (milestone 606's lane); calef names modules.
 
@@ -36,10 +36,7 @@ use subtree_scope::Kind;
 
 /// The largest file whose bytes are kept. The walk fixture's largest is 256 KiB, and a source
 /// tree's files are almost all smaller.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `FILE_MAX`.
-pub const FILE_MAXIMUM: usize = 256 * 1024;
+pub const FILE_MAX: usize = 256 * 1024;
 
 /// The most file bytes kept at once. A quarter of the server's 8 MiB heap; the walk fixture is
 /// 334,000 bytes.
@@ -74,8 +71,8 @@ pub struct Memo {
     /// File node id to its whole contents.
     files: BTreeMap<u32, Vec<u8>>,
     file_bytes: usize,
-    /// Files known to be larger than [`FILE_MAXIMUM`], so a read of one does not first walk the
-    /// tree to learn its size again.
+    /// Files known to be larger than [`FILE_MAX`], so a read of one does not first walk the tree
+    /// to learn its size again.
     large: BTreeSet<u32>,
 }
 
@@ -170,7 +167,7 @@ impl Memo {
 
     /// Whether a file of `size` bytes is one this would keep.
     pub fn would_keep(size: u64) -> bool {
-        size as usize <= FILE_MAXIMUM
+        size as usize <= FILE_MAX
     }
 
     /// Whether the file is known to be one this will not keep.
@@ -185,7 +182,7 @@ impl Memo {
 
     /// Keep `body` as the file's bytes, dropping every file first if it would not fit.
     pub fn keep_file(&mut self, ptr: TreePtr<Node>, body: Vec<u8>) {
-        if body.len() > FILE_MAXIMUM {
+        if body.len() > FILE_MAX {
             return;
         }
         if self.file_bytes + body.len() > FILE_BUDGET {

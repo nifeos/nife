@@ -11,8 +11,8 @@ into the IDT, so getting one wrong does not misroute an interrupt, it runs the p
 
 - `no_vector_belongs_to_two_bands`. `MSI_VECTOR_BASE`'s doc claims the three vector bands are
   "disjoint by construction rather than by anybody remembering", the construction being
-  `MAXIMUM_REDIRECTION_ENTRIES` clamping the entry count. This is that claim, over every entry count
-  an eight-bit version register can report and every state the MSI bump counter can be in, asked
+  `MAX_REDIRECTION_ENTRIES` clamping the entry count. This is that claim, over every entry count an
+  eight-bit version register can report and every state the MSI bump counter can be in, asked
   through the two predicates the trap handler actually calls rather than restated from the
   constants.
 - `an_owned_gsi_routes_inside_the_io_apic_band`. For every GSI `redirection_index` admits, the
@@ -23,13 +23,13 @@ into the IDT, so getting one wrong does not misroute an interrupt, it runs the p
 The second one found a defect, and the harness carries the finding as an assumption. Without
 `kani::assume(base == 0)` it fails: a second IO APIC owning global interrupts from 200, with the 24
 entries every real part has, admits GSI 210, and `gsi_vector(210)` wraps onto vector 2, the NMI.
-`MAXIMUM_REDIRECTION_ENTRIES`' doc says this cannot happen and bounds the wrong quantity. Not fixed
+`MAX_REDIRECTION_ENTRIES`' doc says this cannot happen and bounds the wrong quantity. Not fixed
 here, because the fix costs `gsi_vector` its `const fn` and its total signature: see `irq.rs`'s
 module `BUGS` and
 `design/roadmap/proposals/the-gsi-vector-map-wraps-on-a-second-io-apic.md`.
 
 Falsified twice, on cordoba, and the asymmetry is the honest half. Raising
-`MAXIMUM_REDIRECTION_ENTRIES` by one turns both red; loosening `redirection_index`'s bound from
+`MAX_REDIRECTION_ENTRIES` by one turns both red; loosening `redirection_index`'s bound from
 `index < entries` to `index <= entries` turns only the second red, correctly, because the first
 never calls the guard. Both are recorded `attested` rather than `replayable`, because
 `script/falsifications --sweep` runs a named harness on whatever host it is on and an x86_64 harness

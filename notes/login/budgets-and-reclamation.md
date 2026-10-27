@@ -52,7 +52,7 @@ allocates during a login with the channel still live.
 ## Giving a channel back: the region, not the capabilities
 
 A rendezvous retyped by `RETYPE_OBJ` lives in the kernel's global rendezvous registry
-(`kernel::sched::MAXIMUM_RENDEZVOUS`, 512 slots shared by every process on the machine) until the
+(`kernel::sched::MAX_RENDEZVOUS`, 512 slots shared by every process on the machine) until the
 region it was retyped from is destroyed. `cap_delete` removes only this process's reference. So a
 channel's request and result endpoints, its staging page and that page's page tables all come from
 a small region of their own. The region is destroyed when the login is done. With `cap_delete` alone, the suite's ~29 connects once spent 58 of the 512, and a

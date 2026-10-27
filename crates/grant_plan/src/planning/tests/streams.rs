@@ -352,7 +352,7 @@ fn a_redirection_resolves_its_leading_path() {
     };
     assert_eq!(g.name.as_bytes(), b"report.txt");
     assert!(g.writable, "a `>` target is written");
-    let mut buf = [0u8; nav::RENDER_MAXIMUM];
+    let mut buf = [0u8; nav::RENDER_MAX];
     let n = g.directory.render(&mut buf);
     assert_eq!(&buf[..n], b"/logs/old");
     // An absolute path resolves from this shell's root rather than from where it stands, so

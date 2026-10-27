@@ -32,11 +32,11 @@ use talc::source::Manual;
 const POOL_SIZE: usize = 512 * 1024 * 1024;
 
 const PAGE: usize = 4096;
-/// The FS server's growth floor (`memory_region_heap::MINIMUM_GROW_PAGES`).
-const MINIMUM_GROW_PAGES: usize = 8;
+/// The FS server's growth floor (`memory_region_heap::MIN_GROW_PAGES`).
+const MIN_GROW_PAGES: usize = 8;
 
 /// The heap cap in bytes, from `NIFE_HEAP_MIB`, defaulting to the FS server's 8 MiB
-/// (`redoxfs_server.rs::HEAP_MAXIMUM`, which `FS_BUDGET_PAGES` in kernel/src/user.rs matches).
+/// (`redoxfs_server.rs::HEAP_MAX`, which `FS_BUDGET_PAGES` in kernel/src/user.rs matches).
 fn heap_cap() -> usize {
     std::env::var("NIFE_HEAP_MIB")
         .ok()
@@ -82,7 +82,7 @@ impl Inner {
         let need_pages = need.div_ceil(PAGE);
         let want_pages = need_pages
             .max(self.committed / PAGE)
-            .max(MINIMUM_GROW_PAGES)
+            .max(MIN_GROW_PAGES)
             .min((self.cap - self.committed) / PAGE);
         if want_pages < need_pages {
             HIT_CAP.store(true, Ordering::Relaxed);
@@ -93,8 +93,7 @@ impl Inner {
         COMMITTED.store(self.committed, Ordering::Relaxed);
         let run = std::ptr::with_exposed_provenance_mut::<u8>(start);
         // SAFETY: this slice of the pool is donated once, never freed, and continues the heap
-        // `heap_end` ends, or is the first run, at least `MINIMUM_GROW_PAGES`, ample for talc's
-        // bins.
+        // `heap_end` ends, or is the first run, at least `MIN_GROW_PAGES`, ample for talc's bins.
         self.heap_end = unsafe {
             match self.heap_end {
                 Some(end) => Some(self.heap.extend(end, run.wrapping_add(want_pages * PAGE))),

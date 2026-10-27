@@ -15,8 +15,8 @@ pub(super) static PREEMPTIONS: AtomicU64 = AtomicU64::new(0);
 /// over `script/fastpath-footprint`'s bound (the assertion is beside `cpu::PERCPU`), and nothing on
 /// the IPC fastpath reads this. Written only by the owning core, in [`count_preemption`], on the
 /// timer path; read by anyone.
-pub(super) static PREEMPTIONS_PER_CPU: [AtomicU64; cpu::MAXIMUM_CPUS] =
-    [const { AtomicU64::new(0) }; cpu::MAXIMUM_CPUS];
+pub(super) static PREEMPTIONS_PER_CPU: [AtomicU64; cpu::MAX_CPUS] =
+    [const { AtomicU64::new(0) }; cpu::MAX_CPUS];
 
 /// Record that this core wants a switch, and run the tick's other accounting; does not switch.
 ///

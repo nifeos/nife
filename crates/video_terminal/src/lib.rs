@@ -40,7 +40,7 @@ mod test_support;
 pub use cell::{Attr, Cell, Colour};
 pub use damage::{CellRect, Damage};
 pub use geometry::{
-    CELL_H, CELL_W, MAXIMUM_CELLS, MAXIMUM_COLS, MAXIMUM_ROWS, SCROLLBACK_CELLS, SCROLLBACK_ROWS,
+    CELL_H, CELL_W, MAX_CELLS, MAX_COLS, MAX_ROWS, SCROLLBACK_CELLS, SCROLLBACK_ROWS,
 };
 pub use palette::{DEFAULT_BG, DEFAULT_FG, PALETTE};
 pub use vt::Vt;

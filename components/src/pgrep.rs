@@ -66,9 +66,9 @@ fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
 
     // **Walk first, filter second, complain third, print fourth.** DECISIONS §67's reader drains
     // diagnostics to end-of-stream before it reads a byte of output, and neither the complaints nor
-    // "nothing matched" (which needs the count) is known until the walk ends. `MAXIMUM_ROWS` is the
+    // "nothing matched" (which needs the count) is known until the walk ends. `MAX_ROWS` is the
     // kernel's whole thread table, so truncation is unreachable: 2 KiB on a twelve-page stack.
-    let mut rows = [ps::Row::default(); ps::MAXIMUM_ROWS];
+    let mut rows = [ps::Row::default(); ps::MAX_ROWS];
     let walked = ps::collect(&mut rows, &mut |cursor| survey(DOMAIN_SLOT, cursor));
     let found = pgrep::select(&walked, pgrep::Selector::from_wire(a1));
 

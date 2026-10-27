@@ -270,7 +270,7 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
 /// is the only one that depends on both, so it is where the agreement can be checked, and a
 /// compile-time assert is the rung this project reaches for when a fact can be made unrepresentable
 /// rather than remembered.
-const _: () = assert!(jh7110_entropy::WORD_BYTES == proto::MAXIMUM_BYTES);
+const _: () = assert!(jh7110_entropy::WORD_BYTES == proto::MAX_BYTES);
 
 user_mode_runtime::panic_handler!();
 

@@ -313,7 +313,7 @@ fn a_short_phentsize_is_refused() {
     assert_eq!(Elf::parse(&bytes).err(), Some(Error::BadProgramHeaders));
 }
 
-/// The header-count cap is exclusive: exactly `MAXIMUM_PHNUM` (64) headers must still parse,
+/// The header-count cap is exclusive: exactly `MAX_PHNUM` (64) headers must still parse,
 /// because the cap exists to stop a stalling count, not to shrink what a real file may hold.
 #[test]
 fn exactly_the_maximum_header_count_is_accepted() {

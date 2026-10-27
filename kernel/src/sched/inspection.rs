@@ -353,7 +353,7 @@ pub fn runnable_non_idle_count(&exclude: &ThreadId) -> usize {
     let Some(sched) = guard.as_mut() else {
         return 0;
     };
-    let mut idles = [u64::MAX; crate::cpu::MAXIMUM_CPUS];
+    let mut idles = [u64::MAX; crate::cpu::MAX_CPUS];
     // Each online core's idle tid by set membership, not `0..count`: the VisionFive 2's online
     // harts are {1, 2, 3}.
     for (slot, c) in idles.iter_mut().zip(crate::smp::online_cpus()) {
@@ -482,7 +482,7 @@ pub fn dump_threads() {
     }
     // A parked core with a non-empty inbox holds a thread nothing will run.
     let online = crate::smp::online_harts_mask();
-    for c in (0..crate::cpu::MAXIMUM_CPUS).filter(|c| online & (1 << c) == 0) {
+    for c in (0..crate::cpu::MAX_CPUS).filter(|c| online & (1 << c) == 0) {
         let inbox_len = cpu::of(c).inbox.lock().len();
         if inbox_len != 0 {
             crate::println!(

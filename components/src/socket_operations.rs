@@ -42,7 +42,7 @@ pub(crate) fn udp_sendto(
     let Some(sk) = table.socks[entry] else {
         return REP_ERR;
     };
-    if sk.kind != Kind::Udp || len > DATA_MAXIMUM {
+    if sk.kind != Kind::Udp || len > DATA_MAX {
         return REP_ERR;
     }
     let Some(window) = sk.window else {
@@ -90,7 +90,7 @@ pub(crate) fn sock_receive(
         return REP_ERR;
     }
 
-    let mut buf = [0u8; DATA_MAXIMUM];
+    let mut buf = [0u8; DATA_MAX];
     let n = if is_tcp {
         sockets
             .get_mut::<tcp::Socket>(handle)
@@ -325,7 +325,7 @@ pub(crate) fn tcp_send(
     let Some(sk) = table.socks[entry] else {
         return REP_ERR;
     };
-    if sk.kind != Kind::Tcp || len > DATA_MAXIMUM {
+    if sk.kind != Kind::Tcp || len > DATA_MAX {
         return REP_ERR;
     }
     let Some(window) = sk.window else {

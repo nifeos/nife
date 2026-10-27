@@ -40,7 +40,7 @@ use crate::mapped_window::{MappedWindow, PAGE};
 ///
 /// `MappedWindow::new`'s contract, forwarded once: `base .. base + PAGE` must be a range the
 /// kernel has mapped read/write-accessible into this process for as long as the `Frame` is used.
-/// One page, which is what [`socket_contract::DATA_MAXIMUM`] already assumes.
+/// One page, which is what [`socket_contract::DATA_MAX`] already assumes.
 #[derive(Clone, Copy)]
 pub struct Frame {
     window: MappedWindow,
@@ -59,7 +59,7 @@ impl Frame {
         Self {
             // SAFETY: forwarded from this function's own contract, verbatim: `base .. base +
             // PAGE` is mapped for as long as the `Frame` is used, and one page is what
-            // `socket_contract::DATA_MAXIMUM` assumes.
+            // `socket_contract::DATA_MAX` assumes.
             window: unsafe { MappedWindow::new(base, PAGE) },
         }
     }

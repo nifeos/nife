@@ -148,10 +148,9 @@ machine. That agrees with E1: 16 threads of background traffic sits inside E1's 
 below where E1 found any cost on this hardware.
 
 The stronger follow-up, originally deferred, was taken 2026-08-23. A second background-load
-condition, `SCALE_MAXIMUM_PAIRS`, joined the original 8-pair one in `app_displacement`. It runs 48
-pairs (96 threads), the same pair count E1's own sweep tops out at. Over the same three repeated
-runs, throughput lost at 96 threads reads 2 to 9%. It is higher than the low-load figure at every
-one of the 5 working sets on every one of the 3 runs.
+condition, `SCALE_MAX_PAIRS`, joined the original 8-pair one in `app_displacement`. It runs 48 pairs (96 threads), the same pair count E1's own sweep tops out at. Over the same three
+repeated runs, throughput lost at 96 threads reads 2 to 9%. It is higher than the low-load figure
+at every one of the 5 working sets on every one of the 3 runs.
 
 That is a small, reproducible, direction-consistent effect, not a knee. The two ranges (0-5% and
 2-9%) overlap. E1's own equivalent point (94-96 threads) shows only an 8-11% cost, so a modest

@@ -84,7 +84,7 @@ impl Log {
             store: Store {
                 ring: Ring::new(),
                 next_seq: 0,
-                scratch: [0; json::LINE_MAXIMUM],
+                scratch: [0; json::LINE_MAX],
             },
             refused: 0,
         }
@@ -114,7 +114,7 @@ impl Log {
             self.refused += 1;
             return Handled::Nothing;
         }
-        let mut bytes = [0u8; INLINE_MAXIMUM];
+        let mut bytes = [0u8; INLINE_MAX];
         match unpack(w0, w1, w2, &mut bytes) {
             Msg::Bytes(n) => {
                 let level = byte_sink_contract::severity(w0);

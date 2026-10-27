@@ -15,8 +15,8 @@
 //! - The archive holds every image the plan builds: code, not authority (see the note).
 //! - `--mem` entries run alone, and others due meanwhile run late, once (see the note).
 //! - A calendar line fires up to one pass late; `Registry::next_deadline` covers only counter rows.
-//! - A replacement's plan is cut at `registration::BODY_MAXIMUM`; the verdict word survives. Only
-//!   the compiled-in document is audited.
+//! - A replacement's plan is cut at `registration::BODY_MAX`; the verdict word survives. Only the
+//!   compiled-in document is audited.
 //! - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
 //! - In store mode an oversized program's refusal is unnamed, and a fire failure is only `E_BUDGET`.
 //!
@@ -97,15 +97,15 @@ enum Image {
 
 /// The name an installed row was registered with. See [`Image::Installed`].
 struct Installed {
-    name: [u8; NAME_MAXIMUM],
+    name: [u8; NAME_MAX],
     len: usize,
 }
 
 /// The longest program name store mode resolves; a prompt name is at most sixteen bytes.
-const NAME_MAXIMUM: usize = 32;
+const NAME_MAX: usize = 32;
 
 /// The images an admitted row will be built from, one slot per entry.
-type Images = [Option<Image>; timetable::MAXIMUM_ENTRIES];
+type Images = [Option<Image>; timetable::MAX_ENTRIES];
 
 /// **Where this timetable's programs come from**: an archive its spawn site narrowed, or the store.
 enum Programs {
@@ -411,7 +411,7 @@ impl Tally {
 /// store-mode registry was resolved before it was planned ([`resolve_installed`]), so this answers
 /// it with no images, which is right only for the empty document a store-mode timetable starts with.
 fn resolve(reg: &Registry<'_>, programs: &Programs) -> Result<Images, usize> {
-    let mut images: Images = [const { None }; timetable::MAXIMUM_ENTRIES];
+    let mut images: Images = [const { None }; timetable::MAX_ENTRIES];
     let Programs::Archive(fs) = programs else {
         return Ok(images);
     };
@@ -434,15 +434,15 @@ fn resolve(reg: &Registry<'_>, programs: &Programs) -> Result<Images, usize> {
 /// installed, cannot be read, or needs what no timetable endows (`timetable::schedulable`).
 fn resolve_installed(
     doc: &timetable::Document<'_>,
-) -> Result<([grant_plan::Manifest; timetable::MAXIMUM_ENTRIES], Images), usize> {
-    let mut manifests = [grant_plan::NO_NOTE_MANIFEST; timetable::MAXIMUM_ENTRIES];
-    let mut images: Images = [const { None }; timetable::MAXIMUM_ENTRIES];
+) -> Result<([grant_plan::Manifest; timetable::MAX_ENTRIES], Images), usize> {
+    let mut manifests = [grant_plan::NO_NOTE_MANIFEST; timetable::MAX_ENTRIES];
+    let mut images: Images = [const { None }; timetable::MAX_ENTRIES];
     for (i, entry) in doc.entries().iter().enumerate() {
         let word = grant_plan::parse_run(entry.command).program;
-        let (Ok(_), true) = (core::str::from_utf8(word), word.len() <= NAME_MAXIMUM) else {
+        let (Ok(_), true) = (core::str::from_utf8(word), word.len() <= NAME_MAX) else {
             return Err(i);
         };
-        let mut n = [0u8; NAME_MAXIMUM];
+        let mut n = [0u8; NAME_MAX];
         n[..word.len()].copy_from_slice(word);
         let p = Installed {
             name: n,
@@ -607,7 +607,7 @@ mod store {
 /// A [`Registry`] borrows its document, and the page cannot be it: the reply overwrites the page.
 /// The replacement is registered in one buffer while the registry in force borrows the other
 /// (§222's all-or-nothing sub-ruling). See `notes/scheduled-execution/the-program.md`.
-static mut DOCUMENTS: [[u8; registration::BODY_MAXIMUM]; 2] = [[0; registration::BODY_MAXIMUM]; 2];
+static mut DOCUMENTS: [[u8; registration::BODY_MAX]; 2] = [[0; registration::BODY_MAX]; 2];
 
 /// **Answer a replacement, if the registrar has asked for one since the last answer.**
 ///
@@ -667,7 +667,7 @@ fn replace_if_asked(
             .try_into()
             .unwrap(),
     );
-    if len as usize > registration::BODY_MAXIMUM {
+    if len as usize > registration::BODY_MAX {
         answer(body, registration::STATUS_MALFORMED, 0, 0, 0);
         say(b"timetable: a replacement longer than the page, refused whole\n");
         return false;
@@ -733,7 +733,7 @@ fn replace_if_asked(
     // must find the reply there by the time it sees the line.
     let mut plan = 0usize;
     timetable::write_plan(reg, &mut |bytes: &[u8]| {
-        let room = registration::BODY_MAXIMUM - plan;
+        let room = registration::BODY_MAX - plan;
         let n = bytes.len().min(room);
         body[registration::BODY + plan..registration::BODY + plan + n].copy_from_slice(&bytes[..n]);
         plan += n;

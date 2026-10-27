@@ -236,21 +236,18 @@ pub const TASK_BUDGET_PAGES: u64 = 1
 
 /// The largest task pool the supervisor builds, and therefore the length of its go-endpoint array.
 ///
-/// 32, against `sched::MAXIMUM_THREADS`'s 256 and against the 64 user threads the soak already
-/// builds on this machine. The sweep tops out here rather than at milestone 134 (the register of measures)'s E1 ceiling of 96
-/// because every task in this pool is a **process**, with an address space and a loaded image
-/// behind it, where E1's were kernel threads; the memory, not the thread table, is what binds.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_TASKS`.
-pub const MAXIMUM_TASKS: usize = 32;
+/// 32, against `sched::MAX_THREADS`'s 256 and against the 64 user threads the soak already builds
+/// on this machine. The sweep tops out here rather than at milestone 134's E1 ceiling of 96 because
+/// every task in this pool is a **process**, with an address space and a loaded image behind it,
+/// where E1's were kernel threads; the memory, not the thread table, is what binds.
+pub const MAX_TASKS: usize = 32;
 
 /// The subruns, in AIM7's sense: how many tasks are released for each measurement.
 ///
 /// AIM7 increments by one and runs until throughput collapses. This doubles, because a run on a
 /// board is an evening of somebody's time and the interesting feature (a knee, or its absence) is
 /// visible on a log axis. 1 is the control: a single task with the whole machine.
-pub const TASK_SWEEP: [usize; 6] = [1, 2, 4, 8, 16, MAXIMUM_TASKS];
+pub const TASK_SWEEP: [usize; 6] = [1, 2, 4, 8, 16, MAX_TASKS];
 
 /// **Measured repeats per subrun, and the statistic is their median, not their best.** Here the
 /// contention is the subject, and a minimum drawn from a wide distribution moves most with the
@@ -273,11 +270,11 @@ const _: () = assert!(TASK_BUDGET_PAGES < 1 + 8 + MAP_REGION_PAGES + CHILD_PAGES
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Spread {
     /// The fastest repeat, in ticks. It is printed so the spread stays visible; it is not the result.
-    pub minimum: u64,
+    pub min: u64,
     /// The middle repeat, in ticks. **This is the result**, and it is what `jpm_median` is made from.
     pub median: u64,
     /// The slowest repeat, in ticks.
-    pub maximum: u64,
+    pub max: u64,
 }
 
 // An odd count, so the median is one of the samples rather than a mean of the middle two. A mean
@@ -297,9 +294,9 @@ pub fn spread(samples: &mut [u64]) -> Option<Spread> {
     }
     samples.sort_unstable();
     Some(Spread {
-        minimum: samples[0],
+        min: samples[0],
         median: samples[(samples.len() - 1) / 2],
-        maximum: samples[samples.len() - 1],
+        max: samples[samples.len() - 1],
     })
 }
 
@@ -351,7 +348,7 @@ pub const REPORT_FAILED: u64 = u64::MAX;
 // machine, and an instrument with no server at all cannot run that job at all. This is a relation
 // between two constants in one file, which is the case where AGENTS.md's ladder says to make the
 // wrong state unrepresentable rather than to write a check that runs later.
-const _: () = assert!(ECHO_SERVERS >= 1 && ECHO_SERVERS < MAXIMUM_TASKS);
+const _: () = assert!(ECHO_SERVERS >= 1 && ECHO_SERVERS < MAX_TASKS);
 
 /// The order one task runs [`MIX`] in: a permutation of [`MIX`] chosen by `seed`.
 ///
@@ -557,7 +554,7 @@ mod tests {
     #[test]
     fn a_plausible_silicon_measurement_does_not_overflow() {
         // 32 tasks * 128 jobs at 1 GHz over one second: the numerator is 2.5e11 * 1e9.
-        let jobs = MAXIMUM_TASKS as u64 * JOBS_PER_TASK;
+        let jobs = MAX_TASKS as u64 * JOBS_PER_TASK;
         let hz = 1_000_000_000;
         assert_eq!(jobs_per_minute(jobs, hz, hz), jobs * 60);
     }
@@ -566,10 +563,7 @@ mod tests {
     /// tasks than it built and a partial run's printed points are still a prefix of the curve.
     #[test]
     fn the_sweep_climbs_to_the_pool_size() {
-        assert_eq!(
-            *TASK_SWEEP.last().expect("a sweep has points"),
-            MAXIMUM_TASKS
-        );
+        assert_eq!(*TASK_SWEEP.last().expect("a sweep has points"), MAX_TASKS);
         for w in TASK_SWEEP.windows(2) {
             assert!(w[0] < w[1], "the sweep is not increasing at {w:?}");
         }
@@ -583,9 +577,9 @@ mod tests {
         assert_eq!(
             spread(&mut v),
             Some(Spread {
-                minimum: 132_148,
+                min: 132_148,
                 median: 149_654,
-                maximum: 181_408
+                max: 181_408
             })
         );
     }
@@ -601,7 +595,7 @@ mod tests {
         ];
         let s = spread(&mut v).expect("fifteen samples");
         assert_eq!(s.median, 111_256);
-        assert_eq!(s.minimum, 97_672);
+        assert_eq!(s.min, 97_672);
     }
 
     /// An even count takes the lower middle, a sample and never a mean of two.

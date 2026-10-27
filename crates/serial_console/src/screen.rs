@@ -367,8 +367,8 @@ fn parse_pixmap(ppm: &[u8]) -> Result<(usize, usize, &[u8]), ReadError> {
     let mut at = 2;
     let width = token(&mut at).ok_or(ReadError::NotAPixmap)?;
     let height = token(&mut at).ok_or(ReadError::NotAPixmap)?;
-    let maximum = token(&mut at).ok_or(ReadError::NotAPixmap)?;
-    if maximum != 255 || width == 0 || height == 0 {
+    let max = token(&mut at).ok_or(ReadError::NotAPixmap)?;
+    if max != 255 || width == 0 || height == 0 {
         return Err(ReadError::NotAPixmap);
     }
     // Exactly one whitespace byte separates the header from the pixels.

@@ -52,7 +52,7 @@ $ mdr gate.txt | wc
 
 Two source lines are one paragraph re-flowed to one output line, and the two extra bytes are the
 body indent. So the counts are what separate a rendered page from silence. `MAX_TEXT_CHUNKS = 32`
-was the other half of this entry and is also gone. The shell drains `MAXIMUM_OUTPUT_CHUNKS = 4096`
+was the other half of this entry and is also gone. The shell drains `MAX_OUTPUT_CHUNKS = 4096`
 messages, which is 64 KiB rather than 512 bytes.
 
 ## Ranking was occurrence count and nothing else
@@ -81,8 +81,8 @@ caretaker-hop race it flagged before the decision was made is a named, accepted 
 a surprise. Both are recorded in the main page's `BUGS` section now rather than there. The third
 ranking item there is built too (2026-08-22, same day), and this page says what changed.
 
-## The `LINE_MAXIMUM` count drifted
+## The `LINE_MAX` count drifted
 
-The longest-line number in the main page's `LINE_MAXIMUM` entry carries a count marker because it
+The longest-line number in the main page's `LINE_MAX` entry carries a count marker because it
 drifted. Three places said 1835 for as long as the two gated ones said 1841. That is the margin
 this milestone is measured against, going stale in the prose that explains it.

@@ -299,11 +299,7 @@ impl Codes {
         if self.n >= 8 {
             return;
         }
-        let byte = if code <= proto::MAXIMUM_CODE {
-            code
-        } else {
-            0xff
-        };
+        let byte = if code <= proto::MAX_CODE { code } else { 0xff };
         self.packed |= byte << (8 * self.n);
         self.n += 1;
     }

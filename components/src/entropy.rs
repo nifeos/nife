@@ -103,8 +103,8 @@ const Q_AVAIL: u64 = 0x080;
 const Q_USED: u64 = 0x100;
 const POOL_OFF: u64 = 0x400;
 
-/// How many bytes one device request fetches. 256 is 32 clients' worth of [`proto::MAXIMUM_BYTES`]
-/// per round trip, and it leaves the rest of the page unused rather than crowding the rings.
+/// How many bytes one device request fetches. 256 is 32 clients' worth of [`proto::MAX_BYTES`] per
+/// round trip, and it leaves the rest of the page unused rather than crowding the rings.
 const POOL_LEN: u64 = 256;
 
 /// How many times to re-ask a device that returned nothing before telling the caller so. A device
@@ -416,7 +416,7 @@ mod instr {
 
     /// Draw eight bytes of real entropy, or `None` if the source stayed dry across [`RETRIES`]
     /// attempts. Unlike the virtio backend's [`super::Pool`], there is no gathering across a
-    /// boundary to do: one successful draw is exactly [`super::proto::MAXIMUM_BYTES`] bytes, so a
+    /// boundary to do: one successful draw is exactly [`super::proto::MAX_BYTES`] bytes, so a
     /// single request never needs more than one attempt loop.
     #[cfg(target_arch = "x86_64")]
     pub fn draw() -> Option<[u8; 8]> {
@@ -498,7 +498,7 @@ fn serve_instruction() -> ! {
         I_READY,
         report,
         u64::from(first.is_some()),
-        first.map_or(0, |_| proto::MAXIMUM_BYTES),
+        first.map_or(0, |_| proto::MAX_BYTES),
     );
     // Eight zero bytes out of `RDSEED`/`RNDRRS` condemn the source for the boot, the same rule the
     // two device backends follow. The false-positive probability is 2^-64 here rather than the

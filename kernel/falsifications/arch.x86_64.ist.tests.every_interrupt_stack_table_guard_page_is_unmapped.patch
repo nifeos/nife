@@ -16,7 +16,7 @@ index 015fb5ec1..4f09d21d6 100644
 --- a/kernel/src/arch/x86_64/mmu/fine_map.rs
 +++ b/kernel/src/arch/x86_64/mmu/fine_map.rs
 @@ -159,7 +159,7 @@ where
-     for id in 0..crate::cpu::MAXIMUM_CPUS {
+     for id in 0..crate::cpu::MAX_CPUS {
          for k in 0..super::super::ist::VECTORS.len() {
              let (bottom, top) = super::super::ist::span(id, k);
 -            va("IST stack", bottom, top, Flags::kernel_data())?;

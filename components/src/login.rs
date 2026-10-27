@@ -531,7 +531,7 @@ struct Authenticated {
     /// `SCHEDULE` rather than `LOGIN`.
     wants_schedule: bool,
     /// An owned copy of the identity: its first `identity_len` bytes.
-    identity_buf: [u8; login_contract::MAXIMUM_IDENTITY],
+    identity_buf: [u8; login_contract::MAX_IDENTITY],
     identity_len: usize,
     /// [`login_contract::identity_hint`] of the identity, for the audit record.
     hint: u64,
@@ -568,8 +568,8 @@ fn authenticate(channel: &Channel, terminal_held: bool) -> Option<Authenticated>
     let hint = login_contract::identity_hint(identity);
     // **Copy the identity out before it is gone**: the page is wiped right after the credential
     // relay, and `mint` needs the identity's bytes to name the subtree (DECISIONS §117) after that.
-    // `login_contract::read` has already checked it fits `login_contract::MAXIMUM_IDENTITY`.
-    let mut identity_buf = [0u8; login_contract::MAXIMUM_IDENTITY];
+    // `login_contract::read` has already checked it fits `login_contract::MAX_IDENTITY`.
+    let mut identity_buf = [0u8; login_contract::MAX_IDENTITY];
     let identity_len = identity.len();
     identity_buf[..identity_len].copy_from_slice(identity);
 
@@ -956,7 +956,7 @@ impl Durable {
     /// when the timetable answered and took the document ([`registration::STATUS_REPLACED`]).
     fn restore(&self, doc: &[u8]) -> bool {
         use core::sync::atomic::{AtomicU64, Ordering};
-        let n = doc.len().min(registration::BODY_MAXIMUM);
+        let n = doc.len().min(registration::BODY_MAX);
         // SAFETY: as in `end`: the page is mapped read/write at `self.va`, and nothing else
         // writes it until it is handed out after this returns.
         let page = unsafe {
@@ -1287,9 +1287,9 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
     let care = care?;
 
     // The grant name travels in two `START` argument words, so it is capped at
-    // `grant::WORDS_NAME` (16 bytes), below `login_contract::MAXIMUM_IDENTITY` (64). A truncated
-    // name is one two identities could share, so `pack_name` refuses a longer one, and that refusal
-    // is taken before anything is built.
+    // `grant::WORDS_NAME` (16 bytes), below `login_contract::MAX_IDENTITY` (64). A truncated name
+    // is one two identities could share, so `pack_name` refuses a longer one, and that refusal is
+    // taken before anything is built.
     let (lo, hi) = filesystem_contract::grant::pack_name(identity)?;
 
     let region = memory_region_split(CONSTRUCTION_UT, CARETAKER_REGION_PAGES).ok()?;

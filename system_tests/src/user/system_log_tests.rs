@@ -64,7 +64,7 @@ fn spawn_writer(image: &'static [u8], intake: RendezvousId, badge: u32, report: 
 }
 
 /// The most lines a test reads back from one window.
-const MAXIMUM_LINES: usize = 8;
+const MAX_LINES: usize = 8;
 
 /// Play a reader: ask for everything from `cursor` through `badge`, wait for the service to say the
 /// window is filled, and return the next cursor and the window's lines.
@@ -74,7 +74,7 @@ fn read_window(
     done: crate::sched::NotificationId,
     window_phys: u64,
     cursor: u64,
-) -> (u64, [&'static str; MAXIMUM_LINES], usize) {
+) -> (u64, [&'static str; MAX_LINES], usize) {
     crate::sched::ipc_send_badged(intake, [read::request(), cursor, 0], badge as u64);
     crate::sched::notification_wait(done).expect("the reader's notification died");
     // SAFETY: a frame this test allocated and owns until the end of the test, named through the
@@ -93,10 +93,10 @@ fn read_window(
     );
     let text = core::str::from_utf8(&window[read::DATA..read::DATA + len])
         .expect("the service wrote a line that is not UTF-8");
-    let mut lines = [""; MAXIMUM_LINES];
+    let mut lines = [""; MAX_LINES];
     let mut n = 0;
     for line in text.lines() {
-        assert!(n < MAXIMUM_LINES, "more lines than this test wrote: {text}");
+        assert!(n < MAX_LINES, "more lines than this test wrote: {text}");
         lines[n] = line;
         n += 1;
     }
@@ -352,7 +352,7 @@ fn spin_for(nanos: u64) {
 
 /// The flags record `seq` carries in the kernel's ring.
 fn ring_flags(seq: u64) -> u8 {
-    let mut text = [0u8; system_log_contract::record::TEXT_MAXIMUM];
+    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
     crate::kernel_log::test_read(seq, &mut text)
         .1
         .expect("the record left the ring")
@@ -377,7 +377,7 @@ fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() 
     // End the harness's own `test name ... ` line first: a line already begun goes where it
     // began, and that one began on the UART.
     crate::println!();
-    let mut text = [0u8; system_log_contract::record::TEXT_MAXIMUM];
+    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
     let (next, _) = crate::kernel_log::test_read(0, &mut text);
     let fallbacks = crate::kernel_log::fallback_count();
     crate::kernel_log::test_set_cursor(next);
@@ -428,7 +428,7 @@ fn a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it() {
     // As the test above: publish, end the harness's line, and play a drainer that never reads.
     crate::kernel_log::publish();
     crate::println!();
-    let mut text = [0u8; system_log_contract::record::TEXT_MAXIMUM];
+    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
     let (next, _) = crate::kernel_log::test_read(0, &mut text);
     crate::kernel_log::test_set_cursor(next);
     let line = "  kernel log probe: the last line before the drainer stopped\n";
@@ -468,7 +468,7 @@ fn a_panic_prints_the_held_lines_first_and_holds_nothing_after() {
     // End the harness's own `test name ... ` line first: a line already begun goes where it
     // began, and that one began on the UART.
     crate::println!();
-    let mut text = [0u8; system_log_contract::record::TEXT_MAXIMUM];
+    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
     let (next, _) = crate::kernel_log::test_read(0, &mut text);
     crate::kernel_log::test_set_cursor(next);
     let written = crate::console::bytes_written();

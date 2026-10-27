@@ -1,6 +1,6 @@
 // This module's docs are on its `pub mod` line in `lib.rs`.
 
-use super::{HIST, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM, RAW_QUEUE_MAXIMUM, RawQueue};
+use super::{HIST, LINE_MAX, LineDisc, PROMPT_MAX, RAW_QUEUE_MAX, RawQueue};
 
 /// "LEDT", then the layout, in the blob's first eight bytes.
 pub const MAGIC: u32 = 0x5444_454c;
@@ -128,11 +128,11 @@ impl LineDisc {
         }
         self.cur = cur;
         self.kill_len = r.field(&mut self.kill)?;
-        self.prompt_len = r.field(&mut self.prompt[..PROMPT_MAXIMUM])?;
+        self.prompt_len = r.field(&mut self.prompt[..PROMPT_MAX])?;
         self.hist_count = (r.u32()? as usize).min(HIST);
         self.hist_next = (r.u32()? as usize) % HIST;
         for entry in &mut self.hist {
-            let mut line = [0u8; LINE_MAXIMUM];
+            let mut line = [0u8; LINE_MAX];
             let n = r.field(&mut line)?;
             *entry = (line, n);
         }
@@ -144,16 +144,16 @@ impl LineDisc {
 impl RawQueue {
     /// Write the unread raw bytes into `w`, oldest first.
     pub fn save(&self, w: &mut Writer<'_>) {
-        let mut out = [0u8; RAW_QUEUE_MAXIMUM];
+        let mut out = [0u8; RAW_QUEUE_MAX];
         for (i, b) in out.iter_mut().take(self.len).enumerate() {
-            *b = self.buf[(self.head + i) % RAW_QUEUE_MAXIMUM];
+            *b = self.buf[(self.head + i) % RAW_QUEUE_MAX];
         }
         w.field(&out[..self.len]);
     }
 
     /// Replace the queue with what `r` holds.
     pub fn restore(&mut self, r: &mut Reader<'_>) -> Option<()> {
-        let mut buf = [0u8; RAW_QUEUE_MAXIMUM];
+        let mut buf = [0u8; RAW_QUEUE_MAX];
         let n = r.field(&mut buf)?;
         *self = RawQueue::new();
         self.push(&buf[..n]);

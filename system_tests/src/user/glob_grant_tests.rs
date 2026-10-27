@@ -10,7 +10,7 @@ const ROLE_GLOB: u64 = 2;
 
 /// The most messages one `rm` run may send before the harness stops reading, as
 /// [`rm_program_tests`] bounds it and for the same reason.
-const MAXIMUM_MESSAGES: usize = 64;
+const MAX_MESSAGES: usize = 64;
 
 /// The set `gl-*.txt` matches in the fixture, which `filesystem_contract`'s host test pins against the
 /// matcher. Stated literally here because building a grant is the one thing the kernel can do
@@ -120,7 +120,7 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
     )
     .expect("the FS service was wired by the shell phase");
 
-    for _ in 0..MAXIMUM_MESSAGES {
+    for _ in 0..MAX_MESSAGES {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
         // `rm` ends with the sink contract's end of stream, the verdict in the two words
         // `OPERATION_EOF` leaves free. The shell phase reports a `VERDICT` bitmap instead.
@@ -130,7 +130,7 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
         }
         assert!(w0 <= 16, "neither a verdict nor a text frame: {w0:#x}");
     }
-    panic!("rm sent {MAXIMUM_MESSAGES} messages and never a verdict");
+    panic!("rm sent {MAX_MESSAGES} messages and never a verdict");
 }
 
 /// **The attacker, and it is `rm` itself.** Told to remove a name that exists, sits one

@@ -309,7 +309,7 @@ fn every_screen_pixel_distinguishes_its_owner() {
 /// pattern tests' properties, per window.
 #[test]
 fn a_window_pattern_cannot_be_produced_by_accident() {
-    for id in 0..MAXIMUM_WINDOWS as u32 {
+    for id in 0..MAX_WINDOWS as u32 {
         let first = window_pixel(id, 0, 0);
         assert!(
             (0..64).any(|y| (0..64).any(|x| window_pixel(id, x, y) != first)),
@@ -560,7 +560,7 @@ fn the_shared_page_layouts_are_consistent() {
         assert!(a + 4 <= 4096, "a control field runs off its page");
     }
     assert!(
-        wlist::RECORDS + wlist::RECORD_STRIDE * MAXIMUM_WINDOWS as u64 <= 4096,
+        wlist::RECORDS + wlist::RECORD_STRIDE * MAX_WINDOWS as u64 <= 4096,
         "the window list does not fit in a page",
     );
     assert!(
@@ -622,11 +622,11 @@ fn a_degenerate_rectangle_is_empty() {
 }
 
 /// The geometry the compositor publishes is exact: stride is width times four with no
-/// padding, and [`MAXIMUM_SURFACE_BYTES`] is the scene's largest surface, byte for byte. These
+/// padding, and [`MAX_SURFACE_BYTES`] is the scene's largest surface, byte for byte. These
 /// numbers cross a control page into another process, which paints by them; an
 /// off-by-anything here is a fault in the client's own address space.
 #[test]
-fn stride_and_maximum_surface_bytes_are_exact() {
+fn stride_and_max_surface_bytes_are_exact() {
     assert_eq!(Window::new(8, 8, 64, 32).stride(), 256);
     assert_eq!(
         Window::new(0, 0, 1, 1).stride(),
@@ -634,9 +634,9 @@ fn stride_and_maximum_surface_bytes_are_exact() {
         "one pixel is four bytes"
     );
     // 72*52*4 = 14,976, 71*56*4 = 15,904, 30*80*4 = 9,600: the second window is the largest.
-    assert_eq!(MAXIMUM_SURFACE_BYTES, 15_904);
+    assert_eq!(MAX_SURFACE_BYTES, 15_904);
     assert_eq!(
-        MAXIMUM_SURFACE_BYTES,
+        MAX_SURFACE_BYTES,
         SCENE.iter().map(|w| w.w * w.h * 4).max().unwrap(),
         "the const loop and the iterator must find the same maximum",
     );

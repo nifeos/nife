@@ -269,9 +269,9 @@ pub mod client_checks {
 /// **Pack the survey's state histogram into one report word.** Four counts, a byte each, in the
 /// order [`abi::survey`] declares them, so a reader of `RPT_SURVEY` needs no second table.
 ///
-/// A byte each is enough because `MAXIMUM_THREADS` is far below 256 and this operator's domain is
-/// three children; a domain wider than a byte would saturate rather than wrap, which is a lie a
-/// test would catch and a real monitor would not want. Hence the `min`.
+/// A byte each is enough because `MAX_THREADS` is far below 256 and this operator's domain is three
+/// children; a domain wider than a byte would saturate rather than wrap, which is a lie a test would
+/// catch and a real monitor would not want. Hence the `min`.
 pub const fn survey_counts(ready: u64, running: u64, blocked: u64, dead: u64) -> u64 {
     const fn saturate(n: u64) -> u64 {
         if n > 255 { 255 } else { n }

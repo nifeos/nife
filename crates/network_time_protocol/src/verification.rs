@@ -21,7 +21,7 @@ fn nanoseconds_survive_the_fixed_point() {
 }
 
 /// **The era pivot is exact over the whole representable window**: for every Unix second in
-/// [`UNIX_MINIMUM`]`..`[`UNIX_LIMIT`], 1970 to 2104, encoding and decoding returns the second it
+/// [`UNIX_MIN`]`..`[`UNIX_LIMIT`], 1970 to 2104, encoding and decoding returns the second it
 /// started with. Quantified rather than sampled, and the window spans the 2036 rollover, so this
 /// covers the era-0 branch, the era-1 branch, and the boundary between them in one proof. All
 /// 4.2 billion of them, in a third of a second, because this half is addition.
@@ -129,7 +129,7 @@ fn accepting_is_total_and_a_sample_is_coherent() {
             s.response.transmit.0 != 0,
             "an accepted sample carries an unset transmit timestamp",
         );
-        assert!(s.response.stratum >= 1 && s.response.stratum <= MAXIMUM_STRATUM);
+        assert!(s.response.stratum >= 1 && s.response.stratum <= MAX_STRATUM);
         assert!(s.response.mode == mode::SERVER);
     }
 }

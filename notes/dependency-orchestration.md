@@ -173,9 +173,9 @@ no opinion about it. No contract in this tree declares one, so this was not exer
 building a second forwarding contract should check its own graph by hand until this has a mechanism.
 
 **Every name here is provisional**: `depends_on`, `LiveInstance`, `Dependents`, `dependents`,
-`quiesce_order`, `OrchestrationRefusal`, `MAXIMUM_LIVE`. `dependents` in particular is one word
-doing two jobs (a query function and, informally, "orchestration") and may not survive contact with
-a real second consumer.
+`quiesce_order`, `OrchestrationRefusal`, `MAX_LIVE`. `dependents` in particular is one word doing two
+jobs (a query function and, informally, "orchestration") and may not survive contact with a real
+second consumer.
 
 ## See also
 

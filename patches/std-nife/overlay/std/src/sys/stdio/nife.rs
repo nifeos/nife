@@ -93,8 +93,8 @@ const STREAM_ENDED: u8 = 3;
 
 /// The bytes of the last frame a short read could not take: the frame, where the rest starts, and
 /// where it ends.
-static STREAM_AHEAD: Mutex<([u8; sinkproto::INLINE_MAXIMUM], usize, usize)> =
-    Mutex::new(([0; sinkproto::INLINE_MAXIMUM], 0, 0));
+static STREAM_AHEAD: Mutex<([u8; sinkproto::INLINE_MAX], usize, usize)> =
+    Mutex::new(([0; sinkproto::INLINE_MAX], 0, 0));
 
 /// One read from the byte stream, or `None` when the slot turned out to be empty and the console
 /// should answer instead.

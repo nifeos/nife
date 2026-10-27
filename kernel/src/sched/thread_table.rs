@@ -1,5 +1,5 @@
 //! The thread table: the fixed array of thread control block pointers, generational over
-//! [`MAXIMUM_THREADS`] slots, that every thread id names. See notes/thread-control-block.md ("The
+//! [`MAX_THREADS`] slots, that every thread id names. See notes/thread-control-block.md ("The
 //! thread table").
 //!
 //! Name: provisional (milestone 840's lane, 2026-10-11 UTC; §271 (the scheduler file splits into
@@ -7,7 +7,7 @@
 
 use super::*;
 
-/// The most threads that were ever alive at once on this boot, which makes [`MAXIMUM_THREADS`] a
+/// The most threads that were ever alive at once on this boot, which makes [`MAX_THREADS`] a
 /// measured number: a refused spawn cannot say how close the suite came.
 ///
 /// Context: updated with `fetch_max` by both inserts, under `IPC_TABLES`. See
@@ -23,8 +23,8 @@ pub(super) static PEAK_THREADS: core::sync::atomic::AtomicUsize =
 /// thread's slot; a survey's relaxed read of a slot in flight is stale, never torn. Zeroed when a
 /// slot is filled, so a corpse keeps its time until it is reaped. See
 /// notes/thread-control-block.md ("CPU time, per slot").
-pub(super) static CPU_TICKS: [core::sync::atomic::AtomicU64; MAXIMUM_THREADS] =
-    [const { core::sync::atomic::AtomicU64::new(0) }; MAXIMUM_THREADS];
+pub(super) static CPU_TICKS: [core::sync::atomic::AtomicU64; MAX_THREADS] =
+    [const { core::sync::atomic::AtomicU64::new(0) }; MAX_THREADS];
 
 /// The slot a generational thread name occupies, for indexing [`CPU_TICKS`].
 ///
@@ -72,7 +72,7 @@ unsafe impl Send for ThreadControlBlockPointer {}
 /// page-resident TCBs, each at the start of one page that never moves, so the context-switch
 /// assembly and the intrusive queues may hold pointers into it. See notes/thread-control-block.md.
 pub(super) struct Threads {
-    pub(super) table: generational_table::Table<ThreadControlBlockPointer, MAXIMUM_THREADS>,
+    pub(super) table: generational_table::Table<ThreadControlBlockPointer, MAX_THREADS>,
 }
 
 impl Threads {

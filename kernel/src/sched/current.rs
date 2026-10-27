@@ -30,8 +30,8 @@ pub(super) fn current_thread_id() -> ThreadId {
 #[repr(align(64))]
 pub(super) struct CurrentCapabilities(AtomicPtr<CapabilityTableLock>);
 
-pub(super) static CURRENT_CAPABILITIES: [CurrentCapabilities; cpu::MAXIMUM_CPUS] =
-    [const { CurrentCapabilities(AtomicPtr::new(core::ptr::null_mut())) }; cpu::MAXIMUM_CPUS];
+pub(super) static CURRENT_CAPABILITIES: [CurrentCapabilities; cpu::MAX_CPUS] =
+    [const { CurrentCapabilities(AtomicPtr::new(core::ptr::null_mut())) }; cpu::MAX_CPUS];
 
 /// Make `tid` this core's running thread: its name in `PerCpu::current` and its capability table in
 /// [`CURRENT_CAPABILITIES`]. The only writer of either, so a lookup never finds one thread's name

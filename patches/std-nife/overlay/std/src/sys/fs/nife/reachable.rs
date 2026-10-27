@@ -27,7 +27,7 @@ pub(crate) fn is_reachable() -> bool {
         1 => true,
         2 => false,
         _ => {
-            let (r0, _) = rt::call(FS, proto::req(proto::FSTAT, proto::MAXIMUM_HANDLE, 0), 0);
+            let (r0, _) = rt::call(FS, proto::req(proto::FSTAT, proto::MAX_HANDLE, 0), 0);
             // A payload-free probe cannot draw `ENOENT` (whose -2 collides with the kernel's
             // `WrongObject`), so all three of the kernel's refusals are unambiguous here.
             let ok = !matches!(r0 as i64, -1 | -2 | -3);

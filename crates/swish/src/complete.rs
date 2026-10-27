@@ -43,10 +43,7 @@
 
 /// The longest name [`Matches`] tracks a common prefix over. Longer names still count as
 /// candidates; their common prefix is cut at this length, which only shortens what is inserted.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `NAME_MAX`.
-pub const NAME_MAXIMUM: usize = 255;
+pub const NAME_MAX: usize = 255;
 
 /// What the word under the cursor is.
 #[derive(Debug, PartialEq, Eq)]
@@ -133,7 +130,7 @@ fn command_position(before: &[u8]) -> bool {
 /// and whether the only match is a directory.
 pub struct Matches<'p> {
     prefix: &'p [u8],
-    common: [u8; NAME_MAXIMUM],
+    common: [u8; NAME_MAX],
     common_len: usize,
     total: usize,
     only_is_dir: bool,
@@ -162,7 +159,7 @@ impl<'p> Matches<'p> {
     pub const fn new(prefix: &'p [u8]) -> Self {
         Matches {
             prefix,
-            common: [0; NAME_MAXIMUM],
+            common: [0; NAME_MAX],
             common_len: 0,
             total: 0,
             only_is_dir: false,
@@ -182,7 +179,7 @@ impl<'p> Matches<'p> {
             return;
         }
         if self.total == 0 {
-            let n = name.len().min(NAME_MAXIMUM);
+            let n = name.len().min(NAME_MAX);
             self.common[..n].copy_from_slice(&name[..n]);
             self.common_len = n;
         } else {

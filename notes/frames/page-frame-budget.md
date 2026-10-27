@@ -39,16 +39,16 @@ test kernel::user::dir_capability_tests::a_full_directory_capability_... ... ok
 frames: 29280 free before the first test, 15249 after the last (14031 never returned); longest free run 14080
 ```
 
-A charge under `PAGE_FRAME_REPORT_MINIMUM` (16 page frames) is silent, so the transcript names the
+A charge under `PAGE_FRAME_REPORT_MIN` (16 page frames) is silent, so the transcript names the
 services and not the arithmetic.
 
 Two ceilings fail the run, and the second is the one that names the bug. `SUITE_PAGE_FRAME_BUDGET`
 catches the total residue growing past what is accounted for below, which is how a
-new service-shaped test that forgets to hand its memory back is caught in the act.
-`SUITE_MINIMUM_FREE_RUN` requires the boot to end with a free run of at least 1024 page frames, and
-that is the real gate: loading a program calls `alloc_contiguous`, so what a boot runs out of is
-contiguity rather than memory. A suite can pass a residue ceiling and still be fragmented into
-uselessness, which is exactly the state this one was in.
+new service-shaped test that forgets to hand its memory back is caught in the act. `SUITE_MIN_FREE_RUN`
+requires the boot to end with a free run of at least 1024 page frames, and that is the real gate: loading a
+program calls `alloc_contiguous`, so what a boot runs out of is contiguity rather than memory. A suite
+can pass a residue ceiling and still be fragmented into uselessness, which is exactly the state this
+one was in.
 
 ## What the boot spent, measured
 

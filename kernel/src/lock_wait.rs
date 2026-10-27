@@ -10,7 +10,7 @@
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use crate::cpu::MAXIMUM_CPUS;
+use crate::cpu::MAX_CPUS;
 
 /// Lock ranks are below this (`sync::rank` tops out at 61). A rank at or above it is not counted.
 const RANKS: usize = 64;
@@ -51,10 +51,10 @@ impl Core {
     }
 }
 
-static CORES: [Core; MAXIMUM_CPUS] = [const { Core::new() }; MAXIMUM_CPUS];
+static CORES: [Core; MAX_CPUS] = [const { Core::new() }; MAX_CPUS];
 
 fn here() -> &'static Core {
-    &CORES[crate::cpu::id() & (MAXIMUM_CPUS - 1)]
+    &CORES[crate::cpu::id() & (MAX_CPUS - 1)]
 }
 
 fn bump(counter: &AtomicU64, by: u64) {

@@ -216,7 +216,7 @@ the executing hart's own page-table writes.
   checks it is synchronous, because nothing can. The failure would be a stale translation on another
   hart, arbitrarily far from the cause.
 - The hart mask is a bitmap relative to base 0, so the shootdown reaches harts 0..63 on rv64. Fine
-  for `cpu::MAXIMUM_CPUS`, wrong for a bigger machine, and the same limitation
+  for `cpu::MAX_CPUS`, wrong for a bigger machine, and the same limitation
   `smp::bring_up_secondaries` documents for logical-id-equals-hart-id.
 - **QEMU cannot exercise the case the probe measures for the reason a real core would.** QEMU's
   softmmu TLB is not tagged by ASID; it flushes wholesale whenever `satp.ASID` changes. The test

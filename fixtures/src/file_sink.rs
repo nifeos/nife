@@ -121,7 +121,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let mut off = 0u64;
     loop {
         let (w0, w1, w2) = receive(SINK);
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut buf = [0u8; byte_sink_contract::INLINE_MAX];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Msg::Bytes(0) => {}
             byte_sink_contract::Msg::Bytes(n) => {

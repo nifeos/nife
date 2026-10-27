@@ -120,8 +120,8 @@ impl SignatureVerificationAlgorithm for Ed25519 {
 /// algorithms are named `RSA_PKCS1_2048_8192_SHA256`. The lower bound is the load-bearing one: a
 /// 1024-bit modulus is factorable by a well-resourced attacker and `rsa` itself imposes no
 /// minimum, so without this line a certificate chain could be forged by presenting a small key.
-const MINIMUM_MODULUS_BYTES: usize = 2048 / 8;
-const MAXIMUM_MODULUS_BYTES: usize = 8192 / 8;
+const MIN_MODULUS_BYTES: usize = 2048 / 8;
+const MAX_MODULUS_BYTES: usize = 8192 / 8;
 
 /// Decode an X.509 RSA public key and check its size.
 ///
@@ -131,7 +131,7 @@ const MAXIMUM_MODULUS_BYTES: usize = 8192 / 8;
 fn public_key(der: &[u8]) -> Result<rsa::RsaPublicKey, InvalidSignature> {
     let key = rsa::RsaPublicKey::from_pkcs1_der(der).map_err(|_| InvalidSignature)?;
     let size = key.size();
-    if !(MINIMUM_MODULUS_BYTES..=MAXIMUM_MODULUS_BYTES).contains(&size) {
+    if !(MIN_MODULUS_BYTES..=MAX_MODULUS_BYTES).contains(&size) {
         return Err(InvalidSignature);
     }
     Ok(key)

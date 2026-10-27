@@ -30,7 +30,7 @@ trusted core. Expand the term when there is any doubt.
 
 ## Where TCBs live (the phase B.2 decision)
 
-Decided at B.2: a static pool, a MAXIMUM_THREADS-sized array in BSS, a ThreadId's slot bits naming
+Decided at B.2: a static pool, a MAX_THREADS-sized array in BSS, a ThreadId's slot bits naming
 its storage directly. That pool was always a scaffold: the B.2 note said "the pool upgrades to
 retype-backed storage behind the table when init lands."
 
@@ -168,11 +168,11 @@ so a corpse keeps the time it earned until its supervisor reaps it.
 
 ### The peak
 
-`PEAK_THREADS` is the most threads alive at once on this boot, which makes `MAXIMUM_THREADS` a
-measured number. By the time a spawn is refused, the table is full and every earlier number is gone.
-It is one high-water mark rather than a per-test ledger. What fills the table is the services
-earlier tests left running on purpose (notes/frames.md's "held" list), not one test's spend. Both
-inserts update it under `IPC_TABLES` with `fetch_max`.
+`PEAK_THREADS` is the most threads alive at once on this boot, which makes `MAX_THREADS` a measured
+number. By the time a spawn is refused, the table is full and every earlier number is gone. It is one
+high-water mark rather than a per-test ledger. What fills the table is the services earlier tests
+left running on purpose (notes/frames.md's "held" list), not one test's spend. Both inserts update
+it under `IPC_TABLES` with `fetch_max`.
 
 ### The running thread, per core
 

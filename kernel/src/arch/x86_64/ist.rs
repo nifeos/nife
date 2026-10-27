@@ -14,12 +14,11 @@
 //! # BUGS
 //!
 //! - `script/stack-depth-check` does not measure these stacks.
-//! - They cost 3 x 20 KiB x `MAXIMUM_CPUS` (480 KiB) of address space whether or not the cores
-//!   exist.
+//! - They cost 3 x 20 KiB x `MAX_CPUS` (480 KiB) of address space whether or not the cores exist.
 
 use core::cell::SyncUnsafeCell;
 
-use crate::cpu::MAXIMUM_CPUS;
+use crate::cpu::MAX_CPUS;
 
 /// The usable stack under each IST entry: four pages, `crate::interrupt_stack::SIZE`'s size and
 /// for its reason (the fatal path prints a register dump from here).
@@ -55,7 +54,7 @@ pub(crate) const fn slot_for(vector: usize) -> u8 {
 
 /// The page-aligned layout of the region: per core, one slot per entry of [`VECTORS`].
 #[repr(C, align(4096))]
-struct Stacks([[[u8; SLOT]; VECTORS.len()]; MAXIMUM_CPUS]);
+struct Stacks([[[u8; SLOT]; VECTORS.len()]; MAX_CPUS]);
 
 /// The stacks. A `SyncUnsafeCell` for calef's ruling of 2026-10-09 on milestone 891 (a mutable
 /// static becomes an atomic, a lock or a recorded cell): the CPU switches to these by address. It
@@ -66,7 +65,7 @@ struct Stacks([[[u8; SLOT]; VECTORS.len()]; MAXIMUM_CPUS]);
 /// before any IST vector can be taken there.
 #[cfg_attr(target_os = "none", unsafe(link_section = ".ist_stacks"))]
 static STACKS: SyncUnsafeCell<Stacks> =
-    SyncUnsafeCell::new(Stacks([[[0; SLOT]; VECTORS.len()]; MAXIMUM_CPUS]));
+    SyncUnsafeCell::new(Stacks([[[0; SLOT]; VECTORS.len()]; MAX_CPUS]));
 
 /// The low end of core `id`'s slot `k` (zero-based, an index into [`VECTORS`]): its guard page.
 /// Indexing bounds-checks both numbers.
@@ -86,7 +85,7 @@ pub(crate) fn span(id: usize, k: usize) -> (u64, u64) {
 #[cfg(test)]
 fn region() -> (u64, u64) {
     let start = STACKS.get() as u64;
-    (start, start + (MAXIMUM_CPUS * VECTORS.len() * SLOT) as u64)
+    (start, start + (MAX_CPUS * VECTORS.len() * SLOT) as u64)
 }
 
 /// **Point this core's three IST entries at its own stacks**, and write this core's per-CPU pointer
@@ -116,7 +115,7 @@ pub unsafe fn install(id: usize, percpu: u64) {
 /// `gs`.
 pub(crate) fn is_on_an_nmi_stack(addr: u64) -> bool {
     const NMI: usize = slot_for(2) as usize - 1;
-    (0..MAXIMUM_CPUS).any(|id| {
+    (0..MAX_CPUS).any(|id| {
         let (bottom, top) = span(id, NMI);
         (bottom..top).contains(&addr)
     })
@@ -297,7 +296,7 @@ mod tests {
     #[test_case]
     fn every_online_core_has_its_own_three_interrupt_stack_table_entries() {
         let online = crate::smp::online_harts_mask();
-        for id in (0..MAXIMUM_CPUS).filter(|id| online & (1 << id) != 0) {
+        for id in (0..MAX_CPUS).filter(|id| online & (1 << id) != 0) {
             for (k, &vector) in VECTORS.iter().enumerate() {
                 let entry = super::super::segments::interrupt_stack(id, k as u8 + 1);
                 let (bottom, top) = span(id, k);
@@ -333,7 +332,7 @@ mod tests {
     /// Name: provisional (milestone 915, 2026-10-13 UTC).
     #[test_case]
     fn every_interrupt_stack_table_guard_page_is_unmapped() {
-        for id in 0..MAXIMUM_CPUS {
+        for id in 0..MAX_CPUS {
             for (k, &vector) in VECTORS.iter().enumerate() {
                 let g = guard(id, k);
                 assert!(

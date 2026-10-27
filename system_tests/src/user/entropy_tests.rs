@@ -198,7 +198,7 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
     let mut big = [0u8; 8];
     assert_eq!(
         w.get(200, &mut big),
-        entropy_contract::MAXIMUM_BYTES as usize,
+        entropy_contract::MAX_BYTES as usize,
         "an oversized request should be clamped and answered, not refused",
     );
 
@@ -220,7 +220,7 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
 /// A fill of more than one exchange gathers across round trips (milestone 159 (a real hardware
 /// entropy source: the JH7110's TRNG)).
 ///
-/// `entropy_contract` carries [`entropy_contract::MAXIMUM_BYTES`] bytes per exchange, so a 32-byte
+/// `entropy_contract` carries [`entropy_contract::MAX_BYTES`] bytes per exchange, so a 32-byte
 /// buffer takes four; `Wiring::fill` is the loop, run here against the backend CI has. A full
 /// buffer comes back full, and two consecutive fills differ, which for 32 bytes means the service
 /// crossed an internal refill boundary without repeating itself.

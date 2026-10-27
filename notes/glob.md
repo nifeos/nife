@@ -62,10 +62,10 @@ Six functions, and each is there for a caller that exists:
   for a name nobody has.
 - **`match_steps`** and `cost_bound` are the anti-blowup claim made checkable. See below.
 
-Everything is bytes. A name here is a byte string (`filesystem_contract::grant::MAXIMUM_NAME` is 252
-of them). So a matcher that decoded UTF-8 would have to decide what to do with a name that is not
-valid UTF-8, which is a question the filesystem never asks. `?` therefore matches one byte, which is
-half of a two-byte UTF-8 character. Same as `fnmatch(3)` in the C locale.
+Everything is bytes. A name here is a byte string (`filesystem_contract::grant::MAX_NAME` is 252 of
+them). So a matcher that decoded UTF-8 would have to decide what to do with a name that is not valid
+UTF-8, which is a question the filesystem never asks. `?` therefore matches one byte, which is half
+of a two-byte UTF-8 character. Same as `fnmatch(3)` in the C locale.
 
 **There is no error case, and no `Result`.** A `[` with no closing `]` is a literal `[`; a trailing
 `\` is a literal `\`. That is bash and `fnmatch(3)`, and the reason to match them goes past
@@ -231,11 +231,11 @@ The unit tests exist for these. Every one is a place a real glob implementation 
   granted.
 - No `**`, no qualifiers, no POSIX classes, no locale, no case folding, no path separator.
 - **No grant.** The attenuated-to-a-name-set work, the shell's expansion, `grant_plan::plan` seeing the
-  expanded set rather than the pattern, and `ARG_MAX` as a capability limit are milestone 47
-  (navigation and naming)'s globbing lane, built on top of this crate and written up in
-  [glob-grant.md](glob-grant.md). This crate is the part with no authority in it, which is why it
-  could be finished and proved on its own, and it did not change by one line when the granting
-  arrived. It did not change by one line when batching arrived either: `xargs`, milestone 109
-  (batching a grant too large to hand over). That is the same claim made a second time:
+  expanded set rather than the pattern, and `ARG_MAX` as a capability limit are milestone 47's
+  globbing lane, built on top of this crate and written up in [glob-grant.md](glob-grant.md). This
+  crate is the part with no authority in it, which is why it could be finished and proved on its own,
+  and it did not change by one line when the granting arrived. It did not change by one line when
+  batching arrived either: `xargs`, milestone 109 (batching a grant too large to hand over). That is
+  the same claim made a second time:
   what a pattern designates is decided here, and how much of it one invocation is handed is decided
   three layers up.

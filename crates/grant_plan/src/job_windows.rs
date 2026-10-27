@@ -18,10 +18,7 @@
 
 /// The most windows a pool can track. The file service's pool has seven
 /// (`login_contract::DURABLE_WINDOW` is the last), so this is room, not a target.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_WINDOWS`.
-pub const MAXIMUM_WINDOWS: usize = 16;
+pub const MAX_WINDOWS: usize = 16;
 
 /// **A job's label**: the badge the progenitor puts on the job's supervision capability, which the
 /// kernel hands back beside the job's death message (DECISIONS §148 (resolves by asking the kernel), milestone 105 (the two forks)) and
@@ -38,7 +35,7 @@ pub struct Windows {
     next: u64,
     /// `holder[w]` is the label of the job window `w` was last handed to and that has not been
     /// reaped, or `0` when the window is free.
-    holder: [Label; MAXIMUM_WINDOWS],
+    holder: [Label; MAX_WINDOWS],
     /// Bit `w` set means window `w`'s badge is bound to a grant and must be unbound before reuse
     /// (milestone 606 (a directory walk costs what it does on Linux), ruling D).
     bound: u64,
@@ -49,17 +46,16 @@ impl Windows {
     ///
     /// # Panics
     ///
-    /// If the range is empty or reaches past [`MAXIMUM_WINDOWS`]: a pool that could hand out
-    /// nothing, or a window this table cannot record, is a wiring mistake, caught where the pool is
-    /// made.
+    /// If the range is empty or reaches past [`MAX_WINDOWS`]: a pool that could hand out nothing,
+    /// or a window this table cannot record, is a wiring mistake, caught where the pool is made.
     #[must_use]
     pub const fn new(first: u64, end: u64) -> Self {
-        assert!(first < end && end <= MAXIMUM_WINDOWS as u64);
+        assert!(first < end && end <= MAX_WINDOWS as u64);
         Self {
             first,
             end,
             next: first,
-            holder: [0; MAXIMUM_WINDOWS],
+            holder: [0; MAX_WINDOWS],
             bound: 0,
         }
     }
@@ -115,10 +111,7 @@ impl Windows {
 
 /// How many finished jobs [`ReapsDue`] tracks. A full table only stops the progenitor waiting for
 /// the reaps it could not record, so this bounds a liveness improvement, not a safety rule.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_DUE`.
-pub const MAXIMUM_DUE: usize = 8;
+pub const MAX_DUE: usize = 8;
 
 /// **The finished jobs whose reap is on its way** (milestone 685): jobs whose whole answer went to
 /// the shell's result endpoint, supervised by `job_undertaker`, not yet reaped.
@@ -129,7 +122,7 @@ pub const MAXIMUM_DUE: usize = 8;
 ///
 /// Name: provisional.
 pub struct ReapsDue {
-    labels: [Label; MAXIMUM_DUE],
+    labels: [Label; MAX_DUE],
 }
 
 impl ReapsDue {
@@ -137,7 +130,7 @@ impl ReapsDue {
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            labels: [0; MAXIMUM_DUE],
+            labels: [0; MAX_DUE],
         }
     }
 
@@ -324,7 +317,7 @@ mod tests {
         assert!(d.any(), "another job's reap cleared job 4's");
         d.reaped(4);
         assert!(!d.any());
-        for job in 1..=MAXIMUM_DUE as u64 {
+        for job in 1..=MAX_DUE as u64 {
             assert!(d.expect(job));
         }
         assert!(!d.expect(99), "a full table said it recorded a ninth");

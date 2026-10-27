@@ -282,7 +282,7 @@ fn drain_report(report: crate::sched::RendezvousId, out: &mut [u8]) -> usize {
     let mut len = 0usize;
     loop {
         let words = sched::ipc_receive(report);
-        let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut chunk = [0u8; byte_sink_contract::INLINE_MAX];
         match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
             byte_sink_contract::Msg::Bytes(n) => {
                 let take = n.min(out.len() - len);
@@ -301,7 +301,7 @@ fn walk_rows(report: crate::sched::RendezvousId, row: &str) {
     let mut len = 0usize;
     loop {
         let words = sched::ipc_receive(report);
-        let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut chunk = [0u8; byte_sink_contract::INLINE_MAX];
         match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
             byte_sink_contract::Msg::Bytes(n) => {
                 let take = n.min(text.len() - len);

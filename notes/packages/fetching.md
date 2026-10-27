@@ -82,9 +82,9 @@ HTTPS for the internet rung, and under §195 (a reviewed recipe vouches for a pa
 digest, not its transport, decides whether its bytes may run.
 
 The reader is incremental and holds only the head. A response arrives one socket read at a time,
-at most `socket_contract::DATA_MAXIMUM` bytes each, and the body is a package that may be a
-megabyte. That is the borrowing shape `package_archive` uses, for the same reason: the first
-consumer has no allocator.
+at most `socket_contract::DATA_MAX` bytes each, and the body is a package that may be a megabyte.
+That is the borrowing shape `package_archive` uses, for the same reason: the first consumer has no
+allocator.
 
 `httparse`, the parser under `hyper`, parses the head. It is `no_std`, has no dependencies and
 no allocator, and is fuzzed upstream (OSS-Fuzz). Its `Partial` status tells the reader the head has
@@ -109,8 +109,8 @@ The limits it carries, in full:
   design/decisions/0046-dependency-rule.md takes the parser rather than proving one, and the harness
   the hand-written parser had never finished in a CI shard's minutes.
 - `httparse` parses into a caller-supplied array and this crate has no allocator, so a head with
-  more than `MAXIMUM_HEADERS` lines is refused even under the byte cap. The array lives on the stack
-  for one parse (4 KiB).
+  more than `MAX_HEADERS` lines is refused even under the byte cap. The array lives on the stack for
+  one parse (4 KiB).
 - `httparse` does not resume, so the head is parsed again on every read until it ends. That is
   bounded by the head cap, quadratic in it for a peer that sends one byte per read, and not measured.
 - Header values other than the two it reads are skipped, so a malformed `Date` costs nothing; a

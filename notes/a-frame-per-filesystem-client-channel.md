@@ -72,9 +72,9 @@ about 17% to it.
 ### A. Badged endpoint capabilities (seL4's answer)
 
 A derived endpoint capability carries a badge word the kernel delivers to the receiver on
-`RECEIVE_CAP`. The server maps K windows and reads request `b` from `FILE_PAGE + b *
-TRANSFER_MAXIMUM`. The progenitor holds a pool of K (badged endpoint, frame) pairs and hands one to
-each caretaker chain, taking it back at reap.
+`RECEIVE_CAP`. The server maps K windows and reads request `b` from `FILE_PAGE + b * TRANSFER_MAX`. The
+progenitor holds a pool of K (badged endpoint, frame) pairs and hands one to each caretaker chain,
+taking it back at reap.
 
 - `filesystem_contract`'s message layout and opcodes do not change.
 - The syscall surface does. A method to mint a badged endpoint, and a fourth return value from
@@ -169,8 +169,7 @@ What is blocked: only the production pool, and through it milestone 47 (navigati
 Raise `CAPABILITY_TABLE_SLOTS` from 24 to 32 and hold the seven window capabilities permanently.
 
 - Cost: every thread's table is inline in its control block, at 32 bytes a slot. Eight slots are
-  256 bytes a thread, 64 KiB across `MAXIMUM_THREADS` (256). Computed from the constants `cap.rs`
-  pins.
+  256 bytes a thread, 64 KiB across `MAX_THREADS` (256). Computed from the constants `cap.rs` pins.
 - It moves `abi::fault::FAULT_EP_SLOT` (always `CAPABILITY_TABLE_SLOTS - 1`) from 23 to 31, which
   every supervised program agrees on. It has moved three times already (16, 17, 24), each a
   one-number change with the tree rebuilt around it.

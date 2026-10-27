@@ -10,9 +10,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use package_archive::{
-    Attributes, MAXIMUM_MEMBERS, NAME_LEN, Package, package_size, write_package,
-};
+use package_archive::{Attributes, MAX_MEMBERS, NAME_LEN, Package, package_size, write_package};
 
 fuzz_target!(|input: (String, String, String, Vec<(String, Vec<u8>)>)| {
     let (name, version, architecture, members) = input;
@@ -28,7 +26,7 @@ fuzz_target!(|input: (String, String, String, Vec<(String, Vec<u8>)>)| {
     {
         return;
     }
-    if members.len() > MAXIMUM_MEMBERS {
+    if members.len() > MAX_MEMBERS {
         return;
     }
     if members

@@ -35,10 +35,7 @@ pub const TRIES_SHIFT: u32 = 52;
 pub const SUCCESSFUL_BIT: u32 = 56;
 
 /// The largest value either four-bit field holds, and the ceiling both setters saturate at.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_NIBBLE`.
-pub const MAXIMUM_NIBBLE: u8 = 15;
+pub const MAX_NIBBLE: u8 = 15;
 
 /// **The priority `system_installer` gives the slot it writes at install time.**
 ///
@@ -93,17 +90,17 @@ impl State {
     /// A slot holding a freshly written image that has never booted: outranking whatever is there,
     /// and with `tries` attempts to prove itself before the machine gives up on it.
     ///
-    /// Both arguments saturate at [`MAXIMUM_NIBBLE`] rather than wrapping, because a wrapped
-    /// priority of 16 is a priority of 0, which is the one value that means "never boot this".
+    /// Both arguments saturate at [`MAX_NIBBLE`] rather than wrapping, because a wrapped priority
+    /// of 16 is a priority of 0, which is the one value that means "never boot this".
     pub const fn on_trial(priority: u8, tries: u8) -> State {
         State {
-            priority: if priority > MAXIMUM_NIBBLE {
-                MAXIMUM_NIBBLE
+            priority: if priority > MAX_NIBBLE {
+                MAX_NIBBLE
             } else {
                 priority
             },
-            tries: if tries > MAXIMUM_NIBBLE {
-                MAXIMUM_NIBBLE
+            tries: if tries > MAX_NIBBLE {
+                MAX_NIBBLE
             } else {
                 tries
             },
@@ -376,10 +373,7 @@ pub mod cmdline {
     ///
     /// One digit, because [`super::select_excluding`] cannot exclude past slot 63 and
     /// `system_installer` lays out two; [`encode`] refuses a wider number rather than truncating.
-    ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `MAX_LEN`.
-    pub const MAXIMUM_LEN: usize = KEY.len() + 1;
+    pub const MAX_LEN: usize = KEY.len() + 1;
 
     /// Write `boot-slot=N` into `out`, returning its length, or **0 when it does not fit or `slot`
     /// is not a single digit**.
@@ -389,12 +383,12 @@ pub mod cmdline {
     /// whole feature fails in anyway.
     #[must_use]
     pub fn encode(slot: u8, out: &mut [u8]) -> usize {
-        if slot > 9 || out.len() < MAXIMUM_LEN {
+        if slot > 9 || out.len() < MAX_LEN {
             return 0;
         }
         out[..KEY.len()].copy_from_slice(KEY.as_bytes());
         out[KEY.len()] = b'0' + slot;
-        MAXIMUM_LEN
+        MAX_LEN
     }
 
     /// **Which slot started this boot**, from the whole command line, or `None` when no word on it
@@ -408,7 +402,7 @@ pub mod cmdline {
     /// ```
     /// use boot_slot::cmdline;
     ///
-    /// let mut out = [0u8; cmdline::MAXIMUM_LEN];
+    /// let mut out = [0u8; cmdline::MAX_LEN];
     /// let n = cmdline::encode(1, &mut out);
     /// let line = core::str::from_utf8(&out[..n]).unwrap();
     /// assert_eq!(line, "boot-slot=1");
@@ -446,7 +440,7 @@ pub mod cmdline {
 /// ```
 /// use boot_slot::medium;
 ///
-/// let mut out = [0u8; medium::MAXIMUM_LEN];
+/// let mut out = [0u8; medium::MAX_LEN];
 /// let n = medium::encode_nvme(&mut out);
 /// let line = core::str::from_utf8(&out[..n]).unwrap();
 /// assert_eq!(line, "boot-medium=nvme");
@@ -461,19 +455,16 @@ pub mod medium {
     pub const NVME: &str = "boot-medium=nvme";
 
     /// The longest this token can be.
-    ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `MAX_LEN`.
-    pub const MAXIMUM_LEN: usize = NVME.len();
+    pub const MAX_LEN: usize = NVME.len();
 
     /// Write [`NVME`] into `out`, returning its length, or 0 when it does not fit.
     #[must_use]
     pub fn encode_nvme(out: &mut [u8]) -> usize {
-        if out.len() < MAXIMUM_LEN {
+        if out.len() < MAX_LEN {
             return 0;
         }
-        out[..MAXIMUM_LEN].copy_from_slice(NVME.as_bytes());
-        MAXIMUM_LEN
+        out[..MAX_LEN].copy_from_slice(NVME.as_bytes());
+        MAX_LEN
     }
 
     /// **Did this boot come from the NVMe disk?** True only for the exact word: a malformed one is

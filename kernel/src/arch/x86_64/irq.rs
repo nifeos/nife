@@ -324,7 +324,7 @@ pub const MSI_VECTOR_BASE: u8 = 0xc0;
 /// could report 256. It bounds [`is_device_vector`] and [`initialize_io_apic`]'s mask loop, and
 /// keeps [`gsi_vector`]'s base plus index inside the band, the claim
 /// `proofs::an_owned_gsi_routes_inside_the_io_apic_band` checks.
-const MAXIMUM_REDIRECTION_ENTRIES: u32 = (MSI_VECTOR_BASE - GSI_VECTOR_BASE) as u32;
+const MAX_REDIRECTION_ENTRIES: u32 = (MSI_VECTOR_BASE - GSI_VECTOR_BASE) as u32;
 
 /// The next MSI vector to hand out, as an offset from [`MSI_VECTOR_BASE`]. A bump counter, never
 /// returned: nothing in this tree releases a device, and a freed-vector list with no free path is
@@ -395,8 +395,8 @@ static IO_APIC_ENTRIES: AtomicU32 = AtomicU32::new(0);
 /// legacy numbers to one GSI (IRQ 0 and IRQ 2 both resolve to GSI 2 on most PCs), and GSI 0 has no
 /// legacy owner at all. The intid that armed the line is the one a driver bound, which is the
 /// question the handler asks. Written by `enable`, read in interrupt context, so atomics and no lock.
-static GSI_OWNER: [AtomicU32; MAXIMUM_REDIRECTION_ENTRIES as usize] =
-    [const { AtomicU32::new(NO_OWNER) }; MAXIMUM_REDIRECTION_ENTRIES as usize];
+static GSI_OWNER: [AtomicU32; MAX_REDIRECTION_ENTRIES as usize] =
+    [const { AtomicU32::new(NO_OWNER) }; MAX_REDIRECTION_ENTRIES as usize];
 
 /// The value in [`GSI_OWNER`] that means "nothing armed this entry".
 const NO_OWNER: u32 = u32::MAX;
@@ -460,8 +460,7 @@ pub(crate) unsafe fn initialize_io_apic(base: u64, gsi_base: u32) {
     IO_APIC_GSI_BASE.store(gsi_base, Ordering::Relaxed);
 
     // The version register's bits 23:16 are the entry count *minus one*.
-    let entries =
-        (((io_apic_read(io_reg::VERSION) >> 16) & 0xff) + 1).min(MAXIMUM_REDIRECTION_ENTRIES);
+    let entries = (((io_apic_read(io_reg::VERSION) >> 16) & 0xff) + 1).min(MAX_REDIRECTION_ENTRIES);
     IO_APIC_ENTRIES.store(entries, Ordering::Relaxed);
 
     for entry in 0..entries {
@@ -513,7 +512,7 @@ pub fn gsi_vector(gsi: u32) -> Option<u8> {
     // `initialize_io_apic` clamps the entry count to the band's width and `redirection_index`
     // admits only an index below it, so this addition neither wraps nor truncates.
     debug_assert!(
-        index < MAXIMUM_REDIRECTION_ENTRIES,
+        index < MAX_REDIRECTION_ENTRIES,
         "redirection index {index} is outside the vector band the entry-count cap reserves"
     );
     Some(GSI_VECTOR_BASE + index as u8)
@@ -997,7 +996,7 @@ mod proofs {
     /// [`MSI_VECTOR_BASE`]'s doc makes, over every entry count and MSI allocation state, asked of
     /// the predicates the trap handler calls rather than of the constants.
     ///
-    /// Falsification: attested 2026-09-16. `MAXIMUM_REDIRECTION_ENTRIES` raised by one, on cordoba
+    /// Falsification: attested 2026-09-16. `MAX_REDIRECTION_ENTRIES` raised by one, on cordoba
     /// (x86_64 Linux): the device band then reaches `MSI_VECTOR_BASE` and this goes red, along
     /// with its sibling. One character in the constant whose own doc makes the disjointness claim.
     ///
@@ -1014,7 +1013,7 @@ mod proofs {
         // one, then clamped. Anything the hardware can say, put through the real expression.
         let reported: u32 = kani::any();
         kani::assume(reported <= 0xff);
-        let entries = (reported + 1).min(MAXIMUM_REDIRECTION_ENTRIES);
+        let entries = (reported + 1).min(MAX_REDIRECTION_ENTRIES);
         IO_APIC_ENTRIES.store(entries, Ordering::Relaxed);
 
         // Every state the bump counter can reach, including past the end of the band.
@@ -1077,7 +1076,7 @@ mod proofs {
 
         let reported: u32 = kani::any();
         kani::assume(reported <= 0xff);
-        let entries = (reported + 1).min(MAXIMUM_REDIRECTION_ENTRIES);
+        let entries = (reported + 1).min(MAX_REDIRECTION_ENTRIES);
         IO_APIC_ENTRIES.store(entries, Ordering::Relaxed);
 
         // Unconstrained too. `record_isa_routing` packs a GSI into sixteen bits, so the reachable

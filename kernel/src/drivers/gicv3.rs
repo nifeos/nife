@@ -143,8 +143,8 @@ const ENABLED_PRIORITY: u8 = 0x80;
 pub(crate) const SPECIAL_FIRST: u32 = 1020;
 
 /// How many redistributors this driver remembers, one per slot the caller names. The aarch64
-/// adapter asserts at compile time that `cpu::MAXIMUM_CPUS` fits, so the kernel's core count and
-/// this table cannot drift apart without a build failure.
+/// adapter asserts at compile time that `cpu::MAX_CPUS` fits, so the kernel's core count and this
+/// table cannot drift apart without a build failure.
 pub(crate) const SLOTS: usize = 8;
 
 /// The distributor's virtual address, zero until [`initialize`]. Written once, on the boot core,

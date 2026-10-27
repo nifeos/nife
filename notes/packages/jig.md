@@ -168,7 +168,7 @@ $ ioping -v
   ioping 1.3
 ```
 
-The Release hop works only while GitHub's `302` head fits `http_response::REDIRECT_HEAD_MAXIMUM`,
+The Release hop works only while GitHub's `302` head fits `http_response::REDIRECT_HEAD_MAX`,
 32 KiB. It measured 10,806 bytes on 2026-10-24, most of it one `content-security-policy` line.
 When it does not fit, `jig` prints `passed over https://github.com:443/...: Http(HeadTooLong)` and
 installs from the Pages copy. The ignored test `a_release_download_is_e46_then_one_redirect_to_x1`

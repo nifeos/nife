@@ -115,8 +115,8 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         // and it is the whole of what a sink adapter is.
         let mut i = 0usize;
         while i < got as usize {
-            let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
-            let n = (got as usize - i).min(byte_sink_contract::INLINE_MAXIMUM);
+            let mut chunk = [0u8; byte_sink_contract::INLINE_MAX];
+            let n = (got as usize - i).min(byte_sink_contract::INLINE_MAX);
             for (k, b) in chunk[..n].iter_mut().enumerate() {
                 *b = get(i + k);
             }

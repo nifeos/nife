@@ -52,9 +52,9 @@ small piece of work with no design question in it.
 
 ## The throughput shape
 
-The transfer unit is `filesystem_contract::fs::TRANSFER_MAXIMUM`, so the phase measures the
-protocol's own ceiling. A comparison against a system whose client may pass a differently sized
-buffer compares two different things, however large the unit is ([benchmarks.md](benchmarks.md)).
+The transfer unit is `filesystem_contract::fs::TRANSFER_MAX`, so the phase measures the protocol's
+own ceiling. A comparison against a system whose client may pass a differently sized buffer
+compares two different things, however large the unit is ([benchmarks.md](benchmarks.md)).
 
 A phase moves 1 MiB whatever the transfer size. The bytes are pinned rather than the transfer
 count: with the count pinned, a 64 KiB transfer would move sixteen times the data a 4 KiB one does.

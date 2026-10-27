@@ -2,7 +2,7 @@
 //! package whose first member is MANIFEST. Borrowing, allocation-free, every member walked.
 use crate::manifest::Manifest;
 const B: usize = 512;
-pub const MAXIMUM_MEMBERS: usize = 64;
+pub const MAX_MEMBERS: usize = 64;
 #[derive(Clone, Copy, PartialEq)]
 pub struct Name<'a> { pub prefix: &'a str, pub name: &'a str }
 impl Name<'_> {
@@ -72,7 +72,7 @@ impl<'a> Package<'a> {
         let m = Manifest::parse(data)?;
         let mut at = first; let mut count = 0;
         while let Some((name, _, after)) = next(b, at)? {
-            count += 1; if count > MAXIMUM_MEMBERS { return None; }
+            count += 1; if count > MAX_MEMBERS { return None; }
             let mut found = false;
             for l in m.text.split_terminator('\n').filter_map(|l| l.strip_prefix("member ")) {
                 if let Some((_, p)) = l.split_once(' ') { if name.is(p) { found = true; break; } }

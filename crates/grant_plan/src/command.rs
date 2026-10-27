@@ -149,7 +149,7 @@ pub struct TouchOperands<'a> {
 /// short of an option the user typed.
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
-pub const MAXIMUM_SHORT_OPTIONS: usize = 8;
+pub const MAX_SHORT_OPTIONS: usize = 8;
 
 /// What a valid `run` resolves to: exactly the authority to hand the child, and nothing else.
 /// Reading this is reading the whole endowment, which is §14's "one literal tells you a process's

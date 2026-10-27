@@ -80,10 +80,7 @@ pub const MEMBER_ALIGN: usize = 8;
 /// multiplied by it**, which is the arithmetic a hostile file reaches for first. 64 is a judgment:
 /// the largest thing anyone has proposed packaging is one program, its license, its manifest and
 /// its documentation bundle, which is four. Raising it costs nothing but the bound in this line.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_MEMBERS`.
-pub const MAXIMUM_MEMBERS: usize = 64;
+pub const MAX_MEMBERS: usize = 64;
 
 /// What a package says about itself: the identity §197 rules it is named by, plus the architecture,
 /// because "per-architecture output is the normal case" (§197) and three triples means three files.
@@ -102,7 +99,7 @@ pub struct Attributes<'a> {
 pub enum Error {
     /// The first eight bytes are not [`MAGIC`], or the file is shorter than the header.
     BadMagic,
-    /// The header claims more members than [`MAXIMUM_MEMBERS`].
+    /// The header claims more members than [`MAX_MEMBERS`].
     TooManyMembers,
     /// The file is shorter than the table of contents it claims, or a member's `offset` and `len`
     /// run past its end. One variant for both, because from a reader's side they are one fact: the
@@ -150,7 +147,7 @@ impl<'a> Package<'a> {
     /// Read a package's structure, or say why it cannot be read.
     ///
     /// **This is the hostile-input entry point.** It proves, before any accessor runs, that the
-    /// magic matches, that the count is within [`MAXIMUM_MEMBERS`], that the table of contents lies
+    /// magic matches, that the count is within [`MAX_MEMBERS`], that the table of contents lies
     /// inside the buffer, and that every member's `offset .. offset + len` does too, with the
     /// addition done in `usize` on values widened from `u32` so it cannot wrap on any target this
     /// tree builds for. What it does not check is in the crate's BUGS.
@@ -164,7 +161,7 @@ impl<'a> Package<'a> {
             bytes[HEADER_LEN - 6],
             bytes[HEADER_LEN - 5],
         ]) as usize;
-        if count > MAXIMUM_MEMBERS {
+        if count > MAX_MEMBERS {
             return Err(Error::TooManyMembers);
         }
         let table_end = HEADER_LEN + count * MEMBER_LEN;
@@ -623,7 +620,7 @@ pub fn write_package(
     members: &[(&str, &[u8])],
     buffer: &mut [u8],
 ) -> Result<(), Error> {
-    if members.len() > MAXIMUM_MEMBERS {
+    if members.len() > MAX_MEMBERS {
         return Err(Error::TooManyMembers);
     }
     if buffer.len() != package_size(members) {
@@ -1070,13 +1067,12 @@ mod tests {
     /// parse and write, 65 are refused by both.
     #[test]
     fn the_member_ceiling_is_inclusive_in_the_reader_and_the_writer() {
-        let names: std::vec::Vec<std::string::String> = (0..=MAXIMUM_MEMBERS)
-            .map(|i| std::format!("m{i}"))
-            .collect();
+        let names: std::vec::Vec<std::string::String> =
+            (0..=MAX_MEMBERS).map(|i| std::format!("m{i}")).collect();
         let all: std::vec::Vec<(&str, &[u8])> =
             names.iter().map(|n| (n.as_str(), &b"x"[..])).collect();
-        let at_maximum = written(&all[..MAXIMUM_MEMBERS]);
-        assert_eq!(Package::parse(&at_maximum).unwrap().len(), MAXIMUM_MEMBERS);
+        let at_max = written(&all[..MAX_MEMBERS]);
+        assert_eq!(Package::parse(&at_max).unwrap().len(), MAX_MEMBERS);
 
         let attributes = Attributes {
             name: "uptime",
@@ -1090,8 +1086,8 @@ mod tests {
         );
 
         // The reader's side: the same file with its count word raised by one.
-        let mut over = at_maximum.clone();
-        over[104..108].copy_from_slice(&(MAXIMUM_MEMBERS as u32 + 1).to_le_bytes());
+        let mut over = at_max.clone();
+        over[104..108].copy_from_slice(&(MAX_MEMBERS as u32 + 1).to_le_bytes());
         over.resize(over.len() + MEMBER_LEN, 0);
         assert_eq!(Package::parse(&over), Err(Error::TooManyMembers));
     }
@@ -1189,7 +1185,7 @@ mod verification {
         const LEN: usize = HEADER_LEN + MEMBER_LEN * 2 + 16;
         let bytes: [u8; LEN] = kani::any();
         if let Ok(package) = Package::parse(&bytes) {
-            assert!(package.len() <= MAXIMUM_MEMBERS);
+            assert!(package.len() <= MAX_MEMBERS);
             for index in 0..2 {
                 if let Some(member) = package.member(index) {
                     assert!(member.len() <= LEN);

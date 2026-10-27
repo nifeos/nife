@@ -18,7 +18,7 @@ static VERSION: AtomicU8 = AtomicU8::new(0);
 
 /// The GICv3 driver keeps one redistributor per slot, and the slot is the logical core id, so the
 /// kernel's core count must fit its table. Rung one of the ladder: a mismatch is a build failure.
-const _: () = assert!(crate::cpu::MAXIMUM_CPUS <= gicv3::SLOTS);
+const _: () = assert!(crate::cpu::MAX_CPUS <= gicv3::SLOTS);
 
 /// A version-3 machine? One byte, read on every dispatch below.
 #[inline(always)]
@@ -281,7 +281,7 @@ mod tests {
     use core::sync::atomic::Ordering;
 
     use crate::arch::timer;
-    use crate::cpu::MAXIMUM_CPUS;
+    use crate::cpu::MAX_CPUS;
 
     /// **Every online core takes its own timer interrupts.**
     ///
@@ -290,7 +290,7 @@ mod tests {
     /// not a rate: five seconds for a 100 Hz tick to move at all.
     #[test_case]
     fn every_online_cpu_takes_its_own_timer_ticks() {
-        let before: [u64; MAXIMUM_CPUS] = core::array::from_fn(timer::ticks_on);
+        let before: [u64; MAX_CPUS] = core::array::from_fn(timer::ticks_on);
         let deadline = timer::now() + timer::frequency() * 5;
         loop {
             let silent = crate::smp::online_cpus().find(|&c| timer::ticks_on(c) <= before[c]);

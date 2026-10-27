@@ -87,18 +87,15 @@ impl ManifestAuthorities {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct VerbGrant {
     /// The word, as typed after the program's name, or that word, one space and the word after
-    /// it, for a verb whose option changes what it holds (`list -u`). At most [`MAXIMUM_VERB`]
-    /// bytes. [`narrow_by_verb`] tries the two words first and then the first alone.
+    /// it, for a verb whose option changes what it holds (`list -u`). At most [`MAX_VERB`] bytes.
+    /// [`narrow_by_verb`] tries the two words first and then the first alone.
     pub verb: &'static str,
     /// What a line with this verb is endowed with, of what the manifest declares.
     pub authorities: ManifestAuthorities,
 }
 
 /// The longest verb a verb table may hold, in bytes: `capability_manifest_note`'s record gives each sixteen.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_VERB`.
-pub const MAXIMUM_VERB: usize = 16;
+pub const MAX_VERB: usize = 16;
 
 /// **`jig`'s verbs** (milestone 809; the spellings are apt's, ruled 2026-10-10 by calef), sorted
 /// by their bytes, which `capability_manifest_note`'s record requires. Each holds the least it
@@ -197,17 +194,17 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
 
 /// **The line's verb**: its second word, quotes off, as the program will hear it as `argv[1]`
 /// (`each_word`'s reading, which [`argv`](crate::argv) assembles the page from), followed by a
-/// space and the third word when both fit in [`MAXIMUM_VERB`] bytes, which is the key a verb with
-/// an option has (`list -u`). `None` when there is no second word, when it is longer than
-/// [`MAXIMUM_VERB`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied
-/// into `out`, because a quoted word's text is a temporary.
-pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [u8]> {
+/// space and the third word when both fit in [`MAX_VERB`] bytes, which is the key a verb with an
+/// option has (`list -u`). `None` when there is no second word, when it is longer than
+/// [`MAX_VERB`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied into
+/// `out`, because a quoted word's text is a temporary.
+pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAX_VERB]) -> Option<&'o [u8]> {
     let mut seen = 0usize;
-    let mut held = [[0u8; MAXIMUM_VERB]; 2];
+    let mut held = [[0u8; MAX_VERB]; 2];
     let mut lens = [None; 2];
     let _ = each_word(line, &mut |w| {
         seen += 1;
-        if (2..=3).contains(&seen) && w.len() <= MAXIMUM_VERB {
+        if (2..=3).contains(&seen) && w.len() <= MAX_VERB {
             held[seen - 2][..w.len()].copy_from_slice(w);
             lens[seen - 2] = Some(w.len());
         }
@@ -222,14 +219,14 @@ pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [
 fn verb_key<'o>(
     verb: &[u8],
     option: Option<&[u8]>,
-    out: &'o mut [u8; MAXIMUM_VERB],
+    out: &'o mut [u8; MAX_VERB],
 ) -> Option<&'o [u8]> {
-    if verb.is_empty() || verb.len() > MAXIMUM_VERB || verb.contains(&b' ') {
+    if verb.is_empty() || verb.len() > MAX_VERB || verb.contains(&b' ') {
         return None;
     }
     out[..verb.len()].copy_from_slice(verb);
     let mut len = verb.len();
-    if let Some(option) = option.filter(|o| !o.is_empty() && len + 1 + o.len() <= MAXIMUM_VERB) {
+    if let Some(option) = option.filter(|o| !o.is_empty() && len + 1 + o.len() <= MAX_VERB) {
         out[len] = b' ';
         out[len + 1..len + 1 + option.len()].copy_from_slice(option);
         len += 1 + option.len();
@@ -240,8 +237,8 @@ fn verb_key<'o>(
 /// **The verb on an argument page**: its `argv[1]`, and `argv[2]` after a space when both fit,
 /// as the program will read them. [`verb_of`]'s reading of the page [`argv`](crate::argv)
 /// assembled from the line, which is what the progenitor holds; `None` for a page that does not
-/// parse, has one word, or whose second is longer than [`MAXIMUM_VERB`] or holds a space.
-pub fn verb_of_page<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [u8]> {
+/// parse, has one word, or whose second is longer than [`MAX_VERB`] or holds a space.
+pub fn verb_of_page<'o>(page: &[u8], out: &'o mut [u8; MAX_VERB]) -> Option<&'o [u8]> {
     let args = program_argument_contract::ArgPage::parse(page);
     let mut words = args.iter().skip(1);
     let verb = words.next()?;
@@ -262,7 +259,7 @@ mod tests {
     fn a_verb_narrows_and_never_widens() {
         let jig = Program::Jig.manifest();
         let as_typed = |line: &[u8]| {
-            let mut buf = [0u8; MAXIMUM_VERB];
+            let mut buf = [0u8; MAX_VERB];
             narrow_by_verb(&jig, Program::Jig.verbs(), verb_of(line, &mut buf))
         };
         let list = as_typed(b"jig list");
@@ -284,7 +281,7 @@ mod tests {
         // The progenitor's reading of the page the shell assembles agrees with the shell's.
         let mut page = [0u8; program_argument_contract::PAGE_BYTES];
         argv(b"jig 'install' greeting", &mut page).unwrap();
-        let mut read = [0u8; MAXIMUM_VERB];
+        let mut read = [0u8; MAX_VERB];
         assert_eq!(
             verb_of_page(&page, &mut read),
             Some(&b"install greeting"[..])
@@ -299,7 +296,7 @@ mod tests {
         assert_eq!(as_typed(b"jig 'list -u'"), as_typed(b"jig upgrade"));
         let mut page = [0u8; program_argument_contract::PAGE_BYTES];
         argv(b"jig list -u", &mut page).unwrap();
-        let mut read = [0u8; MAXIMUM_VERB];
+        let mut read = [0u8; MAX_VERB];
         assert_eq!(verb_of_page(&page, &mut read), Some(&b"list -u"[..]));
         let nothing = as_typed(b"jig upgrade");
         assert!(!nothing.installer && !nothing.catalog && !nothing.network);
@@ -311,7 +308,7 @@ mod tests {
         for &p in Program::ALL {
             let m = p.manifest();
             for v in p.verbs() {
-                assert!(v.verb.len() <= MAXIMUM_VERB, "{}", v.verb);
+                assert!(v.verb.len() <= MAX_VERB, "{}", v.verb);
                 // Everything the verb names survives the narrowing: it names only what the
                 // manifest declares.
                 let narrowed = narrow_by_verb(&m, p.verbs(), Some(v.verb.as_bytes()));
@@ -367,14 +364,14 @@ mod tests {
     /// **Each authority a verb can choose is narrowed on its own.** A manifest declaring all twelve,
     /// and a table with one verb per authority: each verb keeps its one, and only that one.
     /// **A page's verb fits the key buffer, and an empty word is no verb.** The shell's reading
-    /// caps a word at [`MAXIMUM_VERB`] before it reaches [`verb_key`], but the progenitor reads the
+    /// caps a word at [`MAX_VERB`] before it reaches [`verb_key`], but the progenitor reads the
     /// page, where an argument may be any length: one byte too long would overrun `out`.
     #[test]
     fn a_page_verb_is_bounded_and_never_empty() {
         let read = |line: &[u8]| {
             let mut page = [0u8; program_argument_contract::PAGE_BYTES];
             argv(line, &mut page).unwrap();
-            let mut out = [0u8; MAXIMUM_VERB];
+            let mut out = [0u8; MAX_VERB];
             verb_of_page(&page, &mut out).map(<[u8]>::to_vec)
         };
         assert_eq!(

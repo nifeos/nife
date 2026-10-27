@@ -34,12 +34,12 @@ page leaving every space), and teardown flushes by ASID (a space leaving the wor
 
 The roadmap sketched "generation/rollover", the Linux design: processes outnumber ASIDs there,
 so exhaustion bumps a generation, mass-flushes once, and reassigns lazily. Milestone 14 changed
-the arithmetic under that sketch: concurrent address spaces are bounded (`MAXIMUM_SPACES` = 160,
+the arithmetic under that sketch: concurrent address spaces are bounded (`MAX_SPACES` = 160,
 enforced by the revocation registry), below even the smallest hardware ASID space (8-bit: 256).
 The exhaustion case the generation machinery guards is unreachable here, and machinery whose
 hard path can never be exercised honestly is machinery that rots. So: one bitmap, ASID 0 born
 reserved for the kernel (the "nobody is home" reserved table runs as ASID 0 forever), 255
-numbers for at most 160 spaces. If `MAXIMUM_SPACES` ever outgrows 255, the first answer is 16-bit
+numbers for at most 160 spaces. If `MAX_SPACES` ever outgrows 255, the first answer is 16-bit
 ASIDs (one TCR bit plus an ID-register check), not a new algorithm.
 
 ## The same three parts on RISC-V, and what they cost there instead

@@ -5,15 +5,12 @@
 //! still works. Each byte that does not decode as UTF-8 becomes U+FFFD, so every line is valid
 //! JSON. See notes/system-log.md, "The JSONL writer".
 
-use system_log_contract::record::{Header, TEXT_MAXIMUM, flags};
+use system_log_contract::record::{Header, TEXT_MAX, flags};
 use system_log_contract::{control, severity};
 
 /// The longest line [`render`] can produce, newline included, with room to spare: every text byte
 /// and every name byte escaped to six characters, and every number at twenty digits, is 1,901.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `LINE_MAX`.
-pub const LINE_MAXIMUM: usize = 2048;
+pub const LINE_MAX: usize = 2048;
 
 const _: () = assert!(
     7 + 20
@@ -22,18 +19,18 @@ const _: () = assert!(
         + 10
         + 20
         + 11
-        + (2 + 6 * control::NAME_MAXIMUM)
+        + (2 + 6 * control::NAME_MAX)
         + 8
-        + (2 + 6 * control::NAME_MAXIMUM)
+        + (2 + 6 * control::NAME_MAX)
         + 13
         + 7
         + 9
-        + 6 * TEXT_MAXIMUM
+        + 6 * TEXT_MAX
         + 1
         + 11
         + 22
         + 2
-        <= LINE_MAXIMUM
+        <= LINE_MAX
 );
 
 struct Out<'a> {
@@ -112,7 +109,7 @@ impl Out<'_> {
     }
 }
 
-/// Render one record as a JSONL line into `out` (at least [`LINE_MAXIMUM`] bytes) and return its
+/// Render one record as a JSONL line into `out` (at least [`LINE_MAX`] bytes) and return its
 /// length, newline included. `program` and `user` are what the badge was registered as; `None`
 /// renders as `null`.
 pub fn render(
@@ -136,7 +133,7 @@ pub fn render(
     o.raw(b",\"severity\":\"");
     o.raw(severity::name(h.severity).as_bytes());
     o.raw(b"\",\"msg\":");
-    o.string(&text[..text.len().min(TEXT_MAXIMUM)]);
+    o.string(&text[..text.len().min(TEXT_MAX)]);
     if h.flags & flags::CUT != 0 {
         o.raw(b",\"cut\":true");
     }
@@ -176,7 +173,7 @@ mod tests {
             len: text.len() as u16,
             kind: 0,
         };
-        let mut out = [0u8; LINE_MAXIMUM];
+        let mut out = [0u8; LINE_MAX];
         let n = render(&h, Some(b"p"), None, text, &mut out);
         std::string::String::from_utf8(out[..n].to_vec()).unwrap()
     }
@@ -198,26 +195,20 @@ mod tests {
 
     /// The worst case fits the bound the ring and the window are sized by.
     #[test]
-    fn the_worst_case_line_fits_line_maximum() {
+    fn the_worst_case_line_fits_line_max() {
         let h = Header {
             seq: u64::MAX,
             time: u64::MAX,
             source: u64::MAX,
             severity: 0,
             flags: 0xff,
-            len: TEXT_MAXIMUM as u16,
+            len: TEXT_MAX as u16,
             kind: 0,
         };
-        let name = [0x01u8; control::NAME_MAXIMUM];
-        let mut out = [0u8; LINE_MAXIMUM + 64];
-        let n = render(
-            &h,
-            Some(&name),
-            Some(&name),
-            &[0x01; TEXT_MAXIMUM],
-            &mut out,
-        );
-        assert!(n <= LINE_MAXIMUM, "{n}");
+        let name = [0x01u8; control::NAME_MAX];
+        let mut out = [0u8; LINE_MAX + 64];
+        let n = render(&h, Some(&name), Some(&name), &[0x01; TEXT_MAX], &mut out);
+        assert!(n <= LINE_MAX, "{n}");
         assert_eq!(out[n - 1], b'\n');
     }
 

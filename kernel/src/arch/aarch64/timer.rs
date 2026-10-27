@@ -10,7 +10,7 @@
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use super::instructions;
-use crate::cpu::{self, MAXIMUM_CPUS};
+use crate::cpu::{self, MAX_CPUS};
 
 /// The EL1 **virtual** timer, as a GIC interrupt ID.
 ///
@@ -33,7 +33,7 @@ pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// Ticks delivered, per core: each core has its own timer, and a lock masks only the holding core's
 /// interrupts. See §11 (SMP: per-CPU run queues).
-static TICKS: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
+static TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
 /// Counter ticks between interrupts, computed from `CNTFRQ_EL0`: the rate is the board's.
 static INTERVAL: AtomicU64 = AtomicU64::new(0);
@@ -41,14 +41,14 @@ static INTERVAL: AtomicU64 = AtomicU64::new(0);
 /// **Does this core have `PMUSERENR_EL0`**, the register the cycle-counter grant writes? Recorded
 /// per core by `initialize` from `ID_AA64DFR0_EL1.PMUVer`, so the context switch reads no ID
 /// register.
-static PMU_PRESENT: [AtomicBool; MAXIMUM_CPUS] = [const { AtomicBool::new(false) }; MAXIMUM_CPUS];
+static PMU_PRESENT: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) }; MAX_CPUS];
 
 /// **What this core last wrote to `PMUSERENR_EL0`**, as a bool: open (`CR` set) or closed (zero).
 /// `initialize` writes zero, so `false` is the truth at boot on every core.
 ///
 /// A cache, not a read-back, because without `FEAT_PMUv3` reading the register is UNDEFINED.
 /// Nothing but this file writes `PMUSERENR_EL0`, so the cache cannot go stale.
-static COUNTER_OPEN: [AtomicBool; MAXIMUM_CPUS] = [const { AtomicBool::new(false) }; MAXIMUM_CPUS];
+static COUNTER_OPEN: [AtomicBool; MAX_CPUS] = [const { AtomicBool::new(false) }; MAX_CPUS];
 
 /// Start the heartbeat.
 ///
@@ -225,7 +225,7 @@ pub(crate) fn calibration_loop(iters: u64) -> u64 {
 
 /// Deadlines already past when the handler re-armed, per core. Zero unless the handler took longer
 /// than a tick period or the emulator was descheduled.
-static MISSED_TICKS: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
+static MISSED_TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
 /// This core's missed ticks.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // this file's tests are the callers
@@ -259,11 +259,11 @@ pub fn deadline() -> u64 {
 pub mod miss_detail {
     use core::sync::atomic::{AtomicU64, Ordering};
 
-    use crate::cpu::{self, MAXIMUM_CPUS};
+    use crate::cpu::{self, MAX_CPUS};
 
-    static NOW: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
-    static NEXT: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
-    static COUNT: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
+    static NOW: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+    static NEXT: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+    static COUNT: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
 
     /// Record the counter and the deadline it had already passed. Called from `rearm`, in
     /// interrupt context, so this is three relaxed stores and nothing else.

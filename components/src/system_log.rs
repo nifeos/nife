@@ -176,7 +176,7 @@ fn drain(log: &mut Log, flush_armed: &mut bool) {
         c => c.max(ring.oldest()),
     };
     let mut lost = false;
-    let mut text = [0u8; record::TEXT_MAXIMUM];
+    let mut text = [0u8; record::TEXT_MAX];
     loop {
         match ring.read(seq, &mut text) {
             Read::Record(mut h, n) => {
@@ -207,7 +207,7 @@ fn drain(log: &mut Log, flush_armed: &mut bool) {
 
 /// Send one kernel line to the console, sixteen bytes a message, newline included.
 fn forward(text: &[u8]) {
-    let mut line = [0u8; record::TEXT_MAXIMUM + 1];
+    let mut line = [0u8; record::TEXT_MAX + 1];
     line[..text.len()].copy_from_slice(text);
     line[text.len()] = b'\n';
     for chunk in line[..text.len() + 1].chunks(16) {

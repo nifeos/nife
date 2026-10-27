@@ -535,14 +535,14 @@ fn a_screen_taller_than_the_grid_uses_the_rows_that_fit() {
     assert!(rows < 200);
 }
 
-/// The column bound [`Cells::CAPACITY`] is built on: no width gets `2 * MINIMUM_COLUMNS` columns
+/// The column bound [`Cells::CAPACITY`] is built on: no width gets `2 * MIN_COLUMNS` columns
 /// or more, at any scale. Checked over every width up to five scales' worth.
 #[test]
 fn no_screen_is_wider_than_the_grid_allows() {
-    for width in 1..7 * super::MINIMUM_COLUMNS * 6 {
+    for width in 1..7 * super::MIN_COLUMNS * 6 {
         let cols = width / (bitmap_font::GLYPH_W * ScreenConsole::scale_for(width));
         assert!(
-            cols < 2 * super::MINIMUM_COLUMNS,
+            cols < 2 * super::MIN_COLUMNS,
             "{width} wide gets {cols} columns"
         );
     }
@@ -953,14 +953,14 @@ fn a_1920x1080_screen_is_covered_entirely_at_scale_two() {
     let terminal = Aperture::new(
         &found,
         video_terminal::CELL_W,
-        (video_terminal::MAXIMUM_COLS as u32) * video_terminal::CELL_W,
+        (video_terminal::MAX_COLS as u32) * video_terminal::CELL_W,
         u32::MAX,
     )
     .expect("xenon's screen");
     assert_eq!((terminal.size(), terminal.scale()), ((1920, 1080), 1));
     let grid = (1920 / video_terminal::CELL_W, 1080 / video_terminal::CELL_H);
     assert_eq!(grid, (137, 41));
-    assert!((grid.0 * grid.1) as usize <= video_terminal::MAXIMUM_CELLS);
+    assert!((grid.0 * grid.1) as usize <= video_terminal::MAX_CELLS);
     assert_eq!(
         grid.0,
         ScreenConsole::new(found).expect("xenon's screen").size().0,
@@ -1109,7 +1109,7 @@ fn a_pixel_sink_knows_when_it_covers_nothing() {
 /// it gets every row.
 #[test]
 fn the_grid_holds_150_rows_at_the_widest_scale_one_screen() {
-    let cols = 2 * super::MINIMUM_COLUMNS - 1;
+    let cols = 2 * super::MIN_COLUMNS - 1;
     let width = cols * bitmap_font::GLYPH_W;
     assert_eq!(ScreenConsole::scale_for(width), 1);
     let found = Framebuffer {
@@ -1127,7 +1127,7 @@ fn the_grid_holds_150_rows_at_the_widest_scale_one_screen() {
 /// short pixel slice is enough: the painter truncates rather than panics.
 #[test]
 fn a_console_that_fills_the_grid_scrolls_without_reading_past_it() {
-    let cols = super::MINIMUM_COLUMNS;
+    let cols = super::MIN_COLUMNS;
     let rows = (Cells::CAPACITY / cols as usize) as u32;
     let width = cols * bitmap_font::GLYPH_W;
     let found = Framebuffer {
@@ -1151,7 +1151,7 @@ fn a_console_that_fills_the_grid_scrolls_without_reading_past_it() {
 /// it must be painted rather than skipped as too wide.
 #[test]
 fn a_glyph_at_scale_sixteen_is_painted() {
-    let width = 16 * bitmap_font::GLYPH_W * super::MINIMUM_COLUMNS;
+    let width = 16 * bitmap_font::GLYPH_W * super::MIN_COLUMNS;
     assert_eq!(ScreenConsole::scale_for(width), 16);
     let found = Framebuffer {
         base: 0,

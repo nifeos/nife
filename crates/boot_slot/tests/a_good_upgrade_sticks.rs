@@ -95,7 +95,7 @@ fn the_slot_token_refuses_everything_it_cannot_read_exactly() {
     assert_eq!(cmdline::parse(""), None);
 
     // And the writer refuses what the reader would refuse.
-    let mut out = [0u8; cmdline::MAXIMUM_LEN];
+    let mut out = [0u8; cmdline::MAX_LEN];
     assert_eq!(
         cmdline::encode(10, &mut out),
         0,
@@ -113,9 +113,9 @@ fn the_slot_token_refuses_everything_it_cannot_read_exactly() {
 #[test]
 fn every_slot_that_can_be_written_reads_back_as_itself() {
     for slot in 0..=9u8 {
-        let mut out = [0u8; cmdline::MAXIMUM_LEN];
+        let mut out = [0u8; cmdline::MAX_LEN];
         let n = cmdline::encode(slot, &mut out);
-        assert_eq!(n, cmdline::MAXIMUM_LEN);
+        assert_eq!(n, cmdline::MAX_LEN);
         let line = core::str::from_utf8(&out[..n]).expect("the writer emits ASCII");
         assert_eq!(cmdline::parse(line), Some(slot));
     }

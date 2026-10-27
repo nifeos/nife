@@ -26,7 +26,7 @@ diff --git a/crates/direct_memory_access_validator/src/lib.rs b/crates/direct_me
 index 9a6d0500..365f8a5a 100644
 --- a/crates/direct_memory_access_validator/src/lib.rs
 +++ b/crates/direct_memory_access_validator/src/lib.rs
-@@ -320,8 +320,8 @@ pub const MAXIMUM_QUEUES: u64 = 2;
+@@ -320,8 +320,8 @@ pub const MAX_QUEUES: u64 = 2;
  /// Queue `q`'s ring block base, relative to a region (driver DMA or shadow) base. Queue `q`'s
  /// descriptor table, available ring, and used ring sit at `queue_block(q) + {DESC,AVAIL,USED}_OFF`,
  /// so distinct queues validate on disjoint blocks and never read or write each other's rings.

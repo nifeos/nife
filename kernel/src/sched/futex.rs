@@ -101,11 +101,9 @@ pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
     let key = inter_process_communication::futex::Key { space, address: va };
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
-    let maximum = usize::try_from(count).unwrap_or(usize::MAX);
+    let max = usize::try_from(count).unwrap_or(usize::MAX);
     // SAFETY: every waiter on the table is a live TCB, and `IPC_TABLES` is held.
-    let mut woken = sched
-        .futexes
-        .take(key, maximum, |w| unsafe { futex_key_of(w) });
+    let mut woken = sched.futexes.take(key, max, |w| unsafe { futex_key_of(w) });
     let mut n = 0;
     while let Some(token) = woken.pop_front() {
         let tid = hold_token(token);

@@ -92,7 +92,7 @@ struct Slot {
     // the segment net_stack delivered). Served before the next `RECEIVE`, so a stream never drops bytes.
     res_off: usize,
     res_len: usize,
-    res: [u8; DATA_MAXIMUM],
+    res: [u8; DATA_MAX],
     // UDP: the connected peer (set by `connect`) and the most recent send destination, used as the
     // reported source of `recv_from` since the contract's RECEIVE does not carry the datagram source.
     peer: Option<(Ipv4Addr, u16)>,
@@ -107,7 +107,7 @@ impl Slot {
             socket: NO_FRAME,
             res_off: 0,
             res_len: 0,
-            res: [0; DATA_MAXIMUM],
+            res: [0; DATA_MAX],
             peer: None,
             last_dst: None,
         }
@@ -445,7 +445,7 @@ impl TcpStream {
                 "the net server timed out waiting for data"
             ));
         }
-        let total = (r0 as usize).min(DATA_MAXIMUM);
+        let total = (r0 as usize).min(DATA_MAX);
         if total == 0 {
             return Ok(0); // peer closed: end of stream
         }
@@ -491,7 +491,7 @@ impl TcpStream {
         if buf.is_empty() {
             return Ok(0);
         }
-        let chunk = buf.len().min(DATA_MAXIMUM);
+        let chunk = buf.len().min(DATA_MAX);
         write_payload(self.id, &buf[..chunk]);
         let (r0, _) = rt::call(socket_of(self.id), OPERATION_SEND, chunk as u64);
         if is_syscall_err(r0) {
@@ -841,7 +841,7 @@ impl UdpSocket {
 
     pub fn send_to(&self, buf: &[u8], addr: &SocketAddr) -> io::Result<usize> {
         let (ip, port) = v4(addr)?;
-        if buf.len() > DATA_MAXIMUM {
+        if buf.len() > DATA_MAX {
             return Err(io::const_error!(
                 io::ErrorKind::InvalidInput,
                 "datagram larger than the shared frame"
@@ -887,7 +887,7 @@ impl UdpSocket {
                 "the net server timed out waiting for a datagram"
             ));
         }
-        let total = (r0 as usize).min(DATA_MAXIMUM);
+        let total = (r0 as usize).min(DATA_MAX);
         // A datagram is message-oriented: a short buffer truncates it, standard UDP semantics.
         let n = total.min(buf.len());
         read_payload(self.id, 0, &mut buf[..n]);
@@ -1115,7 +1115,7 @@ fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
 }
 
 pub struct LookupHost {
-    addresses: [Ipv4Addr; resolve::MAXIMUM_ADDRESSES],
+    addresses: [Ipv4Addr; resolve::MAX_ADDRESSES],
     count: usize,
     next: usize,
     port: u16,
@@ -1136,7 +1136,7 @@ impl Iterator for LookupHost {
 /// resolver.
 pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
     let name = host.as_bytes();
-    if name.is_empty() || name.len() > resolve::NAME_TEXT_MAXIMUM {
+    if name.is_empty() || name.len() > resolve::NAME_TEXT_MAX {
         return Err(io::const_error!(io::ErrorKind::InvalidInput, "not a host name"));
     }
     let held = resolver_lock();
@@ -1167,8 +1167,8 @@ pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
     };
     let kind = match outcome.status {
         resolve::status::OK => {
-            let count = (outcome.count as usize).min(resolve::MAXIMUM_ADDRESSES);
-            let mut addresses = [Ipv4Addr::UNSPECIFIED; resolve::MAXIMUM_ADDRESSES];
+            let count = (outcome.count as usize).min(resolve::MAX_ADDRESSES);
+            let mut addresses = [Ipv4Addr::UNSPECIFIED; resolve::MAX_ADDRESSES];
             for (k, a) in addresses.iter_mut().take(count).enumerate() {
                 let at = page + (resolve::OFF_ADDRESSES + 4 * k) as u64;
                 *a = Ipv4Addr::new(fr8(at), fr8(at + 1), fr8(at + 2), fr8(at + 3));

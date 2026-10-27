@@ -111,7 +111,7 @@ const SWAPPER_BUDGET_PAGES: u64 = 224;
 /// more), and to 42 for dependency-aware orchestration (one `RPT_DEPENDENTS` on the direct and
 /// queued channels). A role that adds reports must raise it, or the run loses the operator's
 /// verdict and fails for the wrong reason.
-const MAXIMUM_REPORTS: usize = 42;
+const MAX_REPORTS: usize = 42;
 
 /// Spawn the operator the way the kernel spawns the progenitor, and return the report rendezvous
 /// every process in the run holds a WRITE view of.
@@ -168,11 +168,11 @@ fn spawn_swapper(role: u64) -> (sched::RendezvousId, u64, u64, u64) {
 /// `authority_tests::run_tree` records: a half-run system keeps building processes in the
 /// background, and a test that leaves work running is a test that fails somebody else. The
 /// operator's `RPT_LOG` is always its last word, so that is the stop condition.
-fn run_swap(role: u64) -> ([[u64; 5]; MAXIMUM_REPORTS], usize) {
+fn run_swap(role: u64) -> ([[u64; 5]; MAX_REPORTS], usize) {
     let (report, budget, thread_control_block_region, report_region) = spawn_swapper(role);
-    let mut msgs = [[0u64; 5]; MAXIMUM_REPORTS];
+    let mut msgs = [[0u64; 5]; MAX_REPORTS];
     let mut n = 0;
-    while n < MAXIMUM_REPORTS {
+    while n < MAX_REPORTS {
         let msg = sched::ipc_receive(report);
         assert_ne!(
             msg[0], RPT_FAILED,
@@ -184,7 +184,7 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAXIMUM_REPORTS], usize) {
              honest kernel), \
              40-51 the queued rung, \
              60-63 the component manifests (60 means an unsatisfiable declaration was WIRED), \
-             64 the dependency graph query (more live instances than MAXIMUM_LIVE), 70-87 and 110-119 \
+             64 the dependency graph query (more live instances than MAX_LIVE), 70-87 and 110-119 \
              the hung-component rung (81 means the incumbent answered the bounded quiesce, so \
              it never hung; 117 and 119 a region DESTROY that never succeeded), 90-108 state handoff (92 means a \
              stateful component was wired by a supervisor with no handoff page to give it, 100 \
@@ -205,8 +205,8 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAXIMUM_REPORTS], usize) {
         }
     }
     assert!(
-        n < MAXIMUM_REPORTS,
-        "the operator never reached its final verdict in {MAXIMUM_REPORTS} reports",
+        n < MAX_REPORTS,
+        "the operator never reached its final verdict in {MAX_REPORTS} reports",
     );
 
     // A parked sender after settling would mean something acted after the operator finished,

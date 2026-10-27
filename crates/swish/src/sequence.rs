@@ -17,13 +17,10 @@ use grant_plan::{Refusal, trim};
 use crate::Status;
 
 /// The most commands one line will sequence. A ceiling in the same spirit as
-/// [`grant_plan::line::MAXIMUM_STAGES`]: past it the line is refused rather than silently
-/// truncated, and a line that wants more is better written as several lines. Must match the count
-/// in [`Refusal::TooManySegments`]'s message.
-///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_SEGMENTS`.
-pub const MAXIMUM_SEGMENTS: usize = 8;
+/// [`grant_plan::line::MAX_STAGES`]: past it the line is refused rather than silently truncated,
+/// and a line that wants more is better written as several lines. Must match the count in
+/// [`Refusal::TooManySegments`]'s message.
+pub const MAX_SEGMENTS: usize = 8;
 
 /// **How a segment is joined to the one before it**, which is the whole of what a connector says.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -60,7 +57,7 @@ impl Joint {
 /// same reason: nothing here needs to copy a line, and `grant_plan` has no allocator.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Sequence<'a> {
-    segments: [(Joint, &'a [u8]); MAXIMUM_SEGMENTS],
+    segments: [(Joint, &'a [u8]); MAX_SEGMENTS],
     n: usize,
 }
 
@@ -120,7 +117,7 @@ impl<'a> Sequence<'a> {
 /// assert_eq!(split(b"date &&"), Err(Refusal::EmptySegment));
 /// ```
 pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
-    let mut segments = [(Joint::First, &b""[..]); MAXIMUM_SEGMENTS];
+    let mut segments = [(Joint::First, &b""[..]); MAX_SEGMENTS];
     let mut n = 0usize;
     let mut c = Cursor::new();
     let mut start = 0usize;
@@ -144,7 +141,7 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
         if seg.is_empty() {
             return Err(Refusal::EmptySegment);
         }
-        if n == MAXIMUM_SEGMENTS {
+        if n == MAX_SEGMENTS {
             return Err(Refusal::TooManySegments);
         }
         segments[n] = (joint, seg);
@@ -172,7 +169,7 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
             _ => Err(Refusal::EmptySegment),
         };
     }
-    if n == MAXIMUM_SEGMENTS {
+    if n == MAX_SEGMENTS {
         return Err(Refusal::TooManySegments);
     }
     segments[n] = (joint, tail);
@@ -359,7 +356,7 @@ mod tests {
 
     #[test]
     fn there_is_a_ceiling_and_it_refuses_rather_than_truncates() {
-        assert_eq!(segs(b"a;b;c;d;e;f;g;h").len(), MAXIMUM_SEGMENTS);
+        assert_eq!(segs(b"a;b;c;d;e;f;g;h").len(), MAX_SEGMENTS);
         assert_eq!(split(b"a;b;c;d;e;f;g;h;i"), Err(Refusal::TooManySegments));
     }
 

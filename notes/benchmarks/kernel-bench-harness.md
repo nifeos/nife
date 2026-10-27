@@ -229,17 +229,17 @@ and 10 MHz on riscv64. `NIFE_ACCEL` is host-side and never reaches the guest. It
 unknown machine reads as real. It says "not QEMU `virt`", not "has a 32 KB L1", so the runbook
 records which machine a number came from.
 
-`SCALE_MAXIMUM_PAIRS` is 48, so the sweep stops at 96 threads, where the roadmap says "N from 2 to
-128". Read "N" as distinct threads cycling through IPC, as the prediction ("somewhere between 16 and
-32 threads") does: 96 is three times past the predicted knee. It stays at 48 although
-`sched::MAXIMUM_THREADS` is now 256, because the sweep is a published measurement and moving its end
+`SCALE_MAX_PAIRS` is 48, so the sweep stops at 96 threads, where the roadmap says "N from 2 to 128".
+Read "N" as distinct threads cycling through IPC, as the prediction ("somewhere between 16 and 32
+threads") does: 96 is three times past the predicted knee. It stays at 48 although
+`sched::MAX_THREADS` is now 256, because the sweep is a published measurement and moving its end
 would make every later run incomparable. Change it only if the knee moves.
 
 E4 sweeps working sets of 4 to 128 KiB, below, at and above a typical 32 KB L1d and into L2, so it
 can show whether displacement tracks one cache level. Its low-load condition is 8 pairs, inside
 E1's flat region, so E1's curve predicts a null result there. Its high-load condition is
-`SCALE_MAXIMUM_PAIRS` pairs, past E1's knee (on radon the knee is at 16 threads, 1.68x), which is
-where it can tell the kernel's path slowing from eviction of the application's cache
+`SCALE_MAX_PAIRS` pairs, past E1's knee (on radon the knee is at 16 threads, 1.68x), which is where
+it can tell the kernel's path slowing from eviction of the application's cache
 ([cache-experiments.md](../register-of-measures/cache-experiments.md)). The workload yields about 64
 times per run in every condition, so a compute-only thread cannot finish before the background pairs
 run and the conditions differ only in what else is ready. It keeps the minimum of 5 batches, one

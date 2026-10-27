@@ -441,7 +441,7 @@ where
     /// Name: provisional (lane `maintainer/pipeline-fetch-fault`, 2026-10-14 UTC).
     pub fn walk(&self, va: u64, readable: impl Fn(u64) -> bool) -> Walk {
         let mut walk = Walk {
-            steps: [WalkStep::default(); MAXIMUM_WALK],
+            steps: [WalkStep::default(); MAX_WALK],
             len: 0,
             end: WalkEnd::OtherHalf,
         };
@@ -449,7 +449,7 @@ where
             return walk;
         }
         let mut table = self.root;
-        for level in 0..F::LEVELS.min(MAXIMUM_WALK) {
+        for level in 0..F::LEVELS.min(MAX_WALK) {
             if !readable(table) {
                 walk.end = WalkEnd::Unreadable(table);
                 return walk;
@@ -481,7 +481,7 @@ where
 
 /// The most levels any format here has: four (aarch64's 4 KiB granule, `Ia32e`). One spare, so a
 /// fifth-level format would be caught by its own walk's length rather than by an index panic.
-const MAXIMUM_WALK: usize = 5;
+const MAX_WALK: usize = 5;
 
 /// One level of a [`Walk`]: the table read, the index read at, and the raw entry found there.
 /// Name: provisional (lane `maintainer/pipeline-fetch-fault`, 2026-10-14 UTC).
@@ -514,7 +514,7 @@ pub enum WalkEnd {
 /// `maintainer/pipeline-fetch-fault`, 2026-10-14 UTC).
 #[derive(Debug, Clone, Copy)]
 pub struct Walk {
-    steps: [WalkStep; MAXIMUM_WALK],
+    steps: [WalkStep; MAX_WALK],
     len: usize,
     end: WalkEnd,
 }

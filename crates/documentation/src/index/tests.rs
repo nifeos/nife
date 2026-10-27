@@ -4,11 +4,11 @@ use super::*;
 /// reader's query normaliser must agree, byte for byte, on what a term is.
 #[test]
 fn a_query_folds_the_way_the_text_did() {
-    let mut buf = [0u8; TERM_MAXIMUM];
+    let mut buf = [0u8; TERM_MAX];
     let n = normalize(b"Capability!", &mut buf);
     assert_eq!(&buf[..n], b"capability");
 
-    let mut seen: [[u8; TERM_MAXIMUM]; 4] = [[0; TERM_MAXIMUM]; 4];
+    let mut seen: [[u8; TERM_MAX]; 4] = [[0; TERM_MAX]; 4];
     let mut lens = [0usize; 4];
     let mut i = 0;
     tokens(b"Capability, a `Frame`. x", |t| {
@@ -30,11 +30,11 @@ fn a_query_folds_the_way_the_text_did() {
 /// term. See notes/documentation/underscore-terms.md.
 #[test]
 fn an_underscore_name_is_searchable_as_itself() {
-    let mut key = [0u8; TERM_MAXIMUM];
+    let mut key = [0u8; TERM_MAX];
     let n = normalize(b"line_editor", &mut key);
     assert_eq!(&key[..n], b"lineeditor");
 
-    let mut seen: [[u8; TERM_MAXIMUM]; 8] = [[0; TERM_MAXIMUM]; 8];
+    let mut seen: [[u8; TERM_MAX]; 8] = [[0; TERM_MAX]; 8];
     let mut lens = [0usize; 8];
     let mut i = 0;
     tokens(b"the line_editor crate", |t| {
@@ -60,8 +60,8 @@ fn an_underscore_name_is_searchable_as_itself() {
 #[test]
 fn a_term_longer_than_the_record_folds_to_its_prefix() {
     let long = b"averyveryverylongidentifiername";
-    let mut buf = [0u8; TERM_MAXIMUM];
-    assert_eq!(normalize(long, &mut buf), TERM_MAXIMUM);
+    let mut buf = [0u8; TERM_MAX];
+    assert_eq!(normalize(long, &mut buf), TERM_MAX);
 }
 
 #[test]
@@ -212,7 +212,7 @@ fn a_search_keeps_the_best_sixteen_and_counts_the_rest() {
     use alloc::vec::Vec;
 
     let mut texts: Vec<String> = Vec::new();
-    for i in 0..RESULTS_MAXIMUM + 5 {
+    for i in 0..RESULTS_MAX + 5 {
         let mut t = String::new();
         for _ in 0..=i {
             t.push_str("capability ");
@@ -240,8 +240,8 @@ fn a_search_keeps_the_best_sixteen_and_counts_the_rest() {
 
     let mut r = Ranked::new();
     search(b"many", b"capability", &mut Slice(&bytes), &mut r).unwrap();
-    assert_eq!(r.results().len(), RESULTS_MAXIMUM);
-    assert_eq!(r.offered(), RESULTS_MAXIMUM + 5);
+    assert_eq!(r.results().len(), RESULTS_MAX);
+    assert_eq!(r.offered(), RESULTS_MAX + 5);
     // Sorted by score, and here that agrees with raw count by construction (both grow with
     // `i`), so the strongest page is still the one with the most occurrences.
     assert_eq!(r.results()[0].count as usize, texts.len());
@@ -302,20 +302,20 @@ fn ranking_divides_by_page_length() {
 //
 // Each of these kills a mutant that survived the rest of the suite. See notes/mutation-testing.md.
 
-/// Both of the tokeniser's buffers are exactly `TERM_MAXIMUM` and both are written by index, so
+/// Both of the tokeniser's buffers are exactly `TERM_MAX` and both are written by index, so
 /// the bound is the difference between a truncated term and a panic in a `no_std` reader.
 /// `normalize` had this test and `tokens` did not, and the two write different buffers: the
 /// second is the underscore-joined compound, which overflows on a shorter source word.
 #[test]
 fn a_run_longer_than_a_term_record_holds_is_truncated_rather_than_written_past() {
-    let mut seen = [[0u8; TERM_MAXIMUM]; 8];
+    let mut seen = [[0u8; TERM_MAX]; 8];
     let mut lens = [0usize; 8];
     let mut i = 0;
     tokens(
         b"averyveryverylongidentifiername and_a_compound_far_past_the_limit",
         |t| {
             assert!(
-                t.len() <= TERM_MAXIMUM,
+                t.len() <= TERM_MAX,
                 "a term longer than its record: {}",
                 t.len()
             );
@@ -338,7 +338,7 @@ fn a_run_longer_than_a_term_record_holds_is_truncated_rather_than_written_past()
 /// page whose last word is an identifier is ordinary, and nothing exercised that path.
 #[test]
 fn an_underscore_name_at_the_end_of_the_text_is_still_joined() {
-    let mut seen = [[0u8; TERM_MAXIMUM]; 8];
+    let mut seen = [[0u8; TERM_MAX]; 8];
     let mut lens = [0usize; 8];
     let mut i = 0;
     tokens(b"defined in grant_plan", |t| {
@@ -511,7 +511,7 @@ fn a_location_too_long_for_the_field_is_truncated_and_says_so() {
     let f = &r.results()[0];
     assert_eq!(
         f.location().len(),
-        LOCATION_MAXIMUM,
+        LOCATION_MAX,
         "a truncated location fills the field"
     );
     assert!(
@@ -547,13 +547,13 @@ fn the_merge_shifts_what_a_stronger_result_displaces() {
     // Descending strength past the table's end, which walks `at` to the last slot held every
     // time and is what a bound that is off by one falls off.
     let mut full = Ranked::new();
-    for i in 0..RESULTS_MAXIMUM + 4 {
-        let count = (RESULTS_MAXIMUM + 4 - i) as u16;
+    for i in 0..RESULTS_MAX + 4 {
+        let count = (RESULTS_MAX + 4 - i) as u16;
         full.offer(b"b", b"p.md", b"page", count, 100);
     }
-    assert_eq!(full.results().len(), RESULTS_MAXIMUM);
-    assert_eq!(full.offered(), RESULTS_MAXIMUM + 4);
-    assert_eq!(full.results()[0].count as usize, RESULTS_MAXIMUM + 4);
+    assert_eq!(full.results().len(), RESULTS_MAX);
+    assert_eq!(full.offered(), RESULTS_MAX + 4);
+    assert_eq!(full.results()[0].count as usize, RESULTS_MAX + 4);
 }
 
 /// The truncation flag is a single comparison over a sum of five terms, and a location far
@@ -565,11 +565,11 @@ fn the_merge_shifts_what_a_stronger_result_displaces() {
 #[test]
 fn a_location_exactly_as_long_as_the_field_is_not_truncated() {
     let base = "a".repeat(40);
-    let exact = "b".repeat(LOCATION_MAXIMUM - STORE_DIR.len() - 2 - base.len());
+    let exact = "b".repeat(LOCATION_MAX - STORE_DIR.len() - 2 - base.len());
     let mut r = Ranked::new();
     r.offer(exact.as_bytes(), base.as_bytes(), b"T", 1, 10);
     let f = &r.results()[0];
-    assert_eq!(f.location().len(), LOCATION_MAXIMUM);
+    assert_eq!(f.location().len(), LOCATION_MAX);
     assert!(
         !f.is_truncated(),
         "a location that exactly fills the field lost nothing"
@@ -585,7 +585,7 @@ fn a_location_exactly_as_long_as_the_field_is_not_truncated() {
         10,
     );
     let g = &over.results()[0];
-    assert_eq!(g.location().len(), LOCATION_MAXIMUM);
+    assert_eq!(g.location().len(), LOCATION_MAX);
     assert!(
         g.is_truncated(),
         "a location one byte over the field lost its tail"

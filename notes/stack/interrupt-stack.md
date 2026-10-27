@@ -143,7 +143,7 @@ is entitled to spend it. It is a lane of its own, and the instruments it needs n
 
 ## What it cost
 
-160 KiB of RAM and address space: `MAXIMUM_CPUS` (8) slots of 16 KiB stack over a 4 KiB guard,
+160 KiB of RAM and address space: `MAX_CPUS` (8) slots of 16 KiB stack over a 4 KiB guard,
 whether or not a core ever fills the seat, exactly like the secondary stacks beside them. It is a
 `(NOLOAD)` region, so the flat image does not grow; `__image_size` does, which is what tells the
 bootloader the memory is ours.
