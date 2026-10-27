@@ -18,6 +18,13 @@ use crate::long_name::{MAXIMUM_CODE_UNITS, UNITS_PER_ENTRY, checksum};
 /// The most pieces a name holds: 255 units at thirteen to a piece.
 const MAXIMUM_PIECES: usize = MAXIMUM_CODE_UNITS.div_ceil(UNITS_PER_ENTRY);
 
+/// The units those pieces hold, which is five more than a name may have.
+const MAXIMUM_UNITS: usize = MAXIMUM_PIECES * UNITS_PER_ENTRY;
+
+/// **The assembler the crate uses**, sized for the longest name. The proof instantiates
+/// [`Assembler`] with fewer pieces.
+pub(crate) type LongNameAssembler = Assembler<MAXIMUM_UNITS>;
+
 /// **A long file name, assembled and checked**: up to 255 UTF-16 code units.
 ///
 /// Only the crate's long-name assembler makes one, so a value of this type came from a run whose
@@ -90,10 +97,10 @@ pub enum LongNameError {
 /// [`LongNameAssembler::finish`] with the next short entry's name. `finish` also clears the state
 /// for the next run.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct LongNameAssembler {
+pub(crate) struct Assembler<const UNITS: usize> {
     /// Whole pieces, so a twentieth piece (which holds units 247 to 259) fits before its length
-    /// is checked.
-    units: [u16; MAXIMUM_PIECES * UNITS_PER_ENTRY],
+    /// is checked. `UNITS` is a whole number of pieces: the proof instantiates three.
+    units: [u16; UNITS],
     /// How many pieces the run has, from its first piece's ordinal; 0 when no run is open.
     pieces: u8,
     /// The ordinal the next piece must have, which is 1 once the run is complete.
@@ -104,11 +111,15 @@ pub(crate) struct LongNameAssembler {
     error: Option<LongNameError>,
 }
 
-impl LongNameAssembler {
+impl<const UNITS: usize> Assembler<UNITS> {
+    /// The most pieces this assembler takes.
+    const PIECES: usize = UNITS / UNITS_PER_ENTRY;
+
     /// An assembler with no run open.
-    pub(crate) const fn new() -> LongNameAssembler {
-        LongNameAssembler {
-            units: [0; MAXIMUM_PIECES * UNITS_PER_ENTRY],
+    pub(crate) const fn new() -> Assembler<UNITS> {
+        assert!(UNITS % UNITS_PER_ENTRY == 0 && UNITS / UNITS_PER_ENTRY <= u8::MAX as usize);
+        Assembler {
+            units: [0; UNITS],
             pieces: 0,
             next: 0,
             checksum: 0,
@@ -121,8 +132,8 @@ impl LongNameAssembler {
     pub(crate) fn push(&mut self, piece: &LongNameEntry) {
         let ordinal = piece.ordinal();
         if piece.is_last() {
-            *self = LongNameAssembler::new();
-            if ordinal == 0 || usize::from(ordinal) > MAXIMUM_PIECES {
+            *self = Assembler::<UNITS>::new();
+            if ordinal == 0 || usize::from(ordinal) > Self::PIECES {
                 self.error = Some(LongNameError::BadStart);
                 return;
             }
@@ -158,35 +169,50 @@ impl LongNameAssembler {
         &mut self,
         short_name: &[u8; 11],
     ) -> Result<Option<LongFileName>, LongNameError> {
-        let run = core::mem::replace(self, LongNameAssembler::new());
-        if run.pieces == 0 && run.error.is_none() {
+        let Some(len) = self.finish_length(short_name)? else {
+            return Ok(None);
+        };
+        let mut units = [0u16; MAXIMUM_CODE_UNITS];
+        units[..len].copy_from_slice(&self.units[..len]);
+        Ok(Some(LongFileName { units, len }))
+    }
+
+    /// **Check the run as `finish` does and report the name's length**, leaving its units in
+    /// place for `finish` to copy. The run's state is cleared; the units stay until the next first
+    /// piece, which no later piece can reach without opening a run of its own.
+    fn finish_length(&mut self, short_name: &[u8; 11]) -> Result<Option<usize>, LongNameError> {
+        let pieces = self.pieces;
+        let next = self.next;
+        let run_checksum = self.checksum;
+        let error = self.error.take();
+        self.pieces = 0;
+        self.next = 0;
+        if pieces == 0 && error.is_none() {
             return Ok(None);
         }
-        if let Some(error) = run.error {
+        if let Some(error) = error {
             return Err(error);
         }
-        if run.next != 0 {
+        if next != 0 {
             return Err(LongNameError::Incomplete);
         }
-        if run.checksum != checksum(short_name) {
+        if run_checksum != checksum(short_name) {
             return Err(LongNameError::ChecksumMismatch);
         }
-        let total = usize::from(run.pieces) * UNITS_PER_ENTRY;
-        let len = run.units[..total]
+        let total = usize::from(pieces) * UNITS_PER_ENTRY;
+        let len = self.units[..total]
             .iter()
             .position(|unit| *unit == 0)
             .unwrap_or(total);
-        let padded = run.units[len..total]
+        let padded = self.units[len..total]
             .iter()
             .skip(1)
             .all(|unit| *unit == 0xFFFF);
-        let in_last = len > (usize::from(run.pieces) - 1) * UNITS_PER_ENTRY;
+        let in_last = len > (usize::from(pieces) - 1) * UNITS_PER_ENTRY;
         if !padded || !in_last || len > MAXIMUM_CODE_UNITS {
             return Err(LongNameError::BadPadding);
         }
-        let mut units = [0u16; MAXIMUM_CODE_UNITS];
-        units[..len].copy_from_slice(&run.units[..len]);
-        Ok(Some(LongFileName { units, len }))
+        Ok(Some(len))
     }
 }
 
