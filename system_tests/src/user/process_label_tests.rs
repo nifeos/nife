@@ -29,7 +29,10 @@ fn labeled(slot: u64) -> ([(u64, Option<u64>); TEST_ROWS], usize, usize) {
         survey_record(slot, cursor, record::STATE)
     });
     s.join_process(&mut |cursor| survey_record(slot, cursor, record::PROCESS));
-    assert!(s.is_complete(), "the walk was refused or outgrew its buffer");
+    assert!(
+        s.is_complete(),
+        "the walk was refused or outgrew its buffer"
+    );
     let mut out = [(0, None); TEST_ROWS];
     let mut with_count = 0;
     for (i, r) in s.rows().iter().enumerate() {
@@ -85,7 +88,11 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
     };
     let mut a = [(0, 0); 5];
     for (i, member) in a.iter_mut().enumerate() {
-        *member = start(region_a, process_a, if i < 4 { domain_one } else { domain_two });
+        *member = start(
+            region_a,
+            process_a,
+            if i < 4 { domain_one } else { domain_two },
+        );
     }
     let b = start(region_b, process_b, domain_one);
     assert_eq!(
@@ -97,13 +104,20 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
     // The first viewer: A's four threads and B's one.
     let view_one = hold_view(domain_one);
     let (rows, n, labeled_rows) = labeled(view_one);
-    assert_eq!(n, 5, "the first domain holds four threads of A and one of B");
+    assert_eq!(
+        n, 5,
+        "the first domain holds four threads of A and one of B"
+    );
     assert_eq!(labeled_rows, 5, "every row has a label");
     let rows = &rows[..n];
     let label_of = |tid| rows.iter().find(|r| r.0 == tid).and_then(|r| r.1);
     let a_label = label_of(a[0].0).expect("A's first thread has a label");
     for member in &a[..4] {
-        assert_eq!(label_of(member.0), Some(a_label), "A's threads share a label");
+        assert_eq!(
+            label_of(member.0),
+            Some(a_label),
+            "A's threads share a label"
+        );
     }
     let b_label = label_of(b.0).expect("B's thread has a label");
     assert_ne!(a_label, b_label, "two processes must not share a label");
@@ -111,11 +125,16 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
     assert_eq!(count(rows, Some(b_label)), 1, "B's count is its row");
     // An ordinal for the walk, so a kernel address or an identity cannot be hiding in it.
     for label in [a_label, b_label] {
-        assert!((1..=2).contains(&label), "label {label} is not a walk ordinal of two processes");
+        assert!(
+            (1..=2).contains(&label),
+            "label {label} is not a walk ordinal of two processes"
+        );
     }
     // And the table `ps` prints says the same.
     let mut table = [ps::Row::default(); TEST_ROWS];
-    let mut s = ps::collect(&mut table, &mut |c| survey_record(view_one, c, record::STATE));
+    let mut s = ps::collect(&mut table, &mut |c| {
+        survey_record(view_one, c, record::STATE)
+    });
     s.join_process(&mut |c| survey_record(view_one, c, record::PROCESS));
     let mut text = [0u8; 512];
     let mut len = 0;
@@ -124,15 +143,26 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
         len += bytes.len();
     });
     let text = core::str::from_utf8(&text[..len]).expect("ASCII");
-    assert!(text.starts_with("PROC  THR"), "the table lost its process columns: {text}");
-    assert_eq!(text.lines().count(), 6, "a header and one line per row: {text}");
+    assert!(
+        text.starts_with("PROC  THR"),
+        "the table lost its process columns: {text}"
+    );
+    assert_eq!(
+        text.lines().count(),
+        6,
+        "a header and one line per row: {text}"
+    );
 
     // The second viewer holds only A's fifth thread: a partial process, counted as one.
     let view_two = hold_view(domain_two);
     let (rows_two, n_two, _) = labeled(view_two);
     assert_eq!(n_two, 1, "the second domain holds one thread of A");
     assert_eq!(rows_two[0].0, a[4].0);
-    assert_eq!(rows_two[0].1, Some(1), "the lone thread is the first process the walk meets");
+    assert_eq!(
+        rows_two[0].1,
+        Some(1),
+        "the lone thread is the first process the walk meets"
+    );
     assert_eq!(
         sched::process_state(pid_a).map(|(members, _)| members),
         Some(5),
@@ -140,18 +170,24 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
     );
 
     // A thread of a process outside the viewer's domain does not appear. B's domain holds B only.
-    assert!(!rows.iter().any(|r| r.0 == a[4].0), "the first viewer saw a thread outside its domain");
+    assert!(
+        !rows.iter().any(|r| r.0 == a[4].0),
+        "the first viewer saw a thread outside its domain"
+    );
 
     // Teardown: end both processes, collect the corpses through their supervisors, give back.
     let supervisor = hold_supervisor(domain_one);
     for process in [process_a, process_b] {
-        assert_eq!(call(process, abi::process::DESTROY, 0, 0, 0), Ok(0), "DESTROY refused");
+        assert_eq!(
+            call(process, abi::process::DESTROY, 0, 0, 0),
+            Ok(0),
+            "DESTROY refused"
+        );
     }
     for (tid, _) in [a[0], b] {
         assert!(
             wait_for(5, || {
-                let mut frame =
-                    crate::arch::exceptions::TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
+                let mut frame = crate::arch::exceptions::TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
                 crate::syscall::invoke(&mut frame, supervisor, abi::rendezvous::REAP, tid, 0, 0)
                     == Ok(0)
             }),
