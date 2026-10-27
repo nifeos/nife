@@ -221,3 +221,162 @@ fn open_file_refuses_a_directory_and_the_label_and_opens_a_file() {
     assert_eq!(reader.read(&mut buffer), Ok(100));
     assert_eq!(buffer[0], pattern(5, 0));
 }
+
+/// A table walk that counts the entries it reads, over a real volume.
+struct Counting<'v> {
+    volume: &'v mut Volume<Image>,
+    reads: u32,
+}
+
+impl Links for Counting<'_> {
+    type Error = u64;
+
+    fn clusters(&self) -> u32 {
+        self.volume.clusters()
+    }
+
+    fn table_entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<u64>> {
+        self.reads += 1;
+        Links::table_entry(&mut *self.volume, cluster)
+    }
+}
+
+use crate::table::TableEntry;
+
+#[test]
+fn a_seek_inside_the_cluster_at_hand_does_not_walk_the_chain_again() {
+    let clusters = [3, 4, 5, 6];
+    let mut volume = Volume::open(with_file(&clusters)).unwrap();
+    let boot = *volume.boot_sector();
+    let mut links = Counting {
+        volume: &mut volume,
+        reads: 0,
+    };
+    let mut cursor = FileCursor::new(3, 4 * 512);
+    cursor.seek(&boot, 3 * 512 + 10);
+    assert!(cursor.next_span(&mut links, &boot, 1).unwrap().is_some());
+    // Reaching the fourth cluster read the entries of the three before it.
+    assert_eq!(links.reads, 3);
+    cursor.seek(&boot, 3 * 512 + 100);
+    assert!(cursor.next_span(&mut links, &boot, 1).unwrap().is_some());
+    cursor.seek(&boot, 3 * 512);
+    assert!(cursor.next_span(&mut links, &boot, 1).unwrap().is_some());
+    assert_eq!(
+        links.reads, 3,
+        "a seek within the cluster walked the chain again"
+    );
+    // A seek to an earlier cluster starts the walk over, and the walk to it reads its entries.
+    cursor.seek(&boot, 2 * 512);
+    assert!(cursor.next_span(&mut links, &boot, 1).unwrap().is_some());
+    assert_eq!(links.reads, 3 + 2);
+    // A seek forward continues from the cluster at hand.
+    cursor.seek(&boot, 3 * 512);
+    assert!(cursor.next_span(&mut links, &boot, 1).unwrap().is_some());
+    assert_eq!(links.reads, 3 + 2 + 1);
+}
+
+/// A volume with four sectors in each cluster, and a pattern in the sectors of clusters 3 and 5.
+fn four_sectors_a_cluster() -> Image {
+    let mut image = Image::fat12();
+    image.bytes[13] = 4;
+    for cluster in [3u32, 5] {
+        let first = FIRST_DATA + (cluster as usize - 2) * 4;
+        for sector in 0..4 {
+            for offset in 0..512 {
+                image.bytes[(first + sector) * 512 + offset] =
+                    pattern(cluster * 4 + sector as u32, offset);
+            }
+        }
+    }
+    image.link(&[3]);
+    image.set(3, 5);
+    image.set(5, 0xFFF);
+    image
+}
+
+/// Every span of a file of `size` bytes read `want` bytes at a time from `from`, as (sector, offset,
+/// length) triples, with the position after each.
+fn spans(
+    volume: &mut Volume<Image>,
+    size: u32,
+    from: u32,
+    want: usize,
+) -> ([(u32, usize, usize, u32); 12], usize) {
+    let boot = *volume.boot_sector();
+    let mut cursor = FileCursor::new(3, size);
+    cursor.seek(&boot, from);
+    let mut out = [(0, 0, 0, 0); 12];
+    let mut count = 0;
+    while let Some(span) = cursor.next_span(volume, &boot, want).unwrap() {
+        out[count] = (span.sector, span.offset, span.len, cursor.position());
+        count += 1;
+    }
+    assert_eq!(cursor.next_span(volume, &boot, want).unwrap(), None);
+    (out, count)
+}
+
+#[test]
+fn spans_follow_sectors_inside_clusters_and_clusters_along_the_chain() {
+    let mut volume = Volume::open(four_sectors_a_cluster()).unwrap();
+    assert_eq!(volume.boot_sector().sectors_per_cluster(), 4);
+    // Cluster 3 starts at sector 10 and cluster 5 at sector 18; 3000 bytes end 440 into the
+    // second sector of the second cluster.
+    let (all, count) = spans(&mut volume, 3000, 0, 10_000);
+    assert_eq!(
+        &all[..count],
+        &[
+            (10, 0, 512, 512),
+            (11, 0, 512, 1024),
+            (12, 0, 512, 1536),
+            (13, 0, 512, 2048),
+            (18, 0, 512, 2560),
+            (19, 0, 440, 3000),
+        ]
+    );
+    // Small requests split a sector, and a start inside a sector begins there.
+    let (some, count) = spans(&mut volume, 3000, 2100, 300);
+    assert_eq!(
+        &some[..count],
+        &[
+            (18, 52, 300, 2400),
+            (18, 352, 160, 2560),
+            (19, 0, 300, 2860),
+            (19, 300, 140, 3000),
+        ]
+    );
+    let (none, count) = spans(&mut volume, 3000, 3000, 300);
+    assert_eq!((count, none[0]), (0, (0, 0, 0, 0)));
+}
+
+#[test]
+fn a_file_across_four_sector_clusters_reads_back_whole() {
+    let mut volume = Volume::open(four_sectors_a_cluster()).unwrap();
+    let mut file = FileReader::new(&mut volume, 3, 3000);
+    let mut out = [0u8; 3100];
+    assert_eq!(file.read(&mut out), Ok(3000));
+    for (position, byte) in out[..3000].iter().enumerate() {
+        let (cluster, within) = if position < 2048 {
+            (3, position)
+        } else {
+            (5, position - 2048)
+        };
+        assert_eq!(
+            *byte,
+            pattern(cluster * 4 + (within / 512) as u32, within % 512),
+            "{position}"
+        );
+    }
+}
+
+#[test]
+fn a_cursor_at_the_end_returns_nothing_and_a_zero_request_returns_nothing() {
+    let mut volume = Volume::open(with_file(&[5])).unwrap();
+    let boot = *volume.boot_sector();
+    let mut cursor = FileCursor::new(5, 100);
+    assert_eq!(cursor.next_span(&mut volume, &boot, 0), Ok(None));
+    assert_eq!(cursor.position(), 0);
+    let span = cursor.next_span(&mut volume, &boot, 100).unwrap().unwrap();
+    assert_eq!((span.offset, span.len, cursor.position()), (0, 100, 100));
+    assert_eq!(cursor.next_span(&mut volume, &boot, 100), Ok(None));
+    assert_eq!(cursor.position(), 100);
+}

@@ -27,6 +27,7 @@ fn an_empty_table_has_no_partitions() {
     let table = MasterBootRecord::parse(&empty()).unwrap();
     assert_eq!(table.partitions().count(), 0);
     assert_eq!(table.partition(0), None);
+    assert_eq!(table.partition(4), None);
     assert_eq!(table.partition(9), None);
 }
 
@@ -106,6 +107,15 @@ fn a_sector_that_is_not_a_table_is_refused() {
         MasterBootRecord::parse(&sector),
         Err(MasterBootRecordError::EmptyPartition { index: 1 })
     );
+}
+
+#[test]
+fn a_large_partition_that_fits_is_accepted() {
+    // Both numbers are small enough to add but their product passes 2^32.
+    let mut sector = empty();
+    put(&mut sector, 0, 0, 0x0B, 100_000, 100_000);
+    let table = MasterBootRecord::parse(&sector).unwrap();
+    assert_eq!(table.partition(0).unwrap().sector_count(), 100_000);
 }
 
 #[test]
