@@ -143,7 +143,7 @@ pub(crate) fn test() -> bool {
         return false;
     }
     let filter = export_test_filter();
-    if !refuse_a_bad_image_flag(filter.is_some(), hvf) {
+    if !image_flag_is_acceptable(filter.is_some(), hvf) {
         return false;
     }
     if !export_test_repeat(filter.as_deref()) {
@@ -210,7 +210,7 @@ pub(crate) fn test() -> bool {
 /// screen tour, the post-run image checks and, on x86_64, the extra machines, as `--test` does:
 /// they judge a whole run. False after refusing a value, or the flag beside `--test` or `--hvf`.
 /// Name: provisional.
-fn refuse_a_bad_image_flag(filtered: bool, hvf: bool) -> bool {
+fn image_flag_is_acceptable(filtered: bool, hvf: bool) -> bool {
     let Some(image) = flag_value("--image") else {
         return true;
     };
