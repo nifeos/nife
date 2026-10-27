@@ -1,0 +1,16 @@
+[package]
+name = "periodic_deadline"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# The next deadline on a fixed beat (milestone 360 (`crates/timetable`'s proved `next_after` is not what the timer calls), §178 (where the
+# timer re-arm seam goes)). Pure
+# `u64` arithmetic and Kani-proved, with no dependencies, so the kernel's timer re-arm and the
+# `timetable` scheduler link one function rather than two copies. Name: provisional.
+
+[dependencies]
+
+[lints]
+workspace = true
