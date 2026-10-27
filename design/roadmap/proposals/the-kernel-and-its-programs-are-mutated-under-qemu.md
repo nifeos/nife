@@ -138,9 +138,10 @@ already keys on, and execution stays with the driver that already knows how to b
 
 Measured on 2026-10-27 (UTC) on `ubuntu-24.04-arm` hosted runners (4 cpus, 15.6 GiB), in
 `kernel-mutants-cost.yml` run 40587528953 (the first run, 40584191045, agrees on aarch64). The
-sample is the first eight mutants of `kernel/src/revoke.rs` on aarch64 and the first six on x86_64
-(under TCG on the same pool, as the x86_64 leg of `ci.yml` runs). It is small, one file, and every
-mutant in it was caught, so the survivor cost below is a local figure.
+sample is the first eight mutants of `kernel/src/revoke.rs` on aarch64 and the first six on x86_64.
+The x86_64 boots run under TCG on the same pool, as the x86_64 leg of `ci.yml` does. The sample is
+small and from one file, and every mutant in it was caught, so the survivor cost below is a local
+figure.
 
 | tier | aarch64 | x86_64 |
 |---|---|---|
@@ -155,10 +156,10 @@ mutant in it was caught, so the survivor cost below is a local figure.
   them after about 195 s, which is a hung or panicked boot waiting out a watchdog.
 - aarch64 is the cheaper architecture for code that is not `arch/`: it is 24% cheaper per mutant on
   this sample and its baseline is half as long. Arch-independent code runs there.
-- A local run on the 80-core Linux host (twelve `cap.rs` mutants, all survivors, and eight
-  `revoke.rs`) gives 36 to 44 s for the kernel image, 175 to 220 s for the system image and 255 s
-  for a mutant that survives both. Three of the eight `revoke.rs` mutants did not
-  compile and cost 23 to 25 s each.
+- A local run on the 80-core Linux host covered twelve `cap.rs` mutants, all survivors, and eight
+  `revoke.rs` mutants. The kernel image took 36 to 44 s, the system image 175 to 220 s, and a mutant
+  that survived both 255 s. Three of the eight `revoke.rs` mutants did not compile and cost 23 to
+  25 s each.
 
 The rest is estimated from those figures. It assumes half the kernel's mutants survive the first
 tier, as half of eight did; that fraction is the weakest number here.
