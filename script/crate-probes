@@ -126,7 +126,7 @@ EOF
 }
 
 # Probes that are expected not to build, each with the reason, which is the whole of why a red row
-# here does not fail the script (milestone 341, §174 (a caller for each of the three uncalled
+# here does not fail the script (milestone 341 (give the three instruments nothing runs a caller), §174 (a caller for each of the three uncalled
 # instruments)). Every other probe is a gate: one that stops building, or whose own `main` stops
 # building on the host, fails the run. The crates stay in `probe_names`, so the table above and
 # notes/crates-io-on-nife.md keep measuring them; they are not deleted from the list because their
