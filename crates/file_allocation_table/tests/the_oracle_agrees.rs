@@ -394,7 +394,6 @@ fn agree(label: &str, mebibytes: usize, fat_type: lamfat::FatType, sector: u16) 
     disk[entry + 12..entry + 16].copy_from_slice(&sectors.to_le_bytes());
     disk[510] = 0x55;
     disk[511] = 0xAA;
-    let device = Memory { bytes: &disk, size };
     if sector == 512 {
         // An MBR holds sector numbers in 512-byte units here; a 4096-byte-sector image is read
         // bare above, and its partition arithmetic is the same.
