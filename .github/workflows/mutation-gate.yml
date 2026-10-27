@@ -77,6 +77,11 @@ on:
         description: the commit whose changed lines are gated; the checkout by default
         type: string
         required: false
+      expire_rows:
+        description: "true: a row for a survivor on a changed line must itself change in the diff (default false until the replay in notes/mutation-testing/row-expiry-replay.md is ruled on)"
+        type: string
+        required: false
+        default: "false"
   workflow_call:
     inputs:
       triage:
@@ -97,6 +102,11 @@ on:
         description: the commit whose changed lines are gated; the checkout by default
         type: string
         required: false
+      expire_rows:
+        description: "true: a row for a survivor on a changed line must itself change in the diff (default false until the replay in notes/mutation-testing/row-expiry-replay.md is ruled on)"
+        type: string
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -153,6 +163,9 @@ jobs:
       CAP_MINUTES: "20"
       IN_BASE: ${{ inputs.base }}
       IN_TIP: ${{ inputs.tip }}
+      # The row-expiry rule (helpers/mutation_diff_gate.py, A ROW EXPIRES WHEN ITS CODE CHANGES). Off
+      # until the replay is ruled on; the flip is this one default.
+      EXPIRE_ROWS: ${{ inputs.expire_rows || 'false' }}
     steps:
       # Full history: the first-parent read below wants the parents, and `git diff` wants blobs.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -281,6 +294,10 @@ jobs:
       - name: Decide against the triage ledger
         if: steps.mutate.outputs.mutants != 'none'
         run: |
+          expire=()
+          if [ "$EXPIRE_ROWS" = "true" ]; then
+            expire=(--base-ref "${{ steps.ends.outputs.base }}")
+          fi
           python3 helpers/mutation_diff_gate.py gate \
             --run-dir mutants.out --triage "$TRIAGE" --renames "$RENAMES" \
-            --summary "$GITHUB_STEP_SUMMARY"
+            --summary "$GITHUB_STEP_SUMMARY" "${expire[@]}"
