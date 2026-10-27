@@ -47,9 +47,9 @@ The 612 equivalents cluster by operator:
 
 | mutation | mutants |
 |---|---|
-| a bitwise swap, almost all `|` to `^` over flags that share no bit | 378 |
-| a comparison (`<` to `<=` and the like) | 89 |
-| a shift, mostly `1 << 0` becoming `1 >> 0` | 67 |
+| a bitwise swap, almost all OR becoming XOR over flags that share no bit | 378 |
+| a comparison, such as less-than becoming less-or-equal | 89 |
+| a shift, mostly one shifted left by zero becoming one shifted right by zero | 67 |
 | arithmetic | 41 |
 | a return value, a deletion or other | 37 |
 
