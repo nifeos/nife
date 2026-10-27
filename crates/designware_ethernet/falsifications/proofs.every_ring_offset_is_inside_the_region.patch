@@ -6,15 +6,15 @@ that ever ran past the ring addresses past the ring's page and into the transmit
 Expected to fail: the harness's first assertion, on any index of 256 or more.
 
 diff --git a/crates/designware_ethernet/src/layout.rs b/crates/designware_ethernet/src/layout.rs
-index 436d51b23..860ee7551 100644
+index 4ff12ccd2..1b52c886a 100644
 --- a/crates/designware_ethernet/src/layout.rs
 +++ b/crates/designware_ethernet/src/layout.rs
-@@ -22,7 +22,7 @@ pub const fn tx_buffer(i: u16) -> u64 {
- }
- /// Receive descriptor `i`'s offset.
- pub const fn rx_descriptor(i: u16) -> u64 {
--    RX_RING + (i % RX_ENTRIES) as u64 * DESCRIPTOR_BYTES
-+    RX_RING + i as u64 * DESCRIPTOR_BYTES
+@@ -24,7 +24,7 @@ pub(crate) const fn transmit_buffer(i: u16) -> u64 {
+ ///
+ /// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `rx_descriptor`.
+ pub const fn receive_descriptor(i: u16) -> u64 {
+-    RECEIVE_RING + (i % RECEIVE_ENTRIES) as u64 * DESCRIPTOR_BYTES
++    RECEIVE_RING + i as u64 * DESCRIPTOR_BYTES
  }
  /// Transmit descriptor `i`'s offset.
- pub const fn tx_descriptor(i: u16) -> u64 {
+ ///

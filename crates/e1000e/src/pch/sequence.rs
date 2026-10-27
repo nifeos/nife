@@ -268,7 +268,20 @@ fn has_management_engine(hardware: &mut impl Hardware) -> bool {
 // Pass 1: at attach.
 // ---------------------------------------------------------------------------------------------
 
-/// **`e1000_init_phy_workarounds_pchlan`**, the SPT path. Returns the PHY's identifier.
+/// **`e1000_init_phy_workarounds_pchlan`**, the SPT path, at attach. Returns the PHY's identifier.
+///
+/// It gates the hardware's automatic PHY configuration and forces the PHY out of ultra-low-power:
+/// through the Management Engine if there is one, through PHY registers if not. It makes sure the
+/// MAC-PHY interconnect is PCIe rather than `SMBus`. If the PHY does not answer, it forces `SMBus`,
+/// and if the PHY still does not answer, it power-cycles the PHY with `LANPHYPC`. Then it resets
+/// the PHY so it starts from a known state, unless firmware blocks PHY resets: then it skips the
+/// reset, notes [`Note::PhysicalLayerDeviceResetBlocked`] and returns the identifier.
+///
+/// Refuses with [`Error::LanphypcBlocked`] when firmware blocks that power cycle,
+/// [`Error::PhysicalLayerDeviceInaccessible`] when the PHY never answers,
+/// [`Error::BlockedAfterPhysicalLayerDeviceReset`] when firmware takes the PHY after its reset,
+/// [`Error::PhysicalLayerDevice`] when the semaphore cannot be taken, and
+/// [`Error::NonVolatileMemory`] when no NVM bank is valid after the reset.
 ///
 /// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide rulings that spell out `phy` (the
 /// chip) as `physical_layer_device` and `init` as `initialize`, the second of which names it.
@@ -565,6 +578,11 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
 
 /// **`e1000_reset_hw_ich8lan`** for the SPT class, preceded by `em_reset`'s packet-buffer
 /// allocation and followed by nothing the kernel does not already do for the 82574L.
+///
+/// The MAC and PHY reset together, unless firmware blocks PHY resets, in which case the MAC resets
+/// alone. After a PHY reset the PHY is configured from the NVM: `config_done` waits for it and
+/// checks a bank is valid, and `post_physical_layer_device_reset` replays the NVM's configuration
+/// and the OEM bits.
 ///
 /// One addition: FreeBSD does not wait for `CTRL.RST` to self-clear (its configuration-done wait
 /// covers it); this waits up to `reset_wait_ms` first, so a reset that never completes is reported
