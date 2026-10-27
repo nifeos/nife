@@ -46,9 +46,9 @@ name: mutation gate
 # caller's checkout, ledger and `.cargo-mutants-version` are what run; nothing here reads this
 # repository's paths except as defaults.
 #
-# **Required-check status.** The job name below is the required context. Adding it to the `main`
-# ruleset is a settings change only calef can make (roadmap 924's "Done means"); until then this
-# reports and does not gate.
+# **Required-check status.** The job name below is the required context, and the `main` ruleset
+# lists it (`gh api repos/nifeos/nife/rules/branches/main`), so a survivor on a changed line blocks
+# the merge.
 #
 # **Jobs run on arm** (the milestone 587 (most CI jobs do not need an arm64 host) split): the weekly mutation shards run there, and
 # `Swatinem/rust-cache` keys on the host, so the gate's baseline build shares their cache pool.

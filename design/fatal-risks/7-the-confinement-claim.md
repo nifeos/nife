@@ -143,8 +143,10 @@ Open security findings that bear on it, each a proposal and none yet built:
   `script/swish-check` on three ISAs, with a replayable falsification (a patch, replayed by hand on
   aarch64, red with exit 1).
 - [Reset unowned PCI functions before the IOMMU enables](../roadmap/0693-reset-unowned-pci-functions-before-iommu-enable.md):
-  Bus Master Enable is already set on functions the kernel never owns, so DMA can outlive the
-  confinement. Severity not recorded; an architect's call.
+  Bus Master Enable is already set on functions the kernel never owns. Ruled 2026-10-27 (UTC):
+  record and do not build. The gap is one of fault visibility, not a confinement escape, because
+  default-deny still blocks every address of an unregistered device. The milestone stays open, and
+  clearing Bus Master Enable is built only when code needs to read faults reliably.
 - [Every client of a network stack shares its socket numbers](../roadmap/0649-every-client-of-a-network-stack-shares-its-socket-numbers.md):
   one holder of the network capability can read and close another's sockets. Milestone 800 (a
   non-Anthropic model attacks the confinement claim)'s fourth pass booted it on a shipped path on
