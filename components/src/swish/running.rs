@@ -1374,12 +1374,7 @@ pub(super) const MAXIMUM_OUTPUT_CHUNKS: usize = 4096;
 /// **Take the answer to a held job's request, and then the job**: the progenitor's one answer, the
 /// job's `ThreadControlBlock` after a good one (§309), and then either the job in the foreground,
 /// read to its death and torn down, or the job kept in `background` (milestone 933).
-fn finish_held(
-    e: &Endowment,
-    held: Minted,
-    budget: Option<u64>,
-    background: Option<&mut Jobs>,
-) {
+fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Option<&mut Jobs>) {
     let (answer, label, _) = receive(RESULT);
     if answer != spawnproto::SPAWN_OK {
         // The progenitor has reclaimed the region; this shell's slot for it is stale. The budget
@@ -1397,10 +1392,7 @@ fn finish_held(
     }
     let (_, tcb, _) = receive_cap(RESULT);
     match background {
-        Some(jobs) => keep_background(
-            jobs,
-            Held::exit(label, held.region, budget, tcb, e.program),
-        ),
+        Some(jobs) => keep_background(jobs, Held::exit(label, held.region, budget, tcb, e.program)),
         None => {
             foreground_held(e, label);
             held::collect(held.region, label);

@@ -36,9 +36,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use user_mode_runtime::{
-    cntfrq, exit, now, notification_wait, retype_sleeper, send, sleep_until,
-};
+use user_mode_runtime::{cntfrq, exit, notification_wait, now, retype_sleeper, send, sleep_until};
 
 /// Slot 0: where the one line goes.
 const REPORT: u64 = 0;
