@@ -34,7 +34,7 @@ pub(super) fn read_satp() -> u64 {
     satp
 }
 
-/// **T-Head Supervisor Extension Status Register** (`th.sxstatus`, T-Head XuanTie C906
+/// **T-Head Supervisor Extension Status Register** (`th.sxstatus`, T-Head `XuanTie` C906
 /// documentation).
 /// `csrr th.sxstatus` (CSR `0x5c0`): T-Head's supervisor-visible extension status, whose bit 21 is
 /// `MAEE`, whether the hart reads memory types out of PTE bits 63:59 (milestone 89 (Scaleway EM-RV1)).
