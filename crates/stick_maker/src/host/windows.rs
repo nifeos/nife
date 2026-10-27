@@ -1,12 +1,13 @@
-//! **Windows: the four `kernel32` calls.** The pure half, which turns what they report into a
+//! **Windows: the five `kernel32` calls.** The pure half, which turns what they report into a
 //! [`Disk`], is `crate::windows`.
 
 use crate::disk::Disk;
 use crate::windows::disk_from;
 
 mod system {
-    // `raw-dylib`: rustc writes the import table itself, so linking needs no `libkernel32.a` from
-    // a MinGW installation, and the program cross-links from any host with `rust-lld`.
+    // `raw-dylib`: rustc writes the import table itself, so these calls need no `libkernel32.a`
+    // from a MinGW installation. Whether the rest of std then links from a non-Windows host is
+    // untested; notes/boot-stick.md's host table says a MinGW runtime or the Windows SDK is needed.
     #[link(name = "kernel32", kind = "raw-dylib")]
     unsafe extern "system" {
         pub fn GetLogicalDrives() -> u32;

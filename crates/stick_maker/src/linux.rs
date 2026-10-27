@@ -9,7 +9,8 @@
 
 //! # BUGS
 //!
-//! - **None of this has run on Linux**; the pure half is tested against a synthetic sysfs.
+//! - **Only CI's loop device has run it on Linux**; the unit tests use a synthetic sysfs, and no
+//!   USB stick has met it.
 //! - **Free space is not known before copying**; a full volume fails the copy, keeping old files.
 //! - **Erasing needs root, `sfdisk` and `mkfs.vfat`** (dosfstools); the program names the package.
 //! - **Without udev** an unmounted FAT stick is offered for erasing; mounting it first avoids that.

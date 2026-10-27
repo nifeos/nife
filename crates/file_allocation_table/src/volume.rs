@@ -33,7 +33,8 @@ pub const CLUSTER_BYTES: usize = CLUSTER_SECTORS as usize * SECTOR_BYTES;
 /// Name: ratified 2026-10-25 (#2720).
 pub const RESERVED_SECTORS: u32 = 32;
 
-/// How many copies of the table are written.
+/// How many copies of the table are written: two, because every tool writes two and a firmware that
+/// reads the second finds it.
 ///
 /// Name: ratified 2026-10-25 (#2720). Refused `FATS` (the acronym in a crate that spells it out).
 pub const TABLE_COUNT: u32 = 2;
@@ -105,7 +106,7 @@ pub enum LayoutError {
 ///
 /// # Examples
 ///
-/// A 512 MiB EFI system partition at LBA 2048 holding a 9 MiB boot file, written through anything
+/// A 512 MiB EFI system partition at LBA 2048 holding a 9 MB boot file, written through anything
 /// that can put 512 bytes at an LBA:
 ///
 /// ```

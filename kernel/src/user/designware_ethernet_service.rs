@@ -10,7 +10,7 @@
 //! - Proved by one radon bench boot ([`PROVEN_ON_SILICON`]), at a rate its note's `BUGS` records.
 
 use ::driver_process_contract::designware_ethernet::{
-    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS,
+    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS,
 };
 
 use super::*;
@@ -115,12 +115,12 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
     super::fs_service::map_channel(
         &mut maps[..PLANE],
         DATA_PLANE_VIRTUAL_ADDRESS,
-        found.handoff.data_plane_phys,
+        found.handoff.data_plane_physical_address,
         PLANE,
     );
     // Device-typed, because a cached or reordered tail write is a frame the device never hears of.
     maps[PLANE] = Mapping {
-        va: DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS,
+        va: DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS,
         phys: found.dma_page,
         flags: Flags::user_device(),
     };

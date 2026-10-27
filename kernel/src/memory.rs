@@ -703,7 +703,7 @@ pub(crate) struct Jh7110Ethernet {
     /// The SYS clock-and-reset window: `gmac0`'s transmit and PTP clocks.
     pub sys: jh7110_clock_and_reset::WindowLocation,
     /// The AON syscon: `gmac0`'s interface select.
-    pub syscon: designware_ethernet::jh7110::Syscon,
+    pub syscon: designware_ethernet::jh7110::SystemController,
 }
 
 /// The PCIe host bridge's windows, from the device tree: `(ecam, mem32)`, each `(start, size)`,

@@ -162,8 +162,6 @@ work, and the lane that renames a name drops its line.
 ### Nife's own plan
 
 - `layout` (`src/layout.rs`): nife: nife's own process plan
-- `DMA_PAGE` (`src/regs.rs`): nife: nife's own process plan
-- `WINDOW` (`src/regs.rs`): nife: nife's own process plan
 
 ### Belongs to something else
 
@@ -171,7 +169,6 @@ work, and the lane that renames a name drops its line.
 - `motorcomm` (`src/motorcomm.rs`): scope: one vendor's PHY in a MAC crate
 - `first_cell` (`src/jh7110.rs`): scope: a device-tree cell reader in a MAC crate
 - `FALLBACK_GMAC0` (`src/motorcomm.rs`): scope: one board's PHY values in a MAC crate
-- `YT8531_ID` (`src/motorcomm.rs`): scope: one vendor's PHY in a MAC crate
 
 ### Generic
 
@@ -184,20 +181,10 @@ work, and the lane that renames a name drops its line.
 - `prepare` (`src/coherence.rs`): generic
 - `Bus` (`src/controller.rs`): generic: two `Bus` types in two modules
 - `interface` (`src/jh7110.rs`): generic
-- `Bus` (`src/mdio.rs`): generic: two `Bus` types in two modules
 - `Applied` (`src/motorcomm.rs`): generic
 - `Drive` (`src/motorcomm.rs`): generic
 - `Settings` (`src/motorcomm.rs`): generic
 - `Source` (`src/motorcomm.rs`): generic
-
-### Unclear
-
-- `dma_bits` (`src/controller.rs`): unclear: `dma` and an unstated unit
-- `Hw` (`src/hardware.rs`): unclear: an abbreviation of hardware
-- `mainline_phy` (`src/jh7110.rs`): unclear: reads as a PHY; it reads a PHY node into settings
-- `vendor_phy` (`src/jh7110.rs`): unclear: reads as a PHY; it reads a PHY node into settings
-- `read_ext` (`src/motorcomm.rs`): unclear: `ext` abbreviates extended
-- `write_ext` (`src/motorcomm.rs`): unclear: `ext` abbreviates extended
 
 ## Exit
 

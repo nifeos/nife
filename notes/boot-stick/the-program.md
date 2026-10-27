@@ -10,7 +10,8 @@ comments in `crates/stick_maker`, which link here.
 - `disk.rs` is the host-independent model. It holds the one rule for what may be written
   (`disk::refusal`) and the choice between copying and erasing (`disk::plan`).
 - `macos.rs`, `linux.rs` and `windows.rs` each turn their host's description of its disks into
-  `disk::Disk` values. Each is compiled only where it runs, and in tests. They also hold the few
+  `disk::Disk` values. `macos.rs` and `linux.rs` are compiled only where they run, and in tests;
+  `windows.rs` is pure and compiled everywhere. They also hold the few
   commands that change a disk.
 - `payload.rs` is what is carried, and `write.rs` puts it on a mounted volume safely.
 - `cli.rs` is the whole conversation with the person, tested against a fake host.
@@ -41,9 +42,11 @@ GUIDs. Firmware boot entries, `PARTUUID` lookups and installs would then be ambi
 copies meet one machine. Measured on 2026-10-06 (UTC), it does not happen here, for structural
 reasons:
 
-- There is no image. `cargo xtask stick` stages a directory of three `.EFI` files
-  (`target/stick/EFI/BOOT/`), and the program copies files onto a FAT volume. Nothing in the build
-  writes a partition table, so there is nothing to share.
+- There is no stick image. `cargo xtask stick` stages a directory of three `.EFI` files
+  (`target/stick/EFI/BOOT/`), and the program copies files onto a FAT volume. The build does write
+  GPT disks, `target/cloud-image/nife-{aarch64,riscv64}.img` (`xtask/src/cloud_image.rs`), with
+  GUIDs drawn on each run, and copies of one such file share its GUIDs; that module's `BUGS` says
+  so.
 - The copy path leaves the stick's own table alone, whatever its maker wrote.
 - The erase path writes MBR, never GPT, with the host's own tool (`host/macos.rs`'s `erase` says
   why). So a stick has no disk GUID and no partition unique GUID at all.
@@ -102,7 +105,8 @@ fake sysfs rather than needing a Linux machine.
 
 What has not been checked on Linux:
 
-- The pure half is tested against a synthetic sysfs, not a live kernel. The layouts are the
+- The unit tests use a synthetic sysfs. CI runs discovery and both paths on a live kernel against
+  a loop device (`stick-maker-hosts.yml`), and no USB stick has met it. The layouts are the
   kernel's documented ABI (`Documentation/ABI/stable/sysfs-block`) and udev's database format. The
   udev format is recalled rather than read against a live system.
 - Free space is not known before copying, because there is no `statvfs` without a dependency. A FAT
@@ -117,7 +121,7 @@ What has not been checked on Linux:
 
 Windows names volumes by drive letter. `GetDriveTypeW` answers `DRIVE_REMOVABLE` from the same
 removable-media bit the other two hosts read. A USB hard disk answers `DRIVE_FIXED`, so the one rule
-in `disk.rs` refuses it with nothing Windows-specific. The four functions used are in `kernel32`,
+in `disk.rs` refuses it with nothing Windows-specific. The five functions used are in `kernel32`,
 which every Windows process already links, so they are declared by hand rather than through a
 bindings crate (§46).
 
