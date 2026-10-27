@@ -263,6 +263,8 @@ impl Threads {
         // dropped Thread afterward.
         unsafe { core::ptr::drop_in_place(ptr) };
         self.table.remove(tid);
+        // A driver's death gives its virtio slot back (§16, amendment of 2026-10-27).
+        crate::virtio::release_owned_by(tid);
         if from_kmem {
             crate::kmem::recycle(crate::arch::mmu::virt_to_phys(ptr as u64));
         }

@@ -43,6 +43,8 @@ fn wire(
     let vid = crate::virtio::register(transport, dma, FRAME_SIZE, rid);
 
     crate::sched::spawn(move || {
+        // The driver's death gives the slot back (§16, amendment of 2026-10-27).
+        crate::virtio::bind_to_current_thread(vid);
         run(
             image,
             Spawn {
@@ -237,6 +239,8 @@ fn wire_net_server(
     }
 
     let tid = crate::sched::spawn(move || {
+        // The driver's death gives the slot back (§16, amendment of 2026-10-27).
+        crate::virtio::bind_to_current_thread(vid);
         run_with_own_space(
             image,
             Spawn {
@@ -587,6 +591,8 @@ pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
     let report = crate::sched::create_rendezvous();
 
     crate::sched::spawn(move || {
+        // The driver's death gives the slot back (§16, amendment of 2026-10-27).
+        crate::virtio::bind_to_current_thread(vid);
         run(
             image,
             Spawn {
@@ -632,6 +638,8 @@ pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
     let report = crate::sched::create_rendezvous();
 
     crate::sched::spawn(move || {
+        // The driver's death gives the slot back (§16, amendment of 2026-10-27).
+        crate::virtio::bind_to_current_thread(vid);
         run(
             image,
             Spawn {

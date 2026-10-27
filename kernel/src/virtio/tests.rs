@@ -529,3 +529,135 @@ fn a_register_read_outside_the_slot_is_refused() {
     assert!(!register_in_slot(u64::MAX - 3));
     assert_eq!(read_register(0, SLOT_STRIDE), None);
 }
+
+/// A transport on the first block device of whichever bus this machine has, registered with no
+/// IOMMU confinement (`rid` is `None`): enough device for the table, the reset and the names. `None`
+/// when the machine has no block device to borrow.
+fn borrow_block_transport() -> Option<Transport> {
+    find_block_device_n(0).map(|d| d.transport)
+}
+
+/// Register a transport with a fresh DMA frame, the way a starter does. The frame is the
+/// starter's to free, not the table's, so a test that does not free it leaks it; the helper
+/// [`release_borrowed`] does both.
+fn register_borrowed() -> Option<(u64, u64)> {
+    let transport = borrow_block_transport()?;
+    let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+    Some((register(transport, dma, page_frames::FRAME_SIZE, None), dma))
+}
+
+/// [`unregister`] a borrowed device and return its DMA frame.
+fn release_borrowed(id: u64, dma: u64) -> bool {
+    let released = unregister(id);
+    crate::memory::free(page_frames::PageFrame::from_addr(dma));
+    released
+}
+
+/// Milestone 647's exit criterion, first half: one boot registers and releases more transports
+/// than the table holds at once. Each round takes a slot and gives it back, so the count of live
+/// devices never passes one while the count of registrations passes `MAXIMUM_DEVICES` twice.
+#[test_case]
+fn one_boot_registers_and_releases_more_transports_than_the_table_holds() {
+    if borrow_block_transport().is_none() {
+        return;
+    }
+    let live_before = live_count();
+    for _ in 0..(2 * MAXIMUM_DEVICES + 1) {
+        let (id, dma) = register_borrowed().expect("a block device vanished");
+        assert_eq!(live_count(), live_before + 1);
+        assert!(release_borrowed(id, dma), "a live device was not released");
+    }
+    assert_eq!(
+        live_count(),
+        live_before,
+        "a released slot did not come back"
+    );
+}
+
+/// Milestone 647's exit criterion, second half: a name to a released device is refused, and does
+/// not resolve to the device that takes the slot next. The successor lands in the same slot (first
+/// fit), so only the generation tells the two names apart.
+#[test_case]
+fn a_name_to_a_released_device_is_refused_and_never_names_its_successor() {
+    if borrow_block_transport().is_none() {
+        return;
+    }
+    let (first, first_dma) = register_borrowed().expect("a block device vanished");
+    assert!(read_register(first, REG_STATUS).is_some());
+    assert!(release_borrowed(first, first_dma));
+    assert!(
+        !unregister(first),
+        "a second release found the device again"
+    );
+
+    let (second, second_dma) = register_borrowed().expect("a block device vanished");
+    assert_eq!(
+        first & 0xffff_ffff,
+        second & 0xffff_ffff,
+        "the successor should reuse the released slot, or this test proves nothing"
+    );
+    assert_ne!(
+        first, second,
+        "the successor carries the slot's next generation"
+    );
+
+    // Every method a capability can invoke refuses the stale name; the live one still answers.
+    assert_eq!(read_register(first, REG_STATUS), None);
+    assert_eq!(
+        write_register(first, REG_STATUS, 0),
+        Err(TransportError::NoDevice)
+    );
+    assert_eq!(setup_queue(first, 1, 0), Err(TransportError::NoDevice));
+    assert_eq!(notify(first, 0), Err(TransportError::NoDevice));
+    assert!(read_register(second, REG_STATUS).is_some());
+    assert!(release_borrowed(second, second_dma));
+}
+
+/// Release resets the device: a status the departed driver left behind reads back as zero.
+#[test_case]
+fn releasing_a_device_resets_its_status_register() {
+    let Some(transport) = borrow_block_transport() else {
+        return;
+    };
+    let mut probe = transport; // the same device, reached without the table
+    let (id, dma) = register_borrowed().expect("a block device vanished");
+    probe.write_reg(REG_STATUS, 1); // ACKNOWLEDGE, as a driver that never finished would leave it
+    assert_eq!(probe.read_reg(REG_STATUS), 1);
+    assert!(release_borrowed(id, dma));
+    assert_eq!(probe.read_reg(REG_STATUS), 0, "the device was not reset");
+}
+
+/// The hook that makes this "when a driver dies": a thread that binds a device owns it, and its
+/// removal from the thread table releases the slot, with no call from the owner.
+#[test_case]
+fn a_dying_owner_releases_its_device() {
+    if borrow_block_transport().is_none() {
+        return;
+    }
+    let (id, dma) = register_borrowed().expect("a block device vanished");
+    let tid = crate::sched::spawn(move || {
+        assert!(bind_to_current_thread(id));
+    })
+    .expect("spawn failed");
+    assert!(
+        crate::user::wait_for(|| read_register(id, REG_STATUS).is_none()),
+        "the owner died and its device stayed registered"
+    );
+    let _ = tid;
+    crate::memory::free(page_frames::PageFrame::from_addr(dma));
+}
+
+/// An unowned device survives any thread's death: only a bound owner releases.
+#[test_case]
+fn a_device_nobody_bound_outlives_other_threads() {
+    if borrow_block_transport().is_none() {
+        return;
+    }
+    let id = register_borrowed().expect("a block device vanished");
+    let tid = crate::sched::spawn(|| {}).expect("spawn failed");
+    assert!(crate::user::wait_for(|| !crate::sched::is_thread_present(
+        tid
+    )));
+    assert!(read_register(id, REG_STATUS).is_some());
+    assert!(unregister(id));
+}

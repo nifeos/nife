@@ -161,6 +161,8 @@ pub(in crate::user) fn spawn_block_server(
         dev.rid, // `Some` behind an IOMMU (every PCI function), `None` on virtio-mmio
     );
     crate::sched::spawn(move || {
+        // The driver's death gives the slot back (§16, amendment of 2026-10-27).
+        crate::virtio::bind_to_current_thread(vid);
         // The rings page, then the BLK_PAGES data pages, contiguous at DMA_VA.
         let mut maps = [Mapping {
             va: 0,

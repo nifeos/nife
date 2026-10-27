@@ -27,7 +27,7 @@ pub struct Wiring {
 /// grants it to the progenitor. Name: provisional.
 pub(crate) struct KeyboardDevice {
     /// The `Virtio` capability's id.
-    pub vid: usize,
+    pub vid: u64,
     /// The event interrupt, routed and enabled.
     pub intid: u32,
     /// The one DMA page's physical base, which the page also carries at

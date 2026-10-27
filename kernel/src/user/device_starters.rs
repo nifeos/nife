@@ -74,7 +74,7 @@ pub(super) fn boot_clock_page() -> u64 {
 /// than stored, so the caller grants them at the slots it chooses.
 pub(super) struct VirtioBootGrant {
     /// The `Virtio` capability's id (`crate::virtio::register`'s return value).
-    pub(super) vid: usize,
+    pub(super) vid: u64,
     /// The device's completion interrupt, **routed** (`crate::sched::bind_interrupt`) but not
     /// **enabled**: aarch64's GIC enables inline and riscv64 pins the PLIC source to the boot hart
     /// (`notes/harts-and-pes.md`'s hart lottery), so the caller enables it beside

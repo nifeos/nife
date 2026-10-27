@@ -130,11 +130,27 @@ All four are fields of `Transport::Pci`, set in one place, `Transport::pci`, fro
 checkable. One gap: `notify_addr[q]` is zero until `setup_queue` resolves it, so `notify` refuses a
 queue whose doorbell is not ready rather than write through `phys_to_virt(0)`.
 
-`MAXIMUM_DEVICES` is an exception and a foot gun. Nothing unregisters, so it counts the devices a
-boot has ever wired, and the test suite spawns a driver per gate (tests share a transport where they
-can). The fix is reuse on driver death, which needs a generational name so a stale `Object::Virtio`
-capability cannot resolve to a different device. That is a design fork under §16 (object
-revocation). Milestone 647 (a virtio slot should come back when its driver dies) proposes it.
+A transport's slot comes back when its driver dies (§16, amendment of 2026-10-27). The device table
+is a `generational_table::Table`, the machinery regions and thread ids use, and an `Object::Virtio`
+capability carries the slot's generational name. A starter calls `bind_to_current_thread` from the
+driver's own thread; when that thread leaves the thread table (it exits, is killed, or has its
+region destroyed), `Threads::remove` calls `release_owned_by`, which `unregister`s the device. The
+unregister writes zero to the status register and waits for it to read back zero, bumps the slot's
+generation, frees the slot and returns the shadow frame. A capability that outlives its device is
+refused with the same `WrongObject` an absent device gets, and never resolves to the device that took
+the slot next. `MAXIMUM_DEVICES` now bounds the transports live at once. The 32-bit generation
+wraps, as it does for regions and thread ids.
+
+A device nobody binds lives for the boot. The entropy service and the boot-time devices are
+unbound on purpose: `entropy_service::ensure` wires one service per device because a second would
+reset the device under the first, and an unbound transport keeps its slot, so a second service
+cannot obtain the device while the first lives. A transport is handed to a second driver only after
+the first one's thread is gone, and the reset on release is what makes that safe.
+
+BUGS. An IOMMU domain built for a PCIe function is not torn down on release, so re-registering the
+same function builds a second domain and leaks the first's page-table frames (`iommu::confine`'s own
+note says it runs once per device per boot). Release resets the function, which stops its DMA. The
+driver's DMA region stays the starter's to free, as it was at `register`.
 
 Two test hooks go around the shadow ring to reach the hardware. `provoke_iommu_escape` points queue
 0's available ring at a frame the IOMMU domain does not include and kicks; the device's first read

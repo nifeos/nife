@@ -467,6 +467,12 @@ const VIRTQ_DESC_F_INDIRECT: u16 = 4;
 
 /// One block device the kernel operates the transport for.
 struct Device {
+    /// This slot's generational name: what an `Object::Virtio` capability carries, and what
+    /// [`unregister`] takes. Kept in the entry so a walk by owner can name the device it finds.
+    name: u64,
+    /// The thread whose death releases this device (see [`bind_to_current_thread`]), or `None`
+    /// for a device that lives for the boot.
+    owner: Option<crate::thread::ThreadId>,
     transport: Transport,
     direct_memory_access_base: u64,
     direct_memory_access_size: u64,
@@ -485,39 +491,40 @@ struct Device {
     shadow_base: u64,
 }
 
-/// The most virtio transports we will drive. Fixed-size, so probing never allocates.
+/// The most virtio transports the kernel drives **at once**. Fixed-size, so probing never allocates.
 ///
-/// Each `register` takes a slot for the life of the boot, so this counts devices a boot has ever
-/// wired, not devices that exist.
-///
-/// This is an exception and a foot gun: see notes/virtio.md, "The kernel's half", and
-/// `design/roadmap/0647-a-virtio-slot-comes-back-when-its-driver-dies.md`, which the next lane that
-/// needs a device should take rather than a bump.
+/// A slot comes back when its driver dies ([`bind_to_current_thread`], [`unregister`]), so this
+/// counts live transports, not every transport a boot has wired. A name that outlives its device
+/// is refused, not resolved to the device that took the slot next (§16, amendment of 2026-10-27).
+/// See notes/virtio.md, "The kernel's half".
 const MAXIMUM_DEVICES: usize = 34;
 
-/// The device table, fixed. `get`/`get_mut` mirror the slice API the call sites already used.
+/// The device table: `generational_table::Table`, the machinery regions and thread ids use, so a
+/// removal bumps the slot's generation and every outstanding name goes stale.
 struct Devices {
-    entries: [Option<Device>; MAXIMUM_DEVICES],
-    count: usize,
+    table: generational_table::Table<Device, MAXIMUM_DEVICES>,
 }
 
 impl Devices {
-    fn get(&self, i: usize) -> Option<&Device> {
-        self.entries.get(i)?.as_ref()
+    fn get(&self, id: u64) -> Option<&Device> {
+        self.table.get(id)
     }
 
-    fn get_mut(&mut self, i: usize) -> Option<&mut Device> {
-        self.entries.get_mut(i)?.as_mut()
+    fn get_mut(&mut self, id: u64) -> Option<&mut Device> {
+        self.table.get_mut(id)
     }
 }
 
 static DEVICES: InterruptSafeMutex<Devices> = InterruptSafeMutex::new(
     rank::VIRTIO,
     Devices {
-        entries: [const { None }; MAXIMUM_DEVICES],
-        count: 0,
+        table: generational_table::Table::new(),
     },
 );
+
+/// How many live devices have an owner. [`release_owned_by`] runs on every thread removal, and
+/// reads this first so a boot with no owned device pays one load and no lock.
+static OWNED: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
 /// Register the block device and its DMA region with the transport layer. Returns its id, which
 /// is what goes inside an `Object::Virtio` capability. The driver never sees the device's
@@ -531,7 +538,7 @@ pub(crate) fn register(
     direct_memory_access_base: u64,
     direct_memory_access_size: u64,
     rid: Option<u32>,
-) -> usize {
+) -> u64 {
     // Zeroed so a stale word can never look like a valid descriptor before the first copy.
     let shadow_base = crate::memory::alloc_zeroed()
         .expect("no frame for the virtio shadow ring")
@@ -552,21 +559,100 @@ pub(crate) fn register(
     }
 
     let mut devs = DEVICES.lock();
-    assert!(
-        devs.count < MAXIMUM_DEVICES,
-        "more virtio devices than MAXIMUM_DEVICES"
-    );
-    let id = devs.count;
-    devs.entries[id] = Some(Device {
-        transport,
-        direct_memory_access_base,
-        direct_memory_access_size,
-        last_avail: [0; MAXIMUM_QUEUES],
-        driver_features_sel: 0,
-        shadow_base,
-    });
-    devs.count += 1;
-    id
+    devs.table
+        .insert_with(|name| Device {
+            name,
+            owner: None,
+            transport,
+            direct_memory_access_base,
+            direct_memory_access_size,
+            last_avail: [0; MAXIMUM_QUEUES],
+            driver_features_sel: 0,
+            shadow_base,
+        })
+        .expect("more virtio devices live at once than MAXIMUM_DEVICES")
+}
+
+/// Make the calling thread the owner of device `id`: when that thread is removed from the thread
+/// table, the device is [`unregister`]ed. Called by the thread that becomes the driver, as its
+/// first act, so the owner is alive when it is recorded and cannot die before it is.
+///
+/// A device nobody binds lives for the boot, which is what a long-lived service (the entropy
+/// service, the boot-time devices) wants. Returns `false` for a name that is not live.
+pub(crate) fn bind_to_current_thread(id: u64) -> bool {
+    let tid = crate::arch::read_current_thread();
+    let mut devs = DEVICES.lock();
+    let Some(dev) = devs.get_mut(id) else {
+        return false;
+    };
+    if dev.owner.replace(tid).is_none() {
+        OWNED.fetch_add(1, core::sync::atomic::Ordering::Release);
+    }
+    true
+}
+
+/// Release every device owned by thread `tid`, which has just left the thread table. The hook
+/// `Threads::remove` calls, so a driver that exits, is killed or has its region destroyed gives
+/// its slot back by the one path they all share.
+///
+/// Context: runs under `IPC_TABLES` (rank 60) and takes `VIRTIO` (56), the frame allocator and
+/// nothing above them.
+pub(crate) fn release_owned_by(tid: crate::thread::ThreadId) {
+    if OWNED.load(core::sync::atomic::Ordering::Acquire) == 0 {
+        return;
+    }
+    loop {
+        let found = {
+            let devs = DEVICES.lock();
+            devs.table
+                .values()
+                .find(|d| d.owner == Some(tid))
+                .map(|d| d.name)
+        };
+        let Some(id) = found else { return };
+        unregister(id);
+    }
+}
+
+/// **Release device `id`**: reset it, bump its slot's generation and free the slot, so the next
+/// `register` can take it and a capability still naming `id` is refused. Returns whether `id` was
+/// live.
+///
+/// The reset writes zero to the status register and waits for it to read back zero, as the virtio
+/// specification asks of a driver, so the device holds no queue, feature or interrupt the dead
+/// driver programmed and stops reading memory that is about to be reused. The kernel-private shadow
+/// frame goes back to the allocator after the reset. The driver's DMA region is the caller's, as it
+/// was at `register`. See notes/virtio.md, "The kernel's half".
+pub(crate) fn unregister(id: u64) -> bool {
+    let removed = {
+        let mut devs = DEVICES.lock();
+        let Some(mut dev) = devs.table.remove(id) else {
+            return false;
+        };
+        dev.transport.write_reg(REG_STATUS, 0);
+        // Bounded: a device that never reads back zero is as quiet as it will get.
+        for _ in 0..RESET_POLLS {
+            if dev.transport.read_reg(REG_STATUS) == 0 {
+                break;
+            }
+            core::hint::spin_loop();
+        }
+        dev
+    };
+    if removed.owner.is_some() {
+        OWNED.fetch_sub(1, core::sync::atomic::Ordering::Release);
+    }
+    crate::memory::free(page_frames::PageFrame::from_addr(removed.shadow_base));
+    true
+}
+
+/// How many times [`unregister`] reads the status register waiting for the reset to land.
+const RESET_POLLS: u32 = 100_000;
+
+/// How many devices are registered right now. Test support and the exit criterion's witness.
+#[cfg(any(test, feature = "system_tests"))]
+pub(crate) fn live_count() -> usize {
+    DEVICES.lock().table.len()
 }
 
 fn reg_read(mmio_phys: u64, off: u64) -> u32 {
@@ -656,7 +742,7 @@ pub(crate) enum TransportError {
 /// `off` is the caller's, and the mmio arm adds it to the slot's physical base and reads through
 /// the direct map, so an offset past the slot would read whatever RAM or device lies there. Only
 /// an aligned word inside the device's own slot is answered.
-pub(crate) fn read_register(id: usize, off: u64) -> Option<u32> {
+pub(crate) fn read_register(id: u64, off: u64) -> Option<u32> {
     if !register_in_slot(off) {
         return None;
     }
@@ -672,7 +758,7 @@ fn register_in_slot(off: u64) -> bool {
 
 /// Write one of the DMA-*safe* registers (status, features selection, interrupt ack). Refuses the
 /// DMA-critical ones (queue addresses, notify), which have their own validated paths.
-pub(crate) fn write_register(id: usize, off: u64, val: u32) -> Result<(), TransportError> {
+pub(crate) fn write_register(id: u64, off: u64, val: u32) -> Result<(), TransportError> {
     // Only these offsets are safe to pass straight through. Everything to do with queue setup or
     // notification goes through setup_queue / notify, which validate.
     const SAFE: &[u64] = &[
@@ -725,7 +811,7 @@ fn sanitize_driver_features(sel: u32, val: u32) -> u32 {
 /// table and available ring in the kernel-private shadow page, used ring in the driver's region
 /// (the device writes only indices and lengths there). Each queue's rings sit at
 /// `queue * RING_BLOCK` in both. Refuses a queue that is out of range or does not fit.
-pub(crate) fn setup_queue(id: usize, num: u16, queue: u16) -> Result<(), TransportError> {
+pub(crate) fn setup_queue(id: u64, num: u16, queue: u16) -> Result<(), TransportError> {
     if queue as usize >= MAXIMUM_QUEUES {
         return Err(TransportError::BadQueue);
     }
@@ -754,7 +840,7 @@ pub(crate) fn setup_queue(id: usize, num: u16, queue: u16) -> Result<(), Transpo
 /// and only then ring the device. If any descriptor escapes the driver's DMA region, the shadow is
 /// not published, the device is NOT notified, and the driver gets `DmaEscape`. Each queue keeps its
 /// own last-validated index, so a receive submit and a transmit submit never interfere.
-pub(crate) fn notify(id: usize, queue: u16) -> Result<(), TransportError> {
+pub(crate) fn notify(id: u64, queue: u16) -> Result<(), TransportError> {
     if queue as usize >= MAXIMUM_QUEUES {
         return Err(TransportError::BadQueue);
     }
@@ -845,7 +931,7 @@ const TEST_HOOK_DRIVER_OK: u32 = 1 | 2 | 8 | 4;
 /// nothing available, so the device's one write is clearing `VRING_USED_F_NO_NOTIFY`. No fault
 /// record is promised. See notes/virtio.md, "The kernel's half".
 #[cfg(test)]
-pub(crate) fn provoke_write_to_shadow(id: usize) -> u16 {
+pub(crate) fn provoke_write_to_shadow(id: u64) -> u16 {
     let mut devs = DEVICES.lock();
     let dev = devs
         .get_mut(id)
@@ -880,7 +966,7 @@ pub(crate) fn provoke_write_to_shadow(id: usize) -> u16 {
 /// `avail_out_of_domain`, filled from the CPU (which the IOMMU does not police), and kicked. The
 /// device's first read is the out-of-domain IOVA. See notes/iommu.md.
 #[cfg(test)]
-pub(crate) fn provoke_iommu_escape(id: usize, avail_out_of_domain: u64) {
+pub(crate) fn provoke_iommu_escape(id: u64, avail_out_of_domain: u64) {
     let mut devs = DEVICES.lock();
     let dev = devs
         .get_mut(id)

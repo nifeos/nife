@@ -83,14 +83,16 @@ pub enum Object {
     /// supervision and its end. `BIND` on it joins a thread (`abi::process`).
     Process(crate::sched::ProcessId),
 
-    /// A virtio device's **transport**, by id (into the kernel's virtio device table).
+    /// A virtio device's **transport**, by generational name (into the kernel's virtio device
+    /// table). The name goes stale when the device is released (§16's amendment of 2026-10-27), so
+    /// it never resolves to the device that takes the slot next.
     ///
     /// The DMA-confinement capability. The device has no IOMMU, so the kernel keeps the two
     /// DMA-critical powers (programming the queue's ring addresses and ringing the device) and
     /// validates that every descriptor stays within the driver's own DMA region before the device
     /// sees it. The holder drives the device (status, features, submit) through this, but cannot
     /// point it outside its region. See kernel/src/virtio.rs.
-    Virtio(usize),
+    Virtio(u64),
 
     /// A contiguous range of x86 I/O ports, by base port and count, enforced by the TSS I/O
     /// permission bitmap rather than the MMU. The holder may execute `in`/`out` on `[base, base +
@@ -385,7 +387,7 @@ pub fn memory_region_root_cap(region: u64) -> Cap {
 }
 
 /// A capability to a virtio device's transport. `WRITE` lets the holder operate it.
-pub(crate) fn virtio_cap(id: usize) -> Cap {
+pub(crate) fn virtio_cap(id: u64) -> Cap {
     Cap {
         object: Object::Virtio(id),
         rights: Rights::WRITE,
@@ -396,7 +398,7 @@ pub(crate) fn virtio_cap(id: usize) -> Cap {
 /// The progenitor holds one with `GRANT` so it can delegate the device to an entropy service it builds,
 /// [`interrupt_cap_rights`]'s own reason one object type over.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub(crate) fn virtio_cap_rights(id: usize, rights: Rights) -> Cap {
+pub(crate) fn virtio_cap_rights(id: u64, rights: Rights) -> Cap {
     Cap {
         object: Object::Virtio(id),
         rights,
