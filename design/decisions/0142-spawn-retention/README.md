@@ -5,7 +5,7 @@ what is decided, the answers with their costs, the mapping onto milestone 133 (e
 permanently blocked thread) and what is blocked, and a reader can act on it without opening anything
 here. These files hold the evidence, moved whole and unreworded:
 
-- [`amendment-2026-10-27.md`](amendment-2026-10-27.md): milestone 933 (every job is built the way a supervised job is)'s change to who supervises a job.
+- [`amendment-2026-10-27.md`](amendment-2026-10-27.md): who supervises a job when its requester holds the region.
 - [`thread-capability.md`](thread-capability.md): the premise check on the thread capability after
   `START`, the call sites that delete it, and R2's findings.
 - [`precedent.md`](precedent.md): what the recorded decisions and milestones already say about a
