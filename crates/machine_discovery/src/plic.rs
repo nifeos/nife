@@ -39,8 +39,10 @@ pub const MAX_CONTEXT_HARTS: usize = crate::riscv64::MAX_HARTS;
 /// interrupts: `scause` 9. Its machine twin is 11; those are the only two that appear in a PLIC's
 /// `interrupts-extended`.
 ///
-/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling. Linux
+/// calls this `IRQ_S_EXT`; the RISC-V specification calls cause 9 a supervisor external interrupt.
 #[doc(alias = "irq")]
+#[doc(alias = "IRQ_S_EXT")]
 pub const SUPERVISOR_EXTERNAL_INTERRUPT: u32 = 9;
 
 /// **Each hart's S-mode PLIC context**, as the device tree lays it out.

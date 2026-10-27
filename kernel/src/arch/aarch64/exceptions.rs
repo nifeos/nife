@@ -267,9 +267,15 @@ pub fn initialize() {
 }
 
 /// Vector slot 5: Current EL, `SP_ELx`, IRQ. **The kernel being interrupted.**
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling: Arm's
+/// vector kind is `IRQ`, kept in the table strings, and `FIQ` is the other kind this blurs.
 #[doc(alias = "irq")]
 const VECTOR_INTERRUPT_CURRENT: u64 = 5;
 /// Vector slot 9: Lower EL, AArch64, IRQ. Userspace being interrupted. Milestone 7.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling, with
+/// `VECTOR_INTERRUPT_CURRENT`.
 #[doc(alias = "irq")]
 const VECTOR_INTERRUPT_LOWER: u64 = 9;
 

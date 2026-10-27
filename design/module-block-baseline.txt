@@ -4382,7 +4382,6 @@ kernel/src/arch/aarch64/iommu.rs::Fault
 kernel/src/arch/aarch64/iommu.rs::attach
 kernel/src/arch/aarch64/iommu.rs::is_active
 kernel/src/arch/aarch64/iommu.rs::take_fault
-kernel/src/arch/aarch64/interrupt_controller.rs
 kernel/src/arch/aarch64/interrupt_controller.rs::enable
 kernel/src/arch/aarch64/interrupt_controller.rs::send_sgi
 kernel/src/arch/aarch64/isa.rs
@@ -4472,7 +4471,6 @@ kernel/src/arch/riscv64/iommu.rs::Fault
 kernel/src/arch/riscv64/iommu.rs::attach
 kernel/src/arch/riscv64/iommu.rs::is_active
 kernel/src/arch/riscv64/iommu.rs::take_fault
-kernel/src/arch/riscv64/interrupt_controller.rs
 kernel/src/arch/riscv64/interrupt_controller.rs::enable
 kernel/src/arch/riscv64/isa.rs
 kernel/src/arch/riscv64/isa.rs::get
@@ -4559,7 +4557,6 @@ kernel/src/arch/x86_64/iommu.rs::Fault
 kernel/src/arch/x86_64/iommu.rs::attach
 kernel/src/arch/x86_64/iommu.rs::is_active
 kernel/src/arch/x86_64/iommu.rs::take_fault
-kernel/src/arch/x86_64/interrupt_controller.rs
 kernel/src/arch/x86_64/interrupt_controller.rs::enable
 kernel/src/arch/x86_64/isa.rs
 kernel/src/arch/x86_64/isa.rs::get

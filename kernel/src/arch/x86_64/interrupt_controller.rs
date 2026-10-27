@@ -9,6 +9,9 @@
 //!   armed.
 //! - An MSI vector is never handed back ([`alloc_msi_vector`] bumps), out of a band of 63.
 //! - Interrupt remapping is assumed off; a VT-d unit with it on rejects these MSI messages.
+//!
+//! Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling. Spelled
+//! out from `irq`; `interrupts` already names the masking module, so this one names the controller.
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
