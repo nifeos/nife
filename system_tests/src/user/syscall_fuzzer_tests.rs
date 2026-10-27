@@ -58,7 +58,7 @@ const SUITE_SEEDS: u64 = 32;
 const CORPUS: &[u64] = &[180, 559];
 /// The sweep's guest-time cap: it stops between seeds once this has passed and says how far it
 /// got, so a weekly run with a large count fits under the per-test budget
-/// (`test_times::DEFAULT_BUDGET_SECS`, 90 s).
+/// (`test_times::DEFAULT_BUDGET_SECONDS`, 90 s).
 const SWEEP_SECONDS: u64 = 60;
 const NO_CAP: u64 = abi::rendezvous::NO_CAP;
 /// A method number no object answers.

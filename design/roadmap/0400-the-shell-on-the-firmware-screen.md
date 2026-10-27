@@ -233,7 +233,7 @@ scroll is a full-surface copy through an uncacheable mapping (BUGS).
   into an uncacheable aperture, debug builds under TCG. That contradicts `framebuffer_driver`'s
   own BUGS line ("free under QEMU"), left unedited there only because pull request #991 is in that
   file. It turned 182's pull request red in CI on a slower runner, and 182 now carries a 90 s
-  per-line bound for that leg, measured and recorded at `SWISH_CHECK_X86_LINE_SECS` in
+  per-line bound for that leg, measured and recorded at `SWISH_CHECK_X86_LINE_SECONDS` in
   `xtask/src/main.rs`. A real PC pays native stores, not emulated ones; not measured on silicon.
   The paint lane (2026-09-30, PR #1471) took that measurement as its mandate. It built the three
   fixes the paragraph names: the scroll that moves pixels instead of re-rendering them, qword

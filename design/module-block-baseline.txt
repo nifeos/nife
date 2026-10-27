@@ -3721,7 +3721,7 @@ crates/system_log_contract/src/lib.rs::request
 crates/system_log_contract/src/lib.rs::set
 crates/system_log_contract/src/lib.rs::word
 crates/system_log_contract/src/lib.rs::wrote
-crates/test_times/src/lib.rs::DEFAULT_BUDGET_SECS
+crates/test_times/src/lib.rs::DEFAULT_BUDGET_SECONDS
 crates/test_times/src/lib.rs::HEADING
 crates/test_times/src/lib.rs::Line
 crates/test_times/src/lib.rs::Malformed

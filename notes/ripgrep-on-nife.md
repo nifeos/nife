@@ -161,7 +161,7 @@ guest sees) into `target/ripgrep-walk-expected.txt`. The answer must hold every 
 often, and nothing else, in any order, since RedoxFS and APFS list a directory differently. On
 2026-10-07 that was 349 lines from 136 files, matched on all three architectures, in 14.9 s
 (aarch64, HVF), 40.8 s (riscv64) and 345.8 s (`x86_64`, both TCG). The bounds and their table are
-beside `RG_WALK_SECS` in `xtask/src/swish_check/launch.rs`.
+beside `RG_WALK_SECONDS` in `xtask/src/swish_check/launch.rs`.
 
 The walk exposed three faults, each fixed in the same change, among them swish-check's image
 growing to 32 MiB (`SWISH_CHECK_DISK_MIB`); [`walk-faults.md`](ripgrep-on-nife/walk-faults.md) has
@@ -242,9 +242,9 @@ sh bench/host/run_linux_rg.sh         # needs rustup target add aarch64-unknown-
   argument parsing took 3.8 to 30.1 s on aarch64 under HVF, and the `caps` line that hashes the
   2.8 MiB image up to 38.7 s on `x86_64`, with other lanes loading the host (2026-10-07). The
   image passes through the shell's staging and the progenitor's hash; which dominates is open.
-  These lines get a 90 s bound of their own (`RG_LINE_SECS`) rather than the shared 30 s.
+  These lines get a 90 s bound of their own (`RG_LINE_SECONDS`) rather than the shared 30 s.
 - The walk costs 345.8 to 432.1 s on `x86_64` under TCG, against 14.9 to 54.1 s on aarch64 under
-  HVF. Why is unmeasured; the screen path through TCG is the suspect `SWISH_CHECK_X86_LINE_SECS`
+  HVF. Why is unmeasured; the screen path through TCG is the suspect `SWISH_CHECK_X86_LINE_SECONDS`
   already documents.
 - The walk's peak memory at the prompt is unmeasured, since the shell reports no per-job heap. It
   finished inside the `std` heap on all three legs. The host's `rg` with `--threads 1 --no-mmap`

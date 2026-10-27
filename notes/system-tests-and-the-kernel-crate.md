@@ -182,7 +182,7 @@ tests", and so a test whose own output happens to begin with `time ` is never re
 The figures are milliseconds because whole seconds round most of this suite to zero (§254). A `u64`
 of milliseconds outlasts any suite.
 
-Every test gets `DEFAULT_BUDGET_SECS`, 90 s, unless it declares a longer one in `SLOW_TESTS`, with
+Every test gets `DEFAULT_BUDGET_SECONDS`, 90 s, unless it declares a longer one in `SLOW_TESTS`, with
 its reason. A budget is roughly twice the measured time: enough headroom that host load or a debug
 build does not produce a flaky failure, and tight enough to still catch a hang. A single global limit
 large enough for every test would protect nothing. `SLOW_TESTS` has been empty since 2026-10-11

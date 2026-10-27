@@ -70,7 +70,7 @@ SELF = 'helpers/unit_symbols.py'
 
 # The count on 2026-10-27, lowered by the sweep's `--bank`. Never raise it by hand: a new unit
 # symbol is spelled out, not admitted.
-CEILING = 170
+CEILING = 0
 
 FAMILY = {
     'nanos': 'nanos', 'millis': 'millis',
@@ -98,6 +98,8 @@ KEPT = {
     'crates/paging/src/x86_64.rs': ({'US'}, 'the x86 paging User/Supervisor bit'),
     'kernel/src/pci.rs': ({'sec', 'sec_sts'}, _BUS),
     'c_library/src/lib.rs': ({'tv_sec', 'tv_nsec', 'tv_usec'}, _POSIX),
+    'notes/filesystem-crates-2026-10-07/probes/btrfs-transaction.rs':
+        ({'sec'}, 'a field of btrfs_disk::items::Timespec, an external crate'),
     'components/src/clock.rs': ({'offset_nanos'}, _OVERLAY),
     'components/src/date.rs': ({'offset_nanos'}, _OVERLAY),
     'components/src/timetable.rs': ({'offset_nanos'}, _OVERLAY),
