@@ -605,7 +605,7 @@ impl Hardware for NetworkInterfaceController {
         }
     }
 
-    fn delay_us(&mut self, _us: u64) {
+    fn delay_microseconds(&mut self, _microseconds: u64) {
         self.step();
     }
 }

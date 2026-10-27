@@ -51,7 +51,7 @@ fn is_update_in_progress() -> bool {
     read(REG_STATUS_A) & STATUS_A_UPDATE_IN_PROGRESS != 0
 }
 
-/// One look at the six date/time registers, taken together so [`read_unix_nanos`]'s tearing check
+/// One look at the six date/time registers, taken together so [`read_unix_ns`]'s tearing check
 /// can compare two of them for equality.
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Snapshot {
@@ -89,7 +89,7 @@ fn bcd_to_binary(v: u8) -> u8 {
 /// `components/src/clock.rs` still runs whatever it is handed through
 /// `clock_contract::policy::is_plausible` before publishing it, the same as every other RTC
 /// binding.
-pub(crate) fn read_unix_nanos() -> Option<u64> {
+pub(crate) fn read_unix_ns() -> Option<u64> {
     let raw = loop {
         while is_update_in_progress() {
             core::hint::spin_loop();
@@ -142,6 +142,6 @@ pub(crate) fn read_unix_nanos() -> Option<u64> {
     let year = 2000 + i32::from(year);
 
     let civil = calendar::Civil::new(year, month, day, hour, minute, second).ok()?;
-    let secs = u64::try_from(civil.to_unix()).ok()?;
-    Some(secs * clock_contract::NS_PER_SECOND)
+    let seconds = u64::try_from(civil.to_unix()).ok()?;
+    Some(seconds * clock_contract::NS_PER_SECOND)
 }

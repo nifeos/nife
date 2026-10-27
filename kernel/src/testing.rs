@@ -13,7 +13,7 @@ use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32, AtomicU64, AtomicUsiz
 
 // The per-test budget table lives in `crates/test_times` (`DEFAULT_BUDGET_SECS`, `SLOW_TESTS`),
 // because `xtask`'s host watchdog reads the same numbers (rule 7).
-use test_times::budget_secs_for;
+use test_times::budget_seconds_for;
 
 use crate::arch::semihosting;
 use crate::{print, println};
@@ -471,7 +471,7 @@ fn report_frame_pressure() {
 /// milliseconds and a duration on every line would bury the signal. Above it, the number is what makes
 /// a `test_times::SLOW_TESTS` entry an evidence-based declaration rather than a guess: until this existed, the
 /// only way to learn a test's real cost was to set its budget too low on purpose and read the failure.
-const SLOW_REPORT_SECS: u64 = 5;
+const SLOW_REPORT_SECONDS: u64 = 5;
 
 /// **How many tests one image can record a time for** (milestone 807 (the kernel suite reports
 /// what each test cost)). The largest image held 320 tests on 2026-10-06 (riscv64's
@@ -688,7 +688,7 @@ impl<T: Fn()> Testable for T {
         TEST_NAME_PTR.store(name.as_ptr() as *mut u8, Ordering::Relaxed);
         TEST_NAME_LEN.store(name.len(), Ordering::Relaxed);
         TEST_BUDGET.store(
-            budget_secs_for(name) * crate::arch::timer::frequency(),
+            budget_seconds_for(name) * crate::arch::timer::frequency(),
             Ordering::Relaxed,
         );
         let start = crate::arch::timer::now();
@@ -747,7 +747,7 @@ impl<T: Fn()> Testable for T {
             let ticks = crate::arch::timer::now().saturating_sub(start);
             record_milliseconds(ticks);
             let elapsed = ticks / crate::arch::timer::frequency();
-            if elapsed >= SLOW_REPORT_SECS {
+            if elapsed >= SLOW_REPORT_SECONDS {
                 print!("[{elapsed} s] ");
             }
             assert!(
@@ -775,7 +775,7 @@ impl<T: Fn()> Testable for T {
         let ticks = crate::arch::timer::now().saturating_sub(start);
         record_milliseconds(ticks);
         let elapsed = ticks / crate::arch::timer::frequency();
-        if elapsed >= SLOW_REPORT_SECS {
+        if elapsed >= SLOW_REPORT_SECONDS {
             print!("[{elapsed} s] ");
         }
 

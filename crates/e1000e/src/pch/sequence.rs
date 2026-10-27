@@ -528,10 +528,10 @@ fn physical_layer_device_reset_generic(hardware: &mut impl Hardware) -> Result<(
     hardware.write(mac::CTRL, ctrl | CTRL_PHY_RST);
     flush_writes(hardware);
     // `phy->reset_delay_us`, 100 for every PCH part.
-    hardware.delay_us(100);
+    hardware.delay_microseconds(100);
     hardware.write(mac::CTRL, ctrl);
     flush_writes(hardware);
-    hardware.delay_us(150);
+    hardware.delay_microseconds(150);
     f.release(hardware);
     config_done(hardware)
 }
@@ -551,7 +551,7 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     let mut done = false;
     for _ in 0..1500 {
         let s = hardware.read(mac::STATUS);
-        hardware.delay_us(100);
+        hardware.delay_microseconds(100);
         if s & STATUS_LAN_INIT_DONE != 0 {
             done = true;
             break;
@@ -593,12 +593,12 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
     // `e1000_disable_pcie_master_generic`: stop new bus-master requests, wait for pending ones.
     set(hardware, mac::CTRL, reset::CTRL_GIO_MASTER_DISABLE);
     let mut idle = false;
-    for _ in 0..reset::MASTER_WAIT_US / 100 {
+    for _ in 0..reset::MASTER_WAIT_MICROSECONDS / 100 {
         if hardware.read(mac::STATUS) & reset::STATUS_GIO_MASTER_ENABLE == 0 {
             idle = true;
             break;
         }
-        hardware.delay_us(100);
+        hardware.delay_microseconds(100);
     }
     if !idle {
         hardware.note(Note::MasterRequestsPending);
@@ -947,7 +947,7 @@ mod tests {
         registers: HashMap<u64, u32>,
         reads: Vec<u64>,
         writes: Vec<(u64, u32)>,
-        elapsed_us: u64,
+        elapsed_microseconds: u64,
         notes: Vec<Note>,
     }
 
@@ -963,8 +963,8 @@ mod tests {
         fn read16(&mut self, offset: u64) -> u16 {
             self.read(offset) as u16
         }
-        fn delay_us(&mut self, us: u64) {
-            self.elapsed_us += us;
+        fn delay_microseconds(&mut self, microseconds: u64) {
+            self.elapsed_microseconds += microseconds;
         }
         fn pci_vendor_id(&mut self) -> u16 {
             0x8086
@@ -999,7 +999,7 @@ mod tests {
             ulp::ICH_FWSM_FW_VALID | ulp::FWSM_ULP_CFG_DONE,
         );
         leave_ulp(&mut hardware);
-        assert_eq!(hardware.elapsed_us, 2_500_000);
+        assert_eq!(hardware.elapsed_microseconds, 2_500_000);
         // One read to ask whether there is an ME, then the 251 polls.
         assert_eq!(
             hardware
@@ -1020,7 +1020,7 @@ mod tests {
             .registers
             .insert(registers::FWSM, ulp::ICH_FWSM_FW_VALID);
         leave_ulp(&mut hardware);
-        assert_eq!(hardware.elapsed_us, 0);
+        assert_eq!(hardware.elapsed_microseconds, 0);
         assert_eq!(hardware.notes, [Note::UlpByMe { cleared: true }]);
         assert_eq!(
             hardware.written(registers::H2ME),
@@ -1042,12 +1042,15 @@ mod tests {
         toggle_lanphypc(&mut hardware);
         assert_eq!(hardware.registers[&registers::FEXTNVM3], 0x0800_00ff);
         assert_eq!(hardware.written(mac::CTRL), [0x0001_0040, 0x0000_0040]);
-        assert_eq!(hardware.elapsed_us, 136_000, "LPCD never rose");
+        assert_eq!(hardware.elapsed_microseconds, 136_000, "LPCD never rose");
 
         let mut s = Sim::new(Start::Dead, true);
         toggle_lanphypc(&mut s);
         assert_eq!(s.lanphypc_toggles, 1);
-        assert_eq!(s.elapsed_us, 36_000, "LPCD rose at the first poll");
+        assert_eq!(
+            s.elapsed_microseconds, 36_000,
+            "LPCD rose at the first poll"
+        );
     }
 
     /// **A configuration that never completes is waited for 150 ms after the first 10 and
@@ -1070,7 +1073,7 @@ mod tests {
         );
         // 10 ms, 1500 polls of 100 us, and the bank probe's one microsecond before its flash
         // cycle (which fails at once: there is no flash descriptor).
-        assert_eq!(hardware.elapsed_us, 10_000 + 1500 * 100 + 1);
+        assert_eq!(hardware.elapsed_microseconds, 10_000 + 1500 * 100 + 1);
 
         // The simulated reset raises both, and nothing is reported.
         let mut s = Sim::new(Start::Healthy, true);
@@ -1098,7 +1101,7 @@ mod tests {
         assert_eq!(hardware.notes, [Note::MasterRequestsPending]);
         // 80 ms for the master requests, 10 ms after disabling receive and transmit, and 20 ms
         // after the reset.
-        assert_eq!(hardware.elapsed_us, 80_000 + 10_000 + 20_000);
+        assert_eq!(hardware.elapsed_microseconds, 80_000 + 10_000 + 20_000);
         let last = *hardware.written(mac::CTRL).last().unwrap();
         assert_ne!(last & crate::CTRL_RST, 0);
         assert_ne!(last & CTRL_PHY_RST, 0, "the PHY is reset with the MAC");

@@ -97,7 +97,7 @@ pub mod mdic {
     /// Polls before giving up: `E1000_GEN_POLL_TIMEOUT * 3`.
     pub(crate) const POLLS: u32 = 640 * 3;
     /// Between polls, in microseconds.
-    pub const POLL_US: u64 = 50;
+    pub const POLL_MICROSECONDS: u64 = 50;
 }
 
 /// The highest MDIO register number (`MAX_PHY_REG_ADDRESS`).
@@ -255,7 +255,7 @@ pub(crate) fn write_mdic(
 fn complete(hardware: &mut impl Hardware, register: u32) -> Result<u32, Error> {
     let mut v = 0;
     for _ in 0..mdic::POLLS {
-        hardware.delay_us(mdic::POLL_US);
+        hardware.delay_microseconds(mdic::POLL_MICROSECONDS);
         v = hardware.read(super::registers::MDIC);
         if v & mdic::READY != 0 {
             break;
@@ -290,7 +290,7 @@ impl Swflag {
                 free = true;
                 break;
             }
-            hardware.delay_us(1000);
+            hardware.delay_microseconds(1000);
         }
         if !free {
             return Err(Error::SwflagHeld);
@@ -302,7 +302,7 @@ impl Swflag {
             if ext & EXTCNF_CTRL_SWFLAG != 0 {
                 return Ok(Swflag(()));
             }
-            hardware.delay_us(1000);
+            hardware.delay_microseconds(1000);
         }
         hardware.write(super::registers::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
         Err(Error::SwflagRefused)
@@ -415,7 +415,7 @@ pub(crate) fn reset_blocked(hardware: &mut impl Hardware) -> bool {
             return false;
         }
         if i < 30 {
-            hardware.delay_us(10_000);
+            hardware.delay_microseconds(10_000);
         }
     }
     true

@@ -13,7 +13,7 @@ use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, re
 /// Why the controller was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    /// The software reset did not self-clear in [`RESET_LIMIT_US`]. On this controller the usual
+    /// The software reset did not self-clear in [`RESET_LIMIT_MICROSECONDS`]. On this controller the usual
     /// cause is a missing receive clock from the PHY, which the reset needs to complete.
     ResetTimeout,
     /// The DMA region is not somewhere this controller can address: past its address width
@@ -28,7 +28,7 @@ pub enum Error {
 }
 
 /// How long the software reset may take: OpenBSD's 30000 polls 10 µs apart.
-pub(crate) const RESET_LIMIT_US: u64 = 300_000;
+pub(crate) const RESET_LIMIT_MICROSECONDS: u64 = 300_000;
 
 /// What the controller says it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,10 +100,10 @@ pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
         if hardware.read(registers::BUS_MODE) & registers::BUS_MODE_SWR == 0 {
             return Ok(waited);
         }
-        if waited >= RESET_LIMIT_US {
+        if waited >= RESET_LIMIT_MICROSECONDS {
             return Err(Error::ResetTimeout);
         }
-        hardware.delay_us(10);
+        hardware.delay_microseconds(10);
         waited += 10;
     }
 }
@@ -417,7 +417,7 @@ pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
             flushed = true;
             break;
         }
-        hardware.delay_us(1);
+        hardware.delay_microseconds(1);
     }
     let conf = hardware.read(registers::MAC_CONF);
     hardware.write(registers::MAC_CONF, conf & !registers::MAC_CONF_TE);
@@ -652,7 +652,7 @@ mod tests {
             self.writes.push((offset, v));
             self.registers.insert(offset, v);
         }
-        fn delay_us(&mut self, _us: u64) {}
+        fn delay_microseconds(&mut self, _microseconds: u64) {}
     }
 
     /// 40-bit addressing and 2 KiB FIFOs, the simulated controller's identity.

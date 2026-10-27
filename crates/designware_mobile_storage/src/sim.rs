@@ -5,7 +5,7 @@
 //! and OpenBSD describe it: self-clearing `CTRL` resets, the `CMD` start bit, a FIFO raising
 //! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS` fill and busy, `CARDTHRCTL` above the FIFO ending in
 //! `FRUN` and `DTO` as on radon, and the IDMAC walk, whose last read words reach memory after
-//! `DTO`. Time is one microsecond per `now_us` call, so a test that would hang on silicon fails
+//! `DTO`. Time is one microsecond per `now_microseconds` call, so a test that would hang on silicon fails
 //! here.
 
 use std::collections::VecDeque;
@@ -231,7 +231,7 @@ pub struct Sim {
     pub extended_card_specific_data_sectors: Option<u32>,
     /// Store one block of one write command wrongly: `(write command, from 0; block)`.
     pub mangle_write: Option<(usize, u64)>,
-    /// Microseconds per call to `now_us`.
+    /// Microseconds per call to `now_microseconds`.
     pub clock_step: u64,
     /// What the IDMAC reaches, if a test gave it any.
     pub memory: Option<Memory>,
@@ -938,7 +938,7 @@ impl Registers for Sim {
         }
     }
 
-    fn now_us(&mut self) -> u64 {
+    fn now_microseconds(&mut self) -> u64 {
         self.now += self.clock_step;
         self.now
     }
