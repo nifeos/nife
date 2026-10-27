@@ -70,7 +70,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         (CHILD_UART_VA, UART_DEVICE, abi::address_space::MAP_RO),
     ];
     let endowment = ChildEndowment {
-        caps: &grants,
+        capabilities: &grants,
         maps: &maps,
         stack_pages: system_initializer::CHILD_STACK_PAGES,
         // `Retention::Nothing`: nothing here ever stops the server, and this program exits once

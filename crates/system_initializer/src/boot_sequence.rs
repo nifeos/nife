@@ -285,7 +285,7 @@ fn start_undertaker(own_ut: u64, reaper_elf: &elf::Elf<'static>, chan: SpawnChan
         own_ut,
         reaper_elf,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (chan.deaths, abi::rights::READ),
                 (chan.result_ep, abi::rights::WRITE),
                 (reaper_spawn, abi::rights::WRITE),

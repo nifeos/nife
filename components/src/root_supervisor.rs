@@ -93,7 +93,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         ROOT_UT,
         &spawner,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (req, abi::rights::READ),
                 (rep, abi::rights::WRITE),
                 (sp_ut, abi::rights::SPEND_ONLY),
@@ -120,7 +120,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         ROOT_UT,
         &sub_server_supervisor,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (req, abi::rights::WRITE),
                 (rep, abi::rights::READ),
                 (childfault, abi::rights::READ),

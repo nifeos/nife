@@ -91,7 +91,7 @@ pub(super) fn build_caretaker(
         region,
         care,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (fs.ep, abi::rights::WRITE),
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
@@ -176,7 +176,7 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
         ut,
         program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (report, abi::rights::WRITE),
                 (g.virtio_net_interrupt, abi::rights::READ),
                 (g.virtio_net, abi::rights::WRITE),
@@ -323,7 +323,7 @@ pub(super) fn graphical_terminal_grants(
     fs: &nifefs::Fs<'static>,
     table: &str,
     g: &BootEndowment,
-) -> GraphicalTerminalCaps {
+) -> GraphicalTerminalCapabilities {
     let driver = measured(fs, table, "gpu_driver").elf;
     let terminal = measured(fs, table, "display_terminal").elf;
     let held = is_granted(g.gpu) && driver.is_some() && terminal.is_some();
@@ -339,7 +339,7 @@ pub(super) fn graphical_terminal_grants(
             cap_delete(c);
         }
     }
-    GraphicalTerminalCaps {
+    GraphicalTerminalCapabilities {
         held,
         keyboard,
         gpu: [g.gpu, g.gpu_interrupt, g.gpu_dma, g.gpu_surface],
@@ -354,7 +354,7 @@ pub(super) fn graphical_terminal_grants(
 /// display devices, the devices themselves, and the measured images a session is built from.
 /// `held` false means no session can be launched: the caps were deleted at boot, and a
 /// `graphical_terminal` request is answered [`spawnproto::SPAWN_NO_DISPLAY`].
-pub(super) struct GraphicalTerminalCaps {
+pub(super) struct GraphicalTerminalCapabilities {
     pub(super) held: bool,
     pub(super) keyboard: bool,
     /// The gpu's four, in the boot endowment's slots, held by the spawn service for the life of
@@ -407,8 +407,8 @@ pub(super) const GRAPHICAL_TERMINAL_SESSION_PAGES: u64 = 544;
 
 /// Drop every capability named, freeing the slots: a builder's means, spent once the children hold
 /// their own copies or the build failed, so a failed spawn costs no slot for the rest of the boot.
-fn drop_caps(caps: &[u64]) {
-    for c in caps {
+fn drop_capabilities(capabilities: &[u64]) {
+    for c in capabilities {
         cap_delete(*c);
     }
 }
@@ -448,7 +448,7 @@ pub(super) struct GraphicalTerminalLaunch<'a> {
 #[inline(never)]
 pub(super) fn build_graphical_terminal_session(
     l: &GraphicalTerminalLaunch,
-    s: &GraphicalTerminalCaps,
+    s: &GraphicalTerminalCapabilities,
     d: &SessionDiscipline,
 ) -> Result<(), ()> {
     let built = graphical_terminal_session_children(l, s, d);
@@ -465,7 +465,7 @@ pub(super) fn build_graphical_terminal_session(
 #[inline(never)]
 fn graphical_terminal_session_children(
     l: &GraphicalTerminalLaunch,
-    s: &GraphicalTerminalCaps,
+    s: &GraphicalTerminalCapabilities,
     d: &SessionDiscipline,
 ) -> Result<(), ()> {
     let GraphicalTerminalLaunch {
@@ -489,7 +489,7 @@ fn graphical_terminal_session_children(
         None => {
             let raw = user_mode_runtime::badge(boot_terminal, proto::RAW_ONLY_BADGE);
             let Ok(raw) = u64::try_from(raw) else {
-                drop_caps(&[term, out]);
+                drop_capabilities(&[term, out]);
                 return Err(());
             };
             (1, raw, out, None, term)
@@ -516,11 +516,11 @@ fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Resu
         return Err(());
     };
     let Some(driver_report) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
-        drop_caps(&[display]);
+        drop_capabilities(&[display]);
         return Err(());
     };
     let Ok(budget) = memory_region_split(region, GRAPHICAL_MAP_BUDGET_PAGES) else {
-        drop_caps(&[display, driver_report]);
+        drop_capabilities(&[display, driver_report]);
         return Err(());
     };
     let Some(driver) = build_child(
@@ -528,7 +528,7 @@ fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Resu
         region,
         gpu_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (driver_report, abi::rights::WRITE),
                 (gpu[1], abi::rights::READ),
                 (gpu[0], abi::rights::WRITE),
@@ -540,19 +540,19 @@ fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Resu
         },
     )
     .ok() else {
-        drop_caps(&[display, driver_report, budget]);
+        drop_capabilities(&[display, driver_report, budget]);
         return Err(());
     };
     cap_delete(budget);
     // Role 0, the honest driver. No physical address: the run's first page carries it
     // (`abi::virtio::DMA_PHYS_OFFSET`), and this process could not supply one anyway.
     if !start_child(driver, 0, 0, 0) {
-        drop_caps(&[display, driver_report]);
+        drop_capabilities(&[display, driver_report]);
         return Err(());
     }
     let (up, _, _) = receive(driver_report);
     if up != graphics_contract::status::UP {
-        drop_caps(&[display, driver_report]);
+        drop_capabilities(&[display, driver_report]);
         return Err(());
     }
     Ok((display, driver_report))
@@ -574,19 +574,19 @@ fn start_display_terminal(
         ..
     } = *l;
     let Some(term_report) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
-        drop_caps(&[display, driver_report]);
+        drop_capabilities(&[display, driver_report]);
         return Err(());
     };
     let Some(term) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
-        drop_caps(&[display, driver_report, term_report]);
+        drop_capabilities(&[display, driver_report, term_report]);
         return Err(());
     };
     let Some(out) = retype_page_frame(region).ok() else {
-        drop_caps(&[display, driver_report, term_report, term]);
+        drop_capabilities(&[display, driver_report, term_report, term]);
         return Err(());
     };
     let Ok(budget) = memory_region_split(region, GRAPHICAL_MAP_BUDGET_PAGES) else {
-        drop_caps(&[display, driver_report, term_report, term, out]);
+        drop_capabilities(&[display, driver_report, term_report, term, out]);
         return Err(());
     };
     let Some(terminal) = build_child(
@@ -594,7 +594,7 @@ fn start_display_terminal(
         region,
         disp_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (term_report, abi::rights::WRITE),
                 (display, abi::rights::WRITE),
                 (term, abi::rights::READ),
@@ -606,24 +606,24 @@ fn start_display_terminal(
         },
     )
     .ok() else {
-        drop_caps(&[display, driver_report, term_report, term, out, budget]);
+        drop_capabilities(&[display, driver_report, term_report, term, out, budget]);
         return Err(());
     };
     cap_delete(budget);
     cap_delete(display);
     if !start_child(terminal, video_terminal::status::MODE_DISPLAY, 0, 0) {
-        drop_caps(&[driver_report, term_report, term, out]);
+        drop_capabilities(&[driver_report, term_report, term, out]);
         return Err(());
     }
     let (tag, _, _) = receive(term_report);
     if tag != video_terminal::status::TERM_UP {
-        drop_caps(&[driver_report, term_report, term, out]);
+        drop_capabilities(&[driver_report, term_report, term, out]);
         return Err(());
     }
     cap_delete(term_report);
     let (tag, _, _) = receive(driver_report);
     if tag != graphics_contract::status::FLUSHED {
-        drop_caps(&[driver_report, term, out]);
+        drop_capabilities(&[driver_report, term, out]);
         return Err(());
     }
     cap_delete(driver_report);
@@ -642,15 +642,15 @@ fn start_keyboard_arm(
 ) -> Result<SessionArm, ()> {
     let GraphicalTerminalLaunch { own_ut, region, .. } = *l;
     let Some(session_term) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
-        drop_caps(&[term, out]);
+        drop_capabilities(&[term, out]);
         return Err(());
     };
     let Some(session_out) = retype_page_frame(region).ok() else {
-        drop_caps(&[term, out, session_term]);
+        drop_capabilities(&[term, out, session_term]);
         return Err(());
     };
     let Some(session_in) = retype_page_frame(region).ok() else {
-        drop_caps(&[term, out, session_term, session_out]);
+        drop_capabilities(&[term, out, session_term, session_out]);
         return Err(());
     };
     build_terminal(
@@ -671,7 +671,7 @@ fn start_keyboard_arm(
         ],
     );
     let Some(report) = retype_obj(region, abi::objtype::RENDEZVOUS).ok() else {
-        drop_caps(&[term, out, session_term, session_out, session_in]);
+        drop_capabilities(&[term, out, session_term, session_out, session_in]);
         return Err(());
     };
     // The guard in `graphical_terminal_session_children` saw this `Some`.
@@ -681,7 +681,7 @@ fn start_keyboard_arm(
         region,
         kbd_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (report, abi::rights::WRITE),
                 (k[1], abi::rights::READ),
                 (k[0], abi::rights::WRITE),
@@ -692,16 +692,16 @@ fn start_keyboard_arm(
         },
     )
     .ok() else {
-        drop_caps(&[term, out, session_term, session_out, session_in, report]);
+        drop_capabilities(&[term, out, session_term, session_out, session_in, report]);
         return Err(());
     };
     if !start_child(driver, KBD_MODE_DIRECT, 0, 0) {
-        drop_caps(&[term, out, session_term, session_out, session_in, report]);
+        drop_capabilities(&[term, out, session_term, session_out, session_in, report]);
         return Err(());
     }
     let (tag, _, _) = receive(report);
     if tag != video_terminal::status::KEYBOARD_UP {
-        drop_caps(&[term, out, session_term, session_out, session_in, report]);
+        drop_capabilities(&[term, out, session_term, session_out, session_in, report]);
         return Err(());
     }
     cap_delete(report);
@@ -740,7 +740,7 @@ fn start_session_program(
         region,
         screen_elf,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (result_ep, abi::rights::WRITE),
                 (write_ep, abi::rights::WRITE),
                 (keys_ep, abi::rights::WRITE),
@@ -751,16 +751,16 @@ fn start_session_program(
         },
     )
     .ok() else {
-        drop_caps(&[term, out, keys_ep]);
+        drop_capabilities(&[term, out, keys_ep]);
         if let Some(p) = in_page {
-            drop_caps(&[out_page, p]);
+            drop_capabilities(&[out_page, p]);
         }
         return Err(());
     };
     // Never `boot_terminal`: it is our only copy, kept for the next session.
-    drop_caps(&[term, out, keys_ep]);
+    drop_capabilities(&[term, out, keys_ep]);
     if let Some(p) = in_page {
-        drop_caps(&[out_page, p]);
+        drop_capabilities(&[out_page, p]);
     }
     if !start_child(session, arm, 0, 0) {
         return Err(());
@@ -791,7 +791,7 @@ pub(super) fn render_ipv4(addr: u32, out: &mut [u8]) -> usize {
 }
 
 /// **Build the terminal: `terminal_supervisor`, which builds `line_editor` from `td_bytes`.**
-/// `caps` is in `line_editor::component::supervisor`'s slot order after its budget (the terminal
+/// `capabilities` is in `line_editor::component::supervisor`'s slot order after its budget (the terminal
 /// endpoint with every right, the output sink, the three pages, and the console's reply endpoint in
 /// console mode), and is copied, not moved. `ut` is where the loader's tables come from and
 /// `budget` is the region the supervisor is made of: the same root at boot, `own_ut` and the job
@@ -804,19 +804,19 @@ pub(super) fn build_terminal(
     ts_elf: &elf::Elf,
     td_bytes: &[u8],
     mode: u64,
-    caps: &[(u64, u64)],
+    capabilities: &[(u64, u64)],
 ) {
     use line_editor::component::supervisor as s;
     let budget_pages = must(memory_region_split(budget, s::BUDGET_PAGES));
     let mut all = [(0u64, 0u64); 8];
     all[0] = (budget_pages, abi::rights::ALL);
-    all[1..=caps.len()].copy_from_slice(caps);
+    all[1..=capabilities.len()].copy_from_slice(capabilities);
     let sup = must(build_child(
         ut,
         budget,
         ts_elf,
         &ChildEndowment {
-            caps: &all[..=caps.len()],
+            capabilities: &all[..=capabilities.len()],
             blobs: &[(s::ELF_VA, td_bytes)],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)

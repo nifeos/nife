@@ -22,10 +22,13 @@ pub enum Command<'a> {
     /// command would grant; the tail is carried for the shell to re-parse. The tail is the command
     /// you would have typed, unprefixed, which is the whole point of the spelling: what you inspect
     /// and what you run cannot drift apart.
-    Caps(&'a [u8]),
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+    /// `Capabilities` under the capability ruling of 2026-10-06 (UTC).
+    Capabilities(&'a [u8]),
     /// `time <command>`: run that command exactly as typed and say how long it took.
     ///
-    /// A prefix word, carrying a whole command line for [`Caps`](Command::Caps)'s reason: `time
+    /// A prefix word, carrying a whole command line for [`Capabilities`](Command::Capabilities)'s reason: `time
     /// date | wc` times the pipeline, so the tail keeps its operators and the shell re-dispatches
     /// it as it would untimed. It grants nothing: the shell times the tail with its own clock, so a
     /// child holding no clock can be timed. See notes/time-command.md.

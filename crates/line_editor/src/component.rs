@@ -1,7 +1,7 @@
 // This module's docs are on its `pub mod` line in `lib.rs`.
 
 use capability_plan::Direction::{Serve, Use};
-use capability_plan::{CapNeed, MapNeed, PageKind, Requirements, StateHandoff};
+use capability_plan::{CapabilityNeed, MapNeed, PageKind, Requirements, StateHandoff};
 
 /// Where the handoff page sits. Clear of the three pages `line_editor` already maps.
 pub const HANDOFF_VA: u64 = 0x00a0_0000;
@@ -40,24 +40,24 @@ const MAPS: &[MapNeed] = &[
 /// A `line_editor` printing through the console server.
 pub const CONSOLE: Requirements = Requirements {
     contract: "terminal",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "terminal",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "sink",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "sink_reply",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "control",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "supervisor",
             direction: Use,
         },
@@ -73,20 +73,20 @@ pub const CONSOLE: Requirements = Requirements {
 /// A `line_editor` printing through `display_terminal`.
 pub const DISPLAY: Requirements = Requirements {
     contract: "terminal",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "terminal",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "sink",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "control",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "supervisor",
             direction: Use,
         },

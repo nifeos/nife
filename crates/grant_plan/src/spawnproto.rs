@@ -655,7 +655,10 @@ pub fn is_interruptible(w2: u64) -> bool {
 /// (the progenitor identifies the cap by the protocol position, not the tag), but a fixed marker
 /// makes a misrouted message obvious in a trace. Its low bits echo the page count as a cheap
 /// cross-check.
-pub const CAP_TAG: u64 = 0x6361_705f; // "cap_" little-endian-ish marker
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+/// `CAPABILITY_TAG` under the capability ruling of 2026-10-06 (UTC).
+pub const CAPABILITY_TAG: u64 = 0x6361_705f; // "cap_" little-endian-ish marker
 
 /// The sentinel the progenitor sends on the result endpoint when it could not build the child, so
 /// the shell's single read completes with a legible failure rather than blocking forever. Distinct

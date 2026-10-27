@@ -539,7 +539,6 @@ crates/capability_manifest_note/src/lib.rs::len
 crates/capability_manifest_note/src/lib.rs::of
 crates/capability_manifest_note/src/lib.rs::of
 crates/capability_manifest_note/src/lib.rs::verbs_len
-crates/capability_plan/src/lib.rs::CapNeed
 crates/capability_plan/src/lib.rs::Dependents
 crates/capability_plan/src/lib.rs::Direction
 crates/capability_plan/src/lib.rs::LiveInstance
@@ -550,7 +549,6 @@ crates/capability_plan/src/lib.rs::Plan
 crates/capability_plan/src/lib.rs::Provisions
 crates/capability_plan/src/lib.rs::Refusal
 crates/capability_plan/src/lib.rs::Requirements
-crates/capability_plan/src/lib.rs::caps
 crates/capability_plan/src/lib.rs::code
 crates/capability_plan/src/lib.rs::dependents
 crates/capability_plan/src/lib.rs::devices
@@ -2034,7 +2032,6 @@ crates/grant_plan/src/refusal/tests.rs
 crates/grant_plan/src/spawnproto.rs
 crates/grant_plan/src/spawnproto.rs::Activation
 crates/grant_plan/src/spawnproto.rs::ActivationStatus
-crates/grant_plan/src/spawnproto.rs::CAP_TAG
 crates/grant_plan/src/spawnproto.rs::GRANT_WORDS
 crates/grant_plan/src/spawnproto.rs::IMAGE_PAGE
 crates/grant_plan/src/spawnproto.rs::SPAWN_FAILED
@@ -4224,6 +4221,8 @@ kernel/src/arch/aarch64/fp.rs::new
 kernel/src/arch/aarch64/fp.rs::set_pattern
 kernel/src/arch/aarch64/fp.rs::touch
 kernel/src/arch/aarch64/instructions.rs
+kernel/src/arch/aarch64/interrupt_controller.rs::enable
+kernel/src/arch/aarch64/interrupt_controller.rs::send_sgi
 kernel/src/arch/aarch64/interrupts.rs
 kernel/src/arch/aarch64/interrupts.rs::disable
 kernel/src/arch/aarch64/interrupts.rs::enable
@@ -4233,8 +4232,6 @@ kernel/src/arch/aarch64/iommu.rs::Fault
 kernel/src/arch/aarch64/iommu.rs::attach
 kernel/src/arch/aarch64/iommu.rs::is_active
 kernel/src/arch/aarch64/iommu.rs::take_fault
-kernel/src/arch/aarch64/interrupt_controller.rs::enable
-kernel/src/arch/aarch64/interrupt_controller.rs::send_sgi
 kernel/src/arch/aarch64/isa.rs
 kernel/src/arch/aarch64/isa.rs::get
 kernel/src/arch/aarch64/isa.rs::psci
@@ -4313,6 +4310,7 @@ kernel/src/arch/riscv64/harts.rs::cpu_start
 kernel/src/arch/riscv64/harts.rs::print_bring_up_mechanism
 kernel/src/arch/riscv64/harts.rs::sbi_send_ipi
 kernel/src/arch/riscv64/instructions.rs
+kernel/src/arch/riscv64/interrupt_controller.rs::enable
 kernel/src/arch/riscv64/interrupts.rs
 kernel/src/arch/riscv64/interrupts.rs::disable
 kernel/src/arch/riscv64/interrupts.rs::enable
@@ -4322,7 +4320,6 @@ kernel/src/arch/riscv64/iommu.rs::Fault
 kernel/src/arch/riscv64/iommu.rs::attach
 kernel/src/arch/riscv64/iommu.rs::is_active
 kernel/src/arch/riscv64/iommu.rs::take_fault
-kernel/src/arch/riscv64/interrupt_controller.rs::enable
 kernel/src/arch/riscv64/isa.rs
 kernel/src/arch/riscv64/isa.rs::get
 kernel/src/arch/riscv64/mmu.rs
@@ -4399,6 +4396,7 @@ kernel/src/arch/x86_64/fp.rs::disable
 kernel/src/arch/x86_64/fp.rs::enable
 kernel/src/arch/x86_64/fp.rs::new
 kernel/src/arch/x86_64/instructions.rs
+kernel/src/arch/x86_64/interrupt_controller.rs::enable
 kernel/src/arch/x86_64/interrupts.rs
 kernel/src/arch/x86_64/interrupts.rs::disable
 kernel/src/arch/x86_64/interrupts.rs::enable
@@ -4408,7 +4406,6 @@ kernel/src/arch/x86_64/iommu.rs::Fault
 kernel/src/arch/x86_64/iommu.rs::attach
 kernel/src/arch/x86_64/iommu.rs::is_active
 kernel/src/arch/x86_64/iommu.rs::take_fault
-kernel/src/arch/x86_64/interrupt_controller.rs::enable
 kernel/src/arch/x86_64/isa.rs
 kernel/src/arch/x86_64/isa.rs::get
 kernel/src/arch/x86_64/ist.rs::install
