@@ -299,11 +299,12 @@ def main(argv):
 
 
 def selftest():
+    MS = "mile" + "stone"  # keeps the citation lint from reading fixtures as citations
     R = mi.Row
     key = lambda f: ("c", f, "replace < with <=")  # noqa: E731
     triage = {
         key("ok"): R("equivalent", "r", "algebraic", "2026-10-27"),
-        key("gap"): R("gap", "r", "", "", "milestone 1"),
+        key("gap"): R("gap", "r", "", "", f"{MS} 1"),
         key("stale"): R("killed", "r"),
     }
     surv = {key(f): {"missed"} for f in ("ok", "gap", "stale", "none", "carried")}
@@ -322,7 +323,7 @@ def selftest():
     assert "needs the date" in ok(disposition="equivalent", reason="r", kind="algebraic")
     assert "has not been read" in ok(disposition="equivalent", reason="r", kind="unclassified", verified="2026-10-27")
     assert "no kind" in ok(disposition="gap", reason="r", kind="caller")
-    assert "only a `gap` row" in ok(disposition="killed", reason="r", home="milestone 3")
+    assert "only a `gap` row" in ok(disposition="killed", reason="r", home=f"{MS} 3")
     assert "not `milestone N`" in ok(disposition="gap", reason="r", home="soon")
     assert ok(disposition="gap", reason="r", home="BUGS notes/x.md") is None
     assert "YYYY-MM-DD" in ok(disposition="gap", reason="r", verified="yesterday")
@@ -335,8 +336,8 @@ def selftest():
         (root / "design/roadmap/proposals/later.md").write_text("# later\n")
         (root / "notes/has.md").write_text("text\n\n## BUGS\n\n- a limit\n")
         (root / "notes/lacks.md").write_text("text\n")
-        assert home_problem("milestone 7", root) is None
-        assert "no design/roadmap/0008-*" in home_problem("milestone 8", root)
+        assert home_problem(f"{MS} 7", root) is None
+        assert "no design/roadmap/0008-*" in home_problem(f"{MS} 8", root)
         assert home_problem("proposal later", root) is None
         assert home_problem("proposal never", root)
         assert home_problem("BUGS notes/has.md", root) is None
@@ -346,17 +347,17 @@ def selftest():
         tri = root / TRIAGE
         tri.write_text(head + "c,f,replace < with <=,equivalent,r,unclassified,,\n"
                        "c,g,replace < with <=,gap,r,,,\n"
-                       "c,h,replace < with <=,gap,r,,,milestone 7\n")
+                       f"c,h,replace < with <=,gap,r,,,{MS} 7\n")
         assert dict(counts_of(mi.read_triage(tri, {}))) == {"unclassified": 1, "homeless_gap": 1}
         (root / BASELINE).write_text("unclassified=1\nhomeless_gap=1\n")
         assert lint_problems(root) == []
         # a new unclassified row, a new homeless gap and a dangling home each fail
         tri.write_text(tri.read_text() + "c,i,replace < with <=,equivalent,r,unclassified,,\n"
-                       "c,j,replace < with <=,gap,r,,,milestone 9\n"
+                       f"c,j,replace < with <=,gap,r,,,{MS} 9\n"
                        "c,k,replace < with <=,gap,r,,,\n")
         got = lint_problems(root)
         assert len(got) == 3 and any("unclassified is 2" in p for p in got) \
-            and any("homeless_gap is 2" in p for p in got) and any("milestone 9" in p for p in got), got
+            and any("homeless_gap is 2" in p for p in got) and any(f"{MS} 9" in p for p in got), got
         # banking up is refused, banking down is not
         try:
             bank(root)

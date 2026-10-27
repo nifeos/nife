@@ -3612,6 +3612,7 @@ python3 helpers/mutation_real_holes.py check
 # under a baseline that only falls, every home names something that exists, and a key leaves the
 # carried list of rowless survivors in the pull request that gives it a row.
 python3 helpers/mutation_survivor_rows.py --selftest >/dev/null
+python3 helpers/mutation_gate_replay.py --selftest >/dev/null
 echo "==> the mutation triage rows are classified and housed (a baseline that only falls)"
 python3 helpers/mutation_survivor_rows.py lint
 # The baseline every `script/mutation --report` diffs against names the census it holds, and holds
