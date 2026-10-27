@@ -18,6 +18,9 @@ An error path here is a `?` taken on its error side, an `Err` built or returned,
 
 ## The answer
 
+`script/coverage --kernel` now measures the kernel's own unit-test image under QEMU; its numbers are in
+[kernel-coverage.md](kernel-coverage.md), and the table below predates it.
+
 | | Result-family paths | not reached | Option-family paths | not reached |
 |---|---:|---:|---:|---:|
 | host crates, measured | 1,150 | 586 (51%) | 437 | 156 (36%) |
