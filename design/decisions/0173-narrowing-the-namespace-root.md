@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-27
+ratified_by: calef
 ---
 
 # 173. Narrowing the root of the shell's namespace: a verb on the wire, or a shallower root
@@ -9,6 +11,14 @@ Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decisio
 `DECISION` gate and found it naming no section. The fork is milestone 31's, stated in that block
 under *"The two shapes a grant cannot take"* and carried forward by the 2026-09-03 proposal sweep.
 *(Section number provisional until the merge queue lands it.)*
+
+## The ruling
+
+Decided 2026-10-27 (UTC), option A, in the same sitting as the ruling on §98. `filesystem_contract` gains a narrowing verb, verb 23. It takes a held directory handle
+and a rights mask, mints a second handle whose rights are the held rights run through `Rights::attenuate`, and
+resolves no name. The ruling declines options B and C: the shell's root stays where it is, and nobody
+records the top prompt as a limitation. Milestone 328 builds the verb, and the client and the server
+both call the proved `Rights::attenuate` rather than restating it.
 
 ## What is being decided
 
@@ -70,17 +80,15 @@ rights-shaped addition to this wire without the other case in view.
 | **B** | An interactive boot whose shell is rooted one component below the image root. | Nothing on the wire, nothing to un-ship, and no new verb. It changes what every relative path at that prompt means, which cannot be un-taught: every example, every note and every person's habit moves one level. |
 | **C** | Neither, and the limitation is recorded where the reader meets the feature. | Free, and it is the option milestone 31's block did not take, because `notes/dir-capability.md` already carries the sibling case (a grant more than one level down) as a `BUGS` entry and this one is a fork rather than a limitation. |
 
-No recommendation, deliberately. Both A and B are in the column AGENTS.md prices as
-irreversible: A is a thing two programs agree on, and B is a fact that lands in a reader's head. The
-tenet's own limit says a fork of this kind arrives as options.
+The fork arrived as options without a recommendation, because both A and B are in the column
+AGENTS.md prices as irreversible: A is a thing two programs agree on, and B is a fact that lands in
+a reader's head. The ruling chose A.
 
 **What a lane could measure before the ruling, and it is not much.** A's size is already known from
 §98 (OPENDIR cannot be asked to attenuate)'s neighboring estimate (about thirty lines for a smaller change on the same surfaces). B's cost
 is not a measurement at all; it is a judgment about what a prompt means, which is why it is calef's.
 
-## What is blocked until this is answered
+## What this unblocks
 
-Milestone 328 (a grant on the root of the shell's namespace), entirely. Nothing else cites
-it, and `script/swish-check` gates the working case
-on both ISAs, so there is no regression risk in leaving it: what stands is a permanent hole in the
-headline demonstration, at the one place a newcomer starts.
+Milestone 328 (a grant on the root of the shell's namespace), entirely. Nothing else cites it.
+`script/swish-check` gates the working case on both ISAs, and gains the top-prompt case.
