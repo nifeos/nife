@@ -56,6 +56,17 @@ meaning anything.
 directory changed between two calls of one enumeration can therefore repeat or skip a name. That is
 the ordinary `readdir` caveat, recorded rather than fixed.
 
+## NARROW attenuates a handle already held
+
+`NARROW` (verb 23, §173 (narrowing the root of the shell's namespace)) is `OPENDIR` with no name.
+The handle field is a directory the caller holds,
+`w1` is the rights asked for, and the reply is a second handle on the same directory carrying
+`Rights::attenuate` of the first's. It serves the one directory no name leads to, the root a
+caretaker binds to, and lets `rm gate.txt` at the top prompt receive `REMOVE` alone. A short
+intersection is `EPERM`, as for `OPENDIR`, and a file handle is `ENOTDIR`. It demands no right,
+because it cannot widen. A name filter refuses it at the directory it filters
+(`Verb::reissues_handle`), since the new handle would carry no filter.
+
 ## UNLINK and RMDIR, and why neither revokes
 
 An open handle on an unlinked file keeps reading. The FS server registers each open node with the

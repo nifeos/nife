@@ -537,7 +537,7 @@ fn host_tests() -> bool {
 
 /// **The programs every leg's archive packs that the suite builds first**: `std_exerciser` and the
 /// nifefs data disk, then the TLS graph's programs for the legs this run boots.
-fn build_suite_programs(legs: ArchLegs) -> bool {
+pub(crate) fn build_suite_programs(legs: ArchLegs) -> bool {
     // Build the std demo (milestone 27 (Rust `std` on the native ABI)) for every custom target
     // first, so every initial ramdisk carries it: initial_ramdisk_aarch64 (inside `user`) packs the
     // aarch64 std_exerciser, initial_ramdisk_riscv packs the riscv one. Outside the leg guards
@@ -567,7 +567,7 @@ fn build_suite_programs(legs: ArchLegs) -> bool {
 
 /// The test-leg devices: a virtio-gpu, a virtio keyboard, two virtio-rngs and an NVMe controller,
 /// set in this process's environment for every leg's runner to read.
-fn attach_test_leg_devices() {
+pub(crate) fn attach_test_leg_devices() {
     // Attach a virtio-gpu for the display test (milestone 29). Set here, in `test`, rather than in
     // `cargo()`: the benchmark boot uses the same runner and adding a device to it would change what
     // the icount instrument measures, so the GPU is a test-leg device only. Both ISA legs get it,
@@ -617,17 +617,7 @@ fn aarch64_suite(hvf: bool, filtered: bool) -> bool {
         "--- kernel tests, aarch64 (QEMU {}) ---",
         crate::host::qemu_version("aarch64")
     );
-    // The FS server (milestone 32 phase 2), for the aarch64 bare target, before `user()` so
-    // initial_ramdisk_aarch64 packs it; then the RedoxFS test images the runner attaches as
-    // extra mmio disks.
-    if !redoxfs_server_build(TARGET)
-        || !user()
-        || !mkredoxfs()
-        || !mkredoxfs_crash()
-        || !mkgptdisk()
-        || !mkblankdisk()
-        || !mknvmedisk()
-    {
+    if !prepare_aarch64_images() {
         return false;
     }
     // `cargo()` only exports the env the runner needs; the test itself runs under the scanout
@@ -659,6 +649,22 @@ fn aarch64_suite(hvf: bool, filtered: bool) -> bool {
                     &["test", "-p", "system_tests", "--target", TARGET],
                 ))
     }
+}
+
+/// **The aarch64 leg's images**: the FS server, the userspace archive, the RedoxFS, GPT, blank and
+/// NVMe test disks. Everything the kernel test images read from the host, built before either
+/// image boots. Shared with `cargo xtask coverage`, which boots the same images instrumented.
+pub(crate) fn prepare_aarch64_images() -> bool {
+    // The FS server (milestone 32 phase 2), for the aarch64 bare target, before `user()` so
+    // initial_ramdisk_aarch64 packs it; then the RedoxFS test images the runner attaches as
+    // extra mmio disks.
+    redoxfs_server_build(TARGET)
+        && user()
+        && mkredoxfs()
+        && mkredoxfs_crash()
+        && mkgptdisk()
+        && mkblankdisk()
+        && mknvmedisk()
 }
 
 /// **The riscv64 leg**: its own archive and fresh images, then both test images.
@@ -1239,6 +1245,17 @@ fn hvf_verdict(verdict: Option<bool>, watched: bool) -> bool {
 /// field is a filesystem path emitted by cargo, so it contains no escapes, and the only artifact
 /// line `cargo test --no-run -p kernel` emits with a non-null `executable` is the one we want.
 pub(crate) fn kernel_test_elf(package: &str, target: &str, who: &str) -> Option<String> {
+    kernel_test_elf_with(package, target, who, &[])
+}
+
+/// [`kernel_test_elf`] with extra arguments for `cargo test --no-run`: a feature, a target
+/// directory. `cargo xtask coverage` builds its instrumented image this way.
+pub(crate) fn kernel_test_elf_with(
+    package: &str,
+    target: &str,
+    who: &str,
+    extra: &[&str],
+) -> Option<String> {
     let mut args = std::vec![
         "test",
         "-p",
@@ -1253,6 +1270,7 @@ pub(crate) fn kernel_test_elf(package: &str, target: &str, who: &str) -> Option<
     if RELEASE.load(Ordering::Relaxed) {
         args.push("--release");
     }
+    args.extend_from_slice(extra);
     let out = Command::new("cargo")
         .args(&args)
         .stdout(std::process::Stdio::piped())

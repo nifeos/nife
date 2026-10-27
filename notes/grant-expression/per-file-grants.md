@@ -89,7 +89,8 @@ so `rm` runs. `script/swish-check` types four lines on both ISAs:
 - the removal: `rm -v rmtree/rm-solo` prints the name it was given;
 - the check: `ls rmtree | wc` counts two entries where there were three, so the sibling file and
   the whole doomed subtree inside the same capability are untouched;
-- the one grant shape that is still a refusal: `rm gate.txt`.
+- the top prompt: `caps rm gate.txt` and `rm -v gate.txt`, a grant on the root of the shell's
+  namespace, narrowed by `NARROW`.
 
 
 `FileGrantDeclaration::Required` still has no consumer, and that is unchanged. The per-file caretaker is built
@@ -111,10 +112,9 @@ caretaker's and then the program's, forwarded by the progenitor without being de
 `grant_plan` carry a filesystem grant while keeping its deliberate non-dependency on `filesystem_contract`.
 
 The depth. As predicted, and it is the one thing still open. Every caretaker wiring in this tree
-descends exactly one name, so `rm rmtree/rm-solo` works and `rm gate.txt` at the top prompt does not.
-The root has no name to descend into and the contract has no verb for narrowing a directory you
-already hold. Chaining answers depth two and beyond; the root needs a decision, and
-`design/roadmap/0031-capability-shell.md` states the two options rather than guessing.
+descends exactly one name, so `rm rmtree/rm-solo` descends with `OPENDIR`. The root has no name to
+descend into, so `rm gate.txt` at the top prompt narrows the directory the caretaker holds with
+`NARROW`, the verb §173 (narrowing the root of the shell's namespace) ruled. Chaining answers depth two and beyond.
 
 The lifetime. Predicted as "a supervision question rather than a filesystem one", which is what
 DECISIONS §92 (caretaker supervised) then decided: the caretaker is built out of the client's own region, so §40 (supervisor's death)'s

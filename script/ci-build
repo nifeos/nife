@@ -136,6 +136,7 @@ cd "$(dirname "$0")/.."
 # here is the defect this table exists to prevent.
 checks() {
     cat <<'TABLE'
+rule-violations|local|script/rule-violations --check
 fmt|local|script/fmt --check
 lint|local|script/lint
 image-permissions|local|script/image-permissions
@@ -167,6 +168,14 @@ watchdog-check|ci|script/soak-test --wedge --arch x86_64 && script/soak-test --w
 TABLE
 }
 
+# Why `rule-violations` is `local` (milestone 341 (give the three instruments nothing runs a caller),
+# §174 (a caller for each of the three uncalled instruments), ruled 2026-10-27 UTC): it reads
+# `notes/rule-violations.md` and totals strikes, which takes 0.07 seconds (three runs, 2026-10-27
+# UTC), so nothing about it is a build a developer would wait for. It is first because it is the
+# cheapest row. It fails when an open rule reaches three strikes, so the fix is the ledger's own: move
+# the rule up the ladder or mark it resolved, an architect's or the maintainer's call and never a
+# lane's. CI runs it as a step of the `lint` job, whose verdict is already required.
+#
 # Why each `ci` row is not `local`. Kept beside the tier it explains, because the three comments
 # this milestone deleted from `ci.yml` were each correct when written and each drifted.
 #
