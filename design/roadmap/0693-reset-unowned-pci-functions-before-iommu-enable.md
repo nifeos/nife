@@ -6,7 +6,7 @@ milestone_dependencies: 612
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 693. Should the kernel clear Bus Master Enable on every PCI function it does not own, before the IOMMU turns on?
 
@@ -89,6 +89,13 @@ No recommendation is made among these. A and B are irreversible in the sense tha
 because the code is hard to revert. A real machine's firmware handoff is not something a lane can
 safely test without the actual hardware, and a wrong default could turn a diagnostic gap into a
 boot hang. This is an architect's call.
+
+## Ruling
+
+Ruled 2026-10-27 (UTC), option C: record and do not build. The severity is a fault-visibility gap
+and not a confinement escape, because default-deny still blocks every address of a device the
+kernel has not registered. This milestone stays open. Code builds the clearing of Bus Master Enable
+(option A) only when it needs to read faults reliably.
 
 ## What is blocked until this is answered
 
