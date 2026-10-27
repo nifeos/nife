@@ -15,10 +15,16 @@ reading `result_ep` while that program runs.
 On the spawn endpoint, an edit to the installed-programs table is asked first, because under that
 bit no other bit of word 2 means anything. Only the owner's console sends it (`vouch`).
 
-Everything else is a spawn, in one of two shapes (`grant_plan::spawnproto`):
+Everything else is a spawn, in one of three shapes (`grant_plan::spawnproto`):
 
 - A normal job. `Service::spawn_job` builds the child in a region it splits off the job pool, with
   a supervision endpoint in its fault slot.
+- A held job (`design/roadmap/0933-every-job-is-built-the-way-a-supervised-job-is.md`). The same
+  `Service::spawn_job`, built from a region the shell split off its own budget, with the shell's
+  exit endpoint badged with the job's label in its fault slot. The progenitor answers once with the
+  label and hands the shell the job's `ThreadControlBlock`. The shell tears the job down, then
+  sends a release request, and the progenitor frees the job's window as it does for the
+  undertaker's message. `job_undertaker` never sees the job.
 - A supervised, interruptible job. The shell leads with a job untyped and a shared job frame.
   `Service::spawn_interruptible` builds the child entirely from that untyped, so the shell's region
   owns it and can `DESTROY` it (§24 (interrupting the foreground process)). It maps the job frame

@@ -15,16 +15,22 @@ visible in the code.
    They come before the capabilities because they are data, and mixing the orders would put a
    `RECEIVE` where a `RECEIVE_CAP` belongs.
 3. Delegation, in a fixed order both sides read from the same `Wiring`. First the supervised
-   job's pair, then the sink, the source, the diagnostic endpoint and the screen-narrowed tail's
+   job's pair. Then, for a held job (`Wiring::held`), its region, the shell's exit endpoint and, for
+   a program that declares a share view, the shell's budget narrowed to `ENUMERATE`. Then the sink, the source, the diagnostic endpoint and the screen-narrowed tail's
    completion endpoint. Then the `--mem` untyped, split from the shell's own budget, and the
    machine statistics page last. The order stands in for tags, so a promise nobody receives would
    deadlock both sides.
 4. Outcome. The progenitor builds, endows and starts the child, which answers on the result
-   endpoint. If it cannot, it sends `SPAWN_FAILED` there, so the shell's single read completes.
-5. Death. For a killed child, `job_undertaker` sends `JOB_FAULTED` on that same read.
+   endpoint. If it cannot, it sends `SPAWN_FAILED` there, so the shell's single read completes. A
+   held job's outcome is one message, `held_answer(label)`, and then the job's
+   `ThreadControlBlock`. The job's own output and its death arrive on the shell's exit endpoint.
+5. Death. For a killed child, `job_undertaker` sends `JOB_FAULTED` on that same read. For a held
+   job the kernel's death message arrives on the shell's exit endpoint, with the job's label in
+   its sixth word.
 6. Reaped. After every collect, `job_undertaker` sends `reaped` on the spawn endpoint through a
    copy badged `UNDERTAKER_BADGE`. That tells the progenitor the job's memory and file-service
-   window are back.
+   window are back. For a held job the shell destroys the region and sends `release(label)` on the
+   spawn endpoint, unbadged and before its next request, with the same effect.
 
 ## Data messages and frames
 
