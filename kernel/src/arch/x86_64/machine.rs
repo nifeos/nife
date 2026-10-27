@@ -43,7 +43,7 @@ pub(crate) fn boot_info(at: usize) -> Option<BootInfo> {
 ///
 /// A NUL-terminated string at a physical address a previous stage chose, so the terminator is a
 /// claim rather than a guarantee, and the loop below has to stop somewhere whether or not it finds
-/// one. `Framebuffer::MAX_LEN` is the only thing written there today and is well under this.
+/// one. `Framebuffer::MAXIMUM_LEN` is the only thing written there today and is well under this.
 const MAXIMUM_CMDLINE: usize = 256;
 
 /// The boot command line the loader wrote, or `None` when this boot chain did not write one.
@@ -238,14 +238,14 @@ const EBDA_SEGMENT_PTR: u64 = 0x0000_040e;
 const MAXIMUM_TABLES: usize = 64;
 
 /// The most MADT entries the walk will report, for the same reason.
-const MAX_MADT_ENTRIES: usize = 256;
+const MAXIMUM_MADT_ENTRIES: usize = 256;
 
 /// The most `LocalApic` entries [`Acpi::cpus`] records (milestone 161's SMP item). Bounded well
 /// past `cpu::MAXIMUM_CPUS` on purpose: a MADT can list more processor entries than this kernel can
 /// seat (disabled sockets, a bigger machine than this build is sized for), and `smp::
 /// seat_cpus_from_acpi` needs the true count to report "N described, only M startable" honestly,
 /// the same distinction `read_cpu_list` draws on the device-tree architectures.
-const MAX_ACPI_CPUS: usize = 32;
+const MAXIMUM_ACPI_CPUS: usize = 32;
 
 /// What the tables said, kept so the APIC and PCI bring-up can read it rather than re-walking.
 ///
@@ -272,9 +272,9 @@ pub(crate) struct Acpi {
     /// **Every `LocalApic` entry the MADT listed**: `(local_apic_id, enabled)`, in the table's own
     /// order, past `cpu_count`. Fed to `smp::seat_cpus_from_acpi` (milestone 161's SMP item), the
     /// ACPI analog of `read_cpu_list`'s device-tree walk.
-    pub cpus: [(u8, bool); MAX_ACPI_CPUS],
-    /// How many entries of [`Acpi::cpus`] are real. May exceed `MAX_ACPI_CPUS` conceptually (the
-    /// table can list more than that), in which case this saturates at `MAX_ACPI_CPUS` and
+    pub cpus: [(u8, bool); MAXIMUM_ACPI_CPUS],
+    /// How many entries of [`Acpi::cpus`] are real. May exceed `MAXIMUM_ACPI_CPUS` conceptually
+    /// (the table can list more than that), in which case this saturates at `MAXIMUM_ACPI_CPUS` and
     /// `enabled_cpus`/`disabled_cpus` above are still the true totals.
     pub cpu_count: usize,
     /// True when the machine also has 8259 PICs, which must be masked before the APICs are used.
@@ -304,7 +304,7 @@ impl Default for Acpi {
             isa_irqs: core::array::from_fn(|irq| IsaIrqRouting::isa_default(irq as u8)),
             enabled_cpus: 0,
             disabled_cpus: 0,
-            cpus: [(0, false); MAX_ACPI_CPUS],
+            cpus: [(0, false); MAXIMUM_ACPI_CPUS],
             cpu_count: 0,
             has_8259: false,
             ecam: None,
@@ -485,7 +485,7 @@ fn read_madt(body: &[u8], into: &mut Acpi) {
     // _gsi_2` test for the case this whole table exists for.
     into.isa_irqs = isa_irq_table(body);
 
-    for entry in madt_entries(body).take(MAX_MADT_ENTRIES) {
+    for entry in madt_entries(body).take(MAXIMUM_MADT_ENTRIES) {
         match entry {
             MadtEntry::LocalApic {
                 apic_id, enabled, ..
@@ -495,7 +495,7 @@ fn read_madt(body: &[u8], into: &mut Acpi) {
                 } else {
                     into.disabled_cpus += 1;
                 }
-                if into.cpu_count < MAX_ACPI_CPUS {
+                if into.cpu_count < MAXIMUM_ACPI_CPUS {
                     into.cpus[into.cpu_count] = (apic_id, enabled);
                     into.cpu_count += 1;
                 }

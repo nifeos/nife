@@ -41,7 +41,7 @@ pub fn write_holdings(
             out(b"    cap ");
             write_num(grant_plan::spawnproto::MOUNTED_TREE_SLOT, out);
             out(b" endpoint  directory  a second tree, mounted at ");
-            let mut buf = [0u8; nav::RENDER_MAX];
+            let mut buf = [0u8; nav::RENDER_MAXIMUM];
             let n = sd.mount().render(&mut buf);
             out(&buf[..n]);
             out(b"\n");
@@ -112,7 +112,7 @@ fn write_bind_row(entry: &nav::BindEntry, out: &mut dyn FnMut(&[u8])) {
     out(b"      bind ");
     out(entry.name());
     out(b" -> ");
-    let mut buf = [0u8; nav::RENDER_MAX];
+    let mut buf = [0u8; nav::RENDER_MAXIMUM];
     let n = entry.pos().render(&mut buf);
     out(&buf[..n]);
     out(b"\n");

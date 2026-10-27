@@ -7,13 +7,13 @@ use super::*;
 
 /// **How many address spaces the registry can name at once: every one the machine can hold.**
 ///
-/// [`crate::revoke::MAX_SPACES`], because every [`AddressSpace`] is in the revocation registry
+/// [`crate::revoke::MAXIMUM_SPACES`], because every [`AddressSpace`] is in the revocation registry
 /// from build to drop and holds one entry here, so this table cannot fill while a space wanting an
 /// entry exists. That lets [`register_bound_address_space`] treat a full table as a broken
 /// invariant; the `const` assert keeps the two together. It is 21,904 bytes of `.bss` at 288 slots
 /// (`registry_footprint`); see notes/user-address-spaces.md.
-const MAXIMUM_USER_SPACES: usize = crate::revoke::MAX_SPACES;
-const _: () = assert!(MAXIMUM_USER_SPACES >= crate::revoke::MAX_SPACES);
+const MAXIMUM_USER_SPACES: usize = crate::revoke::MAXIMUM_SPACES;
+const _: () = assert!(MAXIMUM_USER_SPACES >= crate::revoke::MAXIMUM_SPACES);
 
 /// **One registry entry: a space, and what holds it if anything does** (§249; name provisional).
 ///

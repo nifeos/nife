@@ -50,7 +50,10 @@ pub const TARGET_SUFFIX: &str = ".nifepkg";
 pub const PATH_MAXIMUM: usize = 256;
 
 /// The longest channel name.
-pub const CHANNEL_MAX: usize = 32;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `CHANNEL_MAX`.
+pub const CHANNEL_MAXIMUM: usize = 32;
 
 /// **A TUF repository on a host: one channel of one distribution** (Q4). The image carries two,
 /// the index's address and a backup tried when the first stops answering (Q2), and an owner may
@@ -71,7 +74,7 @@ impl<'a> Repository<'a> {
     /// number must be a canonical IPv4 address, as for a [`Location`].
     pub fn new(host: &'a str, port: u16, channel: &'a str) -> Option<Repository<'a>> {
         let channel_ok = !channel.is_empty()
-            && channel.len() <= CHANNEL_MAX
+            && channel.len() <= CHANNEL_MAXIMUM
             && channel
                 .bytes()
                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
@@ -861,7 +864,10 @@ pub const STORE_DIRECTORY: &str = "indexes";
 pub const IMAGE_INDEX_COPY: &str = "image";
 
 /// The largest index copy, in bytes: less than a page, so the end of the text is in it.
-pub const COPY_MAX: usize = 4095;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `COPY_MAX`.
+pub const COPY_MAXIMUM: usize = 4095;
 
 /// The most repositories an image may name: the index's address and a backup (Q2), and room for
 /// one more. A fixed bound so the reader allocates nothing.

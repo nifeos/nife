@@ -12,7 +12,7 @@
 //!   package is one archive file)).
 //! - [`Requirements::pages`] is a property of a build, not of the contract.
 //! - A malformed declaration's compile error names the manifest, not the role.
-//! - [`MAX_CAPS`] and [`MAXIMUM_MAPS`] are hard bounds, about double any manifest here.
+//! - [`MAXIMUM_CAPS`] and [`MAXIMUM_MAPS`] are hard bounds, about double any manifest here.
 //! - Nothing checks that a routed object is the kind the role wants; the kernel refuses it later.
 //! - [`plan`] does not refuse two roles routed to one supervisor slot; no right is widened.
 //! - [`dependents`] finds direct dependents only; nothing warns a dependent's own dependents.
@@ -29,10 +29,13 @@
 ///
 /// Eight, which is roughly double the four that the widest manifest in this tree asks for, and which
 /// leaves room below `abi::fault::FAULT_EP_SLOT` for the placed slots a component might also want.
-pub const MAX_CAPS: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CAPS`.
+pub const MAXIMUM_CAPS: usize = 8;
 
-/// **How many pages one component may declare.** [`MAX_CAPS`]'s twin, for the mapping half. Four,
-/// against the two that the widest manifest here asks for.
+/// **How many pages one component may declare.** [`MAXIMUM_CAPS`]'s twin, for the mapping half.
+/// Four, against the two that the widest manifest here asks for.
 ///
 /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
 /// 2026-10-26 (UTC), renamed from `MAX_MAPS`.
@@ -207,7 +210,7 @@ impl Requirements {
     /// that every real manifest asserts in a `const` item, so a malformed declaration does not
     /// compile. It refuses a role declared twice, two pages at one address (a page anywhere in the
     /// handoff run counts), an empty handoff and zero pages, each a mistake that would otherwise be
-    /// silent. An over-long declaration is [`plan`]'s refusal, where [`MAX_CAPS`] is met. See
+    /// silent. An over-long declaration is [`plan`]'s refusal, where [`MAXIMUM_CAPS`] is met. See
     /// notes/component-manifest/capability-plan.md.
     pub const fn problem(&self) -> Option<Refusal> {
         if self.pages == 0 {
@@ -354,7 +357,7 @@ pub enum Refusal {
         /// The address they collide at.
         va: u64,
     },
-    /// The declaration asks for more capabilities than [`MAX_CAPS`].
+    /// The declaration asks for more capabilities than [`MAXIMUM_CAPS`].
     TooManyCaps {
         /// How many it asked for.
         asked: usize,
@@ -404,11 +407,11 @@ impl Refusal {
 
 /// **Exactly what to endow one child with**, in the form `supervision_protocol::ChildEndowment` takes.
 ///
-/// A value with no allocation, bounded by [`MAX_CAPS`] and [`MAXIMUM_MAPS`], so a supervisor holds
-/// it on its stack and hands out slices of it.
+/// A value with no allocation, bounded by [`MAXIMUM_CAPS`] and [`MAXIMUM_MAPS`], so a supervisor
+/// holds it on its stack and hands out slices of it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Plan {
-    caps: [(u64, u64); MAX_CAPS],
+    caps: [(u64, u64); MAXIMUM_CAPS],
     ncaps: usize,
     maps: [(u64, u64, u64); MAXIMUM_MAPS],
     nmaps: usize,
@@ -511,7 +514,7 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
     if let Some(problem) = reqs.problem() {
         return Err(problem);
     }
-    if reqs.caps.len() > MAX_CAPS {
+    if reqs.caps.len() > MAXIMUM_CAPS {
         return Err(Refusal::TooManyCaps {
             asked: reqs.caps.len(),
         });
@@ -523,7 +526,7 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
     }
 
     let mut out = Plan {
-        caps: [(0, 0); MAX_CAPS],
+        caps: [(0, 0); MAXIMUM_CAPS],
         ncaps: reqs.caps.len(),
         maps: [(0, 0, 0); MAXIMUM_MAPS],
         nmaps: reqs.mapped(),
@@ -635,10 +638,10 @@ const fn str_eq(a: &str, b: &str) -> bool {
 // ===================================================================================================
 
 /// **How many running components one orchestration query may consider.** The same shape as
-/// [`MAX_CAPS`]: a [`Dependents`] is a value on the stack in a `no_std` program with no allocator, so
-/// this is a real bound rather than a hint. Eight, matched to [`MAX_CAPS`] because a supervisor
-/// managing more live components than it could ever endow one of with capabilities is not a shape
-/// this tree has.
+/// [`MAXIMUM_CAPS`]: a [`Dependents`] is a value on the stack in a `no_std` program with no
+/// allocator, so this is a real bound rather than a hint. Eight, matched to [`MAXIMUM_CAPS`]
+/// because a supervisor managing more live components than it could ever endow one of with
+/// capabilities is not a shape this tree has.
 ///
 /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
 /// 2026-10-26 (UTC), renamed from `MAX_LIVE`.
@@ -1360,7 +1363,7 @@ mod tests {
         assert_eq!(d.quiesce_order(), &[7; MAXIMUM_LIVE]);
     }
 
-    /// Exactly `MAX_CAPS` capabilities and exactly `MAXIMUM_MAPS` pages is a full plan, and one
+    /// Exactly `MAXIMUM_CAPS` capabilities and exactly `MAXIMUM_MAPS` pages is a full plan, and one
     /// more of either is refused. The refusal tests above sit one past each bound; these sit on it.
     #[test]
     fn a_plan_exactly_at_each_bound_is_built_and_one_over_is_refused() {
@@ -1370,7 +1373,7 @@ mod tests {
                 direction: Direction::Use,
             }
         }
-        const NINE: [CapNeed; MAX_CAPS + 1] = [
+        const NINE: [CapNeed; MAXIMUM_CAPS + 1] = [
             cap("c0"),
             cap("c1"),
             cap("c2"),
@@ -1408,11 +1411,11 @@ mod tests {
                 ("c8", 8),
             ],
         };
-        assert_eq!(plan(&FULL_CAPS, &held).unwrap().caps().len(), MAX_CAPS);
+        assert_eq!(plan(&FULL_CAPS, &held).unwrap().caps().len(), MAXIMUM_CAPS);
         assert_eq!(
             plan(&OVER_CAPS, &held),
             Err(Refusal::TooManyCaps {
-                asked: MAX_CAPS + 1
+                asked: MAXIMUM_CAPS + 1
             })
         );
 

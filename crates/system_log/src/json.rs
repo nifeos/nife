@@ -198,7 +198,7 @@ mod tests {
 
     /// The worst case fits the bound the ring and the window are sized by.
     #[test]
-    fn the_worst_case_line_fits_line_max() {
+    fn the_worst_case_line_fits_line_maximum() {
         let h = Header {
             seq: u64::MAX,
             time: u64::MAX,

@@ -14,9 +14,9 @@ pub const MAXIMUM_NAMES: usize = 8;
 
 /// **The most bytes of name one set carries, all its names together.** A second bound beside
 /// [`MAXIMUM_NAMES`], for the same stack: a set travels by value through the shell's frames, so
-/// what it costs is its bytes, and holding eight names of [`grant::MAX_NAME`] each would cost eight
-/// times what a set of ordinary names needs. Two of the longest names fit, or eight of 64 bytes.
-/// Measured with milestone 946 (a granted file name can be longer than sixteen bytes); the
+/// what it costs is its bytes, and holding eight names of [`grant::MAXIMUM_NAME`] each would cost
+/// eight times what a set of ordinary names needs. Two of the longest names fit, or eight of 64
+/// bytes. Measured with milestone 946 (a granted file name can be longer than sixteen bytes); the
 /// measurement is in notes/glob-grant/xargs.md ("The bytes a set carries"). Over it is the same
 /// refusal as a ninth name, never a truncation.
 ///
@@ -29,7 +29,7 @@ pub const BYTES: usize = 2 * MAXIMUM_NAMES + NAME_BYTES + 1;
 
 // A set arrives in one page, and the longest name has to fit in one set.
 const _: () = assert!(BYTES <= super::PAGE);
-const _: () = assert!(NAME_BYTES >= 2 * grant::MAX_NAME);
+const _: () = assert!(NAME_BYTES >= 2 * grant::MAXIMUM_NAME);
 
 /// Bit 0 of a record's flags byte: this name was a directory when the grant was planned.
 pub const IS_DIR: u8 = 1 << 0;

@@ -446,7 +446,7 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
         xattr::ERANGE,
     );
     assert_eq!(
-        srv.set_xattr(h, &vec![b'n'; xattr::MAX_NAME + 1], xattr::RAW, b"v")
+        srv.set_xattr(h, &vec![b'n'; xattr::MAXIMUM_NAME + 1], xattr::RAW, b"v")
             .unwrap_err()
             .errno,
         xattr::ERANGE,

@@ -616,9 +616,9 @@ fn the_captured_sweep_runs_to_its_done_line() {
         "the last point is the top of job_mix::TASK_SWEEP"
     );
     assert_eq!(
-        u64::from(u32::try_from(job_mix::MAX_TASKS).expect("the sweep tops out in a u32")),
+        u64::from(u32::try_from(job_mix::MAXIMUM_TASKS).expect("the sweep tops out in a u32")),
         point.tasks,
-        "the last point is job_mix::MAX_TASKS, and the two agree by the kernel reading it"
+        "the last point is job_mix::MAXIMUM_TASKS, and the two agree by the kernel reading it"
     );
     assert_eq!(point.jobs, point.tasks * job_mix::JOBS_PER_TASK);
     // **The field the parse is most likely to be silently wrong about.** Every other number

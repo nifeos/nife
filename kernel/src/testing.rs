@@ -151,7 +151,8 @@ fn refuse_a_repeat_that_runs_dry(iteration: u32, baseline: RepeatReading, now: R
     );
     println!(
         "  frames: {} free at run 2, {} now ({frames_lost} lost over {since} runs); the {left} runs \
-         left need about {frames_needed}, plus the {SUITE_MINIMUM_FREE_RUN} the ledger keeps. Longest \
+         left need about {frames_needed}, plus the {SUITE_MINIMUM_FREE_RUN} the ledger keeps. \
+         Longest \
          free run {}.",
         baseline.frames, now.frames, now.run
     );
@@ -342,7 +343,8 @@ fn report_page_frame_ledger() {
         println!();
         println!(
             "FRAME LEDGER: the boot ends with no free run longer than {run} frames, under the \
-             {SUITE_MINIMUM_FREE_RUN} this gate requires. This is the failure rather than a warning \
+             {SUITE_MINIMUM_FREE_RUN} this gate requires. This is the failure rather than a \
+             warning \
              about one: loading a program takes a contiguous run, so the next test to load anything \
              substantial would fail as Unmappable(OutOfPageFrames), and it would do so in whichever \
              test happened to be next rather than in the one that spent the memory. Read the \
@@ -367,13 +369,13 @@ fn report_page_frame_ledger() {
 ///
 /// It reports and does not gate: what fills the table is the services earlier tests meant to keep,
 /// so a climbing peak is usually a boot doing more, and `sched::thread_leak_police` catches the
-/// wrong kind of growth. See `sched::MAX_THREADS`.
+/// wrong kind of growth. See `sched::MAXIMUM_THREADS`.
 fn report_thread_peak() {
     let peak = crate::sched::peak_thread_count();
-    let maximum = crate::sched::MAX_THREADS;
+    let maximum = crate::sched::MAXIMUM_THREADS;
     println!(
         "threads: {peak} live at the peak, of {maximum} the image allows ({} spare). \
-         See sched::MAX_THREADS.",
+         See sched::MAXIMUM_THREADS.",
         maximum.saturating_sub(peak)
     );
 }
@@ -414,9 +416,10 @@ fn report_rendezvous_peak() {
     let (peak, kernel) = crate::sched::rendezvous_pressure();
     let maximum = crate::sched::MAXIMUM_RENDEZVOUS;
     println!(
-        "rendezvous: {peak} live at the peak, of {maximum} the image allows ({} spare), set during \
-        {}; \
-         {kernel} were created on kernel chunks, which are never freed. See sched::MAXIMUM_RENDEZVOUS.",
+        "rendezvous: {peak} live at the peak, of {maximum} the image allows ({} spare), set \
+        during {}; \
+         {kernel} were created on kernel chunks, which are never freed. See \
+         sched::MAXIMUM_RENDEZVOUS.",
         maximum.saturating_sub(peak),
         stored_name(&RENDEZVOUS_PEAK_NAME_PTR, &RENDEZVOUS_PEAK_NAME_LEN)
             .unwrap_or("the boot, before the first test"),

@@ -40,7 +40,7 @@ const CLIENT_STACK_PAGES: u64 = 3;
 /// `Query::accept` and the `Name`s around it keep several 256-byte copies live at once.
 const RESOLVER_STACK_PAGES: u64 = 8;
 /// The larger of the two, which sizes the one array `stack_pages` fills.
-const STACK_PAGES_MAX: usize = RESOLVER_STACK_PAGES as usize;
+const STACK_PAGES_MAXIMUM: usize = RESOLVER_STACK_PAGES as usize;
 
 /// Bounded by wall clock, as `ntp_tests`' is, so a client that never reports fails with a sentence
 /// rather than the 60 s watchdog. Twenty seconds, because one case is a TCP connection to a host
@@ -87,13 +87,13 @@ pub(super) fn entropy() -> Option<RendezvousId> {
 
 /// `pages` zeroed pages below the stack top, from a region `held` hands back once the program is
 /// dead. The array is the largest size; only the first `pages` entries are mappings.
-fn stack_pages(pages: u64, held: &mut Holding) -> [Mapping; STACK_PAGES_MAX] {
+fn stack_pages(pages: u64, held: &mut Holding) -> [Mapping; STACK_PAGES_MAXIMUM] {
     let region = crate::memory_region::create(pages).expect("no stack region");
     let mut maps = [Mapping {
         va: 0,
         phys: 0,
         flags: Flags::user_data(),
-    }; STACK_PAGES_MAX];
+    }; STACK_PAGES_MAXIMUM];
     for (k, m) in maps.iter_mut().take(pages as usize).enumerate() {
         m.phys = crate::memory_region::retype_page(region).expect("no stack page");
         m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;

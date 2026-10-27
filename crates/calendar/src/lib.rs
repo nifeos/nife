@@ -19,7 +19,10 @@
 pub const MINIMUM_YEAR: i32 = 0;
 
 /// The highest supported year, 9999, which is RFC 3339's four-digit `date-fullyear`.
-pub const MAX_YEAR: i32 = 9999;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_YEAR`.
+pub const MAXIMUM_YEAR: i32 = 9999;
 
 /// 0000-01-01T00:00:00Z, the earliest instant this crate will name.
 ///
@@ -32,7 +35,7 @@ pub const MINIMUM_TIMESTAMP: i64 = days_from_civil(MINIMUM_YEAR, 1, 1) * SECS_PE
 /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
 /// 2026-10-26 (UTC), renamed from `MAX_TIMESTAMP`.
 pub const MAXIMUM_TIMESTAMP: i64 =
-    days_from_civil(MAX_YEAR, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
+    days_from_civil(MAXIMUM_YEAR, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
 
 /// Seconds in a day. Exactly 86,400, always, by the definition of Unix time (see the module docs on
 /// leap seconds).
@@ -43,7 +46,7 @@ pub const SECS_PER_DAY: i64 = 86_400;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Error {
     /// A timestamp outside [`MINIMUM_TIMESTAMP`]..=[`MAXIMUM_TIMESTAMP`], or a year outside
-    /// [`MINIMUM_YEAR`]..=[`MAX_YEAR`].
+    /// [`MINIMUM_YEAR`]..=[`MAXIMUM_YEAR`].
     OutOfRange,
     /// Month was not 1..=12.
     BadMonth,
@@ -257,7 +260,7 @@ impl Civil {
         minute: u8,
         second: u8,
     ) -> Result<Civil, Error> {
-        if year < MINIMUM_YEAR || year > MAX_YEAR {
+        if year < MINIMUM_YEAR || year > MAXIMUM_YEAR {
             return Err(Error::OutOfRange);
         }
         let Some(len) = days_in_month(year, month) else {
@@ -840,7 +843,7 @@ mod verification {
 
     /// The first and last day numbers in the supported range: 0000-01-01 and 9999-12-31.
     const FIRST_DAY: i64 = days_from_civil(MINIMUM_YEAR, 1, 1);
-    const LAST_DAY: i64 = days_from_civil(MAX_YEAR, 12, 31);
+    const LAST_DAY: i64 = days_from_civil(MAXIMUM_YEAR, 12, 31);
 
     /// Any representable `DateTime`, built from six symbolic fields and a symbolic offset, or
     /// `None` for the field combinations that are not a real date.
@@ -884,7 +887,7 @@ mod verification {
         let days: i64 = kani::any();
         kani::assume((FIRST_DAY..=LAST_DAY).contains(&days));
         let (y, m, d) = civil_from_days(days);
-        assert!((MINIMUM_YEAR..=MAX_YEAR).contains(&y));
+        assert!((MINIMUM_YEAR..=MAXIMUM_YEAR).contains(&y));
         assert!((1..=12).contains(&m));
         assert!(1 <= d && d <= days_in_month(y, m).unwrap());
         assert!(Civil::new(y, m, d, 0, 0, 0).is_ok());

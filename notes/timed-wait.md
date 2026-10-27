@@ -126,8 +126,8 @@ A deadline on `Rendezvous::RECEIVE`/`CALL` needs two things the other two do not
    `pop_front`, `is_empty`, `len`. `inter_process_communication::Rendezvous` adds only
    `drain_waiters`, which drains *all* of them. Removing one specific waiter is a new method,
    O(queue length) from the head, on a crate that carries machine-checked proofs of its one-queue
-   invariant, so the proofs move with it. Bounded by `MAX_THREADS`, paid only on an actual expiry,
-   and the census in section 6 says a queue can hold most of the table.
+   invariant, so the proofs move with it. Bounded by `MAXIMUM_THREADS`, paid only on an actual
+   expiry, and the census in section 6 says a queue can hold most of the table.
 2. Nothing else. The half that looks harder is already built. `thread_wake_handshake`'s undelivered-wake
    gate refuses a wake with `wait_on.is_some()` and nothing delivered (boot 8). So a timeout looks
    like exactly the wake the gate exists to stop. But `Handshake::abort()` already passes the gate for
@@ -147,10 +147,10 @@ whichever shape wins.
 
 ## 6. How many threads are actually blocked at once
 
-`MAX_THREADS` is 128 and the asymptotics in section 2 turn over between 64 and 128, so the occupancy
-is worth knowing rather than assuming. A `#[cfg(test)]` census was sampled from inside `schedule()`'s
-decision (which already holds `SCHED` and already has the table), every 64th call, over the whole
-aarch64 suite:
+`MAXIMUM_THREADS` is 128 and the asymptotics in section 2 turn over between 64 and 128, so the
+occupancy is worth knowing rather than assuming. A `#[cfg(test)]` census was sampled from inside
+`schedule()`'s decision (which already holds `SCHED` and already has the table), every 64th call,
+over the whole aarch64 suite:
 
 ```
 106-pricing: blocked-census samples=31371 mean_x100=3695 max=97 live_max=102

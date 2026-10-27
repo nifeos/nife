@@ -445,7 +445,7 @@ fn metrics(font: &Font) -> String {
     let extent = |byte: u8| -> Option<(usize, usize, usize, usize, usize)> {
         let mut minimum_x = usize::MAX;
         let mut maximum_x = 0;
-        let mut min_y = usize::MAX;
+        let mut minimum_y = usize::MAX;
         let mut maximum_y = 0;
         let mut ink = 0;
         for y in 0..font.height {
@@ -454,12 +454,12 @@ fn metrics(font: &Font) -> String {
                     ink += 1;
                     minimum_x = minimum_x.min(x);
                     maximum_x = maximum_x.max(x);
-                    min_y = min_y.min(y);
+                    minimum_y = minimum_y.min(y);
                     maximum_y = maximum_y.max(y);
                 }
             }
         }
-        (ink > 0).then_some((minimum_x, maximum_x, min_y, maximum_y, ink))
+        (ink > 0).then_some((minimum_x, maximum_x, minimum_y, maximum_y, ink))
     };
 
     let seen: Vec<_> = letters.iter().filter_map(|&b| extent(b)).collect();

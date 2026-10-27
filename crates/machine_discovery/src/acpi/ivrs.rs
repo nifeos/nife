@@ -34,7 +34,10 @@ pub const MAXIMUM_IVHDS: usize = 8;
 /// 2026-10-26 (UTC), renamed from `MAX_IVHD_RANGES`.
 pub const MAXIMUM_IVHD_RANGES: usize = 64;
 /// The most IVMDs recorded. Name: provisional.
-pub const MAX_IVMDS: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IVMDS`.
+pub const MAXIMUM_IVMDS: usize = 8;
 
 /// Four bytes of `IVinfo`, eight reserved.
 const IVRS_FIXED_LEN: usize = 12;
@@ -132,7 +135,7 @@ pub struct IvrsUnits {
     pub ivhd_count: usize,
     pub ranges: [DeviceRange; MAXIMUM_IVHD_RANGES],
     pub range_count: usize,
-    pub unity: [UnityRegion; MAX_IVMDS],
+    pub unity: [UnityRegion; MAXIMUM_IVMDS],
     pub unity_count: usize,
     /// IVMDs refused as malformed (zero length, or a range that wraps), counted so the boot print
     /// can say so.
@@ -152,7 +155,7 @@ impl Default for IvrsUnits {
             ivhd_count: 0,
             ranges: [DeviceRange::default(); MAXIMUM_IVHD_RANGES],
             range_count: 0,
-            unity: [UnityRegion::default(); MAX_IVMDS],
+            unity: [UnityRegion::default(); MAXIMUM_IVMDS],
             unity_count: 0,
             unity_refused: 0,
             truncated: false,
@@ -369,7 +372,7 @@ impl IvrsUnits {
         if self.unity[..self.unity_count].contains(&r) {
             return;
         }
-        if self.unity_count == MAX_IVMDS {
+        if self.unity_count == MAXIMUM_IVMDS {
             self.truncated = true;
             return;
         }

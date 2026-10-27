@@ -57,7 +57,7 @@ const SURFACE_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
 /// address-space map (milestone 206 (a program image has under 896 KiB)), 8 MiB of it at most, and
 /// 2 MiB-aligned for the same reason as above. Device-typed (write-combining on `x86_64`), it
 /// covers the rows the surface can reach (`screen_console::Aperture::span`), the whole screen
-/// unless that exceeds `display_service::MAX_APERTURE_PAGES`. It is a spawn-time mapping, not a
+/// unless that exceeds `display_service::MAXIMUM_APERTURE_PAGES`. It is a spawn-time mapping, not a
 /// capability, so this driver cannot map the screen again, delegate it, or hand it on. The
 /// geometry arrives in the three argument registers (`screen_console::Aperture::to_words`, then
 /// the aperture's offset into its first page).

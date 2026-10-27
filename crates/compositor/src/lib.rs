@@ -246,8 +246,9 @@ impl Window {
 /// Fixed at compile time, so the composed screen is a value every party can predict and check pixel
 /// for pixel. The geometry makes a wrong composite fail: three sizes, overlap, and a window hanging
 /// off the left edge. Each surface is at most four page frames, because the kernel maps a surface
-/// one `Spawn::maps` entry a page (`kernel/src/user/compositor_service.rs`'s `MAX_SURFACE_PAGES`,
-/// asserted at build time). See notes/compositor/arithmetic.md for why each choice.
+/// one `Spawn::maps` entry a page (`kernel/src/user/compositor_service.rs`'s
+/// `MAXIMUM_SURFACE_PAGES`, asserted at build time). See notes/compositor/arithmetic.md for why
+/// each choice.
 pub const SCENE: &[Window] = &[
     Window::new(16, 26, 72, 52),
     Window::new(40, 50, 71, 56),

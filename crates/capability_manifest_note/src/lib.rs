@@ -41,7 +41,7 @@
 //! | 33 | 1 | `entropy` | 0 or 1 |
 //! | 34 | 1 | `network` | 0 or 1 |
 //! | 35 | 1 | `startup` | 0 native, 1 std |
-//! | 36 | 1 | option count | at most `grant_plan::MAX_DECLARED_SHORT_OPTIONS` (16) |
+//! | 36 | 1 | option count | at most `grant_plan::MAXIMUM_DECLARED_SHORT_OPTIONS` (16) |
 //! | 37 | 16 | option letters | the first *count* are the letters in bit order, the rest 0 |
 //! | 53 | 1 | `machine` | 0 or 1 (milestone 126, the machine statistics page) |
 //! | 54 | 1 | `share` | 0 or 1 (milestone 126, a view of the job budget) |
@@ -57,7 +57,7 @@
 //!
 //! | offset | size | field | values |
 //! |---|---|---|---|
-//! | 56 | 1 | zone count | 1 to [`MAX_ZONES`] |
+//! | 56 | 1 | zone count | 1 to [`MAXIMUM_ZONES`] |
 //! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most
 //! [`ZONE_MAXIMUM`]; 0 is the root zone |
 //!
@@ -76,7 +76,7 @@
 
 use grant_plan::{
     DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration,
-    InputDeclaration, MAX_DECLARED_SHORT_OPTIONS, Manifest, MemoryGrantDeclaration,
+    InputDeclaration, MAXIMUM_DECLARED_SHORT_OPTIONS, Manifest, MemoryGrantDeclaration,
     OutputDeclaration, ProgramArgumentDeclaration, ShortOptions, StartupContract, WordGrant,
 };
 
@@ -113,13 +113,13 @@ pub const ZONED_VERSION: u32 = 2;
 /// a program asking for more could never be granted them all at once.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const MAX_ZONES: usize = domain_name_resolution_contract::GRANTS_MAXIMUM;
+pub const MAXIMUM_ZONES: usize = domain_name_resolution_contract::GRANTS_MAXIMUM;
 
 /// The longest zone, in bytes of dotted text: 253, a host name's limit and the resolver's
-/// `domain_name_resolution_contract::NAME_TEXT_MAX`.
+/// `domain_name_resolution_contract::NAME_TEXT_MAXIMUM`.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const ZONE_MAXIMUM: usize = domain_name_resolution_contract::NAME_TEXT_MAX;
+pub const ZONE_MAXIMUM: usize = domain_name_resolution_contract::NAME_TEXT_MAXIMUM;
 
 /// `OWNER` with its NUL, padded to the note's 4-byte alignment.
 const NAME_FIELD: usize = 8;
@@ -167,7 +167,7 @@ const NETWORK: usize = 34;
 const RUNTIME: usize = 35;
 const FLAG_COUNT: usize = 36;
 const FLAG_LETTERS: usize = 37;
-const MACHINE: usize = FLAG_LETTERS + MAX_DECLARED_SHORT_OPTIONS;
+const MACHINE: usize = FLAG_LETTERS + MAXIMUM_DECLARED_SHORT_OPTIONS;
 const SHARE: usize = MACHINE + 1;
 const TAIL: usize = SHARE + 1;
 
@@ -382,12 +382,16 @@ pub fn decode(d: &[u8]) -> Result<Manifest, Error> {
     let mem = decode_mem(d)?;
     let file = decode_file(d)?;
     let count = d[FLAG_COUNT] as usize;
-    if count > MAX_DECLARED_SHORT_OPTIONS {
+    if count > MAXIMUM_DECLARED_SHORT_OPTIONS {
         return Err(Error::BadField(FLAG_COUNT));
     }
     let letters = &d[FLAG_LETTERS..FLAG_LETTERS + count];
     let short_options = ShortOptions::try_new(letters).ok_or(Error::BadField(FLAG_LETTERS))?;
-    zero(d, FLAG_LETTERS + count, MAX_DECLARED_SHORT_OPTIONS - count)?;
+    zero(
+        d,
+        FLAG_LETTERS + count,
+        MAXIMUM_DECLARED_SHORT_OPTIONS - count,
+    )?;
     let dir = decode_dir(d, letters)?;
     let output = decode_output(d)?;
     let input = decode_input(d)?;
@@ -578,7 +582,7 @@ pub const fn zoned_len(zones: &[&str]) -> usize {
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8; LEN] {
     assert!(
-        !zones.is_empty() && zones.len() <= MAX_ZONES,
+        !zones.is_empty() && zones.len() <= MAXIMUM_ZONES,
         "a version 2 manifest asks for one to eight zones; none is version 1"
     );
     assert!(LEN == zoned_len(zones), "LEN must be zoned_len(zones)");
@@ -617,12 +621,12 @@ pub const fn encode_zoned<const LEN: usize>(m: &Manifest, zones: &[&str]) -> [u8
     out
 }
 
-/// Every zone of a version 2 descriptor, checked: a count of one to [`MAX_ZONES`], each zone
+/// Every zone of a version 2 descriptor, checked: a count of one to [`MAXIMUM_ZONES`], each zone
 /// canonical (`domain_name_resolution_contract::is_canonical_zone`) and sorted strictly after the one before, and nothing after the
 /// last. The offset in a refusal is the first byte at fault.
 fn check_zones(d: &[u8]) -> Result<&[u8], Error> {
     let count = *d.get(DESCRIPTOR_LEN).ok_or(Error::WrongLength)? as usize;
-    if count == 0 || count > MAX_ZONES {
+    if count == 0 || count > MAXIMUM_ZONES {
         return Err(Error::BadField(DESCRIPTOR_LEN));
     }
     let mut at = DESCRIPTOR_LEN + 1;
@@ -903,9 +907,9 @@ pub const VERBS_VERSION: u32 = 1;
 /// 2026-10-26 (UTC), renamed from `MAX_VERBS`.
 pub const MAXIMUM_VERBS: usize = 256;
 
-/// One verb's record: the word in `grant_plan::MAX_VERB` bytes, zero-padded; then the grants'
+/// One verb's record: the word in `grant_plan::MAXIMUM_VERB` bytes, zero-padded; then the grants'
 /// bits, little-endian; then two zero bytes.
-pub const VERB_RECORD: usize = grant_plan::MAX_VERB + 4;
+pub const VERB_RECORD: usize = grant_plan::MAXIMUM_VERB + 4;
 
 /// A [`VERBS`] descriptor's length for `count` verbs: the version word, the count word, and
 /// exactly `count` records. Variable, as calef ruled on #1903 (2026-10-10 (UTC)); one table still
@@ -949,7 +953,7 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
     while i < verbs.len() {
         let word = verbs[i].verb.as_bytes();
         assert!(
-            !word.is_empty() && word.len() <= grant_plan::MAX_VERB,
+            !word.is_empty() && word.len() <= grant_plan::MAXIMUM_VERB,
             "a verb is one to sixteen bytes"
         );
         if i > 0 {
@@ -966,8 +970,8 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> 
             b += 1;
         }
         let bits = verbs[i].authorities.bits().to_le_bytes();
-        out[at + grant_plan::MAX_VERB] = bits[0];
-        out[at + grant_plan::MAX_VERB + 1] = bits[1];
+        out[at + grant_plan::MAXIMUM_VERB] = bits[0];
+        out[at + grant_plan::MAXIMUM_VERB + 1] = bits[1];
         i += 1;
     }
     out
@@ -1028,9 +1032,10 @@ impl<'a> Verbs<'a> {
     /// Record `i`, which [`decode_verbs`] has already checked.
     fn record(&self, i: usize) -> (&'a [u8], grant_plan::ManifestAuthorities) {
         let r = &self.records[i * VERB_RECORD..(i + 1) * VERB_RECORD];
-        let word = &r[..grant_plan::MAX_VERB];
+        let word = &r[..grant_plan::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
-        let bits = u16::from_le_bytes([r[grant_plan::MAX_VERB], r[grant_plan::MAX_VERB + 1]]);
+        let bits =
+            u16::from_le_bytes([r[grant_plan::MAXIMUM_VERB], r[grant_plan::MAXIMUM_VERB + 1]]);
         (
             &word[..len],
             grant_plan::ManifestAuthorities::from_bits(bits)
@@ -1061,7 +1066,7 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     for i in 0..count {
         let at = 8 + i * VERB_RECORD;
         let record = &d[at..at + VERB_RECORD];
-        let word = &record[..grant_plan::MAX_VERB];
+        let word = &record[..grant_plan::MAXIMUM_VERB];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
         if len == 0 {
             return Err(Error::BadField(at));
@@ -1070,14 +1075,14 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
             return Err(Error::BadField(at + len + k));
         }
         let bits = u16::from_le_bytes([
-            record[grant_plan::MAX_VERB],
-            record[grant_plan::MAX_VERB + 1],
+            record[grant_plan::MAXIMUM_VERB],
+            record[grant_plan::MAXIMUM_VERB + 1],
         ]);
         if grant_plan::ManifestAuthorities::from_bits(bits).is_none() {
-            return Err(Error::BadField(at + grant_plan::MAX_VERB));
+            return Err(Error::BadField(at + grant_plan::MAXIMUM_VERB));
         }
-        if record[grant_plan::MAX_VERB + 2] != 0 || record[grant_plan::MAX_VERB + 3] != 0 {
-            return Err(Error::BadField(at + grant_plan::MAX_VERB + 2));
+        if record[grant_plan::MAXIMUM_VERB + 2] != 0 || record[grant_plan::MAXIMUM_VERB + 3] != 0 {
+            return Err(Error::BadField(at + grant_plan::MAXIMUM_VERB + 2));
         }
         if previous.is_some_and(|p| !before(p, &word[..len])) {
             return Err(Error::BadField(at));
@@ -1426,7 +1431,7 @@ mod tests {
         assert_eq!(decode(&undeclared), Err(Error::BadField(SUBTREE)));
 
         let mut too_many = rm;
-        too_many[FLAG_COUNT] = MAX_DECLARED_SHORT_OPTIONS as u8 + 1;
+        too_many[FLAG_COUNT] = MAXIMUM_DECLARED_SHORT_OPTIONS as u8 + 1;
         assert_eq!(decode(&too_many), Err(Error::BadField(FLAG_COUNT)));
     }
 
@@ -1566,7 +1571,8 @@ mod tests {
         assert_eq!(decode(&VERSION.to_le_bytes()), Err(Error::WrongLength));
         assert_eq!(decode(&3u32.to_le_bytes()), Err(Error::UnknownVersion));
 
-        let letters: [u8; MAX_DECLARED_SHORT_OPTIONS] = core::array::from_fn(|i| b'a' + i as u8);
+        let letters: [u8; MAXIMUM_DECLARED_SHORT_OPTIONS] =
+            core::array::from_fn(|i| b'a' + i as u8);
         let m = Manifest {
             short_options: ShortOptions::try_new(&letters).unwrap(),
             ..base()
@@ -1645,7 +1651,7 @@ mod tests {
         const D8: [u8; zoned_len(EIGHT)] = encode_zoned(&M, EIGHT);
         assert_eq!(
             zones(&D8).unwrap().iter().count(),
-            MAX_ZONES,
+            MAXIMUM_ZONES,
             "eight is the most, and allowed"
         );
         let unsorted = std::panic::catch_unwind(|| {

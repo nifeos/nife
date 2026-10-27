@@ -20,7 +20,7 @@ no memory to wire one", which reads like a packaging bug and is not one.
 
 The fix taken here was to stop over-provisioning. `NET_SERVER_BUDGET_PAGES` was 192 on the
 recorded reasoning that `net_stack` caps its heap at 128 pages "so 192 leaves headroom without being
-unbounded", which is a margin nobody measured. It is now 128, with `net_stack`'s `HEAP_MAX`
+unbounded", which is a margin nobody measured. It is now 128, with `net_stack`'s `HEAP_MAXIMUM`
 lowered to 96 so the budget still covers the heap's declared worst case with 32 pages for page
 tables and clients' frame mappings. Ten net servers per boot at 64 pages saved each is 640 frames
 returned, which is six times what the new gate spends. The suite is what proves 96 is enough.

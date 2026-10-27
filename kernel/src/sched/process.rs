@@ -23,7 +23,7 @@ pub type ProcessId = u64;
 
 /// The most processes that can exist at once, whole machine: one per thread at most, so the thread
 /// ceiling.
-pub(super) const MAXIMUM_PROCESSES: usize = super::MAX_THREADS;
+pub(super) const MAXIMUM_PROCESSES: usize = super::MAXIMUM_THREADS;
 
 /// **What lives at the start of a process's page.** The capability table follows it, at
 /// [`TABLE_OFFSET`], outside the struct for the reason `thread::capability_table_of` gives: a

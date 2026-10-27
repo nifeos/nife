@@ -144,7 +144,7 @@ The table is nearly empty at boot. Almost every region live at the peak is one a
 behind (on aarch64, `ntp_tests` 39 and `login_tests` 33 lead, then the compositor, file service and
 date stacks), and the peak is a few above that residue. A full table refuses quietly (a `--mem`
 split hangs). `design/roadmap/0676-the-ntp-and-login-tests-give-their-regions-back.md` is the work
-to account for the residue. There is no gate: as with `sched::MAX_THREADS`, a climbing peak is
+to account for the residue. There is no gate: as with `sched::MAXIMUM_THREADS`, a climbing peak is
 usually a boot doing more, and a gate needs a held list like the frame ledger's
 ([frames.md](frames.md)), which regions do not have yet.
 

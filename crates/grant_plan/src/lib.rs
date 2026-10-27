@@ -53,8 +53,8 @@ pub use image::{
 pub use manifest::{
     CATALOG_SLOT, DIAGNOSTICS_SLOT, DOMAIN_SLOT, DirectoryGrantDeclaration, ENTROPY_SLOT,
     FileGrantDeclaration, INDEX_SOURCES_SLOT, INSTALLER_REPLY_SLOT, INSTALLER_SLOT,
-    IndexStoreDeclaration, InputDeclaration, MACHINE_SLOT, MAX_DECLARED_SHORT_OPTIONS, Manifest,
-    MemoryGrantDeclaration, NETWORK_SLOT, NO_SHORT_OPTIONS, OutputDeclaration,
+    IndexStoreDeclaration, InputDeclaration, MACHINE_SLOT, MAXIMUM_DECLARED_SHORT_OPTIONS,
+    Manifest, MemoryGrantDeclaration, NETWORK_SLOT, NO_SHORT_OPTIONS, OutputDeclaration,
     ProgramArgumentDeclaration, REBOOT_SLOT, SHARE_SLOT, SHELL_CONFIGURATION_SLOT,
     SHELL_CONFIGURATION_VIRTUAL_ADDRESS, STD_REGION_PAGES, SYNC_SLOT, ShortOptions,
     StartupContract, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST, WordGrant, image_region_pages,
@@ -70,11 +70,13 @@ pub use planning::{
 };
 pub use program::{PROGRAM_COUNT, Program};
 pub use refusal::{CapabilityKind, Refusal};
-pub use verbs::{MAX_VERB, ManifestAuthorities, VerbGrant, narrow_by_verb, verb_of, verb_of_page};
+pub use verbs::{
+    MAXIMUM_VERB, ManifestAuthorities, VerbGrant, narrow_by_verb, verb_of, verb_of_page,
+};
 
 mod lexing;
 
 use lexing::*;
-pub use lexing::{MAX_FILE_NAME, WORDS_NAME, file_name_fits, parse_u64, trim};
+pub use lexing::{MAXIMUM_FILE_NAME, WORDS_NAME, file_name_fits, parse_u64, trim};
 
 // ---- small byte helpers (no_std, no alloc) ----

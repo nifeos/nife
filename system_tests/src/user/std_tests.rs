@@ -54,7 +54,7 @@ pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &
     let mut len = 0usize;
     loop {
         let words = crate::sched::ipc_receive(ep);
-        let mut chunk = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
             byte_sink_contract::Msg::Bytes(n) => {
                 for &b in &chunk[..n] {
@@ -126,7 +126,7 @@ pub(super) fn drain_sink_from(
             arm();
             continue;
         }
-        let mut chunk = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
             byte_sink_contract::Msg::Bytes(n) => {
                 for &b in &chunk[..n] {

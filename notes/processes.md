@@ -88,7 +88,7 @@ outcome, since the race itself cannot be staged on demand.
   pulled off its run queue; it is converted the next time it is switched in and preempted.
 - **The TCB page of a thread that ended is not reused.** A `std` program spends one page of its
   heap region per thread it has ever spawned, until that region is destroyed.
-- Teardown walks every thread to find members, `MAX_THREADS` at most. Fine at 256; a member
+- Teardown walks every thread to find members, `MAXIMUM_THREADS` at most. Fine at 256; a member
   list in the page is the shape if that grows.
 - Exit codes are not carried. `SYS_EXIT`'s code was discarded before this milestone and still
   is; a process records its end's event, not a code.

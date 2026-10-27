@@ -237,7 +237,6 @@ crates/address_space_map/src/lib.rs::HEAP
 crates/address_space_map/src/lib.rs::IMAGE
 crates/address_space_map/src/lib.rs::IMAGE_BASE
 crates/address_space_map/src/lib.rs::ImagePlacement
-crates/address_space_map/src/lib.rs::MAX_STACK_PAGES
 crates/address_space_map/src/lib.rs::NULL_GUARD
 crates/address_space_map/src/lib.rs::PAGE
 crates/address_space_map/src/lib.rs::PAIR_PAGES
@@ -306,9 +305,6 @@ crates/boot_ladder/src/lib.rs::TOUR
 crates/boot_slot/src/lib.rs::EMPTY
 crates/boot_slot/src/lib.rs::INSTALLED_PRIORITY
 crates/boot_slot/src/lib.rs::KEY
-crates/boot_slot/src/lib.rs::MAX_LEN
-crates/boot_slot/src/lib.rs::MAX_LEN
-crates/boot_slot/src/lib.rs::MAX_NIBBLE
 crates/boot_slot/src/lib.rs::NVME
 crates/boot_slot/src/lib.rs::PRIORITY_SHIFT
 crates/boot_slot/src/lib.rs::SLOT_HEADER_BYTES
@@ -340,7 +336,6 @@ crates/boot_slot/src/lib.rs::unreadable
 crates/byte_sink_contract/src/lib.rs::BAD
 crates/byte_sink_contract/src/lib.rs::DONE
 crates/byte_sink_contract/src/lib.rs::GONE
-crates/byte_sink_contract/src/lib.rs::INLINE_MAX
 crates/byte_sink_contract/src/lib.rs::KIND_SHIFT
 crates/byte_sink_contract/src/lib.rs::KIND_TEXT
 crates/byte_sink_contract/src/lib.rs::Msg
@@ -441,7 +436,6 @@ crates/calendar/src/lib.rs::DateTime
 crates/calendar/src/lib.rs::Error
 crates/calendar/src/lib.rs::Format
 crates/calendar/src/lib.rs::Formatted
-crates/calendar/src/lib.rs::MAX_YEAR
 crates/calendar/src/lib.rs::SECS_PER_DAY
 crates/calendar/src/lib.rs::UTC
 crates/calendar/src/lib.rs::UtcOffset
@@ -487,7 +481,6 @@ crates/capability/src/lib.rs::CapabilityTable
 crates/capability/src/lib.rs::ENUMERATE
 crates/capability/src/lib.rs::Error
 crates/capability/src/lib.rs::GRANT
-crates/capability/src/lib.rs::MAX_SLOTS
 crates/capability/src/lib.rs::NONE
 crates/capability/src/lib.rs::READ
 crates/capability/src/lib.rs::Reap
@@ -550,7 +543,6 @@ crates/capability_plan/src/lib.rs::CapNeed
 crates/capability_plan/src/lib.rs::Dependents
 crates/capability_plan/src/lib.rs::Direction
 crates/capability_plan/src/lib.rs::LiveInstance
-crates/capability_plan/src/lib.rs::MAX_CAPS
 crates/capability_plan/src/lib.rs::MapNeed
 crates/capability_plan/src/lib.rs::OrchestrationRefusal
 crates/capability_plan/src/lib.rs::PageKind
@@ -713,7 +705,6 @@ crates/coremark/src/lib.rs::PINNED_CRC_64
 crates/coremark/src/lib.rs::PINNED_ITERS
 crates/coremark/src/lib.rs::run
 crates/counter_frequency_contract/src/lib.rs::MAGIC
-crates/counter_frequency_contract/src/lib.rs::MAX_PLAUSIBLE_HZ
 crates/counter_frequency_contract/src/lib.rs::PAGE_BYTES
 crates/counter_frequency_contract/src/lib.rs::PAGE_VA
 crates/counter_frequency_contract/src/lib.rs::PAGE_VA
@@ -764,7 +755,6 @@ crates/credentialer/src/lib.rs::Cost
 crates/credentialer/src/lib.rs::DEFAULT
 crates/credentialer/src/lib.rs::ENCODED_LEN
 crates/credentialer/src/lib.rs::Error
-crates/credentialer/src/lib.rs::MAX_M_KIB
 crates/credentialer/src/lib.rs::Record
 crates/credentialer/src/lib.rs::SALT_LEN
 crates/credentialer/src/lib.rs::Store
@@ -1007,7 +997,6 @@ crates/direct_memory_access_validator/src/lib.rs::Desc
 crates/direct_memory_access_validator/src/lib.rs::F_INDIRECT
 crates/direct_memory_access_validator/src/lib.rs::F_NEXT
 crates/direct_memory_access_validator/src/lib.rs::LAYOUT_QSIZE
-crates/direct_memory_access_validator/src/lib.rs::MAX_QUEUES
 crates/direct_memory_access_validator/src/lib.rs::RING_BLOCK
 crates/direct_memory_access_validator/src/lib.rs::RING_END
 crates/direct_memory_access_validator/src/lib.rs::USED_OFF
@@ -1039,7 +1028,6 @@ crates/documentation/src/index.rs::STORE_DIR
 crates/documentation/src/index.rs::Slice
 crates/documentation/src/index.rs::Source
 crates/documentation/src/index.rs::TERM_REC
-crates/documentation/src/index.rs::TITLE_MAX
 crates/documentation/src/index.rs::VERSION
 crates/documentation/src/index.rs::build
 crates/documentation/src/index.rs::bundles
@@ -1101,7 +1089,6 @@ crates/domain_name_resolution_contract/src/wire.rs::BAD_NAME
 crates/domain_name_resolution_contract/src/wire.rs::BAD_REQUEST
 crates/domain_name_resolution_contract/src/wire.rs::CONNECT
 crates/domain_name_resolution_contract/src/wire.rs::DENIED
-crates/domain_name_resolution_contract/src/wire.rs::NAME_TEXT_MAX
 crates/domain_name_resolution_contract/src/wire.rs::NETWORK
 crates/domain_name_resolution_contract/src/wire.rs::NOT_ATTACHED
 crates/domain_name_resolution_contract/src/wire.rs::NO_ANSWER
@@ -1136,8 +1123,6 @@ crates/domain_name_system/src/lib.rs::FLAG_RD
 crates/domain_name_system/src/lib.rs::FLAG_TC
 crates/domain_name_system/src/lib.rs::HEADER_LEN
 crates/domain_name_system/src/lib.rs::Header
-crates/domain_name_system/src/lib.rs::MAX_LABEL_LEN
-crates/domain_name_system/src/lib.rs::MAX_NAME_LEN
 crates/domain_name_system/src/lib.rs::Name
 crates/domain_name_system/src/lib.rs::OPCODE_MASK
 crates/domain_name_system/src/lib.rs::PORT
@@ -1150,7 +1135,6 @@ crates/domain_name_system/src/lib.rs::Record
 crates/domain_name_system/src/lib.rs::Reject
 crates/domain_name_system/src/lib.rs::Result
 crates/domain_name_system/src/lib.rs::TcpReply
-crates/domain_name_system/src/lib.rs::UDP_MESSAGE_MAX
 crates/domain_name_system/src/lib.rs::accept
 crates/domain_name_system/src/lib.rs::addresses
 crates/domain_name_system/src/lib.rs::as_bytes
@@ -1384,7 +1368,6 @@ crates/filesystem_contract/src/fs.rs::CREATE
 crates/filesystem_contract/src/fs.rs::FSTAT
 crates/filesystem_contract/src/fs.rs::GETXATTR
 crates/filesystem_contract/src/fs.rs::LISTXATTR
-crates/filesystem_contract/src/fs.rs::MAX_LEN
 crates/filesystem_contract/src/fs.rs::MKDIR
 crates/filesystem_contract/src/fs.rs::OPEN
 crates/filesystem_contract/src/fs.rs::OPENDIR
@@ -1413,7 +1396,6 @@ crates/filesystem_contract/src/grant.rs
 crates/filesystem_contract/src/grant.rs::ENOTDIR
 crates/filesystem_contract/src/grant.rs::EROFS
 crates/filesystem_contract/src/grant.rs::HANDLE
-crates/filesystem_contract/src/grant.rs::MAX_NAME
 crates/filesystem_contract/src/grant.rs::READ
 crates/filesystem_contract/src/grant.rs::WHOLE_NAMESPACE
 crates/filesystem_contract/src/grant.rs::WRITE
@@ -1473,7 +1455,6 @@ crates/filesystem_contract/src/xattr.rs::ENODATA
 crates/filesystem_contract/src/xattr.rs::ENOSPC
 crates/filesystem_contract/src/xattr.rs::ENOTSUP
 crates/filesystem_contract/src/xattr.rs::ERANGE
-crates/filesystem_contract/src/xattr.rs::MAX_NAME
 crates/filesystem_contract/src/xattr.rs::Names
 crates/filesystem_contract/src/xattr.rs::RAW
 crates/filesystem_contract/src/xattr.rs::RECORD_HEADER
@@ -1827,7 +1808,6 @@ crates/globally_unique_identifier_partition_table/src/header.rs::decode
 crates/globally_unique_identifier_partition_table/src/header.rs::encode_into
 crates/globally_unique_identifier_partition_table/src/lib.rs::DEFAULT_ENTRY_COUNT
 crates/globally_unique_identifier_partition_table/src/lib.rs::ENTRY_ARRAY_BYTES
-crates/globally_unique_identifier_partition_table/src/lib.rs::MIN_BLOCK_SIZE
 crates/globally_unique_identifier_partition_table/src/lib.rs::PRIMARY_HEADER_LBA
 crates/globally_unique_identifier_partition_table/src/lib.rs::is_block_size_ok
 crates/globally_unique_identifier_partition_table/src/mbr.rs
@@ -1891,7 +1871,6 @@ crates/grant_plan/src/expand.rs
 crates/grant_plan/src/expand.rs::Batch
 crates/grant_plan/src/expand.rs::Expander
 crates/grant_plan/src/expand.rs::Expansion
-crates/grant_plan/src/expand.rs::MAX_NAME
 crates/grant_plan/src/expand.rs::Name
 crates/grant_plan/src/expand.rs::NameSet
 crates/grant_plan/src/expand.rs::Resume
@@ -1939,7 +1918,6 @@ crates/grant_plan/src/job_page_frame.rs::STATUS
 crates/grant_plan/src/job_page_frame.rs::STATUS_DONE
 crates/grant_plan/src/job_page_frame.rs::STATUS_INTERRUPTED
 crates/grant_plan/src/job_windows.rs::Label
-crates/grant_plan/src/job_windows.rs::MAX_DUE
 crates/grant_plan/src/job_windows.rs::Windows
 crates/grant_plan/src/job_windows.rs::any
 crates/grant_plan/src/job_windows.rs::expect
@@ -1951,7 +1929,6 @@ crates/grant_plan/src/job_windows.rs::reaped
 crates/grant_plan/src/job_windows.rs::release
 crates/grant_plan/src/job_windows.rs::set_bound
 crates/grant_plan/src/job_windows.rs::take
-crates/grant_plan/src/lexing.rs::MAX_FILE_NAME
 crates/grant_plan/src/lexing.rs::file_name_fits
 crates/grant_plan/src/lexing.rs::parse_u64
 crates/grant_plan/src/lexing.rs::trim
@@ -1989,9 +1966,7 @@ crates/grant_plan/src/nav.rs::BindEntry
 crates/grant_plan/src/nav.rs::BindRefused
 crates/grant_plan/src/nav.rs::Bindings
 crates/grant_plan/src/nav.rs::Cwd
-crates/grant_plan/src/nav.rs::MAX_NAME
 crates/grant_plan/src/nav.rs::Path
-crates/grant_plan/src/nav.rs::RENDER_MAX
 crates/grant_plan/src/nav.rs::Refused
 crates/grant_plan/src/nav.rs::Step
 crates/grant_plan/src/nav.rs::TwoRoots
@@ -2102,7 +2077,6 @@ crates/grant_plan/src/verbs.rs::INDEXES
 crates/grant_plan/src/verbs.rs::INDEXES_WRITE
 crates/grant_plan/src/verbs.rs::INSTALLER
 crates/grant_plan/src/verbs.rs::MACHINE
-crates/grant_plan/src/verbs.rs::MAX_VERB
 crates/grant_plan/src/verbs.rs::NETWORK
 crates/grant_plan/src/verbs.rs::NONE
 crates/grant_plan/src/verbs.rs::SHARE
@@ -2262,7 +2236,6 @@ crates/hot_swap_contract/src/lib.rs::tag_seq
 crates/hot_swap_contract/src/lib.rs::tag_version
 crates/hot_swap_contract/src/lib.rs::try_receive_cap
 crates/http_response/src/lib.rs::Error
-crates/http_response/src/lib.rs::HEAD_MAX
 crates/http_response/src/lib.rs::Response
 crates/http_response/src/lib.rs::content_length
 crates/http_response/src/lib.rs::feed
@@ -2346,7 +2319,6 @@ crates/job_mix/src/lib.rs::LOCK
 crates/job_mix/src/lib.rs::MAP
 crates/job_mix/src/lib.rs::MAP_CALLS
 crates/job_mix/src/lib.rs::MAP_REGION_PAGES
-crates/job_mix/src/lib.rs::MAX_TASKS
 crates/job_mix/src/lib.rs::MIX
 crates/job_mix/src/lib.rs::MIX_LEN
 crates/job_mix/src/lib.rs::NULL_SYSCALL
@@ -2545,8 +2517,6 @@ crates/machine_discovery/src/acpi/dmar.rs::Dmar
 crates/machine_discovery/src/acpi/dmar.rs::DmarEntry
 crates/machine_discovery/src/acpi/dmar.rs::DmarStructures
 crates/machine_discovery/src/acpi/dmar.rs::Drhd
-crates/machine_discovery/src/acpi/dmar.rs::MAX_DRHDS
-crates/machine_discovery/src/acpi/dmar.rs::MAX_RMRRS
 crates/machine_discovery/src/acpi/dmar.rs::SCOPE_PCI_ENDPOINT
 crates/machine_discovery/src/acpi/dmar.rs::SCOPE_PCI_SUBHIERARCHY
 crates/machine_discovery/src/acpi/dmar.rs::dmar_structures
@@ -2571,7 +2541,6 @@ crates/machine_discovery/src/acpi/ivrs.rs
 crates/machine_discovery/src/acpi/ivrs.rs::DeviceRange
 crates/machine_discovery/src/acpi/ivrs.rs::Ivhd
 crates/machine_discovery/src/acpi/ivrs.rs::IvrsUnits
-crates/machine_discovery/src/acpi/ivrs.rs::MAX_IVMDS
 crates/machine_discovery/src/acpi/ivrs.rs::UnityRegion
 crates/machine_discovery/src/acpi/ivrs.rs::device_may_write
 crates/machine_discovery/src/acpi/ivrs.rs::last_device_id
@@ -2618,7 +2587,6 @@ crates/machine_discovery/src/cpu_list.rs
 crates/machine_discovery/src/cpu_list.rs::Cpu
 crates/machine_discovery/src/cpu_list.rs::CpuList
 crates/machine_discovery/src/cpu_list.rs::EnableMethod
-crates/machine_discovery/src/cpu_list.rs::MAX_CPU_NODES
 crates/machine_discovery/src/cpu_list.rs::cpus
 crates/machine_discovery/src/cpu_list.rs::from_device_tree
 crates/machine_discovery/src/cpu_list.rs::from_property
@@ -2628,7 +2596,6 @@ crates/machine_discovery/src/cpu_list.rs::name
 crates/machine_discovery/src/framebuffer.rs
 crates/machine_discovery/src/framebuffer.rs::Framebuffer
 crates/machine_discovery/src/framebuffer.rs::KEY
-crates/machine_discovery/src/framebuffer.rs::MAX_LEN
 crates/machine_discovery/src/framebuffer.rs::PixelOrder
 crates/machine_discovery/src/framebuffer.rs::encode
 crates/machine_discovery/src/framebuffer.rs::has_screen_hold
@@ -2649,7 +2616,6 @@ crates/machine_discovery/src/gic.rs::version
 crates/machine_discovery/src/interrupt_id.rs::of_node
 crates/machine_discovery/src/plic.rs::COMPATIBLES
 crates/machine_discovery/src/plic.rs::IRQ_S_EXT
-crates/machine_discovery/src/plic.rs::MAX_CONTEXT_HARTS
 crates/machine_discovery/src/plic.rs::PlicContexts
 crates/machine_discovery/src/plic.rs::from_device_tree
 crates/machine_discovery/src/plic.rs::is_empty
@@ -2883,7 +2849,6 @@ crates/network_time_protocol/src/lib.rs::Sample
 crates/network_time_protocol/src/lib.rs::Short
 crates/network_time_protocol/src/lib.rs::Timestamp
 crates/network_time_protocol/src/lib.rs::UNIX_DELTA
-crates/network_time_protocol/src/lib.rs::UNIX_MIN
 crates/network_time_protocol/src/lib.rs::VERSION
 crates/network_time_protocol/src/lib.rs::ZERO
 crates/network_time_protocol/src/lib.rs::ZERO
@@ -2973,8 +2938,6 @@ crates/package_index/src/lib.rs::ABSENT
 crates/package_index/src/lib.rs::AddressRefusal
 crates/package_index/src/lib.rs::BACKUP_HOST
 crates/package_index/src/lib.rs::BadLine
-crates/package_index/src/lib.rs::CHANNEL_MAX
-crates/package_index/src/lib.rs::COPY_MAX
 crates/package_index/src/lib.rs::CheckedLocation
 crates/package_index/src/lib.rs::Configured
 crates/package_index/src/lib.rs::Entry
@@ -3359,7 +3322,6 @@ crates/serial_console/src/watch.rs::watch
 crates/serial_console/src/watch.rs::watch_with
 crates/slabtop/src/lib.rs::Spending
 crates/slabtop/src/lib.rs::write_report
-crates/soak_page/src/lib.rs::MAX_WORKERS
 crates/soak_page/src/lib.rs::PAGE
 crates/soak_page/src/lib.rs::VA
 crates/soak_page/src/lib.rs::answer
@@ -3428,7 +3390,6 @@ crates/std_runtime_contract/src/lib.rs::ENTROPY_SLOT
 crates/std_runtime_contract/src/lib.rs::FS_DIR_SLOT
 crates/std_runtime_contract/src/lib.rs::FS_PAGE
 crates/std_runtime_contract/src/lib.rs::HEAP_BASE
-crates/std_runtime_contract/src/lib.rs::HEAP_MAX
 crates/std_runtime_contract/src/lib.rs::INDEX_SOURCES_PAGE
 crates/std_runtime_contract/src/lib.rs::MEMORY_REGION_SLOT
 crates/std_runtime_contract/src/lib.rs::NET_MEMORY_REGION_SLOT
@@ -3622,7 +3583,6 @@ crates/swish/src/sentences.rs::write_vouch
 crates/swish/src/sentences/tests.rs
 crates/swish/src/sequence.rs
 crates/swish/src/sequence.rs::Joint
-crates/swish/src/sequence.rs::MAX_SEGMENTS
 crates/swish/src/sequence.rs::Sequence
 crates/swish/src/sequence.rs::is_empty
 crates/swish/src/sequence.rs::is_plain
@@ -3729,7 +3689,6 @@ crates/system_log_contract/src/lib.rs::OPERATION_READ
 crates/system_log_contract/src/lib.rs::OPERATION_READER
 crates/system_log_contract/src/lib.rs::OPERATION_STREAM
 crates/system_log_contract/src/lib.rs::PAGES
-crates/system_log_contract/src/lib.rs::PARTIAL_MAX
 crates/system_log_contract/src/lib.rs::PROGRAM
 crates/system_log_contract/src/lib.rs::REFUSED
 crates/system_log_contract/src/lib.rs::Read
@@ -3855,7 +3814,6 @@ crates/timetable/src/recurrence.rs::next
 crates/timetable/src/recurrence.rs::parse
 crates/timetable/src/recurrence.rs::range
 crates/timetable/src/registration.rs::BODY
-crates/timetable/src/registration.rs::BODY_MAX
 crates/timetable/src/registration.rs::DETAIL
 crates/timetable/src/registration.rs::EXIT
 crates/timetable/src/registration.rs::EXITED
@@ -3908,7 +3866,6 @@ crates/timetable/src/registry.rs::rows
 crates/timetable_store/src/lib.rs::DEMO_SCHEDULE_DOC
 crates/timetable_store/src/lib.rs::Error
 crates/timetable_store/src/lib.rs::MANIFEST_FILE_NAME
-crates/timetable_store/src/lib.rs::MAX_IDENTITY_LEN
 crates/timetable_store/src/lib.rs::Manifest
 crates/timetable_store/src/lib.rs::SCHEDULE_FILE_NAME
 crates/timetable_store/src/lib.rs::entries
@@ -3919,7 +3876,6 @@ crates/timetable_store/src/lib.rs::render_manifest
 crates/top/src/lib.rs::write_machine_line
 crates/top/src/lib.rs::write_summary
 crates/uptime/src/lib.rs::Formatted
-crates/uptime/src/lib.rs::MAX_LEN
 crates/uptime/src/lib.rs::as_bytes
 crates/uptime/src/lib.rs::format
 crates/usb/src/boot_keyboard.rs
@@ -4729,7 +4685,6 @@ kernel/src/sched/interrupt_route.rs::bind_irq
 kernel/src/sched/interrupt_route.rs::irq_notify
 kernel/src/sched/interrupt_route.rs::irq_route
 kernel/src/sched/ipc_outcome.rs::take_ipc_aborted
-kernel/src/sched/ipc_tables.rs::MAX_THREADS
 kernel/src/sched/ipc_tables.rs::RendezvousId
 kernel/src/sched/ipc_tables.rs::rendezvous_pressure
 kernel/src/sched/notification.rs::NotificationId
@@ -5742,7 +5697,6 @@ uefi_loader/src/chooser.rs
 uefi_loader/src/chooser.rs::booted_from_nvme
 uefi_loader/src/chooser.rs::choose
 uefi_loader/src/device_path.rs
-uefi_loader/src/device_path.rs::MAX_LEN
 uefi_loader/src/device_path.rs::is_nvme
 uefi_loader/src/device_path.rs::is_on
 uefi_loader/src/device_path.rs::length
@@ -5750,7 +5704,6 @@ uefi_loader/src/device_tree_from_acpi.rs
 uefi_loader/src/device_tree_from_acpi.rs::Cpu
 uefi_loader/src/device_tree_from_acpi.rs::GICC_LEN
 uefi_loader/src/device_tree_from_acpi.rs::GICD_LEN
-uefi_loader/src/device_tree_from_acpi.rs::MAX_RAM
 uefi_loader/src/device_tree_from_acpi.rs::Machine
 uefi_loader/src/device_tree_from_acpi.rs::Ram
 uefi_loader/src/device_tree_from_acpi.rs::Uart

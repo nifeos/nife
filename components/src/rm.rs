@@ -265,7 +265,7 @@ fn sweep(flags: u64, count: &mut u64) -> Result<(), i32> {
 /// **The `-v` line: the name, and nothing else.** `rm(1)`'s `-v` is "showing them as they are
 /// removed", and the default is silence, which is why every call to this is behind the option.
 fn say(name: &[u8], suffix: &[u8]) {
-    let mut out = [0u8; grant::MAX_NAME + 16];
+    let mut out = [0u8; grant::MAXIMUM_NAME + 16];
     let n = pack(&mut out, &[name, suffix, b"\n"]);
     text(&out[..n]);
 }
@@ -281,7 +281,7 @@ fn diagnose(name: &[u8], errno: i32) {
     } else {
         dir::explain(errno).as_bytes()
     };
-    let mut out = [0u8; grant::MAX_NAME + 96];
+    let mut out = [0u8; grant::MAXIMUM_NAME + 96];
     let n = if name.is_empty() {
         pack(&mut out, &[b"rm: ", reason, b"\n"])
     } else {

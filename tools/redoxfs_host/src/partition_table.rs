@@ -52,7 +52,7 @@ pub(crate) fn parse_table<'a>(
 ) -> Result<(GloballyUniqueIdentifierPartitionTable<'a>, usize), String> {
     let mut first: Option<(usize, globally_unique_identifier_partition_table::Error)> = None;
     for block_size in [
-        globally_unique_identifier_partition_table::MIN_BLOCK_SIZE,
+        globally_unique_identifier_partition_table::MINIMUM_BLOCK_SIZE,
         globally_unique_identifier_partition_table::MAXIMUM_BLOCK_SIZE,
     ] {
         let Some(header_block) = head.get(block_size..2 * block_size) else {

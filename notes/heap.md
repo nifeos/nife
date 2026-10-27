@@ -242,8 +242,8 @@ the process's own untyped budget. The pair that landed:
   geometrically (double, at least 8 pages, never past `maximum_bytes`). The first run is talc's
   `claim`, holding its bins; each later run is `extend`, so the heap stays one contiguous range.
   Which slot pays, and where the heap lives, are part of the program's capability contract like
-  every other slot number (notes/abi.md §4 (kernel shape: monolithic, deferred));
-  `heap::DEFAULT_BASE` (1 GiB) is a suggested VA clear of every convention in the tree.
+  every other slot number (notes/abi.md §4 (kernel shape: monolithic, deferred)); `heap::DEFAULT_BASE` (1 GiB) is a suggested VA clear of
+  every convention in the tree.
 
 What this is *not*: a kernel service. The kernel's only involvement is the `untyped::MAP` it
 already had; a process that leaks just exhausts its own budget (`OutOfMemory` is the process's

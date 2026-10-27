@@ -91,15 +91,15 @@ fn spelled(mut n: usize, buf: &mut [u8; 32]) -> &str {
 /// **A limit a line quotes is the limit the code enforces.** Each of these five strings states a
 /// number as text, and nothing else ties that text to the constant, so a ceiling raised in one
 /// place would leave the prompt quoting the old one. The segment ceiling `TooManySegments` quotes
-/// lives in the shell (`swish::sequence::MAX_SEGMENTS`), which this crate cannot see.
+/// lives in the shell (`swish::sequence::MAXIMUM_SEGMENTS`), which this crate cannot see.
 #[test]
 fn a_quoted_limit_is_the_constant_behind_it() {
     let cases: &[(Refusal, &str, usize, &str)] = &[
         (
             Refusal::FileNotNameable,
             "at most {} bytes a file",
-            crate::MAX_FILE_NAME,
-            "MAX_FILE_NAME",
+            crate::MAXIMUM_FILE_NAME,
+            "MAXIMUM_FILE_NAME",
         ),
         (
             Refusal::FileNotNameable,
@@ -128,8 +128,8 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         (
             Refusal::MatchNotNameable,
             "at most {} bytes",
-            crate::expand::MAX_NAME,
-            "expand::MAX_NAME",
+            crate::expand::MAXIMUM_NAME,
+            "expand::MAXIMUM_NAME",
         ),
         (
             Refusal::TooManyStages,

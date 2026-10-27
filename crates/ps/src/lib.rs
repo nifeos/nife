@@ -23,7 +23,7 @@
 
 #![cfg_attr(not(test), no_std)]
 
-/// The widest domain a survey can produce: the kernel's entire thread table (`MAX_THREADS` in
+/// The widest domain a survey can produce: the kernel's entire thread table (`MAXIMUM_THREADS` in
 /// `kernel/src/sched.rs`). **A buffer this size makes truncation unreachable rather than handled**,
 /// and a compile-time assertion in `kernel::user::survey_tests` keeps the two in step. The buffer
 /// is a stack allocation in `ps` and `pgrep`; notes/process-view/the-ps-crate.md has its measured

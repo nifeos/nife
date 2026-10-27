@@ -430,7 +430,7 @@ mod tests {
     /// parse, and read back by name, the last one included. With `too_many_files_is_refused` below
     /// it pins the ceiling from both sides, so a `DIR_BLOCKS` change that miscounts fails here.
     #[test]
-    fn exactly_max_files_is_written_and_every_entry_reads_back() {
+    fn exactly_maximum_files_is_written_and_every_entry_reads_back() {
         let names: vec::Vec<std::string::String> =
             (0..MAXIMUM_FILES).map(|i| std::format!("f{i}")).collect();
         let files: vec::Vec<(&str, &[u8])> =

@@ -12,7 +12,8 @@
 //! # BUGS
 //!
 //! - IPv4 only: `net_stack` builds `smoltcp` with `proto-ipv4` alone.
-//! - No EDNS(0), so UDP replies stop at [`UDP_MESSAGE_MAX`] and a larger answer costs a TCP retry.
+//! - No EDNS(0), so UDP replies stop at [`UDP_MESSAGE_MAXIMUM`] and a larger answer costs a TCP
+//!   retry.
 //! - No DNSSEC: an on-path attacker can forge the reply, id and all. No "0x20" case randomisation.
 //! - At most [`MAXIMUM_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
 //! - Labels hold only letters, digits, `-` and `_` ([`Name::from_dotted`]): no escape syntax.
@@ -32,12 +33,21 @@ pub const PORT: u16 = 53;
 
 /// The largest message RFC 1035 lets travel over UDP without EDNS (section 4.2.1). A reply that would be
 /// larger arrives truncated, with [`FLAG_TC`] set.
-pub const UDP_MESSAGE_MAX: usize = 512;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `UDP_MESSAGE_MAX`.
+pub const UDP_MESSAGE_MAXIMUM: usize = 512;
 
 /// A name in wire form is at most 255 bytes, length bytes and the root label included (section 2.3.4).
-pub const MAX_NAME_LEN: usize = 255;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NAME_LEN`.
+pub const MAXIMUM_NAME_LEN: usize = 255;
 /// A label is at most 63 bytes; the two top bits of a longer count are the compression-pointer tag.
-pub const MAX_LABEL_LEN: usize = 63;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_LABEL_LEN`.
+pub const MAXIMUM_LABEL_LEN: usize = 63;
 
 /// The header every DNS message starts with.
 pub const HEADER_LEN: usize = 12;
@@ -188,7 +198,7 @@ impl Header {
 /// same name. `Debug` prints the dotted form.
 #[derive(Clone, Copy)]
 pub struct Name {
-    bytes: [u8; MAX_NAME_LEN],
+    bytes: [u8; MAXIMUM_NAME_LEN],
     len: u8,
 }
 
@@ -196,7 +206,7 @@ impl Name {
     /// The root, the name every other name ends in: one empty label.
     pub const fn root() -> Name {
         Name {
-            bytes: [0; MAX_NAME_LEN],
+            bytes: [0; MAXIMUM_NAME_LEN],
             len: 1,
         }
     }
@@ -221,7 +231,7 @@ impl Name {
     /// ```
     pub fn from_dotted(text: &str) -> Result<Name> {
         let mut out = Name {
-            bytes: [0; MAX_NAME_LEN],
+            bytes: [0; MAXIMUM_NAME_LEN],
             len: 0,
         };
         let body = text.strip_suffix('.').unwrap_or(text);
@@ -230,7 +240,7 @@ impl Name {
                 if label.is_empty() {
                     return Err(Error::BadLabel);
                 }
-                if label.len() > MAX_LABEL_LEN {
+                if label.len() > MAXIMUM_LABEL_LEN {
                     return Err(Error::LabelTooLong);
                 }
                 if !label
@@ -347,7 +357,7 @@ impl core::fmt::Debug for Name {
 /// [`Error::PointerForward`] rather than a hang. `src/proofs.rs` checks that claim with Kani.
 pub fn decode_name(msg: &[u8], off: usize) -> Result<(Name, usize)> {
     let mut out = Name {
-        bytes: [0; MAX_NAME_LEN],
+        bytes: [0; MAXIMUM_NAME_LEN],
         len: 0,
     };
     let (len, resume) = decode_name_into(msg, off, &mut out.bytes)?;

@@ -32,8 +32,8 @@
 
 use abi::rights;
 use domain_name_resolution_contract::{
-    self as protocol, Grants, MAXIMUM_ADDRESSES, NAME_TEXT_MAX, OFF_ADDRESSES, OFF_NAME, Outcome,
-    endowment, network_step, status,
+    self as protocol, Grants, MAXIMUM_ADDRESSES, NAME_TEXT_MAXIMUM, OFF_ADDRESSES, OFF_NAME,
+    Outcome, endowment, network_step, status,
 };
 use domain_name_system::{Answer, Name, Query, Reject, TcpReply};
 use socket_contract as socket;
@@ -89,7 +89,7 @@ struct State {
     /// The slot of the page frame mapped in each window, while one is: what a forget unmaps and
     /// deletes.
     attached: [Option<u64>; protocol::GRANTS_MAXIMUM],
-    request: [u8; 2 + domain_name_system::UDP_MESSAGE_MAX],
+    request: [u8; 2 + domain_name_system::UDP_MESSAGE_MAXIMUM],
     reply: [u8; TCP_REPLY_MAXIMUM],
     chunk: [u8; socket::DATA_MAXIMUM],
 }
@@ -97,7 +97,7 @@ struct State {
 static mut STATE: State = State {
     grants: Grants::new(),
     attached: [None; protocol::GRANTS_MAXIMUM],
-    request: [0; 2 + domain_name_system::UDP_MESSAGE_MAX],
+    request: [0; 2 + domain_name_system::UDP_MESSAGE_MAXIMUM],
     reply: [0; TCP_REPLY_MAXIMUM],
     chunk: [0; socket::DATA_MAXIMUM],
 };
@@ -243,10 +243,10 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
 
     // Copied out before it is read, so what is judged and what is asked are the same bytes.
     let len = len as usize;
-    if len == 0 || len > NAME_TEXT_MAX + 1 {
+    if len == 0 || len > NAME_TEXT_MAXIMUM + 1 {
         return (Outcome::of(status::BAD_NAME), 0);
     }
-    let mut text = [0u8; NAME_TEXT_MAX + 1];
+    let mut text = [0u8; NAME_TEXT_MAXIMUM + 1];
     for (i, b) in text[..len].iter_mut().enumerate() {
         *b = page.r8((OFF_NAME + i) as u64);
     }

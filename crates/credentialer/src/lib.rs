@@ -126,7 +126,10 @@ impl Cost {
     /// corrupt record. Refusing it here means [`blocks`] is always a number a caller can act on.
     ///
     /// [`blocks`]: Cost::blocks
-    pub const MAX_M_KIB: u32 = 1024 * 1024;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_M_KIB`.
+    pub const MAXIMUM_M_KIB: u32 = 1024 * 1024;
 
     /// A cost, or `None` if it is one Argon2 (or this crate) will not accept. Checked here rather
     /// than at derivation time so a bad policy fails where it is written.
@@ -146,13 +149,14 @@ impl Cost {
     ///
     /// assert!(Cost::new(4096, 3, 1).is_some());
     /// assert!(Cost::new(0, 3, 1).is_none()); // no memory is not a memory-hard KDF
-    /// assert!(Cost::new(Cost::MAX_M_KIB + 1, 3, 1).is_none()); // past a gibibyte is a typo, not a policy
+    /// // Past a gibibyte is a typo, not a policy.
+    /// assert!(Cost::new(Cost::MAXIMUM_M_KIB + 1, 3, 1).is_none());
     /// ```
     pub fn new(m_kib: u32, t: u32, p: u32) -> Option<Self> {
         if p == 0 || p > MAXIMUM_P_COST || t == 0 {
             return None;
         }
-        if !(MINIMUM_M_COST..=Self::MAX_M_KIB).contains(&m_kib) {
+        if !(MINIMUM_M_COST..=Self::MAXIMUM_M_KIB).contains(&m_kib) {
             return None;
         }
         // Safe now: `p <= 2^24 - 1`, so `p * 8` cannot overflow a u32.
@@ -925,10 +929,10 @@ mod tests {
             );
         }
         assert!(
-            Cost::new(Cost::MAX_M_KIB + 1, 1, 1).is_none(),
+            Cost::new(Cost::MAXIMUM_M_KIB + 1, 1, 1).is_none(),
             "more memory than the ceiling is a corrupt record, not a policy",
         );
-        assert!(Cost::new(Cost::MAX_M_KIB, 1, 1).is_some());
+        assert!(Cost::new(Cost::MAXIMUM_M_KIB, 1, 1).is_some());
     }
 
     // ---------------------------------------------------------------------------------------
@@ -1105,10 +1109,10 @@ mod tests {
         );
     }
 
-    /// The cost accessors and the memory ceiling. `MAX_M_KIB` is `1024 * 1024`, and a mutant that
-    /// turned the multiply into a divide (ceiling: one KiB) refused every real cost with nothing
-    /// failing; the accessors are how the service echoes a store's policy and returned what they
-    /// liked.
+    /// The cost accessors and the memory ceiling. `MAXIMUM_M_KIB` is `1024 * 1024`, and a mutant
+    /// that turned the multiply into a divide (ceiling: one KiB) refused every real cost with
+    /// nothing failing; the accessors are how the service echoes a store's policy and returned what
+    /// they liked.
     #[test]
     fn the_cost_is_what_it_says_up_to_the_real_ceiling() {
         let c = Cost::new(256, 3, 2).unwrap();
@@ -1116,10 +1120,10 @@ mod tests {
         // 1 GiB in KiB, hand-computed. The two assertions below name the ceiling by its own symbol,
         // so both sides move together when the constant does: `1024 + 1024` is 2048, still above
         // MINIMUM_M_COST, and every symbolic check still passes while every real policy is refused.
-        assert_eq!(Cost::MAX_M_KIB, 1_048_576);
+        assert_eq!(Cost::MAXIMUM_M_KIB, 1_048_576);
         // The ceiling itself is a legal cost (validation only; nothing allocates a gibibyte here).
-        assert!(Cost::new(Cost::MAX_M_KIB, 1, 1).is_some());
-        assert!(Cost::new(Cost::MAX_M_KIB + 1, 1, 1).is_none());
+        assert!(Cost::new(Cost::MAXIMUM_M_KIB, 1, 1).is_some());
+        assert!(Cost::new(Cost::MAXIMUM_M_KIB + 1, 1, 1).is_none());
         // blocks() answers from the real params, not some default: 256 KiB at p=1 is 256 blocks
         // (Argon2 rounds m down to a multiple of 4p, which 256 already is).
         assert_eq!(Cost::new(256, 1, 1).unwrap().blocks(), 256);

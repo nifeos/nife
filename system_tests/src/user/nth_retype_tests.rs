@@ -42,15 +42,15 @@ struct Census {
     /// `held` entries. Bounded small and not per-slot: a `[Option<_>; CAPABILITY_TABLE_SLOTS]` here
     /// is a 1.5 KiB value at 64 slots, copied through every frame (milestone 754 (the capability
     /// table grows to 64 slots)).
-    regions: [(usize, u64, u64); MAX_REGIONS_HELD],
+    regions: [(usize, u64, u64); MAXIMUM_REGIONS_HELD],
     held: usize,
 }
 
 /// More memory regions than `login` has ever held at once, with room; `census` panics past it.
-const MAX_REGIONS_HELD: usize = 8;
+const MAXIMUM_REGIONS_HELD: usize = 8;
 
 fn census(tid: crate::thread::ThreadId) -> Census {
-    let mut regions = [(0, 0, 0); MAX_REGIONS_HELD];
+    let mut regions = [(0, 0, 0); MAXIMUM_REGIONS_HELD];
     let mut held = 0;
     for slot in 0..crate::cap::CAPABILITY_TABLE_SLOTS {
         // One slot per lock acquisition: `memory_region::usage` takes a lock of higher rank than the
@@ -62,8 +62,8 @@ fn census(tid: crate::thread::ThreadId) -> Census {
         {
             let spent = crate::memory_region::usage(region).map_or(u64::MAX, |(spent, _)| spent);
             assert!(
-                held < MAX_REGIONS_HELD,
-                "login holds more than {MAX_REGIONS_HELD} regions"
+                held < MAXIMUM_REGIONS_HELD,
+                "login holds more than {MAXIMUM_REGIONS_HELD} regions"
             );
             regions[held] = (slot, region, spent);
             held += 1;

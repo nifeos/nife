@@ -11,7 +11,7 @@ use super::*;
 /// [`MAXIMUM_RENDEZVOUS`], and half of it, since §101 (notification objects)'s consumers want about
 /// one per thread or service. It bounds only the name table, 16 bytes a slot; the pages come from
 /// the creators' regions.
-pub(super) const MAX_NOTIFICATIONS: usize = 256;
+pub(super) const MAXIMUM_NOTIFICATIONS: usize = 256;
 
 /// A notification's name: a generational name over the notification registry, what an
 /// `Object::Notification` capability carries. Stale-safe like every other name.
@@ -47,7 +47,7 @@ pub(super) fn notification_of(
 pub fn create_notification_from(region: u64) -> Option<NotificationId> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut()?;
-    if sched.notification_table.len() >= MAX_NOTIFICATIONS {
+    if sched.notification_table.len() >= MAXIMUM_NOTIFICATIONS {
         return None;
     }
     let phys = crate::memory_region::retype_object_page(

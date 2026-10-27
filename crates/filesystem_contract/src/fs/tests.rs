@@ -5,7 +5,7 @@ fn file_request_packs_and_unpacks() {
     // Every field survives the pack, at its extremes, without bleeding into another.
     for &(o, h, l) in &[
         (fs::OPEN, 0u64, 7u64),
-        (fs::READ, fs::MAXIMUM_HANDLE, fs::MAX_LEN),
+        (fs::READ, fs::MAXIMUM_HANDLE, fs::MAXIMUM_LEN),
         (fs::WRITE, 1, 4096),
         (fs::CLOSE, 65535, 0),
         (fs::FSTAT, 3, 0),
@@ -23,10 +23,10 @@ fn file_request_packs_and_unpacks() {
 fn a_handle_never_collides_with_the_opcode_or_length() {
     // A big handle must not spill into the opcode field, and a max length must not spill into
     // the handle: the READ path packs all three and reads them back independently.
-    let w = fs::req(fs::READ, fs::MAXIMUM_HANDLE, fs::MAX_LEN);
+    let w = fs::req(fs::READ, fs::MAXIMUM_HANDLE, fs::MAXIMUM_LEN);
     assert_eq!(operation(w), fs::READ);
     assert_eq!(fs::req_handle(w), fs::MAXIMUM_HANDLE);
-    assert_eq!(fs::req_len(w) as u64, fs::MAX_LEN);
+    assert_eq!(fs::req_len(w) as u64, fs::MAXIMUM_LEN);
 }
 
 // --- The directory capability (milestone 47 (navigation and naming)) ---
@@ -79,11 +79,11 @@ fn a_rename_carries_two_directories_and_two_lengths_without_them_bleeding() {
         (1, 16, 2, 1),
         (
             fs::MAXIMUM_HANDLE,
-            fs::MAX_LEN,
+            fs::MAXIMUM_LEN,
             fs::MAXIMUM_HANDLE,
-            fs::MAX_LEN,
+            fs::MAXIMUM_LEN,
         ),
-        (fs::MAXIMUM_HANDLE, 1, 0, fs::MAX_LEN),
+        (fs::MAXIMUM_HANDLE, 1, 0, fs::MAXIMUM_LEN),
     ] {
         let w0 = fs::req(fs::RENAME, sh, sl);
         let w1 = fs::rename_dst(dh, dl);

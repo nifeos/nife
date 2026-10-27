@@ -95,9 +95,9 @@ its checks is a mistake that would otherwise be silent:
   split refusing for no visible reason.
 
 The handoff run is held to the same rules as a mapping, and a page anywhere inside the run collides.
-An over-long declaration is not checked there, because `MAX_CAPS` is this crate's limit rather than
-the declaration's defect, so it is `plan`'s refusal. `MAX_CAPS` is eight, about double the widest
-manifest's four, and it leaves room below `abi::fault::FAULT_EP_SLOT` for placed slots.
+An over-long declaration is not checked there, because `MAXIMUM_CAPS` is this crate's limit rather
+than the declaration's defect, so it is `plan`'s refusal. `MAXIMUM_CAPS` is eight, about double the
+widest manifest's four, and it leaves room below `abi::fault::FAULT_EP_SLOT` for placed slots.
 
 `plan` refuses before the component exists, and the guest test asserts that by reporting the refusal
 ahead of the first build step.
@@ -124,7 +124,7 @@ supervisor never waits for it)).
 Only direct dependents are returned. A dependent with its own decoupling (a queue, a cache) is not
 assumed to pass the warning to its own dependents. Whether it must is a property of that mechanism,
 which two contract names cannot show. `Dependents` makes no ordering claim; it is a filter, held as a
-value so a supervisor does not re-derive it. `MAXIMUM_LIVE` is eight, matched to `MAX_CAPS`. A
+value so a supervisor does not re-derive it. `MAXIMUM_LIVE` is eight, matched to `MAXIMUM_CAPS`. A
 supervisor running more live components than it could endow one of with capabilities is not a shape
 this tree has.
 

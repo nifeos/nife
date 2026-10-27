@@ -144,9 +144,9 @@ the low-water is [frames.md](frames.md)'s held list plus that one reservation: t
 moves the low, and the refusal count catches a load that no longer fits. Contiguity is not tracked
 per test: `largest_free_run` never moved from the first test's reading, and a bitmap scan per test
 overran the `x86_64` 17 GiB leg's time bound. A refused `alloc_contiguous` is the contiguity failure
-itself, and it is counted. The figure reports and does not gate, for `sched::MAX_THREADS`'s reason:
-the held list grows on purpose, and the ledger's two end-of-suite gates hold the permanent part to
-account.
+itself, and it is counted. The figure reports and does not gate, for `sched::MAXIMUM_THREADS`'s
+reason: the held list grows on purpose, and the ledger's two end-of-suite gates hold the permanent
+part to account.
 
 ## No heap, and an interrupt-safe lock
 

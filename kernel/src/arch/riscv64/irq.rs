@@ -12,8 +12,8 @@ use core::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
 ///
 /// A table, because the formula is QEMU's layout: on the JH7110 hart h's S context is `2h`. See
 /// notes/riscv-port/traps.md.
-static S_CTX: [AtomicUsize; machine_discovery::plic::MAX_CONTEXT_HARTS] =
-    [const { AtomicUsize::new(CTX_UNKNOWN) }; machine_discovery::plic::MAX_CONTEXT_HARTS];
+static S_CTX: [AtomicUsize; machine_discovery::plic::MAXIMUM_CONTEXT_HARTS] =
+    [const { AtomicUsize::new(CTX_UNKNOWN) }; machine_discovery::plic::MAXIMUM_CONTEXT_HARTS];
 const CTX_UNKNOWN: usize = usize::MAX;
 
 /// Record the PLIC context layout from the device tree at physical `dtb_ptr`, once, on the boot

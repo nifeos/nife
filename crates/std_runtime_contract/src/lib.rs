@@ -175,7 +175,10 @@ pub const INDEX_SOURCES_PAGE: u64 = 0x1700_0000;
 pub const HEAP_BASE: u64 = 0x4000_0000;
 /// The heap's growth cap: the heap band's whole width. Only a bound on the address range: the
 /// budget in [`MEMORY_REGION_SLOT`] is the real, per-program limit.
-pub const HEAP_MAX: u64 = 256 * 1024 * 1024;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `HEAP_MAX`.
+pub const HEAP_MAXIMUM: u64 = 256 * 1024 * 1024;
 
 /// **Stack pages a loader maps for a std program**, where a native child of the progenitor gets
 /// twelve. std's startup, its formatting machinery and its collections use far more stack than a
@@ -187,9 +190,9 @@ pub const HEAP_MAX: u64 = 256 * 1024 * 1024;
 /// Name: provisional.
 pub const STACK_PAGES: u64 = 32;
 
-// The stack band holds 4,080 pages less a guard (`address_space_map::MAX_STACK_PAGES`); the test
-// below pins the exact figure. This line keeps a nonsense value out of the PAL, which cannot see
-// the map.
+// The stack band holds 4,080 pages less a guard (`address_space_map::MAXIMUM_STACK_PAGES`); the
+// test below pins the exact figure. This line keeps a nonsense value out of the PAL, which cannot
+// see the map.
 const _: () = assert!(STACK_PAGES > 0 && STACK_PAGES <= 4079);
 
 #[cfg(test)]
@@ -275,7 +278,7 @@ mod tests {
             }
         }
         assert_eq!(HEAP_BASE % PAGE, 0);
-        assert_eq!(HEAP_MAX % PAGE, 0);
+        assert_eq!(HEAP_MAXIMUM % PAGE, 0);
     }
 
     /// **The restated numbers are the map's**, which is the whole of what stands between this file
@@ -284,8 +287,8 @@ mod tests {
     #[allow(clippy::assertions_on_constants)]
     fn the_heap_and_the_stack_are_the_address_space_maps() {
         assert_eq!(HEAP_BASE, address_space_map::HEAP.start);
-        assert_eq!(HEAP_MAX, address_space_map::HEAP.bytes());
-        assert!(STACK_PAGES <= address_space_map::MAX_STACK_PAGES);
-        assert_eq!(address_space_map::MAX_STACK_PAGES, 4079);
+        assert_eq!(HEAP_MAXIMUM, address_space_map::HEAP.bytes());
+        assert!(STACK_PAGES <= address_space_map::MAXIMUM_STACK_PAGES);
+        assert_eq!(address_space_map::MAXIMUM_STACK_PAGES, 4079);
     }
 }

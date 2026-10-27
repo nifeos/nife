@@ -4,12 +4,15 @@
 /// a real client's name would be discovered on the board rather than here. It is also exactly
 /// what one length byte holds, which is what makes [`list`]'s records a byte cheaper than
 /// [`super::dirent`]'s.
-pub const MAX_NAME: usize = 255;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NAME`.
+pub const MAXIMUM_NAME: usize = 255;
 
 /// The longest attribute **value**, in bytes.
 ///
 /// Three kibibytes, set by the transport: [`fs::SETXATTR`] carries a name and a value in one
-/// [`super::PAGE`], so `MAX_NAME + MAXIMUM_VALUE` must fit 4096 with room to spare. Apple's
+/// [`super::PAGE`], so `MAXIMUM_NAME + MAXIMUM_VALUE` must fit 4096 with room to spare. Apple's
 /// `AFP_AfpInfo` is 60 bytes and a `FinderInfo` blob 32, while Samba's `streams_xattr` can ask for
 /// far more; §99 (where Apple's metadata lands) says what fits here.
 ///
@@ -23,7 +26,7 @@ pub const MAXIMUM_VALUE: usize = 3072;
 /// The most attributes one file or directory may carry.
 ///
 /// Sixteen, and it is the number that makes [`fs::LISTXATTR`] complete in one reply: sixteen
-/// names of [`MAX_NAME`] bytes plus their length prefixes is 4096 bytes, exactly one
+/// names of [`MAXIMUM_NAME`] bytes plus their length prefixes is 4096 bytes, exactly one
 /// [`super::PAGE`]. A cursor would otherwise be needed, and a cursored listing can be observed
 /// half-changed, which is a worse property than a ceiling. Samba with `fruit` uses a handful per
 /// file.
@@ -49,8 +52,8 @@ pub const RAW: u32 = 0;
 /// which is the discipline `ENOENT` earns in [`dir::explain`]: an instrument that reads any
 /// failure as "not there" reports filesystems that never existed (notes/fs-server.md).
 pub const ENODATA: i32 = 61;
-/// `ERANGE`: the name is empty, longer than [`MAX_NAME`], or holds a NUL. A fact about the name,
-/// not about the capability.
+/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME`], or holds a NUL. A fact about the
+/// name, not about the capability.
 pub const ERANGE: i32 = 34;
 /// `E2BIG`: the value is longer than [`MAXIMUM_VALUE`].
 pub const E2BIG: i32 = 7;
@@ -110,8 +113,8 @@ pub const fn reply_value_len(r0: i64) -> usize {
     (r0 as u64 & 0xffff_ffff) as usize
 }
 
-/// Whether `name` is a name this store can hold: non-empty, at most [`MAX_NAME`] bytes, and free
-/// of NUL.
+/// Whether `name` is a name this store can hold: non-empty, at most [`MAXIMUM_NAME`] bytes, and
+/// free of NUL.
 ///
 /// **Bytes, not UTF-8, and no namespace prefix is required.** Linux insists on
 /// `user.`/`security.`/`trusted.` because those namespaces mean different privilege; there is no
@@ -120,7 +123,7 @@ pub const fn reply_value_len(r0: i64) -> usize {
 /// anything speaking the POSIX API) hands it over as a C string, and a name with a NUL in it
 /// would come back shorter than it went out.
 pub const fn is_valid_name(name: &[u8]) -> bool {
-    if name.is_empty() || name.len() > MAX_NAME {
+    if name.is_empty() || name.len() > MAXIMUM_NAME {
         return false;
     }
     let mut i = 0;
@@ -152,7 +155,7 @@ pub mod list {
     ///
     /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
     /// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
-    pub const MAXIMUM_BYTES: usize = super::MAXIMUM_COUNT * record_len(super::MAX_NAME);
+    pub const MAXIMUM_BYTES: usize = super::MAXIMUM_COUNT * record_len(super::MAXIMUM_NAME);
 
     /// Write one record at the start of `out`, returning its length, or `None` if it does not
     /// fit or the name is not one this store holds.
@@ -221,7 +224,7 @@ pub mod store {
     ///
     /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
     /// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
-    pub const MAXIMUM_BYTES: usize = MAXIMUM_COUNT * record_len(super::MAX_NAME, MAXIMUM_VALUE);
+    pub const MAXIMUM_BYTES: usize = MAXIMUM_COUNT * record_len(super::MAXIMUM_NAME, MAXIMUM_VALUE);
 
     /// The name of the file that holds a node's blob: its `TreePtr` id in lowercase hex, always
     /// eight characters, so the store directory's entries sort and read predictably in a
@@ -348,7 +351,7 @@ pub mod store {
     /// Lay one record at the start of `out`; `None` if it does not fit.
     fn write_record(out: &mut [u8], name: &[u8], kind: u32, value: &[u8]) -> Option<usize> {
         let n = record_len(name.len(), value.len());
-        if out.len() < n || name.len() > super::MAX_NAME || value.len() > MAXIMUM_VALUE {
+        if out.len() < n || name.len() > super::MAXIMUM_NAME || value.len() > MAXIMUM_VALUE {
             return None;
         }
         out[0] = name.len() as u8;
@@ -392,7 +395,7 @@ use super::{dir, fs};
 /// A [`fs::SETXATTR`] carries a name and a value in one page, so the two limits together must
 /// leave the transport room. Checked at compile time because both sides are constants: a change
 /// that broke it should fail the build rather than wait for a request that happens to be wide.
-const _: () = assert!(MAX_NAME + MAXIMUM_VALUE <= super::PAGE);
+const _: () = assert!(MAXIMUM_NAME + MAXIMUM_VALUE <= super::PAGE);
 /// And a complete listing must fit one page, which is what lets [`fs::LISTXATTR`] have no cursor.
 const _: () = assert!(list::MAXIMUM_BYTES <= super::PAGE);
 /// The four verbs must not collide with the thirteen that were already on the wire.

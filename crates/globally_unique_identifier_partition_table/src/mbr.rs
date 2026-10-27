@@ -59,11 +59,12 @@ pub fn validate(block: &[u8], block_count: u64) -> Result<(), Error> {
     // order because the two failures mean different things and the message has to be the right
     // one: a disk with a real MBR partition table and no 0xEE record is "not a GPT disk", while
     // a 0xEE record with company is a hybrid MBR.
-    let os_type = |i: usize| block[RECORDS + i * 16 + OPERATING_SYSTEM_TYPE];
-    let Some(i) = (0..4).find(|&i| os_type(i) == PROTECTIVE_OPERATING_SYSTEM_TYPE) else {
+    let operating_system_type = |i: usize| block[RECORDS + i * 16 + OPERATING_SYSTEM_TYPE];
+    let Some(i) = (0..4).find(|&i| operating_system_type(i) == PROTECTIVE_OPERATING_SYSTEM_TYPE)
+    else {
         return Err(Error::Mbr(MbrProblem::NoProtectiveRecord));
     };
-    if let Some(extra) = (0..4).find(|&j| j != i && os_type(j) != 0x00) {
+    if let Some(extra) = (0..4).find(|&j| j != i && operating_system_type(j) != 0x00) {
         return Err(Error::Mbr(MbrProblem::ExtraRecord { index: extra }));
     }
     let r = &block[RECORDS + i * 16..RECORDS + (i + 1) * 16];

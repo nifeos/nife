@@ -68,7 +68,7 @@ const CAPACITY: usize = 6;
 
 /// The heap's virtual cap. It holds one allocation, the Argon2 scratch, plus the slack an
 /// allocator needs to place it; the untyped behind it is the real ceiling either way.
-const HEAP_MAX: u64 = 6 * 1024 * 1024;
+const HEAP_MAXIMUM: u64 = 6 * 1024 * 1024;
 
 /// The startup report's first word, so a reader of the endpoint knows this is the credential
 /// service speaking. ASCII-ish, so a hex dump of a report reads.
@@ -92,7 +92,7 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
-    HEAP.initialize(BUDGET, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.initialize(BUDGET, memory_region_heap::DEFAULT_BASE, HEAP_MAXIMUM);
 
     let cost = Cost::DEFAULT;
 

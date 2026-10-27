@@ -169,7 +169,8 @@ What is blocked: only the production pool, and through it milestone 47 (navigati
 Raise `CAPABILITY_TABLE_SLOTS` from 24 to 32 and hold the seven window capabilities permanently.
 
 - Cost: every thread's table is inline in its control block, at 32 bytes a slot. Eight slots are
-  256 bytes a thread, 64 KiB across `MAX_THREADS` (256). Computed from the constants `cap.rs` pins.
+  256 bytes a thread, 64 KiB across `MAXIMUM_THREADS` (256). Computed from the constants `cap.rs`
+  pins.
 - It moves `abi::fault::FAULT_EP_SLOT` (always `CAPABILITY_TABLE_SLOTS - 1`) from 23 to 31, which
   every supervised program agrees on. It has moved three times already (16, 17, 24), each a
   one-number change with the tree rebuilt around it.

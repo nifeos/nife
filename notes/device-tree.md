@@ -242,7 +242,7 @@ only ACPI, and its BUGS keep one line per loss. The full accounts:
   never its length, because the GIC architecture fixes the frame at 64 KiB. The same goes for the
   GICv2 CPU interface and the PL011's page. A machine whose frames differ would need this told
   rather than assumed, and nothing here would notice.
-- One `/memory` node per merged run, capped at `MAX_RAM`. A machine with more runs than that is
+- One `/memory` node per merged run, capped at `MAXIMUM_RAM`. A machine with more runs than that is
   described short, and nothing says so.
 
 ---

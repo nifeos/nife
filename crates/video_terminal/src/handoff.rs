@@ -75,7 +75,7 @@ pub(crate) const KNOWN_ATTR_FLAGS: u32 = 0x7b;
 /// Layout 1's flags, its underline bit among them.
 pub(crate) const KNOWN_ATTR_FLAGS_1: u32 = 0x3f;
 /// The most underline styles `Attr` defines: `0` none through `5` dashed.
-pub(crate) const MAX_UNDERLINE_STYLE: u32 = 5;
+pub(crate) const MAXIMUM_UNDERLINE_STYLE: u32 = 5;
 
 pub(crate) const fn color_word(c: Colour) -> u32 {
     match c {
@@ -113,7 +113,7 @@ pub(crate) const fn word_underline(w: u32) -> Option<Option<Colour>> {
 
 /// The rendition from its words, checked: `None` for a flag or a style no `Attr` has.
 pub(crate) fn words_attr(fg: u32, bg: u32, flags: u32, ul: u32, style: u32) -> Option<Attr> {
-    if flags & !KNOWN_ATTR_FLAGS != 0 || style > MAX_UNDERLINE_STYLE {
+    if flags & !KNOWN_ATTR_FLAGS != 0 || style > MAXIMUM_UNDERLINE_STYLE {
         return None;
     }
     Some(Attr {

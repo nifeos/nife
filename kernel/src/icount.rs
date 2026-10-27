@@ -32,7 +32,7 @@ pub mod tick_trace {
     static ARRIVAL_MAXIMUM: AtomicU64 = AtomicU64::new(0);
     static ARRIVAL_MINIMUM: AtomicU64 = AtomicU64::new(u64::MAX);
     static HANDLER_SUM: AtomicU64 = AtomicU64::new(0);
-    static HANDLER_MAX: AtomicU64 = AtomicU64::new(0);
+    static HANDLER_MAXIMUM: AtomicU64 = AtomicU64::new(0);
     static EARLY: AtomicU64 = AtomicU64::new(0);
 
     /// Record one tick's numbers, all in counter ticks.
@@ -58,7 +58,7 @@ pub mod tick_trace {
         ARRIVAL_MAXIMUM.fetch_max(arrival_latency, Ordering::Relaxed);
         ARRIVAL_MINIMUM.fetch_min(arrival_latency, Ordering::Relaxed);
         HANDLER_SUM.fetch_add(handler, Ordering::Relaxed);
-        HANDLER_MAX.fetch_max(handler, Ordering::Relaxed);
+        HANDLER_MAXIMUM.fetch_max(handler, Ordering::Relaxed);
     }
 
     /// Ticks recorded since the last [`reset`].
@@ -72,7 +72,7 @@ pub mod tick_trace {
         EARLY.load(Ordering::Relaxed)
     }
 
-    /// `(count, arrival_minimum, arrival_mean, arrival_maximum, handler_mean, handler_max)`, in
+    /// `(count, arrival_minimum, arrival_mean, arrival_maximum, handler_mean, handler_maximum)`, in
     /// counter ticks. Means are integer divisions; the caller converts to instructions.
     pub(crate) fn snapshot() -> (u64, u64, u64, u64, u64, u64) {
         let n = COUNT.load(Ordering::Relaxed).max(1);
@@ -82,7 +82,7 @@ pub mod tick_trace {
             ARRIVAL_SUM.load(Ordering::Relaxed) / n,
             ARRIVAL_MAXIMUM.load(Ordering::Relaxed),
             HANDLER_SUM.load(Ordering::Relaxed) / n,
-            HANDLER_MAX.load(Ordering::Relaxed),
+            HANDLER_MAXIMUM.load(Ordering::Relaxed),
         )
     }
 
@@ -93,7 +93,7 @@ pub mod tick_trace {
         ARRIVAL_MAXIMUM.store(0, Ordering::Relaxed);
         ARRIVAL_MINIMUM.store(u64::MAX, Ordering::Relaxed);
         HANDLER_SUM.store(0, Ordering::Relaxed);
-        HANDLER_MAX.store(0, Ordering::Relaxed);
+        HANDLER_MAXIMUM.store(0, Ordering::Relaxed);
         EARLY.store(0, Ordering::Relaxed);
     }
 }
@@ -169,7 +169,7 @@ pub fn run() -> ! {
     let ticks_measured = ticks_after - ticks_before;
     let deadline_delta = deadline_after - deadline_before;
 
-    let (count, arrival_minimum, arrival_mean, arrival_maximum, handler_mean, handler_max) =
+    let (count, arrival_minimum, arrival_mean, arrival_maximum, handler_mean, handler_maximum) =
         tick_trace::snapshot();
     let early = tick_trace::early();
 
@@ -183,7 +183,7 @@ pub fn run() -> ! {
     println!(
         "icount: handler_instructions mean {} max {}",
         handler_mean * per_tick,
-        handler_max * per_tick
+        handler_maximum * per_tick
     );
     println!("icount: missed_ticks {missed}");
     println!("icount: early_arrivals {early}");
@@ -212,10 +212,10 @@ pub fn run() -> ! {
 
     // Claim 2: deadline to re-armed, the span `MISSED_TICKS` only approximates.
     assert!(
-        handler_max * per_tick <= crate::arch::timer::HANDLER_BOUND,
+        handler_maximum * per_tick <= crate::arch::timer::HANDLER_BOUND,
         "icount: the timer handler took {} instructions from deadline to re-arm, over a bound of \
          {}. Nothing about the host can move this number.",
-        handler_max * per_tick,
+        handler_maximum * per_tick,
         crate::arch::timer::HANDLER_BOUND
     );
 

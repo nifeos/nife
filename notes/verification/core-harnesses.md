@@ -192,8 +192,8 @@ A; see notes/generational-names.md); the table names the three this appendix adj
 
 ## `crates/intrusive_queue`
 
-One in `crates/intrusive_queue/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's queue structure (milestone 14 phase A.2;
-see notes/intrusive-queues.md):
+One in `crates/intrusive_queue/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's
+queue structure (milestone 14 phase A.2; see notes/intrusive-queues.md):
 
 | Harness | Property |
 |---|---|

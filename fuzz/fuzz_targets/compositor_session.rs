@@ -28,7 +28,7 @@ use compositor::{
 use libfuzzer_sys::arbitrary::{Result as ArbResult, Unstructured};
 use libfuzzer_sys::fuzz_target;
 
-const MAX_FRAMES: usize = 24;
+const MAXIMUM_FRAMES: usize = 24;
 
 /// A damage word: mostly near the surface, sometimes anywhere, including the values that turn
 /// negative or saturate when the compositor reads them as `i32`.
@@ -94,7 +94,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
     let margin = Rect::new(scene.x - 16, scene.y - 16, scene.w + 32, scene.h + 32)
         .intersect(&Rect::screen());
 
-    for _ in 0..MAX_FRAMES {
+    for _ in 0..MAXIMUM_FRAMES {
         if u.is_empty() {
             break;
         }

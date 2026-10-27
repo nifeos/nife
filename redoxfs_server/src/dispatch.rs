@@ -296,7 +296,7 @@ impl<D: Disk> Server<D> {
         // The name comes in on the page and the value goes back out on it, so the name is
         // copied to the stack before the reply is written over it. 255 bytes against a
         // measured 127 KiB high-water on a 397 KiB grant (notes/fs-server.md).
-        let mut name = [0u8; xattr::MAX_NAME];
+        let mut name = [0u8; xattr::MAXIMUM_NAME];
         if len > name.len() {
             Err(Error::new(xattr::ERANGE))
         } else {

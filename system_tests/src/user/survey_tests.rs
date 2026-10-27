@@ -27,7 +27,7 @@ const RENDEZVOUS_PAGES: u64 = 4;
 /// one failure a monitor must never have. Making the wrong state unrepresentable costs one line
 /// here and nobody has to remember it.
 const _: () = assert!(
-    ps::MAXIMUM_ROWS >= sched::MAX_THREADS,
+    ps::MAXIMUM_ROWS >= sched::MAXIMUM_THREADS,
     "ps::MAXIMUM_ROWS is smaller than the kernel's thread table: a listing of the widest domain \
     this \
      system can express would be silently truncated",

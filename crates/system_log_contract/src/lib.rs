@@ -571,7 +571,10 @@ pub mod console {
     /// What ends every line the console writes for the kernel: see [`Inserter::kernel_chunk`].
     pub const LINE_END: &[u8] = b"\r\n";
     /// How much of the terminal's current partial line is kept for a redraw.
-    pub const PARTIAL_MAX: usize = 512;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `PARTIAL_MAX`.
+    pub const PARTIAL_MAXIMUM: usize = 512;
     /// How many bytes of kernel lines wait for a line end.
     ///
     /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
@@ -580,7 +583,7 @@ pub mod console {
 
     /// The console's kernel-line state. See the module doc.
     pub struct Inserter {
-        partial: [u8; PARTIAL_MAX],
+        partial: [u8; PARTIAL_MAXIMUM],
         plen: usize,
         partial_lost: bool,
         kline: [u8; LINE_MAXIMUM],
@@ -599,7 +602,7 @@ pub mod console {
         /// At the start of a line, nothing queued.
         pub const fn new() -> Self {
             Inserter {
-                partial: [0; PARTIAL_MAX],
+                partial: [0; PARTIAL_MAXIMUM],
                 plen: 0,
                 partial_lost: false,
                 kline: [0; LINE_MAXIMUM],
@@ -626,7 +629,7 @@ pub mod console {
                 if b == b'\n' {
                     self.plen = 0;
                     self.partial_lost = false;
-                } else if self.plen < PARTIAL_MAX {
+                } else if self.plen < PARTIAL_MAXIMUM {
                     self.partial[self.plen] = b;
                     self.plen += 1;
                 } else {
@@ -1001,7 +1004,7 @@ mod tests {
         extern crate std;
         use std::vec::Vec;
         let mut c = console::Inserter::new();
-        c.wrote(&[b'p'; console::PARTIAL_MAX + 1], |_| unreachable!());
+        c.wrote(&[b'p'; console::PARTIAL_MAXIMUM + 1], |_| unreachable!());
         c.kernel_chunk(b"k\n", |_| unreachable!());
         let mut t: Vec<u8> = Vec::new();
         c.flush(|b| t.extend_from_slice(b));

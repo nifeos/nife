@@ -29,10 +29,10 @@ use crate::thread::ThreadId;
 /// `net_stack` and its socket client), and four keeps margin. A fifth panics rather than dropping
 /// one silently. Raise this and [`MAXIMUM_REGIONS`] together: each client costs one thread, one
 /// region before death and two after.
-const MAX_THREADS: usize = 4;
+const MAXIMUM_THREADS: usize = 4;
 
 /// The most untyped regions one holding covers, in **each** phase. The widest service holds two
-/// endpoint regions before death and four after it, and eight keeps [`MAX_THREADS`]'s margin. A
+/// endpoint regions before death and four after it, and eight keeps [`MAXIMUM_THREADS`]'s margin. A
 /// ninth panics rather than leaking memory that looks reclaimed.
 const MAXIMUM_REGIONS: usize = 8;
 
@@ -66,7 +66,7 @@ fn reclaim(region: u64, deadline: u64) -> bool {
 /// this 320-byte value per link at `opt-level=0`, which put `start_net_std`'s frame past the 4 KiB
 /// guard page under every kernel thread stack (notes/stack-high-water.md).
 pub struct Holding {
-    threads: [Option<ThreadId>; MAX_THREADS],
+    threads: [Option<ThreadId>; MAXIMUM_THREADS],
     regions: [Option<u64>; MAXIMUM_REGIONS],
     after: [Option<u64>; MAXIMUM_REGIONS],
 }
@@ -74,7 +74,7 @@ pub struct Holding {
 impl Holding {
     pub const fn new() -> Self {
         Holding {
-            threads: [None; MAX_THREADS],
+            threads: [None; MAXIMUM_THREADS],
             regions: [None; MAXIMUM_REGIONS],
             after: [None; MAXIMUM_REGIONS],
         }
@@ -83,14 +83,14 @@ impl Holding {
     /// Remember a thread this service runs, so [`release`](Self::release) can end it.
     ///
     /// # Panics
-    /// If more than [`MAX_THREADS`] are added, because a silently dropped thread is a leak that
+    /// If more than [`MAXIMUM_THREADS`] are added, because a silently dropped thread is a leak that
     /// looks like a fix.
     pub fn add_thread(&mut self, tid: ThreadId) {
         let slot = self
             .threads
             .iter_mut()
             .find(|s| s.is_none())
-            .expect("a holding holds at most MAX_THREADS threads");
+            .expect("a holding holds at most MAXIMUM_THREADS threads");
         *slot = Some(tid);
     }
 

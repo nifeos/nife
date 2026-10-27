@@ -83,8 +83,8 @@ pub(crate) fn create_rendezvous() -> RendezvousId {
                 Some(r) => r,
                 None => {
                     assert!(
-                        sched.kernel_ep_chunks < MAX_KERNEL_EP_CHUNKS,
-                        "the kernel carved all {MAX_KERNEL_EP_CHUNKS} rendezvous chunks; \
+                        sched.kernel_ep_chunks < MAXIMUM_KERNEL_EP_CHUNKS,
+                        "the kernel carved all {MAXIMUM_KERNEL_EP_CHUNKS} rendezvous chunks; \
                          with {MAXIMUM_RENDEZVOUS} registry slots this should be unreachable",
                     );
                     let r = crate::memory_region::create(KERNEL_EP_CHUNK_PAGES)
@@ -950,9 +950,10 @@ pub(super) fn strand_callers_of(sched: &mut IpcTables, tid: ThreadId) {
 /// torn down. `drain_waiters` cannot, because a reply park is linked on no queue; `wait_on` records
 /// it.
 ///
-/// Rescans the thread table rather than listing victims, because a list bounded by `MAX_THREADS`
-/// would grow the deepest frame in the kernel. The scan ends on the abort flag, not on `wait_on`,
-/// which a wake deferred behind `on_cpu` leaves in place. See notes/scheduler/rendezvous.md.
+/// Rescans the thread table rather than listing victims, because a list bounded by
+/// `MAXIMUM_THREADS` would grow the deepest frame in the kernel. The scan ends on the abort flag,
+/// not on `wait_on`, which a wake deferred behind `on_cpu` leaves in place. See
+/// notes/scheduler/rendezvous.md.
 ///
 /// Context: caller holds `IPC_TABLES`; takes capability-table locks beneath it.
 #[cold]

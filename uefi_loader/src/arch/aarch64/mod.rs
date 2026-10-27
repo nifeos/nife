@@ -238,7 +238,7 @@ unsafe fn find_table(rsdp: u64, signature: &[u8; 4]) -> Option<&'static [u8]> {
 /// describes the same machine.
 fn read_ram(
     services: &BootServices,
-    out: &mut [device_tree_from_acpi::Ram; device_tree_from_acpi::MAX_RAM],
+    out: &mut [device_tree_from_acpi::Ram; device_tree_from_acpi::MAXIMUM_RAM],
 ) -> Result<usize, &'static str> {
     // The walk below strides by the firmware's own `descriptor_size`; see `memory_map_size`.
     let (bytes, descriptor_size) =
@@ -290,7 +290,7 @@ fn read_ram(
             out[count - 1].len += len;
             continue;
         }
-        if count == device_tree_from_acpi::MAX_RAM {
+        if count == device_tree_from_acpi::MAXIMUM_RAM {
             break;
         }
         out[count] = device_tree_from_acpi::Ram { start, len };
@@ -327,7 +327,7 @@ fn tree_from_acpi(
     // --- The rest, every one of which a machine may legitimately not have ---
     let (timer, psci_hvc, uart) = optional_tables(rsdp);
 
-    let mut ram = [device_tree_from_acpi::Ram::default(); device_tree_from_acpi::MAX_RAM];
+    let mut ram = [device_tree_from_acpi::Ram::default(); device_tree_from_acpi::MAXIMUM_RAM];
     let ram_count = read_ram(services, &mut ram)?;
 
     let machine = device_tree_from_acpi::Machine {

@@ -46,7 +46,7 @@ the 4,096-byte guard page under every kernel thread stack (`script/stack-frame-c
 `MAXIMUM_ROWS` is the kernel's whole thread table, so a buffer of that size makes truncation
 unreachable rather than handled. A `ps` holding the widest grant this system can express sees every
 thread on the machine, so there is no "and N more" the shipped program can print. A compile-time
-assertion in `kernel::user::survey_tests` keeps `MAXIMUM_ROWS` and `sched::MAX_THREADS` in step.
+assertion in `kernel::user::survey_tests` keeps `MAXIMUM_ROWS` and `sched::MAXIMUM_THREADS` in step.
 
 The buffer is a stack allocation in both shipped programs, so its size was measured.
 `-Z emit-stack-sizes` puts `_start` at 4,240 bytes in `ps` and 4,320 in `pgrep`. That is against

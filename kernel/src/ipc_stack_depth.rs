@@ -263,14 +263,14 @@ pub(crate) fn kernel_thread_shapes() -> usize {
         *dst = src.load(Ordering::Relaxed);
     }
     null.sort_unstable();
-    let (null_median, null_max) = (u64::from(null[SAMPLES / 2]), u64::from(null[SAMPLES - 1]));
+    let (null_median, null_maximum) = (u64::from(null[SAMPLES / 2]), u64::from(null[SAMPLES - 1]));
     // `<=`, not `==`: whether the median reads exactly the floor depends on when the first trap
     // frame overwrites the ceiling word (notes/stack-high-water/per-ipc-depth.md). Too small a
     // margin reads deeper than the floor, which this still catches.
     let null_clean = null_median <= null_floor;
     println!(
         "ipc-stack-depth: kernel null (the instrument alone) floor {null_floor} median \
-         {null_median} max {null_max} margin {MARGIN} {}",
+         {null_median} max {null_maximum} margin {MARGIN} {}",
         if null_clean {
             "clean"
         } else {

@@ -238,7 +238,7 @@ pub(super) fn drain_until_end(
             sched::yield_now();
         }
         let words = sched::ipc_receive(report);
-        let mut chunk = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
             byte_sink_contract::Msg::Bytes(n) => {
                 assert!(
