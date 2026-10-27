@@ -1,8 +1,8 @@
 # Stage 5: reading files and the partition table
 
 Appendix to [813. `file_allocation_table`](../0813-a-proven-fat-crate-released-on-its-own.md). It
-records what stage 5 built and the evidence. Milestone 140 (mount a drive this system did not create) can start its read-only FAT stratum from
-this stage.
+records what stage 5 built and the evidence. Milestone 140 (mount a drive this system did not
+create) can start its read-only FAT stratum from this stage.
 
 ## What stage 5 built
 
