@@ -2,7 +2,7 @@
 status: NOT-STARTED
 raised: 2026-09-03
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: 173
 machine_requirements: none
 specific_machine: none
 needs_person: no
@@ -17,10 +17,12 @@ constructor that `OPENDIR` and `MKDIR` narrow *through*, not an operation on a h
 31's block still records the refusal in "The two shapes a grant cannot take", and no interactive boot
 roots the shell below the image root.
 
-Both permanent answers are an architect's, and they are permanent in different ways. A
-narrowing verb is an addition to `filesystem_contract`, which two programs agree on, so it cannot be
-un-shipped. An interactive boot rooted one component below the image root changes what every other
-command at that prompt means, which cannot be un-taught. Nothing can start until one is chosen.
+Both permanent answers were an architect's call. On 2026-10-27 (UTC) §173 (narrowing the root of
+the shell's namespace) ruled: option A, a narrowing verb, verb 23 on `filesystem_contract`. It takes a
+held directory handle and a rights mask, mints a second handle through `Rights::attenuate`, and
+resolves no name. The client and the server both use the proved `Rights::attenuate`; neither restates
+it. The shell's root does not move. This milestone builds the verb and the test that `rm gate.txt`
+at the top prompt is granted narrowed, as `rm rmtree/rm-solo` already is.
 
 **In brief.** A subtree caretaker attenuates by performing one `OPENDIR` *into* the directory it was
 granted. The root of the shell's namespace has no name to descend into, and `filesystem_contract` has
