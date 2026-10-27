@@ -117,7 +117,8 @@ impl<const UNITS: usize> Assembler<UNITS> {
 
     /// An assembler with no run open.
     pub(crate) const fn new() -> Assembler<UNITS> {
-        assert!(UNITS % UNITS_PER_ENTRY == 0 && UNITS / UNITS_PER_ENTRY <= u8::MAX as usize);
+        assert!(UNITS / UNITS_PER_ENTRY * UNITS_PER_ENTRY == UNITS);
+        assert!(UNITS / UNITS_PER_ENTRY <= u8::MAX as usize);
         Assembler {
             units: [0; UNITS],
             pieces: 0,

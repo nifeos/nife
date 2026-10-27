@@ -1,8 +1,8 @@
 //! **Machine-checked proof (Kani) of long-name assembly**: the reader accepts a run only if the
 //! specification would have written it. Behind `#[cfg(kani)]`, so only `cargo kani` compiles it.
 //!
-//! This is the read half of the fourth property in milestone 813's table; the writer's half is in
-//! `long_name/verification.rs`.
+//! This is the reader's half of the property that long names are well formed; the writer's half
+//! is in `long_name/verification.rs`.
 //!
 //! Name: provisional.
 
