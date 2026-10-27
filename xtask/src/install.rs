@@ -47,9 +47,9 @@ use crate::disk::redoxfs_server_build;
 use crate::host::workspace_root;
 use crate::uefi::{uefi_kernel, uefi_stage};
 
-/// The disk the install goes onto. **One gibibyte**: comfortably over the installer's own floor
-/// (a 512 MiB EFI system partition plus its 64 MiB minimum for data), and a sparse file, so it
-/// costs what is written to it and nothing else.
+/// The disk the install goes onto. **One gibibyte**: over the installer's own floor of about
+/// 705 MiB (a 512 MiB EFI system partition, two 64 MiB boot slots, a 64 MiB minimum for data and
+/// the alignment), and a sparse file, so it costs what is written to it and nothing else.
 const DISK_BYTES: u64 = 1024 * 1024 * 1024;
 
 /// Where the boot files are staged for this gate. Its own directory rather than `target/esp`,
