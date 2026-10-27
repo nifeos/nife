@@ -130,28 +130,7 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
             "label {label} is not a walk ordinal of two processes"
         );
     }
-    // And the table `ps` prints says the same.
-    let mut table = [ps::Row::default(); TEST_ROWS];
-    let mut s = ps::collect(&mut table, &mut |c| {
-        survey_record(view_one, c, record::STATE)
-    });
-    s.join_process(&mut |c| survey_record(view_one, c, record::PROCESS));
-    let mut text = [0u8; 512];
-    let mut len = 0;
-    s.write_report(&mut |bytes| {
-        text[len..len + bytes.len()].copy_from_slice(bytes);
-        len += bytes.len();
-    });
-    let text = core::str::from_utf8(&text[..len]).expect("ASCII");
-    assert!(
-        text.starts_with("PROC  THR"),
-        "the table lost its process columns: {text}"
-    );
-    assert_eq!(
-        text.lines().count(),
-        6,
-        "a header and one line per row: {text}"
-    );
+    assert_the_table_prints_the_columns(view_one);
 
     // The second viewer holds only A's fifth thread: a partial process, counted as one.
     let view_two = hold_view(domain_two);
@@ -182,6 +161,29 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
         &[view_one, view_two],
         endpoints,
         a.iter().map(|m| m.1).chain([b.1]),
+    );
+}
+
+/// The table `ps` prints for `view` opens with the process columns and has a line per row.
+fn assert_the_table_prints_the_columns(view: u64) {
+    let mut table = [ps::Row::default(); TEST_ROWS];
+    let mut s = ps::collect(&mut table, &mut |c| survey_record(view, c, record::STATE));
+    s.join_process(&mut |c| survey_record(view, c, record::PROCESS));
+    let mut text = [0u8; 512];
+    let mut len = 0;
+    s.write_report(&mut |bytes| {
+        text[len..len + bytes.len()].copy_from_slice(bytes);
+        len += bytes.len();
+    });
+    let text = core::str::from_utf8(&text[..len]).expect("ASCII");
+    assert!(
+        text.starts_with("PROC  THR"),
+        "the table lost its process columns: {text}"
+    );
+    assert_eq!(
+        text.lines().count(),
+        6,
+        "a header and one line per row: {text}"
     );
 }
 
