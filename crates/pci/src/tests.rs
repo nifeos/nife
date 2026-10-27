@@ -514,7 +514,7 @@ fn the_capability_walk_finds_virtio_vendor_capabilities_only() {
     };
     let mut capabilities = Vec::new();
     virtio_capabilities(bdf, &mut |b, o| cfg.read32(b, o), &mut |c| {
-        capabilities.push(c)
+        capabilities.push(c);
     });
 
     assert_eq!(
@@ -552,7 +552,7 @@ fn a_function_without_a_capability_list_is_not_walked() {
     cfg.space.insert((0, 1, 0, COMMAND), 0);
     let mut capabilities = Vec::new();
     virtio_capabilities(bdf, &mut |b, o| cfg.read32(b, o), &mut |c| {
-        capabilities.push(c)
+        capabilities.push(c);
     });
     assert!(
         capabilities.is_empty(),

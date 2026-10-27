@@ -580,7 +580,7 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
         &mut |b, o| cfg_read32(b, o),
         &mut |capability| match capability.cfg_type {
             pci::VIRTIO_CAPABILITY_COMMON if common.is_none() => {
-                common = resolve(&bars, &capability)
+                common = resolve(&bars, &capability);
             }
             pci::VIRTIO_CAPABILITY_NOTIFY if notify_base.is_none() => {
                 notify_base = resolve(&bars, &capability);
