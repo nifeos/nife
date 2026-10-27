@@ -33,8 +33,9 @@ documentation  last 2026-10-19 (Decisions read forward: the ten sections minted 
 
 A count trigger points nowhere in particular, so the lens came from the two judgment triggers and
 from what the last sweep left. The 2026-10-19 sweep took the second trigger. No sweep has taken the
-first, and it fits this window exactly: between 2026-10-19 and 2026-10-26, milestone 813's stages 2
-and 3, milestone 560 and the crate's naming passes added about 5,000 lines to
+first, and it fits this window exactly. Between 2026-10-19 and 2026-10-26, stages 2 and 3 of
+milestone 813 (a proven FAT crate, released on its own), milestone 560 (a long file name, or
+riscv64 cannot be installed) and the crate's naming passes added about 5,000 lines to
 `crates/file_allocation_table` (#2585, #2709, #2739, #2731, #2760). That moved no component and no
 ABI constant, which is the blind spot the README's `BUGS` names. The staleness worklist, which
 the 2026-10-15 sweep took and the 2026-10-19 one left, does not rank these notes; its top entries
@@ -116,15 +117,16 @@ for word, which milestone 813 had already moved there (gone). The headings stay,
 
 ### 2. FIXED: installing.md called the FAT crate finished
 
-Section 3 said the crate closes the FAT gap "and is then finished", and that milestone 140's FAT32
-stratum was read-first and unbuilt. The ruling of 2026-10-22 on #2580, which milestone 813
+Section 3 said the crate closes the FAT gap "and is then finished", and that the FAT32 stratum of
+milestone 140 (mount a drive this system did not create) was read-first and unbuilt. The ruling of 2026-10-22 on #2580, which milestone 813
 records, made the crate a full FAT12, FAT16 and FAT32 reader and writer, with 140 the server built
 on it. The section now says so. The crate's manifest said the same as the note (a `description`
 and a comment naming only the FAT32 writer); both now name both halves.
 
 ### 3. FIXED: installing.md named the wrong process for the survey
 
-"The looking is done by ... the `disk_partitioner` verify role of milestone 57." The kernel's
+"The looking is done by ... the `disk_partitioner` verify role of milestone 57." Milestone 57 is partitioning and formatting
+a real drive. The kernel's
 offer spawns `system_installer` with `ROLE_SURVEY` (`install_service.rs`, `spawn_system_installer`),
 and the page's own table says so two paragraphs earlier. The sentence now names the role and keeps
 milestone 57's role as the shape it follows.
@@ -136,7 +138,7 @@ milestone 57's role as the shape it follows.
 - "A disk under about 600 MiB is refused". `Layout::fit` reserves 512 MiB for the EFI system
   partition, two 64 MiB slots, a 64 MiB data floor and the alignment: about 705 MiB, as
   `system_installer`'s own `BUGS` says ("about 700"). The figure is 700.
-- "Nothing schedules it" now cites milestone 712, as `xtask/src/install.rs`'s `BUGS` does.
+- "Nothing schedules it" now cites milestone 712 (the install gates run nowhere), as `xtask/src/install.rs`'s `BUGS` does.
 - `kernel/src/user/fs_service.rs` grew its NVMe arm in what is now `fs_service/wiring.rs`.
 - The appendix said the chooser's `the_disk_with_slots` collects boot partitions. `read_table`
   does; `the_disk_with_slots` picks the disk.
@@ -209,7 +211,7 @@ with the rows the sort produced.
 - The kernel prints `hart 0 booted`, a literal, not `hart N booted` (`kernel/src/boot.rs`).
 - `--disk ID --erase` is not "no questions": a FAT disk still gets `confirm_copy`'s question
   unless `--yes` is given.
-- The block number of milestone 441 is not provisional; the block is BUILT.
+- The block number of milestone 441 (the program that makes the stick) is not provisional; the block is BUILT.
 - `the-program.md`: `windows.rs` is compiled everywhere, not "only where it runs"; Windows uses
   five `kernel32` functions, not four (`SetErrorMode` is the fifth), fixed in the note and in five
   code docs and comments; and Linux is no longer unchecked on a live kernel, since

@@ -24,7 +24,7 @@ each one itself.
 | agreement | its spellings |
 |---|---|
 | the kernel's handover line, which every boot gate waits for | `kernel/src/boot.rs` prints it; `xtask/src/stick.rs` (`BOOTED`), `install.rs`, `uefi.rs`, `swish_check/verdict.rs` and `helpers/stick-maker-proof.sh` match it |
-| the loader's first line, `nife uefi_loader: milestone 87` | `uefi_loader/src/loading.rs` prints it; `xtask/src/stick.rs` and `install.rs` match it |
+| the loader's first line, which names milestone 87 (the x86_64 bare-metal machine) | `uefi_loader/src/loading.rs` prints it; `xtask/src/stick.rs` and `install.rs` match it |
 | each architecture's removable-media file name | `xtask/src/stick.rs` (`PAYLOADS`), `crates/stick_maker/src/payload.rs` (`architecture`), `uefi_loader/src/placement.rs` (`BOOT_FILE_PATH`), `components/src/system_installer.rs` (`BOOT_FILE_NAME`) |
 | the payload directory xtask hands the stick program's build | `NIFE_STICK_PAYLOADS` and `NIFE_STICK_BUILD`, set in `xtask/src/stick.rs` and read in `crates/stick_maker/build.rs` |
 

@@ -212,7 +212,7 @@ place of `mmc 1:1` boot it from USB.
 
 | What radon prints | What it means |
 |---|---|
-| `nife uefi_loader: milestone 87`, then `boot hart from ...: N`, then the kernel's `hart 0 booted` line | The universal stick works on radon; record which source gave the hart |
+| The loader's first line, then `boot hart from ...: N`, then the kernel's `hart 0 booted` line | The universal stick works on radon; record which source gave the hart |
 | `Unknown command 'bootefi'` | This U-Boot has no UEFI; radon stays on `script/board-image`'s card (U2) |
 | The loader's line, then `uefi_loader: the firmware says neither ... which hart this is` | This U-Boot offers neither the RISC-V boot protocol nor `/chosen/boot-hartid`; the loader needs a third source, which is a finding to bring back |
 | `uefi_loader: wanted 0x0000000080200000..` and a list of what is in the way | U-Boot's EFI memory map holds the kernel's fixed load address; the listed ranges are the answer |
