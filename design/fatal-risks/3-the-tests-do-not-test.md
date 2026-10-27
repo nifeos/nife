@@ -89,4 +89,4 @@ no `equivalent` or `gap` row for it (`helpers/mutation_diff_gate.py`,
 `.github/workflows/mutation-gate.yml`). A `killed` row never clears one, a timeout is untriaged
 the same as a survivor, and a diff whose mutants exceed the 20-minute cap fails. It covers the
 host corpus; `kernel/` and `components/` generate no mutants and pass with the summary that says
-so. The check is in the required set: `gh api repos/nifeos/nife/rules/branches/main` lists "mutation gate (a survivor on a changed line cannot merge untriaged)" (corrected 2026-10-27, UTC; §216).
+so. The check is in the required set: `gh api repos/nifeos/nife/rules/branches/main` lists "mutation gate (a survivor on a changed line cannot merge untriaged)" (corrected 2026-10-27, UTC; §216 (fatal-risk facts are correctable, and verdicts are the architect's)).
