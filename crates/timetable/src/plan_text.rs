@@ -6,10 +6,10 @@
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
+use clock_contract::NS_PER_SECOND;
 use grant_plan::Endowment;
 
 use crate::{Admission, Registry, Schedule, recurrence};
-use clock_contract::NS_PER_SECOND;
 
 /// **Write the whole registered plan**: one block per entry, saying when it fires and the complete
 /// authority its child will hold, or why it will not fire at all.

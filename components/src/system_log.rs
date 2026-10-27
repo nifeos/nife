@@ -124,8 +124,7 @@ fn start(mode: u64, readers: u64, _a2: u64) -> ! {
         if badge == 0 && w0 as i64 == abi::Error::Gone as i64 {
             exit();
         }
-        let Handled::Read { window, cursor } = log.handle(badge, w0, w1, w2, monotonic_ns())
-        else {
+        let Handled::Read { window, cursor } = log.handle(badge, w0, w1, w2, monotonic_ns()) else {
             continue;
         };
         if window as u64 >= readers {

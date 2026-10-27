@@ -566,10 +566,7 @@ mod tests {
                 policy::MAXIMUM_STEP_FORWARD_NS as i64 + 1,
                 status::REFUSED_TOO_FAR_FORWARD,
             ),
-            (
-                -(policy::MAXIMUM_STEP_BACKWARD_NS as i64),
-                status::ACCEPTED,
-            ),
+            (-(policy::MAXIMUM_STEP_BACKWARD_NS as i64), status::ACCEPTED),
             (
                 -(policy::MAXIMUM_STEP_BACKWARD_NS as i64) - 1,
                 status::REFUSED_TOO_FAR_BACKWARD,

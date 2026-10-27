@@ -827,11 +827,7 @@ mod tests {
         #[cfg(not(miri))]
         let domain = 0..1_000_000_000u32;
         for n in domain {
-            assert_eq!(
-                ticks_to_ns(ns_to_ticks(n)),
-                n,
-                "{n} ns did not survive"
-            );
+            assert_eq!(ticks_to_ns(ns_to_ticks(n)), n, "{n} ns did not survive");
         }
         // The same thing through the public conversion, on the cases that break a truncating
         // implementation. 1 ns is 4.29 ticks: truncate both ways and it comes back 0.

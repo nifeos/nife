@@ -425,10 +425,11 @@ pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_support::with_clock;
-    use crate::parse;
     use clock_contract::NS_PER_SECOND;
+
+    use super::*;
+    use crate::parse;
+    use crate::test_support::with_clock;
 
     #[test]
     fn arming_puts_at_boot_first_and_an_interval_one_interval_out() {

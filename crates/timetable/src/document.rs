@@ -6,8 +6,9 @@
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
-use crate::{MAXIMUM_ENTRIES, recurrence};
 use clock_contract::NS_PER_SECOND;
+
+use crate::{MAXIMUM_ENTRIES, recurrence};
 
 /// **When an entry fires.** Two shapes on the monotonic counter, and one on the wall clock.
 ///
