@@ -34,7 +34,7 @@ pub const CAPABILITY_INSERT: u64 = 1;
 /// whole before it runs. Needs `WRITE`.
 pub const START: u64 = 2;
 
-/// `invoke(capability, SET_THREAD_POINTER, value, _, _)` -> 0 (milestone 812, §269 (how threads share
+/// `invoke(capability, SET_THREAD_POINTER, value, _, _)` -> 0 (milestone 812 (`std::thread::spawn` runs real threads in one address space), §269 (how threads share
 /// a process) fork 4; seL4's `SetTLSBase`). **Change the thread pointer of the thread this TCB
 /// names**: `TPIDR_EL0` on aarch64, `tp` on riscv64, the `FS` base on `x86_64`. Needs `WRITE`.
 ///

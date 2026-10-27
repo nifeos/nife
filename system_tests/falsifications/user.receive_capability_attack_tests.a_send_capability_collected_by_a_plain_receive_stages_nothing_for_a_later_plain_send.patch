@@ -13,7 +13,7 @@ another.
 
 This is the live tree on the successful-collect path, not an invented break. It is the exact hazard
 of `a_send_capability_aborted_by_teardown_stages_nothing_for_a_later_plain_send`, reached without an abort.
-Milestone 634 (a plain SEND received by RECEIVE_CAPABILITY never hands the receiver a sender-chosen slot)'s
+Milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver a sender-chosen slot)'s
 `cap_delivered` guard does not catch it: that guard covers the order where the receiver parks first,
 and this escape takes `outgoing_cap` on the order where the sender parks first, through
 `ipc_receive_capability`'s immediate `FromSender` path, which calls `outgoing_cap.take()` unconditionally. A

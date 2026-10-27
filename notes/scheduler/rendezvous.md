@@ -67,7 +67,7 @@ the unlock path. It cost `ipc_receive` 138 bytes on riscv64 and 174 on x86_64.
   with `RECEIVE_CAPABILITY`, so the fastpath pays one branch and none of their bytes.
 
 `RECEIVE_CAPABILITY`'s `x1` is `NO_CAPABILITY` unless this delivery installed a capability (milestone 634
-(a plain `SEND` received by `RECEIVE_CAPABILITY` never hands over a sender-chosen slot)). A plain `SEND`
+(a plain `SEND` received by `RECEIVE_CAP` never hands over a sender-chosen slot)). A plain `SEND`
 that reached a parked `RECEIVE_CAPABILITY` dropped its three words straight into the mailbox. So `m[1]` is
 a word the sender chose. Returned as `x1`, it would hand a sender a slot number where a `CALL`
 server reads a reply slot. `x4` is `REPLY_DELIVERED` only on the two paths a `CALL` reaches a

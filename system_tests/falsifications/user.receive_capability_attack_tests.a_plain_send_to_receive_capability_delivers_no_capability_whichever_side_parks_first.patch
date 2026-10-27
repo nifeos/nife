@@ -2,7 +2,7 @@ Falsifies `system_tests::user::receive_capability_attack_tests::a_plain_send_to_
 
 Architecture: all three (the change is in shared scheduler code, `kernel/src/sched.rs`).
 
-The defect this restores was live on `main` until milestone 634 (a plain SEND received by RECEIVE_CAPABILITY never hands the receiver a sender-chosen slot). `ipc_receive_capability`'s receiver-first mailbox read returned
+The defect this restores was live on `main` until milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver a sender-chosen slot). `ipc_receive_capability`'s receiver-first mailbox read returned
 the parked mailbox unchanged, so a plain `SEND` that reached a parked `RECEIVE_CAPABILITY` receiver left the
 sender's second word in `x1` where a `CALL` server reads a reply slot. This patch reverts the one
 hunk that makes the receive side write `NO_CAP` unless a capability was installed, putting the leak

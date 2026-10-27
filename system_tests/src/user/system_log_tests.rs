@@ -303,6 +303,9 @@ fn badge_of_every_message(ep: RendezvousId) -> u64 {
 /// pick a client's window and scope. Before the change, a client that `SEND`s rather than `CALL`s
 /// through its badged capability arrived as badge 0, the unscoped value; now it arrives as itself.
 /// The second half pins the value every unbadged sender in the tree still relies on.
+///
+/// Falsification: unfalsified. Renamed by the capability sweep (2026-10-27 UTC), which changed the
+/// name and nothing the test checks, and did not break the code it guards to watch it go red.
 #[test_case]
 fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_capability() {
     let writer = program("sink_transcript_writer")

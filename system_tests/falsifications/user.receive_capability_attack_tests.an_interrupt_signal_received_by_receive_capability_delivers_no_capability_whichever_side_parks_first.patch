@@ -10,7 +10,7 @@ Expected to fail: `assert_eq!(RECEIVER_X1, abi::rendezvous::NO_CAP, "an interrup
 receiver x1 = 0 on the receiver-first order ...")`. The `w0 == 1` check before it and the
 signal-first half after it stay green, which is what makes the red about the order.
 
-The patch is the hunk of milestone 634 (a plain SEND received by RECEIVE_CAPABILITY never hands the receiver a
+The patch is the hunk of milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver a
 sender-chosen slot), byte for byte: `ipc_receive_capability`'s receiver-first read is the one place all three deliveries
 (a plain SEND, an interrupt signal, a death message) meet, so reverting it is the only defect that
 puts back what this test pins. That the same revert turns the interrupt test red is the evidence that this
@@ -18,7 +18,7 @@ test, and not only 634's, reaches the default. The hunk's context cites mileston
 objects: async multiplexing without wait-any), whose bound-notification tag the fix exempts, and milestone 706 (a `CALL` server can tell a Reply from a delegation),
 whose `x4` comment sits in the hunk's context.
 
-Replayed on 2026-10-03 (UTC) by the lane for milestone 714 (the sibling RECEIVE_CAPABILITY paths get a receiver-first test); see the roadmap block for the exit code and
+Replayed on 2026-10-03 (UTC) by the lane for milestone 714 (the sibling RECEIVE_CAP paths get a receiver-first test); see the roadmap block for the exit code and
 the assertion line.
 
 Regenerated 2026-10-11 (UTC) for milestone 840 (the scheduler file is split along its seams):

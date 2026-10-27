@@ -1,5 +1,5 @@
 //! **A plain `SEND` received by `RECEIVE_CAPABILITY` hands the receiver `NO_CAPABILITY` in `x1`, never a
-//! sender-chosen word** (milestone 634 (a plain SEND received by RECEIVE_CAPABILITY never hands the
+//! sender-chosen word** (milestone 634 (a plain SEND received by RECEIVE_CAP never hands the
 //! receiver a sender-chosen slot), fatal risk 7's confinement claim).
 //!
 //! `RECEIVE_CAPABILITY` returns in `x1` the slot a delivered capability landed in, or `NO_CAPABILITY`, and a
@@ -169,6 +169,9 @@ fn a_server_that_deletes_the_received_slot_deletes_nothing_of_its_own() {
 /// rendezvous and wakes the sender aborted, and `set_ipc_aborted` clears the staged capability, or
 /// the sender's next plain `SEND`, parked on an unrelated rendezvous, would hand it to whoever
 /// `RECEIVE_CAPABILITY`s there: a delegation made to one endpoint, delivered to another.
+///
+/// Falsification: unfalsified. Renamed by the capability sweep (2026-10-27 UTC), which changed the
+/// name and nothing the test checks, and did not break the code it guards to watch it go red.
 #[test_case]
 fn a_send_capability_aborted_by_teardown_stages_nothing_for_a_later_plain_send() {
     static PARKED_ON_DOOMED: AtomicBool = AtomicBool::new(false);
@@ -499,7 +502,7 @@ fn the_server_answered_and_kept_nothing(round: &CallServerRound, server_first: b
 const QUIET_INTID: u32 = 250;
 
 /// **An interrupt signal received by `RECEIVE_CAPABILITY` delivers `NO_CAPABILITY` in `x1` whichever side arrives
-/// first** (milestone 714 (the sibling `RECEIVE_CAPABILITY` paths get a receiver-first test), fatal risk
+/// first** (milestone 714 (the sibling `RECEIVE_CAP` paths get a receiver-first test), fatal risk
 /// 7's confinement claim; the sibling of milestone 634's plain-`SEND` test above).
 ///
 /// `interrupt_notify` drops `[1, 0, 0, 0, 0]` into a parked receiver's mailbox, so without 634's

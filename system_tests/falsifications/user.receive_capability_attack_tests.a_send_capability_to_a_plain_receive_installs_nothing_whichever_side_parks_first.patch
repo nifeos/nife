@@ -52,7 +52,7 @@ index c59bccd96..e25735c9b 100644
 -                    // write a zero here, so RECEIVE_CAPABILITY surfaces it at no extra instruction on this path.
 -                    r.mailbox = [data, slot, 0, badge, 0];
 -                    // A capability was installed, so RECEIVE_CAPABILITY's x1 is a real slot (milestone 634 (a plain SEND
--                    // received by RECEIVE_CAPABILITY never hands the receiver a sender-chosen slot)).
+-                    // received by RECEIVE_CAP never hands the receiver a sender-chosen slot)).
 -                    r.capability_delivered = true;
 -                } else {
 -                    // A plain RECEIVE takes no capability (§246 (a plain `RECEIVE` never takes a
