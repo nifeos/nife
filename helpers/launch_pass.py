@@ -241,13 +241,17 @@ def check_machine():
 
 
 def host_version(binary):
-    """The harness's version on the host. The image installs the same, so both run one release."""
+    """The harness's version on the host. The image installs the same, so both run one release.
+
+    The version is the first version-looking token, not the first word: opencode 2.x prints
+    `opencode v2.0.29` and Claude Code prints `2.1.308 (Claude Code)`.
+    """
     done = subprocess.run([binary, '--version'], capture_output=True, text=True)
-    words = done.stdout.split()
-    if done.returncode != 0 or not words:
+    found = re.search(r'(?<![\w.])(v?\d+(?:\.\d+)+)', done.stdout) if done.returncode == 0 else None
+    if not found:
         raise SystemExit('launch-pass: refused: `%s --version` gave no version to pin the image to'
                          % binary)
-    return words[0]
+    return found.group(1).lstrip('v')
 
 
 def build_image(tree):
@@ -330,7 +334,11 @@ class Claude:
 
 
 class Opencode:
-    """opencode headless: the event stream names the session; its exported record, the model."""
+    """opencode headless: the event stream names the session; its exported record, the model.
+
+    No `--dir` argument: opencode 2.x dropped it, and the clone is already the container's
+    working directory (`-w` in Box.argv), which is what both calls below rely on.
+    """
     name = 'opencode'
     version_arg = 'OPENCODE_VERSION'
 
@@ -346,7 +354,7 @@ class Opencode:
                 for m in record.get('messages', []) if m.get('info', {}).get('role') == 'assistant'}
 
     def probe(self, model, box, log):
-        inner = ['opencode', 'run', '-m', model, '--dir', INSIDE + '/nife', '--format', 'json', PROBE]
+        inner = ['opencode', 'run', '-m', model, '--format', 'json', PROBE]
         _, out = box.run(inner, log)
         sessions = {e.get('sessionID') or e.get('part', {}).get('sessionID') for e in events(out)}
         sessions.discard(None)
@@ -356,8 +364,8 @@ class Opencode:
         return session, self.models(session, box, log)
 
     def send(self, session, model, message, box, log):
-        inner = ['opencode', 'run', '--session', session, '-m', model, '--auto', '--dir',
-                 INSIDE + '/nife', '--format', 'json', message]
+        inner = ['opencode', 'run', '--session', session, '-m', model, '--auto',
+                 '--format', 'json', message]
         status, _ = box.run(inner, log)
         return status, self.models(session, box, log)
 
