@@ -41,6 +41,18 @@ What it costs, and why it is an architect's call rather than a lane's:
 - The cooperative tier needs somewhere to live for a program that has no job frame. A `std`
   program's `SIGINT` is the obvious reading, and that is its own question.
 
+## Ruling
+
+2026-10-27 (UTC), about 22:30: yes. Every job is built from a region the shell holds, with its exit
+delivered to an endpoint the shell holds, the shape of [§106 (take the `terminal_sink_caretaker`
+narrowing)](../decisions/0106-tail-output-narrowing.md). The shell reaps these jobs. The progenitor
+learns that a job's file-service window is free another way than the undertaker's "reaped" message
+(milestone 685 (a job is finished when its memory is back)). The shell's endowment grows by what
+the progenitor's pool shrinks. The cooperative tier, a `std` program's `SIGINT`, stays its own
+question. The prior art weighed was a Unix parent shell, Fuchsia process handles and Genode's
+parent-paid quotas. [§142 (what a spawner retains over a child after
+`START`)](../decisions/0142-spawn-retention.md) records the retention this changes.
+
 ## Index row
 
 Job control reaches only supervised jobs, because every other job is built in the progenitor's pool and the shell holds nothing for it. Building every job from a region the shell holds, with its exit on a shell-held endpoint, would give `&`, `wait`, `kill` and `fg` to every program; the spawn-protocol change is calef's call.
