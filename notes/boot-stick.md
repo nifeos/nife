@@ -5,7 +5,7 @@ host operating system, with the boot payload inside it, which writes a bootable 
 is not signed, and from any machine it builds a boot for any other machine. This note is how that
 was built, what it was proved on, and what it was not. The measured device-tree handover is in
 [`boot-stick/`](boot-stick/README.md). The roadmap block is
-`design/roadmap/0441-the-program-that-makes-the-stick.md` (number provisional).
+`design/roadmap/0441-the-program-that-makes-the-stick.md`.
 
 ## In one paragraph
 
@@ -37,14 +37,14 @@ Type y to copy: y
 Ejected disk6; it can be pulled out.
 ```
 
-(The listing above is the program's real output shape; the disk in it is the synthesized stick of
-the test fixtures, because no flash stick was attached while this was written. See BUGS.)
+(The listing above is the program's real output shape, with the sizes of a 2026-09-19 debug build;
+the disk in it is the synthesized stick of the test fixtures, because no flash stick was attached while this was written. See BUGS.)
 
 | Flag | What it does |
 |---|---|
 | `--list [--all]` | Show what would be offered; `--all` adds every disk that is not, with the reason |
 | `--disk ID --yes` | No questions: copy onto that disk's FAT volume, never erasing |
-| `--disk ID --erase` | No questions: erase that disk if it is not FAT, then copy |
+| `--disk ID --erase` | Erase that disk if it is not FAT, then copy; a FAT disk still gets the copy question unless `--yes` is given too |
 | `--keep-mounted` | Do not eject afterwards |
 | `--include-disk-images` | Also offer file-backed disks, which is how every test here runs |
 
@@ -96,7 +96,8 @@ mounted where the running system lives, and a file-backed disk unless asked for.
 Each file is written to a temporary name, flushed, renamed over the old one and read back, so a stick
 pulled out mid-write holds last time's file or this time's, never half of one.
 
-**Erasing uses each host's own tool**, not a FAT32 writer in this tree: `diskutil eraseDisk` on
+**Erasing uses each host's own tool**, not the tree's FAT32 writer (`file_allocation_table::VolumeLayout`,
+which the installer and `xtask/src/cloud_image.rs` use on disks they own): `diskutil eraseDisk` on
 macOS, `sfdisk` and `mkfs.vfat` on Linux. The reason is not effort. A tree-written formatter would
 mean this program opening a raw block device and writing to it, which is the most dangerous thing it
 could do and the thing the OS tools already refuse to do to a mounted system disk. The cost is
@@ -161,8 +162,9 @@ wrong archive: radon's boot 12 and xenon's 2026-09-17 refusal have no way to hap
 
 | Claim | How | Result, 2026-09-19 |
 |---|---|---|
-| One directory boots on all three firmwares | `cargo xtask stick-boot`: `target/stick` as a USB stick under OVMF, EDK2 aarch64 and EDK2 riscv64 | All three to the progenitor |
-| The aarch64 stick boots from ACPI alone, as a cloud machine offers it | `cargo xtask acpi-boot`: `BOOTAA64.EFI` under EDK2 with `acpi=on`, once on QEMU's default GICv2 and once with `gic-version=3`, a CI gate in the `boot-check` job (2026-10-19) | Both to the progenitor, with the loader's "describing this machine from ACPI" line, and on the GICv3 its GICv3 and ITS lines |
+| One directory boots on all three firmwares | `cargo xtask stick-boot`: `target/stick` as a USB stick under OVMF, EDK2 aarch64 and EDK2 riscv64, then `BOOTRISCV64.EFI` from a FAT32 volume this tree wrote (`riscv64_from_our_volume`) | All three to the progenitor; the fourth boot since milestone 560 |
+| The aarch64 stick boots from ACPI alone, as a cloud machine offers it | `cargo xtask acpi-boot`: `BOOTAA64.EFI` under EDK2 with `acpi=on`, once on QEMU's default GICv2 from `target/stick` and once with `gic-version=3` from
+`target/cloud-image/nife-aarch64.img`, a CI gate in the `boot-check` job (2026-10-19) | Both to the progenitor, with the loader's "describing this machine from ACPI" line, and on the GICv3 its GICv3 and ITS lines |
 | The program writes a stick that boots on all three | `helpers/stick-maker-proof.sh`: a blank file erased, a FAT32 file copied onto, each booted under all three | Six of six to the progenitor; a file already on the FAT32 stick survived |
 | Nothing is erased without `--erase` or the disk's name typed back; a refused disk stays refused when named; a host that cannot erase says so before asking | `crates/stick_maker/src/cli.rs`'s tests, which run the whole conversation against a fake host | All pass |
 | A backup disk is never offered | `crates/stick_maker` host tests on the captured `diskutil` documents, and `--list --all` on the development Mac | Every USB hard disk refused |
@@ -210,11 +212,11 @@ place of `mmc 1:1` boot it from USB.
 
 | What radon prints | What it means |
 |---|---|
-| `nife uefi_loader: milestone 87`, then `boot hart from ...: N`, then the kernel's `hart N booted` | The universal stick works on radon; record which source gave the hart |
+| `nife uefi_loader: milestone 87`, then `boot hart from ...: N`, then the kernel's `hart 0 booted` line | The universal stick works on radon; record which source gave the hart |
 | `Unknown command 'bootefi'` | This U-Boot has no UEFI; radon stays on `script/board-image`'s card (U2) |
 | The loader's line, then `uefi_loader: the firmware says neither ... which hart this is` | This U-Boot offers neither the RISC-V boot protocol nor `/chosen/boot-hartid`; the loader needs a third source, which is a finding to bring back |
 | `uefi_loader: wanted 0x0000000080200000..` and a list of what is in the way | U-Boot's EFI memory map holds the kernel's fixed load address; the listed ranges are the answer |
-| The loader's lines and then silence on the console | The handover or the kernel; the same triage as `script/board-image`'s boots, since from `hart N booted` on it is the same kernel |
+| The loader's lines and then silence on the console | The handover or the kernel; the same triage as `script/board-image`'s boots, since from `hart 0 booted` on it is the same kernel |
 
 The riscv64 boot file carries the `board` kernel, the one radon runs, and it was proved under
 QEMU's EDK2 in that build. Whether radon's U-Boot 2021.10 offers `RISCV_EFI_BOOT_PROTOCOL` or
@@ -237,9 +239,11 @@ Make a stick on this Mac, from nothing, and prove it before touching a real stic
 ```console
 $ cargo xtask stick
 $ cargo xtask stick-boot
-stick-boot: x86_64: booted from BOOTX64.EFI to the progenitor
-stick-boot: aarch64: booted from BOOTAA64.EFI to the progenitor
-stick-boot: riscv64: booted from BOOTRISCV64.EFI to the progenitor
+stick-boot: x86_64: booted from BOOTX64.EFI on <checkout>/target/stick to the progenitor
+stick-boot: aarch64: booted from BOOTAA64.EFI on <checkout>/target/stick to the progenitor
+stick-boot: riscv64: booted from BOOTRISCV64.EFI on <checkout>/target/stick to the progenitor
+stick-boot: wrote <checkout>/target/cloud-image/nife-riscv64.img
+stick-boot: riscv64: booted from BOOTRISCV64.EFI on <checkout>/target/cloud-image/nife-riscv64.img to the progenitor
 $ helpers/stick-maker-proof.sh        # about twelve minutes: six boots, each held to its bound
 ```
 
@@ -274,18 +278,18 @@ $ shasum -a 256 /Volumes/NIFE/EFI/BOOT/*
 - The program is not signed, by decision (§157). macOS Gatekeeper refuses it on first open and
   Windows SmartScreen warns; the steps past each are rung 4's web page to write, and they move
   between OS releases.
-- The downloads are large, and the profile is not chosen yet. Measured 2026-09-19 for macOS
-  arm64: 41.6 MB from `cargo xtask stick` (debug payloads: 10.2, 16.0 and 14.4 MB), 20.0 MB
-  from `cargo xtask stick --release` (2.6, 8.3 and 8.2 MB). Both sets boot on all three firmwares.
-  The numbers move with every build, as `BOOTX64.EFI`'s already do in notes/x86-uefi-boot.md: the
-  debug download was 45.1 MB the same evening, after rebasing onto that day's `main`.
-  `cargo xtask stick` defaults to debug like every other xtask build, which is what the bench has
-  used; which one a customer downloads is rung 4's choice.
+- The downloads are large. `cargo xtask stick` always builds release (ruled 2026-10-03 UTC, in
+  `stick()`): a debug image is about three times the size, and the loader refuses one for
+  install. `--release` is accepted and changes nothing. Measured 2026-09-19 for macOS arm64, before
+  that ruling: 41.6 MB with debug payloads (10.2, 16.0 and 14.4 MB), 20.0 MB with release ones
+  (2.6, 8.3 and 8.2 MB). Both sets booted on all three firmwares. The numbers move with every
+  build, as `BOOTX64.EFI`'s already do in notes/x86-uefi-boot.md.
 - A universal macOS binary carries the payload twice, once per slice: 82.9 MB against 41.6 MB
   for the debug build. Carrying the payload outside the Mach-O slices would halve it, at the cost
   of the program being two files or reading itself.
 - **The aarch64 payload runs on QEMU `virt` and nowhere else yet**, for the load-address reason under
   argon. The riscv64 payload is linked for `0x8020_0000`, which radon's RAM contains.
 - Each QEMU proof boot runs to its time bound, because nife hands over to a shell and never
-  exits; `stick-boot` takes about six minutes and the proof script about twelve. Watching the
+  exits; `stick-boot` takes about eight minutes (four boots at the 120-second
+  `NIFE_STICK_TIMEOUT`) and the proof script about twelve. Watching the
   transcript and stopping at the progenitor line would cut both to seconds.

@@ -1,5 +1,5 @@
 //! **The half that runs the host's own tools**: `diskutil` on macOS, `sfdisk`, `mkfs.vfat` and
-//! `mount` on Linux, four `kernel32` calls on Windows; and the real terminal.
+//! `mount` on Linux, five `kernel32` calls on Windows; and the real terminal.
 //!
 //! Every decision is elsewhere and tested (`crate::disk`, `crate::macos`, `crate::linux`,
 //! `crate::windows`, and `crate::cli` against a fake host); this only runs a program or makes a

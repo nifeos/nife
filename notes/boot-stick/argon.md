@@ -22,7 +22,7 @@ Tegra210 (P2371-2180) # bootefi ${kernel_addr_r} ${fdtcontroladdr}
 | What argon prints | What it means |
 |---|---|
 | `nife uefi_loader: milestone 87`, then `uefi_loader: wanted 0x0000000040080000..` | **The expected result**: bootefi ran our loader, the tree was offered, and the kernel's load address is the only thing in the way. U1's premise holds on argon |
-| `uefi_loader: the firmware offers no device tree` | L4T's `bootefi` was not given a tree; retry with the tree's address as the second argument, from `printenv fdt_addr_r` or `fdtcontroladdr` |
+| `uefi_loader: the firmware offers neither a device tree nor ACPI, so nothing describes this machine` | L4T's `bootefi` was not given a tree; retry with the tree's address as the second argument, from `printenv fdt_addr_r` or `fdtcontroladdr` |
 | `Unknown command 'bootefi'` | argon takes U2 until its U-Boot is newer |
 
 (The prompt text is Tegra's recalled default, not read off argon.)

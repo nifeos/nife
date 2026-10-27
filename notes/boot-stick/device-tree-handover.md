@@ -8,7 +8,7 @@ EDK2 on aarch64 hid the tree, and how the loader now writes one from the ACPI ta
 
 ## The four steps
 
-1. The loader finds the tree in the UEFI configuration table under `gFdtTableGuid`
+1. The loader finds the tree in the UEFI configuration table under `r_efi::efi::DTB_TABLE_GUID`, EDK2's `gFdtTableGuid`
    (`b1b621d5-f19c-41a5-830b-d9152c69aae0`, read from EDK2's `MdePkg.dec`).
 2. It copies the tree below what the kernel's boot page tables reach (2 GiB on aarch64, 3 GiB on
    riscv64), adding `/chosen/linux,initrd-start` and `linux,initrd-end` for the archive it placed.
