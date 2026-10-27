@@ -33,13 +33,13 @@ measured boot, or hands the archive to an installer, which writes a disk that bo
 
 ### Which partition is boot slot `n`
 
-The chooser writes `boot-slot=<n>` onto the kernel's command
-line, and `system_installer`'s `ROLE_CONFIRM` sets the successful bit on slot `n`. Both count
-`NIFE_BOOT` partitions in table order: the chooser in `read_table`
-(`uefi_loader/src/chooser.rs`), capped at `MAX_SLOTS` (4), and `confirm` in its own loop, capped
-at `MAX_PARTITIONS` (16). `notes/installing/system-installer.md` calls that counting "the whole
-agreement between the two". A change to either loop (skipping an unreadable slot, say) confirms an
-image that never ran, which is the outcome that note ranks worse than not confirming.
+The chooser writes `boot-slot=<n>` onto the kernel's command line, and `system_installer`'s
+`ROLE_CONFIRM` sets the successful bit on slot `n`. Both refuse a table whose used entries are not
+contiguous from index 0. Both count `NIFE_BOOT` partitions in table order: the chooser in
+`read_table` (`uefi_loader/src/chooser.rs`), capped at `MAX_SLOTS` (4), and `confirm` in its own
+loop, capped at `MAX_PARTITIONS` (16). `notes/installing/system-installer.md` calls that counting
+"the whole agreement between the two". A change to either loop (skipping an unreadable slot, say)
+confirms an image that never ran, which is the outcome that note ranks worse than not confirming.
 
 ## The fix
 
@@ -56,17 +56,34 @@ pub const MODULES: usize = 2;
 
 ```rust
 // boot_slot
-/// Boot slot `n` on a disk: the `n`th `NIFE_BOOT` partition in table order, with its index
-/// in the entry array. The one definition the chooser and the installer both count by.
+/// How many boot slots a disk may hold. The chooser counts no further, so neither does anything
+/// that names a slot by its number.
+pub const MAX_SLOTS: usize = 4;
+
+/// Why a table names no slot `n`.
+pub enum NoSlot {
+    /// The used entries are not contiguous from index 0, or there are more than the caller can
+    /// rewrite (`MAX_PARTITIONS`). A rewrite would renumber them, so both sides refuse.
+    NotContiguous,
+    /// The table holds `found` boot slots and `n` is not below it.
+    Missing { found: usize },
+}
+
+/// Boot slot `n` on a disk: the `n`th `NIFE_BOOT` partition in table order, counting at most
+/// [`MAX_SLOTS`], with its index in the entry array. The one definition the chooser and the
+/// installer both count by.
 pub fn nth_slot<'t>(
     partitions: impl Iterator<Item = (usize, &'t Entry)>,
+    max_partitions: usize,
     n: usize,
-) -> Option<(usize, &'t Entry)>;
+) -> Result<(usize, &'t Entry), NoSlot>;
 ```
 
-The chooser builds its `Disk` from repeated calls or an iterator beside it, and `confirm` calls
-`nth_slot(table.partitions(), slot)`. A host test in `boot_slot` pins the order on a table that
-mixes data, slot and EFI partitions.
+The chooser builds its `Disk` from the same walk, and `confirm` calls
+`nth_slot(table.partitions(), MAX_PARTITIONS, slot)` and sends `R_NO_SLOT` with `found` for
+either refusal. Today `confirm` keeps counting past four slots where the chooser stops; with one
+function both stop at `MAX_SLOTS`. A host test in `boot_slot` pins the order on a table that mixes
+data, slot and EFI partitions, and refuses a table with a gap at index 1 and one with five slots.
 
 ## Exit test
 

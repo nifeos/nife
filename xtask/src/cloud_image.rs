@@ -30,8 +30,9 @@
 //!   cloud wants (VMDK for Oracle, VHD for Azure, a tarball for Google) is that cloud's choice.
 //! - The disk and partition GUIDs come from the host's `/dev/urandom`, so two runs on the same
 //!   boot file write different bytes and the image is not reproducible. Every copy of one image
-//!   shares its GUIDs, so two disks imported from one CI artifact carry the same disk and
-//!   partition GUIDs.
+//!   shares its GUIDs, so two disks imported from one CI artifact collide in their disk and
+//!   partition GUIDs if they meet on one machine. Re-draw them at import, for example with
+//!   `sgdisk -G`.
 //!
 //! Name: provisional (milestone 578's lane, 2026-10-21 UTC), for the module and the path.
 

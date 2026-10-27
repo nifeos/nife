@@ -43,12 +43,14 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
 [fat-adopt-or-build.md](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md) prices them.
 
 1. The long-name writer in the existing `mkfs`: milestone 560, built.
-2. The sector interface, boot sector and BPB parse, and FAT type by cluster count, with a
-   per-sector no-panic harness and the reader's first fuzz target. The oracle's dev-dependency pin
-   is ruled here. Built: [stage-2-the-reader-begins.md](0813-a-proven-fat-crate-released-on-its-own/stage-2-the-reader-begins.md)
+2. The sector interface, boot sector and BPB parse, and FAT type by cluster count, with a per-sector
+   no-panic harness and the reader's first fuzz target. The oracle's dev-dependency pin is ruled
+   here. Built:
+   [stage-2-the-reader-begins.md](0813-a-proven-fat-crate-released-on-its-own/stage-2-the-reader-begins.md)
    has what landed.
 3. FAT entry decode, the bounded chain walk, and directory slots read as stored, with the oracle
-   tests in both directions. Built: [stage-3-the-table-and-the-chain.md](0813-a-proven-fat-crate-released-on-its-own/stage-3-the-table-and-the-chain.md)
+   tests in both directions. Built:
+   [stage-3-the-table-and-the-chain.md](0813-a-proven-fat-crate-released-on-its-own/stage-3-the-table-and-the-chain.md)
    has what landed, the oracle's pin and its `fsck` check.
 4. Directories: long-name assembly with the checksum checked, and #1803's macOS images read to
    their recorded hashes.
@@ -131,9 +133,10 @@ Non-goals for the first release:
 
 ## What is proven
 
-The table names what is proved; the rest is this milestone's scope, not a step before it. Each row is a property this crate must prove before it publishes. The harness
-cell names the Kani harness that proves it, or says `none yet`; every named harness carries a
-falsification patch that makes it fail at its own assertion. Each patch sits at
+The table names what is proved; the rest is this milestone's scope, not a step before it. Each row
+is a property this crate must prove before it publishes. The harness cell names the Kani harness
+that proves it, or says `none yet`; every named harness carries a falsification patch that makes it
+fail at its own assertion. Each patch sits at
 `crates/file_allocation_table/falsifications/<module.path>.<harness>.patch`, as §134 (a harness
 carries a machine-replayable falsification record) and `script/falsifications` require.
 

@@ -1,8 +1,8 @@
 ---
 status: PROPOSED
 raised: 2026-10-27
-milestone_dependencies: none
-decision_dependencies: none
+milestone_dependencies: 407
+decision_dependencies: 187
 machine_requirements: none
 specific_machine: none
 needs_person: no
@@ -11,15 +11,23 @@ needs_person: no
 
 Raised by the 2026-10-27 documentation sweep
 ([its report](../../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 6).
-Name: provisional, for this file and for every crate and module name it sketches.
+Name: provisional, for this file and for every module name it sketches.
 
-Reuse: the shape `hot_swap_contract` and `confined_syscall_fuzzer_contract` already use, one crate
-holding a spawned program's roles and verdicts, which the kernel and the program both depend on.
+This proposal adds rows to a class the tree already tracks. Milestone 407 (one definition of the
+numbers a kernel test and its program agree on) holds every pair of a kernel `*_service.rs` and a
+program it spawns that keep their roles and report words in step with "must match" comments. Its
+measurement does not list `install_service.rs` and `system_installer.rs`. §187 (one crate per
+kernel-test pair, or one crate for all of them?) decides where the shared definitions live, so this
+proposal sketches the contents and leaves the crate to that ruling. It can be promoted as a row of
+407, or folded into it.
+
+Reuse: the shape `hot_swap_contract` and `confined_syscall_fuzzer_contract` already use, roles and
+verdicts in a crate that the kernel and the program both depend on.
 
 ## The failure
 
 The kernel's install offer (`kernel/src/user/install_service.rs`) spawns `system_installer`
-(`components/src/system_installer.rs`) three times a boot at most, and the two sides agree on five
+(`components/src/system_installer.rs`) at most three times a boot, and the two sides agree on five
 things that each spells for itself:
 
 | agreement | the kernel's spelling | the program's spelling |
@@ -30,23 +38,21 @@ things that each spells for itself:
 | where the boot file is mapped | `BOOT_FILE_VA` | `BOOT_FILE_VA` |
 | the report's first word | `R_INSTALLED`, `R_ALREADY`, `R_CONFIRMED`, `R_NO_SLOT` | those four and five more the kernel prints only as hex |
 
-Each side carries a "Must match" comment, which is the whole of what keeps them in step. A changed
-role value or slot on one side builds, boots, and fails at the first install or confirm, and the
-install gate (`cargo xtask install-boot`) runs on no schedule (milestone 712 (the install gates run nowhere)). `install_service.rs`
-records a reason for the duplication: the words are the kernel's own convention with a program it
-spawns. Rule 7 of `AGENTS.md` and ruling 55a (2026-10-26 UTC) both say a word two binaries agree on
-is code, and `hot_swap_contract` is the tree's existing answer to the same kind of convention.
+Each side carries a "Must match" comment, and nothing else keeps them in step. A changed role
+value or slot on one side builds, boots, and fails at the first install or confirm, and the
+install gate (`cargo xtask install-boot`) runs on no schedule (milestone 712 (the install gates
+run nowhere)). `install_service.rs` records a reason for the duplication: the words are the
+kernel's own convention with a program it spawns. Rule 7 of `AGENTS.md`, and the method ruled
+2026-10-26 UTC that a contract is code and not prose, both say otherwise.
 
-`install_service.rs` also spells `mkfs`'s `ROLE_MAKE` and `R_MADE`, which `disk_service` and
-`disk_tests` spell again. That is the same failure with a third program, and it belongs in the same
-crate or a sibling one.
+`install_service.rs` also spells `mkfs`'s `ROLE_MAKE` and `R_MADE`, which milestone 407's table
+already lists for `disk_tests`.
 
 ## The fix
 
-A contract crate, provisionally `system_installer_contract`, that both sides depend on:
+The definitions, in whichever crate §187 chooses:
 
 ```rust
-#![no_std]
 /// What `a0` asks for.
 #[repr(u64)]
 pub enum Role { Install = 0, Survey = 1, Confirm = 2 }
@@ -64,7 +70,7 @@ pub mod slot {
 /// Where the kernel maps the boot file, read-only, for `Role::Install`.
 pub const BOOT_FILE_VA: u64 = address_space_map::runtime_window(0x1000_0000);
 
-/// The report's first word, one variant per verdict, with its second word where it has one.
+/// The report's first word, one variant per verdict, with the words after it.
 pub enum Verdict {
     Installed { data_first: u64, esp_first: u64 },
     NoEntropy,
@@ -74,7 +80,9 @@ pub enum Verdict {
     Already { data_first: u64 },
     Empty,
     Confirmed { slot: u64, written: bool },
-    NoSlot { found: u64 },
+    /// Word 1 is how many boot slots the disk holds; word 2 is the slot asked for, or 0 when the
+    /// table was refused before the count finished.
+    NoSlot { found: u64, asked: u64 },
 }
 
 impl Verdict {
@@ -87,16 +95,16 @@ impl Verdict {
 `Verdict::decode`, so the kernel prints every refusal by name rather than as hex. A host test
 round-trips every variant, and a test asserts that no two first words collide.
 
+## How big the class is
+
+The phrases "Must match", "must agree" and "the two must" appear on 207 lines in 117 Rust files
+outside `vendor/` when the search ignores case, and on 173 lines in 95 files when it does not
+(2026-10-27 UTC). Many hits are not contracts between programs: test oracles, hardware
+specifications, invariants inside one crate, and quotations of rule 7. The count measures the
+class and is not a gate, since rewording a comment would satisfy a ratchet on it. Milestone 407's
+own exit is the gate.
+
 ## Exit test
 
-`git grep -n "Must match" kernel/src/user/install_service.rs components/src/system_installer.rs`
-finds nothing, neither file defines a role, slot or verdict constant, and `cargo xtask
-install-boot` passes.
-
-## The class beyond the installer
-
-"Must match", "must agree" and "the two must" mark a contract stated in prose, and on 2026-10-27
-(UTC) they appear on 207 lines in 117 Rust files outside `vendor/`. A count held to its baseline in
-`script/lint`, the way `helpers/prose_ratchet.py` holds passives, is the gate that keeps the class
-from growing. This milestone adds that ratchet and lowers it by the installer's lines; each other
-hit is its own owner's work.
+Neither `install_service.rs` nor `system_installer.rs` defines a role, slot or verdict constant,
+both take them from the shared definitions, and `cargo xtask install-boot` passes.

@@ -18,10 +18,11 @@ Reuse: the method of the two pilots, #2778 (`notes/system-initializer`) and #278
 
 ## The work
 
-The sweep sorted `notes/boot-stick.md` and `notes/boot-stick/` (about 5,400 words, 82 passages)
-by ruling 55 (2026-10-26 UTC) and fixed every contradiction it found. It did not make the cuts and
-moves the sort asks for, because the pilots measured that a third of first-pass cuts removed
-something a reader needs, and only a review pass caught them. That pass is this milestone.
+The sweep sorted `notes/boot-stick.md` and `notes/boot-stick/` (about 5,400 words, 82 passages) by
+the method of the 2026-10-26 UTC ruling, which reads each note against its code, and fixed every
+contradiction it found. It did not make the cuts and moves the sort asks for, because the pilots measured that a
+third of first-pass cuts removed something a reader needs, and only a review pass caught them. That
+pass is this milestone.
 
 Seventeen passages narrate what a code doc already says. Among them are the flag table
 (`stick_maker::cli`'s `USAGE`), the write-then-rename paragraph (`write.rs`), and "The halves" in

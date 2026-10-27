@@ -14,9 +14,9 @@ and which drivers outside this tree read it back.
 
 The shape is the most boring FAT32 a firmware could be handed, because the reader is somebody
 else's driver. Each number is a constant in `volume.rs` whose doc gives its reason
-(`SECTOR_BYTES`, `CLUSTER_SECTORS`, `RESERVED_SECTORS`, `TABLE_COUNT`, `ROOT_CLUSTER`), and
-`efi_system_partition` places `EFI`, `EFI\BOOT` and the boot file's data at clusters 3, 4 and 5
-onward, after the root at cluster 2.
+(`SECTOR_BYTES`, `CLUSTER_SECTORS`, `RESERVED_SECTORS`, `TABLE_COUNT`, `ROOT_CLUSTER`).
+`VolumeLayout` places `EFI`, `EFI\BOOT` and the boot file's data at clusters 3, 4 and 5 onward,
+after the root at cluster 2, by the constants in `efi_system_partition`.
 
 A file name that is 8.3 is written as a short entry alone, the form every FAT driver reads. Any
 other name gets VFAT long-name entries ahead of a short alias, so `BOOTRISCV64.EFI` is written as

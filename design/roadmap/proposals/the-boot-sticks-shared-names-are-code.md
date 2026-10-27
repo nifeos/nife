@@ -18,7 +18,7 @@ match (`BANNER`, `SELF_TEST`), and which `xtask` already depends on.
 
 ## The failure
 
-Four names cross between the programs that build, write and boot the stick, and every side spells
+Five names cross between the programs that build, write and boot the stick, and every side spells
 each one itself.
 
 | agreement | its spellings |
@@ -27,14 +27,12 @@ each one itself.
 | the loader's first line, which names milestone 87 (the x86_64 bare-metal machine) | `uefi_loader/src/loading.rs` prints it; `xtask/src/stick.rs` and `install.rs` match it |
 | each architecture's removable-media file name | `xtask/src/stick.rs` (`PAYLOADS`), `crates/stick_maker/src/payload.rs` (`architecture`), `uefi_loader/src/placement.rs` (`BOOT_FILE_PATH`), `components/src/system_installer.rs` (`BOOT_FILE_NAME`) |
 | the payload directory xtask hands the stick program's build | `NIFE_STICK_PAYLOADS` and `NIFE_STICK_BUILD`, set in `xtask/src/stick.rs` and read in `crates/stick_maker/build.rs` |
+| the downloads' names and directory | `xtask::stick::download_name` and `target/stick-maker`; `helpers/stick-maker-proof.sh` spells `stick_maker-macos-$(uname -m)` again |
 
-Inside `stick_maker` alone, `host/macos.rs`, `host/linux.rs` and `windows.rs`'s `diskpart` steps
-each spell the erased stick's volume label, `NIFE`, and the bench path `/Volumes/NIFE`
-depends on it.
-
-A changed handover line passes every unit test and fails every boot gate with a timeout, which
-reads as a hang rather than a rename. A changed file name on one side boots nothing from a stick
-the other side wrote. Ruling 55a (2026-10-26 UTC) and rule 7 of `AGENTS.md` both make these code.
+A changed handover line passes every unit test and fails every boot gate with a timeout, which reads
+as a hang rather than a rename. A changed file name on one side boots nothing from a stick the other
+side wrote. The method ruled 2026-10-26 UTC (a contract is code, not prose) and rule 7 of
+`AGENTS.md` both make these code.
 
 ## The fix
 
@@ -54,9 +52,10 @@ pub const REMOVABLE_MEDIA: [(&str, &str); 3] = [
 ```
 
 The kernel, the loader, `xtask`, `stick_maker` and `system_installer` take those names from it.
-`helpers/stick-maker-proof.sh` reads the handover line from `cargo xtask` rather than spelling it.
+`helpers/stick-maker-proof.sh` asks `cargo xtask` for the handover line and the download's path
+rather than spelling either.
 The two environment variable names go in a constant `stick_maker`'s build script and `xtask` both
-import, and the volume label becomes one `stick_maker::disk` constant the three hosts use.
+import.
 
 ## Exit test
 

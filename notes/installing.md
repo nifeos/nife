@@ -93,8 +93,8 @@ is a contract stated at both ends.
 **The kernel and the archive therefore move as a set for free**, which was the failure this had to
 make unexpressible. A disk carrying a new kernel beside an archive it does not vouch for halts at
 `MEASURED BOOT REFUSED`, and that cost a boot on 2026-09-01. They are sealed together inside the one
-file at build time (`uefi_loader/build.rs`'s `refuse_an_unsealed_pair`), and the installer copies the
-file.
+file at build time (`uefi_loader/build.rs`'s `refuse_an_unsealed_pair`), and the installer copies
+the file.
 
 Two candidates were priced in milestone 515 and lost. Reading the stick over USB mass storage waits
 on milestone 242 (USB host and HID), which milestone 192 (a keyboard on real silicon) prices at
@@ -118,9 +118,8 @@ With the data partition at LBA 2048 it begins at block 256.
 
 What that deletes from this rung: a partition-aware mount in `redoxfs_server`, and a base-block
 field on the `blk` wire (a wire value two programs agree on, and therefore calef's). Also a
-caretaker
-process in the middle of every filesystem block. `kernel/src/user/fs_service` grew an NVMe arm (`wiring.rs`) and
-nothing else.
+caretaker process in the middle of every filesystem block. `kernel/src/user/fs_service` grew an NVMe
+arm (`wiring.rs`) and nothing else.
 
 What it costs is real and is recorded in `system_installer`'s `BUGS`: the filesystem server on an
 installed machine can address the EFI system partition and the partition table. What keeps it inside
@@ -176,9 +175,9 @@ the strong ones from a distance.
 | any of this works on real firmware | nothing | rung 2b, on xenon, and it is somebody's hands rather than a lane's |
 
 The third row is milestone 515's B1, which that proposal recommended and called unmeasured on
-anything but OVMF. It is now measured on OVMF and on nothing else. The deletion of the variable store
-is what makes it a measurement at all. The default store persists across runs in a checkout, so
-without it the second boot would have been riding a boot option the first one left behind.
+anything but OVMF. It is now measured on OVMF and on nothing else. The deletion of the variable
+store is what makes it a measurement at all. The default store persists across runs in a checkout,
+so without it the second boot would have been riding a boot option the first one left behind.
 
 ## What this does not do
 
@@ -207,9 +206,9 @@ chooser started it from a slot. The kernel mounts the NVMe only when that token 
 stick, a `-kernel` boot and the device-tree architectures leave the internal disk alone. Boot 3 now
 finds the disk byte-identical.
 
-The sixth, the partition-bounded mount, is a `BUGS` entry in `system_installer` rather than a proposal,
-because what closes it is a wire value two programs agree on and that is an architect's to name
-rather than a lane's to propose.
+The sixth, the partition-bounded mount, is a `BUGS` entry in `system_installer` rather than a
+proposal, because what closes it is a wire value two programs agree on and that is an architect's to
+name rather than a lane's to propose.
 
 ## The install gate's BUGS, in full
 

@@ -9,7 +9,7 @@
 `crates/file_allocation_table`, which gained a reader in the window, read from the notes that
 describe it and its two writers from the outside, passage by passage against the code, with each
 program's spawn and report words swept for contracts stated only in prose. **Findings:** fixed 6,
-minted 4, accepted 3.
+minted 4, accepted 4.
 
 The finding to carry off: every note outside the crate still described a writer with no reader,
 and the one program that writes an install to a disk agrees with the kernel on its roles, slots,
@@ -51,13 +51,14 @@ still called the crate finished after the 2026-10-22 ruling on #2580 that milest
 
 ### The method
 
-Two rulings bear on it, both ruled 2026-10-26 UTC. A note is read against the code, and each
+The method was ruled 2026-10-26 UTC, in two parts: notes are read against the code, and a contract
+is code, not prose. A note is read against the code, and each
 passage is sorted as gone (it narrates the code), moves (it belongs beside the code it describes),
 stays (a reason, a measurement, a refused alternative, or orientation), or contract. A
 contradiction is fixed, or filed as a `BUGS` entry when the code may be the wrong side, and a note
-names the symbol and keeps the reason (55). A contract is code, not prose: one stated only in prose,
+names the symbol and keeps the reason. A contract is code, not prose: one stated only in prose,
 or only implied, is a finding, proposed as a milestone with a code sketch, and this lane writes no
-contract code (55a).
+contract code.
 
 The two pilots of that method, #2778 (`notes/system-initializer`) and #2782 (`notes/e1000e`),
 found two things this sweep was built around. A grep for a crate's name misses stale claims that
@@ -86,7 +87,7 @@ before it was fixed or routed.
 |---|---|---|---|---|---|---|
 | FAT note | 8 | 2 | 1 | 5 | 0 | 2 |
 | installing, with its appendix | 21 | 0 | 0 | 17 | 4 | 6 |
-| boot stick | 82 | 17 | 6 | 54 | 5 | 13 |
+| boot stick | 82 | 17 | 6 | 55 | 4 | 13 |
 
 ## What came back clean
 
@@ -118,18 +119,19 @@ for word, which milestone 813 had already moved there (gone). The headings stay,
 ### 2. FIXED: installing.md called the FAT crate finished
 
 Section 3 said the crate closes the FAT gap "and is then finished", and that the FAT32 stratum of
-milestone 140 (mount a drive this system did not create) was read-first and unbuilt. The ruling of 2026-10-22 on #2580, which milestone 813
-records, made the crate a full FAT12, FAT16 and FAT32 reader and writer, with 140 the server built
-on it. The section now says so. The crate's manifest said the same as the note (a `description`
-and a comment naming only the FAT32 writer); both now name both halves.
+milestone 140 (mount a drive this system did not create) was read-first and unbuilt. The ruling of
+2026-10-22 on #2580, which milestone 813 records, made the crate a full FAT12, FAT16 and FAT32
+reader and writer, with 140 the server built on it. The section now says so. The crate's manifest
+said the same as the note (a `description` and a comment naming only the FAT32 writer); both now
+name both halves.
 
 ### 3. FIXED: installing.md named the wrong process for the survey
 
-"The looking is done by ... the `disk_partitioner` verify role of milestone 57." (Milestone 57 (partitioning and formatting
-a real drive) built that role.) The kernel's
-offer spawns `system_installer` with `ROLE_SURVEY` (`install_service.rs`, `spawn_system_installer`),
-and the page's own table says so two paragraphs earlier. The sentence now names the role and keeps
-milestone 57's role as the shape it follows.
+"The looking is done by ... the `disk_partitioner` verify role of milestone 57." (Milestone 57
+(partitioning and formatting a real drive) built that role.) The kernel's offer spawns
+`system_installer` with `ROLE_SURVEY` (`install_service.rs`, `spawn_system_installer`), and the
+page's own table says so two paragraphs earlier. The sentence now names the role and keeps milestone
+57's role as the shape it follows.
 
 ### 4. FIXED: installing.md's proposals, floor and pointers had moved on
 
@@ -138,7 +140,8 @@ milestone 57's role as the shape it follows.
 - "A disk under about 600 MiB is refused". `Layout::fit` reserves 512 MiB for the EFI system
   partition, two 64 MiB slots, a 64 MiB data floor and the alignment: about 705 MiB, as
   `system_installer`'s own `BUGS` says ("about 700"). The figure is 700.
-- "Nothing schedules it" now cites milestone 712 (the install gates run nowhere), as `xtask/src/install.rs`'s `BUGS` does.
+- "Nothing schedules it" now cites milestone 712 (the install gates run nowhere), as
+  `xtask/src/install.rs`'s `BUGS` does.
 - `kernel/src/user/fs_service.rs` grew its NVMe arm in what is now `fs_service/wiring.rs`.
 - The appendix said the chooser's `the_disk_with_slots` collects boot partitions. `read_table`
   does; `the_disk_with_slots` picks the disk.
@@ -147,7 +150,7 @@ milestone 57's role as the shape it follows.
 
 - Milestone 813's exit called `BOOTRISCV64.EFI` "a name the `mkfs` refuses today"; milestone 560
   writes it. Its "What is proven" paragraph said only the writer's half of one property was
-  proved, against its own table, which names eight reader harnesses. It cited `Volume::new` for
+  proved, against its own table, which names nine reader harnesses. It cited `Volume::new` for
   `VolumeLayout::new`.
 - `system_installer`'s `BOOT_FILE_NAME` doc sent a reader to the crate's `BUGS` "for the riscv64
   name that is not" written; the crate writes it. `Layout::fit` cited a reason "this file's header
@@ -162,39 +165,42 @@ milestone 57's role as the shape it follows.
 
 `install_service.rs` and `system_installer.rs` each spell the three roles, the five capability
 slots, the boot file's mapping address and four report words, with a "Must match" comment on each
-side and no shared code. `install_service.rs` records why: the words are the kernel's own
-convention with a program it spawns. Under 55a that is a contract stated in prose, and
-`hot_swap_contract` is the tree's existing shape for the same convention. Proposed as
-[the installer's spawn and report words are one definition](../roadmap/proposals/the-installers-spawn-and-report-words-are-one-definition.md),
-which also carries this sweep's one gate (below).
+side and no shared code. `install_service.rs` records why: the words are the kernel's own convention
+with a program it spawns. Under the method that is a contract stated in prose, and
+`hot_swap_contract` is the tree's existing shape for the same convention. Proposed as [the
+installer's spawn and report words are one
+definition](../roadmap/proposals/the-installers-spawn-and-report-words-are-one-definition.md). It is
+the installer's rows within milestone 407 (one definition of the numbers a kernel test and its
+program agree on), whose measurement does not list this pair, and it waits on §187 (one crate per
+kernel-test pair, or one crate for all of them?) for where the definitions live.
 
 ### 7. MINTED: the loader's two install agreements are prose
 
 The PVH module order (archive at 0, boot file at 1) is an array order in `write_start_info` and
-literal indices in the kernel's `machine.rs`, each comment naming the other. Which partition is
-boot slot `n` is counted twice, by the chooser's `read_table` and by `confirm`'s loop, which the
-appendix calls "the whole agreement between the two". Proposed as
-[the loader's two install agreements are code](../roadmap/proposals/the-loaders-two-install-agreements-are-code.md),
-with constants in `machine_discovery` and a `boot_slot::nth_slot`.
+literal indices in the kernel's `machine.rs`, each comment naming the other. Which partition is boot
+slot `n` is counted twice, by the chooser's `read_table` and by `confirm`'s loop, which the appendix
+calls "the whole agreement between the two". Proposed as [the loader's two install agreements are
+code](../roadmap/proposals/the-loaders-two-install-agreements-are-code.md), with constants in
+`machine_discovery` and a `boot_slot::nth_slot`.
 
 ### 8. MINTED: the boot stick's shared names are spelled on every side
 
-The kernel's handover line, which every boot gate waits for, is spelled in six places; the
-loader's first line in three; each architecture's removable-media file name in four; the payload
-directory's environment variables in two; and the erased stick's label in three, all inside
-`stick_maker`. Proposed as
-[the boot stick's shared names are code](../roadmap/proposals/the-boot-sticks-shared-names-are-code.md),
-in `crates/boot_ladder` beside the lines it already holds.
+The kernel's handover line, which every boot gate waits for, is spelled in six places; the loader's
+first line in three; each architecture's removable-media file name in four; the payload directory's
+environment variables in two; and the downloads' names in two. Proposed as [the boot stick's shared
+names are code](../roadmap/proposals/the-boot-sticks-shared-names-are-code.md), in
+`crates/boot_ladder` beside the lines it already holds.
 
 ### 9. MINTED: the boot stick notes want the pilots' rewrite
 
-The sort found 17 passages in the boot stick notes that narrate a code doc and 6 that belong
-beside their code. This sweep made none of those cuts: the system-initializer pilot measured a
-third of first-pass cuts as wrong, and a review pass is what caught them. Proposed as
-[the boot stick notes are read against their code](../roadmap/proposals/the-boot-stick-notes-are-read-against-their-code.md),
-with the rows the sort produced.
+The sort found 17 passages in the boot stick notes that narrate a code doc and 6 that belong beside
+their code. This sweep made none of those cuts: the system-initializer pilot measured a third of
+first-pass cuts as wrong, and a review pass is what caught them. Proposed as [the boot stick notes
+are read against their
+code](../roadmap/proposals/the-boot-stick-notes-are-read-against-their-code.md), with the rows the
+sort produced.
 
-### 10. FIXED: the boot stick notes contradicted their code in thirteen places
+### 10. FIXED: the boot stick notes contradicted their code in twelve places
 
 - "`cargo xtask stick` defaults to debug ... which one a customer downloads is rung 4's choice."
   `stick()` has built release only since the ruling of 2026-10-03 UTC; `--release` does nothing.
@@ -208,10 +214,10 @@ with the rows the sort produced.
   wrote; the proof table, the transcript (which now names the medium, as `boot_and_check` prints)
   and the time (eight minutes, four boots at the 120-second `NIFE_STICK_TIMEOUT`) follow.
 - `acpi-boot`'s GICv3 boot is from `target/cloud-image/nife-aarch64.img`, not `target/stick`.
-- The kernel prints `hart 0 booted`, a literal, not `hart N booted` (`kernel/src/boot.rs`).
 - `--disk ID --erase` is not "no questions": a FAT disk still gets `confirm_copy`'s question
   unless `--yes` is given.
-- The block number of milestone 441 (the program that makes the stick) is not provisional; the block is BUILT.
+- The block number of milestone 441 (the program that makes the stick) is not provisional; the block
+  is BUILT.
 - `the-program.md`: `windows.rs` is compiled everywhere, not "only where it runs"; Windows uses
   five `kernel32` functions, not four (`SetErrorMode` is the fifth), fixed in the note and in five
   code docs and comments; and Linux is no longer unchecked on a live kernel, since
@@ -245,6 +251,14 @@ disagree. Accepted: milestone 813's stage 8 folds the writer into the general fo
 two meet, and editing `boot_sector.rs` now would re-cut its four falsification patches for no
 change in behavior.
 
+### 14. ACCEPTED: the riscv64 banner names hart 0 whichever hart booted
+
+The radon table in `notes/boot-stick.md` read "the kernel's `hart N booted`". `riscv64_banner` in
+`kernel/src/boot.rs` prints a hard-coded `hart 0 booted`, but on RISC-V the boot hart's logical id
+is its physical hart id (`percpu::boot_cpu_id`), which need not be 0. The note described what the
+kernel should print, so the code is the wrong side. Recorded as a `BUGS` entry on
+`riscv64_banner`; the note now names the kernel's `booted:` line without a number.
+
 ## What was deliberately not examined
 
 - Milestone 813's two stage appendices (`stage-2-the-reader-begins.md`,
@@ -255,15 +269,16 @@ change in behavior.
 - `notes/boot-slots.md`, which the installer's appendix points to for the slot states.
 - `crates/boot_slot`, `crates/globally_unique_identifier_partition_table` and
   `uefi_loader`'s chooser, beyond the functions a passage named.
-- Every other "Must match" in the tree beyond the installer's: 207 lines in 117 Rust files, counted
-  and not read (finding 6 routes the class).
+- Every other "Must match" in the tree beyond the installer's, counted and not read (below).
 - `design/decisions/`, read only where a passage cited it.
 
 ## What converts to a gate
 
-One class. The phrases "Must match", "must agree" and "the two must" mark a contract stated in
-prose, and they are greppable. A count held to its baseline in `script/lint` is the gate; finding 6's
-proposal carries it, since a ratchet with no milestone lowering it is a number nobody reads.
+Nothing in this scope. The phrases "Must match", "must agree" and "the two must" mark many
+contracts stated in prose: 207 lines in 117 Rust files when the search ignores case, 173 lines in
+95 files when it does not. They also match test oracles, hardware specifications, invariants inside
+one crate and quotations of rule 7, and a ratchet on the wording would be met by rewording. The
+count is a measurement; milestone 407's exit, one definition per pair, is the gate.
 
 ## What wants a lane of its own
 
