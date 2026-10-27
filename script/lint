@@ -565,7 +565,7 @@ import sys
 DECL = re.compile(
     r'^\s*(?:pub(?:\([^)]*\))?\s+)?(?:default\s+)?(?:const\s+)?'
     r'unsafe\s+(?:extern\s+"[^"]*"\s+)?fn\s+(\w+)')
-# An `impl ... for ...` header. `impl<T> Node for N` counts; `impl Fifo<T>` (inherent) does not.
+# An `impl ... for ...` header. `impl<T> Node for N` counts; `impl Queue<T>` (inherent) does not.
 IMPL_FOR = re.compile(r'^\s*(?:unsafe\s+)?impl\b.*\bfor\b')
 
 total = 0
@@ -2347,8 +2347,8 @@ REGISTRY = {
         lambda: _harness_hits().get('generational_table', 0),
     ),
     'intrusive-fifo-harnesses': (
-        'how many Kani proof harnesses crates/intrusive_fifo carries',
-        lambda: _harness_hits().get('intrusive_fifo', 0),
+        'how many Kani proof harnesses crates/intrusive_queue carries',
+        lambda: _harness_hits().get('intrusive_queue', 0),
     ),
     'address-space-identifier-harnesses': (
         'how many Kani proof harnesses crates/address_space_identifier carries',

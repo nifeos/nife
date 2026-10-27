@@ -396,14 +396,14 @@ pub struct Thread {
     /// the thread, under that queue's synchronization.
     pub(crate) next: Option<core::ptr::NonNull<Thread>>,
 
-    /// This thread's queue token while no queue holds it (`intrusive_fifo::Unqueued`). Every live
+    /// This thread's queue token while no queue holds it (`intrusive_queue::Unqueued`). Every live
     /// thread has one token, minted when the table inserts it, and it is always on a queue or here.
     /// A queue push takes it by value, so a thread reaches a queue only through the token its last
     /// transition left here. Here means on no queue: running, an embryo, awaiting a Reply, a
     /// deferred wake, a corpse, or an idle thread off its CPU. See notes/thread-control-block.md.
     ///
     /// Name: provisional (milestone 139, round 10): calef names fields a reader meets.
-    pub(crate) own_token: Option<intrusive_fifo::Unqueued<Thread>>,
+    pub(crate) own_token: Option<intrusive_queue::Unqueued<Thread>>,
 
     /// **Where this thread's EL0 execution begins** (milestone 19c.3), set by `ThreadControlBlock::CONFIGURE`
     /// on an embryo, consumed by `START` to build the entry context. `(0, 0)` for a kernel
@@ -691,7 +691,7 @@ pub(crate) unsafe fn initialize_capability_table(thread: *mut Thread) {
 }
 
 // SAFETY: plain storage of the link, nothing else, which is all the queue's contract asks.
-unsafe impl intrusive_fifo::Node for Thread {
+unsafe impl intrusive_queue::Node for Thread {
     fn next(&self) -> Option<core::ptr::NonNull<Self>> {
         self.next
     }

@@ -20,8 +20,8 @@ rendezvous," and whoever answers, answers.
 
 ```rust
 struct Rendezvous {             // crates/inter_process_communication, over kernel threads
-    senders: Fifo<Thread>,      // blocked senders, if no receiver was waiting
-    receivers: Fifo<Thread>,    // blocked receivers, if no sender was waiting
+    senders: Queue<Thread>,      // blocked senders, if no receiver was waiting
+    receivers: Queue<Thread>,    // blocked receivers, if no sender was waiting
     pending: u32,               // async signals (interrupts) delivered with nobody waiting
 }
 ```
@@ -77,8 +77,8 @@ capabilities exist to avoid.
 A rendezvous names a synchronous meeting point, so the natural question is who receives. In our
 code (`Rendezvous` in `sched.rs`), both sides are FIFO queues on the rendezvous itself:
 
-- `receivers: Fifo<Thread>`, threads blocked in `RECEIVE` with no sender yet.
-- `senders: Fifo<Thread>`, threads blocked in `SEND` with no receiver yet.
+- `receivers: Queue<Thread>`, threads blocked in `RECEIVE` with no sender yet.
+- `senders: Queue<Thread>`, threads blocked in `SEND` with no receiver yet.
 
 At most one queue is ever non-empty (whoever arrived first and had to wait). A `SEND` that finds a
 receiver does `receivers.pop_front()` and wakes exactly that one; a `RECEIVE` that finds a sender does

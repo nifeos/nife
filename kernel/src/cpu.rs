@@ -9,7 +9,7 @@
 use core::cell::UnsafeCell;
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 
-use intrusive_fifo::Fifo;
+use intrusive_queue::Queue;
 
 use crate::sync::{IrqSafeMutex, rank};
 use crate::thread::{Thread, ThreadId};
@@ -65,14 +65,14 @@ pub struct PerCpu {
     /// TCB pointers kept alive because a queued thread is `Ready` and only `Finished` threads are
     /// reaped. No lock: only this core touches it, with interrupts masked, which is what makes the
     /// `UnsafeCell` sound. Access it through [`with_runq`](Self::with_runq).
-    runq: UnsafeCell<Fifo<Thread>>,
+    runq: UnsafeCell<Queue<Thread>>,
 
     /// This core's migration inbox: threads handed to it by other cores.
     ///
     /// The one cross-core scheduler structure. A remote core locks it, pushes the TCB and sends a
     /// reschedule SGI; this core drains it in the handler. See [`inbox_of`] and
     /// `sched::drain_inbox`.
-    pub inbox: IrqSafeMutex<Fifo<Thread>>,
+    pub inbox: IrqSafeMutex<Queue<Thread>>,
 
     /// This core's run-queue length, mirrored so other cores may read it (§28 (SMP placement)).
     /// Kept exact by the owner after every [`with_runq`](Self::with_runq); read relaxed and
@@ -158,8 +158,8 @@ impl PerCpu {
             idle: AtomicU64::new(NO_TID),
             need_resched: AtomicBool::new(false),
             switched_from: AtomicU64::new(NO_TID),
-            runq: UnsafeCell::new(Fifo::new()),
-            inbox: IrqSafeMutex::new(rank::INBOX, Fifo::new()),
+            runq: UnsafeCell::new(Queue::new()),
+            inbox: IrqSafeMutex::new(rank::INBOX, Queue::new()),
             runq_len: AtomicUsize::new(0),
             inbox_len: AtomicUsize::new(0),
             steal_request: work_steal_slot::Slot::new(),
@@ -177,7 +177,7 @@ impl PerCpu {
     ///
     /// Context: interrupts masked, including the reschedule-SGI handler's inbox drain; takes no
     /// lock.
-    pub(crate) fn with_runq<R>(&self, f: impl FnOnce(&mut Fifo<Thread>) -> R) -> R {
+    pub(crate) fn with_runq<R>(&self, f: impl FnOnce(&mut Queue<Thread>) -> R) -> R {
         debug_assert!(
             !crate::arch::interrupts::is_enabled(),
             "run queue touched with interrupts enabled: single-owner safety needs them masked",
@@ -323,7 +323,7 @@ pub fn id() -> usize {
 
 /// Another core's migration inbox, by id. This is the one place a core reaches into a *different*
 /// core's `PerCpu` block, and only the inbox (a real lock), never the run queue. See DECISIONS §11.
-pub(crate) fn inbox_of(id: usize) -> &'static IrqSafeMutex<Fifo<Thread>> {
+pub(crate) fn inbox_of(id: usize) -> &'static IrqSafeMutex<Queue<Thread>> {
     &PERCPU[id].inbox
 }
 

@@ -39,26 +39,27 @@ pub struct ExtractStats {
 pub fn extract(volume: Volume, path: &str, dest: &Path) -> Result<ExtractStats, String> {
     let comps = components(path)?;
     let mut fs = open_ro(volume)?;
-    fs.tx(|tx| Ok(extract_tx(tx, &comps, dest))).map_err(|e| {
-        format!(
-            "extracting {path} from {} failed: {e}",
-            volume.path.display()
-        )
-    })?
+    fs.tx(|transaction| Ok(extract_transaction(transaction, &comps, dest)))
+        .map_err(|e| {
+            format!(
+                "extracting {path} from {} failed: {e}",
+                volume.path.display()
+            )
+        })?
 }
 
-pub(crate) fn extract_tx<D: Disk>(
-    tx: &mut Transaction<D>,
+pub(crate) fn extract_transaction<D: Disk>(
+    transaction: &mut Transaction<D>,
     comps: &[&str],
     dest: &Path,
 ) -> Result<ExtractStats, String> {
-    let node = resolve(tx, comps)?;
+    let node = resolve(transaction, comps)?;
     // Found once, from the image root, and carried down the walk. The store's location does not
     // depend on which subtree is being extracted, which is why extracting `nested/deep` still
     // recovers the attributes of what is in it.
-    let store = find_store(tx)?;
+    let store = find_store(transaction)?;
     let mut stats = ExtractStats::default();
-    extract_node(tx, &node, dest, store, &mut stats)?;
+    extract_node(transaction, &node, dest, store, &mut stats)?;
     Ok(stats)
 }
 
@@ -70,13 +71,13 @@ pub(crate) fn extract_tx<D: Disk>(
 /// Linux host refusing any attribute on a symlink (`EPERM` again, which is why the message carries
 /// the errno rather than an interpretation of it).
 pub(crate) fn reattach<D: Disk>(
-    tx: &mut Transaction<D>,
+    transaction: &mut Transaction<D>,
     node: &TreeData<Node>,
     dest: &Path,
     store: Option<TreePtr<Node>>,
     stats: &mut ExtractStats,
 ) {
-    let blob = match attr_blob(tx, store, node.ptr().id()) {
+    let blob = match attr_blob(transaction, store, node.ptr().id()) {
         Ok(blob) => blob,
         Err(msg) => {
             eprintln!("redoxfs_host: {}: {msg}", dest.display());
@@ -153,7 +154,7 @@ pub(crate) fn host_mode(node: &Node) -> u32 {
 }
 
 pub(crate) fn extract_node<D: Disk>(
-    tx: &mut Transaction<D>,
+    transaction: &mut Transaction<D>,
     node: &TreeData<Node>,
     dest: &Path,
     store: Option<TreePtr<Node>>,
@@ -166,9 +167,10 @@ pub(crate) fn extract_node<D: Disk>(
             std::fs::create_dir_all(dest)
                 .map_err(|e| format!("cannot create {}: {e}", dest.display()))?;
             let mut children = Vec::new();
-            tx.child_nodes(node.ptr(), &mut children)
+            transaction
+                .child_nodes(node.ptr(), &mut children)
                 .map_err(|e| format!("cannot list {}: {e}", dest.display()))?;
-            // Names and pointers first: the recursion needs `tx` mutably, and a borrowed
+            // Names and pointers first: the recursion needs `transaction` mutably, and a borrowed
             // `DirEntry` would keep it borrowed for the whole loop.
             let entries: Vec<(String, TreePtr<Node>)> = children
                 .iter()
@@ -176,16 +178,16 @@ pub(crate) fn extract_node<D: Disk>(
                 .collect();
             for (name, ptr) in entries {
                 safe_component(&name)?;
-                let child = tx
+                let child = transaction
                     .read_tree(ptr)
                     .map_err(|e| format!("{name}: cannot read its node: {e}"))?;
-                extract_node(tx, &child, &dest.join(&name), store, stats)?;
+                extract_node(transaction, &child, &dest.join(&name), store, stats)?;
             }
             // Attributes before the permissions, for the same reason the permissions come last: a
             // directory already made read-only can still refuse a `setxattr` on some filesystems,
             // and a directory whose own attributes failed for that reason would be a self-inflicted
             // skip.
-            reattach(tx, node, dest, store, stats);
+            reattach(transaction, node, dest, store, stats);
             // Permissions last: a directory extracted read-only would otherwise refuse its own
             // children.
             std::fs::set_permissions(dest, PermissionsExt::from_mode(host_mode(node.data())))
@@ -193,10 +195,10 @@ pub(crate) fn extract_node<D: Disk>(
             stats.dirs += 1;
         }
         Kind::File => {
-            let data = read_all(tx, node)?;
+            let data = read_all(transaction, node)?;
             std::fs::write(dest, &data)
                 .map_err(|e| format!("cannot write {}: {e}", dest.display()))?;
-            reattach(tx, node, dest, store, stats);
+            reattach(transaction, node, dest, store, stats);
             std::fs::set_permissions(dest, PermissionsExt::from_mode(host_mode(node.data())))
                 .map_err(|e| format!("cannot set the mode of {}: {e}", dest.display()))?;
             stats.files += 1;
@@ -206,7 +208,7 @@ pub(crate) fn extract_node<D: Disk>(
             // A RedoxFS symlink stores its target as the node's data, which is how `archive_at`
             // writes one. Recreate it as a symlink rather than following it: a dangling link
             // recovered faithfully beats a copy of whatever the *host* has at that path today.
-            let target = read_all(tx, node)?;
+            let target = read_all(transaction, node)?;
             let target = String::from_utf8(target)
                 .map_err(|_| format!("{}: symlink target is not UTF-8", dest.display()))?;
             let _ = std::fs::remove_file(dest);
@@ -214,7 +216,7 @@ pub(crate) fn extract_node<D: Disk>(
                 .map_err(|e| format!("cannot link {} -> {target}: {e}", dest.display()))?;
             // The attributes of the **link**, not of what it points at. macOS takes them; Linux
             // refuses `user.*` on a symlink and the refusal is counted rather than hidden.
-            reattach(tx, node, dest, store, stats);
+            reattach(transaction, node, dest, store, stats);
             stats.symlinks += 1;
         }
         Kind::Other => {

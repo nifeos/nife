@@ -45,12 +45,12 @@ pub fn mkfs(image: &Path, size: u64) -> Result<(), String> {
 pub fn put(image: &Path, path: &str, data: &[u8]) -> Result<(), String> {
     let comps = components(path)?;
     let mut fs = open_rw(image)?;
-    fs.tx(|tx| Ok(put_tx(tx, &comps, data)))
+    fs.tx(|transaction| Ok(put_transaction(transaction, &comps, data)))
         .map_err(|e| format!("putting {path} into {} failed: {e}", image.display()))?
 }
 
-pub(crate) fn put_tx<D: Disk>(
-    tx: &mut Transaction<D>,
+pub(crate) fn put_transaction<D: Disk>(
+    transaction: &mut Transaction<D>,
     comps: &[&str],
     data: &[u8],
 ) -> Result<(), String> {
@@ -58,22 +58,24 @@ pub(crate) fn put_tx<D: Disk>(
         return Err("no file name given".to_string());
     };
     let (secs, nsec) = now();
-    let parent = resolve(tx, parents)?;
+    let parent = resolve(transaction, parents)?;
     if !parent.data().is_dir() {
         return Err(format!("/{}: not a directory", parents.join("/")));
     }
-    let node_ptr = match tx.find_node(parent.ptr(), name) {
+    let node_ptr = match transaction.find_node(parent.ptr(), name) {
         Ok(node) => {
-            tx.truncate_node(node.ptr(), 0, secs, nsec)
+            transaction
+                .truncate_node(node.ptr(), 0, secs, nsec)
                 .map_err(|e| format!("{name}: truncate failed: {e}"))?;
             node.ptr()
         }
-        Err(_) => tx
+        Err(_) => transaction
             .create_node(parent.ptr(), name, Node::MODE_FILE | 0o644, secs, nsec)
             .map_err(|e| format!("{name}: create failed: {e}"))?
             .ptr(),
     };
-    tx.write_node(node_ptr, 0, data, secs, nsec)
+    transaction
+        .write_node(node_ptr, 0, data, secs, nsec)
         .map_err(|e| format!("{name}: write failed: {e}"))?;
     Ok(())
 }

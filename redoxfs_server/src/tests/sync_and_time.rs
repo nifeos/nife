@@ -13,9 +13,9 @@ use super::*;
 fn a_sync_needs_write_and_takes_a_handle_of_either_kind() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)
         .expect("mkfs through BlockDisk");
-    fs.tx(|tx| {
-        tx.create_node(TreePtr::root(), "scratch", Node::MODE_FILE | 0o644, 0, 0)?;
-        tx.create_node(TreePtr::root(), "sub", Node::MODE_DIR | 0o755, 0, 0)?;
+    fs.tx(|transaction| {
+        transaction.create_node(TreePtr::root(), "scratch", Node::MODE_FILE | 0o644, 0, 0)?;
+        transaction.create_node(TreePtr::root(), "sub", Node::MODE_DIR | 0o755, 0, 0)?;
         Ok(())
     })
     .expect("populate");

@@ -677,7 +677,7 @@ fn create_through_the_block_chunking_does_not_loop() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)
         .expect("mkfs through BlockDisk");
     // The root the shipped image has when std::fs::write adds a third name to it.
-    fs.tx(|tx| {
+    fs.tx(|transaction| {
         for (name, body) in [
             (
                 "motd",
@@ -688,10 +688,10 @@ fn create_through_the_block_chunking_does_not_loop() {
                 &b"(placeholder overwritten by the redoxfs_server write test)"[..],
             ),
         ] {
-            let ptr = tx
+            let ptr = transaction
                 .create_node(TreePtr::root(), name, Node::MODE_FILE | 0o644, 0, 0)?
                 .ptr();
-            tx.write_node(ptr, 0, body, 0, 0)?;
+            transaction.write_node(ptr, 0, body, 0, 0)?;
         }
         Ok(())
     })

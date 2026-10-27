@@ -438,13 +438,15 @@ fn a_grant_root_cannot_be_closed_while_bound() {
 fn a_symbolic_link_is_never_followed_or_opened() {
     let disk = DiskMemory::new(16 * 1024 * 1024);
     let mut fs = FileSystem::create(disk, None, 0, 0).expect("create");
-    fs.tx(|tx| {
-        let sub = tx.create_node(TreePtr::root(), "sub", Node::MODE_DIR | 0o755, 0, 0)?;
-        let other = tx.create_node(TreePtr::root(), "other", Node::MODE_DIR | 0o755, 0, 0)?;
-        let secret = tx.create_node(other.ptr(), "secret", Node::MODE_FILE | 0o644, 0, 0)?;
-        tx.write_node(secret.ptr(), 0, b"in the sibling", 0, 0)?;
-        let link = tx.create_node(sub.ptr(), "link", Node::MODE_SYMLINK | 0o777, 0, 0)?;
-        tx.write_node(link.ptr(), 0, b"../other", 0, 0)?;
+    fs.tx(|transaction| {
+        let sub = transaction.create_node(TreePtr::root(), "sub", Node::MODE_DIR | 0o755, 0, 0)?;
+        let other =
+            transaction.create_node(TreePtr::root(), "other", Node::MODE_DIR | 0o755, 0, 0)?;
+        let secret =
+            transaction.create_node(other.ptr(), "secret", Node::MODE_FILE | 0o644, 0, 0)?;
+        transaction.write_node(secret.ptr(), 0, b"in the sibling", 0, 0)?;
+        let link = transaction.create_node(sub.ptr(), "link", Node::MODE_SYMLINK | 0o777, 0, 0)?;
+        transaction.write_node(link.ptr(), 0, b"../other", 0, 0)?;
         Ok(())
     })
     .expect("populate");

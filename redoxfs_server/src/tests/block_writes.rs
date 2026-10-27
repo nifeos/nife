@@ -13,11 +13,11 @@ use super::*;
 fn repeat_writes_through_the_block_chunking_do_not_loop() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)
         .expect("mkfs through BlockDisk");
-    fs.tx(|tx| {
-        let ptr = tx
+    fs.tx(|transaction| {
+        let ptr = transaction
             .create_node(TreePtr::root(), "scratch", Node::MODE_FILE | 0o644, 0, 0)?
             .ptr();
-        tx.write_node(ptr, 0, b"(placeholder)", 0, 0)?;
+        transaction.write_node(ptr, 0, b"(placeholder)", 0, 0)?;
         Ok(())
     })
     .expect("populate");
@@ -47,8 +47,8 @@ fn repeat_writes_through_the_block_chunking_do_not_loop() {
 fn repeat_record_sized_writes_through_the_chunking_do_not_loop() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 32 * 1024 * 1024])), None, 0, 0)
         .expect("mkfs");
-    fs.tx(|tx| {
-        tx.create_node(TreePtr::root(), "big", Node::MODE_FILE | 0o644, 0, 0)?;
+    fs.tx(|transaction| {
+        transaction.create_node(TreePtr::root(), "big", Node::MODE_FILE | 0o644, 0, 0)?;
         Ok(())
     })
     .expect("populate");
@@ -204,7 +204,7 @@ fn a_write_survives_a_full_close_and_reopen() {
     let mut srv = Server::open(disk).unwrap();
     let h = srv.open_file(&named("f")).unwrap();
     srv.write(h, 0, b"persisted").unwrap();
-    let disk = srv.fs.disk; // the FileSystem committed on each tx; take the disk back
+    let disk = srv.fs.disk; // the FileSystem committed on each transaction; take the disk back
     let mut srv = Server::open(disk).unwrap();
     let h = srv.open_file(&named("f")).unwrap();
     let mut buf = [0u8; 16];

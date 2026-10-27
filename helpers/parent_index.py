@@ -641,17 +641,17 @@ def run_list():
     return 0
 
 
-def bank(init=False):
-    if init and os.path.exists(BASELINE):
+def bank(initialize=False):
+    if initialize and os.path.exists(BASELINE):
         print(f'parent-index check: {BASELINE} already exists. --init wrote it once, for §282; it '
               f'is refused now, and --bank is the verb that never raises', file=sys.stderr)
         return 2
-    if not init and not os.path.exists(BASELINE):
+    if not initialize and not os.path.exists(BASELINE):
         print(f'parent-index check: {BASELINE} does not exist; there is nothing to bank',
               file=sys.stderr)
         return 2
     _paths, judged = judge_tree()
-    if init:
+    if initialize:
         rows = {p: j['number'] for p, j in judged.items() if j['number']}
     else:
         rows = banked(read_baseline(read(BASELINE)), judged)
@@ -833,8 +833,11 @@ def main(argv):
         return run_check()
     if argv[0] == '--list':
         return run_list()
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
     if argv[0] in ('--bank', '--init'):
-        return bank(init=argv[0] == '--init')
+        return bank(initialize=argv[0] == '--init')
     print(__doc__.split('\n\n')[2], file=sys.stderr)
     return 2
 

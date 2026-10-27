@@ -184,7 +184,7 @@ still have no reason to build one.
 
 `DESTROY` used to refuse outright while a live thread occupied the region, which is correct for a
 cooperative child but leaves the shell's `^C` escalation (§24) nothing to escalate to: a thread
-spinning at EL0 would refuse `DESTROY` forever. The fix is small and avoids two hard problems (removing a node from the intrusive `Fifo`, and stopping a thread
+spinning at EL0 would refuse `DESTROY` forever. The fix is small and avoids two hard problems (removing a node from the intrusive `Queue`, and stopping a thread
 running on another core):
 
 - `DESTROY` on a live resident thread now marks it `killed` and still refuses that pass.
