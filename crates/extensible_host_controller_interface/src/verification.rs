@@ -1,3 +1,5 @@
+//! Name: ratified 2026-10-25 (#2720).
+
 use super::*;
 
 /// **A producer ring never places a TRB on its link slot or past the end**, and places the link

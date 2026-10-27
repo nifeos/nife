@@ -87,7 +87,7 @@ fn board_console_exposure(args: &[String]) -> ExitCode {
         }
     };
     meta.source = Some(path.to_string());
-    // A machine with a profile is judged against it (radon may lack `deviceirq`, xenon may
+    // A machine with a profile is judged against it (radon may lack `device_interrupt`, xenon may
     // not); argon, `hvf` and an unnamed machine have none, so no absence fails their boots.
     let profile = meta
         .machine

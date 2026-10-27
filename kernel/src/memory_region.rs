@@ -13,18 +13,18 @@ use memory_regions::{PageUse, RegionTable};
 use page_frames::{FRAME_SIZE, PageFrame};
 
 use crate::memory;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 /// The most untyped regions that can be live **at once**. Slots are reused (the table is
 /// generational), so this bounds concurrent regions, not creations over the kernel's lifetime.
 ///
 /// Read the ledger of what holds regions at the peak, in notes/memory-regions.md, before raising or
 /// lowering it. A full table refuses quietly, and there is no gate.
-pub(crate) const MAX_REGIONS: usize = 256;
+pub(crate) const MAXIMUM_REGIONS: usize = 256;
 
 /// **The most regions that were ever live at once on this boot**, the instrument that makes
-/// [`MAX_REGIONS`] a measured number: a full table is refused in whichever test asks next, and by
-/// then every earlier reading is gone. `sched::PEAK_THREADS`'s twin.
+/// [`MAXIMUM_REGIONS`] a measured number: a full table is refused in whichever test asks next, and
+/// by then every earlier reading is gone. `sched::PEAK_THREADS`'s twin.
 ///
 /// Updated under the `REGIONS` lock on the two paths that can grow the table, [`create`] and
 /// [`split`], so it never races. `fetch_max` rather than a compare-store, for `PEAK_THREADS`'s
@@ -33,7 +33,7 @@ static PEAK_REGIONS: core::sync::atomic::AtomicUsize = core::sync::atomic::Atomi
 
 /// Record the table's occupancy against [`PEAK_REGIONS`]. Takes the table rather than the lock so
 /// the reading is the one the insert just produced, under the same hold.
-fn note_peak(table: &RegionTable<MAX_REGIONS>) {
+fn note_peak(table: &RegionTable<MAXIMUM_REGIONS>) {
     PEAK_REGIONS.fetch_max(table.len(), core::sync::atomic::Ordering::Relaxed);
 }
 
@@ -50,8 +50,8 @@ pub(crate) fn peak_region_count() -> usize {
 ///
 /// **Page units inside, byte addresses outside.** The crate is `FRAME_SIZE`-agnostic on purpose, so
 /// every conversion happens here, at the boundary where the constant is already in scope.
-static REGIONS: IrqSafeMutex<RegionTable<MAX_REGIONS>> =
-    IrqSafeMutex::new(rank::MEMORY_REGION, RegionTable::new());
+static REGIONS: InterruptSafeMutex<RegionTable<MAXIMUM_REGIONS>> =
+    InterruptSafeMutex::new(rank::MEMORY_REGION, RegionTable::new());
 
 /// Carve `pages` of physical memory out of the frame allocator, once, and make it an untyped
 /// region. **This is the kernel's one allocation for this memory**: the seL4 boundary, where all

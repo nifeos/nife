@@ -46,7 +46,7 @@ Three properties fall out of the existing design rather than needing to be built
 naming because each is a question a reader will ask:
 
 1. A timer armed at a notification that dies first is already harmless. The expiry signal goes
-   through `sched::irq_notify`, whose own comment is *"a stale name ... is simply dropped: an
+   through `sched::interrupt_notify`, whose own comment is *"a stale name ... is simply dropped: an
    interrupt with no live rendezvous has nowhere to go, which is not an error."* Generational
    naming does the work; nothing is owed here.
 2. The cached earliest deadline may be early but never late, so the reap does not have to
@@ -160,11 +160,11 @@ of the struct.
 
 Nothing in this tree records that, and it is not specific to timers: it prices every future
 addition to the scheduler's tables. It is left here rather than acted on, because a lane does not
-choose `MAX_TIMERS`, and because the right response may be to shrink the registry rather than to
+choose `MAXIMUM_TIMERS`, and because the right response may be to shrink the registry rather than to
 chase the backend.
 
-And it makes `MAX_TIMERS` a real decision rather than a constant copied from `MAX_RENDEZVOUS`. At
-512 it is 10 KiB of kernel data, doubled on riscv64. At 64 (the 2026-09-05 scaffold's number) it is
-1.3 KiB. This lane picked 512 to mirror the rendezvous registry and has no evidence that is right.
-(Since then, verified 2026-10-11 UTC: milestone 106 built the timer with `MAX_TIMERS = 256` in
-`kernel/src/sched.rs`.)
+And it makes `MAXIMUM_TIMERS` a real decision rather than a constant copied from
+`MAXIMUM_RENDEZVOUS`. At 512 it is 10 KiB of kernel data, doubled on riscv64. At 64 (the 2026-09-05
+scaffold's number) it is 1.3 KiB. This lane picked 512 to mirror the rendezvous registry and has no
+evidence that is right. (Since then, verified 2026-10-11 UTC: milestone 106 built the timer with
+`MAXIMUM_TIMERS = 256` in `kernel/src/sched.rs`.)

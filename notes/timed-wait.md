@@ -89,7 +89,8 @@ core. The static totals over-count, so the ratio is a lower bound and the delta 
 ## 4. The interrupt-stack proof holds, and the reason it holds was already in the tree
 
 Nothing on an interrupt stack may context-switch, and `script/stack-depth-check` proves it. A
-deadline expiry keeps that proof, because a wake is an enqueue, not a switch: `irq_notify` already
+deadline expiry keeps that proof, because a wake is an enqueue, not a switch: `interrupt_notify`
+already
 wakes threads from the interrupt stack, and the switch is deferred to `preempt_if_needed` one frame
 out. A prototype `expire_deadlines` was wired in and the gate still found no context switch
 reachable, on both ISAs. What it does cost is the whole-machine `SCHED` lock on every tick, which is
@@ -121,13 +122,13 @@ counterparty; the expiry wakes it; it returns.
 
 A deadline on `Rendezvous::RECEIVE`/`CALL` needs two things the other two do not, and both are concrete:
 
-1. A targeted unlink from an endpoint's wait queue. `crates/intrusive_fifo`'s `Fifo` is
+1. A targeted unlink from an endpoint's wait queue. `crates/intrusive_queue`'s `Queue` is
    singly linked: one `next` per node, `head`/`tail`/`len`, and its whole API is `push_back`,
    `pop_front`, `is_empty`, `len`. `inter_process_communication::Rendezvous` adds only
    `drain_waiters`, which drains *all* of them. Removing one specific waiter is a new method,
    O(queue length) from the head, on a crate that carries machine-checked proofs of its one-queue
-   invariant, so the proofs move with it. Bounded by `MAX_THREADS`, paid only on an actual expiry,
-   and the census in section 6 says a queue can hold most of the table.
+   invariant, so the proofs move with it. Bounded by `MAXIMUM_THREADS`, paid only on an actual
+   expiry, and the census in section 6 says a queue can hold most of the table.
 2. Nothing else. The half that looks harder is already built. `thread_wake_handshake`'s undelivered-wake
    gate refuses a wake with `wait_on.is_some()` and nothing delivered (boot 8). So a timeout looks
    like exactly the wake the gate exists to stop. But `Handshake::abort()` already passes the gate for
@@ -147,10 +148,10 @@ whichever shape wins.
 
 ## 6. How many threads are actually blocked at once
 
-`MAX_THREADS` is 128 and the asymptotics in section 2 turn over between 64 and 128, so the occupancy
-is worth knowing rather than assuming. A `#[cfg(test)]` census was sampled from inside `schedule()`'s
-decision (which already holds `SCHED` and already has the table), every 64th call, over the whole
-aarch64 suite:
+`MAXIMUM_THREADS` is 128 and the asymptotics in section 2 turn over between 64 and 128, so the
+occupancy is worth knowing rather than assuming. A `#[cfg(test)]` census was sampled from inside
+`schedule()`'s decision (which already holds `SCHED` and already has the table), every 64th call,
+over the whole aarch64 suite:
 
 ```
 106-pricing: blocked-census samples=31371 mean_x100=3695 max=97 live_max=102
@@ -166,7 +167,7 @@ Two caveats that matter for how the number is used:
   the number of consumers in a timed wait, which is single digits. Section 2's table should
   be read at `occ` = 1 to 16, not at 97.
 - 97 is what a targeted unlink walks past. The one place the blocked count is the *right* number
-  is shape 3's `Fifo::remove`, which walks an endpoint's wait queue from the head. This says that
+  is shape 3's `Queue::remove`, which walks an endpoint's wait queue from the head. This says that
   queue can be long, so the walk is O(97) rather than O(3) in the worst case the suite reaches.
 
 ## BUGS

@@ -27,9 +27,13 @@
 //! [mainline-rst]: https://github.com/torvalds/linux/blob/master/drivers/reset/starfive/reset-starfive-jh7110.c
 //! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
 //! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/include/dt-bindings/clock/starfive-jh7110-clkgen.h
+//!
+//! Name: ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806).
 
 /// The bit that turns a clock on, in every one of this controller's per-clock words
 /// (\[mainline-clk\], `#define JH71X0_CLK_ENABLE BIT(31)`).
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const CLOCK_ENABLE: u32 = 1 << 31;
 
 /// A single step of a device's bring-up sequence, in the order it must be taken.
@@ -39,6 +43,8 @@ pub const CLOCK_ENABLE: u32 = 1 << 31;
 /// comment says why: *"if the associated clock is gated, deasserting might otherwise hang
 /// forever"*), and a plan is the only shape that lets a host test assert on the order without a
 /// device. The kernel driver walks this slice; it does not know which device it is bringing up.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Step {
     /// Set [`CLOCK_ENABLE`] in the domain's word for this clock index.
@@ -69,6 +75,8 @@ pub(crate) const CLOCK_MUX_SHIFT: u32 = 24;
 /// **A clock word with its parent replaced**, leaving the enable bit, the divider and every other
 /// field as they were. A parent too wide for the field is reduced to it rather than spilling into
 /// the enable bit.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn with_parent(word: u32, parent: u32) -> u32 {
     (word & !CLOCK_MUX_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_MUX_MASK)
@@ -103,6 +111,9 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 /// assert!(is_deasserted(0b1000, r.mask));
 /// assert!(!is_deasserted(0b0111, r.mask));
 /// ```
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `TRNG_BRING_UP` (it names the block for its
+/// abbreviation; the sequence brings up the entropy source).
 pub const ENTROPY_BRING_UP: &[Step] = &[
     Step::EnableClock(STGCLK_SEC_AHB),
     Step::EnableClock(STGCLK_SEC_MISC_AHB),
@@ -125,6 +136,8 @@ pub(crate) const STGCLK_SEC_MISC_AHB: u32 = 16;
 /// which is a fact about the silicon rather than about Linux's API: the same line resets the whole
 /// security top block, the PL080 DMA at `0x1600_8000` included. Deasserting it is safe; asserting
 /// it would reset a neighbour, which is why nothing in this crate offers an assert.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const STGRST_SEC_AHB: u32 = 3;
 
 /// **The AON (always-on) domain**, where `gmac0`'s bus clocks, its transmit clock mux and both
@@ -134,6 +147,9 @@ pub const STGRST_SEC_AHB: u32 = 3;
 /// 0x3C`, read 2026-10-06); the counts from \[mainline-ids\]'s `JH7110_AONRST_END` (8) and
 /// `JH7110_AONCLK_END` (14). The chip's own abbreviation is AON, kept in the copied `AONCLK_*`
 /// and `AONRST_*` names.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `AON` (the chip's abbreviation, kept as an
+/// alias).
 #[doc(alias = "aon")]
 pub const ALWAYS_ON: Domain = Domain {
     reset_assert: 0x38,
@@ -152,6 +168,9 @@ pub(crate) const ALWAYS_ON_SIZE: u64 = 0x1_0000;
 
 /// **AON clock and reset generator** (CRG, the device tree's `aoncrg` node, \[mainline-dts\]):
 /// mainline's dedicated AON clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
+///
+/// Name: provisional: the domain spelled out by the ruling on #2760, and CRG kept from the
+/// device-tree node.
 #[doc(alias = "clock and reset generator")]
 pub const COMPATIBLE_ALWAYS_ON_CRG: &[u8] = b"starfive,jh7110-aoncrg";
 
@@ -191,6 +210,9 @@ pub(crate) const SYSCLK_GMAC0_GTXC: u32 = 111;
 /// Every clock mainline's `&gmac0` node names that lives in SYS, with the parent
 /// of `gtxc` first because enabling a gate under a gated parent turns nothing on. Run before
 /// [`GMAC0_ALWAYS_ON_BRING_UP`], whose resets must be released with every clock already running.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_SYS_BRING_UP` (the domain spelled
+/// out).
 pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_GMAC0_GTXCLK),
     Step::EnableClock(SYSCLK_GMAC0_GTXC),
@@ -202,6 +224,9 @@ pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
 /// both enable every clock before deasserting either reset. The transmit clock's inverted twin
 /// (`gmac0_tx_inv`, index 6) and both receive clocks (7, 8) have no gate to enable (they are
 /// \[mainline-clk\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_AON_BRING_UP` (the domain spelled
+/// out).
 pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
     Step::EnableClock(AONCLK_GMAC0_AXI),
     Step::EnableClock(AONCLK_GMAC0_AHB),
@@ -215,6 +240,8 @@ pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
 ];
 
 /// Where one reset lives: which word to write, which word to watch, and which bit in both.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResetBit {
     /// Byte offset from the domain's base of the word whose bit is written to assert or deassert.
@@ -233,6 +260,8 @@ pub struct ResetBit {
 /// table entry rather than a rewrite.
 ///
 /// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Domain {
     /// Byte offset from the base of the first reset-assert word.
@@ -252,6 +281,9 @@ pub struct Domain {
 ///
 /// Offsets from \[mainline-rst\]'s `jh7110_stg_info`; the counts from \[mainline-ids\]'s
 /// `JH7110_STGRST_END` (23) and `JH7110_STGCLK_END` (29).
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STG` (the chip's abbreviation for
+/// System-Top-Group, kept as an alias).
 #[doc(alias = "stg")]
 pub const SYSTEM_TOP_GROUP: Domain = Domain {
     reset_assert: 0x74,
@@ -281,6 +313,9 @@ pub(crate) const SYSTEM_TOP_GROUP_SIZE: u64 = 0x1_0000;
 /// count, as `JH7110_CLK_SYS_REG_END 190`, which is the boundary between clocks that have a
 /// register and the vendor's virtual ones numbered above it. The chip's own abbreviation is SYS,
 /// kept in the copied `SYSCLK_*` and `SYSRST_*` names.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `SYS` (the chip's abbreviation, kept as an
+/// alias).
 #[doc(alias = "sys")]
 pub const SYSTEM: Domain = Domain {
     reset_assert: 0x2f8,
@@ -350,6 +385,8 @@ pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 /// (`clock_enable_all`, then `reset_deassert_all`). Every step is idempotent, which matters here:
 /// radon's U-Boot has already brought the microSD controller up to load the boot script, and the
 /// bench step reads whether it left it that way before it walks the plan.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const SDIO_BRING_UP: [&[Step]; 2] = [
     &[
         Step::EnableClock(SYSCLK_SDIO0_AHB),
@@ -366,6 +403,8 @@ pub const SDIO_BRING_UP: [&[Step]; 2] = [
 /// The divider field of a JH7110 clock word, bits 23:0 (\[mainline-clk\]'s `JH71X0_CLK_DIV_MASK`).
 /// A transcript prints it beside the enable bit so the card clock's source rate is read off the
 /// silicon rather than assumed from `assigned-clock-rates`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn clock_divider(word: u32) -> u32 {
     word & 0x00ff_ffff
@@ -375,16 +414,24 @@ pub const fn clock_divider(word: u32) -> u32 {
 /// `VF2_v2.10.4`, `starfive_visionfive2.dts`:
 /// `pmic: axp15060_reg@36 { compatible = "stf,axp15060-regulator"; reg = <0x36>; }` under
 /// `&i2c5`). This is also the string radon's OpenSBI matches to find its reset device.
+///
+/// Name: provisional. The same reason as `COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE`.
 #[doc(alias = "pmic")]
 pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR: &[u8] = b"stf,axp15060-regulator";
 
 /// The same PMIC in mainline's `jh7110-common.dtsi`: `axp15060: pmic@36 { compatible =
 /// "x-powers,axp15060"; }` under `&i2c5`.
+///
+/// Name: provisional. PMIC spelled out as the 2026-10-26 (UTC) ruling spells it for
+/// `POWER_MANAGEMENT_CHIP_COMPATIBLES`; the ruling did not name this constant.
 #[doc(alias = "pmic")]
 pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE: &[u8] = b"x-powers,axp15060";
 
 /// Both PMIC (power management integrated circuit) spellings, in the order to try them: mainline's
 /// first.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_COMPATIBLES` (PMIC spelled out; `chip`
+/// for integrated circuit, and not `power_management_bus`, which is the `PMBus` standard's name).
 #[doc(alias = "pmic")]
 pub const POWER_MANAGEMENT_CHIP_COMPATIBLES: [&[u8]; 2] = [
     COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
@@ -397,6 +444,9 @@ pub(crate) const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 
 /// **The plan for the PMIC's bus, and where it came from.** The PMIC (power management integrated
 /// circuit) is radon's AXP15060, on I2C5.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PmicBus` (PMIC spelled out) and
+/// `PowerManagementBus` (it collides with the `PMBus` standard's name).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "pmic")]
 pub struct PowerManagementChipBus {
@@ -426,6 +476,8 @@ pub struct PowerManagementChipBus {
 
 impl PowerManagementChipBus {
     /// The steps to walk, clocks before resets.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub fn plan(&self) -> &[Step] {
         &self.steps[..self.len]
@@ -473,6 +525,9 @@ fn parse_reg(cells: &[u8]) -> Option<(u64, u64)> {
 impl PowerManagementChipBus {
     /// **The plan when the tree names no known PMIC**: the constant I2C5 plan, with `from_tree`
     /// false and `power_management_chip` `None`.
+    ///
+    /// Name: provisional. Follows `PowerManagementChipBus`; the ruling named the type and the
+    /// constants, not this method.
     #[must_use]
     pub fn without_power_management_chip() -> Self {
         PowerManagementChipBus::fallback(None, 0)
@@ -495,6 +550,9 @@ impl PowerManagementChipBus {
     /// # Errors
     ///
     /// Propagates the first error `provider` returns.
+    ///
+    /// Name: ratified 2026-10-26 (UTC). Refused `from_bus` (`PmicBus::from_bus` repeated its type;
+    /// it reads the PMIC's node and its bus's node).
     pub fn from_nodes<'t, E>(
         power_management_chip: &'static [u8],
         power_management_chip_reg: Option<&[u8]>,
@@ -580,11 +638,16 @@ fn collect_system_steps<'t, E>(
 }
 
 /// How many steps a [`DevicePlan`] holds. The watchdog names two clocks and two resets.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `MAX_DEVICE_STEPS` (max spelled out, as the
+/// tree-wide ruling asks).
 pub const MAXIMUM_DEVICE_STEPS: usize = 4;
 
 /// **A device's own SYS-domain clocks and resets, as its node names them.** Unlike
 /// [`PowerManagementChipBus`] there is no constant fallback: an empty plan means the tree named
 /// nothing usable, and the caller decides what that costs.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DevicePlan {
     steps: [Step; MAXIMUM_DEVICE_STEPS],
@@ -597,6 +660,8 @@ pub struct DevicePlan {
 
 impl DevicePlan {
     /// The steps to walk, clocks before resets.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub fn plan(&self) -> &[Step] {
         &self.steps[..self.len]
@@ -610,6 +675,8 @@ impl DevicePlan {
     /// # Errors
     ///
     /// Propagates the first error `provider` returns.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     pub fn from_specifiers<'t, E>(
         clocks: Option<&[u8]>,
         resets: Option<&[u8]>,
@@ -644,26 +711,38 @@ impl DevicePlan {
 /// what looked like an overlap between the PLL words at `0x2c..0x34` and the early clock words:
 /// different windows, same offsets. The name is that header's macro, kept as copied; SYS is the
 /// chip's abbreviation for [`SYSTEM`], and syscon is its system-controller block.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[doc(alias = "system syscon")]
 pub const SYS_SYSCON_BASE: u64 = 0x1303_0000;
 
 /// The SYS syscon window's size, matching the CRG window's. The name follows
 /// [`SYS_SYSCON_BASE`]'s.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const SYS_SYSCON_SIZE: u64 = 0x1_0000;
 
 /// `JH7110_BUS_ROOT` in the vendor header radon's U-Boot builds from, **5**. Word `0x14`: a mux
 /// whose bit 24 picks `osc` (0) or `pll2_out` (1), per the vendor clock driver's registration
 /// (`bus_root_sels`, `starfive_clk_mux(..., SYS_OFFSET(JH7110_BUS_ROOT), 1, ...)`).
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const SYSCLK_BUS_ROOT: u32 = 5;
 
 /// `JH7110_AXI_CFG0`, **7**. Word `0x1c`: a one-based 2-bit divider off `bus_root`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const SYSCLK_AXI_CFG0: u32 = 7;
 
 /// `JH7110_STG_AXIAHB`, **8**. Word `0x20`: a one-based 2-bit divider off `axi_cfg0`.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const SYSCLK_STG_AXIAHB: u32 = 8;
 
 /// `JH7110_APB_BUS_FUNC`, **11**. Word `0x2c`: a one-based 4-bit divider off `stg_axiahb`, the
 /// last divider before the APB tree that `u5_dw_i2c_clk_apb` (gate id 143, bit 31 only) sits on.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const SYSCLK_APB_BUS_FUNC: u32 = 11;
 
 /// The oscillator every JH7110 rate chain is rooted in, 24 MHz, `refclk` in the vendor PLL code.
@@ -678,6 +757,9 @@ pub(crate) const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
 /// words come from [`SYSTEM`]'s window at the offsets the ids above give; the PLL2 words from
 /// [`SYS_SYSCON_BASE`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
 /// (POSTDIV1 bits 29:28) and `0x34` (PREDIV bits 5:0), exactly the vendor `pll.c` masks.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `IcClkWords` (three abbreviations; these are the I2C
+/// controller's clock words).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct I2cClockWords {
     /// Word `0x14` of the CRG: `bus_root`'s mux, bit 24.
@@ -699,6 +781,8 @@ pub struct I2cClockWords {
 /// A one-based divider field of `width` bits: the value when nonzero, 1 when the field reads zero
 /// (a zero a one-based divider never means, and a boot that left one is a fact the caller's print
 /// should carry rather than a divide-by-zero).
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `one_based_div` (`div` abbreviated divider).
 #[must_use]
 pub const fn one_based_divider(word: u32, width: u32) -> u64 {
     let mask = if width >= 32 {
@@ -717,6 +801,10 @@ pub const fn one_based_divider(word: u32, width: u32) -> u64 {
 /// vendor `pll.c` exactly: integer mode (`dacpd == 1 && dsmpd == 1`) is
 /// `24 MHz * fbdiv / (prediv * postdiv1)`, anything else is the vendor's own default rather than a
 /// guess. The u64 divisions truncate, as the vendor's do.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `i2c5_ic_clk` (`ic_clk` is the `DesignWare`
+/// databook's signal name, which the doc and `doc(alias)` carry; the function returns the clock's
+/// frequency), as `IcClkWords` was refused for `I2cClockWords`.
 #[must_use]
 #[doc(alias = "ic_clk")]
 pub const fn i2c5_clock_frequency(w: &I2cClockWords) -> u64 {
@@ -727,6 +815,8 @@ pub const fn i2c5_clock_frequency(w: &I2cClockWords) -> u64 {
 /// divider. The parent of both the PMIC bus's clock chain ([`i2c5_clock_frequency`]) and the SD/MMC
 /// controllers' card clocks ([`SYSCLK_SDIO_SDCARD`]), each a registration in the vendor clock driver.
 ///
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn axi_cfg0_hz(w: &I2cClockWords) -> u64 {
     let parent = if (w.bus_root >> 24) & 1 == 1 {
@@ -749,15 +839,22 @@ pub const fn axi_cfg0_hz(w: &I2cClockWords) -> u64 {
 
 /// **Each SD/MMC controller's card clock** (`ciu` in the tree), by controller index: the eMMC
 /// socket's, then the microSD slot's. Each divides [`axi_cfg0_hz`] by its own one-based divider.
+///
+/// Name: ratified 2026-10-26 (UTC).
 pub const SYSCLK_SDIO_SDCARD: [u32; 2] = [SYSCLK_SDIO0_SDCARD, SYSCLK_SDIO1_SDCARD];
 
 /// The card clocks' largest divider (the vendor driver registers them with a maximum of 15).
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `SDCARD_DIVIDER_MAX` (max spelled out, as the
+/// tree-wide ruling asks).
 pub const SDCARD_DIVIDER_MAXIMUM: u32 = 15;
 
 /// **The divider that brings a card clock to at most `want_hz`** from `parent_hz`: the smallest
 /// that does, so the rate is as close below the ask as the divider allows, clamped to
 /// `1..=`[`SDCARD_DIVIDER_MAXIMUM`]. The tree's `assigned-clock-rates` is a rate the OS is asked to
 /// program, and radon's firmware leaves this divider at 2, four times the tree's 50 MHz.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn sdcard_divider_for(parent_hz: u64, want_hz: u64) -> u32 {
     if want_hz == 0 {
@@ -775,6 +872,8 @@ pub const fn sdcard_divider_for(parent_hz: u64, want_hz: u64) -> u32 {
 
 /// `word` with its divider field ([`clock_divider`]'s bits) replaced by `divider`, every other bit
 /// (the enable, the mux) as found.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn with_divider(word: u32, divider: u32) -> u32 {
     (word & !0x00ff_ffff) | (divider & 0x00ff_ffff)
@@ -790,6 +889,8 @@ pub const fn with_divider(word: u32, divider: u32) -> u32 {
 /// 100 kHz rather than the fast mode U-Boot defaults to, because the AXP15060's datasheet timing is
 /// met by every standard-mode controller and the failure this answers was OpenSBI trusting a
 /// controller at reset defaults; slower than the spec floor is safe, faster is not.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StandardMode {
     /// The `IC_CON` word: `IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS`.
@@ -821,6 +922,8 @@ const fn counts(clock_frequency: u64, period_ns: u64) -> u64 {
 /// four-line derivation its comment carries, with the period fill. `clock_frequency` is the
 /// controller's input clock in hertz, the databook's `ic_clk`. Inputs below the spec minima
 /// clamp to the smallest legal counts rather than wrapping.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn standard_mode_100k(clock_frequency: u64) -> StandardMode {
     let rise = counts(clock_frequency, 1_000);
@@ -867,10 +970,15 @@ pub const fn standard_mode_100k(clock_frequency: u64) -> StandardMode {
 /// both go through, `0x32`, and the bit that resets: bit 6 (bit 7 powers off), as read on a
 /// VisionFive 2 bench on 2026-10-09 and 2026-10-10. The caller writes the reset bit alone,
 /// read-modify-write, so the register's other bits keep whatever the PMIC already holds.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_RESET_REG` (PMIC and `reg` spelled out)
+/// and `PMIC_RESET_REGISTER` (PMIC spelled out).
 #[doc(alias = "pmic")]
 pub const POWER_MANAGEMENT_CHIP_RESET_REGISTER: u8 = 0x32;
 
 /// The reset bit of [`POWER_MANAGEMENT_CHIP_RESET_REGISTER`].
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_RESET_BIT` (PMIC spelled out).
 #[doc(alias = "pmic")]
 pub const POWER_MANAGEMENT_CHIP_RESET_BIT: u8 = 6;
 
@@ -935,6 +1043,8 @@ impl Domain {
     /// One 32-bit word per clock, in index order, from \[mainline-clk\]: `priv->base + 4 *
     /// clk->idx`. The `Option` is the bound: a caller holding an identifier from the wrong domain
     /// gets nothing rather than a plausible-looking offset into somebody else's register.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub const fn clock_offset(&self, index: u32) -> Option<u64> {
         if index >= self.clocks {
@@ -949,6 +1059,8 @@ impl Domain {
     /// STG domain has 23, so every one of them is in word zero; the arithmetic is written out
     /// anyway because the SYS domain has 126 and would otherwise be a second implementation of
     /// the same rule.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub const fn reset_bit(&self, id: u32) -> Option<ResetBit> {
         if id >= self.resets {
@@ -971,12 +1083,16 @@ impl Domain {
 /// `(value & mask) == done`. So a **set** bit is a line that is out of reset. Getting this
 /// backwards would produce a driver that waits forever on a device that came up correctly, which
 /// is the failure this function exists to have exactly one copy of.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn is_deasserted(status_word: u32, mask: u32) -> bool {
     status_word & mask != 0
 }
 
 /// **Is this clock running?** Given the clock's own word.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn is_clock_enabled(clock_word: u32) -> bool {
     clock_word & CLOCK_ENABLE != 0
@@ -985,6 +1101,9 @@ pub const fn is_clock_enabled(clock_word: u32) -> bool {
 /// How many `EnableClock` steps a report keeps words for. Two is what the TRNG needs; four is
 /// slack for the next device, and a plan with more simply stops recording rather than growing the
 /// report, which is what [`BringUpReport::truncated`] says out loud.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `MAX_RECORDED_CLOCKS` (max spelled out, as
+/// the tree-wide ruling asks).
 pub const MAXIMUM_RECORDED_CLOCKS: usize = 4;
 
 /// What the hardware said, in enough detail that a bench transcript is diagnosable without a
@@ -994,6 +1113,9 @@ pub const MAXIMUM_RECORDED_CLOCKS: usize = 4;
 /// the reset already released, then this milestone's premise was wrong for radon and the TRNG's
 /// all-zero register window on 2026-09-04 has some other cause. That is the outcome a bench
 /// session most needs to be able to tell apart, and only a before-and-after can tell it.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `Report` (a word that could name almost anything; it
+/// reports one bring-up).
 #[derive(Clone, Copy, Debug, Default)]
 pub struct BringUpReport {
     /// Each `EnableClock` step's word as it read *before* anything was written, in plan order.
@@ -1043,6 +1165,8 @@ pub struct BringUpReport {
 
 impl BringUpReport {
     /// **Did every reset step read as released?** True for a plan with none.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub fn every_reset_released(&self) -> bool {
         self.resets_released == self.resets
@@ -1050,6 +1174,8 @@ impl BringUpReport {
 
     /// **Did every clock this plan named read its enable bit back?** A clock that does not is a
     /// window with nothing behind it, or a base address that is not this controller.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub fn has_clocks_running(&self) -> bool {
         self.clocks > 0
@@ -1061,6 +1187,8 @@ impl BringUpReport {
     /// **Was the device already up before this ran?** True when every recorded clock was enabled
     /// and, if the plan had one, the reset was already released. See the type's own doc for why
     /// this is the question a bench session asks first.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub fn was_already_up(&self) -> bool {
         let clocks = self.clocks > 0
@@ -1079,6 +1207,9 @@ impl BringUpReport {
 }
 
 /// Where a domain's registers are, as a caller concluded from a tree or from [`RegisterWindow::fallback`].
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `Found` (a word that could name almost anything; it is
+/// where a window was located).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WindowLocation {
     /// Physical base of the register window.
@@ -1095,18 +1226,25 @@ pub struct WindowLocation {
 
 /// **STG clock and reset generator** (CRG, the device tree's `stgcrg` node, \[mainline-dts\]):
 /// mainline's dedicated STG clock-and-reset controller node.
+///
+/// Name: provisional: the domain spelled out by the ruling on #2760, and CRG kept from the
+/// device-tree node.
 #[doc(alias = "clock and reset generator")]
 pub const COMPATIBLE_SYSTEM_TOP_GROUP_CRG: &[u8] = b"starfive,jh7110-stgcrg";
 
 /// **Vendor clock generator** (the `clkgen` node, \[vendor-dts\]): the vendor U-Boot's single
 /// clock controller covering sys, stg and aon. This is the one radon's firmware actually serves,
 /// if it serves either.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[doc(alias = "clock generator")]
 pub const COMPATIBLE_VENDOR_CLKGEN: &[u8] = b"starfive,jh7110-clkgen";
 
 /// **Vendor reset generator** (the `rstgen` node, \[vendor-dts\]): the vendor U-Boot's separate
 /// reset controller, whose `reg` list covers the same windows. Tried last: it names the same
 /// address as the clkgen node, so it is only reached by a tree that carries one and not the other.
+///
+/// Name: ratified 2026-10-26 (UTC).
 #[doc(alias = "reset generator")]
 pub const COMPATIBLE_VENDOR_RSTGEN: &[u8] = b"starfive,jh7110-reset";
 
@@ -1117,6 +1255,9 @@ const VENDOR_RSTGEN_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stgcrg";
 
 /// **SYS clock and reset generator** (CRG, the device tree's `syscrg` node, \[mainline-dts\]):
 /// mainline's dedicated SYS clock-and-reset controller node, `syscrg: clock-controller@13020000`.
+///
+/// Name: provisional: the domain spelled out by the ruling on #2760, and CRG kept from the
+/// device-tree node.
 #[doc(alias = "clock and reset generator")]
 pub const COMPATIBLE_SYSTEM_CRG: &[u8] = b"starfive,jh7110-syscrg";
 
@@ -1128,6 +1269,9 @@ const VENDOR_RSTGEN_SYSTEM_NAME: &[u8] = b"syscrg";
 
 /// One way a device tree names a domain's window: a node's `compatible`, and the `reg-names`
 /// entry that selects the window when the node carries several.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `Spelling` (a word that could name almost anything; it
+/// is one tree's spelling of a window).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WindowSpelling {
     /// The node's `compatible` string.
@@ -1138,6 +1282,9 @@ pub struct WindowSpelling {
 
 /// How many `reg` entries a matched node may carry. Five, because the vendor `rstgen` node names
 /// five windows and a short buffer would silently truncate the list `reg-names` is indexing into.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `MAX_REG_ENTRIES` (max spelled out, as the
+/// tree-wide ruling asks). Refused `MAX_WINDOWS` (it bounds a node's `reg` entries, not windows).
 pub const MAXIMUM_REG_ENTRIES: usize = 5;
 
 /// **Where one domain's registers are, in every spelling the two trees use.**
@@ -1147,6 +1294,9 @@ pub const MAXIMUM_REG_ENTRIES: usize = 5;
 /// [`RegisterWindow::fallback`], the constant both published trees agree on, with `from_tree` false. The
 /// two vendor nodes carry several windows and are indexed by `reg-names`, not position. An answer
 /// is not evidence that the machine is a JH7110.
+///
+/// Name: ratified 2026-10-26 (UTC). Refused `Window` (a register window, which the name did not
+/// say).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RegisterWindow {
     /// The spellings to try, in order.
@@ -1159,6 +1309,8 @@ pub struct RegisterWindow {
 
 impl RegisterWindow {
     /// The answer for a tree that names none of [`RegisterWindow::spellings`].
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub const fn fallback(&self) -> WindowLocation {
         WindowLocation {
@@ -1171,6 +1323,8 @@ impl RegisterWindow {
 }
 
 /// **The STG window**, where the TRNG's clocks and reset live.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STG_WINDOW` (the domain spelled out).
 #[doc(alias = "stg", alias = "STG_WINDOW")]
 pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
@@ -1192,6 +1346,8 @@ pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
 };
 
 /// **The AON window**, where `gmac0`'s bus clocks, transmit clock and resets live.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `AON_WINDOW` (the domain spelled out).
 #[doc(alias = "aon", alias = "AON_WINDOW")]
 pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
@@ -1213,6 +1369,8 @@ pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
 };
 
 /// **The SYS window**, where I2C5's clock and reset live.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `SYS_WINDOW` (the domain spelled out).
 #[doc(alias = "sys", alias = "SYS_WINDOW")]
 pub const SYSTEM_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
@@ -1240,6 +1398,8 @@ impl WindowLocation {
     /// names one past the end of `reg`: picking a window by position because one tree happened
     /// to put it there is a fact nobody wrote down, and [`RegisterWindow::fallback`] is the honest answer
     /// instead.
+    ///
+    /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
     pub fn from_regions(
         spelling: &WindowSpelling,

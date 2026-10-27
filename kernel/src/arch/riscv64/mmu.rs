@@ -181,7 +181,8 @@ pub const VIRTIO_MMIO_BASE: u64 = 0x1000_1000;
 /// The size of the virtio-mmio window (8 slots of 0x1000).
 pub(crate) const VIRTIO_MMIO_SIZE: u64 = 8 * 0x1000;
 /// The PLIC interrupt id of the first virtio-mmio slot on `virt`; the driver adds the slot index.
-pub(crate) const VIRTIO_IRQ_BASE: u32 = 1;
+#[doc(alias = "irq")]
+pub(crate) const VIRTIO_INTERRUPT_NUMBER_BASE: u32 = 1;
 /// The distance between virtio-mmio slots on RISC-V's `virt`, which `virtio::find_block_device`
 /// walks.
 pub(crate) const VIRTIO_SLOT_STRIDE: u64 = 0x1000;
@@ -215,8 +216,9 @@ pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 pub(crate) const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
 /// The PLIC input for INTx line A on `virt`'s root complex; B, C and D follow, by the standard
-/// swizzle in `pci::intx_irq`.
-pub(crate) const PCI_IRQ_BASE: u32 = 32;
+/// swizzle in `pci::intx_interrupt_number`.
+#[doc(alias = "irq")]
+pub(crate) const PCI_INTERRUPT_NUMBER_BASE: u32 = 32;
 
 /// Physical to kernel-virtual: `pa + KERNEL_VA_BASE`, or [`DEVICE_WINDOW_VA`] onward inside the
 /// device window, by one branchless mask.
@@ -429,13 +431,13 @@ where
     map_range(m, stack_bottom(), stack_top(), Flags::kernel_data())?;
 
     // 4b. Secondary stacks one slot at a time, so each slot's bottom page stays a guard hole.
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::smp::secondary_stack_span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
 
     // 4c. Interrupt stacks, slot by slot for 4b's reason.
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::interrupt_stack::span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
@@ -524,7 +526,7 @@ where
     // 10. The JH7110's SD/MMC controllers, the registers and data FIFO the driver touches.
     if let Some(slots) = memory::jh7110_storage() {
         for s in slots.iter().flatten() {
-            let used = u64::from(designware_mobile_storage::regs::WINDOW_USED).min(s.size);
+            let used = u64::from(designware_mobile_storage::registers::WINDOW_USED).min(s.size);
             direct_map(m, s.base, s.base + used, Flags::device())?;
         }
     }
@@ -612,14 +614,14 @@ where
         "the guard page IS mapped: stack overflow protection is off"
     );
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::smp::secondary_stack_guard(id)).is_none(),
             "a secondary's guard page IS mapped: its stack overflow protection is off"
         );
     }
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::interrupt_stack::guard(id)).is_none(),
             "an interrupt stack's guard page IS mapped: its overflow protection is off"
@@ -897,8 +899,8 @@ pub(crate) unsafe fn switch_user_root(satp: u64) {
 }
 
 /// Serializes edits to the kernel's live tables across harts, at aarch64's lock rank.
-static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
-    crate::sync::IrqSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
+static KERNEL_MMU: crate::sync::InterruptSafeMutex<()> =
+    crate::sync::InterruptSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
 
 /// The kernel's live page tables, as a `Mapper` rooted at `KERNEL_ROOT`, which every hart shares.
 ///
@@ -1030,7 +1032,7 @@ pub(crate) fn share_kernel_half(root: u64) {
 )]
 pub(crate) fn print_summary() {
     crate::println!(
-        "  mmu             : Sv39 {}, one satp, kernel high half at {:#018x}",
+        "  mmu              : Sv39 {}, one satp, kernel high half at {:#018x}",
         if is_enabled() {
             "on, fine-grained W^X tables installed"
         } else {

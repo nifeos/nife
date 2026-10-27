@@ -144,7 +144,7 @@ proofs and the type system are standing aside and a person's comment is the whol
   `unsafe fn` gets no ceiling, for the reason under "Where it stands".
 - **Done.** The renames calef ruled on #1842 and #1998 are applied, each with `Name: ratified` at
   its definition.
-- **Done.** The scheduler's ownership token, `Unqueued<T>`, is in `crates/intrusive_fifo`, and the
+- **Done.** The scheduler's ownership token, `Unqueued<T>`, is in `crates/intrusive_queue`, and the
   running thread's token lives on `Thread::own_token`, as calef confirmed on 2026-10-20 (UTC).
 - **Done.** Outside `user_mode_runtime`, a shipping crate calls `invoke` raw only where no wrapper
   covers the method or its arguments. `supervision_protocol`, `virtio`, `system_initializer`,

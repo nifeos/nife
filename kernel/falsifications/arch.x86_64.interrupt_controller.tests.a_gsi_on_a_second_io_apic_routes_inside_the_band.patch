@@ -1,4 +1,4 @@
-Falsifies `kernel::arch::x86_64::irq::tests::a_gsi_on_a_second_io_apic_routes_inside_the_band`.
+Falsifies `kernel::arch::x86_64::interrupt_controller::tests::a_gsi_on_a_second_io_apic_routes_inside_the_band`.
 
 Architecture: x86_64
 
@@ -12,7 +12,7 @@ test catches the wrap.
 
 Expected to fail: `assert_eq!(vector, GSI_VECTOR_BASE + 10, "the vector is the base plus the
 redirection index, not plus the GSI")`, the first assertion in the test body
-(`kernel/src/arch/x86_64/irq.rs:1216` at the revision swept; the line moves and the name does
+(`kernel/src/arch/x86_64/interrupt_controller.rs:1216` at the revision swept; the line moves and the name does
 not, which is why both are written). Measured on
 patagonia, 2026-09-16, `cargo xtask test --arch x86_64 --test
 a_gsi_on_a_second_io_apic_routes_inside_the_band`: RED, with `left: 2` and `right: 58`. The
@@ -23,7 +23,7 @@ before, because `0x30 + 210` is `0x102` and a `u8` keeps the low byte.
 **This patch stands for the Kani harness too**, `proofs::an_owned_gsi_routes_inside_the_io_apic_band`,
 which it also turns red. Attested on cordoba, 2026-09-16, x86_64 Linux, `script/verify --only
 kernel`: 3 of 4 harnesses SUCCESSFUL and that one FAILED, on **both** assertions inside its `if let`
-(the band one and the `is_device_vector` agreement one; `irq.rs:1164` and `irq.rs:1168` at the
+(the band one and the `is_device_vector` agreement one; `interrupt_controller.rs:1164` and `interrupt_controller.rs:1168` at the
 revision measured, and the messages rather than the numbers are what to grep for). Without the patch
 the same command is 4 of 4 SUCCESSFUL with 131 checks on that harness. That harness records
 `attested` rather than `replayable` and points here, because a
@@ -37,15 +37,15 @@ QEMU, which is why the replayable half of milestone 308's evidence is this one. 
 no machine here has a second IO APIC, so the numbers above are a synthetic base and entry
 count written into two atomics rather than a part answering its own version register. This
 proves the arithmetic is compiled and wrong-when-broken. It does not prove an interrupt is
-delivered through a second IO APIC, and nothing in this tree does. `irq.rs`'s module BUGS says
+delivered through a second IO APIC, and nothing in this tree does. `interrupt_controller.rs`'s module BUGS says
 so where a reader meets the feature.
 
-diff --git a/kernel/src/arch/x86_64/irq.rs b/kernel/src/arch/x86_64/irq.rs
+diff --git a/kernel/src/arch/x86_64/interrupt_controller.rs b/kernel/src/arch/x86_64/interrupt_controller.rs
 index 81d1c50f4..4f2dc4881 100644
---- a/kernel/src/arch/x86_64/irq.rs
-+++ b/kernel/src/arch/x86_64/irq.rs
+--- a/kernel/src/arch/x86_64/interrupt_controller.rs
++++ b/kernel/src/arch/x86_64/interrupt_controller.rs
 @@ -513,7 +513,7 @@ pub fn gsi_vector(gsi: u32) -> Option<u8> {
-         index < MAX_REDIRECTION_ENTRIES,
+         index < MAXIMUM_REDIRECTION_ENTRIES,
          "redirection index {index} is outside the vector band the entry-count cap reserves"
      );
 -    Some(GSI_VECTOR_BASE + index as u8)

@@ -23,21 +23,24 @@ pub(crate) const KEY_LEFTCTRL: u16 = 29;
 pub(crate) const KEY_RIGHTCTRL: u16 = 97;
 
 /// The highest evdev code this table knows. Above it, [`byte`] answers `None`.
-pub const MAX_CODE: u16 = 57;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CODE`.
+pub const MAXIMUM_CODE: u16 = 57;
 
 /// What each key sends with no modifier, indexed by evdev code. `0` means "this key produces no
 /// byte", which covers both the unmapped codes and the modifiers themselves.
 ///
 /// Written as one flat table rather than a match, because that is what it is: a keyboard layout is
 /// data, and the failure mode of a 58-arm match is a row silently missing.
-static UNSHIFTED: [u8; MAX_CODE as usize + 1] =
+static UNSHIFTED: [u8; MAXIMUM_CODE as usize + 1] =
     *b"\0\x1b1234567890-=\x08\tqwertyuiop[]\r\0asdfghjkl;'`\0\\zxcvbnm,./\0*\0 ";
 
 /// What each key sends with shift held. Same indexing as [`UNSHIFTED`].
-static SHIFTED: [u8; MAX_CODE as usize + 1] =
+static SHIFTED: [u8; MAXIMUM_CODE as usize + 1] =
     *b"\0\x1b!@#$%^&*()_+\x08\tQWERTYUIOP{}\r\0ASDFGHJKL:\"~\0|ZXCVBNM<>?\0*\0 ";
 
-// The cursor and navigation clusters' evdev codes. Numerically far above [`MAX_CODE`] (the main
+// The cursor and navigation clusters' evdev codes. Numerically far above [`MAXIMUM_CODE`] (the main
 // block's own flat table stops at 57; these start at 102), so they get their own case in
 // [`cluster`] rather than a much wider table padded with zeros in between.
 
@@ -63,12 +66,12 @@ pub(crate) const KEY_INSERT: u16 = 110;
 pub(crate) const KEY_DELETE: u16 = 111;
 
 // The clusters sit entirely above the main block's own table, checked at compile time so a future
-// edit that moved `MAX_CODE` up past 102 fails the build rather than silently making `byte`'s
+// edit that moved `MAXIMUM_CODE` up past 102 fails the build rather than silently making `byte`'s
 // table start answering for a cluster code (`cluster` is matched first in `Keyboard::event`, so
 // `byte` would never be reached, but the table itself would then hold a wrong, unreachable entry,
 // which is exactly the kind of fact this file's own tests exist to keep visible). `KEY_HOME` is the
 // lowest of them.
-const _: () = assert!(KEY_HOME > MAX_CODE);
+const _: () = assert!(KEY_HOME > MAXIMUM_CODE);
 
 /// Is this key a shift?
 pub(crate) const fn is_shift(code: u16) -> bool {
@@ -313,7 +316,7 @@ mod tests {
         );
         assert_eq!(byte(56, false), None, "left alt likewise");
         assert_eq!(byte(0, false), None, "KEY_RESERVED");
-        assert_eq!(byte(MAX_CODE + 1, false), None, "past the table");
+        assert_eq!(byte(MAXIMUM_CODE + 1, false), None, "past the table");
         assert_eq!(byte(59, false), None, "F1");
         assert_eq!(byte(u16::MAX, true), None, "far past the table");
     }
@@ -325,7 +328,7 @@ mod tests {
     fn two_keys_never_send_the_same_byte() {
         for shift in [false, true] {
             let mut seen: Vec<(u16, u8)> = Vec::new();
-            for code in 0..=MAX_CODE {
+            for code in 0..=MAXIMUM_CODE {
                 let Some(b) = byte(code, shift) else { continue };
                 if let Some((other, _)) = seen.iter().find(|(_, o)| *o == b) {
                     assert!(
@@ -489,10 +492,10 @@ mod tests {
         assert_eq!(ld.line(), b"a");
     }
 
-    /// Arrow codes sit well above [`MAX_CODE`] (checked at compile time, below this module): this
-    /// proves the runtime half of the same claim, that [`byte`] (the main block's own lookup) does
-    /// not accidentally answer for them. If it ever did, [`Keyboard::event`]'s arrow case would be
-    /// dead code nobody noticed.
+    /// Arrow codes sit well above [`MAXIMUM_CODE`] (checked at compile time, below this module):
+    /// this proves the runtime half of the same claim, that [`byte`] (the main block's own lookup)
+    /// does not accidentally answer for them. If it ever did, [`Keyboard::event`]'s arrow case
+    /// would be dead code nobody noticed.
     #[test]
     fn arrow_codes_are_outside_the_main_blocks_table() {
         for code in [

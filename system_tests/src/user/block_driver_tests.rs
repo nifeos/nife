@@ -82,16 +82,18 @@ fn the_kernel_refuses_an_indirect_descriptor_escape() {
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 #[test_case]
 fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
-    use crate::arch::exceptions::ROUTED_IRQS;
+    use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     // **The baseline is sampled before the device is wired.** The trap handler bumps
-    // `ROUTED_IRQS` immediately *before* `sched::irq_notify`, and `Irq::WAIT` receives on the
+    // `ROUTED_INTERRUPTS` immediately *before* `sched::interrupt_notify`, and `Interrupt::WAIT`
+    // receives on the
     // endpoint notify signals, so a driver cannot report without this counter having moved, and
     // until `start_pci` runs there is nothing to count. The check guards that chain: a driver that
-    // polls the used ring, or a handler that counts after `irq_notify`, breaks it and this fires,
+    // polls the used ring, or a handler that counts after `interrupt_notify`, breaks it and this
+    // fires,
     // where the first assertion alone would pass a polled driver. See
     // notes/load-sensitive-assertions.md.
-    let irqs_before = ROUTED_IRQS.load(Ordering::Relaxed);
+    let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
     let Some(report) = virtio_service::start_pci(blk_image()) else {
         crate::testing::skip!("no virtio-pci disk on the bus");
@@ -104,11 +106,12 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
         b"nife: re",
         "the driver reported the wrong file contents over pci",
     );
-    let irqs_after = ROUTED_IRQS.load(Ordering::Relaxed);
+    let interrupts_after = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     assert!(
-        irqs_after > irqs_before,
+        interrupts_after > interrupts_before,
         "the read completed but the device's interrupt was never delivered to this kernel \
-         ({irqs_before} routed before the device was wired, {irqs_after} after the report)",
+         ({interrupts_before} routed before the device was wired, {interrupts_after} after the \
+         report)",
     );
 }
 

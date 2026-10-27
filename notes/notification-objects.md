@@ -13,7 +13,7 @@ is the implementation record and the one proposal the build produced.
 
 calef ruled option B on 2026-09-26, the day this was raised: the kernel writes
 `abi::notification::BOUND` (2) into `w4` on every receive a bound notification ends (`RECEIVE`,
-`RECEIVE_CAP`, `Irq::WAIT`), keeping §101's `w0 = 2` and the word in `w1`. A maintainer records it as
+`RECEIVE_CAP`, `Interrupt::WAIT`), keeping §101's `w0 = 2` and the word in `w1`. A maintainer records it as
 an amendment to §101. What follows is the proposal as it reached him, kept because how the decision
 was reached is part of the record. Its measured cost on the call/reply path is in
 `design/roadmap/0151-notification-objects.md`: about 34 bytes of `ipc_receive_cap` on riscv64 and 54 on
@@ -32,7 +32,8 @@ was reached is part of the record. Its measured cost on the call/reply path is i
 passed as `a0` to `SEND`). So `w0 = 0` does not mean "a message arrived"; it means a sender chose to
 send 0. Any holder of a `WRITE` capability to the endpoint can `SEND(2, word, 0)` and be
 indistinguishable from the bound notification under §101's encoding. The existing `w0 = 1` for an
-IRQ signal has the same weakness today, and is harmless only because no ordinary sender shares an
+Interrupt signal has the same weakness today, and is harmless only because no ordinary sender shares
+an
 interrupt's endpoint. A notification's whole purpose is to share a wait point with ordinary
 senders, so here the forgery is the common case rather than an edge.
 
@@ -53,8 +54,8 @@ anything; the question is which register and which value.
 | | shape | forgeable? | fastpath cost | cost to receivers |
 |---|---|---|---|---|
 | A | §101 as written: `w0 = 2`, word in `w1` | yes, by any sender | none | none; and wrong |
-| B | `w0 = 2` kept, word in `w1`, and `w4 = 2` on every receive (`RECEIVE`, `RECEIVE_CAP`, `Irq::WAIT`). A receiver tests `w4` | no | `RECEIVE`: none (it already writes `w4` from the mailbox). `RECEIVE_CAP`: one store to `x4`. `Irq::WAIT`: two stores, off the fastpath | one rule for all three receives |
-| C | per method, whichever register is already kernel-written: `RECEIVE` tests `w4`; `RECEIVE_CAP` returns a sentinel slot (`u64::MAX - 1`) in `x1` with the word in `x2`; `Irq::WAIT` needs nothing because it has no senders | no | none on any path | three rules, one per receive |
+| B | `w0 = 2` kept, word in `w1`, and `w4 = 2` on every receive (`RECEIVE`, `RECEIVE_CAP`, `Interrupt::WAIT`). A receiver tests `w4` | no | `RECEIVE`: none (it already writes `w4` from the mailbox). `RECEIVE_CAP`: one store to `x4`. `Interrupt::WAIT`: two stores, off the fastpath | one rule for all three receives |
+| C | per method, whichever register is already kernel-written: `RECEIVE` tests `w4`; `RECEIVE_CAP` returns a sentinel slot (`u64::MAX - 1`) in `x1` with the word in `x2`; `Interrupt::WAIT` needs nothing because it has no senders | no | none on any path | three rules, one per receive |
 | D | a new receive method, used only by bound threads | no | none | a new method number, outside §101 |
 | E | a new `Error` variant meaning "you were notified" | yes: a sender can already send a negative `w0`, which a receiver decodes as an error (a separate, pre-existing wart; see BUGS below) | none | none; and wrong |
 
@@ -93,10 +94,11 @@ left `RECEIVE` exactly as it was.
 were not in §101 and were made in the build, each for a stated reason:
 
 - The binding wakes every receive, not only `RECEIVE`. A thread parked as a receiver on an endpoint
-  is in `RECEIVE`, `RECEIVE_CAP` or `Irq::WAIT`, and the kernel parks all three the same way. One rule covers
+  is in `RECEIVE`, `RECEIVE_CAP` or `Interrupt::WAIT`, and the kernel parks all three the same way. One rule covers
   "blocked receiving on an endpoint", which is §101's own phrase. It is also the rule milestone 106
   (a wait that ends on either the interrupt or the deadline) needs. `net_stack` blocks in
-  `Irq::WAIT`, and the case in §147 (a timer a userspace service cannot hold) is a timer ending that
+  `Interrupt::WAIT`, and the case in §147 (a timer a userspace service cannot hold) is a timer
+  ending that
   wait.
 - A zero-bit `SIGNAL` does nothing. So `WAIT` never returns zero, and zero from `POLL` means
   nothing was pending.
@@ -122,14 +124,16 @@ does constrain the future: §26.4's fault-reply protocol, which `abi::fault` say
 additively", must not put `2` in `w4` of a death message, or it must move the tag. That constraint
 is written beside the constant (`abi::notification::BOUND`) so the author of §26.4 meets it.
 
-Is `SEND(1, ...)` a forged IRQ signal today? Not reachable today, and nothing stops it
-becoming reachable. An IRQ signal is `[1, 0, 0, 0, 0]` in the receiver's mailbox, the same `w0`
+Is `SEND(1, ...)` a forged interrupt signal today? Not reachable today, and nothing stops it
+becoming reachable. An interrupt signal is `[1, 0, 0, 0, 0]` in the receiver's mailbox, the same
+`w0`
 a sender controls, so the encoding is forgeable in principle. It is not forgeable in practice,
-because every endpoint the kernel routes an interrupt to (`bind_irq`, thirteen wiring call sites
+because every endpoint the kernel routes an interrupt to (`bind_interrupt`, thirteen wiring call
+sites
 today, the soak's loop beside them) is created for that purpose and never handed out as a
 `Rendezvous` capability. Fifteen was written here at birth; the 2026-09-29 documentation audit
 re-derived the count. The driver reaches it
-only through `Irq::WAIT`, and an `Irq` capability has no send method. A grep for any
+only through `Interrupt::WAIT`, and an `Interrupt` capability has no send method. A grep for any
 `rendezvous_cap(` naming an interrupt endpoint finds none. Two caveats keep this from being a
 guarantee. First, it holds by wiring discipline, which is rung zero: nothing in the type system or
 in `script/lint` refuses a future service that binds an interrupt to an endpoint it also grants
@@ -140,7 +144,8 @@ fix (make an interrupt endpoint unsendable, or move IRQ delivery onto notificati
 "IRQ migration", which §101 explicitly left undecided.
 
 Closed on 2026-09-26. calef ruled the first fix (§101's second amendment), and milestone 603 (an
-interrupt's endpoint refuses every send) built it: `bind_irq` marks the endpoint, and a `SEND`,
+interrupt's endpoint refuses every send) built it: `bind_interrupt` marks the endpoint, and a
+`SEND`,
 `SEND_CAP` or `CALL` to it answers `NotPermitted`. Moving interrupts onto notifications is
 decided driver by driver.
 
@@ -159,7 +164,7 @@ Every way off a receiver queue marks the thread delivered or aborted in the same
 sender's `serve`, an interrupt signal's `serve`, a drain's `abort`, a bound delivery's `serve`. The
 one exception is `finish_blocked_resident`, which ends the thread. So the test is exactly "still
 linked on that receiver queue", and `deliver_bound` asserts it. `RECEIVE`, `RECEIVE_CAP` and
-`Irq::WAIT` all park this way, so the binding wakes all three.
+`Interrupt::WAIT` all park this way, so the binding wakes all three.
 
 `deliver_bound` takes the thread off its rendezvous's receiver queue with `remove_receiver`, a drain
 and repush, O(receivers queued). That is the cost of reaching into another object's singly linked
@@ -171,7 +176,8 @@ FIFO. A server's endpoint usually holds one receiver, itself.
 where the woken thread is placed. A thread's signal wakes locally, because the pair is often a
 conversation and the signaling core is warm. A signal from interrupt context (the timer expiry walk)
 wakes load-aware (§28 (SMP placement) step 2), because an interrupt carries no locality. Everything
-in it is legal in interrupt context for `irq_notify`'s reason: `IPC_TABLES` masks interrupts while
+in it is legal in interrupt context for `interrupt_notify`'s reason: `IPC_TABLES` masks interrupts
+while
 held, a wake is an enqueue rather than a switch, and nothing allocates. The timer expiry walk calls
 it directly, under one hold, for several timers. `signal_notification_from_interrupt` is the
 one-at-a-time entry, exercised by a kernel test and otherwise uncalled.
@@ -185,18 +191,18 @@ thread a word counted while it was elsewhere. It is `#[cold]` and out of line. T
 tests `bound_notification.is_some()` on the thread it holds, §101's "one load and one compare", so
 only a bound thread pays for the body.
 
-`MAX_NOTIFICATIONS` is 256, half of `MAX_RENDEZVOUS`, because a notification is a per-thread or
-per-service doorbell where a rendezvous is per conversation. The pages come from the creators' own
-regions, so it bounds only the 16-byte-a-slot name table. Raise it when a real workload refuses a
-`RETYPE_OBJ` here.
+`MAXIMUM_NOTIFICATIONS` is 256, half of `MAXIMUM_RENDEZVOUS`, because a notification is a per-thread
+or per-service doorbell where a rendezvous is per conversation. The pages come from the creators'
+own regions, so it bounds only the 16-byte-a-slot name table. Raise it when a real workload refuses
+a `RETYPE_OBJ` here.
 
 ## BUGS
 
-- The notification and timer registries are machine-wide (`MAX_NOTIFICATIONS` and `MAX_TIMERS`,
-  256 each, `kernel/src/sched.rs`), and a full registry answers every creator with one flat
-  `OutOfMemory`. A victim cannot tell a full registry from its own empty region. One domain
+- The notification and timer registries are machine-wide (`MAXIMUM_NOTIFICATIONS` and
+  `MAXIMUM_TIMERS`, 256 each, `kernel/src/sched.rs`), and a full registry answers every creator with
+  one flat `OutOfMemory`. A victim cannot tell a full registry from its own empty region. One domain
   holding 256 pages of untyped can deny notification and timer creation to every other domain
-  for the rest of the boot. This copies the rendezvous registry's shape (`MAX_RENDEZVOUS`, 512,
+  for the rest of the boot. This copies the rendezvous registry's shape (`MAXIMUM_RENDEZVOUS`, 512,
   which one test suite actually filled), and the recorded stance is to raise the bound when a
   real workload refuses, not before. Recorded by the 2026-09-29 security audit, which weighed a
   per-domain quota and left it unproposed: nothing multi-domain has asked for the objects yet.

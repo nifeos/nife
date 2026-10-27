@@ -24,7 +24,7 @@ pub const PROGENITOR_ENTRY: &str = "progenitor";
 /// Name: ratified 2026-10-18 (calef: "Progenitors numbers are ratified."), replacing `INIT_STACK_PAGES`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub const PROGENITOR_STACK_PAGES: u64 = 14;
-const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_map::MAX_STACK_PAGES);
+const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_map::MAXIMUM_STACK_PAGES);
 
 /// **Boot the system: load the progenitor and start it as the first process, on every
 /// architecture.**
@@ -56,8 +56,8 @@ const _: () = assert!(PROGENITOR_STACK_PAGES <= address_space_map::MAX_STACK_PAG
 pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId, LoadError> {
     // From the machine's description when it gave one, else QEMU virt's constant. The source is
     // printed so a bench transcript names it (a wrong PLIC source cost a boot on the JH7110).
-    let (uart_irq, uart_irq_source) = uart_irq_and_source();
-    crate::println!("  uart irq  : {uart_irq} ({uart_irq_source})");
+    let (uart_interrupt_number, uart_interrupt_source) = uart_interrupt_number_and_source();
+    crate::println!("  uart interrupt   : {uart_interrupt_number} ({uart_interrupt_source})");
     // The stride is the one fact about this UART the userspace drivers cannot see for themselves,
     // and a wrong one is a console that prints nothing at all, so the transcript states it.
     let uart_shape = crate::console::uart_register_shape();
@@ -74,21 +74,22 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
 
     let aspace_name = progenitor_address_space(&elf, ramdisk_start, ramdisk_pages)?;
 
-    // Route the UART receive interrupt to an endpoint; the input driver's Irq cap will WAIT on it.
-    let irq_ep = crate::sched::create_rendezvous();
-    crate::sched::bind_irq(uart_irq, irq_ep);
+    // Route the UART receive interrupt to an endpoint; the input driver's Interrupt cap will WAIT
+    // on it.
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(uart_interrupt_number, interrupt_ep);
     // aarch64's GIC has no boot-hart lottery, so its line is armed here; riscv64's waits until the
     // driver runs. On `x86_64` the IO APIC entry goes live now, and nothing raises the line until
     // the input driver sets the 16550's receive enable.
     #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
-    crate::arch::irq::enable(uart_irq);
+    crate::arch::interrupt_controller::enable(uart_interrupt_number);
     let build_region =
         crate::memory_region::create(12288).expect("no building budget for the progenitor");
 
     let thread_control_block_region = crate::memory_region::create(2).expect("no tcb region");
     let tid =
         crate::sched::create_thread_control_block(thread_control_block_region).expect("no tcb");
-    grant_boot_slots(tid, build_region, uart_irq);
+    grant_boot_slots(tid, build_region, uart_interrupt_number);
     let (fs_rights, fs_pool) = grant_file_service(tid);
     let virtio_rng = grant_entropy_source(tid);
     let (gpu, keyboard) = wire_graphics();
@@ -119,12 +120,21 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     // virtio-rng device's and the NIC's, all pinned to the boot hart, then external interrupts.
     #[cfg(target_arch = "riscv64")]
     {
-        crate::drivers::plic::enable(uart_irq, crate::arch::irq::boot_s_context());
+        crate::drivers::plic::enable(
+            uart_interrupt_number,
+            crate::arch::interrupt_controller::boot_s_context(),
+        );
         if let Some(g) = &virtio_rng {
-            crate::drivers::plic::enable(g.intid, crate::arch::irq::boot_s_context());
+            crate::drivers::plic::enable(
+                g.intid,
+                crate::arch::interrupt_controller::boot_s_context(),
+            );
         }
         if let Some(g) = &virtio_net {
-            crate::drivers::plic::enable(g.intid, crate::arch::irq::boot_s_context());
+            crate::drivers::plic::enable(
+                g.intid,
+                crate::arch::interrupt_controller::boot_s_context(),
+            );
         }
         crate::arch::exceptions::enable_external();
     }
@@ -205,7 +215,7 @@ fn progenitor_address_space(
 /// ports on `x86_64`. The clock and configuration pages are `READ | GRANT` (DECISIONS §43 (reading
 /// the clock is a page), §111 (inert configuration is a read-only page)) and sit ahead of the
 /// conditional file-service pair, so their slots never move.
-fn grant_boot_slots(tid: crate::thread::ThreadId, build_region: u64, uart_irq: u32) {
+fn grant_boot_slots(tid: crate::thread::ThreadId, build_region: u64, uart_interrupt_number: u32) {
     let s0 = crate::sched::thread_control_block_insert_cap(
         tid,
         crate::cap::memory_region_root_cap(build_region),
@@ -226,10 +236,10 @@ fn grant_boot_slots(tid: crate::thread::ThreadId, build_region: u64, uart_irq: u
     assert_eq!(s1, 1);
     let s2 = crate::sched::thread_control_block_insert_cap(
         tid,
-        crate::cap::irq_cap_rights(uart_irq, Rights::READ.union(Rights::GRANT)),
+        crate::cap::interrupt_cap_rights(uart_interrupt_number, Rights::READ.union(Rights::GRANT)),
         Some(2),
     )
-    .expect("insert uart irq");
+    .expect("insert uart interrupt");
     assert_eq!(s2, 2);
     let s3 = crate::sched::thread_control_block_insert_cap(
         tid,
@@ -302,7 +312,7 @@ fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant>
         assert_eq!(s7, 7);
         let s8 = crate::sched::thread_control_block_insert_cap(
             tid,
-            crate::cap::irq_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
+            crate::cap::interrupt_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
             Some(8),
         )
         .expect("insert the virtio-rng interrupt");
@@ -319,7 +329,7 @@ fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant>
         assert_eq!(s9, 9);
         // aarch64's GIC has no hart lottery, so its source is armed here; riscv64's after the start.
         #[cfg(target_arch = "aarch64")]
-        crate::arch::irq::enable(g.intid);
+        crate::arch::interrupt_controller::enable(g.intid);
     }
     if virtio_rng.is_none()
         && let Some(request) = boot_instruction_entropy()
@@ -551,7 +561,7 @@ fn grant_graphics(
             "the gpu transport",
         );
         insert(
-            crate::cap::irq_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
+            crate::cap::interrupt_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
             18,
             "the gpu interrupt",
         );
@@ -572,7 +582,7 @@ fn grant_graphics(
             "the keyboard transport",
         );
         insert(
-            crate::cap::irq_cap_rights(k.intid, Rights::READ.union(Rights::GRANT)),
+            crate::cap::interrupt_cap_rights(k.intid, Rights::READ.union(Rights::GRANT)),
             21,
             "the keyboard interrupt",
         );
@@ -605,7 +615,7 @@ fn grant_virtio_net(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
         assert_eq!(s13, 13);
         let s14 = crate::sched::thread_control_block_insert_cap(
             tid,
-            crate::cap::irq_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
+            crate::cap::interrupt_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
             Some(14),
         )
         .expect("insert the virtio-net interrupt");
@@ -622,7 +632,7 @@ fn grant_virtio_net(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
         assert_eq!(s15, 15);
         // aarch64 arms inline, riscv64 at the PLIC after the start, as for the virtio-rng source.
         #[cfg(target_arch = "aarch64")]
-        crate::arch::irq::enable(g.intid);
+        crate::arch::interrupt_controller::enable(g.intid);
     }
     virtio_net
 }

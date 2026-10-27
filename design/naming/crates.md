@@ -168,7 +168,7 @@ before.
 known gap rather than a decision.
 
 - Kernel logic, host-tested and Kani-reachable: `capability`, `paging`, `page_frames`,
-  `memory_regions`, `generational_table`, `address_space_identifier`, `intrusive_fifo`,
+  `memory_regions`, `generational_table`, `address_space_identifier`, `intrusive_queue`,
   `inter_process_communication`, `direct_memory_access_validator`, `measured_boot`,
   `user_mode_heap`.
 - Wire contracts, spelled `*_protocol` and checked for it by `script/lint`:

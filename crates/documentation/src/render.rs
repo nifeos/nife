@@ -682,7 +682,7 @@ impl Layout {
                 .enumerate()
                 .max_by_key(|&(_, v)| *v)
                 .unwrap_or((0, &0));
-            if w[widest] <= MIN_CELL {
+            if w[widest] <= MINIMUM_CELL {
                 break;
             }
             w[widest] -= 1;
@@ -804,7 +804,7 @@ const BODY: usize = 2;
 const CODE: usize = 4;
 /// The narrowest a table column may be squeezed before the renderer gives up and lets the row
 /// overflow, because a two-character column tells a reader nothing.
-const MIN_CELL: usize = 3;
+const MINIMUM_CELL: usize = 3;
 
 fn pad(out: &mut impl Sink, n: usize) {
     repeat(out, b' ', n);

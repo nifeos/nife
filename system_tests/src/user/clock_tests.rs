@@ -87,12 +87,12 @@ fn a_proposer_can_ask_and_cannot_tell() {
             "the far future, past every certificate expiry",
         ),
         (
-            now + 2 * policy::MAX_STEP_FORWARD_NANOS,
+            now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOS,
             status::REFUSED_TOO_FAR_FORWARD,
             "plausible in the absolute, too big a step",
         ),
         (
-            now - 2 * policy::MAX_STEP_BACKWARD_NANOS,
+            now - 2 * policy::MAXIMUM_STEP_BACKWARD_NANOS,
             status::REFUSED_TOO_FAR_BACKWARD,
             "backwards, where instants would happen twice",
         ),

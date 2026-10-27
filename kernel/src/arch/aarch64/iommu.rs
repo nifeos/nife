@@ -10,7 +10,7 @@
 //! two arch drivers, structural twins", and its honest limits.
 
 use crate::arch::mmu::phys_to_virt;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 // --- Register file (offsets from the SMMU page; Arm IHI 0070, and QEMU's smmuv3-common.h) ---
 const IDR1: u64 = 0x04;
@@ -87,7 +87,7 @@ struct Smmu {
     evtq_cons: u32,
 }
 
-static SMMU: IrqSafeMutex<Option<Smmu>> = IrqSafeMutex::new(rank::IOMMU, None);
+static SMMU: InterruptSafeMutex<Option<Smmu>> = InterruptSafeMutex::new(rank::IOMMU, None);
 
 fn r32(base: u64, off: u64) -> u32 {
     // SAFETY: the SMMU register page is device-mapped (mmu::map_everything region 9, gated on the
@@ -154,10 +154,10 @@ pub fn initialize(base: u64) {
     }
 
     let idr1 = r32(base, IDR1);
-    let cmdqs_max = (idr1 >> 21) & 0x1f;
-    let evtqs_max = (idr1 >> 16) & 0x1f;
+    let cmdqs_maximum = (idr1 >> 21) & 0x1f;
+    let evtqs_maximum = (idr1 >> 16) & 0x1f;
     assert!(
-        cmdqs_max >= CMDQ_LOG2 && evtqs_max >= EVTQ_LOG2,
+        cmdqs_maximum >= CMDQ_LOG2 && evtqs_maximum >= EVTQ_LOG2,
         "SMMU queues smaller than expected (IDR1 {idr1:#x})"
     );
 
@@ -211,11 +211,11 @@ pub fn initialize(base: u64) {
 pub(crate) fn print_summary() {
     match SMMU.lock().as_ref() {
         Some(s) => crate::println!(
-            "  iommu           : SMMUv3 at {:#018x}, stream table default-deny, translating",
+            "  iommu            : SMMUv3 at {:#018x}, stream table default-deny, translating",
             s.base,
         ),
         None => crate::println!(
-            "  iommu           : none (this machine's device tree names no smmuv3 node)",
+            "  iommu            : none (this machine's device tree names no smmuv3 node)",
         ),
     }
 }

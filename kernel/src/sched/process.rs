@@ -23,7 +23,7 @@ pub type ProcessId = u64;
 
 /// The most processes that can exist at once, whole machine: one per thread at most, so the thread
 /// ceiling.
-pub(super) const MAX_PROCESSES: usize = super::MAX_THREADS;
+pub(super) const MAXIMUM_PROCESSES: usize = super::MAXIMUM_THREADS;
 
 /// **What lives at the start of a process's page.** The capability table follows it, at
 /// [`TABLE_OFFSET`], outside the struct for the reason `thread::capability_table_of` gives: a
@@ -77,7 +77,7 @@ pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Er
     crate::user::bind_user_address_space(space, |bound| {
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
-        if sched.processes.len() >= MAX_PROCESSES {
+        if sched.processes.len() >= MAXIMUM_PROCESSES {
             return Err(abi::Error::OutOfMemory);
         }
         let phys = crate::memory_region::retype_object_page(
@@ -324,7 +324,7 @@ fn release(process: &mut ProcessPage) -> Option<u64> {
 /// Free a finished thread that no core stands on: its stack, its thread page, and its space or its
 /// share of its process's. Takes the held `guard` and releases it before any `Drop`.
 pub(super) fn reap_corpse(
-    mut guard: crate::sync::IrqSafeGuard<'_, Option<IpcTables>>,
+    mut guard: crate::sync::InterruptSafeGuard<'_, Option<IpcTables>>,
     prev: ThreadId,
 ) {
     let Some(sched) = guard.as_mut() else {

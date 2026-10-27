@@ -1,10 +1,14 @@
 //! The interrupt controller, aarch64: the GIC.
 //!
-//! The arch side of the portable `arch::irq` surface, so no caller names `drivers::gic`. It holds
+//! The arch side of the portable `arch::interrupt_controller` surface, so no caller names
+//! `drivers::gic`. It holds
 //! both GIC versions: a GICv2 is `drivers/gic.rs`; a GICv3 is `drivers/gicv3.rs` plus
 //! `gic_cpu_interface.rs`. [`initialize`] takes the version from the device tree and confirms it
 //! with the hardware before any configuration write. The RISC-V twin is the PLIC. See
 //! notes/aarch64-port.md, "Which GIC, and where its lines go".
+//!
+//! Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling. Spelled
+//! out from `irq`; `interrupts` already names the masking module, so this one names the controller.
 
 use core::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
 
@@ -18,7 +22,7 @@ static VERSION: AtomicU8 = AtomicU8::new(0);
 
 /// The GICv3 driver keeps one redistributor per slot, and the slot is the logical core id, so the
 /// kernel's core count must fit its table. Rung one of the ladder: a mismatch is a build failure.
-const _: () = assert!(crate::cpu::MAX_CPUS <= gicv3::SLOTS);
+const _: () = assert!(crate::cpu::MAXIMUM_CPUS <= gicv3::SLOTS);
 
 /// A version-3 machine? One byte, read on every dispatch below.
 #[inline(always)]
@@ -39,30 +43,33 @@ fn affinity_of(cpu: usize) -> u64 {
 }
 
 /// Per-INTID target core, or [`UNASSIGNED`] until the first `enable` chooses one. A device line's
-/// target must be **stable** across re-enables: the IRQ handler masks the line when it fires, and
+/// target must be **stable** across re-enables: the interrupt handler masks the line when it fires,
+/// and
 /// the driver's ACK re-enables it (this file's `enable`), so if we re-rolled the target on every
 /// ACK the line would hop cores on every completion. Assign once, then reuse.
 const UNASSIGNED: u8 = 0xff;
-static IRQ_TARGET: [AtomicU8; 256] = [const { AtomicU8::new(UNASSIGNED) }; 256];
+#[doc(alias = "irq")]
+static INTERRUPT_TARGET: [AtomicU8; 256] = [const { AtomicU8::new(UNASSIGNED) }; 256];
 
 /// Round-robin cursor for spreading SPI lines over the online cores. Consecutive device lines get
 /// consecutive cores regardless of their INTID values, which `intid % ncpus` would not guarantee
 /// (three virtio devices at INTIDs 48, 52, 56 would all land on core 0 under mod-4).
-static NEXT_IRQ_CPU: AtomicUsize = AtomicUsize::new(0);
+#[doc(alias = "irq")]
+static NEXT_INTERRUPT_CPU: AtomicUsize = AtomicUsize::new(0);
 
 /// The core an SPI should target: its stable assignment if it has one, otherwise the next core in
 /// the round-robin, recorded so every later re-enable of this line reuses it. Bounded to the cores
 /// that are actually online (each has its GIC CPU interface up), so we never target a core that
 /// would never take the interrupt.
 fn target_cpu(intid: u32) -> usize {
-    let slot = &IRQ_TARGET[intid as usize];
+    let slot = &INTERRUPT_TARGET[intid as usize];
     let existing = slot.load(Ordering::Relaxed);
     if existing != UNASSIGNED {
         return existing as usize;
     }
     // The k-th online core, not index k: the online set need not be contiguous from zero, and a
     // line routed to a parked core pends forever.
-    let chosen = crate::smp::nth_online(NEXT_IRQ_CPU.fetch_add(1, Ordering::Relaxed));
+    let chosen = crate::smp::nth_online(NEXT_INTERRUPT_CPU.fetch_add(1, Ordering::Relaxed));
     // First writer wins, so a racing second enable of the same line agrees on the target.
     match slot.compare_exchange(
         UNASSIGNED,
@@ -77,7 +84,8 @@ fn target_cpu(intid: u32) -> usize {
 
 /// Re-enable (unmask) an interrupt source at the controller.
 ///
-/// Called by the `Irq` capability's ACK once a userspace driver has serviced its device (seL4's
+/// Called by the `Interrupt` capability's ACK once a userspace driver has serviced its device
+/// (seL4's
 /// `IRQHandler` protocol), and by the timer on each core. An SPI goes to its [`target_cpu`]; an SGI
 /// or a PPI (INTID below 32) is enabled on the calling core and takes no target.
 pub fn enable(intid: u32) {
@@ -93,8 +101,10 @@ pub fn enable(intid: u32) {
     }
 }
 
-/// Mask an interrupt source at the controller: the IRQ handler's first act for a line routed to a
-/// userspace driver, undone by [`enable`] when the driver ACKs. A PPI is masked on the calling core.
+/// Mask an interrupt source at the controller: the interrupt handler's first act for a line routed
+/// to a
+/// userspace driver, undone by [`enable`] when the driver ACKs. A PPI is masked on the calling
+/// core.
 pub(crate) fn disable(intid: u32) {
     if is_v3() {
         gicv3::disable(crate::cpu::id(), intid);
@@ -103,7 +113,7 @@ pub(crate) fn disable(intid: u32) {
     }
 }
 
-/// **Take the interrupt.** Acknowledging has a side effect, so exactly once per IRQ. Returns
+/// **Take the interrupt.** Acknowledging has a side effect, so exactly once per interrupt. Returns
 /// [`SPURIOUS`] when there is nothing to take; on a GICv3 all four special INTIDs (1020-1023) are
 /// folded into it, because none of them is an interrupt this kernel can complete.
 #[inline(always)]
@@ -143,7 +153,8 @@ pub fn send_sgi(intid: u32, target_cpu: usize) {
 
 /// **Reserve a vector a PCI function may deliver an MSI-X message on**, the arch contract's
 /// milestone-215 name. `None`: a PCI function on QEMU's `virt` raises INTx through the swizzle
-/// (`pci::intx_irq`) onto `mmu::PCI_IRQ_BASE`, and `kernel/src/pci.rs` falls back to that. A GICv3
+/// (`pci::intx_interrupt_number`) onto `mmu::PCI_INTERRUPT_NUMBER_BASE`, and `kernel/src/pci.rs`
+/// falls back to that. A GICv3
 /// ITS would implement MSI here on a board that needs it. See
 /// design/roadmap/0215-x86-64-pci-interrupt-routing.md.
 pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
@@ -152,7 +163,8 @@ pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
 
 /// **How many interrupts a device line delivered at bring-up**, which on this port is none: no
 /// device here can be made to interrupt without input or an attached disk, so bring-up proves no
-/// device line through the GIC, and `self_test`'s `deviceirq` check reports itself absent. `x86_64`
+/// device line through the GIC, and `self_test`'s `device_interrupt` check reports itself absent.
+/// `x86_64`
 /// proves the PIT's. A device line on this port is proved where one exists: the user-level input
 /// driver at the hand-over, and the `blockdev` check's driver when a disk is attached.
 #[cfg_attr(
@@ -205,7 +217,8 @@ pub fn initialize() {
         }
         Gic::V3 { .. } => {
             VERSION.store(3, Ordering::Relaxed);
-            // SAFETY: the tree named a GICv3 here, its distributor confirmed it, and the distributor
+            // SAFETY: the tree named a GICv3 here, its distributor confirmed it, and the
+            // distributor
             // and the whole redistributor region are mapped device memory that nothing else drives.
             unsafe { gicv3::initialize(gicd, second_virt, second.size) };
             initialize_this_cpu();
@@ -214,7 +227,8 @@ pub fn initialize() {
 }
 
 /// Per-core interrupt-controller setup, run by each core as it comes online. On a GICv2 the CPU
-/// interface is banked MMIO; on a GICv3 the core finds and wakes its own redistributor, then turns on
+/// interface is banked MMIO; on a GICv3 the core finds and wakes its own redistributor, then turns
+/// on
 /// its system-register CPU interface. Either way every core enables its own.
 pub(crate) fn initialize_this_cpu() {
     if is_v3() {
@@ -253,7 +267,7 @@ pub(crate) fn print_summary() {
             distributor,
             cpu_interface,
         }) => crate::println!(
-            "  interrupts      : GICv2, distributor {:#018x}, cpu interface {:#018x}",
+            "  interrupts       : GICv2, distributor {:#018x}, cpu interface {:#018x}",
             distributor.start,
             cpu_interface.start,
         ),
@@ -261,13 +275,13 @@ pub(crate) fn print_summary() {
             distributor,
             redistributors,
         }) => crate::println!(
-            "  interrupts      : GICv3, distributor {:#018x}, redistributors {:#018x}, cpu \
+            "  interrupts       : GICv3, distributor {:#018x}, redistributors {:#018x}, cpu \
              interface in system registers",
             distributor.start,
             redistributors.start,
         ),
         None => {
-            crate::println!("  interrupts      : none (this machine's device tree names no GIC)");
+            crate::println!("  interrupts       : none (this machine's device tree names no GIC)");
         }
     }
 }
@@ -281,7 +295,7 @@ mod tests {
     use core::sync::atomic::Ordering;
 
     use crate::arch::timer;
-    use crate::cpu::MAX_CPUS;
+    use crate::cpu::MAXIMUM_CPUS;
 
     /// **Every online core takes its own timer interrupts.**
     ///
@@ -290,7 +304,7 @@ mod tests {
     /// not a rate: five seconds for a 100 Hz tick to move at all.
     #[test_case]
     fn every_online_cpu_takes_its_own_timer_ticks() {
-        let before: [u64; MAX_CPUS] = core::array::from_fn(timer::ticks_on);
+        let before: [u64; MAXIMUM_CPUS] = core::array::from_fn(timer::ticks_on);
         let deadline = timer::now() + timer::frequency() * 5;
         loop {
             let silent = crate::smp::online_cpus().find(|&c| timer::ticks_on(c) <= before[c]);

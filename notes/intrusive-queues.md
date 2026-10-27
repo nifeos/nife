@@ -1,7 +1,8 @@
 # Intrusive queues
 
-*(Milestone 14 phase A.2. The mechanism behind `crates/intrusive_fifo`, which the per-CPU run queues
-and migration inboxes are built on. See design/kernel-objects-from-untyped.md, decision D1.)*
+*(Milestone 14 (kernel objects from untyped) phase A.2. The mechanism behind
+`crates/intrusive_queue`, which the per-CPU run queues and migration inboxes are built on. See
+design/kernel-objects-from-untyped.md, decision D1.)*
 
 ## The idea
 
@@ -14,8 +15,9 @@ Every serious kernel does scheduler queues this way (Linux `list_head`, seL4's T
 because of what it removes:
 
 - Allocation. A push writes two pointers. It cannot allocate, so it cannot fail, so it is
-  legal anywhere, including the paths where allocation is forbidden (our §9: IRQ context). The
-  scheduler used to pre-reserve VecDeque capacity so a push from the timer IRQ could never
+  legal anywhere, including the paths where allocation is forbidden (our §9 (locking: IrqSafeMutex,
+  plus a discipline): interrupt context). The
+  scheduler used to pre-reserve VecDeque capacity so a push from the timer interrupt could never
   reallocate; that standing apology is gone, because the rule became structural.
 - The lookup. The old queues held thread ids; every pop paid a table lookup to reach the thread.
   An intrusive pop hands back the TCB itself. The migration path got the full benefit: draining
@@ -55,7 +57,7 @@ safety is a discipline, stated once and kept:
 
 ## The crate's contract, and the `Unqueued` token
 
-`crates/intrusive_fifo` states its caller's contract as three rules, and its doc comments cite them
+`crates/intrusive_queue` states its caller's contract as three rules, and its doc comments cite them
 by number:
 
 1. A node is pushed onto at most one queue, and not pushed again until popped. A push takes the
@@ -81,7 +83,7 @@ node: queueing the node again needs a second token, which is the `unsafe` the ty
 
 ## What is proved
 
-The crate's Kani harness (`script/verify`) drives the real `Fifo` with a symbolic operation
+The crate's Kani harness (`script/verify`) drives the real `Queue` with a symbolic operation
 sequence: six steps, each an arbitrary push-or-pop over three nodes, checked against a
 trivially-correct model. Every interleaving up to that depth at once, including the
 drained-to-empty transitions where head/tail bugs live. FIFO order, no loss, no invention,

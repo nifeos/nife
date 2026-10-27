@@ -58,14 +58,14 @@
 #   said "ranking is occurrence count and nothing else" until 2026-09-19, which had stopped being
 #   true. See `crates/documentation/src/index.rs`'s BUGS.
 # - **A path longer than 72 bytes is truncated in the result**, because the page record is the
-#   guest's fixed layout (`documentation::index::PATH_MAX`). Six roadmap and decision filenames are
-#   past it. The search exits 1 only when one of those is in the results it printed, and names it;
-#   until 2026-09-19 any long path anywhere in the corpus failed every search, with six warnings,
-#   whatever the word, which is how milestone 117's sixth run found it: the tool it was about to
-#   put in front of a newcomer failed on the example chosen for the README.
+#   guest's fixed layout (`documentation::index::PATH_MAXIMUM`). Six roadmap and decision filenames
+#   are past it. The search exits 1 only when one of those is in the results it printed, and names
+#   it; until 2026-09-19 any long path anywhere in the corpus failed every search, with six
+#   warnings, whatever the word, which is how milestone 117 (the stranger test)'s sixth run found it: the tool it was
+#   about to put in front of a newcomer failed on the example chosen for the README.
 # - **Sixteen results, always**, because that is the guest reader's fixed table
-#   (`documentation::index::RESULTS_MAX`) and this uses the guest reader. The line under the results says
-#   how many pages matched in total.
+#   (`documentation::index::RESULTS_MAXIMUM`) and this uses the guest reader. The line under the
+#   results says how many pages matched in total.
 # - **It rebuilds the whole index on every run** (about a second). There is no cache, because a
 #   cache that can be stale is worse here than a second of work.
 # - **The first stranger it was built for never ran it, and had the name in front of it three

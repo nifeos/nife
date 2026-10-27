@@ -16,7 +16,7 @@ use driver_process_contract::extensible_host_controller_interface::{
 };
 
 use super::*;
-use crate::cap::{Rights, irq_cap, rendezvous_cap};
+use crate::cap::{Rights, interrupt_cap, rendezvous_cap};
 use crate::sched::RendezvousId;
 
 /// Where the driver's register pages are mapped, page `n` of BAR0 at `REGS_VA + n * 4096`. Must
@@ -31,7 +31,8 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const EXTRA_STACK_PAGES: usize = 3;
 
 /// The most mappings one spawn makes: every work page, every register page, and the stack.
-const MAX_MAPS: usize = WORK_PAGES as usize + MAXIMUM_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
+const MAXIMUM_MAPS: usize =
+    WORK_PAGES as usize + MAXIMUM_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
 
 /// What [`start`] hands back.
 pub(crate) struct Wiring {
@@ -52,12 +53,13 @@ pub(crate) fn start(
     let found = crate::extensible_host_controller_interface::bring_up()?;
     let words = found.handoff.pack();
 
-    let irq_ep = crate::sched::create_rendezvous();
-    crate::sched::bind_irq(found.intid, irq_ep);
-    // Through the arch layer, as the `Irq` capability's ACK is: on riscv64 a source enabled on
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(found.intid, interrupt_ep);
+    // Through the arch layer, as the `Interrupt` capability's ACK is: on riscv64 a source enabled
+    // on
     // the boot hart's context instead is moved by its first ACK, and no keystroke after the first
     // arrives (measured). See notes/usb.md, "What the driver holds".
-    crate::arch::irq::enable(found.intid);
+    crate::arch::interrupt_controller::enable(found.intid);
 
     let attach = crate::sched::create_rendezvous();
     let report = crate::sched::create_rendezvous();
@@ -79,7 +81,7 @@ pub(crate) fn start(
             va: 0,
             phys: 0,
             flags: Flags::user_data(),
-        }; MAX_MAPS];
+        }; MAXIMUM_MAPS];
         // The work pages, contiguous, normal memory: the controller and the driver share ordinary
         // RAM there. The scratchpad pages after them are not mapped.
         super::fs_service::map_channel(
@@ -116,7 +118,7 @@ pub(crate) fn start(
                 arg1: words[1], // its length in pages, and the register page mask
                 arg2: words[2],
                 grants: &[
-                    irq_cap(intid),                        // slot 0: the controller's interrupt
+                    interrupt_cap(intid),                  // slot 0: the controller's interrupt
                     rendezvous_cap(attach, Rights::READ),  // slot 1: receive where keystrokes go
                     rendezvous_cap(report, Rights::WRITE), // slot 2: the one bring-up report
                 ],

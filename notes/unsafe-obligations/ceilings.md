@@ -193,7 +193,7 @@ Other than `Send`/`Sync`, at most 12 <!--count-at-most:unsafe-trait-claims--> `u
 an unsafe trait, at the tree's exact value for the reason the line above
 gives (milestone 139 round 9, 2026-10-07 UTC; the marker's name is provisional). The census once
 counted `unsafe impl` as one number and the gate watched only its `Send`/`Sync` half. This is the
-rest (`GlobalAlloc`, `intrusive_fifo::Node`, `ns16550::RegisterSpace`). It read 7, 9, 9, 9, 11
+rest (`GlobalAlloc`, `intrusive_queue::Node`, `ns16550::RegisterSpace`). It read 7, 9, 9, 9, 11
 and 12 from 2026-08-18 to 2026-10-10, the last for the futex host tests.
 
 ## Mutable statics

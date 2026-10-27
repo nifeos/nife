@@ -19,7 +19,7 @@ for that question.
 
 | Class | Functions | Why it matters |
 |---|---|---|
-| **Hot: every IPC, every core** | `ipc_send`, `ipc_receive`, `ipc_call`, `ipc_reply`, `ipc_send_cap`, `ipc_receive_cap`, `irq_notify` | The `call_reply` fast path this project benchmarks and wins on takes `IPC_TABLES` at least once per operation. At 4 cores on radon this is most of what is left of the lock's wait ([below](#what-the-measurement-found-2026-10-04)); whether partitioning it pays past 4 is THE milestone 17 question |
+| **Hot: every IPC, every core** | `ipc_send`, `ipc_receive`, `ipc_call`, `ipc_reply`, `ipc_send_cap`, `ipc_receive_cap`, `interrupt_notify` | The `call_reply` fast path this project benchmarks and wins on takes `IPC_TABLES` at least once per operation. At 4 cores on radon this is most of what is left of the lock's wait ([below](#what-the-measurement-found-2026-10-04)); whether partitioning it pays past 4 is THE milestone 17 question |
 | **Hot: every reschedule** | `schedule` (twice), `depart` | Runs on the core's own queue, but takes the global lock to touch the thread table |
 | **Warm: per capability operation** | `delete_current_cap`, `take_ipc_aborted` | `current_cap`, `grant` and `grant_at` take only the running thread's own CapabilityTable lock (milestone 761, finding 2 below). These two still take `IPC_TABLES` |
 | **Cold: lifecycle** | `create_tcb`, `configure_tcb`, `start_tcb`, `tcb_insert_cap`, `spawn_on`, `spawn_with_quota`, `kill_thread`, `reap_supervised`, `reap_region_objects`, `create_endpoint`, `try_create_endpoint_from`, `adopt_address_space`, `adopt_secondary_idle`, `init` | Dozens per boot, not thousands per second. No plausible contention at any scale this project names |
@@ -75,34 +75,35 @@ holding `IPC_TABLES`, and that drop frees: the kernel stack's pages go back thro
 lock, and its address range to its free list. Freeing takes the locks allocating does. Nothing
 under the lock allocates from a heap. A TCB page comes from a region or from `kmem`'s fixed pool,
 and the queues are intrusive, so a queue operation is a few pointer writes. §9 (locking)'s
-no-allocation-in-IRQ rule holds by construction.
+no-allocation-in-interrupt rule holds by construction.
 
-### `MAX_THREADS`
+### `MAXIMUM_THREADS`
 
-`MAX_THREADS` is 256, a documented limit of the image, so a spawn past it fails cleanly. The boot
-keeps many services alive for its whole life (notes/frames.md's "held" list), so every milestone
-that adds one spends some of it. `PEAK_THREADS` and `kernel::testing`'s closing `threads:` line print
-the demand on every run; when the limit was set the peaks were 130 (aarch64), 129 (riscv64) and 57
-(`x86_64`). 256 is about twice the tightest, because the failure is an unrelated test refusing a
-spawn far from its cause. What scales with it, each checked at 256:
+`MAXIMUM_THREADS` is 256, a documented limit of the image, so a spawn past it fails cleanly. The
+boot keeps many services alive for its whole life (notes/frames.md's "held" list), so every
+milestone that adds one spends some of it. `PEAK_THREADS` and `kernel::testing`'s closing `threads:`
+line print the demand on every run; when the limit was set the peaks were 130 (aarch64), 129
+(riscv64) and 57 (`x86_64`). 256 is about twice the tightest, because the failure is an unrelated
+test refusing a spawn far from its cause. What scales with it, each checked at 256:
 
 - the boot stack, about 20 bytes a slot, which is why `init` installs `EMPTY_TABLES` from `.rodata`
   rather than building the tables on the boot stack, under `stack::report_high_water`'s gate;
 - `kmem::KERNEL_OBJ_PAGES`, 7 pages per live thread (`thread::STACK_PAGES` and the TCB page);
-- `ps::MAX_ROWS`, const-asserted `>= MAX_THREADS` in `kernel::user::survey_tests`, which sizes
-  stack-resident row arrays in `ps` and `pgrep` inside `system_initializer::CHILD_STACK_PAGES`;
-- `revoke::MAX_SPACES` and `thread::FreeAddressSpace`, derived from it.
+- `ps::MAXIMUM_ROWS`, const-asserted `>= MAXIMUM_THREADS` in `kernel::user::survey_tests`, which
+  sizes stack-resident row arrays in `ps` and `pgrep` inside
+  `system_initializer::CHILD_STACK_PAGES`;
+- `revoke::MAXIMUM_SPACES` and `thread::FreeAddressSpace`, derived from it.
 
 Nothing on the `spawn_el0` benchmark scales with it, because the revocation scans are bounded by
-live occupancy ([notes/benchmarks.md](benchmarks.md)). No `[u64; MAX_THREADS]` scratch array sits
-on a stack ([notes/region-reaping.md](region-reaping.md)).
+live occupancy ([notes/benchmarks.md](benchmarks.md)). No `[u64; MAXIMUM_THREADS]` scratch array
+sits on a stack ([notes/region-reaping.md](region-reaping.md)).
 
-### `MAX_RENDEZVOUS`, and the kernel's chunks
+### `MAXIMUM_RENDEZVOUS`, and the kernel's chunks
 
-`MAX_RENDEZVOUS` is 512 live at once. Tearing down a region removes its rendezvous and frees their
-slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and `KERNEL_CHUNK_RENDEZVOUS`
-report the peak and how many of those sat on the kernel's own chunks, updated at the one insert
-under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
+`MAXIMUM_RENDEZVOUS` is 512 live at once. Tearing down a region removes its rendezvous and frees
+their slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and
+`KERNEL_CHUNK_RENDEZVOUS` report the peak and how many of those sat on the kernel's own chunks,
+updated at the one insert under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
 
 | architecture | peak | spare | on kernel chunks |
 |---|---|---|---|
@@ -122,9 +123,9 @@ pages). The chunk is carved lazily and replaced when it fills, so the kernel's s
 compile-time guess. A fixed ceiling grew with the test suite, and the union of parallel branches'
 boots crossed it at merge, where no branch could see it coming. A normal boot carves one chunk. A
 filled chunk's handle is forgotten; its pages stay pinned and its endpoints live. No path tears a
-kernel chunk down, and if one should, the handle becomes an array. `MAX_KERNEL_EP_CHUNKS` is derived
-so chunks can host `MAX_RENDEZVOUS` one-page endpoints, which makes the registry, never the page
-supply, the limit that refuses.
+kernel chunk down, and if one should, the handle becomes an array. `MAXIMUM_KERNEL_EP_CHUNKS` is
+derived so chunks can host `MAXIMUM_RENDEZVOUS` one-page endpoints, which makes the registry, never
+the page supply, the limit that refuses.
 
 ### `FUTEX_BUCKETS`
 

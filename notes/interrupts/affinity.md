@@ -1,21 +1,25 @@
-# IRQ affinity: spreading device lines off core 0
+# Interrupt affinity: spreading device lines off core 0
 
 *Name: provisional, minted 2026-10-11 (UTC) by lane/third-ten-longest-notes.*
 
 An appendix to [notes/interrupts.md](../interrupts.md), moved there on 2026-10-11 (UTC) under §212
-(a prose budget). It is the record of fix/irq-delivery (2026-07-29), the PLIC parity work and the
+(a prose budget). It is the record of fix/interrupt-delivery (2026-07-29), the PLIC parity work and
+the
 `std_net` hang that turned out not to be an interrupt bug.
 
 Until now every SPI targeted core 0: `gic::enable` wrote `ITARGETSR[intid] = 1` (bit 0). Under SMP
 that funnels every device interrupt onto one core. The handler that turns an interrupt into a
-message runs on the core that took it (`handle_irq` calls `irq_notify`, which wakes the driver onto
+message runs on the core that took it (`handle_interrupt` calls `interrupt_notify`, which wakes the
+driver onto
 `cpu::current`), so the driver wake lands on core 0 too. Every disk and NIC completion, and
 the driver work it triggers, re-concentrates on core 0 no matter where the threads were spawned.
 
-The fix distributes SPI lines across the online cores. The policy lives in `arch::irq::enable`
+The fix distributes SPI lines across the online cores. The policy lives in
+`arch::interrupt_controller::enable`
 (it may read `smp::online_count`; it is arch glue, not a driver). Each SPI is assigned a target core
 the first time it is enabled, round-robin over the online cores. That assignment is stable
-(`IRQ_TARGET`, an atomic per-INTID slot). Stability matters because the `Irq` capability's ACK
+(`INTERRUPT_TARGET`, an atomic per-INTID slot). Stability matters because the `Interrupt`
+capability's ACK
 re-enables the line on every completion; re-rolling the target each time would make the line hop
 cores on every interrupt. The mechanism stays in the driver: `gic::enable(intid, target_cpu)`
 writes `ITARGETSR[intid] = 1 << target_cpu`. PPIs and SGIs are per-core, so the target is ignored
@@ -26,12 +30,12 @@ What this does and does not buy, measured honestly:
 
 - It does move each device's interrupt (and the wake it causes) off core 0 onto its assigned
   core. Verified: the full aarch64 suite (disk, PCIe disk, both DHCP round trips) stays green with
-  the lines spread, and a diskless boot's device IRQs land on cores other than 0.
+  the lines spread, and a diskless boot's device interrupts land on cores other than 0.
 - It does not, on its own, make the heavy `std_net` pipeline (smoltcp in `net_stack`, plus the std
   program) go faster under SMP. That pipeline is a chain of IPC rendezvous, and a rendezvous
   wake still lands on the *waker's* core (`cpu::current`). Spreading the interrupt moves the whole
   chain to the interrupt's core; it does not parallelize it. Parallelizing the pipeline needs the
-  rendezvous/device-IRQ wake placement to be load-aware, which is the scheduler's call
+  rendezvous/device-interrupt wake placement to be load-aware, which is the scheduler's call
   (DECISIONS §28 territory), not the interrupt controller's. See the `std_net` note below.
 
 ## The riscv PLIC side, done the same way (parity §19)
@@ -39,17 +43,20 @@ What this does and does not buy, measured honestly:
 The PLIC equivalent spreads device sources across harts, the same round-robin-with-a-stable-target
 shape as the GIC. The PLIC delivers a source to a context (a hart at a privilege level). The
 hart-to-context numbering is the board's, read out of the device tree's `interrupts-extended` at
-boot (`arch::irq::initialize_contexts`, backed by `isa::plic`). It is `2*hart+1` for S-mode on QEMU
+boot (`arch::interrupt_controller::initialize_contexts`, backed by `isa::plic`). It is `2*hart+1`
+for S-mode on QEMU
 `virt`, and `2*hart` on the JH7110, whose disabled S7 monitor core contributes only an M context
 (see notes/visionfive2.md). The pieces are:
 
-- Every hart sets `SEIE` early (`arch::irq::initialize_this_cpu` now unmasks supervisor external
+- Every hart sets `SEIE` early (`arch::interrupt_controller::initialize_this_cpu` now unmasks
+  supervisor external
   interrupts alongside the software-interrupt IPI source). This is safe before the PLIC base is even
   known: `SEIE` with no source enabled for the hart's context delivers nothing. It sidesteps the
   ordering hazard that a secondary comes online (running `initialize_this_cpu`) *before* the boot
   path calls `plic::initialize`; the CSR is unmasked now, the context is set up later.
 - The boot hart opens a target hart's context and routes the source to it (`target_context` in
-  `arch/riscv64/irq.rs`). The threshold and enable registers are global PLIC MMIO, so the boot hart,
+  `arch/riscv64/interrupt_controller.rs`). The threshold and enable registers are global PLIC MMIO,
+  so the boot hart,
   which runs every `enable` (test wiring, driver spawn), can open any hart's context and enable a
   source on it. The target is chosen round-robin over the online harts and is stable per source
   (`SOURCE_CTX`). The reason is the GIC's: the ACK re-enables the line on every
@@ -68,10 +75,11 @@ boot (`arch::irq::initialize_contexts`, backed by `isa::plic`). It is `2*hart+1`
   handler running `disable` on a neighbor. A lost update either masks a device forever (its driver
   blocks on an interrupt that never arrives) or leaves a level-triggered source live after the handler
   masked it (an interrupt storm on that hart). So `enable`/`disable` go through one helper holding an
-  `IrqSafeMutex` at `rank::IRQ_CONTROLLER`, the same rank the GIC's lock takes.
+  `InterruptSafeMutex` at `rank::INTERRUPT_CONTROLLER`, the same rank the GIC's lock takes.
 
-  It has to be `IrqSafeMutex` rather than a plain lock, and that is the §9 deadlock rather than
-  caution. `disable` runs *in the handler* while `enable` runs in thread context with interrupts on.
+  It has to be `InterruptSafeMutex` rather than a plain lock.
+  That is the §9 (locking: IrqSafeMutex, plus a discipline) deadlock rather than caution. `disable`
+  runs *in the handler* while `enable` runs in thread context with interrupts on.
   A plain spinlock would let a thread take the word on a hart and then have that hart's own
   handler spin on it forever. Nothing else in the driver takes the lock, deliberately.
   Claim/complete is per-context and therefore hart-local (the hot path stays lock-free). The
@@ -106,7 +114,8 @@ disagreement, it just holds whichever word was written last.
 
 Both directions of that race are bad, and they fail differently, which is why neither is tolerable:
 
-- A lost `enable` (above) silently masks a device forever. The driver blocks in `Irq::WAIT` on an
+- A lost `enable` (above) silently masks a device forever. The driver blocks in `Interrupt::WAIT` on
+  an
   interrupt the PLIC will never route to it. The symptom is a hang in code that has no bug.
 - A lost `disable` is the mirror: the handler thinks it masked a level-triggered source, but the
   bit is back on and the line is still asserted, so the PLIC re-delivers immediately, forever. That
@@ -118,7 +127,8 @@ kind of race that passes a thousand test runs and then fails in front of an audi
 it by reading for the pattern rather than by waiting for it to bite ([arch-audit.md](../arch-audit.md),
 finding 3).
 
-The fix is one `IrqSafeMutex` around the read and the write together, so steps 1-4 and 2-6 cannot
+The fix is one `InterruptSafeMutex` around the read and the write together, so steps 1-4 and 2-6
+cannot
 interleave: whichever hart takes the lock second re-reads the word *after* the first hart's store and
 computes from current state. It is the smallest possible critical section (a read, an or/and-not, a
 write) and it is off the hot path, so it costs nothing measurable.
@@ -144,16 +154,19 @@ Two things were wrong, and only one of them was scheduling:
 
 1. A real deadlock. `net_stack` blocked on the NIC interrupt while smoltcp still had a retransmit
    pending, so neither side would move. The timer that would have retransmitted was never polled
-   because the thread was parked in `Irq::WAIT`, and no packet was coming to wake it. That is a
+   because the thread was parked in `Interrupt::WAIT`, and no packet was coming to wake it. That is
+   a
    mutual-idle deadlock, not slowness, and no amount of core placement fixes it. `net_stack` now bounds
    its wait by smoltcp's own next-poll deadline.
 2. Serialization on one core. With the deadlock gone the pipeline ran, but slowly: its threads
-   are woken by a mix of device IRQ and IPC rendezvous, and both wakes pinned to one core. DECISIONS
-   §28's wake split fixed the half that mattered (device-IRQ wakes go load-aware, IPC rendezvous
+   are woken by a mix of device interrupt and IPC rendezvous, and both wakes pinned to one core.
+   DECISIONS
+   §28 (SMP placement)'s wake split fixed the half that mattered (device-interrupt wakes go
+   load-aware, IPC rendezvous
    wakes stay local, because a rendezvous partner is about to run on the caller's core and moving it
    only adds a migration).
 
-An intermediate hypothesis of mine was wrong and worth keeping written down: I expected IRQ
+An intermediate hypothesis of mine was wrong and worth keeping written down: I expected interrupt
 affinity alone to fix it. It cannot. Spreading interrupts across harts relocates where a wake lands;
 it does not parallelize a chain of request/response rendezvous, which is serial by construction. The
 agent disproved it by measurement rather than argument.

@@ -8,7 +8,8 @@ use super::*;
 
 pub(crate) const REPORT: u64 = 0;
 
-pub(crate) const IRQ: u64 = 1;
+#[doc(alias = "irq")]
+pub(crate) const INTERRUPT: u64 = 1;
 
 pub(crate) const MEMORY_REGION: u64 = 3;
 
@@ -37,7 +38,7 @@ pub(crate) const OWN_SPACE: u64 = socket_contract::stack_slots::OWN_SPACE;
 /// for the heap's page tables and for mapping clients' shared frames, and the budget is small
 /// because no `net_stack` region is ever reclaimed (`kernel/src/user/virtio_service.rs` has the
 /// measurement). If either number moves, both must.
-pub(crate) const HEAP_MAX: u64 = 96 * 4096;
+pub(crate) const HEAP_MAXIMUM: u64 = 96 * 4096;
 
 #[global_allocator]
 pub(crate) static HEAP: memory_region_heap::MemoryRegionHeap =

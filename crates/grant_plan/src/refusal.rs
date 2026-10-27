@@ -38,8 +38,8 @@ pub enum Refusal {
     /// whose printed preview and actual transfer could disagree.
     NoSuchOption,
     /// The named file is not something this shell can express: empty, a component longer than the
-    /// two argument words a grant's name rides in (`filesystem_contract::grant::MAX_NAME`), deeper than the
-    /// shell tracks, or a path that designates a directory rather than a file.
+    /// two argument words a grant's name rides in (`filesystem_contract::grant::MAXIMUM_NAME`),
+    /// deeper than the shell tracks, or a path that designates a directory rather than a file.
     FileNotNameable,
     /// The program takes no memory grant, but `--mem` was given.
     ///
@@ -52,7 +52,7 @@ pub enum Refusal {
     /// `--mem N` was outside the program's declared range.
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
-    MemoryGrantOutOfRange { min: u64, max: u64 },
+    MemoryGrantOutOfRange { minimum: u64, maximum: u64 },
     /// The program requires an integer argument, but none was given.
     ///
     /// Name: ratified 2026-10-18 (calef: "Approve the family").
@@ -72,8 +72,8 @@ pub enum Refusal {
     /// of what it matched is the worst outcome this mechanism has.
     TooManyNames,
     /// A name a pattern matched cannot travel in a grant (longer than
-    /// [`expand::MAX_NAME`](crate::expand::MAX_NAME)). Refused whole rather than dropped from the set, for
-    /// [`Refusal::TooManyNames`]'s reason.
+    /// [`expand::MAXIMUM_NAME`](crate::expand::MAXIMUM_NAME)). Refused whole rather than dropped
+    /// from the set, for [`Refusal::TooManyNames`]'s reason.
     MatchNotNameable,
     /// A pattern somewhere other than a token's **last** component (`*/report.txt`). Selecting
     /// directories to walk is an authority question, not a matching one, so it is not something a
@@ -112,7 +112,8 @@ pub enum Refusal {
     /// direct call, which is why the sequence splitter has to run first rather than merely usually
     /// running first.
     EmptyStage,
-    /// **More stages than one line may carry** ([`line::MAX_STAGES`](crate::line::MAX_STAGES)). A ceiling on processes and
+    /// **More stages than one line may carry**
+    /// ([`line::MAXIMUM_STAGES`](crate::line::MAXIMUM_STAGES)). A ceiling on processes and
     /// endpoints, not on a buffer.
     TooManyStages,
     /// **A pattern where a redirection's name goes.** A redirection designates one destination and

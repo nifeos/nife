@@ -105,9 +105,9 @@
 <rect class="seg s2" x="601.4" y="168.7" width="38.7" height="7.7"><title>2026W44, Partial: 29</title></rect>
 <rect class="seg s3" x="601.4" y="78.2" width="38.7" height="90.4"><title>2026W44, Not started: 340</title></rect>
 <rect class="seg s4" x="601.4" y="77.7" width="38.7" height="0.5"><title>2026W44, Optional: 2</title></rect>
-<path class="seg s6" d="M601.4,77.7 V76.4 Q601.4,75.0 602.7,75.0 H638.7 Q640.0,75.0 640.0,76.4 V77.7 Z"><title>2026W44, Proposal, no number yet: 10</title></path>
+<path class="seg s6" d="M601.4,77.7 V75.7 Q601.4,73.7 603.4,73.7 H638.0 Q640.0,73.7 640.0,75.7 V77.7 Z"><title>2026W44, Proposal, no number yet: 15</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="620.7" y="70.0" font-size="10" text-anchor="middle">936</text>
+<text class="fg val" x="620.7" y="68.7" font-size="10" text-anchor="middle">941</text>
 <rect class="s6" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">Proposal, no number</tspan><tspan x="689" dy="13">yet</tspan></text>
 <rect class="s5" x="672" y="96" width="11" height="11" rx="2"/>

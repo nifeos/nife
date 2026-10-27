@@ -184,8 +184,8 @@ still have no reason to build one.
 
 `DESTROY` used to refuse outright while a live thread occupied the region, which is correct for a
 cooperative child but leaves the shell's `^C` escalation (§24) nothing to escalate to: a thread
-spinning at EL0 would refuse `DESTROY` forever. The fix is small and avoids two hard problems (removing a node from the intrusive `Fifo`, and stopping a thread
-running on another core):
+spinning at EL0 would refuse `DESTROY` forever. The fix is small and avoids two hard problems
+(removing a node from the intrusive `Queue`, and stopping a thread running on another core):
 
 - `DESTROY` on a live resident thread now marks it `killed` and still refuses that pass.
 - `schedule()` converts a killed thread to a `Finished` corpse at its next preemption instead of
@@ -272,6 +272,7 @@ timing exposed it.
 
   **What is still argued rather than checked**, because a caveat replaced is not a caveat removed.
   Loom models C11 rather than aarch64 or riscv64. The model assumes mutual exclusion and says
-  nothing about `IrqSafeMutex` delivering it or about the rank order being right. And it searches
+  nothing about `InterruptSafeMutex` delivering it or about the rank order being right. And it
+  searches
   who wins the claim, not whether the winner then frees the right pages, which is `destroy_outcome`'s
   Kani proof and a separate argument.

@@ -284,7 +284,7 @@ pub static XENON: Profile = Profile {
     refusals: &[],
     relocation: &[],
     // RDSEED and an IO APIC with a PIT behind it, on any PC this port runs on.
-    must_not_be_absent: &["entropy", "deviceirq"],
+    must_not_be_absent: &["entropy", "device_interrupt"],
 };
 
 /// **An emulator: no firmware prologue, and no device it must have.** `boot-check`'s and the soak's

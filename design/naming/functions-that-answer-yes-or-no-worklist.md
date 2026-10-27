@@ -37,15 +37,15 @@ names they were written with, per the rename procedure.
 | Was | Defined in | Visibility | Sites | Now | Landed in | Notes |
 |---|---|---|---|---|---|---|
 | `tick_pending` | `kernel/src/arch/{aarch64,riscv64,x86_64}/timer.rs` | pub | 18 | `is_tick_pending` | this pull request | the ruling's own example; doc comments say ratified |
-| `timer_pending` | `kernel/src/arch/x86_64/irq.rs` | pub | 3 | `is_timer_pending` | this pull request | doc comment says ratified |
+| `timer_pending` | `kernel/src/arch/x86_64/interrupt_controller.rs` | pub | 3 | `is_timer_pending` | this pull request | doc comment says ratified |
 | `enabled` | `kernel/src/arch/*/interrupts.rs` | pub | 21 | `is_enabled` | kernel follow-up |  |
 | `active` | `kernel/src/iommu.rs, kernel/src/arch/*/iommu.rs` | pub | 15 | `is_active` | kernel follow-up |  |
 | `live` | `kernel/src/arch/*/fp.rs` | pub | 7 | `is_live` | kernel follow-up | the `live` flag it reads keeps its name |
 | `cycle_counter_grantable` | `kernel/src/arch/*/timer.rs` | pub | 9 | `is_cycle_counter_grantable` | kernel follow-up |  |
 | `from_lower_el` | `kernel/src/arch/aarch64/exceptions.rs` | private | 7 | `is_from_lower_el` | kernel follow-up | notes/stack/interrupt-stack.md's measurement keeps the old name, with the new one beside it |
-| `v3` | `kernel/src/arch/aarch64/irq.rs` | private | 7 | `is_v3` | kernel follow-up |  |
+| `v3` | `kernel/src/arch/aarch64/interrupt_controller.rs` | private | 7 | `is_v3` | kernel follow-up |  |
 | `pmuv3_present` | `kernel/src/arch/aarch64/pmu.rs` | pub(super) | 6 | `is_pmuv3_present` | kernel follow-up |  |
-| `local_apic_ready` | `kernel/src/arch/x86_64/irq.rs` | pub | 10 | `is_local_apic_ready` | kernel follow-up |  |
+| `local_apic_ready` | `kernel/src/arch/x86_64/interrupt_controller.rs` | pub | 10 | `is_local_apic_ready` | kernel follow-up |  |
 | `reachable` | `kernel/src/arch/x86_64/machine.rs` | private | 5 | `is_reachable` | kernel follow-up |  |
 | `update_in_progress` | `kernel/src/arch/x86_64/rtc.rs` | private | 3 | `is_update_in_progress` | kernel follow-up |  |
 | `rx_waiting` | `kernel/src/console.rs, drivers/{ns16550,pl011}.rs` | pub | 18 | `is_byte_waiting` | kernel follow-up | first renamed `is_rx_waiting`; calef's review of the crates follow-up (2026-09-24) asked what `rx` stands for, so both UART predicates became `is_byte_waiting` |
@@ -138,9 +138,9 @@ The private names followed under the same ruling: the virtio-net queue constants
 (`NET_RECEIVE_*`, `NET_TRANSMIT_*` in `crates/virtio`, `RECEIVE_*`, `TRANSMIT_*` in
 `components/src/virtio_net_transport.rs`) and the helpers beside them (`post_receive`,
 `wait_receive`, `receive_frame`, `transmit_frame`, `receive_buf`, `transmit_buf`).
-`tools/redoxfs_host`'s `ls_tx`, `put_tx` and the rest are a different word: there `tx` means a
-RedoxFS transaction, the closure argument of RedoxFS's own `Filesystem::tx`. That is the best
-argument that the abbreviation does not decode itself.
+In `tools/redoxfs_host` and `redoxfs_server`, `tx` meant a RedoxFS transaction, the closure argument of
+RedoxFS's own `Filesystem::tx`. It reads as transmit in this tree, so those names spell `transaction`
+(`ls_transaction`, `put_transaction` and the rest). Only RedoxFS's own `Filesystem::tx` keeps upstream's spelling.
 
 ## Fits as written
 

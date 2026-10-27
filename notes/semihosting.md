@@ -65,7 +65,8 @@ exit code. Building on the standard tooling beats a hack that parses text.
 ## The hang watchdog, and what it cannot tell you
 
 A lost IPC wakeup would leave a test blocked forever, so the whole run hangs silently and
-`script/test` never returns. `kernel/src/testing.rs` guards against that: the timer IRQ watches a
+`script/test` never returns. `kernel/src/testing.rs` guards against that: the timer interrupt
+watches a
 heartbeat, and if it does not advance for ~60 s it dumps the thread table and exits with a failure
 status (the same semihosting exit, just with a nonzero code). So a real hang fails loudly instead of
 hanging the CI.

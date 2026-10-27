@@ -18,7 +18,7 @@ const ARGV_VA: u64 = IMAGE_WINDOW;
 /// **And the window a stage's name set is written through** (milestone 205's designation half,
 /// `spawnproto::NAMESET_BIT`): one page per stage, above the argv pages and below [`IMAGE_VA`], so
 /// [`IMAGE_TABLE_PAGES`] pays for these tables too.
-const SET_VA: u64 = ARGV_VA + line::MAX_STAGES as u64 * spawnproto::IMAGE_PAGE;
+const SET_VA: u64 = ARGV_VA + line::MAXIMUM_STAGES as u64 * spawnproto::IMAGE_PAGE;
 
 /// **One line's argv, written and waiting to be sent**: the one-page region it was carved from and
 /// the frame in it. The frame travels to the progenitor narrowed to `READ` (`spawnproto::PROGRAM_ARGUMENTS_BIT`)
@@ -156,7 +156,7 @@ pub(super) fn words_grant(
 fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
     let va = SET_VA + stage as u64 * spawnproto::IMAGE_PAGE;
     let page = fresh_page(va).ok_or(None)?;
-    let mut list = [(&b""[..], false); filesystem_contract::nameset::MAX_NAMES];
+    let mut list = [(&b""[..], false); filesystem_contract::nameset::MAXIMUM_NAMES];
     let mut n = 0;
     for (name, is_dir) in g.names.iter() {
         list[n] = (name, is_dir);
@@ -209,12 +209,12 @@ fn release_region(region: u64) {
 pub(super) const IMAGE_WINDOW: u64 = address_space_map::pair_page(0x0000_0000_0400_0000);
 
 /// **The window this shell writes an image's frames through**, above the name-set pages. At most
-/// [`spawnproto::IMAGE_MAX_PAGES`] pages, which is 4 MiB and so crosses 2 MiB page-table spans.
-const IMAGE_VA: u64 = SET_VA + line::MAX_STAGES as u64 * spawnproto::IMAGE_PAGE;
+/// [`spawnproto::IMAGE_MAXIMUM_PAGES`] pages, which is 4 MiB and so crosses 2 MiB page-table spans.
+const IMAGE_VA: u64 = SET_VA + line::MAXIMUM_STAGES as u64 * spawnproto::IMAGE_PAGE;
 
 /// The first address past [`IMAGE_WINDOW`].
 pub(super) const IMAGE_WINDOW_END: u64 =
-    IMAGE_VA + spawnproto::IMAGE_MAX_PAGES * spawnproto::IMAGE_PAGE;
+    IMAGE_VA + spawnproto::IMAGE_MAXIMUM_PAGES * spawnproto::IMAGE_PAGE;
 
 /// **The pages that pay for [`IMAGE_WINDOW`]'s page tables**, split off [`BUDGET`] once per shell
 /// and never given back. A staging region's pages go back to [`BUDGET`] on `DESTROY` only if it is
@@ -616,7 +616,7 @@ pub(super) fn out_of_budget() {
 /// **Open the file `path` names, for its bytes**, the way `<` would: walk the lead, open the last
 /// component. Returns the tree it is in (either, in a two-grant shell), the handle and the size, or
 /// prints why not and returns `None`. A file that
-/// is empty or larger than [`spawnproto::IMAGE_MAX_PAGES`] is refused here, before anything is
+/// is empty or larger than [`spawnproto::IMAGE_MAXIMUM_PAGES`] is refused here, before anything is
 /// sent, because both a §219 image and a package travel as that many frames at most.
 pub(super) fn open_for_bytes(nav: &mut Nav, path: &[u8]) -> Option<(Tree, u64, u64)> {
     let p = match nav.plan_name_path(path) {
@@ -647,7 +647,7 @@ pub(super) fn open_for_bytes(nav: &mut Nav, path: &[u8]) -> Option<(Tree, u64, u
     }
     let handle = opened as u64;
     let size = call(t.slot, fs::req(fs::FSTAT, handle, 0), 0).0 as i64;
-    if size <= 0 || spawnproto::image_pages(size as u64) > spawnproto::IMAGE_MAX_PAGES {
+    if size <= 0 || spawnproto::image_pages(size as u64) > spawnproto::IMAGE_MAXIMUM_PAGES {
         nav.close_in(t, handle);
         refused();
         print(b"  that file is empty, or larger than an image may be (4 MiB)\n");
@@ -1094,7 +1094,7 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
 /// leave a message queued that the next command's single `receive` takes as its answer.
 pub(super) fn drain_text() {
     print(b"  ");
-    for _ in 0..MAX_OUTPUT_CHUNKS {
+    for _ in 0..MAXIMUM_OUTPUT_CHUNKS {
         let (w0, w1, w2) = receive(RESULT);
         // Checked before decoding: the progenitor's sentinel is `u64::MAX`, whose top byte is an opcode this
         // contract does not define, so it would otherwise read as a malformed message rather than as
@@ -1120,13 +1120,13 @@ pub(super) fn drain_text() {
         }
         // **The stream stops here because its writer is dead** (milestone 235), and this is the
         // one place that difference is visible: without the word, this loop would run to
-        // `MAX_OUTPUT_CHUNKS` on a rendezvous nobody will ever send on again.
+        // `MAXIMUM_OUTPUT_CHUNKS` on a rendezvous nobody will ever send on again.
         if w0 == spawnproto::JOB_FAULTED {
             failed();
             print(swish::FAULTED_SENTENCE);
             return;
         }
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Msg::Bytes(n) => print(&buf[..n]),
             byte_sink_contract::Msg::Eof => return,
@@ -1213,8 +1213,8 @@ pub(super) fn await_screen(ep: u64) {
     print(b"  that page's process would not collect; the progenitor's job budget may be short one job\n");
 }
 
-/// `job_undertaker::MAX_ATTEMPTS`'s reasoning, held here rather than shared: this shell reaps at
-/// most one screen-narrowed corpse at a time and only ever the one it just watched for, where
+/// `job_undertaker::MAXIMUM_ATTEMPTS`'s reasoning, held here rather than shared: this shell reaps
+/// at most one screen-narrowed corpse at a time and only ever the one it just watched for, where
 /// `job_undertaker` reaps every ordinary job on the machine, so the two have no data to share and a
 /// shared constant would imply a coupling that is not there.
 const SCREEN_REAP_ATTEMPTS: usize = 1024;
@@ -1228,12 +1228,12 @@ const SCREEN_REAP_ATTEMPTS: usize = 1024;
 pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
     let Some(ep) = diag_rendezvous() else { return };
     let mut done = 0usize;
-    for _ in 0..MAX_OUTPUT_CHUNKS {
+    for _ in 0..MAXIMUM_OUTPUT_CHUNKS {
         if done == writers {
             break;
         }
         let (w0, w1, w2) = receive(ep);
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Msg::Bytes(n) => dest.push(&buf[..n]),
             byte_sink_contract::Msg::Eof => done += 1,
@@ -1251,7 +1251,7 @@ pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
 /// A bound on a bug, a program that never announces end of stream, and not a policy about length:
 /// larger than anything a working program says (a rendered manual page is tens of kilobytes) and
 /// smaller than forever. See `notes/swish-language/running.md`, "The output ceiling".
-pub(super) const MAX_OUTPUT_CHUNKS: usize = 4096;
+pub(super) const MAXIMUM_OUTPUT_CHUNKS: usize = 4096;
 
 /// Report what the spawned program did, in terms of the grant it was given.
 fn outcome(e: Endowment, answer: u64) {
@@ -1326,9 +1326,9 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
             Source::File(g) => {
                 // Cannot fail: this command came out of `cmd`.
                 let Ok(l) = line::split(cmd) else { return };
-                // One element, not `MAX_STAGES`: an `Endowment` carries a whole `NameSet` by value,
-                // and a full-width array overflows the shell's stack (a data abort one word below
-                // the lowest mapped stack page).
+                // One element, not `MAXIMUM_STAGES`: an `Endowment` carries a whole `NameSet` by
+                // value, and a full-width array overflows the shell's stack (a data abort one word
+                // below the lowest mapped stack page).
                 run_pipeline(nav, l, &[Some(endow)], false, None, Some(g), None);
             }
             // **A program that hears words gets the line as its argv** (milestone 205,
@@ -1339,7 +1339,7 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
                 // program at the prompt holds the network and a resolver)): the terminal answers its
                 // stdin read only in cooked mode, so the shell leaves raw mode first, as it does for a
                 // supervised job, and the next prompt's editor takes it back.
-                let mut verb = [0u8; grant_plan::MAX_VERB];
+                let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
                 let verb = grant_plan::verb_of(spec.line(), &mut verb);
                 let program = endow.program;
                 if grant_plan::narrow_by_verb(&program.manifest(), program.verbs(), verb)

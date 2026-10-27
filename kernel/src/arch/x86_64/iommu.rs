@@ -22,13 +22,14 @@
 //! - One Fault Recording Register per unit is read, so one device's faults can hide another's.
 
 use machine_discovery::acpi::{
-    DmarUnits, Drhd, InterruptRemappingClaims, MAX_DRHDS, MAX_RMRR_SCOPES, SCOPE_PCI_ENDPOINT,
+    DmarUnits, Drhd, InterruptRemappingClaims, MAXIMUM_DRHDS, MAXIMUM_RMRR_SCOPES,
+    SCOPE_PCI_ENDPOINT,
 };
 use paging::PageFormat;
 use paging::x86_64::Vtd;
 
 use crate::arch::mmu::phys_to_virt;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 // --- Register file (offsets from the DRHD's register base; Intel VT-d spec chapter 10, and
 // QEMU's hw/i386/intel_iommu_internal.h, which is this driver's ground truth for what q35's
@@ -245,11 +246,11 @@ enum Slot {
 /// unit's context tables beside it rather than inside [`Unit`], so a unit is a few dozen bytes to
 /// build on the boot stack and only this static holds the 4 KiB of table pointers per unit.
 struct Units {
-    slots: [Slot; MAX_DRHDS],
+    slots: [Slot; MAXIMUM_DRHDS],
     /// Per unit, one context-table root per PCI bus, allocated the first time a device on that
     /// bus is attached. `None` is the default-deny state: a bus with no table here has no
     /// root-table entry pointing at one either, so every device on it faults.
-    ctx: [[Option<u64>; 256]; MAX_DRHDS],
+    ctx: [[Option<u64>; 256]; MAXIMUM_DRHDS],
 }
 
 impl Units {
@@ -258,18 +259,18 @@ impl Units {
     }
 }
 
-static IOMMU: IrqSafeMutex<Units> = IrqSafeMutex::new(
+static IOMMU: InterruptSafeMutex<Units> = InterruptSafeMutex::new(
     rank::IOMMU,
     Units {
-        slots: [const { Slot::Absent }; MAX_DRHDS],
-        ctx: [[None; 256]; MAX_DRHDS],
+        slots: [const { Slot::Absent }; MAXIMUM_DRHDS],
+        ctx: [[None; 256]; MAXIMUM_DRHDS],
     },
 );
 
 /// Every unit, device scope and RMRR the DMAR described, so [`attach`] can route a device to its
 /// owner and [`scope_of`] can say which unit that is. Recorded by [`initialize`]; never held at the
 /// same time as [`IOMMU`], because resolving a scope path reads configuration space.
-static DMAR: IrqSafeMutex<Option<DmarUnits>> = IrqSafeMutex::new(rank::IOMMU, None);
+static DMAR: InterruptSafeMutex<Option<DmarUnits>> = InterruptSafeMutex::new(rank::IOMMU, None);
 
 fn r32(base: u64, off: u64) -> u32 {
     // SAFETY: the DRHD's register file lies inside the direct map (it is ordinary MMIO below the
@@ -417,7 +418,7 @@ pub fn initialize(dmar: &DmarUnits) {
 
     // Step 2. A device named by two scopes (two RMRRs, say) is confined once, with both regions:
     // `confine` asks `for_each_reserved_region` for all of them.
-    let mut done = [0u32; MAX_RMRR_SCOPES];
+    let mut done = [0u32; MAXIMUM_RMRR_SCOPES];
     let mut done_count = 0;
     for s in &dmar.rmrr_scopes[..dmar.rmrr_scope_count] {
         let region = dmar.rmrrs[s.unit as usize];
@@ -540,7 +541,7 @@ pub(crate) fn scope_of(rid: u32) -> crate::iommu::Scope {
     }
     // Copied out rather than held, so the config-space reads that resolve a path run with no
     // lock taken.
-    let mut up = [false; MAX_DRHDS];
+    let mut up = [false; MAXIMUM_DRHDS];
     let mut translating = None;
     for (i, s) in IOMMU.lock().iter().enumerate() {
         if let Slot::Up(u) = s {
@@ -629,7 +630,7 @@ pub(crate) fn print_summary() {
             Slot::Up(u) => {
                 any = true;
                 crate::println!(
-                    "  iommu           : VT-d drhd at {:#018x}, root table default-deny, translating, \
+                    "  iommu            : VT-d drhd at {:#018x}, root table default-deny, translating, \
                      {}",
                     u.base,
                     InterruptRemappingClaims {
@@ -640,14 +641,14 @@ pub(crate) fn print_summary() {
             }
             Slot::Refused(why) => {
                 any = true;
-                crate::println!("  iommu           : VT-d unit refused: {why}");
+                crate::println!("  iommu            : VT-d unit refused: {why}");
             }
             Slot::Absent => {}
         }
     }
     if !any {
         crate::println!(
-            "  iommu           : none (this machine's ACPI names neither a DMAR nor an IVRS); device \
+            "  iommu            : none (this machine's ACPI names neither a DMAR nor an IVRS); device \
              DMA is NOT confined",
         );
     }

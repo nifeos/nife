@@ -46,9 +46,11 @@ pub struct Spawn<'a> {
 ///
 /// aarch64: SGI 3, distinct from the scheduler's RESCHED (0) and the endpoint SGIs (1, 2). RISC-V
 /// has no software-generated interrupt a test can raise on itself (the SBI IPI arrives down the
-/// software-interrupt arm, never touching `irq_route`), so it names the console UART's own line,
+/// software-interrupt arm, never touching `interrupt_route`), so it names the console UART's own
+/// line,
 /// the same number as [`UART_RECEIVE_INTID`] there; [`spawn_elf_child_builder`] binds that route
-/// once and grants two capabilities naming it. `sched::tests`' `DELIVERY_IRQ` reaches the same
+/// once and grants two capabilities naming it. `sched::tests`' `delivery_interrupt_number` reaches
+/// the same
 /// answer.
 ///
 /// Name: ratified 2026-10-18 (calef), with the rule that took `init` out of nife's own names. It is
@@ -61,12 +63,14 @@ pub const DELEGATED_TEST_INTERRUPT: u32 = 3;
 pub const DELEGATED_TEST_INTERRUPT: u32 = 10;
 /// `x86_64` (milestone 161 (the x86_64 kernel port)): **the local APIC's self-IPI test vector**.
 /// The local APIC delivers a vector to its own CPU on demand through the ICR
-/// (`arch::x86_64::irq::raise_self_interrupt`), so this ISA is on aarch64's side of the split. The
+/// (`arch::x86_64::interrupt_controller::raise_self_interrupt`), so this ISA is on aarch64's side
+/// of the split. The
 /// intid for such a source is its vector, hence 0x22; see
 /// `arch::x86_64::exceptions::x86_trap_body`'s self-IPI arm.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[cfg(target_arch = "x86_64")]
-pub const DELEGATED_TEST_INTERRUPT: u32 = crate::arch::irq::SELF_TEST_VECTOR as u32;
+pub const DELEGATED_TEST_INTERRUPT: u32 =
+    crate::arch::interrupt_controller::SELF_TEST_VECTOR as u32;
 
 /// **Spawn one of the ELF child builders**, the archive entry `entry`, in the bare world every
 /// builder gets (19d.2c, in milestone 19d (run a real workload)).
@@ -93,16 +97,16 @@ pub fn spawn_elf_child_builder(
 
     // Routed before the builder exists: the test raises it as soon as this returns, and an
     // interrupt that fires unrouted is dropped, not queued. The child's WAIT drains the count.
-    crate::sched::bind_irq(DELEGATED_TEST_INTERRUPT, crate::sched::create_rendezvous());
-    crate::arch::irq::enable(DELEGATED_TEST_INTERRUPT);
+    crate::sched::bind_interrupt(DELEGATED_TEST_INTERRUPT, crate::sched::create_rendezvous());
+    crate::arch::interrupt_controller::enable(DELEGATED_TEST_INTERRUPT);
     // And the UART receive interrupt (19d.2c), the machine's own number, printed with its source.
     // On QEMU RISC-V it is the same source as DELEGATED_TEST_INTERRUPT, and binding it twice would
     // leave the first endpoint routed to nothing, so bind once and grant twice.
-    let (uart_receive_intid, uart_irq_source) = uart_irq_and_source();
-    crate::println!("  uart irq  : {uart_receive_intid} ({uart_irq_source})");
+    let (uart_receive_intid, uart_interrupt_source) = uart_interrupt_number_and_source();
+    crate::println!("  uart interrupt   : {uart_receive_intid} ({uart_interrupt_source})");
     if uart_receive_intid != DELEGATED_TEST_INTERRUPT {
-        crate::sched::bind_irq(uart_receive_intid, crate::sched::create_rendezvous());
-        crate::arch::irq::enable(uart_receive_intid);
+        crate::sched::bind_interrupt(uart_receive_intid, crate::sched::create_rendezvous());
+        crate::arch::interrupt_controller::enable(uart_receive_intid);
     }
 
     // Measured before the thread exists, so the check decides whether one is created at all
@@ -192,17 +196,17 @@ pub fn spawn_elf_child_builder(
             crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
         ))
         .expect("grant uart device");
-        crate::sched::grant(crate::cap::irq_cap_rights(
+        crate::sched::grant(crate::cap::interrupt_cap_rights(
             DELEGATED_TEST_INTERRUPT,
             crate::cap::Rights::READ.union(crate::cap::Rights::GRANT),
         ))
-        .expect("grant test irq");
+        .expect("grant test interrupt");
         // The number the route above was bound with, or the cap names a source no endpoint serves.
-        crate::sched::grant(crate::cap::irq_cap_rights(
+        crate::sched::grant(crate::cap::interrupt_cap_rights(
             uart_receive_intid,
             crate::cap::Rights::READ.union(crate::cap::Rights::GRANT),
         ))
-        .expect("grant uart receive irq");
+        .expect("grant uart receive interrupt");
 
         // A builder has no filesystem, so `x2` (the file-service rights the boot path passes) is 0.
         enter_frame(elf.entry(), USER_STACK_TOP, 0, initial_ramdisk_len, 0)
@@ -230,7 +234,7 @@ pub(crate) struct DeviceRun {
     /// The first page's physical address. Page-aligned.
     pub phys: u64,
     /// How many pages. The intermediate page tables come out of the address space's own
-    /// `AS_OVERHEAD`, so a caller bounds this (`display_service`'s `MAX_APERTURE_PAGES`).
+    /// `AS_OVERHEAD`, so a caller bounds this (`display_service`'s `MAXIMUM_APERTURE_PAGES`).
     pub pages: u64,
     /// **Map it write-combining** (`paging::Flags::user_write_combining`) rather than as
     /// registers. True only for memory the process writes and never reads, which on this tree is

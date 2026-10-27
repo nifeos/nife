@@ -47,7 +47,8 @@
 # kernel/src/soak.rs and fixtures/src/soaker.rs.
 #
 # Milestone 221 added the tick route: the kernel signals a rendezvous from `sched::on_tick` and one
-# worker per group blocks on it through `Irq::WAIT`, which is what makes the run cross cores at all.
+# worker per group blocks on it through `Interrupt::WAIT`, which is what makes the run cross cores
+# at all.
 # Before it, `crossings` froze inside the first second and stayed frozen; see notes/soak.md.
 #
 # Exit statuses are `script/board-console`'s, because the judging is literally the same code:

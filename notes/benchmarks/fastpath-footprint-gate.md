@@ -173,7 +173,8 @@ and calef's.
 
 `exception_vectors` is 2,020 bytes of sixteen self-contained 128-byte slots, because the hardware
 requires that layout. An `svc` from EL0 lands in exactly one of them (index 8) and fetches at most
-128 bytes. The other 1,892 are page faults, IRQs, kernel-mode traps and the AArch32 entries this
+128 bytes. The other 1,892 are page faults, interrupts, kernel-mode traps and the AArch32 entries
+this
 kernel will never support. `exception_restore` (92 bytes), which runs on the return leg of every
 syscall and is the twin of riscv64's `trap_return`, was in neither figure and is now in this one.
 The riscv64 port needs no equivalent fix (`stvec` is in direct mode, one handler, no table), and neither does

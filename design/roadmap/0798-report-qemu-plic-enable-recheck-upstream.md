@@ -31,7 +31,7 @@ enabled, above threshold and undelivered until some unrelated event calls `sifiv
 The specification has the PLIC notify a target whenever a source is pending, enabled and above the
 threshold. A real part evaluates that continuously, so the defect is the emulator's.
 
-nife hit it because `plic::enable`, which is also a userspace driver's `Irq::ACK`, wrote the
+nife hit it because `plic::enable`, which is also a userspace driver's `Interrupt::ACK`, wrote the
 priority before the enable bit, so the ACK's only re-evaluation ran while the bit was clear. #1657
 reordered the two writes. That works around the defect in nife. Any other guest that masks a PLIC
 source in its handler and unmasks it with nothing but an enable write is still exposed. Whether

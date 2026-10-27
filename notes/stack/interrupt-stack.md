@@ -53,7 +53,8 @@ a per-core address and the thread comes back on bytes the next interrupt on that
 spent. That corrupts a stack rather than faulting, which puts it in the worst class of bug this
 project has: invisible at the site, fatal somewhere else.
 
-So the four lines of preemption moved out of `handle_irq` into `sched::preempt_if_needed`. They also
+So the four lines of preemption moved out of `handle_interrupt` into `sched::preempt_if_needed`.
+They also
 moved out of its riscv64 twin, where they had been written twice and had already drifted in their
 comments. The new function is called by the dispatcher's outer half, which is provably back on the
 interrupted thread's own stack.
@@ -143,7 +144,7 @@ is entitled to spend it. It is a lane of its own, and the instruments it needs n
 
 ## What it cost
 
-160 KiB of RAM and address space: `MAX_CPUS` (8) slots of 16 KiB stack over a 4 KiB guard,
+160 KiB of RAM and address space: `MAXIMUM_CPUS` (8) slots of 16 KiB stack over a 4 KiB guard,
 whether or not a core ever fills the seat, exactly like the secondary stacks beside them. It is a
 `(NOLOAD)` region, so the flat image does not grow; `__image_size` does, which is what tells the
 bootloader the memory is ours.

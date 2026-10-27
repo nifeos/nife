@@ -38,10 +38,10 @@ const DATA_AT: usize = 64;
 /// The most directory entries this will walk before giving up. QEMU publishes a couple of dozen on
 /// either `virt` board; the cap is here because the count is a number the device stated and a
 /// corrupt one must bound the loop rather than read its way across memory.
-const MAX_ENTRIES: u32 = 256;
+const MAXIMUM_ENTRIES: u32 = 256;
 
 /// How many times the control word is read before a transfer is called hung. See BUGS.
-const MAX_POLLS: u32 = 1_000_000;
+const MAXIMUM_POLLS: u32 = 1_000_000;
 
 /// Why a `ramfb` did not come up.
 ///
@@ -55,9 +55,9 @@ pub enum Error {
     NoSuchFile,
     /// The device set its error bit.
     Refused,
-    /// The control word never cleared within [`MAX_POLLS`].
+    /// The control word never cleared within [`MAXIMUM_POLLS`].
     Hung,
-    /// The file directory did not decode, or claimed more entries than [`MAX_ENTRIES`].
+    /// The file directory did not decode, or claimed more entries than [`MAXIMUM_ENTRIES`].
     Undecodable,
 }
 
@@ -115,7 +115,7 @@ impl FirmwareConfiguration {
             ((self.registers + DMA_REGISTER + 4) as *mut u32).write_volatile(low);
         }
 
-        for _ in 0..MAX_POLLS {
+        for _ in 0..MAXIMUM_POLLS {
             // Byte at a time and reassembled, rather than one `u32` read. The interface is
             // big-endian, so the bytes have to be reordered either way, and reading them
             // individually means this driver asks nothing of the caller's alignment: a `*mut u32`
@@ -177,7 +177,7 @@ impl FirmwareConfiguration {
         self.run(DmaCommand::read(DIRECTORY_KEY, 4, self.data_physical()))?;
         let header = self.data(4);
         let count = u32::from_be_bytes([header[0], header[1], header[2], header[3]]);
-        if count > MAX_ENTRIES {
+        if count > MAXIMUM_ENTRIES {
             return Err(Error::Undecodable);
         }
         for _ in 0..count {

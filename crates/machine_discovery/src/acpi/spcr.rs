@@ -18,7 +18,7 @@ pub struct Spcr {
     /// 0 for system memory, 1 for system I/O. An Arm machine says 0.
     pub address_space: u8,
     /// The GSIV the port raises, absolute like every GSIV, or `None` when the table states only a
-    /// PC-AT IRQ (an x86 spelling an Arm machine does not use).
+    /// PC-AT interrupt (an x86 spelling an Arm machine does not use).
     pub interrupt: Option<u32>,
 }
 
@@ -27,7 +27,7 @@ pub const SPCR_PL011: u8 = 0x03;
 /// [`Spcr::interface`] for the SBSA generic UART, a PL011 subset with no DMA and no modem lines.
 pub const SPCR_SBSA_UART: u8 = 0x0e;
 
-/// The bit of SPCR's interrupt-type byte that says a GSIV is stated rather than a PC-AT IRQ.
+/// The bit of SPCR's interrupt-type byte that says a GSIV is stated rather than a PC-AT interrupt.
 const SPCR_INTERRUPT_TYPE_GSIV: u8 = 1 << 3;
 
 /// The bytes of an SPCR body this decoder reads.
@@ -78,11 +78,12 @@ mod tests {
         every_short_prefix_is_refused(&body, SPCR_FIXED_LEN, parse_spcr);
     }
 
-    /// **A PC-AT IRQ is not a GSIV**, and a table that states only the former answers `None` rather
+    /// **A PC-AT interrupt is not a GSIV**, and a table that states only the former answers `None`
+    /// rather
     /// than handing back an ISA interrupt number as though it were a GIC INTID. That is the same
     /// class of mistake `interrupt_id`'s bank bases exist to prevent, one table over.
     #[test]
-    fn an_spcr_that_states_only_a_pc_at_irq_names_no_global_interrupt() {
+    fn an_spcr_that_states_only_a_pc_at_interrupt_names_no_global_interrupt() {
         let mut body = [0u8; SPCR_FIXED_LEN];
         body[0] = SPCR_PL011;
         body[16] = 1; // PC-AT compatible, not a GSIV

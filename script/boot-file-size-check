@@ -3,9 +3,9 @@
 #
 # **Why this exists.** An install puts one file, `\EFI\BOOT\BOOTX64.EFI`, into the EFI system
 # partition and again into each of two boot slots, and a slot is a fixed 64 MiB
-# (`BOOT_FILE_MAX` in uefi_loader/src/placement.rs; components/src/system_installer.rs has the layout). calef
-# ruled on 2026-10-03 UTC to keep 64 MiB "with both fixes". This is the second fix. The first is
-# that an installed image is always a release build with a kernel stripped of its DWARF
+# (`BOOT_FILE_MAXIMUM` in uefi_loader/src/placement.rs; components/src/system_installer.rs has the
+# layout). calef ruled on 2026-10-03 UTC to keep 64 MiB "with both fixes". This is the second fix.
+# The first is that an installed image is always a release build with a kernel stripped of its DWARF
 # (`cargo xtask stick` and `install-boot` build release, and the loader refuses to offer a debug
 # image for install: `uefi_loader::image::carries_debug_info`). Without a budget the slot would be
 # a limit that is only found by hitting it, on somebody's disk, after the first upgrade.
@@ -15,8 +15,8 @@
 #   2. The embedded kernel has no `.debug_*` section. A debug kernel reaching an install image is
 #      the failure the first fix exists to prevent, and this is the CI half of it.
 #   3. The image is at most BUDGET bytes. WARN at 12 MiB, FAIL over 16 MiB.
-#   4. The default budget is exactly a quarter of `BOOT_FILE_MAX`, read from the loader's source, so
-#      the two cannot drift apart by one being edited.
+#   4. The default budget is exactly a quarter of `BOOT_FILE_MAXIMUM`, read from the loader's
+#      source, so the two cannot drift apart by one being edited.
 #
 # **The size breakdown is printed on every run** (loader, kernel, archive), so a failure or a
 # creeping warning has a cause on record. The kernel and archive are embedded whole, so the loader
@@ -26,21 +26,22 @@
 #       budget_bytes: <N>
 #       why: <the reason, one line>
 # which replaces the 16 MiB default. A `budget_bytes` with no `why` is refused, and so is one above
-# `BOOT_FILE_MAX`, because the loader would then refuse the file it was budgeted for. Raising the
-# budget is therefore a committed change with a reason beside it, which is how
+# `BOOT_FILE_MAXIMUM`, because the loader would then refuse the file it was budgeted for. Raising
+# the budget is therefore a committed change with a reason beside it, which is how
 # `script/fastpath-footprint --save --why` works for the footprint floors. The file's
 # `recorded_bytes` and `recorded_on` lines are the last measurement, for a reader; they gate
 # nothing.
 #
-# **Parity (DECISIONS §19 (architectural parity is a tenet)), and why this is x86_64 only.** `BOOT_FILE_MAX` and the slots exist only
-# on x86_64: the device-tree architectures have no installer and no slot (their boot file has
-# nowhere to go; design/roadmap/0568-the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md).
-# `cargo xtask stick` builds BOOTAA64.EFI and BOOTRISCV64.EFI as release too, but nothing bounds
-# them, so there is nothing for a budget to protect. When milestone 568 (the boot file has nowhere to go on a device-tree machine) gives them a slot, the
-# budget belongs beside it and this script grows an architecture argument.
-# Measured 2026-10-03 UTC for the record: release BOOTAA64.EFI 10,469,376 bytes and BOOTRISCV64.EFI
-# 7,896,064 bytes, against 4,640,256 for x86_64. Their kernels are not stripped (only the x86_64
-# path is, because only it installs), which is most of the difference.
+# **Parity (DECISIONS §19 (architectural parity is a tenet)), and why this is x86_64 only.**
+# `BOOT_FILE_MAXIMUM` and the slots exist only on x86_64: the device-tree architectures have no
+# installer and no slot (their boot file has nowhere to go;
+# design/roadmap/0568-the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md). `cargo xtask
+# stick` builds BOOTAA64.EFI and BOOTRISCV64.EFI as release too, but nothing bounds them, so there
+# is nothing for a budget to protect. When milestone 568 (the boot file has nowhere to go on a
+# device-tree machine) gives them a slot, the budget belongs beside it and this script grows an
+# architecture argument. Measured 2026-10-03 UTC for the record: release BOOTAA64.EFI 10,469,376
+# bytes and BOOTRISCV64.EFI 7,896,064 bytes, against 4,640,256 for x86_64. Their kernels are not
+# stripped (only the x86_64 path is, because only it installs), which is most of the difference.
 #
 # Name: ratified 2026-10-03 UTC (calef, ruling on #1520's provisional name: "pairs nicely with
 # swish-check"). The `-check` suffix is the majority pattern for a pass/fail gate (boot-check,
@@ -79,15 +80,17 @@ DEFAULT_BUDGET=$((16 * MIB))
 BASE=bench/boot-file-size-x86_64.txt
 LOADER_SRC=uefi_loader/src/placement.rs
 
-# BOOT_FILE_MAX, from the one place it is defined, written there as `64 * 1024 * 1024`.
-slot_mib=$(sed -n 's/^\(pub([a-z]*) \)\{0,1\}const BOOT_FILE_MAX: u64 = \([0-9]*\) \* 1024 \* 1024;.*/\2/p' "$LOADER_SRC")
+# BOOT_FILE_MAXIMUM, from the one place it is defined, written there as `64 * 1024 * 1024`.
+slot_mib=$(sed -n 's/^\(pub([a-z]*) \)\{0,1\}const BOOT_FILE_MAXIMUM: u64 = \([0-9]*\) \* 1024 \* 1024;.*/\2/p' "$LOADER_SRC")
 if [ -z "$slot_mib" ]; then
-    echo "boot-file-size-check: cannot read BOOT_FILE_MAX from $LOADER_SRC; its spelling changed" >&2
+    echo "boot-file-size-check: cannot read BOOT_FILE_MAXIMUM from $LOADER_SRC; its spelling \
+    changed" >&2
     exit 1
 fi
 SLOT=$((slot_mib * MIB))
 if [ $((DEFAULT_BUDGET * 4)) -ne "$SLOT" ]; then
-    echo "boot-file-size-check: the default budget ($DEFAULT_BUDGET) is not a quarter of BOOT_FILE_MAX ($SLOT)." >&2
+    echo "boot-file-size-check: the default budget ($DEFAULT_BUDGET) is not a quarter of \
+    BOOT_FILE_MAXIMUM ($SLOT)." >&2
     echo "  Change this script's DEFAULT_BUDGET and WARN together with $LOADER_SRC." >&2
     exit 1
 fi
@@ -103,7 +106,8 @@ if [ -f "$BASE" ]; then
             exit 1
         fi
         if [ "$over" -gt "$SLOT" ]; then
-            echo "boot-file-size-check: $BASE sets a budget of $over, above BOOT_FILE_MAX ($SLOT); the loader would refuse the file." >&2
+            echo "boot-file-size-check: $BASE sets a budget of $over, above BOOT_FILE_MAXIMUM \
+            ($SLOT); the loader would refuse the file." >&2
             exit 1
         fi
         budget=$over
@@ -155,7 +159,7 @@ echo "  budget $budget bytes ($((budget / MIB)) MiB, a quarter of the $slot_mib 
 if [ "$total" -gt "$budget" ]; then
     echo "boot-file-size-check: FAIL: $total bytes is over the $budget byte budget." >&2
     echo "  The breakdown above says which part grew. If the growth is intended, raise it in" >&2
-    echo "  $BASE with 'budget_bytes:' and a 'why:' line; it may not exceed BOOT_FILE_MAX." >&2
+    echo "  $BASE with 'budget_bytes:' and a 'why:' line; it may not exceed BOOT_FILE_MAXIMUM." >&2
     exit 1
 fi
 if [ "$total" -gt "$WARN" ]; then

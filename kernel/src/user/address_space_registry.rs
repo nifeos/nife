@@ -7,13 +7,13 @@ use super::*;
 
 /// **How many address spaces the registry can name at once: every one the machine can hold.**
 ///
-/// [`crate::revoke::MAX_SPACES`], because every [`AddressSpace`] is in the revocation registry
+/// [`crate::revoke::MAXIMUM_SPACES`], because every [`AddressSpace`] is in the revocation registry
 /// from build to drop and holds one entry here, so this table cannot fill while a space wanting an
 /// entry exists. That lets [`register_bound_address_space`] treat a full table as a broken
 /// invariant; the `const` assert keeps the two together. It is 21,904 bytes of `.bss` at 288 slots
 /// (`registry_footprint`); see notes/user-address-spaces.md.
-const MAX_USER_SPACES: usize = crate::revoke::MAX_SPACES;
-const _: () = assert!(MAX_USER_SPACES >= crate::revoke::MAX_SPACES);
+const MAXIMUM_USER_SPACES: usize = crate::revoke::MAXIMUM_SPACES;
+const _: () = assert!(MAXIMUM_USER_SPACES >= crate::revoke::MAXIMUM_SPACES);
 
 /// **One registry entry: a space, and what holds it if anything does** (§249; name provisional).
 ///
@@ -109,19 +109,19 @@ impl BoundSpace {
 /// and the region sweep ([`reap_address_spaces_in_region`]). `Table::remove` hands the space out
 /// once and kills the name in the same step, so a double free is not representable. Deleting a
 /// capability removes nothing (§249's amendment (a)).
-static USER_SPACES: crate::sync::IrqSafeMutex<
-    generational_table::Table<Registered, MAX_USER_SPACES>,
-> = crate::sync::IrqSafeMutex::new(
+static USER_SPACES: crate::sync::InterruptSafeMutex<
+    generational_table::Table<Registered, MAXIMUM_USER_SPACES>,
+> = crate::sync::InterruptSafeMutex::new(
     crate::sync::rank::ADDRESS_SPACES,
     generational_table::Table::new(),
 );
 
 /// **The registry's static footprint in bytes**, for the boot that reports it (§249's
-/// `MAX_USER_SPACES` raise; name provisional).
+/// `MAXIMUM_USER_SPACES` raise; name provisional).
 #[cfg(any(test, feature = "system_tests"))]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const fn registry_footprint() -> usize {
-    size_of::<generational_table::Table<Registered, MAX_USER_SPACES>>()
+    size_of::<generational_table::Table<Registered, MAXIMUM_USER_SPACES>>()
 }
 
 /// Create an address space **in and backed by** `region` (the `RETYPE_OBJ(ADDRESS_SPACE)` engine): the
@@ -162,7 +162,7 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
         .insert_with(|_| Registered { space, bound: None });
     if name.is_none() {
         // Undo the bookkeeping; the page stays spent on the caller's budget. Unreachable while
-        // `MAX_USER_SPACES` covers the revocation registry.
+        // `MAXIMUM_USER_SPACES` covers the revocation registry.
         crate::revoke::forget_root(root);
         ASIDS.lock().free(asid);
     }
@@ -317,7 +317,7 @@ pub(crate) fn give_back_thread_page(name: u64, slot: u8) {
 /// **Put a space the kernel built into the registry, already bound to `tid`** (`sched::adopt_address_space`'s
 /// half, §249; name provisional), and return the copy the thread keeps.
 ///
-/// Infallible because it cannot fail: [`MAX_USER_SPACES`] covers every space the revocation
+/// Infallible because it cannot fail: [`MAXIMUM_USER_SPACES`] covers every space the revocation
 /// registry can hold, and this one is registered there. A full table here is a broken invariant,
 /// not a resource limit, so it panics with that sentence rather than handing every kernel spawn
 /// path an error it could never act on.
@@ -339,7 +339,7 @@ pub(crate) fn register_bound_address_space(
                 bound: Some(Holder::Thread(tid)),
             }
         })
-        .expect("the address-space registry is full, which MAX_USER_SPACES says cannot happen");
+        .expect("the address-space registry is full, which MAXIMUM_USER_SPACES says cannot happen");
     copy.expect("insert_with names the entry before it stores it")
 }
 

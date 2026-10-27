@@ -32,7 +32,7 @@
 
 use designware_mobile_storage::host::{Host, Registers};
 use designware_mobile_storage::sd::{self, Card};
-use designware_mobile_storage::{command as c, regs};
+use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::{
     Handoff, REGISTER_VIRTUAL_ADDRESS, TRANSFER_VIRTUAL_ADDRESS,
 };
@@ -61,7 +61,7 @@ struct Page;
 
 impl Registers for Page {
     fn read(&mut self, offset: u32) -> u32 {
-        debug_assert!(offset < regs::WINDOW_USED);
+        debug_assert!(offset < registers::WINDOW_USED);
         // SAFETY: the spawner maps one device-typed page of the controller at
         // REGISTER_VIRTUAL_ADDRESS before `_start` runs, and every offset the crate passes is a
         // word-aligned register in it.
@@ -71,7 +71,7 @@ impl Registers for Page {
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        debug_assert!(offset < regs::WINDOW_USED);
+        debug_assert!(offset < registers::WINDOW_USED);
         // SAFETY: as `read`.
         unsafe {
             core::ptr::write_volatile(
@@ -91,7 +91,7 @@ fn transfer() -> &'static mut [u8] {
     // before `_start` runs; this process is single-threaded, so this is the only reference at a
     // time.
     unsafe {
-        core::slice::from_raw_parts_mut(TRANSFER_VIRTUAL_ADDRESS as *mut u8, blk::TRANSFER_MAX)
+        core::slice::from_raw_parts_mut(TRANSFER_VIRTUAL_ADDRESS as *mut u8, blk::TRANSFER_MAXIMUM)
     }
 }
 
@@ -102,7 +102,11 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         send(READY, STEP_BAD_HANDOFF, arg0, 0);
         exit();
     };
-    let Ok((mut host, _)) = Host::new(Page, h.ciu_hz, Some(u32::from(h.fifo_depth))) else {
+    let Ok((mut host, _)) = Host::new(
+        Page,
+        h.card_interface_unit_hz,
+        Some(u32::from(h.queue_depth)),
+    ) else {
         send(READY, STEP_CONTROLLER, 0, 0);
         exit();
     };
@@ -177,7 +181,7 @@ fn serve(mut host: Host<Page>, card: Card, h: Handoff) -> ! {
             blk::FLUSH => {
                 let status = host.command(&c::Command::new(
                     c::SEND_STATUS,
-                    u32::from(card.rca) << 16,
+                    u32::from(card.relative_card_address) << 16,
                     c::Response::R1,
                 ));
                 match status {

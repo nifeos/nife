@@ -14,7 +14,7 @@ const ROLE_BLK_SERVER: u64 = 32;
 
 /// The heap budget the FS server draws RedoxFS's allocations from. RedoxFS keeps a 128 KiB
 /// compress buffer, block buffers, and small tree structures for the images phase 2 serves; 8 MiB
-/// is comfortable and is the process's hard ceiling (its `HEAP_MAX` matches).
+/// is comfortable and is the process's hard ceiling (its `HEAP_MAXIMUM` matches).
 pub(super) const FS_BUDGET_PAGES: u64 = 2048;
 
 /// One boot, one FS service, remembered here: a second wiring would put a second driver on the
@@ -151,9 +151,9 @@ pub(in crate::user) fn spawn_block_server(
     let blk_ep = crate::sched::create_rendezvous(); // FS server WRITE (CALL) -> block server READ
     let blk_ready = crate::sched::create_rendezvous(); // block server WRITE -> the kernel test receives
 
-    let irq_ep = crate::sched::create_rendezvous();
-    crate::sched::bind_irq(dev.intid, irq_ep);
-    crate::arch::irq::enable(dev.intid);
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(dev.intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(dev.intid);
     let vid = crate::virtio::register(
         dev.transport,
         dma,
@@ -181,7 +181,7 @@ pub(in crate::user) fn spawn_block_server(
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(blk_ep, Rights::READ), // slot 0: RECEIVE blk requests
-                    irq_cap(dev.intid),                   // slot 1: the device interrupt
+                    interrupt_cap(dev.intid),             // slot 1: the device interrupt
                     virtio_cap(vid),                      // slot 2: the confined transport
                     rendezvous_cap(blk_ready, Rights::WRITE), // slot 3: signal readiness once
                 ],

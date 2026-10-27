@@ -17,7 +17,7 @@ the machine down. No remote attacker, no crypto, single core, runs under QEMU or
 The core boundaries are sound, and the review confirmed each with reasoning rather than assertion:
 
 - The capability boundary. No method is invocable without its rights (SEND needs WRITE, RECEIVE
-  needs READ, `MemoryRegion::MAP` needs WRITE, `Irq` needs READ). Userspace only ever names a capability
+  needs READ, `MemoryRegion::MAP` needs WRITE, `Interrupt` needs READ). Userspace only ever names a capability
   *slot*, which `CapabilityTable::get` bounds-checks; the object index inside (endpoint id, untyped region,
   intid) always comes from a kernel-minted capability, never a user register. Rights cannot widen,
   and delegation is not even exposed to userspace yet. No process can reach another's CapabilityTable,
@@ -31,7 +31,7 @@ The core boundaries are sound, and the review confirmed each with reasoning rath
   a dead owner's data.
 - The scheduler and locks. No third instance of the two bugs milestone 9 (A virtio-blk driver at EL0, and an interrupt) fixed (interrupt
   restored under the lock; no idle thread). `HELD_RANK` is `NONE` at every `switch_to`; IPC
-  blocking races, IRQ re-entrancy, and the untyped-MAP TOCTOU all check out on single core.
+  blocking races, interrupt re-entrancy, and the untyped-MAP TOCTOU all check out on single core.
 - The loaders and parsers. ELF file-bounds and header-table math are `checked_*`; `.bss` is
   genuinely zeroed; the "load over the kernel" attack is refused by construction (`Half::Low`); the
   device-tree parser reads every field through bounds-checked accessors and cannot be made to loop
@@ -46,7 +46,7 @@ overflow-checks on (the shipping dev profile) that is a panic, i.e. a hostile in
 the kernel, which is precisely the denial of service the ELF crate exists to prevent. Fixed with a
 `checked_add` on `vaddr + memsz` (new `Error::AddressOverflow`), saturating arithmetic in the
 `pub` `page_range`, and two tests (`u64::MAX` memsz, and 65-header count). Also capped the program
-header count (`MAX_PHNUM = 64`), because 65535 headers turned the O(n²) overlap check into a
+header count (`MAXIMUM_PHNUM = 64`), because 65535 headers turned the O(n²) overlap check into a
 multi-second stall.
 
 2. A spawn flood could panic the kernel (`shell_service`). The process service did

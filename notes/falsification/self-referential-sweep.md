@@ -90,7 +90,7 @@ risk wants the pattern rather than 135 rows:
   clearest: a table-driven CRC against the bitwise definition, where a self-consistent wrong table
   is the exact defect it exists to catch. `capability::subset_matches_allows` and
   `calendar::the_calendar_algorithms_are_mutual_inverses` are the same move.
-- The harness carries its own model. `intrusive_fifo` records push order in a local array and
+- The harness carries its own model. `intrusive_queue` records push order in a local array and
   compares the queue against it; `generational_table` counts against a counter the walk does not
   use.
 - The property is totality or termination, where there is no predicate to be blind to:

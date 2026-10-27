@@ -281,7 +281,7 @@ struct Resolved {
     /// The digest of an image the live generation vouched for, which its zone grants are keyed on
     /// (milestone 892).
     image_digest: Option<measured_boot::Digest>,
-    verb: [u8; grant_plan::MAX_VERB],
+    verb: [u8; grant_plan::MAXIMUM_VERB],
     verb_len: Option<usize>,
 }
 
@@ -711,14 +711,14 @@ impl Service<'_> {
         });
         // The verb is read from the shell's page before the region is split, which an installer
         // holder's manifest sizes, and checked again against the child's copy ([`copy_args`]).
-        let mut verb = [0u8; grant_plan::MAX_VERB];
+        let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
         let verb_len = args_seen.and_then(|theirs| {
             // SAFETY: `receive_args` mapped the shell's frame read-only at `theirs`, one page, and
             // it stays mapped until the shell reclaims its frame after this request's answer.
             let page = unsafe {
                 core::slice::from_raw_parts(theirs as *const u8, spawnproto::IMAGE_PAGE as usize)
             };
-            let mut read = [0u8; grant_plan::MAX_VERB];
+            let mut read = [0u8; grant_plan::MAXIMUM_VERB];
             let w = grant_plan::verb_of_page(page, &mut read)?;
             verb[..w.len()].copy_from_slice(w);
             Some(w.len())
@@ -865,7 +865,7 @@ impl Service<'_> {
         // could not be made fails the spawn rather than running without the line's words.
         let args_page = match (std_layout, region, req.args_seen) {
             (true, Some(r), Some(theirs)) => copy_args(own_ut, r, theirs, |copy| {
-                grant_plan::verb_of_page(copy, &mut [0u8; grant_plan::MAX_VERB]) == job.verb()
+                grant_plan::verb_of_page(copy, &mut [0u8; grant_plan::MAXIMUM_VERB]) == job.verb()
             }),
             _ => None,
         };

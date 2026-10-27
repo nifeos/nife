@@ -24,7 +24,8 @@ A throwaway scaffold was built on 2026-09-05 and then deleted. It held:
 - a `RETYPE_OBJ` arm minting one from the caller's own untyped;
 - two `#[inline(never)]` dispatch bodies;
 - a 64-entry armed-timer table with a cached earliest deadline;
-- an `expire` call from `sched::on_tick` that signals through the existing `sched::irq_notify`.
+- an `expire` call from `sched::on_tick` that signals through the existing
+  `sched::interrupt_notify`.
 
 `script/test` passed with it wired in (205 passed, 69 skipped, all three ISAs plus the OVMF leg)
 before it was removed. So the numbers are from a working system and not a half-compiled one.

@@ -2,7 +2,7 @@ Falsifies `system_tests::user::receive_cap_attack_tests::an_interrupt_signal_rec
 
 Architecture: all three (the change is in shared scheduler code, `kernel/src/sched.rs`).
 
-The defect this restores is the receiver-first order of an interrupt signal: `irq_notify` drops
+The defect this restores is the receiver-first order of an interrupt signal: `interrupt_notify` drops
 `[1, 0, 0, 0, 0]` into a parked receiver's mailbox, and with the `cap_delivered` default reverted
 `ipc_receive_cap` returns it unchanged, so `x1 = 0`, where the signal-pending order returns `NO_CAP`.
 

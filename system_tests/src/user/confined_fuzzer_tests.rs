@@ -785,8 +785,9 @@ impl Conductor {
 
     /// Is `(base, size)` wholly inside fuzzer `x`'s own region? A `SPLIT` child's pages are.
     fn extent_within_own(&self, x: usize, base: u64, size: u64) -> bool {
-        crate::memory_region::region_bounds(self.world.own[x])
-            .is_some_and(|(ob, os)| base >= ob && base + size <= ob + os)
+        crate::memory_region::region_bounds(self.world.own[x]).is_some_and(
+            |(ob, operating_system)| base >= ob && base + size <= ob + operating_system,
+        )
     }
 
     fn in_any_bound(&self, page: u64) -> bool {
@@ -841,7 +842,7 @@ impl Conductor {
                         escape!(self, "fuzzer {x} holds region {r:#x} it was never granted");
                     }
                 }
-                Object::Irq(_) | Object::DeviceFrame(_) => {
+                Object::Interrupt(_) | Object::DeviceFrame(_) => {
                     escape!(self, "fuzzer {x} holds {:?}, which no grant names", obj);
                 }
                 Object::Reply(tid) if !self.fuzzers.iter().any(|f| f.tid == *tid) => {

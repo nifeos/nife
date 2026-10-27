@@ -30,8 +30,8 @@ pub(super) fn current_thread_id() -> ThreadId {
 #[repr(align(64))]
 pub(super) struct CurrentCapabilities(AtomicPtr<CapabilityTableLock>);
 
-pub(super) static CURRENT_CAPABILITIES: [CurrentCapabilities; cpu::MAX_CPUS] =
-    [const { CurrentCapabilities(AtomicPtr::new(core::ptr::null_mut())) }; cpu::MAX_CPUS];
+pub(super) static CURRENT_CAPABILITIES: [CurrentCapabilities; cpu::MAXIMUM_CPUS] =
+    [const { CurrentCapabilities(AtomicPtr::new(core::ptr::null_mut())) }; cpu::MAXIMUM_CPUS];
 
 /// Make `tid` this core's running thread: its name in `PerCpu::current` and its capability table in
 /// [`CURRENT_CAPABILITIES`]. The only writer of either, so a lookup never finds one thread's name
@@ -62,7 +62,7 @@ pub(super) unsafe fn set_current(tid: ThreadId, tcb: *mut Thread) {
 /// [`crate::sync::lock_found`] for why the entry is read with interrupts masked.
 #[inline]
 pub(super) fn current_capabilities()
--> Option<crate::sync::IrqSafeGuard<'static, crate::cap::CapabilityTable>> {
+-> Option<crate::sync::InterruptSafeGuard<'static, crate::cap::CapabilityTable>> {
     crate::sync::lock_found(|| {
         let table = CURRENT_CAPABILITIES
             .get(cpu::id())?

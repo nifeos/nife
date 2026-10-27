@@ -8,7 +8,7 @@ use page_frames::FRAME_SIZE;
 use paging::Flags;
 
 use crate::arch::mmu;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 pub type ThreadId = u64;
 
@@ -53,21 +53,21 @@ pub(crate) const UNNAMED: ThreadId = u64::MAX;
 /// page tables that already exist. `unmap_page` leaves intermediate tables standing, so
 /// bump-allocating addresses forever would cost an L2 and an L3 table for every 2 MiB consumed. A
 /// test asserts that a second batch of threads costs zero additional frames.
-static FREE_STACK_ADDRESS_SPACE: IrqSafeMutex<FreeAddressSpace> =
-    IrqSafeMutex::new(rank::STACK_VA, FreeAddressSpace::new());
+static FREE_STACK_ADDRESS_SPACE: InterruptSafeMutex<FreeAddressSpace> =
+    InterruptSafeMutex::new(rank::STACK_VA, FreeAddressSpace::new());
 
 /// A fixed stack of reusable stack-VA ranges. A range is pushed when a thread dies and popped when
 /// one spawns, so the count never exceeds the most threads alive at once; the array is sized from
-/// [`crate::sched::MAX_THREADS`], and the debug assert is the cross-check.
+/// [`crate::sched::MAXIMUM_THREADS`], and the debug assert is the cross-check.
 struct FreeAddressSpace {
-    vas: [u64; crate::sched::MAX_THREADS],
+    vas: [u64; crate::sched::MAXIMUM_THREADS],
     len: usize,
 }
 
 impl FreeAddressSpace {
     const fn new() -> Self {
         Self {
-            vas: [0; crate::sched::MAX_THREADS],
+            vas: [0; crate::sched::MAXIMUM_THREADS],
             len: 0,
         }
     }
@@ -83,7 +83,7 @@ impl FreeAddressSpace {
     fn push(&mut self, va: u64) {
         debug_assert!(
             self.len < self.vas.len(),
-            "more dead stack ranges than MAX_THREADS"
+            "more dead stack ranges than MAXIMUM_THREADS"
         );
         if self.len < self.vas.len() {
             self.vas[self.len] = va;
@@ -396,14 +396,14 @@ pub struct Thread {
     /// the thread, under that queue's synchronization.
     pub(crate) next: Option<core::ptr::NonNull<Thread>>,
 
-    /// This thread's queue token while no queue holds it (`intrusive_fifo::Unqueued`). Every live
+    /// This thread's queue token while no queue holds it (`intrusive_queue::Unqueued`). Every live
     /// thread has one token, minted when the table inserts it, and it is always on a queue or here.
     /// A queue push takes it by value, so a thread reaches a queue only through the token its last
     /// transition left here. Here means on no queue: running, an embryo, awaiting a Reply, a
     /// deferred wake, a corpse, or an idle thread off its CPU. See notes/thread-control-block.md.
     ///
     /// Name: provisional (milestone 139, round 10): calef names fields a reader meets.
-    pub(crate) own_token: Option<intrusive_fifo::Unqueued<Thread>>,
+    pub(crate) own_token: Option<intrusive_queue::Unqueued<Thread>>,
 
     /// **Where this thread's EL0 execution begins** (milestone 19c.3), set by `ThreadControlBlock::CONFIGURE`
     /// on an embryo, consumed by `START` to build the entry context. `(0, 0)` for a kernel
@@ -592,7 +592,7 @@ pub(crate) unsafe fn initialize_fp_state(thread: *mut Thread) {
 /// can name nothing until somebody hands it something (§10 (process model: capability-based,
 /// microkernel)). Userspace sees only a slot index, so unforgeability is a bounds check. The order
 /// between the locks is written at the rank.
-pub(crate) type CapabilityTableLock = crate::sync::IrqSafeMutex<crate::cap::CapabilityTable>;
+pub(crate) type CapabilityTableLock = crate::sync::InterruptSafeMutex<crate::cap::CapabilityTable>;
 
 /// **Where a thread's capability table lives: past its FP register file, in the same TCB page.**
 ///
@@ -628,7 +628,7 @@ const _: () = assert!(
 /// of the table and then copied again into the page: two copies of 2 KiB on every thread's birth.
 /// One copy from here took 1,194 instructions off each riscv64 `spawn_reap` iteration.
 /// Never locked or borrowed as a lock: a copy of an unheld lock's bytes is a fresh unheld lock.
-static EMPTY_CAPABILITY_TABLE: CapabilityTableLock = crate::sync::IrqSafeMutex::new(
+static EMPTY_CAPABILITY_TABLE: CapabilityTableLock = crate::sync::InterruptSafeMutex::new(
     crate::sync::rank::CAPABILITY_TABLE,
     crate::cap::CapabilityTable::new(),
 );
@@ -691,7 +691,7 @@ pub(crate) unsafe fn initialize_capability_table(thread: *mut Thread) {
 }
 
 // SAFETY: plain storage of the link, nothing else, which is all the queue's contract asks.
-unsafe impl intrusive_fifo::Node for Thread {
+unsafe impl intrusive_queue::Node for Thread {
     fn next(&self) -> Option<core::ptr::NonNull<Self>> {
         self.next
     }
@@ -1022,7 +1022,8 @@ extern "C" fn call_closure<F: FnOnce()>(closure: *mut ()) {
 #[unsafe(no_mangle)]
 extern "C" fn thread_entry(closure: *mut (), call: extern "C" fn(*mut ())) -> ! {
     // A new thread skips `schedule()`'s post-switch point, so it reaps its predecessor here. It
-    // arrives with IRQs masked, and `finish_switch` must run masked: a timer IRQ before it could
+    // arrives with interrupts masked, and `finish_switch` must run masked: a timer interrupt before
+    // it could
     // overwrite `switched_from` and strand the predecessor (context.s). Only then is the closure
     // made preemptible.
     crate::sched::finish_switch();

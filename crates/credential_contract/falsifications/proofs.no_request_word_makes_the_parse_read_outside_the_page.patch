@@ -17,7 +17,7 @@ shifts, which is the wire format itself: DECISIONS' *move fast on what can be un
 puts anything two programs agree on in the irreversible column, and a field offset is
 exactly that.
 
-The bounds assertions beside it (`identity.len() <= MAX_IDENTITY`,
+The bounds assertions beside it (`identity.len() <= MAXIMUM_IDENTITY`,
 `ID_OFF + identity.len() <= SECRET_OFF`) were independent already, and they are why this
 defect is a correctness failure rather than a memory-safety one: the parse still stays
 inside the page.
@@ -27,7 +27,7 @@ index 39fae307..0a92d3de 100644
 --- a/crates/credential_contract/src/lib.rs
 +++ b/crates/credential_contract/src/lib.rs
 @@ -238,7 +238,7 @@ pub const fn operation(w0: u64) -> u64 {
- /// The identity length a request word claims. Not yet checked against [`MAX_IDENTITY`]; that is
+ /// The identity length a request word claims. Not yet checked against [`MAXIMUM_IDENTITY`]; that is
  /// [`read`]'s job, and it is the reason [`read`] exists rather than two accessors.
  pub const fn id_len(w0: u64) -> usize {
 -    ((w0 >> 16) & 0xffff) as usize

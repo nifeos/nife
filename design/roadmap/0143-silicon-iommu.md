@@ -101,7 +101,8 @@ rendering carries a 2026-02-22 stamp on the same v1.0.1 version number, so the b
    v3.0 and the HSM extension, and all 16 harts come online, so the SBI half is satisfied
    ([OpenSBI series](https://ratatoskr.run/opensbi/2026/09/17546622/t)). **The interrupt controller
    is not.** The K3 is RVA23 and uses AIA: APLIC and IMSIC, and this kernel's riscv64
-   `arch::irq` resolves to `drivers::plic` with nothing else behind it. A PLIC node was not found in
+   `arch::interrupt_controller` resolves to `drivers::plic` with nothing else behind it. A PLIC node
+   was not found in
    the upstream K3 device tree. ([K3 DT series](https://patchew.org/linux/20260115-k3-basic-dt-v5-0-6990ac9f4308@riscstar.com/))
 
 **What could not be established, said plainly.** The K3 datasheet is an image-only PDF and did not

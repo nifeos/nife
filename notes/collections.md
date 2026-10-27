@@ -82,7 +82,7 @@ Which is why our `vec_works` test (1000 pushes) is a real workout for the alloca
 reallocates about ten times, and each one is an allocate, a copy, and a free through code we
 wrote.
 
-`Vec` is why `MAX_REGIONS = 16` existed. A fixed array must guess its maximum in advance
+`Vec` is why `MAXIMUM_REGIONS = 16` existed. A fixed array must guess its maximum in advance
 and fail if it guessed low. `memory.rs` still returns `TooManyRegions` on a machine with more
 than 16 memory regions, purely because `Vec` didn't exist when it was written.
 

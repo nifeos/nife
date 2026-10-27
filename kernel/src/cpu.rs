@@ -9,9 +9,9 @@
 use core::cell::UnsafeCell;
 use core::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 
-use intrusive_fifo::Fifo;
+use intrusive_queue::Queue;
 
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 use crate::thread::{Thread, ThreadId};
 
 /// A `current`/`idle` slot holding no thread. Tids are small integers from 0 up, so `u64::MAX`
@@ -23,7 +23,10 @@ pub const NO_TID: ThreadId = u64::MAX;
 /// A bound on hart ids, not core counts, since each core is seated at the slot its id names. One
 /// name for `current_cpu_contract::CPU_ID_BOUND`, which userspace shares. Each seat costs a block
 /// and a 68 KiB secondary stack slot whether or not a core fills it. See notes/per-cpu.md.
-pub const MAX_CPUS: usize = current_cpu_contract::CPU_ID_BOUND;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CPUS`.
+pub const MAXIMUM_CPUS: usize = current_cpu_contract::CPU_ID_BOUND;
 
 /// One core's private data.
 ///
@@ -46,7 +49,8 @@ pub struct PerCpu {
     /// is empty. Each core gets its own, so an idle core parks in its *own* `wfi`.
     pub idle: AtomicU64,
 
-    /// Set by this core's timer tick, read on this core's return from the IRQ, so one core's tick
+    /// Set by this core's timer tick, read on this core's return from the interrupt, so one core's
+    /// tick
     /// cannot make another reschedule (DECISIONS §9 (locking)'s record-and-defer).
     pub need_resched: AtomicBool,
 
@@ -65,14 +69,14 @@ pub struct PerCpu {
     /// TCB pointers kept alive because a queued thread is `Ready` and only `Finished` threads are
     /// reaped. No lock: only this core touches it, with interrupts masked, which is what makes the
     /// `UnsafeCell` sound. Access it through [`with_runq`](Self::with_runq).
-    runq: UnsafeCell<Fifo<Thread>>,
+    runq: UnsafeCell<Queue<Thread>>,
 
     /// This core's migration inbox: threads handed to it by other cores.
     ///
     /// The one cross-core scheduler structure. A remote core locks it, pushes the TCB and sends a
     /// reschedule SGI; this core drains it in the handler. See [`inbox_of`] and
     /// `sched::drain_inbox`.
-    pub inbox: IrqSafeMutex<Fifo<Thread>>,
+    pub inbox: InterruptSafeMutex<Queue<Thread>>,
 
     /// This core's run-queue length, mirrored so other cores may read it (§28 (SMP placement)).
     /// Kept exact by the owner after every [`with_runq`](Self::with_runq); read relaxed and
@@ -158,8 +162,8 @@ impl PerCpu {
             idle: AtomicU64::new(NO_TID),
             need_resched: AtomicBool::new(false),
             switched_from: AtomicU64::new(NO_TID),
-            runq: UnsafeCell::new(Fifo::new()),
-            inbox: IrqSafeMutex::new(rank::INBOX, Fifo::new()),
+            runq: UnsafeCell::new(Queue::new()),
+            inbox: InterruptSafeMutex::new(rank::INBOX, Queue::new()),
             runq_len: AtomicUsize::new(0),
             inbox_len: AtomicUsize::new(0),
             steal_request: work_steal_slot::Slot::new(),
@@ -177,7 +181,7 @@ impl PerCpu {
     ///
     /// Context: interrupts masked, including the reschedule-SGI handler's inbox drain; takes no
     /// lock.
-    pub(crate) fn with_runq<R>(&self, f: impl FnOnce(&mut Fifo<Thread>) -> R) -> R {
+    pub(crate) fn with_runq<R>(&self, f: impl FnOnce(&mut Queue<Thread>) -> R) -> R {
         debug_assert!(
             !crate::arch::interrupts::is_enabled(),
             "run queue touched with interrupts enabled: single-owner safety needs them masked",
@@ -252,10 +256,10 @@ impl PerCpu {
 /// exists for `smp::tests::work_can_be_placed_on_every_cpu`, which asserts delivery to the named
 /// core because stealing may move the thread before it runs (notes/load-sensitive-assertions.md).
 /// An array beside `PerCpu`, because a drain is on no hot path (notes/per-cpu.md).
-static ADOPTED: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+static ADOPTED: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// The per-CPU blocks, one per core, static so a core's block exists before any allocator.
-static PERCPU: [PerCpu; MAX_CPUS] = [const { PerCpu::new() }; MAX_CPUS];
+static PERCPU: [PerCpu; MAXIMUM_CPUS] = [const { PerCpu::new() }; MAXIMUM_CPUS];
 
 /// `PerCpu`'s size stays a power of two, so `PERCPU[id]` indexes with a shift.
 ///
@@ -288,9 +292,12 @@ const _: () = assert!(
 ///
 /// Call once per core, before that core takes its first lock, because the lock path reads
 /// `current().held_rank`: before `console::initialize` on the boot core, first thing on a
-/// secondary. Panics if `id` is not below [`MAX_CPUS`].
+/// secondary. Panics if `id` is not below [`MAXIMUM_CPUS`].
 pub(crate) fn initialize_this_cpu(id: usize) {
-    assert!(id < MAX_CPUS, "cpu id {id} exceeds MAX_CPUS {MAX_CPUS}");
+    assert!(
+        id < MAXIMUM_CPUS,
+        "cpu id {id} exceeds MAXIMUM_CPUS {MAXIMUM_CPUS}"
+    );
     crate::arch::set_percpu(&PERCPU[id] as *const PerCpu as usize);
     // Deterministic per core, so the cores do not sample in lockstep. `| 1` keeps it nonzero,
     // which xorshift requires.
@@ -317,13 +324,13 @@ pub fn current() -> &'static PerCpu {
 pub fn id() -> usize {
     let base = PERCPU.as_ptr() as usize;
     // Wrapping, because it cannot wrap: the register holds `&PERCPU[id]`, at or above `base`. Were
-    // that broken, the quotient lands far past `MAX_CPUS` and the next index refuses it.
+    // that broken, the quotient lands far past `MAXIMUM_CPUS` and the next index refuses it.
     crate::arch::percpu().wrapping_sub(base) / core::mem::size_of::<PerCpu>()
 }
 
 /// Another core's migration inbox, by id. This is the one place a core reaches into a *different*
 /// core's `PerCpu` block, and only the inbox (a real lock), never the run queue. See DECISIONS §11.
-pub(crate) fn inbox_of(id: usize) -> &'static IrqSafeMutex<Fifo<Thread>> {
+pub(crate) fn inbox_of(id: usize) -> &'static InterruptSafeMutex<Queue<Thread>> {
     &PERCPU[id].inbox
 }
 
@@ -349,7 +356,7 @@ mod tests {
     #[test_case]
     fn percpu_is_self_consistent_on_whatever_cpu_we_run() {
         let me = id();
-        assert!(me < MAX_CPUS, "cpu::id() returned {me}, out of range");
+        assert!(me < MAXIMUM_CPUS, "cpu::id() returned {me}, out of range");
         assert_eq!(
             current() as *const PerCpu,
             &PERCPU[me] as *const PerCpu,

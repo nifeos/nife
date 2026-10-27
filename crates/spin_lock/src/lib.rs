@@ -1,5 +1,5 @@
 //! **The kernel's spinlock**: one flag, taken with an Acquire compare-exchange and released with a
-//! Release store, and a guard that hands out the data while it holds the flag. `IrqSafeMutex`
+//! Release store, and a guard that hands out the data while it holds the flag. `InterruptSafeMutex`
 //! (`kernel/src/sync.rs`) wraps it and adds interrupt masking and the lock ranks; this crate is
 //! only the exclusion and the happens-before edge, written so loom can check both.
 //!

@@ -224,10 +224,10 @@ impl<const N: usize> RegionTable<N> {
     /// **How many regions are live right now**, roots and split children together.
     ///
     /// The kernel reads this under its lock after every insert, to keep the high-water mark the
-    /// test suite's closing `regions:` line prints (`memory_region::MAX_REGIONS` has the ledger).
-    /// An observer about the table rather than about any region, so it names nothing a caller
-    /// could act on after the answer stopped being true, which is the argument `script/lint`'s
-    /// surface pin asks of a new `&self` method.
+    /// test suite's closing `regions:` line prints (`memory_region::MAXIMUM_REGIONS` has the
+    /// ledger). An observer about the table rather than about any region, so it names nothing a
+    /// caller could act on after the answer stopped being true, which is the argument
+    /// `script/lint`'s surface pin asks of a new `&self` method.
     ///
     /// Name: provisional, from milestone 601 (the region table prints its peak). It is
     /// `generational_table`'s own spelling of the same question.
@@ -921,7 +921,7 @@ mod interleavings {
     //!
     //! The protocol is lock-based, so loom searches the interleaving of critical sections, not
     //! memory orderings: the model assumes mutual exclusion and says nothing about whether
-    //! `IrqSafeMutex` delivers it. The harnesses use `RegionTable<2>` or `<4>`, not the kernel's 256,
+    //! `InterruptSafeMutex` delivers it. The harnesses use `RegionTable<2>` or `<4>`, not the kernel's 256,
     //! because the search is exponential in the interleavings and nothing in the protocol depends
     //! on capacity. Every other input is the kernel's own source.
 

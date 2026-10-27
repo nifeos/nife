@@ -34,7 +34,7 @@ The kernel hands the driver, and nothing more:
   page-aligned, so the kernel maps the containing page and passes the in-page offset;
 - a DMA page, mapped read/write, *and its physical address* (in a register), because
   descriptors speak physical addresses and a process only knows virtual ones;
-- **an `Irq` capability** for INTID 79;
+- **an `Interrupt` capability** for INTID 79;
 - an endpoint to report what it read.
 
 ## DMA: the one place a process needs a physical address
@@ -69,9 +69,11 @@ the status byte is 0 (OK) and reads the 512 bytes the device left in the buffer.
 
 ## The completion arrives as a message
 
-The driver does not poll. It `WAIT`s on its `Irq` capability (9a). When the device finishes and
+The driver does not poll. It `WAIT`s on its `Interrupt` capability (9a). When the device finishes
+and
 raises INTID 79, the kernel masks the line, turns it into a notification, and wakes the driver. The
-driver quiets the device (reads its `InterruptStatus`, writes `InterruptACK`), then `ACK`s its `Irq`
+driver quiets the device (reads its `InterruptStatus`, writes `InterruptACK`), then `ACK`s its
+`Interrupt`
 capability to re-enable the line. This is the whole reason 9a came first: a userspace driver's
 completion path *is* interrupt-as-message.
 
@@ -128,8 +130,8 @@ All four are fields of `Transport::Pci`, set in one place, `Transport::pci`, fro
 checkable. One gap: `notify_addr[q]` is zero until `setup_queue` resolves it, so `notify` refuses a
 queue whose doorbell is not ready rather than write through `phys_to_virt(0)`.
 
-`MAX_DEVICES` is an exception and a foot gun. Nothing unregisters, so it counts the devices a boot
-has ever wired, and the test suite spawns a driver per gate (tests share a transport where they
+`MAXIMUM_DEVICES` is an exception and a foot gun. Nothing unregisters, so it counts the devices a
+boot has ever wired, and the test suite spawns a driver per gate (tests share a transport where they
 can). The fix is reuse on driver death, which needs a generational name so a stale `Object::Virtio`
 capability cannot resolve to a different device. That is a design fork under §16 (object
 revocation). Milestone 647 (a virtio slot should come back when its driver dies) proposes it.
@@ -192,7 +194,8 @@ crate). See [nifefs.md](nifefs.md).
 
 The driver runs at EL0 and holds three things the kernel handed it. The DMA page is mapped at
 `DMA_VA`, and its physical address arrives as `_start`'s argument, because descriptors speak
-physical addresses. The other two are an `Irq` capability in slot 1 and a `Virtio` capability in
+physical addresses. The other two are an `Interrupt` capability in slot 1 and a `Virtio` capability
+in
 slot 2. The device registers are not mapped. Every register access, the queue setup and the "go" go
 through the `Virtio` capability, so the driver cannot point the device outside its DMA region
 ([dma.md](dma.md)). If anything here is wrong, this process faults and the kernel does not. The

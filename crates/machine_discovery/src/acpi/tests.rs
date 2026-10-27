@@ -110,14 +110,14 @@ pub(super) fn q35_madt_body() -> [u8; 8 + 8 + 12 + 10 + 10] {
     b[18] = 0;
     b[20..24].copy_from_slice(&0xfec0_0000u32.to_le_bytes());
     b[24..28].copy_from_slice(&0u32.to_le_bytes());
-    // Interrupt source override: ISA IRQ 0 arrives as GSI 2.
+    // Interrupt source override: ISA interrupt 0 arrives as GSI 2.
     b[28] = 2;
     b[29] = 10;
     b[30] = 0; // bus 0 = ISA
-    b[31] = 0; // source: IRQ 0
+    b[31] = 0; // source: interrupt 0
     b[32..36].copy_from_slice(&2u32.to_le_bytes());
     b[36..38].copy_from_slice(&0u16.to_le_bytes());
-    // Interrupt source override: ISA IRQ 5, active high, level triggered.
+    // Interrupt source override: ISA interrupt 5, active high, level triggered.
     b[38] = 2;
     b[39] = 10;
     b[40] = 0;

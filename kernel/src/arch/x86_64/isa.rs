@@ -13,7 +13,7 @@ use core::arch::x86_64::CpuidResult;
 
 use machine_discovery::x86_64::{CpuidWords, Gate, HYPERVISOR_CITE, Isa, TABLE};
 
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 use crate::{print, println};
 
 /// **`CPUID`, spelled so that two toolchains a year apart both accept it** (milestone 304
@@ -51,7 +51,7 @@ pub(super) fn cpuid_count(leaf: u32, sub_leaf: u32) -> CpuidResult {
 /// records keep, and the reason this stopped being a `static mut` with a zeroed initializer: the
 /// zeroed value decodes as a machine that would have been refused, which is the worst possible
 /// thing for a missed initialization to look like.
-static ISA: IrqSafeMutex<Option<Isa>> = IrqSafeMutex::new(rank::ISA, None);
+static ISA: InterruptSafeMutex<Option<Isa>> = InterruptSafeMutex::new(rank::ISA, None);
 
 /// One `CpuidResult` as the four words the decoder takes.
 fn words(r: CpuidResult) -> [u32; 4] {
@@ -76,7 +76,7 @@ pub fn initialize(boot_info_pointer: usize) {
     // Leaf 0 needs no maximum-leaf check first, because leaf 0 is what reports the maximum; the
     // same is true of leaf 0x80000000 in the extended space, which has its own maximum.
     let leaf0 = cpuid(0);
-    let extended_max_leaf = cpuid(0x8000_0000).eax;
+    let extended_maximum_leaf = cpuid(0x8000_0000).eax;
 
     let mut brand = [0u32; 12];
     for (i, leaf) in [0x8000_0002u32, 0x8000_0003, 0x8000_0004]
@@ -90,7 +90,7 @@ pub fn initialize(boot_info_pointer: usize) {
         leaf0: words(leaf0),
         leaf1_ecx: cpuid(1).ecx,
         leaf7_0: words(cpuid_count(7, 0)),
-        extended_max_leaf,
+        extended_maximum_leaf,
         extended_leaf1_edx: cpuid(0x8000_0001).edx,
         extended_leaf7_edx: cpuid(0x8000_0007).edx,
         brand,
@@ -186,7 +186,7 @@ pub fn draw_random_seed() -> Option<u64> {
 /// today calibrates. The rate is a constant only because [`initialize`] refuses bare metal without
 /// the invariant TSC. See notes/x86-port/cpu-state.md.
 pub(crate) fn tsc_crystal_hz() -> Option<u64> {
-    if get().max_leaf < 0x15 {
+    if get().maximum_leaf < 0x15 {
         return None;
     }
     // Leaf 0x15 carries no precondition beyond the max-leaf check just above.
@@ -215,7 +215,7 @@ pub(crate) fn print_summary() {
     };
     println!(
         "  cpu         : x86_64, vendor {vendor}, cpuid leaves 0..{:#x} and {:#x}..{:#x}, {host}",
-        cpu.max_leaf, 0x8000_0000u32, cpu.extended_max_leaf
+        cpu.maximum_leaf, 0x8000_0000u32, cpu.extended_maximum_leaf
     );
     if let Some(brand) = cpu.brand_str() {
         println!("              : {brand}");
@@ -248,9 +248,9 @@ mod tests {
     fn the_part_described_itself() {
         let cpu = get();
 
-        assert!(cpu.max_leaf >= 1, "leaf 0 reported no leaves at all");
+        assert!(cpu.maximum_leaf >= 1, "leaf 0 reported no leaves at all");
         assert!(
-            cpu.extended_max_leaf >= 0x8000_0007,
+            cpu.extended_maximum_leaf >= 0x8000_0007,
             "every gate this kernel checks lives at or below extended leaf 7"
         );
         assert!(!cpu.missing_requirements().any());

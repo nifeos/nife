@@ -144,18 +144,19 @@ the low-water is [frames.md](frames.md)'s held list plus that one reservation: t
 moves the low, and the refusal count catches a load that no longer fits. Contiguity is not tracked
 per test: `largest_free_run` never moved from the first test's reading, and a bitmap scan per test
 overran the `x86_64` 17 GiB leg's time bound. A refused `alloc_contiguous` is the contiguity failure
-itself, and it is counted. The figure reports and does not gate, for `sched::MAX_THREADS`'s reason:
-the held list grows on purpose, and the ledger's two end-of-suite gates hold the permanent part to
-account.
+itself, and it is counted. The figure reports and does not gate, for `sched::MAXIMUM_THREADS`'s
+reason: the held list grows on purpose, and the ledger's two end-of-suite gates hold the permanent
+part to account.
 
 ## No heap, and an interrupt-safe lock
 
 The kernel has no heap: no `Vec` and no `Box` (`kmem` is a fixed carve, see
 [kernel-budget.md](kernel-budget.md)). The regions coming out of the device tree go into
-fixed-size arrays of `MAX_REGIONS` entries, because a fixed-size array is what you use when there
-is no allocator.
+fixed-size arrays of `MAXIMUM_REGIONS` entries, because a fixed-size array is what you use when
+there is no allocator.
 
-`ALLOCATOR` is an `IrqSafeMutex` (DECISIONS §9 (locking: IrqSafeMutex, plus a discipline)), not a
+`ALLOCATOR` is an `InterruptSafeMutex` (DECISIONS §9 (locking: IrqSafeMutex, plus a discipline)),
+not a
 bare spinlock. An interrupt handler that tried to allocate while the interrupted code held a bare
 spinlock would spin forever for a lock only the code it interrupted can release. The discipline
 that goes with it: interrupt handlers do not allocate. They record what happened and defer the
@@ -165,8 +166,8 @@ work.
 
 - The seam's type is still `device_tree_blob::Region`, a plain `{ start, size }` pair, so a machine
   with no device tree names a device-tree type. Moving it belongs with widening the seam.
-- At most `MAX_REGIONS` (16) RAM regions. Both `virt` boards describe one; q35 describes three. A
-  caller with more must decide what to drop.
+- At most `MAXIMUM_REGIONS` (16) RAM regions. Both `virt` boards describe one; q35 describes three.
+  A caller with more must decide what to drop.
 
 ---
 

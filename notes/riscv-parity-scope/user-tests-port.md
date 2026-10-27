@@ -10,11 +10,13 @@ assertions broken on purpose, and what stays aarch64-only.
 Follow-on (§19 (architectural parity), 2026-07-31): the last two gated portable tests are gated no longer.
 `kernel::sched::tests::an_interrupt_becomes_a_message` and
 `an_interrupt_that_arrives_before_the_wait_is_not_lost` were the "two SGI interrupt tests" named
-above. Neither property is architectural (IRQ-to-IPC delivery, and a lost-wakeup race); only the
+above. Neither property is architectural (Interrupt-to-IPC delivery, and a lost-wakeup race); only
+the
 *trigger* was, and it is now behind three per-arch functions in the test module. RISC-V raises the
 console UART's own transmit-empty line into the PLIC, because it has no SGI. Its two other
 candidates are worse. The SBI IPI lands on the software-interrupt arm, which never reaches
-`irq_route`. The PLIC's pending block is read-only, and QEMU ignores writes to it. The legs are
+`interrupt_route`. The PLIC's pending block is read-only, and QEMU ignores writes to it. The legs
+are
 not twins in what the trigger costs, and notes/interrupts.md says which way each one is wider.
 That leaves `kernel::sched::tests` fully portable, and the remaining aarch64-only tests are the ones
 that genuinely need aarch64 machine code or a GIC.
@@ -109,6 +111,6 @@ because a blanket comment is exactly how the old claim survived past being true.
 | `el1_runs_on_sp_el1` | No RISC-V analogue exists. RISC-V does not bank `sp` by privilege level; there is one `sp`, swapped with `sscratch` on trap entry. The hazard (two names for one register, silently) cannot arise, so a twin would have nothing to assert. |
 | ~~`asid_tagging_keeps_address_spaces_apart_without_flushes`~~ | Closed by milestone 58; it runs on both ISAs now. It was here because the property was not true on RISC-V: `write_satp` issued an unconditional `sfence.vma` on every root switch, so a twin would have read the right byte because everything was just flushed, not because the tagging works. The row stays, struck through, because the *reason* is the useful part: this is what a test that cannot fail for its stated reason looks like before anyone notices. |
 | `the_hardware_says_el0_cannot_read_the_kernels_memory` | Twin exists: `riscv_virtio_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`. Kept separate on purpose, because the *mechanism* is the subject: aarch64 asks the silicon (`AT S1E0R`), RISC-V has no such instruction and walks in software. Merging them would assert only what both can say. |
-| `the_interrupt_child_builder_delegates_an_interrupt_to_its_child` | RISC-V has no second interrupt to raise. Its only hand-assertable line is the console UART's, which `spawn_elf_child_builder` is already routing for the input driver, so a twin would prove delivery through whichever route was bound last rather than through the delegated capability. The property is covered by `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk` (which asserts `ROUTED_IRQS` rises while a userspace driver waits on its own Irq cap) and by `sched::tests::an_interrupt_becomes_a_message`. |
+| `the_interrupt_child_builder_delegates_an_interrupt_to_its_child` | RISC-V has no second interrupt to raise. Its only hand-assertable line is the console UART's, which `spawn_elf_child_builder` is already routing for the input driver, so a twin would prove delivery through whichever route was bound last rather than through the delegated capability. The property is covered by `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk` (which asserts `ROUTED_INTERRUPTS` rises while a userspace driver waits on its own Interrupt cap) and by `sched::tests::an_interrupt_becomes_a_message`. |
 | `the_device_child_builder_builds_a_driver_that_reads_real_hardware` | The assertion is `0xB105F00D` in the PL011's PrimeCell identification registers, and RISC-V `virt` has no PL011. That constant is what makes the test exact rather than "the read did not fault"; substituting a virtio magic number would be a different test wearing this one's name. Device delegation to a userspace driver is proved on RISC-V by the virtio-blk driver test, which is a stronger version of the same claim. |
 | 24 device / filesystem / network tests | Twins already exist in `riscv_virtio_tests`, which drives the same properties through the dedicated `blk` and `net_stack` binaries. Running both copies would double the suite's slowest tests (including the ~300 s `std_net`) to prove nothing new. This duplication is itself worth revisiting: see the open gap below. |

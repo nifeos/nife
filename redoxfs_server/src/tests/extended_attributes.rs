@@ -7,7 +7,7 @@ use super::*;
 /// tests have to be able to see it.
 fn node_id_of(srv: &mut Server<DiskMemory>, parent: TreePtr<Node>, name: &str) -> u32 {
     srv.fs
-        .tx(|tx| Ok(tx.find_node(parent, name)?.id()))
+        .tx(|transaction| Ok(transaction.find_node(parent, name)?.id()))
         .unwrap_or_else(|e| panic!("no node behind {name}: {e:?}"))
 }
 
@@ -16,13 +16,13 @@ fn node_id_of(srv: &mut Server<DiskMemory>, parent: TreePtr<Node>, name: &str) -
 /// "the attributes were purged" from "the attributes are unreachable".
 fn store_holds(srv: &mut Server<DiskMemory>, node_id: u32) -> bool {
     srv.fs
-        .tx(|tx| {
-            let Some(dir) = find_store(tx)? else {
+        .tx(|transaction| {
+            let Some(dir) = find_store(transaction)? else {
                 return Ok(false);
             };
             let bytes = xattr::store::file_name(node_id);
             let name = core::str::from_utf8(&bytes).expect("hex is ASCII");
-            Ok(tx.find_node(dir, name).is_ok())
+            Ok(transaction.find_node(dir, name).is_ok())
         })
         .unwrap()
 }
@@ -262,7 +262,9 @@ fn the_last_attribute_takes_the_store_with_it() {
     /// Whether the store directory exists at all. Reaches past the contract on purpose: no
     /// client can name it, so nothing inside the contract can tell "gone" from "hidden".
     fn store_exists(srv: &mut Server<DiskMemory>) -> bool {
-        srv.fs.tx(|tx| Ok(find_store(tx)?.is_some())).unwrap()
+        srv.fs
+            .tx(|transaction| Ok(find_store(transaction)?.is_some()))
+            .unwrap()
     }
 
     let mut srv = server_with_tree();
@@ -313,7 +315,9 @@ fn the_attribute_store_is_not_in_the_namespace() {
 
     // It is really there: this test would be vacuous against a filesystem with no store at all.
     assert!(
-        srv.fs.tx(|tx| Ok(find_store(tx)?.is_some())).unwrap(),
+        srv.fs
+            .tx(|transaction| Ok(find_store(transaction)?.is_some()))
+            .unwrap(),
         "nothing was created, so nothing is being hidden",
     );
 
@@ -442,15 +446,20 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
         xattr::ERANGE,
     );
     assert_eq!(
-        srv.set_xattr(h, &vec![b'n'; xattr::MAX_NAME + 1], xattr::RAW, b"v")
+        srv.set_xattr(h, &vec![b'n'; xattr::MAXIMUM_NAME + 1], xattr::RAW, b"v")
             .unwrap_err()
             .errno,
         xattr::ERANGE,
     );
     assert_eq!(
-        srv.set_xattr(h, b"user.big", xattr::RAW, &vec![0u8; xattr::MAX_VALUE + 1])
-            .unwrap_err()
-            .errno,
+        srv.set_xattr(
+            h,
+            b"user.big",
+            xattr::RAW,
+            &vec![0u8; xattr::MAXIMUM_VALUE + 1]
+        )
+        .unwrap_err()
+        .errno,
         xattr::E2BIG,
     );
     // The widest value the contract allows must actually work, or the limit above is a limit on
@@ -459,16 +468,16 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
         h,
         b"user.widest",
         xattr::RAW,
-        &vec![0xCDu8; xattr::MAX_VALUE],
+        &vec![0xCDu8; xattr::MAXIMUM_VALUE],
     )
     .expect("the widest permitted value");
     assert_eq!(
         attr(&mut srv, h, b"user.widest").unwrap().1.len(),
-        xattr::MAX_VALUE,
+        xattr::MAXIMUM_VALUE,
     );
 
     // Fill the node and ask for one more.
-    for i in 1..xattr::MAX_COUNT {
+    for i in 1..xattr::MAXIMUM_COUNT {
         srv.set_xattr(h, format!("user.a{i}").as_bytes(), xattr::RAW, b"v")
             .unwrap();
     }

@@ -75,9 +75,10 @@ pub(super) fn boot_clock_page() -> u64 {
 pub(super) struct VirtioBootGrant {
     /// The `Virtio` capability's id (`crate::virtio::register`'s return value).
     pub(super) vid: usize,
-    /// The device's completion interrupt, **routed** (`crate::sched::bind_irq`) but not
+    /// The device's completion interrupt, **routed** (`crate::sched::bind_interrupt`) but not
     /// **enabled**: aarch64's GIC enables inline and riscv64 pins the PLIC source to the boot hart
-    /// (`notes/harts-and-pes.md`'s hart lottery), so the caller enables it beside `uart_irq`.
+    /// (`notes/harts-and-pes.md`'s hart lottery), so the caller enables it beside
+    /// `uart_interrupt_number`.
     pub(super) intid: u32,
     /// The DMA region's physical base. A driver writes physical addresses into virtio
     /// descriptors, no capability exposes one, and the progenitor's three `START` words are spent,
@@ -266,7 +267,7 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
     // Its physical base goes in the page's tail ([`VIRTIO_DMA_PHYS_OFFSET`]).
     write_dma_phys(dma);
     // Routed, not yet enabled: [`VirtioBootGrant::intid`].
-    crate::sched::bind_irq(d.intid, crate::sched::create_rendezvous());
+    crate::sched::bind_interrupt(d.intid, crate::sched::create_rendezvous());
     let vid = crate::virtio::register(
         crate::virtio::Transport::Mmio {
             mmio_phys: d.mmio_phys,

@@ -37,7 +37,7 @@ All of it on radon (riscv64 VisionFive 2, JH7110). The device is the true random
 
 | What | Result | Source |
 |---|---|---|
-| Confined | grant is two endpoints and one `0x1000` page; no IRQ, no DMA page, no `Virtio` capability | `design/roadmap/0159-jh7110-trng-driver.md`; read adversarially, "Nothing to find", `design/audit-reports/2026-09-17-userspace-confinement.md`, "The population, found by reading grants rather than names" |
+| Confined | grant is two endpoints and one `0x1000` page; no interrupt, no DMA page, no `Virtio` capability | `design/roadmap/0159-jh7110-trng-driver.md`; read adversarially, "Nothing to find", `design/audit-reports/2026-09-17-userspace-confinement.md`, "The population, found by reading grants rather than names" |
 | Drives the device | draws differ between draws and boots, 2026-09-03/04 | transcripts named in the appendix live under `target/board/`, which is not in git |
 | Rate, 2026-09-16 | 988,416, 992,248 and 992,248 bytes/s; bring-up 522, 516 and 522 us | `bench/radon-2026-09-16/jobmix-boot3.log:721`, `jobmix-boot5.log:736`, `jobmix-boot4.log:814` |
 | Rate, 2026-09-25 | 973,384 bytes/s over 8 round trips, bring-up 580 us | `bench/radon-2026-09-25/soak-8h.log:208` (the 8 h 09 m soak boot) |

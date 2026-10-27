@@ -10,7 +10,7 @@
 //! - A counter written before [`publish`] is lost.
 //! - The switch count on the page is up to one tick old.
 //! - A spurious or unrouted interrupt is not counted.
-//! - The soak build's timer-driven `irq_notify` counts as a device interrupt.
+//! - The soak build's timer-driven `interrupt_notify` counts as a device interrupt.
 //!
 //! Name: provisional, minted 2026-09-26 by milestone 126's `free` lane.
 

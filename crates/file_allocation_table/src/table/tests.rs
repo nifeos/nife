@@ -1,4 +1,6 @@
 //! The markers of each FAT type at their boundaries, and where entries lie in the table.
+//!
+//! Name: ratified 2026-10-26 (UTC), on #2760.
 
 use super::*;
 use crate::boot_sector::tests::fat32_with_active_table;

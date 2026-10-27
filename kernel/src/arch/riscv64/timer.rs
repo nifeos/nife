@@ -9,7 +9,7 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use super::instructions;
-use crate::cpu::{self, MAX_CPUS};
+use crate::cpu::{self, MAXIMUM_CPUS};
 
 /// The S-mode timer interrupt cause (`scause` = 5, the Supervisor timer interrupt). The RISC-V
 /// analog of aarch64's per-CPU timer INTID.
@@ -79,15 +79,15 @@ const STIE: u64 = 1 << 5;
 ///
 /// Per hart because masking `sstatus.SIE` masks one hart's timer (DECISIONS §11 (SMP: per-CPU run
 /// queues)): only a per-hart count shows that holding a lock stopped this hart's ticks.
-static TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+static TICKS: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// Deadlines already past when this hart re-armed, per hart. Nonzero means a whole tick period
 /// elapsed inside the handler or a critical section.
-static MISSED_TICKS: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+static MISSED_TICKS: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// The absolute `time` value each hart's next tick is due at: the grid, anchored by [`initialize`].
 /// SBI's `set_timer` cannot be read back, so this is the only copy.
-static DEADLINE: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+static DEADLINE: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// Arm this hart's S-mode timer interrupt for when `time` reaches `next`, through SBI TIME
 /// `set_timer`, and clear any pending one.
@@ -354,11 +354,11 @@ pub(crate) fn deadline() -> u64 {
 pub mod miss_detail {
     use core::sync::atomic::{AtomicU64, Ordering};
 
-    use crate::cpu::{self, MAX_CPUS};
+    use crate::cpu::{self, MAXIMUM_CPUS};
 
-    static NOW: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
-    static NEXT: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
-    static COUNT: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+    static NOW: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
+    static NEXT: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
+    static COUNT: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
     /// Record `now` and the deadline `next` it had already passed.
     ///
@@ -561,16 +561,16 @@ mod tests {
     // here: from inside the guest a slow handler and a descheduled host look alike. See
     // notes/riscv-port/timer.md.
 
-    /// Holding an `IrqSafeMutex` across more than one tick deadline loses a tick.
+    /// Holding an `InterruptSafeMutex` across more than one tick deadline loses a tick.
     ///
     /// If it did not, the mutex would not be masking interrupts. This is the cost DECISIONS §9's
     /// short critical sections avoid.
     #[test_case]
     fn a_long_critical_section_costs_a_tick() {
         use crate::arch::timer;
-        use crate::sync::{IrqSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutex, rank};
 
-        static M: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
 
         // Read `before` inside the critical section, where this thread cannot migrate, so the
         // window measured is exactly the masked one.
@@ -587,7 +587,8 @@ mod tests {
         assert!(
             within_periods(20, || timer::missed_ticks_on(hart) > before),
             "holding a lock across two tick periods did NOT lose a tick, which means \
-             IrqSafeMutex is not masking interrupts and the deadlock in notes/locking.md is live"
+             InterruptSafeMutex is not masking interrupts and the deadlock in notes/locking.md \
+             is live"
         );
     }
 
@@ -608,7 +609,8 @@ mod tests {
         );
     }
 
-    /// Holding an `IrqSafeMutex` masks this hart's timer (`sstatus.SIE`), and releasing it delivers
+    /// Holding an `InterruptSafeMutex` masks this hart's timer (`sstatus.SIE`), and releasing it
+    /// delivers
     /// the held tick.
     ///
     /// Confirms ticks flow, spins three periods under a lock asserting none lands, waits for one to
@@ -617,9 +619,9 @@ mod tests {
     #[test_case]
     fn holding_a_lock_masks_the_timer() {
         use crate::arch::{interrupts, timer};
-        use crate::sync::{IrqSafeMutex, rank};
+        use crate::sync::{InterruptSafeMutex, rank};
 
-        static M: IrqSafeMutex<u32> = IrqSafeMutex::new(rank::PAGE_FRAMES, 0);
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
 
         assert!(
             interrupts::is_enabled(),
@@ -649,7 +651,7 @@ mod tests {
             assert_eq!(
                 timer::ticks_on(hart),
                 before,
-                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. IrqSafeMutex is not masking \
+                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutex is not masking \
                  sstatus.SIE, and the deadlock in notes/locking.md is live: a handler that touched \
                  this lock would spin forever waiting for code that cannot run."
             );
@@ -665,7 +667,7 @@ mod tests {
             assert_eq!(
                 timer::ticks_on(hart),
                 before,
-                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. IrqSafeMutex is not masking \
+                "A TIMER INTERRUPT FIRED WHILE A LOCK WAS HELD. InterruptSafeMutex is not masking \
                  sstatus.SIE, and the deadlock in notes/locking.md is live: a handler that touched \
                  this lock would spin forever waiting for code that cannot run."
             );

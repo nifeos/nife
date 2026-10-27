@@ -22,7 +22,8 @@ const PRESS_CUE: &str = "bench-keyboard: press";
 /// `keyboard_up` runs from the driver's spawn being queued to its `KEYBOARD_UP` report: loading
 /// the image, feature negotiation, queue setup and the first buffers, with the host not involved.
 /// `keyboard_event` runs, per press, from the kernel's delivery of the keyboard's interrupt
-/// (`sched::watched_irq_at`) to the driver's `COMMIT` reaching this thread, which stands in for
+/// (`sched::watched_interrupt_at`) to the driver's `COMMIT` reaching this thread, which stands in
+/// for
 /// the compositor; it excludes the wait for the host, which under icount is idle time the counter
 /// skips past. No `TickWindow`: the windows open on a device's interrupt, not on a tick, and the
 /// 1 Hz bench tick landing in one would move one press by a tick handler's cost, which
@@ -46,13 +47,13 @@ pub(super) fn keyboard() {
     }
     println!("bench: keyboard_up {} 1", t1 - t0);
 
-    sched::watch_irq(wiring.irq);
+    sched::watch_interrupt(wiring.interrupt_ep);
     let mut total = 0;
     let mut typed = [0u8; 16];
     for i in 0..KEY_PRESSES {
         println!("{PRESS_CUE} {i}");
         let arrived = wiring.answer_doorbell();
-        total += arrived - sched::watched_irq_at();
+        total += arrived - sched::watched_interrupt_at();
         if wiring.take_typed(&mut typed) == 0 {
             println!("bench-probe: press {i} rang the doorbell with nothing typed; no row");
             return;

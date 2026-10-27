@@ -119,13 +119,16 @@ Traps and interrupts:
 - `exceptions::{initialize, self_test}`.
 - `exceptions::{user_pc, set_user_arg}`: read a trapped thread's PC and write its return
   registers, through the frame at its kernel stack top.
-- `exceptions::{last_user_fault, USER_FAULTS, ROUTED_IRQS, SPURIOUS_IRQS}`: diagnostics.
+- `exceptions::{last_user_fault, USER_FAULTS, ROUTED_INTERRUPTS, SPURIOUS_INTERRUPTS}`: diagnostics.
 - `interrupts::{disable, restore, enable, is_enabled}`: `disable` returns the prior state
   and callers `restore` it; `enable` is for first enabling only.
-- `irq::{initialize, initialize_this_cpu, print_summary}`: the interrupt controller, then each core.
-- `irq::enable(id)`: unmask a source the handler masked, at an `Irq` capability's ACK.
-- `irq::send_reschedule(cpu)`: the reschedule inter-processor interrupt.
-- `irq::alloc_msi_vector()`: an MSI-X vector and target, or `None` where the board uses INTx.
+- `interrupt_controller::{initialize, initialize_this_cpu, print_summary}`: the interrupt
+  controller, then each core.
+- `interrupt_controller::enable(id)`: unmask a source the handler masked, at an `Interrupt`
+  capability's ACK.
+- `interrupt_controller::send_reschedule(cpu)`: the reschedule inter-processor interrupt.
+- `interrupt_controller::alloc_msi_vector()`: an MSI-X vector and target, or `None` where the board
+  uses INTx.
 
 Time:
 - `timer::{initialize, frequency, interval, TICK_HZ}`: the periodic tick and its rate.
@@ -149,7 +152,7 @@ Memory:
   switch-time install, and sharing the kernel into a new root (a no-op where the kernel has
   its own root register).
 - `mmu::map_current_user_page_frame(..)`: map an owned frame into the caller's space.
-- `mmu::{THREAD_STACK_AREA, PCI_ECAM_BUSES, PCI_IRQ_BASE}`: layout and bus constants.
+- `mmu::{THREAD_STACK_AREA, PCI_ECAM_BUSES, PCI_INTERRUPT_NUMBER_BASE}`: layout and bus constants.
 - `iommu::{initialize, is_active, print_summary, build_domain, attach, scope_of,
   for_each_reserved_region}`: build a DMA domain in the unit's own format, bind a requester
   to it, and report firmware-reserved regions.

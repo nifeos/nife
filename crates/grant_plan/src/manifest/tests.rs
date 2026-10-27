@@ -35,7 +35,7 @@ fn the_index_store_opens_with_a_word_grants_rights() {
 #[test]
 fn an_option_set_may_hold_exactly_its_maximum_and_no_repeat() {
     let sixteen = b"abcdefghijklmnop";
-    assert_eq!(sixteen.len(), MAX_DECLARED_SHORT_OPTIONS);
+    assert_eq!(sixteen.len(), MAXIMUM_DECLARED_SHORT_OPTIONS);
     assert!(ShortOptions::try_new(sixteen).is_some());
     assert!(ShortOptions::try_new(b"abcdefghijklmnopq").is_none());
     assert!(ShortOptions::try_new(b"aa").is_none());
@@ -68,7 +68,7 @@ fn an_installer_region_holds_one_more_package() {
     assert!(jig.installer);
     assert_eq!(
         named_std_region_pages(&jig),
-        STD_REGION_PAGES + spawnproto::IMAGE_MAX_PAGES
+        STD_REGION_PAGES + spawnproto::IMAGE_MAXIMUM_PAGES
     );
     let plain = Manifest {
         installer: false,

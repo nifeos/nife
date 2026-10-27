@@ -8,7 +8,7 @@ its word budget.
 counterpart to the SMMU's proofs) as §212's parent-named sibling directory of
 `notes/kernel-proofs.md`, whose own name is provisional too. Naming is calef's.*
 
-`smmu-proofs` and `x86-irq-proofs` Name: provisional, minted 2026-10-11 (UTC) by
+`smmu-proofs` and `x86-interrupt-controller-proofs` Name: provisional, minted 2026-10-11 (UTC) by
 lane/fourth-ten-longest-notes. That lane moved the main page's two per-file proof sections here
 under §212 (a prose budget). The SMMUv3 pair is from milestone 255 (a quarter of `kernel/src/arch/`
 has no assembly in it), and the IO APIC pair is from milestone 304 (`cargo kani -p kernel` only ever
@@ -16,5 +16,6 @@ compiled one architecture). Each file is named for the code it proves. calef nam
 
 - [`smmu-proofs.md`](smmu-proofs.md): the two SMMUv3 harnesses, their falsifications and what they
   do not cover.
-- [`x86-irq-proofs.md`](x86-irq-proofs.md): the two vector-band harnesses, the GSI wrap one of them
+- [`x86-interrupt-controller-proofs.md`](x86-interrupt-controller-proofs.md): the two vector-band
+  harnesses, the GSI wrap one of them
   found, and why both are `attested`.

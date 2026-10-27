@@ -10,7 +10,7 @@
 //! notes/elf/parser.md ("Finding a note") for the format, the padding rule and the hostile cases.
 
 use super::{
-    EHDR_SIZE, ELFCLASS64, ELFDATA2LSB, Elf, MAGIC, MAX_PHNUM, PHDR_SIZE, u16le, u32le, u64le,
+    EHDR_SIZE, ELFCLASS64, ELFDATA2LSB, Elf, MAGIC, MAXIMUM_PHNUM, PHDR_SIZE, u16le, u32le, u64le,
 };
 
 /// `p_type` for a segment of notes.
@@ -90,7 +90,7 @@ impl<'a> NoteSegments<'a> {
         let phoff = usize::try_from(u64le(head, 32)).map_err(|_| NoteError::NotReadable)?;
         let phentsize = u16le(head, 54) as usize;
         let phnum = u16le(head, 56) as usize;
-        if phentsize < PHDR_SIZE || phnum > MAX_PHNUM {
+        if phentsize < PHDR_SIZE || phnum > MAXIMUM_PHNUM {
             return Err(NoteError::NotReadable);
         }
         // `phnum <= 64` and `phentsize <= u16::MAX`, so the product cannot wrap; the sum can.

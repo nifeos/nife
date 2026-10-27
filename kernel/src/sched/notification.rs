@@ -8,10 +8,10 @@
 use super::*;
 
 /// The most notifications that can exist at once, whole machine: a registry bound like
-/// [`MAX_RENDEZVOUS`], and half of it, since §101 (notification objects)'s consumers want about one
-/// per thread or service. It bounds only the name table, 16 bytes a slot; the pages come from the
-/// creators' regions.
-pub(super) const MAX_NOTIFICATIONS: usize = 256;
+/// [`MAXIMUM_RENDEZVOUS`], and half of it, since §101 (notification objects)'s consumers want about
+/// one per thread or service. It bounds only the name table, 16 bytes a slot; the pages come from
+/// the creators' regions.
+pub(super) const MAXIMUM_NOTIFICATIONS: usize = 256;
 
 /// A notification's name: a generational name over the notification registry, what an
 /// `Object::Notification` capability carries. Stale-safe like every other name.
@@ -47,7 +47,7 @@ pub(super) fn notification_of(
 pub fn create_notification_from(region: u64) -> Option<NotificationId> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut()?;
-    if sched.notification_table.len() >= MAX_NOTIFICATIONS {
+    if sched.notification_table.len() >= MAXIMUM_NOTIFICATIONS {
         return None;
     }
     let phys = crate::memory_region::retype_object_page(
@@ -197,7 +197,8 @@ pub fn notification_signal(id: NotificationId, bits: u64) -> Result<(), abi::Err
 }
 
 /// Signal a notification from interrupt context, placed load-aware: safe from a handler for
-/// [`irq_notify`]'s reason. A stale name is dropped silently, as `irq_notify` drops a revoked
+/// [`interrupt_notify`]'s reason. A stale name is dropped silently, as `interrupt_notify` drops a
+/// revoked
 /// route.
 ///
 /// Only a kernel test calls it: the timer expiry walk ([`expire_timers`]) calls [`signal_locked`]
@@ -212,7 +213,7 @@ pub fn signal_notification_from_interrupt(id: NotificationId, bits: u64) {
             .flatten()
     };
     if let Some(target) = remote {
-        crate::arch::irq::send_reschedule(target);
+        crate::arch::interrupt_controller::send_reschedule(target);
     }
 }
 

@@ -43,7 +43,7 @@ pub fn spawn_on<F: FnOnce() + Send + 'static>(target: usize, f: F) -> Option<Thr
 
     if let Some(target) = remote {
         // Poke the target: its handler drains the inbox we just pushed to and reschedules.
-        crate::arch::irq::send_reschedule(target);
+        crate::arch::interrupt_controller::send_reschedule(target);
     }
     Some(id)
 }
@@ -102,7 +102,7 @@ pub fn spawn_with_quota<F: FnOnce() + Send + 'static>(
         t.quota = Some(token); // returned to `budget` when the thread is reaped
     }
     let token = take_token(sched, id);
-    // This core's queue: IPC_TABLES held, IRQs masked.
+    // This core's queue: IPC_TABLES held, interrupts masked.
     cpu::current().with_runq(|q| q.push_back(token));
     Some(id)
 }

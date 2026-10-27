@@ -84,8 +84,8 @@ Two counts in the parent's survey are also wrong, from the same cause on the oth
 Taking `pread`'s comment seriously found a path that made it false. It claimed every address
 reaching it was inside a device-mapped BAR. `Transport::Pci`'s `notify_addr[q]` is zero until
 `setup_queue` resolves it, and the `NOTIFY` syscall checked only that the queue number was under
-`MAX_QUEUES`. So a userspace driver holding a virtio capability could ring a queue it had never set
-up, and the kernel wrote a `u16` through `phys_to_virt(0)`: a kernel store, inside no BAR, at a
+`MAXIMUM_QUEUES`. So a userspace driver holding a virtio capability could ring a queue it had never
+set up, and the kernel wrote a `u16` through `phys_to_virt(0)`: a kernel store, inside no BAR, at a
 moment the driver chose. `virtio::notify` now refuses that queue via `Transport::is_doorbell_ready`,
 and a unit test builds the two transport values by hand so it runs on both ISAs and in the mmio-only
 configurations that have no PCI function at all.

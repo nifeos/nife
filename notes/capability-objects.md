@@ -25,7 +25,8 @@ Each variant of `Object` is a decision. What follows is why each is there.
   because `PageFrame` is already that wide.
 - `MemoryRegion`: raw physical memory the holder retypes into pages and objects. Invoking it grows
   the holder's address space out of its own budget, and the kernel allocates nothing to do it.
-- `Irq`: a hardware interrupt, by INTID. The holder can `WAIT` for it and `ACK` it once the device
+- `Interrupt`: a hardware interrupt, by INTID. The holder can `WAIT` for it and `ACK` it once the
+  device
   is serviced. The kernel's handler does nothing device-specific: it masks the line and turns the
   interrupt into a message. A driver owns an interrupt without owning any privilege.
 - `PageFrame`: a contiguous run of physical pages, by base address and count. IPC carries control
@@ -69,10 +70,10 @@ arguments, so the syscall's argument shape is the same for a run as for one page
 
 A slot is 32 bytes: `Object` is as wide as its widest variant, `PageFrame`, at 24 bytes, plus the
 rights. §102 priced the slot count on 24 bytes a slot. At 64 slots a table is 2,048 bytes of slots,
-and the option §102 priced at 12 KiB a thread for 512 slots would be 32 KiB. `sched::MAX_THREADS`
-is 256, so every whole-machine figure §102 quoted is larger again. The refusal does not change; the
-size assertions in `cap.rs` exist so the number a reader quotes is the one the compiler agrees
-with.
+and the option §102 priced at 12 KiB a thread for 512 slots would be 32 KiB.
+`sched::MAXIMUM_THREADS` is 256, so every whole-machine figure §102 quoted is larger again. The
+refusal does not change; the size assertions in `cap.rs` exist so the number a reader quotes is the
+one the compiler agrees with.
 
 The table is 64 slots, calef's ruling of 2026-10-04 (UTC) for milestone 754 (the capability table
 grows to 64 slots), chosen over moving holdings into a new process after a gpu-and-keyboard boot

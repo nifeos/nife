@@ -140,7 +140,7 @@ a per-connection shared frame delegated at open time.
   becomes that connection's TX/RX ring, seL4-dataport style.
 - `Socket::connect(ip, port)`, `Socket::bind(port)`, `Socket::listen`, `Socket::send(len)`,
   `Socket::recv() -> len`, `Socket::close`. `send`/`recv` carry only a length; the bytes are already
-  in the shared frame. "Data ready" is a message on the socket endpoint, the same way an `Irq`
+  in the shared frame. "Data ready" is a message on the socket endpoint, the same way an `Interrupt`
   capability delivers an interrupt (WAIT-shaped), so a blocking read is a blocked `RECEIVE`.
 - DHCP and the interface config live entirely inside the server; a client never sees "the network,"
   only its own sockets. The server runs smoltcp's DHCP socket at startup and does not expose it.

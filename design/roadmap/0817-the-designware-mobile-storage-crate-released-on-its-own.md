@@ -74,10 +74,10 @@ Measured 2026-10-25 (UTC), after the cut: 3 of 5 proven.
 | property | harness |
 |---|---|
 | The scratch range never touches a partition or sector zero | `proofs::the_scratch_range_never_touches_a_partition_or_sector_zero` |
-| A FIFO step never overruns the FIFO or the buffer | `proofs::a_fifo_step_never_overruns_the_fifo_or_the_buffer` |
+| A FIFO step never overruns the FIFO or the buffer | `proofs::a_queue_step_never_overruns_the_queue_or_the_buffer` |
 | An admitted range is inside the card and the address | `proofs::an_admitted_range_is_inside_the_card_and_the_address` |
-| The MBR parse (`partition::Mbr::parse`) is total, and every entry it accepts lies inside the card | none yet |
-| The capacity decoders (`card::Csd`, `card::ext_csd_sectors`) are total for any register or EXT_CSD bytes | none yet |
+| The MBR parse (`partition::MasterBootRecord::parse`) is total, and every entry it accepts lies inside the card | none yet |
+| The capacity decoders (`card::CardSpecificData`, `card::extended_card_specific_data_sectors`) are total for any register or EXT_CSD bytes | none yet |
 
 The last two rows are this lane's reading of the hostile surface: a stranger's SD card supplies
 its partition table and its registers. The served-block row left with `serve` on 2026-10-25: its
@@ -158,6 +158,47 @@ blocks, which the ratification pass settles.
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   nothing. `serve`, which spoke nife's block protocol, left with the cut.
+
+## Names a stranger may misread, open before release
+
+design/naming.md's tests and Fork 5 of milestone 857 (names that stand on their own) judge
+each name. The lines below list the names that read as something other than clear or a term, as of
+2026-10-26 (UTC), copied as they stand. Each stays open until a ruling keeps or changes it. The tree
+keeps no record of a release-track crate's names (ruled 2026-10-26 UTC), so this list is the open
+work, and the lane that renames a name drops its line.
+
+### Nife's own plan
+
+- `role` (`src/jh7110.rs`): nife: nife's own process plan
+
+### Belongs to something else
+
+- `bench` (`src/bench.rs`): scope: a bench
+- `jh7110` (`src/jh7110.rs`): scope: one SoC's glue in a host controller crate
+- `partition` (`src/partition.rs`): scope: partitions
+- `MATRIX_BLOCKS` (`src/bench.rs`): scope: a bench
+- `MATRIX_HZ` (`src/bench.rs`): scope: a bench
+- `MatrixRow` (`src/bench.rs`): scope: a bench
+- `ReadFailure` (`src/bench.rs`): scope: a bench
+- `ReadReport` (`src/bench.rs`): scope: a bench
+- `SCRATCH_SECTORS` (`src/bench.rs`): scope: a bench
+- `Watch` (`src/bench.rs`): scope: a bench
+- `WriteVerdict` (`src/bench.rs`): scope: a bench
+- `pattern` (`src/bench.rs`): scope: a bench
+- `read_matrix` (`src/bench.rs`): scope: a bench
+- `read_only` (`src/bench.rs`): scope: a bench
+- `scratch_write` (`src/bench.rs`): scope: a bench
+- `Entry` (`src/partition.rs`): scope: partitions
+- `SIGNATURE` (`src/partition.rs`): scope: partitions
+- `is_used` (`src/partition.rs`): scope: partitions
+- `scratch` (`src/partition.rs`): scope: partitions
+
+### Generic
+
+- `bits` (`src/card.rs`): generic
+- `Data` (`src/command.rs`): generic
+- `word` (`src/command.rs`): generic
+- `Kind` (`src/sd.rs`): generic
 
 ## Exit
 

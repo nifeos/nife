@@ -21,7 +21,7 @@
 //!
 //! - `SYS_CAP_DELETE` is driven through `sched::delete_current_cap`, not `syscall::dispatch`.
 //! - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
-//!   `Timer`, `Irq`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages.
+//!   `Timer`, `Interrupt`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages.
 //! - An unexpected wake is caught, but possibly some steps after the operation that caused it.
 //! - A kernel change that re-rolls a corpus seed's walk can leave it green with its defect still
 //!   reachable.

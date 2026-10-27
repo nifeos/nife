@@ -326,6 +326,9 @@ def main(argv):
         return run_check()
     if argv[0] == '--bank':
         return bank()
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
     if argv[0] == '--init' and not os.path.exists(BASELINE):
         write_baseline(tree_modules()[1])
         print(f'module-block ratchet: wrote {BASELINE}')

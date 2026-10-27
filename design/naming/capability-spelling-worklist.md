@@ -62,8 +62,8 @@ becomes `capability`, `caps` becomes `capabilities`, `Cap` becomes `Capability`,
 | Today | Proposed | Note |
 |---|---|---|
 | module `cap` (`kernel/src/cap.rs`) | `capability_object` | `capability` would shadow the `capability` crate the module imports. The file's own header calls it "the set of nouns" a capability points at. |
-| `rendezvous_cap`, `memory_region_cap`, `page_frame_cap`, `page_frame_run_cap`, `device_frame_cap`, `port_range_cap`, `irq_cap`, `timer_cap`, `notification_cap`, `address_space_cap`, `thread_control_block_cap`, `virtio_cap`, `reply_cap`, `memory_region_root_cap` | `rendezvous_capability` and so on | the constructors in the module |
-| `rendezvous_cap_badged`, `irq_cap_rights`, `virtio_cap_rights`, `memory_region_cap_rights` | `rendezvous_capability_badged` and so on | |
+| `rendezvous_cap`, `memory_region_cap`, `page_frame_cap`, `page_frame_run_cap`, `device_frame_cap`, `port_range_cap`, `interrupt_cap`, `timer_cap`, `notification_cap`, `address_space_cap`, `thread_control_block_cap`, `virtio_cap`, `reply_cap`, `memory_region_root_cap` | `rendezvous_capability` and so on | the constructors in the module |
+| `rendezvous_cap_badged`, `interrupt_cap_rights`, `virtio_cap_rights`, `memory_region_cap_rights` | `rendezvous_capability_badged` and so on | |
 | `current_cap`, `delete_current_cap`, `enter_current_cap`, `leave_current_cap`, `current_cap_totals` | `current_capability` and so on | |
 | `thread_control_block_insert_cap`, `thread_control_block_cap_insert`, `thread_control_block_delegate_cap` | `thread_control_block_insert_capability` and so on | |
 | `ipc_send_cap`, `ipc_send_cap_from`, `ipc_receive_cap`, `ipc_delegate_cap` | `ipc_send_capability` and so on | |
@@ -77,7 +77,7 @@ becomes `capability`, `caps` becomes `capabilities`, `Cap` becomes `Capability`,
 | Today | Proposed | Note |
 |---|---|---|
 | `CapNeed` (`crates/capability_plan`) | `CapabilityNeed` | |
-| `MAX_CAPS`, `TooManyCaps`, `FULL_CAPS`, `OVER_CAPS`, `CAP_TWICE`, `caps()` | `MAX_CAPABILITIES`, `TooManyCapabilities` and so on | |
+| `MAXIMUM_CAPS`, `TooManyCaps`, `FULL_CAPS`, `OVER_CAPS`, `CAP_TWICE`, `caps()` | `MAXIMUM_CAPABILITIES`, `TooManyCapabilities` and so on | |
 | `Command::Caps` (`crates/grant_plan`) | `Command::Capabilities` | see the swish builtin below. `CapKind` is done: it became `CapabilityKind` on 2026-10-11 (UTC), #1913 |
 | `CAP_TAG` (`crates/grant_plan/src/spawnproto.rs`) | `CAPABILITY_TAG` | the value `0x6361_705f` stays: it is a wire marker |
 | `CAP_WRITE`, `CAP_USER`, `CAP_USER_EXEC`, `CAP_KERNEL_EXEC`, `CAP_DEVICE`, `CAP_GLOBAL`, `CAP_WRITE_COMBINE`, `from_caps` (`crates/paging`) | `ACCESS_WRITE` and so on, `from_access` | private bits for what a mapping grants; `CAPABILITY_WRITE` would read as an object capability, so propose `ACCESS_`. A word for calef. |

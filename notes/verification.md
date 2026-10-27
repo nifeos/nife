@@ -116,7 +116,7 @@ table and the reasoning.
 | `device_tree_blob` | 4 | the big-endian leaf readers are total | [core](verification/core-harnesses.md) |
 | `inter_process_communication` | 6 | at most one wait queue is non-empty; rendezvous is exact; a collected sender is forgotten | [core](verification/core-harnesses.md) |
 | `generational_table` | 3 | a removed name never resolves again | [core](verification/core-harnesses.md) |
-| `intrusive_fifo` | 1 | any push/pop interleaving is FIFO and lossless | [core](verification/core-harnesses.md) |
+| `intrusive_queue` | 1 | any push/pop interleaving is FIFO and lossless | [core](verification/core-harnesses.md) |
 | `address_space_identifier` | 3 | ASID 0 is never allocated; live ASIDs are distinct | [core](verification/core-harnesses.md) |
 | `elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |
@@ -169,7 +169,8 @@ script/verify
 It self-installs Kani on first run (its own nightly toolchain and a CBMC backend), then runs
 `cargo kani` over every package carrying harnesses. The harness count is generated weekly into
 `notes/project-metrics.md`; the harnesses sit across 39 packages <!--count:harness-crates-->. Not
-every host compiles all of them: two in `kernel/src/arch/x86_64/irq.rs` run only on an x86_64 host.
+every host compiles all of them: two in `kernel/src/arch/x86_64/interrupt_controller.rs` run only on
+an x86_64 host.
 
 Harnesses within a crate verify in parallel, `-j 4` by default (`VERIFY_JOBS` overrides). In CI the
 suite runs as three `prove` shards behind one required check, `verify (Kani proofs)`, which calef

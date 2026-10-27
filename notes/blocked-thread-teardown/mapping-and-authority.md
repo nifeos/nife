@@ -18,7 +18,7 @@ possibly one endpoint queue, and returns. The victim is touched as data, never s
 destroyer never calls `schedule()` from anywhere new.
 
 The property to preserve if a proposal ever grows a timer (a deadline on `CALL`, milestone 106's
-fork) is that firing a deadline from the timer IRQ must not switch there either. The existing
+fork) is that firing a deadline from the timer interrupt must not switch there either. The existing
 answer is already written: the interrupt path defers its switch to `preempt_if_needed`, one frame
 outside the trampoline, back on the interrupted thread's own stack. A deadline would have to use the
 same deferral, and that is a constraint to write into 106 rather than a reason to refuse it.

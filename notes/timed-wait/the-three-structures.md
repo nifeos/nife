@@ -6,7 +6,7 @@ Section 2 of [`notes/timed-wait.md`](../timed-wait.md) in full: three deadline s
 cannot tell them apart.
 
 The block offers "a timer wheel or an ordered deadline list" as if those were the options. At
-`MAX_THREADS = 128` and `TICK_HZ = 100` there is a third that beats both, and the reason is not
+`MAXIMUM_THREADS = 128` and `TICK_HZ = 100` there is a third that beats both, and the reason is not
 asymptotic.
 
 Three candidates, modeled on the host over 200,000 ticks (2,000 seconds of kernel time) with a
@@ -54,7 +54,7 @@ The crossover is where it is because a scan is O(live threads) *per expiry event
 is O(1) per insert and per expiry. At a handful of deadline holders the scan's constant factor is
 smaller than the wheel's bookkeeping. The five known consumers (net_stack's retransmit window,
 `thread::sleep`, `Rendezvous::RECEIVE`'s no-timeout limitation, milestone 103 (`^C` stops spinning)'s `^C` watch, milestone
-106's `Irq::WAIT`) are on the order of one deadline each.
+106's `Interrupt::WAIT`) are on the order of one deadline each.
 
 The honest error bars. These are *modeled* operation counts, not machine instructions: the host
 model counts comparisons and pointer writes at the points a kernel implementation would perform them,

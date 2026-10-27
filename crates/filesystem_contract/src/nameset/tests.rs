@@ -25,32 +25,33 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
 
     // A full set fits exactly, and one more name does not: BYTES is a bound that is met, not a
     // guess with slack in it. The widest set is the most names whose bytes together reach
-    // NAME_BYTES, which is MAX_NAMES names sharing it.
-    let each = nameset::NAME_BYTES / nameset::MAX_NAMES;
-    let wide = [b'w'; nameset::NAME_BYTES / nameset::MAX_NAMES];
-    let full: [(&[u8], bool); nameset::MAX_NAMES] = [(&wide[..], false); nameset::MAX_NAMES];
+    // NAME_BYTES, which is MAXIMUM_NAMES names sharing it.
+    let each = nameset::NAME_BYTES / nameset::MAXIMUM_NAMES;
+    let wide = [b'w'; nameset::NAME_BYTES / nameset::MAXIMUM_NAMES];
+    let full: [(&[u8], bool); nameset::MAXIMUM_NAMES] =
+        [(&wide[..], false); nameset::MAXIMUM_NAMES];
     assert_eq!(
         nameset::encode(&full, &mut buf),
-        Some(2 * nameset::MAX_NAMES + each * nameset::MAX_NAMES + 1),
+        Some(2 * nameset::MAXIMUM_NAMES + each * nameset::MAXIMUM_NAMES + 1),
     );
     assert_eq!(
-        each * nameset::MAX_NAMES,
+        each * nameset::MAXIMUM_NAMES,
         nameset::NAME_BYTES,
         "the full set meets the bound"
     );
     assert_eq!(
-        2 * nameset::MAX_NAMES + nameset::NAME_BYTES + 1,
+        2 * nameset::MAXIMUM_NAMES + nameset::NAME_BYTES + 1,
         nameset::BYTES,
         "the widest set this contract carries must fit its own buffer exactly",
     );
     // And the longest name travels in a set (milestone 946 (a granted file name can be longer than sixteen bytes)), twice over, with room for nothing
     // that would take the set past its bytes.
-    let longest = [b'l'; grant::MAX_NAME];
+    let longest = [b'l'; grant::MAXIMUM_NAME];
     let two: [(&[u8], bool); 2] = [(&longest[..], false), (&longest[..], true)];
     let n = nameset::encode(&two, &mut buf).expect("two of the longest names fit");
     assert_eq!(nameset::iter(&buf[..n]).count(), 2);
     assert!(nameset::contains(&buf[..n], &longest));
-    let spill = [b's'; nameset::NAME_BYTES - 2 * grant::MAX_NAME + 1];
+    let spill = [b's'; nameset::NAME_BYTES - 2 * grant::MAXIMUM_NAME + 1];
     let three: [(&[u8], bool); 3] = [
         (&longest[..], false),
         (&longest[..], true),
@@ -61,10 +62,11 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
         None,
         "one byte past NAME_BYTES is refused, not dropped",
     );
-    let over: [(&[u8], bool); nameset::MAX_NAMES + 1] = [(b"a", false); nameset::MAX_NAMES + 1];
+    let over: [(&[u8], bool); nameset::MAXIMUM_NAMES + 1] =
+        [(b"a", false); nameset::MAXIMUM_NAMES + 1];
     assert_eq!(nameset::encode(&over, &mut buf), None, "one name too many");
     assert_eq!(
-        nameset::encode(&[(&[b'n'; grant::MAX_NAME + 1][..], false)], &mut buf),
+        nameset::encode(&[(&[b'n'; grant::MAXIMUM_NAME + 1][..], false)], &mut buf),
         None,
         "a name that cannot travel in a grant cannot travel in a set either",
     );
@@ -122,23 +124,23 @@ fn a_truncated_set_stops_at_the_last_whole_record() {
     assert_eq!(nameset::count(&full[..1]), 0);
 }
 
-/// **A buffer holding more records than [`nameset::MAX_NAMES`] reads as its first
-/// [`nameset::MAX_NAMES`]**, because `encode` never writes more, so the extra records were not
+/// **A buffer holding more records than [`nameset::MAXIMUM_NAMES`] reads as its first
+/// [`nameset::MAXIMUM_NAMES`]**, because `encode` never writes more, so the extra records were not
 /// planned by anyone. The bound also ends every walk over a hostile page: a set of one-byte names
 /// could otherwise hold hundreds of records.
 #[test]
-fn a_set_past_max_names_reads_as_its_first_max_names() {
+fn a_set_past_maximum_names_reads_as_its_first_maximum_names() {
     let mut buf = [0u8; nameset::BYTES];
-    for i in 0..=nameset::MAX_NAMES {
+    for i in 0..=nameset::MAXIMUM_NAMES {
         buf[3 * i..3 * i + 3].copy_from_slice(&[1, 0, b'a' + i as u8]);
     }
-    assert_eq!(nameset::count(&buf), nameset::MAX_NAMES);
-    let last = [b'a' + nameset::MAX_NAMES as u8 - 1];
+    assert_eq!(nameset::count(&buf), nameset::MAXIMUM_NAMES);
+    let last = [b'a' + nameset::MAXIMUM_NAMES as u8 - 1];
     assert!(nameset::contains(&buf, &last));
-    let extra = [b'a' + nameset::MAX_NAMES as u8];
+    let extra = [b'a' + nameset::MAXIMUM_NAMES as u8];
     assert!(
         !nameset::contains(&buf, &extra),
-        "a record past MAX_NAMES widened the set"
+        "a record past MAXIMUM_NAMES widened the set"
     );
     let names: [(&[u8], bool); 2] = [(b"ab", false), (b"cde", true)];
     let mut out = [0u8; 10];

@@ -10,7 +10,7 @@
 //!
 //! A std program's loader owes it the slots `crates/std_runtime_contract` lists (the out-of-band
 //! rule of notes/abi.md §4). Two are always there: an untyped budget the allocator draws heap pages
-//! from lazily (`memory_region::MAP`, at [`HEAP_BASE`], capped at [`HEAP_MAX`]), and the endpoint
+//! from lazily (`memory_region::MAP`, at [`HEAP_BASE`], capped at [`HEAP_MAXIMUM`]), and the endpoint
 //! `stdout` and `stderr` SEND to, 16 bytes per message (w0 = byte count, w1|w2 = the bytes,
 //! little-endian), so out and err interleave. The rest are granted only to a program given that
 //! authority, and an empty slot makes the std call answer that it has nothing: `Unsupported`,
@@ -26,7 +26,7 @@
 // number to its band.
 pub use super::runtimeproto::{
     ARGS_PAGE, ARGS_SLOT, CLOCK_PAGE, CLOCK_SLOT, CONFIG_PAGE, CONFIG_SLOT, ENTROPY_SLOT, FS_DIR_SLOT, FS_PAGE, HEAP_BASE,
-    HEAP_MAX, MEMORY_REGION_SLOT, NET_MEMORY_REGION_SLOT, RESOLVER_PAGE, RESOLVER_SLOT, RESOLVER_SLOTS,
+    HEAP_MAXIMUM, MEMORY_REGION_SLOT, NET_MEMORY_REGION_SLOT, RESOLVER_PAGE, RESOLVER_SLOT, RESOLVER_SLOTS,
     STACK_SLOT, STDIN_READ_REQUEST, STDIN_SLOT, STDIN_STREAM_SLOT,
     STDOUT_SLOT,
 };

@@ -15,11 +15,11 @@ use super::*;
 ///   since milestone 606 (a directory walk costs what it does on Linux) the [`Memo`] pays it once
 ///   per directory until something changes.
 pub(crate) fn list<D: Disk>(
-    tx: &mut Transaction<D>,
+    transaction: &mut Transaction<D>,
     dir: TreePtr<Node>,
 ) -> Result<Vec<memo::Child>> {
     let mut children = Vec::new();
-    tx.child_nodes(dir, &mut children)?;
+    transaction.child_nodes(dir, &mut children)?;
     // The attribute store is not part of the namespace (milestone 57 (extended attributes)). It is
     // filtered before any cursor applies, so the cursor counts only what the client can see.
     let mut out = Vec::with_capacity(children.len());
@@ -28,7 +28,7 @@ pub(crate) fn list<D: Disk>(
         if name == xattr::STORE_DIR {
             continue;
         }
-        let child: redoxfs::TreeData<Node> = tx.read_tree(entry.node_ptr())?;
+        let child: redoxfs::TreeData<Node> = transaction.read_tree(entry.node_ptr())?;
         out.push(memo::Child {
             name: name.into(),
             ptr: entry.node_ptr(),

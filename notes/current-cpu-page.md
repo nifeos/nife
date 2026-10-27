@@ -44,8 +44,8 @@ prepared lacks `MAGIC`, and a page whose thread never ran holds `UNSCHEDULED` (`
 is the kernel's own cpu id, and the online set is not `0..count`. On the VisionFive 2 it is
 `{1, 2, 3}`, so a per-CPU array is sized by `CPU_ID_BOUND` (see `crates/cpu_set`).
 
-`CPU_ID_BOUND` is the kernel's compile-time `MAX_CPUS`, not the online set. It is right for sizing
-and useless for iterating, and iterating is the selector's question.
+`CPU_ID_BOUND` is the kernel's compile-time `MAXIMUM_CPUS`, not the online set. It is right for
+sizing and useless for iterating, and iterating is the selector's question.
 
 ## The magic and the layout
 

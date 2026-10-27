@@ -1,8 +1,12 @@
 //! The interrupt controller, RISC-V: the PLIC.
 //!
-//! The arch side of the portable `arch::irq` surface, the twin of aarch64's GIC adapter, resolving
+//! The arch side of the portable `arch::interrupt_controller` surface, the twin of aarch64's GIC
+//! adapter, resolving
 //! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4 (kernel shape:
 //! monolithic, deferred)). See notes/riscv-port/traps.md.
+//!
+//! Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling. Spelled
+//! out from `irq`; `interrupts` already names the masking module, so this one names the controller.
 
 use core::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
 
@@ -12,8 +16,8 @@ use core::sync::atomic::{AtomicU16, AtomicUsize, Ordering};
 ///
 /// A table, because the formula is QEMU's layout: on the JH7110 hart h's S context is `2h`. See
 /// notes/riscv-port/traps.md.
-static S_CTX: [AtomicUsize; machine_discovery::plic::MAX_CONTEXT_HARTS] =
-    [const { AtomicUsize::new(CTX_UNKNOWN) }; machine_discovery::plic::MAX_CONTEXT_HARTS];
+static S_CTX: [AtomicUsize; machine_discovery::plic::MAXIMUM_CONTEXT_HARTS] =
+    [const { AtomicUsize::new(CTX_UNKNOWN) }; machine_discovery::plic::MAXIMUM_CONTEXT_HARTS];
 const CTX_UNKNOWN: usize = usize::MAX;
 
 /// Record the PLIC context layout from the device tree at physical `dtb_ptr`, once, on the boot
@@ -68,24 +72,25 @@ pub(crate) fn this_s_context() -> usize {
 /// Assigned once and stable, so a claim and its completion land on one context. Indexed by source
 /// number; QEMU `virt`'s are small (the UART is 10, virtio-mmio 1..8).
 const CTX_UNASSIGNED: u16 = u16::MAX;
-const MAX_SOURCES: usize = 128;
-static SOURCE_CTX: [AtomicU16; MAX_SOURCES] =
-    [const { AtomicU16::new(CTX_UNASSIGNED) }; MAX_SOURCES];
+const MAXIMUM_SOURCES: usize = 128;
+static SOURCE_CTX: [AtomicU16; MAXIMUM_SOURCES] =
+    [const { AtomicU16::new(CTX_UNASSIGNED) }; MAXIMUM_SOURCES];
 
 /// Round-robin cursor spreading device sources over the online harts, the twin of the GIC's
 /// `ITARGETSR` distribution.
-static NEXT_IRQ_HART: AtomicUsize = AtomicUsize::new(0);
+#[doc(alias = "irq")]
+static NEXT_INTERRUPT_HART: AtomicUsize = AtomicUsize::new(0);
 
 /// The PLIC context `source` targets: its stable assignment, or else the next online hart's S
 /// context, opened and recorded. Only online harts, which set `SEIE`, are chosen.
 fn target_context(source: u32) -> usize {
-    let slot = &SOURCE_CTX[source as usize % MAX_SOURCES];
+    let slot = &SOURCE_CTX[source as usize % MAXIMUM_SOURCES];
     let existing = slot.load(Ordering::Relaxed);
     if existing != CTX_UNASSIGNED {
         return existing as usize;
     }
     // The k-th online hart, not hart k: the VisionFive 2's online set is {1,2,3}.
-    let hart = crate::smp::nth_online(NEXT_IRQ_HART.fetch_add(1, Ordering::Relaxed));
+    let hart = crate::smp::nth_online(NEXT_INTERRUPT_HART.fetch_add(1, Ordering::Relaxed));
     let ctx = s_context_of(hart);
     // Open it before the first source lands. Threshold registers are global MMIO and opening is
     // idempotent, so any hart may do it and a race is harmless.
@@ -104,20 +109,20 @@ fn target_context(source: u32) -> usize {
 
 /// The context holding each source's outstanding claim, or [`CTX_UNASSIGNED`]. Set by
 /// [`hold_claim`] and taken by [`enable`], which must complete against the context that claimed.
-static CLAIM_CTX: [AtomicU16; MAX_SOURCES] =
-    [const { AtomicU16::new(CTX_UNASSIGNED) }; MAX_SOURCES];
+static CLAIM_CTX: [AtomicU16; MAXIMUM_SOURCES] =
+    [const { AtomicU16::new(CTX_UNASSIGNED) }; MAXIMUM_SOURCES];
 
 /// Record that `context` claimed `source` and that its driver's ACK owes the completion.
 pub(crate) fn hold_claim(source: u32, context: usize) {
-    CLAIM_CTX[source as usize % MAX_SOURCES].store(context as u16, Ordering::Release);
+    CLAIM_CTX[source as usize % MAXIMUM_SOURCES].store(context as u16, Ordering::Release);
 }
 
-/// An `Irq` capability's ACK for `intid`, and its arming at setup.
+/// An `Interrupt` capability's ACK for `intid`, and its arming at setup.
 ///
 /// With a claim outstanding, completes it on the claiming context, so the gateway forwards the next
 /// interrupt. Otherwise enables the source at its stable target hart (see [`target_context`]).
 pub fn enable(intid: u32) {
-    match CLAIM_CTX[intid as usize % MAX_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire) {
+    match CLAIM_CTX[intid as usize % MAXIMUM_SOURCES].swap(CTX_UNASSIGNED, Ordering::Acquire) {
         CTX_UNASSIGNED => crate::drivers::plic::enable(intid, target_context(intid)),
         claimed => crate::drivers::plic::complete(intid, claimed as usize),
     }
@@ -125,7 +130,7 @@ pub fn enable(intid: u32) {
 
 /// Reserve a vector a PCI function may deliver an MSI-X message on: `None` on this architecture.
 ///
-/// PCI functions here raise INTx onto PLIC inputs from `mmu::PCI_IRQ_BASE`, which
+/// PCI functions here raise INTx onto PLIC inputs from `mmu::PCI_INTERRUPT_NUMBER_BASE`, which
 /// `kernel/src/pci.rs` falls back to. A board with the AIA's IMSIC would implement this. See
 /// notes/riscv-port/traps.md.
 pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
@@ -139,7 +144,8 @@ pub(crate) fn boot_s_context() -> usize {
 }
 
 /// How many interrupts a device line delivered at bring-up: `None`, because no device here
-/// interrupts without input or a disk, so `self_test`'s `deviceirq` check reports itself absent.
+/// interrupts without input or a disk, so `self_test`'s `device_interrupt` check reports itself
+/// absent.
 #[cfg_attr(
     any(test, feature = "system_tests", feature = "bench"),
     allow(dead_code)
@@ -195,11 +201,11 @@ pub(crate) fn send_reschedule(target_cpu: usize) {
 pub(crate) fn print_summary() {
     match crate::memory::plic_region() {
         Some((plic, _)) => crate::println!(
-            "  interrupts      : PLIC at {plic:#018x}, this hart's S-mode context {}",
+            "  interrupts       : PLIC at {plic:#018x}, this hart's S-mode context {}",
             this_s_context(),
         ),
         None => {
-            crate::println!("  interrupts      : none (this machine's device tree names no PLIC)");
+            crate::println!("  interrupts       : none (this machine's device tree names no PLIC)");
         }
     }
 }

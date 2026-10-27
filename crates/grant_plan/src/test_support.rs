@@ -103,7 +103,8 @@ pub(crate) fn plan_streams(
 /// `Holdings` an operand would be.
 /// What [`plan_line`] answers: the planned stages and how many there are, or the stage index
 /// that refused and why. Named because the tuple is long enough that clippy is right about it.
-pub(crate) type Planned = Result<([Option<Endowment>; line::MAX_STAGES], usize), (usize, Refusal)>;
+pub(crate) type Planned =
+    Result<([Option<Endowment>; line::MAXIMUM_STAGES], usize), (usize, Refusal)>;
 
 pub(crate) fn plan_line(text: &[u8], holds: Holdings) -> Planned {
     let l = line::split(text).map_err(|r| (0, r))?;
@@ -125,7 +126,7 @@ pub(crate) fn plan_line(text: &[u8], holds: Holdings) -> Planned {
         )),
         None => None,
     };
-    let mut plans: [Option<Endowment>; line::MAX_STAGES] = [None; line::MAX_STAGES];
+    let mut plans: [Option<Endowment>; line::MAXIMUM_STAGES] = [None; line::MAXIMUM_STAGES];
     for (i, stage) in l.stages().iter().enumerate() {
         let Command::Run(run) = parse(stage) else {
             return Err((i, Refusal::NotAPipelineStage));
@@ -142,10 +143,10 @@ pub(crate) fn plan_line(text: &[u8], holds: Holdings) -> Planned {
 
 /// **A line naming a file one byte longer than a grant can carry**, `<prefix>xxx...x`, built in
 /// `buf` because this crate has no allocator in tests either. Every test that proves the name
-/// bound is refused uses it, so the bound is [`crate::MAX_FILE_NAME`] and never a spelled-out
+/// bound is refused uses it, so the bound is [`crate::MAXIMUM_FILE_NAME`] and never a spelled-out
 /// literal that a raised bound would silently make legal.
 pub(crate) fn with_too_long_name<'a>(prefix: &[u8], buf: &'a mut [u8; 512]) -> &'a [u8] {
-    let n = prefix.len() + crate::MAX_FILE_NAME + 1;
+    let n = prefix.len() + crate::MAXIMUM_FILE_NAME + 1;
     buf[..prefix.len()].copy_from_slice(prefix);
     buf[prefix.len()..n].fill(b'x');
     &buf[..n]

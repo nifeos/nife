@@ -20,7 +20,7 @@ Name: provisional, minted by lane/no-cap-abbreviation on 2026-10-06. A shared py
 calef names things; expect this to change.
 
 **What counts.** An identifier in a `.rs` file that has `cap` or `caps` as a whole component, in
-any casing: `cap`, `Cap`, `CAP`, `caps`, `cap_slot`, `SEND_CAP`, `irq_cap`, `CapKind`, `MCap`.
+any casing: `cap`, `Cap`, `CAP`, `caps`, `cap_slot`, `SEND_CAP`, `interrupt_cap`, `CapKind`, `MCap`.
 Components split at `_`, at digits and at CamelCase boundaries, so `capacity`, `capture`, `escape`,
 `capable` and `keycaps` are one component each and never match. Comments and string literals are
 stripped first: the ruling covers identifiers, and "a cap on lane count" in a comment is the
@@ -385,8 +385,8 @@ def selftest():
     cases = [
         # (Rust source, the identifiers that must count)
         ('fn f(cap: u64, caps: &[Cap]) -> CAP {}', ['cap', 'caps', 'Cap', 'CAP']),
-        ('const SEND_CAP: u64 = 1; let irq_cap = cap_slot; struct CapKind; struct MCap;',
-         ['SEND_CAP', 'irq_cap', 'cap_slot', 'CapKind', 'MCap']),
+        ('const SEND_CAP: u64 = 1; let interrupt_cap = cap_slot; struct CapKind; struct MCap;',
+         ['SEND_CAP', 'interrupt_cap', 'cap_slot', 'CapKind', 'MCap']),
         ('let cap2 = x; let caps3 = y;', ['cap2', 'caps3']),
         # The false positives the ruling's wording invites.
         ('fn f(capacity: usize, capture: bool, escape: u8, capable: bool, keycaps: u8, '

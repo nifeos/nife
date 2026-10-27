@@ -42,7 +42,7 @@ Measured on the machines this project runs, not asserted:
 | `aarch64` | a separate *device*, the GICv3 ITS | absent: the TCG runner uses `gic-version=2`, which has none, and milestone 227 (a GICv3 driver) does not drive the ITS a `gic-version=3` machine offers |
 | `riscv64` | inside the IOMMU's own device context (`CAP_MSI_FLAT`, widening it 32 → 64 bytes) | already driven, `arch/riscv64/iommu.rs` handles both formats |
 
-So on two of three architectures an IRQ-driven EL0 driver would not be confined, whatever the
+So on two of three architectures an interrupt-driven EL0 driver would not be confined, whatever the
 IOMMU does for DMA (on x86_64, ours). That is why milestone 159 (a real hardware entropy source) polls and why milestone 261 (the NVMe driver leaves the kernel)
 does: in 261's lane's words, *"polling keeps `Object::Irq` off the grant list, which is less
 authority."* **A confinement choice wearing a performance choice's clothes**, and worth saying out
@@ -50,14 +50,14 @@ loud because the next person meeting a polled driver will reasonably read it as 
 
 ## What is not in question
 
-An interrupt is already a capability here. `Object::Irq(u32)` has existed since milestone 9 (an interrupt becomes a message): the
+An interrupt is already a capability here. `Object::Interrupt(u32)` has existed since milestone 9 (an interrupt becomes a message): the
 kernel masks the line, `READ` lets the holder `WAIT` and `ACK`, and everything that knows what the
 *device* is lives in the userspace driver. That is seL4's `IRQHandler` shape, and
-[DECISIONS §101 (notification objects)](../../design/decisions/0101-notification-objects.md) already specifies `bind_irq(intid,
+[DECISIONS §101 (notification objects)](../../design/decisions/0101-notification-objects.md) already specifies `bind_interrupt(intid,
 ep)` on the delivery side, with a prior-art survey covering seL4's bound notifications, Fuchsia's
 `zx_port`, Mach port sets and why Linux's `epoll` model was refused.
 
-`Object::Irq` confines a line-based interrupt perfectly well. The kernel masks it; the holder
+`Object::Interrupt` confines a line-based interrupt perfectly well. The kernel masks it; the holder
 can only wait and acknowledge; there is no way to aim it. MSI-X is the case it does not cover.
 
 ## The open question, and why it is deliberately not a decision yet
@@ -67,7 +67,7 @@ reason is the one `design/fatal-risks/README.md`'s own rule 1 gives: nothing is 
 drivers poll, and **there was no experiment behind it**. A decision with no experiment is a worry
 rather than a choice.
 
-Milestone 317 (the interrupt-remapping flags) made the question live. There are three options. EL0 drivers get `Irq` for line-based interrupts only, and MSI-X stays
+Milestone 317 (the interrupt-remapping flags) made the question live. There are three options. EL0 drivers get `Interrupt` for line-based interrupts only, and MSI-X stays
 kernel-owned. Or remapping is turned on, and a driver may own its table because the platform
 confines it. Or it is allowed unconfined and said so, which is Linux's `allow_unsafe_interrupts`
 and is a claim this tree should not make quietly.

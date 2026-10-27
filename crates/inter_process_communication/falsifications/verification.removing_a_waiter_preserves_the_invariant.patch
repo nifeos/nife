@@ -21,7 +21,7 @@ index 845029a65..469d8e044 100644
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
 @@ -208,10 +208,10 @@ impl<T: Node> Rendezvous<T> {
-         let mut kept: Fifo<T> = Fifo::new();
+         let mut kept: Queue<T> = Queue::new();
          let mut found = None;
          while let Some(node) = self.senders.pop_front() {
 +            // SAFETY: none. This is the defect: the victim goes back on the queue it was taken off.

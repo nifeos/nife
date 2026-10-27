@@ -58,7 +58,7 @@ prover) removed on 2026-08-30.)*
   the per-host table.
 - Why it is amber and not red. Two real defects were caught *while harnesses were being written*
   (`dtb::be32`'s unchecked `at + 4`, reachable from a corrupt device tree on the boot path;
-  `pci::intx_irq`'s pin-0 underflow). That is the survivorship asymmetry this file's rule 1 warned
+  `pci::intx_interrupt_number`'s pin-0 underflow). That is the survivorship asymmetry this file's rule 1 warned
   about, showing up as evidence rather than as an excuse.
 - The strongest counterfactual is nearly a measurement. The timer re-arm drift of 
 milestone 6 (threads, the context switch, and preemption), 100 Hz configured and ~70 Hz delivered, has its
@@ -122,18 +122,18 @@ The premise was measured rather than assumed: two `assert!(false)` probes placed
 and `arch/x86_64/` produced *"4 successfully verified harnesses, 0 failures"*, because neither
 subtree was compiled.
 
-The first proof ever pointed at `arch/x86_64/irq.rs` went red. `gsi_vector` is a flat
-`GSI_VECTOR_BASE.wrapping_add(gsi)`, and `MAX_REDIRECTION_ENTRIES` is documented as the reason it
-"cannot silently wrap onto an exception vector" while actually bounding the IO APIC's entry count,
-not the GSI. A second IO APIC based at global interrupt 200 with the 24 entries every real part has
-admits GSI 210, and `gsi_vector(210)` wraps onto vector 2, the NMI. Nothing has hit it because every
-single-socket PC gives its one IO APIC `gsi_base` 0; a nonzero base is legal ACPI and exists on
-multi-socket servers.
+The first proof ever pointed at `arch/x86_64/interrupt_controller.rs` went red. `gsi_vector` is a flat
+`GSI_VECTOR_BASE.wrapping_add(gsi)`, and `MAXIMUM_REDIRECTION_ENTRIES` is documented as the reason
+it "cannot silently wrap onto an exception vector" while actually bounding the IO APIC's entry
+count, not the GSI. A second IO APIC based at global interrupt 200 with the 24 entries every real
+part has admits GSI 210, and `gsi_vector(210)` wraps onto vector 2, the NMI. Nothing has hit it
+because every single-socket PC gives its one IO APIC `gsi_base` 0; a nonzero base is legal ACPI and
+exists on multi-socket servers.
 
 That is a latent defect on hardware this project does not own, found by a model checker, which no
 test in this tree could have reached. It is the class this risk was written to ask about, and it is
 the first time this tree has an instance of it. The survivorship caveat above still applies with
-full force: the harness caught it *while being written*, like `dtb::be32` and `pci::intx_irq` before
+full force: the harness caught it *while being written*, like `dtb::be32` and `pci::intx_interrupt_number` before
 it. So it is evidence that pointing the prover somewhere new pays, not yet evidence that a standing
 proof catches regressions. Kani has no cross-target flag, and Kani 0.67's source supports only the
 x86_64 and aarch64 machine models, so a riscv64 runner would not help; the riscv64 files that call
@@ -148,7 +148,8 @@ index, not by its own number). That block is
 [roadmap/0308-route-gsi-by-index.md](../roadmap/0308-route-gsi-by-index.md). The fix does not add to
 this risk's evidence and slightly complicates it: the harness's `kani::assume(base == 0)` is gone.
 So a standing proof now covers the case. But no machine here can execute the path, which
-`kernel/src/arch/x86_64/irq.rs`'s module `BUGS` records where a reader meets the feature. A proof
+`kernel/src/arch/x86_64/interrupt_controller.rs`'s module `BUGS` records where a reader meets the
+feature. A proof
 that catches a regression on hardware nobody owns is still the honest shape of what this risk asks
 about.
 

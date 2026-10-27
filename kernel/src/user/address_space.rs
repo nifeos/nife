@@ -343,8 +343,8 @@ impl AddressSpace {
 
 /// The machine's ASID allocator (milestone 15; the crate carries the proofs). Taken alone, at
 /// address-space creation and teardown, holding nothing else that matters; a leaf-adjacent rank.
-pub(super) static ASIDS: crate::sync::IrqSafeMutex<address_space_identifier::Allocator> =
-    crate::sync::IrqSafeMutex::new(
+pub(super) static ASIDS: crate::sync::InterruptSafeMutex<address_space_identifier::Allocator> =
+    crate::sync::InterruptSafeMutex::new(
         crate::sync::rank::ASIDS,
         address_space_identifier::Allocator::new(),
     );

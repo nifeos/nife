@@ -13,19 +13,19 @@ use page_frames::{FRAME_SIZE, PageFrame, PageFrameAllocator, Stats};
 
 use crate::arch::mmu::{phys_to_virt, virt_to_phys};
 use crate::println;
-use crate::sync::{IrqSafeMutex, rank};
+use crate::sync::{InterruptSafeMutex, rank};
 
 /// The frame allocator.
 ///
-/// `IrqSafeMutex`, not a bare spinlock: an interrupt handler that tried to allocate while
+/// `InterruptSafeMutex`, not a bare spinlock: an interrupt handler that tried to allocate while
 /// the interrupted code held this lock would spin forever waiting for code that cannot
 /// run. See sync.rs and DECISIONS §9.
 ///
 /// The discipline that goes with it: **interrupt handlers do not allocate.** They record
 /// what happened and defer the work. The lock being interrupt-safe is the belt; that rule
 /// is the braces.
-static ALLOCATOR: IrqSafeMutex<Option<PageFrameAllocator<'static>>> =
-    IrqSafeMutex::new(rank::PAGE_FRAMES, None);
+static ALLOCATOR: InterruptSafeMutex<Option<PageFrameAllocator<'static>>> =
+    InterruptSafeMutex::new(rank::PAGE_FRAMES, None);
 
 /// The most `/memory` nodes and `/memreserve` entries we'll cope with.
 ///
@@ -33,7 +33,7 @@ static ALLOCATOR: IrqSafeMutex<Option<PageFrameAllocator<'static>>> =
 /// more, and a fixed-size array is the right shape here because **we have no heap yet**.
 /// The `Vec` we'd reach for in userspace is precisely the thing this milestone is a
 /// prerequisite for.
-const MAX_REGIONS: usize = 16;
+const MAXIMUM_REGIONS: usize = 16;
 
 /// **Find out where RAM is and which devices the machine has, and bring the frame allocator up.**
 ///
@@ -60,14 +60,14 @@ fn initialize_from_device_tree() {
     let dtb_phys = crate::DTB.load(core::sync::atomic::Ordering::Relaxed) as u64;
     let dtb = crate::device_tree().expect("device tree is unreadable");
 
-    let mut ram = [Region { start: 0, size: 0 }; MAX_REGIONS];
+    let mut ram = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
     let ram_count = dtb
         .memory_regions(&mut ram)
         .expect("cannot read the memory map");
     let ram = &ram[..ram_count];
     assert!(!ram.is_empty(), "the device tree describes no RAM at all");
 
-    let mut reserved = [Region { start: 0, size: 0 }; MAX_REGIONS];
+    let mut reserved = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
     let reserved_count = dtb
         .reserved_regions(&mut reserved)
         .expect("cannot read the memory reservations");
@@ -78,8 +78,8 @@ fn initialize_from_device_tree() {
 
     // Everything already spoken for, which must never be allocated: the image, the tree and the
     // initial ramdisk (3; nobody else protects the ramdisk), then the legacy reservation block and
-    // /reserved-memory (up to MAX_REGIONS each).
-    let mut forbidden = [Region { start: 0, size: 0 }; 2 * MAX_REGIONS + 3];
+    // /reserved-memory (up to MAXIMUM_REGIONS each).
+    let mut forbidden = [Region { start: 0, size: 0 }; 2 * MAXIMUM_REGIONS + 3];
     let mut n = 0;
 
     let mut claim = |r: Region| {
@@ -108,7 +108,7 @@ fn initialize_from_device_tree() {
     // The /reserved-memory node's children, distinct from the legacy reservation block above. This
     // is where RISC-V firmware (OpenSBI) reserves its own region below the kernel; without it the
     // allocator would hand out OpenSBI's PMP-protected memory and the first write would fault.
-    let mut resv_mem = [Region { start: 0, size: 0 }; MAX_REGIONS];
+    let mut resv_mem = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
     let resv_mem_count = dtb
         .reserved_memory_regions(&mut resv_mem)
         .expect("cannot read /reserved-memory");
@@ -127,7 +127,8 @@ fn initialize_from_device_tree() {
 fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // aarch64's GIC, found by its binding (`machine_discovery::gic`), not by node name: a GICv3's
     // `reg[1]` is the redistributor array, not a CPU interface. An unknown binding is refused by
-    // name, and `arch::irq::initialize` then checks the hardware agrees with the tree.
+    // name, and `arch::interrupt_controller::initialize` then checks the hardware agrees with the
+    // tree.
     #[cfg(target_arch = "aarch64")]
     match machine_discovery::gic::discover(dtb) {
         Ok(found) => *GIC_REGIONS.lock() = found,
@@ -206,9 +207,10 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // The console UART's interrupt line, decoded per the tree's own `#interrupt-cells`
     // (`machine_discovery::interrupt_id`): the JH7110's UART0 is line 32, not QEMU's 10. None when
     // the tree does not say, and the callers fall back to the QEMU constant and say so.
-    if let Ok(Some(irq)) = machine_discovery::interrupt_id::of_node(dtb, crate::console::UART_NODE)
+    if let Ok(Some(interrupt_number)) =
+        machine_discovery::interrupt_id::of_node(dtb, crate::console::UART_NODE)
     {
-        *UART_IRQ.lock() = Some(irq);
+        *UART_INTERRUPT_NUMBER.lock() = Some(interrupt_number);
     }
 
     // The PCIe host bridge, by the generic-ECAM binding: `reg` is the config window and the 32-bit
@@ -330,7 +332,7 @@ fn record_jh7110_watchdog(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 ///
 /// # BUGS
 /// - The seam's type is still `device_tree_blob::Region`, a device-tree type on every machine.
-/// - At most `MAX_REGIONS` RAM regions; more indexes past the map.
+/// - At most `MAXIMUM_REGIONS` RAM regions; more indexes past the map.
 pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
     assert!(!ram.is_empty(), "the machine describes no RAM at all");
 
@@ -745,7 +747,7 @@ pub(crate) fn smmu_region() -> Option<(u64, u64)> {
 /// each window, the same role [`smmu_region`] plays for the SMMU. Every unit and not only one
 /// since milestone 594 (every VT-d unit translates its own devices), which brings every unit up. Name: provisional.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn vtd_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::MAX_DRHDS] {
+pub(crate) fn vtd_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_DRHDS] {
     *VTD_REGIONS.lock()
 }
 
@@ -769,7 +771,8 @@ pub(crate) fn record_vtd_region(base: u64, size: u64) {
 /// named, in table order; `None` past the last. [`vtd_regions`]' counterpart on an AMD machine,
 /// and read by `mmu::map_everything` for the same reason. Name: provisional (lane `amd-vi`).
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn amd_vi_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAX_IVHDS] {
+pub(crate) fn amd_vi_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS]
+{
     *AMD_VI_REGIONS.lock()
 }
 
@@ -827,29 +830,36 @@ pub(crate) fn rtc_region() -> Option<(u64, u64, u64)> {
 
 /// The console UART's interrupt line, as the machine states it: PLIC source 10 on QEMU's
 /// riscv64 `virt`, 32 on the JH7110, GIC INTID 33 on QEMU's aarch64 `virt`, and on `x86_64` the
-/// global system interrupt COM1's legacy ISA IRQ 4 resolves to (milestone 176), filled by
-/// [`record_uart_irq`] rather than by [`initialize`] since there is no tree to read. `None` before
+/// global system interrupt COM1's legacy ISA interrupt 4 resolves to (milestone 176 (the x86_64
+/// discovery seam's wide half: COM1's IRQ and a CMOS RTC)), filled by
+/// [`record_uart_interrupt_number`] rather than by [`initialize`] since there is no tree to read.
+/// `None` before
 /// either has run, and on a device-tree machine whose tree does not say (no `interrupts`, no
 /// resolvable parent, or an entry shape the decoder refuses; see
 /// `machine_discovery::interrupt_id`). The callers own the fallback (`user::UART_RECEIVE_INTID`,
 /// the QEMU constant) and print which source won, so a bench transcript is diagnosable.
-pub(crate) fn uart_irq() -> Option<u32> {
-    *UART_IRQ.lock()
+#[doc(alias = "irq")]
+pub(crate) fn uart_interrupt_number() -> Option<u32> {
+    *UART_INTERRUPT_NUMBER.lock()
 }
 
 /// **Record the console UART's interrupt line directly**, for a machine with no device tree to
 /// read it from. `x86_64`'s counterpart of `initialize`'s
-/// [`machine_discovery::interrupt_id::of_node`] call. It takes COM1's **legacy** line, ISA IRQ 4,
-/// because that is what an intid is on `x86_64`; `arch::irq::enable` resolves it through any MADT
+/// [`machine_discovery::interrupt_id::of_node`] call. It takes COM1's **legacy** line, ISA
+/// interrupt 4,
+/// because that is what an intid is on `x86_64`; `arch::interrupt_controller::enable` resolves it
+/// through any MADT
 /// override when the line is armed. It fills the same static every consumer already reads
-/// (`user::uart_irq_and_source`), which the input driver's `Irq` capability is minted from since
+/// (`user::uart_interrupt_number_and_source`), which the input driver's `Interrupt` capability is
+/// minted from since
 /// milestone 505 (an x86_64 input driver that never lets the core idle).
 ///
 /// Its only caller is `x86_64`'s boot tour; the other two architectures fill the same static from
 /// their device tree inside `initialize` instead.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn record_uart_irq(irq: u32) {
-    *UART_IRQ.lock() = Some(irq);
+#[doc(alias = "irq")]
+pub(crate) fn record_uart_interrupt_number(interrupt_number: u32) {
+    *UART_INTERRUPT_NUMBER.lock() = Some(interrupt_number);
 }
 
 /// The RAM regions the device tree told us about.
@@ -997,71 +1007,76 @@ use core::sync::atomic::AtomicUsize;
 /// heap.
 #[derive(Clone, Copy)]
 struct RamMap {
-    regions: [(u64, u64); MAX_REGIONS],
+    regions: [(u64, u64); MAXIMUM_REGIONS],
     count: usize,
 }
 
-static RAM: IrqSafeMutex<RamMap> = IrqSafeMutex::new(
+static RAM: InterruptSafeMutex<RamMap> = InterruptSafeMutex::new(
     rank::RAM,
     RamMap {
-        regions: [(0, 0); MAX_REGIONS],
+        regions: [(0, 0); MAXIMUM_REGIONS],
         count: 0,
     },
 );
 
 /// The GIC the device tree names, with its version (milestone 227). Physical addresses.
 #[cfg_attr(not(target_arch = "aarch64"), allow(dead_code))]
-static GIC_REGIONS: IrqSafeMutex<Option<machine_discovery::gic::Gic>> =
-    IrqSafeMutex::new(rank::RAM, None);
+static GIC_REGIONS: InterruptSafeMutex<Option<machine_discovery::gic::Gic>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 /// The PLIC's single register block, from the device tree (milestone 20). `None` on aarch64 (no such
 /// node) and until `initialize` has run.
-static PLIC_REGION: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
+static PLIC_REGION: InterruptSafeMutex<Option<(u64, u64)>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's SD/MMC controllers (milestone 53). `None` until `initialize`, and on every machine
 /// that is not a JH7110.
-static JH7110_STORAGE: IrqSafeMutex<Option<[Option<designware_mobile_storage::jh7110::Slot>; 2]>> =
-    IrqSafeMutex::new(rank::RAM, None);
+static JH7110_STORAGE: InterruptSafeMutex<
+    Option<[Option<designware_mobile_storage::jh7110::Slot>; 2]>,
+> = InterruptSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's STG clock-and-reset window, from the device tree or from the constant both
 /// published trees agree on (milestone 220 (this kernel drives no clock or reset controller)).
 /// `None` until `initialize`, and on every machine that is not a JH7110.
-static JH7110_CRG: IrqSafeMutex<Option<jh7110_clock_and_reset::WindowLocation>> =
-    IrqSafeMutex::new(rank::RAM, None);
+static JH7110_CRG: InterruptSafeMutex<Option<jh7110_clock_and_reset::WindowLocation>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's SYS clock-and-reset window and the PMIC bus's plan (milestone 592). `None` until
 /// `initialize`, and on every machine that is not a JH7110.
-static JH7110_PMIC_BUS: IrqSafeMutex<
+static JH7110_PMIC_BUS: InterruptSafeMutex<
     Option<(
         jh7110_clock_and_reset::WindowLocation,
         jh7110_clock_and_reset::PowerManagementChipBus,
     )>,
-> = IrqSafeMutex::new(rank::RAM, None);
+> = InterruptSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's watchdog and its SYS window (milestone 593). `None` until `initialize`, and on
 /// every machine whose tree names no such watchdog.
 #[cfg(all(target_arch = "riscv64", soak_watchdog))]
-static JH7110_WATCHDOG: IrqSafeMutex<
+static JH7110_WATCHDOG: InterruptSafeMutex<
     Option<(
         jh7110_watchdog::Discovered,
         jh7110_clock_and_reset::WindowLocation,
     )>,
-> = IrqSafeMutex::new(rank::RAM, None);
+> = InterruptSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's first Ethernet port and its bring-up windows (milestone 53). `None` until
 /// `initialize`, and on every machine whose tree names no such port.
-static JH7110_ETHERNET: IrqSafeMutex<Option<Jh7110Ethernet>> = IrqSafeMutex::new(rank::RAM, None);
+static JH7110_ETHERNET: InterruptSafeMutex<Option<Jh7110Ethernet>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 /// The generic-ECAM PCIe host bridge's windows: (ecam, mem32), each (base, size). Physical.
 type PciWindows = ((u64, u64), (u64, u64));
 
 /// `None` until `initialize`, and on a machine whose device tree has no such node (the JH7110).
-static PCI_REGIONS: IrqSafeMutex<Option<PciWindows>> = IrqSafeMutex::new(rank::RAM, None);
+static PCI_REGIONS: InterruptSafeMutex<Option<PciWindows>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 /// The SMMUv3's register block, from the device tree (milestone 16b). `None` unless the machine was
 /// started with `-machine virt,iommu=smmuv3` (and always on riscv, whose IOMMU is a PCI function
 /// found by enumeration, not a platform device with a node).
-static SMMU_REGION: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
+static SMMU_REGION: InterruptSafeMutex<Option<(u64, u64)>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 /// VT-d's register blocks (base, size), one per DRHD in table order (milestone 161 (the
 /// `x86_64` kernel port), roadmap item 6; every unit since milestone 594 (every VT-d unit
@@ -1072,27 +1087,35 @@ static SMMU_REGION: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::R
 /// file is a mapped device window before `arch::iommu::initialize` ever reads it
 /// (`arch::x86_64::iommu`'s own accessors go through `phys_to_virt`, which is arithmetic, not a
 /// promise the address is mapped).
-static VTD_REGIONS: IrqSafeMutex<[Option<(u64, u64)>; machine_discovery::acpi::MAX_DRHDS]> =
-    IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::MAX_DRHDS]);
+static VTD_REGIONS: InterruptSafeMutex<
+    [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_DRHDS],
+> = InterruptSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::MAXIMUM_DRHDS]);
 
 /// AMD-Vi's register blocks (base, size), one per IVHD the IVRS names (lane `amd-vi`). The same
 /// role as [`VTD_REGIONS`] on an AMD machine, kept apart rather than shared because the two are
 /// named for the hardware they hold and a machine has one kind or the other.
-static AMD_VI_REGIONS: IrqSafeMutex<
-    [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAX_IVHDS],
-> = IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::ivrs::MAX_IVHDS]);
+static AMD_VI_REGIONS: InterruptSafeMutex<
+    [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS],
+> = InterruptSafeMutex::new(
+    rank::RAM,
+    [None; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS],
+);
 
 /// The screen the boot handoff described (milestone 243). See [`framebuffer`].
-static FRAMEBUFFER: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
+static FRAMEBUFFER: InterruptSafeMutex<Option<(u64, u64)>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 /// The RTC's register block and binding kind (milestone 51 (wall-clock time, the `date` command,
 /// and an NTP service)). `None` until `initialize` has run, and on a machine whose device tree
 /// describes neither RTC we can drive.
-static RTC_REGION: IrqSafeMutex<Option<(u64, u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);
+static RTC_REGION: InterruptSafeMutex<Option<(u64, u64, u64)>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 /// The console UART's interrupt line, from the device tree. `None` until `initialize`, and on a
 /// tree that does not say.
-static UART_IRQ: IrqSafeMutex<Option<u32>> = IrqSafeMutex::new(rank::RAM, None);
+#[doc(alias = "irq")]
+static UART_INTERRUPT_NUMBER: InterruptSafeMutex<Option<u32>> =
+    InterruptSafeMutex::new(rank::RAM, None);
 
 static BITMAP_START: AtomicUsize = AtomicUsize::new(0);
 static BITMAP_BYTES: AtomicUsize = AtomicUsize::new(0);
@@ -1107,7 +1130,7 @@ static INITIAL_RAMDISK_SIZE: AtomicUsize = AtomicUsize::new(0);
 )]
 pub(crate) fn print_summary() {
     let Some(s) = stats() else {
-        println!("  memory          : uninitialized");
+        println!("  memory           : uninitialized");
         return;
     };
 
@@ -1115,7 +1138,7 @@ pub(crate) fn print_summary() {
     let kib = |frames: usize| (frames as u64 * FRAME_SIZE) / 1024;
 
     println!(
-        "  memory          : {} MiB total, {} MiB free ({} KiB in use)",
+        "  memory           : {} MiB total, {} MiB free ({} KiB in use)",
         mib(s.total),
         mib(s.free()),
         kib(s.used),

@@ -65,7 +65,7 @@ would have turned every one into `inter_process_communication::Endpoint`, a type
 existed. They were classified instead. The ones in decided sections are accounts, and kept their
 words with the current name beside them. The ones in notes describing today's code were repointed to
 `Rendezvous`. Reading those lines found two more pointers of the same age (`Rendezvous<Tid>`, and
-`crates/intrusive` for a crate now called `intrusive_fifo`). A type rename leaves a trail of stale
+`crates/intrusive` for a crate now called `intrusive_queue`). A type rename leaves a trail of stale
 prose, and the next crate rename walks straight into it.
 
 ## A tool that does not understand `\b` does not say so

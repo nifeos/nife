@@ -27,7 +27,8 @@ trace counters.
   core, and at least two so a single-core QEMU leg still runs more than one endpoint.
 - Each worker's seed is distinct, odd and well spread. The jitter it drives keeps the pairs from
   locking into one interleaving, and two workers given one seed would defeat it for that pair.
-- `TICK_ROUTES` holds each rendezvous plus one, as `sched::IRQ_ROUTES` does, because a rendezvous
+- `TICK_ROUTES` holds each rendezvous plus one, as `sched::INTERRUPT_ROUTES` does, because a
+  rendezvous
   name may be zero. They are plain atomics because the reader is an interrupt handler on every core,
   and a lock taken to learn whether there is anything to do is one more thing that can go wrong. The
   boot thread writes each once, after every worker exists. `TICK_CURSOR` is global rather than keyed
@@ -51,7 +52,7 @@ trace counters.
   counter moves, and the rest say it still does.
 - `WEDGE_AFTER_SECONDS` is 30, six beats, so the log shows the watchdog petted before it is starved.
 - A worker's core in the census is `u8::try_from` rather than `as`. An online cpu id is bounded by
-  `MAX_CPUS` and cannot truncate, but a topology that broke that would report `u8::MAX`, the
+  `MAXIMUM_CPUS` and cannot truncate, but a topology that broke that would report `u8::MAX`, the
   census's "no answer", instead of a wrong core number.
 
 ## The orderings

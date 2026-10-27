@@ -26,7 +26,11 @@ pub enum Object {
     /// A hardware interrupt, by INTID. The holder may `WAIT` for it and `ACK` it; the kernel's
     /// handler masks the line and turns the interrupt into a message, so a driver owns an interrupt
     /// without owning any privilege.
-    Irq(u32),
+    ///
+    /// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling:
+    /// `Interrupt`, or `InterruptLine` for a wired source only. Spelled out from `Irq`.
+    #[doc(alias = "irq")]
+    Interrupt(u32),
 
     /// A contiguous run of physical pages, by base address and page count, that the holder may map
     /// and delegate: the shared-memory capability of §10 (process model: capability-based,
@@ -135,9 +139,9 @@ pub const CAPABILITY_TABLE_SLOTS: usize = 64;
 
 // The free-slot word is a `u64`, so 64 is also the ceiling the type allows. `capability` asserts it
 // for every size; it is repeated here, where the next raise will be typed. Raising past it needs a
-// wider word or a second one (`capability::MAX_SLOTS`).
+// wider word or a second one (`capability::MAXIMUM_SLOTS`).
 const _: () = assert!(
-    CAPABILITY_TABLE_SLOTS <= capability::MAX_SLOTS,
+    CAPABILITY_TABLE_SLOTS <= capability::MAXIMUM_SLOTS,
     "the capability table's free-slot bitmap is one u64; widen it before raising the slot count"
 );
 // The table's layout, pinned: 64 slots of 32 bytes, the `u64` free word and two `u16` counts,
@@ -301,19 +305,25 @@ pub fn rendezvous_cap_badged(ep: crate::sched::RendezvousId, rights: Rights, bad
 }
 
 /// A capability naming a hardware interrupt. `READ` lets the holder `WAIT` and `ACK` it.
-pub fn irq_cap(intid: u32) -> Cap {
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+#[doc(alias = "irq")]
+pub fn interrupt_cap(intid: u32) -> Cap {
     Cap {
-        object: Object::Irq(intid),
+        object: Object::Interrupt(intid),
         rights: Rights::READ,
     }
 }
 
 /// An interrupt capability with explicit rights (milestone 19d.2b): the progenitor holds one with `GRANT`
 /// so it can delegate the interrupt to a driver it builds.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub fn irq_cap_rights(intid: u32, rights: Rights) -> Cap {
+#[doc(alias = "irq")]
+pub fn interrupt_cap_rights(intid: u32, rights: Rights) -> Cap {
     Cap {
-        object: Object::Irq(intid),
+        object: Object::Interrupt(intid),
         rights,
     }
 }
@@ -385,7 +395,7 @@ pub(crate) fn virtio_cap(id: usize) -> Cap {
 
 /// A virtio transport capability with explicit rights (DECISIONS §120's 2026-08-26 amendment):
 /// The progenitor holds one with `GRANT` so it can delegate the device to an entropy service it builds,
-/// [`irq_cap_rights`]'s own reason one object type over.
+/// [`interrupt_cap_rights`]'s own reason one object type over.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn virtio_cap_rights(id: usize, rights: Rights) -> Cap {
     Cap {

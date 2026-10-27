@@ -52,7 +52,7 @@ Everything below is about case 2.
 
 When the shell puts a process in the foreground, it gives the terminal an interrupt endpoint
 that the foreground process is watching (or that the kernel delivers an async notification to,
-the same way an IRQ becomes a message: [interrupts.md](../notes/interrupts.md)). On `^C` the
+the same way an interrupt becomes a message: [interrupts.md](../notes/interrupts.md)). On `^C` the
 terminal notifies it. The process handles the notification at a safe point and unwinds: it prints,
 frees what it holds, and returns to the shell.
 
@@ -125,7 +125,7 @@ Adopt **C (two-tier), with the interrupt capability held by the shell**, and reu
 primitives rather than inventing a signal:
 
 1. The **cooperative tier** is an async notification on an endpoint the foreground job watches,
-   built from the same "interrupt becomes a message" machinery as IRQ delivery. A job that wants
+   built from the same "interrupt becomes a message" machinery as interrupt delivery. A job that wants
    graceful interruption receives it; a job that does not care simply never registers, and the
    escalation covers it.
 2. The **forcible tier** is object revocation / a `Tcb` suspend-or-destroy method on the job,

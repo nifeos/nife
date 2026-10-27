@@ -46,7 +46,8 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE) };
 
 /// Capability slots the kernel granted, by convention.
-const IRQ: u64 = 1;
+#[doc(alias = "irq")]
+const INTERRUPT: u64 = 1;
 const VIRTIO: u64 = 2;
 
 // virtio-mmio register offsets (the transport seam speaks this vocabulary on both buses).
@@ -225,10 +226,11 @@ impl VirtioNet {
 
     /// Quiet the device's interrupt and re-enable the line at the controller, after a `WAIT`
     /// returned. The server calls this each wakeup, the disk driver's discipline.
-    pub(crate) fn ack_irq(&self) {
+    #[doc(alias = "irq")]
+    pub(crate) fn acknowledge_interrupt(&self) {
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
-        interrupt_acknowledge(IRQ); // re-enable the interrupt the kernel masked when it fired
+        interrupt_acknowledge(INTERRUPT); // re-enable the interrupt the kernel masked when it fired
     }
 
     /// Take one received frame, if the receive used ring has advanced. Copies the frame out (minus

@@ -22,13 +22,16 @@
 /// The widest address space a listing can produce in one call: the kernel's whole thread table's
 /// worth of page-table overhead plus content pages, rounded generously.
 ///
-/// Unlike `ps::MAX_ROWS`, which is exactly the kernel's thread table (`sched::MAX_THREADS`) and so
-/// makes truncation *unreachable*, there is no equally tight bound on one process's own mapping
-/// count: a space's own budget (its backing region) is the only limit, and that is a runtime
-/// quantity, not a compile-time one. `MAX_ROWS` is sized generously (256) rather than exactly, and
-/// truncation is a real, reachable, and reported case here in a way it is not for `ps`. See `BUGS`
-/// and [`Listing::is_complete`].
-pub const MAX_ROWS: usize = 256;
+/// Unlike `ps::MAXIMUM_ROWS`, which is exactly the kernel's thread table (`sched::MAXIMUM_THREADS`)
+/// and so makes truncation *unreachable*, there is no equally tight bound on one process's own
+/// mapping count: a space's own budget (its backing region) is the only limit, and that is a
+/// runtime quantity, not a compile-time one. `MAXIMUM_ROWS` is sized generously (256) rather than
+/// exactly, and truncation is a real, reachable, and reported case here in a way it is not for
+/// `ps`. See `BUGS` and [`Listing::is_complete`].
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ROWS`.
+pub const MAXIMUM_ROWS: usize = 256;
 
 /// One line of the listing: a mapped page and how it may be used.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -60,14 +63,14 @@ pub struct Listing<'a> {
 /// # Examples
 ///
 /// ```
-/// use pmap::{MAX_ROWS, Row, collect};
+/// use pmap::{MAXIMUM_ROWS, Row, collect};
 ///
 /// // A space of one mapping: cursor 0 yields it, cursor 1 says done.
 /// let mut reader = |cursor: u64| match cursor {
 ///     0 => (1, 0x0040_0000, abi::address_space::MAP_CODE),
 ///     _ => (abi::survey::DONE as i64, 0, 0),
 /// };
-/// let mut rows = [Row::default(); MAX_ROWS];
+/// let mut rows = [Row::default(); MAXIMUM_ROWS];
 /// let listing = collect(&mut rows, &mut reader);
 /// assert_eq!(listing.rows().len(), 1);
 /// assert_eq!(listing.rows()[0].va, 0x0040_0000);
@@ -281,7 +284,7 @@ mod tests {
 
     #[test]
     fn a_space_walks_to_its_end() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(
             &mut rows,
             &mut space(&[
@@ -305,9 +308,9 @@ mod tests {
     /// an empty space and a refused one must not produce the same thing on any stream.
     #[test]
     fn an_empty_space_and_a_refusal_are_different_answers() {
-        let mut rows_a = [Row::default(); MAX_ROWS];
+        let mut rows_a = [Row::default(); MAXIMUM_ROWS];
         let empty = collect(&mut rows_a, &mut space(&[]));
-        let mut rows_b = [Row::default(); MAX_ROWS];
+        let mut rows_b = [Row::default(); MAXIMUM_ROWS];
         let refused = collect(&mut rows_b, &mut |_| {
             (abi::Error::NotPermitted as i64, 0, 0)
         });
@@ -327,7 +330,7 @@ mod tests {
 
     #[test]
     fn a_refusal_halfway_through_discards_the_partial_table() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(&mut rows, &mut |cursor| match cursor {
             0 => (1, 0x0040_0000, abi::address_space::MAP_CODE),
             _ => (abi::Error::Gone as i64, 0, 0),
@@ -340,7 +343,7 @@ mod tests {
 
     #[test]
     fn a_cursor_that_does_not_advance_ends_the_walk() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(&mut rows, &mut |_| {
             (1, 0x0040_0000, abi::address_space::MAP_RO)
         });
@@ -367,7 +370,7 @@ mod tests {
 
     #[test]
     fn the_table_has_a_header_and_one_line_per_mapping() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(
             &mut rows,
             &mut space(&[
@@ -387,7 +390,7 @@ mod tests {
     #[test]
     fn an_unknown_kind_is_shown_as_unknown() {
         assert_eq!(kind_name(99), "???");
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(&mut rows, &mut space(&[(0x0040_0000, 99)]));
         assert!(shown(|o| l.write_report(o)).contains("???"));
     }
@@ -413,7 +416,7 @@ mod tests {
     /// A `va` at the very top of the user half prints in full and does not overflow the column.
     #[test]
     fn a_wide_va_prints_in_full() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let l = collect(
             &mut rows,
             &mut space(&[(0x0000_7fff_ffff_f000, abi::address_space::MAP_RW)]),

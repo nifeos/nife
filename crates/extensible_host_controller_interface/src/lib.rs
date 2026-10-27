@@ -13,6 +13,9 @@
 //! - One page size: [`direct_memory_access`] assumes 4 KiB (`PAGESIZE` bit 0), and the driver refuses otherwise.
 //! - No streams, isochronous or bulk: the TRBs a keyboard needs and nothing more.
 //! - Hubs are not modelled (route string 0), so a device behind a hub cannot be addressed.
+//!
+//! Name: ratified 2026-10-07 (#1806). xHCI expanded, as the acronym test asks; permanent once
+//! published. Too long for a program name, so the program is `usb_keyboard_driver`.
 
 pub mod context;
 pub mod direct_memory_access;
@@ -22,6 +25,8 @@ pub mod registers;
 pub use registers::Capabilities;
 
 /// The page size every layout here is in.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `PAGE` (it reads as a page and holds a size).
 pub const PAGE_BYTES: u64 = 4096;
 
 /// Transfer Request Block (TRB) type codes (xHCI 1.2 Table 6-91).

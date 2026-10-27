@@ -13,7 +13,8 @@ broker)'s "a client of a rendezvous cannot become its server". Claim 2 is §14 (
 direction)'s "userspace cannot forge a right out of a syscall register". Both are driven through
 the real dispatcher, `syscall::invoke`, the way a program's `svc` or `ecall` reaches it. So what is
 under test is the rights gate in `invoke`'s `Object::Rendezvous` arm, and nothing re-implemented
-beside it. `irq_send_refusal_tests` is the pattern: grant a capability into this thread's own table
+beside it. `interrupt_send_refusal_tests` is the pattern: grant a capability into this thread's own
+table
 and invoke a method it must be refused. `call` is copied in shape from that file.
 
 `invoke`, the rights check and the rendezvous are portable kernel code. The same test on each

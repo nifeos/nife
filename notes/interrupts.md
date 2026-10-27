@@ -10,7 +10,7 @@ The evidence behind this note is in [interrupts/](interrupts/README.md).
 
 ## The GIC: the multiplexer in front of the CPU
 
-The CPU has one IRQ input line. That's all. Priorities, masking individual sources and routing to a particular core all live in the interrupt
+The CPU has one interrupt input line. That is all. Priorities, masking individual sources and routing to a particular core all live in the interrupt
 controller, not in the CPU.
 
 Two halves, and the split *is* the design:
@@ -69,14 +69,14 @@ INTID 1023 is spurious: the GIC raised the line and then changed its mind (anoth
 it, or it got masked). Do nothing; in particular do **not** write EOIR: signaling
 completion for an interrupt you never took corrupts the GIC's priority stack.
 
-## IRQs dispatch by vector slot, not by ESR
+## Interrupts dispatch by vector slot, not by ESR
 
 `exception_dispatch` gets both the trap frame and *which of the sixteen vector slots fired*
-([exceptions.md](exceptions.md)). For a fault we decode `ESR_EL1`. For an IRQ we must not.
+([exceptions.md](exceptions.md)). For a fault we decode `ESR_EL1`. For an interrupt we must not.
 
-`ESR_EL1` describes a synchronous exception: what instruction did what wrong. An IRQ is
+`ESR_EL1` describes a synchronous exception: what instruction did what wrong. An interrupt is
 *asynchronous*. It has nothing to do with the instruction it interrupted, and `ESR_EL1` still
-holds whatever the last *synchronous* exception left there. Reading it in an IRQ handler is
+holds whatever the last *synchronous* exception left there. Reading it in an interrupt handler is
 reading a stale answer to a question nobody asked.
 
 ## The bug we shipped and then measured
@@ -164,7 +164,7 @@ That is the bill for deadlock prevention, and why "keep critical sections short"
 that didn't get preempted.
 
 It is a strange thing to *assert*, until you notice: if that cost stopped being real,
-`IrqSafeMutex` would have stopped masking, and the deadlock would be back.
+`InterruptSafeMutex` would have stopped masking, and the deadlock would be back.
 
 ---
 
@@ -187,7 +187,7 @@ So the interrupt reaches the driver as something it *can* receive: a message.
 ## The shape
 
 ```
-  device raises INTID  ──►  kernel handle_irq:  mask INTID at the GIC
+  device raises INTID  ──►  kernel handle_interrupt:  mask INTID at the GIC
                                                 turn it into a notification
                                                 EOI
                                                         │
@@ -195,7 +195,7 @@ So the interrupt reaches the driver as something it *can* receive: a message.
                                                 │
                        reads the device, quiets its interrupt
                                                 │
-                       invoke(irq_cap, ACK)  ──►  kernel: re-enable INTID at the GIC
+                       invoke(interrupt_cap, ACK)  ──►  kernel: re-enable INTID at the GIC
 ```
 
 The kernel's half does nothing device-specific, and everything that knows what a *virtio block
@@ -208,8 +208,9 @@ until the driver does something to quiet it (for virtio, reads `InterruptStatus`
 `InterruptACK`). If the kernel left the line enabled and just EOI'd, the GIC would re-deliver it forever: a storm
 the machine never climbs out of, because only the driver can quiet the device and it never runs.
 
-So `handle_irq` masks the INTID at the distributor (`gic::disable`) the moment it fires. The driver
-services the device, then calls `ACK` on its `Irq` capability, and only then does the kernel
+So `handle_interrupt` masks the INTID at the distributor (`gic::disable`) the moment it fires. The
+driver
+services the device, then calls `ACK` on its `Interrupt` capability, and only then does the kernel
 re-enable the line (`gic::enable`). Until then the interrupt is held off. This is exactly seL4's
 IRQHandler protocol, and it is what lets a process that holds no privilege safely own an
 interrupt.
@@ -227,7 +228,7 @@ drains it instead of blocking. An interrupt that fires one instruction before th
 
 ## The capability
 
-`Object::Irq(intid)`. Its holder can:
+`Object::Interrupt(intid)`. Its holder can:
 
 - `WAIT`: block until the interrupt fires (internally, `RECEIVE` on the endpoint the kernel routed
   the interrupt to).
@@ -248,24 +249,30 @@ driver (9b) uses the same path with a real device interrupt.
 The two tests (`kernel::sched::tests::an_interrupt_becomes_a_message` and
 `an_interrupt_that_arrives_before_the_wait_is_not_lost`) trigger with an SGI on aarch64. On RISC-V
 the trigger is the console UART's own
-transmit-empty interrupt, behind `arm_test_irq`, `raise_test_irq` and `quiet_test_irq`. The SBI IPI
-was refused because it never reaches `irq_route`, and writing the PLIC's pending bits does nothing.
+transmit-empty interrupt, behind `arm_test_interrupt`, `raise_test_interrupt` and
+`quiet_test_interrupt`. The SBI IPI
+was refused because it never reaches `interrupt_route`, and writing the PLIC's pending bits does
+nothing.
 The two legs are not twins: aarch64's needs no device, and RISC-V's covers more of the controller.
 Why each option lost, and the unbacked claim the old doc comment made, are in
 [interrupts/riscv-test-trigger.md](interrupts/riscv-test-trigger.md).
 
 ---
 
-# IRQ affinity: spreading device lines off core 0 (fix/irq-delivery, 2026-07-29)
+# Interrupt affinity: spreading device lines off core 0 (fix/interrupt-delivery, 2026-07-29)
 
-Device lines no longer all target core 0. `arch::irq::enable` gives each SPI a target core the
-first time it is enabled, round-robin over the online cores, and keeps it (`IRQ_TARGET`), because
-the `Irq` capability's ACK re-enables the line on every completion. The GIC driver is told which
+Device lines no longer all target core 0. `arch::interrupt_controller::enable` gives each SPI a
+target core the
+first time it is enabled, round-robin over the online cores, and keeps it (`INTERRUPT_TARGET`),
+because
+the `Interrupt` capability's ACK re-enables the line on every completion. The GIC driver is told
+which
 core and does not decide (rule #2). The PLIC does the same per hart (`SOURCE_CTX`), with each hart
 claiming and completing against its own context.
 
 The PLIC's enable bits share one word per 32 sources, so setting one is a read-modify-write two
-harts can interleave, losing an enable. One `IrqSafeMutex` at `rank::IRQ_CONTROLLER` serializes it
+harts can interleave, losing an enable. One `InterruptSafeMutex` at `rank::INTERRUPT_CONTROLLER`
+serializes it
 ([arch-audit.md](arch-audit.md), finding 3).
 
 The PLIC's claim is the mask and the ACK is the completion (`drivers/plic.rs`, milestone 890
@@ -297,10 +304,13 @@ emulates one.
 | SGI | an `GICD_SGIR` store | an `ICC_SGI1R_EL1` write, `dsb ishst` before it |
 | confirmed at boot by | `GICC_IIDR.ArchitectureVersion` from the block the tree calls the CPU interface | `GICD_PIDR2.ArchRev`, then `ICC_SRE_EL1.SRE` sticking |
 
-One place holds both. `arch/aarch64/irq.rs` reads the version (`machine_discovery::gic`,
+One place holds both. `arch/aarch64/interrupt_controller.rs` reads the version
+(`machine_discovery::gic`,
 host-tested against QEMU's own GICv2, GICv3 and HVF trees), asks the hardware whether the tree is
-right, and only then initializes a driver. Every other caller in the kernel (the IRQ handler, the
-timer, the scheduler's reschedule SGI, the tests) names `arch::irq` and never a driver, so the
+right, and only then initializes a driver. Every other caller in the kernel (the interrupt handler,
+the
+timer, the scheduler's reschedule SGI, the tests) names `arch::interrupt_controller` and never a
+driver, so the
 choice is made once. The split between `drivers/` and `arch/` is DECISIONS §4 rule 1: the ICC
 registers are `msr`/`mrs`, so they are architecture code, while everything behind a pointer stays a
 driver that is handed its addresses. `design/roadmap/0227-gicv3-driver.md` has the placement and what
@@ -362,8 +372,8 @@ calef asked on 2026-09-17 why the tree polls, the third time in two days it had 
 is confinement, not performance. An MSI or MSI-X message is a memory write, and plain DMA remapping
 does not confine it. A component that can write a device's MSI-X table can aim an interrupt at a
 vector it was never given (§86 (whether an NVMe driver can leave the kernel)). MSI remapping is offered but never enabled on `x86_64`, and absent
-on `aarch64` (no GICv3 ITS is driven); only `riscv64` drives it. So an IRQ-driven EL0 driver would not
-be confined on two of three architectures, and milestones 159 and 261 poll. `Object::Irq` already
+on `aarch64` (no GICv3 ITS is driven); only `riscv64` drives it. So an interrupt-driven EL0 driver would not
+be confined on two of three architectures, and milestones 159 and 261 poll. `Object::Interrupt` already
 confines a line-based interrupt; MSI-X is the case it does not cover.
 
 Who owns the page holding the MSI-X table is open on purpose: calef declined to mint it on

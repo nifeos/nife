@@ -110,7 +110,7 @@ is there to keep it that way.
 
 ## What it unblocks
 
-Every list in the kernel was a fixed-size array (`MAX_REGIONS = 16`) purely because there
+Every list in the kernel was a fixed-size array (`MAXIMUM_REGIONS = 16`) purely because there
 was no heap. `memory.rs` still declares `[Region; 16]` and returns `TooManyRegions` if a
 machine has more, a limitation accepted only because `Vec` didn't exist.
 
@@ -236,13 +236,14 @@ the process's own untyped budget. The pair that landed:
   `design/roadmap/0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md`.
 
 - `memory_region_heap::MemoryRegionHeap`: the policy and the syscall glue. A `#[global_allocator]`
-  static the program wires with one call, `HEAP.initialize(untyped_slot, base_va, max_bytes)`, first
-  thing in `_start`. Growth maps pages at the top of `[base, base+committed)` via `untyped::MAP`
-  (one page per invoke, zeroed by the kernel, paid from the budget). It grows geometrically (double,
-  at least 8 pages, never past `max_bytes`). The first run is talc's `claim`, holding its bins;
-  each later run is `extend`, so the heap stays one contiguous range. Which slot pays, and where the heap lives, are part of the
-  program's capability contract like every other slot number (notes/abi.md §4);
-  `heap::DEFAULT_BASE` (1 GiB) is a suggested VA clear of every convention in the tree.
+  static the program wires with one call, `HEAP.initialize(untyped_slot, base_va, maximum_bytes)`,
+  first thing in `_start`. Growth maps pages at the top of `[base, base+committed)` via
+  `untyped::MAP` (one page per invoke, zeroed by the kernel, paid from the budget). It grows
+  geometrically (double, at least 8 pages, never past `maximum_bytes`). The first run is talc's
+  `claim`, holding its bins; each later run is `extend`, so the heap stays one contiguous range.
+  Which slot pays, and where the heap lives, are part of the program's capability contract like
+  every other slot number (notes/abi.md §4 (kernel shape: monolithic, deferred)); `heap::DEFAULT_BASE` (1 GiB) is a suggested VA clear of
+  every convention in the tree.
 
 What this is *not*: a kernel service. The kernel's only involvement is the `untyped::MAP` it
 already had; a process that leaks just exhausts its own budget (`OutOfMemory` is the process's
@@ -269,7 +270,7 @@ heap links no allocator.
 - Which untyped slot pays is the program's convention with its parent. No untyped, no heap.
 - `DEFAULT_BASE` (1 GiB) starts `address_space_map::HEAP`, the band the address-space map keeps for
   a heap and nothing else.
-- `max_bytes` caps growth, so a leak exhausts the heap visibly before it eats the budget the
+- `maximum_bytes` caps growth, so a leak exhausts the heap visibly before it eats the budget the
   program builds children from. `MAP`'s `OutOfMemory` is the hard ceiling either way, and it is
   reported as an allocation failure. Allocating before `init` fails the same way.
 - A spinlock is enough because the holder is always scheduled again to release it under this
@@ -293,7 +294,7 @@ of the shell cannot reach `Vec` at all. `mod heap` hands out `Room`, a slice onc
 with `try_reserve_exact` and `push_within_capacity`, and it has no method that grows. `script/lint`
 holds that the declaration stays in `mod heap`.
 
-The heap is capped at 32 KiB (`swish::HEAP_MAX_BYTES`). All of it is mapped from the shell's
+The heap is capped at 32 KiB (`swish::HEAP_MAXIMUM_BYTES`). All of it is mapped from the shell's
 128-page budget first thing at `_start` (`MemoryRegionHeap::commit_all`), so its pages and their
 page tables sit under every later carve and cannot break their last-in first-out return. The cap is
 several times what a line needs. A leak therefore exhausts the heap and refuses lines long before

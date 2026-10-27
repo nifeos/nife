@@ -18,11 +18,11 @@ writes `Blocked`:
 
 | `WaitRole` | Where the TCB is linked | Reached by |
 |---|---|---|
-| `Sender` | the endpoint's sender `Fifo` | `Endpoint::receive`, `drain_waiters`, `remove_sender` |
-| `Receiver` | the endpoint's receiver `Fifo` | `Endpoint::send`, `Endpoint::signal`, `drain_waiters` |
+| `Sender` | the endpoint's sender `Queue` | `Endpoint::receive`, `drain_waiters`, `remove_sender` |
+| `Receiver` | the endpoint's receiver `Queue` | `Endpoint::send`, `Endpoint::signal`, `drain_waiters` |
 | `Reply` | no queue at all | `sched::ipc_reply`, addressed by tid |
 
-There is no fourth. An `Irq::WAIT` is `sched::ipc_receive` on a routed endpoint, so it is a `Receiver`.
+There is no fourth. An `Interrupt::WAIT` is `sched::ipc_receive` on a routed endpoint, so it is a `Receiver`.
 `handshake.wait_on` carries `(EpId, WaitRole)` and `endpoint_of` resolves the `EpId`, so from a bare
 `Tid` the kernel can say exactly which queue, if any, holds that thread.
 
@@ -42,8 +42,8 @@ queue, which is the whole of `Error::Gone`'s reach.
 
 `Endpoint::remove_sender` exists, and it exists for exactly this shape of problem: a corpse
 parked on its supervisor's sender queue must be unlinked before its TCB is freed. Its doc calls it
-"the one operation an intrusive `Fifo` deliberately does not offer (arbitrary remove)". There is no
-`remove_receiver`, and it is the same drain-and-repush over the other `Fifo`.
+"the one operation an intrusive `Queue` deliberately does not offer (arbitrary remove)". There is no
+`remove_receiver`, and it is the same drain-and-repush over the other `Queue`.
 
 For `WaitRole::Reply` no unlink is needed at all, because the thread is on no queue. Mechanically the
 case the hung-component note frames as hardest is the easiest one.

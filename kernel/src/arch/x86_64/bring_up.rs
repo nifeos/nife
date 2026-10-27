@@ -15,7 +15,7 @@ use super::*;
 /// and waiting is what makes the next call's `ap_boot::prepare` safe to overwrite it. See
 /// notes/x86-port/smp-bring-up.md.
 pub fn cpu_start(target_cpu: u64, entry: u64, context: u64) -> i64 {
-    if !irq::is_local_apic_ready() {
+    if !interrupt_controller::is_local_apic_ready() {
         return -1;
     }
     debug_assert_eq!(
@@ -35,16 +35,16 @@ pub fn cpu_start(target_cpu: u64, entry: u64, context: u64) -> i64 {
 
     // The universal INIT-SIPI-SIPI startup algorithm (Intel MP spec, appendix B.4): INIT, a settle
     // delay, then a STARTUP IPI.
-    irq::send_init(dest);
+    interrupt_controller::send_init(dest);
     busy_wait_us(10_000);
     let vector = (entry >> 12) as u8;
-    irq::send_startup(dest, vector);
+    interrupt_controller::send_startup(dest, vector);
     busy_wait_us(200);
 
     // A second STARTUP only if the first has not visibly worked: a core that has left
     // wait-for-SIPI ignores another (QEMU's `apic_sipi` too), so this is as correct as two.
     if crate::smp::online_count() == before {
-        irq::send_startup(dest, vector);
+        interrupt_controller::send_startup(dest, vector);
         busy_wait_us(200);
     }
 
@@ -77,12 +77,12 @@ pub(super) fn busy_wait_us(us: u64) {
 /// Can this machine start a secondary CPU at all? Yes, once the local APIC is up: INIT-SIPI-SIPI is
 /// sent *through* it, unlike PSCI or SBI, which need no device at all before the first call.
 pub fn can_start_secondaries() -> bool {
-    irq::is_local_apic_ready()
+    interrupt_controller::is_local_apic_ready()
 }
 
 /// Print how this machine starts a CPU. One line, on every boot, beside the SMP count.
 pub fn print_bring_up_mechanism() {
-    if irq::is_local_apic_ready() {
+    if interrupt_controller::is_local_apic_ready() {
         crate::println!(
             "  smp: init-sipi-sipi via the local apic, trampoline at {:#x}",
             ap_boot::trampoline_phys()

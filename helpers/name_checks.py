@@ -629,6 +629,9 @@ def main(argv):
         _selftest()
         return 0
     mode = argv[0] if argv and argv[0].startswith("-") else "--list"
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
     prefixes = tuple(a for a in argv if not a.startswith("-"))
     if mode not in ("--list", "--check", "--bank", "--init"):
         sys.exit(__doc__.split("\n\n")[2])

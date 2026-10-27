@@ -168,8 +168,8 @@ pub(crate) struct Found {
 static REGION: AtomicU64 = AtomicU64::new(0);
 
 /// The last bring-up's account, refused or not: one boot artifact, read by the bench boot's lines.
-static LAST_REPORT: crate::sync::IrqSafeMutex<Option<Report>> =
-    crate::sync::IrqSafeMutex::new(crate::sync::rank::RAM, None);
+static LAST_REPORT: crate::sync::InterruptSafeMutex<Option<Report>> =
+    crate::sync::InterruptSafeMutex::new(crate::sync::rank::RAM, None);
 
 /// **What the last bring-up saw**, as far as it got. `None` before any.
 #[cfg_attr(not(feature = "network_bench"), allow(dead_code))] // the bench boot is its reader

@@ -178,7 +178,7 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
         &ChildEndowment {
             caps: &[
                 (report, abi::rights::WRITE),
-                (g.virtio_net_irq, abi::rights::READ),
+                (g.virtio_net_interrupt, abi::rights::READ),
                 (g.virtio_net, abi::rights::WRITE),
                 (budget, abi::rights::SPEND_ONLY),
                 (stack, abi::rights::READ),
@@ -328,22 +328,22 @@ pub(super) fn graphical_terminal_grants(
     let terminal = measured(fs, table, "display_terminal").elf;
     let held = is_granted(g.gpu) && driver.is_some() && terminal.is_some();
     if is_granted(g.gpu) && !held {
-        for c in [g.gpu, g.gpu_irq, g.gpu_dma, g.gpu_surface] {
+        for c in [g.gpu, g.gpu_interrupt, g.gpu_dma, g.gpu_surface] {
             cap_delete(c);
         }
     }
     let kbd_driver = measured(fs, table, "keyboard_driver").elf;
     let keyboard = held && is_granted(g.keyboard) && kbd_driver.is_some();
     if is_granted(g.keyboard) && !keyboard {
-        for c in [g.keyboard, g.keyboard_irq, g.keyboard_dma] {
+        for c in [g.keyboard, g.keyboard_interrupt, g.keyboard_dma] {
             cap_delete(c);
         }
     }
     GraphicalTerminalCaps {
         held,
         keyboard,
-        gpu: [g.gpu, g.gpu_irq, g.gpu_dma, g.gpu_surface],
-        kbd: [g.keyboard, g.keyboard_irq, g.keyboard_dma],
+        gpu: [g.gpu, g.gpu_interrupt, g.gpu_dma, g.gpu_surface],
+        kbd: [g.keyboard, g.keyboard_interrupt, g.keyboard_dma],
         driver,
         terminal,
         kbd_driver,

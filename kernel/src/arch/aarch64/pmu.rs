@@ -19,7 +19,7 @@
 use core::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
 use super::instructions;
-use crate::cpu::{self, MAX_CPUS};
+use crate::cpu::{self, MAXIMUM_CPUS};
 
 /// **The value written to `PMCCFILTR_EL0` on every core: zero, so EL0 and EL1 are counted and EL2
 /// is not.** calef's ruling A1, 2026-10-07 (UTC), recorded in milestone 353's block.
@@ -82,27 +82,27 @@ pub enum CycleCounter {
 /// [`CycleCounter`] per core, as a byte. Written once by that core's [`initialize_this_cpu`] before
 /// the core is counted online, read-only afterwards. Atomics rather than a lock: nothing here nests
 /// with another lock, so it earns no rank in `sync::rank`.
-static OUTCOME: [AtomicU8; MAX_CPUS] =
-    [const { AtomicU8::new(CycleCounter::Unknown as u8) }; MAX_CPUS];
+static OUTCOME: [AtomicU8; MAXIMUM_CPUS] =
+    [const { AtomicU8::new(CycleCounter::Unknown as u8) }; MAXIMUM_CPUS];
 
 /// Each core's `PMCR_EL0` as read back after the enable, for the boot line: `N` (bits 15:11) is how
 /// many event counters EL1 can see, which is `MDCR_EL2.HPMN` when an EL2 is implemented and so is
 /// the visible trace of `boot.s` having set it.
-static PMCR_READBACK: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+static PMCR_READBACK: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// What the check on each core measured, cycles and generic-timer ticks over the same window, kept
 /// for the boot line. **The ticks are what elapsed, not [`CHECK_TICKS`]**: the loop exits at the
 /// first read past the threshold, and under TCG that first read can come milliseconds late (the
 /// block is being translated), so printing the constant would divide by the wrong number. On the
 /// `Stuck` outcome the window the counter failed to move across is the diagnostic.
-static CHECK_CYCLES: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
-static CHECK_ELAPSED: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+static CHECK_CYCLES: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
+static CHECK_ELAPSED: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// **What `PMCCFILTR_EL0` held before this kernel overwrote it**, per core, for the boot line.
 ///
 /// Evidence for milestone 25 (cross-OS comparison), never state this kernel uses: seL4's published
 /// TX1 figures counted whatever firmware left here. See notes/pmu.md, "Why `PMCCFILTR_EL0` is zero".
-static FIRMWARE_FILTER: [AtomicU64; MAX_CPUS] = [const { AtomicU64::new(0) }; MAX_CPUS];
+static FIRMWARE_FILTER: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// `ID_AA64DFR0_EL1.PMUVer`, bits 11:8 (Arm DDI 0487, `ID_AA64DFR0_EL1`).
 fn pmu_version() -> u64 {
@@ -244,7 +244,7 @@ pub(crate) fn print_summary() {
     let mut initialised = 0;
     let mut running = 0;
     let mut first_other: Option<(usize, CycleCounter)> = None;
-    for cpu in 0..MAX_CPUS {
+    for cpu in 0..MAXIMUM_CPUS {
         let o = outcome_on(cpu);
         if o == CycleCounter::Unknown {
             continue;
@@ -411,9 +411,9 @@ mod tests {
     /// reads so both are on this core.
     #[test_case]
     fn a_running_counter_advances() {
-        let irqs = crate::arch::interrupts::disable();
+        let interrupts_were_enabled = crate::arch::interrupts::disable();
         let Some(first) = cycles() else {
-            crate::arch::interrupts::restore(irqs);
+            crate::arch::interrupts::restore(interrupts_were_enabled);
             return;
         };
         let t0 = instructions::read_cntvct();
@@ -421,7 +421,7 @@ mod tests {
             core::hint::spin_loop();
         }
         let second = cycles().expect("the counter did not vanish mid-test");
-        crate::arch::interrupts::restore(irqs);
+        crate::arch::interrupts::restore(interrupts_were_enabled);
         assert!(
             second.wrapping_sub(first) > 0,
             "PMCCNTR_EL0 read {first} twice across 1000 ticks; something stopped it after boot"

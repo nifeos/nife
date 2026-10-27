@@ -31,9 +31,10 @@ impl Nic {
             Nic::DesignWare(n) => n.mac(),
         }
     }
-    pub(crate) fn ack_irq(&self) {
+    #[doc(alias = "irq")]
+    pub(crate) fn acknowledge_interrupt(&self) {
         if let Nic::Virtio(v) = self {
-            v.ack_irq();
+            v.acknowledge_interrupt();
         }
     }
     fn receive_frame(&mut self) -> Option<alloc::vec::Vec<u8>> {

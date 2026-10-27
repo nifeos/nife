@@ -150,8 +150,8 @@ proved by construction rather than by assertion.
 
 `a_host_process_connects_to_the_guest_and_is_answered` is one test with stage codes, and the codes
 stand in for the names separate tests would have. A second net server once cost a region nothing
-reclaimed (`virtio::MAX_DEVICES`); a net service is reclaimable (notes/frames.md), so splitting the
-test is possible, as a change with its own argument.
+reclaimed (`virtio::MAXIMUM_DEVICES`); a net service is reclaimable (notes/frames.md), so splitting
+the test is possible, as a change with its own argument.
 
 The UDP bind grant (milestone 55's stack half) rides the same spawn for the same memory reason,
 measured: a twelfth net server died as `Unmappable(OutOfPageFrames)` in an unrelated later test.

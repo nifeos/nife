@@ -6,6 +6,9 @@
 //! that each entry's bytes lie inside the table is `table::verification`'s proof. The volume holds
 //! one to eight clusters, the bound Kani needs to unroll the walk; the walk's own bound is the
 //! cluster count whatever it is, and the crate's fuzz target runs the same walk over whole images.
+//!
+//! Name: ratified 2026-10-26 (UTC), on #2760. The Kani proofs, named as `boot_sector` and
+//! `long_name` name theirs.
 
 use super::*;
 use crate::boot_sector::FileAllocationTableType;

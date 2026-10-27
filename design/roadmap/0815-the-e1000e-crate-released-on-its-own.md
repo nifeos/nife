@@ -144,6 +144,28 @@ blocks, which the ratification pass settles.
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   `Handoff` is nife's spawn ABI. The addresses taken from `address_space_map` left with the cut.
 
+## Names a stranger may misread, open before release
+
+design/naming.md's tests and Fork 5 of milestone 857 (names that stand on their own) judge
+each name. The lines below list the names that read as something other than clear or a term, as of
+2026-10-26 (UTC), copied as they stand. Each stays open until a ruling keeps or changes it. The tree
+keeps no record of a release-track crate's names (ruled 2026-10-26 UTC), so this list is the open
+work, and the lane that renames a name drops its line.
+
+### Nife's own plan
+
+- `layout` (`src/layout.rs`): nife: nife's own process plan
+
+### Generic
+
+- `required` (`src/pch/flush.rs`): generic
+- `Note` (`src/pch/sequence.rs`): generic
+- `Reached` (`src/pch/sequence.rs`): generic
+
+### Unclear
+
+- `ulp` (`src/pch/ulp.rs`): unclear: Intel's ultra low power, an abbreviation
+
 ## Exit
 
 A check proves it. In nife, `cargo tree --locked -i e1000e` resolves to `v0.1.x` from crates.io with

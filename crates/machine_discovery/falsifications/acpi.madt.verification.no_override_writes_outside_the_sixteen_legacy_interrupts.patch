@@ -1,9 +1,9 @@
-Falsifies `machine_discovery::acpi::madt::verification::no_override_writes_outside_the_sixteen_legacy_irqs`.
+Falsifies `machine_discovery::acpi::madt::verification::no_override_writes_outside_the_sixteen_legacy_interrupts`.
 
 The defect: the bound on an override's `source` field is gone, so a MADT interrupt
 source override naming source 200 indexes a sixteen-entry array at 200. The field
 is one byte straight out of a firmware table, and the array it indexes is a fixed
-`[IsaIrqRouting; ISA_IRQ_COUNT]` on the stack of a function the x86 boot path calls
+`[IsaInterruptRouting; ISA_INTERRUPT_COUNT]` on the stack of a function the x86 boot path calls
 while bringing up the IO APIC.
 
 The guard sits as one clause of a four-clause `if let` chain, which is the shape
@@ -16,11 +16,11 @@ Expected to fail: the bounds check on `table[source as usize]`.
 diff --git a/crates/machine_discovery/src/acpi/madt.rs b/crates/machine_discovery/src/acpi/madt.rs
 --- a/crates/machine_discovery/src/acpi/madt.rs
 +++ b/crates/machine_discovery/src/acpi/madt.rs
-@@ -285,7 +285,6 @@ pub fn isa_irq_table(body: &[u8]) -> [IsaIrqRouting; ISA_IRQ_COUNT] {
+@@ -285,7 +285,6 @@ pub fn isa_interrupt_table(body: &[u8]) -> [IsaInterruptRouting; ISA_INTERRUPT_COUNT] {
              flags,
          } = entry
              && bus == ISA_BUS
--            && (source as usize) < ISA_IRQ_COUNT
+-            && (source as usize) < ISA_INTERRUPT_COUNT
          {
-             table[source as usize] = IsaIrqRouting {
+             table[source as usize] = IsaInterruptRouting {
                  gsi,

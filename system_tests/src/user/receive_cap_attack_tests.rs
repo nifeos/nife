@@ -484,7 +484,8 @@ fn the_server_answered_and_kept_nothing(round: &CallServerRound, server_first: b
 }
 
 /// An interrupt number no device on any of the three machines raises, so binding it steals no real
-/// route (the reasoning, and the value, are `irq_send_refusal_tests`'). `bind_irq` has no unbind,
+/// route (the reasoning, and the value, are `interrupt_send_refusal_tests`'). `bind_interrupt` has
+/// no unbind,
 /// so a neighbour that rebinds it simply replaces this test's route.
 const QUIET_INTID: u32 = 250;
 
@@ -492,7 +493,7 @@ const QUIET_INTID: u32 = 250;
 /// first** (milestone 714 (the sibling `RECEIVE_CAP` paths get a receiver-first test), fatal risk
 /// 7's confinement claim; the sibling of milestone 634's plain-`SEND` test above).
 ///
-/// `irq_notify` drops `[1, 0, 0, 0, 0]` into a parked receiver's mailbox, so without 634's
+/// `interrupt_notify` drops `[1, 0, 0, 0, 0]` into a parked receiver's mailbox, so without 634's
 /// `cap_delivered` default a receiver-first `RECEIVE_CAP` sees `x1 = 0`: a kernel word, not a
 /// chosen one, but a driver deleting `x1` as a delegation would lose its slot 0. The only test
 /// driving an interrupt through that order; the signal-pending order is the control.
@@ -507,7 +508,7 @@ fn an_interrupt_signal_received_by_receive_cap_delivers_no_cap_whichever_side_pa
 
     let region = crate::memory_region::create(4).expect("no region");
     let ep = sched::create_rendezvous_from(region).expect("no rendezvous");
-    sched::bind_irq(QUIET_INTID, ep);
+    sched::bind_interrupt(QUIET_INTID, ep);
 
     // Receiver-first: the driver parks in RECEIVE_CAP, then the interrupt arrives.
     sched::spawn(move || {
@@ -522,7 +523,7 @@ fn an_interrupt_signal_received_by_receive_cap_delivers_no_cap_whichever_side_pa
         wait_for(|| PARKING.load(Ordering::SeqCst) && sched::rendezvous_waiting_receivers(ep) == 1),
         "the driver never parked in RECEIVE_CAP, so nothing proved the receiver-first order",
     );
-    sched::irq_notify(ep);
+    sched::interrupt_notify(ep);
     assert!(
         wait_for(|| DONE.load(Ordering::SeqCst)),
         "the interrupt never reached the parked RECEIVE_CAP receiver",
@@ -541,7 +542,7 @@ fn an_interrupt_signal_received_by_receive_cap_delivers_no_cap_whichever_side_pa
     );
 
     // Signal-first: the interrupt is counted, then this thread receives.
-    sched::irq_notify(ep);
+    sched::interrupt_notify(ep);
     let [x0, x1, ..] = sched::ipc_receive_cap(ep);
     assert_eq!(x0, 1, "the pending interrupt's w0 did not arrive");
     assert_eq!(

@@ -171,11 +171,15 @@ pub unsafe fn set_user_arg(stack_top: u64, i: usize, v: u64) {
     unsafe { (*frame).set_arg(i, v) }
 }
 
-/// Interrupts routed to a userspace handler (delegated IRQs). Bumped by the trap dispatcher.
-pub static ROUTED_IRQS: AtomicUsize = AtomicUsize::new(0);
+/// Interrupts routed to a userspace handler (delegated interrupts). Bumped by the trap dispatcher.
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+#[doc(alias = "irq")]
+pub static ROUTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// Interrupts taken with no source enabled or routed to explain them.
-pub(crate) static SPURIOUS_IRQS: AtomicUsize = AtomicUsize::new(0);
+#[doc(alias = "irq")]
+pub(crate) static SPURIOUS_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// System calls served, in test builds only, for `system_tests/src/user/el0_boundary_tests.rs`:
 /// every syscall on every core writes this one line (notes/job-mix/null-syscall-under-load.md).
@@ -194,7 +198,8 @@ const SPP: u64 = 1 << 8;
 /// The high bit of `scause`: set for an interrupt, clear for an exception.
 const INTERRUPT: u64 = 1 << 63;
 /// `scause` interrupt code for a supervisor external interrupt: a device raised a line into the
-/// PLIC, which routed it here. The RISC-V analog of an aarch64 IRQ exception carrying a GIC intid.
+/// PLIC, which routed it here. The RISC-V analog of an aarch64 interrupt exception carrying a GIC
+/// intid.
 const S_EXTERNAL: u32 = 9;
 /// `scause` interrupt code for a supervisor software interrupt: another hart's reschedule IPI, set
 /// through the SBI (which pends `sip.SSIP`). The RISC-V analog of aarch64's reschedule SGI.
@@ -369,16 +374,16 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
             // JH7110's PLIC drops a completion for a disabled source (drivers/plic.rs).
             S_EXTERNAL => {
                 // Claim against this hart's own context; affinity may route a source to any hart.
-                let ctx = super::irq::this_s_context();
+                let ctx = super::interrupt_controller::this_s_context();
                 let source = crate::drivers::plic::claim(ctx);
                 if source != 0 {
-                    if let Some(ep) = crate::sched::irq_route(source) {
-                        ROUTED_IRQS.fetch_add(1, Ordering::Relaxed);
-                        super::irq::hold_claim(source, ctx);
-                        crate::sched::irq_notify(ep);
+                    if let Some(ep) = crate::sched::interrupt_route(source) {
+                        ROUTED_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
+                        super::interrupt_controller::hold_claim(source, ctx);
+                        crate::sched::interrupt_notify(ep);
                     } else {
                         // Nobody will ACK an unrouted source, so it is completed here.
-                        SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
+                        SPURIOUS_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
                         crate::drivers::plic::complete(source, ctx);
                     }
                 }
@@ -392,7 +397,7 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
                 crate::sched::serve_steal_request();
             }
             _ => {
-                SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
+                SPURIOUS_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
             }
         }
 

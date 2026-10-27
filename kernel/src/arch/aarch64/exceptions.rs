@@ -5,7 +5,7 @@
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
-use super::{instructions, irq, timer};
+use super::{instructions, interrupt_controller, timer};
 use crate::arch::{UserFault, UserFaultAccess};
 use crate::println;
 
@@ -63,7 +63,8 @@ impl TrapFrame {
     /// `x0`..`x2`, so portable `user.rs` never names `elr`, `spsr` or `sp_el0` (notes/riscv-port.md,
     /// leak #3).
     ///
-    /// `spsr = 0` returns to `EL0t`, AArch64, with IRQs unmasked, so a tight-loop user thread is
+    /// `spsr = 0` returns to `EL0t`, AArch64, with interrupts unmasked, so a tight-loop user thread
+    /// is
     /// still preemptible (DECISIONS §5 (preemptive threads with real stacks)). Zero looks like a
     /// bug and is not.
     pub fn for_user_entry(entry: u64, user_sp: u64, args: [u64; 3]) -> Self {
@@ -266,9 +267,17 @@ pub fn initialize() {
 }
 
 /// Vector slot 5: Current EL, `SP_ELx`, IRQ. **The kernel being interrupted.**
-const VECTOR_IRQ_CURRENT: u64 = 5;
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling: Arm's
+/// vector kind is `IRQ`, kept in the table strings, and `FIQ` is the other kind this blurs.
+#[doc(alias = "irq")]
+const VECTOR_INTERRUPT_CURRENT: u64 = 5;
 /// Vector slot 9: Lower EL, AArch64, IRQ. Userspace being interrupted. Milestone 7.
-const VECTOR_IRQ_LOWER: u64 = 9;
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling, with
+/// `VECTOR_INTERRUPT_CURRENT`.
+#[doc(alias = "irq")]
+const VECTOR_INTERRUPT_LOWER: u64 = 9;
 
 unsafe extern "C" {
     /// Switch to `top` (or stay put if it is 0), call [`exception_body`], come back.
@@ -306,12 +315,12 @@ extern "C" fn exception_dispatch(frame: &mut TrapFrame, index: u64) {
 
 /// The trap handler proper: everything that runs on the interrupt stack when there is one.
 ///
-/// Returns whether the caller owes a deferred `schedule()`: true for an IRQ, false otherwise.
+/// Returns whether the caller owes a deferred `schedule()`: true for an interrupt, false otherwise.
 #[unsafe(no_mangle)]
 extern "C" fn exception_body(frame: &mut TrapFrame, index: u64) -> bool {
-    // By slot, not by ESR: ESR_EL1 describes the last synchronous exception, not an IRQ.
-    if index == VECTOR_IRQ_CURRENT || index == VECTOR_IRQ_LOWER {
-        handle_irq(frame);
+    // By slot, not by ESR: ESR_EL1 describes the last synchronous exception, not an interrupt.
+    if index == VECTOR_INTERRUPT_CURRENT || index == VECTOR_INTERRUPT_LOWER {
+        handle_interrupt(frame);
         return true;
     }
 
@@ -371,7 +380,10 @@ pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub static USER_FAULTS: AtomicUsize = AtomicUsize::new(0);
 
 /// How many device/SGI interrupts were routed to a userspace endpoint. Bring-up diagnostic.
-pub static ROUTED_IRQS: AtomicUsize = AtomicUsize::new(0);
+///
+/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+#[doc(alias = "irq")]
+pub static ROUTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// The most recent user fault, [`UserFault::encode`]d, and the address it named. Two relaxed
 /// stores on a path that is already killing a thread; read back through [`last_user_fault`].
@@ -456,15 +468,17 @@ fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
 
 /// Service one hardware interrupt.
 ///
-/// Context: interrupt context, IRQs masked by the vector. Records and defers, per §9 (locking):
+/// Context: interrupt context, interrupts masked by the vector. Records and defers, per §9
+/// (locking):
 /// allocates nothing and takes no lock above rank GIC.
-fn handle_irq(_frame: &mut TrapFrame) {
+#[doc(alias = "irq")]
+fn handle_interrupt(_frame: &mut TrapFrame) {
     // The acknowledge has a side effect: exactly once.
-    let intid = irq::acknowledge();
+    let intid = interrupt_controller::acknowledge();
 
     // Spurious: no end-of-interrupt, which would corrupt the GIC's priority stack.
-    if intid == irq::SPURIOUS {
-        SPURIOUS_IRQS.fetch_add(1, Ordering::Relaxed);
+    if intid == interrupt_controller::SPURIOUS {
+        SPURIOUS_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
         return;
     }
 
@@ -482,27 +496,29 @@ fn handle_irq(_frame: &mut TrapFrame) {
         other => {
             // Masked before the notification, or a level-triggered line re-fires on the EOI; the
             // driver's ACK re-enables it. See notes/interrupts.md.
-            if let Some(ep) = crate::sched::irq_route(other) {
-                ROUTED_IRQS.fetch_add(1, Ordering::Relaxed);
-                irq::disable(other);
-                crate::sched::irq_notify(ep);
+            if let Some(ep) = crate::sched::interrupt_route(other) {
+                ROUTED_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
+                interrupt_controller::disable(other);
+                crate::sched::interrupt_notify(ep);
             } else {
-                UNEXPECTED_IRQS.fetch_add(1, Ordering::Relaxed);
-                println!("[IRQ] unexpected interrupt {other}, ignoring");
+                UNEXPECTED_INTERRUPTS.fetch_add(1, Ordering::Relaxed);
+                println!("[interrupt] unexpected interrupt {other}, ignoring");
             }
         }
     }
 
     // Before the deferred switch in `exception_dispatch`: until it is written the GIC delivers
     // nothing of equal or lower priority, to this thread or the one switched to.
-    irq::end_of_interrupt(intid);
+    interrupt_controller::end_of_interrupt(intid);
 }
 
 /// Interrupts the GIC raised and then withdrew. Not an error; worth counting.
-pub(crate) static SPURIOUS_IRQS: AtomicUsize = AtomicUsize::new(0);
+#[doc(alias = "irq")]
+pub(crate) static SPURIOUS_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// Interrupts we enabled but have no handler for. Definitely worth counting.
-pub(crate) static UNEXPECTED_IRQS: AtomicUsize = AtomicUsize::new(0);
+#[doc(alias = "irq")]
+pub(crate) static UNEXPECTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// Print everything we know and stop.
 ///

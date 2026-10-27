@@ -25,7 +25,7 @@ one.
 ## The fix
 
 Mask interrupts for as long as the lock is held. The interrupt cannot fire, so it
-cannot try to take the lock. Linux calls this `spin_lock_irqsave`; ours is `IrqSafeMutex`
+cannot try to take the lock. Linux calls this `spin_lock_irqsave`; ours is `InterruptSafeMutex`
 in `kernel/src/sync.rs`.
 
 On aarch64 that means the `I` bit of `PSTATE.DAIF`:
@@ -40,7 +40,7 @@ On aarch64 that means the `I` bit of `PSTATE.DAIF`:
 Set the bit to *mask*, clear it to *unmask*. Note the polarity: `1` means "masked," which
 is the opposite of how most people read a flag called `I`.
 
-`msr daifset, #2` masks IRQs; `msr daifclr, #2` unmasks them. Single instructions that
+`msr daifset, #2` masks interrupts; `msr daifclr, #2` unmasks them. Single instructions that
 touch only the bits you name, so there is no read-modify-write window to lose a race in.
 
 ## Two orderings that are the entire point
@@ -48,7 +48,7 @@ touch only the bits you name, so there is no read-modify-write window to lose a 
 Acquire: mask interrupts FIRST, then take the lock.
 
 ```rust
-let irqs_were_enabled = interrupts::disable();   // <- first
+let interrupts_were_enabled = interrupts::disable();   // <- first
 let guard = self.inner.lock();                   // <- second
 ```
 
@@ -59,7 +59,7 @@ Release: drop the lock FIRST, then restore interrupts.
 
 ```rust
 unsafe { ManuallyDrop::drop(&mut self.guard) };  // <- first
-interrupts::restore(self.irqs_were_enabled);     // <- second
+interrupts::restore(self.interrupts_were_enabled);     // <- second
 ```
 
 Same window, arrived at from the other side. An interrupt fires, the handler wants the
@@ -70,7 +70,7 @@ for months.
 
 ## Restore is not the same as enable
 
-`IrqSafeGuard::drop` restores the interrupt state that was in effect when the lock was
+`InterruptSafeGuard::drop` restores the interrupt state that was in effect when the lock was
 taken. It does not simply enable interrupts.
 
 The difference bites when a lock is taken inside a context that *already* had interrupts
@@ -80,7 +80,7 @@ not enjoy explaining.
 
 This is precisely why Linux's is called `irqsave`/`irqrestore` and not `irqoff`/`irqon`,
 and it is the single easiest thing to get wrong here. There is a test named
-`irq_safe_mutex_restores_rather_than_enables` whose only job is to catch it, and it was
+`interrupt_safe_mutex_restores_rather_than_enables` whose only job is to catch it, and it was
 verified against a deliberately broken `restore()`.
 
 ## Why we didn't build per-CPU reserves
@@ -196,7 +196,7 @@ able to take while held and by what holds it.
 | 54 | `IOMMU` | A leaf. The DMA domain's page-table frames are allocated before it is taken, so it is never held across an allocation. Below `VIRTIO` because a PCI device is confined from the bring-up path that registers its transport, though the two never nest. |
 | 45 | `KERNEL_MMU` | Below `IPC_TABLES` (a stack's `Drop` unmaps under the reaper) and `STACK_VA` (a stack's `new` maps pages), above the allocators (mapping allocates table frames). |
 | 30 | `PAGE_FRAMES`, `RAM` | The physical memory map. |
-| 20 | `IRQ_CONTROLLER` | The IRQ handler takes it and may print a diagnostic while holding it. |
+| 20 | `INTERRUPT_CONTROLLER` | The interrupt handler takes it and may print a diagnostic while holding it. |
 | 15 | `ASIDS` | Taken alone at address-space creation and teardown. |
 | 11 to 13 | `RECLAIM_REFUSAL`, `ISA`, `ACPI` | Leaves above the console, because a reader may print while holding one. |
 | 10 | `CONSOLE` | The leaf. A panic prints while holding any lock. |
@@ -205,7 +205,7 @@ The three locks at 59 are never nested with one another. Inbox traffic is schedu
 registry is user bookkeeping, and `KMEM` is the kernel buying its own pages. Equal rank refuses the
 nesting, so this is checked rather than hoped.
 
-`IRQ_CONTROLLER` is one rank for two drivers. The GIC on aarch64 and the PLIC on RISC-V are
+`INTERRUPT_CONTROLLER` is one rank for two drivers. The GIC on aarch64 and the PLIC on RISC-V are
 compiled for their own ISA only, so they never coexist and need no order between them. `x86_64`
 never takes it: the local APIC's claim is one register read with no shared state.
 
@@ -227,7 +227,8 @@ a panic path, which is only `CONSOLE`.
 
 ## Why the lock path carries inline hints
 
-`IrqSafeMutex::lock` is `#[inline]`. Unmarked, the generic is emitted once and can inline only in
+`InterruptSafeMutex::lock` is `#[inline]`. Unmarked, the generic is emitted once and can inline only
+in
 the codegen unit that owns it. Which unit that is depends on a metadata hash Cargo derives partly
 from the host triple. One commit then built two aarch64 kernels 25 KiB of text apart, and
 `script/fastpath-footprint` reported a shrink that was only the hash. With the hint each call site
@@ -251,7 +252,7 @@ closures on all three ISAs.
 
 See [DECISIONS](../design/decisions/0009-irq-safe-locking.md) §9 for the full table. The short version:
 
-1. All kernel locks are `IrqSafeMutex`.
+1. All kernel locks are `InterruptSafeMutex`.
 2. Mask, then lock. Unlock, then restore.
 3. Restore, never blindly enable.
 4. Keep critical sections short: interrupts are off for the whole of it.

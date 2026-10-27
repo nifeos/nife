@@ -90,7 +90,7 @@ fn a_truncated_answer_says_how_much_it_dropped() {
     // The half that keeps the answer honest: printing sixteen results out of forty without
     // saying so implies the store holds sixteen.
     let mut r = documentation::index::Ranked::new();
-    for i in 0..documentation::index::RESULTS_MAX + 4 {
+    for i in 0..documentation::index::RESULTS_MAXIMUM + 4 {
         // Same page length for every offering, so the count this test is truncating stays the
         // thing that decides rank, and this is a test about the truncation count, not density.
         r.offer(b"kernel", b"notes/x.md", b"X", i as u16, 100);

@@ -87,7 +87,7 @@ requirements later.** What phase B builds instead, per the decisions:
 - B.1 (no decisions): every kernel object gets a fixed shape. The cspace becomes a
   const-generic array in `crates/capability`, `KernelStack`'s frame list an array, and the endpoint /
   untyped-region / virtio / stack-VA tables fixed arrays.
-- B.2: TCBs move from `Box` to a static pool (BSS, MAX_THREADS slots; table slot i is
+- B.2: TCBs move from `Box` to a static pool (BSS, MAXIMUM_THREADS slots; table slot i is
   pool slot i). Retype-from-untyped was considered and declined while the kernel is the only
   payer: sub-page packing would rebuild the slab in the milestone that deletes it (see
   notes/thread-control-block.md). The pool upgrades to retype-backed storage behind the table when init lands.

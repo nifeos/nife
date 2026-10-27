@@ -150,21 +150,22 @@ page table. To start a thread you invoke a capability on a TCB.
 Where [milestone 2's exception model](exceptions.md) meets this one, and it is the prettiest
 consequence.
 
-A driver holds an IRQ capability, binds it to a notification, and blocks. The kernel's handler
+A driver holds an interrupt capability, binds it to a notification, and blocks. The kernel's handler
 does exactly one thing: signal the notification. The driver thread wakes up.
 
 **The driver has no interrupt handler.** It has a loop:
 
 ```rust
 loop {
-    wait(irq_notification);          // sleeps until the device interrupts
+    wait(interrupt_notification);          // sleeps until the device interrupts
     let packet = read_device_fifo();
     send(net_stack_endpoint, packet);
-    ack(irq_cap);
+    ack(interrupt_cap);
 }
 ```
 
-Compare that to `handle_irq` in `arch/aarch64/exceptions.rs`, which runs in exception context with
+Compare that to `handle_interrupt` in `arch/aarch64/exceptions.rs`, which runs in exception context
+with
 interrupts masked and has to be extremely careful about what it touches. This is ordinary code,
 in a process, at EL0. If it deadlocks, it deadlocks by itself, and we restart it.
 

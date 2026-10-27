@@ -10,7 +10,7 @@
 A pipeline that half-starts leaves a process blocked on a channel nobody will write to, and the
 shell has no way to reach it. So nothing spawns until the shell knows the whole line is runnable.
 
-The plans live on the heap, sized to the line's own stage count rather than to `MAX_STAGES`. An
+The plans live on the heap, sized to the line's own stage count rather than to `MAXIMUM_STAGES`. An
 array of endowments, each carrying a whole name set, is what the four stack overflows in
 [the-boot](the-boot.md) had in common, and this function's frame was the deepest in the program.
 

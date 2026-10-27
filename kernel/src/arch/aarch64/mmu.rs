@@ -239,13 +239,13 @@ where
 
     // 4b. The secondary stacks, slot by slot so each slot's bottom page stays a guard. They are
     // outside `.bss` because step 2 maps that in one range. See notes/stack-high-water.md.
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::smp::secondary_stack_span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
 
     // 4c. The interrupt stacks, slot by slot as in 4b. See kernel/src/interrupt_stack.rs.
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::interrupt_stack::span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
@@ -294,8 +294,10 @@ where
 /// interrupts SPI 16..47 (INTID 48..79). Fixed by the machine, like [`UART_BASE`].
 pub const VIRTIO_MMIO_BASE: u64 = 0x0a00_0000;
 pub(crate) const VIRTIO_MMIO_SIZE: u64 = 32 * 0x200;
-/// SPI 16 becomes INTID 48 (SPIs start at 32). Slot `i` uses INTID `VIRTIO_IRQ_BASE + i`.
-pub(crate) const VIRTIO_IRQ_BASE: u32 = 48;
+/// SPI 16 becomes INTID 48 (SPIs start at 32). Slot `i` uses INTID `VIRTIO_INTERRUPT_NUMBER_BASE +
+/// i`.
+#[doc(alias = "irq")]
+pub(crate) const VIRTIO_INTERRUPT_NUMBER_BASE: u32 = 48;
 /// aarch64's `virt` lays out 32 virtio-mmio slots 0x200 apart (RISC-V's are 8, 0x1000 apart). The
 /// probe (`virtio::find_block_device`) walks them.
 pub(crate) const VIRTIO_SLOT_STRIDE: u64 = 0x200;
@@ -319,9 +321,10 @@ pub(crate) const PCI_ECAM_BUSES: u16 = 1;
 pub(crate) const PCI_BAR_MAPPED: u64 = 0x20_0000;
 
 /// PCI INTx line A routes to GIC SPI 3 (INTID 32 + 3 = 35); B, C, D follow, by the standard
-/// swizzle (`pci::intx_irq`). The pci crate's fixture test walks the machine's own
+/// swizzle (`pci::intx_interrupt_number`). The pci crate's fixture test walks the machine's own
 /// `interrupt-map` and asserts the formula matches all sixteen entries.
-pub(crate) const PCI_IRQ_BASE: u32 = 35;
+#[doc(alias = "irq")]
+pub(crate) const PCI_INTERRUPT_NUMBER_BASE: u32 = 35;
 
 /// Map a range of *virtual* addresses to the physical ones they were linked against.
 ///
@@ -411,14 +414,14 @@ where
         "the guard page IS mapped: stack overflow protection is off"
     );
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::smp::secondary_stack_guard(id)).is_none(),
             "a secondary's guard page IS mapped: its stack overflow protection is off"
         );
     }
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::interrupt_stack::guard(id)).is_none(),
             "an interrupt stack's guard page IS mapped: its overflow protection is off"
@@ -821,8 +824,8 @@ pub(crate) unsafe fn switch_user_root(ttbr: u64) {
 ///
 /// Two cores spawning threads map into the shared TTBR1 tables at once. Ranked below `IPC_TABLES`
 /// and above the allocators it calls (`sync::rank::KERNEL_MMU`).
-static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
-    crate::sync::IrqSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
+static KERNEL_MMU: crate::sync::InterruptSafeMutex<()> =
+    crate::sync::InterruptSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
 
 /// The kernel's live page tables, as a `Mapper`.
 ///
@@ -938,12 +941,12 @@ pub fn translate_user(va: u64) -> Option<(u64, Flags)> {
 )]
 pub(crate) fn print_summary() {
     println!(
-        "  mmu             : {}, kernel in TTBR1 at {:#018x}, TTBR0 free for userspace",
+        "  mmu              : {}, kernel in TTBR1 at {:#018x}, TTBR0 free for userspace",
         if is_enabled() { "on" } else { "OFF" },
         KERNEL_VA_BASE,
     );
     println!(
-        "  stack guard     : {:#018x} (unmapped; a stack overflow faults here)",
+        "  stack guard      : {:#018x} (unmapped; a stack overflow faults here)",
         stack_guard(),
     );
 }

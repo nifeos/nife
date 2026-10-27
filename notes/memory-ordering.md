@@ -34,7 +34,7 @@ the number from `script/lint` and not from here.
 
 63 sites is a small number for an SMP kernel on two weakly ordered ISAs, and the reason is
 DECISIONS §9 (locking). Almost everything shared is behind a ranked interrupt-safe lock, and
-`IrqSafeMutex` wraps `spin_lock::SpinLock`, which locks with `compare_exchange(false, true,
+`InterruptSafeMutex` wraps `spin_lock::SpinLock`, which locks with `compare_exchange(false, true,
 Acquire, Relaxed)` and unlocks with `store(false, Release)`. So the overwhelming majority of this
 kernel's happens-before edges are supplied by one acquire/release pair in `crates/spin_lock`, which
 no call site names and no grep over the kernel's call sites can find. Loom checks that pair, with
@@ -128,7 +128,7 @@ would try to reconcile three against four.
 | Work-steal request slot | `kernel/src/sched/placement.rs`, `crates/work_steal_slot` | Release CAS to claim, acquire swap to take. **Loom-checked** by milestone 80, six harnesses |
 | User fault record | `kernel/src/arch/*/exceptions.rs` | Relaxed record, release counter, acquire fence on the read. Correct, on both ISAs |
 | Boot roster | `kernel/src/smp.rs` | `ROSTER`, `DESCRIBED`, `ONLINE`, `ONLINE_MASK`: relaxed arrays under a release flag, acquire flag then relaxed arrays. Textbook array publication, single-shot at boot |
-| IRQ routing table | `kernel/src/sched/interrupt_route.rs` `IRQ_ROUTES` | Release store, acquire load, same array. Paired |
+| Interrupt routing table | `kernel/src/sched/interrupt_route.rs` `INTERRUPT_ROUTES` | Release store, acquire load, same array. Paired |
 | One-shot service wiring | `fs_service`, `entropy_service`, `disk_service`, `credential_service` | **Four instances of one correct idiom**: relaxed fields, then a release flag; readers acquire the flag, then read the fields relaxed |
 | Spin locks | `crates/user_mode_runtime`, `patches/std-nife` (3), `redoxfs_server/src/bin/second_mount.rs` | Acquire CAS, release store. **The one shape that cannot be one-sided**, because the lock is both halves |
 | Benchmark start barrier | `kernel/src/bench.rs` `TP_GO` | Release store, acquire spin. Paired. The `SeqCst` reset is over-strong and has no reader yet, so it orders nothing and costs nothing |

@@ -43,13 +43,13 @@ That is true and it is the wrong conclusion: re-arming from `now` is what made t
 as much here as on aarch64; there was no instrument.
 
 With the grid in place the count is real, and `a_long_critical_section_costs_a_tick` is what makes
-the price of `IrqSafeMutex` visible on the second ISA.
+the price of `InterruptSafeMutex` visible on the second ISA.
 
 ### 3. `TICKS` was one global counter for a per-hart timer
 
-aarch64's `TICKS` is `[AtomicU64; MAX_CPUS]`, and the comment on it explains why (DECISIONS §11): a
-single counter is advanced by *every* core's tick, so "holding a lock stops my ticks" stops being
-observable, because masking interrupts masks only the holding core.
+aarch64's `TICKS` is `[AtomicU64; MAXIMUM_CPUS]`, and the comment on it explains why (DECISIONS §11
+(SMP: per-CPU run queues)): a single counter is advanced by *every* core's tick, so "holding a lock
+stops my ticks" stops being observable, because masking interrupts masks only the holding core.
 
 RISC-V had one global. Under `-smp 4` the other three harts kept counting into the same word.
 Measured, by reverting to the global and running `holding_a_lock_masks_the_timer`: 61 ticks landed

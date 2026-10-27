@@ -23,12 +23,12 @@ pub(crate) fn print_summary() {
     let root = KERNEL_ROOT.load(Ordering::Relaxed);
     if root == 0 {
         crate::println!(
-            "  mmu             : 4-level paging on (cr3 {:#x}), boot map: 4 GiB identity + high alias",
+            "  mmu              : 4-level paging on (cr3 {:#x}), boot map: 4 GiB identity + high alias",
             current_root(),
         );
     } else {
         crate::println!(
-            "  mmu             : fine W^X 4-level map installed (cr3 {:#x}), image {:#x}, direct map {:#x}",
+            "  mmu              : fine W^X 4-level map installed (cr3 {:#x}), image {:#x}, direct map {:#x}",
             current_root(),
             KERNEL_VA_BASE,
             DIRECT_MAP_BASE,
@@ -82,8 +82,8 @@ pub(super) fn largest_leaf() -> PageSize {
 
 /// Serializes edits to the kernel's live tables: two CPUs must not mutate them at once. Same role
 /// and lock rank as the other two architectures' `KERNEL_MMU`.
-static KERNEL_MMU: crate::sync::IrqSafeMutex<()> =
-    crate::sync::IrqSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
+static KERNEL_MMU: crate::sync::InterruptSafeMutex<()> =
+    crate::sync::InterruptSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
 
 /// **Replace the boot map with a fine-grained one**: W^X kernel sections, the guard pages
 /// unmapped, device registers device-typed, a direct map over all of physical memory, and no

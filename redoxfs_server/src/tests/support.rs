@@ -30,12 +30,12 @@ impl BlockIo for VecIo {
 pub(super) fn image_with(files: &[(&str, &[u8])]) -> DiskMemory {
     let disk = DiskMemory::new(16 * 1024 * 1024);
     let mut fs = FileSystem::create(disk, None, 0, 0).expect("create");
-    fs.tx(|tx| {
+    fs.tx(|transaction| {
         for (name, data) in files {
-            let ptr = tx
+            let ptr = transaction
                 .create_node(TreePtr::root(), name, Node::MODE_FILE | 0o644, 0, 0)?
                 .ptr();
-            tx.write_node(ptr, 0, data, 0, 0)?;
+            transaction.write_node(ptr, 0, data, 0, 0)?;
         }
         Ok(())
     })
@@ -49,30 +49,30 @@ pub(super) fn image_with(files: &[(&str, &[u8])]) -> DiskMemory {
 pub(super) fn image_with_tree() -> DiskMemory {
     let disk = DiskMemory::new(16 * 1024 * 1024);
     let mut fs = FileSystem::create(disk, None, 0, 0).expect("create");
-    fs.tx(|tx| {
-        let file = |tx: &mut redoxfs::Transaction<DiskMemory>,
+    fs.tx(|transaction| {
+        let file = |transaction: &mut redoxfs::Transaction<DiskMemory>,
                     parent: TreePtr<Node>,
                     name: &str,
                     body: &[u8]| {
-            let ptr = tx
+            let ptr = transaction
                 .create_node(parent, name, Node::MODE_FILE | 0o644, 0, 0)?
                 .ptr();
-            tx.write_node(ptr, 0, body, 0, 0)?;
+            transaction.write_node(ptr, 0, body, 0, 0)?;
             Ok::<(), Error>(())
         };
-        file(tx, TreePtr::root(), "motd", b"root motd")?;
-        let sub = tx
+        file(transaction, TreePtr::root(), "motd", b"root motd")?;
+        let sub = transaction
             .create_node(TreePtr::root(), "sub", Node::MODE_DIR | 0o755, 0, 0)?
             .ptr();
-        file(tx, sub, "inner", b"inside the grant")?;
-        let deeper = tx
+        file(transaction, sub, "inner", b"inside the grant")?;
+        let deeper = transaction
             .create_node(sub, "deeper", Node::MODE_DIR | 0o755, 0, 0)?
             .ptr();
-        file(tx, deeper, "leaf", b"two levels down")?;
-        let other = tx
+        file(transaction, deeper, "leaf", b"two levels down")?;
+        let other = transaction
             .create_node(TreePtr::root(), "other", Node::MODE_DIR | 0o755, 0, 0)?
             .ptr();
-        file(tx, other, "secret", b"in the sibling")?;
+        file(transaction, other, "secret", b"in the sibling")?;
         Ok(())
     })
     .expect("populate the tree");

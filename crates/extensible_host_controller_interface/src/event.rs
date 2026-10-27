@@ -1,8 +1,12 @@
 //! **An event the controller wrote**, decoded.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 use super::*;
 
 /// **One event, decoded.** The fields a driver uses, by event type.
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     /// A transfer finished (or failed).
@@ -41,6 +45,8 @@ pub enum Event {
 
 impl Event {
     /// Decode an event TRB. Total: every input is some variant.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn decode(t: TransferRequestBlock) -> Event {
         let d = t.0;
         let pointer = d[0] as u64 | (d[1] as u64) << 32;

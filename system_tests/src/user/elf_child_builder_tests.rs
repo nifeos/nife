@@ -125,7 +125,8 @@ fn a_process_spends_memory_region_and_the_kernel_never_allocates() {
 
 /// A userspace builder delegates an interrupt to a driver it builds (milestone 19d.2b).
 ///
-/// `interrupt_child_builder` hands `interrupt_child` the Irq cap for a test SGI; the test raises
+/// `interrupt_child_builder` hands `interrupt_child` the Interrupt cap for a test SGI; the test
+/// raises
 /// it, and the child wakes on the message and reports. A hang means the interrupt never reached
 /// the built child. aarch64-only: RISC-V has no second line to raise, and the property is proved
 /// there by other tests (notes/riscv-parity-scope.md, "The aarch64-only user tests").
@@ -149,13 +150,13 @@ fn the_interrupt_child_builder_delegates_an_interrupt_to_its_child() {
 
     // Raise the test interrupt. The rendezvous counts it if the child is not waiting yet (it is
     // still being built), and the child's WAIT drains that pending signal, so there is no race.
-    crate::arch::irq::send_sgi(DELEGATED_TEST_INTERRUPT, crate::cpu::id());
+    crate::arch::interrupt_controller::send_sgi(DELEGATED_TEST_INTERRUPT, crate::cpu::id());
 
     let word = crate::sched::ipc_receive(report)[0];
     assert_eq!(
         word,
         capability_witness_contract::INTERRUPT_CHILD_WORD,
-        "the interrupt never reached the built child through the delegated Irq cap",
+        "the interrupt never reached the built child through the delegated Interrupt cap",
     );
     builder.release_or_fail("a builder test's building budget");
     crate::sched::reclaim_region(report_region)

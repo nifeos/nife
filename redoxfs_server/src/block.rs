@@ -39,8 +39,8 @@ const _: () = {
     // The file channel is a whole number of blocks (milestone 138 (close the read gap) step 3): a
     // channel ending part way through a block would make the last chunk of every full-channel
     // request partial, the repeat-write bug's shape.
-    assert!(filesystem_contract::fs::TRANSFER_MAX.is_multiple_of(BLOCK));
-    assert!(filesystem_contract::fs::TRANSFER_MAX >= BLOCK);
+    assert!(filesystem_contract::fs::TRANSFER_MAXIMUM.is_multiple_of(BLOCK));
+    assert!(filesystem_contract::fs::TRANSFER_MAXIMUM >= BLOCK);
 };
 
 /// A block-granular transport: read or write one whole filesystem block, or report the disk size.

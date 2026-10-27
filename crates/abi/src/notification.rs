@@ -25,7 +25,8 @@ pub const POLL: u64 = 2;
 pub const BIND: u64 = 3;
 
 /// **The tag on a receive that the bound notification ended** rather than a message. A receive
-/// (`RECEIVE`, `RECEIVE_CAP`, `Irq::WAIT`) woken by the bound notification returns `(BOUND, word,
+/// (`RECEIVE`, `RECEIVE_CAP`, `Interrupt::WAIT`) woken by the bound notification returns `(BOUND,
+/// word,
 /// 0, 0, BOUND)`: this value in `x0` as §101 (notification objects) specified, the word in `x1`,
 /// **and this value again in `x4`, which is the one to test.** Any sender can put `BOUND` in `x0`;
 /// `x4` is written only by the kernel, and is `0` on every other receive. Ruled by calef on

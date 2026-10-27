@@ -4,16 +4,28 @@
 //! read, with a single bit added, **disables the port** and acknowledges every pending change
 //! nobody has looked at yet. So a write is always [`write_value`]: the bits that are safe to write
 //! back, plus the one the caller means.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 /// Current Connect Status: a device is attached.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CONNECTED: u32 = 1 << 0;
 /// Port Enabled. **Write one to clear, which disables the port.**
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ENABLED: u32 = 1 << 1;
 /// Port Reset: write one to reset the port, reads one until the reset finishes.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const RESET: u32 = 1 << 4;
 /// Port Power.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const POWER: u32 = 1 << 9;
 /// Connect Status Change, write one to clear.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CONNECT_CHANGE: u32 = 1 << 17;
 /// Port Enabled/Disabled Change, write one to clear.
 pub(crate) const ENABLE_CHANGE: u32 = 1 << 18;
@@ -22,6 +34,8 @@ pub(crate) const WARM_RESET_CHANGE: u32 = 1 << 19;
 /// Over-current Change, write one to clear.
 pub(crate) const OVER_CURRENT_CHANGE: u32 = 1 << 20;
 /// Port Reset Change, write one to clear.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const RESET_CHANGE: u32 = 1 << 21;
 /// Port Link State Change, write one to clear.
 pub(crate) const LINK_CHANGE: u32 = 1 << 22;
@@ -29,6 +43,8 @@ pub(crate) const LINK_CHANGE: u32 = 1 << 22;
 pub(crate) const CONFIG_ERROR_CHANGE: u32 = 1 << 23;
 
 /// Every change bit: what a driver writes back to acknowledge all of them.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CHANGES: u32 = CONNECT_CHANGE
     | ENABLE_CHANGE
     | WARM_RESET_CHANGE
@@ -46,6 +62,8 @@ pub(crate) const PRESERVE: u32 =
 /// Port speed ids, the default ones every xHCI uses (xHCI 1.2 Table 7-13).
 pub mod speed {
     /// Full speed, 12 Mb/s: most keyboards.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Kept: `speed::FULL` reads as the USB full-speed id it is.
     pub const FULL: u8 = 1;
     /// Low speed, 1.5 Mb/s: cheap keyboards.
     pub(crate) const LOW: u8 = 2;
@@ -58,12 +76,16 @@ pub mod speed {
 }
 
 /// The attached device's speed id, from bits 13:10.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn speed_of(portsc: u32) -> u8 {
     ((portsc >> 10) & 0xf) as u8
 }
 
 /// **What to write to set `bits`** without disabling the port or acknowledging a change nobody
 /// asked to: `portsc`'s preserved bits, plus `bits`.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn write_value(portsc: u32, bits: u32) -> u32 {
     (portsc & PRESERVE) | bits
 }
@@ -72,6 +94,8 @@ pub const fn write_value(portsc: u32, bits: u32) -> u32 {
 /// and full speed (a full-speed device may want up to 64, which the driver learns from the first
 /// eight bytes of its descriptor and fixes with Evaluate Context), 64 for high speed, 512 above.
 /// `None` for a speed id this table does not know.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn default_control_packet(speed: u8) -> Option<u16> {
     match speed {
         speed::LOW | speed::FULL => Some(8),
@@ -82,6 +106,8 @@ pub const fn default_control_packet(speed: u8) -> Option<u16> {
 }
 
 /// The name a bench transcript prints for a speed id.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const fn speed_name(speed: u8) -> &'static str {
     match speed {
         speed::LOW => "low speed",
@@ -99,6 +125,9 @@ pub const fn speed_name(speed: u8) -> &'static str {
 /// [`DEBOUNCE_STABLE_MS`], read every [`DEBOUNCE_STEP_MS`], giving up at [`DEBOUNCE_TIMEOUT_MS`].
 /// The clock starts when the ports are powered, so nothing is believed before
 /// [`DEBOUNCE_STABLE_MS`] after power either. The numbers are Linux's (`drivers/usb/core/hub.c`).
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `Settle` (the debounce is what it does; `Settle`
+/// named the outcome).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PortDebounce {
     start_ms: u64,
@@ -107,19 +136,29 @@ pub struct PortDebounce {
 }
 
 /// Every root port's `CCS`, one bit per port number: 256 bits, since `HCSPARAMS1.MaxPorts` is a byte.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub type Connections = [u32; 8];
 
 /// USB 2.0's `TATTDB` (section 7.1.7.3), a connection's debounce interval, and Linux's
 /// `HUB_DEBOUNCE_STABLE`. It also covers USB 2.0's `TSIGATT` (a device attaches within 100 ms of
 /// power) and is Linux's floor on a root hub's power-on-to-good time.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const DEBOUNCE_STABLE_MS: u64 = 100;
 /// Linux's `HUB_DEBOUNCE_STEP`.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const DEBOUNCE_STEP_MS: u64 = 25;
 /// Linux's `HUB_DEBOUNCE_TIMEOUT`.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const DEBOUNCE_TIMEOUT_MS: u64 = 2000;
 
 impl PortDebounce {
     /// Start at `now_ms`, when the ports were powered, having read `first`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn new(now_ms: u64, first: Connections) -> PortDebounce {
         PortDebounce {
             start_ms: now_ms,
@@ -130,6 +169,9 @@ impl PortDebounce {
 
     /// The ports read `seen` at `now_ms`: `None` to keep reading, `Some(true)` once nothing has
     /// changed for [`DEBOUNCE_STABLE_MS`], `Some(false)` at [`DEBOUNCE_TIMEOUT_MS`].
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `observe` (each call is one sample of the ports'
+    /// connections).
     pub fn sample(&mut self, now_ms: u64, seen: Connections) -> Option<bool> {
         if seen != self.last {
             self.last = seen;

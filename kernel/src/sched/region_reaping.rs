@@ -300,8 +300,8 @@ impl ReclaimRefusal {
 }
 
 #[cfg(feature = "system_tests")]
-static LAST_REFUSAL: crate::sync::IrqSafeMutex<Option<ReclaimRefusal>> =
-    crate::sync::IrqSafeMutex::new(crate::sync::rank::RECLAIM_REFUSAL, None);
+static LAST_REFUSAL: crate::sync::InterruptSafeMutex<Option<ReclaimRefusal>> =
+    crate::sync::InterruptSafeMutex::new(crate::sync::rank::RECLAIM_REFUSAL, None);
 
 #[cfg_attr(not(feature = "system_tests"), allow(unused_variables))]
 fn record_refusal(why: ReclaimRefusal) {
@@ -578,8 +578,8 @@ mod tests {
     /// has slots, and each round returns its own page.
     #[test_case]
     fn destroyed_region_slots_are_reused() {
-        // More than MAX_REGIONS (256), and the frame is checked per round, so a leak fails on the
-        // round that leaked.
+        // More than MAXIMUM_REGIONS (256), and the frame is checked per round, so a leak fails on
+        // the round that leaked.
         for _ in 0..320 {
             let r = crate::memory_region::create(1)
                 .expect("a region slot must be reused, not exhausted");

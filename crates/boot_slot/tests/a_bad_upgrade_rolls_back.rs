@@ -9,7 +9,7 @@
 //! $ cargo test -p boot_slot
 //! ```
 
-use boot_slot::{MAX_NIBBLE, SlotHeader, State, select, select_excluding};
+use boot_slot::{MAXIMUM_NIBBLE, SlotHeader, State, select, select_excluding};
 
 /// One boot, the way the chooser does it: pick, spend a try, hand off. Returns which slot was
 /// handed to, or `None` if nothing was bootable and the chooser fell back to its own image.
@@ -144,8 +144,8 @@ fn the_bit_positions_are_the_ones_cgpt_prints() {
 
 #[test]
 fn a_round_trip_through_the_attribute_word_is_the_identity() {
-    for priority in 0..=MAX_NIBBLE {
-        for tries in 0..=MAX_NIBBLE {
+    for priority in 0..=MAXIMUM_NIBBLE {
+        for tries in 0..=MAXIMUM_NIBBLE {
             for successful in [false, true] {
                 let state = State {
                     priority,
@@ -163,8 +163,8 @@ fn a_round_trip_through_the_attribute_word_is_the_identity() {
 fn on_trial_saturates_rather_than_wrapping_a_priority_into_never_boot() {
     // 16 wrapped into four bits is 0, and 0 is the one value that means the machine will not start
     // this image. Saturating is the difference between a clumsy upgrade and a dead one.
-    assert_eq!(State::on_trial(16, 16).priority, MAX_NIBBLE);
-    assert_eq!(State::on_trial(200, 200).tries, MAX_NIBBLE);
+    assert_eq!(State::on_trial(16, 16).priority, MAXIMUM_NIBBLE);
+    assert_eq!(State::on_trial(200, 200).tries, MAXIMUM_NIBBLE);
     assert!(State::on_trial(16, 1).is_bootable());
 }
 
@@ -254,10 +254,10 @@ fn a_slot_header_needs_exactly_its_own_length() {
 #[test]
 fn the_medium_token_is_written_whole_or_not_at_all() {
     use boot_slot::medium;
-    let mut big = [0u8; medium::MAX_LEN + 8];
-    assert_eq!(medium::encode_nvme(&mut big), medium::MAX_LEN);
-    assert_eq!(&big[..medium::MAX_LEN], medium::NVME.as_bytes());
-    let mut short = [0u8; medium::MAX_LEN - 1];
+    let mut big = [0u8; medium::MAXIMUM_LEN + 8];
+    assert_eq!(medium::encode_nvme(&mut big), medium::MAXIMUM_LEN);
+    assert_eq!(&big[..medium::MAXIMUM_LEN], medium::NVME.as_bytes());
+    let mut short = [0u8; medium::MAXIMUM_LEN - 1];
     assert_eq!(medium::encode_nvme(&mut short), 0);
-    assert_eq!(short, [0u8; medium::MAX_LEN - 1]);
+    assert_eq!(short, [0u8; medium::MAXIMUM_LEN - 1]);
 }
