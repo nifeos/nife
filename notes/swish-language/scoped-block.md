@@ -1,6 +1,6 @@
 # The scoped block, and what `( ... )` became
 
-*Milestone 52, [§160 (what a subshell copies)](../../design/decisions/0160-what-a-subshell-copies.md),
+*Milestone 52 (subshells without `fork`), [§160 (what a subshell copies)](../../design/decisions/0160-what-a-subshell-copies.md),
 under [§312 (swish has one way to do each job)](../../design/decisions/0312-swish-has-one-way-to-do-each-job.md).
 `crates/swish/src/scope.rs`, `components/src/swish/scope.rs`, `Nav::return_to`. Both spellings are
 provisional and go to calef's naming pass.*
