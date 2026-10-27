@@ -184,7 +184,7 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAX_REPORTS], usize) {
              honest kernel), \
              40-51 the queued rung, \
              60-63 the component manifests (60 means an unsatisfiable declaration was WIRED), \
-             64 the dependency graph query (more live instances than MAX_LIVE), 70-87 and 110-119 \
+             64 the dependency graph query (more live instances than MAXIMUM_LIVE), 70-87 and 110-119 \
              the hung-component rung (81 means the incumbent answered the bounded quiesce, so \
              it never hung; 117 and 119 a region DESTROY that never succeeded), 90-108 state handoff (92 means a \
              stateful component was wired by a supervisor with no handoff page to give it, 100 \

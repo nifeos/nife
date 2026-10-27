@@ -290,7 +290,7 @@ impl Terminal {
     #[inline]
     fn bytes_raw(&mut self, w0: u64, w1: u64, slot: Reply) {
         // Raw mode: no echo, no interpretation, straight into the raw queue. A burst past
-        // RAW_QUEUE_MAX is dropped audibly, the same overflow contract `disc.feed` uses.
+        // RAW_QUEUE_MAXIMUM is dropped audibly, the same overflow contract `disc.feed` uses.
         let n = proto::len(w0).min(8);
         let bytes = w1.to_le_bytes();
         if self.raw_queue.push(&bytes[..n]) < n {

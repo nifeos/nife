@@ -33,7 +33,7 @@
 //!
 //! Name: ratified 2026-08-23 (calef); see `design/naming/vocabulary-rulings.md`.
 
-pub use credential_contract::{MAX_IDENTITY, MAX_SECRET, PAGE, operation, place, read, wipe};
+pub use credential_contract::{MAX_IDENTITY, MAXIMUM_SECRET, PAGE, operation, place, read, wipe};
 
 /// **The front door's only legal request** (milestone 49's channel-per-client update): "give me my
 /// own private channel." Carries no lengths and touches no page; build the word with

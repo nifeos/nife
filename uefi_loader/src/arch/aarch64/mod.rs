@@ -352,7 +352,7 @@ struct Madt {
     redistributors: Region,
     cpu_interface: u64,
     per_cpu_redistributor: u64,
-    cpus: [device_tree_from_acpi::Cpu; device_tree_from_acpi::MAX_CPUS],
+    cpus: [device_tree_from_acpi::Cpu; device_tree_from_acpi::MAXIMUM_CPUS],
     cpu_count: usize,
     /// The first GIC ITS entry's frame, and how many the MADT states. Reported, not written into
     /// the tree: see `device_tree_from_acpi`'s BUGS.
@@ -360,14 +360,14 @@ struct Madt {
     its_count: u32,
 }
 
-/// Walk the MADT's entries once, keeping the GIC's frames and up to `MAX_CPUS` cores.
+/// Walk the MADT's entries once, keeping the GIC's frames and up to `MAXIMUM_CPUS` cores.
 fn read_madt(body: &[u8]) -> Madt {
     let mut distributor = 0u64;
     let mut version = 0u8;
     let mut redistributors = Region { start: 0, size: 0 };
     let mut cpu_interface = 0u64;
     let mut per_cpu_redistributor = 0u64;
-    let mut cpus = [device_tree_from_acpi::Cpu::default(); device_tree_from_acpi::MAX_CPUS];
+    let mut cpus = [device_tree_from_acpi::Cpu::default(); device_tree_from_acpi::MAXIMUM_CPUS];
     let mut cpu_count = 0usize;
     let mut first_its = 0u64;
     let mut its_count = 0u32;
@@ -400,7 +400,7 @@ fn read_madt(body: &[u8]) -> Madt {
                 if redistributor != 0 && per_cpu_redistributor == 0 {
                     per_cpu_redistributor = redistributor;
                 }
-                if cpu_count < device_tree_from_acpi::MAX_CPUS {
+                if cpu_count < device_tree_from_acpi::MAXIMUM_CPUS {
                     cpus[cpu_count] = device_tree_from_acpi::Cpu {
                         mpidr,
                         // `online_capable` is a socket firmware would start later, and the kernel's

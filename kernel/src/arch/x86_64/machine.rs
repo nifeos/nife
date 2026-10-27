@@ -44,7 +44,7 @@ pub(crate) fn boot_info(at: usize) -> Option<BootInfo> {
 /// A NUL-terminated string at a physical address a previous stage chose, so the terminator is a
 /// claim rather than a guarantee, and the loop below has to stop somewhere whether or not it finds
 /// one. `Framebuffer::MAX_LEN` is the only thing written there today and is well under this.
-const MAX_CMDLINE: usize = 256;
+const MAXIMUM_CMDLINE: usize = 256;
 
 /// The boot command line the loader wrote, or `None` when this boot chain did not write one.
 ///
@@ -58,12 +58,15 @@ fn cmdline(info: &BootInfo) -> Option<&'static str> {
     }
     // SAFETY: a physical address the loader wrote into its own handoff, reached through the direct
     // map the boot page tables installed over the low 4 GiB. The length is capped rather than
-    // trusted, so an unterminated string reads `MAX_CMDLINE` bytes of the loader's own page and
+    // trusted, so an unterminated string reads `MAXIMUM_CMDLINE` bytes of the loader's own page and
     // stops; the bytes are only ever compared against ASCII.
     let bytes = unsafe {
-        core::slice::from_raw_parts(phys_to_virt(info.cmdline) as *const u8, MAX_CMDLINE)
+        core::slice::from_raw_parts(phys_to_virt(info.cmdline) as *const u8, MAXIMUM_CMDLINE)
     };
-    let len = bytes.iter().position(|b| *b == 0).unwrap_or(MAX_CMDLINE);
+    let len = bytes
+        .iter()
+        .position(|b| *b == 0)
+        .unwrap_or(MAXIMUM_CMDLINE);
     core::str::from_utf8(&bytes[..len]).ok()
 }
 
@@ -238,7 +241,7 @@ const MAX_TABLES: usize = 64;
 const MAX_MADT_ENTRIES: usize = 256;
 
 /// The most `LocalApic` entries [`Acpi::cpus`] records (milestone 161's SMP item). Bounded well
-/// past `cpu::MAX_CPUS` on purpose: a MADT can list more processor entries than this kernel can
+/// past `cpu::MAXIMUM_CPUS` on purpose: a MADT can list more processor entries than this kernel can
 /// seat (disabled sockets, a bigger machine than this build is sized for), and `smp::
 /// seat_cpus_from_acpi` needs the true count to report "N described, only M startable" honestly,
 /// the same distinction `read_cpu_list` draws on the device-tree architectures.

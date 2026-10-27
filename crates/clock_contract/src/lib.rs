@@ -332,8 +332,8 @@ pub mod status {
     /// Outside the sanity window entirely: [`super::policy::is_plausible`] says no machine running
     /// this code is at that instant. A proposal of 1970, or of 2038, lands here.
     pub const REFUSED_IMPLAUSIBLE: u64 = 1;
-    /// Plausible in the absolute, but more than [`super::policy::MAX_STEP_FORWARD_NANOS`] ahead of
-    /// what the clock already believes.
+    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_FORWARD_NANOS`] ahead
+    /// of what the clock already believes.
     pub const REFUSED_TOO_FAR_FORWARD: u64 = 2;
     /// Plausible in the absolute, but more than [`super::policy::MAX_STEP_BACKWARD_NANOS`] behind
     /// what the clock already believes. The asymmetry with forward is deliberate; see [`policy`](super::policy).
@@ -374,7 +374,10 @@ pub mod policy {
     /// How far forward one accepted proposal may move a clock that already knows the time: an hour.
     /// Enough to absorb a machine that has been asleep, or an RTC an hour out because somebody set
     /// it to local time; not enough to walk the clock past an expiry in one step.
-    pub const MAX_STEP_FORWARD_NANOS: u64 = 3600 * super::NANOS_PER_SEC;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_STEP_FORWARD_NANOS`.
+    pub const MAXIMUM_STEP_FORWARD_NANOS: u64 = 3600 * super::NANOS_PER_SEC;
 
     /// How far **backward** one accepted proposal may move a clock that already knows the time: one
     /// second.
@@ -391,7 +394,7 @@ pub mod policy {
     // something a reader has to notice: anyone "tidying" the two constants into one fails to
     // compile rather than quietly making backwards steps as free as forwards ones.
     const _: () = assert!(
-        MAX_STEP_BACKWARD_NANOS < MAX_STEP_FORWARD_NANOS,
+        MAX_STEP_BACKWARD_NANOS < MAXIMUM_STEP_FORWARD_NANOS,
         "moving the clock backwards must stay far tighter than moving it forwards",
     );
 
@@ -425,7 +428,7 @@ pub mod policy {
     ///
     /// // Walking the clock past a certificate expiry in one step is the classic attack.
     /// assert_eq!(
-    ///     policy::decide(state::SYNCED, now, now + 2 * policy::MAX_STEP_FORWARD_NANOS),
+    ///     policy::decide(state::SYNCED, now, now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOS),
     ///     status::REFUSED_TOO_FAR_FORWARD,
     /// );
     ///
@@ -450,7 +453,7 @@ pub mod policy {
             return status::ACCEPTED;
         }
         if proposed_nanos > current_nanos {
-            if proposed_nanos - current_nanos > MAX_STEP_FORWARD_NANOS {
+            if proposed_nanos - current_nanos > MAXIMUM_STEP_FORWARD_NANOS {
                 return status::REFUSED_TOO_FAR_FORWARD;
             }
         } else if current_nanos - proposed_nanos > MAX_STEP_BACKWARD_NANOS {
@@ -552,11 +555,11 @@ mod tests {
         for (delta, want) in [
             (0i64, status::ACCEPTED),
             (
-                policy::MAX_STEP_FORWARD_NANOS as i64,
+                policy::MAXIMUM_STEP_FORWARD_NANOS as i64,
                 status::ACCEPTED, // exactly the limit is inside it
             ),
             (
-                policy::MAX_STEP_FORWARD_NANOS as i64 + 1,
+                policy::MAXIMUM_STEP_FORWARD_NANOS as i64 + 1,
                 status::REFUSED_TOO_FAR_FORWARD,
             ),
             (-(policy::MAX_STEP_BACKWARD_NANOS as i64), status::ACCEPTED),

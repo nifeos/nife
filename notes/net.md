@@ -59,11 +59,12 @@ userspace threads (the TCBs of milestone 19c (run a real workload)) or a select-
 
 The client rides in the net_stack binary (a nonzero entry role runs it) rather than a separate
 binary, because the nifefs archive directory held at most 15 files at the time and the initrd was
-already near that ceiling. (The ceiling is `nifefs::MAX_FILES`, now 178, fourteen 512-byte directory
-blocks of 40-byte entries. The decision stands on its own merits, but the pressure behind it is
-gone.) A subtlety worth recording: net_stack reports its DHCP lease with a *blocking* `send`, so the
-spawn service drains that report before returning, or net_stack never reaches its serve loop and the
-client's first request hangs. That was the one real bug in bring-up, caught by a watchdog hang.
+already near that ceiling. (The ceiling is `nifefs::MAXIMUM_FILES`, now 178, fourteen 512-byte
+directory blocks of 40-byte entries. The decision stands on its own merits, but the pressure behind
+it is gone.) A subtlety worth recording: net_stack reports its DHCP lease with a *blocking* `send`,
+so the spawn service drains that report before returning, or net_stack never reaches its serve loop
+and the client's first request hangs. That was the one real bug in bring-up, caught by a watchdog
+hang.
 
 
 ## The inbound half: the guest can be connected to (milestone 107)
@@ -172,8 +173,8 @@ needed to use the contract.
 - An accepted stream reports its peer as `0.0.0.0:0`, because `OPERATION_ACCEPT`'s reply carries no peer.
   Both fixes change what two programs agree on, so both are calef's. See
   [std-tcp-listener.md](net/std-tcp-listener.md).
-- `virtio::MAX_DEVICES` never reuses a slot, and a dead net service's DMA page and shadow ring are
-  not returned. See [memory-and-reclamation.md](net/memory-and-reclamation.md).
+- `virtio::MAXIMUM_DEVICES` never reuses a slot, and a dead net service's DMA page and shadow ring
+  are not returned. See [memory-and-reclamation.md](net/memory-and-reclamation.md).
 - No artifact says which components may serve inbound ports, where a static seL4 system description
   would. Nothing in `crates/socket_contract` is machine-checked. See
   [prior-art-and-the-contract.md](net/prior-art-and-the-contract.md).

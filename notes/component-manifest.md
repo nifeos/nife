@@ -279,7 +279,7 @@ reports an assertion that failed, so a reader is told which `Requirements` is wr
 the duplicate themselves. `Requirements::problem()` returns the `Refusal` with the role in it and a
 host test prints the good message; the `const` assertion cannot.
 
-`MAX_CAPS` and `MAX_MAPS` are fixed at eight and four. A `Plan` is a value in a `no_std` program
+`MAX_CAPS` and `MAXIMUM_MAPS` are fixed at eight and four. A `Plan` is a value in a `no_std` program
 with no allocator, so the bound is a real limit: a manifest past it is refused rather than served.
 Both are roughly double what the widest declaration in this tree asks for.
 

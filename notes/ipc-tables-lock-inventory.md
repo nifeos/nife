@@ -89,7 +89,7 @@ spawn far from its cause. What scales with it, each checked at 256:
 - the boot stack, about 20 bytes a slot, which is why `init` installs `EMPTY_TABLES` from `.rodata`
   rather than building the tables on the boot stack, under `stack::report_high_water`'s gate;
 - `kmem::KERNEL_OBJ_PAGES`, 7 pages per live thread (`thread::STACK_PAGES` and the TCB page);
-- `ps::MAX_ROWS`, const-asserted `>= MAX_THREADS` in `kernel::user::survey_tests`, which sizes
+- `ps::MAXIMUM_ROWS`, const-asserted `>= MAX_THREADS` in `kernel::user::survey_tests`, which sizes
   stack-resident row arrays in `ps` and `pgrep` inside `system_initializer::CHILD_STACK_PAGES`;
 - `revoke::MAX_SPACES` and `thread::FreeAddressSpace`, derived from it.
 
@@ -97,12 +97,12 @@ Nothing on the `spawn_el0` benchmark scales with it, because the revocation scan
 live occupancy ([notes/benchmarks.md](benchmarks.md)). No `[u64; MAX_THREADS]` scratch array sits
 on a stack ([notes/region-reaping.md](region-reaping.md)).
 
-### `MAX_RENDEZVOUS`, and the kernel's chunks
+### `MAXIMUM_RENDEZVOUS`, and the kernel's chunks
 
-`MAX_RENDEZVOUS` is 512 live at once. Tearing down a region removes its rendezvous and frees their
-slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and `KERNEL_CHUNK_RENDEZVOUS`
-report the peak and how many of those sat on the kernel's own chunks, updated at the one insert
-under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
+`MAXIMUM_RENDEZVOUS` is 512 live at once. Tearing down a region removes its rendezvous and frees
+their slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and
+`KERNEL_CHUNK_RENDEZVOUS` report the peak and how many of those sat on the kernel's own chunks,
+updated at the one insert under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
 
 | architecture | peak | spare | on kernel chunks |
 |---|---|---|---|
@@ -123,7 +123,7 @@ compile-time guess. A fixed ceiling grew with the test suite, and the union of p
 boots crossed it at merge, where no branch could see it coming. A normal boot carves one chunk. A
 filled chunk's handle is forgotten; its pages stay pinned and its endpoints live. No path tears a
 kernel chunk down, and if one should, the handle becomes an array. `MAX_KERNEL_EP_CHUNKS` is derived
-so chunks can host `MAX_RENDEZVOUS` one-page endpoints, which makes the registry, never the page
+so chunks can host `MAXIMUM_RENDEZVOUS` one-page endpoints, which makes the registry, never the page
 supply, the limit that refuses.
 
 ### `FUTEX_BUCKETS`

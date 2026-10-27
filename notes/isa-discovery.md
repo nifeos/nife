@@ -190,7 +190,7 @@ else was already reading.
 |---|---|---|
 | The PSCI conduit is `hvc` | `psci_cpu_on`'s `hvc #0` | `/psci`'s `method` |
 | The `CPU_ON` function id is `0xc4000003` | a `const` in the same function | `/psci`'s `cpu_on`, or the 0.2 standard when `compatible` claims it |
-| The cores are `0..MAX_CPUS` | `bring_up_secondaries`'s loop | `/cpus` |
+| The cores are `0..MAXIMUM_CPUS` | `bring_up_secondaries`'s loop | `/cpus` |
 | RISC-V's counter runs at 10 MHz | `TIMEBASE_HZ`, a `const` | `/cpus/timebase-frequency` |
 
 The fourth row is the one that names the pattern rather than an instance. `arch/riscv64/timer.rs`

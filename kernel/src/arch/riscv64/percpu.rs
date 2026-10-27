@@ -43,8 +43,8 @@ const _: () = {
 
 /// One trap stash per hart, indexed like `cpu::PERCPU`; static, so the first trap needs no
 /// allocator.
-pub(super) static TRAP_STASH: [TrapStash; crate::cpu::MAX_CPUS] =
-    [const { TrapStash::new() }; crate::cpu::MAX_CPUS];
+pub(super) static TRAP_STASH: [TrapStash; crate::cpu::MAXIMUM_CPUS] =
+    [const { TrapStash::new() }; crate::cpu::MAXIMUM_CPUS];
 
 /// The physical hart id OpenSBI booted the kernel on (`a0` at `_start`), stashed by boot.s. Not
 /// necessarily 0, so the SMP bring-up reads it.

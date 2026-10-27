@@ -17,7 +17,7 @@
 //! - No phrase search, and a result names a page, not a line; a heading mention ranks alike.
 //! - A shard whose [`VERSION`] is not this reader's is refused, not migrated; a shard from
 //!   elsewhere is the day to revisit this.
-//! - A search keeps [`RESULTS_MAX`] results and counts the rest ([`Ranked::offered`]).
+//! - A search keeps [`RESULTS_MAXIMUM`] results and counts the rest ([`Ranked::offered`]).
 //! - A search answer names pages, never grants them ([`Found::location`]).
 
 /// The page size the whole layout is built around: the frame a client shares with the FS server.
@@ -407,7 +407,10 @@ pub fn page_record(h: &Header, i: u16, src: &mut impl Pages) -> Option<Page> {
 /// it is three short components, and the widest real one today (`doc/swish/line-discipline.md`) is
 /// twenty-eight bytes. A location longer than this is truncated and [`Found::is_truncated`] says
 /// so, for the reason the renderer gives about losing text silently.
-pub const LOCATION_MAX: usize = 96;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `LOCATION_MAX`.
+pub const LOCATION_MAXIMUM: usize = 96;
 
 /// **How many results one search keeps.**
 ///
@@ -416,7 +419,10 @@ pub const LOCATION_MAX: usize = 96;
 /// has is 16 rows (`video_terminal`) or a serial window. Every result past the sixteenth is counted
 /// and not kept, and [`Ranked::offered`] is what lets the caller say so instead of implying the
 /// answer was complete.
-pub const RESULTS_MAX: usize = 16;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `RESULTS_MAX`.
+pub const RESULTS_MAXIMUM: usize = 16;
 
 /// **The fixed-point scale `score` multiplies by**, so `count / tokens` survives as an integer
 /// worth comparing rather than rounding to zero every time a term is not the whole page.
@@ -446,7 +452,7 @@ fn score(count: u16, page_tokens: u32) -> u32 {
 /// grants nothing: reading the page is a separate act, backed by whoever holds the store.
 #[derive(Clone, Copy)]
 pub struct Found {
-    location: [u8; LOCATION_MAX],
+    location: [u8; LOCATION_MAXIMUM],
     location_len: u8,
     truncated: bool,
     title: [u8; TITLE_MAX],
@@ -475,7 +481,7 @@ impl Found {
         &self.location[..self.location_len as usize]
     }
 
-    /// Whether the location above lost its tail to [`LOCATION_MAX`].
+    /// Whether the location above lost its tail to [`LOCATION_MAXIMUM`].
     pub fn is_truncated(&self) -> bool {
         self.truncated
     }
@@ -493,14 +499,14 @@ impl Found {
     }
 }
 
-/// **The merge across shards**: the best [`RESULTS_MAX`] results offered, strongest first.
+/// **The merge across shards**: the best [`RESULTS_MAXIMUM`] results offered, strongest first.
 ///
 /// The roadmap's "the index is a merge of shards" lives here, and it is a fixed array rather than a
 /// heap because the merge runs in a shell holding one 4 KiB stack page and no allocator. Ties keep
 /// the order they were offered in, so a store whose bundles are searched in manifest order gives
 /// the same answer twice.
 pub struct Ranked {
-    found: [Found; RESULTS_MAX],
+    found: [Found; RESULTS_MAXIMUM],
     n: usize,
     offered: usize,
 }
@@ -513,11 +519,11 @@ impl Default for Ranked {
 
 impl Ranked {
     /// An empty table. `const` so a caller with no allocator can put one in `.bss`, which is what
-    /// the shell does: [`RESULTS_MAX`] of these is about 2.4 KiB and a stack page is four.
+    /// the shell does: [`RESULTS_MAXIMUM`] of these is about 2.4 KiB and a stack page is four.
     pub const fn new() -> Self {
         Ranked {
             found: [Found {
-                location: [0; LOCATION_MAX],
+                location: [0; LOCATION_MAXIMUM],
                 location_len: 0,
                 truncated: false,
                 title: [0; TITLE_MAX],
@@ -526,7 +532,7 @@ impl Ranked {
                 origin_len: 0,
                 count: 0,
                 score: 0,
-            }; RESULTS_MAX],
+            }; RESULTS_MAXIMUM],
             n: 0,
             offered: 0,
         }
@@ -558,10 +564,10 @@ impl Ranked {
         while at < self.n && self.found[at].score >= s {
             at += 1;
         }
-        if at == RESULTS_MAX {
+        if at == RESULTS_MAXIMUM {
             return;
         }
-        let end = (self.n + 1).min(RESULTS_MAX);
+        let end = (self.n + 1).min(RESULTS_MAXIMUM);
         for i in (at + 1..end).rev() {
             self.found[i] = self.found[i - 1];
         }
@@ -634,7 +640,7 @@ pub fn search(
 
 /// Build `<STORE_DIR>/<bundle>/<basename of path>` into `out`, returning its length and whether it
 /// lost its tail.
-fn location(bundle: &[u8], path: &[u8], out: &mut [u8; LOCATION_MAX]) -> (u8, bool) {
+fn location(bundle: &[u8], path: &[u8], out: &mut [u8; LOCATION_MAXIMUM]) -> (u8, bool) {
     let base = match path.iter().rposition(|&b| b == b'/') {
         Some(i) => &path[i + 1..],
         None => path,
@@ -642,7 +648,7 @@ fn location(bundle: &[u8], path: &[u8], out: &mut [u8; LOCATION_MAX]) -> (u8, bo
     let mut n = 0usize;
     let mut put = |bytes: &[u8]| {
         for &b in bytes {
-            if n < LOCATION_MAX {
+            if n < LOCATION_MAXIMUM {
                 out[n] = b;
                 n += 1;
             }
@@ -654,7 +660,7 @@ fn location(bundle: &[u8], path: &[u8], out: &mut [u8; LOCATION_MAX]) -> (u8, bo
     put(b"/");
     put(base);
     let want = STORE_DIR.len() + 1 + bundle.len() + 1 + base.len();
-    (n as u8, want > LOCATION_MAX)
+    (n as u8, want > LOCATION_MAXIMUM)
 }
 
 /// Copy as much of `src` as fits, returning how much that was.

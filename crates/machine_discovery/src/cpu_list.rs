@@ -18,9 +18,9 @@ use device_tree_blob::{DeviceTreeBlob, Error};
 
 /// The most `cpu@` nodes [`CpuList::from_device_tree`] will record.
 ///
-/// Sixteen, matching [`crate::riscv64::MAX_HARTS`], which is twice the kernel's `MAX_CPUS` and
-/// costs 24 bytes each. A machine with more is reported as truncated ([`CpuList::described`] keeps
-/// counting) rather than silently half-read.
+/// Sixteen, matching [`crate::riscv64::MAXIMUM_HARTS`], which is twice the kernel's `MAXIMUM_CPUS`
+/// and costs 24 bytes each. A machine with more is reported as truncated ([`CpuList::described`]
+/// keeps counting) rather than silently half-read.
 pub const MAX_CPU_NODES: usize = 16;
 
 /// How firmware says a core is started, from `enable-method`.

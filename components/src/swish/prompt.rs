@@ -44,7 +44,7 @@ impl documentation::index::Pages for Shard {
 /// The most of the bundle manifest one search reads. It is one short name per line and the shipped
 /// store has four, so this is two orders of magnitude of headroom in a buffer that costs a quarter
 /// of a page.
-const MANIFEST_MAX: usize = 256;
+const MANIFEST_MAXIMUM: usize = 256;
 
 /// **The merge across shards**, in `.bss` rather than on the stack: it is about 2.4 KiB and this
 /// program's stack is twelve pages that several deeper paths already spend.
@@ -85,7 +85,7 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
 
     // The manifest, copied out of the shared page before anything else touches it: every `OPENDIR`
     // below stages a name in that same page.
-    let mut names = [0u8; MANIFEST_MAX];
+    let mut names = [0u8; MANIFEST_MAXIMUM];
     let handle = nav.name_call_in(t, fs::OPEN, store, index::MANIFEST.as_bytes(), 0);
     if handle < 0 {
         nav.close_in(t, store);
@@ -93,7 +93,7 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     }
     let got = call(
         dir,
-        fs::req(fs::READ, handle as u64, MANIFEST_MAX as u64),
+        fs::req(fs::READ, handle as u64, MANIFEST_MAXIMUM as u64),
         0,
     )
     .0 as i64;
@@ -102,7 +102,7 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
         nav.close_in(t, store);
         return Say::Failed(-got as i32);
     }
-    let got = (got as usize).min(MANIFEST_MAX);
+    let got = (got as usize).min(MANIFEST_MAXIMUM);
     get_page(got, &mut names);
 
     // SAFETY: this process is single-threaded, so there is exactly one live reference to this
@@ -137,7 +137,7 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     // A manifest that filled the buffer is a search that did not cover the store; say so rather
     // than answer "no page says that" about bundles nobody looked in. The shipped manifest is 25
     // bytes, so this fires only once the store is ten times that.
-    if got == MANIFEST_MAX {
+    if got == MANIFEST_MAXIMUM {
         print(b"  the bundle manifest filled this shell's buffer; bundles past it were not searched\n");
     }
     if unreadable {

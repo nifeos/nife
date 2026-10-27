@@ -84,7 +84,7 @@ const E_SCRATCH: u64 = 0x02;
 /// is a crate). A page offset that disagreed here would put a client's blob where the service
 /// reads a proof.
 const _: () = assert!(proto::MAX_IDENTITY == credentialer::MAX_IDENTITY);
-const _: () = assert!(proto::MAX_SECRET == credentialer::MAX_SECRET);
+const _: () = assert!(proto::MAXIMUM_SECRET == credentialer::MAXIMUM_SECRET);
 
 #[global_allocator]
 static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();

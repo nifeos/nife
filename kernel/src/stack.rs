@@ -80,7 +80,7 @@ pub(crate) fn guard_page_at(addr: u64) -> Option<GuardPage> {
         return Some(GuardPage::Boot);
     }
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let g = crate::smp::secondary_stack_guard(id);
         if (g..g + PAGE).contains(&addr) {
             return Some(GuardPage::Secondary(id));
@@ -417,7 +417,7 @@ pub(crate) fn report_high_water() {
 
     let boot_cpu = crate::arch::boot_cpu_id();
     let mut max_secondary = 0u64;
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         if id == boot_cpu || crate::smp::online_harts_mask() & (1 << id) == 0 {
             continue; // the boot core runs on the linker-script stack; its slot was never painted
         }
@@ -434,13 +434,13 @@ pub(crate) fn report_high_water() {
     }
 
     // Every seat: `interrupt_stack::initialize` painted each slot, so an unused one reads 0.
-    let mut max_interrupt = 0u64;
-    for id in 0..crate::cpu::MAX_CPUS {
+    let mut maximum_interrupt = 0u64;
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (b, t) = crate::interrupt_stack::span(id);
         // SAFETY: a slot of the region `interrupt_stack::initialize` mapped and painted before any
         // core could switch to one.
         let used = unsafe { high_water(b, t) };
-        max_interrupt = max_interrupt.max(used);
+        maximum_interrupt = maximum_interrupt.max(used);
         if used > 0 {
             crate::println!(
                 "stack high-water: irq{id}   {used}/{} bytes ({}%)",
@@ -476,8 +476,8 @@ pub(crate) fn report_high_water() {
     // Half the 16 KiB slot, above the ~4 KiB chain `script/stack-depth-check` finds and far below
     // the guard. A trip means a handler chain grew, not that the stack is too small.
     assert!(
-        max_interrupt <= 8192,
-        "an interrupt stack's high-water {max_interrupt} exceeded 8192, half its slot: a trap \
+        maximum_interrupt <= 8192,
+        "an interrupt stack's high-water {maximum_interrupt} exceeded 8192, half its slot: a trap \
          handler's chain has grown past anything measured (notes/stack/interrupt-stack.md, \
          script/stack-depth-check)",
     );

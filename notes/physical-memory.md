@@ -152,8 +152,8 @@ account.
 
 The kernel has no heap: no `Vec` and no `Box` (`kmem` is a fixed carve, see
 [kernel-budget.md](kernel-budget.md)). The regions coming out of the device tree go into
-fixed-size arrays of `MAX_REGIONS` entries, because a fixed-size array is what you use when there
-is no allocator.
+fixed-size arrays of `MAXIMUM_REGIONS` entries, because a fixed-size array is what you use when
+there is no allocator.
 
 `ALLOCATOR` is an `IrqSafeMutex` (DECISIONS §9 (locking: IrqSafeMutex, plus a discipline)), not a
 bare spinlock. An interrupt handler that tried to allocate while the interrupted code held a bare
@@ -165,8 +165,8 @@ work.
 
 - The seam's type is still `device_tree_blob::Region`, a plain `{ start, size }` pair, so a machine
   with no device tree names a device-tree type. Moving it belongs with widening the seam.
-- At most `MAX_REGIONS` (16) RAM regions. Both `virt` boards describe one; q35 describes three. A
-  caller with more must decide what to drop.
+- At most `MAXIMUM_REGIONS` (16) RAM regions. Both `virt` boards describe one; q35 describes three.
+  A caller with more must decide what to drop.
 
 ---
 

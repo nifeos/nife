@@ -1115,7 +1115,7 @@ fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
 }
 
 pub struct LookupHost {
-    addresses: [Ipv4Addr; resolve::MAX_ADDRESSES],
+    addresses: [Ipv4Addr; resolve::MAXIMUM_ADDRESSES],
     count: usize,
     next: usize,
     port: u16,
@@ -1167,8 +1167,8 @@ pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
     };
     let kind = match outcome.status {
         resolve::status::OK => {
-            let count = (outcome.count as usize).min(resolve::MAX_ADDRESSES);
-            let mut addresses = [Ipv4Addr::UNSPECIFIED; resolve::MAX_ADDRESSES];
+            let count = (outcome.count as usize).min(resolve::MAXIMUM_ADDRESSES);
+            let mut addresses = [Ipv4Addr::UNSPECIFIED; resolve::MAXIMUM_ADDRESSES];
             for (k, a) in addresses.iter_mut().take(count).enumerate() {
                 let at = page + (resolve::OFF_ADDRESSES + 4 * k) as u64;
                 *a = Ipv4Addr::new(fr8(at), fr8(at + 1), fr8(at + 2), fr8(at + 3));

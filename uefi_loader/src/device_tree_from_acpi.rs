@@ -38,9 +38,13 @@ use crate::device_tree_patch::{BEGIN_NODE, END, END_NODE, Error, HEADER_LEN, MAG
 
 /// The most cores this writes a `cpu@` node for. Sixteen, matching
 /// `machine_discovery::cpu_list::MAX_CPU_NODES`, which is what would read them back.
-pub const MAX_CPUS: usize = 16;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CPUS`.
+pub const MAXIMUM_CPUS: usize = 16;
 
-/// The most `/memory` nodes this writes. Sixteen, matching `kernel::memory`'s own `MAX_REGIONS`.
+/// The most `/memory` nodes this writes. Sixteen, matching `kernel::memory`'s own
+/// `MAXIMUM_REGIONS`.
 pub const MAX_RAM: usize = 16;
 
 /// The GIC distributor's register frame, which the architecture fixes at 64 KiB and the MADT never
@@ -110,7 +114,7 @@ pub struct Machine {
     /// the two halves honest.
     pub gic: Gic,
     /// The cores, in MADT order.
-    pub cpus: [Cpu; MAX_CPUS],
+    pub cpus: [Cpu; MAXIMUM_CPUS],
     /// How many of [`Machine::cpus`] are real.
     pub cpu_count: usize,
     /// `Some(true)` for PSCI over `hvc`, `Some(false)` for `smc`, `None` for a machine whose FADT
@@ -266,7 +270,7 @@ const fn interrupt_flags(flags: u32) -> u32 {
 pub const fn output_len() -> usize {
     // Header, reservation block, a fixed part (root, psci, cpus, intc, timer, uart), the per-core
     // and per-region nodes, and the strings block.
-    HEADER_LEN + 16 + 1024 + (MAX_CPUS + MAX_RAM) * 128 + STRINGS.len() + 64
+    HEADER_LEN + 16 + 1024 + (MAXIMUM_CPUS + MAX_RAM) * 128 + STRINGS.len() + 64
 }
 
 /// **Write `machine` as a flattened device tree into `out`**, returning its length.
@@ -351,7 +355,7 @@ fn write_cpus(o: &mut Out<'_>, machine: &Machine) -> Result<(), Error> {
     // with clusters, and the decoder reads the declaration rather than assuming either.
     o.prop_cells(b"#address-cells", &[2])?;
     o.prop_cells(b"#size-cells", &[0])?;
-    for cpu in &machine.cpus[..machine.cpu_count.min(MAX_CPUS)] {
+    for cpu in &machine.cpus[..machine.cpu_count.min(MAXIMUM_CPUS)] {
         let mut buf = [0u8; 40];
         o.begin(unit_name(b"cpu", cpu.mpidr, &mut buf))?;
         o.prop(b"device_type", b"cpu\0")?;
@@ -477,7 +481,7 @@ mod tests {
     /// QEMU `virt` with `acpi=on,gic-version=3`, as its tables describe it: the machine the boot
     /// this milestone measured actually ran on.
     fn qemu_virt() -> Machine {
-        let mut cpus = [Cpu::default(); MAX_CPUS];
+        let mut cpus = [Cpu::default(); MAXIMUM_CPUS];
         for (i, cpu) in cpus[..4].iter_mut().enumerate() {
             *cpu = Cpu {
                 mpidr: i as u64,
@@ -826,7 +830,7 @@ mod tests {
                 enabled: false,
             };
         }
-        machine.cpu_count = MAX_CPUS;
+        machine.cpu_count = MAXIMUM_CPUS;
         for (i, ram) in machine.ram.iter_mut().enumerate() {
             *ram = Ram {
                 start: 0xffff_0000_0000_0000 + (i as u64) * 0x1000_0000,

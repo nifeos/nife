@@ -27,8 +27,9 @@ const RENDEZVOUS_PAGES: u64 = 4;
 /// one failure a monitor must never have. Making the wrong state unrepresentable costs one line
 /// here and nobody has to remember it.
 const _: () = assert!(
-    ps::MAX_ROWS >= sched::MAX_THREADS,
-    "ps::MAX_ROWS is smaller than the kernel's thread table: a listing of the widest domain this \
+    ps::MAXIMUM_ROWS >= sched::MAX_THREADS,
+    "ps::MAXIMUM_ROWS is smaller than the kernel's thread table: a listing of the widest domain \
+    this \
      system can express would be silently truncated",
 );
 
@@ -84,10 +85,11 @@ fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
 /// `ps::collect` is what `components/src/ps.rs` runs; driving it here rather than reimplementing the
 /// cursor walk is the same discipline the `rm`, `date` and sink tests keep, and it is why a bug in
 /// the cursor protocol cannot hide between the two sides.
-/// Eight rows, not `ps::MAX_ROWS`. **These tests run on a kernel thread stack**, under a 4,096-byte
-/// guard page, and a `[Row; 128]` local is two kilobytes; `script/stack-frame-check` is the gate
-/// that made the buffer the caller's in the first place. The widest domain any test here builds is
-/// three, so eight is slack with room to notice an unexpected member rather than truncate it.
+/// Eight rows, not `ps::MAXIMUM_ROWS`. **These tests run on a kernel thread stack**, under a
+/// 4,096-byte guard page, and a `[Row; 128]` local is two kilobytes; `script/stack-frame-check` is
+/// the gate that made the buffer the caller's in the first place. The widest domain any test here
+/// builds is three, so eight is slack with room to notice an unexpected member rather than truncate
+/// it.
 pub(super) const TEST_ROWS: usize = 8;
 
 fn walk(slot: u64, rows: &mut [ps::Row; TEST_ROWS]) -> ps::Survey<'_> {

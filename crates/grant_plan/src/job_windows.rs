@@ -18,7 +18,10 @@
 
 /// The most windows a pool can track. The file service's pool has seven
 /// (`login_contract::DURABLE_WINDOW` is the last), so this is room, not a target.
-pub const MAX_WINDOWS: usize = 16;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_WINDOWS`.
+pub const MAXIMUM_WINDOWS: usize = 16;
 
 /// **A job's label**: the badge the progenitor puts on the job's supervision capability, which the
 /// kernel hands back beside the job's death message (DECISIONS §148 (resolves by asking the kernel), milestone 105 (the two forks)) and
@@ -35,7 +38,7 @@ pub struct Windows {
     next: u64,
     /// `holder[w]` is the label of the job window `w` was last handed to and that has not been
     /// reaped, or `0` when the window is free.
-    holder: [Label; MAX_WINDOWS],
+    holder: [Label; MAXIMUM_WINDOWS],
     /// Bit `w` set means window `w`'s badge is bound to a grant and must be unbound before reuse
     /// (milestone 606 (a directory walk costs what it does on Linux), ruling D).
     bound: u64,
@@ -46,16 +49,17 @@ impl Windows {
     ///
     /// # Panics
     ///
-    /// If the range is empty or reaches past [`MAX_WINDOWS`]: a pool that could hand out nothing,
-    /// or a window this table cannot record, is a wiring mistake, caught where the pool is made.
+    /// If the range is empty or reaches past [`MAXIMUM_WINDOWS`]: a pool that could hand out
+    /// nothing, or a window this table cannot record, is a wiring mistake, caught where the pool is
+    /// made.
     #[must_use]
     pub const fn new(first: u64, end: u64) -> Self {
-        assert!(first < end && end <= MAX_WINDOWS as u64);
+        assert!(first < end && end <= MAXIMUM_WINDOWS as u64);
         Self {
             first,
             end,
             next: first,
-            holder: [0; MAX_WINDOWS],
+            holder: [0; MAXIMUM_WINDOWS],
             bound: 0,
         }
     }

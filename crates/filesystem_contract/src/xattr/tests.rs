@@ -21,7 +21,7 @@ fn scratch() -> Vec<u8> {
 fn an_attribute_round_trips_at_the_edges_of_both_limits() {
     use xattr::store;
     let widest_name = vec![b'n'; xattr::MAX_NAME];
-    let widest_value = vec![0xABu8; xattr::MAX_VALUE];
+    let widest_value = vec![0xABu8; xattr::MAXIMUM_VALUE];
     for (name, value) in [
         (&b"user.DOSATTRIB"[..], &b"0x20"[..]),
         (&b"a"[..], &b""[..]),
@@ -48,7 +48,7 @@ fn an_attribute_round_trips_at_the_edges_of_both_limits() {
 fn a_type_code_survives_the_store_and_the_reply_word() {
     use xattr::store;
     // 'CSTR' and 'LONG', BFS's own spellings, plus the largest code the reply word can carry.
-    for kind in [xattr::RAW, 0x4353_5452, 0x4C4F_4E47, xattr::MAX_KIND] {
+    for kind in [xattr::RAW, 0x4353_5452, 0x4C4F_4E47, xattr::MAXIMUM_KIND] {
         let mut out = scratch();
         let n = store::set(&[], b"typed", kind, b"body", &mut out).expect("set");
         assert_eq!(store::get(&out[..n], b"typed").unwrap().0, kind);
@@ -65,7 +65,7 @@ fn a_type_code_survives_the_store_and_the_reply_word() {
     // Bit 31 is not the store's to give away: refuse it where it is written.
     let mut out = scratch();
     assert_eq!(
-        store::set(&[], b"toobig", xattr::MAX_KIND + 1, b"x", &mut out),
+        store::set(&[], b"toobig", xattr::MAXIMUM_KIND + 1, b"x", &mut out),
         Err(22),
         "a kind that cannot ride home must be refused, not truncated",
     );
@@ -102,7 +102,7 @@ fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
             &[],
             b"big",
             xattr::RAW,
-            &vec![0u8; xattr::MAX_VALUE + 1],
+            &vec![0u8; xattr::MAXIMUM_VALUE + 1],
             &mut out
         ),
         Err(xattr::E2BIG),
@@ -110,7 +110,7 @@ fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
 
     // Fill a node to its ceiling, then ask for one more.
     let mut blob: Vec<u8> = Vec::new();
-    for i in 0..xattr::MAX_COUNT {
+    for i in 0..xattr::MAXIMUM_COUNT {
         let mut next = scratch();
         let n = store::set(
             &blob,
@@ -122,7 +122,7 @@ fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
         .expect("within the count");
         blob = next[..n].to_vec();
     }
-    assert_eq!(store::count(&blob), xattr::MAX_COUNT);
+    assert_eq!(store::count(&blob), xattr::MAXIMUM_COUNT);
     assert_eq!(
         store::set(&blob, b"one-too-many", xattr::RAW, b"v", &mut out),
         Err(xattr::ENOSPC),
@@ -130,7 +130,7 @@ fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
     // And the ceiling is on NEW names only: replacing one of the sixteen still works, which is
     // what keeps a full file usable rather than frozen.
     let n = store::set(&blob, b"a0", xattr::RAW, b"replaced", &mut out).expect("replace at cap");
-    assert_eq!(store::count(&out[..n]), xattr::MAX_COUNT);
+    assert_eq!(store::count(&out[..n]), xattr::MAXIMUM_COUNT);
     assert_eq!(store::get(&out[..n], b"a0").unwrap().1, b"replaced");
 }
 
@@ -251,7 +251,7 @@ fn the_widest_listing_fits_one_page_and_round_trips() {
 
     let mut blob = Vec::new();
     let mut out = scratch();
-    let names: Vec<Vec<u8>> = (0..xattr::MAX_COUNT)
+    let names: Vec<Vec<u8>> = (0..xattr::MAXIMUM_COUNT)
         .map(|i| {
             let mut n = vec![b'a' + i as u8; xattr::MAX_NAME];
             n[0] = b'0' + i as u8;
@@ -283,9 +283,9 @@ fn the_widest_listing_fits_one_page_and_round_trips() {
 fn the_attribute_words_carry_a_kind_and_a_length_without_bleeding() {
     for &(kind, len) in &[
         (xattr::RAW, 0usize),
-        (1, xattr::MAX_VALUE),
-        (xattr::MAX_KIND, xattr::MAX_VALUE),
-        (0xFFFF_FFFF, 1), // a caller that ignores MAX_KIND: the reply masks rather than lies
+        (1, xattr::MAXIMUM_VALUE),
+        (xattr::MAXIMUM_KIND, xattr::MAXIMUM_VALUE),
+        (0xFFFF_FFFF, 1), // a caller that ignores MAXIMUM_KIND: the reply masks rather than lies
     ] {
         let w1 = xattr::spec(kind, len as u64);
         assert_eq!(xattr::spec_kind(w1), kind, "kind through the request word");
@@ -296,7 +296,7 @@ fn the_attribute_words_carry_a_kind_and_a_length_without_bleeding() {
         );
         let r = xattr::reply(kind, len);
         assert!(r >= 0);
-        assert_eq!(xattr::reply_kind(r), kind & xattr::MAX_KIND);
+        assert_eq!(xattr::reply_kind(r), kind & xattr::MAXIMUM_KIND);
         assert_eq!(xattr::reply_value_len(r), len);
     }
 }
@@ -365,12 +365,12 @@ fn a_record_that_exactly_fits_is_written_and_a_short_buffer_refuses() {
 ///
 /// [`xattr::store::set`] and [`xattr::store::remove`] re-emit every untouched record with lengths
 /// read off the blob, not from a bounds-checked caller. A value length is a `u16`, so a torn or
-/// forged blob reaches 65535 where [`xattr::MAX_VALUE`] is 3072, and `write_record`'s own limit is
-/// all that stops it. Every other test builds blobs through `set`, whose `E2BIG` fires first.
+/// forged blob reaches 65535 where [`xattr::MAXIMUM_VALUE`] is 3072, and `write_record`'s own limit
+/// is all that stops it. Every other test builds blobs through `set`, whose `E2BIG` fires first.
 #[test]
 fn a_record_wider_than_the_contract_is_refused_when_a_blob_is_rewritten() {
     use xattr::store::{self, RECORD_HEADER};
-    let over = xattr::MAX_VALUE + 1;
+    let over = xattr::MAXIMUM_VALUE + 1;
     let mut blob = vec![0u8; store::record_len(1, over)];
     blob[0] = 1;
     blob[5..7].copy_from_slice(&(over as u16).to_le_bytes());

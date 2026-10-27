@@ -32,7 +32,7 @@
 
 use abi::rights;
 use domain_name_resolution_contract::{
-    self as protocol, Grants, MAX_ADDRESSES, NAME_TEXT_MAX, OFF_ADDRESSES, OFF_NAME, Outcome,
+    self as protocol, Grants, MAXIMUM_ADDRESSES, NAME_TEXT_MAX, OFF_ADDRESSES, OFF_NAME, Outcome,
     endowment, network_step, status,
 };
 use domain_name_system::{Answer, Name, Query, Reject, TcpReply};
@@ -80,7 +80,7 @@ const DATAGRAMS_PER_ATTEMPT: u32 = 8;
 /// The largest reply over TCP this resolver reads. RFC 7766 allows 65,535 bytes; a host-name lookup
 /// with eight addresses is a few hundred, and a reply past this is refused as malformed rather than
 /// truncated, because over TCP there is nothing left to fall back to.
-const TCP_REPLY_MAX: usize = 2048;
+const TCP_REPLY_MAXIMUM: usize = 2048;
 
 /// Everything too large for a one-page stack, in `.bss`. One thread, so one reference.
 struct State {
@@ -89,7 +89,7 @@ struct State {
     /// deletes.
     attached: [Option<u64>; protocol::GRANTS_MAX],
     request: [u8; 2 + domain_name_system::UDP_MESSAGE_MAX],
-    reply: [u8; TCP_REPLY_MAX],
+    reply: [u8; TCP_REPLY_MAXIMUM],
     chunk: [u8; socket::DATA_MAX],
 }
 
@@ -97,7 +97,7 @@ static mut STATE: State = State {
     grants: Grants::new(),
     attached: [None; protocol::GRANTS_MAX],
     request: [0; 2 + domain_name_system::UDP_MESSAGE_MAX],
-    reply: [0; TCP_REPLY_MAX],
+    reply: [0; TCP_REPLY_MAXIMUM],
     chunk: [0; socket::DATA_MAX],
 };
 
@@ -268,7 +268,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
         Err(Fail::Rejected(reject)) => return (refused(reject), 0),
     };
     let addresses = answer.addresses();
-    for (k, a) in addresses.iter().enumerate().take(MAX_ADDRESSES) {
+    for (k, a) in addresses.iter().enumerate().take(MAXIMUM_ADDRESSES) {
         for (j, &b) in a.iter().enumerate() {
             page.w8((OFF_ADDRESSES + 4 * k + j) as u64, b);
         }

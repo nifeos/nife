@@ -16,7 +16,8 @@
 //! - A poked victim that never reaches a scheduler entry locks every other thief out, outside
 //!   loom's model.
 //! - The identity is not authenticated; the only caller passes its own `cpu::id()`.
-//! - [`MAX_REQUESTER`] guards the bias's addition, unreachable and covered by a host test alone.
+//! - [`MAXIMUM_REQUESTER`] guards the bias's addition, unreachable and covered by a host test
+//!   alone.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `steal_request`: the type is `Slot` with
 //! `claim`/`take`, and "work-steal" is the field's compound (Cilk, Go, Rayon).
@@ -41,9 +42,12 @@ const EMPTY: u32 = 0;
 ///
 /// The bias is `id + 1`, so `u32::MAX` would encode as zero and read back as *empty*: a request
 /// that vanished. [`Slot::claim`] refuses that id instead of wrapping into it. A kernel cannot
-/// reach this (`MAX_CPUS` is single digits), which is exactly why the refusal is written down
+/// reach this (`MAXIMUM_CPUS` is single digits), which is exactly why the refusal is written down
 /// rather than left to the arithmetic.
-pub const MAX_REQUESTER: u32 = u32::MAX - 1;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_REQUESTER`.
+pub const MAXIMUM_REQUESTER: u32 = u32::MAX - 1;
 
 /// One core's work-steal request slot: at most one pending request, first come first served.
 ///
@@ -96,7 +100,7 @@ impl Slot {
     }
 
     /// **Ask this core for work.** Returns `true` if the request was parked, `false` if the slot
-    /// already holds someone else's (or if `requester` is past [`MAX_REQUESTER`]).
+    /// already holds someone else's (or if `requester` is past [`MAXIMUM_REQUESTER`]).
     ///
     /// A `false` is not an error and is not a queue position: the caller is idle, and it will ask
     /// again next time round its idle loop. That is what keeps a thundering herd of idle cores to
@@ -165,7 +169,7 @@ mod tests {
     fn a_claim_round_trips_the_requester_id() {
         // Core 0 is the interesting one: it encodes as 1, and an unbiased encoding would have made
         // a request from the boot core indistinguishable from an empty slot.
-        for id in [0, 1, 7, MAX_REQUESTER] {
+        for id in [0, 1, 7, MAXIMUM_REQUESTER] {
             let slot = Slot::new();
             assert!(slot.claim(id), "a fresh slot refused a claim from {id}");
             assert_eq!(slot.take(), Some(id));

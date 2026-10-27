@@ -44,15 +44,19 @@ pub const TAG_LEN: usize = 32;
 /// are checked against each other by a test in `credential_contract`'s consumer, the service.
 pub const MAX_IDENTITY: usize = 64;
 
-/// The longest secret [`Record::derive`] will accept. Matches `credential_contract::MAX_SECRET`.
-pub const MAX_SECRET: usize = 256;
+/// The longest secret [`Record::derive`] will accept. Matches
+/// `credential_contract::MAXIMUM_SECRET`.
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SECRET`.
+pub const MAXIMUM_SECRET: usize = 256;
 
 /// Argon2's own lower bound on `m_cost`, restated so [`Cost::new`] can check it before handing a
 /// value to a function that would overflow on the way to checking it itself.
 const MIN_M_COST: u32 = 8;
 
 /// Argon2's own upper bound on `p_cost`, `2^24 - 1`. Same reason.
-const MAX_P_COST: u32 = (1 << 24) - 1;
+const MAXIMUM_P_COST: u32 = (1 << 24) - 1;
 
 /// **What went wrong with the question**, as distinct from the answer to it. Every variant here is
 /// a caller bug: a length out of range, a cost the KDF will not accept, a scratch buffer too
@@ -62,7 +66,7 @@ const MAX_P_COST: u32 = (1 << 24) - 1;
 pub enum Error {
     /// The identity is empty or longer than [`MAX_IDENTITY`].
     Identity,
-    /// The secret is empty or longer than [`MAX_SECRET`].
+    /// The secret is empty or longer than [`MAXIMUM_SECRET`].
     Secret,
     /// The cost parameters are outside what Argon2 accepts.
     Cost,
@@ -141,7 +145,7 @@ impl Cost {
     /// assert!(Cost::new(Cost::MAX_M_KIB + 1, 3, 1).is_none()); // past a gibibyte is a typo, not a policy
     /// ```
     pub fn new(m_kib: u32, t: u32, p: u32) -> Option<Self> {
-        if p == 0 || p > MAX_P_COST || t == 0 {
+        if p == 0 || p > MAXIMUM_P_COST || t == 0 {
             return None;
         }
         if !(MIN_M_COST..=Self::MAX_M_KIB).contains(&m_kib) {
@@ -246,7 +250,7 @@ impl Record {
         if identity.is_empty() || identity.len() > MAX_IDENTITY {
             return Err(Error::Identity);
         }
-        if secret.is_empty() || secret.len() > MAX_SECRET {
+        if secret.is_empty() || secret.len() > MAXIMUM_SECRET {
             return Err(Error::Secret);
         }
         let mut id = [0u8; MAX_IDENTITY];
@@ -521,7 +525,7 @@ impl<const N: usize> Store<N> {
         if identity.is_empty() || identity.len() > MAX_IDENTITY {
             return Err(Error::Identity);
         }
-        if presented.is_empty() || presented.len() > MAX_SECRET {
+        if presented.is_empty() || presented.len() > MAXIMUM_SECRET {
             return Err(Error::Secret);
         }
         let sel = self.select(identity);
@@ -859,7 +863,7 @@ mod tests {
         );
         assert_eq!(s.verify(b"alice", b"", &mut mem), Err(Error::Secret));
         assert_eq!(
-            s.verify(b"alice", &[b'x'; MAX_SECRET + 1], &mut mem),
+            s.verify(b"alice", &[b'x'; MAXIMUM_SECRET + 1], &mut mem),
             Err(Error::Secret),
         );
         let mut tiny = vec![Block::default(); 1];
@@ -885,7 +889,7 @@ mod tests {
     }
 
     /// **The overflow `argon2` 0.5.3 does not check before it multiplies.** `Params::new`
-    /// evaluates `m_cost < p_cost * 8` ahead of its own `MAX_P_COST` bound, so in a debug build
+    /// evaluates `m_cost < p_cost * 8` ahead of its own `MAXIMUM_P_COST` bound, so in a debug build
     /// (which is what the userspace programs are built as) a large `p_cost` panics rather than
     /// erroring. A panic inside the credential service is a login outage, so [`Cost::new`] checks
     /// the bound first. Swept across the boundary and up to the top of the range, because the
@@ -896,15 +900,15 @@ mod tests {
     /// (2026-10-07 census triage: `(1 << 24) - 1` as `/` or `+` survived it).
     #[test]
     fn the_restated_bounds_are_argon2s_own() {
-        assert_eq!(MAX_P_COST, argon2::Params::MAX_P_COST);
+        assert_eq!(MAXIMUM_P_COST, argon2::Params::MAX_P_COST);
         assert_eq!(MIN_M_COST, argon2::Params::MIN_M_COST);
     }
 
     #[test]
     fn a_hostile_cost_is_refused_and_never_overflows_the_library() {
         for p in [
-            MAX_P_COST,
-            MAX_P_COST + 1,
+            MAXIMUM_P_COST,
+            MAXIMUM_P_COST + 1,
             u32::MAX / 8,
             u32::MAX / 8 + 1,
             1 << 29,
@@ -1062,7 +1066,7 @@ mod tests {
         let cost = cheap();
         let mut mem = scratch(cost);
         let id = [b'i'; MAX_IDENTITY];
-        let secret = [b's'; MAX_SECRET];
+        let secret = [b's'; MAXIMUM_SECRET];
         let r = Record::derive(&id, &secret, [7u8; SALT_LEN], cost, &mut mem).unwrap();
         assert_eq!(r.identity(), &id);
         let back = Record::decode(&r.encode()).unwrap();
@@ -1076,7 +1080,7 @@ mod tests {
         assert_eq!(
             Record::derive(
                 &id,
-                &[b's'; MAX_SECRET + 1],
+                &[b's'; MAXIMUM_SECRET + 1],
                 [7u8; SALT_LEN],
                 cost,
                 &mut mem

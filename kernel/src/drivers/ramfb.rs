@@ -41,7 +41,7 @@ const DATA_AT: usize = 64;
 const MAX_ENTRIES: u32 = 256;
 
 /// How many times the control word is read before a transfer is called hung. See BUGS.
-const MAX_POLLS: u32 = 1_000_000;
+const MAXIMUM_POLLS: u32 = 1_000_000;
 
 /// Why a `ramfb` did not come up.
 ///
@@ -55,7 +55,7 @@ pub enum Error {
     NoSuchFile,
     /// The device set its error bit.
     Refused,
-    /// The control word never cleared within [`MAX_POLLS`].
+    /// The control word never cleared within [`MAXIMUM_POLLS`].
     Hung,
     /// The file directory did not decode, or claimed more entries than [`MAX_ENTRIES`].
     Undecodable,
@@ -115,7 +115,7 @@ impl FirmwareConfiguration {
             ((self.registers + DMA_REGISTER + 4) as *mut u32).write_volatile(low);
         }
 
-        for _ in 0..MAX_POLLS {
+        for _ in 0..MAXIMUM_POLLS {
             // Byte at a time and reassembled, rather than one `u32` read. The interface is
             // big-endian, so the bytes have to be reordered either way, and reading them
             // individually means this driver asks nothing of the caller's alignment: a `*mut u32`

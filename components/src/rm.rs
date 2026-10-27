@@ -65,7 +65,7 @@ const ELOOP: i32 = 40;
 /// level holds a listing buffer by value. Eight matches the shell's path stack (`grant_plan::nav`) and
 /// is well inside the sixteen handles a `fs_subtree_caretaker` will mint. Deeper is refused rather
 /// than silently leaving a tree half-removed with a zero exit status.
-const MAX_DEPTH: usize = 8;
+const MAXIMUM_DEPTH: usize = 8;
 
 /// One round of a directory listing, decoded out of the shared page. The page is sixteen times
 /// larger; a directory bigger than this buffer is read in rounds, and this program cannot hold the
@@ -149,7 +149,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
         diagnose(name, dir::EISDIR);
         return Err(dir::EISDIR);
     }
-    if depth >= MAX_DEPTH {
+    if depth >= MAXIMUM_DEPTH {
         diagnose(name, ELOOP);
         return Err(ELOOP);
     }

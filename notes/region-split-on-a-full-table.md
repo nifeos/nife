@@ -34,7 +34,7 @@ The rule's own reasons, read from the history rather than recalled:
 - Milestone 135 (the region claim, under loom) moved `split` into `crates/memory_regions` as one
   `&mut self` borrow (`405113c08`). The second hold, and the race that justified the rule, no
   longer exist. The doc comment kept the rule and dropped the reason.
-- The headroom is gone too: 252 of 256 on aarch64 before #1347, and `memory_region::MAX_REGIONS`
+- The headroom is gone too: 252 of 256 on aarch64 before #1347, and `memory_region::MAXIMUM_REGIONS`
   now carries the measured ledger.
 
 So both reasons have lapsed. What remains is the sentence "the honest record that a page of it is
@@ -75,7 +75,7 @@ Same outcome as B. Loses to B on moving parts:
 it writes a state and then unwrites it, and a watermark that goes down outside the LIFO return is
 the one thing a reader of a bump allocator is primed to distrust.
 
-### D. Raise `MAX_REGIONS` instead
+### D. Raise `MAXIMUM_REGIONS` instead
 
 Orthogonal. It makes the full table rarer and leaves the
 ratchet in place for whenever it is reached. Worth doing on its own evidence (the peak line now

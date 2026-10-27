@@ -7,7 +7,7 @@ use super::*;
 
 pub(super) const PAGE: u64 = 4096;
 
-pub(super) const MIN_GROW_PAGES: u64 = 8;
+pub(super) const MINIMUM_GROW_PAGES: u64 = 8;
 
 pub(super) type Talc = talc::base::Talc<talc::source::Manual, talc::base::binning::DefaultBinning>;
 
@@ -70,7 +70,7 @@ pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
     let need_pages = need.div_ceil(PAGE);
     let want_pages = need_pages
         .max(inner.committed / PAGE)
-        .max(MIN_GROW_PAGES)
+        .max(MINIMUM_GROW_PAGES)
         .min((rt::HEAP_MAX - inner.committed) / PAGE);
     if want_pages < need_pages {
         return false;

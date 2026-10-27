@@ -444,14 +444,14 @@ pub struct CpuidWords {
     pub leaf7_0: [u32; 4],
     /// Leaf `0x80000000`'s `EAX`: the maximum *extended* leaf, a separate space with its own
     /// maximum. A part can answer every standard leaf and implement no extended leaf at all.
-    pub extended_max_leaf: u32,
-    /// Leaf `0x80000001`'s `EDX`. Meaningful only when `extended_max_leaf >= 0x8000_0001`.
+    pub extended_maximum_leaf: u32,
+    /// Leaf `0x80000001`'s `EDX`. Meaningful only when `extended_maximum_leaf >= 0x8000_0001`.
     pub extended_leaf1_edx: u32,
-    /// Leaf `0x80000007`'s `EDX`. Meaningful only when `extended_max_leaf >= 0x8000_0007`.
+    /// Leaf `0x80000007`'s `EDX`. Meaningful only when `extended_maximum_leaf >= 0x8000_0007`.
     pub extended_leaf7_edx: u32,
     /// Leaves `0x80000002` through `0x80000004`, four registers each, in `EAX`/`EBX`/`ECX`/`EDX`
     /// order: the 48-character brand string. Meaningful only when
-    /// `extended_max_leaf >= 0x8000_0004`, and a part that answers 2 and 3 but not 4 does not
+    /// `extended_maximum_leaf >= 0x8000_0004`, and a part that answers 2 and 3 but not 4 does not
     /// exist in the manuals, so the three leaves are gated together.
     pub brand: [u32; 12],
 }
@@ -473,7 +473,7 @@ pub struct Isa {
     /// The maximum standard `CPUID` leaf this part answers.
     pub max_leaf: u32,
     /// The maximum extended (`0x8000_0000`-based) leaf. A separate space; see [`CpuidWords`].
-    pub extended_max_leaf: u32,
+    pub extended_maximum_leaf: u32,
     /// Which of [`TABLE`]'s features the part reports.
     pub features: Features,
     /// Whether `CPUID` says a hypervisor is present ([`HYPERVISOR_CITE`]). Decides what a
@@ -490,7 +490,7 @@ impl Default for Isa {
             vendor: [0; 12],
             brand: [0; 48],
             max_leaf: 0,
-            extended_max_leaf: 0,
+            extended_maximum_leaf: 0,
             features: Features::NONE,
             under_hypervisor: false,
         }
@@ -525,14 +525,14 @@ impl Isa {
         vendor[8..12].copy_from_slice(&w.leaf0[2].to_le_bytes());
 
         let mut brand = [0u8; 48];
-        if w.extended_max_leaf >= 0x8000_0004 {
+        if w.extended_maximum_leaf >= 0x8000_0004 {
             for (i, word) in w.brand.iter().enumerate() {
                 brand[i * 4..i * 4 + 4].copy_from_slice(&word.to_le_bytes());
             }
         }
 
         let mut features = Features::NONE;
-        if w.extended_max_leaf >= 0x8000_0001 {
+        if w.extended_maximum_leaf >= 0x8000_0001 {
             if w.extended_leaf1_edx & (1 << 20) != 0 {
                 features = features.union(NX);
             }
@@ -540,7 +540,7 @@ impl Isa {
                 features = features.union(SYSCALL);
             }
         }
-        if w.extended_max_leaf >= 0x8000_0007 && w.extended_leaf7_edx & (1 << 8) != 0 {
+        if w.extended_maximum_leaf >= 0x8000_0007 && w.extended_leaf7_edx & (1 << 8) != 0 {
             features = features.union(INVARIANT_TSC);
         }
         if w.leaf0[0] >= 7 && w.leaf7_0[1] & (1 << 18) != 0 {
@@ -551,7 +551,7 @@ impl Isa {
             vendor,
             brand,
             max_leaf: w.leaf0[0],
-            extended_max_leaf: w.extended_max_leaf,
+            extended_maximum_leaf: w.extended_maximum_leaf,
             features,
             under_hypervisor: w.leaf0[0] >= 1 && w.leaf1_ecx & (1 << 31) != 0,
         }

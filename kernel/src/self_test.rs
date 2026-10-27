@@ -534,7 +534,7 @@ fn wait_until(seconds: u64, mut done: impl FnMut() -> bool) -> bool {
 fn preemption(tally: &mut Tally) {
     use core::sync::atomic::AtomicBool;
 
-    const MAX: usize = crate::cpu::MAX_CPUS + 1;
+    const MAX: usize = crate::cpu::MAXIMUM_CPUS + 1;
     static PROGRESS: [AtomicU64; MAX] = [const { AtomicU64::new(0) }; MAX];
     static STOP: AtomicBool = AtomicBool::new(false);
 

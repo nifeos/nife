@@ -104,11 +104,17 @@ pub const MAGIC: [u8; 8] = *b"ENVCONF1";
 /// today (the longest IANA identifiers, like `America/Argentina/ComodRivadavia`, run to about
 /// 33 bytes), so a curated list can grow toward the real database's longer names without a
 /// layout change.
-pub const TZ_MAX: usize = 40;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TZ_MAX`.
+pub const TZ_MAXIMUM: usize = 40;
 
 /// The most bytes a `LANG` value may occupy. Covers every entry in [`domain::KNOWN_LANG`] with
 /// headroom for a codeset suffix this crate does not carry yet (`en_US.ISO8859-1` is 16 bytes).
-pub const LANG_MAX: usize = 24;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `LANG_MAX`.
+pub const LANG_MAXIMUM: usize = 24;
 
 /// The most bytes a `TERM` value may occupy. Covers every entry in [`domain::KNOWN_TERM`]
 /// (`screen-256color` is the longest at 15) with headroom to grow.
@@ -117,9 +123,9 @@ pub const TERM_MAX: usize = 24;
 const OFF_MAGIC: usize = 0;
 const OFF_TZ_LEN: usize = OFF_MAGIC + 8;
 const OFF_TZ: usize = OFF_TZ_LEN + 1;
-const OFF_LANG_LEN: usize = OFF_TZ + TZ_MAX;
+const OFF_LANG_LEN: usize = OFF_TZ + TZ_MAXIMUM;
 const OFF_LANG: usize = OFF_LANG_LEN + 1;
-const OFF_TERM_LEN: usize = OFF_LANG + LANG_MAX;
+const OFF_TERM_LEN: usize = OFF_LANG + LANG_MAXIMUM;
 const OFF_TERM: usize = OFF_TERM_LEN + 1;
 
 /// The whole page's size in bytes: magic, then one length-prefixed field per declared key. Well
@@ -226,8 +232,8 @@ impl<'a> PageBuilder<'a> {
     pub fn build(&self) -> [u8; PAGE_BYTES] {
         let mut page = [0u8; PAGE_BYTES];
         page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
-        write_field(&mut page, OFF_TZ_LEN, OFF_TZ, TZ_MAX, self.tz);
-        write_field(&mut page, OFF_LANG_LEN, OFF_LANG, LANG_MAX, self.lang);
+        write_field(&mut page, OFF_TZ_LEN, OFF_TZ, TZ_MAXIMUM, self.tz);
+        write_field(&mut page, OFF_LANG_LEN, OFF_LANG, LANG_MAXIMUM, self.lang);
         write_field(&mut page, OFF_TERM_LEN, OFF_TERM, TERM_MAX, self.term);
         page
     }
@@ -366,15 +372,15 @@ mod tests {
     fn every_domain_member_fits_its_field() {
         for tz in domain::KNOWN_TZ {
             assert!(
-                tz.len() <= TZ_MAX,
-                "{tz:?} is {} bytes, over TZ_MAX",
+                tz.len() <= TZ_MAXIMUM,
+                "{tz:?} is {} bytes, over TZ_MAXIMUM",
                 tz.len()
             );
         }
         for lang in domain::KNOWN_LANG {
             assert!(
-                lang.len() <= LANG_MAX,
-                "{lang:?} is {} bytes, over LANG_MAX",
+                lang.len() <= LANG_MAXIMUM,
+                "{lang:?} is {} bytes, over LANG_MAXIMUM",
                 lang.len()
             );
         }
@@ -518,9 +524,9 @@ mod tests {
     fn the_layout_offsets_do_not_overlap() {
         assert_eq!(OFF_TZ_LEN, 8);
         assert_eq!(OFF_TZ, 9);
-        assert_eq!(OFF_LANG_LEN, 9 + TZ_MAX);
+        assert_eq!(OFF_LANG_LEN, 9 + TZ_MAXIMUM);
         assert_eq!(OFF_LANG, OFF_LANG_LEN + 1);
-        assert_eq!(OFF_TERM_LEN, OFF_LANG + LANG_MAX);
+        assert_eq!(OFF_TERM_LEN, OFF_LANG + LANG_MAXIMUM);
         assert_eq!(OFF_TERM, OFF_TERM_LEN + 1);
         assert_eq!(PAGE_BYTES, OFF_TERM + TERM_MAX);
         assert!(PAGE_BYTES < 4096, "the page must fit in one frame");

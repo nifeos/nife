@@ -124,7 +124,10 @@ pub const REDIRECT_PATH_MAX: usize = 2048;
 /// bytes; a second is refused rather than followed, so a listed location cannot walk a client
 /// anywhere further than one step from where the signed index pointed. Name: provisional, as
 /// above.
-pub const MAX_REDIRECTS: usize = 1;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_REDIRECTS`.
+pub const MAXIMUM_REDIRECTS: usize = 1;
 
 /// **One place the index says a package's bytes may be fetched**: optionally the name of the root
 /// its certificate must chain to, then `https://`, a host, an optional port, a path. No user, no
@@ -849,7 +852,10 @@ pub const COPY_MAX: usize = 4095;
 
 /// The most repositories an image may name: the index's address and a backup (Q2), and room for
 /// one more. A fixed bound so the reader allocates nothing.
-pub const MAX_REPOSITORIES: usize = 4;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_REPOSITORIES`.
+pub const MAXIMUM_REPOSITORIES: usize = 4;
 
 /// One index address the image names, with where to connect for it when the image says.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -895,7 +901,7 @@ impl Root<'_> {
 /// Blank lines and `#` comments are skipped. See notes/packages/the-index-crate.md.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Sources<'a> {
-    repositories: [Option<Configured<'a>>; MAX_REPOSITORIES],
+    repositories: [Option<Configured<'a>>; MAXIMUM_REPOSITORIES],
     /// The index's root: every repository here chains to it, and so does a listed location that
     /// names no root, and so does a redirect's target.
     pub root: Root<'a>,
@@ -912,7 +918,7 @@ pub const MAX_LOCATION_ROOTS: usize = 2;
 pub enum SourcesRefusal {
     /// That line is not one of the two shapes.
     BadLine(usize),
-    /// More than [`MAX_REPOSITORIES`] repositories.
+    /// More than [`MAXIMUM_REPOSITORIES`] repositories.
     TooMany,
     /// No repository at all.
     NoRepository,
@@ -925,7 +931,7 @@ pub enum SourcesRefusal {
 impl<'a> Sources<'a> {
     /// Read the text, refusing it whole at the first line that is neither shape.
     pub fn parse(text: &'a str) -> Result<Sources<'a>, SourcesRefusal> {
-        let mut repositories = [None; MAX_REPOSITORIES];
+        let mut repositories = [None; MAXIMUM_REPOSITORIES];
         let mut count = 0;
         let mut root = None;
         let mut location_roots = [None; MAX_LOCATION_ROOTS];

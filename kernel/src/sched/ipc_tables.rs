@@ -1,6 +1,7 @@
 //! The tables behind `IPC_TABLES`: [`IpcTables`] itself, the one lock it sits behind, the limits
-//! that size it ([`MAX_THREADS`], [`MAX_RENDEZVOUS`], the futex buckets and the kernel's endpoint
-//! chunks), and the rendezvous-pressure instrument. See notes/ipc-tables-lock-inventory.md.
+//! that size it ([`MAX_THREADS`], [`MAXIMUM_RENDEZVOUS`], the futex buckets and the kernel's
+//! endpoint chunks), and the rendezvous-pressure instrument. See
+//! notes/ipc-tables-lock-inventory.md.
 //!
 //! The fields are `pub(super)`, which in a child of `sched` reaches `sched` and its children, the
 //! set §271 (the scheduler file splits into submodules of `sched`) keeps the table to. The
@@ -39,7 +40,7 @@ pub(super) struct IpcTables {
     pub(super) threads: Threads,
     /// The rendezvous registry: generational name to the physical address of the page the
     /// rendezvous lives at, retyped from a region that stays pinned while it lives.
-    pub(super) rendezvous_table: generational_table::Table<u64, MAX_RENDEZVOUS>,
+    pub(super) rendezvous_table: generational_table::Table<u64, MAXIMUM_RENDEZVOUS>,
     /// The kernel's current object chunk, where its own endpoints (boot services, tests) are
     /// retyped from. Carved on the first [`create_rendezvous`] and replaced when it fills; a filled
     /// chunk's handle is forgotten, because no path tears a kernel chunk down.
@@ -51,7 +52,7 @@ pub(super) struct IpcTables {
     pub(super) notification_table: generational_table::Table<u64, MAX_NOTIFICATIONS>,
     /// The timer registry (§147 (a timer a userspace service cannot hold)): name to the page a
     /// [`TimerPage`] lives at. The expiry walk iterates it.
-    pub(super) timer_table: generational_table::Table<u64, MAX_TIMERS>,
+    pub(super) timer_table: generational_table::Table<u64, MAXIMUM_TIMERS>,
     /// The futex wait queues (§269 (how threads share a process) fork 2): threads parked in
     /// `AddressSpace::WAIT`, by `(space, address)`. Under this lock so that the check of the word,
     /// the park, and a waker's take are one order. See [`futex_wait`].
@@ -66,11 +67,11 @@ pub(super) const FUTEX_BUCKETS: usize = 64;
 
 /// The most endpoints that can exist at once: the registry's bound. Region teardown frees a
 /// rendezvous's slot, so this bounds concurrency, not creations.
-pub(crate) const MAX_RENDEZVOUS: usize = 512;
+pub(crate) const MAXIMUM_RENDEZVOUS: usize = 512;
 
 /// The most rendezvous that were ever live at once on this boot, and how many of those sat on the
-/// kernel's own chunks, which only rises. [`MAX_RENDEZVOUS`]'s instrument; it reports and does not
-/// gate. The measured peaks are in notes/ipc-tables-lock-inventory.md.
+/// kernel's own chunks, which only rises. [`MAXIMUM_RENDEZVOUS`]'s instrument; it reports and does
+/// not gate. The measured peaks are in notes/ipc-tables-lock-inventory.md.
 ///
 /// Context: updated at the one insert, under `IPC_TABLES`.
 pub(super) static PEAK_RENDEZVOUS: core::sync::atomic::AtomicUsize =
@@ -97,9 +98,9 @@ pub type RendezvousId = u64;
 pub(super) const KERNEL_EP_CHUNK_PAGES: u64 = 32;
 
 /// How many chunks the kernel will carve before refusing, derived so the chunks can host
-/// [`MAX_RENDEZVOUS`] one-page endpoints: exhaustion always reports the registry full.
+/// [`MAXIMUM_RENDEZVOUS`] one-page endpoints: exhaustion always reports the registry full.
 pub(super) const MAX_KERNEL_EP_CHUNKS: usize =
-    MAX_RENDEZVOUS.div_ceil(KERNEL_EP_CHUNK_PAGES as usize);
+    MAXIMUM_RENDEZVOUS.div_ceil(KERNEL_EP_CHUNK_PAGES as usize);
 
 /// The lock over every table in [`IpcTables`].
 ///

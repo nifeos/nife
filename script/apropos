@@ -64,8 +64,8 @@
 #   whatever the word, which is how milestone 117 (the stranger test)'s sixth run found it: the tool it was about to
 #   put in front of a newcomer failed on the example chosen for the README.
 # - **Sixteen results, always**, because that is the guest reader's fixed table
-#   (`documentation::index::RESULTS_MAX`) and this uses the guest reader. The line under the results says
-#   how many pages matched in total.
+#   (`documentation::index::RESULTS_MAXIMUM`) and this uses the guest reader. The line under the
+#   results says how many pages matched in total.
 # - **It rebuilds the whole index on every run** (about a second). There is no cache, because a
 #   cache that can be stale is worse here than a second of work.
 # - **The first stranger it was built for never ran it, and had the name in front of it three

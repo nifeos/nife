@@ -443,23 +443,23 @@ fn dots(font: &Font, text: &str) -> String {
 fn metrics(font: &Font) -> String {
     let letters: Vec<u8> = (b'A'..=b'Z').chain(b'a'..=b'z').collect();
     let extent = |byte: u8| -> Option<(usize, usize, usize, usize, usize)> {
-        let mut min_x = usize::MAX;
+        let mut minimum_x = usize::MAX;
         let mut max_x = 0;
         let mut min_y = usize::MAX;
-        let mut max_y = 0;
+        let mut maximum_y = 0;
         let mut ink = 0;
         for y in 0..font.height {
             for x in 0..font.advance {
                 if font.is_ink(byte, x, y) {
                     ink += 1;
-                    min_x = min_x.min(x);
+                    minimum_x = minimum_x.min(x);
                     max_x = max_x.max(x);
                     min_y = min_y.min(y);
-                    max_y = max_y.max(y);
+                    maximum_y = maximum_y.max(y);
                 }
             }
         }
-        (ink > 0).then_some((min_x, max_x, min_y, max_y, ink))
+        (ink > 0).then_some((minimum_x, max_x, min_y, maximum_y, ink))
     };
 
     let seen: Vec<_> = letters.iter().filter_map(|&b| extent(b)).collect();

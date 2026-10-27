@@ -1213,8 +1213,8 @@ pub(super) fn await_screen(ep: u64) {
     print(b"  that page's process would not collect; the progenitor's job budget may be short one job\n");
 }
 
-/// `job_undertaker::MAX_ATTEMPTS`'s reasoning, held here rather than shared: this shell reaps at
-/// most one screen-narrowed corpse at a time and only ever the one it just watched for, where
+/// `job_undertaker::MAXIMUM_ATTEMPTS`'s reasoning, held here rather than shared: this shell reaps
+/// at most one screen-narrowed corpse at a time and only ever the one it just watched for, where
 /// `job_undertaker` reaps every ordinary job on the machine, so the two have no data to share and a
 /// shared constant would imply a coupling that is not there.
 const SCREEN_REAP_ATTEMPTS: usize = 1024;

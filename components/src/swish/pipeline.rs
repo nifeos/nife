@@ -615,7 +615,7 @@ fn open_at(
     nav: &Nav,
     t: Tree,
     at: Cwd,
-    tmp: &mut [u64; nav::MAX_DEPTH],
+    tmp: &mut [u64; nav::MAXIMUM_DEPTH],
 ) -> Result<(u64, usize), Say> {
     let mut handle = fs::ROOT;
     let mut n = 0usize;
@@ -643,7 +643,7 @@ fn open_at(
 /// See notes/pipes/the-file-end.md.
 fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Result<FileOut, Say> {
     let t = nav.tree(g.which);
-    let mut tmp = [0u64; nav::MAX_DEPTH];
+    let mut tmp = [0u64; nav::MAXIMUM_DEPTH];
     let (dir_handle, opened) = open_at(nav, t, g.directory, &mut tmp)?;
     let name = g.name.as_bytes();
     let dir = t.slot;
@@ -694,7 +694,7 @@ fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Resul
 /// person would believe.
 pub(super) fn open_source(nav: &mut Nav, g: grant_plan::FileGrant) -> Result<FileIn, Say> {
     let t = nav.tree(g.which);
-    let mut tmp = [0u64; nav::MAX_DEPTH];
+    let mut tmp = [0u64; nav::MAXIMUM_DEPTH];
     let (dir_handle, opened) = open_at(nav, t, g.directory, &mut tmp)?;
     let handle = nav.name_call_in(t, fs::OPEN, dir_handle, g.name.as_bytes(), 0);
     for h in tmp.iter().take(opened) {

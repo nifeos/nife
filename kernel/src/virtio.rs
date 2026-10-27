@@ -493,11 +493,11 @@ struct Device {
 /// This is an exception and a foot gun: see notes/virtio.md, "The kernel's half", and
 /// `design/roadmap/0647-a-virtio-slot-comes-back-when-its-driver-dies.md`, which the next lane that
 /// needs a device should take rather than a bump.
-const MAX_DEVICES: usize = 34;
+const MAXIMUM_DEVICES: usize = 34;
 
 /// The device table, fixed. `get`/`get_mut` mirror the slice API the call sites already used.
 struct Devices {
-    entries: [Option<Device>; MAX_DEVICES],
+    entries: [Option<Device>; MAXIMUM_DEVICES],
     count: usize,
 }
 
@@ -514,7 +514,7 @@ impl Devices {
 static DEVICES: IrqSafeMutex<Devices> = IrqSafeMutex::new(
     rank::VIRTIO,
     Devices {
-        entries: [const { None }; MAX_DEVICES],
+        entries: [const { None }; MAXIMUM_DEVICES],
         count: 0,
     },
 );
@@ -553,8 +553,8 @@ pub(crate) fn register(
 
     let mut devs = DEVICES.lock();
     assert!(
-        devs.count < MAX_DEVICES,
-        "more virtio devices than MAX_DEVICES"
+        devs.count < MAXIMUM_DEVICES,
+        "more virtio devices than MAXIMUM_DEVICES"
     );
     let id = devs.count;
     devs.entries[id] = Some(Device {

@@ -133,16 +133,16 @@ The reader drains diagnostics to end-of-stream first. A survey cannot know its c
 front (an endpoint can die mid-walk), so the whole domain goes into a buffer, then diagnostics, then
 the table.
 
-The buffer is the caller's, and that was a gate's doing. It began as a `[Row; MAX_ROWS]` local,
+The buffer is the caller's, and that was a gate's doing. It began as a `[Row; MAXIMUM_ROWS]` local,
 which made `collect`'s frame 4,336 bytes. That is larger than the 4,096-byte guard page under every kernel
 thread stack. So one call could move `sp` past the guard in a single step and land in a neighboring
 thread's stack without ever faulting. `script/stack-frame-check` failed the build and named the
 shape, which is the second time that gate has caught a `[T; MAX]` local wearing the clothes of a
 bound. A caller-provided slice is the fix it recommends and is better anyway: a program that sizes
-its own listing knows where the memory came from, and `ps` sizes it at `MAX_ROWS` while the kernel's
-tests size it at eight.
+its own listing knows where the memory came from, and `ps` sizes it at `MAXIMUM_ROWS` while the
+kernel's tests size it at eight.
 
-A compile-time assertion in the kernel's survey tests keeps `ps::MAX_ROWS` at least as large as
+A compile-time assertion in the kernel's survey tests keeps `ps::MAXIMUM_ROWS` at least as large as
 `sched::MAX_THREADS`, so the shipped program has no truncation case. A caller with a shorter buffer
 does, and it is not silent: `Survey::is_complete` is false, nothing is printed, and diagnostics
 say the domain has more in it. Same rule as the refusal: a monitor never reports less than it saw
@@ -201,9 +201,9 @@ let mut reader = |cursor: u64| match cursor {
     0 => (1, 7, abi::survey::RUNNING),
     _ => (abi::survey::DONE as i64, 0, 0),
 };
-// The row buffer is the caller's, because a `[Row; MAX_ROWS]` local outgrew the guard page; see
-// below. `ps` sizes it at `MAX_ROWS`, the kernel's tests at eight.
-let mut rows = [ps::Row::default(); ps::MAX_ROWS];
+// The row buffer is the caller's, because a `[Row; MAXIMUM_ROWS]` local outgrew the guard page; see
+// below. `ps` sizes it at `MAXIMUM_ROWS`, the kernel's tests at eight.
+let mut rows = [ps::Row::default(); ps::MAXIMUM_ROWS];
 let survey = ps::collect(&mut rows, &mut reader);
 assert_eq!(survey.rows()[0].tid, 7);
 ```

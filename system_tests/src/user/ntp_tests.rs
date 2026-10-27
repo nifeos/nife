@@ -323,7 +323,7 @@ fn a_proposal_outside_the_policy_is_refused_by_the_service() {
 
     for (claimed, want, what) in [
         (
-            clock.wall_nanos() + 2 * policy::MAX_STEP_FORWARD_NANOS,
+            clock.wall_nanos() + 2 * policy::MAXIMUM_STEP_FORWARD_NANOS,
             status::REFUSED_TOO_FAR_FORWARD,
             "two hours forward",
         ),

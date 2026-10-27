@@ -33,7 +33,7 @@ static ALLOCATOR: IrqSafeMutex<Option<PageFrameAllocator<'static>>> =
 /// more, and a fixed-size array is the right shape here because **we have no heap yet**.
 /// The `Vec` we'd reach for in userspace is precisely the thing this milestone is a
 /// prerequisite for.
-const MAX_REGIONS: usize = 16;
+const MAXIMUM_REGIONS: usize = 16;
 
 /// **Find out where RAM is and which devices the machine has, and bring the frame allocator up.**
 ///
@@ -60,14 +60,14 @@ fn initialize_from_device_tree() {
     let dtb_phys = crate::DTB.load(core::sync::atomic::Ordering::Relaxed) as u64;
     let dtb = crate::device_tree().expect("device tree is unreadable");
 
-    let mut ram = [Region { start: 0, size: 0 }; MAX_REGIONS];
+    let mut ram = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
     let ram_count = dtb
         .memory_regions(&mut ram)
         .expect("cannot read the memory map");
     let ram = &ram[..ram_count];
     assert!(!ram.is_empty(), "the device tree describes no RAM at all");
 
-    let mut reserved = [Region { start: 0, size: 0 }; MAX_REGIONS];
+    let mut reserved = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
     let reserved_count = dtb
         .reserved_regions(&mut reserved)
         .expect("cannot read the memory reservations");
@@ -78,8 +78,8 @@ fn initialize_from_device_tree() {
 
     // Everything already spoken for, which must never be allocated: the image, the tree and the
     // initial ramdisk (3; nobody else protects the ramdisk), then the legacy reservation block and
-    // /reserved-memory (up to MAX_REGIONS each).
-    let mut forbidden = [Region { start: 0, size: 0 }; 2 * MAX_REGIONS + 3];
+    // /reserved-memory (up to MAXIMUM_REGIONS each).
+    let mut forbidden = [Region { start: 0, size: 0 }; 2 * MAXIMUM_REGIONS + 3];
     let mut n = 0;
 
     let mut claim = |r: Region| {
@@ -108,7 +108,7 @@ fn initialize_from_device_tree() {
     // The /reserved-memory node's children, distinct from the legacy reservation block above. This
     // is where RISC-V firmware (OpenSBI) reserves its own region below the kernel; without it the
     // allocator would hand out OpenSBI's PMP-protected memory and the first write would fault.
-    let mut resv_mem = [Region { start: 0, size: 0 }; MAX_REGIONS];
+    let mut resv_mem = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
     let resv_mem_count = dtb
         .reserved_memory_regions(&mut resv_mem)
         .expect("cannot read /reserved-memory");
@@ -330,7 +330,7 @@ fn record_jh7110_watchdog(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 ///
 /// # BUGS
 /// - The seam's type is still `device_tree_blob::Region`, a device-tree type on every machine.
-/// - At most `MAX_REGIONS` RAM regions; more indexes past the map.
+/// - At most `MAXIMUM_REGIONS` RAM regions; more indexes past the map.
 pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
     assert!(!ram.is_empty(), "the machine describes no RAM at all");
 
@@ -997,14 +997,14 @@ use core::sync::atomic::AtomicUsize;
 /// heap.
 #[derive(Clone, Copy)]
 struct RamMap {
-    regions: [(u64, u64); MAX_REGIONS],
+    regions: [(u64, u64); MAXIMUM_REGIONS],
     count: usize,
 }
 
 static RAM: IrqSafeMutex<RamMap> = IrqSafeMutex::new(
     rank::RAM,
     RamMap {
-        regions: [(0, 0); MAX_REGIONS],
+        regions: [(0, 0); MAXIMUM_REGIONS],
         count: 0,
     },
 );

@@ -14,7 +14,7 @@
 //! - IPv4 only: `net_stack` builds `smoltcp` with `proto-ipv4` alone.
 //! - No EDNS(0), so UDP replies stop at [`UDP_MESSAGE_MAX`] and a larger answer costs a TCP retry.
 //! - No DNSSEC: an on-path attacker can forge the reply, id and all. No "0x20" case randomisation.
-//! - At most [`MAX_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
+//! - At most [`MAXIMUM_ADDRESSES`] addresses are kept from one answer; the rest are dropped.
 //! - Labels hold only letters, digits, `-` and `_` ([`Name::from_dotted`]): no escape syntax.
 //!
 //! Name: ratified 2026-10-18 (calef, a crate-naming session). Kept: the external DNS wire format,
@@ -74,7 +74,10 @@ pub const CLASS_IN: u16 = 1;
 pub const MAX_CHAIN: usize = 8;
 
 /// How many addresses an [`Answer`] keeps (see the crate's BUGS).
-pub const MAX_ADDRESSES: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ADDRESSES`.
+pub const MAXIMUM_ADDRESSES: usize = 8;
 
 /// What is wrong with some bytes, as a parser sees them.
 ///
@@ -556,7 +559,7 @@ pub enum Reject {
 /// The addresses a reply gave for our name, after every check passed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Answer {
-    addresses: [[u8; 4]; MAX_ADDRESSES],
+    addresses: [[u8; 4]; MAXIMUM_ADDRESSES],
     count: u8,
     ttl: u32,
     canonical: Name,
@@ -744,7 +747,7 @@ impl Query {
         }
 
         let mut answer = Answer {
-            addresses: [[0; 4]; MAX_ADDRESSES],
+            addresses: [[0; 4]; MAXIMUM_ADDRESSES],
             count: 0,
             ttl,
             canonical: owner,
