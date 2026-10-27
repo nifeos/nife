@@ -68,9 +68,50 @@ import re
 import subprocess
 import sys
 import tempfile
+import typing
 
 DISPOSITIONS = ("killed", "equivalent", "gap")
-TRIAGE_FIELDS = ["crate", "function", "mutation", "disposition", "reason"]
+# Part 2 of the survivor proposal (a survivor accepted once is not accepted forever) added the last
+# three columns. `kind` says what an `equivalent` row claims: `algebraic` holds in every caller,
+# `caller` holds only for today's callers and the reason names them, `unclassified` is a legacy row
+# nobody has read yet. `verified` is the UTC date someone last read the row against its code. `home`
+# is a `gap` row's tracked home: `milestone N`, `proposal SLUG` or `BUGS PATH`. Names provisional.
+TRIAGE_FIELDS = ["crate", "function", "mutation", "disposition", "reason", "kind", "verified", "home"]
+OLD_TRIAGE_FIELDS = TRIAGE_FIELDS[:5]
+KINDS = ("algebraic", "caller", "unclassified")
+HOME = re.compile(r"^(?:milestone \d+|proposal [a-z0-9][a-z0-9-]*|BUGS \S+)$")
+DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+class Row(typing.NamedTuple):
+    """A triage row. Indexing [0] and [1] still give disposition and reason, as before the columns."""
+
+    disposition: str
+    reason: str
+    kind: str = ""
+    verified: str = ""
+    home: str = ""
+
+
+def row_problem(row):
+    """Why a row is malformed, or None. The shape rules of the three part-2 columns."""
+    if row.kind not in ("",) + KINDS:
+        return f"kind {row.kind!r} is not one of {KINDS}"
+    if row.disposition == "equivalent" and not row.kind:
+        return "an `equivalent` row needs a kind"
+    if row.disposition != "equivalent" and row.kind:
+        return f"a `{row.disposition}` row has no kind; only `equivalent` rows do"
+    if row.verified and not DATE.match(row.verified):
+        return f"verified {row.verified!r} is not a YYYY-MM-DD date"
+    if row.kind in ("algebraic", "caller") and not row.verified:
+        return f"a `{row.kind}` row needs the date it was verified"
+    if row.kind == "unclassified" and row.verified:
+        return "an `unclassified` row has not been read, so it has no verified date; give it a kind"
+    if row.home and row.disposition != "gap":
+        return "only a `gap` row has a home"
+    if row.home and not HOME.match(row.home):
+        return f"home {row.home!r} is not `milestone N`, `proposal SLUG` or `BUGS PATH`"
+    return None
 SNAPSHOT_FIELDS = ["crate", "function", "mutation", "count"]
 # Crates keyed `<crate>::<module>`, by the first path component under `src/`. One module per driver,
 # each with its own `Handoff`, so the crate alone would merge two drivers' survivors under one key.
@@ -206,16 +247,20 @@ def latest_before(survivors_dir, census):
     return older[-1] if older else None
 
 
-def read_triage(path, chain):
-    """key -> (disposition, reason). A malformed file is an error, because a row that silently
-    fails to match turns a triaged survivor into a red job nobody can explain."""
+def read_triage(path, chain, strict=True):
+    """key -> Row. A malformed file is an error, because a row that silently fails to match turns
+    a triaged survivor into a red job nobody can explain. `strict=False` also reads the older
+    five-column file and skips the part-2 shape rules: the gate reads the base commit's copy that
+    way, since the base predates whatever the pull request changed."""
     out = {}
     p = pathlib.Path(path)
     if not p.exists():
         return out
     rows = list(csv.DictReader(p.open()))
-    if rows and list(rows[0].keys()) != TRIAGE_FIELDS:
-        raise ValueError(f"{path}: header must be {','.join(TRIAGE_FIELDS)}")
+    if rows:
+        header = list(rows[0].keys())
+        if header != TRIAGE_FIELDS and not (not strict and header == OLD_TRIAGE_FIELDS):
+            raise ValueError(f"{path}: header must be {','.join(TRIAGE_FIELDS)}")
     for i, row in enumerate(rows, start=2):
         if row["disposition"] not in DISPOSITIONS:
             raise ValueError(f"{path}:{i}: disposition {row['disposition']!r} is not one of {DISPOSITIONS}")
@@ -224,7 +269,12 @@ def read_triage(path, chain):
         key = (resolve(row["crate"], chain), row["function"], row["mutation"])
         if key in out:
             raise ValueError(f"{path}:{i}: duplicate key {key}")
-        out[key] = (row["disposition"], row["reason"])
+        out[key] = Row(row["disposition"], row["reason"], row.get("kind") or "",
+                       row.get("verified") or "", row.get("home") or "")
+        if strict:
+            bad = row_problem(out[key])
+            if bad:
+                raise ValueError(f"{path}:{i}: {bad}")
     return out
 
 
@@ -397,9 +447,9 @@ def selftest():
         ])
         tri = tmp / "triage.csv"
         tri.write_text(
-            "crate,function,mutation,disposition,reason\n"
-            "fresh,checked,replace == with !=,killed,a_test_names_it\n"
-            "fresh,Fresh::get,replace Fresh::get -> u8 with 0,gap,needs a clock\n"
+            "crate,function,mutation,disposition,reason,kind,verified,home\n"
+            "fresh,checked,replace == with !=,killed,a_test_names_it,,,\n"
+            "fresh,Fresh::get,replace Fresh::get -> u8 with 0,gap,needs a clock,,,\n"
         )
         table = {
             ("crates/stays/src/lib.rs", 11): "old",
@@ -431,8 +481,8 @@ def selftest():
         # with every inflow key triaged the check passes, and the snapshot round-trips
         full = tmp / "full.csv"
         full.write_text(tri.read_text()
-                        + "dup,twice,replace > with >=,equivalent,both arms refuse\n"
-                        + "fresh,,replace | with ^,equivalent,disjoint bits\n")
+                        + "dup,twice,replace > with >=,equivalent,both arms refuse,algebraic,2026-10-01,\n"
+                        + "fresh,,replace | with ^,equivalent,disjoint bits,algebraic,2026-10-01,\n")
         code, text = go(full)
         assert code == 0 and "0 untriaged" in text.replace("**", ""), text
         meta, c = read_snapshot(tmp / "o.csv.gz")
@@ -444,7 +494,7 @@ def selftest():
         assert code == 0 and "nothing to diff" in text, text
         # a bad disposition is an input error, not a silent non-match
         bad = tmp / "bad.csv"
-        bad.write_text("crate,function,mutation,disposition,reason\nx,f,m,fixed,because\n")
+        bad.write_text("crate,function,mutation,disposition,reason,kind,verified,home\nx,f,m,fixed,because\n")
         try:
             read_triage(bad, {})
         except ValueError:
@@ -456,8 +506,8 @@ def selftest():
             (tmp / "crates" / name / "src").mkdir(parents=True)
             (tmp / "crates" / name / "Cargo.toml").write_text("")
         rows = tmp / "rows.csv"
-        rows.write_text("crate,function,mutation,disposition,reason\n"
-                        "lib_was,f,m,equivalent,r\nkept,f,m,equivalent,r\n")
+        rows.write_text("crate,function,mutation,disposition,reason,kind,verified,home\n"
+                        "lib_was,f,m,equivalent,r\nkept,f,m,equivalent,r,algebraic,2026-10-01,\n")
         assert orphans(rows, {}, tmp) == ["lib_was"]
         assert orphans(rows, {"lib_was": "lib_now"}, tmp) == []
     # the key's three shapes

@@ -22,7 +22,7 @@
 //!
 //! It is endowed with exactly the client's capabilities, including a real, working capability to
 //! the stable endpoint. If endpoint-only naming meant "whoever holds the endpoint is the server",
-//! it would be able to park itself in `RECEIVE_CAP` and take the client's requests. It cannot: its
+//! it would be able to park itself in `RECEIVE_CAPABILITY` and take the client's requests. It cannot: its
 //! capability carries `WRITE` and not `READ`, and the same object handed out with different rights
 //! is a one-way pipe in whichever direction each holder was trusted with. It reports the refusal.
 //!
@@ -220,7 +220,7 @@ fn produce() -> ! {
 
 /// **The attacker.** It tries to become the server on the endpoint it is a client of.
 fn usurp() -> ! {
-    let r = hot_swap_contract::try_receive_cap(SVC);
+    let r = hot_swap_contract::try_receive_capability(SVC);
     // A success here is the catastrophe: it means the attacker is now parked in the queue the real
     // component receives on, and the next client request goes to it. Report the code either way and
     // let the test decide; a program that judged its own attack would be judging itself.
@@ -228,7 +228,7 @@ fn usurp() -> ! {
         RPT,
         hot_swap_contract::RPT_ATTACK,
         (-r) as u64,
-        abi::rendezvous::RECEIVE_CAP,
+        abi::rendezvous::RECEIVE_CAPABILITY,
     );
     // Also say so on the operator's channel, so the operator knows the attack has been made and the
     // run is not simply missing a report. `w1` carries the verdict, mirroring the report's word:
@@ -240,11 +240,11 @@ fn usurp() -> ! {
 /// **The plant** (milestone 800 (a non-Anthropic model attacks the confinement claim), fourth
 /// pass).
 ///
-/// An instrument for the usurper's attack. A `RECEIVE_CAP` the kernel fails to refuse blocks on an
+/// An instrument for the usurper's attack. A `RECEIVE_CAPABILITY` the kernel fails to refuse blocks on an
 /// empty queue, so the break would surface as a watchdog hang: the wrong-reason red milestone 202
 /// (every confinement test is a ritual until somebody breaks the confinement) recorded, and why
-/// claim 26's test could never fail. So it parks one plain `SEND` first: a let-open `RECEIVE_CAP`
-/// returns it (`sched::ipc_receive_cap` takes any parked sender's word) and the usurper reports
+/// claim 26's test could never fail. So it parks one plain `SEND` first: a let-open `RECEIVE_CAPABILITY`
+/// returns it (`sched::inter_process_communication_receive_capability` takes any parked sender's word) and the usurper reports
 /// [`hot_swap_contract::PLANT_MARKER`], which nothing honest produces. It exits when anyone takes
 /// it, the usurper or the operator's bounded receive, so no interleaving needs a handshake.
 fn plant() -> ! {
@@ -261,12 +261,12 @@ fn plant() -> ! {
 fn confused_deputy() -> ! {
     // First the honest refusal, so the report stream shows this program holds only `WRITE` and could
     // not simply receive, exactly as `usurp` does.
-    let r = hot_swap_contract::try_receive_cap(SVC);
+    let r = hot_swap_contract::try_receive_capability(SVC);
     send(
         RPT,
         hot_swap_contract::RPT_ATTACK,
         (-r) as u64,
-        abi::rendezvous::RECEIVE_CAP,
+        abi::rendezvous::RECEIVE_CAPABILITY,
     );
     // The deputy call: drive the server to write far past its log page.
     let (d0, d1) = call(

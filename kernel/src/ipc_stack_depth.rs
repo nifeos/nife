@@ -124,7 +124,7 @@ static K_SR_CLIENT_RECEIVE: Series = Series::new();
 static K_SR_SERVER_RECEIVE: Series = Series::new();
 static K_SR_SERVER_SEND: Series = Series::new();
 static K_CR_CLIENT_CALL: Series = Series::new();
-static K_CR_SERVER_RECEIVE_CAP: Series = Series::new();
+static K_CR_SERVER_RECEIVE_CAPABILITY: Series = Series::new();
 static K_CR_SERVER_REPLY: Series = Series::new();
 
 /// Unmeasured round trips first, so a lazily built path (the first rendezvous, a first reply
@@ -181,12 +181,12 @@ fn send_receive_kernel() {
     sched::ipc_receive(done);
 }
 
-/// CALL against `RECEIVE_CAP` and REPLY between two kernel threads, the shape `bench.rs`'s
+/// CALL against `RECEIVE_CAPABILITY` and REPLY between two kernel threads, the shape `bench.rs`'s
 /// `call_reply` times and the one real services issue.
 fn call_reply_kernel() {
     for s in [
         &K_CR_CLIENT_CALL,
-        &K_CR_SERVER_RECEIVE_CAP,
+        &K_CR_SERVER_RECEIVE_CAPABILITY,
         &K_CR_SERVER_REPLY,
     ] {
         s.reset();
@@ -198,8 +198,8 @@ fn call_reply_kernel() {
     sched::spawn_on(cpu, move || {
         let span = own_span();
         loop {
-            let m = measured(&K_CR_SERVER_RECEIVE_CAP, span, || {
-                sched::ipc_receive_cap(ep)
+            let m = measured(&K_CR_SERVER_RECEIVE_CAPABILITY, span, || {
+                sched::inter_process_communication_receive_capability(ep)
             });
             if m[0] == u64::MAX {
                 break;
@@ -208,16 +208,17 @@ fn call_reply_kernel() {
             // does to answer: find the reply capability, reply through it, drop the slot.
             measured(&K_CR_SERVER_REPLY, span, || {
                 let slot = m[1];
-                let crate::cap::Object::Reply(caller) = sched::current_cap(slot)
-                    .expect("ipc_stack_depth: no reply capability")
-                    .object
+                let crate::capability_object::Object::Reply(caller) =
+                    sched::current_capability(slot)
+                        .expect("ipc_stack_depth: no reply capability")
+                        .object
                 else {
                     panic!(
-                        "ipc_stack_depth: RECEIVE_CAP of a CALL did not deliver a Reply capability"
+                        "ipc_stack_depth: RECEIVE_CAPABILITY of a CALL did not deliver a Reply capability"
                     );
                 };
                 sched::ipc_reply(caller, [m[0], 0]);
-                let _ = sched::delete_current_cap(slot);
+                let _ = sched::delete_current_capability(slot);
             });
         }
     })
@@ -231,7 +232,7 @@ fn call_reply_kernel() {
         for _ in 0..SAMPLES {
             measured(&K_CR_CLIENT_CALL, span, || sched::ipc_call(ep, [1, 0]));
         }
-        // A plain SEND meets a server parked in RECEIVE_CAP all the same (`bench.rs`'s `call_reply`).
+        // A plain SEND meets a server parked in RECEIVE_CAPABILITY all the same (`bench.rs`'s `call_reply`).
         sched::ipc_send(ep, [u64::MAX, 0, 0]);
         sched::ipc_send(done, [0, 0, 0]);
     })
@@ -314,8 +315,8 @@ pub(crate) fn kernel_thread_shapes() -> usize {
         "kernel",
         "call_reply",
         "server",
-        "RECEIVE_CAP",
-        &K_CR_SERVER_RECEIVE_CAP,
+        "RECEIVE_CAPABILITY",
+        &K_CR_SERVER_RECEIVE_CAPABILITY,
     );
     bad += report(
         "kernel",
@@ -445,7 +446,7 @@ const SOAK_CALLER: u64 = 1;
 /// forever, so the endpoints come from a region a `Holding` reclaims, which wakes it to die.
 #[cfg(initial_ramdisk)]
 fn send_receive_el0() -> Option<()> {
-    use crate::cap::{Rights, rendezvous_cap};
+    use crate::capability_object::{Rights, rendezvous_capability};
     use crate::user::Spawn;
     use crate::user::holding::Holding;
 
@@ -473,8 +474,8 @@ fn send_receive_el0() -> Option<()> {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(request, Rights::READ),
-                    rendezvous_cap(reply, Rights::WRITE),
+                    rendezvous_capability(request, Rights::READ),
+                    rendezvous_capability(reply, Rights::WRITE),
                 ],
                 maps: &[],
             },
@@ -490,9 +491,9 @@ fn send_receive_el0() -> Option<()> {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE),
-                    rendezvous_cap(request, Rights::WRITE),
-                    rendezvous_cap(reply, Rights::READ),
+                    rendezvous_capability(report, Rights::WRITE),
+                    rendezvous_capability(request, Rights::WRITE),
+                    rendezvous_capability(reply, Rights::READ),
                 ],
                 maps: &[],
             },
@@ -511,13 +512,13 @@ fn send_receive_el0() -> Option<()> {
     Some(())
 }
 
-/// CALL against `RECEIVE_CAP` and REPLY between two EL0 processes, the soak workload's pair.
+/// CALL against `RECEIVE_CAPABILITY` and REPLY between two EL0 processes, the soak workload's pair.
 ///
 /// Returns `None` when `soaker` is not in the initial ramdisk. Both loop forever, so this waits up
 /// to 30 seconds for their series to fill and then reclaims them.
 #[cfg(initial_ramdisk)]
 fn call_reply_el0() -> Option<()> {
-    use crate::cap::{Rights, rendezvous_cap};
+    use crate::capability_object::{Rights, rendezvous_capability};
     use crate::user::holding::Holding;
     use crate::user::{Mapping, Spawn};
 
@@ -544,7 +545,7 @@ fn call_reply_el0() -> Option<()> {
                     arg0: role,
                     arg1: slot as u64,
                     arg2: 2 * slot as u64 + 1,
-                    grants: &[rendezvous_cap(ep, rights)],
+                    grants: &[rendezvous_capability(ep, rights)],
                     maps: &[Mapping {
                         va: soak_page::VA,
                         phys,
@@ -561,7 +562,7 @@ fn call_reply_el0() -> Option<()> {
     // Wall clock, not a yield count, for `Holding`'s own reason (threads may run on other cores).
     let deadline = crate::arch::timer::now() + 30 * crate::arch::timer::frequency();
     let filled = || {
-        EL0[0].series[abi::rendezvous::RECEIVE_CAP as usize].is_full()
+        EL0[0].series[abi::rendezvous::RECEIVE_CAPABILITY as usize].is_full()
             && EL0[0].series[abi::reply::REPLY as usize].is_full()
             && EL0[1].series[abi::rendezvous::CALL as usize].is_full()
     };
@@ -583,7 +584,7 @@ fn call_reply_el0() -> Option<()> {
 /// Both EL0 shapes, then their report, in the same form as [`kernel_thread_shapes`].
 #[cfg(initial_ramdisk)]
 pub(crate) fn el0_shapes() -> usize {
-    use abi::rendezvous::{CALL, RECEIVE, RECEIVE_CAP, SEND};
+    use abi::rendezvous::{CALL, RECEIVE, RECEIVE_CAPABILITY, SEND};
     let mut bad = 0;
     if send_receive_el0().is_some() {
         bad += report(
@@ -628,8 +629,8 @@ pub(crate) fn el0_shapes() -> usize {
             "el0",
             "call_reply",
             "server",
-            "RECEIVE_CAP",
-            &EL0[0].series[RECEIVE_CAP as usize],
+            "RECEIVE_CAPABILITY",
+            &EL0[0].series[RECEIVE_CAPABILITY as usize],
         );
         bad += report(
             "el0",

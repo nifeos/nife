@@ -215,7 +215,7 @@ installed.
 These authorities land at fixed slots rather than the next free one. A child's ordinary grants fill
 from zero upward, and how many there are depends on the wiring: `date` gets a clock from the
 progenitor and none from the guest test harness. A low number would move under the program, and it
-would probe the wrong slot. `abi::thread_control_block::CAP_INSERT`'s explicit target places them,
+would probe the wrong slot. `abi::thread_control_block::CAPABILITY_INSERT`'s explicit target places them,
 as it places the fault endpoint at `abi::fault::FAULT_EP_SLOT`, the table's last slot.
 
 The slots run as one block from 7 (`DOMAIN_SLOT`) through 18 (`INDEX_SOURCES_SLOT`). They also clear

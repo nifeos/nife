@@ -269,7 +269,7 @@ impl Staged {
             true,
             std_runtime_contract::MEMORY_REGION_SLOT,
         ) {
-            rt::cap_delete(run);
+            rt::capability_delete(run);
             return Err("this jig could not map the pages for that package");
         }
         Ok(Staged {
@@ -307,7 +307,7 @@ fn ask(verb: Activation, staged: Option<&Staged>, name: Option<&str>) -> Reply {
             match u64::try_from(rt::slice_page_frame(st.run, i, 1)) {
                 Ok(page) => {
                     rt::send_capability(INSTALLER_SLOT, page, abi::rights::READ, i);
-                    rt::cap_delete(page);
+                    rt::capability_delete(page);
                 }
                 // A plain message where a frame was promised keeps both sides in step: the
                 // progenitor counts a missing frame and refuses the package.

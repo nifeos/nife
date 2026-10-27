@@ -131,23 +131,30 @@ fn spawn_swapper(role: u64) -> (sched::RendezvousId, u64, u64, u64) {
     let started = spawn_progenitor_shaped(
         "swapper",
         SWAPPER_BUDGET_PAGES,
-        crate::cap::Rights::ALL,
+        crate::capability_object::Rights::ALL,
         report,
-        crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+        crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
         &[
             (
-                crate::cap::device_frame_cap(
+                crate::capability_object::device_frame_capability(
                     UART_PHYS,
-                    crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+                    crate::capability_object::Rights::WRITE
+                        .union(crate::capability_object::Rights::GRANT),
                 ),
                 "device capability",
             ),
             (
-                crate::cap::notification_cap(wake, crate::cap::Rights::ALL),
+                crate::capability_object::notification_capability(
+                    wake,
+                    crate::capability_object::Rights::ALL,
+                ),
                 "notification",
             ),
             (
-                crate::cap::timer_cap(retransmit, crate::cap::Rights::ALL),
+                crate::capability_object::timer_capability(
+                    retransmit,
+                    crate::capability_object::Rights::ALL,
+                ),
                 "timer",
             ),
         ],
@@ -460,7 +467,7 @@ fn a_client_keeps_talking_while_the_server_underneath_it_is_replaced() {
 /// a one-way pipe; the attacker holds exactly the client's endowment, so the refusal is rights, not
 /// wiring. A plant makes it fail rather than hang (milestone 800 (a non-Anthropic model attacks the
 /// confinement claim), fourth pass): with the replacement retired, a `swap_boundary_witness` parks
-/// a message that a let-open `RECEIVE_CAP` returns as the report's marker word; the operator drains
+/// a message that a let-open `RECEIVE_CAPABILITY` returns as the report's marker word; the operator drains
 /// it otherwise. Claim 26's record, beside its kernel-side twin in `confinement_attack_tests`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.live_swap_tests.a_client_of_the_stable_rendezvous_cannot_become_its_server.patch`
@@ -505,11 +512,11 @@ fn a_confined_client_drives_the_server_to_write_past_its_log() {
     let (msgs, n) = run_swap(ROLE_DEPUTY);
     let attack = of_kind(&msgs[..n], RPT_ATTACK)
         .next()
-        .expect("the attacker never reported its RECEIVE_CAP refusal");
+        .expect("the attacker never reported its RECEIVE_CAPABILITY refusal");
     assert_eq!(
         attack[1],
         (-(abi::Error::NotPermitted as i64)) as u64,
-        "the attacker's RECEIVE_CAP was not refused, so this run proves nothing about the deputy",
+        "the attacker's RECEIVE_CAPABILITY was not refused, so this run proves nothing about the deputy",
     );
     let deputy = of_kind(&msgs[..n], RPT_DEPUTY)
         .next()

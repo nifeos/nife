@@ -2,7 +2,7 @@
 
 *Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-capabilities.*
 
-`kernel/src/cap.rs` is the kernel's half of the capability model: the set of nouns a process can
+`kernel/src/capability_object.rs` is the kernel's half of the capability model: the set of nouns a process can
 be handed, the capability table's size, and the checks that keep the kernel's rights vocabulary and
 the ABI's in step. The table itself is `crates/capability`, which is pure logic. The model is §10
 (process model: capability-based, microkernel), and [capabilities](capabilities.md) is the
@@ -17,7 +17,7 @@ Each variant of `Object` is a decision. What follows is why each is there.
   ends with opposite rights makes a one-way pipe. The console is a userspace server reached this
   way, so the kernel knows nothing about a UART on any path a user program can take.
 - The endpoint's badge rides on the capability, not on the endpoint. The kernel delivers it to a
-  server's `RECEIVE_CAP`, so a server can tell apart clients sharing one endpoint. `0` means
+  server's `RECEIVE_CAPABILITY`, so a server can tell apart clients sharing one endpoint. `0` means
   unbadged, which every capability is until `abi::rendezvous::BADGE` stamps one. This is seL4's
   model: a badge is set once on an unbadged capability and never altered, and two clients can hold
   differently badged views of one rendezvous. §148 (a supervisor restarts by asking) refused `BADGE`
@@ -116,7 +116,7 @@ be the wrong yardstick for the suite's much larger workload.
 ## Two rights vocabularies, one meaning
 
 `abi::rights` is the word that travels in a syscall register, from the progenitor's grant tables to
-every `SEND_CAP` and `CAP_INSERT` in `components/` and `fixtures/`. `capability::Rights` is what the
+every `SEND_CAPABILITY` and `CAPABILITY_INSERT` in `components/` and `fixtures/`. `capability::Rights` is what the
 kernel means by one. They are two arrays of numbers in two dependency-free crates that cannot see
 each other, so `cap.rs` compares them at compile time.
 
@@ -144,7 +144,7 @@ The root budget the progenitor receives carries `Rights::ALL`, so it is where ev
 object comes from: the progenitor's processes need `BIND` to hand a `std` program its own process.
 `ALL` rather than a list, because a list stops being full the next time a right is added. Rights
 only narrow below the root: a `SPLIT` child inherits its parent's, through the `mint_child` the
-`split_never_widens_rights` proof covers, and `CAP_INSERT` narrows again. `ENUMERATE` flows down
+`split_never_widens_rights` proof covers, and `CAPABILITY_INSERT` narrows again. `ENUMERATE` flows down
 every split, so the progenitor can hand a job budget's holder a view narrowed to `ENUMERATE` alone,
 which is `free`'s "yours" line. A holder that could already spend, split and destroy the region
 learns nothing new by asking what it spent, the argument §114 (`pmap` gets its listing) made for

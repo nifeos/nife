@@ -81,8 +81,8 @@ impl Registers for Page {
         }
     }
 
-    fn now_us(&mut self) -> u64 {
-        user_mode_runtime::monotonic_nanos() / 1000
+    fn now_microseconds(&mut self) -> u64 {
+        user_mode_runtime::monotonic_ns() / 1000
     }
 }
 
@@ -169,7 +169,7 @@ fn serve(mut host: Host<Page>, card: Card, h: Handoff) -> ! {
     loop {
         let req = receive_request(REQ);
         let (w0, block) = (req.w0, req.w1);
-        let Some(reply_cap) = req.delivered.into_reply() else {
+        let Some(reply_capability) = req.delivered.into_reply() else {
             continue;
         };
         // Clamped, as every block server here clamps: the packing could spell more.
@@ -194,7 +194,7 @@ fn serve(mut host: Host<Page>, card: Card, h: Handoff) -> ! {
             }
             _ => filesystem_contract::reply_err(EINVAL),
         };
-        reply(reply_cap, r0 as u64, 0);
+        reply(reply_capability, r0 as u64, 0);
     }
 }
 

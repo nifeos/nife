@@ -12,7 +12,9 @@ use byte_sink_contract::fixture;
 use system_log_contract::{control, read};
 
 use super::*;
-use crate::cap::{Rights, notification_cap, rendezvous_cap, rendezvous_cap_badged};
+use crate::capability_object::{
+    Rights, notification_capability, rendezvous_capability, rendezvous_capability_badged,
+};
 use crate::sched::RendezvousId;
 
 /// The two writers' badges and users. Distinct users, so a reader that confused the two would put
@@ -53,8 +55,8 @@ fn spawn_writer(image: &'static [u8], intake: RendezvousId, badge: u32, report: 
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap_badged(intake, Rights::WRITE, badge as u64), // slot 0
-                    rendezvous_cap(report, Rights::WRITE),                      // slot 1
+                    rendezvous_capability_badged(intake, Rights::WRITE, badge as u64), // slot 0
+                    rendezvous_capability(report, Rights::WRITE),                      // slot 1
                 ],
                 maps: &[],
             },
@@ -138,9 +140,9 @@ fn two_badged_writers_are_attributed_by_the_badge_and_a_per_user_read_filters() 
                 arg1: 2, // two readers' notifications, slots 1 and 2
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(intake, Rights::READ), // slot 0: the intake
-                    notification_cap(system_done, Rights::WRITE), // slot 1: window 0's reader
-                    notification_cap(alice_done, Rights::WRITE), // slot 2: window 1's reader
+                    rendezvous_capability(intake, Rights::READ), // slot 0: the intake
+                    notification_capability(system_done, Rights::WRITE), // slot 1: window 0's reader
+                    notification_capability(alice_done, Rights::WRITE), // slot 2: window 1's reader
                 ],
                 maps: &[
                     Mapping {
@@ -262,7 +264,7 @@ fn run_the_writers(writer: &'static [u8], intake: RendezvousId, report: Rendezvo
     }
 }
 
-/// Drain one `sink_transcript_writer` run on `ep`, alternating `RECEIVE_CAP` and `RECEIVE` so both of
+/// Drain one `sink_transcript_writer` run on `ep`, alternating `RECEIVE_CAPABILITY` and `RECEIVE` so both of
 /// the receives a server might use are asked, and return the badge every message arrived with
 /// (asserting it is the same on each). Ends at the writer's end of stream.
 fn badge_of_every_message(ep: RendezvousId) -> u64 {
@@ -270,9 +272,9 @@ fn badge_of_every_message(ep: RendezvousId) -> u64 {
     let mut bytes = 0;
     for i in 0.. {
         let m = if i % 2 == 0 {
-            let m = crate::sched::ipc_receive_cap(ep);
+            let m = crate::sched::inter_process_communication_receive_capability(ep);
             // Only x0 and x3 are read here. Which word lands in x1 for a plain SEND depends on
-            // who reached the rendezvous first (`abi::rendezvous::RECEIVE_CAP`'s BUGS), so a test
+            // who reached the rendezvous first (`abi::rendezvous::RECEIVE_CAPABILITY`'s BUGS), so a test
             // that asserted it would be asserting the scheduler's order.
             [m[0], 0, 0, m[3]]
         } else {
@@ -294,15 +296,18 @@ fn badge_of_every_message(ep: RendezvousId) -> u64 {
 }
 
 /// **A plain `SEND` arrives with the badge of the capability it went through, on `RECEIVE` and on
-/// `RECEIVE_CAP`, and an unbadged one still arrives with 0** (calef's ruling on #1494, 2026-10-03
+/// `RECEIVE_CAPABILITY`, and an unbadged one still arrives with 0** (calef's ruling on #1494, 2026-10-03
 /// UTC, amending §230 (badged endpoint capabilities)).
 ///
-/// The consumer whose behaviour this changes is `redoxfs_server`, which reads `RECEIVE_CAP`'s badge to
+/// The consumer whose behaviour this changes is `redoxfs_server`, which reads `RECEIVE_CAPABILITY`'s badge to
 /// pick a client's window and scope. Before the change, a client that `SEND`s rather than `CALL`s
 /// through its badged capability arrived as badge 0, the unscoped value; now it arrives as itself.
 /// The second half pins the value every unbadged sender in the tree still relies on.
+///
+/// Falsification: unfalsified. Renamed by the capability sweep (2026-10-27 UTC), which changed the
+/// name and nothing the test checks, and did not break the code it guards to watch it go red.
 #[test_case]
-fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_cap() {
+fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_capability() {
     let writer = program("sink_transcript_writer")
         .expect("no sink_transcript_writer in the initial ramdisk");
     let region = crate::memory_region::create(2).expect("no region for the test's endpoints");
@@ -322,8 +327,8 @@ fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_cap() 
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(ep, Rights::WRITE),     // slot 0: unbadged
-                    rendezvous_cap(report, Rights::WRITE), // slot 1
+                    rendezvous_capability(ep, Rights::WRITE), // slot 0: unbadged
+                    rendezvous_capability(report, Rights::WRITE), // slot 1
                 ],
                 maps: &[],
             },
@@ -340,11 +345,11 @@ fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_cap() 
     );
 }
 
-/// Busy-wait `nanos` on the kernel's own clock: long enough for the ring to call its drainer
+/// Busy-wait `ns` on the kernel's own clock: long enough for the ring to call its drainer
 /// stalled, without a sleep primitive the test harness would have to provide.
-fn spin_for(nanos: u64) {
+fn spin_for(ns: u64) {
     let hz = crate::arch::timer::frequency();
-    let until = crate::arch::timer::now() + nanos * hz / 1_000_000_000;
+    let until = crate::arch::timer::now() + ns * hz / 1_000_000_000;
     while crate::arch::timer::now() < until {
         core::hint::spin_loop();
     }
@@ -365,7 +370,7 @@ fn ring_flags(seq: u64) -> u8 {
 ///
 /// The test plays the drainer by writing the cursor page itself. With a drainer attached and
 /// caught up, a `println!` reaches the ring and not the UART (`console::bytes_written` does not
-/// move). Left unread past `STALL_NANOS`, the next line finds the drainer stalled: it prints the
+/// move). Left unread past `STALL_NS`, the next line finds the drainer stalled: it prints the
 /// held line and itself, flags both `DIRECT`, and counts two fallbacks.
 #[test_case]
 fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() {
@@ -385,7 +390,7 @@ fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() 
     crate::println!("  kernel log probe: held for the drainer");
     let held_written = crate::console::bytes_written();
     let held_flags = ring_flags(next);
-    spin_for(crate::kernel_log::STALL_NANOS + 100_000_000);
+    spin_for(crate::kernel_log::STALL_NS + 100_000_000);
     crate::println!("  kernel log probe: after the stall");
     let after_written = crate::console::bytes_written();
     let (flags_then, flags_now) = (ring_flags(next), ring_flags(next + 1));
@@ -434,7 +439,7 @@ fn a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it() {
     let line = "  kernel log probe: the last line before the drainer stopped\n";
     crate::print!("{line}");
     let held_written = crate::console::bytes_written();
-    // The stall test needs `STALL_NANOS` and the poll runs once a second; three seconds bounds
+    // The stall test needs `STALL_NS` and the poll runs once a second; three seconds bounds
     // both with room for a loaded emulator. The poll may run on another core and writes the text
     // and its newline separately, so the loop waits for the whole line, not the first byte.
     let hz = crate::arch::timer::frequency();

@@ -12,18 +12,12 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-// The `cap` module and these names still carry their pre-sweep spelling
-// (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
-// this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{
-    self as kernel_capability, Rights, memory_region_cap_rights as memory_region_capability_rights,
-    rendezvous_cap as rendezvous_capability,
+use crate::capability_object::{
+    self as kernel_capability, Rights, memory_region_capability_rights, rendezvous_capability,
 };
-use crate::sched::{
-    self, current_cap as current_capability, delete_current_cap as delete_current_capability,
-};
+use crate::sched::{self, current_capability, delete_current_capability};
 
-const RECEIVE_CAPABILITY: u64 = abi::rendezvous::RECEIVE_CAP;
+const RECEIVE_CAPABILITY: u64 = abi::rendezvous::RECEIVE_CAPABILITY;
 use crate::syscall::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it. Returns the
@@ -36,7 +30,7 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 
 /// **A holder of `WRITE` alone on a rendezvous is refused every operation the *other* rights gate.**
 ///
-/// `WRITE` (`SEND`, `CALL`) is a client's right. `RECEIVE`, `RECEIVE_CAP`, `REAP` (`READ`) and
+/// `WRITE` (`SEND`, `CALL`) is a client's right. `RECEIVE`, `RECEIVE_CAPABILITY`, `REAP` (`READ`) and
 /// `SURVEY` (`ENUMERATE`) must each answer `NotPermitted`. The two blocking methods are tried with a
 /// sender parked, so a gate let open returns its message instead of hanging, and the unchanged
 /// sender count proves a refused receive consumes nothing. A `READ` receive on the same endpoint is
@@ -48,7 +42,7 @@ fn a_write_only_rendezvous_holder_cannot_receive_reap_or_survey() {
     let region = crate::memory_region::create(4).expect("no region for the endpoint");
     let ep = sched::create_rendezvous_from(region).expect("no rendezvous");
 
-    // A sender parked on the endpoint. A WRITE-only RECEIVE/RECEIVE_CAP let through would collect
+    // A sender parked on the endpoint. A WRITE-only RECEIVE/RECEIVE_CAPABILITY let through would collect
     // this and the waiting-sender count would fall to zero; refused, it stays at one.
     const SENT_WORD: u64 = 0x633;
     let sender = sched::spawn(move || {
@@ -78,12 +72,12 @@ fn a_write_only_rendezvous_holder_cannot_receive_reap_or_survey() {
     assert_eq!(
         call(client, RECEIVE_CAPABILITY, 0, 0, 0),
         Err(Error::NotPermitted),
-        "a WRITE-only holder RECEIVE_CAPd: a client became its server",
+        "a WRITE-only holder received: a client became its server",
     );
     assert_eq!(
         sched::rendezvous_waiting_senders(ep),
         1,
-        "a refused RECEIVE_CAP still consumed the queued sender",
+        "a refused RECEIVE_CAPABILITY still consumed the queued sender",
     );
     // REAP (READ) and SURVEY (ENUMERATE) do not block, so a let-open gate returns some other answer
     // (a reap decision, a survey cursor) rather than NotPermitted, which is still observable.

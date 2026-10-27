@@ -1,0 +1,20 @@
+Falsifies `periodic_deadline::proofs::a_stall_costs_one_fire_and_not_a_backlog`.
+
+The defect: the snap moves `now` forward onto the next beat rather than back onto the last one,
+`(now + r)` in place of `(now - r)`. One character, and the comment above the line survives it
+unchanged, because "snap `now` onto the beat" does not say which direction. The answer stays
+strictly after `now` and stays a whole period on from `prev`, so the two properties a reader
+checks first both still hold.
+
+Expected to fail: the harness's `assert!(next <= now + period)`, for any `now` whose distance
+from `prev` is not a multiple of the period, where the answer overshoots by `r` and a scheduler
+that fell behind drifts further behind on every pass.
+
+diff --git a/crates/periodic_deadline/src/lib.rs b/crates/periodic_deadline/src/lib.rs
+--- a/crates/periodic_deadline/src/lib.rs
++++ b/crates/periodic_deadline/src/lib.rs
+@@ -454,3 +454,3 @@ pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
+     let r = (now - prev) % period;
+-    (now - r).saturating_add(period)
++    (now + r).saturating_add(period)
+ }

@@ -82,8 +82,7 @@ use crate::memo::Memo;
 ///   file this build creates has 8 KiB records, which could address twice it, and no image comes
 ///   within a factor of a million. See notes/fs-server/the-core.md.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_FILE_END`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_FILE_END: u64 =
     (128 + 64 * 256 + 32 * 256 * 256 + 16 * 256 * 256 * 256 + 8 * 256 * 256 * 256 * 256)
         * BLOCK as u64;

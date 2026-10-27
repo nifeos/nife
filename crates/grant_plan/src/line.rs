@@ -22,8 +22,7 @@ use crate::{Refusal, word};
 /// a real ceiling rather than a buffer size: each stage costs a process and an endpoint, and a line
 /// that wants more is better written as two lines than silently truncated.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_STAGES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_STAGES: usize = 4;
 
 /// **Where a stage's bytes go**, which is the whole of what `>` and `|` decide.

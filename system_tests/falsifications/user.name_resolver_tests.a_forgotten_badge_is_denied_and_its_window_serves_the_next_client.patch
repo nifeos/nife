@@ -28,6 +28,6 @@ index dbbb588e5..7d85a6487 100644
 -                0,
 -            )
 -        };
-         cap_delete(frame);
+         capability_delete(frame);
      }
  }

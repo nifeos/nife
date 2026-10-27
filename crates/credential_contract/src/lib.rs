@@ -26,15 +26,13 @@ pub const OPERATION_SHIFT: u32 = 56;
 /// is a different milestone and this crate deliberately does not start it. 64 bytes is longer than
 /// any SMB account name and short enough that the whole store is a small fixed array.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_IDENTITY`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_IDENTITY: usize = 64;
 
 /// The longest secret a request may present, in bytes. Long enough for a passphrase nobody would
 /// type twice; the bound exists so the service's parse is total and its page layout is fixed.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_SECRET`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_SECRET: usize = 256;
 
 /// Where the identity starts in the shared page.
@@ -99,8 +97,7 @@ pub const NO_ENTROPY: u64 = 6;
 
 /// The largest reply code. Everything at or below this is a reply; see [`code`].
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CODE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CODE: u64 = NO_ENTROPY;
 
 /// Build a request's first word: the opcode, the identity's length, and the secret's length.

@@ -51,6 +51,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The machine statistics page](../machine-statistics.md): the granted page `free`, `vmstat` and `top` read, and why it is not a snapshot. Name provisional.
 - [`date`](../date.md): prints the wall clock and cannot set it.
 - [`time`](../time-command.md): times a command on the shell's clock.
+- [The periodic_deadline proofs](../periodic-deadline-proofs.md): why `next_after` snaps onto the beat, and which law the host tests check instead of Kani.
 - [The calendar crate](../calendar.md): Unix seconds to civil dates and back, and formats.
 - [Entropy](../entropy.md): where randomness comes from, and who may reach it.
 - [Credentials](../credentials.md): checking a secret the service can never read back.

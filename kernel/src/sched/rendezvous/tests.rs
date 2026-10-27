@@ -71,15 +71,15 @@ fn reply_parked_callers(ep: super::RendezvousId) -> usize {
 }
 
 /// How many live `Reply` capabilities anywhere in the machine still name `caller`: the sweep's
-/// own assertion. `outgoing_cap` counts too, because a caller that met no
-/// server rides its own reply capability there awaiting a `RECEIVE_CAP` hand-off, and a live one
+/// own assertion. `outgoing_capability` counts too, because a caller that met no
+/// server rides its own reply capability there awaiting a `RECEIVE_CAPABILITY` hand-off, and a live one
 /// left in that slot is the same forgery one step earlier.
 fn outstanding_reply_capabilities(caller: super::ThreadId) -> usize {
     let guard = super::IPC_TABLES.lock();
     let Some(sched) = guard.as_ref() else {
         return 0;
     };
-    let target = crate::cap::Object::Reply(caller);
+    let target = crate::capability_object::Object::Reply(caller);
     let mut found = 0;
     for (_, t) in sched.threads.iter_from(0) {
         let table = sched.threads.capabilities(t.id).unwrap().lock();
@@ -89,7 +89,7 @@ fn outstanding_reply_capabilities(caller: super::ThreadId) -> usize {
             }
         }
         drop(table);
-        if matches!(t.outgoing_cap, Some(c) if c.object == target) {
+        if matches!(t.outgoing_capability, Some(c) if c.object == target) {
             found += 1;
         }
     }
@@ -103,7 +103,7 @@ fn outstanding_reply_capabilities(caller: super::ThreadId) -> usize {
 /// The server has collected the request, so the caller is on no wait queue; that one collected
 /// message is the difference from the revoked-waiter test. The second assertion matters most: a
 /// woken caller with a live Reply still naming it could be answered in its next conversation.
-/// `current_cap` is the lookup `abi::reply::REPLY` makes, so a capability gone here cannot reply.
+/// `current_capability` is the lookup `abi::reply::REPLY` makes, so a capability gone here cannot reply.
 #[test_case]
 fn a_reply_parked_caller_wakes_with_an_error_when_its_rendezvous_is_reclaimed() {
     static COLLECTED: AtomicBool = AtomicBool::new(false);
@@ -123,14 +123,20 @@ fn a_reply_parked_caller_wakes_with_an_error_when_its_rendezvous_is_reclaimed() 
     // away; a server that returned here would depart, which is the *other* trigger and the
     // next test's subject.
     crate::sched::spawn(move || {
-        let m = crate::sched::ipc_receive_cap(ep);
+        let m = crate::sched::inter_process_communication_receive_capability(ep);
         let slot = m[1];
-        HELD_BEFORE.store(crate::sched::current_cap(slot).is_ok(), Ordering::SeqCst);
+        HELD_BEFORE.store(
+            crate::sched::current_capability(slot).is_ok(),
+            Ordering::SeqCst,
+        );
         COLLECTED.store(true, Ordering::SeqCst);
         while !RELEASE.load(Ordering::SeqCst) {
             crate::sched::yield_now();
         }
-        HELD_AFTER.store(crate::sched::current_cap(slot).is_ok(), Ordering::SeqCst);
+        HELD_AFTER.store(
+            crate::sched::current_capability(slot).is_ok(),
+            Ordering::SeqCst,
+        );
         CHECKED.store(true, Ordering::SeqCst);
     })
     .expect("spawn a server");
@@ -209,8 +215,11 @@ fn a_server_that_exits_frees_the_caller_it_never_answered() {
     // server exits holding it, which is the case the survey found this kernel alone in
     // stranding.
     crate::sched::spawn(move || {
-        let m = crate::sched::ipc_receive_cap(ep);
-        HELD.store(crate::sched::current_cap(m[1]).is_ok(), Ordering::SeqCst);
+        let m = crate::sched::inter_process_communication_receive_capability(ep);
+        HELD.store(
+            crate::sched::current_capability(m[1]).is_ok(),
+            Ordering::SeqCst,
+        );
         COLLECTED.store(true, Ordering::SeqCst);
     })
     .expect("spawn a server");
@@ -552,7 +561,7 @@ fn a_retyped_rendezvous_carries_ipc_and_pins_its_region() {
 
 /// **Milestone 12: a call gets a reply, over one rendezvous, via a one-shot Reply cap.**
 ///
-/// The client `CALL`s and blocks; the server `RECEIVE_CAP`s (receiving the request word plus a
+/// The client `CALL`s and blocks; the server `RECEIVE_CAPABILITY`s (receiving the request word plus a
 /// kernel-minted `Reply` cap naming the caller), answers through that cap, and consumes it. One
 /// rendezvous, not the two the pre-`Call` pattern needs, and the server was never wired to this
 /// client.
@@ -565,13 +574,15 @@ fn a_call_gets_a_reply() {
     let ep = super::create_rendezvous_from(region).expect("no rendezvous from region");
 
     let server = super::spawn(move || {
-        let m = super::ipc_receive_cap(ep); // [n, reply_slot, second_word]
+        let m = super::inter_process_communication_receive_capability(ep); // [n, reply_slot, second_word]
         let slot = m[1];
-        let crate::cap::Object::Reply(caller) = super::current_cap(slot).unwrap().object else {
-            panic!("RECEIVE_CAP of a CALL did not deliver a Reply capability");
+        let crate::capability_object::Object::Reply(caller) =
+            super::current_capability(slot).unwrap().object
+        else {
+            panic!("RECEIVE_CAPABILITY of a CALL did not deliver a Reply capability");
         };
         super::ipc_reply(caller, [m[0] + 1, 0]);
-        super::delete_current_cap(slot).expect("consume the one-shot reply");
+        super::delete_current_capability(slot).expect("consume the one-shot reply");
     })
     .expect("spawn failed");
 
@@ -613,13 +624,15 @@ fn a_reply_reaches_the_caller_that_called() {
     // The server: field two calls, reply each caller its own word + 11, via its own cap.
     let server = super::spawn(move || {
         for _ in 0..2 {
-            let m = super::ipc_receive_cap(ep);
+            let m = super::inter_process_communication_receive_capability(ep);
             let (word, slot) = (m[0], m[1]);
-            let crate::cap::Object::Reply(caller) = super::current_cap(slot).unwrap().object else {
+            let crate::capability_object::Object::Reply(caller) =
+                super::current_capability(slot).unwrap().object
+            else {
                 panic!("not a reply cap");
             };
             super::ipc_reply(caller, [word + 11, 0]);
-            super::delete_current_cap(slot).unwrap();
+            super::delete_current_capability(slot).unwrap();
         }
     })
     .expect("spawn failed");

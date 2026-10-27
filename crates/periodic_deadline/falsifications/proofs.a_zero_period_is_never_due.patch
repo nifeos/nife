@@ -1,0 +1,21 @@
+Falsifies `periodic_deadline::proofs::a_zero_period_is_never_due`.
+
+The defect: the zero guard is deleted. This is the plausible one rather than a contrived one,
+because the guard looks dead: `parse` refuses `every 0s`, so no document can reach it, and a
+reader tidying the function has every reason to believe the branch is unreachable. The doc
+comment on `next_after` says the guard is there for the caller who did not read the doc comment,
+which is the caller a `pub const fn` has to be total for.
+
+Expected to fail: the harness's `assert_eq!(next_after(prev, 0, now), u64::MAX)`, either on the
+answer (`prev` is returned when `prev > now`) or on the remainder operation, which Kani reports
+as a division by zero on the path where it is reached.
+
+diff --git a/crates/periodic_deadline/src/lib.rs b/crates/periodic_deadline/src/lib.rs
+--- a/crates/periodic_deadline/src/lib.rs
++++ b/crates/periodic_deadline/src/lib.rs
+@@ -436,5 +436,2 @@ impl<'a> Registry<'a> {
+ pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
+-    if period == 0 {
+-        return NEVER;
+-    }
+     let first = prev.saturating_add(period);

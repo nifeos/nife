@@ -18,3 +18,7 @@ grant_plan = { version = "0.1.0", path = "../grant_plan" }
 # month's length. The crate of milestone 51 (wall-clock time), already Kani-proved inverse over its range, rather than a
 # second copy of Hinnant's algorithms here.
 calendar = { version = "0.1.0", path = "../calendar" }
+clock_contract = { version = "0.1.0", path = "../clock_contract" }
+# The fire arithmetic, `next_after`, and its Kani proofs (milestone 360 (`crates/timetable`'s proved `next_after` is not what the timer calls)). The kernel's timer re-arm
+# links the same crate, so the proof binds the code that runs. `timetable` re-exports it.
+periodic_deadline = { version = "0.1.0", path = "../periodic_deadline" }

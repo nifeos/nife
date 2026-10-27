@@ -76,14 +76,12 @@ pub mod record {
     /// The most text one record carries. §242 measured it against a whole xenon boot (longest
     /// kernel line 123 bytes) and an eight-hour radon soak (99% of lines fit).
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `TEXT_MAX`.
+    /// Name: ratified 2026-10-27 (#2797).
     pub const TEXT_MAXIMUM: usize = 224;
 
     /// Header and text together, at most.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `RECORD_MAX`.
+    /// Name: ratified 2026-10-27 (#2797).
     pub const RECORD_MAXIMUM: usize = HEADER_LEN + TEXT_MAXIMUM;
 
     /// The `flags` byte's bits.
@@ -198,8 +196,7 @@ pub mod control {
 
     /// The longest name a registration carries: two chunks of sixteen.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `NAME_MAX`.
+    /// Name: ratified 2026-10-27 (#2797).
     pub const NAME_MAXIMUM: usize = 32;
 
     /// A control word.
@@ -281,8 +278,7 @@ pub mod read {
     pub const DATA: usize = 16;
     /// The most JSONL one read returns.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `DATA_MAX`.
+    /// Name: ratified 2026-10-27 (#2797).
     pub const DATA_MAXIMUM: usize = WINDOW_BYTES - DATA;
 
     /// A read's outcome, at window bytes 12..16.
@@ -565,20 +561,17 @@ pub mod console {
 
     /// The longest kernel line the console assembles before writing it as cut.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `LINE_MAX`.
+    /// Name: ratified 2026-10-27 (#2797).
     pub const LINE_MAXIMUM: usize = 256;
     /// What ends every line the console writes for the kernel: see [`Inserter::kernel_chunk`].
     pub const LINE_END: &[u8] = b"\r\n";
     /// How much of the terminal's current partial line is kept for a redraw.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `PARTIAL_MAX`.
+    /// Name: ratified 2026-10-27 (#2797).
     pub const PARTIAL_MAXIMUM: usize = 512;
     /// How many bytes of kernel lines wait for a line end.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `QUEUE_MAX`.
+    /// Name: ratified 2026-10-27 (#2797).
     pub const QUEUE_MAXIMUM: usize = 2048;
 
     /// The console's kernel-line state. See the module doc.

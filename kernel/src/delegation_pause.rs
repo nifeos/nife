@@ -2,7 +2,7 @@
 //! revocation sweep while it waits. Names provisional: the module, [`disarm`], [`arm`],
 //! [`is_parked`], [`release`] and [`here`].
 //!
-//! [`here`] sits in `SEND_CAP`, `ThreadControlBlock::CAP_INSERT`, `PageFrame::SLICE`,
+//! [`here`] sits in `SEND_CAPABILITY`, `ThreadControlBlock::CAPABILITY_INSERT`, `PageFrame::SLICE`,
 //! `PageFrame::MAP`, `AddressSpace::MAP_INTO` and `MemoryRegion::MAP`, just before the critical
 //! section that reads the source capability and files the copy. Nothing is held at the seam. Only
 //! the test kernel has it: the module and every call are under `cfg(feature = "system_tests")`. See

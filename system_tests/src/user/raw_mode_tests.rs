@@ -417,7 +417,7 @@ fn a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them() {
     use line_editor::proto::{self, BAD_REQUEST, RAW_ONLY_BADGE};
     let (w, held) = svc::start();
     // The kernel's own delivery of a badged `CALL`: the badge lands in `x3` of the server's
-    // `RECEIVE_CAP`, as it would for a user program holding the copy.
+    // `RECEIVE_CAPABILITY`, as it would for a user program holding the copy.
     let badged = |operation: u64, len: u64, w1: u64| {
         sched::ipc_call_badged(w.term, [proto::req(operation, len), w1], RAW_ONLY_BADGE)
     };

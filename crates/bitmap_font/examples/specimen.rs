@@ -474,7 +474,7 @@ fn metrics(font: &Font) -> String {
     let left: Vec<f64> = seen.iter().map(|e| e.0 as f64).collect();
     let width: Vec<f64> = seen.iter().map(|e| (e.1 - e.0 + 1) as f64).collect();
 
-    let cap = extent(b'H').map_or(0, |e| e.3 - e.2 + 1);
+    let capital_height = extent(b'H').map_or(0, |e| e.3 - e.2 + 1);
     let x_ext = extent(b'x');
     let x_height = x_ext.map_or(0, |e| e.3 - e.2 + 1);
     let baseline = x_ext.map_or(0, |e| e.3);
@@ -486,7 +486,7 @@ fn metrics(font: &Font) -> String {
         mean(&ink),
         sigma(&left),
         sigma(&width),
-        cap,
+        capital_height,
         x_height,
         descender,
     )

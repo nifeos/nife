@@ -79,7 +79,7 @@ pub(super) fn dispatch_line(nav: &mut Nav, cmd: &[u8]) {
 /// `caps date | wc` would lose the pipe.
 pub(super) fn dispatch(nav: &mut Nav, cmd: &[u8]) {
     match swish::route(cmd) {
-        Route::Caps(tail) => caps(nav, tail),
+        Route::Capabilities(tail) => capabilities(nav, tail),
         Route::Time(tail) => time_command(nav, tail),
         Route::Xargs(tail) => xargs(nav, tail),
         Route::One(stage) => dispatch_one(nav, stage),
@@ -109,15 +109,15 @@ pub(super) fn time_command(nav: &mut Nav, tail: &[u8]) {
     }
     // A duration needs no clock (§72 (`time` needs no clock: duration is ambient, wall-clock
     // identity is authority)): across a command the wall clock's offset cancels, and
-    // `monotonic_nanos` is ambient (the kernel opened the counter to EL0) and cannot be stepped. So
+    // `monotonic_ns` is ambient (the kernel opened the counter to EL0) and cannot be stepped. So
     // `time` cannot be refused; a capability gates wall-clock identity, which is `date`'s.
-    let start = monotonic_nanos();
+    let start = monotonic_ns();
 
     dispatch(nav, tail);
 
     // Saturating out of habit rather than need: the counter is monotonic, so `end` cannot precede
     // `start`, and a wrap would take centuries at either board's frequency.
-    swish::write_timing(monotonic_nanos().saturating_sub(start), &mut print);
+    swish::write_timing(monotonic_ns().saturating_sub(start), &mut print);
 }
 
 /// The most batches one sweep will run. A ceiling so a resume rule that failed to advance costs a
@@ -205,7 +205,7 @@ pub(super) fn dispatch_one(nav: &mut Nav, cmd: &[u8]) {
         // line so they can see the operators. Kept so this function is complete on its own: it is
         // the whole of "what one command means", and a reader should not have to know about the
         // interception to find every arm.
-        Command::Caps(tail) => caps(nav, tail),
+        Command::Capabilities(tail) => capabilities(nav, tail),
         Command::Time(tail) => time_command(nav, tail),
         Command::Xargs(tail) => xargs(nav, tail),
         Command::Pwd => print_pwd(nav),

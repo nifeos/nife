@@ -104,6 +104,21 @@ The ABI capability takes `Interrupt` or `InterruptLine` by what it names, and it
 (`bind_interrupt`, `interrupt_wait`, or the `_line` form). Refused `interrupt_request`: `ipi` and
 `nmi` expanded to "... interrupt" on 2026-10-18 (UTC), and `irq` matches them.
 
+Ruled 2026-10-27 (UTC), the names the irq sweep left open:
+
+- The ABI capability is `Interrupt` (`Object::Interrupt`), not `InterruptLine`.
+- `arch::<arch>::irq` is `arch::<arch>::interrupt_controller` on aarch64, riscv64 and x86_64.
+- The self-test `deviceirq` prints `device_interrupt`. It is a clean break: no table maps the old
+  name to the new one.
+- Boot transcript labels spell it out: `uart interrupt`, `device interrupt`, `isa interrupt` and
+  `interrupt<id>`.
+- RISC-V cause 9 is `SUPERVISOR_EXTERNAL_INTERRUPT`, with `#[doc(alias = "IRQ_S_EXT")]` for the name
+  Linux gives it.
+- The Arm exception vector constants are `VECTOR_INTERRUPT_CURRENT` and `VECTOR_INTERRUPT_LOWER`.
+  Arm's own `IRQ` and `FIQ` vector kinds keep their spelling in the table strings.
+- Doc comments on register accessors name the manual that defines the register and give no section
+  numbers.
+
 ## The tree spells `queue`, never `fifo`
 
 Ruled 2026-10-26 (UTC), tree-wide: where a name this tree authors says `fifo`, it says `queue`
@@ -112,6 +127,90 @@ TQS), and the renamed item carries `#[doc(alias = "fifo")]`. Register names copi
 datasheet (`FIFOTH`) keep their spelling. The ruling reaches the crate ratified on 2026-08-23
 (Decision 41, ruled 2026-10-26 (UTC)): `intrusive_fifo` becomes `intrusive_queue` and its `Fifo`
 becomes `Queue`, with `#[doc(alias = "fifo")]`.
+
+
+## The tree spells `minimum`, `maximum` and `operating_system`, with three limits kept
+
+[precedents-set-by-example.md](precedents-set-by-example.md) holds the expansion, ruled 2026-10-26
+(UTC): `min` expands to `minimum`, `max` to `maximum` and `os` to `operating_system`. Ruled
+2026-10-27 (UTC), on the sweep that applied it:
+
+- A limit this tree defines under the Unix names `PATH_MAX`, `LINE_MAX` and `NAME_MAX` expands to
+  `PATH_MAXIMUM`, `LINE_MAXIMUM` and `NAME_MAXIMUM`. Prose that cites Unix itself keeps the original
+  spelling, since it names the Unix limit and not ours.
+- The GPT crate's constants are `OPERATING_SYSTEM_TYPE` and `PROTECTIVE_OPERATING_SYSTEM_TYPE`. Their
+  documentation cites UEFI's `OSType` field, and each carries `#[doc(alias = "OSType")]`.
+- `os_primitives_benchmarker` keeps its name until the variable-width step of Decision 307 lands.
+  That step renames it; the sweep does not.
+
+## The `intrusive_queue` order property says `first_in_first_out`
+
+Ruled 2026-10-27 (UTC): the `intrusive_queue` property test that checks arrival order is
+`any_push_pop_interleaving_is_first_in_first_out_and_lossless`. It replaces
+`any_push_pop_interleaving_is_queue_ordered_and_lossless`, whose name did not say which order it
+checks. `senders_queue_in_arrival_order` keeps its name.
+
+## The min, max and irq sweeps: rows ratified, and the names they changed
+
+Ruled 2026-10-27 (UTC), on [#2797](https://github.com/nifeos/nife/pull/2797): the architect ratified
+every `Name: provisional` block the irq sweep and the min, max and os sweep added, under the names
+below. Each ratified block now reads `Name: ratified 2026-10-27 (#2797).` Five rows stay
+provisional for their own sweeps: `interrupt_cap` and `interrupt_cap_rights` (the `cap` ruling
+below), `MAXIMUM_CAPS`, and `MAXIMUM_STEP_FORWARD_NANOS` with `MAXIMUM_STEP_BACKWARD_NANOS` (the
+unit ruling below).
+
+Renamed, then ratified under the new name:
+
+- A length constant carries its unit. `MAXIMUM_NAME_LEN` is `MAXIMUM_NAME_BYTES` and
+  `MAXIMUM_IDENTITY_LEN` is `MAXIMUM_IDENTITY_BYTES`. A bare `MAXIMUM_LEN` is `MAXIMUM_BYTES` in
+  `uptime`, `uefi_loader`'s `device_path.rs`, `machine_discovery`'s `framebuffer.rs` and both
+  `boot_slot` modules. `filesystem_contract`'s `MAXIMUM_LEN` is `MAXIMUM_LENGTH_OR_OFFSET`, because
+  it bounds a packed field that holds either.
+- `MAXIMUM_COLS` is `MAXIMUM_COLUMNS` in `video_terminal` and in the `rmle` component.
+- Argon2 cost: the fields, parameters and accessors `m_kib`, `t` and `p` are `memory_kib`, `passes`
+  and `lanes`, each with `#[doc(alias = "m")]`, `"t"` and `"p"` and RFC 9106's terms in the docs.
+  `MAXIMUM_M_KIB` is `MAXIMUM_MEMORY_KIB` and `MINIMUM_M_COST` is `MINIMUM_MEMORY_KIB`.
+- The IOMMU limits share one noun for both vendors. `MAXIMUM_DRHDS` and `MAXIMUM_IVHDS` are
+  `MAXIMUM_TRANSLATION_UNITS`. `MAXIMUM_RMRRS` and `MAXIMUM_IVMDS` are `MAXIMUM_RESERVED_REGIONS`.
+  `MAXIMUM_RMRR_SCOPES` is `MAXIMUM_RESERVED_REGION_DEVICES`. `MAXIMUM_IVHD_RANGES` is
+  `MAXIMUM_TRANSLATION_UNIT_DEVICE_RANGES`. Each doc names the specification's entry and its full
+  name (Intel VT-d: DMA Remapping Hardware unit Definition, Reserved Memory Region Reporting; AMD
+  IOMMU: I/O Virtualization Hardware Definition, I/O Virtualization Memory Definition) and carries
+  `#[doc(alias = "DRHD")]`, `"RMRR"`, `"IVHD"` or `"IVMD"`.
+- `boot_slot`'s `MAXIMUM_NIBBLE` is `MAXIMUM_FIELD_VALUE`. The doc says both fields are four bits
+  wide, and the item carries `#[doc(alias = "nibble")]`.
+- `environment_contract`: `TZ_MAXIMUM`, `LANG_MAXIMUM` and `TERM_MAXIMUM` are
+  `MAXIMUM_TIME_ZONE_BYTES`, `MAXIMUM_LOCALE_BYTES` and `MAXIMUM_TERMINAL_TYPE_BYTES`. `KNOWN_TZ`,
+  `KNOWN_LANG` and `KNOWN_TERM` are `KNOWN_TIME_ZONES`, `KNOWN_LOCALES` and `KNOWN_TERMINAL_TYPES`.
+  They carry `#[doc(alias = "TZ")]`, `"LANG"` and `"TERM"`. The variable-name strings `"TZ"`,
+  `"LANG"` and `"TERM"` do not change.
+- `documentation`'s search-term limit `TERM_MAXIMUM` is `MAXIMUM_TERM_BYTES`.
+- `domain_name_system`'s `UDP_MESSAGE_MAXIMUM` is `MAXIMUM_UDP_MESSAGE_BYTES`, and its doc spells out
+  User Datagram Protocol.
+
+## `capability` reaches every name, PCI capability structures included
+
+Ruled 2026-10-27 (UTC), recorded here and applied by its own sweep: every name this tree authors
+spells `capability` out, and that includes PCI capability structures. This extends the
+[`capability` ruling above](#the-tree-spells-capability-never-cap) to the names it left open.
+`interrupt_cap`, `interrupt_cap_rights` and `MAXIMUM_CAPS` stay provisional until that sweep
+renames them.
+
+## Unit symbols in names
+
+Ruled 2026-10-27 (UTC), recorded here and applied by its own sweep:
+
+- A name uses a unit symbol only from the allowed list: `ns` and `ms`; `kib`, `mib` and `gib`; `hz`,
+  `khz` and `mhz`. A symbol that reads two ways is spelled out: `microseconds`, not `us`; `seconds`,
+  not `s`; `minutes`; `meters`. `bytes` stays a word.
+- The list grows by ruling.
+- Rust standard-library names such as `as_nanos` keep their spelling.
+- `NANOS_PER_SEC` gets one definition, `clock_contract::NS_PER_SECOND`. `network_time_protocol`,
+  `timetable`, `uptime` and `user_mode_runtime` import it.
+- `MAXIMUM_STEP_FORWARD_NS` and `MAXIMUM_STEP_BACKWARD_NS` carry ratified Name blocks (2026-10-27 UTC).
+- `helpers/unit_symbols.py` counts the identifiers that break this ruling and holds the count to a
+  ceiling that only falls; `script/lint` runs it. It leaves `nsec`, `msec`, `kb`, `mb`, `gb`, `tb`,
+  `bps` and `ppm` uncounted, since the list above does not settle them.
 
 ## Abbreviation sweeps owed under §154
 

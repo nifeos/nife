@@ -26,7 +26,7 @@ use supervision_protocol::{
     Retention,
 };
 use user_mode_runtime::{
-    cap_delete, receive, retype_into_kernel_object, retype_into_page_frame, send,
+    capability_delete, receive, retype_into_kernel_object, retype_into_page_frame, send,
 };
 
 /// What the kernel grants us, and nothing else.
@@ -93,7 +93,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         ROOT_UT,
         &spawner,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (req, abi::rights::READ),
                 (rep, abi::rights::WRITE),
                 (sp_ut, abi::rights::SPEND_ONLY),
@@ -120,7 +120,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         ROOT_UT,
         &sub_server_supervisor,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (req, abi::rights::WRITE),
                 (rep, abi::rights::READ),
                 (childfault, abi::rights::READ),
@@ -142,9 +142,9 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     //    the spawner's budget, then the construction budget itself. From here we cannot make a page,
     //    an address space, a thread, or an endpoint.
     for c in [req, rep, childfault, sp_ut] {
-        cap_delete(c);
+        capability_delete(c);
     }
-    cap_delete(ROOT_UT);
+    capability_delete(ROOT_UT);
 
     // And prove it, from the inside, on the two primitives that build things: retype a page, and
     // retype a kernel object. Both must now fail with `NoSuchSlot` (-1), which is what

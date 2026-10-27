@@ -33,25 +33,26 @@ pub(super) fn build_child_in(
     fault_ep: Option<sched::RendezvousId>,
 ) -> u64 {
     let report = report.map(|rep| {
-        crate::cap::rendezvous_cap(
+        crate::capability_object::rendezvous_capability(
             rep,
-            crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+            crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
         )
     });
     let fault = fault_ep.map(super::supervised_child::supervision_endpoint);
     build_child_with(region, stub, report.as_slice(), fault)
 }
 
-/// [`build_child_in`] with the capabilities spelled out: `caps` land in slots 0, 1, ... in order,
+/// [`build_child_in`] with the capabilities spelled out: `capabilities` land in slots 0, 1, ... in order,
 /// and `fault`, if given, in the reserved fault slot, so `START` records it as the child's
 /// supervision endpoint and keeps its badge as the child's label (milestone 105 (the two forks)).
 pub(super) fn build_child_with(
     region: u64,
     stub: &[u32],
-    caps: &[crate::cap::Cap],
-    fault: Option<crate::cap::Cap>,
+    capabilities: &[crate::capability_object::Capability],
+    fault: Option<crate::capability_object::Capability>,
 ) -> u64 {
-    super::supervised_child::spawn(region, stub, caps, fault).expect("could not build the child")
+    super::supervised_child::spawn(region, stub, capabilities, fault)
+        .expect("could not build the child")
 }
 
 /// **A crash becomes a message; the corpse survives until reaped; a fresh child runs.** The whole
@@ -312,12 +313,18 @@ const LABEL_TWO: u64 = 0x1abe_0002;
 /// in its own region. Returns `(tid, region)`.
 fn label_reporter(report: sched::RendezvousId, fault_ep: sched::RendezvousId) -> (u64, u64) {
     let region = crate::memory_region::create(16).expect("no region for the supervisor stub");
-    let caps = [
-        crate::cap::rendezvous_cap(report, crate::cap::Rights::WRITE),
-        crate::cap::rendezvous_cap(fault_ep, crate::cap::Rights::READ),
+    let capabilities = [
+        crate::capability_object::rendezvous_capability(
+            report,
+            crate::capability_object::Rights::WRITE,
+        ),
+        crate::capability_object::rendezvous_capability(
+            fault_ep,
+            crate::capability_object::Rights::READ,
+        ),
     ];
     (
-        build_child_with(region, LABEL_REPORTER_STUB, &caps, None),
+        build_child_with(region, LABEL_REPORTER_STUB, &capabilities, None),
         region,
     )
 }
@@ -326,7 +333,11 @@ fn label_reporter(report: sched::RendezvousId, fault_ep: sched::RendezvousId) ->
 /// the way a builder stamps it with `rendezvous::BADGE`. Returns `(tid, region)`.
 fn labelled_child(fault_ep: sched::RendezvousId, label: u64) -> (u64, u64) {
     let region = crate::memory_region::create(16).expect("no region for the child");
-    let fault = crate::cap::rendezvous_cap_badged(fault_ep, crate::cap::Rights::READ, label);
+    let fault = crate::capability_object::rendezvous_capability_badged(
+        fault_ep,
+        crate::capability_object::Rights::READ,
+        label,
+    );
     (
         build_child_with(region, FAULT_STUB, &[], Some(fault)),
         region,
@@ -431,9 +442,9 @@ fn a_child_can_neither_learn_nor_forge_its_label() {
 
     let (child, r1) = labelled_child(fault_ep, LABEL_ONE);
     let (slot_empty, carries_label) = sched::with_capability_table(child, |table| {
-        let carries = (0..crate::cap::CAPABILITY_TABLE_SLOTS as u64).any(|slot| {
+        let carries = (0..crate::capability_object::CAPABILITY_TABLE_SLOTS as u64).any(|slot| {
             table.get(slot).is_ok_and(|c| {
-                matches!(c.object, crate::cap::Object::Rendezvous(_, badge) if badge == LABEL_ONE)
+                matches!(c.object, crate::capability_object::Object::Rendezvous(_, badge) if badge == LABEL_ONE)
             })
         });
         (table.get(FAULT_EP_SLOT).is_err(), carries)
@@ -450,7 +461,11 @@ fn a_child_can_neither_learn_nor_forge_its_label() {
     );
 
     let forger_region = crate::memory_region::create(16).expect("no region for the forger");
-    let forged = crate::cap::rendezvous_cap_badged(fault_ep, crate::cap::Rights::WRITE, LABEL_ONE);
+    let forged = crate::capability_object::rendezvous_capability_badged(
+        fault_ep,
+        crate::capability_object::Rights::WRITE,
+        LABEL_ONE,
+    );
     let forger = build_child_with(forger_region, REPORT_STUB, &[forged], None);
 
     let (_sup, rs) = label_reporter(report, fault_ep);

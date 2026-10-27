@@ -49,13 +49,13 @@ to be shared, because between the two steps is where the delegation happens.
 
 ## Sharing is delegation applied to memory
 
-Because a `PageFrame` is an ordinary capability, it travels over a rendezvous with `SEND_CAP`, and the
+Because a `PageFrame` is an ordinary capability, it travels over a rendezvous with `SEND_CAPABILITY`, and the
 rights narrow on the way exactly as they do for any delegation (see [delegation.md](delegation.md)).
 So the whole sharing protocol is:
 
 1. Producer `RETYPE`s a page frame, `MAP`s it read/write, writes into it.
-2. Producer `SEND_CAP`s the page frame to the consumer, narrowed to `READ` (dropping `WRITE` and `GRANT`).
-3. Consumer `RECEIVE_CAP`s it, `MAP`s the *same physical page* read-only, and reads what the producer
+2. Producer `SEND_CAPABILITY`s the page frame to the consumer, narrowed to `READ` (dropping `WRITE` and `GRANT`).
+3. Consumer `RECEIVE_CAPABILITY`s it, `MAP`s the *same physical page* read-only, and reads what the producer
    wrote.
 
 The kernel copied nothing and was never told these two processes would share memory. They built the
@@ -83,7 +83,7 @@ same parked problem: capability revocation.
 
 On ARM's weak memory model, the producer's write is not automatically visible to the consumer just
 because it happened first in time. What makes it visible is that the delegation is a *rendezvous*:
-the producer's `SEND_CAP` releases the scheduler lock and the consumer's `RECEIVE_CAP` acquires it, and
+the producer's `SEND_CAPABILITY` releases the scheduler lock and the consumer's `RECEIVE_CAPABILITY` acquires it, and
 that release/acquire pair is the happens-before edge. The write lands before the send, the send
 synchronizes with the receive, the read comes after. So the same IPC that carries the capability also
 orders the memory, which is a tidy demonstration of why "control travels by IPC" and "data travels by
@@ -146,7 +146,7 @@ else, and the program is handed a budget to reach it with:
 
 ```rust
 crate::sched::grant_at(SURVEY_SLOT_BUDGET, untyped_cap(budget))?;
-crate::sched::grant_at(SURVEY_SLOT_ROSTER, page_frame_cap(roster_phys, Rights::READ))?;
+crate::sched::grant_at(SURVEY_SLOT_ROSTER, page_frame_capability(roster_phys, Rights::READ))?;
 run(surveyor_image, Spawn { arg0: ROLE_SURVEY, grants: &[], maps: &stack, .. })
 ```
 

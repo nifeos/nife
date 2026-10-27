@@ -24,7 +24,7 @@ numbers are `spawn_el0`, aarch64, TCG + icount, at `MAXIMUM_THREADS = 256` unles
 | 256, `revoke::MAXIMUM_SPACES` pinned at its old 160 | 2,280,022 | the registry = **138,584** |
 
 There are two causes of nearly equal size, not one. The first was predicted.
-`sched::delete_page_frame_caps_where` walks every thread's capability table on every
+`sched::delete_page_frame_capabilities_where` walks every thread's capability table on every
 `MemoryRegion::DESTROY`. `generational_table::iter_mut` yields only live entries but visits every
 slot to filter them, so its cost tracked `MAXIMUM_THREADS` rather than the number of live threads.
 

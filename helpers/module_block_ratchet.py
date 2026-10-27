@@ -305,6 +305,22 @@ def selftest():
          [b.split(' was added')[0] for b in problems(files, tree, tree, base, (), was.get, retyped.get)]
          == [f'{BASELINE}: x/src/b.rs::f']),
     ]
+    # A unit-symbol respelling keeps its row (design/naming/spelled-out-rulings.md).
+    respelled_was = {'x/src/a.rs': 'pub fn delay_us() {}\npub fn other() {}\n'}
+    respelled_now = {'x/src/a.rs': 'pub fn delay_microseconds() {}\npub fn other() {}\n'}
+    respelled_base = i('delay_us', 'other')
+    respelled_tree = i('delay_microseconds', 'other')
+    renamed_not_respelled = {'x/src/a.rs': 'pub fn pause() {}\npub fn other() {}\n'}
+    cases += [
+        ('a unit-symbol respelling inside a file moves its row',
+         moved_rows.banked(respelled_base, respelled_tree,
+                           moved_rows.moves(respelled_tree - respelled_base,
+                                            respelled_base - respelled_tree, respelled_was.get,
+                                            respelled_now.get)) == respelled_tree),
+        ('any other rename inside a file is still an addition',
+         not moved_rows.moves(i('pause') , i('delay_us'), respelled_was.get,
+                              renamed_not_respelled.get)),
+    ]
     msg = problems(set(m('a', 'new')), m('new'), collections.Counter())[0]
     cases.append(('the failure names the file and the block to write',
                   'x/src/new.rs' in msg and '//! Name: provisional' in msg))

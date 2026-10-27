@@ -107,8 +107,8 @@ fn release(h: Held) {
 
 /// Delete this shell's slots for a job's frame and region, on every path that ends with them.
 fn give_back(job_fr: u64, job_ut: u64) {
-    cap_delete(job_fr);
-    cap_delete(job_ut);
+    capability_delete(job_fr);
+    capability_delete(job_ut);
 }
 
 /// **Mint, direct and start a supervised job**, and hand back what this shell holds for it once the
@@ -123,7 +123,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
         return None;
     };
     let Some(job_ut) = memory_region_split(JOB_UNTYPED_PAGES) else {
-        cap_delete(job_fr);
+        capability_delete(job_fr);
         failed();
         print(b"  this shell's memory budget is exhausted; nothing left to grant\n");
         return None;
@@ -207,7 +207,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
     }
     send(SPAWN, w0, w1, w2);
     delegate(job_ut, abi::rights::ALL);
-    send_cap(job_fr);
+    send_capability(job_fr);
 
     // The progenitor acks once the child is running: that is the shell's go-ahead to start watching.
     let answer = receive(RESULT).0;
@@ -221,7 +221,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
     // `ThreadControlBlock` goes to the shell that asked for it)), received before anything else
     // because the progenitor is blocked sending it. `WRITE` without `GRANT`: this shell can
     // suspend and resume its job and cannot pass that on.
-    let (_, tcb, _) = receive_cap(RESULT);
+    let (_, tcb, _) = receive_capability(RESULT);
     Some(Held {
         jf,
         job_ut,
@@ -367,12 +367,12 @@ const RECLAIM_PATIENCE_NS: u64 = 1_000_000_000;
 /// `interrupt_ignorer` teardowns printed "teardown refused", and each refusal also leaked the job's
 /// pages from this shell's budget, which ran out on the seventh job.
 pub(super) fn reclaim(job_ut: u64) -> bool {
-    let start = monotonic_nanos();
+    let start = monotonic_ns();
     loop {
         if destroy_memory_region(job_ut) == 0 {
             return true;
         }
-        if monotonic_nanos().wrapping_sub(start) > RECLAIM_PATIENCE_NS {
+        if monotonic_ns().wrapping_sub(start) > RECLAIM_PATIENCE_NS {
             return false;
         }
         yield_now();

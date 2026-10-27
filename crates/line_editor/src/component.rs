@@ -1,7 +1,7 @@
 // This module's docs are on its `pub mod` line in `lib.rs`.
 
 use capability_plan::Direction::{Serve, Use};
-use capability_plan::{CapNeed, MapNeed, PageKind, Requirements, StateHandoff};
+use capability_plan::{CapabilityNeed, MapNeed, PageKind, Requirements, StateHandoff};
 
 /// Where the handoff page sits. Clear of the three pages `line_editor` already maps.
 pub const HANDOFF_VA: u64 = 0x00a0_0000;
@@ -40,24 +40,24 @@ const MAPS: &[MapNeed] = &[
 /// A `line_editor` printing through the console server.
 pub const CONSOLE: Requirements = Requirements {
     contract: "terminal",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "terminal",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "sink",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "sink_reply",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "control",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "supervisor",
             direction: Use,
         },
@@ -73,20 +73,20 @@ pub const CONSOLE: Requirements = Requirements {
 /// A `line_editor` printing through `display_terminal`.
 pub const DISPLAY: Requirements = Requirements {
     contract: "terminal",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "terminal",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "sink",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "control",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "supervisor",
             direction: Use,
         },
@@ -221,7 +221,7 @@ pub mod supervisor {
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
     pub const CHILD_DISPLAY_TERMINAL: u64 = 1;
-    /// Lender → supervisor, a `SEND_CAP` on the swap endpoint carrying a `MemoryRegion` split
+    /// Lender → supervisor, a `SEND_CAPABILITY` on the swap endpoint carrying a `MemoryRegion` split
     /// from the machine's swap reserve ([`SWAP_RESERVE_PAGES`]), lent for the
     /// next `SWAP` of [`CHILD_DISPLAY_TERMINAL`] (calef's ruling "D", 2026-10-19 UTC), with
     /// `GRANT`, because the replacement's map budget is split from it and delegated. The

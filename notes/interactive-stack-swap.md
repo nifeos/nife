@@ -90,7 +90,7 @@ How it works:
 - **The handoff is everything.** `video_terminal::handoff` writes the live grid, the scrollback
   oldest first, the cursor, the rendition and the parser's state, three little-endian words a
   cell. Because the run exists only during a swap, it is sent rather than mapped at build:
-  `CTL_HANDOFF`, a `SEND_CAP` on the control endpoint, answered `NOTE_WRITTEN` once the blob is in
+  `CTL_HANDOFF`, a `SEND_CAPABILITY` on the control endpoint, answered `NOTE_WRITTEN` once the blob is in
   it. A replacement started `START_ABSORB` takes the same message before it paints, so its first
   picture is the incumbent's screen rendered from the absorbed state.
 

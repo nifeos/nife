@@ -359,14 +359,14 @@ fn mem_flag_must_have_a_numeric_value() {
 }
 
 #[test]
-fn caps_previews_the_command_you_would_have_typed() {
+fn capabilities_previews_the_command_you_would_have_typed() {
     // The tail is the line itself, so what you inspect and what you run cannot drift apart.
-    assert_eq!(parse(b"caps"), Command::Caps(b""));
+    assert_eq!(parse(b"caps"), Command::Capabilities(b""));
     assert_eq!(
         parse(b"caps memory_grant_depleter --mem 16"),
-        Command::Caps(b"memory_grant_depleter --mem 16")
+        Command::Capabilities(b"memory_grant_depleter --mem 16")
     );
-    let Command::Caps(tail) = parse(b"caps memory_grant_depleter --mem 16") else {
+    let Command::Capabilities(tail) = parse(b"caps memory_grant_depleter --mem 16") else {
         panic!()
     };
     let (Command::Run(previewed), Command::Run(typed)) =

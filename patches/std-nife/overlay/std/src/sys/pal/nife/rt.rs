@@ -96,8 +96,8 @@ unsafe fn trap6(nr: u64, a: [u64; 6]) -> [u64; 6] {
 }
 
 /// Invoke a capability. See `crates/user_mode_runtime::invoke`, of which this is a twin.
-pub unsafe fn invoke(cap: u64, method: u64, a0: u64, a1: u64, a2: u64) -> i64 {
-    unsafe { trap6(abi::SYS_INVOKE, [cap, method, a0, a1, a2, 0])[0] as i64 }
+pub unsafe fn invoke(capability: u64, method: u64, a0: u64, a1: u64, a2: u64) -> i64 {
+    unsafe { trap6(abi::SYS_INVOKE, [capability, method, a0, a1, a2, 0])[0] as i64 }
 }
 
 /// SEND three words on the endpoint in `slot`. Blocks until a receiver takes them.
@@ -132,16 +132,16 @@ pub fn call(slot: u64, w0: u64, w1: u64) -> (u64, u64) {
 
 /// [`call`], also returning the capability the server's reply carried, if it carried one (§255
 /// (each socket is its own capability)): the net PAL's socket opens. A twin of
-/// `user_mode_runtime::call_receiving`. `NO_CAP` goes in as the unused third argument, so a refused
+/// `user_mode_runtime::call_receiving`. `NO_CAPABILITY` goes in as the unused third argument, so a refused
 /// `CALL`, which writes no `x2`, reads as no capability rather than as slot 0.
 pub fn call_receiving(slot: u64, w0: u64, w1: u64) -> (u64, u64, Option<u64>) {
-    let none = abi::rendezvous::NO_CAP;
+    let none = abi::rendezvous::NO_CAPABILITY;
     // SAFETY: CALL returns the two reply words and the delivered slot in the first three registers.
     let w = unsafe { trap6(abi::SYS_INVOKE, [slot, abi::rendezvous::CALL, w0, w1, none, 0]) };
     (w[0], w[1], (w[2] != none).then_some(w[2]))
 }
 
-/// Drop the capability in `slot` (`SYS_CAP_DELETE`). A twin of `user_mode_runtime::cap_delete`.
+/// Drop the capability in `slot` (`SYS_CAPABILITY_DELETE`). A twin of `user_mode_runtime::capability_delete`.
 /// **`ThreadControlBlock::CONFIGURE` joining a process** (milestone 812 (`std::thread::spawn` runs
 /// real threads in one address space)): the process capability in `process` with `BIND`, and the new
 /// thread's thread pointer in the sixth register. The answer is the thread's current-CPU page, or a
@@ -166,8 +166,8 @@ pub fn exit_thread(word: u64) -> ! {
     }
 }
 
-pub fn cap_delete(slot: u64) {
-    let _ = unsafe { trap6(abi::SYS_CAP_DELETE, [slot, 0, 0, 0, 0, 0]) };
+pub fn capability_delete(slot: u64) {
+    let _ = unsafe { trap6(abi::SYS_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
 }
 
 /// Give up the CPU (`SYS_YIELD`); the timed sleep loop is built on this.

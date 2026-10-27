@@ -22,8 +22,8 @@ use abi::rights;
 use socket_contract::*;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{
-    badge, call, call_receiving, cap_delete, exit, map_page_frame, now, receive, receive_cap,
-    retype_into_page_frame, send, send_capability, yield_now,
+    badge, call, call_receiving, capability_delete, exit, map_page_frame, now, receive,
+    receive_capability, retype_into_page_frame, send, send_capability, yield_now,
 };
 
 use crate::socket_test_client::TFTP_NAME;
@@ -42,7 +42,7 @@ pub(crate) const RPT_LEAKED: u64 = 1;
 pub(crate) const RPT_QUIET: u64 = 0;
 
 // Word 2 of that report (`recv_refused`) sets one bit per kernel-IPC probe on the squatter's own
-// socket capability that was refused: bit 0 a plain `RECEIVE`, bit 1 a `RECEIVE_CAP`. Both set is
+// socket capability that was refused: bit 0 a plain `RECEIVE`, bit 1 a `RECEIVE_CAPABILITY`. Both set is
 // the held world (the minted socket capability carries no `READ`, so neither can drain the stack).
 //
 // Word 1 of that report sets one bit per attempt that was refused, ten in all. In order: the six
@@ -59,7 +59,7 @@ const TFTP_PORT: u16 = 69;
 
 /// How long to watch the page, in seconds. The victim's exchange completes well inside this once
 /// it is told to go; the bound ends this program in the world the test asserts.
-const WATCH_SECS: u64 = 5;
+const WATCH_SECONDS: u64 = 5;
 
 // SAFETY: `run` maps this page writable at PAGE_FRAME_VA before any read or write below.
 static WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_FRAME_VA, PAGE) };
@@ -115,7 +115,7 @@ pub fn run() -> ! {
         if (receive(own).0 as i64) < 0 {
             recv_refused |= 1 << 0;
         }
-        if (receive_cap(own).0 as i64) < 0 {
+        if (receive_capability(own).0 as i64) < 0 {
             recv_refused |= 1 << 1;
         }
         if badge(own, SOCKET_BADGE | 2) < 0 {
@@ -127,10 +127,10 @@ pub fn run() -> ! {
         }
         match call_receiving(own, OPERATION_OPEN_UDP, 0) {
             (REP_ERR, _, None) => refused |= 1 << 9,
-            (_, _, Some(opened)) => cap_delete(opened),
+            (_, _, Some(opened)) => capability_delete(opened),
             _ => {}
         }
-        cap_delete(own);
+        capability_delete(own);
     }
 
     // 5. Arm a valid request in our page and watch it for the victim's reply.
@@ -157,7 +157,7 @@ pub fn run() -> ! {
 
     send(REPORT, RPT_ARMED, refused, recv_refused);
 
-    let deadline = now() + WATCH_SECS * user_mode_runtime::cntfrq();
+    let deadline = now() + WATCH_SECONDS * user_mode_runtime::cntfrq();
     while now() < deadline && WINDOW.r16(OFF_LEN) == 0 {
         yield_now();
     }

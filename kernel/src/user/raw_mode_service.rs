@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::{self, RendezvousId};
 use crate::user::holding::Holding;
 
@@ -82,10 +82,10 @@ fn start_with(replaceable: bool) -> (Wiring, Holding) {
 
     let line_editor_tid = sched::spawn(move || {
         let all = [
-            rendezvous_cap(term, Rights::READ),    // slot 0: TERM, RECEIVE_CAP
-            rendezvous_cap(conreq, Rights::WRITE), // slot 1: CONREQ, SEND
-            rendezvous_cap(conrep, Rights::READ),  // slot 2: CONREP, RECEIVE
-            rendezvous_cap(control, Rights::READ), // slot 3: control, RECEIVE (replaceable only)
+            rendezvous_capability(term, Rights::READ), // slot 0: TERM, RECEIVE_CAPABILITY
+            rendezvous_capability(conreq, Rights::WRITE), // slot 1: CONREQ, SEND
+            rendezvous_capability(conrep, Rights::READ), // slot 2: CONREP, RECEIVE
+            rendezvous_capability(control, Rights::READ), // slot 3: control, RECEIVE (replaceable only)
         ];
         run(
             image,

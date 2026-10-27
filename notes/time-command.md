@@ -170,7 +170,7 @@ Named here rather than in a tracker, next to the feature.
 
 - A duration does not actually need a clock capability, and this command requires one anyway.
   Wall clock is `offset + counter` (notes/clock.md), the offset is constant across a command, and the
-  counter is **ambient**: `user_mode_runtime::monotonic_nanos` is two register reads and no syscall, available
+  counter is **ambient**: `user_mode_runtime::monotonic_ns` is two register reads and no syscall, available
   to every process in the system. So `end - start` reduces to a difference of counter readings, and
   a `time` built on the counter alone would need no capability, could not be refused, and would be
   *immune* to the stepped-clock hazard above rather than merely honest about it.
@@ -180,7 +180,7 @@ Named here rather than in a tracker, next to the feature.
   `time` declines to measure something it could have measured. The design was settled in milestone
   86's roadmap block before the code was written and is implemented as recorded; this paragraph is
   the objection, kept next to the feature so the next reader does not have to rediscover it. If it is
-  revisited, the change is small and local: read `monotonic_nanos` at both ends, delete `Untimed`'s
+  revisited, the change is small and local: read `monotonic_ns` at both ends, delete `Untimed`'s
   two clock arms, and the wiring below stops being needed.
 - **`time` cannot be a stage of a pipeline.** `date | time wc` is refused with "is a builtin that
   produces no stream, so it cannot be a stage of a pipeline". Unix allows it. Nothing here needs it,

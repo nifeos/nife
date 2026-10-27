@@ -29,9 +29,9 @@ use line_editor::component::{self, supervisor as s};
 use line_editor::proto;
 use supervision_protocol::{Child as Built, ChildEndowment, Retention};
 use user_mode_runtime::{
-    Delivered, cap_delete as delete_capability, cntfrq, notification_poll, notification_signal,
-    notification_wait, now, receive, receive_fault, receive_request, reply, send, send_capability,
-    timer_arm,
+    Delivered, capability_delete as delete_capability, cntfrq, notification_poll,
+    notification_signal, notification_wait, now, receive, receive_fault, receive_request, reply,
+    send, send_capability, timer_arm,
 };
 use video_terminal::component as display;
 
@@ -306,7 +306,7 @@ impl<'a> Child<'a> {
                 let plan = self.plan_for(self.controls[p]);
                 let region = supervision_protocol::memory_region_split(place, plan.pages()).ok()?;
                 let endow = ChildEndowment {
-                    caps: plan.caps(),
+                    capabilities: plan.capabilities(),
                     maps: plan.maps(),
                     blobs: &[],
                     fault: Some(self.faultep),
@@ -331,7 +331,7 @@ impl<'a> Child<'a> {
                     (self.notify, abi::rights::WRITE),
                 ];
                 let endow = ChildEndowment {
-                    caps: &capabilities,
+                    capabilities: &capabilities,
                     fault: Some(self.faultep),
                     ..ChildEndowment::new(Retention::Nothing)
                 };
@@ -659,7 +659,7 @@ impl Supervisor<'_> {
             region,
             &d.own,
             &ChildEndowment {
-                caps: &granted,
+                capabilities: &granted,
                 fault: Some(faultep),
                 stack_pages: STAND_IN_STACK_PAGES,
                 ..ChildEndowment::new(Retention::Nothing)

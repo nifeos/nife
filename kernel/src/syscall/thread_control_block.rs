@@ -1,4 +1,4 @@
-//! **The `ThreadControlBlock` methods**: `CONFIGURE`, `CAP_INSERT`, `START` and
+//! **The `ThreadControlBlock` methods**: `CONFIGURE`, `CAPABILITY_INSERT`, `START` and
 //! `SET_THREAD_POINTER`, the spawn machinery a loader runs once per child, and §300 (the paused
 //! state, a TCB verb, silent)'s `SUSPEND` and `RESUME`. See notes/syscall-boundary.md.
 //!
@@ -7,7 +7,7 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Object, Rights};
+use crate::capability_object::{Object, Rights};
 use crate::sched;
 
 /// Decode a `ThreadControlBlock` method on the thread `tid` and run it, out of line like every
@@ -35,11 +35,11 @@ pub(super) fn thread_control_block_invoke(
             }
             thread_control_block_set_thread_pointer(tid, a0, frame)
         }
-        abi::thread_control_block::CAP_INSERT => {
+        abi::thread_control_block::CAPABILITY_INSERT => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
-            thread_control_block_cap_insert(tid, a0, a1, a2)
+            thread_control_block_capability_insert(tid, a0, a1, a2)
         }
         abi::thread_control_block::START => {
             if !rights.allows(Rights::WRITE) {
@@ -78,7 +78,7 @@ fn thread_control_block_configure(
     aspace_slot: u64,
     thread_pointer: u64,
 ) -> Result<i64, Error> {
-    let aspace = sched::current_cap(aspace_slot).map_err(|_| Error::NoSuchSlot)?;
+    let aspace = sched::current_capability(aspace_slot).map_err(|_| Error::NoSuchSlot)?;
     let aspace_name = match aspace.object {
         Object::AddressSpace(name) => name,
         Object::Process(pid) => {
@@ -110,7 +110,7 @@ fn thread_control_block_configure(
     // space stays nameable)), and keeping one past `START` is retaining authority over the child
     // (§142 (what a spawner retains over a child after `START`)). A second bind through another
     // copy is refused by the registry.
-    let _ = sched::delete_current_cap(aspace_slot);
+    let _ = sched::delete_current_capability(aspace_slot);
     Ok(page as i64)
 }
 
@@ -126,11 +126,11 @@ fn thread_control_block_set_thread_pointer(
     Ok(0)
 }
 
-/// `ThreadControlBlock::CAP_INSERT`: endow the embryo with the capability in `src_slot`, narrowed
+/// `ThreadControlBlock::CAPABILITY_INSERT`: endow the embryo with the capability in `src_slot`, narrowed
 /// to `rights`, at `target` (0 the first free slot, n slot n - 1, so a supervisor can place a fault
-/// endpoint in the reserved slot). Needs `GRANT` and only narrows, as `SEND_CAP`. Returns the slot.
+/// endpoint in the reserved slot). Needs `GRANT` and only narrows, as `SEND_CAPABILITY`. Returns the slot.
 #[inline(never)]
-fn thread_control_block_cap_insert(
+fn thread_control_block_capability_insert(
     tid: crate::thread::ThreadId,
     src_slot: u64,
     rights: u64,
@@ -140,7 +140,7 @@ fn thread_control_block_cap_insert(
     // Read and checked inside `sched`, under the hold that files the copy (`sched::Delegation`).
     #[cfg(feature = "system_tests")]
     crate::delegation_pause::here(); // no lock held
-    let child_slot = sched::thread_control_block_delegate_cap(
+    let child_slot = sched::thread_control_block_delegate_capability(
         tid,
         sched::Delegation {
             slot: src_slot,

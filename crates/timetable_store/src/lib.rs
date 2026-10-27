@@ -37,8 +37,7 @@ pub const MANIFEST_FILE_NAME: &str = "durable-sessions";
 /// there is no reason for the two ceilings to differ in this demonstration; a real deployment sizes
 /// both against how many principals it actually has.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_IDENTITIES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_IDENTITIES: usize = 8;
 
 /// The longest one identity name this crate will carry.
@@ -48,9 +47,8 @@ pub const MAXIMUM_IDENTITIES: usize = 8;
 /// log in with is not a name this store needs to carry either. Not enforced by a shared dependency
 /// (this crate takes none), only by this constant and the comment naming why it was chosen.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_IDENTITY_LEN`.
-pub const MAXIMUM_IDENTITY_LEN: usize = 64;
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_IDENTITY_BYTES: usize = 64;
 
 /// A parsed manifest: the identity names it lists, in document order, each borrowing the document's
 /// own bytes.
@@ -72,7 +70,7 @@ impl<'a> Manifest<'a> {
 /// configuration error nobody can find in the file is one nobody will fix.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Error {
-    /// A name longer than [`MAXIMUM_IDENTITY_LEN`].
+    /// A name longer than [`MAXIMUM_IDENTITY_BYTES`].
     NameTooLong(usize),
     /// More identities than [`MAXIMUM_IDENTITIES`], reported at the line that overflowed rather
     /// than dropped, matching `timetable::Error::TooManyEntries`'s own posture.
@@ -125,7 +123,7 @@ pub fn parse_manifest(doc: &str) -> Result<Manifest<'_>, Error> {
             continue;
         }
         let bytes = line.as_bytes();
-        if bytes.len() > MAXIMUM_IDENTITY_LEN {
+        if bytes.len() > MAXIMUM_IDENTITY_BYTES {
             return Err(Error::NameTooLong(no));
         }
         if n == MAXIMUM_IDENTITIES {
@@ -152,7 +150,7 @@ fn strip_comment(line: &str) -> &str {
 ///
 /// A fixed buffer, because this crate is `no_std` with no `alloc`, as `timetable::write_plan` is.
 /// `None` if `names` will not fit [`MAXIMUM_IDENTITIES`], any one name is longer than
-/// [`MAXIMUM_IDENTITY_LEN`], or the rendered document is wider than `buf`; otherwise
+/// [`MAXIMUM_IDENTITY_BYTES`], or the rendered document is wider than `buf`; otherwise
 /// `Some(bytes written)`.
 ///
 /// # Examples
@@ -175,7 +173,7 @@ pub fn render_manifest(names: &[&[u8]], buf: &mut [u8]) -> Option<usize> {
     }
     let mut n = 0usize;
     for name in names {
-        if name.is_empty() || name.len() > MAXIMUM_IDENTITY_LEN {
+        if name.is_empty() || name.len() > MAXIMUM_IDENTITY_BYTES {
             return None;
         }
         if n + name.len() + 1 > buf.len() {
@@ -221,7 +219,7 @@ mod tests {
 
     #[test]
     fn a_name_past_the_bound_is_refused_at_its_own_line() {
-        let mut doc = repeat_byte_string(b'a', MAXIMUM_IDENTITY_LEN + 1);
+        let mut doc = repeat_byte_string(b'a', MAXIMUM_IDENTITY_BYTES + 1);
         doc.push('\n');
         assert_eq!(parse_manifest(&doc), Err(Error::NameTooLong(1)));
     }
@@ -259,7 +257,7 @@ mod tests {
         assert_eq!(render_manifest(&many, &mut buf), None);
 
         // A name past the bound.
-        let long = repeat_byte_string(b'a', MAXIMUM_IDENTITY_LEN + 1);
+        let long = repeat_byte_string(b'a', MAXIMUM_IDENTITY_BYTES + 1);
         assert_eq!(render_manifest(&[long.as_bytes()], &mut buf), None);
 
         // A buffer too small for what would otherwise fit.
@@ -277,8 +275,8 @@ mod tests {
     /// lost the 64th byte of a name or the 8th identity would pass the whole suite above.
     #[test]
     fn the_last_thing_that_fits_still_fits() {
-        // A name of exactly MAXIMUM_IDENTITY_LEN bytes, through both halves.
-        let longest = repeat_byte_string(b'a', MAXIMUM_IDENTITY_LEN);
+        // A name of exactly MAXIMUM_IDENTITY_BYTES bytes, through both halves.
+        let longest = repeat_byte_string(b'a', MAXIMUM_IDENTITY_BYTES);
         let mut doc = longest.clone();
         doc.push('\n');
         assert_eq!(
@@ -339,7 +337,7 @@ mod tests {
     #[test]
     fn each_error_carries_the_line_it_is_about() {
         let mut doc = String::from("# heading\nalice\n");
-        doc.push_str(&repeat_byte_string(b'a', MAXIMUM_IDENTITY_LEN + 1));
+        doc.push_str(&repeat_byte_string(b'a', MAXIMUM_IDENTITY_BYTES + 1));
         doc.push('\n');
         assert_eq!(parse_manifest(&doc).unwrap_err().line(), 3);
 

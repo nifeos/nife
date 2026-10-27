@@ -53,7 +53,7 @@ fn spend_a_window() {
     }
 }
 
-/// `invoke(cap, SURVEY, cursor, record, _)` through the real dispatcher: the three words a
+/// `invoke(capability, SURVEY, cursor, record, _)` through the real dispatcher: the three words a
 /// userspace caller reads out of its registers.
 fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);

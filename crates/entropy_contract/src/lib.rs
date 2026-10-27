@@ -25,8 +25,7 @@
 /// Asking for more than this is not an error, it is answered with this many, and the caller loops;
 /// see [`want`].
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_BYTES: u64 = 8;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position

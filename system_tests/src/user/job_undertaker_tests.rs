@@ -4,7 +4,7 @@ use abi::fault::EVENT_EXIT;
 use super::supervision_tests::{REPORT_STUB, REPORT_WORD, build_child_in, build_child_with};
 use super::*;
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 use crate::user::holding::Holding;
@@ -27,7 +27,7 @@ const JOBS: u64 = 12;
 /// the *claim* is about which budget the pages land in, and that is asserted exactly.
 const YIELDS: u32 = 4000;
 
-/// `invoke(cap, REAP, tid, _, _)` through the real dispatcher, for the tidy-up in the control.
+/// `invoke(capability, REAP, tid, _, _)` through the real dispatcher, for the tidy-up in the control.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
@@ -99,9 +99,9 @@ fn spawn_job_undertaker_with(
         crate::memory_region::create(2).expect("no tcb region for job_undertaker");
     let tid = sched::create_thread_control_block(thread_control_block_region)
         .expect("no tcb for job_undertaker");
-    let slot = sched::thread_control_block_insert_cap(
+    let slot = sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::rendezvous_cap(deaths, Rights::READ),
+        crate::capability_object::rendezvous_capability(deaths, Rights::READ),
         None,
     )
     .expect("insert the supervision endpoint");
@@ -110,18 +110,21 @@ fn spawn_job_undertaker_with(
         "job_undertaker reads its supervision endpoint from slot 0",
     );
     if let Some((report, spawn)) = tell {
-        for (want, cap) in [
-            (1, crate::cap::rendezvous_cap(report, Rights::WRITE)),
+        for (want, capability) in [
+            (
+                1,
+                crate::capability_object::rendezvous_capability(report, Rights::WRITE),
+            ),
             (
                 2,
-                crate::cap::rendezvous_cap_badged(
+                crate::capability_object::rendezvous_capability_badged(
                     spawn,
                     Rights::WRITE,
                     grant_plan::spawnproto::UNDERTAKER_BADGE,
                 ),
             ),
         ] {
-            let slot = sched::thread_control_block_insert_cap(tid, cap, None)
+            let slot = sched::thread_control_block_insert_capability(tid, capability, None)
                 .expect("insert job_undertaker's endpoints");
             assert_eq!(slot, want, "job_undertaker names its endpoints by slot");
         }
@@ -174,13 +177,17 @@ fn without_a_collector_a_bounded_job_pool_runs_out() {
     );
 
     // Tidy: collect the three corpses the way the collector would, then give the pool back.
-    let cap = sched::grant(crate::cap::rendezvous_cap(deaths, Rights::READ)).expect("hold deaths");
+    let capability = sched::grant(crate::capability_object::rendezvous_capability(
+        deaths,
+        Rights::READ,
+    ))
+    .expect("hold deaths");
     for _ in 0..ROOM {
-        let msg = receive_death(cap);
+        let msg = receive_death(capability);
         assert_eq!(msg[0], EVENT_EXIT, "the report stub exits cleanly");
-        assert_eq!(reap(cap, msg[1]), Ok(0), "the tidy-up reap failed");
+        assert_eq!(reap(capability, msg[1]), Ok(0), "the tidy-up reap failed");
     }
-    let _ = sched::delete_current_cap(cap);
+    let _ = sched::delete_current_capability(capability);
     sched::reclaim_region(pool).expect("the job pool did not come back");
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
@@ -275,11 +282,11 @@ fn job_undertaker_says_which_job_it_reaped_and_only_then_is_its_window_free() {
     let tid = build_child_with(
         region,
         REPORT_STUB,
-        &[crate::cap::rendezvous_cap(
+        &[crate::capability_object::rendezvous_capability(
             report,
             Rights::WRITE.union(Rights::GRANT),
         )],
-        Some(crate::cap::rendezvous_cap_badged(
+        Some(crate::capability_object::rendezvous_capability_badged(
             deaths,
             Rights::READ,
             LABEL,

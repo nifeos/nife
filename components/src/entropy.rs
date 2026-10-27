@@ -375,8 +375,8 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
     loop {
         let req = receive_request(REQ);
         let w0 = req.w0;
-        let Some(cap) = req.delivered.into_reply() else {
-            // A plain SEND, or a SEND_CAP, on a CALL-only contract. Nobody is waiting for an
+        let Some(capability) = req.delivered.into_reply() else {
+            // A plain SEND, or a SEND_CAPABILITY, on a CALL-only contract. Nobody is waiting for an
             // answer, so there is nothing to do and nothing to report; drop it (a delegation's slot
             // is deleted, milestone 706 (a `CALL` server can tell a Reply from a delegation))
             // rather than replying into a slot that is not a Reply. (The clock service answers the
@@ -394,7 +394,7 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // is a contract change rather than a branch added here.
             _ => (proto::NO_ENTROPY, 0),
         };
-        reply(cap, count, word);
+        reply(capability, count, word);
     }
 }
 
@@ -512,7 +512,7 @@ fn serve_instruction() -> ! {
     loop {
         let req = receive_request(I_REQ);
         let w0 = req.w0;
-        let Some(cap) = req.delivered.into_reply() else {
+        let Some(capability) = req.delivered.into_reply() else {
             // Same reasoning as `serve`'s identical line: nobody is waiting for an answer.
             continue;
         };
@@ -523,7 +523,7 @@ fn serve_instruction() -> ! {
             },
             _ => (proto::NO_ENTROPY, 0),
         };
-        reply(cap, count, word);
+        reply(capability, count, word);
     }
 }
 

@@ -31,7 +31,9 @@
 
 use grant_plan::spawnproto;
 use timetable::{Registry, contract, registration};
-use user_mode_runtime::{cap_delete, exit, monotonic_nanos, reap, receive_fault, send, yield_now};
+use user_mode_runtime::{
+    capability_delete, exit, monotonic_ns, reap, receive_fault, send, yield_now,
+};
 
 /// The document. Compiled in; see `BUGS`.
 const CONFIG: &str = include_str!("../timetable.conf");
@@ -119,7 +121,7 @@ fn start(fires_wanted: u64, initial_ramdisk_len: u64, registration_page: u64) ->
     PAGE.store(registration_page, core::sync::atomic::Ordering::Relaxed);
     // A scheduled job never holds the run-unvouched capability, gate D2 of §219 (how the shell
     // names an installed program to the spawner), so §220 (signed builds, and trusting a key is
-    // scoped) reaches it. Checked once: this program makes no `RECEIVE_CAP` after `_start`.
+    // scoped) reaches it. Checked once: this program makes no `RECEIVE_CAPABILITY` after `_start`.
     // Every probe here runs before anything is allocated, because a region split later could land
     // in the slot and read as held. See `notes/scheduled-execution/the-program.md`.
     let store = user_mode_runtime::is_granted(ACTIVATION);
@@ -174,7 +176,7 @@ fn start(fires_wanted: u64, initial_ramdisk_len: u64, registration_page: u64) ->
     // reads to exactly this line.
     say(b"timetable: armed\n");
 
-    reg.arm(monotonic_nanos());
+    reg.arm(monotonic_ns());
 
     let mut tally = Tally {
         held,
@@ -296,7 +298,7 @@ impl Tally {
             } else {
                 None
             });
-            let now = monotonic_nanos();
+            let now = monotonic_ns();
             let mut any = false;
             while let Some(i) = reg.due(now) {
                 any = true;
@@ -723,7 +725,7 @@ fn replace_if_asked(
     };
 
     // Committed from here: nothing below can refuse.
-    let kept = next.arm_after(reg, monotonic_nanos());
+    let kept = next.arm_after(reg, monotonic_ns());
     *reg = next;
     *images = next_images;
     *current = spare;
@@ -778,7 +780,7 @@ fn fire(elf: &elf::Elf, arg: u64, report: bool, clock: bool) -> bool {
         supervision_protocol::memory_region_destroy(region);
         return false;
     }
-    cap_delete(region);
+    capability_delete(region);
     true
 }
 
@@ -833,7 +835,7 @@ fn fire_with_grant(
         supervision_protocol::memory_region_destroy(region);
         return None;
     }
-    cap_delete(region);
+    capability_delete(region);
     Some(mem_slot)
 }
 
@@ -885,9 +887,9 @@ fn wall_reading() -> Option<timetable::WallReading> {
     if !clock_contract::state::is_known(r.state) {
         return None;
     }
-    let wall = clock_contract::wall_nanos(r.offset_nanos, monotonic_nanos());
+    let wall = clock_contract::wall_ns(r.offset_nanos, monotonic_ns());
     Some(timetable::WallReading {
-        minute: (wall / (60 * clock_contract::NANOS_PER_SEC)) as i64,
+        minute: (wall / (60 * clock_contract::NS_PER_SECOND)) as i64,
         generation: r.generation,
         set: r.state == clock_contract::state::SET,
     })

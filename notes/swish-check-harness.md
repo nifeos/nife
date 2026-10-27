@@ -87,7 +87,7 @@ the kernel's output goes through a ring a log service drains. Once that is built
 longer writes the UART directly and nothing is left to splice.
 
 `without_redraws` handles the console redrawing a partial prompt line beneath a gauge. The flush
-timer is `FLUSH_NANOS` in `components/src/system_log.rs`, and the redraw is
+timer is `FLUSH_NS` in `components/src/system_log.rs`, and the redraw is
 `system_log_contract::console::Inserter::flush`. The mechanism and the runs are in
 [swish-check-flake.md](swish-check-flake.md), "The noteless signature". Only gauges are taken out
 of the redraw's queue. Any other kernel line flushed above a redraw stays and fails the line it lands

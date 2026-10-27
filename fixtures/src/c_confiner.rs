@@ -31,7 +31,7 @@
 // two parts this milestone leans on: a child born with shared pages and born supervised.
 use c_seam::checks;
 use supervision_protocol::{ChildEndowment, Retention};
-use user_mode_runtime::{cap_delete, map_page_frame, receive_fault, send};
+use user_mode_runtime::{capability_delete, map_page_frame, receive_fault, send};
 
 /// What the kernel grants us, and nothing else.
 const ROOT_UT: u64 = 0; // the construction budget: what we build each instance out of
@@ -110,7 +110,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
                 // The shell's whole authority: say what happened, and spend the region it lives in
                 // (which is what pays for `malloc`). No GRANT on either, so it can neither lend the
                 // report endpoint on nor hand its budget to anyone.
-                caps: &[
+                capabilities: &[
                     (REPORT, abi::rights::WRITE),
                     (region, abi::rights::SPEND_ONLY),
                 ],
@@ -137,7 +137,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         if !supervision_protocol::start_child(child, 0, attempt, 0) {
             bail(12)
         }
-        cap_delete(region);
+        capability_delete(region);
 
         // Block until the child dies, one way or the other. All five words, because the fourth is the
         // faulting address and this is the program that cares where the C code pointed.

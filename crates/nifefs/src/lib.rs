@@ -81,8 +81,7 @@ pub const ENTRIES_IN_FIRST_BLOCK: usize = (BLOCK - HEADER_LEN) / ENTRY_LEN;
 /// **178 at `DIR_BLOCKS = 14` and `ENTRY_LEN = 40`.** It costs image bytes and no kernel stack,
 /// because [`Fs`] holds no entry array.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_FILES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_FILES: usize = (DIR_BLOCKS * BLOCK - HEADER_LEN) / ENTRY_LEN;
 
 /// Why [`Fs::parse`] refused an image.

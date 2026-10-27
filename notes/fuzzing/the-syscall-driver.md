@@ -42,7 +42,7 @@ here; every EL0 test in the suite crosses it.
 `CORPUS` holds the seeds kept because they found something. Seed 180 was the first that a
 5,000-seed sweep found red under the patch for milestone 633 (an outside agent attacks the
 confinement claim). That defect needs a delegation left staged by a plain `RECEIVE`, then a later
-plain `SEND` collected by `RECEIVE_CAP` (2026-10-04, UTC). Seed 559 is the first a 5,000-seed sweep
+plain `SEND` collected by `RECEIVE_CAPABILITY` (2026-10-04, UTC). Seed 559 is the first a 5,000-seed sweep
 found red under the revocation-in-flight patch, at step 14.
 
 Under the committed seeds, all six patches were replayed under QEMU on aarch64, riscv64 and x86_64,
@@ -51,9 +51,9 @@ at seed 19, step 63, inside the suite's range. Revocation in flight went red onl
 
 ## The BUGS, in full
 
-- `SYS_CAP_DELETE` is driven through `sched::delete_current_cap`, not `syscall::dispatch`.
+- `SYS_CAPABILITY_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
   `TrapFrame` has no setter for the syscall number, so a kernel thread cannot build a frame
-  `dispatch` would read as `SYS_CAP_DELETE`. `dispatch`'s arm is that one call and `Ok(0)`.
+  `dispatch` would read as `SYS_CAPABILITY_DELETE`. `dispatch`'s arm is that one call and `Ok(0)`.
 - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
   `Timer`, `Interrupt`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages. No
   actor

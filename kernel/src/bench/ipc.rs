@@ -104,19 +104,19 @@ pub(super) fn call_reply() {
 
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_cap(ep); // [word, reply_slot, word2]
+            let m = sched::inter_process_communication_receive_capability(ep); // [word, reply_slot, word2]
             if m[0] == u64::MAX {
                 break;
             }
             let slot = m[1];
-            let crate::cap::Object::Reply(caller) = sched::current_cap(slot)
+            let crate::capability_object::Object::Reply(caller) = sched::current_capability(slot)
                 .expect("bench: no reply cap")
                 .object
             else {
-                panic!("bench: RECEIVE_CAP of a CALL did not deliver a Reply capability");
+                panic!("bench: RECEIVE_CAPABILITY of a CALL did not deliver a Reply capability");
             };
             sched::ipc_reply(caller, [m[0], 0]);
-            let _ = sched::delete_current_cap(slot);
+            let _ = sched::delete_current_capability(slot);
         }
     })
     .expect("bench: no call server");
@@ -129,14 +129,14 @@ pub(super) fn call_reply() {
             sched::ipc_call(ep, [1, 0]);
         }
     });
-    // Release the server: it is parked in RECEIVE_CAP, and a plain SEND rendezvouses with it all
+    // Release the server: it is parked in RECEIVE_CAPABILITY, and a plain SEND rendezvouses with it all
     // the same (the cap and plain paths share the wait queues), delivering the sentinel.
     sched::ipc_send(ep, [u64::MAX, 0, 0]);
 }
 
 /// What a queue broker costs when both ends are up, §41 (the endpoint is the broker).
 ///
-/// The broker serves its front endpoint with `RECEIVE_CAP`, holds the client's one-shot Reply
+/// The broker serves its front endpoint with `RECEIVE_CAPABILITY`, holds the client's one-shot Reply
 /// capability while it CALLs the backend, and answers through it. Its difference from
 /// [`call_reply`], the same client and backend with nothing between, is the opt-in rung's whole
 /// tax. See notes/benchmarks/kernel-bench-harness.md.
@@ -148,7 +148,7 @@ pub(super) fn broker_rtt() {
     // server in `call_reply` does.
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_cap(back);
+            let m = sched::inter_process_communication_receive_capability(back);
             if m[0] == u64::MAX {
                 break;
             }
@@ -160,7 +160,7 @@ pub(super) fn broker_rtt() {
     // The broker: both ends are up, so it buffers nothing.
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_cap(front);
+            let m = sched::inter_process_communication_receive_capability(front);
             if m[0] == u64::MAX {
                 sched::ipc_send(back, [u64::MAX, 0, 0]);
                 break;
@@ -182,14 +182,14 @@ pub(super) fn broker_rtt() {
     sched::ipc_send(front, [u64::MAX, 0, 0]); // releases the broker, which releases the backend
 }
 
-/// Answer through the one-shot Reply capability `RECEIVE_CAP` delivered, and consume it.
+/// Answer through the one-shot Reply capability `RECEIVE_CAPABILITY` delivered, and consume it.
 fn reply_to(slot: u64, word: u64) {
-    let crate::cap::Object::Reply(caller) = sched::current_cap(slot)
+    let crate::capability_object::Object::Reply(caller) = sched::current_capability(slot)
         .expect("bench: no reply cap")
         .object
     else {
-        panic!("bench: RECEIVE_CAP of a CALL did not deliver a Reply capability");
+        panic!("bench: RECEIVE_CAPABILITY of a CALL did not deliver a Reply capability");
     };
     sched::ipc_reply(caller, [word, 0]);
-    let _ = sched::delete_current_cap(slot);
+    let _ = sched::delete_current_capability(slot);
 }

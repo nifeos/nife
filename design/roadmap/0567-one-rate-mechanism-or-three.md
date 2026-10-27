@@ -33,7 +33,7 @@ Buys: one refusal path. Today aarch64 literally cannot say "unknown", so its `cn
 share a failure mode. A caller written against one of them can be surprised by another.
 
 Costs, measured rather than asserted. aarch64's read is a single `mrs` with `nomem`. The page is
-a load that can miss, and `monotonic_nanos` calls it per measurement. Collapsing costs a frame per
+a load that can miss, and `monotonic_ns` calls it per measurement. Collapsing costs a frame per
 machine plus a mapping per process, spending intermediate table pages from each process's own budget.
 It would put aarch64 on the same footing the other two have, where a path that forgets to map it
 faults. The riscv64 rollout touched seven kernel call sites and the first run hung because two were

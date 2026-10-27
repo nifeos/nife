@@ -20,24 +20,26 @@
 use super::{u16, u32, u64};
 use crate::acpi::Ownership;
 
-/// The most IVHDs (of the chosen type) recorded. A client AMD part has one IOMMU; a two-socket
-/// server can have eight. Name: provisional.
+/// The most translation units (of the chosen type) recorded. AMD IOMMU calls a translation unit an
+/// IVHD (I/O Virtualization Hardware Definition). A client AMD part has one IOMMU; a two-socket
+/// server can have eight.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_IVHDS`.
-pub const MAXIMUM_IVHDS: usize = 8;
-/// The most device-id ranges recorded across every unit, a select entry counting as a range of
-/// one. QEMU's `q35` with every device this tree's runner attaches writes about a dozen. Name:
-/// provisional.
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "IVHD")]
+pub const MAXIMUM_TRANSLATION_UNITS: usize = 8;
+/// The most device-id ranges recorded across every translation unit (every IVHD), a select entry
+/// counting as a range of one. QEMU's `q35` with every device this tree's runner attaches writes
+/// about a dozen.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_IVHD_RANGES`.
-pub const MAXIMUM_IVHD_RANGES: usize = 64;
-/// The most IVMDs recorded. Name: provisional.
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "IVHD")]
+pub const MAXIMUM_TRANSLATION_UNIT_DEVICE_RANGES: usize = 64;
+/// The most reserved regions recorded. AMD IOMMU calls one an IVMD (I/O Virtualization Memory
+/// Definition).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_IVMDS`.
-pub const MAXIMUM_IVMDS: usize = 8;
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "IVMD")]
+pub const MAXIMUM_RESERVED_REGIONS: usize = 8;
 
 /// Four bytes of `IVinfo`, eight reserved.
 const IVRS_FIXED_LEN: usize = 12;
@@ -131,11 +133,11 @@ pub struct IvrsUnits {
     /// The IVHD type decoded: the highest of 10h, 11h and 40h the table carries. Zero when there
     /// is no IVHD.
     pub ivhd_type: u8,
-    pub ivhds: [Ivhd; MAXIMUM_IVHDS],
+    pub ivhds: [Ivhd; MAXIMUM_TRANSLATION_UNITS],
     pub ivhd_count: usize,
-    pub ranges: [DeviceRange; MAXIMUM_IVHD_RANGES],
+    pub ranges: [DeviceRange; MAXIMUM_TRANSLATION_UNIT_DEVICE_RANGES],
     pub range_count: usize,
-    pub unity: [UnityRegion; MAXIMUM_IVMDS],
+    pub unity: [UnityRegion; MAXIMUM_RESERVED_REGIONS],
     pub unity_count: usize,
     /// IVMDs refused as malformed (zero length, or a range that wraps), counted so the boot print
     /// can say so.
@@ -151,11 +153,11 @@ impl Default for IvrsUnits {
         Self {
             ivinfo: 0,
             ivhd_type: 0,
-            ivhds: [Ivhd::default(); MAXIMUM_IVHDS],
+            ivhds: [Ivhd::default(); MAXIMUM_TRANSLATION_UNITS],
             ivhd_count: 0,
-            ranges: [DeviceRange::default(); MAXIMUM_IVHD_RANGES],
+            ranges: [DeviceRange::default(); MAXIMUM_TRANSLATION_UNIT_DEVICE_RANGES],
             range_count: 0,
-            unity: [UnityRegion::default(); MAXIMUM_IVMDS],
+            unity: [UnityRegion::default(); MAXIMUM_RESERVED_REGIONS],
             unity_count: 0,
             unity_refused: 0,
             truncated: false,
@@ -222,7 +224,7 @@ impl IvrsUnits {
             self.truncated = true;
             return;
         }
-        if self.ivhd_count == MAXIMUM_IVHDS {
+        if self.ivhd_count == MAXIMUM_TRANSLATION_UNITS {
             self.truncated = true;
             return;
         }
@@ -327,7 +329,7 @@ impl IvrsUnits {
     }
 
     fn push(&mut self, r: DeviceRange) {
-        if self.range_count == MAXIMUM_IVHD_RANGES {
+        if self.range_count == MAXIMUM_TRANSLATION_UNIT_DEVICE_RANGES {
             self.truncated = true;
             return;
         }
@@ -372,7 +374,7 @@ impl IvrsUnits {
         if self.unity[..self.unity_count].contains(&r) {
             return;
         }
-        if self.unity_count == MAXIMUM_IVMDS {
+        if self.unity_count == MAXIMUM_RESERVED_REGIONS {
             self.truncated = true;
             return;
         }

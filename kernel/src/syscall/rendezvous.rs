@@ -1,5 +1,5 @@
-//! **The `Rendezvous` methods of the IPC round trip**: `SEND`, `RECEIVE`, `SEND_CAP`,
-//! `RECEIVE_CAP` and `CALL`, with `SURVEY` beside them.
+//! **The `Rendezvous` methods of the IPC round trip**: `SEND`, `RECEIVE`, `SEND_CAPABILITY`,
+//! `RECEIVE_CAPABILITY` and `CALL`, with `SURVEY` beside them.
 //!
 //! Every function here is `#[inline(always)]`, and that is the point of the file: a child module
 //! can land in another codegen unit, where a plain function is not inlined, and the round trip
@@ -61,7 +61,7 @@ pub(super) fn rendezvous_receive(
     Ok(msg[0] as i64)
 }
 
-/// `Rendezvous::SEND_CAP`: delegation. `slot` is the slot of the capability to pass on, `narrow`
+/// `Rendezvous::SEND_CAPABILITY`: delegation. `slot` is the slot of the capability to pass on, `narrow`
 /// the rights to narrow it to, `word` one data word. Two rights are in play and they are different
 /// questions: WRITE on *this* endpoint (may I send here?) and GRANT on the *delegated* capability
 /// (was I trusted to pass it on?). Without GRANT you may use a thing and not lend it.
@@ -79,7 +79,7 @@ pub(super) fn rendezvous_send_capability(
     // copy, so no revocation sweep falls between the read and the filing (`sched::Delegation`).
     #[cfg(feature = "system_tests")]
     crate::delegation_pause::here(); // no lock held
-    sched::ipc_delegate_cap(
+    sched::inter_process_communication_delegate_capability(
         ep,
         word,
         sched::Delegation {
@@ -96,7 +96,7 @@ pub(super) fn rendezvous_send_capability(
     Ok(0)
 }
 
-/// `Rendezvous::RECEIVE_CAP`, which takes READ like `RECEIVE`.
+/// `Rendezvous::RECEIVE_CAPABILITY`, which takes READ like `RECEIVE`.
 #[inline(always)]
 pub(super) fn rendezvous_receive_capability(
     frame: &mut TrapFrame,
@@ -106,11 +106,11 @@ pub(super) fn rendezvous_receive_capability(
     if !rights.allows(Rights::READ) {
         return Err(Error::NotPermitted);
     }
-    let msg = sched::ipc_receive_cap(ep);
+    let msg = sched::inter_process_communication_receive_capability(ep);
     if sched::take_ipc_aborted() {
         return Err(Error::Gone); // endpoint revoked; the message is a placeholder
     }
-    // x1 the slot the capability landed in or `NO_CAP`, x2 the second word, x3 the sender's
+    // x1 the slot the capability landed in or `NO_CAPABILITY`, x2 the second word, x3 the sender's
     // badge. x4 is `BOUND`, `REPLY_DELIVERED` (§245 (a `CALL` server tells a Reply from a
     // delegation)) or 0, and is the one register no sender can write.
     frame.set_arg(1, msg[1]);
@@ -121,7 +121,7 @@ pub(super) fn rendezvous_receive_capability(
 }
 
 /// `Rendezvous::CALL`: send two words and block until replied. The kernel mints a one-shot Reply
-/// cap naming us into the server (delivered by its `RECEIVE_CAP`); we return here only when the
+/// cap naming us into the server (delivered by its `RECEIVE_CAPABILITY`); we return here only when the
 /// server invokes it. See §12 (Call/Reply IPC: a one-shot reply capability) and
 /// notes/ipc-naming.md. Sending needs WRITE, like SEND.
 #[inline(always)]
@@ -140,7 +140,7 @@ pub(super) fn rendezvous_call(
         return Err(aborted_send_error()); // revoked or refused; no call, no reply
     }
     frame.set_arg(1, reply[1]); // r1; r0 returns in x0 below
-    // Written on every CALL, so a caller reads the kernel's word (a filed slot or `NO_CAP`),
+    // Written on every CALL, so a caller reads the kernel's word (a filed slot or `NO_CAPABILITY`),
     // never what it left in x2 itself.
     frame.set_arg(2, reply[2]);
     Ok(reply[0] as i64)

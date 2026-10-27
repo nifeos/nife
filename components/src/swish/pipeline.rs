@@ -475,11 +475,11 @@ fn spawn_stages(
         ) {
             // Stages after this one never sent their frames, so their slots go too.
             for a in argvs[i + 1..].iter().flatten() {
-                cap_delete(a.frame);
+                capability_delete(a.frame);
             }
             for w in sets[i + 1..].iter().flatten() {
                 if let Some(p) = w.set {
-                    cap_delete(p.frame);
+                    capability_delete(p.frame);
                 }
             }
             return false;
@@ -877,10 +877,10 @@ fn spawn_stage(
                 // The argv frame was never sent, so its slot is still ours; its region is the
                 // caller's to give back.
                 if let Some(a) = argv {
-                    cap_delete(a.frame);
+                    capability_delete(a.frame);
                 }
                 if let Some(p) = words.and_then(|w| w.set) {
-                    cap_delete(p.frame);
+                    capability_delete(p.frame);
                 }
                 failed();
                 print(b"  this shell's memory budget is exhausted; nothing left to grant\n");
@@ -929,13 +929,13 @@ fn spawn_stage(
     // (`spawnproto::PROGRAM_ARGUMENTS_BIT`, `NAMESET_BIT`), as `spawn` sends them.
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
-        cap_delete(a.frame);
+        capability_delete(a.frame);
     }
     if let Some(w) = &words {
         send_set(w);
     }
-    // In the protocol's order, which both sides read out of the same word. A `SEND_CAP` nobody
-    // expects and a `RECEIVE_CAP` nobody answers both deadlock, so the order is the contract.
+    // In the protocol's order, which both sides read out of the same word. A `SEND_CAPABILITY` nobody
+    // expects and a `RECEIVE_CAPABILITY` nobody answers both deadlock, so the order is the contract.
     if let Some(slot) = sink {
         delegate(slot, abi::rights::WRITE | abi::rights::GRANT);
     }
@@ -954,7 +954,7 @@ fn spawn_stage(
         // Every right, for `running`'s reason (milestone 824 (a retype mints no right its budget
         // lacks)).
         delegate(slot, abi::rights::ALL);
-        cap_delete(slot);
+        capability_delete(slot);
     }
     delegate_machine_page(wiring.machine);
 
@@ -984,12 +984,12 @@ fn spawn_stage(
 /// (the `yes | head` shape); see [`PIPE_REGION_PAGES`].
 fn release_pipeline(region: u64, pipes: &[u64]) {
     for &p in pipes {
-        cap_delete(p);
+        capability_delete(p);
     }
     // Retried for `reclaim`'s reason: a child finishing its last instruction still counts as a live
     // thread, and DESTROY refuses while one is resident.
     reclaim(region);
-    cap_delete(region);
+    capability_delete(region);
 }
 
 /// RETYPE one page of `region` into an `Rendezvous` we hold with full rights, which is what lets us

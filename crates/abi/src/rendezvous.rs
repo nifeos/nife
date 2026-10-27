@@ -1,4 +1,4 @@
-/// `invoke(cap, SEND, w0, w1, w2)` -> 0. **Blocks until a receiver takes the message.**
+/// `invoke(capability, SEND, w0, w1, w2)` -> 0. **Blocks until a receiver takes the message.**
 ///
 /// The three words travel in registers and never touch memory. That is the whole of the
 /// fastpath, and it is DECISIONS §10's rule made real: *IPC carries control.* Bulk data will
@@ -10,53 +10,59 @@
 /// inside the send. See `crates/byte_sink_contract`.
 pub const SEND: u64 = 0;
 
-/// `invoke(cap, RECEIVE, _, _, _)` -> w0, with w1 in x1 and w2 in x2. **Blocks until a message
+/// `invoke(capability, RECEIVE, _, _, _)` -> w0, with w1 in x1 and w2 in x2. **Blocks until a message
 /// arrives.** Only the kernel writes `x3` and `x4`: `x3` is the [`BADGE`] on the sender's capability
 /// (`0` unbadged), or a death's fault address under §26 (the fault endpoint), and `x4` is `0` or
 /// [`notification::BOUND`](crate::notification::BOUND). **It never takes a capability**, §246 (a
-/// plain `RECEIVE` never takes a capability): a [`SEND_CAP`]'s is dropped and a [`CALL`] gets
-/// [`Gone`](crate::Error::Gone); use [`RECEIVE_CAP`] for both.
+/// plain `RECEIVE` never takes a capability): a [`SEND_CAPABILITY`]'s is dropped and a [`CALL`] gets
+/// [`Gone`](crate::Error::Gone); use [`RECEIVE_CAPABILITY`] for both.
 ///
 /// # BUGS
 /// - **`x0` is the sender's own `w0`**, so a negative `w0` equal to an [`Error`](crate::Error) code
 ///   reads as that error to a wrapper that checks the sign (notes/abi/method-contracts.md).
 pub const RECEIVE: u64 = 1;
 
-/// `invoke(cap, SEND_CAP, cap_slot, rights, w0)` -> 0. **Delegate a capability.** Passes the
-/// capability in the sender's `cap_slot`, narrowed to `rights` (see [`crate::rights`]), plus one
+/// `invoke(capability, SEND_CAPABILITY, capability_slot, rights, w0)` -> 0. **Delegate a capability.** Passes the
+/// capability in the sender's `capability_slot`, narrowed to `rights` (see [`crate::rights`]), plus one
 /// data word, over this endpoint; blocks until a receiver takes it. The endpoint capability needs
 /// `WRITE` (you may send here), and the *delegated* capability needs `GRANT` (you were trusted to
 /// pass it on). `rights` may only narrow what the sender holds, never widen it. This is the
 /// operation that makes nife a capability system a process can actually compose in: authority moves
 /// between processes at runtime instead of being wired by the kernel at spawn. Only a
-/// [`RECEIVE_CAP`] takes the capability: a plain [`RECEIVE`] gets the data word and the copy is
+/// [`RECEIVE_CAPABILITY`] takes the capability: a plain [`RECEIVE`] gets the data word and the copy is
 /// dropped, on either arrival order (§246, PROVISIONAL number).
-pub const SEND_CAP: u64 = 2;
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `SEND_CAP` under the capability ruling of 2026-10-06 (UTC).
+pub const SEND_CAPABILITY: u64 = 2;
 
-/// `invoke(cap, RECEIVE_CAP, _, _, _)` -> w0, with the received capability's slot in x1 (or
-/// [`NO_CAP`]), a second data word in x2 and the sender's [`BADGE`] in x3 (0 unbadged). **Blocks
+/// `invoke(capability, RECEIVE_CAPABILITY, _, _, _)` -> w0, with the received capability's slot in x1 (or
+/// [`NO_CAPABILITY`]), a second data word in x2 and the sender's [`BADGE`] in x3 (0 unbadged). **Blocks
 /// until a message arrives.** The kernel chooses a free slot; for a [`CALL`] it holds a one-shot
 /// [`crate::reply`] naming the caller. Only the kernel writes `x4`: [`REPLY_DELIVERED`] for a
 /// `CALL`'s Reply, `notification::BOUND` when a bound notification ended the receive, else `0`.
-/// `x1` is `NO_CAP` unless a capability was installed for this delivery. Needs `READ`.
+/// `x1` is `NO_CAPABILITY` unless a capability was installed for this delivery. Needs `READ`.
 ///
 /// # BUGS
 /// - **A §26 death read here loses the faulting `pc`**: supervisors receive deaths with `RECEIVE`.
-/// - A delegation passes the `NO_CAP` guard; see notes/abi/method-contracts.md.
-pub const RECEIVE_CAP: u64 = 3;
+/// - A delegation passes the `NO_CAPABILITY` guard; see notes/abi/method-contracts.md.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `RECEIVE_CAP` under the capability ruling of 2026-10-06 (UTC).
+pub const RECEIVE_CAPABILITY: u64 = 3;
 
-/// `invoke(cap, CALL, w0, w1, _)` -> r0, with r1 in x1 and in x2 the slot of a capability the
-/// server's [`crate::reply::REPLY_CAPABILITY`] carried, or [`NO_CAP`]. **Send two words and block
+/// `invoke(capability, CALL, w0, w1, _)` -> r0, with r1 in x1 and in x2 the slot of a capability the
+/// server's [`crate::reply::REPLY_CAPABILITY`] carried, or [`NO_CAPABILITY`]. **Send two words and block
 /// until replied.** The atomic send-and-wait a server can answer safely: at the rendezvous the
 /// kernel mints a one-shot [`crate::reply`] capability naming *this* caller and hands it to the
-/// server (through [`RECEIVE_CAP`]), so the server can answer a caller it was never wired to,
+/// server (through [`RECEIVE_CAPABILITY`]), so the server can answer a caller it was never wired to,
 /// exactly once, and only that caller. Needs `WRITE`. Milestone 12 (call/reply IPC); see
 /// notes/ipc-naming.md. A `CALL` that reaches a plain [`RECEIVE`] returns
 /// [`Gone`](crate::Error::Gone): the receiver gets the two words, and there is nowhere to put the
 /// Reply (§246, PROVISIONAL number).
 pub const CALL: u64 = 4;
 
-/// `invoke(cap, REAP, tid, _, _)` -> 0. **Collect a corpse this endpoint supervises**, §32 (a
+/// `invoke(capability, REAP, tid, _, _)` -> 0. **Collect a corpse this endpoint supervises**, §32 (a
 /// supervisor may collect a corpse): reclaim the TCB, space and region of the thread `tid` names.
 /// Needs `READ`, and the thread's recorded fault endpoint must *be* this endpoint.
 ///
@@ -68,7 +74,7 @@ pub const CALL: u64 = 4;
 /// - `NotPermitted` has a second, unmeasured cause; see notes/abi/method-contracts.md.
 pub const REAP: u64 = 5;
 
-/// `invoke(cap, SURVEY, cursor, record, 0)` -> `(next_cursor, tid, word)`: **read one entry of the
+/// `invoke(capability, SURVEY, cursor, record, 0)` -> `(next_cursor, tid, word)`: **read one entry of the
 /// domain this endpoint supervises** (milestone 126 (the `procps` package)), the threads whose fault
 /// endpoint is this one. `record` picks the word ([`survey::record`](super::survey::record)); an
 /// unknown one is [`crate::Error::BadMethod`], refused before the walk.
@@ -79,7 +85,7 @@ pub const REAP: u64 = 5;
 /// Each call is its own snapshot, never a lock held across the walk; see notes/abi/method-contracts.md.
 pub const SURVEY: u64 = 6;
 
-/// `invoke(cap, BADGE, badge, _, _)` -> the slot of a badged copy of this endpoint capability, in
+/// `invoke(capability, BADGE, badge, _, _)` -> the slot of a badged copy of this endpoint capability, in
 /// x0 as `memory_region::RETYPE_OBJ` answers, or a negative [`crate::Error`] (milestone 599 (a
 /// frame per filesystem client channel); provisional name and number). The copy names the same
 /// endpoint with the same rights plus `badge`, which the kernel delivers to the server when its
@@ -87,19 +93,22 @@ pub const SURVEY: u64 = 6;
 ///
 /// Needs `GRANT`, a delegation-class power. Refuses a `badge` of 0 (the unbadged value) and a
 /// source already badged: a badge is set once (seL4's rule), so a holder can trust the one it was
-/// given. It rides through a later [`SEND_CAP`], because that copies the object.
+/// given. It rides through a later [`SEND_CAPABILITY`], because that copies the object.
 pub const BADGE: u64 = 7;
 
-/// The x1 value from [`RECEIVE_CAP`] when the message carried no capability.
-pub const NO_CAP: u64 = u64::MAX;
+/// The x1 value from [`RECEIVE_CAPABILITY`] when the message carried no capability.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `NO_CAP` under the capability ruling of 2026-10-06 (UTC).
+pub const NO_CAPABILITY: u64 = u64::MAX;
 
 /// **The tag on a receive that delivered a `CALL`'s Reply** (milestone 706 (a `CALL` server can
 /// tell a Reply from a delegation), DECISIONS §245 (a `CALL` server tells a Reply from a
-/// delegation)). [`RECEIVE_CAP`] returns it in `x4` exactly when the kernel installed the one-shot
+/// delegation)). [`RECEIVE_CAPABILITY`] returns it in `x4` exactly when the kernel installed the one-shot
 /// [`crate::reply`] it minted for a [`CALL`], with `x1` its slot. Only the kernel writes `x4`: a
 /// delegation, a plain [`SEND`], an interrupt signal and a §26 death leave it `0`. A `CALL` whose
-/// Reply did not fit the table arrives with `x1 ==` [`NO_CAP`] and `x4 == 0`. **Test this, never
-/// `x1 != NO_CAP`**: `user_mode_runtime::receive_request` does, and returns the typed Reply
+/// Reply did not fit the table arrives with `x1 ==` [`NO_CAPABILITY`] and `x4 == 0`. **Test this, never
+/// `x1 != NO_CAPABILITY`**: `user_mode_runtime::receive_request` does, and returns the typed Reply
 /// `user_mode_runtime::reply` accepts. Ruled by calef on 2026-10-03 (UTC): "Option 1 with the typed
 /// runtime helper."
 ///

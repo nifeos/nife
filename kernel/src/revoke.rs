@@ -12,7 +12,7 @@ use crate::sync::{InterruptSafeGuard, InterruptSafeMutex, rank};
 
 /// One recorded mapping: `va` in the owning space maps `phys`, under the capability whose run
 /// starts at `object`. `phys == 0` is a tombstone (no real frame is 0). The run's base names a
-/// capability and all its derivatives, because `Cap::derive` never changes the object; a mapping
+/// capability and all its derivatives, because `Capability::derive` never changes the object; a mapping
 /// made with no capability records the page itself (`object == phys`).
 ///
 /// # BUGS
@@ -79,8 +79,11 @@ pub fn log_pages_for(n: u64) -> u64 {
 #[derive(Clone, Copy)]
 pub enum PageMapSource {
     /// The capability whose object begins at this physical address, **and every capability derived
-    /// from it**: `Cap::derive` narrows rights and never changes the object, so one address names
+    /// from it**: `Capability::derive` narrows rights and never changes the object, so one address names
     /// the whole family. For a `PageFrame` run this is the run's base, not the page being mapped.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+    /// `Cap` under the capability ruling of 2026-10-06 (UTC).
     Capability(u64),
     /// No capability names this page. `MemoryRegion::MAP` retypes and maps in one step, and the
     /// kernel's own loaders map pages straight into a space they are building; in both cases there
@@ -329,13 +332,13 @@ pub(crate) fn forget_root(root: u64) {
 
 /// The mapping registry, held: the one critical section a mapping is read, made and recorded in
 /// (name provisional). A capability's frame is mapped and recorded under the hold its capability
-/// was read under ([`MappingHold::current_cap`]); a sweep deletes capabilities before it takes this
+/// was read under ([`MappingHold::current_capability`]); a sweep deletes capabilities before it takes this
 /// registry, so it either precedes the read (`NoSuchSlot`) or its unmap pass finds the record. See
 /// notes/mapping-log.md.
 ///
 /// # BUGS
 ///
-/// A caller can still read with `sched::current_cap` outside a hold and map with it.
+/// A caller can still read with `sched::current_capability` outside a hold and map with it.
 pub struct MappingHold {
     spaces: InterruptSafeGuard<'static, Registry>,
 }
@@ -354,8 +357,14 @@ impl MappingHold {
     /// made from.
     ///
     /// Context: `SPACES` held; takes the running thread's `CAPABILITY_TABLE` lock beneath it.
-    pub fn current_cap(&self, slot: u64) -> Result<crate::cap::Cap, crate::cap::Error> {
-        crate::sched::current_cap(slot)
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+    /// `current_capability` under the capability ruling of 2026-10-06 (UTC).
+    pub fn current_capability(
+        &self,
+        slot: u64,
+    ) -> Result<crate::capability_object::Capability, crate::capability_object::Error> {
+        crate::sched::current_capability(slot)
     }
 
     /// Record that the space rooted at `root` maps `phys` at `va` under `under`, paid for by that
@@ -611,7 +620,7 @@ pub fn revoke_page_frame(phys: u64) {
 /// Context: takes `IPC_TABLES` (each `CAPABILITY_TABLE` beneath it) for the capability pass and
 /// releases it, then `SPACES` once per page for the unmap pass.
 pub(crate) fn revoke_page_frame_run(phys: u64, count: u64) {
-    crate::sched::delete_page_frame_caps(phys, count);
+    crate::sched::delete_page_frame_capabilities(phys, count);
     for k in 0..count {
         unmap_under_object(phys + k * page_frames::FRAME_SIZE, phys);
     }
@@ -625,7 +634,7 @@ pub(crate) fn revoke_page_frame_run(phys: u64, count: u64) {
 ///
 /// Context: takes `IPC_TABLES` for the capability pass and releases it, then `SPACES`.
 pub fn revoke_device_from_others(phys: u64) {
-    crate::sched::delete_device_frame_caps_from_others(phys);
+    crate::sched::delete_device_frame_capabilities_from_others(phys);
     // The invoker is the current thread, so its space is the one installed in TTBR0 (satp, CR3).
     unmap_everywhere(phys, mmu::current_user_root());
 }
@@ -636,7 +645,7 @@ pub fn revoke_device_from_others(phys: u64) {
 /// fault on its next `in`/`out`. `x86_64` only.
 #[cfg(target_arch = "x86_64")]
 pub fn revoke_port_range_from_others(base: u16, count: u16) {
-    crate::sched::delete_port_range_caps_from_others(base, count);
+    crate::sched::delete_port_range_capabilities_from_others(base, count);
 }
 
 /// Take an x86 port range back from everyone, the invoker included, for the kernel's port tests.
@@ -647,7 +656,7 @@ pub fn revoke_port_range_from_others(base: u16, count: u16) {
     allow(dead_code)
 )]
 pub fn revoke_port_range(base: u16, count: u16) {
-    crate::sched::delete_port_range_caps(base, count);
+    crate::sched::delete_port_range_capabilities(base, count);
 }
 
 /// Revoke every page in `[base, base + size)` before `memory_region::destroy` returns them: delete
@@ -662,7 +671,7 @@ pub fn revoke_port_range(base: u16, count: u16) {
 /// Context: takes `IPC_TABLES` for the capability pass and releases it, then `SPACES` for each scan
 /// and cut. The caller holds neither, nor `MEMORY_REGION`.
 pub fn revoke_region(base: u64, size: u64) {
-    crate::sched::delete_page_frame_caps_overlapping(base, size);
+    crate::sched::delete_page_frame_capabilities_overlapping(base, size);
     // One scan finds either kind of record, so the common case costs one pass over the logs. Order
     // between kinds does not matter: a leaf under a table cut first is tombstoned with the cut, and
     // an unmap through a cut table finds nothing and tombstones anyway.
@@ -709,7 +718,7 @@ mod tests {
     use paging::Flags;
 
     use super::*;
-    use crate::cap::{Rights, page_frame_run_cap, page_frame_run_len};
+    use crate::capability_object::{Rights, page_frame_run_capability, page_frame_run_len};
     use crate::user::AddressSpace;
 
     /// `N` consecutive pages out of one region. A region is a contiguous span and `retype_page`
@@ -761,7 +770,7 @@ mod tests {
         )
         .expect("map B");
 
-        let slot = crate::sched::grant(page_frame_run_cap(
+        let slot = crate::sched::grant(page_frame_run_capability(
             run[0],
             page_frame_run_len(3),
             Rights::ALL,
@@ -781,7 +790,7 @@ mod tests {
             "the run's last page survived the revoke in B",
         );
         assert!(
-            crate::sched::current_cap(slot).is_err(),
+            crate::sched::current_capability(slot).is_err(),
             "REVOKE left the capability that named the run in the revoker's own table",
         );
 
@@ -802,13 +811,13 @@ mod tests {
 
         // `Rights::ALL` carries the `GRANT` `PageFrame::REVOKE` requires, which no run capability
         // in the shipping tree has; minting it here is what makes this path reachable.
-        let window = crate::sched::grant(page_frame_run_cap(
+        let window = crate::sched::grant(page_frame_run_capability(
             run[0],
             page_frame_run_len(4),
             Rights::ALL,
         ))
         .expect("grant the whole window");
-        let surface = crate::sched::grant(page_frame_run_cap(
+        let surface = crate::sched::grant(page_frame_run_capability(
             run[1],
             page_frame_run_len(3),
             Rights::ALL,
@@ -846,11 +855,11 @@ mod tests {
              space-blind unmap §132 replaced",
         );
         assert!(
-            crate::sched::current_cap(surface).is_err(),
+            crate::sched::current_capability(surface).is_err(),
             "REVOKE left the capability that named the revoked run in the revoker's own table",
         );
         assert!(
-            crate::sched::current_cap(window).is_ok(),
+            crate::sched::current_capability(window).is_ok(),
             "revoking a run deleted an overlapping capability nobody revoked: §132 option B, \
              refused because a three-page holder must not be able to delete a four-page one",
         );
@@ -923,23 +932,26 @@ mod tests {
             )
             .expect("map");
 
-        let run_slot = crate::sched::grant(page_frame_run_cap(
+        let run_slot = crate::sched::grant(page_frame_run_capability(
             run[0],
             page_frame_run_len(3),
             Rights::ALL,
         ))
         .expect("grant the run");
-        let lone_slot = crate::sched::grant(crate::cap::page_frame_cap(unmapped, Rights::ALL))
-            .expect("grant the unmapped page");
+        let lone_slot = crate::sched::grant(crate::capability_object::page_frame_capability(
+            unmapped,
+            Rights::ALL,
+        ))
+        .expect("grant the unmapped page");
 
         crate::memory_region::destroy(region);
 
         assert!(
-            crate::sched::current_cap(run_slot).is_err(),
+            crate::sched::current_capability(run_slot).is_err(),
             "a run capability outlived the reclamation of the pages it names: §13's use-after-free",
         );
         assert!(
-            crate::sched::current_cap(lone_slot).is_err(),
+            crate::sched::current_capability(lone_slot).is_err(),
             "a capability to a never-mapped page outlived its region: the mapping log cannot see it",
         );
         assert!(

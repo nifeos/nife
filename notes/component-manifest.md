@@ -35,7 +35,7 @@ receiving on its report channel and sending its answers to the operator's coordi
 nothing to see but a hang.
 
 The rights were typed by hand at six call sites. `READ` on an endpoint means the holder may park
-in `RECEIVE_CAP`; `WRITE` means it may only ask. §41's whole confinement claim is that a client of the
+in `RECEIVE_CAPABILITY`; `WRITE` means it may only ask. §41's whole confinement claim is that a client of the
 stable endpoint cannot become its server, and the test that proves it endows an attacker with the
 honest client's exact capabilities. One character wrong in `client_caps` and that test fails for a
 reason no reader could find from the operator's source.
@@ -207,8 +207,8 @@ supervisor:
    pub const RENDERER: Requirements = Requirements {
        contract: "renderer",
        caps: &[
-           CapNeed { role: "frames", direction: Serve },
-           CapNeed { role: "report", direction: Use },
+           CapabilityNeed { role: "frames", direction: Serve },
+           CapabilityNeed { role: "report", direction: Use },
        ],
        maps: &[MapNeed { role: "canvas", va: 0x0400_0000, kind: PageKind::Shared }],
        pages: 32,
@@ -279,19 +279,19 @@ reports an assertion that failed, so a reader is told which `Requirements` is wr
 the duplicate themselves. `Requirements::problem()` returns the `Refusal` with the role in it and a
 host test prints the good message; the `const` assertion cannot.
 
-`MAXIMUM_CAPS` and `MAXIMUM_MAPS` are fixed at eight and four. A `Plan` is a value in a `no_std`
+`MAXIMUM_CAPABILITIES` and `MAXIMUM_MAPS` are fixed at eight and four. A `Plan` is a value in a `no_std`
 program with no allocator, so the bound is a real limit: a manifest past it is refused rather than
 served. Both are roughly double what the widest declaration in this tree asks for.
 
 Nothing checks that a routed object is the *kind* the role wants. A supervisor that routes a frame
-where the component declared an endpoint gets a plan, and the kernel refuses the `CAP_INSERT` or the
+where the component declared an endpoint gets a plan, and the kernel refuses the `CAPABILITY_INSERT` or the
 component's first `RECEIVE` instead. This is deliberate rather than an omission: the declaration carries
 the direction and the address, which is what a supervisor can get wrong *silently*, and the object
 type is what the kernel already refuses loudly.
 
 The role names are provisional. A lane may not mint a name, and `service`, `report`, `operator`,
 `control`, `witness`, `uart`, `requests` and `backend` are the words a reader meets first. So are
-`Requirements`, `Provisions`, `Plan`, `CapNeed`, `MapNeed` and `Direction`.
+`Requirements`, `Provisions`, `Plan`, `CapabilityNeed`, `MapNeed` and `Direction`.
 
 Three residuals of milestone 23 (a capability-routed component OS with live replacement) remain,
 untouched here: state handoff (the crux,

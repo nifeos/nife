@@ -27,9 +27,9 @@ corner of `READ` is on `capability::Rights::ENUMERATE`, where a reader meets it.
 supervision endpoint is what `RECEIVE` and `REAP` take, so a `ps` granted `READ` could reap a child,
 and a domain names its members rather than acting on them.
 
-## `SEND_CAP` is share, not move
+## `SEND_CAPABILITY` is share, not move
 
-Delegating a capability over IPC (`SEND_CAP`, whose body is `sched::ipc_delegate_cap`) reads the
+Delegating a capability over IPC (`SEND_CAPABILITY`, whose body is `sched::inter_process_communication_delegate_capability`) reads the
 sender's cap and delivers a *new* one to the receiver:
 
 ```rust
@@ -41,10 +41,10 @@ Ok(Cap { object: src.object, rights: self.rights })
 ```
 
 **The read and the filing are one critical section, and that is a revocation property, not a
-tidiness one** (2026-10-04 UTC). Until then the syscall layer read the source with `current_cap`
-and handed the copy to `ipc_send_cap`, which filed it under a second hold of the lock. A
+tidiness one** (2026-10-04 UTC). Until then the syscall layer read the source with `current_capability`
+and handed the copy to `inter_process_communication_send_capability`, which filed it under a second hold of the lock. A
 `PageFrame::REVOKE` or `MemoryRegion::DESTROY` sweep could run between the two, delete the source,
-and pass by before the copy was filed, so the copy survived the revoke. `CAP_INSERT` and `SLICE`
+and pass by before the copy was filed, so the copy survived the revoke. `CAPABILITY_INSERT` and `SLICE`
 had the same shape. `sched::Delegation` carries the argument and
 `system_tests::user::revocation_window_tests` the three tests that drove a sweep into the gap.
 A `MAP` had the use-side version of the same gap: it read its frame, then mapped and recorded, and
@@ -72,7 +72,7 @@ This section was headed "Two independent narrowings" and had the first two rows 
 heading no longer counts them, because the count is the part that rots and the independence is the
 part that matters.
 
-`SEND_CAP` needs `WRITE` on the *endpoint* (may I send here?) and `GRANT` on the *delegated*
+`SEND_CAPABILITY` needs `WRITE` on the *endpoint* (may I send here?) and `GRANT` on the *delegated*
 capability (was I trusted to lend it?). Two rights, two objects, two questions.
 
 ## Frames, end to end
@@ -81,7 +81,7 @@ The frame path shows every piece confining the next:
 
 1. `MemoryRegion::RETYPE` mints the owner a `PageFrame` with `READ|WRITE|GRANT` (`syscall.rs:181`).
 2. The owner maps it writable (`PageFrame::MAP` with the writable flag needs `WRITE`).
-3. The owner delegates a `READ`-only, no-`GRANT` derivative with `SEND_CAP`.
+3. The owner delegates a `READ`-only, no-`GRANT` derivative with `SEND_CAPABILITY`.
 4. The consumer's `PageFrame::MAP` sees `READ` without `WRITE`, so it is confined to `user_rodata`: it
    maps the same physical page but cannot write it, and cannot pass it on.
 
@@ -159,7 +159,7 @@ recorded), which is precisely why it is a first-class object there and parked he
 ## Where authority can enter at all
 
 Only three ways, and none is ambient: retype it out of untyped you hold, be handed it
-(`SEND_CAP` / spawn-time grant), or derive a narrower copy of one you already have. There is no
+(`SEND_CAPABILITY` / spawn-time grant), or derive a narrower copy of one you already have. There is no
 `open(path)`, no global name, no way to mint authority from who you are. A thread's capability table is empty
 until something puts a capability in it. That is the whole of §10, seen from the object's side.
 
@@ -169,23 +169,23 @@ until something puts a capability in it. That is the whole of §10, seen from th
 Each holds `IPC_TABLES` for its whole walk and takes each table's lock beneath it.
 
 Every sweep clears the hand-off slot too. A capability sent to a rendezvous nobody is receiving
-on yet sits in the sender's `Thread::outgoing_cap`, in no table, until a `RECEIVE_CAP` files it. A
+on yet sits in the sender's `Thread::outgoing_capability`, in no table, until a `RECEIVE_CAPABILITY` files it. A
 sweep that read tables alone would leave a live capability there, and `MemoryRegion::DESTROY` would
 return its pages while it was still on its way (the use-after-free of §13 (capability revocation
-and untyped reclamation)). `delete_reply_caps_naming` applies the same rule to `Reply`. The send
-is not failed: the data word still arrives and the receiver sees `NO_CAP`, as it does when its
+and untyped reclamation)). `delete_reply_capabilities_naming` applies the same rule to `Reply`. The send
+is not failed: the data word still arrives and the receiver sees `NO_CAPABILITY`, as it does when its
 table is full, so no new error reaches userspace. `kernel::user::revocation_in_flight_tests` is the
 falsification.
 
 ### Two `PageFrame` sweeps, for two questions
 
-`delete_page_frame_caps(phys, count)` is `PageFrame::REVOKE`'s. It deletes every capability naming
+`delete_page_frame_capabilities(phys, count)` is `PageFrame::REVOKE`'s. It deletes every capability naming
 exactly that run. A narrowed copy goes, since `derive` never changes the object. A different
 sub-range of the same memory stays (§102 (a frame names a run)); whether a revoke should take an
 overlapping holder's capability is the open question of §132 (what `PageFrame::REVOKE` owes an
 overlapping run).
 
-`delete_page_frame_caps_overlapping(base, size)` is reclamation's. The allocator is about to reuse
+`delete_page_frame_capabilities_overlapping(base, size)` is reclamation's. The allocator is about to reuse
 the range, so any capability naming any page of it goes. Equality would miss a run capability,
 since `PageFrame(base, 311)` equals no `PageFrame(p, 1)` inside it. The range sweep does not consult
 the mapping log, so a retyped frame that was never mapped loses its capability too. Its end
@@ -195,11 +195,11 @@ removes all access.
 
 ### Take-back sweeps, and port ranges
 
-`delete_device_frame_caps_from_others` (§41 (the endpoint is the broker)) and `PortRange::REVOKE`'s
-`delete_port_range_caps_from_others` spare the invoker's own capability. That is the difference
+`delete_device_frame_capabilities_from_others` (§41 (the endpoint is the broker)) and `PortRange::REVOKE`'s
+`delete_port_range_capabilities_from_others` spare the invoker's own capability. That is the difference
 between reclaiming a page and taking a device back to hand on, and
 `revoke::revoke_device_from_others` has the reasoning. The kernel mints a port capability once, at
-boot. `delete_port_range_caps`, which spares nobody, is for the kernel's tests.
+boot. `delete_port_range_capabilities`, which spares nobody, is for the kernel's tests.
 
 On `x86_64` a port range is enforced by `Thread::port_range_grant` and the TSS bitmap the context
 switch installs from it, not by the table. Clearing the cached grant is not enough on more than one
@@ -212,7 +212,7 @@ states the rule at the writer. The NMI is forced: it is the only message an x86 
 spins for this lock with interrupts masked ([notes/x86-tlb-shootdown.md](x86-tlb-shootdown.md)).
 With an invoker, its own core is spared, because the bitmap there is the invoker's own grant.
 
-`delete_current_cap` takes only the running thread's table lock, so the one-shot `Reply` every
+`delete_current_capability` takes only the running thread's table lock, so the one-shot `Reply` every
 `REPLY` consumes costs no `IPC_TABLES`. On `x86_64`, deleting the `PortRange` behind the thread's
 cached grant also drops the grant and resets this core's bitmap at once. Otherwise the table would
 say the authority was gone while the switch kept installing it, and `system_initializer` deletes its
@@ -225,17 +225,17 @@ the caller.
 A `Delegation` names a source slot and the rights the copy keeps, not a capability. A copy is safe
 only if its source is read in the same critical section that files it, and that critical section
 excludes every sweep. A delegation into another thread holds `IPC_TABLES` across both
-(`ipc_delegate_cap`, `thread_control_block_delegate_cap`). A derivation into the running thread's
+(`inter_process_communication_delegate_capability`, `thread_control_block_delegate_capability`). A derivation into the running thread's
 own table (`grant_derived`) holds that table's lock across both. A sweep then falls wholly before
 (the source is gone, and the delegation answers `NoSuchSlot`) or wholly after (the copy is in a
 table it walks). A copy read in one critical section and filed in another could be filed after a
 sweep passed, and a `PageFrame` has no generation to make it inert.
-`system_tests::user::revocation_window_tests` drives a sweep into that window on `SEND_CAP`,
-`CAP_INSERT` and `SLICE`. Passing a slot leaves no parameter a stale copy could arrive through.
+`system_tests::user::revocation_window_tests` drives a sweep into that window on `SEND_CAPABILITY`,
+`CAPABILITY_INSERT` and `SLICE`. Passing a slot leaves no parameter a stale copy could arrive through.
 
 The tests drive the frame because it has the most to lose: under `MemoryRegion::DESTROY` a
 surviving copy names pages the allocator is about to hand to somebody else. `DeviceFrame::REVOKE`
-and `x86_64`'s `PortRange::REVOKE` delegate through the same `SEND_CAP` and `CAP_INSERT` path, so
+and `x86_64`'s `PortRange::REVOKE` delegate through the same `SEND_CAPABILITY` and `CAPABILITY_INSERT` path, so
 the one fix covers them. Two cores could produce the interleaving by timing, but the window is a few
 hundred instructions wide. So `delegation_pause` holds an armed thread at the start of its
 delegation with no lock held. The test runs the whole sweep, then lets the thread go.

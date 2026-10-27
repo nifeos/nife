@@ -18,14 +18,15 @@ aarch64 re-arms from `CNTV_CVAL_EL0`, an absolute deadline it can read back from
 takes an absolute `time` value and returns nothing. So the grid lives in software, in the per-hart
 `DEADLINE` array, anchored when `init` arms the hart's first deadline.
 
-`rearm` computes `deadline + interval`, never `now + interval`. `now()` is read after the trap
+`rearm` asks `timetable::next_after(deadline, interval, now)`, which is `deadline + interval` and never
+`now + interval`. `now()` is read after the trap
 entry and the SBI round trip, so re-arming from it makes every period `interval + latency`. The
 lateness compounds, and the delivered rate falls below the configured one. On the grid a slow
 handler makes one tick late and leaves the rest where they were.
 
 When the next deadline is already past, arming it would fire at once, again and again. `rearm`
-gives that tick up instead: it counts it in `MISSED_TICKS` and re-anchors the grid at
-`now + interval`. A nonzero miss count means a whole period elapsed inside the handler or inside a
+gives that tick up instead: it counts it in `MISSED_TICKS` and skips to the next grid
+point after `now`, so the tick returns to its original beat. A nonzero miss count means a whole period elapsed inside the handler or inside a
 critical section.
 
 In test builds `miss_detail` keeps the last miss per hart, as the counter value and the deadline it

@@ -168,7 +168,7 @@ legs. It is worth recording which kind of evidence each one rests on.
    consuming one caller's Reply cannot disturb another's.
 3. The capability cannot be duplicated or delegated. This leg is structural, not a harness. There is
    no syscall that copies a capability within a capability table (`CapabilityTable::derive` is
-   kernel-internal). The only cap-moving syscall, `SEND_CAP`, requires `GRANT`, which `reply_cap`
+   kernel-internal). The only cap-moving syscall, `SEND_CAPABILITY`, requires `GRANT`, which `reply_capability`
    deliberately never mints. This leg lives in the shape of the syscall surface (§4 (kernel shape): narrow and
    explicit), so it is an inspection argument. It is backed end to end by the QEMU test in which the
    call server invokes its Reply twice and the kernel refuses the second (`fixtures/src/hello.rs`,
@@ -197,7 +197,7 @@ queue structure (milestone 14 phase A.2; see notes/intrusive-queues.md):
 
 | Harness | Property |
 |---|---|
-| `any_push_pop_interleaving_is_queue_ordered_and_lossless` | the real `Queue`, driven by a six-step *symbolic* operation sequence over three nodes, agrees with a trivially-correct model at every step: FIFO order, no node lost or invented, lengths agree, and no stale link is dereferenced |
+| `any_push_pop_interleaving_is_first_in_first_out_and_lossless` | the real `Queue`, driven by a six-step *symbolic* operation sequence over three nodes, agrees with a trivially-correct model at every step: FIFO order, no node lost or invented, lengths agree, and no stale link is dereferenced |
 
 One harness rather than several, because the operation-sequence shape subsumes the single-step
 properties: a push-preserves-X proof is the sequence of length one.

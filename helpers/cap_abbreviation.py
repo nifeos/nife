@@ -5,14 +5,14 @@ calef, 2026-10-06 (UTC):
     "I don't think we should abbreviate capability as cap."
 
 and, on how to apply it: "Record the ruling. We've almost got a quiet tree so we can run that
-shortly." New code spells `capability` out. Existing code is renamed in one sweep when the tree is
-quiet, from the worklist in design/naming/capability-spelling-worklist.md; this gate makes sure nothing new arrives
-before then. It is rung 2 of the AGENTS.md ladder, and the ruling's record is in
-design/naming/spelled-out-rulings.md.
+shortly." Every identifier spells `capability` out, and this gate makes sure none abbreviates it
+again. It is rung 2 of the AGENTS.md ladder, and the ruling's record is in
+design/naming/spelled-out-rulings.md (the sweep that brought the count to zero is
+design/naming/capability-spelling-worklist.md).
 
     python3 helpers/cap_abbreviation.py --check     # what script/lint runs
     python3 helpers/cap_abbreviation.py --list [PATH..]  # every counted hit, path:line: identifier
-    python3 helpers/cap_abbreviation.py --bank      # lower CEILING to the tree; never raises
+    python3 helpers/cap_abbreviation.py --bank      # lower CEILING to the tree; never raises (it is 0)
     python3 helpers/cap_abbreviation.py --selftest  # the traps, as fixtures
 
 Name: provisional, minted by lane/no-cap-abbreviation on 2026-10-06. A shared python module under
@@ -29,8 +29,7 @@ English word for a ceiling, which nobody abbreviated.
 **Two halves, house_style.py's shape.** A count over `CEILING` fails, which guards `main`, where
 there is no merge base. A branch is also held to its merge base: summed over the `.rs` files it
 changed, the count may not grow. That second half is the real ratchet, because an ordinary edit
-that deletes a `cap` would otherwise leave slack for the next change to spend. The sweep runs
-`--bank` to lower the ceiling.
+that deletes a `cap` would otherwise leave slack for the next change to spend. The ceiling is 0.
 
 **Permanent exclusions, each for a stated reason, not a backlog:**
 
@@ -38,15 +37,15 @@ that deletes a `cap` would otherwise leave slack for the next change to spend. T
 - `KEPT`, identifiers in a named file where `cap` is not this tree's abbreviation of capability.
   Two kinds, each entry saying which. A ceiling: `cap` is the English word for a limit (`heap_cap`,
   a print budget), or `CAP` a buffer's capacity, and nothing abbreviated capability. A register a
-  hardware specification named (VT-d's `CAP`, NVMe's `CAP`, the PCI capability pointer, IEEE
+  hardware specification named (VT-d's `CAP`, NVMe's `CAP`, the RISC-V IOMMU's `caps`, IEEE
   802.3's ability bits): the `operation` ruling's precedent, that an identifier mirroring an
   external API keeps its spelling. Both are proposals in the worklist until calef rules, and an
   entry may only be removed by renaming what it names. Keyed by file, because `CAP` means a
   buffer's size in one file and a capability in another.
 
 BUGS:
-- `ncaps`, `cptr` and other contractions with no separator are one component and do not match.
-  The worklist lists the ones found; the sweep renames them by hand.
+- `ncaps`, `cptr` and other contractions with no separator are one component and do not match;
+  the sweep renamed the `ncaps` sites by hand.
 - The lexer is a lexer, not a parser. It knows comments (nested), strings (raw and byte), char
   literals and lifetimes, which is what this tree uses. A macro that builds an identifier from a
   string (`concat_idents!`, `paste!`) is not read.
@@ -61,14 +60,13 @@ sys.dont_write_bytecode = True
 
 SELF = 'helpers/cap_abbreviation.py'
 
-# The count on 2026-10-06, and since lowered by the sweep's `--bank`. Never raise it by hand: a new
-# `cap` is spelled out, not admitted.
-CEILING = 2_827
+# The sweep drove the count from 2,890 (2026-10-06) to zero. Never raise it: a new `cap` is spelled
+# out, not admitted.
+CEILING = 0
 
 # Identifiers that keep `cap`, by file, each group with its reason. See the header before adding one.
 _CEILING = 'cap is the English word for a limit or a capacity here, not an abbreviation'
 _REGISTER = 'mirrors a register or field a hardware specification named'
-_CALLS = 'a call of an existing tree API whose name is on the sweep worklist, not a name minted here'
 KEPT = {
     'components/src/printenv.rs': ({'CAP'}, _CEILING),
     'crates/calendar/src/lib.rs': ({'FMT_CAP'}, _CEILING),
@@ -81,6 +79,11 @@ KEPT = {
         ({'addresses_past_the_cap_are_dropped_and_the_rest_kept'}, _CEILING),
     'crates/video_terminal/src/vt/tests.rs': ({'scrolls_report_movement_and_cap_at_the_screen'}, _CEILING),
     'xtask/src/board.rs': ({'cap_given'}, _CEILING),
+    # `write_field` truncates to a capacity, the grant-argument test fills the page to its
+    # `CAPACITY`, and the syscall fuzzer's sweep stops at a guest-time deadline.
+    'crates/environment_contract/src/lib.rs': ({'cap'}, _CEILING),
+    'crates/grant_plan/src/parsing/tests.rs': ({'cap'}, _CEILING),
+    'system_tests/src/user/syscall_fuzzer_tests.rs': ({'cap'}, _CEILING),
     # `PRINT_CAP` bounds a diagnostic's lines; the test's `caps` is the verb "limits". Two files since
     # milestone 840 (the scheduler file is split along its seams) moved each out of `sched.rs`.
     'kernel/src/sched/canary.rs': ({'PRINT_CAP'}, _CEILING),
@@ -100,91 +103,6 @@ KEPT = {
     'crates/e1000e/src/pch/sequence.rs': ({'NWAY_AR_10T_HD_CAPS', 'NWAY_AR_10T_FD_CAPS',
                                            'NWAY_AR_100TX_HD_CAPS', 'NWAY_AR_100TX_FD_CAPS',
                                            'CR_1000T_HD_CAPS', 'CR_1000T_FD_CAPS'}, _REGISTER),
-    # PCI Local Bus 3.0 (`PCI_CAP_PTR`, `PCI_STATUS_CAP_LIST`, `PCI_CAP_ID_*`) and virtio 1.x
-    # section 4.1.4 (`VIRTIO_PCI_CAP_*_CFG`). The tree's own names for them are on the worklist.
-    'crates/pci/src/lib.rs': ({'CAP_PTR', 'STATUS_CAP_LIST', 'CAP_ID_MSI', 'CAP_ID_MSIX',
-                               'CAP_ID_VENDOR', 'VIRTIO_CAP_COMMON', 'VIRTIO_CAP_NOTIFY',
-                               'VIRTIO_CAP_ISR', 'VIRTIO_CAP_DEVICE'}, _REGISTER),
-    'crates/pci/src/tests.rs': ({'CAP_PTR', 'STATUS_CAP_LIST', 'CAP_ID_MSI', 'CAP_ID_MSIX',
-                                 'CAP_ID_VENDOR', 'VIRTIO_CAP_COMMON', 'VIRTIO_CAP_NOTIFY',
-                                 'VIRTIO_CAP_ISR', 'VIRTIO_CAP_DEVICE'}, _REGISTER),
-    'kernel/src/pci.rs': ({'VIRTIO_CAP_COMMON', 'VIRTIO_CAP_NOTIFY', 'VIRTIO_CAP_ISR'}, _REGISTER),
-    # Milestone 800 (a non-Anthropic model attacks the confinement claim), 2026-10-07 (UTC): the
-    # outsider pass's fixture and test call these APIs by their existing names and mint no
-    # cap-named identifier of their own.
-    'components/src/socket_squatter.rs': ({'receive_cap'}, _CALLS),
-    'system_tests/src/user/net_confinement_tests.rs':
-        ({'cap', 'memory_region_cap', 'rendezvous_cap'}, _CALLS),
-    # The same pass's chatty reshape: `spawn_swapper`'s two new slots call the same family.
-    'system_tests/src/user/live_swap_tests.rs':
-        ({'cap', 'device_frame_cap', 'memory_region_root_cap', 'notification_cap', 'rendezvous_cap',
-          'thread_control_block_insert_cap', 'timer_cap'}, _CALLS),
-    # Milestone 801 (packages over the internet), 2026-10-09 (UTC): a std program's resolver badge
-    # is minted by the existing constructor, and nothing cap-named is minted here.
-    'system_tests/src/user/std_service.rs': ({'rendezvous_cap_badged'}, _CALLS),
-    # Milestone 812 (`std::thread::spawn` runs real threads in one address space), 2026-10-10
-    # (UTC): the thread-pointer and futex tests call these APIs by their existing names and mint
-    # none, and the `ThreadControlBlock` methods moved out of `kernel/src/syscall.rs` unchanged
-    # (the split §266 (a Rust source file stays under 2,000 lines) asks for), names and all.
-    'system_tests/src/user/futex_tests.rs':
-        ({'cap', 'address_space_cap', 'thread_control_block_insert_cap', 'delete_current_cap'},
-         _CALLS),
-    'system_tests/src/user/thread_pointer_tests.rs':
-        ({'cap', 'address_space_cap', 'thread_control_block_cap', 'thread_control_block_insert_cap',
-          'current_cap', 'delete_current_cap'}, _CALLS),
-    'kernel/src/syscall/thread_control_block.rs':
-        ({'cap', 'CAP_INSERT', 'thread_control_block_cap_insert', 'current_cap',
-          'delete_current_cap', 'thread_control_block_delegate_cap'}, _CALLS),
-    # The same lane's `RETYPE_OBJ` moved out of `kernel/src/syscall.rs` the same way, and its
-    # process and `std` thread tests call the existing APIs; the one name it minted for a process
-    # is spelled out (`process_capability`).
-    'kernel/src/syscall/retype.rs':
-        ({'cap', 'address_space_cap', 'current_cap', 'delete_current_cap', 'notification_cap',
-          'rendezvous_cap', 'thread_control_block_cap', 'timer_cap'}, _CALLS),
-    'system_tests/src/user/process_tests.rs':
-        ({'cap', 'Cap', 'CAP_INSERT', 'address_space_cap', 'current_cap', 'delete_current_cap',
-          'memory_region_cap', 'rendezvous_cap', 'thread_control_block_cap',
-          'thread_control_block_insert_cap'}, _CALLS),
-    # Milestone 836 (a C library, stage 2: threads), 2026-10-12 (UTC), added `page_frame_cap`: a
-    # threaded C program's argument and clock pages are granted by the existing constructor.
-    'system_tests/src/user/std_threads_tests.rs':
-        ({'cap', 'address_space_cap', 'memory_region_cap', 'page_frame_cap', 'rendezvous_cap',
-          'thread_control_block_cap', 'thread_control_block_insert_cap'}, _CALLS),
-    # Milestone 913 (an eighth outsider pass attacks the confinement claim), 2026-10-13 (UTC): the
-    # pass's tests call these APIs by their existing names, and the names they minted are spelled
-    # out (`theirs_capability`, `two_capability_deletes_then_port_out`).
-    'system_tests/src/user/eighth_pass_delegation_race_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'ipc_receive_cap', 'ipc_send_cap', 'NO_CAP',
-          'page_frame_run_cap', 'port_range_cap', 'rendezvous_cap', 'SEND_CAP'}, _CALLS),
-    'system_tests/src/user/eighth_pass_endpoint_usurper_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'RECEIVE_CAP', 'rendezvous_cap', 'SEND_CAP'},
-         _CALLS),
-    'system_tests/src/user/eighth_pass_port_boundary_tests.rs':
-        ({'cap', 'Cap', 'cap_delete_then_port_out', 'CAP_DELETE_THEN_PORT_OUT_PC_OFFSET',
-          'port_range_cap', 'rendezvous_cap'}, _CALLS),
-    'system_tests/src/user/eighth_pass_slot_lifecycle_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'rendezvous_cap'}, _CALLS),
-    'system_tests/src/user/eighth_pass_spawn_audit_tests.rs':
-        ({'cap', 'page_frame_run_cap', 'rendezvous_cap'}, _CALLS),
-    'crates/capability_plan/src/lib.rs': ({'CapNeed', 'caps'}, _CALLS),
-    'kernel/src/user/x86_programs.rs': ({'SYS_CAP_DELETE'}, _CALLS),
-    # Milestone 914 (a ninth outsider pass attacks the confinement claim): the pass's tests call
-    # these APIs by their existing names and mint none of their own.
-    'system_tests/src/user/ninth_pass_authority_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'memory_region_cap_rights'}, _CALLS),
-    'system_tests/src/user/ninth_pass_confinement_tests.rs':
-        ({'cap', 'current_cap', 'delete_current_cap', 'memory_region_cap_rights',
-          'rendezvous_cap'}, _CALLS),
-    'system_tests/src/user/ninth_pass_mapping_tests.rs':
-        ({'cap', 'delete_current_cap', 'memory_region_cap_rights'}, _CALLS),
-    'system_tests/src/user/ninth_pass_port_tests.rs':
-        ({'cap', 'cap_delete_then_port_out', 'CAP_DELETE_THEN_PORT_OUT_PC_OFFSET', 'port_range_cap',
-          'rendezvous_cap', 'thread_control_block_insert_cap'}, _CALLS),
-    'system_tests/src/user/ninth_pass_revocation_tests.rs':
-        ({'cap', 'current_cap', 'delete_port_range_caps', 'device_frame_cap', 'ipc_receive_cap',
-          'ipc_send_cap', 'NO_CAP', 'port_range_cap'}, _CALLS),
-    'system_tests/src/user/ninth_pass_supervision_tests.rs':
-        ({'cap', 'delete_current_cap', 'rendezvous_cap'}, _CALLS),
 }
 
 EXCLUDED_PREFIXES = ('vendor/', 'patches/', 'target/')
@@ -440,8 +358,7 @@ def main(argv):
                   f'design/naming/spelled-out-rulings.md and the header of {SELF}.',
                   file=sys.stderr)
             return 1
-        print(f'cap: {now:,} identifiers abbreviate capability as cap (ceiling held; the sweep '
-              f'in design/naming/capability-spelling-worklist.md drives it to zero)')
+        print(f'cap: {now:,} identifiers abbreviate capability as cap (ceiling held)')
         return 0
     if argv[0] == '--list':
         paths = argv[1:] or tracked()

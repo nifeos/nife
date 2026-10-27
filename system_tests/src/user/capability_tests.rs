@@ -78,8 +78,14 @@ fn a_user_client_moves_data_through_shared_memory() {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    crate::cap::rendezvous_cap(request, crate::cap::Rights::WRITE),
-                    crate::cap::rendezvous_cap(reply, crate::cap::Rights::READ),
+                    crate::capability_object::rendezvous_capability(
+                        request,
+                        crate::capability_object::Rights::WRITE,
+                    ),
+                    crate::capability_object::rendezvous_capability(
+                        reply,
+                        crate::capability_object::Rights::READ,
+                    ),
                 ],
                 maps: &[Mapping {
                     va: SHARED_VA,
@@ -164,12 +170,12 @@ fn map_physical_maps_a_shared_frame_and_a_device_page() {
 /// A thread can name nothing until somebody hands it something.
 #[test_case]
 fn a_new_thread_holds_no_capabilities() {
-    use crate::cap::Error;
+    use crate::capability_object::Error;
 
     // The current thread is a kernel thread, spawned by the harness, and was handed nothing.
     for slot in 0..16 {
         assert_eq!(
-            sched::current_cap(slot).err(),
+            sched::current_capability(slot).err(),
             Some(Error::NoSuchSlot),
             "slot {slot} is not empty in a thread nobody granted anything",
         );
@@ -233,7 +239,7 @@ fn a_capability_can_be_delegated_over_ipc_and_grant_gates_re_delegation() {
 }
 
 /// **Milestone 12: a process calls a server it was never wired to, and the reply cap is
-/// one-shot.** The client `CALL`s across the boundary; the server `RECEIVE_CAP`s the request plus a
+/// one-shot.** The client `CALL`s across the boundary; the server `RECEIVE_CAPABILITY`s the request plus a
 /// kernel-minted reply capability naming the caller, answers through it (the round trip through
 /// the real syscall path), then tries to answer a second time and reports that the kernel
 /// refused. This is what a pre-wired reply rendezvous cannot guarantee.
@@ -262,7 +268,7 @@ fn a_process_calls_a_server_and_the_reply_is_one_shot() {
 /// its own and sends on it, and the word arrives at the server.
 /// Around that, the method's two refusals, each of which must leave the Reply usable (a carried
 /// capability without `GRANT`, and an empty slot), and the plain `REPLY` that must carry nothing
-/// (`x2` is `NO_CAP`, never a slot 0 the caller would misread).
+/// (`x2` is `NO_CAPABILITY`, never a slot 0 the caller would misread).
 ///
 /// Falsification: replayable `system_tests/falsifications/user.capability_tests.a_reply_carries_a_capability_the_caller_can_use.patch`
 #[test_case]

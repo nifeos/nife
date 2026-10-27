@@ -51,7 +51,8 @@ use network_time_protocol::{Packet, Short, Timestamp, leap, mode};
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
-    Delivered, badge, cap_delete, map_page_frame, receive_request, reply, reply_capability, send,
+    Delivered, badge, capability_delete, map_page_frame, receive_request, reply, reply_capability,
+    send,
 };
 
 // =================================================================================================
@@ -93,7 +94,7 @@ pub mod srv {
 /// This server's turnaround in its reply: T3 - T2. Small but not zero, so the delay arithmetic is
 /// exercised on a value that has to be subtracted rather than one that cannot go wrong. Far under
 /// the client's own round trip, which is two IPC exchanges.
-const SERVER_TURNAROUND_NANOS: u64 = 1_000;
+const SERVER_TURNAROUND_NS: u64 = 1_000;
 
 /// Where this server maps the client's shared frame in its own address space. The client picks its
 /// own, and the two do not have to agree: what they share is the frame's *layout*, which is
@@ -107,13 +108,13 @@ static SHARED_FRAME: Frame = unsafe { Frame::new(PAGE_FRAME_VA) };
 user_mode_runtime::program_entry!(start);
 
 /// `a0` selects an [`srv`] variant, `a1` is the wall-clock time in nanoseconds this server claims.
-fn start(variant: u64, claimed_nanos: u64, _arg2: u64) -> ! {
-    server(variant, claimed_nanos)
+fn start(variant: u64, claimed_ns: u64, _arg2: u64) -> ! {
+    server(variant, claimed_ns)
 }
 
 /// Serve the socket contract on [`STACK`], answering each request with an NTP reply built from
-/// `variant` at `claimed_nanos`. See the module docs for what this does and does not prove.
-fn server(variant: u64, claimed_nanos: u64) -> ! {
+/// `variant` at `claimed_ns`. See the module docs for what this does and does not prove.
+fn server(variant: u64, claimed_ns: u64) -> ! {
     let mut pending = [0u8; network_time_protocol::PACKET_LEN];
     let mut pending_len = 0usize;
     let mut reported = false;
@@ -124,11 +125,11 @@ fn server(variant: u64, claimed_nanos: u64) -> ! {
         // net_stack's own split (milestone 706 (a `CALL` server can tell a Reply from a
         // delegation)): ATTACH takes a delegation, every other operation a Reply.
         let to = match req.delivered {
-            // A SEND_CAP: the client's shared frame, which we map for ourselves and then drop the
+            // A SEND_CAPABILITY: the client's shared frame, which we map for ourselves and then drop the
             // capability for, because the mapping outlives it. No reply; nobody is waiting.
             Delivered::Delegation(frame) if w0 == OPERATION_ATTACH_PAGE_FRAME => {
                 map_page_frame(frame, PAGE_FRAME_VA, true, MEMORY_REGION);
-                cap_delete(frame);
+                capability_delete(frame);
                 continue;
             }
             other => other.into_reply(),
@@ -147,7 +148,7 @@ fn server(variant: u64, claimed_nanos: u64) -> ! {
                 if let Err((to, _)) = reply_capability(to, REP_OK, 0, socket as u64) {
                     reply(to, REP_ERR, 0);
                 }
-                cap_delete(socket as u64);
+                capability_delete(socket as u64);
             }
             OPERATION_SENDTO => {
                 // The length the client declared, which is how the real server learns it too.
@@ -157,7 +158,7 @@ fn server(variant: u64, claimed_nanos: u64) -> ! {
                     &mut wire,
                 );
                 let request = Packet::parse(&wire[..n]).unwrap_or_default();
-                pending_len = build_reply(&request, variant, claimed_nanos, &mut pending);
+                pending_len = build_reply(&request, variant, claimed_ns, &mut pending);
                 reply(to, REP_OK, 0);
                 if !reported {
                     reported = true;
@@ -186,9 +187,9 @@ fn server(variant: u64, claimed_nanos: u64) -> ! {
 }
 
 /// Build the reply for `variant`. Returns how many bytes of `out` are the reply.
-fn build_reply(request: &Packet, variant: u64, claimed_nanos: u64, out: &mut [u8]) -> usize {
-    let t2 = stamp(claimed_nanos).unwrap_or(Timestamp::ZERO);
-    let t3 = stamp(claimed_nanos + SERVER_TURNAROUND_NANOS).unwrap_or(Timestamp::ZERO);
+fn build_reply(request: &Packet, variant: u64, claimed_ns: u64, out: &mut [u8]) -> usize {
+    let t2 = stamp(claimed_ns).unwrap_or(Timestamp::ZERO);
+    let t3 = stamp(claimed_ns + SERVER_TURNAROUND_NS).unwrap_or(Timestamp::ZERO);
 
     let mut p = Packet {
         leap: leap::NONE,
@@ -232,10 +233,10 @@ fn build_reply(request: &Packet, variant: u64, claimed_nanos: u64, out: &mut [u8
 /// client carries the same four lines against its own clock; this one is over a number the kernel
 /// handed it, so a claimed time far outside the era becomes `Timestamp::ZERO` and the client's
 /// `Query::accept` refuses it, which is the behaviour a test wiring an absurd time wants.
-fn stamp(unix_nanos: u64) -> Option<Timestamp> {
+fn stamp(unix_ns: u64) -> Option<Timestamp> {
     Timestamp::from_unix(
-        unix_nanos / clock_contract::NANOS_PER_SEC,
-        (unix_nanos % clock_contract::NANOS_PER_SEC) as u32,
+        unix_ns / clock_contract::NS_PER_SECOND,
+        (unix_ns % clock_contract::NS_PER_SECOND) as u32,
     )
 }
 

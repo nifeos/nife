@@ -19,20 +19,21 @@ pub(super) fn archive_name(p: Program) -> Option<&'static str> {
     Some(p.name())
 }
 
-/// **Place `cap`, narrowed to `rights`, at `slot` of an unstarted child's table** (`CAP_INSERT` with
+/// **Place `capability`, narrowed to `rights`, at `slot` of an unstarted child's table** (`CAPABILITY_INSERT` with
 /// an explicit target, which the ABI numbers from one). `false` if the slot was taken or the right
 /// could not be granted.
-pub(super) fn place_at(tcb: u64, cap: u64, rights: u64, slot: u64) -> bool {
-    user_mode_runtime::thread_control_block_capability_insert(tcb, cap, rights, slot + 1) >= 0
+pub(super) fn place_at(tcb: u64, capability: u64, rights: u64, slot: u64) -> bool {
+    user_mode_runtime::thread_control_block_capability_insert(tcb, capability, rights, slot + 1)
+        >= 0
 }
 
 // The slot the run-unvouched capability is placed in sits just under the kernel's reserved fault
 // slot; `grant_plan` states the number without depending on `abi`, so the relation is held here.
 const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_EP_SLOT - 1);
 
-/// Turn a `receive_cap` slot into `Some(slot)`, or `None` if the message carried no capability.
-pub(super) fn opt_cap(slot: u64) -> Option<u64> {
-    if slot == abi::rendezvous::NO_CAP {
+/// Turn a `receive_capability` slot into `Some(slot)`, or `None` if the message carried no capability.
+pub(super) fn opt_capability(slot: u64) -> Option<u64> {
+    if slot == abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         Some(slot)
@@ -135,7 +136,7 @@ pub(super) struct Channels {
     /// (provisional)): `held` is false on every boot whose shell got no gpu grants, and then a
     /// `graphical_terminal` request is refused below. The shell, not this process, holds the caps between
     /// boot and launch.
-    pub(super) screen: GraphicalTerminalCaps,
+    pub(super) screen: GraphicalTerminalCapabilities,
 }
 
 /// The file service, as the progenitor holds it for the life of the boot.
@@ -267,7 +268,7 @@ impl Delegated {
     /// own, and the progenitor's table must not fill across a long session.
     fn release(&self) {
         for s in self.arrived() {
-            cap_delete(s);
+            capability_delete(s);
         }
     }
 }
@@ -624,7 +625,7 @@ impl Service<'_> {
             boot_terminal,
             ..
         } = self.c;
-        let graphical_terminal_caps = &self.c.screen;
+        let graphical_terminal_capabilities = &self.c.screen;
         let Request { prog, wiring, .. } = *req;
         let malformed = prog != Some(Program::GraphicalTerminal)
             || !wiring.graphics
@@ -632,7 +633,7 @@ impl Service<'_> {
             || req.delegated.arrived().next().is_some();
         let answer = if malformed {
             spawnproto::SPAWN_FAILED
-        } else if !graphical_terminal_caps.held {
+        } else if !graphical_terminal_capabilities.held {
             spawnproto::SPAWN_NO_DISPLAY
         } else {
             let built = match (
@@ -646,13 +647,13 @@ impl Service<'_> {
                         deaths,
                         boot_terminal,
                         result_ep,
-                        gpu: &graphical_terminal_caps.gpu,
-                        kbd: graphical_terminal_caps
+                        gpu: &graphical_terminal_capabilities.gpu,
+                        kbd: graphical_terminal_capabilities
                             .keyboard
-                            .then_some(&graphical_terminal_caps.kbd),
+                            .then_some(&graphical_terminal_capabilities.kbd),
                         program: elf,
                     },
-                    graphical_terminal_caps,
+                    graphical_terminal_capabilities,
                     &self.discipline,
                 ),
                 _ => Err(()),
@@ -914,7 +915,7 @@ impl Service<'_> {
         // pages, since it is the pool's top carve.
         if let Some(st) = staging {
             supervision_protocol::memory_region_destroy(st);
-            cap_delete(st);
+            capability_delete(st);
         }
         let ok = start_job(built, req, std_layout);
         let leftovers = JobLeftovers {
@@ -1195,26 +1196,26 @@ impl Service<'_> {
         } = self.c;
         let narrowed = dir.narrowed;
         // Sized for what the fields allow: two for a directory grant, one each for the rest.
-        let mut caps = [out; 6];
+        let mut capabilities = [out; 6];
         let mut n = 1usize;
         if let Some(dir_ep) = narrowed {
-            caps[0] = (dir_ep, abi::rights::WRITE);
-            caps[1] = out;
+            capabilities[0] = (dir_ep, abi::rights::WRITE);
+            capabilities[1] = out;
             n = 2;
         }
         // The clock and configuration page come before the source and budget, so each is slot 1;
         // that holds only while no manifest declares one with an input (notes/pipes.md's BUGS).
         if wants.clock {
-            caps[n] = (clock_page, abi::rights::READ);
+            capabilities[n] = (clock_page, abi::rights::READ);
             n += 1;
         }
         if wants.config {
-            caps[n] = (config_page, abi::rights::READ);
+            capabilities[n] = (config_page, abi::rights::READ);
             n += 1;
         }
         if let Some(src) = req.delegated.source {
             // `READ` only, so a pipe's reader cannot write back up its own input.
-            caps[n] = (src, abi::rights::READ);
+            capabilities[n] = (src, abi::rights::READ);
             n += 1;
         }
         if let Some(b) = req.delegated.budget {
@@ -1225,13 +1226,13 @@ impl Service<'_> {
             } else {
                 abi::rights::SPEND_ONLY
             };
-            caps[n] = (b, rights);
+            capabilities[n] = (b, rights);
             n += 1;
         }
         let (placed_buf, placed_n) = self.named_slots(req, manifest, wants, dir.sync_ep);
         let (map_buf, map_n) = self.native_maps(req, wants, dir);
         NativeEndowment {
-            in_order: caps,
+            in_order: capabilities,
             n,
             placed_buf,
             placed_n,
@@ -1454,22 +1455,22 @@ impl Service<'_> {
         } = left;
         let label = dir.label;
         if let Some(l) = labeled {
-            cap_delete(l);
+            capability_delete(l);
         }
         // The reply endpoint is kept until the reap, filed by label, so an answer finds it. There is
         // room to file it: a spawn that found none made no installer and was refused.
         if let Some((inst, reply)) = installer {
-            cap_delete(inst);
+            capability_delete(inst);
             let kept = ok
                 && req
                     .prog
                     .is_some_and(|p| self.spawn.hold_reply(label, reply, p.name()));
             if !kept {
-                cap_delete(reply);
+                capability_delete(reply);
             }
         }
         for page in [catalog_page, sources_page].into_iter().flatten() {
-            cap_delete(page);
+            capability_delete(page);
         }
         // A job that never started is never reaped, so its resolver grant is forgotten now.
         if !ok {
@@ -1491,18 +1492,18 @@ impl Service<'_> {
             .chain(resolvers)
             .flatten()
         {
-            cap_delete(endpoint);
+            capability_delete(endpoint);
         }
         if let Some(ch) = dir.channel {
-            cap_delete(ch.page);
+            capability_delete(ch.page);
             // A bound channel's endpoint is `narrowed`, already deleted above, unless a caretaker
             // serves a set over it (`at_bound_root`), and then `narrowed` is the caretaker's.
             if dir.narrowed != Some(ch.ep) {
-                cap_delete(ch.ep);
+                capability_delete(ch.ep);
             }
         }
         if let Some(page) = args_page {
-            cap_delete(page);
+            capability_delete(page);
         }
         // Nothing holds a capability to a live job's memory: since §32 (a supervisor may collect a
         // corpse) the reap is a supervision-endpoint method. A failed job is reclaimed now.
@@ -1510,7 +1511,7 @@ impl Service<'_> {
             if !ok {
                 reclaim(r);
             }
-            cap_delete(r);
+            capability_delete(r);
         }
         // A redirected or screen-narrowed child answers elsewhere, so the shell gets one ack here;
         // an unredirected child's own message is the shell's read, and a failure is the sentinel.
@@ -1543,39 +1544,39 @@ fn receive_delegated(
     let interruptible = wiring.interruptible;
     let (job_ut, job_fr) = if interruptible {
         (
-            opt_cap(spawn.receive_cap().1),
-            opt_cap(spawn.receive_cap().1),
+            opt_capability(spawn.receive_capability().1),
+            opt_capability(spawn.receive_capability().1),
         )
     } else {
         (None, None)
     };
     let sink = if wiring.sink {
-        opt_cap(spawn.receive_cap().1)
+        opt_capability(spawn.receive_capability().1)
     } else {
         None
     };
     let source = if wiring.source {
-        opt_cap(spawn.receive_cap().1)
+        opt_capability(spawn.receive_capability().1)
     } else {
         None
     };
     let diagnostics = if wiring.diagnostics {
-        opt_cap(spawn.receive_cap().1)
+        opt_capability(spawn.receive_capability().1)
     } else {
         None
     };
     let screen = if wiring.screen {
-        opt_cap(spawn.receive_cap().1)
+        opt_capability(spawn.receive_capability().1)
     } else {
         None
     };
     let budget = if mem_pages > 0 {
-        opt_cap(spawn.receive_cap().1)
+        opt_capability(spawn.receive_capability().1)
     } else {
         None
     };
     let machine_page = if wiring.machine {
-        opt_cap(spawn.receive_cap().1)
+        opt_capability(spawn.receive_capability().1)
     } else {
         None
     };
@@ -1629,7 +1630,7 @@ fn build_job(
                 r,
                 e,
                 &ChildEndowment {
-                    caps: &l.caps,
+                    capabilities: &l.capabilities,
                     placed: l.placed(),
                     maps: l.maps(),
                     fault,
@@ -1646,7 +1647,7 @@ fn build_job(
                 r,
                 e,
                 &ChildEndowment {
-                    caps: &native.in_order[..native.n],
+                    capabilities: &native.in_order[..native.n],
                     placed,
                     maps,
                     fault,

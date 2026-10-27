@@ -17,7 +17,7 @@ incumbent swallows one request and stops answering. Six results:
    How the bound was chosen is in [what-counts-as-hung.md](what-counts-as-hung.md).
 2. The domain does not report a hang. `SURVEY` reports every member `BLOCKED` and none `DEAD`,
    which is byte for byte what a healthy idle system reads as: `abi::survey::BLOCKED` is the state of
-   a server parked in `RECEIVE_CAP`, and that is every healthy server between requests. The verdict
+   a server parked in `RECEIVE_CAPABILITY`, and that is every healthy server between requests. The verdict
    in result 1 had to come from the clock because this view cannot give it.
 3. The supervisor's reap vocabulary is refused. `Rendezvous::REAP` is asked about *every* member of
    the domain and answers `StillAlive` every time. It is side-effect free by construction:

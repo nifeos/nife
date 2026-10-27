@@ -12,31 +12,31 @@ use crate::arch::mmu;
 #[inline(never)]
 pub(super) fn address_space_invoke(
     frame: &mut TrapFrame,
-    cap: crate::cap::Cap,
+    capability: crate::capability_object::Capability,
     name: u64,
     method: u64,
     [a0, a1, a2]: [u64; 3],
 ) -> Result<i64, Error> {
     match method {
-        abi::address_space::MAP_INTO => address_space_map_into(cap, name, a0, a1, a2),
+        abi::address_space::MAP_INTO => address_space_map_into(capability, name, a0, a1, a2),
         // `ENUMERATE`, not `WRITE`: seeing a space is not shaping it (DECISIONS §114 (`pmap`
         // gets its listing: `ENUMERATE` extends to the address-space object)).
         abi::address_space::LIST => {
-            if !cap.rights.allows(Rights::ENUMERATE) {
+            if !capability.rights.allows(Rights::ENUMERATE) {
                 return Err(Error::NotPermitted);
             }
             address_space_list(frame, name, a0)
         }
         // `WRITE`, the right `MAP_INTO` takes: shaping a space is one right in both directions.
         abi::address_space::UNMAP => {
-            if !cap.rights.allows(Rights::WRITE) {
+            if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             address_space_unmap(name, a0)
         }
         // §269 (how threads share a process) fork 2.
         abi::address_space::WAIT | abi::address_space::WAKE => {
-            address_space_futex(cap.rights, name, method, a0, a1, a2)
+            address_space_futex(capability.rights, name, method, a0, a1, a2)
         }
         _ => Err(Error::BadMethod),
     }
@@ -54,13 +54,13 @@ pub(super) fn address_space_invoke(
 /// read and `MEMORY_REGION` for each page table retyped. Never `IPC_TABLES`.
 #[inline(never)]
 fn address_space_map_into(
-    cap: crate::cap::Cap,
+    capability: crate::capability_object::Capability,
     name: u64,
     a0: u64,
     a1: u64,
     a2: u64,
 ) -> Result<i64, Error> {
-    if !cap.rights.allows(Rights::WRITE) {
+    if !capability.rights.allows(Rights::WRITE) {
         return Err(Error::NotPermitted);
     }
     let va = a0;
@@ -70,7 +70,7 @@ fn address_space_map_into(
     crate::delegation_pause::here(); // no lock held
     crate::user::with_user_address_space(name, |space| {
         let mut hold = crate::revoke::hold();
-        let frame = hold.current_cap(a1).map_err(|_| Error::NoSuchSlot)?;
+        let frame = hold.current_capability(a1).map_err(|_| Error::NoSuchSlot)?;
         let (phys, count, flags) = match frame.object {
             Object::DeviceFrame(phys) => {
                 if !frame.rights.allows(Rights::WRITE) {

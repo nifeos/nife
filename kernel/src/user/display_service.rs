@@ -11,9 +11,9 @@
 use core::num::NonZeroU64;
 
 use super::*;
-use crate::cap::{
-    Rights, interrupt_cap, memory_region_cap, page_frame_run_cap, page_frame_run_len,
-    rendezvous_cap, virtio_cap,
+use crate::capability_object::{
+    Rights, interrupt_capability, memory_region_capability, page_frame_run_capability,
+    page_frame_run_len, rendezvous_capability, virtio_capability,
 };
 use crate::sched::RendezvousId;
 
@@ -22,7 +22,7 @@ const DMA_PAGE_FRAMES: u64 = 1 + graphics_contract::SURFACE_PAGE_FRAMES as u64;
 
 /// The three run lengths this file grants.
 ///
-/// They are `const` so that [`crate::cap::page_frame_run_len`]'s refusal of a zero-page run fails
+/// They are `const` so that [`crate::capability_object::page_frame_run_len`]'s refusal of a zero-page run fails
 /// the build, not a driver at boot. Name: provisional.
 const SURFACE_RUN: NonZeroU64 = page_frame_run_len(graphics_contract::SURFACE_PAGE_FRAMES as u64);
 const DMA_RUN: NonZeroU64 = page_frame_run_len(DMA_PAGE_FRAMES);
@@ -81,7 +81,7 @@ const _: () = {
 fn grant_run(slot: u64, base: u64, count: NonZeroU64, what: &str) {
     crate::sched::grant_at(
         slot,
-        page_frame_run_cap(base, count, Rights::READ.union(Rights::WRITE)),
+        page_frame_run_capability(base, count, Rights::READ.union(Rights::WRITE)),
     )
     .unwrap_or_else(|_| panic!("{what}: slot {slot} was occupied"));
 }
@@ -104,15 +104,15 @@ pub fn start(
     crate::sched::spawn(move || {
         crate::sched::grant_at(
             CLIENT_SLOT_REPORT,
-            rendezvous_cap(client_report, Rights::WRITE),
+            rendezvous_capability(client_report, Rights::WRITE),
         )
         .expect("client slot 0 was occupied");
         crate::sched::grant_at(
             CLIENT_SLOT_DISPLAY,
-            rendezvous_cap(display_ep, Rights::WRITE),
+            rendezvous_capability(display_ep, Rights::WRITE),
         )
         .expect("client slot 1 was occupied");
-        crate::sched::grant_at(CLIENT_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(CLIENT_SLOT_BUDGET, memory_region_capability(budget))
             .expect("client slot 2 was occupied");
         grant_run(
             CLIENT_SLOT_SURFACE,
@@ -239,19 +239,19 @@ fn wire_driver(
     crate::sched::spawn(move || {
         crate::sched::grant_at(
             DRIVER_SLOT_REPORT,
-            rendezvous_cap(driver_report, Rights::WRITE),
+            rendezvous_capability(driver_report, Rights::WRITE),
         )
         .expect("driver slot 0 was occupied");
-        crate::sched::grant_at(DRIVER_SLOT_INTERRUPT, interrupt_cap(intid))
+        crate::sched::grant_at(DRIVER_SLOT_INTERRUPT, interrupt_capability(intid))
             .expect("driver slot 1 was occupied");
-        crate::sched::grant_at(DRIVER_SLOT_VIRTIO, virtio_cap(vid))
+        crate::sched::grant_at(DRIVER_SLOT_VIRTIO, virtio_capability(vid))
             .expect("driver slot 2 was occupied");
         crate::sched::grant_at(
             DRIVER_SLOT_DISPLAY,
-            rendezvous_cap(display_ep, Rights::READ),
+            rendezvous_capability(display_ep, Rights::READ),
         )
         .expect("driver slot 3 was occupied");
-        crate::sched::grant_at(DRIVER_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(DRIVER_SLOT_BUDGET, memory_region_capability(budget))
             .expect("driver slot 4 was occupied");
         grant_run(DRIVER_SLOT_DMA, dma, DMA_RUN, "the GPU driver");
         run(
@@ -380,13 +380,19 @@ fn spawn_terminal(
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the terminal");
 
     let tid = crate::sched::spawn(move || {
-        crate::sched::grant_at(TERM_SLOT_REPORT, rendezvous_cap(term_report, Rights::WRITE))
-            .expect("terminal slot 0 was occupied");
-        crate::sched::grant_at(TERM_SLOT_DISPLAY, rendezvous_cap(display_ep, Rights::WRITE))
-            .expect("terminal slot 1 was occupied");
-        crate::sched::grant_at(TERM_SLOT_TERM, rendezvous_cap(term, Rights::READ))
+        crate::sched::grant_at(
+            TERM_SLOT_REPORT,
+            rendezvous_capability(term_report, Rights::WRITE),
+        )
+        .expect("terminal slot 0 was occupied");
+        crate::sched::grant_at(
+            TERM_SLOT_DISPLAY,
+            rendezvous_capability(display_ep, Rights::WRITE),
+        )
+        .expect("terminal slot 1 was occupied");
+        crate::sched::grant_at(TERM_SLOT_TERM, rendezvous_capability(term, Rights::READ))
             .expect("terminal slot 2 was occupied");
-        crate::sched::grant_at(TERM_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(TERM_SLOT_BUDGET, memory_region_capability(budget))
             .expect("terminal slot 3 was occupied");
         grant_run(
             TERM_SLOT_SURFACE,
@@ -461,7 +467,7 @@ fn screen_terminal_aperture(
     let mut aperture = screen_console::Aperture::new(
         screen,
         video_terminal::CELL_W,
-        video_terminal::MAXIMUM_COLS as u32 * video_terminal::CELL_W,
+        video_terminal::MAXIMUM_COLUMNS as u32 * video_terminal::CELL_W,
         u32::MAX,
     )?;
     // The rows one `Vt` can hold at that width (`video_terminal::MAXIMUM_CELLS` is a cell budget,
@@ -553,15 +559,15 @@ pub fn start_screen_terminal(
     let driver_tid = crate::sched::spawn(move || {
         crate::sched::grant_at(
             SCREEN_SLOT_REPORT,
-            rendezvous_cap(driver_report, Rights::WRITE),
+            rendezvous_capability(driver_report, Rights::WRITE),
         )
         .expect("screen driver slot 0 was occupied");
         crate::sched::grant_at(
             SCREEN_SLOT_DISPLAY,
-            rendezvous_cap(display_ep, Rights::READ),
+            rendezvous_capability(display_ep, Rights::READ),
         )
         .expect("screen driver slot 1 was occupied");
-        crate::sched::grant_at(SCREEN_SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(SCREEN_SLOT_BUDGET, memory_region_capability(budget))
             .expect("screen driver slot 2 was occupied");
         grant_run(
             SCREEN_SLOT_SURFACE,

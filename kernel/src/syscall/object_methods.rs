@@ -27,7 +27,7 @@ pub(super) fn reply_other(
     if method != abi::reply::REPLY_CAPABILITY {
         return Err(Error::BadMethod);
     }
-    let reply = sched::current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
+    let reply = sched::current_capability(slot).map_err(|_| Error::NoSuchSlot)?;
     let Object::Reply(tid) = reply.object else {
         return Err(Error::BadMethod);
     };
@@ -37,11 +37,11 @@ pub(super) fn reply_other(
     }
     let filed = sched::ipc_reply_capability(tid, [a0, a1], carried)?;
     // One-shot, as for `REPLY`.
-    let _ = sched::delete_current_cap(slot);
+    let _ = sched::delete_current_capability(slot);
     Ok(if filed { 0 } else { 1 })
 }
 
-/// **Which error an aborted `SEND`, `SEND_CAP` or `CALL` answers.** `NotPermitted` when the
+/// **Which error an aborted `SEND`, `SEND_CAPABILITY` or `CALL` answers.** `NotPermitted` when the
 /// endpoint carries an interrupt and refused the deposit (DECISIONS §101 (notification objects),
 /// its amendment "an endpoint bound to an interrupt refuses every send"), `Gone` when it was stale
 /// or revoked. `#[cold]`, because the three arms that call it are on the IPC fastpath.
@@ -91,7 +91,7 @@ pub(super) fn notification_invoke(
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
-            let thread = sched::current_cap(a0).map_err(|_| Error::NoSuchSlot)?;
+            let thread = sched::current_capability(a0).map_err(|_| Error::NoSuchSlot)?;
             let Object::ThreadControlBlock(tid) = thread.object else {
                 return Err(Error::WrongObject);
             };
@@ -133,7 +133,7 @@ pub(super) fn timer_invoke(
     }
     match method {
         abi::timer::ARM => {
-            let target = sched::current_cap(a1).map_err(|_| Error::NoSuchSlot)?;
+            let target = sched::current_capability(a1).map_err(|_| Error::NoSuchSlot)?;
             let Object::Notification(notification) = target.object else {
                 return Err(Error::WrongObject);
             };
@@ -152,7 +152,7 @@ pub(super) fn timer_invoke(
 /// holder's own `rights` and `new_badge`, in a free slot of the caller's table, and returns the
 /// slot; `OutOfMemory` when the table is full.
 ///
-/// `NotPermitted` without `GRANT` (minting a delegatable view is delegation, the gate `SEND_CAP`
+/// `NotPermitted` without `GRANT` (minting a delegatable view is delegation, the gate `SEND_CAPABILITY`
 /// uses), for a zero badge, or for an already-badged source: a badge is set once and never
 /// changed, seL4's rule, so a server can trust the badge it is delivered.
 #[inline(never)]
@@ -165,8 +165,10 @@ pub(super) fn rendezvous_badge(
     if !rights.allows(Rights::GRANT) || new_badge == 0 || held_badge != 0 {
         return Err(Error::NotPermitted);
     }
-    let slot = sched::grant(crate::cap::rendezvous_cap_badged(ep, rights, new_badge))
-        .map_err(|_| Error::OutOfMemory)?;
+    let slot = sched::grant(crate::capability_object::rendezvous_capability_badged(
+        ep, rights, new_badge,
+    ))
+    .map_err(|_| Error::OutOfMemory)?;
     Ok(slot as i64)
 }
 

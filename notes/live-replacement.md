@@ -7,11 +7,11 @@ under a client that is talking to it, and the client's stream is unbroken.*
 
 ```text
                                   ┌──── the stable name: one endpoint object, forever ────┐
-   swap_boundary_witness ──CALL──►│                       SVC                              │◄─RECEIVE_CAP── rust_swappable  (v1, Rust)
-   (a client)                     └────────────────────────────────────────────────────────┘◄─RECEIVE_CAP── c_swappable (v2, C)
+   swap_boundary_witness ──CALL──►│                       SVC                              │◄─RECEIVE_CAPABILITY── rust_swappable  (v1, Rust)
+   (a client)                     └────────────────────────────────────────────────────────┘◄─RECEIVE_CAPABILITY── c_swappable (v2, C)
                                                            ▲
                                                            │ swapper, an unprivileged operator, changes
-                                                           │ WHICH of the two is parked in RECEIVE_CAP
+                                                           │ WHICH of the two is parked in RECEIVE_CAPABILITY
 ```
 
 Five programs, sharing one module (`swap.rs`) the way the supervision tree
@@ -36,13 +36,13 @@ clients, it is *not represented anywhere a client can reach*. Any program that s
 and holds the right capabilities is the component.
 
 That makes the stable name the endpoint object itself, and a swap a change in who is parked in
-`RECEIVE_CAP` on it. Two consequences, both of which a forwarding broker would have had to reimplement
+`RECEIVE_CAPABILITY` on it. Two consequences, both of which a forwarding broker would have had to reimplement
 at a cost:
 
 1. The kernel's sender queue is the buffer for the down window. A `CALL` that finds nobody
    receiving parks the caller as a blocked sender, with its message in its mailbox and the one-shot
-   `Reply` capability the kernel minted for it riding in `outgoing_cap`. Whenever the *next* server
-   calls `RECEIVE_CAP`, it takes both, and answers a caller it was never wired to. So while the
+   `Reply` capability the kernel minted for it riding in `outgoing_capability`. Whenever the *next* server
+   calls `RECEIVE_CAPABILITY`, it takes both, and answers a caller it was never wired to. So while the
    endpoint has no server at all, requests are not lost, not refused, and not reordered; the caller
    is simply blocked, which is what a synchronous IPC caller already is.
 2. The drain is a message traveling in band. The operator's `OPERATION_QUIESCE` goes to *the endpoint
@@ -132,7 +132,7 @@ a receipt rather than a coincidence. A run in which that read *succeeds* is fail
 silently: the instance reports `RPT_PROBE_SURVIVED` and the test refuses the run.
 
 The attacker. Endowed with exactly the honest client's capabilities, including a real working
-capability to the stable endpoint, it tries to park itself in `RECEIVE_CAP` and take the client's
+capability to the stable endpoint, it tries to park itself in `RECEIVE_CAPABILITY` and take the client's
 requests. `NotPermitted`.
 
 And the replacement is written in C (`fixtures/c/c_swappable.c`, over the seam DECISIONS §31 built).

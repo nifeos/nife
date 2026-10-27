@@ -160,7 +160,7 @@ loop {
     wait(interrupt_notification);          // sleeps until the device interrupts
     let packet = read_device_fifo();
     send(net_stack_endpoint, packet);
-    ack(interrupt_cap);
+    ack(interrupt_capability);
 }
 ```
 
@@ -228,7 +228,7 @@ The decision, §10 (process model: capability-based, microkernel), became code i
 
 Milestone 7d (user mode: EL0, capabilities, the ELF loader, and IPC) shipped three calls: `exit`, `yield` and `invoke(cap, method, a0, a1, a2)`, which is everything
 else. There is no `open`, `read`, `write` or `fork`. One call has been added since:
-`SYS_CAP_DELETE` (2026-07-24, milestone 19d (run a real workload)), because forgetting something in your own table needs
+`SYS_CAPABILITY_DELETE` (2026-07-24, milestone 19d (run a real workload)), because forgetting something in your own table needs
 no capability. The surface is five calls today <!--count:syscalls-->, and
 [`notes/abi.md`](abi.md) is the current contract.
 

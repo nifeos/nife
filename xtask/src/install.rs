@@ -424,20 +424,20 @@ pub(crate) fn boot(
     detached: bool,
     sends: &[(&str, &str)],
     until: &str,
-    timeout_secs: u64,
+    timeout_seconds: u64,
 ) -> Option<String> {
-    boot_lingering(esp, detached, sends, until, timeout_secs, 0, &[])
+    boot_lingering(esp, detached, sends, until, timeout_seconds, 0, &[])
 }
 
-/// [`boot`], but keep the machine running `linger_secs` after `until` appears, for a gate that
+/// [`boot`], but keep the machine running `linger_seconds` after `until` appears, for a gate that
 /// measures what the machine wrote rather than what it printed.
 fn boot_lingering(
     esp: &PathBuf,
     detached: bool,
     sends: &[(&str, &str)],
     until: &str,
-    timeout_secs: u64,
-    linger_secs: u64,
+    timeout_seconds: u64,
+    linger_seconds: u64,
     env: &[(&str, &str)],
 ) -> Option<String> {
     // The firmware's variables, fresh. See the module header for why this is the load-bearing line
@@ -450,7 +450,7 @@ fn boot_lingering(
         .current_dir(workspace_root())
         .env("NIFE_NVME", install_disk_path())
         .env("NIFE_OVMF_VARS_OUT", vars_path())
-        .env("NIFE_UEFI_TIMEOUT", timeout_secs.to_string())
+        .env("NIFE_UEFI_TIMEOUT", timeout_seconds.to_string())
         // The machine is a disk and a firmware and nothing else, whether or not a suite leg set
         // these in this process first. One boot with two machines is one boot nobody can compare.
         .env_remove("NIFE_DISK")
@@ -528,14 +528,14 @@ fn boot_lingering(
             break;
         }
     }
-    if linger_secs > 0 && transcript.contains(until) {
+    if linger_seconds > 0 && transcript.contains(until) {
         // Drained on a thread so the guest's console cannot block on a full pipe meanwhile.
         let drain = std::thread::spawn(move || {
             let mut rest = Vec::new();
             let _ = output.read_to_end(&mut rest);
             String::from_utf8_lossy(&rest).into_owned()
         });
-        std::thread::sleep(std::time::Duration::from_secs(linger_secs));
+        std::thread::sleep(std::time::Duration::from_secs(linger_seconds));
         let _ = Command::new("kill")
             .args(["-TERM", &child.id().to_string()])
             .status();

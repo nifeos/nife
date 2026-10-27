@@ -36,7 +36,7 @@ pub(crate) enum Event {
     #[cfg_attr(not(feature = "soak_test"), allow(dead_code))]
     Migrated = 11,
     /// This core set `ipc_served` on `tid`: a delivery completed its parked IPC. `aux` names the
-    /// delivering site (1 send, 2 receive-collect, 3 `send_cap`, 4 `receive_cap`-collect, 5 call,
+    /// delivering site (1 send, 2 receive-collect, 3 `send_capability`, 4 `receive_capability`-collect, 5 call,
     /// 6 reply, 7 interrupt signal, 8 death message, 9 a notification signal to a waiter, 10 one to
     /// its
     /// bound receiver), so a dump says who served a thread (notes/visionfive2.md, fifth stop).

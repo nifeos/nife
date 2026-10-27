@@ -1,0 +1,64 @@
+Falsifies `system_tests::user::revocation_window_tests::a_revoke_inside_a_send_capability_leaves_the_receiver_no_copy`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect is the tree as it stood until 2026-10-04 (UTC): the patch puts `SEND_CAPABILITY` back to
+reading its source with `sched::current_cap` in the syscall layer and handing the copy to
+`sched::ipc_send_cap`, which files it under a second hold of `IPC_TABLES`. A `PageFrame::REVOKE`
+that runs between the two deletes the source and every other copy it can see, and the copy is then
+parked in `outgoing_cap` after the sweep has passed, so the receiver collects it.
+
+This was the live tree, not an invented break. Milestone 761 (capability lookup off the global
+lock) recorded the gap unverified in its `BUGS`; this test is what verified it.
+
+Expected to fail: `assert!(!matches!(delivered, Some(c) if c.object == Object::PageFrame(phys, page_frame_run_len(1))), "a PageFrame revoked while its SEND_CAPABILITY was in progress reached the receiver ...")`. Confirmed red on riscv64 on 2026-10-04 (UTC), before the fix existed, and replayed red the same
+day against the fixed tree at `revocation_window_tests.rs:165`, the assertion predicted.
+
+**The assertions above the headline stay green under this patch**, which is what makes the red mean
+the claim rather than the fixture: the vacuity guard says the thread really was held inside its
+delegation, and the premise check says the sweep really did reach that thread's own table.
+
+The patch leaves the aborted-send path (§101 (notification objects) ruling B) in its context
+untouched. Nothing here is architecture-specific: the syscall layer, the sweeps and the seam are portable
+code, so one patch serves every leg.
+
+Re-cut on 2026-10-12 (UTC) by lane maintainer/long-function-paydown-invoke, when the rendezvous
+arms of `syscall::invoke` moved to `kernel/src/syscall/rendezvous.rs` for milestone 888 (a ratchet
+on function length); the defect is unchanged. Replayed red at the same assertion on aarch64 that
+day.
+
+diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
+--- a/kernel/src/syscall/rendezvous.rs
++++ b/kernel/src/syscall/rendezvous.rs
+@@ -74,17 +74,25 @@
+     }
+     // The source is read, checked and copied inside `sched`, under the hold that files the
+     // copy, so no revocation sweep falls between the read and the filing (`sched::Delegation`).
++    let src = sched::current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
++    if !src.rights.allows(Rights::GRANT) {
++        return Err(Error::NotPermitted);
++    }
++    let narrowed = Rights::from_bits(narrow as u32);
++    if !narrowed.is_subset_of(src.rights) {
++        return Err(Error::NotPermitted);
++    }
+     #[cfg(feature = "system_tests")]
+     crate::delegation_pause::here(); // no lock held
+-    sched::inter_process_communication_delegate_capability(
++    sched::ipc_send_cap(
+         ep,
+         word,
+-        sched::Delegation {
+-            slot,
+-            rights: Rights::from_bits(narrow as u32),
++        crate::capability_object::Cap {
++            object: src.object,
++            rights: narrowed,
+         },
+-        badge, // the endpoint we send on may be badged (milestone 599 (a frame per filesystem client channel))
+-    )?;
++        badge,
++    );
+     if sched::take_ipc_aborted() {
+         // Revoked, or refused (§101 ruling B); either way the delegation did not happen and the
+         // capability is still the sender's.

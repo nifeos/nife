@@ -24,8 +24,8 @@ use domain_name_system::{Query, Reject, TcpReply};
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
-    call, call_receiving, cap_delete, exit, map_page_frame, now, receive, receive_cap,
-    retype_into_page_frame, send, send_capability,
+    call, call_receiving, capability_delete, exit, map_page_frame, now, receive,
+    receive_capability, retype_into_page_frame, send, send_capability,
 };
 
 const REPORT: u64 = 0;
@@ -241,8 +241,8 @@ fn socket_badge_forge() -> ! {
 /// trip through it, with no front door to the stack at all. Then check that after our `CLOSE` the
 /// capability reaches nothing. Reports `OK`, or a stage code.
 fn socket_take() -> ! {
-    let (_, socket, _) = receive_cap(HANDOFF);
-    if socket == abi::rendezvous::NO_CAP {
+    let (_, socket, _) = receive_capability(HANDOFF);
+    if socket == abi::rendezvous::NO_CAPABILITY {
         done(0xE0C0);
     }
     attach_page_frame();
@@ -323,7 +323,7 @@ fn on(which: usize, operation: u64, arg: u64) -> (u64, u64) {
 /// `CLOSE` the socket kept as `which`, and drop our capability to it.
 fn close(which: usize) -> (u64, u64) {
     let answer = on(which, OPERATION_CLOSE, 0);
-    cap_delete(held(which));
+    capability_delete(held(which));
     SOCKETS[which].store(NO_SOCKET, Ordering::Relaxed);
     answer
 }
@@ -400,13 +400,13 @@ fn exchange_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer,
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         return Err(0x2);
     }
-    let mut request = [0u8; 2 + domain_name_system::UDP_MESSAGE_MAXIMUM];
+    let mut request = [0u8; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES];
     let n = query.request_tcp(&mut request).map_err(|_| 0x3u64)?;
     SHARED_FRAME.payload_write(&request[..n]);
     if on(SOCKET, OPERATION_SEND, n as u64).0 != n as u64 {
         return Err(0x4);
     }
-    let mut buf = [0u8; 2 + domain_name_system::UDP_MESSAGE_MAXIMUM];
+    let mut buf = [0u8; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES];
     let mut reply = TcpReply::new(&mut buf);
     let mut chunk = [0u8; DATA_MAXIMUM];
     loop {
@@ -475,7 +475,7 @@ fn ask_the_host_resolver() -> u64 {
     let Ok(query) = Query::new(DNS_TXID, "example.com") else {
         return 0xE012;
     };
-    let mut request = [0u8; domain_name_system::UDP_MESSAGE_MAXIMUM];
+    let mut request = [0u8; domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES];
     let Ok(n) = query.request(&mut request) else {
         return 0xE012;
     };
@@ -713,7 +713,7 @@ fn tcp_accept_unheard() -> ! {
 }
 
 /// How many of `net_stack`'s 15 s bounded accept waits a round sits through before it calls the
-/// round lost: 75 s, inside the test's 90 s budget (`test_times::DEFAULT_BUDGET_SECS`). One wait
+/// round lost: 75 s, inside the test's 90 s budget (`test_times::DEFAULT_BUDGET_SECONDS`). One wait
 /// can fall inside a gap in slirp's SYN backoff, 16 and then 32 s by the time this program listens;
 /// notes/net/the-test-clients.md has the measurement.
 ///

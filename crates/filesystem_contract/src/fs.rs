@@ -197,6 +197,21 @@ pub const SETMTIME: u64 = 21;
 ///
 /// Name: provisional (milestone 47's mtime lane, 2026-08-24); an architect's to ratify.
 pub const SETMTIME_AT: u64 = 22;
+/// **Narrow a directory handle you already hold**: [`req_handle`] is the directory and `w1` the
+/// requested [`super::dir`] mask. No name is resolved and [`req_len`] is 0. Reply `r0` = a second
+/// directory handle, or an error. The handle in [`req_handle`] stays open and unchanged.
+///
+/// The new handle's rights are [`super::dir::Rights::attenuate`] of the held handle's, the same
+/// function [`OPENDIR`] and [`MKDIR`] narrow through, so it carries no right the held handle
+/// lacks. A short intersection is [`super::dir::EPERM`], as for [`OPENDIR`]: no silent
+/// degradation. A file handle is [`super::dir::ENOTDIR`]. It needs no right, because narrowing
+/// cannot widen, and that is what lets the holder of [`ROOT`] attenuate the directory it is bound
+/// to when no name leads down to it. Decided by §173 (narrowing the root of the shell's
+/// namespace), option A, 2026-10-27 (UTC). See notes/fs-server/file-protocol.md.
+///
+/// Name: provisional (milestone 328 (a grant on the root of the shell's namespace)'s lane, 2026-10-27 UTC); an architect's to ratify. The number
+/// is §173's: verb 23.
+pub const NARROW: u64 = 23;
 
 /// **Bind a badge to a directory: a subtree grant the server enforces itself** (milestone 606 (a
 /// directory walk costs what it does on Linux), ruling D). [`req_handle`] is a directory handle the
@@ -266,8 +281,7 @@ pub const TRANSFER_PAGES: usize = 16;
 /// assert_eq!(fs::req_len(w0), PAGE);
 /// ```
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `TRANSFER_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const TRANSFER_MAXIMUM: usize = TRANSFER_PAGES * super::PAGE;
 
 /// **How many client channels one file service keeps side by side** (milestone 599 (a frame per
@@ -282,9 +296,8 @@ pub const CLIENT_WINDOWS: usize = 8;
 /// [`TRANSFER_MAXIMUM`], so the bit-packing has never been what bounds a transfer; the bound only
 /// guards the packing itself, and [`TRANSFER_MAXIMUM`] is what bounds a payload.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_LEN`.
-pub const MAXIMUM_LEN: u64 = (1 << 40) - 1;
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_LENGTH_OR_OFFSET: u64 = (1 << 40) - 1;
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, because a test does
 /// not run in the EL0 build and a build is the only artifact that can be wrong about this.
@@ -296,12 +309,11 @@ pub const MAXIMUM_LEN: u64 = (1 << 40) - 1;
 const _: () = {
     assert!(TRANSFER_PAGES >= 1);
     assert!(TRANSFER_MAXIMUM == TRANSFER_PAGES * super::PAGE);
-    assert!(TRANSFER_MAXIMUM as u64 <= MAXIMUM_LEN);
+    assert!(TRANSFER_MAXIMUM as u64 <= MAXIMUM_LENGTH_OR_OFFSET);
 };
 /// The largest handle the packing can carry (16 bits). The server's table is far smaller.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_HANDLE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_HANDLE: u64 = 0xffff;
 
 /// Pack a file request's first word: opcode (bits 63:56), handle (bits 55:40), length (bits
@@ -328,7 +340,9 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
 /// assert_eq!(fs::req_len(w0), 10);
 /// ```
 pub const fn req(operation: u64, handle: u64, len: u64) -> u64 {
-    (operation << super::OPERATION_SHIFT) | ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LEN)
+    (operation << super::OPERATION_SHIFT)
+        | ((handle & MAXIMUM_HANDLE) << 40)
+        | (len & MAXIMUM_LENGTH_OR_OFFSET)
 }
 /// The handle of a file request word.
 pub const fn req_handle(w0: u64) -> u64 {
@@ -336,14 +350,14 @@ pub const fn req_handle(w0: u64) -> u64 {
 }
 /// The length/count of a file request word.
 pub const fn req_len(w0: u64) -> usize {
-    (w0 & MAXIMUM_LEN) as usize
+    (w0 & MAXIMUM_LENGTH_OR_OFFSET) as usize
 }
 
 /// Pack [`RENAME`]'s **destination** half into the second word: the same handle and length
 /// fields [`req`] uses, minus the opcode, because a rename names two directories and one word
 /// cannot carry both. Read back with [`dst_handle`] and [`dst_len`].
 pub const fn rename_dst(handle: u64, len: u64) -> u64 {
-    ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LEN)
+    ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_OR_OFFSET)
 }
 /// The destination directory handle of a [`RENAME`]'s second word.
 pub const fn dst_handle(w1: u64) -> u64 {
@@ -351,7 +365,7 @@ pub const fn dst_handle(w1: u64) -> u64 {
 }
 /// The destination name's length, in bytes, of a [`RENAME`]'s second word.
 pub const fn dst_len(w1: u64) -> usize {
-    (w1 & MAXIMUM_LEN) as usize
+    (w1 & MAXIMUM_LENGTH_OR_OFFSET) as usize
 }
 
 #[cfg(test)]

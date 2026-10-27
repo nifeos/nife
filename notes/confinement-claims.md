@@ -49,7 +49,7 @@ themselves. The last column is this milestone's result.
 | 27 | A thread holding no port capability cannot touch a port, and a holder's ports do not leak across a context switch (`x86_64`) | §121, milestone 299 | `kernel::user::x86_port_tests::port_holder_transmits_then_a_non_holder_faults` | **yes, milestone 313, and see below** |
 | 28 | A revoked port holder faults on its next `in`/`out` (`x86_64`) | §121, milestone 299 | `kernel::user::x86_port_tests::a_revoked_holder_faults_on_its_next_port_write` | **yes, milestone 313** |
 | 29 | A thread that deletes its own port capability faults on its next `in`/`out` (`x86_64`) | §12 (call/reply IPC: a one-shot reply capability), milestone 313 | `kernel::user::x86_port_tests::a_holder_that_deletes_its_port_capability_faults_on_its_next_port_write` | **yes, milestone 313** |
-| 30 | A revocation reaches a capability in flight, not only the ones sitting in capability tables | `sched::delete_page_frame_caps_where` | `kernel::user::revocation_in_flight_tests::a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver` | yes, 2026-09-21 |
+| 30 | A revocation reaches a capability in flight, not only the ones sitting in capability tables | `sched::delete_page_frame_capabilities_where` | `kernel::user::revocation_in_flight_tests::a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver` | yes, 2026-09-21 |
 | 31 | An unvouched child holds no capability its caller did not delegate, beyond two read-only pages | §219 (how the shell names an installed program to the spawner) | `script/swish-check`: `installed/unvouched` | yes, 2026-10-03, swept weekly ([patch](../xtask/falsifications/swish_check.boot.swish_check_boot.patch)) |
 | 32 | The boot shell holds no display device | Milestone 715 (provisional) | `script/swish-check`: the `caps` census on the gpu boots | yes, 2026-10-03, swept weekly ([patch](../xtask/falsifications/swish_check.boot.swish_check_leg.patch)) |
 | 33 | No `WRITE`, no x86_64 port I/O | Milestone 768 (provisional) | `kernel::user::x86_port_tests::a_read_only_port_capability_must_not_grant_port_output` | [yes](../system_tests/falsifications/user.x86_port_tests.a_read_only_port_capability_must_not_grant_port_output.patch) |
@@ -119,8 +119,8 @@ never sent. [`confinement-claims/which-assertion-fires.md`](confinement-claims/w
 
 This pass assumed each claim false and went looking. Two findings, both fixed:
 
-- A capability revoked while it was in flight was delivered anyway. `Thread::outgoing_cap`, the
-  `SEND_CAP` hand-off slot, was swept by no revocation. Row 30 now tests it, and the three sweeps
+- A capability revoked while it was in flight was delivered anyway. `Thread::outgoing_capability`, the
+  `SEND_CAPABILITY` hand-off slot, was swept by no revocation. Row 30 now tests it, and the three sweeps
   that lacked it drop the parked capability.
 - A mapping the kernel wired at boot was invisible to revocation, because `map_physical` never
   recorded it. So the progenitor could revoke a page the FS server kept mapped writable. The record
@@ -130,26 +130,26 @@ Eight other attacks held, from recycled TCB slots to FP register leaks.
 [`confinement-claims/adversarial-pass-2026-09-21.md`](confinement-claims/adversarial-pass-2026-09-21.md)
 has every attack, what each fix does not settle, and what the pass could not reach.
 
-## What `RECEIVE_CAP` hands back
+## What `RECEIVE_CAPABILITY` hands back
 
-`RECEIVE_CAP` returns in `x1` the slot a delivered capability landed in, or `NO_CAP` when the message
+`RECEIVE_CAPABILITY` returns in `x1` the slot a delivered capability landed in, or `NO_CAPABILITY` when the message
 carried none. A `CALL` server reads it as the slot of its one-shot `Reply`. No consumer in the tree
 checks the kind of object in that slot, and no ABI call would let one, as the audit by milestone 613
 (a system log service: the in-memory half) on PR #1494 found. So a word in `x1` that names a real
 slot without a delivery is authority. The worst case is `net_stack`, which
-any program that declares network reaches: its `OPERATION_ATTACH_PAGE_FRAME` does `cap_delete(x1)`
+any program that declares network reaches: its `OPERATION_ATTACH_PAGE_FRAME` does `capability_delete(x1)`
 with no guard, so a chosen slot deletes one of the server's own capabilities.
 
-`system_tests/src/user/receive_cap_attack_tests.rs` holds the property on every arrival order.
+`system_tests/src/user/receive_capability_attack_tests.rs` holds the property on every arrival order.
 
-- The receive side writes `NO_CAP` unless a capability was installed for this delivery
-  (`Thread::cap_delivered`, `kernel/src/sched.rs`). That covers a plain `SEND`, an interrupt
-  signal and a death message reaching a parked `RECEIVE_CAP`. An `ipc_send` drops its words
+- The receive side writes `NO_CAPABILITY` unless a capability was installed for this delivery
+  (`Thread::capability_delivered`, `kernel/src/sched.rs`). That covers a plain `SEND`, an interrupt
+  signal and a death message reaching a parked `RECEIVE_CAPABILITY`. An `ipc_send` drops its words
   straight into a parked receiver's mailbox, which is why the receiver-first order is the one at
   risk. For the interrupt and the death message the word is the kernel's, not a sender's, so the
   hazard there is order-dependence and a fail-open default rather than a chosen value.
-- `cap_delivered` does not cover the sender-first order. There `ipc_receive_cap`'s `FromSender`
-  path takes `Thread::outgoing_cap` unconditionally. So a delegation must never stay staged after a
+- `capability_delivered` does not cover the sender-first order. There `inter_process_communication_receive_capability`'s `FromSender`
+  path takes `Thread::outgoing_capability` unconditionally. So a delegation must never stay staged after a
   plain `RECEIVE` collects its sender, or the sender's next plain `SEND` hands it to whoever
   receives there.
 - A plain `RECEIVE` never takes a capability (§246 (a plain `RECEIVE` never takes a capability)). A

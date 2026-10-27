@@ -13,10 +13,10 @@ is the implementation record and the one proposal the build produced.
 
 calef ruled option B on 2026-09-26, the day this was raised: the kernel writes
 `abi::notification::BOUND` (2) into `w4` on every receive a bound notification ends (`RECEIVE`,
-`RECEIVE_CAP`, `Interrupt::WAIT`), keeping §101's `w0 = 2` and the word in `w1`. A maintainer records it as
+`RECEIVE_CAPABILITY`, `Interrupt::WAIT`), keeping §101's `w0 = 2` and the word in `w1`. A maintainer records it as
 an amendment to §101. What follows is the proposal as it reached him, kept because how the decision
 was reached is part of the record. Its measured cost on the call/reply path is in
-`design/roadmap/0151-notification-objects.md`: about 34 bytes of `ipc_receive_cap` on riscv64 and 54 on
+`design/roadmap/0151-notification-objects.md`: about 34 bytes of `inter_process_communication_receive_capability` on riscv64 and 54 on
 `x86_64`.
 
 ### The premise §101 rests on is false
@@ -45,8 +45,8 @@ written.
 One grep answers it. A `SEND` carries three words (`w0..w2`). `RECEIVE` returns five registers
 (`x0..x4` on aarch64, `a0..a4` on riscv64, `rdi, rsi, rdx, r10, r8` on `x86_64`). The top two
 are written only by the kernel: `0` for every ordinary message, and the fault address and a reserved
-`0` for a §26 (the fault endpoint) death message. `RECEIVE_CAP` returns three, and its middle one (the delivered slot, or
-`NO_CAP`) is also kernel-written. So an unforgeable discriminator is available without widening
+`0` for a §26 (the fault endpoint) death message. `RECEIVE_CAPABILITY` returns three, and its middle one (the delivered slot, or
+`NO_CAPABILITY`) is also kernel-written. So an unforgeable discriminator is available without widening
 anything; the question is which register and which value.
 
 ### The options
@@ -54,16 +54,16 @@ anything; the question is which register and which value.
 | | shape | forgeable? | fastpath cost | cost to receivers |
 |---|---|---|---|---|
 | A | §101 as written: `w0 = 2`, word in `w1` | yes, by any sender | none | none; and wrong |
-| B | `w0 = 2` kept, word in `w1`, and `w4 = 2` on every receive (`RECEIVE`, `RECEIVE_CAP`, `Interrupt::WAIT`). A receiver tests `w4` | no | `RECEIVE`: none (it already writes `w4` from the mailbox). `RECEIVE_CAP`: one store to `x4`. `Interrupt::WAIT`: two stores, off the fastpath | one rule for all three receives |
-| C | per method, whichever register is already kernel-written: `RECEIVE` tests `w4`; `RECEIVE_CAP` returns a sentinel slot (`u64::MAX - 1`) in `x1` with the word in `x2`; `Interrupt::WAIT` needs nothing because it has no senders | no | none on any path | three rules, one per receive |
+| B | `w0 = 2` kept, word in `w1`, and `w4 = 2` on every receive (`RECEIVE`, `RECEIVE_CAPABILITY`, `Interrupt::WAIT`). A receiver tests `w4` | no | `RECEIVE`: none (it already writes `w4` from the mailbox). `RECEIVE_CAPABILITY`: one store to `x4`. `Interrupt::WAIT`: two stores, off the fastpath | one rule for all three receives |
+| C | per method, whichever register is already kernel-written: `RECEIVE` tests `w4`; `RECEIVE_CAPABILITY` returns a sentinel slot (`u64::MAX - 1`) in `x1` with the word in `x2`; `Interrupt::WAIT` needs nothing because it has no senders | no | none on any path | three rules, one per receive |
 | D | a new receive method, used only by bound threads | no | none | a new method number, outside §101 |
 | E | a new `Error` variant meaning "you were notified" | yes: a sender can already send a negative `w0`, which a receiver decodes as an error (a separate, pre-existing wart; see BUGS below) | none | none; and wrong |
 
 Built, and then ruled: B. It is the one rule a reader has to remember, and its only cost on
-either measured IPC shape is one store on the `CALL`/`RECEIVE_CAP` path. That number is in the block's
+either measured IPC shape is one store on the `CALL`/`RECEIVE_CAPABILITY` path. That number is in the block's
 measurement section, not asserted here. C is the zero-cost alternative and would be the right call if
 calef weighs one store on the call/reply shape over one rule; it is a small change from B (the
-`RECEIVE_CAP` arm and its wrapper). A and E are wrong. D spends a method number to avoid a
+`RECEIVE_CAPABILITY` arm and its wrapper). A and E are wrong. D spends a method number to avoid a
 register convention, which is the larger irreversible change for the same result.
 
 What was not decided here, and could not be. The question §92 (a caretaker is supervised by the client it serves) asks, put to B against C: *would I
@@ -83,7 +83,7 @@ sender did not choose.
 
 ### What would have happened if calef had said no
 
-If he had picked C, the kernel's `RECEIVE_CAP` arm and `ipc_receive_cap` would have changed, and so would
+If he had picked C, the kernel's `RECEIVE_CAPABILITY` arm and `inter_process_communication_receive_capability` would have changed, and so would
 `user_mode_runtime`'s wrapper; nothing else would have, since no program outside this milestone's
 tests was written against either. D would have moved the binding delivery behind a new method and
 left `RECEIVE` exactly as it was.
@@ -94,7 +94,7 @@ left `RECEIVE` exactly as it was.
 were not in §101 and were made in the build, each for a stated reason:
 
 - The binding wakes every receive, not only `RECEIVE`. A thread parked as a receiver on an endpoint
-  is in `RECEIVE`, `RECEIVE_CAP` or `Interrupt::WAIT`, and the kernel parks all three the same way. One rule covers
+  is in `RECEIVE`, `RECEIVE_CAPABILITY` or `Interrupt::WAIT`, and the kernel parks all three the same way. One rule covers
   "blocked receiving on an endpoint", which is §101's own phrase. It is also the rule milestone 106
   (a wait that ends on either the interrupt or the deadline) needs. `net_stack` blocks in
   `Interrupt::WAIT`, and the case in §147 (a timer a userspace service cannot hold) is a timer
@@ -134,7 +134,7 @@ today, the soak's loop beside them) is created for that purpose and never handed
 `Rendezvous` capability. Fifteen was written here at birth; the 2026-09-29 documentation audit
 re-derived the count. The driver reaches it
 only through `Interrupt::WAIT`, and an `Interrupt` capability has no send method. A grep for any
-`rendezvous_cap(` naming an interrupt endpoint finds none. Two caveats keep this from being a
+`rendezvous_capability(` naming an interrupt endpoint finds none. Two caveats keep this from being a
 guarantee. First, it holds by wiring discipline, which is rung zero: nothing in the type system or
 in `script/lint` refuses a future service that binds an interrupt to an endpoint it also grants
 with `WRITE`. Second, `kernel/src/soak.rs`'s `bind_tick_routes` binds the timer tick to endpoints
@@ -146,7 +146,7 @@ fix (make an interrupt endpoint unsendable, or move IRQ delivery onto notificati
 Closed on 2026-09-26. calef ruled the first fix (§101's second amendment), and milestone 603 (an
 interrupt's endpoint refuses every send) built it: `bind_interrupt` marks the endpoint, and a
 `SEND`,
-`SEND_CAP` or `CALL` to it answers `NotPermitted`. Moving interrupts onto notifications is
+`SEND_CAPABILITY` or `CALL` to it answers `NotPermitted`. Moving interrupts onto notifications is
 decided driver by driver.
 
 ## The kernel half (`kernel/src/sched/notification.rs`)
@@ -163,7 +163,7 @@ overwrite the message.
 Every way off a receiver queue marks the thread delivered or aborted in the same critical section: a
 sender's `serve`, an interrupt signal's `serve`, a drain's `abort`, a bound delivery's `serve`. The
 one exception is `finish_blocked_resident`, which ends the thread. So the test is exactly "still
-linked on that receiver queue", and `deliver_bound` asserts it. `RECEIVE`, `RECEIVE_CAP` and
+linked on that receiver queue", and `deliver_bound` asserts it. `RECEIVE`, `RECEIVE_CAPABILITY` and
 `Interrupt::WAIT` all park this way, so the binding wakes all three.
 
 `deliver_bound` takes the thread off its rendezvous's receiver queue with `remove_receiver`, a drain

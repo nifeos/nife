@@ -66,7 +66,7 @@ crossed. It proves the test is wired to the real root handle; it does not demons
 
 The aarch64 falsifications map the kernel's own memory EL0-readable, one flag at one call site, and
 the tests watch the hardware refuse. That defect cannot be booted on RISC-V. `crates/paging`'s Sv39
-encoder turns `CAP_USER` into the `U` bit. S-mode access to a `U` page faults unless `sstatus.SUM` is
+encoder turns `ACCESS_USER` into the `U` bit. S-mode access to a `U` page faults unless `sstatus.SUM` is
 set, which this kernel sets only inside a test helper. A kernel that marked its own `.rodata`
 user-readable there would not be a kernel userspace can read. It would be a kernel that cannot read
 itself, dead before the first test. So the RISC-V evidence is against the software walk instead, and
@@ -82,8 +82,8 @@ replayed 2026-10-03 (UTC), red at the same assertion of `a_user_program_cannot_r
 ## Row 26 could not be falsified as written, because a real escape hung the run
 
 `a_client_of_the_stable_rendezvous_cannot_become_its_server` asserts `attack[1] == -NotPermitted`.
-The honest defect deletes the kernel's `Rights::READ` check on `RECEIVE_CAP`. Run on 2026-09-16, it
-gave a 60-second lost-wakeup watchdog and not one word about impersonation. `RECEIVE_CAP` blocks. So
+The honest defect deletes the kernel's `Rights::READ` check on `RECEIVE_CAPABILITY`. Run on 2026-09-16, it
+gave a 60-second lost-wakeup watchdog and not one word about impersonation. `RECEIVE_CAPABILITY` blocks. So
 an attacker the kernel fails to refuse takes the server's message or parks, and the run deadlocks.
 That is milestone 202's wrong-reason red, on a third claim. So the row stayed unfalsified, rather
 than take an easier defect that only changes which error the refusal returns.

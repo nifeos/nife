@@ -211,10 +211,10 @@ never takes it: the local APIC's claim is one register read with no shared state
 
 The capability table's order is what makes a capability lookup cheap:
 
-- The running thread's own lookups (`sched::current_cap`, `grant`, `grant_at`) take its table's
+- The running thread's own lookups (`sched::current_capability`, `grant`, `grant_at`) take its table's
   lock alone, without `IPC_TABLES`. Taking the global lock there made 41% of lookups wait at four
   busy cores on radon ([job-mix/null-syscall-under-load.md](job-mix/null-syscall-under-load.md)).
-- Anything that touches another thread's table (an IPC delivering a capability, `CAP_INSERT`, the
+- Anything that touches another thread's table (an IPC delivering a capability, `CAPABILITY_INSERT`, the
   revocation sweeps) takes it under `IPC_TABLES`. That keeps a capability in transit, or a sweep
   across every table, atomic against every other cross-table operation.
 - A holder takes nothing. The table is a fixed array of `Copy` entries, so nothing on it

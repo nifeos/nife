@@ -21,12 +21,12 @@ principle.
 
 ## Why the graph cannot live where the roadmap's own wording suggests
 
-The natural first reading is "a `CapNeed` should say which contract satisfies it." That does not
+The natural first reading is "a `CapabilityNeed` should say which contract satisfies it." That does not
 survive contact with a manifest already in this tree. `hot_swap_contract::CLIENT` declares one `Use`
 need named `service`. The supervisor routes that name to a console (or backend) instance on the
 direct channel and to `broker`'s front endpoint on the queued one, per
 `notes/component-manifest.md`'s own rule (the name is the component's and the object is the
-supervisor's). A `CapNeed` that named its supplier would be wrong on one of the two wirings, every
+supervisor's). A `CapabilityNeed` that named its supplier would be wrong on one of the two wirings, every
 time, by construction. Role resolution is the supervisor's business and a capability-level
 dependency claim cannot be, on pain of contradicting the manifest mechanism's own reason for
 existing.
@@ -41,7 +41,7 @@ wiring.
 
 A pure consumer, no matter which contract answers its `service` need, never needs an entry in
 `depends_on`. This is not a simplification; it is DECISIONS §41 applied a second time. A `CALL` that
-finds nobody receiving parks on the endpoint's own sender queue, and the *next* server to `RECEIVE_CAP`
+finds nobody receiving parks on the endpoint's own sender queue, and the *next* server to `RECEIVE_CAPABILITY`
 drains it, in order, with nothing lost. That is exactly the mechanism that made the roadmap's
 imagined forwarding broker unnecessary in the simple case (notes/live-replacement.md's "three things
 the build settled"). It generalizes for free: any component whose only relationship to a dependency
@@ -126,8 +126,8 @@ for id in order.quiesce_order().iter().rev() {
 pub const CACHE: Requirements = Requirements {
     contract: "cache",
     caps: &[
-        CapNeed { role: "requests", direction: Direction::Serve },
-        CapNeed { role: "origin", direction: Direction::Use },
+        CapabilityNeed { role: "requests", direction: Direction::Serve },
+        CapabilityNeed { role: "origin", direction: Direction::Use },
     ],
     maps: &[],
     pages: 32,

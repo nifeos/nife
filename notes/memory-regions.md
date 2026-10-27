@@ -69,9 +69,9 @@ What a budget carries is now what everything made from it carries, so three shap
 
 | Budget | Rights | Who holds it |
 |---|---|---|
-| The root (`cap::memory_region_root_cap`) | every right | the progenitor, which hands `BIND` and `GRANT` on |
+| The root (`cap::memory_region_root_capability`) | every right | the progenitor, which hands `BIND` and `GRANT` on |
 | A lending budget (`abi::rights::ALL`, `cap::memory_region_lending_capability`) | every right | a builder, a shell, a program that lends a page it retyped: a networked program's socket pages, `jig`'s staged package |
-| Spend-only (`abi::rights::SPEND_ONLY`, `cap::memory_region_cap`) | every right but `GRANT` | a leaf |
+| Spend-only (`abi::rights::SPEND_ONLY`, `cap::memory_region_capability`) | every right but `GRANT` | a leaf |
 
 The spend-only budget was `WRITE` alone until 824. It gained `READ`, `ENUMERATE` and `BIND` so a
 leaf can still wait on its own notification and join its own process. On a region those rights

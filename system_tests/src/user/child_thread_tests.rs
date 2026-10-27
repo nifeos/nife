@@ -55,17 +55,17 @@ fn a_process_can_build_start_and_run_a_child_thread() {
     // The child's one authority: WRITE on a report rendezvous, so it can SEND but not receive.
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let report = crate::sched::create_rendezvous_from(endpoints).expect("no report rendezvous");
-    let report_cap = crate::cap::rendezvous_cap(
+    let report_capability = crate::capability_object::rendezvous_capability(
         report,
-        crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+        crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
     );
 
     // Build the thread from parts.
     let thread_control_block_region = crate::memory_region::create(2).expect("no tcb region");
     let tid =
         crate::sched::create_thread_control_block(thread_control_block_region).expect("no tcb");
-    let slot =
-        crate::sched::thread_control_block_insert_cap(tid, report_cap, None).expect("cap insert");
+    let slot = crate::sched::thread_control_block_insert_capability(tid, report_capability, None)
+        .expect("cap insert");
     assert_eq!(
         slot, 0,
         "the child's first cap must land in slot 0 (the code assumes it)"
@@ -148,9 +148,9 @@ fn reclaim_frees_a_started_then_exited_childs_regions() {
     )
     .expect("map stack");
 
-    let report_cap = crate::cap::rendezvous_cap(
+    let report_capability = crate::capability_object::rendezvous_capability(
         report,
-        crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+        crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
     );
     let thread_control_block_region = crate::memory_region::create(2).expect("no tcb region");
     // The two runs this test is responsible for, named while their regions are alive. A
@@ -163,7 +163,8 @@ fn reclaim_frees_a_started_then_exited_childs_regions() {
     let tcb_run = crate::testing::RegionRun::of(thread_control_block_region);
     let tid =
         crate::sched::create_thread_control_block(thread_control_block_region).expect("no tcb");
-    crate::sched::thread_control_block_insert_cap(tid, report_cap, None).expect("cap insert");
+    crate::sched::thread_control_block_insert_capability(tid, report_capability, None)
+        .expect("cap insert");
     crate::sched::configure_thread_control_block(
         tid,
         CODE_VA,
@@ -239,9 +240,9 @@ fn spawn_to_reap_repeats_without_leaking() {
         )
         .expect("map stack");
 
-        let report_cap = crate::cap::rendezvous_cap(
+        let report_capability = crate::capability_object::rendezvous_capability(
             report,
-            crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+            crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
         );
         let thread_control_block_region = crate::memory_region::create(2).expect("tcb region");
         // This round's own ten frames, by name. The leak this test hunts is a per-cycle one, so the
@@ -251,7 +252,8 @@ fn spawn_to_reap_repeats_without_leaking() {
         let tcb_run = crate::testing::RegionRun::of(thread_control_block_region);
         let tid =
             crate::sched::create_thread_control_block(thread_control_block_region).expect("tcb");
-        crate::sched::thread_control_block_insert_cap(tid, report_cap, None).expect("cap insert");
+        crate::sched::thread_control_block_insert_capability(tid, report_capability, None)
+            .expect("cap insert");
         crate::sched::configure_thread_control_block(
             tid,
             CODE_VA,
@@ -306,7 +308,7 @@ fn a_process_composed_from_two_capabilities_runs_in_the_space_it_built() {
     // Each predicate is asked once per pass and its first `true` is the answer: the reclaim below
     // is a predicate with a side effect, and asking it again after it succeeded would ask about a
     // region that no longer exists.
-    let within_30_s = |done: &mut dyn FnMut() -> bool| {
+    let within_30_seconds = |done: &mut dyn FnMut() -> bool| {
         let deadline = timer::now() + 30 * timer::frequency();
         loop {
             if done() {
@@ -319,7 +321,7 @@ fn a_process_composed_from_two_capabilities_runs_in_the_space_it_built() {
         }
     };
     assert!(
-        within_30_s(&mut || sched::rendezvous_waiting_senders(report) > 0),
+        within_30_seconds(&mut || sched::rendezvous_waiting_senders(report) > 0),
         "the witness sent no verdict in 30 s: it is still waiting for a child it started, so the \
          thread it built never ran or never answered on the capability it was given",
     );
@@ -330,11 +332,11 @@ fn a_process_composed_from_two_capabilities_runs_in_the_space_it_built() {
     // The child exited before the witness sent anything, so the budget it was built from is free
     // once the reaper has it; the retry is for that reap, which may land on another core.
     assert!(
-        within_30_s(&mut || !sched::is_thread_present(witness.tid)),
+        within_30_seconds(&mut || !sched::is_thread_present(witness.tid)),
         "the witness sent its verdict and was never reaped",
     );
     assert!(
-        within_30_s(&mut || sched::reclaim_region(witness.budget).is_ok()),
+        within_30_seconds(&mut || sched::reclaim_region(witness.budget).is_ok()),
         "the witness's budget would not reclaim: something it built is still alive",
     );
     sched::reclaim_region(witness.thread_control_block_region)

@@ -12,7 +12,7 @@
 //! # BUGS
 //!
 //! - Interrupt and death deliveries are unreachable and fuzzer-to-fuzzer arrival orders are
-//!   closed, so four recorded falsifications (in `receive_cap_attack_tests`) cannot redden it.
+//!   closed, so four recorded falsifications (in `receive_capability_attack_tests`) cannot redden it.
 //! - `GO` (slot 0) is never fuzzed, and no thread or timer is made (retypes are rewritten to a
 //!   rendezvous to keep the seed the reproducer), so those methods are out of reach.
 //! - Badges are checked only on the server endpoint; copies minted from the shared one are unknown.
@@ -27,19 +27,12 @@ use confined_syscall_fuzzer_contract as proto;
 use confined_syscall_fuzzer_contract::report;
 
 use super::*;
-// The `cap` module and these constructors still carry their pre-sweep names
-// (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
-// this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{
-    Cap as Capability, Object, Rights, address_space_cap as address_space_capability,
-    memory_region_cap_rights as memory_region_capability_rights,
-    notification_cap as notification_capability, page_frame_cap as page_frame_capability,
-    rendezvous_cap as rendezvous_capability, rendezvous_cap_badged as rendezvous_capability_badged,
+use crate::capability_object::{
+    Capability, Object, Rights, address_space_capability, memory_region_capability_rights,
+    notification_capability, page_frame_capability, rendezvous_capability,
+    rendezvous_capability_badged,
 };
-use crate::sched::{
-    self, RendezvousId, current_cap as current_capability,
-    delete_current_cap as delete_current_capability,
-};
+use crate::sched::{self, RendezvousId, current_capability, delete_current_capability};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
 
 const SLOTS: usize = abi::CAPABILITY_TABLE_SLOTS as usize;
@@ -66,7 +59,7 @@ const SUITE_SEEDS: u64 = 32;
 const CORPUS: &[u64] = &[52, 202_643_000_066];
 /// The sweep's guest-time capability (752's), so a weekly run with a large count stops between seeds
 /// inside the per-test budget.
-const SWEEP_SECS: u64 = 60;
+const SWEEP_SECONDS: u64 = 60;
 /// The fuzzers' badges on the server endpoint. Nonzero, distinct, and never mintable by a call.
 const BADGE_A: u64 = 0x779A;
 const BADGE_B: u64 = 0x779B;
@@ -79,7 +72,7 @@ const PAGE: u64 = address_space_map::PAGE;
 
 type Snap = [Option<(Object, u32)>; SLOTS];
 
-/// One delegation the conductor watched leave a sender: parked in a `SEND_CAP` that has not been
+/// One delegation the conductor watched leave a sender: parked in a `SEND_CAPABILITY` that has not been
 /// taken, or spent by one that completed (its receiver's step may still be awaiting judgment).
 #[derive(Clone, Copy, Debug)]
 struct Delegation {
@@ -99,7 +92,7 @@ struct Ledger {
     spent: [Option<Delegation>; 8],
 }
 
-/// A `RECEIVE_CAP` fill whose sender's step had not been collected when the receiver's was: judged
+/// A `RECEIVE_CAPABILITY` fill whose sender's step had not been collected when the receiver's was: judged
 /// at the next quiet point, when the ledger is whole (the module's last `BUGS` entry).
 struct Pending {
     fuzzer: usize,
@@ -539,7 +532,7 @@ impl Conductor {
         (justified_slot, justified_reply)
     }
 
-    /// Register truth for a step that was a `RECEIVE_CAP`.
+    /// Register truth for a step that was a `RECEIVE_CAPABILITY`.
     fn check_receive_registers(
         &self,
         x: usize,
@@ -547,8 +540,8 @@ impl Conductor {
         justified_slot: Option<u64>,
         justified_reply: bool,
     ) {
-        // Register truth for a `RECEIVE_CAP` (milestones 634 and 706): x1 names the slot that
-        // actually filled (the table diff says which) or is NO_CAP, and x4 tags exactly a Reply.
+        // Register truth for a `RECEIVE_CAPABILITY` (milestones 634 and 706): x1 names the slot that
+        // actually filled (the table diff says which) or is NO_CAPABILITY, and x4 tags exactly a Reply.
         // A plain `RECEIVE` defines w0..w3 only and leaves x4 as the caller left it, so there is
         // nothing to check there. A deferred fill is checked at the quiet point, with its own x1
         // and x4.
@@ -561,7 +554,7 @@ impl Conductor {
             if call.rets[1] != want {
                 escape!(
                     self,
-                    "RECEIVE_CAP answered x1 = {got:#x} where the table says {want:#x}",
+                    "RECEIVE_CAPABILITY answered x1 = {got:#x} where the table says {want:#x}",
                     got = call.rets[1]
                 );
             }
@@ -569,7 +562,7 @@ impl Conductor {
             if call.rets[4] != tag {
                 escape!(
                     self,
-                    "RECEIVE_CAP answered x4 = {got:#x} where the delivery says {tag:#x}",
+                    "RECEIVE_CAPABILITY answered x4 = {got:#x} where the delivery says {tag:#x}",
                     got = call.rets[4]
                 );
             }
@@ -619,10 +612,10 @@ impl Conductor {
         }
     }
 
-    /// Record the delegation a completed `SEND_CAP` spent.
+    /// Record the delegation a completed `SEND_CAPABILITY` spent.
     fn note_spent_delegation(&mut self, x: usize, call: &Call) {
-        // A SEND_CAP that completed spent its delegation: its receiver may be waiting on the
-        // record to judge the fill. (Gated on the slot holding an endpoint: `SEND_CAP` and
+        // A SEND_CAPABILITY that completed spent its delegation: its receiver may be waiting on the
+        // record to judge the fill. (Gated on the slot holding an endpoint: `SEND_CAPABILITY` and
         // `RETYPE_OBJ` share the number 2.)
         if call.number == abi::SYS_INVOKE
             && call.words[1] == proto::SEND_CAPABILITY
@@ -644,7 +637,7 @@ impl Conductor {
 
     /// May `call`, made by fuzzer `x`, have filled a slot with `obj` at these rights?
     /// The object the call's slot held when it was made (method numbers collide across object
-    /// types: `RECEIVE_CAP` and `SPLIT` are both 3, `RECEIVE` and `RETYPE` both 1, so every
+    /// types: `RECEIVE_CAPABILITY` and `SPLIT` are both 3, `RECEIVE` and `RETYPE` both 1, so every
     /// method question is really an object-and-method question).
     fn held(&self, x: usize, call: &Call) -> Option<Object> {
         self.fuzzers[x]
@@ -655,7 +648,7 @@ impl Conductor {
             .map(|(o, _)| o)
     }
 
-    /// Was this call a `RECEIVE_CAP` on an endpoint, the one call whose fills are deliveries?
+    /// Was this call a `RECEIVE_CAPABILITY` on an endpoint, the one call whose fills are deliveries?
     fn was_receive_capability(&self, x: usize, call: &Call) -> bool {
         call.number == abi::SYS_INVOKE
             && call.words[1] == proto::RECEIVE_CAPABILITY
@@ -663,7 +656,7 @@ impl Conductor {
     }
 
     /// May `call`, made by fuzzer `x`, have filled a slot with `obj` at these rights? (A
-    /// `RECEIVE_CAP`'s fills are deliveries, judged at the quiet point, never here.)
+    /// `RECEIVE_CAPABILITY`'s fills are deliveries, judged at the quiet point, never here.)
     fn justify_fill(&mut self, x: usize, call: &Call, obj: Object, rights: u32) -> bool {
         if call.number != abi::SYS_INVOKE {
             return false;
@@ -975,7 +968,7 @@ impl Conductor {
             if p.x1 != p.slot {
                 escape!(
                     self,
-                    "RECEIVE_CAP answered x1 = {:#x} where the table says {:#x}",
+                    "RECEIVE_CAPABILITY answered x1 = {:#x} where the table says {:#x}",
                     p.x1,
                     p.slot
                 );
@@ -985,7 +978,7 @@ impl Conductor {
             if p.x4 != 0 {
                 escape!(
                     self,
-                    "RECEIVE_CAP answered x4 = {got:#x} where a delegation's tag is 0",
+                    "RECEIVE_CAPABILITY answered x4 = {got:#x} where a delegation's tag is 0",
                     got = p.x4
                 );
             }
@@ -1003,7 +996,7 @@ impl Conductor {
                 }
             }
         }
-        // A parked SEND_CAP is a live staged delegation: record it from its in-flight report.
+        // A parked SEND_CAPABILITY is a live staged delegation: record it from its in-flight report.
         for x in 0..FUZZERS {
             if let Some(e) = self.staged_of(x) {
                 let known = self
@@ -1028,7 +1021,7 @@ impl Conductor {
     }
 
     /// Fuzzer `x` is parked sending a delegation: which one, from its report page and last table.
-    /// Any endpoint counts: a `SEND_CAP` parks wherever it was sent, the conductor's or a
+    /// Any endpoint counts: a `SEND_CAPABILITY` parks wherever it was sent, the conductor's or a
     /// fuzzer-retyped one alike.
     fn staged_of(&self, x: usize) -> Option<Delegation> {
         let (_, Some(Wait::Rendezvous(_, WaitRole::Sender))) = disposition(self, x)? else {
@@ -1423,7 +1416,7 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             crate::println!("    confined fuzzer: seeds 0..{SUITE_SEEDS} and corpus {CORPUS:?}");
         }
         Some((first, count)) => {
-            let capability = start + SWEEP_SECS * hz;
+            let capability = start + SWEEP_SECONDS * hz;
             for seed in first..first.saturating_add(count) {
                 if crate::arch::timer::now() > capability {
                     break;
@@ -1433,7 +1426,7 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             }
             crate::println!(
                 "    confined fuzzer: sweep of seeds {first}..{} ({ran} of {count} asked; a time \
-                 capability of {SWEEP_SECS} s stops it early)",
+                 capability of {SWEEP_SECONDS} s stops it early)",
                 first + ran
             );
         }

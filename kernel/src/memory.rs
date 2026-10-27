@@ -747,7 +747,8 @@ pub(crate) fn smmu_region() -> Option<(u64, u64)> {
 /// each window, the same role [`smmu_region`] plays for the SMMU. Every unit and not only one
 /// since milestone 594 (every VT-d unit translates its own devices), which brings every unit up. Name: provisional.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn vtd_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_DRHDS] {
+pub(crate) fn vtd_regions()
+-> [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_TRANSLATION_UNITS] {
     *VTD_REGIONS.lock()
 }
 
@@ -771,8 +772,8 @@ pub(crate) fn record_vtd_region(base: u64, size: u64) {
 /// named, in table order; `None` past the last. [`vtd_regions`]' counterpart on an AMD machine,
 /// and read by `mmu::map_everything` for the same reason. Name: provisional (lane `amd-vi`).
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn amd_vi_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS]
-{
+pub(crate) fn amd_vi_regions()
+-> [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_TRANSLATION_UNITS] {
     *AMD_VI_REGIONS.lock()
 }
 
@@ -1088,17 +1089,20 @@ static SMMU_REGION: InterruptSafeMutex<Option<(u64, u64)>> =
 /// (`arch::x86_64::iommu`'s own accessors go through `phys_to_virt`, which is arithmetic, not a
 /// promise the address is mapped).
 static VTD_REGIONS: InterruptSafeMutex<
-    [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_DRHDS],
-> = InterruptSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::MAXIMUM_DRHDS]);
+    [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_TRANSLATION_UNITS],
+> = InterruptSafeMutex::new(
+    rank::RAM,
+    [None; machine_discovery::acpi::MAXIMUM_TRANSLATION_UNITS],
+);
 
 /// AMD-Vi's register blocks (base, size), one per IVHD the IVRS names (lane `amd-vi`). The same
 /// role as [`VTD_REGIONS`] on an AMD machine, kept apart rather than shared because the two are
 /// named for the hardware they hold and a machine has one kind or the other.
 static AMD_VI_REGIONS: InterruptSafeMutex<
-    [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS],
+    [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_TRANSLATION_UNITS],
 > = InterruptSafeMutex::new(
     rank::RAM,
-    [None; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS],
+    [None; machine_discovery::acpi::ivrs::MAXIMUM_TRANSLATION_UNITS],
 );
 
 /// The screen the boot handoff described (milestone 243). See [`framebuffer`].

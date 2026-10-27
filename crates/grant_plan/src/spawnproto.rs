@@ -55,7 +55,7 @@ const SCREEN_BIT: u64 = 1 << 37;
 /// phase 3).
 ///
 /// The one bit here that announces data rather than a capability: two `SEND`s ([`GRANT_WORDS`]),
-/// not a `SEND_CAP`. The shell's file-service endpoint carries no `GRANT`, so it cannot delegate
+/// not a `SEND_CAPABILITY`. The shell's file-service endpoint carries no `GRANT`, so it cannot delegate
 /// what a `fs_subtree_caretaker` needs; it says what the grant is, and the progenitor builds the
 /// rest.
 ///
@@ -78,7 +78,7 @@ const SECOND_DIRECTORY_GRANT_BIT: u64 = 1 << 38;
 /// ruled by calef 2026-09-26). Set when the shell runs a program the image did not name by
 /// [`Program`](crate::Program) id: an installed package's member, or a binary somebody just built.
 ///
-/// Word 0 is then the image's length in bytes ([`image_len`]), and [`image_pages`] `SEND_CAP`s
+/// Word 0 is then the image's length in bytes ([`image_len`]), and [`image_pages`] `SEND_CAPABILITY`s
 /// follow, one `READ` frame each in page order, tagged with its index, after the directory grant's
 /// data and before every other capability. The progenitor hashes its own copy. A miss runs
 /// only with [`RUN_UNVOUCHED_BIT`] and [`crate::UNVOUCHED_MANIFEST`], and is otherwise refused with
@@ -115,7 +115,7 @@ const RUN_UNVOUCHED_BIT: u64 = 1 << 41;
 
 /// **The line's argv follows as one frame** (milestone 205 (how a foreign program is told what to
 /// do), DECISIONS §170 (how a foreign program is told what to do)). The shell assembles the words
-/// it was typed into one page in `program_argument_contract`'s layout and `SEND_CAP`s it narrowed
+/// it was typed into one page in `program_argument_contract`'s layout and `SEND_CAPABILITY`s it narrowed
 /// to `READ`, after the directory grant's data and any image's frames, and before every other
 /// delegated capability.
 ///
@@ -125,7 +125,7 @@ const RUN_UNVOUCHED_BIT: u64 = 1 << 41;
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 const PROGRAM_ARGUMENTS_BIT: u64 = 1 << 42;
-/// **The machine statistics page follows as one `SEND_CAP`, after every other delegated
+/// **The machine statistics page follows as one `SEND_CAPABILITY`, after every other delegated
 /// capability** (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the machine and
 /// your share)). Set by a shell that holds the page at [`MACHINE_PAGE_SLOT`] when the program's
 /// manifest declares `machine`; the progenitor maps it read-only into the child and places it at
@@ -423,8 +423,7 @@ pub fn activation_reply(status: ActivationStatus, live: u32, member: u64) -> (u6
 /// width of a package header's name field (`package_archive::NAME_LEN`). A longer name, which only
 /// a hand-written table holds, arrives cut at this width. Name: provisional, milestone 919's lane.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `HOLDER_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const HOLDER_MAXIMUM: usize = 32;
 
 /// **The two messages that follow a [`ActivationStatus::NameTaken`] reply on an installer
@@ -462,8 +461,7 @@ pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXI
 /// MiB, are set aside at boot for the shell's staging frames, the progenitor's copy, the child's
 /// pages and a `std` heap (`IMAGE_POOL_PAGES` in `crates/system_initializer`). Provisional.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `IMAGE_MAX_PAGES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const IMAGE_MAXIMUM_PAGES: u64 = 1024;
 
 /// **The budget the progenitor hands the boot shell**, in pages, which both read: the progenitor
@@ -495,7 +493,7 @@ pub const GRANT_WORDS: usize = 2;
 
 /// **Where the shell's operators end up on the wire**, alongside the parts of the endowment that
 /// were always here. `sink` and `source` are booleans rather than capabilities because the
-/// capability travels separately, over `SEND_CAP`: this word only says whether to expect it.
+/// capability travels separately, over `SEND_CAPABILITY`: this word only says whether to expect it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Wiring {
     /// A foreground job the shell will supervise (DECISIONS §24). Two capabilities lead the
@@ -639,7 +637,7 @@ pub fn program_argument(w1: u64) -> u64 {
 }
 
 /// The memory-grant page count from a received request (word 2). Non-zero means one delegated
-/// untyped capability follows the interrupt caps (if any) over `SEND_CAP` / `RECEIVE_CAP`.
+/// untyped capability follows the interrupt caps (if any) over `SEND_CAPABILITY` / `RECEIVE_CAPABILITY`.
 ///
 /// Name: ratified 2026-10-18 (calef: "Approve the family").
 pub fn memory_grant_pages(w2: u64) -> u64 {
@@ -653,11 +651,14 @@ pub fn is_interruptible(w2: u64) -> bool {
     w2 & INTERRUPTIBLE_BIT != 0
 }
 
-/// The data word carried alongside the delegated untyped in the `SEND_CAP`. It is not load-bearing
+/// The data word carried alongside the delegated untyped in the `SEND_CAPABILITY`. It is not load-bearing
 /// (the progenitor identifies the cap by the protocol position, not the tag), but a fixed marker
 /// makes a misrouted message obvious in a trace. Its low bits echo the page count as a cheap
 /// cross-check.
-pub const CAP_TAG: u64 = 0x6361_705f; // "cap_" little-endian-ish marker
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+/// `CAPABILITY_TAG` under the capability ruling of 2026-10-06 (UTC).
+pub const CAPABILITY_TAG: u64 = 0x6361_705f; // "cap_" little-endian-ish marker
 
 /// The sentinel the progenitor sends on the result endpoint when it could not build the child, so
 /// the shell's single read completes with a legible failure rather than blocking forever. Distinct

@@ -117,7 +117,7 @@ pub fn boot(
     // Free every boot cap the spawn service does not need, so the capability table has room to
     // build a supervised child. Only the input frame here: `term_ep` is still delegated below (the
     // sink adapter's `WRITE`, the announcements' `CALL`) and `term_out` stages the announcements.
-    cap_delete(term.input);
+    capability_delete(term.input);
     // The file service stays for the life of the boot: a caretaker must hold it to attenuate a
     // directory grant, and the shell's copy carries no `GRANT` (see the module's note).
     let fs = w.with_fs.then_some(Fs {
@@ -236,7 +236,7 @@ fn announce_outcomes(
     // `term_ep` stays and `term_out` does not: a `graphical_terminal` session with no virtio keyboard
     // takes keystrokes from the boot's line discipline, and only this process can grant that
     // endpoint (see the module's note).
-    cap_delete(w.term.out);
+    capability_delete(w.term.out);
     // And the window onto the shell's output page, which every line above was staged through and
     // nothing below writes (milestone 95 (an unmap primitive), §249 (a running address space stays
     // nameable)): given up before the shell starts, so this process cannot read what the shell
@@ -285,7 +285,7 @@ fn start_undertaker(own_ut: u64, reaper_elf: &elf::Elf<'static>, chan: SpawnChan
         own_ut,
         reaper_elf,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (chan.deaths, abi::rights::READ),
                 (chan.result_ep, abi::rights::WRITE),
                 (reaper_spawn, abi::rights::WRITE),
@@ -294,7 +294,7 @@ fn start_undertaker(own_ut: u64, reaper_elf: &elf::Elf<'static>, chan: SpawnChan
             ..ChildEndowment::new(Retention::Nothing)
         },
     ));
-    cap_delete(reaper_spawn);
+    capability_delete(reaper_spawn);
     must_ok(start_child(reaper, 0, 0, 0));
 }
 

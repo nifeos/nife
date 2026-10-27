@@ -33,8 +33,14 @@
 mod arch;
 #[cfg(feature = "bench")]
 mod bench;
-mod cap;
+mod capability_object;
 mod console;
+// The coverage counters, written to the host at exit (milestone 781 (measure kernel and service
+// coverage under QEMU)). aarch64 first; the module refuses the feature on the other targets.
+#[cfg(all(feature = "coverage", target_arch = "aarch64"))]
+mod coverage;
+#[cfg(all(feature = "coverage", not(target_arch = "aarch64")))]
+compile_error!("coverage is aarch64 only");
 mod cpu;
 mod drivers;
 #[cfg(feature = "fastpath_pad")]
@@ -196,8 +202,8 @@ pub mod system_test_access {
     pub mod arch {
         pub use crate::arch::*;
     }
-    pub mod cap {
-        pub use crate::cap::*;
+    pub mod capability_object {
+        pub use crate::capability_object::*;
     }
     pub mod console {
         pub use crate::console::*;

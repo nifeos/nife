@@ -2,7 +2,7 @@
 //! outsider pass at the confinement claim, claims 4, 5 and 2's slot half).
 //!
 //! Claims 4 and 5 are proved on host logic (`capability::a_deleted_capability_stays_deleted`,
-//! `delete_touches_only_its_slot`). This module drives the live kernel, `delete_current_cap` then
+//! `delete_touches_only_its_slot`). This module drives the live kernel, `delete_current_capability` then
 //! `syscall::invoke`, with a stale slot number, an out-of-range index forged in a register, and a
 //! deleted slot the table hands out again. Nothing blocks, and the frame and region ledgers end
 //! flat. Cross-ISA (DECISIONS §19 (architectural parity is a tenet)). See
@@ -11,13 +11,8 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-// The `cap` module and these names still carry their pre-sweep spelling
-// (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
-// this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{Rights, rendezvous_cap as rendezvous_capability};
-use crate::sched::{
-    self, current_cap as current_capability, delete_current_cap as delete_current_capability,
-};
+use crate::capability_object::{Rights, rendezvous_capability};
+use crate::sched::{self, current_capability, delete_current_capability};
 use crate::syscall::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it. Copied in
@@ -70,7 +65,7 @@ fn a_consumed_capability_cannot_be_used_again_even_by_number() {
     );
     assert_eq!(
         call(
-            crate::cap::CAPABILITY_TABLE_SLOTS as u64,
+            crate::capability_object::CAPABILITY_TABLE_SLOTS as u64,
             abi::rendezvous::SEND,
             1,
             0,
@@ -90,7 +85,7 @@ fn a_consumed_capability_cannot_be_used_again_even_by_number() {
     );
     assert_eq!(
         delete_current_capability(writer),
-        Err(crate::cap::Error::NoSuchSlot),
+        Err(crate::capability_object::Error::NoSuchSlot),
         "deleting the same capability a second time succeeded: the first delete left something",
     );
 

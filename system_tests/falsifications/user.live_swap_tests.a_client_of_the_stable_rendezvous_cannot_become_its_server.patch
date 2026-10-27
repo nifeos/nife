@@ -2,11 +2,11 @@ Falsifies `system_tests::user::live_swap_tests::a_client_of_the_stable_rendezvou
 
 Architecture: aarch64
 
-The patch deletes the `READ` check on `Rendezvous::RECEIVE_CAP` in
+The patch deletes the `READ` check on `Rendezvous::RECEIVE_CAPABILITY` in
 `syscall::rendezvous::rendezvous_receive_capability`, the gate this test exists for (the kernel-side
 twin's record deletes `RECEIVE`'s; one test carries one patch). Until milestone 800 (a non-Anthropic
 model attacks the confinement claim) reshaped the fixture, this defect could not turn the test red:
-a let-open `RECEIVE_CAP` found an empty queue and blocked, and the run died at the 60-second
+a let-open `RECEIVE_CAPABILITY` found an empty queue and blocked, and the run died at the 60-second
 watchdog instead of at the assertion (measured 2026-09-16, milestone 305 (the six kernel confinement
 rows get a falsification a machine can replay)). The operator now retires the last receiver first
 and a plant (`swap_boundary_witness`'s `ROLE_PLANT`) parks `hot_swap_contract::PLANT_MARKER` on the endpoint, so the
@@ -31,6 +31,6 @@ diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
 -    if !rights.allows(Rights::READ) {
 -        return Err(Error::NotPermitted);
 -    }
-     let msg = sched::ipc_receive_cap(ep);
+     let msg = sched::inter_process_communication_receive_capability(ep);
      if sched::take_ipc_aborted() {
          return Err(Error::Gone); // endpoint revoked; the message is a placeholder

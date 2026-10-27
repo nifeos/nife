@@ -1024,9 +1024,9 @@ fn jh7110_on_riscv64(tally: &mut Tally) {
                 d.head[2],
                 d.head[3],
                 d.differ,
-                micros(wire_ticks + d.ready_ticks),
+                microseconds(wire_ticks + d.ready_ticks),
                 d.na + d.nb,
-                micros(d.draw_ticks),
+                microseconds(d.draw_ticks),
                 bytes_per_second((d.na + d.nb) as u64, d.draw_ticks),
             ),
         ),
@@ -1231,23 +1231,23 @@ fn entropy(tally: &mut Tally) {
 /// **Counter ticks as microseconds**, for the `trng` check's timings: comparable across boards,
 /// whose counters run at different rates. Truncating, so work too short to measure reads zero.
 ///
-/// Provisional name (an architect's call): `micros`, with `micros_between` and `bytes_per_second`
+/// Provisional name (an architect's call): `microseconds`, with `microseconds_between` and `bytes_per_second`
 /// beside it.
 #[cfg(target_arch = "riscv64")]
 #[allow(dead_code)]
-fn micros(ticks: u64) -> u64 {
+fn microseconds(ticks: u64) -> u64 {
     // `frequency()` asserts a nonzero rate. `saturating_mul` bounds the scaling: a gap long enough
     // to overflow is one nobody is timing.
     ticks.saturating_mul(1_000_000) / arch::timer::frequency()
 }
 
-/// The two-timestamp form of [`micros`]. `wrapping_sub` because the `time` CSR is a free-running
+/// The two-timestamp form of [`microseconds`]. `wrapping_sub` because the `time` CSR is a free-running
 /// 64-bit counter and this is the arithmetic the rest of this file already uses on it (see the
 /// JH7110 entropy step above); at 10 MHz it wraps after about 58,000 years.
 #[cfg(target_arch = "riscv64")]
 #[allow(dead_code)]
-fn micros_between(start: u64, end: u64) -> u64 {
-    micros(end.wrapping_sub(start))
+fn microseconds_between(start: u64, end: u64) -> u64 {
+    microseconds(end.wrapping_sub(start))
 }
 
 /// **Bytes per second over a measured span**, from ticks so it does not inherit the microsecond

@@ -14,16 +14,14 @@
 /// one, and it has no allocator, so the stack is an array. Eight is far past any tree a demonstrator
 /// walks by hand, and going deeper is [`Refused::TooDeep`] rather than a silently truncated path.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_DEPTH`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_DEPTH: usize = 8;
 
 /// The longest single component a path may have, which is [`crate::MAXIMUM_FILE_NAME`]: the last
 /// component of a path can be a file, and a file may be named that long. A component the shell
 /// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME`] as well ([`Cwd::descend`]).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_NAME`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
 
 /// **The longest directory name a [`Cwd`] or a bound name holds**, which is [`crate::WORDS_NAME`]:
@@ -38,8 +36,7 @@ pub const MAXIMUM_DIRECTORY_NAME: usize = crate::WORDS_NAME;
 /// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `RENDER_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const RENDER_MAXIMUM: usize = 1 + MAXIMUM_DEPTH * (1 + MAXIMUM_DIRECTORY_NAME);
 
 /// Why a token cannot be navigated. Each is a fact about the *name*, never about a permission,
@@ -489,8 +486,7 @@ impl<'a> TwoRoots<'a> {
 
 /// How many names one [`Bindings`] can hold.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_BINDS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_BINDS: usize = 4;
 
 /// One name a shell has bound to a position it already reached some other way.

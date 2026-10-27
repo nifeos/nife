@@ -31,7 +31,7 @@ impl GaugeFilter {
     /// What `kernel::progenitor_stack::announce` prints first, its leading indent included: the
     /// kernel's own prefix for the line. Name provisional.
     pub(super) const NEEDLE: &'static str = "  progenitor stack:";
-    /// What `kernel::cap::report_peak` prints first, its leading indent included.
+    /// What `kernel::capability_object::report_peak` prints first, its leading indent included.
     pub(super) const SLOT_NEEDLE: &'static str = "  capability slots:";
     /// Every kernel line this filter takes out. Both start with the kernel's two-space indent,
     /// which the bare-prompt exception in [`GaugeFilter::feed`] relies on.
@@ -114,7 +114,7 @@ pub(super) enum GaugeSeg {
     Num,
 }
 
-/// Every sentence `kernel::progenitor_stack::announce` and `kernel::cap::announce_peak` can print,
+/// Every sentence `kernel::progenitor_stack::announce` and `kernel::capability_object::announce_peak` can print,
 /// grepped from those two functions verbatim (2026-09-27). Longer variants first, so a `BELOW` or
 /// `ABOVE` sentence is matched whole rather than leaving its tail as unmatched noise once the
 /// shorter, common prefix has already been consumed. See [`degauge`].
@@ -146,7 +146,7 @@ pub(super) const GAUGE_TEMPLATES: &[&[GaugeSeg]] = &[
         GaugeSeg::Num,
         GaugeSeg::Lit(" at peak, ABOVE the "),
         GaugeSeg::Num,
-        GaugeSeg::Lit(" recorded in kernel/src/cap.rs"),
+        GaugeSeg::Lit(" recorded in kernel/src/capability_object.rs"),
     ],
     &[
         GaugeSeg::Lit("  capability slots: "),

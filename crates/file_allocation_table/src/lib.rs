@@ -12,6 +12,15 @@
 //! and reads a directory slot by slot ([`Volume::root_directory`], [`Volume::directory`]). A chain
 //! walk yields at most as many clusters as the volume holds, so no table contents can make it
 //! loop, and every read it makes lies inside the volume the boot sector describes.
+//! [`Volume::root_entries`] and [`Volume::entries`] read a directory as files: each short entry
+//! comes with its long name ([`LongFileName`]), assembled from the pieces ahead of it and accepted
+//! only when their ordinals, padding and checksum are the specification's.
+//!
+//! [`Volume::lookup`] finds an entry by path, without regard to case, by long name or short name.
+//! [`Volume::open_file`] opens one for reading as a [`FileReader`], which reads through the chain
+//! and never returns a byte past the entry's size. A whole-disk image opens through
+//! [`MasterBootRecord`]: [`Partition::device`] shows one partition as a device of its own, and
+//! [`Volume::open`] opens the volume inside it.
 //!
 //! The writer is a `mkfs` for one shape: a FAT32 EFI system partition holding one boot file at
 //! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT
@@ -24,8 +33,14 @@
 //! - A long name's alias is always `~1`, right only while the volume holds one file.
 //! - Every timestamp is zero: a `mkfs` with no clock capability writes 1970 rather than inventing one.
 //! - The `FSInfo` free-cluster count is written once, which the specification lets a driver tolerate.
-//! - The reader stops at directory slots: it does not assemble a long name from its pieces or
-//!   check a piece's checksum, and it reads no file's bytes.
+//! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
+//!   backwards seek walks the chain again from its start.
+//! - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table, and
+//!   a short name's bytes above 0x7F (an OEM code page) match only themselves.
+//! - The MBR reader does not follow extended partitions, and reads no GUID partition table.
+//! - Partition sectors are in the device's own sectors, which is 512 bytes for the tools that wrote
+//!   the tables this was tested against.
+//! - A long name is compared by its UTF-16 code units as stored; a lone surrogate is not an error.
 //! - A directory read follows only the table the reader picks (FAT32's live table, or the first),
 //!   and never compares the mirrors.
 //! - A loop in a hostile table stops a chain walk only at the volume's cluster count: on a FAT32
@@ -43,7 +58,12 @@ mod boot_sector;
 mod directory;
 #[doc(alias = "extensible firmware interface system partition")]
 pub mod efi_system_partition;
+mod file;
 mod long_name;
+mod long_name_assembly;
+mod lookup;
+mod master_boot_record;
+mod named_entry;
 mod reader;
 mod sector;
 mod table;
@@ -51,6 +71,14 @@ mod volume;
 
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
+pub use file::{FileReadError, FileReader, NotAFile};
+pub use long_name_assembly::{LongFileName, LongNameError};
+pub use lookup::LookupError;
+pub use master_boot_record::{
+    MasterBootRecord, MasterBootRecordError, MasterBootRecordReadError, PARTITION_COUNT, Partition,
+    PartitionDevice, PartitionError,
+};
+pub use named_entry::{Entries, NamedEntry};
 pub use reader::{Chain, ChainError, Volume};
 pub use sector::{SectorDevice, SectorSize};
 pub use table::TableEntry;

@@ -10,8 +10,8 @@
 //! ```
 
 use crate::{
-    CAP_DEVICE, CAP_GLOBAL, CAP_KERNEL_EXEC, CAP_USER, CAP_USER_EXEC, CAP_WRITE, Flags, PageFormat,
-    PageSize,
+    ACCESS_DEVICE, ACCESS_GLOBAL, ACCESS_KERNEL_EXEC, ACCESS_USER, ACCESS_USER_EXEC, ACCESS_WRITE,
+    Flags, PageFormat, PageSize,
 };
 
 const V: u64 = 1 << 0; // Valid
@@ -86,28 +86,28 @@ impl PageFormat for Sv39 {
     }
 
     fn leaf_flags(entry: u64) -> Flags {
-        let mut caps = 0;
+        let mut access = 0;
         if entry & W != 0 {
-            caps |= CAP_WRITE;
+            access |= ACCESS_WRITE;
         }
         if entry & U != 0 {
-            caps |= CAP_USER;
+            access |= ACCESS_USER;
         }
         if entry & X != 0 {
             // Execute permission belongs to whichever privilege the U bit names.
             if entry & U != 0 {
-                caps |= CAP_USER_EXEC;
+                access |= ACCESS_USER_EXEC;
             } else {
-                caps |= CAP_KERNEL_EXEC;
+                access |= ACCESS_KERNEL_EXEC;
             }
         }
         if entry & G != 0 {
-            caps |= CAP_GLOBAL;
+            access |= ACCESS_GLOBAL;
         }
         if entry & SW_DEVICE != 0 {
-            caps |= CAP_DEVICE;
+            access |= ACCESS_DEVICE;
         }
-        Flags::from_caps(caps)
+        Flags::from_access(access)
     }
 
     /// A megapage (2 MiB, at level 1) or gigapage (1 GiB, at level 0): **the same leaf encoding at

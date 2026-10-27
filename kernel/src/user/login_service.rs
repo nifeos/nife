@@ -1,11 +1,13 @@
 use super::*;
-use crate::cap::{Rights, memory_region_root_cap, page_frame_cap, rendezvous_cap};
+use crate::capability_object::{
+    Rights, memory_region_root_capability, page_frame_capability, rendezvous_capability,
+};
 use crate::sched::{self, RendezvousId};
 
 /// Where the service maps its own request to the credential service. Must match `components/src/login.rs`.
 const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
 
-/// How many pages a `login_test_client` run's own `memory_region_cap` (slot 3) holds.
+/// How many pages a `login_test_client` run's own `memory_region_capability` (slot 3) holds.
 ///
 /// It pays `page_frame::MAP`'s page-table cost when the run maps the frame `login`'s `CONNECT`
 /// step delegates, before the run holds any other budget, and one page for the run's report
@@ -80,7 +82,7 @@ pub const F_BUDGET_DEAD_AFTER_TEARDOWN: u64 = 1 << 7;
 /// The fifth delegated capability delivered [`TERM_MAGIC`] to a
 /// real receiver. Set only by [`HOLD_TERMINAL`].
 pub const F_TERM_WORKS: u64 = 1 << 8;
-/// §219 limitation 2: the sixth capability arrived and `SEND_CAP` of it was refused.
+/// §219 limitation 2: the sixth capability arrived and `SEND_CAPABILITY` of it was refused.
 pub const F_RUN_UNVOUCHED_NOT_GRANTABLE: u64 = 1 << 9;
 /// The sixth capability delivered [`RUN_UNVOUCHED_MAGIC`]. Set only by [`PRESENT_RUN_UNVOUCHED`].
 pub const F_RUN_UNVOUCHED_WORKS: u64 = 1 << 10;
@@ -108,10 +110,10 @@ pub const F_NO_REPORT: u64 = 1 << 20;
 /// The ceiling, in microseconds, on [`LOGOUT`]'s wait for §16 (object revocation)'s armed kill to
 /// land on the caretaker region's `MemoryRegion::DESTROY`.
 ///
-/// [`LOGOUT`]'s third report word is that wait (`waited_micros`), not an identity hint, so a failure
+/// [`LOGOUT`]'s third report word is that wait (`waited_microseconds`), not an identity hint, so a failure
 /// can say whether the host was slow or the caretaker never died. Must match
-/// `fixtures/src/login_test_client.rs`'s `DESTROY_WAIT_SECS`.
-pub const DESTROY_WAIT_MICROS: u64 = 5 * 1_000_000;
+/// `fixtures/src/login_test_client.rs`'s `DESTROY_WAIT_SECONDS`.
+pub const DESTROY_WAIT_MICROSECONDS: u64 = 5 * 1_000_000;
 
 /// A running login service and the endpoints that reach it.
 pub struct Wiring {
@@ -362,8 +364,8 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
     // 8]` whole, and that took `start`'s frame past the 4096-byte guard page
     // `script/stack-frame-check` gates against. See notes/login.md, "The kernel's test harness".
     let mut next_slot = 0u64;
-    let mut grant_in_order = |name: &str, cap: crate::cap::Cap| {
-        let slot = sched::thread_control_block_insert_cap(tid, cap, None)
+    let mut grant_in_order = |name: &str, capability: crate::capability_object::Capability| {
+        let slot = sched::thread_control_block_insert_capability(tid, capability, None)
             .unwrap_or_else(|_| panic!("insert {name}"));
         assert_eq!(
             slot, next_slot,
@@ -371,29 +373,29 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
         );
         next_slot += 1;
     };
-    grant_in_order("request", rendezvous_cap(request, Rights::READ));
+    grant_in_order("request", rendezvous_capability(request, Rights::READ));
     grant_in_order(
         "result",
-        rendezvous_cap(result, Rights::WRITE.union(Rights::GRANT)),
+        rendezvous_capability(result, Rights::WRITE.union(Rights::GRANT)),
     );
-    grant_in_order("verify", rendezvous_cap(verify, Rights::WRITE));
+    grant_in_order("verify", rendezvous_capability(verify, Rights::WRITE));
     grant_in_order(
         "fs_ep",
-        rendezvous_cap(fs_ep, Rights::WRITE.union(Rights::GRANT)),
+        rendezvous_capability(fs_ep, Rights::WRITE.union(Rights::GRANT)),
     );
     grant_in_order(
         "fs_page_frame",
-        // GRANT too: `login` delegates this frame to every authenticated client (`SEND_CAP`).
-        page_frame_cap(
+        // GRANT too: `login` delegates this frame to every authenticated client (`SEND_CAPABILITY`).
+        page_frame_capability(
             fs_page_frame,
             Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
         ),
     );
-    grant_in_order("construction", memory_region_root_cap(construction));
-    grant_in_order("audit", rendezvous_cap(audit, Rights::WRITE));
+    grant_in_order("construction", memory_region_root_capability(construction));
+    grant_in_order("audit", rendezvous_capability(audit, Rights::WRITE));
     grant_in_order(
         "term_ep",
-        rendezvous_cap(term_ep, Rights::WRITE.union(Rights::GRANT)),
+        rendezvous_capability(term_ep, Rights::WRITE.union(Rights::GRANT)),
     );
     assert_eq!(next_slot, 8, "login must hold exactly eight capabilities");
 }
@@ -403,17 +405,17 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
 /// the run-unvouched endpoint.
 fn grant_named_slots(tid: crate::thread::ThreadId) -> RendezvousId {
     let run_unvouched = sched::create_rendezvous();
-    let landed = sched::thread_control_block_insert_cap(
+    let landed = sched::thread_control_block_insert_capability(
         tid,
-        rendezvous_cap(run_unvouched, Rights::WRITE.union(Rights::GRANT)),
+        rendezvous_capability(run_unvouched, Rights::WRITE.union(Rights::GRANT)),
         Some(grant_plan::spawnproto::RUN_UNVOUCHED_SLOT),
     )
     .expect("insert run_unvouched");
     assert_eq!(landed, grant_plan::spawnproto::RUN_UNVOUCHED_SLOT);
     let window = super::fs_service::durable_window().expect("the file service is wired");
-    let landed = sched::thread_control_block_insert_cap(
+    let landed = sched::thread_control_block_insert_capability(
         tid,
-        page_frame_cap(
+        page_frame_capability(
             window,
             Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
         ),
@@ -473,10 +475,10 @@ pub fn spawn_client(
                 arg1: identity,
                 arg2: secret,
                 grants: &[
-                    rendezvous_cap(request, Rights::WRITE),
-                    rendezvous_cap(result, Rights::READ),
-                    rendezvous_cap(report, Rights::WRITE),
-                    memory_region_root_cap(scratch),
+                    rendezvous_capability(request, Rights::WRITE),
+                    rendezvous_capability(result, Rights::READ),
+                    rendezvous_capability(report, Rights::WRITE),
+                    memory_region_root_capability(scratch),
                 ],
                 maps: &[],
             },

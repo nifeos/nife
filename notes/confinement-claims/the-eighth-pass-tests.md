@@ -19,7 +19,7 @@ and §19 (architectural parity is a tenet) is met by running the same test on ev
 The cited test, `revocation_in_flight_tests`, revokes a capability that already sits parked in the
 hand-off slot. Its `BUGS` section names two places as unmeasured, and this module attacks both.
 
-The first is the window between the syscall's start and the filing of the copy. `SEND_CAP` reaches
+The first is the window between the syscall's start and the filing of the copy. `SEND_CAPABILITY` reaches
 the test kernel's seam, `delegation_pause::here`, after its rights gate and just before the locked
 section that reads the source, derives the copy and files it. A revocation sweep landing in that
 window must be seen: the delegation has to re-read the source under the hold and find it gone. A
@@ -30,7 +30,7 @@ The sender arms the seam from inside itself and parks there with no lock held. T
 frame and asserts that the sweep deleted the source out of the sender's own table, so a revoke that
 never reached the sender cannot pass for one that worked. After the release, the delegation must
 answer `NoSuchSlot` and park nothing. The control run drives the same seam without the revoke: the
-delegation completes, parks, and a `RECEIVE_CAP` collects exactly the frame. That is what makes the
+delegation completes, parks, and a `RECEIVE_CAPABILITY` collects exactly the frame. That is what makes the
 refused run's emptiness the revocation talking. The seam makes the interleaving certain rather than
 timed, and every wait is clock-bounded.
 
@@ -76,17 +76,17 @@ The band, the halves and `load` are portable over each ISA's `Mapper`.
 ## A client upgrading itself (claim 26)
 
 The cited tests stop a `WRITE`-only client at the rights gate (`confinement_attack_tests`) and at
-the live-swap usurper's `RECEIVE_CAP` (`live_swap_tests`). This module tries the two roads around
+the live-swap usurper's `RECEIVE_CAPABILITY` (`live_swap_tests`). This module tries the two roads around
 that gate a patient client would take next, both through the real dispatcher.
 
 Self-upgrade by delegation: a client holding `WRITE | GRANT` holds every right a client can be
-trusted with. It may send, and it may lend what it holds. It asks `SEND_CAP` to mint itself a copy
+trusted with. It may send, and it may lend what it holds. It asks `SEND_CAPABILITY` to mint itself a copy
 carrying `READ` too, narrowed and widened in one word. The delegation rule must refuse, because
 `READ` is not a subset of the source's rights and no right can be minted out of the `a1` register.
 Had it succeeded, the client would receive on the next line and be the server.
 
 Badging its way in: `BADGE` is the one method a `GRANT`-holding client legitimately has. A client
-that badges its own endpoint capability and tries `RECEIVE`, `RECEIVE_CAP`, `REAP` and `SURVEY`
+that badges its own endpoint capability and tries `RECEIVE`, `RECEIVE_CAPABILITY`, `REAP` and `SURVEY`
 through the copy must be refused each one. The badge labels a sender; it is not a right.
 
 ## Kernel text and the direct map (claim 21)
@@ -128,7 +128,7 @@ endpoints, so the test picks the instant to revoke. One wakes after its exact ra
 must fault. The other wakes after an unheld range was revoked and must still write; a sweep that
 matched too widely would stop it. A sub-range revoke is not a leg. The sweep matches by exact
 `(base, count)`, and `PortRange::REVOKE` takes its range from the capability, so no syscall can name
-a narrower one. The frame sweep's overlap matching (`delete_page_frame_caps_overlapping`) is the
+a narrower one. The frame sweep's overlap matching (`delete_page_frame_capabilities_overlapping`) is the
 deliberate contrast. This is near miss 1 of the pass: one design change away from an escape if a
 sub-range revoke ever becomes expressible.
 
@@ -164,7 +164,7 @@ the same error word for word. Every probe is non-blocking or aimed at a settled 
 Claim 4 says a consumed capability cannot be used again. Claim 5 says dropping one capability does
 not disturb the others. The host crate proves both on pure logic
 (`capability::a_deleted_capability_stays_deleted`, `delete_touches_only_its_slot`). This module
-drives the live kernel paths instead: `SYS_CAP_DELETE`'s kernel half, `delete_current_cap`, followed
+drives the live kernel paths instead: `SYS_CAPABILITY_DELETE`'s kernel half, `delete_current_capability`, followed
 by invokes through `syscall::invoke`. It tries three angles a host crate cannot reach. One is a
 stale slot number, held by a program that watched its capability be deleted. One is an out-of-range
 index forged in a register. One is a deleted slot whose number the table later hands out again. The

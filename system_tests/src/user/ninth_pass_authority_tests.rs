@@ -5,7 +5,7 @@
 //! `authority_tests::the_root_supervisor_drops_its_construction_authority_and_cannot_build_again`
 //! proves this end to end through the real `root_supervisor`, which needs the initial ramdisk. This
 //! drives the same mechanism through the dispatcher with no program, so it runs on every
-//! architecture: `SYS_CAP_DELETE` is the progenitor's self-drop, and `RETYPE`/`SPLIT` through an
+//! architecture: `SYS_CAPABILITY_DELETE` is the progenitor's self-drop, and `RETYPE`/`SPLIT` through an
 //! empty slot is its later build. See notes/confinement-outsider-pass-9.md, "The kernel tests".
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
@@ -15,10 +15,8 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Object, Rights, memory_region_cap_rights as memory_region_capability_rights};
-use crate::sched::{
-    self, current_cap as current_capability, delete_current_cap as delete_current_capability,
-};
+use crate::capability_object::{Object, Rights, memory_region_capability_rights};
+use crate::sched::{self, current_capability, delete_current_capability};
 use crate::syscall::invoke;
 
 /// `invoke` through the real dispatcher. Copied in shape from `ninth_pass_confinement_tests::call`.
@@ -32,7 +30,7 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 /// A budget carrying `Rights::ALL` is a full construction authority: it can `SPLIT` itself and
 /// `RETYPE` pages into objects, the two powers a progenitor builds with. Both succeed first (the
 /// positive control), and the products are torn down so the ledgers stay flat. The budget is then
-/// deleted on the `SYS_CAP_DELETE` path, and the identical calls answer `NoSuchSlot`: the slot
+/// deleted on the `SYS_CAPABILITY_DELETE` path, and the identical calls answer `NoSuchSlot`: the slot
 /// resolves to nothing, which is what "the authority was dropped" has to mean for the claim.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it

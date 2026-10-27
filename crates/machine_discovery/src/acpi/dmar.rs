@@ -182,38 +182,38 @@ pub fn first_drhd(body: &[u8]) -> Option<Drhd> {
 // device-scope lists and the RMRRs, decoded (milestone 261's bench rehearsal, milestone 594).
 // ---------------------------------------------------------------------------------------------
 
-/// How many DRHDs [`DmarUnits`] records. A client Intel part has two (one for the integrated
+/// How many translation units [`DmarUnits`] records. Intel VT-d calls a translation unit a DRHD
+/// (DMA Remapping Hardware unit Definition). A client Intel part has two (one for the integrated
 /// graphics, one catch-all); a two-socket server has one per root complex, a handful. A table with
 /// more than this sets [`DmarUnits::truncated`] rather than dropping the rest silently.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_DRHDS`.
-pub const MAXIMUM_DRHDS: usize = 8;
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "DRHD")]
+pub const MAXIMUM_TRANSLATION_UNITS: usize = 8;
 /// How many PCI device-scope entries [`DmarUnits`] records across every DRHD. Only the two PCI
 /// types are kept (endpoint and sub-hierarchy); IOAPIC, HPET and ACPI-namespace entries name no
 /// requester id this kernel confines and are skipped.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_SCOPES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_SCOPES: usize = 32;
 /// The longest path a recorded scope can carry: the device itself plus three bridges above it.
 /// Deeper than any machine this tree has met, and a deeper one sets [`DmarUnits::truncated`].
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_SCOPE_PATH`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_SCOPE_PATH: usize = 4;
-/// How many RMRRs [`DmarUnits`] records. The `OptiPlex` 7040 publishes two (USB, graphics). A
-/// ninth sets [`DmarUnits::truncated`]. Name: provisional (milestone 594).
+/// How many reserved regions [`DmarUnits`] records. Intel VT-d calls one an RMRR (Reserved Memory
+/// Region Reporting structure). The `OptiPlex` 7040 publishes two (USB, graphics). A ninth sets
+/// [`DmarUnits::truncated`].
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_RMRRS`.
-pub const MAXIMUM_RMRRS: usize = 8;
-/// How many PCI device-scope entries [`DmarUnits`] records across every RMRR. Name: provisional
-/// (milestone 594).
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "RMRR")]
+pub const MAXIMUM_RESERVED_REGIONS: usize = 8;
+/// How many PCI device-scope entries [`DmarUnits`] records across every reserved region (every
+/// RMRR, in Intel VT-d's terms).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_RMRR_SCOPES`.
-pub const MAXIMUM_RMRR_SCOPES: usize = 16;
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "RMRR")]
+pub const MAXIMUM_RESERVED_REGION_DEVICES: usize = 16;
 
 /// Device-scope type 1: a PCI endpoint, named by its path from the start bus.
 pub const SCOPE_PCI_ENDPOINT: u8 = 1;
@@ -359,13 +359,13 @@ impl ReservedRegion {
 /// Name: provisional (milestone 261's bench rehearsal).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DmarUnits {
-    pub drhds: [Drhd; MAXIMUM_DRHDS],
+    pub drhds: [Drhd; MAXIMUM_TRANSLATION_UNITS],
     pub drhd_count: usize,
     pub scopes: [DeviceScope; MAXIMUM_SCOPES],
     pub scope_count: usize,
-    pub rmrrs: [ReservedRegion; MAXIMUM_RMRRS],
+    pub rmrrs: [ReservedRegion; MAXIMUM_RESERVED_REGIONS],
     pub rmrr_count: usize,
-    pub rmrr_scopes: [DeviceScope; MAXIMUM_RMRR_SCOPES],
+    pub rmrr_scopes: [DeviceScope; MAXIMUM_RESERVED_REGION_DEVICES],
     pub rmrr_scope_count: usize,
     /// RMRRs the table held and this decoder refused because they break section 8.4's
     /// well-formedness rule. Linux skips such a region with a firmware-bug warning; so does this,
@@ -390,13 +390,13 @@ impl Default for DmarUnits {
                 segment: 0,
                 register_base: 0,
                 register_size: 0,
-            }; MAXIMUM_DRHDS],
+            }; MAXIMUM_TRANSLATION_UNITS],
             drhd_count: 0,
             scopes: [DeviceScope::default(); MAXIMUM_SCOPES],
             scope_count: 0,
-            rmrrs: [ReservedRegion::default(); MAXIMUM_RMRRS],
+            rmrrs: [ReservedRegion::default(); MAXIMUM_RESERVED_REGIONS],
             rmrr_count: 0,
-            rmrr_scopes: [DeviceScope::default(); MAXIMUM_RMRR_SCOPES],
+            rmrr_scopes: [DeviceScope::default(); MAXIMUM_RESERVED_REGION_DEVICES],
             rmrr_scope_count: 0,
             rmrrs_refused: 0,
             truncated: false,
@@ -470,7 +470,7 @@ impl DmarUnits {
             at += len;
             match kind {
                 0 if len >= DRHD_FIXED_LEN => {
-                    if u.drhd_count == MAXIMUM_DRHDS {
+                    if u.drhd_count == MAXIMUM_TRANSLATION_UNITS {
                         u.truncated = true;
                         continue;
                     }
@@ -500,7 +500,7 @@ impl DmarUnits {
                         u.rmrrs_refused += 1;
                         continue;
                     }
-                    if u.rmrr_count == MAXIMUM_RMRRS {
+                    if u.rmrr_count == MAXIMUM_RESERVED_REGIONS {
                         u.truncated = true;
                         continue;
                     }
@@ -1099,7 +1099,7 @@ mod tests {
     fn a_ninth_rmrr_marks_the_table_truncated() {
         let s = scope(SCOPE_PCI_ENDPOINT, 0, &[(2, 0)]);
         let mut parts = std::vec![drhd(1, 0xfed9_1000, &[])];
-        for i in 0..=MAXIMUM_RMRRS as u64 {
+        for i in 0..=MAXIMUM_RESERVED_REGIONS as u64 {
             parts.push(rmrr(
                 0x1000_0000 + i * 0x1000,
                 0x1000_0fff + i * 0x1000,
@@ -1107,7 +1107,7 @@ mod tests {
             ));
         }
         let u = DmarUnits::parse(&dmar(&parts));
-        assert_eq!(u.reserved_regions().len(), MAXIMUM_RMRRS);
+        assert_eq!(u.reserved_regions().len(), MAXIMUM_RESERVED_REGIONS);
         assert!(u.truncated);
     }
 

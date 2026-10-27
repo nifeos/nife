@@ -471,6 +471,7 @@ name = "file_allocation_table"
 version = "0.1.0"
 dependencies = [
  "lamfat",
+ "ruzstd",
 ]
 
 [[package]]
@@ -763,11 +764,13 @@ dependencies = [
  "measured_boot",
  "memory_corruption_canary_gate",
  "memory_regions",
+ "minicov",
  "nifefs",
  "non_volatile_memory_express",
  "page_frames",
  "paging",
  "pci",
+ "periodic_deadline",
  "screen_console",
  "soak_page",
  "socket_contract",
@@ -922,8 +925,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "minicov"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3aa3aa12b448ac225b3102217d1ac5cc717908f02722926524b0599c933c7a0"
+dependencies = [
+ "cc",
+ "walkdir",
+]
+
+[[package]]
 name = "network_time_protocol"
 version = "0.1.0"
+dependencies = [
+ "clock_contract",
+]
 
 [[package]]
 name = "nifefs"
@@ -993,6 +1009,10 @@ version = "0.1.0"
 dependencies = [
  "device_tree_blob",
 ]
+
+[[package]]
+name = "periodic_deadline"
+version = "0.1.0"
 
 [[package]]
 name = "pgrep"
@@ -1084,6 +1104,24 @@ name = "rustversion"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
+
+[[package]]
+name = "ruzstd"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69e4ce4a039f42bf25920b95667e4d789e98749ab11bbb8d2c2936f788421bb5"
+dependencies = [
+ "twox-hash",
+]
+
+[[package]]
+name = "same-file"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
+dependencies = [
+ "winapi-util",
+]
 
 [[package]]
 name = "scoped-tls"
@@ -1444,7 +1482,9 @@ name = "timetable"
 version = "0.1.0"
 dependencies = [
  "calendar",
+ "clock_contract",
  "grant_plan",
+ "periodic_deadline",
 ]
 
 [[package]]
@@ -1556,6 +1596,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "twox-hash"
+version = "2.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86a801b3cea342a06d468c8710662aa29e5e05e4f5c0d62f00bbb7f2ad7941c2"
+
+[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1592,6 +1638,9 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "uptime"
 version = "0.1.0"
+dependencies = [
+ "clock_contract",
+]
 
 [[package]]
 name = "usb"
@@ -1602,6 +1651,7 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
+ "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",
@@ -1653,6 +1703,25 @@ version = "0.1.0"
 dependencies = [
  "filesystem_fixture",
  "grant_plan",
+]
+
+[[package]]
+name = "walkdir"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b"
+dependencies = [
+ "same-file",
+ "winapi-util",
+]
+
+[[package]]
+name = "winapi-util"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
+dependencies = [
+ "windows-sys",
 ]
 
 [[package]]

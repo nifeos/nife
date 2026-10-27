@@ -3,12 +3,12 @@
 use super::*;
 
 #[test]
-fn caps_is_answered_before_the_line_is_split() {
+fn capabilities_is_answered_before_the_line_is_split() {
     // The whole reason `route` asks about `caps` first. Splitting first would hand the preview
     // the word `date` and lose the pipe, and the preview would then be a true statement about a
     // line the user did not type.
     match route(b"caps date | wc") {
-        Route::Caps(tail) => assert_eq!(tail, b"date | wc"),
+        Route::Capabilities(tail) => assert_eq!(tail, b"date | wc"),
         other => panic!("expected caps, got {other:?}"),
     }
 }

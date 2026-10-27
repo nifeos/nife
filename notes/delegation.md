@@ -15,11 +15,11 @@ endpoint, and that is the operation that makes the model composable by the proce
 
 The delegation path reuses the endpoints we already had. Two new methods:
 
-- `SEND_CAP(channel, cap_slot, rights, data)`: pass the capability in `cap_slot`, narrowed to
+- `SEND_CAPABILITY(channel, capability_slot, rights, data)`: pass the capability in `capability_slot`, narrowed to
   `rights`, plus one data word, over `channel`. Blocks until a receiver takes it, like `SEND`.
-- `RECEIVE_CAP(channel)`: receive a data word and, if one was delegated, a capability. The capability
-  lands in a free slot of the *receiver's own* capability table, chosen by the kernel, and `RECEIVE_CAP` returns
-  that slot number (or `NO_CAP` if the message carried none).
+- `RECEIVE_CAPABILITY(channel)`: receive a data word and, if one was delegated, a capability. The capability
+  lands in a free slot of the *receiver's own* capability table, chosen by the kernel, and `RECEIVE_CAPABILITY` returns
+  that slot number (or `NO_CAPABILITY` if the message carried none).
 
 This is the seL4 model: capabilities move as part of IPC, not through a side channel. It fits what we
 already built, and it means the receiver never names a slot it doesn't own. The kernel picks the
@@ -27,7 +27,7 @@ slot and tells the receiver where the capability went.
 
 ## Two rights, two different questions
 
-`SEND_CAP` checks two rights, and conflating them would be a bug:
+`SEND_CAPABILITY` checks two rights, and conflating them would be a bug:
 
 - `WRITE` on the channel. May I send on this endpoint at all? Same check `SEND` makes.
 - `GRANT` on the capability being passed. Was I trusted to hand *this* on? This is the right
@@ -50,26 +50,26 @@ processes' capability tables are reachable at once:
 - Receiver waiting when the sender arrives. The sender inserts the capability into the receiver's
   capability table right then, records the slot in the receiver's mailbox, and wakes it.
 - Sender waiting when the receiver arrives. The sender parked the capability in a new
-  `Thread.outgoing_cap` field (the capability analogue of the mailbox that parks the data words). The
+  `Thread.outgoing_capability` field (the capability analogue of the mailbox that parks the data words). The
   receiver `take()`s it and files it in its own capability table.
 
-If the receiver's capability table is full the capability is dropped and the receiver sees `NO_CAP`; the data
-word still arrives. One honest wart: `SEND_CAP` and plain `RECEIVE` (or `SEND` and `RECEIVE_CAP`) share the
+If the receiver's capability table is full the capability is dropped and the receiver sees `NO_CAPABILITY`; the data
+word still arrives. One honest wart: `SEND_CAPABILITY` and plain `RECEIVE` (or `SEND` and `RECEIVE_CAPABILITY`) share the
 same endpoint queues and do not check that both sides agree to carry a capability. A correct protocol
 uses the matching pair. Mixing them does not corrupt anything, it just delivers a capability nobody
-reads, or reports `NO_CAP` to someone who expected one.
+reads, or reports `NO_CAPABILITY` to someone who expected one.
 
 ## What the test proves, and how it can fail
 
 `a_capability_can_be_delegated_over_ipc_and_grant_gates_re_delegation` wires two user processes and
 checks the three things that have to hold:
 
-1. **The receiver gets the capability.** `RECEIVE_CAP` returns a real slot, not `NO_CAP`.
+1. **The receiver gets the capability.** `RECEIVE_CAPABILITY` returns a real slot, not `NO_CAPABILITY`.
 2. **The capability works when the receiver invokes it.** The receiver `SEND`s a distinctive word on
    the delegated capability, and a `RECEIVE` on the other end collects it. A capability minted by one
    process carries real authority when invoked by another.
 3. **`GRANT` gates re-delegation.** The receiver was handed the capability narrowed to `WRITE`
-   (no `GRANT`), so when it tries to `SEND_CAP` it onward, the kernel refuses before any rendezvous.
+   (no `GRANT`), so when it tries to `SEND_CAPABILITY` it onward, the kernel refuses before any rendezvous.
 
 Verified it can fail: stub the `GRANT` check to accept, and claim 3 collapses. The receiver's
 re-delegation is now permitted, blocks forever on the empty rendezvous it tried to send over, and the

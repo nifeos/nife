@@ -32,7 +32,7 @@ written to the seven questions in `CLAUDE.md`. Counts are from the code at `c457
 - a new rendezvous, `session_reviver` holding `WRITE | GRANT` and `login` holding `READ`;
 - per identity, one word carrying an opcode and the name's length, and two words carrying the name
   packed as `filesystem_contract::grant::pack_name` packs it (16 bytes at most);
-- four `SEND_CAP`s in a fixed order: the user's budget (`WRITE | GRANT`), the session process's
+- four `SEND_CAPABILITY`s in a fixed order: the user's budget (`WRITE | GRANT`), the session process's
   region (`WRITE`), the registration page (`WRITE`) and the session's readiness endpoint (`READ`);
 - a closing word with the count, so `login` knows the pass is over before it opens its front door.
 
@@ -182,7 +182,7 @@ boot pass must stop at one as well.
 ### Widening the table
 
 `CAPABILITY_TABLE_SLOTS` is one constant for every thread. A slot is 32 bytes, asserted in
-`kernel/src/cap.rs`, and `kernel::sched::MAXIMUM_THREADS` is 256, so each slot added costs 8 KiB of
+`kernel/src/capability_object.rs`, and `kernel::sched::MAXIMUM_THREADS` is 256, so each slot added costs 8 KiB of
 kernel memory. Holding N durable sessions needs 19 + 4N slots:
 
 | Durable sessions | Slots needed | Table raise | Kernel memory |
@@ -212,7 +212,7 @@ B's re-deriver would need its own 640 pages per session from the progenitor inst
 
 ### Boot latency
 
-`Durable::restore` waits up to `END_WAIT_SECS` (5 seconds) for the timetable's reply. Under A that
+`Durable::restore` waits up to `END_WAIT_SECONDS` (5 seconds) for the timetable's reply. Under A that
 wait sits before `login`'s front door opens, once per re-derived identity. Nobody has measured the usual wait, in the suite or on a board.
 
 ### Code

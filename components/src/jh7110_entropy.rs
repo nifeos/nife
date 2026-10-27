@@ -249,8 +249,8 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
     loop {
         let req = receive_request(REQ);
         let w0 = req.w0;
-        let Some(cap) = req.delivered.into_reply() else {
-            // A plain SEND or a SEND_CAP on a CALL-only contract: nothing to answer. See
+        let Some(capability) = req.delivered.into_reply() else {
+            // A plain SEND or a SEND_CAPABILITY on a CALL-only contract: nothing to answer. See
             // `entropy.rs`'s identical comment.
             continue;
         };
@@ -261,7 +261,7 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             proto::GET if !refuse => pool.take(proto::want(w0), &mut generate),
             _ => (proto::NO_ENTROPY, 0),
         };
-        reply(cap, count, word);
+        reply(capability, count, word);
     }
 }
 

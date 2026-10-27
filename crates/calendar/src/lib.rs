@@ -14,32 +14,28 @@
 
 /// The lowest supported year, 0000. See the module docs for why the range is what it is.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MIN_YEAR`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MINIMUM_YEAR: i32 = 0;
 
 /// The highest supported year, 9999, which is RFC 3339's four-digit `date-fullyear`.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_YEAR`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_YEAR: i32 = 9999;
 
 /// 0000-01-01T00:00:00Z, the earliest instant this crate will name.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MIN_TIMESTAMP`.
-pub const MINIMUM_TIMESTAMP: i64 = days_from_civil(MINIMUM_YEAR, 1, 1) * SECS_PER_DAY;
+/// Name: ratified 2026-10-27 (#2797).
+pub const MINIMUM_TIMESTAMP: i64 = days_from_civil(MINIMUM_YEAR, 1, 1) * SECONDS_PER_DAY;
 
 /// 9999-12-31T23:59:59Z, the latest instant this crate will name.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_TIMESTAMP`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_TIMESTAMP: i64 =
-    days_from_civil(MAXIMUM_YEAR, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
+    days_from_civil(MAXIMUM_YEAR, 12, 31) * SECONDS_PER_DAY + SECONDS_PER_DAY - 1;
 
 /// Seconds in a day. Exactly 86,400, always, by the definition of Unix time (see the module docs on
 /// leap seconds).
-pub const SECS_PER_DAY: i64 = 86_400;
+pub const SECONDS_PER_DAY: i64 = 86_400;
 
 /// What can go wrong. One enum for conversion and parsing both, because the API is small enough that
 /// two would only make callers convert between them.
@@ -318,15 +314,15 @@ impl Civil {
     /// assert_eq!((d.year(), d.month(), d.day()), (1969, 12, 31));
     /// assert_eq!((d.hour(), d.minute(), d.second()), (23, 59, 59));
     /// ```
-    pub const fn from_unix(secs: i64) -> Result<Civil, Error> {
-        if secs < MINIMUM_TIMESTAMP || secs > MAXIMUM_TIMESTAMP {
+    pub const fn from_unix(seconds: i64) -> Result<Civil, Error> {
+        if seconds < MINIMUM_TIMESTAMP || seconds > MAXIMUM_TIMESTAMP {
             return Err(Error::OutOfRange);
         }
         // Euclidean division, not truncating: for a negative timestamp, `-1 / 86400` is 0 in Rust and
         // the answer we need is -1 (the day before the epoch). Truncating division here is the classic
         // way a date library gets 1969-12-31 wrong.
-        let days = secs.div_euclid(SECS_PER_DAY);
-        let sod = secs.rem_euclid(SECS_PER_DAY);
+        let days = seconds.div_euclid(SECONDS_PER_DAY);
+        let sod = seconds.rem_euclid(SECONDS_PER_DAY);
         let (year, month, day) = civil_from_days(days);
         Ok(Civil {
             year,
@@ -341,7 +337,7 @@ impl Civil {
     /// The Unix timestamp of this date, read as UTC. Infallible: [`Civil::new`] already established
     /// that the date is real and in range.
     pub const fn to_unix(&self) -> i64 {
-        days_from_civil(self.year, self.month, self.day) * SECS_PER_DAY
+        days_from_civil(self.year, self.month, self.day) * SECONDS_PER_DAY
             + self.hour as i64 * 3600
             + self.minute as i64 * 60
             + self.second as i64
@@ -454,13 +450,13 @@ impl DateTime {
         DateTime { civil, offset }
     }
 
-    /// What the clock reads at `offset` when the Unix time is `secs`.
+    /// What the clock reads at `offset` when the Unix time is `seconds`.
     ///
     /// `OutOfRange` here means the *local* reading falls outside years 0000-9999, which for any
     /// offset differs from the UTC bound by less than a day. That edge is the only place a caller
     /// can be surprised, and it is why this returns a `Result` where [`DateTime::new`] does not.
-    pub const fn from_unix(secs: i64, offset: UtcOffset) -> Result<DateTime, Error> {
-        let Some(local) = secs.checked_add(offset.seconds()) else {
+    pub const fn from_unix(seconds: i64, offset: UtcOffset) -> Result<DateTime, Error> {
+        let Some(local) = seconds.checked_add(offset.seconds()) else {
             return Err(Error::OutOfRange);
         };
         match Civil::from_unix(local) {
@@ -914,8 +910,8 @@ mod verification {
             civil_from_days(civil.days_since_epoch()),
             (year, month, day)
         );
-        let secs = civil.to_unix();
-        assert!((MINIMUM_TIMESTAMP..=MAXIMUM_TIMESTAMP).contains(&secs));
+        let seconds = civil.to_unix();
+        assert!((MINIMUM_TIMESTAMP..=MAXIMUM_TIMESTAMP).contains(&seconds));
         // Not vacuous, and specifically not on the case that matters: the constructor does accept a
         // 29th of February, so this is quantifying over leap days rather than over an input set the
         // validation quietly emptied.
@@ -982,17 +978,17 @@ mod verification {
     /// Falsification: replayable `crates/calendar/falsifications/verification.unix_to_civil_and_back_is_the_identity.patch`
     #[kani::proof]
     fn unix_to_civil_and_back_is_the_identity() {
-        const START: i64 = days_from_civil(1968, 1, 1) * SECS_PER_DAY;
-        const END: i64 = days_from_civil(1971, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
-        let secs: i64 = kani::any();
-        kani::assume((START..=END).contains(&secs));
+        const START: i64 = days_from_civil(1968, 1, 1) * SECONDS_PER_DAY;
+        const END: i64 = days_from_civil(1971, 12, 31) * SECONDS_PER_DAY + SECONDS_PER_DAY - 1;
+        let seconds: i64 = kani::any();
+        kani::assume((START..=END).contains(&seconds));
 
-        let c = Civil::from_unix(secs).expect("in range");
+        let c = Civil::from_unix(seconds).expect("in range");
         assert!(c.hour() <= 23 && c.minute() <= 59 && c.second() <= 59);
-        assert_eq!(c.to_unix(), secs);
+        assert_eq!(c.to_unix(), seconds);
         // The two things the window was chosen for are reachable inside it, checked rather than
         // asserted in prose: a pre-epoch timestamp (where truncating division breaks) and a leap day.
-        kani::cover!(secs < 0);
+        kani::cover!(seconds < 0);
         kani::cover!(c.month() == 2 && c.day() == 29);
     }
 
@@ -1036,9 +1032,9 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(21)]
     fn the_unix_format_fits_any_i64() {
-        let secs: i64 = kani::any();
+        let seconds: i64 = kani::any();
         let mut w = Writer::new();
-        w.signed(secs);
+        w.signed(seconds);
         let f = w.finish();
         assert!(f.len as usize <= 20); // "-9223372036854775808"
         assert!(f.len as usize <= FMT_CAP);

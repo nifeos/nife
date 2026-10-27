@@ -29,10 +29,10 @@ index 6bf16a921..f99f1ebec 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
 @@ -401,7 +401,6 @@ mod storage {
-         pub(super) fn empty(&mut self, slot: usize) -> Option<Cap<O>> {
-             let cap = self.slots.get_mut(slot)?.take()?;
+         pub(super) fn empty(&mut self, slot: usize) -> Option<Capability<O>> {
+             let capability = self.slots.get_mut(slot)?.take()?;
              self.free |= 1u64 << slot;
 -            self.used -= 1;
-             Some(cap)
+             Some(capability)
          }
  

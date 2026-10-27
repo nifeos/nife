@@ -21,10 +21,10 @@ The proposal (case A of [shared-page-audit.md](shared-page-audit.md)) says to al
 "in `spawn_fs_client` / `start_granted*` / `narrow_dir` rather than in `ensure`". That fixes the
 client side only. The server is the other holder of every channel, and it:
 
-- receives on one endpoint (`redoxfs_server.rs`, `receive_cap(FILE)`), because this kernel has no
+- receives on one endpoint (`redoxfs_server.rs`, `receive_capability(FILE)`), because this kernel has no
   receive over a set of endpoints (DECISIONS §27 (the filesystem service), "Why a process and not a check inside the FS
   server");
-- learns nothing about its caller. `RECEIVE_CAP` hands it two words and a one-shot Reply capability,
+- learns nothing about its caller. `RECEIVE_CAPABILITY` hands it two words and a one-shot Reply capability,
   and the serve loop's own comment says so: "endpoint-only naming means we never learn who they
   are, only how to answer";
 - maps one window at `FILE_PAGE`, `fs::TRANSFER_PAGES` (16) pages wide, and reads every name and
@@ -72,13 +72,13 @@ about 17% to it.
 ### A. Badged endpoint capabilities (seL4's answer)
 
 A derived endpoint capability carries a badge word the kernel delivers to the receiver on
-`RECEIVE_CAP`. The server maps K windows and reads request `b` from `FILE_PAGE + b *
+`RECEIVE_CAPABILITY`. The server maps K windows and reads request `b` from `FILE_PAGE + b *
 TRANSFER_MAXIMUM`. The progenitor holds a pool of K (badged endpoint, frame) pairs and hands one to
 each caretaker chain, taking it back at reap.
 
 - `filesystem_contract`'s message layout and opcodes do not change.
 - The syscall surface does. A method to mint a badged endpoint, and a fourth return value from
-  `RECEIVE_CAP` (it already returns the first word, the Reply slot and the second word).
+  `RECEIVE_CAPABILITY` (it already returns the first word, the Reply slot and the second word).
 - Per request: nothing added. No extra rendezvous, no copy.
 - Server address space: K windows of 64 KiB. K = 8 is 512 KiB, inside the 8 MiB above `BLK_PAGE` that
   `redoxfs_server.rs` says nothing else in the server maps.
@@ -243,7 +243,7 @@ into its third argument beside the map kind.
 
 A small process holds the K window capabilities in its own table (eight fit easily; it holds little
 else). The progenitor holds one endpoint to it, in `fs_page`'s slot. Per client it asks for a window,
-receives a frame capability with `SEND_CAP`, maps it, and deletes it; at reap it tells the broker the
+receives a frame capability with `SEND_CAPABILITY`, maps it, and deletes it; at reap it tells the broker the
 window is free.
 
 - Cost: net zero permanent slots, one transient, one call round trip per spawn (about 0.9 µs,

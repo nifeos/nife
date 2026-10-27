@@ -250,7 +250,7 @@ impl Capabilities {
 /// [`Capabilities::extended`] gives) through a `read` of dwords at byte offsets. `None` when the
 /// list has no such entry, ends, or leaves `limit` bytes.
 ///
-/// Bounded at 64 hops and by `limit`, for `pci::msix_cap`'s reason: the list is a linked list in
+/// Bounded at 64 hops and by `limit`, for `pci::msix_capability`'s reason: the list is a linked list in
 /// a device's register file, so a broken controller must end the walk, not hang the kernel that is
 /// walking it.
 ///
@@ -285,19 +285,20 @@ mod tests {
 
     #[test]
     fn qemus_capability_registers_decode() {
-        let caps = Capabilities::decode(0x0100_0040, 0x0800_0840, 0, 0x0008_7000, 0x2000, 0x1000);
-        assert_eq!(caps.operational, 0x40);
-        assert_eq!(caps.version, 0x0100);
-        assert_eq!(caps.maximum_slots, 64);
-        assert_eq!(caps.maximum_interrupters, 8);
-        assert_eq!(caps.maximum_ports, 8);
-        assert_eq!(caps.scratchpads, 0);
-        assert_eq!(caps.context_bytes, 32);
-        assert_eq!(caps.extended, 0x20); // the dword count in HCCPARAMS1's high half, times four
-        assert_eq!(caps.portsc(1), 0x440);
-        assert_eq!(caps.portsc(8), 0x4b0);
-        assert_eq!(caps.interrupter(ERDP), 0x1038);
-        assert_eq!(caps.doorbell(1), 0x2004);
+        let capabilities =
+            Capabilities::decode(0x0100_0040, 0x0800_0840, 0, 0x0008_7000, 0x2000, 0x1000);
+        assert_eq!(capabilities.operational, 0x40);
+        assert_eq!(capabilities.version, 0x0100);
+        assert_eq!(capabilities.maximum_slots, 64);
+        assert_eq!(capabilities.maximum_interrupters, 8);
+        assert_eq!(capabilities.maximum_ports, 8);
+        assert_eq!(capabilities.scratchpads, 0);
+        assert_eq!(capabilities.context_bytes, 32);
+        assert_eq!(capabilities.extended, 0x20); // the dword count in HCCPARAMS1's high half, times four
+        assert_eq!(capabilities.portsc(1), 0x440);
+        assert_eq!(capabilities.portsc(8), 0x4b0);
+        assert_eq!(capabilities.interrupter(ERDP), 0x1038);
+        assert_eq!(capabilities.doorbell(1), 0x2004);
     }
 
     /// The scratchpad count is split across two fields, high bits first in the register but low
@@ -306,9 +307,9 @@ mod tests {
     fn the_scratchpad_count_joins_its_two_fields() {
         let hi = 0b00001 << 21; // one 32
         let lo = 0b00011 << 27; // plus three
-        let caps = Capabilities::decode(0x40, 0, hi | lo, 1 << 2, 0, 0);
-        assert_eq!(caps.scratchpads, 35);
-        assert_eq!(caps.context_bytes, 64);
+        let capabilities = Capabilities::decode(0x40, 0, hi | lo, 1 << 2, 0, 0);
+        assert_eq!(capabilities.scratchpads, 35);
+        assert_eq!(capabilities.context_bytes, 64);
     }
 
     /// The `USBCMD`, `USBSTS`, `IMAN`, `ERDP` and legacy support bits, pinned against xHCI 1.2

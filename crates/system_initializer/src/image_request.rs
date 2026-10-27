@@ -44,10 +44,10 @@ const _: () = assert!(
 /// The shell keeps its own mapping of this frame, so it is read once, by [`copy_args`], before the
 /// child exists; nothing reads it after.
 pub(super) fn receive_args(spawn: &mut SpawnEndpoint, own_ut: u64) -> Option<u64> {
-    let frame = opt_cap(spawn.receive_cap().1)?;
+    let frame = opt_capability(spawn.receive_capability().1)?;
     // Revoked when the shell reclaims its frame; the scratch window reuses the page on a later lap.
     let theirs = supervision_protocol::map_scratch(frame, false, own_ut).ok();
-    cap_delete(frame);
+    capability_delete(frame);
     theirs
 }
 
@@ -66,7 +66,7 @@ pub(super) fn copy_args(
     let page = retype_page_frame(region).ok()?;
     // Fresh from the child's region, so reaping the child takes this mapping back.
     let Ok(ours) = supervision_protocol::map_scratch(page, true, own_ut) else {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     };
     // SAFETY: both pages are mapped, `theirs` read-only by `receive_args` and `ours` read/write
@@ -86,7 +86,7 @@ pub(super) fn copy_args(
     // a capability to our own space this does nothing, and the region's reap takes it back as before.
     supervision_protocol::give_up_own_page(ours);
     if !same_verb {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     }
     Some(page)
@@ -290,7 +290,7 @@ impl SpawnEndpoint {
             if let Some((l, ep, _)) = *r
                 && l == label
             {
-                cap_delete(ep);
+                capability_delete(ep);
                 *r = None;
             }
         }
@@ -348,27 +348,27 @@ impl SpawnEndpoint {
         }
     }
 
-    /// The served sender's next delegation, `(w0, slot, w1)` as `RECEIVE_CAP` returns them, with
+    /// The served sender's next delegation, `(w0, slot, w1)` as `RECEIVE_CAPABILITY` returns them, with
     /// every reaped message before it taken out of the way. A reaped message read here carries its
     /// label in `x0` and no capability (`spawnproto::UNDERTAKER_BADGE` has the layout). Another
     /// sender's first message is a plain `SEND` and is kept, as [`receive`](SpawnEndpoint::receive)
     /// keeps it. No capability once the request is abandoned.
-    pub(super) fn receive_cap(&mut self) -> (u64, u64, u64) {
+    pub(super) fn receive_capability(&mut self) -> (u64, u64, u64) {
         loop {
             if self.abandoned {
-                return (0, abi::rendezvous::NO_CAP, 0);
+                return (0, abi::rendezvous::NO_CAPABILITY, 0);
             }
-            let (w0, slot, w1, badge) = receive_cap_badged(self.ep);
+            let (w0, slot, w1, badge) = receive_capability_badged(self.ep);
             if badge == spawnproto::UNDERTAKER_BADGE {
-                if slot != abi::rendezvous::NO_CAP {
-                    cap_delete(slot);
+                if slot != abi::rendezvous::NO_CAPABILITY {
+                    capability_delete(slot);
                 }
                 self.reaped(w0);
                 continue;
             }
             if badge != self.serving {
-                if slot != abi::rendezvous::NO_CAP {
-                    cap_delete(slot);
+                if slot != abi::rendezvous::NO_CAPABILITY {
+                    capability_delete(slot);
                 }
                 self.stash((w0, w1, 0, badge));
                 continue;
@@ -459,7 +459,7 @@ fn scratch_page(i: u16) -> u64 {
 /// **Take an image request's frames off the spawn endpoint**, mapping each read-only in the
 /// loader's scratch window and deleting its capability before the next is taken.
 ///
-/// Every frame is received whatever happens, so the grants sent next land in the `RECEIVE_CAP`s
+/// Every frame is received whatever happens, so the grants sent next land in the `RECEIVE_CAPABILITY`s
 /// that expect them. Nothing is carved here: [`stage_frames`] copies later, because a carve may
 /// wait for a reap, which is sound only once the request has been read to its end. The views stay
 /// valid until the caller reclaims its frames, after its answer.
@@ -471,7 +471,7 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
         ok: pages > 0 && pages <= spawnproto::IMAGE_MAXIMUM_PAGES,
     };
     for _ in 0..pages {
-        let Some(frame) = opt_cap(spawn.receive_cap().1) else {
+        let Some(frame) = opt_capability(spawn.receive_capability().1) else {
             f.ok = false;
             continue;
         };
@@ -487,7 +487,7 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
             }
         }
         // The mapping outlives the capability, and the slot is what is scarce.
-        cap_delete(frame);
+        capability_delete(frame);
     }
     f
 }
@@ -521,7 +521,7 @@ pub(super) fn stage_frames(
             ok = match retype_page_frame(st) {
                 Ok(page) => {
                     let mapped = map_page_frame(page, ours, true, own_ut);
-                    cap_delete(page);
+                    capability_delete(page);
                     mapped
                 }
                 Err(()) => false,
@@ -542,7 +542,7 @@ pub(super) fn stage_frames(
         (Some(st), true) => Some(st),
         (Some(st), false) => {
             supervision_protocol::memory_region_destroy(st);
-            cap_delete(st);
+            capability_delete(st);
             None
         }
         _ => None,

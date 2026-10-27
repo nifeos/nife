@@ -107,6 +107,7 @@ members = [
     "crates/coremark",
     "crates/video_terminal",
     "crates/swish",
+    "crates/periodic_deadline",
     "crates/timetable",
     "crates/uptime",
     "crates/system_log",

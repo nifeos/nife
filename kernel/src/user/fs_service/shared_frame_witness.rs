@@ -57,9 +57,9 @@ pub fn start_shared_frame_witness(
             }; FILE_PAGES];
             let n = map_channel(&mut maps, FILE_VA_CLIENT, phys, FILE_PAGES);
             let file = if mint {
-                rendezvous_cap(file_ep, Rights::WRITE.union(Rights::GRANT))
+                rendezvous_capability(file_ep, Rights::WRITE.union(Rights::GRANT))
             } else {
-                rendezvous_cap_badged(file_ep, Rights::WRITE, win)
+                rendezvous_capability_badged(file_ep, Rights::WRITE, win)
             };
             run(
                 client_image,
@@ -68,9 +68,9 @@ pub fn start_shared_frame_witness(
                     arg1: if mint { win } else { 0 }, // the window a minting client badges for
                     arg2: 0,
                     grants: &[
-                        file,                                                    // slot 0: the FS endpoint
-                        rendezvous_cap(report, Rights::WRITE), // slot 1: report to the kernel
-                        rendezvous_cap(sync, Rights::READ.union(Rights::WRITE)), // slot 2: handshake
+                        file,                                                           // slot 0: the FS endpoint
+                        rendezvous_capability(report, Rights::WRITE), // slot 1: report to the kernel
+                        rendezvous_capability(sync, Rights::READ.union(Rights::WRITE)), // slot 2: handshake
                     ],
                     maps: &maps[..n],
                 },

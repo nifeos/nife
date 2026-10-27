@@ -22,9 +22,9 @@ architecture meets the parity gate of §19 (architectural parity is a tenet).
 
 ## Why it sits beside the live-swap test
 
-`live_swap_tests` is claim 26's cited test. It drives one `READ`-gated method, `RECEIVE_CAP`, from
+`live_swap_tests` is claim 26's cited test. It drives one `READ`-gated method, `RECEIVE_CAPABILITY`, from
 one fixture, and only on the two architectures with a console device page. A broken gate surfaces
-there as a watchdog hang rather than a failed assertion, because a `RECEIVE_CAP` let through simply
+there as a watchdog hang rather than a failed assertion, because a `RECEIVE_CAPABILITY` let through simply
 blocks with nothing to receive.
 
 These tests cover the other `READ`-gated methods a would-be server reaches for, `RECEIVE` and
@@ -35,7 +35,7 @@ regression is red at an assertion, not at the watchdog.
 ## The write-only holder
 
 `WRITE` lets a holder `SEND` and `CALL`, and it is the right a client holds. Becoming the server
-means `RECEIVE`, `RECEIVE_CAP` or `REAP`, which take `READ`, or `SURVEY`, which takes `ENUMERATE`.
+means `RECEIVE`, `RECEIVE_CAPABILITY` or `REAP`, which take `READ`, or `SURVEY`, which takes `ENUMERATE`.
 Each must answer `NotPermitted`. The right lives on the capability, and no method number or
 argument register can add one.
 
@@ -67,7 +67,7 @@ honors that (`split_never_widens_rights`), and milestone 824 (a retype mints no 
 lacks) makes `RETYPE` and `RETYPE_OBJ` honor it too.
 
 The test uses two `GRANT`-less budgets: `WRITE` alone, and `SPEND_ONLY`, which is every right but
-`GRANT` and is what `memory_region_cap` hands a leaf. The frame and every object kind come back with
+`GRANT` and is what `memory_region_capability` hands a leaf. The frame and every object kind come back with
 exactly the budget's rights. The process is retyped around the address space just made. The frame
 cannot be passed on: `PageFrame::SLICE` is the one delegating method that does not block, and it is
 refused `NotPermitted` for want of `GRANT`.

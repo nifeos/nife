@@ -4,7 +4,7 @@
 //! What `swapper` (the operator), `rust_swappable` and `c_swappable` (the component's two
 //! instances) and `swap_boundary_witness` (client and attacker) share (rule 7): the wire protocol,
 //! the pages' addresses, the digest both languages compute, and the serving loop. A swap changes
-//! *who is parked in `RECEIVE_CAP`* on one stable endpoint, so the client never changes (DECISIONS
+//! *who is parked in `RECEIVE_CAPABILITY`* on one stable endpoint, so the client never changes (DECISIONS
 //! §12 (Call/Reply IPC)'s endpoint-only naming). The UART's registers are the one thing not
 //! shared: the operator takes them back with `PageFrame::REVOKE` between quiescing the old instance
 //! and endowing the new one. See notes/live-replacement.md.
@@ -16,7 +16,7 @@ use user_mode_runtime::invoke;
 
 // ===========================================================================================
 // The service protocol. Every request is a `CALL` on the stable endpoint; the component serves it
-// with `RECEIVE_CAP` and answers through the kernel's one-shot `Reply` capability (DECISIONS §12 (Call/Reply IPC)).
+// with `RECEIVE_CAPABILITY` and answers through the kernel's one-shot `Reply` capability (DECISIONS §12 (Call/Reply IPC)).
 // ===========================================================================================
 
 /// `call(SVC, OPERATION_PUT, seq)` -> `(digest(seq), (version << 32) | seq)`.
@@ -358,7 +358,7 @@ pub const ROLE_PRODUCER: u64 = 2;
 pub const ROLE_CONFUSED: u64 = 3;
 /// **The plant** (milestone 800 (a non-Anthropic model attacks the confinement claim), fourth
 /// pass). Not an attacker: an instrument. It parks a message on the stable endpoint so a
-/// would-be server's `RECEIVE_CAP`, if the kernel ever lets one through, *returns that message*
+/// would-be server's `RECEIVE_CAPABILITY`, if the kernel ever lets one through, *returns that message*
 /// and is observed, rather than blocking forever on an empty queue and surfacing as a watchdog
 /// hang. Until this role existed, claim 26's own test could not fail, only hang. The operator
 /// starts it once the last receiver on the endpoint is retired, so the parked message is the
@@ -493,7 +493,7 @@ pub const BROKER_LOG_BASE: u64 = 128;
 // ===========================================================================================
 
 use capability_plan::Direction::{Serve, Use};
-use capability_plan::{CapNeed, MapNeed, PageKind, Requirements};
+use capability_plan::{CapabilityNeed, MapNeed, PageKind, Requirements};
 
 /// **The pages one instance is built out of**: its segments (three for a debug build of a program
 /// this small), its four-page stack, its address-space root, its TCB, its page tables and its
@@ -508,24 +508,24 @@ pub const INSTANCE_PAGES: u64 = 32;
 /// **The console component**: the thing that gets replaced. It serves the stable endpoint, owns a
 /// UART, writes the witness page, and holds nothing it could build anything with.
 ///
-/// The declared order of `caps` **is** the component's capability table slot order, which is why [`SVC`] and
+/// The declared order of `capabilities` **is** the component's capability table slot order, which is why [`SVC`] and
 /// its three siblings are derived from this value rather than written down beside it.
 pub const CONSOLE: Requirements = Requirements {
     contract: "console",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "service",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "report",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "operator",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "control",
             direction: Serve,
         },
@@ -556,7 +556,7 @@ pub const CONSOLE: Requirements = Requirements {
 /// which claim. The capability half of the two contracts is identical; the device is the difference.
 pub const BACKEND: Requirements = Requirements {
     contract: "backend",
-    caps: CONSOLE.caps,
+    capabilities: CONSOLE.capabilities,
     maps: &[MapNeed {
         role: "witness",
         va: LOG_VA,
@@ -572,16 +572,16 @@ pub const BACKEND: Requirements = Requirements {
 /// `WRITE`, and there is no longer anywhere for an operator to type `READ` by mistake.
 pub const CLIENT: Requirements = Requirements {
     contract: "client",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "service",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "report",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "operator",
             direction: Use,
         },
@@ -603,20 +603,20 @@ pub const CLIENT: Requirements = Requirements {
 /// same channel.
 pub const BROKER: Requirements = Requirements {
     contract: "broker",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "requests",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "backend",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "report",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "operator",
             direction: Use,
         },
@@ -652,7 +652,7 @@ pub const BROKER: Requirements = Requirements {
 /// `stateful_backend`.
 pub const STATEFUL_BACKEND: Requirements = Requirements {
     contract: "stateful_backend",
-    caps: CONSOLE.caps,
+    capabilities: CONSOLE.capabilities,
     maps: BACKEND.maps,
     pages: INSTANCE_PAGES,
     depends_on: &[],
@@ -818,7 +818,7 @@ pub fn log_get(seq: u64) -> u64 {
 /// **The capability layout every instance is built with, derived from [`CONSOLE`].**
 ///
 /// These four used to be written here as `0, 1, 2, 3` with a comment saying that the operator's
-/// `ChildEndowment.caps` listed them in the same order, and that comment was the only thing holding
+/// `ChildEndowment.capabilities` listed them in the same order, and that comment was the only thing holding
 /// the two files together: a reordered array in `swapper` would have produced a component receiving
 /// on its report channel, with nothing to see but a hang. Now the number **is** the position in the
 /// declaration, computed at compile time, and a role this component does not declare does not
@@ -910,7 +910,7 @@ pub fn serve_with_state(
         loop {
             let req = user_mode_runtime::receive_request(SVC);
             let (operation, arg) = (req.w0, req.w1);
-            // Only a CALL is answered; a SEND_CAP's capability is deleted (milestone 706 (a `CALL`
+            // Only a CALL is answered; a SEND_CAPABILITY's capability is deleted (milestone 706 (a `CALL`
             // server can tell a Reply from a delegation)).
             let Some(slot) = req.delivered.into_reply() else {
                 continue;
@@ -995,7 +995,7 @@ pub fn serve(version: u64, xform: fn(u64) -> u64, log_base: u64, device: bool, w
     loop {
         let req = user_mode_runtime::receive_request(SVC);
         let (operation, arg) = (req.w0, req.w1);
-        // A plain SEND or a SEND_CAP slipped in; the contract says CALL, and there is nobody to
+        // A plain SEND or a SEND_CAPABILITY slipped in; the contract says CALL, and there is nobody to
         // answer. A delegated capability is deleted rather than answered into (milestone 706).
         let Some(slot) = req.delivered.into_reply() else {
             continue;
@@ -1091,7 +1091,7 @@ pub const NOTE_NOT_ABSORBED: u64 = 8;
 /// Name: provisional.
 pub const NOTE_QUIESCE_ANSWERED: u64 = 9;
 /// What the plant parks on the stable endpoint: a word no honest exchange produces, so a would-be
-/// server whose `RECEIVE_CAP` was let through reports a value nothing else could have put there
+/// server whose `RECEIVE_CAPABILITY` was let through reports a value nothing else could have put there
 /// (milestone 800 (a non-Anthropic model attacks the confinement claim), fourth pass).
 pub const PLANT_MARKER: u64 = 0x5317_0a11;
 
@@ -1104,12 +1104,15 @@ pub fn fail() -> ! {
     user_mode_runtime::trap()
 }
 
-/// A raw `RECEIVE_CAP`, returning the kernel's answer rather than a message. The attacker uses it:
-/// `user_mode_runtime::receive_cap` is written for a caller that is allowed to receive, and the whole question
+/// A raw `RECEIVE_CAPABILITY`, returning the kernel's answer rather than a message. The attacker uses it:
+/// `user_mode_runtime::receive_capability` is written for a caller that is allowed to receive, and the whole question
 /// here is what happens to one that is not.
-pub fn try_receive_cap(slot: u64) -> i64 {
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `try_receive_cap` under the capability ruling of 2026-10-06 (UTC).
+pub fn try_receive_capability(slot: u64) -> i64 {
     // SAFETY: a plain syscall. If it succeeds we have stolen a request, which is the failure.
-    unsafe { invoke(slot, abi::rendezvous::RECEIVE_CAP, 0, 0, 0) }
+    unsafe { invoke(slot, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) }
 }
 
 #[cfg(test)]

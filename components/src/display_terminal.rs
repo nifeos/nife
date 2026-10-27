@@ -498,7 +498,7 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
         die(E_GEOMETRY);
     }
     let (cols, rows) = (w / video_terminal::CELL_W, h / video_terminal::CELL_H);
-    if cols as usize > video_terminal::MAXIMUM_COLS
+    if cols as usize > video_terminal::MAXIMUM_COLUMNS
         || rows as usize > video_terminal::MAXIMUM_ROWS
         || cols as usize * rows as usize > video_terminal::MAXIMUM_CELLS
     {
@@ -556,7 +556,7 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
         // by endpoint (DECISIONS §33).
         //
         // A CALL's Reply, or nothing to answer (milestone 706 (a `CALL` server can tell a Reply
-        // from a delegation)): a SEND_CAP is deleted rather than answered into.
+        // from a delegation)): a SEND_CAPABILITY is deleted rather than answered into.
         let req = receive_request(TERM);
         let (w0, w1) = (req.w0, req.w1);
         let reply_slot = req.delivered.into_reply();

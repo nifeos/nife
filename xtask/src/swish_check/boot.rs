@@ -78,13 +78,13 @@ fn usb_keyboard_boot(arch: &str) -> bool {
     );
     let sock = gpu_mon_socket(&format!("{arch}-usb-keyboard"));
     let _ = std::fs::remove_file(&sock);
-    let boot_secs = if x86 {
-        SWISH_CHECK_BOOT_SECS * 2
+    let boot_seconds = if x86 {
+        SWISH_CHECK_BOOT_SECONDS * 2
     } else {
-        SWISH_CHECK_BOOT_SECS
+        SWISH_CHECK_BOOT_SECONDS
     };
 
-    let mut cmd = usb_keyboard_runner(arch, kvm, boot_secs + 2 * SWISH_CHECK_X86_LINE_SECS);
+    let mut cmd = usb_keyboard_runner(arch, kvm, boot_seconds + 2 * SWISH_CHECK_X86_LINE_SECONDS);
     cmd.env("NIFE_SCREEN_MON", &sock);
     cmd.stdin(std::process::Stdio::piped());
     cmd.stdout(std::process::Stdio::piped());
@@ -97,7 +97,7 @@ fn usb_keyboard_boot(arch: &str) -> bool {
     };
     let stdout = child.stdout.take().expect("piped stdout");
     let (seen, reader) = read_console_plain(stdout);
-    let failed = type_on_the_usb_keyboard(&seen, &sock, boot_secs);
+    let failed = type_on_the_usb_keyboard(&seen, &sock, boot_seconds);
 
     // SIGTERM on x86_64, for `swish_check_boot`'s reason: that runner is `qemu-bounded.sh`.
     stop_runner(&mut child, x86);
@@ -122,8 +122,8 @@ fn usb_keyboard_boot(arch: &str) -> bool {
 
 /// The runner [`usb_keyboard_boot`] starts: [`leg_runner`] with the USB keyboard attached and
 /// nothing else that could type.
-fn usb_keyboard_runner(arch: &str, kvm: bool, uefi_timeout_secs: u64) -> Command {
-    let mut cmd = leg_runner(arch, kvm, uefi_timeout_secs);
+fn usb_keyboard_runner(arch: &str, kvm: bool, uefi_timeout_seconds: u64) -> Command {
+    let mut cmd = leg_runner(arch, kvm, uefi_timeout_seconds);
     // The keyboard and nothing that could also type: no virtio keyboard (which `sendkey` would
     // reach instead), no gpu, no NIC.
     for var in [
@@ -157,14 +157,14 @@ fn usb_keyboard_runner(arch: &str, kvm: bool, uefi_timeout_secs: u64) -> Command
 fn type_on_the_usb_keyboard(
     seen: &Arc<Mutex<String>>,
     sock: &str,
-    boot_secs: u64,
+    boot_seconds: u64,
 ) -> Option<String> {
-    let wait = |from: usize, done: &dyn Fn(&str) -> bool, secs: u64| -> bool {
-        wait_until(secs, || {
+    let wait = |from: usize, done: &dyn Fn(&str) -> bool, seconds: u64| -> bool {
+        wait_until(seconds, || {
             done(&degauge(&seen.lock().expect("transcript lock")[from..]))
         })
     };
-    if !wait(0, &|t| t.ends_with("$ "), boot_secs) {
+    if !wait(0, &|t| t.ends_with("$ "), boot_seconds) {
         return Some("the boot never reached a prompt".to_string());
     }
     if !seen
@@ -186,7 +186,7 @@ fn type_on_the_usb_keyboard(
     if !wait(
         mark,
         &|t| t.contains("echo hello\nhello\n"),
-        SWISH_CHECK_LINE_SECS,
+        SWISH_CHECK_LINE_SECONDS,
     ) {
         return Some(
             "`echo hello` typed on the USB keyboard did not come back as `hello`".to_string(),
@@ -208,11 +208,11 @@ fn transcript_tail(transcript: &str, chars: usize) -> String {
         .collect()
 }
 
-/// **Poll `done` every 100 ms until it holds or `secs` pass**, and say which. Every wait in this
+/// **Poll `done` every 100 ms until it holds or `seconds` pass**, and say which. Every wait in this
 /// file is one of these, because a boot that hangs is exactly the failure the gate is for, and a
 /// gate that hangs with it reports nothing.
-fn wait_until(secs: u64, mut done: impl FnMut() -> bool) -> bool {
-    let deadline = Instant::now() + Duration::from_secs(secs);
+fn wait_until(seconds: u64, mut done: impl FnMut() -> bool) -> bool {
+    let deadline = Instant::now() + Duration::from_secs(seconds);
     while Instant::now() < deadline {
         if done() {
             return true;
@@ -245,14 +245,14 @@ fn read_console_plain(
 }
 
 /// **The runner a leg boots under**, before the devices each boot adds: on `x86_64`, the UEFI
-/// image under OVMF with `uefi_timeout_secs` as its own bound and KVM when [`kvm_is_usable`]; on
+/// image under OVMF with `uefi_timeout_seconds` as its own bound and KVM when [`kvm_is_usable`]; on
 /// the other two, the architecture's runner script against the kernel this leg built and its
 /// initial ramdisk.
 ///
 /// The runner directly rather than through `cargo run`, so the process this owns **is** QEMU (the
 /// runner script `exec`s it). A `cargo run` in between would leave the emulator alive when the kill
 /// lands on cargo, which is the leak CLAUDE.md's QEMU rule exists about.
-fn leg_runner(arch: &str, kvm: bool, uefi_timeout_secs: u64) -> Command {
+fn leg_runner(arch: &str, kvm: bool, uefi_timeout_seconds: u64) -> Command {
     let riscv = arch == "riscv64";
     if arch == "x86_64" {
         // OVMF, one core (the runner's default; the tour is where the second core is gated). The
@@ -261,7 +261,7 @@ fn leg_runner(arch: &str, kvm: bool, uefi_timeout_secs: u64) -> Command {
         // it only ever fires on a leg that has already failed.
         let mut c = Command::new("helpers/qemu-uefi-x86_64.sh");
         c.arg(esp_dir());
-        c.env("NIFE_UEFI_TIMEOUT", uefi_timeout_secs.to_string());
+        c.env("NIFE_UEFI_TIMEOUT", uefi_timeout_seconds.to_string());
         c.env_remove("NIFE_NVME");
         if kvm {
             c.env("NIFE_ACCEL", "kvm");
@@ -477,9 +477,9 @@ fn drive_the_prompt(
     // The banner is the first claim: the progenitor built the console, the line editor, the input driver and
     // the shell, and gave the shell every capability it needs to say hello. A boot that dies in any
     // of that prints nothing, which is the symptom all three of this milestone's bugs shared.
-    if !console.wait_after(0, "nife capability shell", SWISH_CHECK_BOOT_SECS) {
+    if !console.wait_after(0, "nife capability shell", SWISH_CHECK_BOOT_SECONDS) {
         failed.push(format!(
-            "no prompt banner within {SWISH_CHECK_BOOT_SECS}s: the boot never reached a \
+            "no prompt banner within {SWISH_CHECK_BOOT_SECONDS}s: the boot never reached a \
              shell"
         ));
         return Driven::Typed;
@@ -489,10 +489,10 @@ fn drive_the_prompt(
     }));
     // **How long each line took**, typed to prompt-back, so every run reports its own margin
     // against the per-line bound rather than leaving it to be guessed after a red one.
-    let line_secs = if x86 && !leg.kvm {
-        SWISH_CHECK_X86_LINE_SECS
+    let line_seconds = if x86 && !leg.kvm {
+        SWISH_CHECK_X86_LINE_SECONDS
     } else {
-        SWISH_CHECK_LINE_SECS
+        SWISH_CHECK_LINE_SECONDS
     };
     // **The panic probe types nothing**: the kernel panics on its own once the log service has
     // drained thirty flood lines, and what is checked is that the panic reached the UART
@@ -501,7 +501,7 @@ fn drive_the_prompt(
         panic_probe_verdict(arch, console, failed);
         return Driven::PanicProbe;
     }
-    let took = type_script(leg, line_secs, console, stdin, failed);
+    let took = type_script(leg, line_seconds, console, stdin, failed);
     // Each line's time into the job's record too (milestone 808 (every gate accounts for its
     // time)), so the daily record can read `swish-check` by line without a log scrape.
     crate::time_record::items(
@@ -518,7 +518,7 @@ fn drive_the_prompt(
         "line",
         &took,
     );
-    report_line_times(arch, leg.kvm, line_secs, took, failed);
+    report_line_times(arch, leg.kvm, line_seconds, took, failed);
     // The launch ends the boot (the shell waits on the session), so it is the last thing typed.
     if failed.is_empty()
         && probe() != Probe::Panic
@@ -724,7 +724,7 @@ fn swish_check_runner(
     let mut cmd = leg_runner(
         arch,
         kvm,
-        SWISH_CHECK_BOOT_SECS * 2 + SWISH_CHECK_X86_LINE_SECS * (script_lines as u64 + 2),
+        SWISH_CHECK_BOOT_SECONDS * 2 + SWISH_CHECK_X86_LINE_SECONDS * (script_lines as u64 + 2),
     );
     // The RedoxFS disk, which `>`, `<`, `ls` and `rm` need; opt-in on the x86_64 runner, and its
     // header says why.
@@ -851,10 +851,10 @@ impl Console {
     /// whole-transcript search finds the first one's echo instantly and the wait returns before the
     /// second line has been read at all, which then types the line after it into a prompt that has
     /// not appeared. That is exactly what the first version of this did.
-    fn wait_after(&self, from: usize, needle: &str, secs: u64) -> bool {
+    fn wait_after(&self, from: usize, needle: &str, seconds: u64) -> bool {
         // `degauge`: a gauge spliced character-by-character into the very bytes being waited
         // for must not defeat an exact search the way it did in #1371 and #1420. See its doc.
-        wait_until(secs, || {
+        wait_until(seconds, || {
             degauge(&self.seen.lock().expect("transcript lock")[from..]).contains(needle)
         })
     }
@@ -872,8 +872,8 @@ impl Console {
     ///
     /// A transcript ending in the bare prompt is the unambiguous "ready": the prompt is out and
     /// nothing has been echoed since.
-    fn wait_for_prompt(&self, secs: u64) -> bool {
-        wait_until(secs, || {
+    fn wait_for_prompt(&self, seconds: u64) -> bool {
+        wait_until(seconds, || {
             self.seen.lock().expect("transcript lock").ends_with("$ ")
         })
     }
@@ -978,7 +978,7 @@ fn panic_probe_verdict(arch: &str, console: &Console, failed: &mut Vec<String>) 
 /// typed to prompt-back. Stops at the first line that fails, recording why.
 fn type_script<'s>(
     leg: &Leg<'s>,
-    line_secs: u64,
+    line_seconds: u64,
     console: &Console,
     stdin: &mut std::process::ChildStdin,
     failed: &mut Vec<String>,
@@ -995,17 +995,17 @@ fn type_script<'s>(
         if leg.skips(line) {
             continue;
         }
-        // **`rg`'s lines have bounds of their own** ([`RG_LINE_SECS`], [`RG_WALK_SECS`]): the
+        // **`rg`'s lines have bounds of their own** ([`RG_LINE_SECONDS`], [`RG_WALK_SECONDS`]): the
         // wait for this prompt is the previous line's run.
         let bound = match previous {
-            Some((RG_WALK_LINE, _)) => RG_WALK_SECS,
+            Some((RG_WALK_LINE, _)) => RG_WALK_SECONDS,
             Some((prev, _))
                 if prev.contains(crate::disk::INSTALLED_RIPGREP)
                     || crate::swish_check::script::FROM_BASALT.contains(&prev) =>
             {
-                line_secs.max(RG_LINE_SECS)
+                line_seconds.max(RG_LINE_SECONDS)
             }
-            _ => line_secs,
+            _ => line_seconds,
         };
         if !console.wait_for_prompt(bound) {
             failed.push(format!(
@@ -1017,7 +1017,7 @@ fn type_script<'s>(
             took.push((prev, typed.elapsed()));
         }
         previous = Some((line, Instant::now()));
-        if let Err(why) = type_one_line((line, echoed, asks), line_secs, console, stdin) {
+        if let Err(why) = type_one_line((line, echoed, asks), line_seconds, console, stdin) {
             failed.push(why);
             break;
         }
@@ -1025,7 +1025,7 @@ fn type_script<'s>(
     // One more, for the last line: every other answer is bounded by the next line's wait, and
     // the last one has no next line. Without this the transcript is read while the final
     // command is still running.
-    if failed.is_empty() && probe() != Probe::Panic && !console.wait_for_prompt(line_secs) {
+    if failed.is_empty() && probe() != Probe::Panic && !console.wait_for_prompt(line_seconds) {
         failed.push("the prompt never came back after the last line".to_string());
     }
     if let (true, Some((prev, typed))) = (failed.is_empty(), previous) {
@@ -1039,7 +1039,7 @@ fn type_script<'s>(
 /// step failed.
 fn type_one_line(
     (line, echoed, asks): (&str, &str, Option<(&str, &str)>),
-    line_secs: u64,
+    line_seconds: u64,
     console: &Console,
     stdin: &mut std::process::ChildStdin,
 ) -> Result<(), String> {
@@ -1074,9 +1074,9 @@ fn type_one_line(
         return Err(format!("could not type `{line:?}` at the prompt"));
     }
     let echo_bound = if line.contains(crate::disk::INSTALLED_RIPGREP) {
-        line_secs.max(RG_LINE_SECS)
+        line_seconds.max(RG_LINE_SECONDS)
     } else {
-        line_secs
+        line_seconds
     };
     if !console.wait_after(at, &format!("{echoed}\n"), echo_bound) {
         return Err(format!("the prompt never echoed `{echoed}` for {line:?}"));
@@ -1084,7 +1084,7 @@ fn type_one_line(
     // **A question, answered once it is asked** (milestone 892): the reply goes to the running
     // program, whose read the terminal's line discipline answers with what was typed.
     if let Some((cue, reply)) = asks {
-        if !console.wait_after(at, cue, line_secs) {
+        if !console.wait_after(at, cue, line_seconds) {
             return Err(format!("`{line}` never asked {cue:?}"));
         }
         if writeln!(stdin, "{reply}").is_err() || stdin.flush().is_err() {
@@ -1092,7 +1092,7 @@ fn type_one_line(
         }
     }
     if SWISH_CHECK_INTERRUPTED.contains(&line) {
-        if !console.wait_after(at, SWISH_CHECK_RUNNING, line_secs) {
+        if !console.wait_after(at, SWISH_CHECK_RUNNING, line_seconds) {
             return Err(format!(
                 "`{line}` never said it was running under supervision ({SWISH_CHECK_RUNNING:?})"
             ));
@@ -1104,7 +1104,7 @@ fn type_one_line(
         }
     }
     if SWISH_CHECK_SUSPENDED.contains(&line) {
-        if !console.wait_after(at, SWISH_CHECK_RUNNING, line_secs) {
+        if !console.wait_after(at, SWISH_CHECK_RUNNING, line_seconds) {
             return Err(format!(
                 "`{line}` never said it was running under supervision ({SWISH_CHECK_RUNNING:?})"
             ));
@@ -1122,7 +1122,7 @@ fn type_one_line(
 fn report_line_times(
     arch: &str,
     kvm: bool,
-    line_secs: u64,
+    line_seconds: u64,
     mut took: Vec<(&str, Duration)>,
     failed: &mut Vec<String>,
 ) {
@@ -1130,7 +1130,7 @@ fn report_line_times(
     // prints the table alone and `NIFE_SHOW_TRANSCRIPT` prints it beside the whole transcript
     // (which is what a person reading a session wants and far too much text to diff a
     // before/after measurement out of). The split exists for exactly that: the paint path's
-    // legs are priced by this table (`SWISH_CHECK_X86_LINE_SECS`'s own doc), and a lane that
+    // legs are priced by this table (`SWISH_CHECK_X86_LINE_SECONDS`'s own doc), and a lane that
     // changes the paint path needs the table from two runs, not two transcripts.
     if std::env::var_os("NIFE_SHOW_TRANSCRIPT").is_some()
         || std::env::var_os("NIFE_SHOW_LINE_TIMES").is_some()
@@ -1144,8 +1144,8 @@ fn report_line_times(
     // shows as a leg far off its own history, which a per-line bound sized to hide a real hang
     // cannot see. See [`LEG_COST_BASELINE`] for why this is not a comparison between legs.
     let accel = if kvm { "kvm" } else { "tcg" };
-    let secs: Vec<f64> = took.iter().map(|(_, d)| d.as_secs_f64()).collect();
-    let cost = leg_cost_verdict(arch, accel, &secs);
+    let seconds: Vec<f64> = took.iter().map(|(_, d)| d.as_secs_f64()).collect();
+    let cost = leg_cost_verdict(arch, accel, &seconds);
     eprintln!(
         "swish-check ({arch}): median {:.2}s a line under {accel}{}",
         cost.median,
@@ -1171,7 +1171,7 @@ fn report_line_times(
     took.sort_by_key(|t| std::cmp::Reverse(t.1));
     let total: Duration = took.iter().map(|(_, d)| *d).sum();
     eprintln!(
-        "swish-check ({arch}): {} lines in {:.1}s; slowest, against a {line_secs}s \
+        "swish-check ({arch}): {} lines in {:.1}s; slowest, against a {line_seconds}s \
          bound per line: {}",
         took.len(),
         total.as_secs_f64(),
@@ -1356,7 +1356,7 @@ fn kernel_fault_failure(transcript: &str) -> Option<String> {
 /// actually uses)), read from `raw_after_hand_over`, since [`GaugeFilter`] takes it out of the
 /// view the waits read. A failure line when the gauge is missing (a gauge that stopped printing
 /// is one nobody would miss) or says `ABOVE`, past the peak
-/// `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` records. That constant is a measurement, so the
+/// `kernel::capability_object::CAPABILITY_TABLE_PEAK_MEASURED` records. That constant is a measurement, so the
 /// fix is to measure, update it, and re-read the headroom arithmetic beside
 /// `CAPABILITY_TABLE_SLOTS`. See notes/swish-check-boot.md.
 fn slot_gauge_failure(arch: &str, raw_after_hand_over: &str) -> Option<String> {
@@ -1369,7 +1369,7 @@ fn slot_gauge_failure(arch: &str, raw_after_hand_over: &str) -> Option<String> {
             line.contains("ABOVE").then(|| {
                 format!(
                     "this boot used more capability slots than the tree records: {:?}. The \
-                     number beside CAPABILITY_TABLE_SLOTS in kernel/src/cap.rs is now stale; \
+                     number beside CAPABILITY_TABLE_SLOTS in kernel/src/capability_object.rs is now stale; \
                      measure, update CAPABILITY_TABLE_PEAK_MEASURED, and re-read that constant's \
                      headroom arithmetic rather than raising the ceiling reflexively.",
                     line.trim()
@@ -1378,7 +1378,7 @@ fn slot_gauge_failure(arch: &str, raw_after_hand_over: &str) -> Option<String> {
         }
         None => Some(format!(
             "the boot never printed {SLOT_GAUGE:?}. The kernel says this from the scheduler's \
-             idle loop once the mark has settled (kernel::cap::report_peak), so either the boot \
+             idle loop once the mark has settled (kernel::capability_object::report_peak), so either the boot \
              never idled or the gauge stopped being printed; the second is the one that matters, \
              because it is the only thing standing between this tree and a fourth reactive raise \
              of CAPABILITY_TABLE_SLOTS."

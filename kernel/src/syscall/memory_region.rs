@@ -16,7 +16,7 @@ use crate::arch::mmu;
 /// Name: provisional (lane maintainer/long-function-paydown-invoke, 2026-10-12 UTC).
 #[inline(always)]
 pub(super) fn memory_region_invoke(
-    capability: crate::cap::Cap,
+    capability: crate::capability_object::Capability,
     region: u64,
     method: u64,
     [a0, a1, a2]: [u64; 3],
@@ -131,7 +131,7 @@ pub(super) fn memory_region_retype(
 /// region or the caller's table is full, with the parent left as it was.
 #[inline(never)]
 pub(super) fn memory_region_split(
-    cap: crate::cap::Cap,
+    capability: crate::capability_object::Capability,
     region: u64,
     count: u64,
 ) -> Result<i64, Error> {
@@ -139,7 +139,8 @@ pub(super) fn memory_region_split(
     // A fresh mint, so it must not widen by hand: the child gets this capability's rights,
     // never more (`split_never_widens_rights` proves `mint_child`). A full table gives the child
     // back; it is childless and at the top of the parent's watermark, so `destroy` undoes it.
-    match sched::grant(cap.mint_child(crate::cap::Object::MemoryRegion(child))) {
+    match sched::grant(capability.mint_child(crate::capability_object::Object::MemoryRegion(child)))
+    {
         Ok(slot) => Ok(slot as i64),
         Err(_) => {
             crate::memory_region::destroy(child);
@@ -162,11 +163,11 @@ pub(super) fn memory_region_destroy(region: u64) -> Result<i64, Error> {
 /// region that no longer resolves.
 #[inline(never)]
 pub(super) fn memory_region_usage(
-    cap: crate::cap::Cap,
+    capability: crate::capability_object::Capability,
     region: u64,
     record: u64,
 ) -> Result<i64, Error> {
-    if !cap.rights.allows(Rights::ENUMERATE) {
+    if !capability.rights.allows(Rights::ENUMERATE) {
         return Err(Error::NotPermitted);
     }
     if !abi::usage::is_known(record) {

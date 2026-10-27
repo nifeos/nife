@@ -109,7 +109,7 @@ pub(super) fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
 
     // The victim is never woken, but a `Reply` outliving it would go stale only on its next
     // use, through a slot generation `ipc_reply` cannot see.
-    delete_reply_caps_naming(sched, tid);
+    delete_reply_capabilities_naming(sched, tid);
 
     // `killed` marks a thread this teardown doomed. `wait_on` is cleared because a hang dump reads
     // `Some` as still waiting.

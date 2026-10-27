@@ -2,7 +2,7 @@
 //! design/roadmap/0126-who-else-is-running.md).
 //!
 //! The program's whole logic, lifted out so it runs on the host; `components/src/uptime.rs` is the
-//! syscall and nothing else. It reads `user_mode_runtime::monotonic_nanos`, the ambient counter
+//! syscall and nothing else. It reads `user_mode_runtime::monotonic_ns`, the ambient counter
 //! `date` reads too, which `kernel/src/arch/*/timer.rs`'s `init` grants every EL0 program as a
 //! deliberate exception to DECISIONS §10 (process model: capability-based, microkernel)'s
 //! no-ambient-authority rule: a monotonic counter observes time and affects nothing. So `uptime`
@@ -22,21 +22,21 @@
 
 #![cfg_attr(not(test), no_std)]
 
-const NANOS_PER_SEC: u64 = 1_000_000_000;
-const SECS_PER_MIN: u64 = 60;
-const SECS_PER_HOUR: u64 = 60 * SECS_PER_MIN;
-const SECS_PER_DAY: u64 = 24 * SECS_PER_HOUR;
+use clock_contract::NS_PER_SECOND;
+
+const SECONDS_PER_MINUTE: u64 = 60;
+const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
+const SECONDS_PER_DAY: u64 = 24 * SECONDS_PER_HOUR;
 
 /// The longest line [`format`] can produce: `u64::MAX` nanoseconds is about 584 years, and
 /// `"up 213503982 days, 23:59:59\n"` is 29 bytes. Rounded up with room to spare.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_LEN`.
-pub const MAXIMUM_LEN: usize = 40;
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_BYTES: usize = 40;
 
 /// A formatted line, owned inline: no allocator on this target.
 pub struct Formatted {
-    buf: [u8; MAXIMUM_LEN],
+    buf: [u8; MAXIMUM_BYTES],
     len: usize,
 }
 
@@ -63,15 +63,15 @@ impl Formatted {
 /// assert_eq!(format(90 * 1_000_000_000).as_bytes(), b"up 00:01:30\n");
 /// assert_eq!(format(90_000 * 1_000_000_000).as_bytes(), b"up 1 day, 01:00:00\n");
 /// ```
-pub fn format(nanos: u64) -> Formatted {
-    let total_secs = nanos / NANOS_PER_SEC;
-    let days = total_secs / SECS_PER_DAY;
-    let hours = (total_secs % SECS_PER_DAY) / SECS_PER_HOUR;
-    let mins = (total_secs % SECS_PER_HOUR) / SECS_PER_MIN;
-    let secs = total_secs % SECS_PER_MIN;
+pub fn format(ns: u64) -> Formatted {
+    let total_seconds = ns / NS_PER_SECOND;
+    let days = total_seconds / SECONDS_PER_DAY;
+    let hours = (total_seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
+    let minutes = (total_seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+    let seconds = total_seconds % SECONDS_PER_MINUTE;
 
     let mut w = Writer {
-        buf: [0u8; MAXIMUM_LEN],
+        buf: [0u8; MAXIMUM_BYTES],
         len: 0,
     };
     w.push_bytes(b"up ");
@@ -81,9 +81,9 @@ pub fn format(nanos: u64) -> Formatted {
     }
     w.push_2digit(hours);
     w.push_bytes(b":");
-    w.push_2digit(mins);
+    w.push_2digit(minutes);
     w.push_bytes(b":");
-    w.push_2digit(secs);
+    w.push_2digit(seconds);
     w.push_bytes(b"\n");
 
     Formatted {
@@ -95,7 +95,7 @@ pub fn format(nanos: u64) -> Formatted {
 /// A fixed-size append cursor, the same shape `date`'s and `wc`'s hand-rolled buffers use: no
 /// allocator on this target, so every formatter here is one.
 struct Writer {
-    buf: [u8; MAXIMUM_LEN],
+    buf: [u8; MAXIMUM_BYTES],
     len: usize,
 }
 
@@ -142,13 +142,13 @@ mod tests {
     #[test]
     fn the_writer_stops_at_the_end_of_its_buffer() {
         let mut w = Writer {
-            buf: [0u8; MAXIMUM_LEN],
+            buf: [0u8; MAXIMUM_BYTES],
             len: 0,
         };
-        w.push_bytes(&[b'x'; MAXIMUM_LEN + 5]);
-        assert_eq!(w.len, MAXIMUM_LEN);
+        w.push_bytes(&[b'x'; MAXIMUM_BYTES + 5]);
+        assert_eq!(w.len, MAXIMUM_BYTES);
         w.push_bytes(b"y");
-        assert_eq!(w.len, MAXIMUM_LEN);
+        assert_eq!(w.len, MAXIMUM_BYTES);
         assert!(w.buf.iter().all(|&b| b == b'x'));
     }
 
@@ -159,21 +159,21 @@ mod tests {
 
     #[test]
     fn seconds_minutes_hours_all_render() {
-        assert_eq!(format(5 * NANOS_PER_SEC).as_bytes(), b"up 00:00:05\n");
-        assert_eq!(format(90 * NANOS_PER_SEC).as_bytes(), b"up 00:01:30\n");
-        assert_eq!(format(3661 * NANOS_PER_SEC).as_bytes(), b"up 01:01:01\n");
+        assert_eq!(format(5 * NS_PER_SECOND).as_bytes(), b"up 00:00:05\n");
+        assert_eq!(format(90 * NS_PER_SECOND).as_bytes(), b"up 00:01:30\n");
+        assert_eq!(format(3661 * NS_PER_SECOND).as_bytes(), b"up 01:01:01\n");
     }
 
     #[test]
     fn a_day_rolls_over_and_pluralises() {
         // One full day plus one hour: singular "day".
         assert_eq!(
-            format((SECS_PER_DAY + SECS_PER_HOUR) * NANOS_PER_SEC).as_bytes(),
+            format((SECONDS_PER_DAY + SECONDS_PER_HOUR) * NS_PER_SECOND).as_bytes(),
             b"up 1 day, 01:00:00\n"
         );
         // Two days: plural.
         assert_eq!(
-            format(2 * SECS_PER_DAY * NANOS_PER_SEC).as_bytes(),
+            format(2 * SECONDS_PER_DAY * NS_PER_SECOND).as_bytes(),
             b"up 2 days, 00:00:00\n"
         );
     }
@@ -182,13 +182,13 @@ mod tests {
     fn sub_second_time_truncates_rather_than_rounds() {
         // 999,999,999 ns is still "0 seconds elapsed", not "1": this is a floor, matching how
         // date's own second-resolution read behaves.
-        assert_eq!(format(NANOS_PER_SEC - 1).as_bytes(), b"up 00:00:00\n");
+        assert_eq!(format(NS_PER_SECOND - 1).as_bytes(), b"up 00:00:00\n");
     }
 
     #[test]
     fn hours_and_minutes_never_reach_24_or_60_in_the_printed_field() {
         // 23 hours, 59 minutes, 59 seconds: the boundary just before a day rolls over.
-        let secs = 23 * SECS_PER_HOUR + 59 * SECS_PER_MIN + 59;
-        assert_eq!(format(secs * NANOS_PER_SEC).as_bytes(), b"up 23:59:59\n");
+        let seconds = 23 * SECONDS_PER_HOUR + 59 * SECONDS_PER_MINUTE + 59;
+        assert_eq!(format(seconds * NS_PER_SECOND).as_bytes(), b"up 23:59:59\n");
     }
 }

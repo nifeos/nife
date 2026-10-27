@@ -10,7 +10,7 @@
 //! back.
 
 use super::*;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
@@ -31,7 +31,7 @@ const SQUATTER_QUIET: u64 = 0;
 /// Every one of the squatter's ten attempts refused (its header lists them in bit order).
 const SQUATTER_ALL_REFUSED: u64 = (1 << 10) - 1;
 /// Both kernel-IPC probes on the squatter's own socket capability refused (risk 7's fifth outsider
-/// pass): bit 0 a plain `RECEIVE`, bit 1 a `RECEIVE_CAP`, word 2 of the squatter's armed report.
+/// pass): bit 0 a plain `RECEIVE`, bit 1 a `RECEIVE_CAPABILITY`, word 2 of the squatter's armed report.
 const SQUATTER_RECV_REFUSED: u64 = 0b11;
 
 /// Budget pages per spawned client: one frame plus its page tables, `spawn_stack_client`'s number.
@@ -40,15 +40,15 @@ const BUDGET_PAGES: u64 = 16;
 const STACK_PAGES: u64 = 6;
 
 /// A capability to the endpoint `ep` with `rights`, and one to the memory region `region`.
-type Granted = crate::cap::Cap;
+type Granted = crate::capability_object::Capability;
 fn endpoint(ep: RendezvousId, rights: Rights) -> Granted {
-    crate::cap::rendezvous_cap(ep, rights)
+    crate::capability_object::rendezvous_capability(ep, rights)
 }
 /// A lending budget: each client retypes its socket page from it and lends the page to the stack,
 /// and the page carries the budget's rights (milestone 824 (a retype mints no right its budget
 /// lacks)).
 fn budget(region: u64) -> Granted {
-    crate::cap::memory_region_lending_capability(region)
+    crate::capability_object::memory_region_lending_capability(region)
 }
 
 /// Bounded by wall clock, `ntp_tests`' discipline: a lost wakeup fails loudly instead of hanging.
@@ -228,7 +228,7 @@ fn a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic() {
 /// The stack mints each socket's capability from a `WRITE | GRANT` copy of its serve endpoint
 /// (`socket_contract::stack_slots::MINT`), badged and without `READ`, and the kernel refuses a
 /// receive on a `READ`-less endpoint (`kernel/src/syscall.rs`). With `READ`, a plain `RECEIVE` or
-/// `RECEIVE_CAP` would dequeue other clients' requests, milestone 649's capture class by IPC. The
+/// `RECEIVE_CAPABILITY` would dequeue other clients' requests, milestone 649's capture class by IPC. The
 /// squatter (role 8) runs both probes on its own socket, so no victim is needed.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.net_confinement_tests.a_socket_holder_cannot_receive_on_its_socket_capability.patch`
@@ -246,7 +246,7 @@ fn a_socket_holder_cannot_receive_on_its_socket_capability() {
         armed[2],
         SQUATTER_RECV_REFUSED,
         "CONFINEMENT ESCAPE: a socket holder reached the stack's own incoming queue through a \
-         kernel receive on its socket capability; of RECEIVE (bit 0) and RECEIVE_CAP (bit 1) these \
+         kernel receive on its socket capability; of RECEIVE (bit 0) and RECEIVE_CAPABILITY (bit 1) these \
          were NOT refused: {:#b}. The minted socket capability must carry no READ right.",
         !armed[2] & SQUATTER_RECV_REFUSED,
     );

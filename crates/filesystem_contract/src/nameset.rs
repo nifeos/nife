@@ -8,8 +8,7 @@ use super::grant;
 /// *.txt` prints the set before anything runs and a grant that quietly took a prefix would be one
 /// nobody checked. See notes/glob-grant/xargs.md ("Why the bound is eight").
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_NAMES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAMES: usize = 8;
 
 /// **The most bytes of name one set carries, all its names together.** A second bound beside

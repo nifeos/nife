@@ -40,13 +40,9 @@ mod test_support;
 
 pub use admission::{Admission, Held, SHIPPED_HELD, Unbacked, schedulable};
 pub use document::{Document, Entry, Error, Schedule, parse};
+pub use periodic_deadline::next_after;
 pub use plan_text::{Audit, write_plan};
-pub use registry::{Registry, Row, SPENT, UNARMED, UNSTAMPED, WallReading, next_after};
-
-/// Nanoseconds in a second. Spelled here rather than taken from `clock_contract`, because this crate
-/// decides *when* rather than *what time it is*: it never touches the wall clock, and depending on
-/// the wall-clock contract to name a unit would claim otherwise.
-pub const NANOS_PER_SEC: u64 = 1_000_000_000;
+pub use registry::{Registry, Row, SPENT, UNARMED, UNSTAMPED, WallReading};
 
 /// The most entries one document may carry.
 ///
@@ -55,8 +51,7 @@ pub const NANOS_PER_SEC: u64 = 1_000_000_000;
 /// what a fixed array costs nothing to hold; the reason there is an array at all is that this crate
 /// allocates nothing, so a document borrows its own bytes and the table is inline.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_ENTRIES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_ENTRIES: usize = 8;
 
 // Machine-checked proofs (Kani). Behind `#[cfg(kani)]`, so an ordinary build or test never sees

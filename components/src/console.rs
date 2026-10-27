@@ -15,7 +15,7 @@
 //! endpoint (`WRITE`), and [`SCREEN_OUT_VA`], the page that terminal reads an `OPERATION_WRITE`'s
 //! bytes from. Every byte it puts on the UART it hands that terminal too, as the kernel's console
 //! does (`kernel/src/console.rs`, "both, not either"). It holds no device for the screen. A batcher
-//! that paints at most once per [`SCREEN_BATCH_NANOS`] is built but off
+//! that paints at most once per [`SCREEN_BATCH_NS`] is built but off
 //! ([`SCREEN_BATCHING_ENABLED`]), so each write paints before its ack, as it does after a refused
 //! `Timer::ARM`. See notes/uart.md, "The console server".
 
@@ -131,7 +131,7 @@ const SCREEN_BATCHING_ENABLED: bool = false;
 /// resolution is the 10 ms tick, `abi::timer`), which is one to two frames at 60 Hz: a screen that
 /// lands within the window reads as instant to the person it is for, while every write a line
 /// generates (echo, output, prompt) folds into one paint instead of one paint per write.
-const SCREEN_BATCH_NANOS: u32 = 20_000_000;
+const SCREEN_BATCH_NS: u32 = 20_000_000;
 /// Where the page `display_terminal` reads an `OPERATION_WRITE`'s bytes from is mapped, in [`MODE_SCREEN`]
 /// only. Must match `crates/system_initializer`'s `CON_SCREEN_OUT_VA`.
 const SCREEN_OUT_VA: u64 = address_space_map::pair_page(0x0068_0000);
@@ -310,11 +310,8 @@ fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
         // Arm the window. The deadline is in counter ticks (the counter every `now()` caller
         // reads); `counter_ticks_for` rounds up so the window is never short, and the saturating
         // add keeps a counter near `u64::MAX` from wrapping into a deadline already long past.
-        let deadline = now().saturating_add(abi::timer::counter_ticks_for(
-            0,
-            SCREEN_BATCH_NANOS,
-            cntfrq(),
-        ));
+        let deadline =
+            now().saturating_add(abi::timer::counter_ticks_for(0, SCREEN_BATCH_NS, cntfrq()));
         if timer_arm(TIMER, deadline, NOTIFIED, 1) >= 0 {
             b.armed = true;
         } else {
@@ -347,7 +344,7 @@ fn paint_screen(b: &mut ScreenBatch) {
     b.pending = 0;
     // The bytes must be visible to the terminal before the request that names them.
     //
-    // PAIR: no acquire fence, and none is needed. `display_terminal` is blocked in `receive_cap` and
+    // PAIR: no acquire fence, and none is needed. `display_terminal` is blocked in `receive_capability` and
     // the `call` below is what wakes it, so the kernel's IPC lock (released here, acquired on its
     // side) is the pair. Redundant, kept, for the reason `kernel::user::term_print` keeps the same
     // fence for the same contract. See notes/memory-ordering.md.

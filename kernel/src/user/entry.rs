@@ -36,7 +36,7 @@ pub struct Spawn<'a> {
     /// it the slot begins.
     pub arg2: u64,
     /// Capabilities, granted into slots 0, 1, 2, ... in order.
-    pub grants: &'a [crate::cap::Cap],
+    pub grants: &'a [crate::capability_object::Capability],
     /// Extra pages: a shared buffer, a device's registers. Mapped after the ELF's own segments.
     pub maps: &'a [Mapping],
 }
@@ -180,31 +180,33 @@ pub fn spawn_elf_child_builder(
         crate::sched::adopt_address_space(space);
         crate::sched::allow_kill();
         // Slots 0 to 4 in order: `grant` takes the next free slot, and builders name them by number.
-        crate::sched::grant(crate::cap::memory_region_root_cap(build_region))
-            .expect("grant untyped");
-        crate::sched::grant(crate::cap::rendezvous_cap(
+        crate::sched::grant(crate::capability_object::memory_region_root_capability(
+            build_region,
+        ))
+        .expect("grant untyped");
+        crate::sched::grant(crate::capability_object::rendezvous_capability(
             report,
-            crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+            crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
         ))
         .expect("grant report");
         // On x86_64 `UART_PHYS` is zero, so this grants a device capability over physical page
         // zero: a foot gun, marked rather than designed away. The slot is positional, so skipping
         // it would renumber the interrupts after it; every fixture that would map it asks
         // `machine_has_no_device_page_for_the_console()` first and skips.
-        crate::sched::grant(crate::cap::device_frame_cap(
+        crate::sched::grant(crate::capability_object::device_frame_capability(
             UART_PHYS,
-            crate::cap::Rights::WRITE.union(crate::cap::Rights::GRANT),
+            crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
         ))
         .expect("grant uart device");
-        crate::sched::grant(crate::cap::interrupt_cap_rights(
+        crate::sched::grant(crate::capability_object::interrupt_capability_rights(
             DELEGATED_TEST_INTERRUPT,
-            crate::cap::Rights::READ.union(crate::cap::Rights::GRANT),
+            crate::capability_object::Rights::READ.union(crate::capability_object::Rights::GRANT),
         ))
         .expect("grant test interrupt");
         // The number the route above was bound with, or the cap names a source no endpoint serves.
-        crate::sched::grant(crate::cap::interrupt_cap_rights(
+        crate::sched::grant(crate::capability_object::interrupt_capability_rights(
             uart_receive_intid,
-            crate::cap::Rights::READ.union(crate::cap::Rights::GRANT),
+            crate::capability_object::Rights::READ.union(crate::capability_object::Rights::GRANT),
         ))
         .expect("grant uart receive interrupt");
 
@@ -323,7 +325,10 @@ fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Op
     if let Some(slot) = own_space {
         crate::sched::grant_at(
             slot,
-            crate::cap::address_space_cap(name, crate::cap::Rights::WRITE),
+            crate::capability_object::address_space_capability(
+                name,
+                crate::capability_object::Rights::WRITE,
+            ),
         )
         .expect("the own-space slot was already occupied");
     }

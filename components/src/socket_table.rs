@@ -148,7 +148,7 @@ impl Table {
             }
         }
         // Ours goes either way: the client holds its copy now, or there is none to hold.
-        cap_delete(minted);
+        capability_delete(minted);
     }
 
     /// `OPERATION_ATTACH_PAGE_FRAME`: map `frame` writable at the window of the socket `badge`
@@ -172,7 +172,7 @@ impl Table {
                 }
             }
         }
-        cap_delete(frame);
+        capability_delete(frame);
     }
 
     /// Take entry `entry`'s page out of our address space, if it has one. `false` if a page is

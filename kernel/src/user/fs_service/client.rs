@@ -63,8 +63,8 @@ pub(crate) fn spawn_fs_client(
                 // `rm` is started as a grant is (`filesystem_contract::grant`); others pass zero.
                 arg2,
                 grants: &[
-                    rendezvous_cap(file_ep, Rights::WRITE), // slot 0: CALL the FS server
-                    rendezvous_cap(report, Rights::WRITE),  // slot 1: report to the kernel
+                    rendezvous_capability(file_ep, Rights::WRITE), // slot 0: CALL the FS server
+                    rendezvous_capability(report, Rights::WRITE),  // slot 1: report to the kernel
                 ],
                 maps: &maps[..n + extra_stack],
             },

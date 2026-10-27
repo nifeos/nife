@@ -42,7 +42,7 @@ fn hex_password(bytes: &[u8], out: &mut [u8]) {
     }
 }
 
-/// A child's capability grants and page mappings, the two slices a `ChildEndowment` takes as `caps`
+/// A child's capability grants and page mappings, the two slices a `ChildEndowment` takes as `capabilities`
 /// and `maps`, so the `x86_64` split of the input endowment is one `let` per branch. `'a` ties the
 /// slices to the `let`'s block.
 type EndowmentSlices<'a> = (&'a [(u64, u64)], &'a [(u64, u64, u64)]);
@@ -99,7 +99,7 @@ pub(super) struct Entropy {
 /// The kernel-granted devices' outcome: the graphical terminal verdict (`screen`, as [`Channels`]
 /// names it), whether the firmware's screen has a terminal, entropy, and the network.
 pub(super) struct DeviceServices {
-    pub(super) screen: GraphicalTerminalCaps,
+    pub(super) screen: GraphicalTerminalCapabilities,
     pub(super) has_screen: bool,
     pub(super) entropy: Entropy,
     /// `(stack, lease, the lease's name server)`.
@@ -313,7 +313,7 @@ pub(super) fn start_device_services(
 ) -> DeviceServices {
     // First: only these slots matter, and every peak below is lower without them.
     for &c in g.for_test_roles {
-        cap_delete(c);
+        capability_delete(c);
     }
 
     let screen = graphical_terminal_grants(fs, table, g);
@@ -401,7 +401,7 @@ fn start_virtio_entropy(
                 ut,
                 ent_program,
                 &ChildEndowment {
-                    caps: &[
+                    capabilities: &[
                         (request, abi::rights::READ),
                         (g.virtio_rng_interrupt, abi::rights::READ),
                         (g.virtio_rng, abi::rights::WRITE),
@@ -418,23 +418,23 @@ fn start_virtio_entropy(
                 direct_memory_access_phys,
                 0,
             ));
-            cap_delete(g.virtio_rng_interrupt);
-            cap_delete(g.virtio_rng);
-            cap_delete(g.virtio_rng_dma);
+            capability_delete(g.virtio_rng_interrupt);
+            capability_delete(g.virtio_rng);
+            capability_delete(g.virtio_rng_dma);
             // `READY` comes after the service's first bufferful from the device.
             let (verdict, _, _) = receive(ready);
-            cap_delete(ready);
+            capability_delete(ready);
             let entropy_ready = verdict == entropy_contract::READY;
             if entropy_ready {
                 Some(request)
             } else {
-                cap_delete(request);
+                capability_delete(request);
                 None
             }
         } else {
-            cap_delete(g.virtio_rng_interrupt);
-            cap_delete(g.virtio_rng);
-            cap_delete(g.virtio_rng_dma);
+            capability_delete(g.virtio_rng_interrupt);
+            capability_delete(g.virtio_rng);
+            capability_delete(g.virtio_rng_dma);
             None
         }
     } else {
@@ -458,11 +458,11 @@ fn start_network(
             network = Some(build_net_stack(ut, net_program, g));
         }
         for trio in [g.virtio_net_interrupt, g.virtio_net, g.virtio_net_dma] {
-            cap_delete(trio);
+            capability_delete(trio);
         }
     } else if is_granted(g.net_stack_ep) {
         let (lease, server, _) = receive(g.net_stack_report);
-        cap_delete(g.net_stack_report);
+        capability_delete(g.net_stack_report);
         network = Some((g.net_stack_ep, lease, server));
     }
     network
@@ -526,7 +526,7 @@ pub(super) fn start_terminal_stack(
 
         // Both children hold their own copies; freed now to lower the shell's peak.
         for c in [request, reply, con_shared] {
-            cap_delete(c);
+            capability_delete(c);
         }
     }
     Terminal {
@@ -557,24 +557,24 @@ fn start_console(
         let timer = must(retype_obj(ut, abi::objtype::TIMER));
         con_batch = (notified, timer);
     }
-    let mut con_caps = [(0, 0); 6];
+    let mut con_capabilities = [(0, 0); 6];
     let mut con_maps = [(0, 0, 0); 3];
-    let (mut ncaps, mut nmaps) = (0, 0);
-    for cap in [(request, abi::rights::READ), (reply, abi::rights::WRITE)] {
-        con_caps[ncaps] = cap;
-        ncaps += 1;
+    let (mut capability_count, mut nmaps) = (0, 0);
+    for capability in [(request, abi::rights::READ), (reply, abi::rights::WRITE)] {
+        con_capabilities[capability_count] = capability;
+        capability_count += 1;
     }
     con_maps[nmaps] = (CON_SHARED_VA, con_shared, abi::address_space::MAP_RO);
     nmaps += 1;
     if has_screen {
-        con_caps[ncaps] = (g.disp_term_ep, abi::rights::WRITE);
-        ncaps += 1;
+        con_capabilities[capability_count] = (g.disp_term_ep, abi::rights::WRITE);
+        capability_count += 1;
         // `READ | WRITE` on the notification: WAIT/POLL and the SIGNAL an armed timer makes of
         // it. `WRITE` on the timer: ARM and CANCEL.
-        con_caps[ncaps] = (con_batch.0, abi::rights::READ | abi::rights::WRITE);
-        ncaps += 1;
-        con_caps[ncaps] = (con_batch.1, abi::rights::WRITE);
-        ncaps += 1;
+        con_capabilities[capability_count] = (con_batch.0, abi::rights::READ | abi::rights::WRITE);
+        capability_count += 1;
+        con_capabilities[capability_count] = (con_batch.1, abi::rights::WRITE);
+        capability_count += 1;
         con_maps[nmaps] = (
             CON_SCREEN_OUT_VA,
             g.disp_term_page,
@@ -590,15 +590,15 @@ fn start_console(
     }
     #[cfg(target_arch = "x86_64")]
     {
-        con_caps[ncaps] = (g.uart_dev, abi::rights::WRITE); // COM1's port range, held not mapped
-        ncaps += 1;
+        con_capabilities[capability_count] = (g.uart_dev, abi::rights::WRITE); // COM1's port range, held not mapped
+        capability_count += 1;
     }
     let con = must(build_child(
         ut,
         ut,
         con_elf,
         &ChildEndowment {
-            caps: &con_caps[..ncaps],
+            capabilities: &con_capabilities[..capability_count],
             maps: &con_maps[..nmaps],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -619,10 +619,10 @@ fn start_console(
     ));
     // The binding lives in the objects, not in our copies of them.
     if has_screen {
-        cap_delete(g.disp_term_ep);
-        cap_delete(g.disp_term_page);
-        cap_delete(con_batch.0);
-        cap_delete(con_batch.1);
+        capability_delete(g.disp_term_ep);
+        capability_delete(g.disp_term_page);
+        capability_delete(con_batch.0);
+        capability_delete(con_batch.1);
     }
 }
 
@@ -645,7 +645,7 @@ fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'stati
             ut,
             log_program,
             &ChildEndowment {
-                caps: &[
+                capabilities: &[
                     (intake, abi::rights::READ),
                     (
                         g.kernel_ring_notification,
@@ -670,13 +670,13 @@ fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'stati
         must_ok(user_mode_runtime::notification_bind(g.kernel_ring_notification, log.tcb) >= 0);
         must_ok(start_child(log, LOG_MODE_KERNEL, 0, 0));
         // No log writer registers yet, so the intake is not kept (the service's BUGS).
-        cap_delete(intake);
-        cap_delete(timer);
+        capability_delete(intake);
+        capability_delete(timer);
     }
     // Either way, so none is carried across the login block's peak.
-    cap_delete(g.kernel_ring);
-    cap_delete(g.kernel_ring_cursor);
-    cap_delete(g.kernel_ring_notification);
+    capability_delete(g.kernel_ring);
+    capability_delete(g.kernel_ring_cursor);
+    capability_delete(g.kernel_ring_notification);
 }
 
 /// Halt, saying why through the console, when `input`, `swish` or `job_undertaker` is not the
@@ -731,7 +731,7 @@ pub(super) fn start_keystroke_sources(
     uart_shape: u64,
 ) {
     #[cfg(not(target_arch = "x86_64"))]
-    let (in_caps, in_maps): EndowmentSlices = (
+    let (in_capabilities, in_maps): EndowmentSlices = (
         &[
             (term_ep, abi::rights::WRITE),
             (g.uart_interrupt, abi::rights::READ),
@@ -739,7 +739,7 @@ pub(super) fn start_keystroke_sources(
         &[(IN_UART_VA, g.uart_dev, abi::address_space::MAP_RO)],
     );
     #[cfg(target_arch = "x86_64")]
-    let (in_caps, in_maps): EndowmentSlices = (
+    let (in_capabilities, in_maps): EndowmentSlices = (
         &[
             (term_ep, abi::rights::WRITE),
             (g.uart_interrupt, abi::rights::READ),
@@ -752,7 +752,7 @@ pub(super) fn start_keystroke_sources(
         ut,
         in_elf,
         &ChildEndowment {
-            caps: in_caps,
+            capabilities: in_capabilities,
             maps: in_maps,
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -763,12 +763,12 @@ pub(super) fn start_keystroke_sources(
     // The driver receives on its attach endpoint before anything else, so this send cannot hang.
     if is_granted(g.usb_keyboard_attach) {
         must_ok(send_capability(g.usb_keyboard_attach, term_ep, abi::rights::WRITE, 0) >= 0);
-        cap_delete(g.usb_keyboard_attach);
+        capability_delete(g.usb_keyboard_attach);
     }
 
     // Before the shell is built, and so that no later child can be handed the UART.
-    cap_delete(g.uart_dev);
-    cap_delete(g.uart_interrupt);
+    capability_delete(g.uart_dev);
+    capability_delete(g.uart_interrupt);
 }
 
 /// Retype the spawn channel and the supervision endpoint, after the drivers are built: held
@@ -801,19 +801,19 @@ pub(super) fn build_shell(
     sh_budget: u64,
 ) -> (supervision_protocol::Child, u64) {
     let (g, ut, with_fs) = (w.g, w.ut, w.with_fs);
-    let mut sh_caps = [(0u64, 0u64); 6];
+    let mut sh_capabilities = [(0u64, 0u64); 6];
     let mut sh_maps = [(0u64, 0u64, 0u64); 5];
-    let mut n_caps = 0usize;
+    let mut capability_count = 0usize;
     let mut n_maps = 0usize;
-    sh_caps[n_caps] = (w.term.ep, abi::rights::WRITE);
-    n_caps += 1;
-    sh_caps[n_caps] = (chan.spawn_ep, abi::rights::WRITE);
-    n_caps += 1;
-    sh_caps[n_caps] = (chan.result_ep, abi::rights::READ);
-    n_caps += 1;
+    sh_capabilities[capability_count] = (w.term.ep, abi::rights::WRITE);
+    capability_count += 1;
+    sh_capabilities[capability_count] = (chan.spawn_ep, abi::rights::WRITE);
+    capability_count += 1;
+    sh_capabilities[capability_count] = (chan.result_ep, abi::rights::READ);
+    capability_count += 1;
     // Every right: what the shell retypes carries its budget's rights, and it lends them on.
-    sh_caps[n_caps] = (sh_budget, abi::rights::ALL);
-    n_caps += 1;
+    sh_capabilities[capability_count] = (sh_budget, abi::rights::ALL);
+    capability_count += 1;
     sh_maps[n_maps] = (SH_OUT_VA, w.term.out, abi::address_space::MAP_RW); // text and prompts
     n_maps += 1;
     sh_maps[n_maps] = (LINE_VA, w.term.input, abi::address_space::MAP_RO); // completed lines
@@ -828,16 +828,16 @@ pub(super) fn build_shell(
         None
     };
     if let Some(zero) = sh_window {
-        sh_caps[n_caps] = (zero.ep, abi::rights::WRITE);
-        n_caps += 1;
+        sh_capabilities[capability_count] = (zero.ep, abi::rights::WRITE);
+        capability_count += 1;
         sh_maps[n_maps] = (SH_FS_VA, zero.page, abi::address_space::MAP_RW);
         n_maps += 1;
     }
-    sh_caps[n_caps] = (g.clock_page, abi::rights::READ);
-    n_caps += 1;
+    sh_capabilities[capability_count] = (g.clock_page, abi::rights::READ);
+    capability_count += 1;
     sh_maps[n_maps] = (SH_CLOCK_VA, g.clock_page, abi::address_space::MAP_RO);
     n_maps += 1;
-    // Mapped for `caps` to read; its capability goes at a named slot after the build, because the
+    // Mapped for `capabilities` to read; its capability goes at a named slot after the build, because the
     // list's slots move with what the boot granted.
     sh_maps[n_maps] = (
         grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
@@ -846,22 +846,22 @@ pub(super) fn build_shell(
     );
     n_maps += 1;
     // `build_child` fills the table from zero, so the clock's slot is the count before it.
-    let sh_clock_slot: u64 = n_caps as u64 - 1;
+    let sh_clock_slot: u64 = capability_count as u64 - 1;
     // Not started: the giveaway's negative control is printed through the shell's output page.
     let shell = must(build_child(
         ut,
         ut,
         sh_elf,
         &ChildEndowment {
-            caps: &sh_caps[..n_caps],
+            capabilities: &sh_capabilities[..capability_count],
             maps: &sh_maps[..n_maps],
             stack_pages: SHELL_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
     ));
-    cap_delete(sh_budget); // our copy; the shell holds its own now
+    capability_delete(sh_budget); // our copy; the shell holds its own now
     if let Some(zero) = sh_window {
-        cap_delete(zero.page); // the slice was only the means; the shell holds the mapping
+        capability_delete(zero.page); // the slice was only the means; the shell holds the mapping
     }
     // Before the shell starts, which is what makes its `_start` probe of this slot sound.
     must_ok(place_at(
@@ -892,7 +892,7 @@ pub(super) fn finish_shell_endowment(
             spawnproto::MACHINE_PAGE_SLOT,
         ));
     }
-    cap_delete(g.machine_page);
+    capability_delete(g.machine_page);
     // Unbadged: the disk tree's window 0 is the frame the shell maps at [`SH_FS_VA`], sound while
     // the shell has one `CALL` in flight. Our copy stays, for the spawn service to badge per job.
     if let Some(t) = mounted_tree {
@@ -920,7 +920,7 @@ pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&elf::Elf<'static>
             ut,
             elf,
             &ChildEndowment {
-                caps: &[
+                capabilities: &[
                     (term_sink, abi::rights::READ),
                     (term_ep, abi::rights::WRITE),
                 ],
@@ -1008,7 +1008,7 @@ fn start_credential_services(
         ut,
         cred_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (prov, abi::rights::READ),
                 (verify, abi::rights::READ),
                 (request, abi::rights::WRITE),
@@ -1024,12 +1024,12 @@ fn start_credential_services(
         },
     ));
     must_ok(start_child(cred_child, 0, 0, 0));
-    cap_delete(cred_budget);
+    capability_delete(cred_budget);
 
     // `cred_ready` is not read until after the seal below: `credentialer` sends `RPT_READY` only
     // once `SEAL` ends its provisioning phase, so reading it here would never wake.
     let mut login_ready = provision_identity(w, p, prov, prov_page, login_password);
-    cap_delete(prov_page);
+    capability_delete(prov_page);
 
     // Sealed whatever provisioning did: `VERIFY` answers nothing until the store is sealed.
     call(
@@ -1037,14 +1037,14 @@ fn start_credential_services(
         credential_contract::req(credential_contract::provision::SEAL, 0, 0),
         0,
     );
-    cap_delete(prov);
+    capability_delete(prov);
 
     // A service that failed at start-up answers too, with its own `0xDEAD_...` word.
     let (cred_rv, _, _) = receive(cred_ready);
-    cap_delete(cred_ready);
+    capability_delete(cred_ready);
     if cred_rv != CRED_RPT_READY {
-        cap_delete(verify);
-        cap_delete(verify_page);
+        capability_delete(verify);
+        capability_delete(verify_page);
         login_ready = false;
     } else {
         start_login(w, p, table, verify, verify_page, run_unvouched);
@@ -1065,7 +1065,7 @@ fn provision_identity(
     let ut = w.ut;
     let req_frame = must(retype_page_frame(ut));
     if !map_page_frame(req_frame, PROVISION_SCRATCH_VA, true, ut) {
-        cap_delete(req_frame);
+        capability_delete(req_frame);
         false
     } else {
         // SAFETY: just mapped read/write, one page, ours alone until it is delegated
@@ -1092,7 +1092,7 @@ fn provision_identity(
         let idp_report =
             start_identity_provisioner(w, p, prov, req_frame, prov_page, login_password);
         let (idp_code, _, _) = receive(idp_report);
-        cap_delete(idp_report);
+        capability_delete(idp_report);
         let login_ready = idp_code == IDP_RPT_OK;
 
         // SAFETY: still the same page this process mapped above, and the only writer
@@ -1130,7 +1130,7 @@ fn start_identity_provisioner(
         ut,
         idp_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (prov, abi::rights::WRITE),
                 (g.fs_ep, abi::rights::WRITE),
                 (idp_report, abi::rights::WRITE),
@@ -1143,11 +1143,11 @@ fn start_identity_provisioner(
             ..ChildEndowment::new(Retention::Nothing)
         },
     ));
-    cap_delete(req_frame);
+    capability_delete(req_frame);
     let idp_page = must(window_page(g.fs_page, 0).ok_or(()));
     let mapped =
         address_space_map_into(idp_aspace, IDP_FS_VA, idp_page, abi::address_space::MAP_RW) == 0;
-    cap_delete(idp_page);
+    capability_delete(idp_page);
     must(mapped.then_some(()).ok_or(()));
     must(supervision_protocol::configure_child(
         idp_child.tcb,
@@ -1191,7 +1191,7 @@ fn start_login(
         ut,
         login_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (login_request, abi::rights::READ),
                 (login_result, abi::rights::WRITE | abi::rights::GRANT),
                 (verify, abi::rights::WRITE),
@@ -1222,13 +1222,13 @@ fn start_login(
         table.len() as u64,
         login_contract::schedule_lengths(p.keeper_blob.len() as u64, p.timetable_blob.len() as u64),
     ));
-    cap_delete(login_page);
-    cap_delete(login_request);
-    cap_delete(login_result);
-    cap_delete(verify);
-    cap_delete(verify_page);
-    cap_delete(login_ut);
-    cap_delete(audit);
+    capability_delete(login_page);
+    capability_delete(login_request);
+    capability_delete(login_result);
+    capability_delete(verify);
+    capability_delete(verify_page);
+    capability_delete(login_ut);
+    capability_delete(audit);
 }
 
 /// Build and start `login_audit_receiver`; returns the endpoint `login` sends its audit on.
@@ -1241,7 +1241,7 @@ fn start_login_audit(ut: u64, p: &LoginPrograms) -> u64 {
         ut,
         audit_program,
         &ChildEndowment {
-            caps: &[(audit, abi::rights::READ)],
+            capabilities: &[(audit, abi::rights::READ)],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
@@ -1271,7 +1271,7 @@ fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Opti
         abi::rights::WRITE | abi::rights::GRANT,
         login_contract::DURABLE_WINDOW_SLOT,
     ));
-    cap_delete(durable_page);
+    capability_delete(durable_page);
 }
 
 /// Place the run-unvouched endpoint in the shell (`WRITE` alone), carve the progenitor's three
@@ -1311,7 +1311,7 @@ pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option
     ) {
         fail()
     }
-    cap_delete(ut);
+    capability_delete(ut);
 
     // `NoSuchSlot` (-1), not `NotPermitted` (-3): gone, not narrowed. `script/swish-check` reads
     // the sentence.

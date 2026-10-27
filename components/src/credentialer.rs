@@ -35,7 +35,7 @@ use alloc::vec::Vec;
 use credential_contract as proto;
 use credentialer::{Block, Cost, Store, Verdict};
 use user_mode_runtime::mapped_window::MappedWindow;
-use user_mode_runtime::{call, cap_delete, exit, receive_request, reply, send};
+use user_mode_runtime::{call, capability_delete, exit, receive_request, reply, send};
 
 /// The provision endpoint (slot 0): RECEIVE, and only until the seal.
 const PROV: u64 = 0;
@@ -119,7 +119,12 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 
     // Phase two begins here, and phase one can never resume: the receive end of the provision
     // endpoint is gone (see `provision`), so even this code could not go back to it.
-    send(READY, RPT_READY, store.len() as u64, cost.m_kib() as u64);
+    send(
+        READY,
+        RPT_READY,
+        store.len() as u64,
+        cost.memory_kib() as u64,
+    );
     serve(&store, &mut scratch)
 }
 
@@ -128,8 +133,8 @@ fn provision(store: &mut Store<CAPACITY>, scratch: &mut [Block]) {
     loop {
         let req = receive_request(PROV);
         let (w0, w1) = (req.w0, req.w1);
-        let Some(cap) = req.delivered.into_reply() else {
-            // A plain SEND, or a SEND_CAP, on a CALL-only contract: nobody is waiting for an
+        let Some(capability) = req.delivered.into_reply() else {
+            // A plain SEND, or a SEND_CAPABILITY, on a CALL-only contract: nobody is waiting for an
             // answer, so there is nothing to reply into. Drop it (a delegation's slot is deleted,
             // milestone 706 (a `CALL` server can tell a Reply from a delegation)) rather than
             // replying into a slot that is not a Reply.
@@ -141,20 +146,20 @@ fn provision(store: &mut Store<CAPACITY>, scratch: &mut [Block]) {
                 // Unconditionally, on every path including the malformed one: the page holds a
                 // plaintext secret and the provisioner is still mapping it.
                 wipe(PROV_WINDOW);
-                reply(cap, verdict, proto::NO_DATA);
+                reply(capability, verdict, proto::NO_DATA);
             }
             proto::provision::SEAL => {
                 wipe(PROV_WINDOW);
-                reply(cap, proto::OK, proto::NO_DATA);
+                reply(capability, proto::OK, proto::NO_DATA);
                 // **The seal.** After this the service holds no capability to this endpoint, so
                 // there is no code path back into the loop above even if one were written. The
                 // provisioner drops its send end for the same reason; between them, nothing in the
                 // system can name the object any more.
-                cap_delete(PROV);
+                capability_delete(PROV);
                 return;
             }
             _ => {
-                reply(cap, proto::MALFORMED, proto::NO_DATA);
+                reply(capability, proto::MALFORMED, proto::NO_DATA);
             }
         }
     }
@@ -188,7 +193,7 @@ fn serve(store: &Store<CAPACITY>, scratch: &mut [Block]) -> ! {
     loop {
         let req = receive_request(VERIFY);
         let w0 = req.w0;
-        let Some(cap) = req.delivered.into_reply() else {
+        let Some(capability) = req.delivered.into_reply() else {
             continue;
         };
         let verdict = match proto::operation(w0) {
@@ -201,7 +206,7 @@ fn serve(store: &Store<CAPACITY>, scratch: &mut [Block]) -> ! {
         // On every path: the client wrote a secret into this page, and leaving it there would make
         // the frame a place the secret persists after the answer.
         wipe(VERIFY_WINDOW);
-        reply(cap, verdict, proto::NO_DATA);
+        reply(capability, verdict, proto::NO_DATA);
     }
 }
 

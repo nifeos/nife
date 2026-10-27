@@ -18,7 +18,7 @@ use crate::test_support::{endowment, listing, shown};
 /// that asks the line for more than unvouched bytes may hold is refused; otherwise it says it would
 /// be refused and grants nothing.
 #[test]
-fn caps_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks() {
+fn capabilities_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks() {
     use grant_plan::expand::Expansion;
     use grant_plan::{Command, Holdings, IMAGE_ROW, Manifest, NO_NOTE_MANIFEST};
     let say = |v: Option<super::Vouched>, holds: bool, declared: Option<Manifest>, line: &[u8]| {
@@ -229,7 +229,7 @@ fn unusual_page() -> [u8; environment_contract::PAGE_BYTES] {
 /// says, not a literal that happens to match the boot's defaults, and a key the page does not
 /// carry reads the way `printenv` would print it.
 #[test]
-fn caps_printenv_prints_the_values_on_the_page_the_child_will_read() {
+fn capabilities_printenv_prints_the_values_on_the_page_the_child_will_read() {
     let bytes = unusual_page();
     // SAFETY: `bytes` is a live buffer of exactly `PAGE_BYTES`, alive for this test.
     let page = unsafe { ConfigPage::new(bytes.as_ptr() as u64) };
@@ -263,7 +263,7 @@ fn caps_printenv_prints_the_values_on_the_page_the_child_will_read() {
 /// with an operator on it: the page is threaded through [`write_capabilities`], not only
 /// [`write_preview`].
 #[test]
-fn caps_on_a_pipeline_threads_the_page_to_the_stage_that_declares_it() {
+fn capabilities_on_a_pipeline_threads_the_page_to_the_stage_that_declares_it() {
     let bytes = unusual_page();
     // SAFETY: as above.
     let page = unsafe { ConfigPage::new(bytes.as_ptr() as u64) };
@@ -465,7 +465,7 @@ fn every_preview_names_where_the_output_goes() {
 }
 
 #[test]
-fn caps_with_no_tail_is_the_shells_own_endowment() {
+fn capabilities_with_no_tail_is_the_shells_own_endowment() {
     let tail = shown(|o| {
         write_capabilities(
             b"   ",
@@ -482,7 +482,7 @@ fn caps_with_no_tail_is_the_shells_own_endowment() {
 }
 
 #[test]
-fn caps_previews_every_stage_of_a_pipeline() {
+fn capabilities_previews_every_stage_of_a_pipeline() {
     let s = shown(|o| {
         write_capabilities(
             b"date | wc",
@@ -556,7 +556,7 @@ fn the_arg_line_follows_the_manifest_for_every_program() {
 }
 
 #[test]
-fn caps_refuses_a_pipeline_whose_stage_has_no_bytes_to_pipe() {
+fn capabilities_refuses_a_pipeline_whose_stage_has_no_bytes_to_pipe() {
     // `least_authority_demo` answers with a number, not a stream, so there is nothing for `|` to carry. The
     // preview refuses the same line the prompt would, which is the property that makes `caps`
     // worth typing before a command rather than after it.
@@ -576,7 +576,7 @@ fn caps_refuses_a_pipeline_whose_stage_has_no_bytes_to_pipe() {
 }
 
 #[test]
-fn caps_refuses_the_line_it_would_have_refused_at_the_prompt() {
+fn capabilities_refuses_the_line_it_would_have_refused_at_the_prompt() {
     // A shell holding no directory cannot back a name, and the preview says so rather than
     // printing a grant that would not happen.
     let s = shown(|o| {
@@ -595,7 +595,7 @@ fn caps_refuses_the_line_it_would_have_refused_at_the_prompt() {
 }
 
 #[test]
-fn caps_says_so_when_the_tail_is_not_an_invocation() {
+fn capabilities_says_so_when_the_tail_is_not_an_invocation() {
     let s = shown(|o| {
         write_capabilities(
             b"help",
@@ -617,7 +617,7 @@ fn caps_says_so_when_the_tail_is_not_an_invocation() {
 /// was seen; every row of the table has to be identical, or the shell would be previewing one
 /// endowment and spawning another.
 #[test]
-fn caps_of_a_timed_command_previews_the_command_itself() {
+fn capabilities_of_a_timed_command_previews_the_command_itself() {
     let preview = |line: &'static [u8]| {
         shown(|o| {
             write_capabilities(
@@ -679,7 +679,7 @@ fn a_declarer_shows_where_its_second_stream_goes() {
 /// `caps` refuses the `2>` the prompt would refuse, which is what makes previewing worth doing
 /// before a command rather than after it.
 #[test]
-fn caps_refuses_a_second_stream_the_program_never_declared() {
+fn capabilities_refuses_a_second_stream_the_program_never_declared() {
     let s = shown(|o| {
         write_capabilities(
             b"least_authority_demo 7 2> err.txt",

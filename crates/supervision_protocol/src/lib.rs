@@ -27,8 +27,8 @@
 //! own (§69 (`Endow` is a verb)).
 
 use user_mode_runtime::{
-    address_space_map_into, cap_delete, destroy_memory_region, invoke, retype_into_kernel_object,
-    retype_into_page_frame, send_capability, split_memory_region,
+    address_space_map_into, capability_delete, destroy_memory_region, invoke,
+    retype_into_kernel_object, retype_into_page_frame, send_capability, split_memory_region,
     thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start,
 };
@@ -237,12 +237,12 @@ pub fn give_up_own_page(va: u64) -> bool {
 /// // `..ChildEndowment::new(Retention::Nothing)` is the intended shape: what is not listed is not
 /// // granted, and what the spawner keeps is stated rather than inherited.
 /// let endow = ChildEndowment {
-///     caps: &[(4, 0b11)], // our slot 4, read/write, landing in the child's slot 0
+///     capabilities: &[(4, 0b11)], // our slot 4, read/write, landing in the child's slot 0
 ///     fault: Some(7), // our slot 7 holds its supervision endpoint
 ///     ..ChildEndowment::new(Retention::Nothing)
 /// };
 ///
-/// assert_eq!(endow.caps.len(), 1);
+/// assert_eq!(endow.capabilities.len(), 1);
 /// assert!(endow.maps.is_empty() && endow.blobs.is_empty() && endow.placed.is_empty());
 /// assert_eq!(endow.stack_pages, CHILD_STACK_PAGES);
 /// assert_eq!(endow.retention, Retention::Nothing);
@@ -260,9 +260,12 @@ pub fn give_up_own_page(va: u64) -> bool {
 /// ```
 pub struct ChildEndowment<'a> {
     /// Capabilities to insert, `(our_slot, rights)`, landing in the child's slots 0, 1, 2, ...
-    pub caps: &'a [(u64, u64)],
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+    /// `capabilities` under the capability ruling of 2026-10-06 (UTC).
+    pub capabilities: &'a [(u64, u64)],
     /// Capabilities to insert at a slot the caller **names**, `(child_slot, our_slot, rights)`,
-    /// after [`caps`](ChildEndowment::caps). For a declared diagnostic stream (DECISIONS §67 (a
+    /// after [`capabilities`](ChildEndowment::capabilities). For a declared diagnostic stream (DECISIONS §67 (a
     /// program's second stream is a declaration, not a number)), whose slot must not move with how
     /// many low slots the command line granted. It cannot collide with
     /// [`fault`](ChildEndowment::fault), which lands in the table's last slot.
@@ -320,7 +323,7 @@ impl<'a> ChildEndowment<'a> {
     /// keeping authority over a running child.
     pub const fn new(retention: Retention) -> Self {
         Self {
-            caps: &[],
+            capabilities: &[],
             placed: &[],
             maps: &[],
             blobs: &[],
@@ -439,8 +442,8 @@ pub fn build_child(
     };
     if configured.is_err() {
         // `CONFIGURE` consumes the address space only when it succeeds, so both are still ours.
-        cap_delete(child.tcb);
-        cap_delete(aspace);
+        capability_delete(child.tcb);
+        capability_delete(aspace);
         return Err(());
     }
     Ok(child)
@@ -487,7 +490,7 @@ pub fn build_child_space(
             aspace,
         )),
         Err(()) => {
-            cap_delete(aspace);
+            capability_delete(aspace);
             Err(())
         }
     }
@@ -535,10 +538,10 @@ fn lay_out_child(
         let stack_frame = retype_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
         if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_RW) != 0 {
-            cap_delete(stack_frame);
+            capability_delete(stack_frame);
             return Err(());
         }
-        cap_delete(stack_frame);
+        capability_delete(stack_frame);
     }
 
     // The timebase page: the builder's own rate, written into a fresh page from `build_ut`, so
@@ -585,17 +588,17 @@ fn lay_out_child(
 
     let tcb = retype_obj_from(build_ut, abi::objtype::THREAD_CONTROL_BLOCK)?;
     if endow_child(tcb, endow, aspace).is_err() {
-        cap_delete(tcb);
+        capability_delete(tcb);
         return Err(());
     }
     Ok(tcb)
 }
 
-/// Insert the endowment's capabilities into the embryo `tcb`: [`ChildEndowment::caps`] first-free,
+/// Insert the endowment's capabilities into the embryo `tcb`: [`ChildEndowment::capabilities`] first-free,
 /// then the placed ones (one of which may be the child's own address space, [`CHILDS_OWN_SPACE`]),
 /// then the fault endpoint in its reserved slot.
 fn endow_child(tcb: u64, endow: &ChildEndowment, aspace: u64) -> Result<(), ()> {
-    for &(our_slot, rights) in endow.caps {
+    for &(our_slot, rights) in endow.capabilities {
         if thread_control_block_capability_insert(tcb, our_slot, rights, 0) < 0 {
             return Err(());
         }
@@ -668,7 +671,7 @@ fn configure_child_as_process(
     let process = process as u64;
     let joined = thread_control_block_capability_insert(tcb, process, rights, slot + 1) >= 0
         && thread_control_block_configure(tcb, entry, CHILD_STACK_VA + PAGE, process) >= 0;
-    cap_delete(process);
+    capability_delete(process);
     if joined { Ok(()) } else { Err(()) }
 }
 
@@ -698,7 +701,7 @@ fn fill_and_map(
 ) -> Result<(), ()> {
     let frame = retype_page_frame_from(build_ut)?;
     let Ok(scratch) = map_scratch(frame, true, own_ut) else {
-        cap_delete(frame);
+        capability_delete(frame);
         return Err(());
     };
     // SAFETY: `scratch` is a page we just mapped read/write in our own address space.
@@ -708,7 +711,7 @@ fn fill_and_map(
         dst[at..at + bytes.len()].copy_from_slice(bytes);
     }
     let mapped = address_space_map_into(aspace, va, frame, mode) == 0;
-    cap_delete(frame);
+    capability_delete(frame);
     // The page is written and in the child (or the build failed): either way this builder is done
     // with its own window onto it. Given up here, one page at a time, rather than after the child
     // is built, so the window is never wider than the page being filled.
@@ -798,7 +801,7 @@ pub fn hand_to_requester(tcb: u64, endpoint: u64) {
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/48-ctrl-z.
 pub fn forget_thread_control_block(tcb: u64) {
-    cap_delete(tcb);
+    capability_delete(tcb);
 }
 
 /// Trap. A half-built system is not worth limping along, and a fault is legible: the kernel prints

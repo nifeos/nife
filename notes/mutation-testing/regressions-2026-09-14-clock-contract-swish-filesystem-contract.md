@@ -32,7 +32,7 @@ compiles. The suite did not get better.
   `the_generation_a_reader_sees_matches_the_pair_it_read` and
   `two_writers_serialise_rather_than_corrupt_the_page`. A host test cannot carry a concurrency
   claim. The loom model can, and here it does.
-- `policy::decide`'s `proposed_nanos > current_nanos` under `>=`. At equality the two branches
+- `policy::decide`'s `proposed_ns > current_ns` under `>=`. At equality the two branches
   compute the same thing. The `if` arm tests `0 > MAX_STEP_FORWARD_NANOS` and the `else` arm tests
   `0 > MAX_STEP_BACKWARD_NANOS`. Both constants are non-zero, so both fall through to
   `status::ACCEPTED`. Equivalent for every input, not merely untested.

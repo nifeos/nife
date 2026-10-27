@@ -10,7 +10,7 @@ that spends what it was granted.
 
 Making `--mem N` real, and not parsed-and-ignored, needed a kernel fix, recorded as an amendment
 to DECISIONS §16 (object revocation). `MemoryRegion::SPLIT` minted its child budget with `WRITE` alone, so it could be spent
-but never delegated (`SEND_CAP` and `CAP_INSERT` both gate on `GRANT`). A memory region was the one object
+but never delegated (`SEND_CAPABILITY` and `CAPABILITY_INSERT` both gate on `GRANT`). A memory region was the one object
 type no process could hand on, which quietly foreclosed the whole feature.
 
 The fix is rights inheritance, not a blanket upgrade, and the distinction matters. Minting the
@@ -19,7 +19,7 @@ The fix is rights inheritance, not a blanket upgrade, and the distinction matter
 manufacture the right it was denied. Instead, a `SPLIT` child inherits the invoking capability's
 rights and no more, and the root untyped the progenitor holds at boot is the delegable one
 (`READ|WRITE|GRANT`). Rights narrow monotonically from that root down: root -> the progenitor split (inherits
-`GRANT`) -> shell (narrowed to `WRITE|GRANT` at `CAP_INSERT`) -> shell split (inherits) -> spawned
+`GRANT`) -> shell (narrowed to `WRITE|GRANT` at `CAPABILITY_INSERT`) -> shell split (inherits) -> spawned
 child (narrowed to `WRITE`, spend-only). `GRANT` never appears where it was not present above.
 
 ## The memory_grant_depleter proves the grant is real

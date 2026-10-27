@@ -12,7 +12,7 @@
 //!   package is one archive file)).
 //! - [`Requirements::pages`] is a property of a build, not of the contract.
 //! - A malformed declaration's compile error names the manifest, not the role.
-//! - [`MAXIMUM_CAPS`] and [`MAXIMUM_MAPS`] are hard bounds, about double any manifest here.
+//! - [`MAXIMUM_CAPABILITIES`] and [`MAXIMUM_MAPS`] are hard bounds, about double any manifest here.
 //! - Nothing checks that a routed object is the kind the role wants; the kernel refuses it later.
 //! - [`plan`] does not refuse two roles routed to one supervisor slot; no right is widened.
 //! - [`dependents`] finds direct dependents only; nothing warns a dependent's own dependents.
@@ -25,26 +25,25 @@
 
 /// **How many capabilities one component may declare.** A [`Plan`] is a value in a `no_std` program
 /// with no allocator, so this is a hard bound rather than a hint: a manifest past it is
-/// [`Refusal::TooManyCaps`].
+/// [`Refusal::TooManyCapabilities`].
 ///
 /// Eight, which is roughly double the four that the widest manifest in this tree asks for, and which
 /// leaves room below `abi::fault::FAULT_EP_SLOT` for the placed slots a component might also want.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CAPS`.
-pub const MAXIMUM_CAPS: usize = 8;
+/// Name: ratified 2026-10-27 (#2797), after the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC) and the capability ruling of 2026-10-06 (UTC).
+pub const MAXIMUM_CAPABILITIES: usize = 8;
 
-/// **How many pages one component may declare.** [`MAXIMUM_CAPS`]'s twin, for the mapping half.
+/// **How many pages one component may declare.** [`MAXIMUM_CAPABILITIES`]'s twin, for the mapping half.
 /// Four, against the two that the widest manifest here asks for.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_MAPS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_MAPS: usize = 4;
 
 /// Which way a rendezvous points: the axis this crate adds over a program's manifest. A required
 /// field with no default, so a component cannot declare a rendezvous without saying whether it
 /// answers on it, and the supervisor never spells `READ` or `WRITE`. A client given `READ` could
-/// park in `RECEIVE_CAP` and take its own server's requests, which is §41 (the endpoint is the
+/// park in `RECEIVE_CAPABILITY` and take its own server's requests, which is §41 (the endpoint is the
 /// broker)'s central refusal. See notes/component-manifest/capability-plan.md.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Direction {
@@ -72,8 +71,11 @@ impl Direction {
 /// supervisor's word for the object. That is what lets one declaration be wired two ways:
 /// `swap_boundary_witness` asks to use `service`, and whether that is the shared rendezvous or a
 /// queue broker's front rendezvous is the supervisor's business and invisible to the component.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+/// `CapabilityNeed` under the capability ruling of 2026-10-06 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct CapNeed {
+pub struct CapabilityNeed {
     /// The component's name for this need. Unique within one [`Requirements`]; a repeat is
     /// [`Refusal::DuplicateRole`] at compile time.
     pub role: &'static str,
@@ -119,7 +121,7 @@ impl PageKind {
 /// **One page a component declares it needs, and the address it needs it at.**
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct MapNeed {
-    /// The component's name for this need, routed exactly as a [`CapNeed`]'s is.
+    /// The component's name for this need, routed exactly as a [`CapabilityNeed`]'s is.
     pub role: &'static str,
     /// The virtual address the component reads it at. It is in the declaration rather than in the
     /// supervisor because it is a fact about the component's own code: the component compiles the
@@ -162,8 +164,8 @@ pub struct StateHandoff {
 }
 
 /// What a component declares it needs: the capability half of a contract, beside the wire half.
-/// The order of [`caps`](Requirements::caps) is the component's capability table slot order,
-/// because `supervision_protocol::ChildEndowment::caps` lands its entries in slots 0, 1, 2, ...,
+/// The order of [`capabilities`](Requirements::capabilities) is the component's capability table slot order,
+/// because `supervision_protocol::ChildEndowment::capabilities` lands its entries in slots 0, 1, 2, ...,
 /// and the component derives its own slot numbers with [`slot_of`]. Supervision (§32 (a supervisor
 /// may collect a corpse without being able to build one)) and start arguments are not declared: a
 /// manifest declares what a component needs, not how it is started. See
@@ -175,7 +177,10 @@ pub struct Requirements {
     /// string it carries cannot prove that.
     pub contract: &'static str,
     /// The capabilities it needs, **in capability table slot order**. See the struct docs.
-    pub caps: &'static [CapNeed],
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+    /// `capabilities` under the capability ruling of 2026-10-06 (UTC).
+    pub capabilities: &'static [CapabilityNeed],
     /// The pages it needs mapped, each at the address its own code reads.
     pub maps: &'static [MapNeed],
     /// How many pages of the supervisor's budget one instance is built out of: its segments, its
@@ -210,19 +215,19 @@ impl Requirements {
     /// that every real manifest asserts in a `const` item, so a malformed declaration does not
     /// compile. It refuses a role declared twice, two pages at one address (a page anywhere in the
     /// handoff run counts), an empty handoff and zero pages, each a mistake that would otherwise be
-    /// silent. An over-long declaration is [`plan`]'s refusal, where [`MAXIMUM_CAPS`] is met. See
+    /// silent. An over-long declaration is [`plan`]'s refusal, where [`MAXIMUM_CAPABILITIES`] is met. See
     /// notes/component-manifest/capability-plan.md.
     pub const fn problem(&self) -> Option<Refusal> {
         if self.pages == 0 {
             return Some(Refusal::NoPages);
         }
         let mut i = 0;
-        while i < self.caps.len() {
+        while i < self.capabilities.len() {
             let mut j = i + 1;
-            while j < self.caps.len() {
-                if str_eq(self.caps[i].role, self.caps[j].role) {
+            while j < self.capabilities.len() {
+                if str_eq(self.capabilities[i].role, self.capabilities[j].role) {
                     return Some(Refusal::DuplicateRole {
-                        role: self.caps[i].role,
+                        role: self.capabilities[i].role,
                     });
                 }
                 j += 1;
@@ -254,8 +259,8 @@ impl Requirements {
                 return Some(Refusal::EmptyHandoff);
             }
             let mut i = 0;
-            while i < self.caps.len() {
-                if str_eq(self.caps[i].role, STATE_HANDOFF_ROLE) {
+            while i < self.capabilities.len() {
+                if str_eq(self.capabilities[i].role, STATE_HANDOFF_ROLE) {
                     return Some(Refusal::DuplicateRole {
                         role: STATE_HANDOFF_ROLE,
                     });
@@ -327,10 +332,10 @@ impl<'a> Provisions<'a> {
 /// A supervisor that does not hold what the component asks for is refused, and nothing is built:
 ///
 /// ```
-/// # use capability_plan::{CapNeed, Direction, Provisions, Refusal, Requirements};
+/// # use capability_plan::{CapabilityNeed, Direction, Provisions, Refusal, Requirements};
 /// # const TALKER: Requirements = Requirements {
 /// #     contract: "talker",
-/// #     caps: &[CapNeed { role: "service", direction: Direction::Serve }],
+/// #     capabilities: &[CapabilityNeed { role: "service", direction: Direction::Serve }],
 /// #     maps: &[],
 /// #     pages: 32,
 /// #     depends_on: &[],
@@ -357,8 +362,11 @@ pub enum Refusal {
         /// The address they collide at.
         va: u64,
     },
-    /// The declaration asks for more capabilities than [`MAXIMUM_CAPS`].
-    TooManyCaps {
+    /// The declaration asks for more capabilities than [`MAXIMUM_CAPABILITIES`].
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+    /// `TooManyCapabilities` under the capability ruling of 2026-10-06 (UTC).
+    TooManyCapabilities {
         /// How many it asked for.
         asked: usize,
     },
@@ -383,7 +391,7 @@ impl Refusal {
             Refusal::Unprovided { .. } => 1,
             Refusal::DuplicateRole { .. } => 2,
             Refusal::OverlappingVa { .. } => 3,
-            Refusal::TooManyCaps { .. } => 4,
+            Refusal::TooManyCapabilities { .. } => 4,
             Refusal::TooManyMaps { .. } => 5,
             Refusal::NoPages => 6,
             Refusal::EmptyHandoff => 7,
@@ -397,7 +405,9 @@ impl Refusal {
             Refusal::Unprovided { .. } => "this supervisor routes nothing to a role it declares",
             Refusal::DuplicateRole { .. } => "it declares one role name twice",
             Refusal::OverlappingVa { .. } => "it declares two pages at one address",
-            Refusal::TooManyCaps { .. } => "it declares more capabilities than a plan can carry",
+            Refusal::TooManyCapabilities { .. } => {
+                "it declares more capabilities than a plan can carry"
+            }
             Refusal::TooManyMaps { .. } => "it declares more pages than a plan can carry",
             Refusal::NoPages => "it declares no memory to be built in",
             Refusal::EmptyHandoff => "it declares a handoff with no pages to hold the state",
@@ -407,12 +417,12 @@ impl Refusal {
 
 /// **Exactly what to endow one child with**, in the form `supervision_protocol::ChildEndowment` takes.
 ///
-/// A value with no allocation, bounded by [`MAXIMUM_CAPS`] and [`MAXIMUM_MAPS`], so a supervisor
+/// A value with no allocation, bounded by [`MAXIMUM_CAPABILITIES`] and [`MAXIMUM_MAPS`], so a supervisor
 /// holds it on its stack and hands out slices of it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Plan {
-    caps: [(u64, u64); MAXIMUM_CAPS],
-    ncaps: usize,
+    capabilities: [(u64, u64); MAXIMUM_CAPABILITIES],
+    capability_count: usize,
     maps: [(u64, u64, u64); MAXIMUM_MAPS],
     nmaps: usize,
     ndevices: usize,
@@ -422,9 +432,12 @@ pub struct Plan {
 
 impl Plan {
     /// `(the supervisor's slot, the child's rights)` per declared capability, **in declared order**,
-    /// which is the child's slot order. Feeds `ChildEndowment::caps` directly.
-    pub fn caps(&self) -> &[(u64, u64)] {
-        &self.caps[..self.ncaps]
+    /// which is the child's slot order. Feeds `ChildEndowment::capabilities` directly.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+    /// `capabilities` under the capability ruling of 2026-10-06 (UTC).
+    pub fn capabilities(&self) -> &[(u64, u64)] {
+        &self.capabilities[..self.capability_count]
     }
 
     /// `(child va, the supervisor's slot, mode)` per declared page. Feeds `ChildEndowment::maps`.
@@ -481,13 +494,13 @@ impl Plan {
 /// # Examples
 ///
 /// ```
-/// use capability_plan::{CapNeed, Direction, MapNeed, PageKind, Provisions, Requirements};
+/// use capability_plan::{CapabilityNeed, Direction, MapNeed, PageKind, Provisions, Requirements};
 ///
 /// pub const TALKER: Requirements = Requirements {
 ///     contract: "talker",
-///     caps: &[
-///         CapNeed { role: "service", direction: Direction::Serve },
-///         CapNeed { role: "report", direction: Direction::Use },
+///     capabilities: &[
+///         CapabilityNeed { role: "service", direction: Direction::Serve },
+///         CapabilityNeed { role: "report", direction: Direction::Use },
 ///     ],
 ///     maps: &[MapNeed { role: "witness", va: 0x0300_0000, kind: PageKind::Shared }],
 ///     pages: 32,
@@ -506,7 +519,7 @@ impl Plan {
 /// )
 /// .expect("every declared role is routed");
 ///
-/// assert_eq!(plan.caps(), &[(5, abi::rights::READ), (1, abi::rights::WRITE)]);
+/// assert_eq!(plan.capabilities(), &[(5, abi::rights::READ), (1, abi::rights::WRITE)]);
 /// assert_eq!(plan.maps(), &[(0x0300_0000, 9, abi::address_space::MAP_RW)]);
 /// assert_eq!(plan.pages(), 32);
 /// ```
@@ -514,9 +527,9 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
     if let Some(problem) = reqs.problem() {
         return Err(problem);
     }
-    if reqs.caps.len() > MAXIMUM_CAPS {
-        return Err(Refusal::TooManyCaps {
-            asked: reqs.caps.len(),
+    if reqs.capabilities.len() > MAXIMUM_CAPABILITIES {
+        return Err(Refusal::TooManyCapabilities {
+            asked: reqs.capabilities.len(),
         });
     }
     if reqs.mapped() > MAXIMUM_MAPS {
@@ -526,8 +539,8 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
     }
 
     let mut out = Plan {
-        caps: [(0, 0); MAXIMUM_CAPS],
-        ncaps: reqs.caps.len(),
+        capabilities: [(0, 0); MAXIMUM_CAPABILITIES],
+        capability_count: reqs.capabilities.len(),
         maps: [(0, 0, 0); MAXIMUM_MAPS],
         nmaps: reqs.mapped(),
         ndevices: 0,
@@ -535,11 +548,11 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
         state_handoff: None,
     };
 
-    for (i, need) in reqs.caps.iter().enumerate() {
+    for (i, need) in reqs.capabilities.iter().enumerate() {
         let Some(slot) = provisions.slot_for(need.role) else {
             return Err(Refusal::Unprovided { role: need.role });
         };
-        out.caps[i] = (slot, need.direction.rights());
+        out.capabilities[i] = (slot, need.direction.rights());
     }
 
     // Two passes over the mapping needs so device registers land at the end of the array whatever
@@ -590,10 +603,10 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
 /// that is a compile error rather than a panic.
 ///
 /// ```compile_fail
-/// # use capability_plan::{CapNeed, Direction, Requirements};
+/// # use capability_plan::{CapabilityNeed, Direction, Requirements};
 /// const R: Requirements = Requirements {
 ///     contract: "talker",
-///     caps: &[CapNeed { role: "service", direction: Direction::Serve }],
+///     capabilities: &[CapabilityNeed { role: "service", direction: Direction::Serve }],
 ///     maps: &[],
 ///     pages: 32,
 ///     depends_on: &[],
@@ -604,8 +617,8 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
 /// ```
 pub const fn slot_of(reqs: &Requirements, role: &str) -> u64 {
     let mut i = 0;
-    while i < reqs.caps.len() {
-        if str_eq(reqs.caps[i].role, role) {
+    while i < reqs.capabilities.len() {
+        if str_eq(reqs.capabilities[i].role, role) {
             return i as u64;
         }
         i += 1;
@@ -638,13 +651,12 @@ const fn str_eq(a: &str, b: &str) -> bool {
 // ===================================================================================================
 
 /// **How many running components one orchestration query may consider.** The same shape as
-/// [`MAXIMUM_CAPS`]: a [`Dependents`] is a value on the stack in a `no_std` program with no
-/// allocator, so this is a real bound rather than a hint. Eight, matched to [`MAXIMUM_CAPS`]
+/// [`MAXIMUM_CAPABILITIES`]: a [`Dependents`] is a value on the stack in a `no_std` program with no
+/// allocator, so this is a real bound rather than a hint. Eight, matched to [`MAXIMUM_CAPABILITIES`]
 /// because a supervisor managing more live components than it could ever endow one of with
 /// capabilities is not a shape this tree has.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_LIVE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_LIVE: usize = 8;
 
 /// **One component a supervisor is currently running**, as far as dependency-aware orchestration
@@ -702,18 +714,18 @@ impl Dependents {
 /// # EXAMPLES
 ///
 /// ```
-/// use capability_plan::{dependents, CapNeed, Direction, LiveInstance, Requirements};
+/// use capability_plan::{dependents, CapabilityNeed, Direction, LiveInstance, Requirements};
 ///
 /// const BACKEND: Requirements = Requirements {
 ///     contract: "backend",
-///     caps: &[CapNeed { role: "service", direction: Direction::Serve }],
+///     capabilities: &[CapabilityNeed { role: "service", direction: Direction::Serve }],
 ///     maps: &[], pages: 32, depends_on: &[], state_handoff: None,
 /// };
 /// const BROKER: Requirements = Requirements {
 ///     contract: "broker",
-///     caps: &[
-///         CapNeed { role: "requests", direction: Direction::Serve },
-///         CapNeed { role: "backend", direction: Direction::Use },
+///     capabilities: &[
+///         CapabilityNeed { role: "requests", direction: Direction::Serve },
+///         CapabilityNeed { role: "backend", direction: Direction::Use },
 ///     ],
 ///     maps: &[], pages: 32, depends_on: &["backend"], state_handoff: None,
 /// };
@@ -763,11 +775,11 @@ pub fn dependents(
 mod tests {
     use super::*;
 
-    const SERVICE: CapNeed = CapNeed {
+    const SERVICE: CapabilityNeed = CapabilityNeed {
         role: "service",
         direction: Direction::Serve,
     };
-    const REPORT: CapNeed = CapNeed {
+    const REPORT: CapabilityNeed = CapabilityNeed {
         role: "report",
         direction: Direction::Use,
     };
@@ -784,7 +796,7 @@ mod tests {
 
     const CONSOLE: Requirements = Requirements {
         contract: "console",
-        caps: &[SERVICE, REPORT],
+        capabilities: &[SERVICE, REPORT],
         maps: &[WITNESS, UART],
         pages: 32,
         depends_on: &[],
@@ -800,7 +812,10 @@ mod tests {
     #[test]
     fn a_serve_gets_read_and_a_use_gets_write() {
         let p = plan(&CONSOLE, &everything()).unwrap();
-        assert_eq!(p.caps(), &[(5, abi::rights::READ), (1, abi::rights::WRITE)]);
+        assert_eq!(
+            p.capabilities(),
+            &[(5, abi::rights::READ), (1, abi::rights::WRITE)]
+        );
     }
 
     /// The one that would otherwise be a comment: the plan's cap order is the declaration's order,
@@ -810,7 +825,7 @@ mod tests {
         assert_eq!(slot_of(&CONSOLE, "service"), 0);
         assert_eq!(slot_of(&CONSOLE, "report"), 1);
         let p = plan(&CONSOLE, &everything()).unwrap();
-        assert_eq!(p.caps()[slot_of(&CONSOLE, "report") as usize].0, 1);
+        assert_eq!(p.capabilities()[slot_of(&CONSOLE, "report") as usize].0, 1);
     }
 
     #[test]
@@ -870,7 +885,7 @@ mod tests {
     fn a_device_declared_first_still_sorts_last() {
         const DEVICE_FIRST: Requirements = Requirements {
             contract: "console",
-            caps: &[SERVICE],
+            capabilities: &[SERVICE],
             maps: &[UART, WITNESS],
             pages: 32,
             depends_on: &[],
@@ -887,7 +902,7 @@ mod tests {
     fn a_read_only_page_is_mapped_read_only_and_not_deferred() {
         const READER: Requirements = Requirements {
             contract: "reader",
-            caps: &[SERVICE],
+            capabilities: &[SERVICE],
             maps: &[
                 UART,
                 MapNeed {
@@ -914,7 +929,7 @@ mod tests {
     fn a_component_with_no_device_has_no_deferred_mapping() {
         const PLAIN: Requirements = Requirements {
             contract: "backend",
-            caps: &[SERVICE],
+            capabilities: &[SERVICE],
             maps: &[WITNESS],
             pages: 32,
             depends_on: &[],
@@ -933,7 +948,7 @@ mod tests {
     /// the far side of it.
     const STATEFUL: Requirements = Requirements {
         contract: "stateful_backend",
-        caps: &[SERVICE],
+        capabilities: &[SERVICE],
         maps: &[UART, WITNESS],
         pages: 32,
         depends_on: &[],
@@ -1114,7 +1129,7 @@ mod tests {
     fn a_role_declared_twice_is_malformed() {
         const TWICE: Requirements = Requirements {
             contract: "confused",
-            caps: &[SERVICE, SERVICE],
+            capabilities: &[SERVICE, SERVICE],
             maps: &[],
             pages: 32,
             depends_on: &[],
@@ -1131,7 +1146,7 @@ mod tests {
     fn two_pages_at_one_address_are_malformed() {
         const COLLIDE: Requirements = Requirements {
             contract: "confused",
-            caps: &[],
+            capabilities: &[],
             maps: &[
                 WITNESS,
                 MapNeed {
@@ -1154,7 +1169,7 @@ mod tests {
     fn a_component_nothing_pays_for_is_malformed() {
         const FREE: Requirements = Requirements {
             contract: "confused",
-            caps: &[],
+            capabilities: &[],
             maps: &[],
             pages: 0,
             depends_on: &[],
@@ -1171,7 +1186,7 @@ mod tests {
             Refusal::Unprovided { role: "x" },
             Refusal::DuplicateRole { role: "x" },
             Refusal::OverlappingVa { va: 0 },
-            Refusal::TooManyCaps { asked: 0 },
+            Refusal::TooManyCapabilities { asked: 0 },
             Refusal::TooManyMaps { asked: 0 },
             Refusal::NoPages,
             Refusal::EmptyHandoff,
@@ -1196,7 +1211,7 @@ mod tests {
 
     const BACKEND: Requirements = Requirements {
         contract: "backend",
-        caps: &[SERVICE],
+        capabilities: &[SERVICE],
         maps: &[],
         pages: 32,
         depends_on: &[],
@@ -1204,12 +1219,12 @@ mod tests {
     };
     const BROKER: Requirements = Requirements {
         contract: "broker",
-        caps: &[
-            CapNeed {
+        capabilities: &[
+            CapabilityNeed {
                 role: "requests",
                 direction: Direction::Serve,
             },
-            CapNeed {
+            CapabilityNeed {
                 role: "backend",
                 direction: Direction::Use,
             },
@@ -1221,7 +1236,7 @@ mod tests {
     };
     const CLIENT: Requirements = Requirements {
         contract: "client",
-        caps: &[REPORT],
+        capabilities: &[REPORT],
         maps: &[],
         pages: 32,
         depends_on: &[],
@@ -1325,7 +1340,7 @@ mod tests {
     fn the_order_returned_is_the_order_given() {
         const OTHER_BROKER: Requirements = Requirements {
             contract: "other_broker",
-            caps: &[],
+            capabilities: &[],
             maps: &[],
             pages: 32,
             depends_on: &["backend"],
@@ -1352,7 +1367,7 @@ mod tests {
     fn a_target_named_second_is_found_and_a_full_registry_is_answered() {
         const LATE: Requirements = Requirements {
             contract: "late",
-            caps: &[],
+            capabilities: &[],
             maps: &[],
             pages: 32,
             depends_on: &["unrelated", "backend"],
@@ -1363,30 +1378,30 @@ mod tests {
         assert_eq!(d.quiesce_order(), &[7; MAXIMUM_LIVE]);
     }
 
-    /// Exactly `MAXIMUM_CAPS` capabilities and exactly `MAXIMUM_MAPS` pages is a full plan, and one
+    /// Exactly `MAXIMUM_CAPABILITIES` capabilities and exactly `MAXIMUM_MAPS` pages is a full plan, and one
     /// more of either is refused. The refusal tests above sit one past each bound; these sit on it.
     #[test]
     fn a_plan_exactly_at_each_bound_is_built_and_one_over_is_refused() {
-        const fn cap(role: &'static str) -> CapNeed {
-            CapNeed {
+        const fn capability(role: &'static str) -> CapabilityNeed {
+            CapabilityNeed {
                 role,
                 direction: Direction::Use,
             }
         }
-        const NINE: [CapNeed; MAXIMUM_CAPS + 1] = [
-            cap("c0"),
-            cap("c1"),
-            cap("c2"),
-            cap("c3"),
-            cap("c4"),
-            cap("c5"),
-            cap("c6"),
-            cap("c7"),
-            cap("c8"),
+        const NINE: [CapabilityNeed; MAXIMUM_CAPABILITIES + 1] = [
+            capability("c0"),
+            capability("c1"),
+            capability("c2"),
+            capability("c3"),
+            capability("c4"),
+            capability("c5"),
+            capability("c6"),
+            capability("c7"),
+            capability("c8"),
         ];
-        const FULL_CAPS: Requirements = Requirements {
+        const FULL_CAPABILITIES: Requirements = Requirements {
             contract: "wide",
-            caps: &[
+            capabilities: &[
                 NINE[0], NINE[1], NINE[2], NINE[3], NINE[4], NINE[5], NINE[6], NINE[7],
             ],
             maps: &[],
@@ -1394,9 +1409,9 @@ mod tests {
             depends_on: &[],
             state_handoff: None,
         };
-        const OVER_CAPS: Requirements = Requirements {
-            caps: &NINE,
-            ..FULL_CAPS
+        const OVER_CAPABILITIES: Requirements = Requirements {
+            capabilities: &NINE,
+            ..FULL_CAPABILITIES
         };
         let held = Provisions {
             held: &[
@@ -1411,17 +1426,23 @@ mod tests {
                 ("c8", 8),
             ],
         };
-        assert_eq!(plan(&FULL_CAPS, &held).unwrap().caps().len(), MAXIMUM_CAPS);
         assert_eq!(
-            plan(&OVER_CAPS, &held),
-            Err(Refusal::TooManyCaps {
-                asked: MAXIMUM_CAPS + 1
+            plan(&FULL_CAPABILITIES, &held)
+                .unwrap()
+                .capabilities()
+                .len(),
+            MAXIMUM_CAPABILITIES
+        );
+        assert_eq!(
+            plan(&OVER_CAPABILITIES, &held),
+            Err(Refusal::TooManyCapabilities {
+                asked: MAXIMUM_CAPABILITIES + 1
             })
         );
 
         const FOUR_PAGES: Requirements = Requirements {
             contract: "paged",
-            caps: &[],
+            capabilities: &[],
             maps: &[
                 MapNeed {
                     role: "a",
@@ -1462,10 +1483,10 @@ mod tests {
     /// found whichever capability position carries it.
     #[test]
     fn a_capability_named_for_the_handoff_page_is_a_duplicate() {
-        const CAP_TWICE: Requirements = Requirements {
-            caps: &[
+        const CAPABILITY_TWICE: Requirements = Requirements {
+            capabilities: &[
                 SERVICE,
-                CapNeed {
+                CapabilityNeed {
                     role: STATE_HANDOFF_ROLE,
                     direction: Direction::Use,
                 },
@@ -1473,7 +1494,7 @@ mod tests {
             ..STATEFUL
         };
         assert_eq!(
-            CAP_TWICE.problem(),
+            CAPABILITY_TWICE.problem(),
             Some(Refusal::DuplicateRole {
                 role: STATE_HANDOFF_ROLE
             })
@@ -1494,7 +1515,7 @@ mod tests {
             Refusal::Unprovided { role: "x" },
             Refusal::DuplicateRole { role: "x" },
             Refusal::OverlappingVa { va: 0 },
-            Refusal::TooManyCaps { asked: 0 },
+            Refusal::TooManyCapabilities { asked: 0 },
             Refusal::TooManyMaps { asked: 0 },
             Refusal::NoPages,
             Refusal::EmptyHandoff,
@@ -1508,18 +1529,18 @@ mod tests {
     // The eighth outsider pass's host attacks (claim 18): the shapes around the cited tests.
     // The test names are provisional (this pass's lane, 2026-10-13 UTC).
 
-    const PEER: CapNeed = CapNeed {
+    const PEER: CapabilityNeed = CapabilityNeed {
         role: "peer",
         direction: Direction::Serve,
     };
-    const SINK: CapNeed = CapNeed {
+    const SINK: CapabilityNeed = CapabilityNeed {
         role: "sink",
         direction: Direction::Use,
     };
 
     const FOUR_WAY: Requirements = Requirements {
         contract: "four_way",
-        caps: &[SERVICE, REPORT, PEER, SINK],
+        capabilities: &[SERVICE, REPORT, PEER, SINK],
         maps: &[],
         pages: 4,
         depends_on: &[],
@@ -1536,7 +1557,7 @@ mod tests {
         };
         let p = plan(&FOUR_WAY, &provisions).unwrap();
         assert_eq!(
-            p.caps(),
+            p.capabilities(),
             &[
                 (0, abi::rights::READ),
                 (9, abi::rights::WRITE),
@@ -1568,7 +1589,7 @@ mod tests {
         };
         let p = plan(&CONSOLE, &greedy).unwrap();
         assert_eq!(
-            p.caps(),
+            p.capabilities(),
             &[(5, abi::rights::READ), (1, abi::rights::WRITE)],
             "a role the declaration never asked for reached the plan's grants",
         );
@@ -1590,7 +1611,7 @@ mod tests {
         };
         let p = plan(&CONSOLE, &repeated).unwrap();
         assert_eq!(
-            p.caps(),
+            p.capabilities(),
             &[(5, abi::rights::READ), (1, abi::rights::WRITE)],
             "a repeated role changed what the plan granted",
         );

@@ -5,8 +5,8 @@ Architecture: aarch64, riscv64, x86_64
 The defect is the tree as it stood until 2026-09-21: the patch removes the three lines this lane
 added to `sched::delete_page_frame_caps_where`, which is the whole of the fix for the `PageFrame`
 sweeps. Every revocation sweep then reads `Thread::capability_table` and nothing else, and a
-capability parked in `Thread::outgoing_cap` by a `SEND_CAP` whose receiver has not arrived is in no
-table, so it survives a whole-machine `PageFrame::REVOKE` and the next `RECEIVE_CAP` files it in the
+capability parked in `Thread::outgoing_cap` by a `SEND_CAPABILITY` whose receiver has not arrived is in no
+table, so it survives a whole-machine `PageFrame::REVOKE` and the next `RECEIVE_CAPABILITY` files it in the
 receiver's own table.
 
 This was the live tree, not an invented break. It was found by risk 7's adversarial pass asking the
@@ -49,10 +49,10 @@ index cd75c6fdd..63133422a 100644
 +++ b/kernel/src/sched/capabilities.rs
 @@ -94,9 +94,7 @@ pub(super) fn delete_page_frame_caps_where(matches: impl Fn(&crate::cap::Object)
      };
-     for (t, caps) in sched.threads.iter_mut_with_capabilities() {
-         caps.lock().delete_matching(&matches);
--        if matches!(t.outgoing_cap, Some(c) if matches(&c.object)) {
--            t.outgoing_cap = None;
+     for (t, capabilities) in sched.threads.iter_mut_with_capabilities() {
+         capabilities.lock().delete_matching(&matches);
+-        if matches!(t.outgoing_capability, Some(c) if matches(&c.object)) {
+-            t.outgoing_capability = None;
 -        }
 +        let _ = t;
      }

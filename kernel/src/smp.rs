@@ -471,7 +471,7 @@ mod tests {
     use super::*;
 
     /// Wait for `cond`, yielding, bounded by the clock: up to 60 s, inside the suite's 90 s
-    /// per-test watchdog (`DEFAULT_BUDGET_SECS`).
+    /// per-test watchdog (`DEFAULT_BUDGET_SECONDS`).
     ///
     /// Returns whether `cond` held by the deadline. The bound is wide for host contention starving
     /// the guest's vCPUs, and under the watchdog so that a failure names the subsystem. See

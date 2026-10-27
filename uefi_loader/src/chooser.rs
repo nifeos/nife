@@ -316,7 +316,7 @@ fn path_of(handle: Handle, services: &BootServices) -> Option<&'static [u8]> {
     let len = device_path::length(|at| {
         // SAFETY: `length` asks only for the header at the start of a node it has reached by
         // adding the lengths of the nodes before it, none of them past the end node, and stops
-        // within `MAXIMUM_LEN`; the firmware's path is at least that long up to its end node.
+        // within `MAXIMUM_BYTES`; the firmware's path is at least that long up to its end node.
         Some(unsafe { ptr::read_unaligned(base.add(at).cast::<[u8; 4]>()) })
     })?;
     // SAFETY: `length` walked these `len` bytes node by node; the firmware owns them until boot

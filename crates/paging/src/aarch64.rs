@@ -10,8 +10,8 @@
 //! ```
 
 use crate::{
-    CAP_DEVICE, CAP_GLOBAL, CAP_KERNEL_EXEC, CAP_USER, CAP_USER_EXEC, CAP_WRITE, Flags, PageFormat,
-    PageSize,
+    ACCESS_DEVICE, ACCESS_GLOBAL, ACCESS_KERNEL_EXEC, ACCESS_USER, ACCESS_USER_EXEC, ACCESS_WRITE,
+    Flags, PageFormat, PageSize,
 };
 
 /// Bits [1:0] = 0b11: "valid, and a table pointer" at L0-L2, or **"valid, and a page"** at L3. The
@@ -139,26 +139,26 @@ impl PageFormat for Aarch64 {
     }
 
     fn leaf_flags(entry: u64) -> Flags {
-        let mut caps = 0;
+        let mut access = 0;
         if entry & AP_RO == 0 {
-            caps |= CAP_WRITE;
+            access |= ACCESS_WRITE;
         }
         if entry & AP_USER != 0 {
-            caps |= CAP_USER;
+            access |= ACCESS_USER;
         }
         if entry & UXN == 0 {
-            caps |= CAP_USER_EXEC;
+            access |= ACCESS_USER_EXEC;
         }
         if entry & PXN == 0 {
-            caps |= CAP_KERNEL_EXEC;
+            access |= ACCESS_KERNEL_EXEC;
         }
         if entry & NG == 0 {
-            caps |= CAP_GLOBAL;
+            access |= ACCESS_GLOBAL;
         }
         if (entry >> 2) & 0b111 == mair::DEVICE {
-            caps |= CAP_DEVICE;
+            access |= ACCESS_DEVICE;
         }
-        Flags::from_caps(caps)
+        Flags::from_access(access)
     }
 
     /// An L2 (2 MiB) or L1 (1 GiB) **block descriptor**: bits `[1:0]` = `0b01`, valid and *not* a

@@ -3,7 +3,7 @@
 //! Name provisional, 2026-10-07 (UTC).
 
 use super::*;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched::RendezvousId;
 
 /// Spawn the pair. Returns `(server report, client report)`. Every endpoint comes out of
@@ -15,7 +15,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
     let probe = crate::sched::create_rendezvous_from(endpoints).expect("no probe rendezvous");
     let server_report = crate::sched::create_rendezvous_from(endpoints).expect("no report");
     let client_report = crate::sched::create_rendezvous_from(endpoints).expect("no report");
-    let endpoint = crate::cap::rendezvous_cap;
+    let endpoint = crate::capability_object::rendezvous_capability;
 
     crate::sched::spawn(move || {
         run(

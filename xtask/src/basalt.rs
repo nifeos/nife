@@ -390,9 +390,19 @@ fn fetch_host_ripgrep() -> Result<String, String> {
 
 /// The bytes at `url`, by `curl`, following redirects (a Release asset answers with one). Nothing
 /// fetched is trusted until its caller checks a pinned digest, so the transport only has to arrive.
+/// `--retry` alone retries only timeouts and HTTP 5xx, not a reset connection (curl exit 35 or 56),
+/// so `--retry-all-errors` is what lets one reset not fail a required check.
 fn download(url: &str) -> Result<Vec<u8>, String> {
     let out = std::process::Command::new("curl")
-        .args(["-sSfL", "--retry", "3", "--max-time", "120", url])
+        .args([
+            "-sSfL",
+            "--retry",
+            "3",
+            "--retry-all-errors",
+            "--max-time",
+            "120",
+            url,
+        ])
         .output()
         .map_err(|e| format!("curl: {e}"))?;
     if !out.status.success() {

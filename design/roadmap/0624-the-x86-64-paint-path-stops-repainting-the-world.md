@@ -48,7 +48,7 @@ fresh checkout after their timed lines, so their totals stand but their line cou
 The console batcher ships **off** (`SCREEN_BATCHING_ENABLED`, the console's module doc), so fix 3 is
 built and not yet earning. Turning it off exposed a fault: with every write painting, small
 mid-row flushes became common, and `copy_wide` counted `x` twice, reading past the surface. That
-is fixed and its host test now covers every rectangle. `SWISH_CHECK_X86_LINE_SECS` stays at 90 s;
+is fixed and its host test now covers every rectangle. `SWISH_CHECK_X86_LINE_SECONDS` stays at 90 s;
 its doc carries these numbers and the reason. The remaining x86_64 gap is the follow-on below.
 
 ## Index row
@@ -60,7 +60,7 @@ up to 0.03 s per line; the batcher ships off, and the remaining x86_64 gap belon
 
 ## Follow-on
 
-- **Recorded.** The rest of the x86_64 gap, at `SWISH_CHECK_X86_LINE_SECS` in
+- **Recorded.** The rest of the x86_64 gap, at `SWISH_CHECK_X86_LINE_SECONDS` in
   `xtask/src/swish_check.rs`: 5.2 s per line against 0.18 s on aarch64, so the paint path was not
   most of it. A lane the integrator minted on 2026-10-03 takes it from this branch's head
   (acceleration, the QEMU machine configuration, the batcher this block shipped off); at merge

@@ -58,16 +58,16 @@ pub(super) fn wait_for_nic(
     };
     // Wait for a frame **or** that deadline, whichever comes first: the notification in `WAKE` is
     // bound to this thread, so `Interrupt::WAIT` ends on either and the hart is idle in between.
-    let micros = delay.total_micros();
+    let microseconds = delay.total_micros();
     let ticks = abi::timer::counter_ticks_for(
-        micros / 1_000_000,
-        ((micros % 1_000_000) * 1000) as u32,
+        microseconds / 1_000_000,
+        ((microseconds % 1_000_000) * 1000) as u32,
         cntfrq(),
     );
     if timer_arm(RETRANSMIT, now().saturating_add(ticks), WAKE, 1) == 0 {
         interrupt_wait(INTERRUPT); // 1: a frame; BOUND: the deadline
         // Whichever ended the wait, leave nothing behind: disarm, and clear a fire that raced the
-        // frame, so a stale deadline never ends the next `receive_cap(STACK)` as a bound delivery.
+        // frame, so a stale deadline never ends the next `receive_capability(STACK)` as a bound delivery.
         if timer_cancel(RETRANSMIT) == 0 {
             notification_poll(WAKE);
         }
@@ -101,7 +101,7 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
     let due = iface
         .poll_delay(instant(), sockets)
         .map(|d| d.total_micros());
-    let micros = match polled_wait::next(
+    let microseconds = match polled_wait::next(
         now(),
         LAST_FRAME.load(Ordering::Relaxed),
         tick,
@@ -113,9 +113,9 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
             return;
         }
         polled_wait::Next::Sleep(0) => return,
-        polled_wait::Next::Sleep(micros) => micros,
+        polled_wait::Next::Sleep(microseconds) => microseconds,
     };
-    let ticks = abi::timer::counter_ticks_for(0, (micros * 1000) as u32, cntfrq());
+    let ticks = abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, cntfrq());
     if sleep_until(RETRANSMIT, WAKE, now().saturating_add(ticks)) < 0 {
         user_mode_runtime::yield_now();
     }

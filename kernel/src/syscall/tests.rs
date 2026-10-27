@@ -14,8 +14,11 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let space_region = crate::memory_region::create(16).expect("no space region");
     let name = crate::user::user_address_space_create(space_region).expect("no address space");
     let root = crate::user::user_address_space_root(name).expect("no root");
-    let space_slot = sched::grant(crate::cap::address_space_cap(name, Rights::ALL))
-        .expect("grant the address space");
+    let space_slot = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::ALL,
+    ))
+    .expect("grant the address space");
 
     let frame_region = crate::memory_region::create(8).expect("no frame region");
     let base = crate::memory_region::retype_page(frame_region).expect("retype 0");
@@ -23,9 +26,9 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
     let third = crate::memory_region::retype_page(frame_region).expect("retype 2");
     assert_eq!(second, base + paging::PAGE_SIZE, "run must be contiguous");
     assert_eq!(third, second + paging::PAGE_SIZE, "run must be contiguous");
-    let frame_slot = sched::grant(crate::cap::page_frame_run_cap(
+    let frame_slot = sched::grant(crate::capability_object::page_frame_run_capability(
         base,
-        crate::cap::page_frame_run_len(3),
+        crate::capability_object::page_frame_run_len(3),
         Rights::ALL,
     ))
     .expect("grant the run");
@@ -67,8 +70,8 @@ fn a_partly_mapped_run_is_rolled_all_the_way_back() {
 
     // The space's region is pinned by its root page, so it comes back through `reclaim_region`,
     // which reaps the space, not through `destroy`.
-    let _ = sched::delete_current_cap(space_slot);
-    let _ = sched::delete_current_cap(frame_slot);
+    let _ = sched::delete_current_capability(space_slot);
+    let _ = sched::delete_current_capability(frame_slot);
     let _ = sched::reclaim_region(space_region);
     crate::memory_region::destroy(frame_region);
 }
@@ -84,26 +87,32 @@ fn a_slice_maps_only_its_window() {
     let space_region = crate::memory_region::create(16).expect("no space region");
     let name = crate::user::user_address_space_create(space_region).expect("no address space");
     let root = crate::user::user_address_space_root(name).expect("no root");
-    let space_slot = sched::grant(crate::cap::address_space_cap(name, Rights::ALL))
-        .expect("grant the address space");
+    let space_slot = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::ALL,
+    ))
+    .expect("grant the address space");
 
     let frame_region = crate::memory_region::create(4).expect("no frame region");
-    let region_slot =
-        sched::grant(crate::cap::memory_region_root_cap(frame_region)).expect("grant");
+    let region_slot = sched::grant(crate::capability_object::memory_region_root_capability(
+        frame_region,
+    ))
+    .expect("grant");
     let pool = invoke(&mut trap, region_slot, abi::memory_region::RETYPE, 4, 0, 0)
         .expect("a four-page pool") as u64;
-    let Object::PageFrame(base, _) = sched::current_cap(pool).expect("the pool").object else {
+    let Object::PageFrame(base, _) = sched::current_capability(pool).expect("the pool").object
+    else {
         panic!("RETYPE must mint a PageFrame");
     };
 
     let slice = invoke(&mut trap, pool, abi::page_frame::SLICE, 2, 1, 0)
         .expect("page 2 of four is inside the pool") as u64;
-    let cap = sched::current_cap(slice).expect("the slice");
+    let capability = sched::current_capability(slice).expect("the slice");
     assert_eq!(
-        cap.object,
+        capability.object,
         Object::PageFrame(
             base + 2 * paging::PAGE_SIZE,
-            crate::cap::page_frame_run_len(1)
+            crate::capability_object::page_frame_run_len(1)
         ),
         "a slice names exactly the pages asked for",
     );
@@ -139,9 +148,9 @@ fn a_slice_maps_only_its_window() {
             "slice ({first}, {len}) of a four-page pool",
         );
     }
-    let narrow = sched::grant(crate::cap::page_frame_run_cap(
+    let narrow = sched::grant(crate::capability_object::page_frame_run_capability(
         base,
-        crate::cap::page_frame_run_len(4),
+        crate::capability_object::page_frame_run_len(4),
         Rights::WRITE,
     ))
     .expect("a pool without GRANT");
@@ -152,7 +161,7 @@ fn a_slice_maps_only_its_window() {
     );
 
     for s in [space_slot, slice, narrow, pool, region_slot] {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     let _ = sched::reclaim_region(space_region);
     crate::memory_region::destroy(frame_region);
@@ -166,11 +175,16 @@ fn a_slice_maps_only_its_window() {
 fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
     let mut trap = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     let region = crate::memory_region::create(4).expect("a region to retype from");
-    let slot = sched::grant(crate::cap::memory_region_root_cap(region)).expect("grant it");
+    let slot = sched::grant(crate::capability_object::memory_region_root_capability(
+        region,
+    ))
+    .expect("grant it");
 
     let run = invoke(&mut trap, slot, abi::memory_region::RETYPE, 3, 0, 0)
         .expect("three pages fit in four") as u64;
-    let Object::PageFrame(phys, count) = sched::current_cap(run).expect("the run's cap").object
+    let Object::PageFrame(phys, count) = sched::current_capability(run)
+        .expect("the run's cap")
+        .object
     else {
         panic!("RETYPE must mint a PageFrame");
     };
@@ -199,7 +213,8 @@ fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
 
     let one = invoke(&mut trap, slot, abi::memory_region::RETYPE, 0, 0, 0)
         .expect("the last page, asked for the way every existing caller asks") as u64;
-    let Object::PageFrame(last, one_count) = sched::current_cap(one).expect("cap").object else {
+    let Object::PageFrame(last, one_count) = sched::current_capability(one).expect("cap").object
+    else {
         panic!("RETYPE must mint a PageFrame");
     };
     assert_eq!(one_count.get(), 1, "0 means one page");
@@ -209,9 +224,9 @@ fn retype_mints_a_run_and_a_refused_run_moves_nothing() {
         "the watermark is contiguous"
     );
 
-    let _ = sched::delete_current_cap(run);
-    let _ = sched::delete_current_cap(one);
-    let _ = sched::delete_current_cap(slot);
+    let _ = sched::delete_current_capability(run);
+    let _ = sched::delete_current_capability(one);
+    let _ = sched::delete_current_capability(slot);
     crate::memory_region::destroy(region);
 }
 
@@ -231,10 +246,12 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
 
     // A spend-only (every right but GRANT) untyped, exactly what a leaf child is handed.
     let spend_only_region = crate::memory_region::create(8).expect("a region to split");
-    let parent =
-        sched::grant(crate::cap::memory_region_cap(spend_only_region)).expect("grant parent");
+    let parent = sched::grant(crate::capability_object::memory_region_capability(
+        spend_only_region,
+    ))
+    .expect("grant parent");
     assert!(
-        !sched::current_cap(parent)
+        !sched::current_capability(parent)
             .unwrap()
             .rights
             .allows(Rights::GRANT),
@@ -244,12 +261,12 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
     // SPLIT through the real handler. WRITE permits it; the child must inherit WRITE only.
     let child_slot = invoke(&mut frame, parent, abi::memory_region::SPLIT, 2, 0, 0)
         .expect("split succeeds: the parent holds WRITE") as u64;
-    let child = sched::current_cap(child_slot).expect("the child capability exists");
+    let child = sched::current_capability(child_slot).expect("the child capability exists");
     assert!(
         !child.rights.allows(Rights::GRANT),
         "escalation: a GRANT-less untyped split into a GRANT-bearing child",
     );
-    // Without GRANT it cannot be delegated: `SEND_CAP` and `CAP_INSERT` both refuse.
+    // Without GRANT it cannot be delegated: `SEND_CAPABILITY` and `CAPABILITY_INSERT` both refuse.
     assert!(
         !child.rights.allows(Rights::GRANT),
         "a spend-only child must be un-delegatable",
@@ -261,10 +278,13 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
     // Contrast: the delegable root (READ|WRITE|GRANT, what the progenitor holds) passes GRANT to its
     // children, so a spawner can hand a budget on. Inheritance, not a blanket deny.
     let root_region = crate::memory_region::create(8).expect("a root region");
-    let root = sched::grant(crate::cap::memory_region_root_cap(root_region)).expect("grant root");
+    let root = sched::grant(crate::capability_object::memory_region_root_capability(
+        root_region,
+    ))
+    .expect("grant root");
     let root_child_slot = invoke(&mut frame, root, abi::memory_region::SPLIT, 2, 0, 0)
         .expect("split the root") as u64;
-    let root_child = sched::current_cap(root_child_slot).expect("root child exists");
+    let root_child = sched::current_capability(root_child_slot).expect("root child exists");
     assert!(
         root_child.rights.allows(Rights::GRANT),
         "a delegable root must split into delegable children",
@@ -279,7 +299,7 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
     sched::reclaim_region(root_child_region).expect("reclaim the root child");
     sched::reclaim_region(root_region).expect("reclaim the root parent");
     for slot in [parent, child_slot, root, root_child_slot] {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
 }
 
@@ -293,12 +313,17 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
 fn split_refused_for_a_full_capability_table_orphans_no_child() {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     let region = crate::memory_region::create(8).expect("a region to split");
-    let parent = sched::grant(crate::cap::memory_region_root_cap(region)).expect("grant");
+    let parent = sched::grant(crate::capability_object::memory_region_root_capability(
+        region,
+    ))
+    .expect("grant");
 
     // Fill every remaining slot. Bounded by the table's capacity, which `grant` enforces.
-    let mut filler = [0u64; crate::cap::CAPABILITY_TABLE_SLOTS];
+    let mut filler = [0u64; crate::capability_object::CAPABILITY_TABLE_SLOTS];
     let mut filled = 0;
-    while let Ok(slot) = sched::grant(crate::cap::memory_region_root_cap(region)) {
+    while let Ok(slot) = sched::grant(crate::capability_object::memory_region_root_capability(
+        region,
+    )) {
         filler[filled] = slot;
         filled += 1;
     }
@@ -320,7 +345,7 @@ fn split_refused_for_a_full_capability_table_orphans_no_child() {
     );
 
     for &slot in filler[..filled].iter().chain([&parent]) {
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     }
     sched::reclaim_region(region).expect("the parent is reclaimable, as if SPLIT never ran");
 }

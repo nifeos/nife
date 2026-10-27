@@ -8,7 +8,7 @@
 //! # What every behaviour shares
 //!
 //! - After any refusal ([`login_contract::DENIED`], [`login_contract::NO_TERMINAL`]) nothing
-//!   follows, so a run never blocks in `RECEIVE_CAP`. An identity with no subtree is refused as a
+//!   follows, so a run never blocks in `RECEIVE_CAPABILITY`. An identity with no subtree is refused as a
 //!   wrong secret is (§117 (a principal's subtree is named by its identity string)).
 //! - A run that succeeds uses what it received (a caretaker directory read, the file service's
 //!   frame, a page retyped from the budget), so a capability that arrived broken fails.
@@ -46,7 +46,7 @@
 
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
-    call, destroy_memory_region, exit, map_page_frame, receive, receive_cap,
+    call, destroy_memory_region, exit, map_page_frame, receive, receive_capability,
     retype_into_page_frame, send, send_capability, split_memory_region, yield_now,
 };
 
@@ -167,7 +167,7 @@ pub const F_NOT_SHARED_SUBTREE: u64 = 1 << 2;
 /// not get to run at all, which the kernel test must treat as its own failure rather than silence.
 pub const F_MARKER_WRITTEN: u64 = 1 << 3;
 /// **Set when the fourth capability's `MemoryRegion::DESTROY` returned success.** Set only by
-/// [`LOGOUT`]; retried on refusal until the region comes down or [`DESTROY_WAIT_SECS`] runs out
+/// [`LOGOUT`]; retried on refusal until the region comes down or [`DESTROY_WAIT_SECONDS`] runs out
 /// ([`login_contract::OK`]'s doc, on the fourth capability, name the transient window this
 /// covers, and `destroy_with_retry` says why the bound is a clock).
 pub const F_TEARDOWN_OK: u64 = 1 << 4;
@@ -185,11 +185,11 @@ pub const F_BUDGET_TEARDOWN_OK: u64 = 1 << 6;
 /// of [`F_DEAD_AFTER_TEARDOWN`].
 pub const F_BUDGET_DEAD_AFTER_TEARDOWN: u64 = 1 << 7;
 /// **Set when the fifth delegated capability (the terminal) delivered [`TERM_MAGIC`] to a real
-/// receiver.** Set only by [`HOLD_TERMINAL`]. A capability that merely arrived (`RECEIVE_CAP`
+/// receiver.** Set only by [`HOLD_TERMINAL`]. A capability that merely arrived (`RECEIVE_CAPABILITY`
 /// succeeded) would pass every earlier check and never set this one: `send` only returns once a
 /// receiver is actually matched.
 pub const F_TERM_WORKS: u64 = 1 << 8;
-/// **Set when a sixth capability arrived and could not be passed on**: `SEND_CAP` of it was refused
+/// **Set when a sixth capability arrived and could not be passed on**: `SEND_CAPABILITY` of it was refused
 /// `NotPermitted`, which the kernel answers before it matches any receiver, for a capability that
 /// lacks `GRANT`. That refusal is DECISIONS §219 limitation 2 holding: a session holds the right to
 /// run unvouched bytes and cannot lend it by delegation. Set on every successful login that was
@@ -270,9 +270,9 @@ fn start(behaviour: u64, identity: u64, secret: u64) -> ! {
         // follows, the same promise the private channel's own OK/DENIED gives.
         done(connect_verdict, 0, 0);
     }
-    let (_, priv_request, _) = receive_cap(RESULT);
-    let (_, priv_result, _) = receive_cap(RESULT);
-    let (_, priv_page, _) = receive_cap(RESULT);
+    let (_, priv_request, _) = receive_capability(RESULT);
+    let (_, priv_result, _) = receive_capability(RESULT);
+    let (_, priv_page, _) = receive_capability(RESULT);
 
     // Map the delegated staging page using this program's own small scratch region: unlike the
     // post-auth `budget` the rest of this function uses, nothing else has been received yet at this
@@ -301,25 +301,25 @@ fn start(behaviour: u64, identity: u64, secret: u64) -> ! {
 
     if verdict != login_contract::OK {
         // Nothing follows a refusal (`login_contract`). Reporting rather than attempting
-        // `RECEIVE_CAP` is the check: a stray fourth message would desync the next login's first
-        // `RECEIVE_CAP`, and a client that tried to receive here would hide that.
+        // `RECEIVE_CAPABILITY` is the check: a stray fourth message would desync the next login's first
+        // `RECEIVE_CAPABILITY`, and a client that tried to receive here would hide that.
         done(verdict, 0, 0);
     }
 
     // Five capabilities, in login_contract's fixed order, on the private channel `priv_result` names.
-    let (_, dir_ep, _) = receive_cap(priv_result);
-    let (_, fs_page_frame, _) = receive_cap(priv_result);
-    let (_, budget, _) = receive_cap(priv_result);
-    let (_, region, _) = receive_cap(priv_result);
-    let (_, term_ep, _) = receive_cap(priv_result);
+    let (_, dir_ep, _) = receive_capability(priv_result);
+    let (_, fs_page_frame, _) = receive_capability(priv_result);
+    let (_, budget, _) = receive_capability(priv_result);
+    let (_, region, _) = receive_capability(priv_result);
+    let (_, term_ep, _) = receive_capability(priv_result);
     // The sixth, only as announced, and taken here with the other five: `login` is blocked sending
     // it, and anything this process sends first (the terminal's proof below) waits on a kernel test
     // that is itself waiting on `login`.
-    let run_unvouched =
-        (extra & login_contract::RUN_UNVOUCHED_FOLLOWS != 0).then(|| receive_cap(priv_result).1);
+    let run_unvouched = (extra & login_contract::RUN_UNVOUCHED_FOLLOWS != 0)
+        .then(|| receive_capability(priv_result).1);
     // The registration page, last, and only as announced (milestone 152).
     let registration =
-        (extra & login_contract::SCHEDULE_FOLLOWS != 0).then(|| receive_cap(priv_result).1);
+        (extra & login_contract::SCHEDULE_FOLLOWS != 0).then(|| receive_capability(priv_result).1);
 
     let mut flags = 0u64;
     if run_unvouched.is_some() {
@@ -457,7 +457,7 @@ fn prove_the_directory(behavior: u64, identity: &[u8], dir_ep: u64, region: u64)
                 // caretaker region's `DESTROY` waited (the budget's own wait is not reported;
                 // nothing lives in that region, so it has never needed one). The kernel test
                 // quotes it in the failure message.
-                hint = waited_micros();
+                hint = waited_microseconds();
             }
             // `HOLD_TERMINAL` shares the teardown but not the wait report: it keeps the identity
             // hint every other behavior puts in the third word.
@@ -603,9 +603,9 @@ fn store_schedule(dir: u64, doc: &[u8]) -> bool {
     w as i64 == doc.len() as i64
 }
 
-/// Poll `done` until it holds or [`DESTROY_WAIT_SECS`] of counter time pass, yielding between.
+/// Poll `done` until it holds or [`DESTROY_WAIT_SECONDS`] of counter time pass, yielding between.
 fn wait(done: impl Fn() -> bool) -> bool {
-    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECS);
+    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECONDS);
     let started = user_mode_runtime::now();
     while user_mode_runtime::now().wrapping_sub(started) < ceiling {
         if done() {
@@ -739,7 +739,7 @@ fn teardown_directory(dir: u64, region: u64) -> u64 {
 /// was 12.8 ms on aarch64 with no induced load (load average 7 to 15), 44.3 ms on aarch64 at 13 to
 /// 29, and 126.4 ms on riscv64 at 27 to 47. Five seconds is 40x the worst
 /// (notes/load-sensitive-assertions/caretaker-teardown-wait.md).
-const DESTROY_WAIT_SECS: u64 = 5;
+const DESTROY_WAIT_SECONDS: u64 = 5;
 
 /// **`MemoryRegion::DESTROY` on `ut`, retried until the region comes down**; `true` if it did.
 ///
@@ -750,9 +750,9 @@ const DESTROY_WAIT_SECS: u64 = 5;
 /// # BUGS
 ///
 /// The bound is wall clock, which milestone 62 (tests that assert on time) argues against, because
-/// a process cannot read delivered ticks; [`DESTROY_WAIT_SECS`]'s 40x margin is what makes it safe.
+/// a process cannot read delivered ticks; [`DESTROY_WAIT_SECONDS`]'s 40x margin is what makes it safe.
 fn destroy_with_retry(ut: u64) -> bool {
-    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECS);
+    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECONDS);
     let started = user_mode_runtime::now();
     loop {
         if destroy_memory_region(ut) == 0 {
@@ -779,7 +779,7 @@ fn record(ticks: u64) {
 }
 
 /// [`WAITED`] in microseconds, for the report.
-fn waited_micros() -> u64 {
+fn waited_microseconds() -> u64 {
     // SAFETY: as `record`.
     let ticks = unsafe { WAITED };
     ticks.saturating_mul(1_000_000) / user_mode_runtime::cntfrq().max(1)

@@ -51,7 +51,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         (TEST_INTERRUPT, abi::rights::READ),
     ];
     let endowment = ChildEndowment {
-        caps: &grants,
+        capabilities: &grants,
         stack_pages: system_initializer::CHILD_STACK_PAGES,
         // `Retention::Nothing`: this program exits a few lines after `START`, so keeping the
         // child's thread control block capability would be keeping it for nobody (DECISIONS §142

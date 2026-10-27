@@ -11,7 +11,7 @@
 
 //! # BUGS
 //!
-//! - A term is truncated to [`TERM_MAXIMUM`] bytes, so long identifiers can share a posting list.
+//! - A term is truncated to [`MAXIMUM_TERM_BYTES`] bytes, so long identifiers can share a posting list.
 //! - Terms are ASCII-folded and split on any byte that is not a letter or digit; an
 //!   underscore-joined name is also indexed whole.
 //! - No phrase search, and a result names a page, not a line; a heading mention ranks alike.
@@ -61,20 +61,17 @@ pub const POST_REC: usize = 4;
 
 /// The longest page path an index can name.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `PATH_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const PATH_MAXIMUM: usize = 72;
 /// The longest page title an index can carry.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `TITLE_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const TITLE_MAXIMUM: usize = 48;
 /// The longest term an index stores; longer ones are truncated to it, so two identifiers that
 /// agree in their first 24 bytes share a posting list.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `TERM_MAX`.
-pub const TERM_MAXIMUM: usize = 24;
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_TERM_BYTES: usize = 24;
 
 /// What went wrong reading an index.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -218,10 +215,10 @@ impl Page {
 ///
 /// Returns the length written into `out`. A word that folds to nothing (punctuation alone) returns
 /// zero and is not a term.
-pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAXIMUM]) -> usize {
+pub fn normalize(word: &[u8], out: &mut [u8; MAXIMUM_TERM_BYTES]) -> usize {
     let mut n = 0;
     for &b in word {
-        if n == TERM_MAXIMUM {
+        if n == MAXIMUM_TERM_BYTES {
             break;
         }
         if b.is_ascii_alphanumeric() {
@@ -233,7 +230,7 @@ pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAXIMUM]) -> usize {
 }
 
 /// Split text into terms the way the builder does: runs of ASCII letters and digits, folded to
-/// lower case, truncated to [`TERM_MAXIMUM`], and dropped if shorter than two characters (a posting
+/// lower case, truncated to [`MAXIMUM_TERM_BYTES`], and dropped if shorter than two characters (a posting
 /// list per letter answers no question anybody asks a manual).
 ///
 /// An underscore-joined name is also one term: `line_editor` yields `line`, `editor` and
@@ -243,20 +240,20 @@ pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAXIMUM]) -> usize {
 /// BUGS: folding is ASCII only and every other byte splits, so a search for `filesystem` also
 /// finds every page that says `filesystem_contract`.
 pub fn tokens(text: &[u8], mut f: impl FnMut(&[u8])) {
-    let mut buf = [0u8; TERM_MAXIMUM];
+    let mut buf = [0u8; MAXIMUM_TERM_BYTES];
     let mut n = 0;
     // The compound: this run and every run underscore-joined ahead of it, with the underscores
     // taken out, which is exactly what `normalize` will do to the query.
-    let mut joined = [0u8; TERM_MAXIMUM];
+    let mut joined = [0u8; MAXIMUM_TERM_BYTES];
     let mut jn = 0;
     let mut parts = 0usize;
     for &b in text {
         if b.is_ascii_alphanumeric() {
-            if n < TERM_MAXIMUM {
+            if n < MAXIMUM_TERM_BYTES {
                 buf[n] = b.to_ascii_lowercase();
                 n += 1;
             }
-            if jn < TERM_MAXIMUM {
+            if jn < MAXIMUM_TERM_BYTES {
                 joined[jn] = b.to_ascii_lowercase();
                 jn += 1;
             }
@@ -314,7 +311,7 @@ pub fn bundles(text: &[u8], mut f: impl FnMut(&[u8])) {
 /// starts with, which narrows the range by half for one read. The final page is searched in memory,
 /// where it costs nothing.
 pub fn lookup(h: &Header, term: &[u8], src: &mut impl Pages) -> Option<Hit> {
-    let mut key = [0u8; TERM_MAXIMUM];
+    let mut key = [0u8; MAXIMUM_TERM_BYTES];
     let n = normalize(term, &mut key);
     if n == 0 || h.terms == 0 {
         return None;
@@ -347,8 +344,8 @@ pub fn lookup(h: &Header, term: &[u8], src: &mut impl Pages) -> Option<Hit> {
         let rec = &buf[i * TERM_REC..(i + 1) * TERM_REC];
         if cmp(rec, key) == core::cmp::Ordering::Equal {
             return Some(Hit {
-                first: u32(rec, TERM_MAXIMUM),
-                count: u16v(rec, TERM_MAXIMUM + 4),
+                first: u32(rec, MAXIMUM_TERM_BYTES),
+                count: u16v(rec, MAXIMUM_TERM_BYTES + 4),
             });
         }
     }
@@ -418,8 +415,7 @@ pub fn page_record(h: &Header, i: u16, src: &mut impl Pages) -> Option<Page> {
 /// and [`Found::is_truncated`] says so, for the reason the renderer gives about losing text
 /// silently.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `LOCATION_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const LOCATION_MAXIMUM: usize = 96;
 
 /// **How many results one search keeps.**
@@ -430,8 +426,7 @@ pub const LOCATION_MAXIMUM: usize = 96;
 /// and not kept, and [`Ranked::offered`] is what lets the caller say so instead of implying the
 /// answer was complete.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `RESULTS_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const RESULTS_MAXIMUM: usize = 16;
 
 /// **The fixed-point scale `score` multiplies by**, so `count / tokens` survives as an integer
@@ -683,8 +678,8 @@ fn copy_into(dst: &mut [u8], src: &[u8]) -> usize {
 
 /// Compare a term record's term against a key.
 fn cmp(rec: &[u8], key: &[u8]) -> core::cmp::Ordering {
-    let n = rec[TERM_MAXIMUM + 6] as usize;
-    rec[..n.min(TERM_MAXIMUM)].cmp(key)
+    let n = rec[MAXIMUM_TERM_BYTES + 6] as usize;
+    rec[..n.min(MAXIMUM_TERM_BYTES)].cmp(key)
 }
 
 fn u16v(b: &[u8], at: usize) -> u16 {
@@ -803,13 +798,13 @@ mod builder {
         let mut post = 0usize;
         for (i, (term, byname)) in terms.iter().enumerate() {
             let rec = term_off + i * TERM_REC;
-            let n = term.len().min(TERM_MAXIMUM);
+            let n = term.len().min(MAXIMUM_TERM_BYTES);
             out[rec..rec + n].copy_from_slice(&term[..n]);
-            out[rec + TERM_MAXIMUM..rec + TERM_MAXIMUM + 4]
+            out[rec + MAXIMUM_TERM_BYTES..rec + MAXIMUM_TERM_BYTES + 4]
                 .copy_from_slice(&(post as u32).to_le_bytes());
-            out[rec + TERM_MAXIMUM + 4..rec + TERM_MAXIMUM + 6]
+            out[rec + MAXIMUM_TERM_BYTES + 4..rec + MAXIMUM_TERM_BYTES + 6]
                 .copy_from_slice(&(byname.len() as u16).to_le_bytes());
-            out[rec + TERM_MAXIMUM + 6] = n as u8;
+            out[rec + MAXIMUM_TERM_BYTES + 6] = n as u8;
             for (page, count) in byname {
                 let at = post_off + post * POST_REC;
                 out[at..at + 2].copy_from_slice(&page.to_le_bytes());

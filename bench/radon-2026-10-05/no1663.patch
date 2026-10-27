@@ -276,7 +276,7 @@ index b2c20b9ba..87bf2f3be 100644
  }
  
  /// The virtual counter, `CNTVCT_EL0`: a monotonic tick count for self-timing. Readable at EL0 only
-@@ -1362,10 +1410,33 @@ pub fn monotonic_nanos() -> u64 {
+@@ -1362,10 +1410,33 @@ pub fn monotonic_ns() -> u64 {
  }
  
  /// Terminate this process. The kernel reaps the thread and frees its whole address space. Never

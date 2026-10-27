@@ -27,13 +27,13 @@ every later call is made on it. net_stack names the socket by the badge the kern
 request, so a client can reach exactly the sockets it holds capabilities for, and can hand one to
 another program by sending the capability. `CLOSE` drops the badge from net_stack's table, so every
 copy reaches nothing afterwards. The per-connection shared frame is still the granted resource for
-bytes, delegated to the socket's capability by `SEND_CAP` and mapped by net_stack at its table
+bytes, delegated to the socket's capability by `SEND_CAPABILITY` and mapped by net_stack at its table
 entry's VA. Before milestone 649 a socket was a small integer carried in the request word, shared
 by every client of the stack; §25 (socket identity) had named minted endpoints as the later step.
 
 ### Operations
 
-`ATTACH_FRAME` is a `SEND_CAP` on a socket's capability (it carries the frame). The rest are
+`ATTACH_FRAME` is a `SEND_CAPABILITY` on a socket's capability (it carries the frame). The rest are
 `CALL`s (which mint the reply cap net_stack answers on), the opcode alone in the request word.
 `OPEN_UDP` / `OPEN_TCP` are on the front door, and `SENDTO(len)` and `RECEIVE() -> len` serve UDP
 (destination and payload in the shared frame). `CONNECT` / `SEND(len)` / `RECEIVE()` for TCP;
@@ -121,7 +121,7 @@ loop {
     // ... read the request out of the frame at FRAME_VA + OFF_PAYLOAD, write the answer back ...
     let _ = call(conn, OPERATION_SEND, reply_len);
     let _ = call(conn, OPERATION_CLOSE, 0);   // the listener is untouched by this
-    cap_delete(conn);
+    capability_delete(conn);
 }
 ```
 

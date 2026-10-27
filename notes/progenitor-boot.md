@@ -70,7 +70,7 @@ progenitor's own to fill.
 
 The progenitor reads its table positionally. A capability whose slot depends on what the machine
 turned out to have is wiring nobody can check by reading. So every grant names its slot
-(`thread_control_block_insert_cap(.., Some(n))`) rather than taking the first free one, and asserts
+(`thread_control_block_insert_capability(.., Some(n))`) rather than taking the first free one, and asserts
 where it landed (`notes/abi.md` section 4). First-free
 numbering would shift the virtio-rng trio down by two on the ordinary boot that has a virtio-rng
 and no disk. Each conditional group sits past the highest slot of every group before it, for the
@@ -95,7 +95,7 @@ design/roadmap/0047-navigation-and-naming/environment.md's "inheritance with vis
   and riscv64 it is the UART's registers as a `DeviceFrame`, which the progenitor maps into those
   drivers. `x86_64` has no page for its console: COM1's 16550 is I/O ports `0x3F8..=0x3FF`. So
   there it is a `PortRange` (milestone 299 (the x86 port-range capability), DECISIONS §121 (x86 port I/O) reversed on 2026-09-15). The progenitor
-  delegates it with `CAP_INSERT` rather than `MAP_INTO`, and the TSS I/O bitmap lets the drivers'
+  delegates it with `CAPABILITY_INSERT` rather than `MAP_INTO`, and the TSS I/O bitmap lets the drivers'
   `in` and `out` reach exactly those ports.
 - The clock page is `READ` (DECISIONS §43 (reading the clock is a page)'s split): the progenitor can endow a reader and holds
   nothing that could set the time.

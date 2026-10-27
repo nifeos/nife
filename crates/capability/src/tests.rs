@@ -12,20 +12,20 @@ enum Obj {
 /// itself.
 #[test]
 fn the_occupied_mask_is_exactly_the_occupied_slots() {
-    let cap = |n| Cap {
+    let capability = |n| Capability {
         object: Obj::PageFrame(n),
         rights: Rights::ALL,
     };
     let mut cs: CapabilityTable<Obj, 8> = CapabilityTable::new();
     assert_eq!(cs.occupied_mask(), 0);
-    cs.insert_at(2, cap(1)).unwrap();
-    cs.insert_at(5, cap(2)).unwrap();
+    cs.insert_at(2, capability(1)).unwrap();
+    cs.insert_at(5, capability(2)).unwrap();
     assert_eq!(cs.occupied_mask(), 0b0010_0100);
     cs.delete(2).unwrap();
     assert_eq!(cs.occupied_mask(), 0b0010_0000);
     let mut full: CapabilityTable<Obj, 64> = CapabilityTable::new();
     assert_eq!(full.occupied_mask(), 0);
-    full.insert_at(63, cap(3)).unwrap();
+    full.insert_at(63, capability(3)).unwrap();
     assert_eq!(full.occupied_mask(), 1 << 63);
 }
 
@@ -49,7 +49,7 @@ fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::PageFrame(0x1000),
             rights: Rights::READ,
         },
@@ -57,7 +57,7 @@ fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
     .unwrap();
     cs.put(
         1,
-        Cap {
+        Capability {
             object: Obj::Console,
             rights: Rights::WRITE,
         },
@@ -65,7 +65,7 @@ fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
     .unwrap();
     cs.put(
         15,
-        Cap {
+        Capability {
             object: Obj::PageFrame(0x2000),
             rights: Rights::ALL,
         },
@@ -89,7 +89,7 @@ fn an_unheld_slot_is_not_permission_denied_it_is_nothing() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::Console,
             rights: Rights::WRITE,
         },
@@ -112,7 +112,7 @@ fn derive_cannot_widen_rights() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::PageFrame(0x1000),
             rights: Rights::READ,
         },
@@ -141,7 +141,7 @@ fn a_derived_capability_names_the_same_object_with_less_authority() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::PageFrame(0x4000),
             rights: Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
         },
@@ -170,7 +170,7 @@ fn get_with_refuses_rights_you_do_not_have() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::Console,
             rights: Rights::READ,
         },
@@ -190,7 +190,7 @@ fn deleting_a_capability_makes_the_object_unnameable() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::Console,
             rights: Rights::ALL,
         },
@@ -248,14 +248,15 @@ fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
 /// writing the same word); a test that outgrows it fails loudly.
 #[test]
 fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
-    let cap = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(3),
         rights: Rights::READ,
     };
     // Full at sixty-four, the most a table may have (`MAXIMUM_SLOTS`).
     let mut cs: CapabilityTable<Obj, 64> = CapabilityTable::new();
     for _ in 0..64 {
-        cs.insert(cap).expect("sixty-four slots hold sixty-four");
+        cs.insert(capability)
+            .expect("sixty-four slots hold sixty-four");
     }
 
     assert_eq!(
@@ -271,45 +272,45 @@ fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
 /// slot `insert` takes, lowest first, because the kernel's Reply mint relies on first-free.
 #[test]
 fn the_free_slot_word_fills_to_zero_and_hands_back_the_lowest_hole() {
-    let cap = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(1),
         rights: Rights::READ,
     };
     let mut cs: CapabilityTable<Obj, 64> = CapabilityTable::new();
     assert_eq!(cs.free_mask(), u64::MAX);
     for want in 0..64u64 {
-        assert_eq!(cs.insert(cap), Ok(want));
+        assert_eq!(cs.insert(capability), Ok(want));
     }
     assert_eq!(cs.free_mask(), 0, "a full table is a zero word");
-    assert_eq!(cs.insert(cap), Err(Error::NoFreeSlot));
+    assert_eq!(cs.insert(capability), Err(Error::NoFreeSlot));
 
     cs.delete(20).unwrap();
     cs.delete(7).unwrap();
     assert_eq!(cs.free_mask(), (1 << 20) | (1 << 7));
-    assert_eq!(cs.insert(cap), Ok(7), "lowest hole first");
-    assert_eq!(cs.insert(cap), Ok(20));
+    assert_eq!(cs.insert(capability), Ok(7), "lowest hole first");
+    assert_eq!(cs.insert(capability), Ok(20));
     assert_eq!(cs.used(), 64);
 
     // A small table's bits above N stay clear, so full is still zero there too.
     let mut small: CapabilityTable<Obj, 3> = CapabilityTable::new();
     assert_eq!(small.free_mask(), 0b111);
     for _ in 0..3 {
-        small.insert(cap).unwrap();
+        small.insert(capability).unwrap();
     }
     assert_eq!(small.free_mask(), 0);
-    assert_eq!(small.insert(cap), Err(Error::NoFreeSlot));
+    assert_eq!(small.insert(capability), Err(Error::NoFreeSlot));
 }
 
 #[test]
 fn a_full_table_says_so() {
     let mut cs: CapabilityTable<Obj, 2> = CapabilityTable::new();
-    let cap = Cap {
+    let capability = Capability {
         object: Obj::Console,
         rights: Rights::ALL,
     };
-    assert_eq!(cs.insert(cap), Ok(0));
-    assert_eq!(cs.insert(cap), Ok(1));
-    assert_eq!(cs.insert(cap).err(), Some(Error::NoFreeSlot));
+    assert_eq!(cs.insert(capability), Ok(0));
+    assert_eq!(cs.insert(capability), Ok(1));
+    assert_eq!(cs.insert(capability).err(), Some(Error::NoFreeSlot));
 }
 
 /// **`insert_at_or_above` never lands below its floor**, finds the first free slot at or above
@@ -317,7 +318,7 @@ fn a_full_table_says_so() {
 #[test]
 fn insert_at_or_above_respects_its_floor() {
     let mut t: CapabilityTable<u8, 64> = CapabilityTable::new();
-    let capability = |o| Cap {
+    let capability = |o| Capability {
         object: o,
         rights: Rights::ALL,
     };
@@ -384,18 +385,18 @@ fn rights_bits_are_the_wire_format() {
 #[test]
 fn insert_at_fills_exactly_the_named_slot() {
     let mut cs: CapabilityTable<Obj, 4> = CapabilityTable::new();
-    let cap = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(7),
         rights: Rights::READ,
     };
-    assert_eq!(cs.insert_at(2, cap), Ok(2));
+    assert_eq!(cs.insert_at(2, capability), Ok(2));
     assert_eq!(cs.get(2).unwrap().object, Obj::PageFrame(7));
     assert!(!cs.is_empty());
     // The other slots are still empty, so it did not spray.
     assert_eq!(cs.get(0).err(), Some(Error::NoSuchSlot));
     // Occupied refuses; out of range is a different answer, as everywhere.
-    assert_eq!(cs.insert_at(2, cap).err(), Some(Error::NoFreeSlot));
-    assert_eq!(cs.insert_at(9, cap).err(), Some(Error::NoSuchSlot));
+    assert_eq!(cs.insert_at(2, capability).err(), Some(Error::NoFreeSlot));
+    assert_eq!(cs.insert_at(9, capability).err(), Some(Error::NoSuchSlot));
     // len is the table's size in slots, not its population.
     assert_eq!(cs.len(), 4);
 }
@@ -409,20 +410,20 @@ fn insert_at_fills_exactly_the_named_slot() {
 /// missed one would be invisible: the number would simply be a little too low, forever.
 #[test]
 fn the_peak_records_what_was_reached_and_never_what_is_left() {
-    let cap = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(1),
         rights: Rights::READ,
     };
     let mut cs: CapabilityTable<Obj, 4> = CapabilityTable::new();
     assert_eq!((cs.used(), cs.peak()), (0, 0));
 
-    assert_eq!(cs.insert(cap), Ok(0));
-    assert_eq!(cs.insert_at(2, cap), Ok(2));
-    cs.put(3, cap).expect("slot 3 is in range");
+    assert_eq!(cs.insert(capability), Ok(0));
+    assert_eq!(cs.insert_at(2, capability), Ok(2));
+    cs.put(3, capability).expect("slot 3 is in range");
     assert_eq!((cs.used(), cs.peak()), (3, 3));
 
     // Replacing an occupant is not growth.
-    cs.put(3, cap).expect("slot 3 is in range");
+    cs.put(3, capability).expect("slot 3 is in range");
     assert_eq!((cs.used(), cs.peak()), (3, 3));
 
     // And emptying it does not lower the mark.
@@ -431,15 +432,15 @@ fn the_peak_records_what_was_reached_and_never_what_is_left() {
     assert_eq!((cs.used(), cs.peak()), (0, 3));
 
     // Refusals leave the count alone. Both of `insert_at`'s, and `delete`'s.
-    assert!(cs.insert_at(9, cap).is_err());
+    assert!(cs.insert_at(9, capability).is_err());
     assert!(cs.delete(1).is_err());
     assert_eq!((cs.used(), cs.peak()), (0, 3));
 
     // A full table refuses, and the mark is the capacity rather than one past it.
     let mut full: CapabilityTable<Obj, 2> = CapabilityTable::new();
-    assert!(full.insert(cap).is_ok());
-    assert!(full.insert(cap).is_ok());
-    assert_eq!(full.insert(cap).err(), Some(Error::NoFreeSlot));
+    assert!(full.insert(capability).is_ok());
+    assert!(full.insert(capability).is_ok());
+    assert_eq!(full.insert(capability).err(), Some(Error::NoFreeSlot));
     assert_eq!((full.used(), full.peak()), (2, 2));
 }
 
@@ -449,13 +450,13 @@ fn the_peak_records_what_was_reached_and_never_what_is_left() {
 /// by every instantiation in the binary, including the other tests in this module.
 #[test]
 fn the_global_high_water_mark_is_never_below_a_table_that_reached_it() {
-    let cap = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(2),
         rights: Rights::WRITE,
     };
     let mut cs: CapabilityTable<Obj, 8> = CapabilityTable::new();
     for _ in 0..5 {
-        cs.insert(cap).expect("eight slots hold five");
+        cs.insert(capability).expect("eight slots hold five");
     }
     let (peak, ceiling) = highest_seen();
     assert!(

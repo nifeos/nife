@@ -551,7 +551,7 @@ mod c_seam_tests;
 /// by taking it back)). **The claim is that a client does not notice**, held by the client's own
 /// witness, the operator's version page (no request unserved, never two owners of the device), a
 /// control that must fail (the outgoing instance reads its revoked UART and faults), and a usurper
-/// refused `RECEIVE_CAP`. The replacement is C (`fixtures/c/c_swappable.c`, the seam DECISIONS §31
+/// refused `RECEIVE_CAPABILITY`. The replacement is C (`fixtures/c/c_swappable.c`, the seam DECISIONS §31
 /// built). The second test covers the opt-in `broker` rung. Both ISAs; notes/live-replacement.md.
 #[cfg(all(test, initial_ramdisk))]
 mod live_swap_tests;
@@ -941,15 +941,15 @@ mod thread_leak_police;
 /// **Revocation against a capability that is in flight** (risk 7's adversarial pass, 2026-09-21).
 ///
 /// Every revocation sweep in this kernel walks capability tables. A capability handed to a
-/// rendezvous nobody is receiving on yet sits in `Thread::outgoing_cap` instead, which no sweep but
-/// `sched::delete_reply_caps_naming` reads. The module's own header has the reasoning and the
+/// rendezvous nobody is receiving on yet sits in `Thread::outgoing_capability` instead, which no sweep but
+/// `sched::delete_reply_capabilities_naming` reads. The module's own header has the reasoning and the
 /// `BUGS`; it is not in `tests.rs` because that file was this tree's worst merge hotspot.
 ///
-/// Cross-ISA: `outgoing_cap`, the sweeps and the rendezvous are portable scheduler code, so the
+/// Cross-ISA: `outgoing_capability`, the sweeps and the rendezvous are portable scheduler code, so the
 /// parity gate (DECISIONS §19, architectural parity is a tenet) is met by the same test running on
 /// each architecture.
 #[cfg(test)]
-mod receive_cap_attack_tests;
+mod receive_capability_attack_tests;
 // Each module carries its own `cfg(test)`: a line inserted between an attribute and its `mod`
 // silently moves the attribute, and the "tests the suite cannot see" check in `script/lint`
 // refuses a bare `mod` here.
@@ -1066,9 +1066,9 @@ mod confinement_attack_tests;
 #[cfg(test)]
 mod seventh_pass_retype_tests;
 
-/// **A `SEND_CAP` cannot widen a right out of its rights register, nor lend a GRANT-less capability**
+/// **A `SEND_CAPABILITY` cannot widen a right out of its rights register, nor lend a GRANT-less capability**
 /// (milestone 903, fatal risk 7's confinement claim, claims 1 and 2). Drives the live kernel
-/// delegation path (`Rendezvous::SEND_CAP` through the real dispatcher) with a widening rights mask
+/// delegation path (`Rendezvous::SEND_CAPABILITY` through the real dispatcher) with a widening rights mask
 /// and with a GRANT-less source, where the host crate's `derive_never_widens_rights` and
 /// `from_bits_cannot_forge_a_right` prove the same properties on pure logic. Both refuse before the
 /// rendezvous is touched, so nothing blocks. Its header has the reasoning.
@@ -1079,7 +1079,7 @@ mod seventh_pass_delegation_tests;
 
 /// **A consumed capability stays consumed, and deleting one disturbs nothing else** (an eighth
 /// outsider pass at the confinement claim, claims 4 and 5). Attacks the live kernel paths the host
-/// crate's pure-logic tests cannot reach: a stale slot number after `SYS_CAP_DELETE`, an
+/// crate's pure-logic tests cannot reach: a stale slot number after `SYS_CAPABILITY_DELETE`, an
 /// out-of-range index forged in a register, a double delete, a neighbor that must keep working
 /// through the real dispatcher, and a freed slot regranted with narrower rights that must carry
 /// nothing of its deleted tenant. Nothing blocks. Its own header has the reasoning.
@@ -1102,7 +1102,7 @@ mod eighth_pass_rendezvous_scope_tests;
 
 /// **Revocation against a delegation that is still being made** (an eighth outsider pass at the
 /// confinement claim, claim 30). Two places the cited in-flight test names as unmeasured: the
-/// race window between `SEND_CAP`'s start and the filing of the copy, forced certain with the test
+/// race window between `SEND_CAPABILITY`'s start and the filing of the copy, forced certain with the test
 /// kernel's delegation seam, and the `x86_64` PortRange sweep through a parked hand-off. The
 /// refused run answers `NoSuchSlot` and parks nothing; the control run delivers. Its own header
 /// has the reasoning.
@@ -1153,7 +1153,7 @@ mod eighth_pass_spawn_audit_tests;
 
 /// **A client trying to upgrade itself into the server** (an eighth outsider pass at the
 /// confinement claim, claim 26). The two roads around the cited rights gates: a self-upgrade
-/// `SEND_CAP` asking for READ through the rights register, and a badged copy of the client's own
+/// `SEND_CAPABILITY` asking for READ through the rights register, and a badged copy of the client's own
 /// capability tried against every server method. The badge labels a sender; it is not a right.
 /// Nothing blocks, and a positive control proves the endpoint live.
 ///
@@ -1208,7 +1208,7 @@ mod ninth_pass_mapping_tests;
 /// **A revocation reaches a `DeviceFrame` or `PortRange` parked in the hand-off slot** (a ninth
 /// outsider pass at the confinement claim, claim 30). `revocation_in_flight_tests` drives the
 /// `PageFrame` sweep, and its `BUGS` names these two sweeps as reasoned from the code rather than
-/// driven. This parks each in `outgoing_cap` through the whole-machine revoke and confirms the
+/// driven. This parks each in `outgoing_capability` through the whole-machine revoke and confirms the
 /// receiver is handed nothing.
 ///
 /// Cross-ISA for the `DeviceFrame` arm (DECISIONS §19); the `PortRange` arm is x86_64 only.
@@ -1246,7 +1246,7 @@ mod ninth_pass_port_tests;
 /// **A holder that drops its construction authority cannot build again** (a ninth outsider pass at
 /// the confinement claim, claim 23). `authority_tests` boots the real `root_supervisor` for this;
 /// this drives the mechanism through the dispatcher with no ramdisk. A full untyped budget retypes
-/// and splits, is deleted the way `SYS_CAP_DELETE` deletes it, and the identical build operations
+/// and splits, is deleted the way `SYS_CAPABILITY_DELETE` deletes it, and the identical build operations
 /// then answer `NoSuchSlot`.
 ///
 /// Cross-ISA: untyped retype and split and the capability table are portable kernel code

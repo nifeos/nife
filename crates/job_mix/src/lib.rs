@@ -94,7 +94,7 @@ pub const KIND: &str = "job-mix-kind:";
 /// - `job-mix-lock: tasks=<n> site=reap reaps=<r> stack_free_ticks=<f> remove_ticks=<m>`, the
 ///   reaper: threads reaped, time freeing their kernel stacks (no lock held), and time its last
 ///   critical section held `IPC_TABLES`;
-/// - `job-mix-lock: tasks=<n> site=current_cap calls=<c> contended=<k> wait_ticks=<w>`, the one
+/// - `job-mix-lock: tasks=<n> site=current_capability calls=<c> contended=<k> wait_ticks=<w>`, the one
 ///   lock the cheapest syscall takes: every call, and the ones that found it held.
 ///
 /// Printed only with `--features lock_wait` (notes/job-mix/null-syscall-under-load.md). Name
@@ -241,8 +241,7 @@ pub const TASK_BUDGET_PAGES: u64 = 1
 /// because every task in this pool is a **process**, with an address space and a loaded image
 /// behind it, where E1's were kernel threads; the memory, not the thread table, is what binds.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_TASKS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_TASKS: usize = 32;
 
 /// The subruns, in AIM7's sense: how many tasks are released for each measurement.

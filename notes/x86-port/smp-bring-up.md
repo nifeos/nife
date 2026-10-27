@@ -51,7 +51,7 @@ The specification calls for two STARTUP IPIs, and a core that has already left w
 defined to ignore the second (QEMU's `apic_sipi` does). `cpu_start` sends the second only when the
 count has not moved, which costs nothing when the first worked and is no less correct.
 
-The delays use `busy_wait_us`, a spin on the calibrated TSC. Parking on `hlt` for them would need
+The delays use `busy_wait_microseconds`, a spin on the calibrated TSC. Parking on `hlt` for them would need
 an interrupt nobody is going to send.
 
 ## The ten-second budget, and why the wait halts
