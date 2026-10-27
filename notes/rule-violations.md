@@ -122,9 +122,9 @@ $ echo $?
   `--check` is a `local` row of `script/ci-build` and a step of the `lint` job (milestone 341 (give
   the three instruments nothing runs a caller), §174 (a caller for each of the three uncalled
   instruments), ruled 2026-10-27 UTC), and takes 0.07 seconds. It passes clean today. When a rule
-  crosses, the fix is not a lane's: moving the rule up the ladder or marking it `resolved` belongs
-  to an architect or the maintainer, and until one does the check fails for every lane. That is the
-  cost the ruling accepted, against a ledger that nothing reads.
+  crosses, the fix is not a lane's. Moving the rule up the ladder or marking it `resolved` belongs
+  to an architect or the maintainer. Until one does, the check fails for every lane. The ruling
+  accepted that cost against a ledger that nothing reads.
 
 - **"The rule" is matched by exact text, not by meaning.** Two rows describing the same rule in
   different words are counted as two different rules. A human curating the table has to normalize
