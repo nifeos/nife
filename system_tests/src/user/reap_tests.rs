@@ -54,7 +54,7 @@ fn hold_rendezvous(ep: sched::RendezvousId) -> u64 {
     .expect("grant the rendezvous")
 }
 
-/// `invoke(cap, REAP, tid, _, _)`, through the real dispatcher.
+/// `invoke(capability, REAP, tid, _, _)`, through the real dispatcher.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
@@ -139,14 +139,14 @@ fn assert_can_only_supervise(expected: &[u64]) {
                     );
                 }
             }
-            Ok(cap) => {
+            Ok(capability) => {
                 assert!(
                     expected.contains(&slot),
                     "the supervisor holds an unexpected capability in slot {slot}: this test's \
                      confinement claim is only about a capability table it fully accounts for",
                 );
                 assert!(
-                    matches!(cap.object, Object::Rendezvous(..)),
+                    matches!(capability.object, Object::Rendezvous(..)),
                     "the supervisor holds a non-rendezvous capability in slot {slot}",
                 );
             }
@@ -181,15 +181,15 @@ fn a_supervisor_holding_only_its_rendezvous_reaps_its_dead_child() {
     let instance = crate::memory_region::split(budget, INSTANCE_PAGES).expect("no instance region");
     let child = build_child_in(instance, FAULT_STUB, None, Some(fault_ep));
 
-    let cap = hold_rendezvous(fault_ep);
-    assert_can_only_supervise(&[cap]);
+    let capability = hold_rendezvous(fault_ep);
+    assert_can_only_supervise(&[capability]);
 
-    let msg = receive_death(cap);
+    let msg = receive_death(capability);
     assert_eq!(msg[0], EVENT_FAULT, "the child should have crashed");
     assert_eq!(msg[1], child, "the death message named the wrong thread");
 
     assert_eq!(
-        reap_when_settled(cap, msg[1]),
+        reap_when_settled(capability, msg[1]),
         Ok(0),
         "a supervisor holding only its supervision rendezvous could not collect its own corpse",
     );
@@ -200,10 +200,10 @@ fn a_supervisor_holding_only_its_rendezvous_reaps_its_dead_child() {
     );
     // The reap did not turn into authority: the same audit still holds, and the same tid is now
     // an unknown name rather than a second free reap.
-    assert_can_only_supervise(&[cap]);
-    assert_eq!(reap(cap, child), Err(Error::NotSupervised));
+    assert_can_only_supervise(&[capability]);
+    assert_eq!(reap(capability, child), Err(Error::NotSupervised));
 
-    tidy(budget, rendezvous_region, &[cap]);
+    tidy(budget, rendezvous_region, &[capability]);
 }
 
 /// **The reclaimed region returns to the builder, not to the reaper** (§32's first consequence,
@@ -229,12 +229,16 @@ fn the_reaped_region_returns_to_the_builder_not_the_reaper() {
     );
     let child = build_child_in(instance, FAULT_STUB, None, Some(fault_ep));
 
-    let cap = hold_rendezvous(fault_ep);
-    let msg = receive_death(cap);
+    let capability = hold_rendezvous(fault_ep);
+    let msg = receive_death(capability);
     assert_eq!(msg[1], child);
     let slots_before = occupied_slots();
 
-    assert_eq!(reap_when_settled(cap, msg[1]), Ok(0), "the reap failed");
+    assert_eq!(
+        reap_when_settled(capability, msg[1]),
+        Ok(0),
+        "the reap failed"
+    );
 
     assert_eq!(
         crate::memory_region::usage(budget).unwrap().0,
@@ -256,9 +260,9 @@ fn the_reaped_region_returns_to_the_builder_not_the_reaper() {
         slots_before,
         "the supervisor gained a capability by reaping",
     );
-    assert_can_only_supervise(&[cap]);
+    assert_can_only_supervise(&[capability]);
 
-    tidy(budget, rendezvous_region, &[cap]);
+    tidy(budget, rendezvous_region, &[capability]);
 }
 
 /// **A live child is refused, with an error of its own.** Collecting a corpse is not killing.
@@ -276,9 +280,9 @@ fn reap_refuses_a_live_child_with_a_distinct_error() {
     let instance = crate::memory_region::split(budget, INSTANCE_PAGES).expect("no instance region");
     let child = build_child_in(instance, REPORT_STUB, Some(report), Some(fault_ep));
 
-    let cap = hold_rendezvous(fault_ep);
+    let capability = hold_rendezvous(fault_ep);
     assert_eq!(
-        reap(cap, child),
+        reap(capability, child),
         Err(Error::StillAlive),
         "a supervisor collected a thread that was still running: REAP authorizes collecting a \
          corpse, never killing",
@@ -290,17 +294,17 @@ fn reap_refuses_a_live_child_with_a_distinct_error() {
         REPORT_WORD,
         "the child never ran"
     );
-    let msg = receive_death(cap);
+    let msg = receive_death(capability);
     assert_eq!(msg[0], EVENT_EXIT, "a clean exit must report EXIT");
     assert_eq!(msg[1], child);
     assert_eq!(
-        reap(cap, child),
+        reap(capability, child),
         Ok(0),
         "the same tid through the same rendezvous failed once dead: the earlier refusal was not \
          about liveness after all",
     );
 
-    tidy(budget, rendezvous_region, &[cap]);
+    tidy(budget, rendezvous_region, &[capability]);
 }
 
 /// **Another supervisor's child is refused, even to a holder of both rendezvous points.**
@@ -319,13 +323,13 @@ fn reap_refuses_another_supervisors_child() {
     let instance = crate::memory_region::split(budget, INSTANCE_PAGES).expect("no instance region");
     let child = build_child_in(instance, FAULT_STUB, None, Some(theirs));
 
-    let cap_mine = hold_rendezvous(mine);
-    let cap_theirs = hold_rendezvous(theirs);
+    let capability_mine = hold_rendezvous(mine);
+    let capability_theirs = hold_rendezvous(theirs);
 
-    let msg = receive_death(cap_theirs);
+    let msg = receive_death(capability_theirs);
     assert_eq!(msg[1], child, "the death arrived on the wrong rendezvous");
     assert_eq!(
-        reap(cap_mine, child),
+        reap(capability_mine, child),
         Err(Error::NotSupervised),
         "a corpse was collected through an rendezvous that does not supervise it",
     );
@@ -335,12 +339,16 @@ fn reap_refuses_another_supervisors_child() {
     );
 
     assert_eq!(
-        reap(cap_theirs, child),
+        reap(capability_theirs, child),
         Ok(0),
         "the supervising rendezvous could not collect its own corpse",
     );
 
-    tidy(budget, rendezvous_region, &[cap_mine, cap_theirs]);
+    tidy(
+        budget,
+        rendezvous_region,
+        &[capability_mine, capability_theirs],
+    );
 }
 
 /// **A recycled tid is refused, not resolved to the thread now in that slot.**
@@ -357,14 +365,14 @@ fn reap_refuses_a_recycled_thread_id_rather_than_the_wrong_thread() {
     let (budget, rendezvous_region) = arena();
     let fault_ep = rendezvous(rendezvous_region);
     let report = rendezvous(rendezvous_region);
-    let cap = hold_rendezvous(fault_ep);
+    let capability = hold_rendezvous(fault_ep);
 
     let first_region =
         crate::memory_region::split(budget, INSTANCE_PAGES).expect("no first region");
     let first = build_child_in(first_region, FAULT_STUB, None, Some(fault_ep));
-    assert_eq!(receive_death(cap)[1], first);
+    assert_eq!(receive_death(capability)[1], first);
     assert_eq!(
-        reap_when_settled(cap, first),
+        reap_when_settled(capability, first),
         Ok(0),
         "the first reap failed"
     );
@@ -384,7 +392,7 @@ fn reap_refuses_a_recycled_thread_id_rather_than_the_wrong_thread() {
     );
 
     assert_eq!(
-        reap(cap, first),
+        reap(capability, first),
         Err(Error::NotSupervised),
         "a stale tid resolved: the reap path is not going through the generational name",
     );
@@ -394,11 +402,11 @@ fn reap_refuses_a_recycled_thread_id_rather_than_the_wrong_thread() {
         REPORT_WORD,
         "the replayed tid reaped the thread that had recycled its slot",
     );
-    let msg = receive_death(cap);
+    let msg = receive_death(capability);
     assert_eq!(msg[1], second);
-    assert_eq!(reap_when_settled(cap, second), Ok(0));
+    assert_eq!(reap_when_settled(capability, second), Ok(0));
 
-    tidy(budget, rendezvous_region, &[cap]);
+    tidy(budget, rendezvous_region, &[capability]);
 }
 
 /// **Reaping a corpse whose death message was never collected leaves the rendezvous clean.**
@@ -416,7 +424,7 @@ fn reaping_an_uncollected_corpse_leaves_no_ghost_on_the_rendezvous() {
     let fault_ep = rendezvous(rendezvous_region);
     let instance = crate::memory_region::split(budget, INSTANCE_PAGES).expect("no instance region");
     let child = build_child_in(instance, FAULT_STUB, None, Some(fault_ep));
-    let cap = hold_rendezvous(fault_ep);
+    let capability = hold_rendezvous(fault_ep);
 
     // Nobody is receiving, so the corpse must park. Wait for it **on the clock**: 4000 yields was
     // the wait, and a yield count is not a duration. On the physical core under HVF (milestone 81)
@@ -427,7 +435,11 @@ fn reaping_an_uncollected_corpse_leaves_no_ghost_on_the_rendezvous() {
         "the corpse never parked on its supervision rendezvous",
     );
 
-    assert_eq!(reap_when_settled(cap, child), Ok(0), "the reap failed");
+    assert_eq!(
+        reap_when_settled(capability, child),
+        Ok(0),
+        "the reap failed"
+    );
     assert_eq!(
         sched::rendezvous_waiting_senders(fault_ep),
         0,
@@ -440,12 +452,12 @@ fn reaping_an_uncollected_corpse_leaves_no_ghost_on_the_rendezvous() {
     let next_region =
         crate::memory_region::split(budget, INSTANCE_PAGES).expect("no second region");
     let next = build_child_in(next_region, FAULT_STUB, None, Some(fault_ep));
-    let msg = receive_death(cap);
+    let msg = receive_death(capability);
     assert_eq!(
         msg[1], next,
         "the rendezvous delivered something other than the new child's death",
     );
-    assert_eq!(reap_when_settled(cap, next), Ok(0));
+    assert_eq!(reap_when_settled(capability, next), Ok(0));
 
-    tidy(budget, rendezvous_region, &[cap]);
+    tidy(budget, rendezvous_region, &[capability]);
 }
