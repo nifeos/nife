@@ -149,6 +149,7 @@ malformed it.
 | 2026-10-19 | security | The supply chain, read from the package inward: the nine external packages the window added and the gate that should see every graph they enter, then the path by which bytes this tree did not build become authority on the target | fixed 3, minted 0, accepted 2 | [The supply chain, read from the package inward](2026-10-19-supply-chain-read-from-the-package-inward.md) |
 | 2026-10-20 | security | The window the supply-chain audit left unread, as a confined process trying to widen: the device authority minted since 2026-10-03, the ABI names added since then followed into their handlers, and the atlas's six host packages read inward to the tables the target draws | fixed 4, minted 3, accepted 2 | [The window the supply-chain audit left unread](2026-10-20-the-window-the-supply-chain-audit-left-unread.md) |
 | 2026-10-26 | security | The compiler, read as code that runs with authority nobody reviewed: the nightly pin and its path to `main`, the workflow that bumps it, and `patches/std-nife` read as a confined program facing a hostile counterparty | fixed 4, minted 1, accepted 3 | [The compiler](2026-10-26-the-compiler.md) |
+| 2026-10-27 | documentation | A subsystem rewritten inside its existing crate: `file_allocation_table`, which gained a reader in the window, read from the notes that describe it and its two writers from the outside, passage by passage against the code, with the installer's and the boot stick's spawn and report words swept for contracts stated only in prose | fixed 6, minted 4, accepted 3 | [The FAT crate, read from the outside](2026-10-27-the-fat-crate-read-from-the-outside.md) |
 
 ## What the tree looked like when each ran
 
@@ -192,6 +193,7 @@ must not err in. So the count spans both, and it stays continuous across the spl
 | 2026-10-19 | security | 455 | 234 | 97 | 190 |
 | 2026-10-20 | security | 469 | 236 | 97 | 196 |
 | 2026-10-26 | security | 488 | 236 | 97 | 201 |
+| 2026-10-27 | documentation | 488 | 235 | 97 | 201 |
 
 The two `-` cells are honest rather than lazy: the roadmap was a single file with no status column
 until milestone 76 (split the roadmap: `design/roadmap/README.md` as index, one file per milestone) split it into `design/roadmap/` on 2026-08-03, and milestones 1 to 11 were

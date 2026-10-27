@@ -131,9 +131,7 @@ Non-goals for the first release:
 
 ## What is proven
 
-The table says which parts are proved: the boot sector, table entry and directory slot parses of
-the first property, the second on volumes of one to eight clusters, and the writer's half of the
-fourth. The rest is this milestone's scope, not a step before it. Each row is a property this crate must prove before it publishes. The harness
+The table names what is proved; the rest is this milestone's scope, not a step before it. Each row is a property this crate must prove before it publishes. The harness
 cell names the Kani harness that proves it, or says `none yet`; every named harness carries a
 falsification patch that makes it fail at its own assertion. Each patch sits at
 `crates/file_allocation_table/falsifications/<module.path>.<harness>.patch`, as §134 (a harness
