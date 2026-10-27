@@ -12,9 +12,8 @@
 //! name is the program's plus the suffix and carries no decision of its own.
 
 use driver_process_contract::extensible_host_controller_interface::{
-    MAX_REGISTER_PAGES, WORK_PAGES,
+    self as report, MAXIMUM_REGISTER_PAGES, WORK_PAGES,
 };
-use usb_keyboard_report as report;
 
 use super::*;
 use crate::cap::{Rights, irq_cap, rendezvous_cap};
@@ -32,7 +31,7 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const EXTRA_STACK_PAGES: usize = 3;
 
 /// The most mappings one spawn makes: every work page, every register page, and the stack.
-const MAXIMUM_MAPS: usize = WORK_PAGES as usize + MAX_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
+const MAXIMUM_MAPS: usize = WORK_PAGES as usize + MAXIMUM_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
 
 /// What [`start`] hands back.
 pub(crate) struct Wiring {
@@ -63,7 +62,11 @@ pub(crate) fn start(
     let attach = crate::sched::create_rendezvous();
     let report = crate::sched::create_rendezvous();
 
-    let (bar0, dma_phys, registers) = (found.bar0, found.handoff.dma_phys, found.handoff.registers);
+    let (bar0, dma_phys, registers) = (
+        found.bar0,
+        found.handoff.direct_memory_access_physical_address,
+        found.handoff.registers,
+    );
     let intid = found.intid;
     let mut stack = [0u64; EXTRA_STACK_PAGES];
     for frame in &mut stack {
@@ -88,7 +91,7 @@ pub(crate) fn start(
         // The register pages the window chose, device-typed: a cached or reordered doorbell write
         // is a command the controller never hears about.
         let mut n = WORK_PAGES as usize;
-        for page in 0..MAX_REGISTER_PAGES {
+        for page in 0..MAXIMUM_REGISTER_PAGES {
             if registers & (1 << page) != 0 {
                 maps[n] = Mapping {
                     va: REGS_VA + page * FRAME_SIZE,

@@ -68,11 +68,11 @@ stack it built, and hands `jig` the same endpoint on all three. Until then the x
 leaves `greeting` running.
 
 The kernel drives an `e1000e` at boot only when the part is one a gate has driven and its link is
-up, and says which refusal it took. xenon's I219 is neither yet: its bring-up runs FreeBSD's
-MAC-register steps, which nothing here has executed, so its booted system has no network until
-milestone 494's bench boot proves the part. A link with no DHCP server behind it still holds the
-prompt back, as on the virtio path (milestone 590 (the booted system starts its network stack)'s
-`BUGS`).
+up, and says which refusal it took. xenon's I219 is neither yet. Its bring-up runs FreeBSD's I219
+passes (`crates/e1000e/src/pch/sequence.rs`), which have run on silicon once, with no cable. So its
+booted system has no network until milestone 494's bench boot proves the part. A link with no DHCP
+server behind it still holds the prompt back, as on the virtio path (milestone 590 (the booted
+system starts its network stack)'s `BUGS`).
 
 ## The HTTP client's rules
 

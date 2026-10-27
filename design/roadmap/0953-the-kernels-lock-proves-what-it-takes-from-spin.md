@@ -51,7 +51,7 @@ exclusion between cores. Loom can, but only over atomics it substitutes, and `sp
 
 #2734 built option 1.
 
-- `crates/spin_lock` (name provisional) is a test-and-set spinlock with the protocol `spin` used:
+- `crates/spin_lock` is a test-and-set spinlock with the protocol `spin` used:
   a weak Acquire compare-exchange in `lock`, a strong one in `try_lock`, a Relaxed load while
   waiting, and a Release store in the guard's drop. Under `cfg(loom)` the flag and the data cell
   are loom's.
@@ -78,15 +78,15 @@ keeps every row within the 10% tripwire, and the LOCK test in
 - A loom proof is a C11 proof, not a proof about aarch64 or riscv64 hardware;
   notes/memory-ordering.md carries that limit.
 - `force_unlock` sits outside the loom models by construction.
-- The crate's name is provisional, as are `SpinLock` and `SpinLockGuard`.
 
 ## Follow-on
 
 - **Recorded.** The C11 limit of a loom proof lives in `notes/memory-ordering.md`, BUGS.
 - **Recorded.** `force_unlock`'s place outside the models lives in
   `notes/kernel-dependency-unsafe.md`.
-- **Recorded.** The crate's provisional name lives in the `Name:` block of `crates/spin_lock/src/lib.rs`
-  until an architect names it.
+- **Done.** Ruled 2026-10-26 (UTC): the crate's name, `SpinLock`, `SpinLockGuard`, both `new`,
+  `lock`, `try_lock` and `force_unlock` stand as ratified; the `Name:` blocks in
+  `crates/spin_lock/src/lib.rs` record it.
 
 ## Index row
 

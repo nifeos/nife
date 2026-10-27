@@ -29,9 +29,10 @@
 use alloc::vec::Vec;
 
 use driver_process_contract::e1000e::{
-    DATA_PLANE_VIRTUAL_ADDRESS, Handoff, RX_QUEUE_VIRTUAL_ADDRESS, TX_QUEUE_VIRTUAL_ADDRESS,
+    DATA_PLANE_VIRTUAL_ADDRESS, Handoff, RECEIVE_QUEUE_VIRTUAL_ADDRESS,
+    TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
 };
-use e1000e::{DataPlane, MAX_FRAME, Region, TAIL_IN_PAGE, Tails, layout};
+use e1000e::{DataPlane, MAXIMUM_FRAME, Region, TAIL_IN_PAGE, Tails, layout};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
 /// How long the poll loop asks to sleep between looks at an idle receive ring when smoltcp has
@@ -45,9 +46,11 @@ pub(crate) const POLL_MS: u64 = 1;
 const PLANE: MappedWindow =
     unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.
-const RECEIVE_QUEUE: MappedWindow = unsafe { MappedWindow::new(RX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
+const RECEIVE_QUEUE: MappedWindow =
+    unsafe { MappedWindow::new(RECEIVE_QUEUE_VIRTUAL_ADDRESS, PAGE) };
 // SAFETY: as above.
-const TRANSMIT_QUEUE: MappedWindow = unsafe { MappedWindow::new(TX_QUEUE_VIRTUAL_ADDRESS, PAGE) };
+const TRANSMIT_QUEUE: MappedWindow =
+    unsafe { MappedWindow::new(TRANSMIT_QUEUE_VIRTUAL_ADDRESS, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
@@ -71,10 +74,10 @@ impl Region for Plane {
 struct Queues;
 
 impl Tails for Queues {
-    fn set_rx_tail(&mut self, v: u32) {
+    fn set_receive_tail(&mut self, v: u32) {
         RECEIVE_QUEUE.w32(TAIL_IN_PAGE, v);
     }
-    fn set_tx_tail(&mut self, v: u32) {
+    fn set_transmit_tail(&mut self, v: u32) {
         TRANSMIT_QUEUE.w32(TAIL_IN_PAGE, v);
     }
     fn barrier(&mut self) {
@@ -85,28 +88,32 @@ impl Tails for Queues {
 /// The NIC as `net_stack` sees it.
 pub(crate) struct GigabitNic {
     plane: DataPlane,
-    mac: [u8; 6],
+    station_address: [u8; 6],
 }
 
 impl GigabitNic {
     /// Post the receive buffers and clear the transmit ring; the device is already running.
     pub fn bring_up(handoff: Handoff) -> GigabitNic {
-        let mut plane = DataPlane::new(handoff.data_plane_phys);
+        let mut plane = DataPlane::new(handoff.data_plane_physical_address);
         plane.start(&mut Plane, &mut Queues);
         GigabitNic {
             plane,
-            mac: handoff.mac,
+            station_address: handoff.station_address,
         }
     }
 
     /// The station address the kernel read from the device.
-    pub fn mac(&self) -> [u8; 6] {
-        self.mac
+    ///
+    /// Name: ratified 2026-10-26 (#2761). Ruled in Decision 49 (2026-10-26 UTC): `mac` holding the
+    /// six-byte hardware address is spelled `station_address`, tree-wide. Refused `mac` (`mac`
+    /// names the controller, not the address).
+    pub fn station_address(&self) -> [u8; 6] {
+        self.station_address
     }
 
     /// The next received frame, if the device has written one.
     pub(crate) fn receive_frame(&mut self) -> Option<Vec<u8>> {
-        let mut buf = [0u8; MAX_FRAME];
+        let mut buf = [0u8; MAXIMUM_FRAME];
         let n = self.plane.receive(&mut Plane, &mut Queues, &mut buf)?;
         Some(buf[..n].to_vec())
     }
@@ -126,7 +133,7 @@ impl GigabitNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let word = PLANE.r64(layout::rx_descriptor(self.plane.rx_cursor()) + 8);
-        e1000e::rx_verdict(word, MAX_FRAME) != e1000e::RxVerdict::NotYet
+        let word = PLANE.r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
+        e1000e::receive_verdict(word, MAXIMUM_FRAME) != e1000e::ReceiveVerdict::NotYet
     }
 }

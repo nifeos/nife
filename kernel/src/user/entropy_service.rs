@@ -281,7 +281,7 @@ pub fn jh7110_trng_device() -> Option<jh7110_entropy::Discovered> {
 ///
 /// The driver holds a request endpoint, a readiness endpoint, and one page of device memory: the
 /// first `0x1000` of the TRNG's `0x4000` register window at [`TRNG_VA`], which covers every
-/// register `jh7110_entropy::regs` names. No DMA page, interrupt or transport. See
+/// register `jh7110_entropy::registers` names. No DMA page, interrupt or transport. See
 /// notes/entropy/jh7110-trng.md.
 fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
     let device = jh7110_trng_device()?;
@@ -338,8 +338,8 @@ fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::BringUpReport> {
     Some(unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
             crate::arch::mmu::phys_to_virt(crg.base) as usize,
-            &jh7110_clock_and_reset::STG,
-            jh7110_clock_and_reset::TRNG_BRING_UP,
+            &jh7110_clock_and_reset::SYSTEM_TOP_GROUP,
+            jh7110_clock_and_reset::ENTROPY_BRING_UP,
         )
     })
 }

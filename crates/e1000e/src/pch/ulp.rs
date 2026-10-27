@@ -1,5 +1,5 @@
 /// `FWSM.FW_VALID`: an ME is present and running, so it owns the ULP exit.
-pub(crate) const FWSM_FW_VALID: u32 = 0x0000_8000;
+pub(crate) const ICH_FWSM_FW_VALID: u32 = 0x0000_8000;
 /// `FWSM.ULP_CFG_DONE`: set while the ME's ULP configuration is still in force.
 pub(crate) const FWSM_ULP_CFG_DONE: u32 = 0x0000_0400;
 /// `H2ME.ULP`: the host's ULP indication.
@@ -23,6 +23,6 @@ pub const fn done(fwsm: u32) -> bool {
 }
 /// Does this machine have an ME to ask? When it does not, ULP exit is the PHY-register
 /// sequence in [`super::sequence`].
-pub(crate) const fn has_me(fwsm: u32) -> bool {
-    fwsm & FWSM_FW_VALID != 0
+pub(crate) const fn has_management_engine(fwsm: u32) -> bool {
+    fwsm & ICH_FWSM_FW_VALID != 0
 }

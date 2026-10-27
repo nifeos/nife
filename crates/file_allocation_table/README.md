@@ -80,7 +80,7 @@ that does not fit.
 
 - One file per volume. A long name's alias is always `~1`, which is right only because no other
   name can collide with it.
-- Sectors are 512 bytes and clusters 4096 bytes; nothing else is offered.
+- The writer writes 512-byte sectors and 4096-byte clusters, and nothing else.
 - Every timestamp is zero.
 - The `FSInfo` free-cluster count is written once.
 - Not crash-atomic, and there is no journal, since FAT has none.

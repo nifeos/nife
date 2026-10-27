@@ -119,8 +119,9 @@ const BACKUP_BLOCKS: u64 = 33;
 /// running `disk_surveyor` or `sgdisk -p` on the installed machine meets them.
 const NAMES: [&str; 2 + SLOTS] = ["nife data", "nife slot 0", "nife slot 1", "nife boot"];
 
-/// The removable-media boot file's name on the EFI system partition. 8.3, which is what
-/// `file_allocation_table` will write; see that crate's BUGS for the riscv64 name that is not.
+/// The removable-media boot file's name on the EFI system partition. 8.3, so
+/// `file_allocation_table` writes it as a short entry alone; riscv64's `BOOTRISCV64.EFI` would get
+/// long-name entries.
 const BOOT_FILE_NAME: &str = "BOOTX64.EFI";
 
 // The report's first word. Must match kernel/src/user/install_service.rs.
@@ -464,7 +465,8 @@ impl Layout {
     /// fit. **All of the arithmetic, in one place**, so the writes below have nothing to decide.
     ///
     /// The EFI system partition goes at the end, the boot slots just below it, and the data
-    /// partition takes everything before them, for the reason this file's header gives.
+    /// partition takes everything before them, for the reason notes/installing/system-installer.md
+    /// gives.
     fn fit(block_count: u64) -> Option<Layout> {
         // The last block a partition may use: the backup entry array and its header sit above it.
         let last_usable = block_count.checked_sub(BACKUP_BLOCKS + 1)?;

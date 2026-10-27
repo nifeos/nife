@@ -7,7 +7,7 @@ name: stick_maker on Linux and Windows
 # **Why this exists: it is the only place the Linux and Windows arms of `stick_maker` run.** The
 # program is developed on a Mac, where its macOS arm is proved against hdiutil-attached files
 # (helpers/stick-maker-proof.sh). Its Linux arm (sysfs discovery, `sfdisk` and `mkfs.vfat`,
-# mounting) and its Windows arm (four `kernel32` calls) can be cross-built from that Mac only in
+# mounting) and its Windows arm (five `kernel32` calls) can be cross-built from that Mac only in
 # part and executed there not at all. These two jobs execute them on their own operating systems:
 # Linux against a loop device, which is that host's file-backed disk, through both the erase and the
 # copy paths; Windows through discovery, which is all it automates (see src/windows.rs's BUGS).

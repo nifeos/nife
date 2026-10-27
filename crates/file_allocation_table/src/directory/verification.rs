@@ -18,12 +18,12 @@ use crate::reader::verification::HostileTable;
 #[kani::proof]
 fn every_slot_parses_as_its_bytes_say() {
     let slot: [u8; 32] = kani::any();
-    let fat_type = match kani::any::<u8>() % 3 {
-        0 => FatType::Fat12,
-        1 => FatType::Fat16,
-        _ => FatType::Fat32,
+    let file_allocation_table_type = match kani::any::<u8>() % 3 {
+        0 => FileAllocationTableType::Fat12,
+        1 => FileAllocationTableType::Fat16,
+        _ => FileAllocationTableType::Fat32,
     };
-    match Slot::parse(&slot, fat_type) {
+    match Slot::parse(&slot, file_allocation_table_type) {
         Slot::End => assert_eq!(slot[0], 0),
         Slot::Free => assert_eq!(slot[0], 0xE5),
         Slot::Used(entry) => {
@@ -33,12 +33,15 @@ fn every_slot_parses_as_its_bytes_say() {
                 DirectoryEntry::LongName(piece) => {
                     assert!(long);
                     assert_eq!(piece.checksum(), slot[13]);
-                    assert_eq!(piece.units()[12], u16::from_le_bytes([slot[30], slot[31]]));
+                    assert_eq!(
+                        piece.code_units()[12],
+                        u16::from_le_bytes([slot[30], slot[31]])
+                    );
                 }
                 DirectoryEntry::Short(short) => {
                     assert!(!long);
                     assert_eq!(short.attributes(), slot[11]);
-                    if fat_type != FatType::Fat32 {
+                    if file_allocation_table_type != FileAllocationTableType::Fat32 {
                         assert!(short.first_cluster() <= 0xFFFF);
                     }
                 }

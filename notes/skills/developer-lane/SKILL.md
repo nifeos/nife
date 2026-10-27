@@ -55,6 +55,13 @@ What a lane writes into the tree states what is true when it merges. What it cha
 replaced and why go in its commit messages and pull request body, never in the document (§298, a
 document states what is in force now).
 
+A lane that writes a note reads it against the code it describes, [§310 (read a note against its
+code)](../../../design/decisions/0310-read-a-note-against-its-code.md): the note names the item and
+keeps the reason, and what is about one crate alone goes into that crate. An agreement between two
+programs is code both sides use, never prose alone, [§311 (a contract is code, not
+prose)](../../../design/decisions/0311-a-contract-is-code-not-prose.md). A lane that finds one held
+only in prose proposes a milestone with a sketch of that code, and does not write it.
+
 ## Identified work leaves the lane in a tracked form, or the merge waits
 
 A lane that finds work it is not doing may report it in exactly two shapes, and "worth doing

@@ -29,7 +29,10 @@
 //! - Raw only. Conversion is `qemu-img`'s, run by the person importing, because which container a
 //!   cloud wants (VMDK for Oracle, VHD for Azure, a tarball for Google) is that cloud's choice.
 //! - The disk and partition GUIDs come from the host's `/dev/urandom`, so two runs on the same
-//!   boot file write different bytes and the image is not reproducible.
+//!   boot file write different bytes and the image is not reproducible. Every copy of one image
+//!   shares its GUIDs, so two disks imported from one CI artifact collide in their disk and
+//!   partition GUIDs if they meet on one machine. Re-draw them at import, for example with
+//!   `sgdisk -G`.
 //!
 //! Name: provisional (milestone 578's lane, 2026-10-21 UTC), for the module and the path.
 
@@ -55,10 +58,10 @@ const LBA: u64 = fat::SECTOR_BYTES as u64;
 /// which also leaves the backup table's 33 blocks room at the far end.
 const ALIGN: u64 = 2048;
 
-/// **The EFI system partition, 300 MiB.** FAT32 needs 65525 data clusters, a little over 256 MiB
-/// at 4096-byte clusters (`file_allocation_table::FAT32_MIN_CLUSTERS`), and below that the firmware reads
-/// the volume as FAT16 whatever its boot sector says. The image is sparse, so the size costs no
-/// disk; a cloud grows the boot volume to its own minimum on import regardless.
+/// **The EFI system partition, 300 MiB.** FAT32 needs 65525 data clusters, a little over 256 MiB at
+/// 4096-byte clusters (`file_allocation_table::FAT32_MINIMUM_CLUSTERS`), and below that the
+/// firmware reads the volume as FAT16 whatever its boot sector says. The image is sparse, so the
+/// size costs no disk; a cloud grows the boot volume to its own minimum on import regardless.
 const ESP_SECTORS: u64 = 300 * 1024 * 1024 / LBA;
 
 /// Where `arch`'s disk is written.
