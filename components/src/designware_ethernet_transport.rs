@@ -21,20 +21,21 @@
 
 use alloc::vec::Vec;
 
-use designware_ethernet::{DataPlane, MAX_FRAME, Region, Tails, layout, regs};
+use designware_ethernet::{DataPlane, MAXIMUM_FRAME, Region, Tails, layout, registers};
 use driver_process_contract::designware_ethernet::{
-    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, Handoff,
+    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, Handoff,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
 // SAFETY: the spawner maps `layout::PAGES` pages of the DMA region read/write at
 // DATA_PLANE_VIRTUAL_ADDRESS, and the controller's DMA page device-typed at
-// DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, before `_start` runs (`designware_ethernet_service`).
+// DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, before `_start` runs
+// (`designware_ethernet_service`).
 const PLANE: MappedWindow =
     unsafe { MappedWindow::new(DATA_PLANE_VIRTUAL_ADDRESS, layout::PAGES * PAGE) };
 // SAFETY: as above.
 const DMA: MappedWindow =
-    unsafe { MappedWindow::new(DIRECT_MEMORY_ACCESS_PAGE_VIRTUAL_ADDRESS, PAGE) };
+    unsafe { MappedWindow::new(DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
@@ -58,11 +59,17 @@ impl Region for Plane {
 struct Channel;
 
 impl Tails for Channel {
-    fn set_rx_tail(&mut self, addr: u32) {
-        DMA.w32(u64::from(regs::CHAN_RX_TAIL - regs::DMA_PAGE), addr);
+    fn set_receive_tail(&mut self, addr: u32) {
+        DMA.w32(
+            u64::from(registers::CHAN_RX_END_ADDR - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            addr,
+        );
     }
-    fn set_tx_tail(&mut self, addr: u32) {
-        DMA.w32(u64::from(regs::CHAN_TX_TAIL - regs::DMA_PAGE), addr);
+    fn set_transmit_tail(&mut self, addr: u32) {
+        DMA.w32(
+            u64::from(registers::CHAN_TX_END_ADDR - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            addr,
+        );
     }
     fn barrier(&mut self) {
         doorbell_barrier();
@@ -78,11 +85,11 @@ pub(crate) struct DesignWareNic {
 impl DesignWareNic {
     /// Post the receive buffers and clear the transmit ring; the channels are already running.
     pub fn bring_up(handoff: Handoff) -> DesignWareNic {
-        let mut plane = DataPlane::new(handoff.data_plane_phys);
+        let mut plane = DataPlane::new(handoff.data_plane_physical_address);
         plane.start(&mut Plane, &mut Channel);
         DesignWareNic {
             plane,
-            mac: handoff.mac,
+            mac: handoff.station_address,
         }
     }
 
@@ -93,7 +100,7 @@ impl DesignWareNic {
 
     /// The next received frame, if the device has written one.
     pub(crate) fn receive_frame(&mut self) -> Option<Vec<u8>> {
-        let mut buf = [0u8; MAX_FRAME];
+        let mut buf = [0u8; MAXIMUM_FRAME];
         let n = self.plane.receive(&mut Plane, &mut Channel, &mut buf)?;
         Some(buf[..n].to_vec())
     }
@@ -113,7 +120,9 @@ impl DesignWareNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let des3 = (PLANE.r64(layout::rx_descriptor(self.plane.rx_cursor()) + 8) >> 32) as u32;
-        designware_ethernet::rx_verdict(des3, MAX_FRAME) != designware_ethernet::RxVerdict::NotYet
+        let des3 =
+            (PLANE.r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8) >> 32) as u32;
+        designware_ethernet::receive_verdict(des3, MAXIMUM_FRAME)
+            != designware_ethernet::ReceiveVerdict::NotYet
     }
 }

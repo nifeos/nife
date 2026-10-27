@@ -6,17 +6,18 @@ the register map, the descriptor formats, the DMA region's layout, the receive a
 the controller and PHY bring-up sequences, MDIO, and a probe that measures whether device DMA is
 coherent with the CPU's caches. It is `no_std` and needs no allocator.
 
-It dereferences no pointer and touches no hardware. You supply register access through the `Hw`
-trait, the DMA region through `Region`, and the tail-pointer writes and barrier through `Tails`;
-the tests run all of it against a simulated controller. It does not support the older 3.x GMAC.
+It dereferences no pointer and touches no hardware. You supply register access through the
+`Hardware` trait, the DMA region through `Region`, and the tail-pointer writes and barrier
+through `Tails`; the tests run all of it against a simulated controller. It does not support the
+older 3.x GMAC.
 
 ## What is proven
 
 Two Kani harnesses, in `src/proofs.rs`:
 
 - `a_delivered_frame_always_fits_the_buffer_and_the_room`: for every value a device can write
-  into word 3 of a receive descriptor and every caller buffer size, a frame that `rx_verdict`
-  accepts fits the caller's buffer, is at most `MAX_FRAME` bytes, and with its CRC fits the
+  into word 3 of a receive descriptor and every caller buffer size, a frame that `receive_verdict`
+  accepts fits the caller's buffer, is at most `MAXIMUM_FRAME` bytes, and with its CRC fits the
   receive buffer.
 - `every_ring_offset_is_inside_the_region`: for every index, each descriptor and buffer offset
   lies inside its own part of the DMA region.
@@ -56,8 +57,8 @@ impl Region for Memory {
 
 struct NoDevice;
 impl Tails for NoDevice {
-    fn set_rx_tail(&mut self, _addr: u32) {}
-    fn set_tx_tail(&mut self, _addr: u32) {}
+    fn set_receive_tail(&mut self, _address: u32) {}
+    fn set_transmit_tail(&mut self, _address: u32) {}
     fn barrier(&mut self) {}
 }
 
@@ -75,8 +76,8 @@ assert_eq!(plane.receive(&mut region, &mut tails, &mut buf), None);
 - The tests run only against the simulator, not against a device.
 - One receive and one transmit queue, polled: no interrupts, offloads, jumbo frames or multicast.
 - The crate reads no device tree. The `jh7110` module names the compatible strings and node names
-  to look for, and `Discovered::from_node`, `mainline_phy` and `vendor_phy` decode the properties
-  of a node you found.
+  to look for, and `Discovered::from_node`, `mainline_physical_layer_device` and
+  `vendor_physical_layer_device` decode the properties of a node you found.
 - On the JH7110 only `gmac0` (`16030000`) is wired; `gmac1`'s clocks have no plan.
 - The API may still change while the driver built on it is finished.
 - Minimum Rust version: 1.88.

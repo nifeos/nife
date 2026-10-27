@@ -8,6 +8,11 @@
 //!
 //! - The ring base registers are on the queue pages, so the IOMMU is the whole DMA confinement.
 //! - One wiring at a time ([`Absent::Busy`]): a test that keeps its holding blocks every later one.
+//! - **The report word is read as a lease whatever it holds.** `net_stack` sends `BAD_HANDOFF`
+//!   (`0xDEAD_0001`, `components/src/socket_server.rs`) in word 0 when its spawn words do not
+//!   unpack, and `start_with_client` stores word 0 as [`Wiring::lease`] without naming the
+//!   sentinel. The bench boot then prints `leased 222.173.0.1`. `designware_ethernet_service` reads
+//!   it the same way.
 
 use ::driver_process_contract::e1000e::{
     DATA_PLANE_VIRTUAL_ADDRESS, RECEIVE_QUEUE_VIRTUAL_ADDRESS, TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
