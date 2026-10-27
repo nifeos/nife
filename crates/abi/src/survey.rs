@@ -66,7 +66,7 @@ pub mod record {
     /// Name: provisional. calef names public items.
     pub const CPU_TIME: u64 = 2;
 
-    /// **Which process of the domain the thread belongs to**, as a label for this walk (§312
+    /// **Which process of the domain the thread belongs to**, as a label for this walk (§313
     /// (`ENUMERATE` on a domain covers which of its threads share a process)).
     ///
     /// - Two threads of one domain carry the same label if and only if they share an address

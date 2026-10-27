@@ -460,7 +460,7 @@ fn process_key(t: &Thread) -> (bool, u64) {
 /// Stateless, because the walk's only state is its cursor: the label is recomputed from the table
 /// on each call. A process is counted at its first domain thread (no earlier domain thread shares
 /// its key). That costs at most the square of the domain, bounded by `MAXIMUM_THREADS`, and
-/// leaks neither a `ProcessId` nor an address (§312 (`ENUMERATE` on a domain covers which of its threads share a process)).
+/// leaks neither a `ProcessId` nor an address (§313 (`ENUMERATE` on a domain covers which of its threads share a process)).
 ///
 /// Context: called under `IPC_TABLES` with `of` in the domain.
 fn survey_process(threads: &Threads, ep: RendezvousId, of: &Thread) -> u64 {

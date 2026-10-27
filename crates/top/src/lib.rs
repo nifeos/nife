@@ -12,7 +12,7 @@
 //! - The summary counts this domain, not the machine, because nothing here is ambient.
 //! - **Ranking by process is a bit in the integer argument** ([`RANK_BY_PROCESS`]), and the shell
 //!   cannot set it (as `pgrep`'s selector): at the prompt `top` always ranks by thread. It sums
-//!   the CPU time of the threads in the domain (§312 (`ENUMERATE` on a domain covers which of its threads share a process)), so a process with a thread supervised
+//!   the CPU time of the threads in the domain (§313 (`ENUMERATE` on a domain covers which of its threads share a process)), so a process with a thread supervised
 //!   elsewhere is ranked on the share this viewer sees.
 //! - Ties break by tid, so a quiet machine ranks in slot order.
 //!

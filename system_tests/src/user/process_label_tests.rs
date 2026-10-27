@@ -1,5 +1,5 @@
 //! **A process's threads share one label in a survey, and the count is the rows** (milestone 942
-//! (`ps` and `top` show which process each thread belongs to), §312 (`ENUMERATE` on a domain
+//! (`ps` and `top` show which process each thread belongs to), §313 (`ENUMERATE` on a domain
 //! covers which of its threads share a process)).
 //!
 //! The kernel arranges what no program can: five threads of one process, started one by one with

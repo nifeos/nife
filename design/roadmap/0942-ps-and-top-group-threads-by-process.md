@@ -3,7 +3,7 @@ status: BUILT
 raised: 2026-10-21
 built: 2026-10-27
 milestone_dependencies: 126, 282, 812
-decision_dependencies: 312
+decision_dependencies: 313
 machine_requirements: none
 specific_machine: none
 needs_person: no
@@ -83,7 +83,7 @@ were the process's total. The count should then be the count within its domain. 
 acceptable, or the count must be the true total, is the open question below.
 
 This is a wire-and-authority question on the syscall surface (§10 (process model: capability-based, microkernel); rule 3 in
-`AGENTS.md`). §312 (`ENUMERATE` on a domain covers which of its threads share a process) records the ruling below.
+`AGENTS.md`). §313 (`ENUMERATE` on a domain covers which of its threads share a process) records the ruling below.
 
 ## Where the data comes from
 
@@ -118,7 +118,7 @@ dependency on a milestone that does not yet exist, so `milestone_dependencies` d
 
 ## Ruling (2026-10-27 UTC)
 
-Section 312 holds the authority decision; this answers the five questions the block raised.
+Section 313 holds the authority decision; this answers the five questions the block raised.
 
 1. Authority. `ENUMERATE` on a domain covers learning thread-to-process membership, as a new
    `SURVEY` record selector under the rule of §150 and §204. No new right.
@@ -167,7 +167,7 @@ supervises one by one (a `std` thread has no supervisor, see `BUGS`), and item 5
   test in `system_tests/src/user/process_label_tests.rs` proves the grouping on threads whose
   starter supervises each one. The user-visible `rg` check waits on a design
   for how a process's later threads get supervisors, which is its own milestone and a ruling.
-- **The counts are of the viewer's domain** (§312), so a process with a thread supervised elsewhere
+- **The counts are of the viewer's domain** (§313), so a process with a thread supervised elsewhere
   reads as smaller than it is. That is the ruling, not a defect.
 - **The shell cannot send `top`'s rank-by-process flag**, so at the prompt `top` ranks by thread
   (`top::RANK_BY_PROCESS`, as `pgrep`'s selector).
@@ -189,9 +189,9 @@ caller holds; seL4 has no enumeration at all.
 - **Recorded.** A `std` thread has no supervisor, so `ps` cannot group a `std` program's workers
   yet; the limitation lives in `BUGS` above, beside the feature.
 - **Recorded.** The shell cannot send `top`'s rank-by-process flag; also in `BUGS` above.
-- **Decision.** The authority ruling is `design/decisions/0312-enumerate-covers-which-threads-share-a-process.md`.
+- **Decision.** The authority ruling is `design/decisions/0313-enumerate-covers-which-threads-share-a-process.md`.
 
 ## Index row
 
 `ps` and `top` list threads one per row, so a program with several threads reads as unrelated
-rows. This groups them by process and shows a thread count, from a new `SURVEY` record that `ENUMERATE` already covers (§312).
+rows. This groups them by process and shows a thread count, from a new `SURVEY` record that `ENUMERATE` already covers (§313).

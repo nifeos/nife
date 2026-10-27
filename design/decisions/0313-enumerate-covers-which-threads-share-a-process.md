@@ -5,7 +5,7 @@ decided: 2026-10-27
 ratified_by: calef
 ---
 
-# 312. `ENUMERATE` on a domain covers which of its threads share a process
+# 313. `ENUMERATE` on a domain covers which of its threads share a process
 
 *Number provisional until the merge queue lands it. Written as a maintainer commit on
 `milestone/942-ps-top-process-grouping` (the lane may not write this directory), from the ruling

@@ -717,7 +717,7 @@ mod futex_tests;
 mod process_tests;
 
 /// **A process's threads share one label in a survey** (milestone 942 (`ps` and `top` show which
-/// process each thread belongs to), §312 (`ENUMERATE` on a domain covers which of its threads share a process)): five threads of one process and one of another, read
+/// process each thread belongs to), §313 (`ENUMERATE` on a domain covers which of its threads share a process)): five threads of one process and one of another, read
 /// through `ps`'s own walk. Needs the scheduler's thread-to-process link and the per-thread
 /// supervision endpoint, which only the kernel can arrange, so it is a kernel-side test. Cross-ISA
 /// (DECISIONS §19).

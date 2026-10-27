@@ -11,7 +11,7 @@
 //! # BUGS
 //!
 //! - No `CMD` column: there is no display name, and no design for who may see one.
-//! - **`THR` counts the threads of the viewer's domain, never the process's true total** (§312 (`ENUMERATE` on a domain covers which of its threads share a process)): a
+//! - **`THR` counts the threads of the viewer's domain, never the process's true total** (§313 (`ENUMERATE` on a domain covers which of its threads share a process)): a
 //!   sibling supervised elsewhere is invisible, and so is a sibling nobody supervises (only a
 //!   process's first thread is supervised unless its starter supervises each one).
 //! - `PROC` is an ordinal for one walk, not a process identity: it can renumber if a process ends
@@ -54,7 +54,7 @@ pub struct Row {
     /// that died between the two walks.
     pub cpu_ms: Option<u64>,
     /// **Which process of the domain the thread belongs to**, as `abi::survey::record::PROCESS`
-    /// labeled it in one walk (§312), or `None` when nobody asked or the thread died between
+    /// labeled it in one walk (§313), or `None` when nobody asked or the thread died between
     /// walks.
     ///
     /// Two rows with the same label share an address space and a capability table. The label means
@@ -233,7 +233,7 @@ impl Survey<'_> {
     }
 
     /// **How many rows carry `label`**: the threads of that process that the viewer's domain
-    /// holds (§312). Never the process's true member count, which this program cannot learn.
+    /// holds (§313). Never the process's true member count, which this program cannot learn.
     ///
     /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
     pub fn threads_with_label(&self, label: u64) -> usize {

@@ -86,7 +86,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     found.join_cpu_time(&mut |cursor| {
         survey_record(DOMAIN_SLOT, cursor, abi::survey::record::CPU_TIME)
     });
-    // **And `PROC` and `THR` are a third** (milestone 942 (`ps` and `top` show which process each thread belongs to), §312 (`ENUMERATE` on a domain covers which of its threads share a process)): the process label, over the same
+    // **And `PROC` and `THR` are a third** (milestone 942 (`ps` and `top` show which process each thread belongs to), §313 (`ENUMERATE` on a domain covers which of its threads share a process)): the process label, over the same
     // endpoint and right. The count is computed here from the rows, so the kernel exposes none.
     found.join_process(&mut |cursor| {
         survey_record(DOMAIN_SLOT, cursor, abi::survey::record::PROCESS)
