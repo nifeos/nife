@@ -255,55 +255,31 @@ impl Survey<'_> {
     ///
     /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
     pub fn rank_by_process_cpu_time(&mut self) {
-        let n = self.rows.len().min(MAXIMUM_ROWS);
-        // The rows cannot be read while they are being sorted, so sort a permutation of them and
-        // then apply it. Each process total is summed once, up front. Two small arrays on the
-        // stack, no allocation.
-        let mut total = [0u64; MAXIMUM_ROWS];
-        for (i, r) in self.rows[..n].iter().enumerate() {
-            total[i] = r.process.map_or(0, |l| {
-                self.rows[..n]
-                    .iter()
-                    .filter(|o| o.process == Some(l))
-                    .map(|o| o.cpu_ms.unwrap_or(0))
-                    .sum()
-            });
+        // Each process total is summed once into a table indexed by label, so the comparator reads
+        // a figure instead of rescanning rows it is in the middle of moving. The kernel's labels
+        // are ordinals of at most `MAXIMUM_ROWS` processes; a label beyond that (a kernel that
+        // answers otherwise) totals 0 and sorts after the processes it can account for.
+        let mut total = [0u64; MAXIMUM_ROWS + 1];
+        for r in self.rows.iter() {
+            if let Some(slot) = r.process.and_then(|l| total.get_mut(l as usize)) {
+                *slot += r.cpu_ms.unwrap_or(0);
+            }
         }
-        let mut order = [0usize; MAXIMUM_ROWS];
-        for (i, o) in order[..n].iter_mut().enumerate() {
-            *o = i;
-        }
-        let rows = &*self.rows;
-        order[..n].sort_unstable_by(|&i, &j| {
-            let (a, b) = (&rows[i], &rows[j]);
+        let of = |r: &Row| {
+            r.process
+                .and_then(|l| total.get(l as usize))
+                .copied()
+                .unwrap_or(0)
+        };
+        self.rows.sort_unstable_by(|a, b| {
             a.process
                 .is_none()
                 .cmp(&b.process.is_none())
-                .then(total[j].cmp(&total[i]))
+                .then(of(b).cmp(&of(a)))
                 .then(a.process.cmp(&b.process))
                 .then(b.cpu_ms.unwrap_or(0).cmp(&a.cpu_ms.unwrap_or(0)))
                 .then(a.tid.cmp(&b.tid))
         });
-        // Apply the permutation in place by following its cycles: afterwards position `k` holds
-        // the row that was at `order[k]`.
-        let mut placed = [false; MAXIMUM_ROWS];
-        for start in 0..n {
-            if placed[start] {
-                continue;
-            }
-            let held = self.rows[start];
-            let mut k = start;
-            loop {
-                placed[k] = true;
-                let from = order[k];
-                if from == start {
-                    self.rows[k] = held;
-                    break;
-                }
-                self.rows[k] = self.rows[from];
-                k = from;
-            }
-        }
     }
 
     /// **Order the rows by CPU time, most first**, which is what makes a listing a `top`.
@@ -761,6 +737,12 @@ mod tests {
         assert_eq!(ms(12_345_678), "12345678");
         assert_eq!(ms(123_456_789), "123456789");
         assert_eq!(shown(|o| write_ms(None, o)), "       -");
+        let cell = |v, w| shown(|o| write_cell(v, w, o));
+        assert_eq!(cell(Some(7), 4), "   7");
+        assert_eq!(cell(Some(12), 4), "  12");
+        assert_eq!(cell(Some(123), 4), " 123");
+        assert_eq!(cell(Some(12_345), 4), "12345");
+        assert_eq!(cell(None, 3), "  -");
     }
 
     /// A CPU-time reader over a canned domain: `entries` in slot order, then done.
@@ -1028,5 +1010,36 @@ mod tests {
         let mut empty = collect(&mut none, &mut domain(&[]));
         empty.rank_by_process_cpu_time();
         assert!(empty.rows().is_empty());
+    }
+
+    /// **The process with the larger total comes first even when its label is larger.** Label
+    /// order and total order must disagree for the sum to be what ranks: process 2 spends 100 ms
+    /// across two threads, process 1 spends 60 ms in one.
+    #[test]
+    fn a_larger_total_outranks_a_smaller_label() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut labels(&[(3, 1), (4, 2), (5, 2), (6, 2)]));
+        s.join_cpu_time(&mut times(&[(3, 60), (4, 30), (5, 30), (6, 40)]));
+        s.rank_by_process_cpu_time();
+        let tids: Vec<_> = s.rows().iter().map(|r| r.tid).collect();
+        assert_eq!(tids, [6, 4, 5, 3]);
+    }
+
+    /// The widest domain the kernel can express has `MAXIMUM_ROWS` processes, so the last label
+    /// is `MAXIMUM_ROWS` itself and its total counts like any other.
+    #[test]
+    fn the_highest_label_still_has_a_total() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        let last = MAXIMUM_ROWS as u64;
+        s.join_process(&mut |cursor| match cursor {
+            0 => (1, 3, 1),
+            1 => (2, 4, last),
+            _ => (abi::survey::DONE as i64, 0, 0),
+        });
+        s.join_cpu_time(&mut times(&[(3, 10), (4, 90)]));
+        s.rank_by_process_cpu_time();
+        assert_eq!(s.rows()[0].tid, 4);
     }
 }
