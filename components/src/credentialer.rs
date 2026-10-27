@@ -35,7 +35,7 @@ use alloc::vec::Vec;
 use credential_contract as proto;
 use credentialer::{Block, Cost, Store, Verdict};
 use user_mode_runtime::mapped_window::MappedWindow;
-use user_mode_runtime::{call, cap_delete, exit, receive_request, reply, send};
+use user_mode_runtime::{call, capability_delete, exit, receive_request, reply, send};
 
 /// The provision endpoint (slot 0): RECEIVE, and only until the seal.
 const PROV: u64 = 0;
@@ -134,7 +134,7 @@ fn provision(store: &mut Store<CAPACITY>, scratch: &mut [Block]) {
         let req = receive_request(PROV);
         let (w0, w1) = (req.w0, req.w1);
         let Some(capability) = req.delivered.into_reply() else {
-            // A plain SEND, or a SEND_CAP, on a CALL-only contract: nobody is waiting for an
+            // A plain SEND, or a SEND_CAPABILITY, on a CALL-only contract: nobody is waiting for an
             // answer, so there is nothing to reply into. Drop it (a delegation's slot is deleted,
             // milestone 706 (a `CALL` server can tell a Reply from a delegation)) rather than
             // replying into a slot that is not a Reply.
@@ -155,7 +155,7 @@ fn provision(store: &mut Store<CAPACITY>, scratch: &mut [Block]) {
                 // there is no code path back into the loop above even if one were written. The
                 // provisioner drops its send end for the same reason; between them, nothing in the
                 // system can name the object any more.
-                cap_delete(PROV);
+                capability_delete(PROV);
                 return;
             }
             _ => {

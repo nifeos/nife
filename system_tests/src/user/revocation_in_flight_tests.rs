@@ -24,7 +24,7 @@ use crate::sched;
 ///
 /// A sender's copy of `PageFrame(phys, 1)` parks in `outgoing_capability` on a rendezvous nobody receives
 /// on; a whole-machine `PageFrame::REVOKE` runs, and the receiver must be handed nothing. The
-/// headline is the last assertion and every path reaches it (`inter_process_communication_receive_capability` returns `NO_CAP` or
+/// headline is the last assertion and every path reaches it (`inter_process_communication_receive_capability` returns `NO_CAPABILITY` or
 /// a slot, both inspected), for milestone 307 (which assertion actually fires when a confinement
 /// claim is broken). A vacuity guard (the sender parked) and a premise check (the revoke reached
 /// the sender's table) above it each mean, failing, that the test proved nothing.
@@ -73,7 +73,7 @@ fn a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver() {
 
     let [_word, slot, _second, _badge, ..] =
         sched::inter_process_communication_receive_capability(ep);
-    let delivered = if slot == abi::rendezvous::NO_CAP {
+    let delivered = if slot == abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         sched::current_capability(slot).ok()

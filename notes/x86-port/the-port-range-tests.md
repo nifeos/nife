@@ -35,11 +35,11 @@ executes next must fault.
 The delete test is milestone 313 (the security audit that was due since August)'s audit
 (2026-09-17). The first two properties show the grant following the capability across a switch and
 across a revoke. Neither could see whether it followed the capability out of the thread's own table.
-The grant is a cached field the switch installs, so `SYS_CAP_DELETE` has to clear the cache as well
+The grant is a cached field the switch installs, so `SYS_CAPABILITY_DELETE` has to clear the cache as well
 as the slot. Otherwise a thread that dropped its port capability would keep the ports for life,
 which is §12 (call/reply IPC: a one-shot reply capability)'s "a consumed capability cannot be used
 again" failing for the one object enforced outside the table. The progenitor makes exactly this drop
-on every x86 boot (`cap_delete(g.uart_dev)`).
+on every x86 boot (`capability_delete(g.uart_dev)`).
 
 The take-back test is the 2026-09-24 audit's. `PortRange::REVOKE` spares the invoker's own
 capability, so the invoker's own core must keep its bitmap installed. A sparing that held in the

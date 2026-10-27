@@ -28,7 +28,7 @@ verb because the verb is where the authority check lives. Here the authority is 
 and there is one verb: invoke it.
 
 **One call has been added since, and it did not widen the boundary** (added by the 2026-08-17
-documentation sweep, which found this heading claiming three in the present tense). `SYS_CAP_DELETE`
+documentation sweep, which found this heading claiming three in the present tense). `SYS_CAPABILITY_DELETE`
 arrived on 2026-07-24 with milestone 19d: a loader retyping hundreds of frames through a 16-slot
 capability table has to recycle slots, and forgetting something in your *own* table needs no capability for
 the same reason `exit` does not. So the property this section is about survives the count
@@ -68,7 +68,7 @@ For a long while `derive` and `GRANT` were true in the crate and unreachable fro
 process. Every capability was minted by the kernel and handed out at spawn. That made the kernel a
 central authority-granting oracle, the ambient-authority shape §10 warned against, only relocated.
 That is fixed. A process now delegates a capability to another process over an IPC endpoint
-(`SEND_CAP` / `RECEIVE_CAP`), narrowing the rights on the way, and only if it holds `GRANT`. Authority
+(`SEND_CAPABILITY` / `RECEIVE_CAPABILITY`), narrowing the rights on the way, and only if it holds `GRANT`. Authority
 composes between processes at runtime instead of being wired by the kernel once. See
 [delegation.md](../delegation.md).
 

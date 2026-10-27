@@ -383,7 +383,7 @@ impl Wiring {
         //
         // PAIR: `drain_input` in components/src/compositor.rs, which reads `TAIL` and then the
         // bytes, the single reader of every writer of the ring. The `ipc_call` below also orders
-        // this producer on its own (the compositor is blocked in `receive_cap` on the doorbell);
+        // this producer on its own (the compositor is blocked in `receive_capability` on the doorbell);
         // see notes/memory-ordering.md.
         core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
         // SAFETY: inside the ring frame.

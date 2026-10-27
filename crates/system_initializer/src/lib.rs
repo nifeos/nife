@@ -69,7 +69,7 @@ use supervision_protocol::{
     retype_obj_from as retype_obj, retype_page_frame_from as retype_page_frame, start_child,
 };
 use user_mode_runtime::{
-    address_space_map_into, call, cap_delete, is_granted, map_page_frame, receive, receive_badged,
-    receive_cap_badged, retype_into_kernel_object, retype_into_page_frame, send, send_capability,
-    slice_page_frame,
+    address_space_map_into, call, capability_delete, is_granted, map_page_frame, receive,
+    receive_badged, receive_capability_badged, retype_into_kernel_object, retype_into_page_frame,
+    send, send_capability, slice_page_frame,
 };

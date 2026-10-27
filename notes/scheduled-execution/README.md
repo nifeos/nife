@@ -21,7 +21,7 @@ work that page points at but does not need to carry whole.
 - [archive-narrowing.md](archive-narrowing.md): why the program set the timetable's archive is
   narrowed to is a written list held by a host test, not computed in the kernel, and the audit
   line that measures it. Moved from the parent under §212 (a prose budget), 2026-10-11 (UTC).
-- [next-after-proofs.md](next-after-proofs.md): why `next_after` snaps onto the beat rather than
+- [periodic-deadline-proofs.md](../periodic-deadline-proofs.md): why `next_after` snaps onto the beat rather than
   counting periods, and why phase preservation is tested rather than proved. Moved from the parent
   under §212, 2026-10-11 (UTC).
 - [the-program.md](the-program.md): what `components/src/timetable.rs` holds, its start-up probes,

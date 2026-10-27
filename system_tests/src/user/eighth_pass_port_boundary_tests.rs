@@ -42,7 +42,7 @@ fn endpoints() -> Endpoints {
 /// reserved fault slot, in its own region. Returns `(tid, region)` for the reaping retry.
 fn child(
     stub: &[u32],
-    capabilities: &[crate::capability_object::Cap],
+    capabilities: &[crate::capability_object::Capability],
     fault: sched::RendezvousId,
 ) -> (u64, u64) {
     let region = crate::memory_region::create(16).expect("no region for the child");
@@ -258,7 +258,7 @@ fn one_port_in_two_slots_falls_when_one_slot_is_deleted_though_its_twin_survives
     // Delete slot 1 only: the twin in slot 2 still names the range with every right, and the
     // cached grant is cleared anyway. Characterized, per the header.
     let (_one, one_region) = child(
-        &x86_programs::cap_delete_then_port_out(1, COM1_BASE, WRITE_VAL),
+        &x86_programs::capability_delete_then_port_out(1, COM1_BASE, WRITE_VAL),
         &duplicated,
         eps.fault,
     );
@@ -271,7 +271,7 @@ fn one_port_in_two_slots_falls_when_one_slot_is_deleted_though_its_twin_survives
     );
     assert_eq!(
         pc,
-        CODE_VA + x86_programs::CAP_DELETE_THEN_PORT_OUT_PC_OFFSET,
+        CODE_VA + x86_programs::CAPABILITY_DELETE_THEN_PORT_OUT_PC_OFFSET,
         "the fault was not at the `out` instruction",
     );
     reap(one_region);

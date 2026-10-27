@@ -15,7 +15,7 @@
 #
 #   ipc_send_receive   the transitive closure of non-cold calls from the SEND/RECEIVE roots. Whole
 #                   symbol sizes, so a cold tail inside a hot function counts. Upper bound.
-#   ipc_call_reply  the same closure from the CALL/RECEIVE_CAP/REPLY roots. **This is the shape the
+#   ipc_call_reply  the same closure from the CALL/RECEIVE_CAPABILITY/REPLY roots. **This is the shape the
 #                   system actually runs**, and it is the larger of the two; see below.
 #   ipc_fastpath    the worse of those two, which is what a round trip costs. Derived, and kept
 #                   under its old name because the tree cites it in a dozen places.
@@ -26,7 +26,7 @@
 #
 # **Two closures and not one, since 2026-09-04 (milestone 188 phase 1).** This gate measured only
 # the SEND/RECEIVE shape until then, which is the shape of the `ipc_rtt_el0` benchmark and of
-# essentially no service in this tree: a client issues `CALL` and a server issues `RECEIVE_CAP` then
+# essentially no service in this tree: a client issues `CALL` and a server issues `RECEIVE_CAPABILITY` then
 # `REPLY`, and `kernel/src/bench/ipc.rs`'s own `call_reply` doc calls that "the one-endpoint shape
 # real services use". Measured on the same binary, the CALL/reply closure is **29% larger** on
 # aarch64 (7,576 against 5,888), because `inter_process_communication_receive_capability` and `ipc_call` carry the one-shot Reply

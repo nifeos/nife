@@ -68,7 +68,7 @@ answers, in the prose's own words, and a derivation.
 
 The last four arrived with the 2026-08-17 documentation sweep, whose lens was the ABI. `syscalls`
 exists because the ABI crate's own front page, the kernel's syscall module, an `Error` variant's
-description and two notes all said the surface was three calls; `SYS_CAP_DELETE` had landed
+description and two notes all said the surface was three calls; `SYS_CAPABILITY_DELETE` had landed
 three weeks earlier and moved none of them. `rights-bits` exists because `ENUMERATE` made the rights
 four and `notes/capability-lifecycle.md` still said three the next day. The `loom-*` pair is the one
 this note asked for by name: it cited `notes/interleaving.md` as the claim a marker could never

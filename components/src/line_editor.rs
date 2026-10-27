@@ -24,7 +24,7 @@
 use line_editor::{Event, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM, RawQueue, Sink, proto};
 use user_mode_runtime::{Reply, call, receive, receive_request, reply, send};
 
-/// The terminal endpoint (slot 0): clients CALL requests here; we serve it with `RECEIVE_CAP`. Its
+/// The terminal endpoint (slot 0): clients CALL requests here; we serve it with `RECEIVE_CAPABILITY`. Its
 /// clients differ by [`MODE_CONSOLE`]/[`MODE_DISPLAY`] (`input` or `keyboard_driver`, directly, for the
 /// keystroke half; `swish` either way), but this server never has to know which: an `OPERATION_BYTES`
 /// CALL looks the same regardless of who is holding the other end (notes/ipc-naming.md). The one
@@ -135,7 +135,7 @@ fn start(mode: u64, control: u64, start: u64) -> ! {
         let req = receive_request(TERM);
         let (w0, w1, badge) = (req.w0, req.w1, req.badge);
         let Some(slot) = req.delivered.into_reply() else {
-            // A plain SEND or a SEND_CAP slipped in; the contract says CALL. With no Reply there is
+            // A plain SEND or a SEND_CAPABILITY slipped in; the contract says CALL. With no Reply there is
             // nobody to answer, so the only honest move is to drop it, and a delegated capability
             // is deleted with it (milestone 706 (a `CALL` server can tell a Reply from a
             // delegation)).

@@ -28,7 +28,7 @@ user-mode workers and a supervisor that watches them forever.
   completes no IPC: it blocks on a rendezvous the kernel signals from `sched::on_tick`, which is
   what makes anything on this machine cross cores at all.
 
-A round trip is `CALL` -> `RECEIVE_CAP` -> `REPLY` -> the caller waking: two block/wake handshakes, the
+A round trip is `CALL` -> `RECEIVE_CAPABILITY` -> `REPLY` -> the caller waking: two block/wake handshakes, the
 protocol `crates/thread_wake_handshake` models and the one the risk's only real defect was in
 (`sched::wake_load_aware` making a receiver `Ready` without a delivery).
 

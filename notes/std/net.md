@@ -19,7 +19,7 @@ contract (DECISIONS §25, notes/net.md, `crates/socket_contract/src/lib.rs`). Th
 the frozen contract, nothing more. It holds the `Stack` endpoint (slot 2) and a frame untyped (slot
 3). An open is a `CALL` on the `Stack` rendezvous, answered with the socket's own capability (§255
 (each socket is its own capability), since 2026-10-07 UTC). The PAL hands that socket a shared
-`PageFrame` it minted and mapped (`SEND_CAP`, `OPERATION_ATTACH_PAGE_FRAME`), and then drives the socket
+`PageFrame` it minted and mapped (`SEND_CAPABILITY`, `OPERATION_ATTACH_PAGE_FRAME`), and then drives the socket
 with `CALL`s on its capability. Control words ride the message; bytes sit in the shared frame. The
 PAL's socket ids are its own registry's indices and never reach net_stack. This is the exact path the hand-written
 `socket_test_client` client walks, reached through std's blocking API instead.

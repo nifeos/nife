@@ -250,7 +250,7 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
         let req = receive_request(REQ);
         let w0 = req.w0;
         let Some(capability) = req.delivered.into_reply() else {
-            // A plain SEND or a SEND_CAP on a CALL-only contract: nothing to answer. See
+            // A plain SEND or a SEND_CAPABILITY on a CALL-only contract: nothing to answer. See
             // `entropy.rs`'s identical comment.
             continue;
         };

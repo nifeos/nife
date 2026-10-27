@@ -28,7 +28,7 @@ so the supervisor never spells `READ` or `WRITE` and cannot spell one wrong.
 
 The stakes are §41 (the endpoint is the broker)'s central refusal. `SEND` and `RECEIVE` are gated by
 different rights on one object, so a rendezvous handed out two ways is a one-way pipe in whichever
-direction each holder was trusted with. A client given `READ` by a typo could park in `RECEIVE_CAP`
+direction each holder was trusted with. A client given `READ` by a typo could park in `RECEIVE_CAPABILITY`
 and take its own server's requests. `a_client_of_the_stable_rendezvous_cannot_become_its_server`
 would then fail for a reason no reader could see from the operator's source.
 
@@ -115,7 +115,7 @@ provisions, and that varies by wiring. `CLIENT`'s `service` is a console on the 
 broker's front rendezvous on the queued one; a contract name does not change. The field is populated
 only for a component that itself serves others. A pure consumer calls through a `CALL`, and §41
 showed that degrades for free. A `CALL` that finds nobody receiving parks on the rendezvous's sender
-queue, and the next server to `RECEIVE_CAP` drains it. A component that serves while calling a
+queue, and the next server to `RECEIVE_CAPABILITY` drains it. A component that serves while calling a
 swappable dependency is different. `broker` blocks its one serving thread on a `CALL` to its backend.
 So it must be told first to stop calling through and start buffering. The warning is a page and a
 signal it is never asked to acknowledge (§231 (a swap's warning to a dependent is advisory, and the

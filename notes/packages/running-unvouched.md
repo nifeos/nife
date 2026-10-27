@@ -11,7 +11,7 @@ the network, entropy, the file service, or anything else the progenitor holds.
 ## The shape, and why it is not a token
 
 §219's limitation 2 found the constraint in the tree. The capability is granted without `GRANT`,
-so its holder cannot pass it on, and the kernel refuses to `SEND_CAP` a capability that lacks
+so its holder cannot pass it on, and the kernel refuses to `SEND_CAPABILITY` a capability that lacks
 `GRANT`. So it cannot ride on a spawn request. What a holder of a `WRITE`-only endpoint can do is
 send on it.
 
@@ -95,7 +95,7 @@ own reason:
 | remove the boot prompt's grant | `caps` said it would not run; the run was refused |
 
 `login`'s half is a kernel test, `login_tests::login_hands_a_listed_session_the_run_unvouched_capability_and_it_cannot_be_passed_on`.
-A session's copy reaches the endpoint `login` was given, and its `SEND_CAP` is refused. Delegating
+A session's copy reaches the endpoint `login` was given, and its `SEND_CAPABILITY` is refused. Delegating
 it with `GRANT` turned that test red: the client's delegation arrived in place of its report.
 
 ## BUGS

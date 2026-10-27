@@ -51,7 +51,8 @@ use network_time_protocol::{Packet, Short, Timestamp, leap, mode};
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
-    Delivered, badge, cap_delete, map_page_frame, receive_request, reply, reply_capability, send,
+    Delivered, badge, capability_delete, map_page_frame, receive_request, reply, reply_capability,
+    send,
 };
 
 // =================================================================================================
@@ -124,11 +125,11 @@ fn server(variant: u64, claimed_ns: u64) -> ! {
         // net_stack's own split (milestone 706 (a `CALL` server can tell a Reply from a
         // delegation)): ATTACH takes a delegation, every other operation a Reply.
         let to = match req.delivered {
-            // A SEND_CAP: the client's shared frame, which we map for ourselves and then drop the
+            // A SEND_CAPABILITY: the client's shared frame, which we map for ourselves and then drop the
             // capability for, because the mapping outlives it. No reply; nobody is waiting.
             Delivered::Delegation(frame) if w0 == OPERATION_ATTACH_PAGE_FRAME => {
                 map_page_frame(frame, PAGE_FRAME_VA, true, MEMORY_REGION);
-                cap_delete(frame);
+                capability_delete(frame);
                 continue;
             }
             other => other.into_reply(),
@@ -147,7 +148,7 @@ fn server(variant: u64, claimed_ns: u64) -> ! {
                 if let Err((to, _)) = reply_capability(to, REP_OK, 0, socket as u64) {
                     reply(to, REP_ERR, 0);
                 }
-                cap_delete(socket as u64);
+                capability_delete(socket as u64);
             }
             OPERATION_SENDTO => {
                 // The length the client declared, which is how the real server learns it too.

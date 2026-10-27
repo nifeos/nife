@@ -22,7 +22,7 @@ use capability_plan::Provisions;
 use hot_swap_contract::log_checks as lc;
 use supervision_protocol::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    address_space_map_into, cap_delete, cntfrq, map_page_frame, now, receive, receive_bound,
+    address_space_map_into, capability_delete, cntfrq, map_page_frame, now, receive, receive_bound,
     receive_fault, revoke_page_frame, send, timer_arm,
 };
 
@@ -283,7 +283,7 @@ fn attack_the_service(
 ) {
     // The replacement is retired first, and the order is the point: once it has answered QUIESCE
     // it never receives again, so the plant's message is the only thing in the queue and a
-    // let-open `RECEIVE_CAP` returns it. With a live server receiving, the queue is always empty
+    // let-open `RECEIVE_CAPABILITY` returns it. With a live server receiving, the queue is always empty
     // and a break would surface as a watchdog hang. The test asserts on its region coming home.
     retire(w, corpses, 3, 34);
 
@@ -706,7 +706,7 @@ fn build_unstarted(
 }
 
 fn launch(u: Unstarted, elf: &elf::Elf, args: [u64; 3], stage: u64) {
-    cap_delete(launch_keeping_region(u, elf, args, stage));
+    capability_delete(launch_keeping_region(u, elf, args, stage));
 }
 
 /// [`launch`], returning the child's region capability instead of dropping it.
@@ -1262,7 +1262,7 @@ fn start_child(
     args: [u64; 3],
     stage: u64,
 ) {
-    cap_delete(start_child_keeping_region(elf, plan, faultep, args, stage));
+    capability_delete(start_child_keeping_region(elf, plan, faultep, args, stage));
 }
 
 /// [`start_child`], returning the child's region capability instead of dropping it: the authority
@@ -1324,8 +1324,8 @@ fn start_bound(
     if !supervision_protocol::start_child(child, 0, 0, 0) {
         bail(stage + 2)
     }
-    cap_delete(tcb);
-    cap_delete(region);
+    capability_delete(tcb);
+    capability_delete(region);
 }
 
 /// Wait for one death, report it, and collect the corpse through the supervision endpoint it

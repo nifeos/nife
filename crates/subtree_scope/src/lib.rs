@@ -2,7 +2,7 @@
 //! (milestone 606 (a directory walk costs what it does on Linux), calef's ruling D, 2026-09-27).
 //!
 //! An eligible server confines a client itself, keyed on the badge milestone 599 (a frame per
-//! filesystem client channel) put on `RECEIVE_CAP`, instead of through `fs_subtree_caretaker`.
+//! filesystem client channel) put on `RECEIVE_CAPABILITY`, instead of through `fs_subtree_caretaker`.
 //! Every eligible server resolves every path through [`walk`] and every handle through [`admit`].
 //! The Kani harnesses at the bottom prove that a step is one name, a walk never widens, follows a
 //! symbolic link or crosses a mount, and a bound badge reaches only its own root and the handles it

@@ -305,7 +305,7 @@ fn serve(mut plane: Plane) -> ! {
         let req = receive_request(REQ);
         let (w0, block) = (req.w0, req.w1);
         let Some(reply_to) = req.delivered.into_reply() else {
-            // A plain SEND or a SEND_CAP on a CALL-only contract: nothing to answer, and a
+            // A plain SEND or a SEND_CAPABILITY on a CALL-only contract: nothing to answer, and a
             // delegation is deleted rather than answered into (milestone 706 (a `CALL` server can
             // tell a Reply from a delegation)).
             continue;

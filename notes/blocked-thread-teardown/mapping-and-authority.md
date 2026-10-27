@@ -53,7 +53,7 @@ sleeper) is exactly the kind of state-dependent rule this tree's ladder says to 
 The rule is that nothing may acquire the ability to name a thread it was not handed. A `ThreadControlBlock`
 capability *is* a thread name that was handed over, so it does not breach the rule. But note what it
 would change: `Object::ThreadControlBlock` is a construction-time authority today. Every method on it
-(`CONFIGURE`, `CAP_INSERT`, `START`) refuses a thread that is not an `Embryo`, so a `ThreadControlBlock` cap is inert
+(`CONFIGURE`, `CAPABILITY_INSERT`, `START`) refuses a thread that is not an `Embryo`, so a `ThreadControlBlock` cap is inert
 the moment the thread runs. Giving it a method that works on a *running* thread converts it from a
 builder's tool into a lifetime handle, which is a real widening and has to be decided as one.
 

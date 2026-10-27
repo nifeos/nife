@@ -203,7 +203,7 @@ milestone 765's lane as a question, below.
    cannot be taken back program by program. C (leave it): loses milestone 95's negative control and
    leaves §162's ruling closing no hole the roadmap named. A frame-capability unmap (seL4's real
    self-unmap path) was not reopened: §162 refused it.
-2. The tree's analogous case. Every other authority a child holds is a `CAP_INSERT` grant chosen
+2. The tree's analogous case. Every other authority a child holds is a `CAPABILITY_INSERT` grant chosen
    by its builder. `FAULT_EP_SLOT` is the one kernel-placed slot, and it is placed by the
    supervisor, not by default.
 3. Prior art. Read above. seL4 for authority, Zircon for lifetime; both explicit.
