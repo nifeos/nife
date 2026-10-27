@@ -167,7 +167,7 @@ fn the_rights_are_the_bits_they_say() {
     assert_eq!(dir::REMOVE_TREE, 1 | 16 | 32);
 }
 
-/// **The parent-rights sentinel is no rights mask, and resolving it never widens** (§98). Every
+/// **The parent-rights sentinel is no rights mask, and resolving it never widens** (§98 (`OPENDIR` cannot be asked to attenuate)). Every
 /// subset of `dir::ALL` is a mask, so the test walks all of them: none equals the sentinel, none
 /// of the sentinel's bits is in `ALL`, and `resolve` leaves every real mask exactly as it was. The
 /// sentinel resolves to the parent's own bits whatever they are, so the child is `parent & parent`.

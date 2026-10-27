@@ -175,7 +175,7 @@ fn opendir_takes_a_path_and_narrows_to_the_request() {
     );
 }
 
-/// **The parent-rights sentinel asks for whatever the parent holds** (§98): the child carries
+/// **The parent-rights sentinel asks for whatever the parent holds** (§98 (`OPENDIR` cannot be asked to attenuate)): the child carries
 /// exactly the parent's rights under a full grant and under a narrowed one, where asking for `ALL`
 /// is `EPERM`. `OPENDIR` and `MKDIR` both take it, along a path as at one name, and it never
 /// widens.

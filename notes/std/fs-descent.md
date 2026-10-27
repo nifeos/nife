@@ -78,7 +78,7 @@ onto one directory inside it, which cannot widen anything (`parent & requested`)
 `openat(dirfd, name, O_DIRECTORY)` hands back on Unix.
 
 The contract has no verb reporting a handle's rights, so a `Dir` cannot ask for the right amount by
-name. It asks for `dir::PARENT_RIGHTS` (§98), a sentinel in `OPENDIR`'s rights word meaning "the
+name. It asks for `dir::PARENT_RIGHTS` (§98 (opendir cannot attenuate)), a sentinel in `OPENDIR`'s rights word meaning "the
 parent's, whatever they are". That is one message under a full grant and under a narrowed one, and
 the server answers `parent & parent`, so nothing widens. The sentinel is `1 << 63`, which no mask
 can equal because a mask is a subset of the seven low bits of `dir::ALL`.

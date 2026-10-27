@@ -41,7 +41,7 @@ AGENTS.md's ladder rather than rung four. Rung four is where `readdir` was caugh
 happening to read the diff.
 
 A held directory in the PAL (milestone 122 (a directory handle `std` can hold)) asks for
-`dir::PARENT_RIGHTS`, the sentinel §98 ruled (`design/decisions/0098-opendir-cannot-attenuate.md`),
+`dir::PARENT_RIGHTS`, the sentinel §98 (`OPENDIR` cannot be asked to attenuate) ruled (`design/decisions/0098-opendir-cannot-attenuate.md`),
 so it reaches the child in one message under any grant. No test under a narrowed grant exercises
 that path, for the same reason, and this fixture shows that a held directory gets exactly the
 parent's rights.

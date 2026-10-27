@@ -122,7 +122,7 @@ impl<D: Disk> Server<D> {
     /// parent, whose absence answers `ENOENT`, so a holder that may not walk in cannot map what is
     /// there.
     pub fn open_dir(&mut self, handle: u32, name: &NameCopy, requested: u64) -> Result<u32> {
-        // The sentinel means the rights of the directory this request is made on (§98); every hop
+        // The sentinel means the rights of the directory this request is made on (§98 (`OPENDIR` cannot be asked to attenuate)); every hop
         // of a path then asks for that, and the result is `parent & parent`.
         let requested = self.dir_at(handle)?.1.resolve(requested);
         // A relative path (milestone 606, ruling A): every directory before the last is a descent

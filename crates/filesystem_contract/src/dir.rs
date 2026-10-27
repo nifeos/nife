@@ -46,7 +46,7 @@ pub const SETTIME: u64 = 1 << 6;
 pub const ALL: u64 = ENUMERATE | READ | WRITE | CREATE | REMOVE | DESCEND | SETTIME;
 
 /// **"The parent's rights, whatever they are"**, spelled as `1 << 63` in the rights word of
-/// [`super::fs::OPENDIR`] and [`super::fs::MKDIR`] (§98, ruled 2026-10-27 UTC).
+/// [`super::fs::OPENDIR`] and [`super::fs::MKDIR`] (§98 (`OPENDIR` cannot be asked to attenuate), ruled 2026-10-27 UTC).
 ///
 /// A client cannot read its own capability, so a directory it holds for later use has no minimum to
 /// ask for, and asking for [`ALL`] is `EPERM` under every narrowed grant. This value says "whatever
@@ -183,19 +183,6 @@ impl Rights {
         Rights(self.0 & requested)
     }
 
-    /// **The rights word a request means**, given the rights of the directory it is made on:
-    /// [`PARENT_RIGHTS`] becomes this set's own bits, and any other word is returned as it is.
-    ///
-    /// It only picks which mask [`Rights::attenuate`] is then given, so the intersection stays that
-    /// one `&`. With the sentinel the result is `self & self`.
-    pub const fn resolve(self, requested: u64) -> u64 {
-        if requested == PARENT_RIGHTS {
-            self.0
-        } else {
-            requested
-        }
-    }
-
     /// Whether this set carries **every** right in `needed`. Written as "all of", not "any of",
     /// because an operation that needs two rights and is allowed by either is a hole.
     pub const fn allows(self, needed: u64) -> bool {
@@ -212,6 +199,22 @@ impl Rights {
     /// back into a [`Rights`]: there is no constructor that takes this.
     pub const fn bits(self) -> u64 {
         self.0
+    }
+
+    /// **The rights word a request means**, given the rights of the directory it is made on:
+    /// [`PARENT_RIGHTS`] becomes this set's own bits, and any other word is returned as it is.
+    ///
+    /// It only picks which mask [`Rights::attenuate`] is then given, so the intersection stays that
+    /// one `&`. With the sentinel the result is `self & self`.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by the lane of §98 (`OPENDIR` cannot be asked to
+    /// attenuate).
+    pub const fn resolve(self, requested: u64) -> u64 {
+        if requested == PARENT_RIGHTS {
+            self.0
+        } else {
+            requested
+        }
     }
 }
 

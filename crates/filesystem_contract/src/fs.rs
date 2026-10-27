@@ -41,7 +41,7 @@ pub const CREATE: u64 = 6;
 pub const TRUNCATE: u64 = 7;
 /// **Descend**: resolve the name in the shared page under the directory handle in [`req_handle`]
 /// and hand back a handle to the child directory. `w1` is the requested [`super::dir`] mask, or
-/// [`super::dir::PARENT_RIGHTS`] for "the parent's rights, whatever they are" (§98), which a client
+/// [`super::dir::PARENT_RIGHTS`] for "the parent's rights, whatever they are" (§98 (`OPENDIR` cannot be asked to attenuate)), which a client
 /// that cannot read its own capability asks for when it holds the directory for later use.
 /// Reply `r0` = the new directory handle, or an error.
 ///
