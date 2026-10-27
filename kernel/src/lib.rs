@@ -35,7 +35,7 @@ mod arch;
 mod bench;
 mod capability_object;
 mod console;
-// The coverage counters, written to the host at exit (milestone 781). aarch64 first.
+// The coverage counters, written to the host at exit (milestone 781 (measure kernel and service coverage under QEMU)). aarch64 first.
 #[cfg(all(feature = "coverage", target_arch = "aarch64"))]
 mod coverage;
 #[cfg(all(feature = "coverage", not(target_arch = "aarch64")))]

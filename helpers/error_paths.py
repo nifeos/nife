@@ -607,7 +607,7 @@ def main():
     out = "target/error-paths"
     os.makedirs(out, exist_ok=True)
     m = list(measured(sys.argv[1]))
-    # A report from an instrumented kernel image (`script/coverage --kernel`, milestone 781)
+    # A report from an instrumented kernel image (`script/coverage --kernel`, milestone 781 (measure kernel and service coverage under QEMU))
     # measures files this list also names. A file in the report is measured, and counts once.
     seen = {r["file"] for r in m}
     u = [r for r in unmeasured() if r["file"] not in seen]

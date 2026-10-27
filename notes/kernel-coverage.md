@@ -55,7 +55,7 @@ between) and the kernel's bar of 2026-10-25.
 | C build step | yes: `build.rs` runs `clang` (hard-coded name) over the ten files for the target |
 
 **The C toolchain.** The step needs a `clang` with the target's backend. CI already installs one:
-`script/bootstrap` installs Ubuntu's clang for the C library (milestone 835), and it carries the
+`script/bootstrap` installs Ubuntu's clang for the C library (milestone 835 (a C library, stage 1: files, clock and memory)), and it carries the
 AArch64, RISC-V and X86 backends. On a Mac, Apple's clang has no RISC-V backend, and
 `helpers/c-library-cc.sh` already documents the Homebrew LLVM that does. Only a build with the
 `coverage` feature runs the step. Nothing in `script/test`, `script/ci-build` or a shipping image does.

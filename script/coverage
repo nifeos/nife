@@ -9,7 +9,7 @@
 #
 #     script/coverage            the host crates, gated at the per-file floor (CI runs this)
 #     script/coverage --kernel   the kernel's unit-test image on aarch64, instrumented and booted
-#                                under QEMU (milestone 781); a report, never a gate, and in no CI job
+#                                under QEMU (milestone 781 (measure kernel and service coverage under QEMU)); a report, never a gate, and in no CI job
 #
 # `--kernel` is `cargo xtask coverage`: it builds the image with `-C instrument-coverage`, boots it
 # bounded, and reads the counters the kernel wrote to the host through semihosting. It needs QEMU

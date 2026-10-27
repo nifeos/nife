@@ -62,7 +62,7 @@ pub fn exit(code: u32) -> ! {
     }
 }
 
-/// `SYS_OPEN`, `SYS_CLOSE` and `SYS_WRITE`, used to put a file on the host (milestone 781).
+/// `SYS_OPEN`, `SYS_CLOSE` and `SYS_WRITE`, used to put a file on the host (milestone 781 (measure kernel and service coverage under QEMU)).
 #[cfg(feature = "coverage")]
 const SYS_OPEN: u64 = 0x01;
 #[cfg(feature = "coverage")]
