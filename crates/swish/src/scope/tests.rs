@@ -11,7 +11,10 @@ fn a_block_is_one_braced_group_and_nothing_after_it() {
     // Braces inside quotes are text.
     assert_eq!(body(b"{ echo '}' }"), Ok(&b"echo '}'"[..]));
     // Nested blocks keep their own braces.
-    assert_eq!(body(b"{ scope { ls } ; pwd }"), Ok(&b"scope { ls } ; pwd"[..]));
+    assert_eq!(
+        body(b"{ scope { ls } ; pwd }"),
+        Ok(&b"scope { ls } ; pwd"[..])
+    );
     for bad in [
         &b""[..],
         b"ls",

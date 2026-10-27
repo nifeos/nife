@@ -426,7 +426,12 @@ mod scope_tests {
     /// connector would run `b)` as a command by itself.
     #[test]
     fn parentheses_refuse_the_whole_line() {
-        for line in [&b"(cd /tmp && ls)"[..], b"echo a ; (rm x)", b"a && (b)", b"a | (b) ; c"] {
+        for line in [
+            &b"(cd /tmp && ls)"[..],
+            b"echo a ; (rm x)",
+            b"a && (b)",
+            b"a | (b) ; c",
+        ] {
             assert_eq!(split(line), Err(Refusal::GroupingParentheses), "{line:?}");
         }
     }

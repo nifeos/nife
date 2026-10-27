@@ -19,11 +19,19 @@ pub(super) const LINES: &[Line] = &[
     line(0, "ls", &["scopes"]),
     // **A bound name does not leak.** Inside the block the name reaches the directory it was filed
     // for; after it, the name reaches nothing.
-    line(0, "scope { bind scopes inner ; cd /inner ; pwd }", &["/scopes"]),
+    line(
+        0,
+        "scope { bind scopes inner ; cd /inner ; pwd }",
+        &["/scopes"],
+    ),
     line(0, "cd /inner", &["no such name in this directory"]),
     // **The block's status is its last command's**, so the connectors around it read the commands
     // inside it.
-    line(0, "scope { cd scopes && echo kept } && echo after", &["kept", "after"]),
+    line(
+        0,
+        "scope { cd scopes && echo kept } && echo after",
+        &["kept", "after"],
+    ),
     // **A block that fails still puts everything back.** The second `cd` fails, the block says why
     // and answers with a failure, and the root is where this shell stands.
     line(
@@ -49,5 +57,9 @@ pub(super) const LINES: &[Line] = &[
     line(0, "ls", &["scopes"]),
     // **The isolation form's spelling is reserved**, and the shell says the child is not built
     // rather than that the program does not exist.
-    line(0, "swish -c ls", &["reserved for an isolated child", "not built yet"]),
+    line(
+        0,
+        "swish -c ls",
+        &["reserved for an isolated child", "not built yet"],
+    ),
 ];
