@@ -86,9 +86,8 @@ impl Framebuffer {
     /// ties it to the encoder: when the key grew from `fb=` to `screen=`, the worst case reached 63
     /// of the old 64 unnoticed, and one byte of headroom is a trap for whoever adds a field.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `MAX_LEN`.
-    pub const MAXIMUM_LEN: usize = 72;
+    /// Name: ratified 2026-10-27 (#2797).
+    pub const MAXIMUM_BYTES: usize = 72;
 
     /// How many bytes the console may touch: `stride * height`.
     ///
@@ -112,7 +111,7 @@ impl Framebuffer {
     ///
     /// # Panics
     ///
-    /// If `out` is shorter than [`Self::MAXIMUM_LEN`].
+    /// If `out` is shorter than [`Self::MAXIMUM_BYTES`].
     ///
     /// # Examples
     ///
@@ -129,7 +128,7 @@ impl Framebuffer {
     ///     order: PixelOrder::Bgrx,
     /// };
     ///
-    /// let mut buffer = [0u8; Framebuffer::MAXIMUM_LEN];
+    /// let mut buffer = [0u8; Framebuffer::MAXIMUM_BYTES];
     /// let written = found.encode(&mut buffer);
     /// assert_eq!(&buffer[..written], b"screen=0x80000000,800,600,3200,bgrx");
     ///
@@ -138,8 +137,8 @@ impl Framebuffer {
     /// ```
     pub fn encode(&self, out: &mut [u8]) -> usize {
         assert!(
-            out.len() >= Self::MAXIMUM_LEN,
-            "encode needs MAXIMUM_LEN bytes"
+            out.len() >= Self::MAXIMUM_BYTES,
+            "encode needs MAXIMUM_BYTES bytes"
         );
         let mut n = 0;
         let mut put = |bytes: &[u8], n: &mut usize| {
@@ -292,7 +291,7 @@ mod verification {
     use super::*;
 
     /// **An encoded token never exceeds the maximum it advertises.** Nothing in the type system
-    /// ties [`Framebuffer::MAXIMUM_LEN`] to what [`Framebuffer::encode`] writes, and an overrun is
+    /// ties [`Framebuffer::MAXIMUM_BYTES`] to what [`Framebuffer::encode`] writes, and an overrun is
     /// a panic in a `no_std` UEFI application. One more field, a longer order token or non-shortest
     /// hex breaks it, and no test can enumerate the widest `u64`.
     /// Falsification: replayable `crates/machine_discovery/falsifications/framebuffer.verification.an_encoded_token_never_exceeds_the_maximum_it_advertises.patch`
@@ -310,9 +309,9 @@ mod verification {
                 PixelOrder::Rgbx
             },
         };
-        let mut out = [0u8; Framebuffer::MAXIMUM_LEN];
+        let mut out = [0u8; Framebuffer::MAXIMUM_BYTES];
         let n = screen.encode(&mut out);
-        assert!(n <= Framebuffer::MAXIMUM_LEN);
+        assert!(n <= Framebuffer::MAXIMUM_BYTES);
         kani::cover!(n >= 60, "the worst case really does get close to the bound");
     }
 
@@ -437,7 +436,7 @@ mod tests {
                 order: PixelOrder::Bgrx,
             },
         ] {
-            let mut buffer = [0u8; Framebuffer::MAXIMUM_LEN];
+            let mut buffer = [0u8; Framebuffer::MAXIMUM_BYTES];
             let n = found.encode(&mut buffer);
             let text = core::str::from_utf8(&buffer[..n]).expect("the encoder writes ASCII");
             assert_eq!(
@@ -448,7 +447,7 @@ mod tests {
         }
     }
 
-    /// `MAXIMUM_LEN` is a constant a caller sizes a stack buffer with, so it has to hold for the
+    /// `MAXIMUM_BYTES` is a constant a caller sizes a stack buffer with, so it has to hold for the
     /// widest value the encoder can meet rather than for the values anyone expects.
     #[test]
     fn the_widest_token_fits_the_advertised_maximum() {
@@ -459,8 +458,8 @@ mod tests {
             stride: u32::MAX,
             order: PixelOrder::Bgrx,
         };
-        let mut buffer = [0u8; Framebuffer::MAXIMUM_LEN];
-        assert!(widest.encode(&mut buffer) <= Framebuffer::MAXIMUM_LEN);
+        let mut buffer = [0u8; Framebuffer::MAXIMUM_BYTES];
+        assert!(widest.encode(&mut buffer) <= Framebuffer::MAXIMUM_BYTES);
     }
 
     /// A description that does not parse must read as "this machine said nothing about a screen",

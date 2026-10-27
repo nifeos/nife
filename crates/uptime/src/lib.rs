@@ -30,13 +30,12 @@ const SECS_PER_DAY: u64 = 24 * SECS_PER_HOUR;
 /// The longest line [`format`] can produce: `u64::MAX` nanoseconds is about 584 years, and
 /// `"up 213503982 days, 23:59:59\n"` is 29 bytes. Rounded up with room to spare.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_LEN`.
-pub const MAXIMUM_LEN: usize = 40;
+/// Name: ratified 2026-10-27 (#2797).
+pub const MAXIMUM_BYTES: usize = 40;
 
 /// A formatted line, owned inline: no allocator on this target.
 pub struct Formatted {
-    buf: [u8; MAXIMUM_LEN],
+    buf: [u8; MAXIMUM_BYTES],
     len: usize,
 }
 
@@ -71,7 +70,7 @@ pub fn format(nanos: u64) -> Formatted {
     let secs = total_secs % SECS_PER_MIN;
 
     let mut w = Writer {
-        buf: [0u8; MAXIMUM_LEN],
+        buf: [0u8; MAXIMUM_BYTES],
         len: 0,
     };
     w.push_bytes(b"up ");
@@ -95,7 +94,7 @@ pub fn format(nanos: u64) -> Formatted {
 /// A fixed-size append cursor, the same shape `date`'s and `wc`'s hand-rolled buffers use: no
 /// allocator on this target, so every formatter here is one.
 struct Writer {
-    buf: [u8; MAXIMUM_LEN],
+    buf: [u8; MAXIMUM_BYTES],
     len: usize,
 }
 
@@ -142,13 +141,13 @@ mod tests {
     #[test]
     fn the_writer_stops_at_the_end_of_its_buffer() {
         let mut w = Writer {
-            buf: [0u8; MAXIMUM_LEN],
+            buf: [0u8; MAXIMUM_BYTES],
             len: 0,
         };
-        w.push_bytes(&[b'x'; MAXIMUM_LEN + 5]);
-        assert_eq!(w.len, MAXIMUM_LEN);
+        w.push_bytes(&[b'x'; MAXIMUM_BYTES + 5]);
+        assert_eq!(w.len, MAXIMUM_BYTES);
         w.push_bytes(b"y");
-        assert_eq!(w.len, MAXIMUM_LEN);
+        assert_eq!(w.len, MAXIMUM_BYTES);
         assert!(w.buf.iter().all(|&b| b == b'x'));
     }
 

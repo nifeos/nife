@@ -102,8 +102,7 @@ const HEADER_LEN: usize = 40;
 /// `arch/arm64/include/asm/boot.h`); the largest blob this tree has met is QEMU `virt`'s, under
 /// 64 KiB. See notes/device-tree.md ("The parser's bounds").
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_TOTALSIZE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_TOTALSIZE: usize = 2 * 1024 * 1024;
 
 fn be32(bytes: &[u8], at: usize) -> Result<u32, Error> {

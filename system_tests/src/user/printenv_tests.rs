@@ -123,11 +123,11 @@ fn assembled_page(
 fn printenv_prints_the_page_it_was_granted() {
     let phys = assembled_page(|b| {
         b.tz("America/Los_Angeles")
-            .expect("a real KNOWN_TZ member")
+            .expect("a real KNOWN_TIME_ZONES member")
             .lang("en_US.UTF-8")
-            .expect("a real KNOWN_LANG member")
+            .expect("a real KNOWN_LOCALES member")
             .term("xterm-256color")
-            .expect("a real KNOWN_TERM member")
+            .expect("a real KNOWN_TERMINAL_TYPES member")
     });
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let out = spawn_printenv(endpoints, Some(phys));
@@ -155,7 +155,7 @@ fn printenv_prints_the_page_it_was_granted() {
 /// different claim `environment_contract`'s `Option<&str>` never makes).
 #[test_case]
 fn a_key_never_declared_reads_as_unset_not_empty() {
-    let phys = assembled_page(|b| b.tz("UTC").expect("UTC is a real KNOWN_TZ member"));
+    let phys = assembled_page(|b| b.tz("UTC").expect("UTC is a real KNOWN_TIME_ZONES member"));
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let out = spawn_printenv(endpoints, Some(phys));
     let mut buf = [0u8; 128];

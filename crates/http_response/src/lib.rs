@@ -29,8 +29,7 @@
 /// this is enough for a real server's, and it is a bound, so a peer that never ends its headers is
 /// refused rather than read forever.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `HEAD_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const HEAD_MAXIMUM: usize = 2048;
 
 /// The most header lines a head may hold. `httparse` fills a caller-supplied array and this crate

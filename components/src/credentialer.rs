@@ -119,7 +119,12 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 
     // Phase two begins here, and phase one can never resume: the receive end of the provision
     // endpoint is gone (see `provision`), so even this code could not go back to it.
-    send(READY, RPT_READY, store.len() as u64, cost.m_kib() as u64);
+    send(
+        READY,
+        RPT_READY,
+        store.len() as u64,
+        cost.memory_kib() as u64,
+    );
     serve(&store, &mut scratch)
 }
 

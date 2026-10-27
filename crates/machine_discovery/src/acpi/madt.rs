@@ -301,7 +301,7 @@ pub const ISA_BUS: u8 = 0;
 
 /// How many legacy ISA interrupts there are: two cascaded 8259s, eight lines each.
 ///
-/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+/// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]
 pub const ISA_INTERRUPT_COUNT: usize = 16;
 
@@ -367,7 +367,7 @@ impl IsaInterruptRouting {
 /// there
 /// are sixteen of those, so a larger one is a malformed table rather than a seventeenth interrupt.
 ///
-/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+/// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]
 pub fn isa_interrupt_table(body: &[u8]) -> [IsaInterruptRouting; ISA_INTERRUPT_COUNT] {
     let mut table = core::array::from_fn(|interrupt_number| {

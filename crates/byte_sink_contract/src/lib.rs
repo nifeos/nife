@@ -39,8 +39,7 @@ pub const OPERATION_EOF: u64 = 1;
 /// the registers a `SEND` already has, and enlarging it means giving a sink a shared page, which is
 /// the thing the module note explains this contract exists to avoid.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `INLINE_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const INLINE_MAXIMUM: usize = 16;
 
 /// The kernel's `abi::Error::Gone`, restated so this crate stays dependency-free.

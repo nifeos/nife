@@ -423,8 +423,7 @@ pub fn activation_reply(status: ActivationStatus, live: u32, member: u64) -> (u6
 /// width of a package header's name field (`package_archive::NAME_LEN`). A longer name, which only
 /// a hand-written table holds, arrives cut at this width. Name: provisional, milestone 919's lane.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `HOLDER_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const HOLDER_MAXIMUM: usize = 32;
 
 /// **The two messages that follow a [`ActivationStatus::NameTaken`] reply on an installer
@@ -462,8 +461,7 @@ pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXI
 /// MiB, are set aside at boot for the shell's staging frames, the progenitor's copy, the child's
 /// pages and a `std` heap (`IMAGE_POOL_PAGES` in `crates/system_initializer`). Provisional.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `IMAGE_MAX_PAGES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const IMAGE_MAXIMUM_PAGES: u64 = 1024;
 
 /// **The budget the progenitor hands the boot shell**, in pages, which both read: the progenitor

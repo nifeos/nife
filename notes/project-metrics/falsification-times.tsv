@@ -155,7 +155,7 @@ inter_process_communication::removing_a_waiter_preserves_the_invariant	0.8
 inter_process_communication::send_preserves_the_invariant	0.6
 inter_process_communication::send_rendezvous_iff_a_receiver_waited	0.6
 inter_process_communication::the_cache_is_never_later_than_an_armed_deadline	3.6
-intrusive_queue::any_push_pop_interleaving_is_queue_ordered_and_lossless	7.8
+intrusive_queue::any_push_pop_interleaving_is_first_in_first_out_and_lossless	7.8
 jh7110_entropy::a_lockup_bit_is_never_overridden	2.0
 jh7110_entropy::an_unseeded_core_never_yields_bytes	1.9
 jh7110_entropy::neither_bit_set_is_always_not_ready	1.9

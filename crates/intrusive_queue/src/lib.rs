@@ -8,10 +8,7 @@
 //! 2. A node outlives its time on the queue; stated once, at [`Unqueued::new`].
 //! 3. The caller serializes all access to a queue and its links (`&mut self`, for the queue).
 //!
-//! Name: provisional. Spelled out under the `fifo` to `queue` ruling of 2026-10-26 (UTC), renamed
-//! before publish from `intrusive_fifo`, which superseded the 2026-08-23 ratification of that
-//! spelling. Before that it was `intrusive`, an adjective without its noun. The primary type is
-//! `Queue<T: Node>`.
+//! Name: ratified 2026-10-27 (#2797). The primary type is `Queue<T: Node>`.
 
 #![cfg_attr(not(test), no_std)]
 
@@ -115,8 +112,7 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 
 /// First in, first out: the queue is two pointers into nodes it does not own, plus a count.
 ///
-/// Name: provisional. Spelled out under the `fifo` to `queue` ruling of 2026-10-26 (UTC), renamed
-/// from `Fifo` with the crate.
+/// Name: ratified 2026-10-27 (#2797).
 ///
 /// # Examples
 ///
@@ -281,9 +277,9 @@ mod verification {
     /// model records the order tags went in; the queue must hand them back in exactly that
     /// order, agree about emptiness and length at every step, and never dereference a stale
     /// link (which Kani would report as an invalid pointer access).
-    /// Falsification: replayable `crates/intrusive_queue/falsifications/verification.any_push_pop_interleaving_is_queue_ordered_and_lossless.patch`
+    /// Falsification: replayable `crates/intrusive_queue/falsifications/verification.any_push_pop_interleaving_is_first_in_first_out_and_lossless.patch`
     #[kani::proof]
-    fn any_push_pop_interleaving_is_queue_ordered_and_lossless() {
+    fn any_push_pop_interleaving_is_first_in_first_out_and_lossless() {
         let mut nodes = [
             N { next: None, tag: 0 },
             N { next: None, tag: 1 },

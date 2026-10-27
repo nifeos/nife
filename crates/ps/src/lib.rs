@@ -29,8 +29,7 @@
 /// is a stack allocation in `ps` and `pgrep`; notes/process-view/the-ps-crate.md has its measured
 /// cost against the child stack.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_ROWS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_ROWS: usize = 256;
 
 /// One line of the listing: a thread and what it is doing.

@@ -53,8 +53,7 @@ const NANOS_PER_SEC: u64 = 1_000_000_000;
 /// clock service has no use for a pre-1970 wall clock and a signed second only invites a sign bug),
 /// so the reachable floor is the Unix epoch itself.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `UNIX_MIN`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const UNIX_MINIMUM: u64 = 0;
 
 /// **The first Unix second [`Timestamp`] cannot represent**: 4233462144, which is 26 February 2104

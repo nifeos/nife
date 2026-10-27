@@ -14,26 +14,22 @@
 
 /// The lowest supported year, 0000. See the module docs for why the range is what it is.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MIN_YEAR`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MINIMUM_YEAR: i32 = 0;
 
 /// The highest supported year, 9999, which is RFC 3339's four-digit `date-fullyear`.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_YEAR`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_YEAR: i32 = 9999;
 
 /// 0000-01-01T00:00:00Z, the earliest instant this crate will name.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MIN_TIMESTAMP`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MINIMUM_TIMESTAMP: i64 = days_from_civil(MINIMUM_YEAR, 1, 1) * SECS_PER_DAY;
 
 /// 9999-12-31T23:59:59Z, the latest instant this crate will name.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_TIMESTAMP`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_TIMESTAMP: i64 =
     days_from_civil(MAXIMUM_YEAR, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
 

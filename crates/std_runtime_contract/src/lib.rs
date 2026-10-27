@@ -176,8 +176,7 @@ pub const HEAP_BASE: u64 = 0x4000_0000;
 /// The heap's growth cap: the heap band's whole width. Only a bound on the address range: the
 /// budget in [`MEMORY_REGION_SLOT`] is the real, per-program limit.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `HEAP_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const HEAP_MAXIMUM: u64 = 256 * 1024 * 1024;
 
 /// **Stack pages a loader maps for a std program**, where a native child of the progenitor gets

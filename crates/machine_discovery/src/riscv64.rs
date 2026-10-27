@@ -21,8 +21,7 @@ use device_tree_blob::{DeviceTreeBlob, Error};
 /// `MAXIMUM_CPUS` and costs one pointer pair each on the stack; a machine with more is reported as
 /// truncated ([`Isa::harts`] saturates) rather than silently half-read.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_HARTS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_HARTS: usize = 16;
 
 /// The base integer ISA the machine declares (`riscv,isa-base`, or the prefix of `riscv,isa`).

@@ -211,8 +211,7 @@ pub enum Error {
 /// wider word or a second one; `design/roadmap/0778-capability-tables-sized-per-process.md` is the
 /// question to answer first.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_SLOTS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_SLOTS: usize = u64::BITS as usize;
 
 pub use storage::CapabilityTable;

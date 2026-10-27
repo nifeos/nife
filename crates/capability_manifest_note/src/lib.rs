@@ -903,8 +903,7 @@ pub const VERBS_VERSION: u32 = 1;
 /// (175 subcommands in git 2.56.0, calef's measure on #1903), and a bound on what a malformed count
 /// can make a reader walk.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_VERBS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_VERBS: usize = 256;
 
 /// One verb's record: the word in `grant_plan::MAXIMUM_VERB` bytes, zero-padded; then the grants'

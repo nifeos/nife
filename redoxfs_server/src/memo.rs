@@ -37,8 +37,7 @@ use subtree_scope::Kind;
 /// The largest file whose bytes are kept. The walk fixture's largest is 256 KiB, and a source
 /// tree's files are almost all smaller.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `FILE_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const FILE_MAXIMUM: usize = 256 * 1024;
 
 /// The most file bytes kept at once. A quarter of the server's 8 MiB heap; the walk fixture is

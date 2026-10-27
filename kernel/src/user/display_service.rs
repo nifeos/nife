@@ -461,7 +461,7 @@ fn screen_terminal_aperture(
     let mut aperture = screen_console::Aperture::new(
         screen,
         video_terminal::CELL_W,
-        video_terminal::MAXIMUM_COLS as u32 * video_terminal::CELL_W,
+        video_terminal::MAXIMUM_COLUMNS as u32 * video_terminal::CELL_W,
         u32::MAX,
     )?;
     // The rows one `Vt` can hold at that width (`video_terminal::MAXIMUM_CELLS` is a cell budget,

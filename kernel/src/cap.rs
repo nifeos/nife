@@ -27,8 +27,7 @@ pub enum Object {
     /// handler masks the line and turns the interrupt into a message, so a driver owns an interrupt
     /// without owning any privilege.
     ///
-    /// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling:
-    /// `Interrupt`, or `InterruptLine` for a wired source only. Spelled out from `Irq`.
+    /// Name: ratified 2026-10-27 (#2797).
     #[doc(alias = "irq")]
     Interrupt(u32),
 

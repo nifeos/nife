@@ -9,14 +9,12 @@
 /// The longest host name a client may write, in dotted text without a trailing dot. RFC 1035's
 /// 255-byte wire limit is 253 characters of dotted text.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `NAME_TEXT_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const NAME_TEXT_MAXIMUM: usize = 253;
 
 /// How many addresses one answer carries back, the same bound `domain_name_system::Answer` keeps.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_ADDRESSES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_ADDRESSES: usize = 8;
 
 /// Where the client writes the host name in its page.
@@ -27,8 +25,7 @@ pub const OFF_ADDRESSES: usize = 0x100;
 
 /// How many clients one resolver can hold grants for (see the crate's BUGS).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `GRANTS_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const GRANTS_MAXIMUM: usize = 8;
 
 /// **Whether `zone` is spelled the one way a zone may be asked for or granted** (milestone 892 (a

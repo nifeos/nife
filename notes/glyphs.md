@@ -227,7 +227,7 @@ Stated plainly, because a demonstrator's caveats are part of the deliverable.
   is exactly a byte stream this engine parses. That is not a hope: the `video_terminal` crate proves it on the
   host by running both.
 - An 80x24 grid on the virtio-gpu scanout: 1120x624 is exactly 80 cells of 14 by 24 of 26.
-  `MAXIMUM_COLS`/`MAXIMUM_ROWS`/`MAXIMUM_CELLS` are sized for the largest firmware screen, not the
+  `MAXIMUM_COLUMNS`/`MAXIMUM_ROWS`/`MAXIMUM_CELLS` are sized for the largest firmware screen, not the
   scanout.
 - The atlas clips a glyph to its cell, so an oblique glyph loses what leans past it;
   `crates/glyph_atlas`'s BUGS has the measure.
