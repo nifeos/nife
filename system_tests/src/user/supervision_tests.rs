@@ -42,16 +42,17 @@ pub(super) fn build_child_in(
     build_child_with(region, stub, report.as_slice(), fault)
 }
 
-/// [`build_child_in`] with the capabilities spelled out: `caps` land in slots 0, 1, ... in order,
+/// [`build_child_in`] with the capabilities spelled out: `capabilities` land in slots 0, 1, ... in order,
 /// and `fault`, if given, in the reserved fault slot, so `START` records it as the child's
 /// supervision endpoint and keeps its badge as the child's label (milestone 105 (the two forks)).
 pub(super) fn build_child_with(
     region: u64,
     stub: &[u32],
-    caps: &[crate::capability_object::Cap],
+    capabilities: &[crate::capability_object::Cap],
     fault: Option<crate::capability_object::Cap>,
 ) -> u64 {
-    super::supervised_child::spawn(region, stub, caps, fault).expect("could not build the child")
+    super::supervised_child::spawn(region, stub, capabilities, fault)
+        .expect("could not build the child")
 }
 
 /// **A crash becomes a message; the corpse survives until reaped; a fresh child runs.** The whole
@@ -312,7 +313,7 @@ const LABEL_TWO: u64 = 0x1abe_0002;
 /// in its own region. Returns `(tid, region)`.
 fn label_reporter(report: sched::RendezvousId, fault_ep: sched::RendezvousId) -> (u64, u64) {
     let region = crate::memory_region::create(16).expect("no region for the supervisor stub");
-    let caps = [
+    let capabilities = [
         crate::capability_object::rendezvous_capability(
             report,
             crate::capability_object::Rights::WRITE,
@@ -323,7 +324,7 @@ fn label_reporter(report: sched::RendezvousId, fault_ep: sched::RendezvousId) ->
         ),
     ];
     (
-        build_child_with(region, LABEL_REPORTER_STUB, &caps, None),
+        build_child_with(region, LABEL_REPORTER_STUB, &capabilities, None),
         region,
     )
 }
