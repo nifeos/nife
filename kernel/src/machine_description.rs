@@ -26,13 +26,13 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
         let entered = arch::entry_el();
         let now = arch::current_el();
         if entered == now {
-            println!("  exception level : EL{now}  (entered here)");
+            println!("  exception level  : EL{now}  (entered here)");
         } else {
-            println!("  exception level : EL{now}  (entered at EL{entered}, dropped in boot.s)");
+            println!("  exception level  : EL{now}  (entered at EL{entered}, dropped in boot.s)");
         }
     }
     arch::isa::print_summary();
-    println!("  stack top       : {:#018x}", stack_top());
+    println!("  stack top        : {:#018x}", stack_top());
     println!(
         "  firmware handoff: {boot_info_pointer:#018x}  ({})",
         if cfg!(target_arch = "x86_64") {
@@ -48,7 +48,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
     // 1. Processors: described (the firmware's tables) and online (this kernel's bring-up)
     //    disagree on a board where a core refused to start.
     println!(
-        "  processors      : {} online of {} described, boot cpu hwid {:#x}",
+        "  processors       : {} online of {} described, boot cpu hwid {:#x}",
         smp::online_count(),
         smp::described_count(),
         smp::hwid(cpu::id()).unwrap_or(0),
@@ -68,7 +68,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
     {
         use crate::arch::{interrupts, timer};
         println!(
-            "  timer           : {} Hz tick, counter at {} MHz, interrupts {}",
+            "  timer            : {} Hz tick, counter at {} MHz, interrupts {}",
             timer::TICK_HZ,
             timer::frequency() / 1_000_000,
             if interrupts::is_enabled() {
@@ -82,17 +82,17 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
     // 6. The initial ramdisk, with "passed but unparseable" apart from "none", which no test can
     //    tell apart.
     match memory::initial_ramdisk_region() {
-        None => println!("  initial ramdisk : none (nothing was passed to this boot)"),
+        None => println!("  initial ramdisk  : none (nothing was passed to this boot)"),
         Some((at, size)) => match user::initial_ramdisk().map(nifefs::Fs::parse) {
             Some(Ok(fs)) => println!(
-                "  initial ramdisk : {size} bytes at {at:#018x}, a nifefs archive of {} program(s)",
+                "  initial ramdisk  : {size} bytes at {at:#018x}, a nifefs archive of {} program(s)",
                 fs.len(),
             ),
             Some(Err(e)) => println!(
-                "  initial ramdisk : {size} bytes at {at:#018x}, but it does not parse: {e:?}",
+                "  initial ramdisk  : {size} bytes at {at:#018x}, but it does not parse: {e:?}",
             ),
             None => println!(
-                "  initial ramdisk : {size} bytes at {at:#018x}, recorded but not reachable",
+                "  initial ramdisk  : {size} bytes at {at:#018x}, recorded but not reachable",
             ),
         },
     }
@@ -102,12 +102,12 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
     match memory::pci_regions() {
         Some(((ecam, ecam_len), (bar, bar_len))) => {
             println!(
-                "  pcie            : ecam {ecam:#018x}..{:#x}, bar window {bar:#x}..{:#x}",
+                "  pcie             : ecam {ecam:#018x}..{:#x}, bar window {bar:#x}..{:#x}",
                 ecam + ecam_len,
                 bar + bar_len,
             );
         }
-        None => println!("  pcie            : none (this machine describes no host bridge)"),
+        None => println!("  pcie             : none (this machine describes no host bridge)"),
     }
 
     // 8. The IOMMU, or its absence: without one, DMA confinement has no hardware half
@@ -117,7 +117,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
     // After the eight: what this kernel did to the machine, not what the machine is.
     arch::mmu::print_summary();
     println!(
-        "  scheduler       : {} thread(s), round robin, preemptive",
+        "  scheduler        : {} thread(s), round robin, preemptive",
         sched::thread_count(),
     );
 

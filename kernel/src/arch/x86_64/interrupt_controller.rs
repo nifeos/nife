@@ -737,7 +737,7 @@ fn prove_a_device_line() {
     let delivered = exceptions::DEVICE_INTERRUPTS.load(Ordering::Relaxed);
     DEVICE_LINE_INTERRUPTS.store(delivered as u64, Ordering::Relaxed);
     crate::println!(
-        "  device interrupt  : pit interrupt {} -> gsi {} on vector {vector:#x}: {delivered} \
+        "  device interrupt : pit interrupt {} -> gsi {} on vector {vector:#x}: {delivered} \
         interrupts in ~0.2s at {hz} Hz",
         timer::PIT_INTERRUPT_NUMBER,
         pit.gsi,
@@ -1001,18 +1001,18 @@ pub(crate) fn send_startup(dest_apic_id: u8, vector: u8) {
 pub(crate) fn print_summary() {
     match (local_apic_phys(), io_apic_phys()) {
         (Some(lapic), Some(ioapic)) => crate::println!(
-            "  interrupts      : local apic {lapic:#018x} (id {}), io apic {ioapic:#018x} ({} \
+            "  interrupts       : local apic {lapic:#018x} (id {}), io apic {ioapic:#018x} ({} \
             entries)",
             local_apic_id(),
             io_apic_entries(),
         ),
         (Some(lapic), None) => crate::println!(
-            "  interrupts      : local apic {lapic:#018x} (id {}), no io apic (the MADT \
+            "  interrupts       : local apic {lapic:#018x} (id {}), no io apic (the MADT \
             described none)",
             local_apic_id(),
         ),
         (None, _) => crate::println!(
-            "  interrupts      : none (the MADT did not say where the local apic is)",
+            "  interrupts       : none (the MADT did not say where the local apic is)",
         ),
     }
 }

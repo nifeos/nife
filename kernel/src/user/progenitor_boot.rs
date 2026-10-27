@@ -57,7 +57,7 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     // From the machine's description when it gave one, else QEMU virt's constant. The source is
     // printed so a bench transcript names it (a wrong PLIC source cost a boot on the JH7110).
     let (uart_interrupt_number, uart_interrupt_source) = uart_interrupt_number_and_source();
-    crate::println!("  uart interrupt  : {uart_interrupt_number} ({uart_interrupt_source})");
+    crate::println!("  uart interrupt   : {uart_interrupt_number} ({uart_interrupt_source})");
     // The stride is the one fact about this UART the userspace drivers cannot see for themselves,
     // and a wrong one is a console that prints nothing at all, so the transcript states it.
     let uart_shape = crate::console::uart_register_shape();

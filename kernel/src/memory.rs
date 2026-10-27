@@ -1130,7 +1130,7 @@ static INITIAL_RAMDISK_SIZE: AtomicUsize = AtomicUsize::new(0);
 )]
 pub(crate) fn print_summary() {
     let Some(s) = stats() else {
-        println!("  memory          : uninitialized");
+        println!("  memory           : uninitialized");
         return;
     };
 
@@ -1138,7 +1138,7 @@ pub(crate) fn print_summary() {
     let kib = |frames: usize| (frames as u64 * FRAME_SIZE) / 1024;
 
     println!(
-        "  memory          : {} MiB total, {} MiB free ({} KiB in use)",
+        "  memory           : {} MiB total, {} MiB free ({} KiB in use)",
         mib(s.total),
         mib(s.free()),
         kib(s.used),
