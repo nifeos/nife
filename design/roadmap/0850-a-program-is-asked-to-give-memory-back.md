@@ -3,7 +3,7 @@ status: NOT-STARTED
 raised: 2026-10-06
 promoted_from: a-program-is-asked-to-give-memory-back
 milestone_dependencies: 851
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no

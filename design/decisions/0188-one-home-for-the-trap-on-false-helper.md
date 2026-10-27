@@ -93,4 +93,7 @@ on rather than speed.
 
 ## State
 
-The section stays PROPOSED until the name is ratified; calef ratifies from `script/names --unratified`.
+Milestone 408 (one home for `fn check(ok: bool)`) is BUILT: the lifted function is
+`user_mode_runtime::require` (`crates/user_mode_runtime/src/process.rs`), the recommended name, and
+it carries a provisional `Name:` line. The section stays PROPOSED until an architect ratifies that
+name through `script/names --unratified`.

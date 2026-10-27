@@ -8,6 +8,13 @@
 //! secret and an unknown identity alike, so the verify endpoint is neither a decryption oracle nor
 //! an identity oracle. See notes/credentials.md and notes/credentials/contract.md.
 //!
+//! Limitation, recorded by §172 (whether a verify endpoint names the identity it asks about): a
+//! verify request names the identity it asks about, so a holder of the verify endpoint can test a
+//! guess against any name. It cannot enumerate names, because [`MISMATCH`] hides whether the name
+//! exists. The endpoint is not narrowed to one identity because `login` must check whatever name a
+//! person types; a per-identity endpoint kind can be added beside this one when a program that acts
+//! for one identity needs it.
+//!
 //! Name: ratified 2026-08-23 (calef), renamed from `cred_proto` to spell out the contraction;
 //! `_contract` per calef's 2026-10-18 ruling.
 
