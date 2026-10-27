@@ -7,8 +7,8 @@ ratified_by: calef
 
 # 16. Object revocation: reclaim the objects a process built (extends §13)
 
-(four amendment blocks below: milestones 31 and 28, the job pool's holes on 2026-10-03, and a running
-root on 2026-10-05.)
+(five amendment blocks below: milestones 31 and 28, the job pool's holes on 2026-10-03, a running
+root on 2026-10-05, and a virtio slot on 2026-10-27.)
 
 <!-- writing-standards: exception. Marked 2026-10-03 (UTC) by the maintainer session. Reason: this change
 adds a dated amendment that carries no bold of its own, and touches two existing lines only to point
@@ -195,3 +195,40 @@ want. Refused: both together, because once the kill exists the `CONFIGURE` refus
 
 No ABI change: no new method, number or refusal. Not yet built; milestone 765 (a destroyed region cannot
 free the root a running thread walks) builds it, after milestone 95 (an unmap primitive). Until then the hole stands as recorded at `revoke::revoke_region`.
+
+## Amendment (2026-10-27): a virtio device slot is released when its driver dies, and its name goes stale
+
+Ruled by the architect on 2026-10-27 (UTC), on the options in
+`design/roadmap/0647-a-virtio-slot-comes-back-when-its-driver-dies.md`. Recorded by the maintainer.
+
+The kernel's virtio device table never gave a slot back, so every confined-device test cost one slot
+for the rest of the boot, and `MAX_DEVICES` was raised ten times to keep up. Reusing a slot changes
+what an `Object::Virtio` capability means, which is why it is recorded here.
+
+Now, once milestone 647 builds it, when the driver that holds a transport dies, the kernel unregisters it in three steps. It
+resets the device by writing zero to the virtio status register, so the next holder finds a device
+that has forgotten the first driver's queues and features. It bumps the slot's generation. It frees
+the slot for the next registration. An `Object::Virtio` capability names its slot together with the
+generation it was minted at, so a capability that outlives its device is refused with the same stale
+answer a destroyed region or a reaped thread gives, and never resolves to the device that took the
+slot next.
+
+This is the model above applied once more: generational names, as for regions and thread ids
+(`crates/slots`, `generational_table`), and no capability derivation tree. A holder of a capability
+to a released device has nothing to hunt down, because the name itself no longer matches.
+
+The generation is 32 bits and wraps, as it does in `generational_table`. A stale capability would
+resolve to a later occupant only after about four billion releases of one slot, and that is accepted
+as it is for regions and thread ids.
+
+Refused: leaving the table append-only and raising `MAX_DEVICES` again, because it is a counter of
+every transport a boot has ever registered rather than of devices that exist, and it binds every lane
+that adds a confined-device test. Refused: a derivation tree over transports, for the reason the
+model above gives for objects. Prior art weighed: Mach port-name generations (the same shape, a
+name that carries a generation), Zircon kernel object ids that are never reused (no wrap, at the price of
+an id space that only grows), seL4 revocation (needs the derivation tree), and VFIO
+resetting a device on release (the source of the reset step).
+
+No new syscall, method or number: a program that held a released device's capability now gets the
+stale refusal it already gets elsewhere. Milestone 647 builds it, and settles how
+`entropy_service::ensure`'s one-service-per-device rule meets a released and reused slot.
