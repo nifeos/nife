@@ -17,7 +17,7 @@ a convention every future spawn path is written against, so it sits in the *move
 undone; be methodical on what cannot* tenet's irreversible category. Each answer below says what it
 would make true and what it would cost. Picking is calef's.
 
-Amended 2026-10-27 (UTC) for milestone 933: [`the amendment`](0142-spawn-retention/amendment-2026-10-27.md).
+Amended 2026-10-27 (UTC) for milestone 933 (every job is built the way a supervised job is): [`the amendment`](0142-spawn-retention/amendment-2026-10-27.md).
 
 The evidence is in [`0142-spawn-retention/`](0142-spawn-retention/README.md); this page is
 complete without it:
