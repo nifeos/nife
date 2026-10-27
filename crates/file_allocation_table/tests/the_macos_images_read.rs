@@ -1,12 +1,14 @@
 //! **The two images a macOS host formatted and wrote are read to their recorded hashes.**
 //!
 //! `fixtures/macos/` holds a bare FAT32 volume and the same files inside an MBR partition, both
-//! compressed (see its README for provenance). Every file in them is found by walking the
-//! directories with this crate and its bytes are hashed with a SHA-256 written here, so the
-//! hashes come from nothing this crate computed. Each expected hash is the line of
-//! `notes/filesystem-crates-2026-10-07/expected.sha256` for that file.
+//! compressed (see its README for provenance). The bare volume opens as a volume. The other image
+//! opens through its partition table, the way a whole-disk image does. Every file is then found by
+//! walking the directories with this crate, read through `open_file`, and hashed with a SHA-256
+//! written here, so the hashes come from nothing this crate computed. Each expected hash is the
+//! line of `notes/filesystem-crates-2026-10-07/expected.sha256` for that file. Path lookup finds
+//! each file too, by its long name and its short name.
 
-use file_allocation_table::{NamedEntry, SectorDevice, SectorSize, Volume};
+use file_allocation_table::{MasterBootRecord, NamedEntry, SectorDevice, SectorSize, Volume};
 
 const BARE: &[u8] = include_bytes!("fixtures/macos/fat32.img.zst");
 const PARTITIONED: &[u8] = include_bytes!("fixtures/macos/fat32-mbr.img.zst");
@@ -27,13 +29,10 @@ fn expand(compressed: &[u8]) -> Vec<u8> {
     out
 }
 
-/// An image in memory, starting `offset` sectors in.
-struct Image<'a> {
-    bytes: &'a [u8],
-    offset: u64,
-}
+/// A disk image in memory.
+struct Memory<'a>(&'a [u8]);
 
-impl SectorDevice for Image<'_> {
+impl SectorDevice for Memory<'_> {
     type Error = u64;
 
     fn sector_size(&self) -> SectorSize {
@@ -41,54 +40,38 @@ impl SectorDevice for Image<'_> {
     }
 
     fn read_sector(&mut self, index: u64, buffer: &mut [u8]) -> Result<(), u64> {
-        let start = usize::try_from((index + self.offset) * 512).map_err(|_| index)?;
-        let bytes = self.bytes.get(start..start + 512).ok_or(index)?;
+        let start = usize::try_from(index * 512).map_err(|_| index)?;
+        let bytes = self.0.get(start..start + 512).ok_or(index)?;
         buffer.copy_from_slice(bytes);
         Ok(())
     }
 }
 
-/// The first sector of the MBR's first partition.
-fn first_partition(disk: &[u8]) -> u64 {
-    assert_eq!(&disk[510..512], &[0x55, 0xAA], "an MBR signature");
-    u64::from(u32::from_le_bytes(
-        disk[446 + 8..446 + 12].try_into().unwrap(),
-    ))
-}
-
-/// The bytes of the file `entry` names, read cluster by cluster through its chain.
-fn read(volume: &mut Volume<Image<'_>>, image: &[u8], offset: u64, entry: &NamedEntry) -> Vec<u8> {
-    let boot = *volume.boot_sector();
-    let size = entry.size_bytes() as usize;
-    let mut out = Vec::new();
-    if size == 0 {
-        return out;
-    }
-    let clusters: Vec<u32> = volume
-        .chain(entry.first_cluster())
-        .map(|c| c.expect("the chain reads"))
-        .collect();
-    assert_eq!(
-        clusters.len(),
-        size.div_ceil(boot.bytes_per_cluster() as usize)
+/// The bytes of the file `entry` names.
+fn read<D: SectorDevice>(volume: &mut Volume<D>, entry: &NamedEntry) -> Vec<u8>
+where
+    D::Error: std::fmt::Debug,
+{
+    let mut file = volume.open_file(entry).expect("a file");
+    let mut out = vec![0u8; entry.size_bytes() as usize];
+    assert_eq!(file.read(&mut out).expect("the file reads"), out.len());
+    let mut more = [0u8; 1];
+    assert!(
+        matches!(file.read(&mut more), Ok(0)),
+        "no byte past the size"
     );
-    for cluster in clusters {
-        let at = (offset as usize + boot.cluster_first_sector(cluster).unwrap() as usize) * 512;
-        out.extend_from_slice(&image[at..at + boot.bytes_per_cluster() as usize]);
-    }
-    out.truncate(size);
     out
 }
 
 /// Every file under `first`, as its path (each part its long name when it has one) and bytes.
-fn files(
-    volume: &mut Volume<Image<'_>>,
-    image: &[u8],
-    offset: u64,
+fn files<D: SectorDevice>(
+    volume: &mut Volume<D>,
     first: u32,
     prefix: &str,
     out: &mut Vec<(String, Vec<u8>)>,
-) {
+) where
+    D::Error: std::fmt::Debug,
+{
     let entries: Vec<NamedEntry> = volume
         .entries(first)
         .map(|e| e.expect("the directory reads"))
@@ -111,35 +94,30 @@ fn files(
         };
         let path = format!("{prefix}{name}");
         if entry.is_directory() {
-            files(
-                volume,
-                image,
-                offset,
-                entry.first_cluster(),
-                &format!("{path}/"),
-                out,
-            );
+            files(volume, entry.first_cluster(), &format!("{path}/"), out);
         } else {
-            out.push((path, read(volume, image, offset, &entry)));
+            out.push((path, read(volume, &entry)));
         }
     }
 }
 
-fn listing(image: &[u8], offset: u64) -> Vec<(String, Vec<u8>)> {
-    let mut volume = Volume::open(Image {
-        bytes: image,
-        offset,
-    })
-    .expect("a macOS volume opens");
+fn listing<D: SectorDevice>(volume: &mut Volume<D>) -> Vec<(String, Vec<u8>)>
+where
+    D::Error: std::fmt::Debug,
+{
     let mut out = Vec::new();
-    files(&mut volume, image, offset, 0, "", &mut out);
+    files(volume, 0, "", &mut out);
     out.sort();
     out
 }
 
-/// Hold `found` to the three recorded files. macOS also leaves `.fseventsd` on a volume it
-/// mounted, which is not a file the script wrote.
-fn check(found: &[(String, Vec<u8>)]) {
+/// Hold `found` to the three recorded files, and find each by path. macOS also leaves
+/// `.fseventsd` on a volume it mounted, which is not a file the script wrote.
+fn check<D: SectorDevice>(volume: &mut Volume<D>)
+where
+    D::Error: std::fmt::Debug,
+{
+    let found = listing(volume);
     let mut names: Vec<String> = found.iter().map(|(p, _)| p.to_ascii_lowercase()).collect();
     names.sort();
     for wanted in ["hello.txt", "long file name.txt", "sub/data.bin"] {
@@ -148,7 +126,7 @@ fn check(found: &[(String, Vec<u8>)]) {
             "{wanted} is missing from {names:?}"
         );
     }
-    for (path, bytes) in found {
+    for (path, bytes) in &found {
         let want = match path.to_ascii_lowercase().as_str() {
             "hello.txt" => HELLO,
             "long file name.txt" => LONG,
@@ -157,21 +135,51 @@ fn check(found: &[(String, Vec<u8>)]) {
         };
         assert_eq!(sha256(bytes), want, "{path}");
     }
+    // The same files by lookup: the 8.3 names macOS stored upper-case, in any case, and the long
+    // name, by its short alias as well.
+    for (path, want) in [
+        ("hello.txt", HELLO),
+        ("HELLO.TXT", HELLO),
+        ("/Sub/Data.bin", DATA),
+        ("sub\\data.bin", DATA),
+        ("long file name.TXT", LONG),
+        ("Long File Name.txt", LONG),
+    ] {
+        let entry = volume
+            .lookup(path)
+            .unwrap_or_else(|e| panic!("{path}: {e:?}"));
+        assert_eq!(sha256(&read(volume, &entry)), want, "{path}");
+    }
 }
 
 #[test]
 fn the_bare_volume_reads_to_its_recorded_hashes() {
     let image = expand(BARE);
-    let found = listing(&image, 0);
+    let mut volume = Volume::open(Memory(&image)).expect("a macOS volume opens");
     // The long name is stored as written; the 8.3 names macOS upper-cases.
-    assert!(found.iter().any(|(p, _)| p == "Long File Name.txt"));
-    check(&found);
+    assert!(
+        listing(&mut volume)
+            .iter()
+            .any(|(p, _)| p == "Long File Name.txt")
+    );
+    check(&mut volume);
 }
 
 #[test]
 fn the_volume_inside_the_partition_table_reads_to_its_recorded_hashes() {
     let image = expand(PARTITIONED);
-    check(&listing(&image, first_partition(&image)));
+    assert!(
+        Volume::open(Memory(&image)).is_err(),
+        "an MBR's sector 0 is not a FAT boot sector"
+    );
+    let table = MasterBootRecord::read(&mut Memory(&image)).expect("a partition table");
+    let partition = table
+        .partitions()
+        .find(|p| p.holds_file_allocation_table())
+        .expect("a FAT partition");
+    assert_eq!((partition.kind(), partition.first_sector()), (0x0B, 63));
+    let mut volume = Volume::open(partition.device(Memory(&image))).expect("the partition opens");
+    check(&mut volume);
 }
 
 /// SHA-256 as lower-case hex (FIPS 180-4), so the expected hashes are checked by code that is

@@ -8,12 +8,15 @@
 //! the device path in `BootSector::read`, and every accessor a caller reaches for afterwards, and
 //! checks the same geometry the harnesses prove. Then it opens the volume and walks its tree,
 //! holding every chain to the volume's data clusters and count, which the harnesses prove only on
-//! small volumes (notes/fuzzing/targets.md).
+//! small volumes (notes/fuzzing/targets.md). It also reads every file it finds through
+//! `open_file`, holding the bytes returned to the size the entry states, looks entries up by
+//! path, and opens the volumes a partition table names.
 
 #![no_main]
 
 use file_allocation_table::{
-    BootSector, ChainError, RootDirectory, SectorDevice, SectorSize, Volume,
+    BootSector, ChainError, FileReadError, MasterBootRecord, RootDirectory, SectorDevice,
+    SectorSize, Volume,
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -51,6 +54,7 @@ fuzz_target!(|data: &[u8]| {
     ] {
         check(data, size);
         walk(data, size);
+        partitions(data, size);
     }
 });
 
@@ -129,6 +133,61 @@ fn walk(bytes: &[u8], size: SectorSize) {
     directory(&mut volume, 0, DEPTH, &mut budget);
 }
 
+/// Open each partition a table in sector 0 names, and walk the volume inside it.
+fn partitions(bytes: &[u8], size: SectorSize) {
+    let Ok(table) = MasterBootRecord::read(&mut Image { bytes, size }) else {
+        return;
+    };
+    for partition in table.partitions() {
+        assert!(partition.sector_count() >= 1);
+        let device = partition.device(Image { bytes, size });
+        let Ok(mut volume) = Volume::open(device) else {
+            continue;
+        };
+        let mut budget = BUDGET;
+        let mut root = volume.root_entries();
+        while let Some(Ok(entry)) = root.next() {
+            if budget == 0 {
+                break;
+            }
+            budget -= 1;
+            let _ = entry.first_cluster();
+        }
+    }
+}
+
+/// Read the file `entry` names to its end, a sector or less at a time, holding the bytes returned
+/// to its size and a failed reader to its error.
+fn read_file(volume: &mut Volume<Image<'_>>, entry: &file_allocation_table::NamedEntry, budget: &mut u32) {
+    let Ok(mut file) = volume.open_file(entry) else {
+        return;
+    };
+    let size = u64::from(file.size_bytes());
+    let mut total = 0u64;
+    let mut buffer = [0u8; 700];
+    loop {
+        if *budget == 0 {
+            return;
+        }
+        *budget -= 1;
+        match file.read(&mut buffer) {
+            Ok(0) => break,
+            Ok(read) => {
+                total += read as u64;
+                assert!(total <= size, "a file read returned bytes past its size");
+            }
+            Err(FileReadError::AfterAFailure) => panic!("a reader failed before it was used"),
+            Err(_) => {
+                assert!(matches!(file.read(&mut buffer), Err(FileReadError::AfterAFailure)));
+                return;
+            }
+        }
+    }
+    assert_eq!(total, size, "a file ended before its size without an error");
+    file.seek(size as u32 / 2);
+    let _ = file.read(&mut buffer);
+}
+
 /// Read the directory starting at `first` (0 for the root) and what it names.
 fn directory(volume: &mut Volume<Image<'_>>, first: u32, depth: u32, budget: &mut u32) {
     let mut entries = Vec::new();
@@ -171,6 +230,9 @@ fn directory(volume: &mut Volume<Image<'_>>, first: u32, depth: u32, budget: &mu
             continue;
         }
         chain(volume, entry.first_cluster(), budget);
+        if !entry.is_directory() {
+            read_file(volume, &entry, budget);
+        }
         if entry.is_directory() && depth > 0 {
             directory(volume, entry.first_cluster(), depth - 1, budget);
         }
