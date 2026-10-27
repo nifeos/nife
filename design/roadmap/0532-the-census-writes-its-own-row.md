@@ -1,14 +1,20 @@
 ---
-status: NOT-STARTED
+status: SUPERSEDED
 raised: 2026-09-20
+superseded_by: 740
 promoted_from: the-census-writes-its-own-row
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
 # 532. The mutation census should write its own row, rather than a person remembering to
+
+Overtaken by commit `c2d34982f` (2026-10-03, milestone 740): the weekly mutation workflow's
+`record` job appends each census to the tree through a pull request, so capture no longer depends on
+someone running `script/mutation-census --add-run`. That is this block's option 2. The text below is
+the block as filed.
 
 Promoted from the proposal `the-census-writes-its-own-row`, filed 2026-09-20, on calef's instruction
 of 2026-09-20 to give every proposal on `main` a number. The text below is the proposal's own,

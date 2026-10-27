@@ -1,6 +1,7 @@
 ---
-status: NOT-STARTED
+status: SUPERSEDED
 raised: 2026-09-24
+superseded_by: 589, §218
 promoted_from: riscv64-code-the-prover-can-already-compile
 milestone_dependencies: none
 decision_dependencies: none
@@ -9,6 +10,11 @@ specific_machine: none
 needs_person: no
 ---
 # 650. Some of `arch/riscv64/` compiles under Kani on an aarch64 host today, and the tree says none can
+
+Overtaken by §218 (carry a Kani patch so riscv64 is proved) and milestone 589: the carried patch lets
+Kani target riscv64 from the aarch64 and x86_64 hosts, so all of `arch/riscv64/` is reachable with
+its real `cfg` dispatch, which this block's probe module reached for one file only. The text below is
+the block as filed.
 
 *Title and slug are drafts.*
 Raised while pricing `design/fatal-risks/README.md` risk 2 (the proofs prove trivia) (pull request
