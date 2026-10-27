@@ -28,7 +28,7 @@ pub(crate) const CTRL_USE_INTERNAL_DMAC: u32 = 1 << 25;
 
 /// Power enable, one bit per card slot. Slot 0 is the only one on the JH7110.
 pub(crate) const PWREN: u32 = 0x004;
-/// Clock divider 0 in bits 7:0: card clock is `base / (2 * div)`, or `base` itself when 0.
+/// Clock divider 0 in bits 7:0: card clock is `base / (2 * divider)`, or `base` itself when 0.
 pub(crate) const CLKDIV: u32 = 0x008;
 /// Which divider each card uses. Always 0 here.
 pub(crate) const CLKSRC: u32 = 0x00c;
@@ -138,8 +138,9 @@ pub(crate) const STATUS_FIFO_FULL: u32 = 1 << 3;
 pub(crate) const STATUS_DATA_BUSY: u32 = 1 << 9;
 
 /// How many FIFO words are filled, bits 29:17 of `STATUS`.
+#[doc(alias = "fifo")]
 #[must_use]
-pub(crate) const fn fifo_count(status: u32) -> u32 {
+pub(crate) const fn queue_count(status: u32) -> u32 {
     (status >> 17) & 0x1fff
 }
 
@@ -262,8 +263,12 @@ pub(crate) const VERID_240A: u32 = 0x240a;
 /// `dw_mci_probe` makes the same test; OpenBSD assumes `0x200` and so supports only the later
 /// releases. Reading the version rather than assuming it is what lets the bench transcript say
 /// which applied.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
+/// authors, and copied register names keep `FIFO`; was `fifo_offset`.
+#[doc(alias = "fifo")]
 #[must_use]
-pub const fn fifo_offset(verid: u32) -> u32 {
+pub const fn queue_offset(verid: u32) -> u32 {
     if verid & 0xffff < VERID_240A {
         0x100
     } else {
@@ -275,8 +280,12 @@ pub const fn fifo_offset(verid: u32) -> u32 {
 /// `None` for anything else. This driver moves the FIFO in 32-bit words and so refuses the others;
 /// OpenBSD does the same for 16-bit and handles 64-bit as two words, which is a step this driver
 /// has not needed yet.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
+/// authors; was `fifo_width`.
+#[doc(alias = "fifo")]
 #[must_use]
-pub const fn fifo_width(hcon: u32) -> Option<u32> {
+pub const fn queue_width(hcon: u32) -> Option<u32> {
     match (hcon >> 7) & 0x7 {
         0 => Some(2),
         1 => Some(4),
@@ -313,14 +322,14 @@ mod tests {
 
     #[test]
     fn hcon_names_every_fifo_width_and_refuses_the_reserved_codes() {
-        assert_eq!(fifo_width(0), Some(2));
-        assert_eq!(fifo_width(1 << 7), Some(4));
-        assert_eq!(fifo_width(2 << 7), Some(8));
+        assert_eq!(queue_width(0), Some(2));
+        assert_eq!(queue_width(1 << 7), Some(4));
+        assert_eq!(queue_width(2 << 7), Some(8));
         for code in 3..8 {
-            assert_eq!(fifo_width(code << 7), None, "code {code}");
+            assert_eq!(queue_width(code << 7), None, "code {code}");
         }
         // Bits outside 9:7 do not leak into the width.
-        assert_eq!(fifo_width(!(7 << 7) | (1 << 7)), Some(4));
+        assert_eq!(queue_width(!(7 << 7) | (1 << 7)), Some(4));
         assert!(uses_64_bit_direct_memory_access(1 << 27));
         assert!(!uses_64_bit_direct_memory_access(!(1 << 27)));
         // radon's word, read on both slots: no external DMA interface, so an IDMAC, and 32-bit
@@ -357,16 +366,16 @@ mod tests {
 
     #[test]
     fn the_fifo_moves_at_release_2_40a_and_the_pio_thresholds_straddle_half() {
-        assert_eq!(fifo_offset(0x5342_2309), 0x100);
-        assert_eq!(fifo_offset(0x5342_240a), 0x200);
-        assert_eq!(fifo_offset(0x5342_290a), 0x200);
+        assert_eq!(queue_offset(0x5342_2309), 0x100);
+        assert_eq!(queue_offset(0x5342_240a), 0x200);
+        assert_eq!(queue_offset(0x5342_290a), 0x200);
         // depth 32: receive watermark 15, transmit 16, OpenBSD's burst code 2.
         assert_eq!(fifoth_for_pio(32), (2 << 28) | (15 << 16) | 16);
         assert_eq!(fifoth_rx_watermark(fifoth_for_pio(32)), 15);
         // A one-word FIFO cannot go below zero.
         assert_eq!(fifoth_rx_watermark(fifoth_for_pio(1)), 0);
-        assert_eq!(fifo_count(0x1fff << 17), 0x1fff);
-        assert_eq!(fifo_count(!(0x1fff << 17)), 0);
+        assert_eq!(queue_count(0x1fff << 17), 0x1fff);
+        assert_eq!(queue_count(!(0x1fff << 17)), 0);
     }
 
     /// **Every bit, as a number.** The driver and `sim` both name these constants, so a wrong one

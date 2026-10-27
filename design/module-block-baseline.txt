@@ -953,8 +953,6 @@ crates/designware_mobile_storage/src/host.rs::Registers
 crates/designware_mobile_storage/src/host.rs::card_clock
 crates/designware_mobile_storage/src/host.rs::clock_divider
 crates/designware_mobile_storage/src/host.rs::command
-crates/designware_mobile_storage/src/host.rs::fifo_depth
-crates/designware_mobile_storage/src/host.rs::fifo_step
 crates/designware_mobile_storage/src/host.rs::into_registers
 crates/designware_mobile_storage/src/host.rs::new
 crates/designware_mobile_storage/src/host.rs::read
@@ -964,7 +962,6 @@ crates/designware_mobile_storage/src/host.rs::write
 crates/designware_mobile_storage/src/jh7110.rs
 crates/designware_mobile_storage/src/jh7110.rs::COMPATIBLE_MAINLINE
 crates/designware_mobile_storage/src/jh7110.rs::COMPATIBLE_VENDOR
-crates/designware_mobile_storage/src/jh7110.rs::FIFO_DEPTH
 crates/designware_mobile_storage/src/jh7110.rs::INTERRUPTS
 crates/designware_mobile_storage/src/jh7110.rs::SDIO0_BASE
 crates/designware_mobile_storage/src/jh7110.rs::SDIO1_BASE
@@ -992,8 +989,6 @@ crates/designware_mobile_storage/src/registers.rs::TCBCNT
 crates/designware_mobile_storage/src/registers.rs::UHS
 crates/designware_mobile_storage/src/registers.rs::WINDOW_USED
 crates/designware_mobile_storage/src/registers.rs::WRTPRT
-crates/designware_mobile_storage/src/registers.rs::fifo_offset
-crates/designware_mobile_storage/src/registers.rs::fifo_width
 crates/designware_mobile_storage/src/sd.rs
 crates/designware_mobile_storage/src/sd.rs::BLOCK
 crates/designware_mobile_storage/src/sd.rs::Card

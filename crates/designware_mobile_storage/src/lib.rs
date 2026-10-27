@@ -1,10 +1,10 @@
 #![cfg_attr(not(test), no_std)]
 //! The Synopsys `DesignWare` Mobile Storage Host Controller, as pure logic: radon's microSD slot
 //! and eMMC socket. The whole driver sits behind [`host::Registers`], a window and a clock; a
-//! kernel implements it over a mapped window and nothing more, so every sequence is tested
-//! against `sim` on a host.
-//! [`jh7110`] has the evidence for the part and the board's constants. Modules: [`registers`],
-//! [`command`], [`host`], [`idmac`], [`card`], [`sd`], [`partition`], [`bench`](mod@bench).
+//! kernel implements it over a mapped window and nothing more, so every sequence is tested against
+//! `sim` on a host. [`jh7110`] has the evidence for the part and the board's constants. Modules:
+//! [`registers`], [`command`], [`host`], [`internal_direct_memory_access`], [`card`], [`sd`],
+//! [`partition`], [`bench`](mod@bench).
 //!
 //! Name: ratified 2026-10-07 (calef, #1806): the databook's name for the part, spelled out as §154
 //! (the acronym test is whether the phrase is spoken) asks; permanent on first publication. The
@@ -49,7 +49,7 @@ pub mod bench;
 pub mod card;
 pub mod command;
 pub mod host;
-pub mod idmac;
+pub mod internal_direct_memory_access;
 pub mod jh7110;
 pub mod partition;
 pub mod registers;
