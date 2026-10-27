@@ -436,7 +436,7 @@ crates/calendar/src/lib.rs::DateTime
 crates/calendar/src/lib.rs::Error
 crates/calendar/src/lib.rs::Format
 crates/calendar/src/lib.rs::Formatted
-crates/calendar/src/lib.rs::SECS_PER_DAY
+crates/calendar/src/lib.rs::SECONDS_PER_DAY
 crates/calendar/src/lib.rs::UTC
 crates/calendar/src/lib.rs::UtcOffset
 crates/calendar/src/lib.rs::Weekday
@@ -581,10 +581,10 @@ crates/clock_contract/src/lib.rs::CMOS
 crates/clock_contract/src/lib.rs::ClockPage
 crates/clock_contract/src/lib.rs::GOLDFISH
 crates/clock_contract/src/lib.rs::MAGIC
-crates/clock_contract/src/lib.rs::NANOS_PER_SEC
+crates/clock_contract/src/lib.rs::NS_PER_SECOND
 crates/clock_contract/src/lib.rs::NONE
-crates/clock_contract/src/lib.rs::NOT_AFTER_NANOS
-crates/clock_contract/src/lib.rs::NOT_BEFORE_NANOS
+crates/clock_contract/src/lib.rs::NOT_AFTER_NS
+crates/clock_contract/src/lib.rs::NOT_BEFORE_NS
 crates/clock_contract/src/lib.rs::OPERATION_SHIFT
 crates/clock_contract/src/lib.rs::PL031
 crates/clock_contract/src/lib.rs::PROPOSE
@@ -607,7 +607,7 @@ crates/clock_contract/src/lib.rs::operation
 crates/clock_contract/src/lib.rs::publish
 crates/clock_contract/src/lib.rs::read
 crates/clock_contract/src/lib.rs::req
-crates/clock_contract/src/lib.rs::wall_nanos
+crates/clock_contract/src/lib.rs::wall_ns
 crates/compositor/src/lib.rs::ACKED
 crates/compositor/src/lib.rs::BYTES
 crates/compositor/src/lib.rs::CAPACITY
@@ -3783,7 +3783,6 @@ crates/timetable/src/document.rs::last_reachable
 crates/timetable/src/document.rs::line
 crates/timetable/src/document.rs::message
 crates/timetable/src/document.rs::parse
-crates/timetable/src/lib.rs::NANOS_PER_SEC
 crates/timetable/src/plan_text.rs::Audit
 crates/timetable/src/plan_text.rs::beyond
 crates/timetable/src/plan_text.rs::held
@@ -3924,7 +3923,7 @@ crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 crates/user_mode_runtime/src/clock.rs::current_cpu
-crates/user_mode_runtime/src/clock.rs::monotonic_nanos
+crates/user_mode_runtime/src/clock.rs::monotonic_ns
 crates/user_mode_runtime/src/clock.rs::now
 crates/user_mode_runtime/src/clock.rs::now
 crates/user_mode_runtime/src/clock.rs::now
@@ -4807,12 +4806,12 @@ kernel/src/user/clock_service.rs::NO_RTC
 kernel/src/user/clock_service.rs::REGION_PAGES
 kernel/src/user/clock_service.rs::Wiring
 kernel/src/user/clock_service.rs::machine_has_no_rtc
-kernel/src/user/clock_service.rs::monotonic_nanos
+kernel/src/user/clock_service.rs::monotonic_ns
 kernel/src/user/clock_service.rs::page
 kernel/src/user/clock_service.rs::propose_nanos
 kernel/src/user/clock_service.rs::start
 kernel/src/user/clock_service.rs::start_in
-kernel/src/user/clock_service.rs::wall_nanos
+kernel/src/user/clock_service.rs::wall_ns
 kernel/src/user/compositor_service.rs
 kernel/src/user/compositor_service.rs::ROLE_CAPTURE
 kernel/src/user/compositor_service.rs::ROLE_FORGE_CTL

@@ -37,7 +37,7 @@ use system_log_contract::kernel_ring::{self, Cursor, DETACHED, Read, Ring};
 use system_log_contract::record::{self, flags};
 use system_log_contract::{console, read};
 use user_mode_runtime::{
-    cntfrq, exit, monotonic_nanos, notification_signal, now, receive_badged, receive_badged_bound,
+    cntfrq, exit, monotonic_ns, notification_signal, now, receive_badged, receive_badged_bound,
     send, timer_arm,
 };
 
@@ -124,7 +124,7 @@ fn start(mode: u64, readers: u64, _a2: u64) -> ! {
         if badge == 0 && w0 as i64 == abi::Error::Gone as i64 {
             exit();
         }
-        let Handled::Read { window, cursor } = log.handle(badge, w0, w1, w2, monotonic_nanos())
+        let Handled::Read { window, cursor } = log.handle(badge, w0, w1, w2, monotonic_ns())
         else {
             continue;
         };

@@ -1,16 +1,16 @@
 Falsifies `network_time_protocol::verification::nanoseconds_survive_the_fixed_point`.
 
-The defect: `ticks_to_nanos` truncates instead of rounding. 1 ns is 4.29 ticks, which encodes as 4 ticks, and 4
+The defect: `ticks_to_ns` truncates instead of rounding. 1 ns is 4.29 ticks, which encodes as 4 ticks, and 4
 ticks truncate back to 0 ns.
 
-Expected to fail: the harness's `assert_eq!(ticks_to_nanos(nanos_to_ticks(nanos)), nanos)`.
+Expected to fail: the harness's `assert_eq!(ticks_to_ns(ns_to_ticks(nanos)), nanos)`.
 
 diff --git a/crates/network_time_protocol/src/lib.rs b/crates/network_time_protocol/src/lib.rs
 index 209f6bae5..5bf2f844d 100644
 --- a/crates/network_time_protocol/src/lib.rs
 +++ b/crates/network_time_protocol/src/lib.rs
-@@ -416,3 +416,3 @@ const fn nanos_to_ticks(nanos: u32) -> u32 {
- const fn ticks_to_nanos(ticks: u32) -> u32 {
--    let n = ((ticks as u64 * NANOS_PER_SEC) + (TICKS_PER_SEC / 2)) / TICKS_PER_SEC;
-+    let n = (ticks as u64 * NANOS_PER_SEC) / TICKS_PER_SEC;
-     if n >= NANOS_PER_SEC {
+@@ -416,3 +416,3 @@ const fn ns_to_ticks(nanos: u32) -> u32 {
+ const fn ticks_to_ns(ticks: u32) -> u32 {
+-    let n = ((ticks as u64 * NS_PER_SECOND) + (TICKS_PER_SECOND / 2)) / TICKS_PER_SECOND;
++    let n = (ticks as u64 * NS_PER_SECOND) / TICKS_PER_SECOND;
+     if n >= NS_PER_SECOND {

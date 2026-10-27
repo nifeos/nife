@@ -47,11 +47,11 @@ calef's ruling behind that, and what the hardcoded rate it replaced cost, are in
 notes/benchmarks/counter-frequency-and-calibration.md. A plausible wrong rate produces a benchmark
 figure somebody quotes. The panic traps and the kernel kills the process with no message, the floor
 every userspace `expect` has. The checked and unchecked pair matches the kernel's
-`arch::timer::frequency` and `frequency_checked`, so `monotonic_nanos` keeps its `u64`.
+`arch::timer::frequency` and `frequency_checked`, so `monotonic_ns` keeps its `u64`.
 
 ## Monotonic nanoseconds
 
-`monotonic_nanos` is here because the naive form is wrong. `ticks * 1_000_000_000` overflows a
+`monotonic_ns` is here because the naive form is wrong. `ticks * 1_000_000_000` overflows a
 `u64` about five minutes into a boot at 62.5 MHz, so the conversion splits into whole seconds and a
 remainder. `components/src/clock.rs`, `date` and the shell's `time` each need it. It needs no
 capability, because the counter is ambient, so any process can measure a duration. The wall clock

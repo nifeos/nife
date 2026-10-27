@@ -56,7 +56,7 @@ use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
-    call, exit, interrupt_acknowledge, interrupt_wait, monotonic_nanos, receive_cap, send,
+    call, exit, interrupt_acknowledge, interrupt_wait, monotonic_ns, receive_cap, send,
 };
 use video_terminal::keymap::{EV_KEY, Keyboard};
 
@@ -96,7 +96,7 @@ const CONTROL_BUFFER: MappedWindow = unsafe {
     )
 };
 
-/// One millisecond, in the units [`monotonic_nanos`] counts.
+/// One millisecond, in the units [`monotonic_ns`] counts.
 const MS: u64 = 1_000_000;
 
 /// **Order ring writes before the doorbell, and a cycle bit's read before the payload it gates.**
@@ -155,11 +155,11 @@ struct Host {
 }
 
 fn deadline(ms: u64) -> u64 {
-    monotonic_nanos().saturating_add(ms * MS)
+    monotonic_ns().saturating_add(ms * MS)
 }
 
 fn past(deadline: u64) -> bool {
-    monotonic_nanos() > deadline
+    monotonic_ns() > deadline
 }
 
 fn zero_page(page: u64) {
@@ -752,13 +752,13 @@ impl Host {
     /// Read `read` every [`port::DEBOUNCE_STEP_MS`] until [`port::PortDebounce`] says it held still
     /// (`true`) or gave up (`false`).
     fn hold_still(&self, read: &dyn Fn(&Host) -> port::Connections) -> bool {
-        let mut settle = port::PortDebounce::new(monotonic_nanos() / MS, read(self));
+        let mut settle = port::PortDebounce::new(monotonic_ns() / MS, read(self));
         loop {
             let end = deadline(port::DEBOUNCE_STEP_MS);
             while !past(end) {
                 core::hint::spin_loop();
             }
-            if let Some(settled) = settle.sample(monotonic_nanos() / MS, read(self)) {
+            if let Some(settled) = settle.sample(monotonic_ns() / MS, read(self)) {
                 return settled;
             }
         }

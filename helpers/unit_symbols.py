@@ -67,7 +67,7 @@ SELF = 'helpers/unit_symbols.py'
 
 # The count on 2026-10-27, lowered by the sweep's `--bank`. Never raise it by hand: a new unit
 # symbol is spelled out, not admitted.
-CEILING = 902
+CEILING = 531
 
 FAMILY = {
     'nanos': 'nanos', 'millis': 'millis',

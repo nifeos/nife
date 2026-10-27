@@ -11,6 +11,6 @@ index 209f6bae5..2c0746497 100644
 +++ b/crates/network_time_protocol/src/lib.rs
 @@ -302,3 +302,3 @@ impl Timestamp {
      pub const fn from_unix(secs: u64, nanos: u32) -> Option<Timestamp> {
--        if nanos as u64 >= NANOS_PER_SEC || secs >= UNIX_LIMIT {
-+        if nanos as u64 >= NANOS_PER_SEC || secs > UNIX_LIMIT {
+-        if nanos as u64 >= NS_PER_SECOND || secs >= UNIX_LIMIT {
++        if nanos as u64 >= NS_PER_SECOND || secs > UNIX_LIMIT {
              return None;

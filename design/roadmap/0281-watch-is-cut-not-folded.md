@@ -29,7 +29,7 @@ Both programs took exactly three slots, and not merely three of the same shape. 
 | diagnostics | `grant_plan::DIAGNOSTICS_SLOT` | `grant_plan::DIAGNOSTICS_SLOT` |
 
 The refresh needed no capability of its own, which is the fact that could have gone the other way
-and did not. `wait_interval()` was a yield-spin over `monotonic_nanos()`, because this kernel has no
+and did not. `wait_interval()` was a yield-spin over `monotonic_ns()`, because this kernel has no
 timed wait (`user/src/timetable.rs`'s module docs name the gap). Had the interval needed a clock
 capability, a flag would mean `ps` always carries authority it usually does not use, and the separate
 program would have been the least-authority answer. It did not, so it was not.

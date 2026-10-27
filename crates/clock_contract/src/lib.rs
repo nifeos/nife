@@ -4,7 +4,7 @@
 //!
 //! Reading is a read-only mapping of [`ClockPage`] plus the monotonic counter, setting is a
 //! read/write mapping of the same page, and proposing is an endpoint [`policy::decide`] answers.
-//! Wall-clock time is [`wall_nanos`]: the counter plus an offset, and only the offset is ever
+//! Wall-clock time is [`wall_ns`]: the counter plus an offset, and only the offset is ever
 //! written, so a clock step cannot perturb `Instant`. Every time is nanoseconds since the Unix
 //! epoch in a `u64`, which runs out in 2554. See notes/clock.md.
 //!
@@ -40,7 +40,7 @@ fn spin_hint() {
 }
 
 /// Nanoseconds in a second, the conversion every reader does exactly once.
-pub const NANOS_PER_SEC: u64 = 1_000_000_000;
+pub const NS_PER_SECOND: u64 = 1_000_000_000;
 
 /// Wall-clock nanoseconds, from the offset the clock page carries and the monotonic nanoseconds
 /// the reader measured for itself.
@@ -53,31 +53,31 @@ pub const NANOS_PER_SEC: u64 = 1_000_000_000;
 /// Setting the wall clock is writing an offset; the monotonic counter is not in the expression:
 ///
 /// ```
-/// use clock_contract::{NANOS_PER_SEC, offset_for, wall_nanos};
+/// use clock_contract::{NS_PER_SECOND, offset_for, wall_ns};
 ///
 /// // The machine has been up for 5 seconds and the service has just learned the wall time.
-/// let monotonic = 5 * NANOS_PER_SEC;
-/// let now = 1_800_000_000 * NANOS_PER_SEC;
+/// let monotonic = 5 * NS_PER_SECOND;
+/// let now = 1_800_000_000 * NS_PER_SECOND;
 /// let offset = offset_for(now, monotonic);
-/// assert_eq!(wall_nanos(offset, monotonic), now);
+/// assert_eq!(wall_ns(offset, monotonic), now);
 ///
 /// // Two seconds later, with nobody having touched anything.
-/// let monotonic = 7 * NANOS_PER_SEC;
-/// assert_eq!(wall_nanos(offset, monotonic), now + 2 * NANOS_PER_SEC);
+/// let monotonic = 7 * NS_PER_SECOND;
+/// assert_eq!(wall_ns(offset, monotonic), now + 2 * NS_PER_SECOND);
 ///
 /// // An operator steps the clock a minute forward. Only the offset changes.
-/// let stepped = offset_for(now + 60 * NANOS_PER_SEC, monotonic);
-/// assert_eq!(wall_nanos(stepped, monotonic), now + 60 * NANOS_PER_SEC);
-/// assert_eq!(monotonic, 7 * NANOS_PER_SEC); // untouched, and there is no way to touch it
+/// let stepped = offset_for(now + 60 * NS_PER_SECOND, monotonic);
+/// assert_eq!(wall_ns(stepped, monotonic), now + 60 * NS_PER_SECOND);
+/// assert_eq!(monotonic, 7 * NS_PER_SECOND); // untouched, and there is no way to touch it
 /// ```
-pub const fn wall_nanos(offset_nanos: u64, monotonic_nanos: u64) -> u64 {
-    offset_nanos.saturating_add(monotonic_nanos)
+pub const fn wall_ns(offset_ns: u64, monotonic_ns: u64) -> u64 {
+    offset_ns.saturating_add(monotonic_ns)
 }
 
-/// The offset that makes `monotonic_nanos` read as `wall_nanos`: what the clock service writes
-/// when it learns the time. The inverse of [`wall_nanos`].
-pub const fn offset_for(wall_nanos: u64, monotonic_nanos: u64) -> u64 {
-    wall_nanos.saturating_sub(monotonic_nanos)
+/// The offset that makes `monotonic_ns` read as `wall_ns`: what the clock service writes
+/// when it learns the time. The inverse of [`wall_ns`].
+pub const fn offset_for(wall_ns: u64, monotonic_ns: u64) -> u64 {
+    wall_ns.saturating_sub(monotonic_ns)
 }
 
 // ================================================================================================
@@ -137,7 +137,7 @@ pub struct Reading {
     /// One of [`state`]'s values.
     pub state: u64,
     /// Wall-clock nanoseconds at monotonic zero. Meaningless unless [`state::is_known`].
-    pub offset_nanos: u64,
+    pub offset_ns: u64,
     /// How many times the page has been published to, which is `seq / 2`. A reader that cares
     /// whether the clock stepped under it (a log, a cache with an expiry) compares this across two
     /// readings instead of comparing timestamps and guessing.
@@ -209,7 +209,7 @@ impl ClockPage {
     pub fn read(&self) -> Reading {
         const UNKNOWN: Reading = Reading {
             state: state::UNKNOWN,
-            offset_nanos: 0,
+            offset_ns: 0,
             generation: 0,
         };
         if self.word(W_MAGIC).load(Ordering::Acquire) != MAGIC {
@@ -238,7 +238,7 @@ impl ClockPage {
             if self.word(W_SEQ).load(Ordering::Relaxed) == s1 {
                 return Reading {
                     state: st,
-                    offset_nanos: off,
+                    offset_ns: off,
                     generation: s1 / 2,
                 };
             }
@@ -249,7 +249,7 @@ impl ClockPage {
     /// read/write mapping, because being able to write the offset is what setting the clock means.
     ///
     /// Returns the new generation.
-    pub fn publish(&self, new_state: u64, offset_nanos: u64) -> u64 {
+    pub fn publish(&self, new_state: u64, offset_ns: u64) -> u64 {
         let claimed = loop {
             let s = self.word(W_SEQ).load(Ordering::Relaxed);
             if s & 1 != 0 {
@@ -277,7 +277,7 @@ impl ClockPage {
         // (notes/interleaving.md, notes/memory-ordering.md).
         fence(Ordering::Release);
         self.word(W_STATE).store(new_state, Ordering::Relaxed);
-        self.word(W_OFFSET).store(offset_nanos, Ordering::Relaxed);
+        self.word(W_OFFSET).store(offset_ns, Ordering::Relaxed);
         // Release: everything above is visible to any reader that sees the even sequence below.
         self.word(W_SEQ).store(claimed + 2, Ordering::Release);
         (claimed + 2) / 2
@@ -332,10 +332,10 @@ pub mod status {
     /// Outside the sanity window entirely: [`super::policy::is_plausible`] says no machine running
     /// this code is at that instant. A proposal of 1970, or of 2038, lands here.
     pub const REFUSED_IMPLAUSIBLE: u64 = 1;
-    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_FORWARD_NANOS`] ahead
+    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_FORWARD_NS`] ahead
     /// of what the clock already believes.
     pub const REFUSED_TOO_FAR_FORWARD: u64 = 2;
-    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_BACKWARD_NANOS`]
+    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_BACKWARD_NS`]
     /// behind what the clock already believes. The asymmetry with forward is deliberate; see
     /// [`policy`](super::policy).
     pub const REFUSED_TOO_FAR_BACKWARD: u64 = 3;
@@ -365,20 +365,20 @@ pub mod policy {
     /// roughly correct clock, and a correct clock needs TLS), and it is chosen here on purpose
     /// rather than discovered halfway through that work. It is a **floor on plausibility, not a
     /// claim of accuracy**: passing it means "not obviously a lie", never "trustworthy".
-    pub const NOT_BEFORE_NANOS: u64 = 1_767_225_600 * super::NANOS_PER_SEC;
+    pub const NOT_BEFORE_NS: u64 = 1_767_225_600 * super::NS_PER_SECOND;
 
     /// The ceiling: 2100-01-01T00:00:00Z. Far enough out to be uncontroversial and near enough to
     /// catch the classic attacks, which push the clock past a certificate's expiry rather than
     /// nudging it.
-    pub const NOT_AFTER_NANOS: u64 = 4_102_444_800 * super::NANOS_PER_SEC;
+    pub const NOT_AFTER_NS: u64 = 4_102_444_800 * super::NS_PER_SECOND;
 
     /// How far forward one accepted proposal may move a clock that already knows the time: an hour.
     /// Enough to absorb a machine that has been asleep, or an RTC an hour out because somebody set
     /// it to local time; not enough to walk the clock past an expiry in one step.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `MAX_STEP_FORWARD_NANOS`.
-    pub const MAXIMUM_STEP_FORWARD_NANOS: u64 = 3600 * super::NANOS_PER_SEC;
+    /// Name: ratified 2026-10-27 (calef): `MAXIMUM` from the minimum, maximum and operating-system
+    /// ruling of 2026-10-26 (UTC), and `NS` from the unit-symbol ruling of 2026-10-27 (UTC).
+    pub const MAXIMUM_STEP_FORWARD_NS: u64 = 3600 * super::NS_PER_SECOND;
 
     /// How far **backward** one accepted proposal may move a clock that already knows the time: one
     /// second.
@@ -390,15 +390,15 @@ pub mod policy {
     /// this, and here the same conservatism is one constant instead of a mechanism, because
     /// `Instant` is never affected by any of it.
     ///
-    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-    /// 2026-10-26 (UTC), renamed from `MAX_STEP_BACKWARD_NANOS`.
-    pub const MAXIMUM_STEP_BACKWARD_NANOS: u64 = super::NANOS_PER_SEC;
+    /// Name: ratified 2026-10-27 (calef): `MAXIMUM` from the minimum, maximum and operating-system
+    /// ruling of 2026-10-26 (UTC), and `NS` from the unit-symbol ruling of 2026-10-27 (UTC).
+    pub const MAXIMUM_STEP_BACKWARD_NS: u64 = super::NS_PER_SECOND;
 
     // The asymmetry is a decision, not an accident, so it is a build-time fact rather than
     // something a reader has to notice: anyone "tidying" the two constants into one fails to
     // compile rather than quietly making backwards steps as free as forwards ones.
     const _: () = assert!(
-        MAXIMUM_STEP_BACKWARD_NANOS < MAXIMUM_STEP_FORWARD_NANOS,
+        MAXIMUM_STEP_BACKWARD_NS < MAXIMUM_STEP_FORWARD_NS,
         "moving the clock backwards must stay far tighter than moving it forwards",
     );
 
@@ -406,12 +406,12 @@ pub mod policy {
     /// window, applied to an RTC reading as well as to a proposal: an RTC that fails this is an RTC
     /// the service refuses to believe, and the clock stays [`state::UNKNOWN`] rather than becoming
     /// confidently wrong.
-    pub const fn is_plausible(unix_nanos: u64) -> bool {
-        unix_nanos >= NOT_BEFORE_NANOS && unix_nanos < NOT_AFTER_NANOS
+    pub const fn is_plausible(unix_ns: u64) -> bool {
+        unix_ns >= NOT_BEFORE_NS && unix_ns < NOT_AFTER_NS
     }
 
-    /// **The decision.** `current_state` and `current_nanos` are what the clock believes now;
-    /// `proposed_nanos` is what the proposer asked for. The answer is one of [`status`]'s codes.
+    /// **The decision.** `current_state` and `current_ns` are what the clock believes now;
+    /// `proposed_ns` is what the proposer asked for. The answer is one of [`status`]'s codes.
     ///
     /// The bootstrap case is the interesting one: when the clock is [`state::UNKNOWN`] there is
     /// nothing to step *from*, so a plausible proposal is accepted outright. That is not a hole,
@@ -423,23 +423,23 @@ pub mod policy {
     /// A compromised time client can lie inside these bounds and do nothing else:
     ///
     /// ```
-    /// use clock_contract::{NANOS_PER_SEC, policy, state, status};
+    /// use clock_contract::{NS_PER_SECOND, policy, state, status};
     ///
-    /// let now = 1_800_000_000 * NANOS_PER_SEC;
+    /// let now = 1_800_000_000 * NS_PER_SECOND;
     ///
     /// // A small correction, in either direction, is what a time client is for.
-    /// assert_eq!(policy::decide(state::SYNCED, now, now + NANOS_PER_SEC / 2), status::ACCEPTED);
+    /// assert_eq!(policy::decide(state::SYNCED, now, now + NS_PER_SECOND / 2), status::ACCEPTED);
     ///
     /// // Walking the clock past a certificate expiry in one step is the classic attack.
     /// assert_eq!(
-    ///     policy::decide(state::SYNCED, now, now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOS),
+    ///     policy::decide(state::SYNCED, now, now + 2 * policy::MAXIMUM_STEP_FORWARD_NS),
     ///     status::REFUSED_TOO_FAR_FORWARD,
     /// );
     ///
     /// // And the tighter half: a second forward is fine, a second and a half backward is not.
-    /// assert_eq!(policy::decide(state::SYNCED, now, now + 3 * NANOS_PER_SEC / 2), status::ACCEPTED);
+    /// assert_eq!(policy::decide(state::SYNCED, now, now + 3 * NS_PER_SECOND / 2), status::ACCEPTED);
     /// assert_eq!(
-    ///     policy::decide(state::SYNCED, now, now - 3 * NANOS_PER_SEC / 2),
+    ///     policy::decide(state::SYNCED, now, now - 3 * NS_PER_SECOND / 2),
     ///     status::REFUSED_TOO_FAR_BACKWARD,
     /// );
     ///
@@ -449,18 +449,18 @@ pub mod policy {
     /// assert_eq!(policy::decide(state::UNKNOWN, 0, 0), status::REFUSED_IMPLAUSIBLE);
     /// assert!(!policy::is_plausible(0)); // 1970 plus uptime is not a time this code can be running at
     /// ```
-    pub const fn decide(current_state: u64, current_nanos: u64, proposed_nanos: u64) -> u64 {
-        if !is_plausible(proposed_nanos) {
+    pub const fn decide(current_state: u64, current_ns: u64, proposed_ns: u64) -> u64 {
+        if !is_plausible(proposed_ns) {
             return status::REFUSED_IMPLAUSIBLE;
         }
         if !state::is_known(current_state) {
             return status::ACCEPTED;
         }
-        if proposed_nanos > current_nanos {
-            if proposed_nanos - current_nanos > MAXIMUM_STEP_FORWARD_NANOS {
+        if proposed_ns > current_ns {
+            if proposed_ns - current_ns > MAXIMUM_STEP_FORWARD_NS {
                 return status::REFUSED_TOO_FAR_FORWARD;
             }
-        } else if current_nanos - proposed_nanos > MAXIMUM_STEP_BACKWARD_NANOS {
+        } else if current_ns - proposed_ns > MAXIMUM_STEP_BACKWARD_NS {
             return status::REFUSED_TOO_FAR_BACKWARD;
         }
         status::ACCEPTED
@@ -522,7 +522,7 @@ mod tests {
     }
 
     /// A time inside the sanity window, used as "now" by the policy tests.
-    const NOW: u64 = 1_800_000_000 * NANOS_PER_SEC; // 2027-01-15-ish
+    const NOW: u64 = 1_800_000_000 * NS_PER_SECOND; // 2027-01-15-ish
 
     #[test]
     fn the_sanity_window_rejects_the_two_lies_that_matter() {
@@ -530,12 +530,12 @@ mod tests {
         // exists to stop being mistaken for an answer.
         assert!(!policy::is_plausible(0));
         // The far future is where a clock attack aims: past every certificate's expiry.
-        assert!(!policy::is_plausible(policy::NOT_AFTER_NANOS));
+        assert!(!policy::is_plausible(policy::NOT_AFTER_NS));
         assert!(policy::is_plausible(NOW));
         // 2038, where a 32-bit `time_t` wraps, is deliberately INSIDE the window. It is a real
         // instant this machine may run at, and refusing it would be treating a C bug as a fact
         // about time. Asserted so a future tightening of the ceiling has to mean it.
-        assert!(policy::is_plausible(2_147_483_647 * NANOS_PER_SEC));
+        assert!(policy::is_plausible(2_147_483_647 * NS_PER_SECOND));
     }
 
     #[test]
@@ -559,19 +559,19 @@ mod tests {
         for (delta, want) in [
             (0i64, status::ACCEPTED),
             (
-                policy::MAXIMUM_STEP_FORWARD_NANOS as i64,
+                policy::MAXIMUM_STEP_FORWARD_NS as i64,
                 status::ACCEPTED, // exactly the limit is inside it
             ),
             (
-                policy::MAXIMUM_STEP_FORWARD_NANOS as i64 + 1,
+                policy::MAXIMUM_STEP_FORWARD_NS as i64 + 1,
                 status::REFUSED_TOO_FAR_FORWARD,
             ),
             (
-                -(policy::MAXIMUM_STEP_BACKWARD_NANOS as i64),
+                -(policy::MAXIMUM_STEP_BACKWARD_NS as i64),
                 status::ACCEPTED,
             ),
             (
-                -(policy::MAXIMUM_STEP_BACKWARD_NANOS as i64) - 1,
+                -(policy::MAXIMUM_STEP_BACKWARD_NS as i64) - 1,
                 status::REFUSED_TOO_FAR_BACKWARD,
             ),
         ] {
@@ -589,7 +589,7 @@ mod tests {
     #[test]
     fn backwards_is_held_far_tighter_than_forwards() {
         let known = state::SYNCED;
-        let ten_minutes = 600 * NANOS_PER_SEC;
+        let ten_minutes = 600 * NS_PER_SECOND;
         assert_eq!(
             policy::decide(known, NOW, NOW + ten_minutes),
             status::ACCEPTED
@@ -603,14 +603,14 @@ mod tests {
 
     #[test]
     fn the_offset_round_trips_through_the_wall_clock() {
-        let monotonic = 42 * NANOS_PER_SEC;
+        let monotonic = 42 * NS_PER_SECOND;
         let offset = offset_for(NOW, monotonic);
-        assert_eq!(wall_nanos(offset, monotonic), NOW);
+        assert_eq!(wall_ns(offset, monotonic), NOW);
         // And the property the whole design is for: the offset changes, the monotonic input does
         // not, and the two are independent by construction.
-        let stepped = offset_for(NOW + 5 * NANOS_PER_SEC, monotonic);
-        assert_eq!(wall_nanos(stepped, monotonic) - NOW, 5 * NANOS_PER_SEC);
-        assert_eq!(monotonic, 42 * NANOS_PER_SEC);
+        let stepped = offset_for(NOW + 5 * NS_PER_SECOND, monotonic);
+        assert_eq!(wall_ns(stepped, monotonic) - NOW, 5 * NS_PER_SECOND);
+        assert_eq!(monotonic, 42 * NS_PER_SECOND);
     }
 
     /// A zeroed frame is a frame nobody published to, and it must read as "unknown" rather than as
@@ -624,7 +624,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::UNKNOWN,
-                    offset_nanos: 0,
+                    offset_ns: 0,
                     generation: 0,
                 }
             );
@@ -648,7 +648,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::RTC,
-                    offset_nanos: 7,
+                    offset_ns: 7,
                     generation: 1,
                 }
             );
@@ -687,7 +687,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::SYNCED,
-                    offset_nanos: 11,
+                    offset_ns: 11,
                     generation: 2,
                 }
             );
@@ -716,9 +716,9 @@ mod tests {
     // rewrites, and the assertion is what notices (milestone 85).
     #[allow(clippy::assertions_on_constants)]
     fn the_sanity_window_is_where_it_says() {
-        assert_eq!(policy::NOT_BEFORE_NANOS, 1_767_225_600_000_000_000);
-        assert_eq!(policy::NOT_AFTER_NANOS, 4_102_444_800_000_000_000);
-        assert!(policy::NOT_BEFORE_NANOS < policy::NOT_AFTER_NANOS);
+        assert_eq!(policy::NOT_BEFORE_NS, 1_767_225_600_000_000_000);
+        assert_eq!(policy::NOT_AFTER_NS, 4_102_444_800_000_000_000);
+        assert!(policy::NOT_BEFORE_NS < policy::NOT_AFTER_NS);
     }
 }
 
@@ -800,7 +800,7 @@ mod interleavings {
             };
 
             let r = page.read();
-            match (r.state, r.offset_nanos) {
+            match (r.state, r.offset_ns) {
                 (state::RTC, 1_000) => SAW_THE_OLD.mark(),
                 (state::SYNCED, 2_000) => SAW_THE_NEW.mark(),
                 other => panic!("a torn reading: {other:?} is neither publish"),
@@ -876,7 +876,7 @@ mod interleavings {
             );
             assert!(
                 matches!(
-                    (r.state, r.offset_nanos),
+                    (r.state, r.offset_ns),
                     (state::RTC, 1_000) | (state::SYNCED, 2_000)
                 ),
                 "the page holds a pair neither writer published: {r:?}"
@@ -910,7 +910,7 @@ mod interleavings {
             };
 
             let r = page.read();
-            match (r.state, r.offset_nanos) {
+            match (r.state, r.offset_ns) {
                 (state::UNKNOWN, 0) => SAW_UNRECOGNISED.mark(),
                 (state::RTC, 1_000) => SAW_INITIALISED.mark(),
                 other => panic!("a reader saw a recognised page with garbage in it: {other:?}"),
