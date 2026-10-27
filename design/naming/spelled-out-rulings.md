@@ -110,7 +110,7 @@ Ruled 2026-10-27 (UTC), the names the irq sweep left open:
 - `arch::<arch>::irq` is `arch::<arch>::interrupt_controller` on aarch64, riscv64 and x86_64.
 - The self-test `deviceirq` prints `device_interrupt`. It is a clean break: no table maps the old
   name to the new one.
-- Boot transcript labels are spelled out: `uart interrupt`, `device interrupt`, `isa interrupt` and
+- Boot transcript labels spell it out: `uart interrupt`, `device interrupt`, `isa interrupt` and
   `interrupt<id>`.
 - RISC-V cause 9 is `SUPERVISOR_EXTERNAL_INTERRUPT`, with `#[doc(alias = "IRQ_S_EXT")]` for the name
   Linux gives it.
@@ -131,9 +131,9 @@ becomes `Queue`, with `#[doc(alias = "fifo")]`.
 
 ## The tree spells `minimum`, `maximum` and `operating_system`, with three limits kept
 
-The expansion itself was ruled 2026-10-26 (UTC) and is recorded in
-[precedents-set-by-example.md](precedents-set-by-example.md): `min` expands to `minimum`, `max` to
-`maximum` and `os` to `operating_system`. Ruled 2026-10-27 (UTC), on the sweep that applied it:
+[precedents-set-by-example.md](precedents-set-by-example.md) holds the expansion, ruled 2026-10-26
+(UTC): `min` expands to `minimum`, `max` to `maximum` and `os` to `operating_system`. Ruled
+2026-10-27 (UTC), on the sweep that applied it:
 
 - A limit this tree defines under the Unix names `PATH_MAX`, `LINE_MAX` and `NAME_MAX` expands to
   `PATH_MAXIMUM`, `LINE_MAXIMUM` and `NAME_MAXIMUM`. Prose that cites Unix itself keeps the original
