@@ -1,4 +1,4 @@
-//! **`capabilities`**: the shell's whole endowment, the preview of what a line would grant,
+//! **`caps`**: the shell's whole endowment, the preview of what a line would grant,
 //! `capabilities_image`, the live generation table, and what a bare word names (`bare`).
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
@@ -70,7 +70,7 @@ pub(super) fn capabilities(nav: &mut Nav, tail: &[u8]) {
 }
 
 /// **The line is a plain run**: one stage, no operator. The shape [`run`] hands to [`run_image`]
-/// when its program token has a `/` in it or names an installed program, so `capabilities` previews
+/// when its program token has a `/` in it or names an installed program, so `caps` previews
 /// exactly what would run.
 fn plain_line(tail: &[u8]) -> Option<ParsedInvocation<'_>> {
     let l = line::split(grant_plan::trim(tail)).ok()?;
@@ -86,7 +86,7 @@ fn plain_line(tail: &[u8]) -> Option<ParsedInvocation<'_>> {
     }
 }
 
-/// **`capabilities <path>`** (DECISIONS §219 D and D2; the manifest note, milestone 597, provisional):
+/// **`caps <path>`** (DECISIONS §219 D and D2; the manifest note, milestone 597, provisional):
 /// read the file's manifest note and bind the line against it as [`run_image`] would, hash the
 /// file's bytes as the progenitor will, look the digest up in the live generation, and say what
 /// would be granted, what the note asked for, and on whose word. Nothing is sent to the progenitor.
@@ -182,7 +182,7 @@ pub(super) fn file_digest(t: Tree, handle: u64, size: u64) -> Option<measured_bo
 }
 
 /// One page of a generation table, read by [`live_generation_listing`]. A static rather than a
-/// local because a page on the stack would take `capabilities`'s frame over the 4 KiB guard page
+/// local because a page on the stack would take `caps`'s frame over the 4 KiB guard page
 /// `script/stack-frame-check` holds every frame to; [`RANKED`] is here for the same reason.
 pub(super) static mut GENERATION_TABLE: [u8; filesystem_contract::PAGE] =
     [0; filesystem_contract::PAGE];
