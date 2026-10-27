@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-27
+ratified_by: calef
 ---
 
 # 192. Does the ACPI walk's direct-map read take a bound, and is the bound per-read or a region it holds?
@@ -103,8 +105,8 @@ this section argues against, on where the invariant lives rather than on effort.
 The parsers. They are proved (milestone 319, with three defects found in the doing), and nothing
 here should re-litigate what a table means.
 
-## What is blocked until this is answered
+## What was blocked
 
-Nothing is blocked. This is the last unproved reach of the x86 discovery path, and the one place
+Nothing was blocked. This is the last unproved reach of the x86 discovery path, and the one place
 left where a firmware number reaches a dereference with no proved step between. Milestone 423 is
-what waits.
+unblocked by the ruling above.
