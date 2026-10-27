@@ -1,6 +1,7 @@
 ---
-status: NOT-STARTED
+status: SUPERSEDED
 raised: 2026-09-14
+superseded_by: 890
 milestone_dependencies: none
 decision_dependencies: 186
 machine_requirements: none
@@ -8,6 +9,11 @@ specific_machine: none
 needs_person: no
 ---
 # 406. Nothing on a pull request boots the riscv64 tour, so its userspace step is unasserted
+
+Overtaken by commit `bcf864dc7` (2026-10-20, milestone 890): under the ruling on #2447 the riscv64
+tour went, so there is no tour boot to assert. The self-test verdict that `script/boot-check` reads
+on every pull request carries what the tour asserted. §186 records the outcome. The text below is
+the block as filed.
 
 Not started, and **the title's claim is no longer true as written**, which is the first
 thing a reader needs. Filed 2026-09-14 as an unnumbered proposal by milestone 289 (RISC-V tour)'s

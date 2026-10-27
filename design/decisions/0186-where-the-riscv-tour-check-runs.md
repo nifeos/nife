@@ -1,12 +1,22 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-20
+ratified_by: calef
 ---
 
 # 186. Where a riscv64 tour-boot check runs, what it asserts, and what it is called
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c lane, which found milestone 406 (nothing on a pull request boots the riscv64 tour)'s
-`DECISION` gate naming no section. *(Section number provisional until the merge queue lands it.)*
+`DECISION` gate naming no section.
+
+## Overtaken 2026-10-20 (UTC)
+
+The question no longer exists. The ruling on #2447 turned the boot tours into self-test checks, and
+commit `bcf864dc7` (milestone 890) deleted the riscv64 tour (`kernel/src/riscv64_boot.rs`,
+`kernel/src/milestone_tour.rs`). There is no tour to check. What the tour asserted is now a
+self-test verdict that `script/boot-check` reads on every pull request, with the checks each board
+profile forbids to be absent.
 
 ## What is being decided
 
