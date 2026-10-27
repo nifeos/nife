@@ -339,16 +339,29 @@ fn a_wrong_interface_echo_is_refused_rather_than_guessed_at() {
     ));
 }
 
+/// A worker with its own deadline turns a spin into a named failure: a mutant that removes the
+/// power-up loop's exit makes this test fail instead of hanging the run.
 #[test]
 fn a_card_that_never_finishes_power_up_is_reported_with_its_last_ocr() {
-    for kind in [CardKind::SdHighCapacity, CardKind::Mmc] {
-        let mut sim = Sim::new(kind, 16_384, 32);
-        sim.busy_polls = u32::MAX;
-        let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
-        assert!(matches!(
-            sd::identify(&mut h, 4),
-            Err(InitializationError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
-        ));
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        for kind in [CardKind::SdHighCapacity, CardKind::Mmc] {
+            let mut sim = Sim::new(kind, 16_384, 32);
+            sim.busy_polls = u32::MAX;
+            let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
+            let reported = matches!(
+                sd::identify(&mut h, 4),
+                Err(InitializationError::PowerUp(ocr)) if ocr & card::OCR_BUSY_DONE == 0
+            );
+            let _ = tx.send(reported);
+        }
+    });
+    for _ in 0..2 {
+        assert_eq!(
+            rx.recv_timeout(std::time::Duration::from_secs(5)),
+            Ok(true),
+            "power-up neither finished nor gave up"
+        );
     }
 }
 
@@ -744,7 +757,7 @@ fn an_sd_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
         ));
     });
     assert_eq!(
-        rx.recv_timeout(std::time::Duration::from_secs(10)),
+        rx.recv_timeout(std::time::Duration::from_secs(5)),
         Ok(true),
         "power-up neither finished nor gave up"
     );
