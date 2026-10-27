@@ -132,12 +132,12 @@ fn measure() -> &'static str {
 /// The `transfer` line, the same on every NIC so two machines' transcripts compare line for line.
 fn print_transfer(bytes: u64, ticks: u64) {
     let hz = arch::timer::frequency();
-    let micros = ticks.saturating_mul(1_000_000) / hz.max(1);
-    let rate = bytes.saturating_mul(8).saturating_mul(1_000_000) / micros.max(1);
+    let microseconds = ticks.saturating_mul(1_000_000) / hz.max(1);
+    let rate = bytes.saturating_mul(8).saturating_mul(1_000_000) / microseconds.max(1);
     println!(
         "network-bench: transfer  : {bytes} bytes in {}.{:03} s = {}.{:03} Mbit/s",
-        micros / 1_000_000,
-        (micros / 1000) % 1000,
+        microseconds / 1_000_000,
+        (microseconds / 1000) % 1000,
         rate / 1_000_000,
         (rate / 1000) % 1000,
     );
@@ -322,7 +322,7 @@ mod radon {
         }
         println!(
             "network-bench: reset     : {} us, then {} us",
-            r.resets_us[0], r.resets_us[1]
+            r.resets_microseconds[0], r.resets_microseconds[1]
         );
         match r.coherence {
             Some((v, o)) => println!(

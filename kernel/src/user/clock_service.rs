@@ -31,7 +31,7 @@ pub struct Wiring {
 pub fn machine_has_no_rtc() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
-        crate::arch::rtc::read_unix_nanos().is_none()
+        crate::arch::rtc::read_unix_ns().is_none()
     }
     #[cfg(not(target_arch = "x86_64"))]
     {
@@ -86,8 +86,8 @@ fn spawn_with(
     // wall clock over as `seed` (§130 (how the kernel-resident CMOS RTC reaches the userspace clock
     // service), option 3); elsewhere the driver polls its own.
     #[cfg(target_arch = "x86_64")]
-    let (kind, seed) = match crate::arch::rtc::read_unix_nanos() {
-        Some(nanos) => (clock_contract::rtc::CMOS, nanos),
+    let (kind, seed) = match crate::arch::rtc::read_unix_ns() {
+        Some(ns) => (clock_contract::rtc::CMOS, ns),
         None => (clock_contract::rtc::NONE, 0u64),
     };
     #[cfg(not(target_arch = "x86_64"))]
@@ -155,22 +155,22 @@ impl Wiring {
 
     /// Wall-clock nanoseconds as a reader would compute them: the page's offset plus the
     /// monotonic counter. 0 when the machine does not know.
-    pub fn wall_nanos(&self) -> u64 {
+    pub fn wall_ns(&self) -> u64 {
         let r = self.page().read();
         if clock_contract::state::is_known(r.state) {
-            clock_contract::wall_nanos(r.offset_nanos, monotonic_nanos())
+            clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
         } else {
             0
         }
     }
 
     /// Play a proposer: `CALL` the propose endpoint. Returns `(status, wall_nanos_after)`.
-    pub fn propose_nanos(&self, unix_nanos: u64) -> (u64, u64) {
+    pub fn propose_ns(&self, unix_ns: u64) -> (u64, u64) {
         let r = crate::sched::ipc_call(
             self.propose,
             [
                 clock_contract::propose::req(clock_contract::propose::PROPOSE),
-                unix_nanos,
+                unix_ns,
             ],
         );
         (r[0], r[1])
@@ -180,10 +180,10 @@ impl Wiring {
 /// Monotonic nanoseconds since boot, the kernel's copy of the reader's arithmetic. Split into
 /// seconds and a remainder for the same reason the service's version is: the naive
 /// `ticks * 1_000_000_000` overflows a `u64` a few minutes into a boot.
-pub fn monotonic_nanos() -> u64 {
+pub fn monotonic_ns() -> u64 {
     let freq = crate::arch::timer::frequency();
     let ticks = crate::arch::timer::now();
-    let secs = ticks / freq;
+    let seconds = ticks / freq;
     let rem = ticks % freq;
-    secs * clock_contract::NANOS_PER_SEC + rem * clock_contract::NANOS_PER_SEC / freq
+    seconds * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
 }

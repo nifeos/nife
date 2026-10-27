@@ -15,7 +15,7 @@ diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
 --- a/crates/pci/src/lib.rs
 +++ b/crates/pci/src/lib.rs
 @@ -504,3 +504,3 @@ pub fn virtio_caps(
-     let mut at = (read32(bdf, CAP_PTR) & 0xfc) as u64;
+     let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
 -    for _ in 0..64 {
 +    for _ in 0..65 {
          if at == 0 {

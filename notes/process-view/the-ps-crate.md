@@ -69,7 +69,7 @@ borrowing a number from another row. A tid in the second walk and not the first 
 there is no row to put it in. That is `readdir`'s bargain, the same one a single walk already takes
 between its own calls.
 
-`None` rather than `0` is the point of `Row::cpu_millis` being an `Option`. A zero is a thread that
+`None` rather than `0` is the point of `Row::cpu_ms` being an `Option`. A zero is a thread that
 has never been on a CPU at a tick, which is a different fact from "not asked". When ranking, a row
 with no figure sorts last, because putting "not known" at the head would be the strongest possible
 claim about the one row that has nothing to say.

@@ -63,7 +63,7 @@ SELF = 'helpers/cap_abbreviation.py'
 
 # The count on 2026-10-06, and since lowered by the sweep's `--bank`. Never raise it by hand: a new
 # `cap` is spelled out, not admitted.
-CEILING = 2_282
+CEILING = 2_034
 
 # Identifiers that keep `cap`, by file, each group with its reason. See the header before adding one.
 _CEILING = 'cap is the English word for a limit or a capacity here, not an abbreviation'
@@ -100,15 +100,6 @@ KEPT = {
     'crates/e1000e/src/pch/sequence.rs': ({'NWAY_AR_10T_HD_CAPS', 'NWAY_AR_10T_FD_CAPS',
                                            'NWAY_AR_100TX_HD_CAPS', 'NWAY_AR_100TX_FD_CAPS',
                                            'CR_1000T_HD_CAPS', 'CR_1000T_FD_CAPS'}, _REGISTER),
-    # PCI Local Bus 3.0 (`PCI_CAP_PTR`, `PCI_STATUS_CAP_LIST`, `PCI_CAP_ID_*`) and virtio 1.x
-    # section 4.1.4 (`VIRTIO_PCI_CAP_*_CFG`). The tree's own names for them are on the worklist.
-    'crates/pci/src/lib.rs': ({'CAP_PTR', 'STATUS_CAP_LIST', 'CAP_ID_MSI', 'CAP_ID_MSIX',
-                               'CAP_ID_VENDOR', 'VIRTIO_CAP_COMMON', 'VIRTIO_CAP_NOTIFY',
-                               'VIRTIO_CAP_ISR', 'VIRTIO_CAP_DEVICE'}, _REGISTER),
-    'crates/pci/src/tests.rs': ({'CAP_PTR', 'STATUS_CAP_LIST', 'CAP_ID_MSI', 'CAP_ID_MSIX',
-                                 'CAP_ID_VENDOR', 'VIRTIO_CAP_COMMON', 'VIRTIO_CAP_NOTIFY',
-                                 'VIRTIO_CAP_ISR', 'VIRTIO_CAP_DEVICE'}, _REGISTER),
-    'kernel/src/pci.rs': ({'VIRTIO_CAP_COMMON', 'VIRTIO_CAP_NOTIFY', 'VIRTIO_CAP_ISR'}, _REGISTER),
     # Milestone 800 (a non-Anthropic model attacks the confinement claim), 2026-10-07 (UTC): the
     # outsider pass's fixture and test call these APIs by their existing names and mint no
     # cap-named identifier of their own.

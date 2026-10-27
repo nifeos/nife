@@ -6,7 +6,9 @@
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
-use crate::{MAXIMUM_ENTRIES, NANOS_PER_SEC, recurrence};
+use clock_contract::NS_PER_SECOND;
+
+use crate::{MAXIMUM_ENTRIES, recurrence};
 
 /// **When an entry fires.** Two shapes on the monotonic counter, and one on the wall clock.
 ///
@@ -18,7 +20,7 @@ pub enum Schedule {
     AtBoot,
     /// Every interval, in **nanoseconds**, from the moment the scheduler is armed.
     ///
-    /// Nanoseconds because that is what `user_mode_runtime::monotonic_nanos` reports and what the arithmetic
+    /// Nanoseconds because that is what `user_mode_runtime::monotonic_ns` reports and what the arithmetic
     /// in [`next_after`](crate::next_after) runs in; the document is written in `ms`, `s` and `m`, and [`parse`]
     /// converts once, where the conversion can be tested.
     Every(u64),
@@ -124,7 +126,7 @@ impl Error {
 /// let doc = timetable::parse("# housekeeping\nevery 30s  least_authority_demo 7\nat-boot  least_authority_demo 3\n")
 ///     .expect("that document is well formed");
 /// assert_eq!(doc.entries().len(), 2);
-/// assert_eq!(doc.entries()[0].schedule, timetable::Schedule::Every(30 * timetable::NANOS_PER_SEC));
+/// assert_eq!(doc.entries()[0].schedule, timetable::Schedule::Every(30 * clock_contract::NS_PER_SECOND));
 /// assert_eq!(doc.entries()[1].schedule, timetable::Schedule::AtBoot);
 /// assert_eq!(doc.entries()[1].command, b"least_authority_demo 3");
 ///
@@ -154,11 +156,11 @@ pub fn parse(doc: &str) -> Result<Document<'_>, Error> {
                 recurrence::Parsed::Calendar(rule, command) => (Schedule::Calendar(rule), command),
                 recurrence::Parsed::NotCalendar => {
                     let (interval, command) = split_word(rest).ok_or(Error::MissingInterval(no))?;
-                    let nanos = interval_nanos(interval).ok_or(Error::BadInterval(no))?;
-                    if nanos == 0 {
+                    let ns = interval_ns(interval).ok_or(Error::BadInterval(no))?;
+                    if ns == 0 {
                         return Err(Error::ZeroInterval(no));
                     }
-                    (Schedule::Every(nanos), command)
+                    (Schedule::Every(ns), command)
                 }
             },
             _ => return Err(Error::UnknownSchedule(no)),
@@ -214,16 +216,16 @@ fn split_word(s: &str) -> Option<(&str, &str)> {
 /// yield-polled scheduler can honour (see `components/src/timetable.rs`'s `BUGS`), and anything longer
 /// than a minute is better said as a calendar line: `every 86400s` is a daily job counted from
 /// arming, where `every day at 02:00` is one at a time of day.
-fn interval_nanos(s: &str) -> Option<u64> {
+fn interval_ns(s: &str) -> Option<u64> {
     let digits = s.len() - s.trim_start_matches(|c: char| c.is_ascii_digit()).len();
     if digits == 0 {
         return None;
     }
     let value: u64 = s[..digits].parse().ok()?;
     let per = match &s[digits..] {
-        "ms" => NANOS_PER_SEC / 1000,
-        "s" => NANOS_PER_SEC,
-        "m" => 60 * NANOS_PER_SEC,
+        "ms" => NS_PER_SECOND / 1000,
+        "s" => NS_PER_SECOND,
+        "m" => 60 * NS_PER_SECOND,
         _ => return None,
     };
     value.checked_mul(per)
@@ -269,11 +271,11 @@ mod tests {
         assert_eq!(doc.entries()[0].schedule, Schedule::Every(250_000_000));
         assert_eq!(
             doc.entries()[1].schedule,
-            Schedule::Every(30 * NANOS_PER_SEC)
+            Schedule::Every(30 * NS_PER_SECOND)
         );
         assert_eq!(
             doc.entries()[2].schedule,
-            Schedule::Every(300 * NANOS_PER_SEC)
+            Schedule::Every(300 * NS_PER_SECOND)
         );
     }
 

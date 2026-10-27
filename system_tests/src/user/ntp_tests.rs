@@ -1,6 +1,6 @@
 use core::sync::atomic::Ordering;
 
-use clock_contract::{NANOS_PER_SEC, policy, state, status};
+use clock_contract::{NS_PER_SECOND, policy, state, status};
 use ntp_service::{ATTEMPTS, reject, rpt, srv};
 
 use super::*;
@@ -97,16 +97,12 @@ fn machine_has_no_entropy() -> bool {
 const SERVER_IP: u32 = 0x0a00_0202; // 10.0.2.2, slirp's gateway
 const SERVER_PORT: u16 = network_time_protocol::PORT;
 
-/// Run one exchange: a fresh server at `claimed_nanos`, a fresh client, both reports drained in
+/// Run one exchange: a fresh server at `claimed_ns`, a fresh client, both reports drained in
 /// the order the blocking `send` requires. Returns `(the server's report, the client's report)`.
 ///
 /// Both programs and their three endpoints are handed back before this returns. The server never
 /// exits on its own (it serves until killed), so the holding is what ends it.
-fn exchange(
-    clock: &clock_service::Wiring,
-    variant: u64,
-    claimed_nanos: u64,
-) -> ([u64; 5], [u64; 5]) {
+fn exchange(clock: &clock_service::Wiring, variant: u64, claimed_ns: u64) -> ([u64; 5], [u64; 5]) {
     // Counted before either program exists, so a fault during the exchange is told apart from a
     // client that is merely slow or blocked. Merge-group run 38284891615 (2026-10-12 UTC) failed
     // the first assertion below because the client had been killed by a page fault, and the
@@ -116,13 +112,8 @@ fn exchange(
         .expect("no endpoint region for an ntp exchange");
     let mut held = Holding::new();
     held.add_region(region);
-    let server = ntp_service::start_server(
-        test_server_image(),
-        variant,
-        claimed_nanos,
-        region,
-        &mut held,
-    );
+    let server =
+        ntp_service::start_server(test_server_image(), variant, claimed_ns, region, &mut held);
     let client = ntp_service::start_client(
         client_image(),
         server.stack,
@@ -176,8 +167,8 @@ fn an_ntp_exchange_reaches_the_clock_as_a_proposal() {
     }
     let (clock, clock_held) = clock();
     let before = clock.page().read();
-    let step = NANOS_PER_SEC / 2;
-    let wall_before = clock.wall_nanos();
+    let step = NS_PER_SECOND / 2;
+    let wall_before = clock.wall_ns();
     let claimed = wall_before + step;
 
     let (served, reported) = exchange(&clock, srv::GOOD, claimed);
@@ -229,13 +220,13 @@ fn an_ntp_exchange_reaches_the_clock_as_a_proposal() {
     // And the clock really moved, by about what the server claimed. The lower bound is what
     // fails if the proposal was dropped on the floor; the upper bound is what fails if the
     // client believed a server it should have bounded.
-    let moved = clock.wall_nanos() - wall_before;
+    let moved = clock.wall_ns() - wall_before;
     assert!(
         moved >= step * 4 / 5,
         "the wall clock moved {moved} ns, less than the {step} ns the server claimed",
     );
     assert!(
-        moved < step + 3 * NANOS_PER_SEC,
+        moved < step + 3 * NS_PER_SECOND,
         "the wall clock moved {moved} ns, far past the {step} ns the server claimed",
     );
     clock_held.release_or_fail("the clock service");
@@ -259,7 +250,7 @@ fn a_reply_that_fails_validation_never_becomes_a_proposal() {
     }
     let (clock, clock_held) = clock();
     let before = clock.page().read();
-    let claimed = clock.wall_nanos() + NANOS_PER_SEC / 2;
+    let claimed = clock.wall_ns() + NS_PER_SECOND / 2;
 
     for (variant, code, attempts, what) in [
         (
@@ -323,12 +314,12 @@ fn a_proposal_outside_the_policy_is_refused_by_the_service() {
 
     for (claimed, want, what) in [
         (
-            clock.wall_nanos() + 2 * policy::MAXIMUM_STEP_FORWARD_NANOS,
+            clock.wall_ns() + 2 * policy::MAXIMUM_STEP_FORWARD_NS,
             status::REFUSED_TOO_FAR_FORWARD,
             "two hours forward",
         ),
         (
-            clock.wall_nanos() - 10 * NANOS_PER_SEC,
+            clock.wall_ns() - 10 * NS_PER_SECOND,
             status::REFUSED_TOO_FAR_BACKWARD,
             "ten seconds backward",
         ),
@@ -438,10 +429,10 @@ fn the_nonce_on_the_wire_is_random_and_is_not_the_clock() {
         crate::testing::skip!("no virtio-rng device on the mmio bus (NIFE_RNG not set?)");
     }
     let (clock, clock_held) = clock();
-    let claimed = clock.wall_nanos() + NANOS_PER_SEC / 2;
+    let claimed = clock.wall_ns() + NS_PER_SECOND / 2;
 
     // A time in the NTP era the transmit field would carry if it were a clock reading.
-    let now_ntp_secs = clock.wall_nanos() / NANOS_PER_SEC + network_time_protocol::UNIX_DELTA;
+    let now_ntp_seconds = clock.wall_ns() / NS_PER_SECOND + network_time_protocol::UNIX_DELTA;
 
     let mut nonces = [0u64; 2];
     for slot in nonces.iter_mut() {
@@ -456,10 +447,10 @@ fn the_nonce_on_the_wire_is_random_and_is_not_the_clock() {
         "two exchanges put the same nonce on the wire: the transmit field is not random",
     );
     for (i, &nonce) in nonces.iter().enumerate() {
-        let secs = nonce >> 32;
+        let seconds = nonce >> 32;
         assert!(
-            secs.abs_diff(now_ntp_secs) > 3600,
-            "nonce {i} decodes to {secs}, within an hour of the clock ({now_ntp_secs}): the \
+            seconds.abs_diff(now_ntp_seconds) > 3600,
+            "nonce {i} decodes to {seconds}, within an hour of the clock ({now_ntp_seconds}): the \
              transmit field is a timestamp, not 64 random bits",
         );
     }
@@ -488,7 +479,7 @@ fn without_entropy_the_client_refuses_rather_than_guessing() {
     let server = ntp_service::start_server(
         test_server_image(),
         srv::GOOD,
-        clock.wall_nanos(),
+        clock.wall_ns(),
         region,
         &mut held,
     );

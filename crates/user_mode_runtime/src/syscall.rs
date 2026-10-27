@@ -134,14 +134,14 @@ pub unsafe fn raw_syscall(number: u64, words: [u64; 6]) -> [u64; 6] {
 /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC).
 #[inline(always)]
 pub(crate) unsafe fn invoke6(
-    cap: u64,
+    capability: u64,
     method: u64,
     a0: u64,
     a1: u64,
     a2: u64,
 ) -> (u64, u64, u64, u64, u64, u64) {
     // SAFETY: forwarded from this function's own contract.
-    unsafe { trap6(abi::SYS_INVOKE, [cap, method, a0, a1, a2, 0]) }
+    unsafe { trap6(abi::SYS_INVOKE, [capability, method, a0, a1, a2, 0]) }
 }
 
 /// [`invoke6`] read to the five words every method but a death delivery uses.
@@ -150,25 +150,25 @@ pub(crate) unsafe fn invoke6(
 /// Exactly [`invoke6`]'s contract.
 #[inline(always)]
 pub(crate) unsafe fn invoke5(
-    cap: u64,
+    capability: u64,
     method: u64,
     a0: u64,
     a1: u64,
     a2: u64,
 ) -> (u64, u64, u64, u64, u64) {
     // SAFETY: forwarded from this function's own contract.
-    let (w0, w1, w2, w3, w4, _) = unsafe { invoke6(cap, method, a0, a1, a2) };
+    let (w0, w1, w2, w3, w4, _) = unsafe { invoke6(capability, method, a0, a1, a2) };
     (w0, w1, w2, w3, w4)
 }
 
-/// Invoke a capability: the one syscall a userspace program makes. `cap` names a capability in the
+/// Invoke a capability: the one syscall a userspace program makes. `capability` names a capability in the
 /// process's capability table, `method` selects the operation, and `a0..a2` are its arguments; the return is
 /// the kernel's `i64` result. Everything else in this crate is built on this.
 ///
 /// # Safety
 /// `svc`/`ecall` traps to the kernel. The kernel validates the capability and the method before
 /// acting; that is its whole job. The caller is trusting the kernel, not the other way around.
-pub unsafe fn invoke(cap: u64, method: u64, a0: u64, a1: u64, a2: u64) -> i64 {
+pub unsafe fn invoke(capability: u64, method: u64, a0: u64, a1: u64, a2: u64) -> i64 {
     // SAFETY: forwarded from this function's own contract, which is `invoke5`'s contract exactly.
-    unsafe { invoke5(cap, method, a0, a1, a2).0 as i64 }
+    unsafe { invoke5(capability, method, a0, a1, a2).0 as i64 }
 }

@@ -130,9 +130,9 @@ fn the_2038_boundary_is_not_a_boundary() {
 /// is 0, so a naive implementation reports 1970-01-01 for every instant in the last day of 1969.
 #[test]
 fn negative_timestamps_are_ordinary() {
-    for secs in [-1i64, -86_399, -86_400, -86_401, -1_000_000_000] {
-        let c = Civil::from_unix(secs).unwrap();
-        assert_eq!(c.to_unix(), secs);
+    for seconds in [-1i64, -86_399, -86_400, -86_401, -1_000_000_000] {
+        let c = Civil::from_unix(seconds).unwrap();
+        assert_eq!(c.to_unix(), seconds);
         assert!(c.year() < 1970);
     }
     assert_eq!(
@@ -299,9 +299,9 @@ fn parse_accepts_rfc3339() {
         ("0000-01-01T00:00:00Z", MINIMUM_TIMESTAMP),
         ("9999-12-31T23:59:59Z", MAXIMUM_TIMESTAMP),
     ];
-    for &(text, secs) in cases {
+    for &(text, seconds) in cases {
         let dt = DateTime::parse_rfc3339(text).unwrap_or_else(|e| panic!("{text}: {e:?}"));
-        assert_eq!(dt.to_unix(), secs, "{text}");
+        assert_eq!(dt.to_unix(), seconds, "{text}");
     }
 
     // The offset survives parsing, it is not normalised away.
@@ -351,19 +351,19 @@ fn parse_refuses_what_it_should() {
 /// a large stride, which is the coverage a bounded proof cannot reach.
 #[test]
 fn format_and_parse_round_trip_across_the_range() {
-    let mut secs = MINIMUM_TIMESTAMP;
+    let mut seconds = MINIMUM_TIMESTAMP;
     // Prime-ish, so it lands on every hour and weekday over time. Under Miri the walk is
     // sampled three orders of magnitude coarser: the native stride is ~315,000 format+parse
     // round trips, which an interpreter turns from a second into the better part of an hour.
     // ~300 samples keep the round trip on Miri's paths; the native run keeps the density.
     // "Miri-clean" means the sampled walk (notes/undefined-behavior.md).
     let stride = if cfg!(miri) { 1_000_036_991 } else { 1_000_037 };
-    while secs <= MAXIMUM_TIMESTAMP {
-        let dt = DateTime::from_unix(secs, UtcOffset::UTC).unwrap();
+    while seconds <= MAXIMUM_TIMESTAMP {
+        let dt = DateTime::from_unix(seconds, UtcOffset::UTC).unwrap();
         let text = dt.format(Format::Rfc3339);
         let back = DateTime::parse_rfc3339(text.as_str()).unwrap();
-        assert_eq!(back.to_unix(), secs, "{}", text.as_str());
-        secs += stride;
+        assert_eq!(back.to_unix(), seconds, "{}", text.as_str());
+        seconds += stride;
     }
 }
 

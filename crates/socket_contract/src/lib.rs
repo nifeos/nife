@@ -209,8 +209,8 @@ pub mod polled_wait {
     }
 
     /// The wait at counter time `now`, when the last frame was taken at `last_frame` and a
-    /// scheduler tick is `tick` counter ticks. `stack_due_micros` is when the stack next needs
-    /// polling for its own timers, if ever; `poll_micros` is the longest a polled NIC goes
+    /// scheduler tick is `tick` counter ticks. `stack_due_microseconds` is when the stack next needs
+    /// polling for its own timers, if ever; `poll_microseconds` is the longest a polled NIC goes
     /// unlooked-at.
     ///
     /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53's receive-rate lane.
@@ -218,15 +218,15 @@ pub mod polled_wait {
         now: u64,
         last_frame: u64,
         tick: u64,
-        stack_due_micros: Option<u64>,
-        poll_micros: u64,
+        stack_due_microseconds: Option<u64>,
+        poll_microseconds: u64,
     ) -> Next {
         if now.wrapping_sub(last_frame) < tick {
             return Next::Look;
         }
-        match stack_due_micros {
-            Some(due) if due < poll_micros => Next::Sleep(due),
-            _ => Next::Sleep(poll_micros),
+        match stack_due_microseconds {
+            Some(due) if due < poll_microseconds => Next::Sleep(due),
+            _ => Next::Sleep(poll_microseconds),
         }
     }
 
@@ -304,11 +304,11 @@ pub mod ephemeral {
             Self { next: 0 }
         }
 
-        /// The next port at `millis` on the boot clock that `held` does not say a live socket
+        /// The next port at `ms` on the boot clock that `held` does not say a live socket
         /// holds. Bounded by the range, so it always returns; a stack holds far fewer sockets than
         /// the range has ports, so in practice the first or second candidate is free.
-        pub fn next(&mut self, millis: u64, held: impl Fn(u16) -> bool) -> u16 {
-            self.next = self.next.max(clock(millis));
+        pub fn next(&mut self, ms: u64, held: impl Fn(u16) -> bool) -> u16 {
+            self.next = self.next.max(clock(ms));
             for _ in 0..SPAN {
                 let port = port_at(self.next);
                 self.next += 1;
@@ -326,9 +326,9 @@ pub mod ephemeral {
         }
     }
 
-    /// The clock's position at `millis`.
-    fn clock(millis: u64) -> u64 {
-        millis.saturating_mul(PER_SECOND) / 1000
+    /// The clock's position at `ms`.
+    fn clock(ms: u64) -> u64 {
+        ms.saturating_mul(PER_SECOND) / 1000
     }
 
     fn port_at(position: u64) -> u16 {

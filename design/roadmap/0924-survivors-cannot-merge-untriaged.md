@@ -104,7 +104,7 @@ repository the split creates start with it.
 - A pull request touching only `kernel/**` or `components/**` passes with the summary "no mutants:
   outside the corpus".
 - The cap and the timeout rule above hold, each with a selftest case.
-- calef adds the check to the required checks; the lane cannot.
+- The `main` ruleset requires the check; a lane cannot add it.
 - Fatal risk 3's file records the gate as a fact. Its color stays calef's.
 
 ## The worth, 2026-10-15 (UTC): built
@@ -130,10 +130,9 @@ sides.
 
 ## Follow-on
 
-- **Recorded.** The check blocks nothing until calef adds
-  `mutation gate (a survivor on a changed line cannot merge untriaged)` to the `main` ruleset's
-  required checks; a lane cannot make that settings change. The workflow header says the same
-  where its job name is written.
+- **Recorded.** The `main` ruleset requires the check: `gh api repos/nifeos/nife/rules/branches/main`
+  lists `mutation gate (a survivor on a changed line cannot merge untriaged)`. A lane cannot change
+  that setting. The workflow header says the same where its job name is written.
 - **Recorded.** The gate has been watched failing: run 38803917791 (2026-10-15 UTC) went red at
   the deciding step on a staged, untested `glob` function, five survivor keys, each listed with
   what clears it. This pull request is the first live green to watch for: its diff generates no

@@ -3508,6 +3508,14 @@ echo "==> capability is not abbreviated cap (calef, 2026-10-06)"
 # Fixtures first, so a green check is not a counter matching nothing.
 python3 helpers/cap_abbreviation.py --selftest
 python3 helpers/cap_abbreviation.py --check
+echo "==> unit symbols are spelled out (2026-10-27)"
+# Ruled 2026-10-27 (UTC), design/naming/spelled-out-rulings.md ("Unit symbols in names"): a name uses
+# a unit symbol only from the allowed list (`ns`, `ms`, `kib`, `mib`, `gib`, `hz`, `khz`, `mhz`);
+# `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` and `mins` are spelled out or become `ns`
+# and `ms`. helpers/unit_symbols.py counts Rust identifiers that carry one (comments and strings
+# skipped) and fails a count over its ceiling or a branch that adds any net. Fixtures first.
+python3 helpers/unit_symbols.py --selftest
+python3 helpers/unit_symbols.py --check
 echo "==> no line-number citations (§277: cite a heading or a symbol)"
 # §277 (cite a heading or a symbol, never a line number), calef, 2026-10-11 (UTC): a document is
 # cited by its heading and code by a symbol, never by line number, because a line number moves with
@@ -3593,6 +3601,12 @@ python3 helpers/mutation_inflow.py --selftest >/dev/null
 # strands its rows, and the weekly check files their survivors as unattributed instead of failing.
 echo "==> every mutation triage row names a package, through the rename table"
 python3 helpers/mutation_inflow.py orphans
+# Part 1 of the survivor proposal (a survivor accepted once is not accepted forever): the real-hole
+# count per crate is generated, not counted by hand, so the committed outputs must equal a
+# regeneration from the newest census and the triage file.
+python3 helpers/mutation_real_holes.py --selftest >/dev/null
+echo "==> the survivor classification is current"
+python3 helpers/mutation_real_holes.py check
 # The baseline every `script/mutation --report` diffs against names the census it holds, and holds
 # it row for row. Without the name, the reader dated the file by a literal that outlived its contents.
 echo "==> the mutation baseline is the recorded census it names"

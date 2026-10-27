@@ -23,8 +23,8 @@ use filesystem_fixture::walk as tree;
 /// `rg --stats`'s last line, `<seconds> seconds`, in nanoseconds.
 fn rg_seconds(text: &str) -> Option<u128> {
     let line = text.lines().rev().find(|l| l.ends_with(" seconds"))?;
-    let secs = line.strip_suffix(" seconds")?;
-    let (whole, frac) = secs.split_once('.')?;
+    let seconds = line.strip_suffix(" seconds")?;
+    let (whole, frac) = seconds.split_once('.')?;
     let frac = format!("{frac:0<9}");
     Some(whole.parse::<u128>().ok()? * 1_000_000_000 + frac[..9].parse::<u128>().ok()?)
 }

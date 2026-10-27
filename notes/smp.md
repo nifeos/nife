@@ -130,7 +130,7 @@ starved of host CPU, so guest wall clock advances while the secondaries do not r
 failed on unmodified `main` about one run in six under synthetic load. On 2026-08-02 it failed three
 pull requests in a row, each on a different RISC-V CPU model, which is a statement about the host
 rather than the ISA. Widening is honest here because the condition waited on is exactly the property
-under test, not a proxy for it. The suite's own watchdog (`DEFAULT_BUDGET_SECS`, 90 s) still catches
+under test, not a proxy for it. The suite's own watchdog (`DEFAULT_BUDGET_SECONDS`, 90 s) still catches
 a dead secondary; staying under it means the failure names the subsystem rather than reading as a
 generic livelock. See [load-sensitive-assertions.md](load-sensitive-assertions.md).
 

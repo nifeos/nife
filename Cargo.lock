@@ -925,6 +925,9 @@ dependencies = [
 [[package]]
 name = "network_time_protocol"
 version = "0.1.0"
+dependencies = [
+ "clock_contract",
+]
 
 [[package]]
 name = "nifefs"
@@ -1454,6 +1457,7 @@ name = "timetable"
 version = "0.1.0"
 dependencies = [
  "calendar",
+ "clock_contract",
  "grant_plan",
 ]
 
@@ -1608,6 +1612,9 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "uptime"
 version = "0.1.0"
+dependencies = [
+ "clock_contract",
+]
 
 [[package]]
 name = "usb"
@@ -1618,6 +1625,7 @@ name = "user_mode_runtime"
 version = "0.1.0"
 dependencies = [
  "abi",
+ "clock_contract",
  "counter_frequency_contract",
  "current_cpu_contract",
  "entropy_contract",

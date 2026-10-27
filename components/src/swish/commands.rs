@@ -109,15 +109,15 @@ pub(super) fn time_command(nav: &mut Nav, tail: &[u8]) {
     }
     // A duration needs no clock (§72 (`time` needs no clock: duration is ambient, wall-clock
     // identity is authority)): across a command the wall clock's offset cancels, and
-    // `monotonic_nanos` is ambient (the kernel opened the counter to EL0) and cannot be stepped. So
+    // `monotonic_ns` is ambient (the kernel opened the counter to EL0) and cannot be stepped. So
     // `time` cannot be refused; a capability gates wall-clock identity, which is `date`'s.
-    let start = monotonic_nanos();
+    let start = monotonic_ns();
 
     dispatch(nav, tail);
 
     // Saturating out of habit rather than need: the counter is monotonic, so `end` cannot precede
     // `start`, and a wrap would take centuries at either board's frequency.
-    swish::write_timing(monotonic_nanos().saturating_sub(start), &mut print);
+    swish::write_timing(monotonic_ns().saturating_sub(start), &mut print);
 }
 
 /// The most batches one sweep will run. A ceiling so a resume rule that failed to advance costs a

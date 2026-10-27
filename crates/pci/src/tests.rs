@@ -29,14 +29,14 @@ impl FakeCfg {
         s.insert((f.0, f.1, f.2, 0x34), 0x40);
         s.insert(
             (f.0, f.1, f.2, 0x40),
-            u32::from_le_bytes([0x09, 0x50, 16, VIRTIO_CAP_COMMON]),
+            u32::from_le_bytes([0x09, 0x50, 16, VIRTIO_CAPABILITY_COMMON]),
         );
         s.insert((f.0, f.1, f.2, 0x44), 4); // bar 4
         s.insert((f.0, f.1, f.2, 0x48), 0x0); // offset
         s.insert((f.0, f.1, f.2, 0x4c), 0x1000); // length
         s.insert(
             (f.0, f.1, f.2, 0x50),
-            u32::from_le_bytes([0x09, 0x70, 20, VIRTIO_CAP_NOTIFY]),
+            u32::from_le_bytes([0x09, 0x70, 20, VIRTIO_CAPABILITY_NOTIFY]),
         );
         s.insert((f.0, f.1, f.2, 0x54), 4);
         s.insert((f.0, f.1, f.2, 0x58), 0x3000);
@@ -505,25 +505,35 @@ fn a_64_bit_bar_in_the_first_slot_keeps_its_high_half() {
 /// The capability walk yields the two virtio vendor capabilities with their (bar, offset,
 /// length) and the notify multiplier, and skips the MSI-X capability in the same list.
 #[test]
-fn the_capability_walk_finds_virtio_vendor_caps_only() {
+fn the_capability_walk_finds_virtio_vendor_capabilities_only() {
     let mut cfg = FakeCfg::new();
     let bdf = Bdf {
         bus: 0,
         dev: 1,
         func: 0,
     };
-    let mut caps = Vec::new();
-    virtio_caps(bdf, &mut |b, o| cfg.read32(b, o), &mut |c| caps.push(c));
+    let mut capabilities = Vec::new();
+    virtio_capabilities(bdf, &mut |b, o| cfg.read32(b, o), &mut |c| {
+        capabilities.push(c);
+    });
 
-    assert_eq!(caps.len(), 2, "exactly the two vendor caps, MSI-X skipped");
-    assert_eq!(caps[0].cfg_type, VIRTIO_CAP_COMMON);
     assert_eq!(
-        (caps[0].bar, caps[0].offset, caps[0].length),
+        capabilities.len(),
+        2,
+        "exactly the two vendor caps, MSI-X skipped"
+    );
+    assert_eq!(capabilities[0].cfg_type, VIRTIO_CAPABILITY_COMMON);
+    assert_eq!(
+        (
+            capabilities[0].bar,
+            capabilities[0].offset,
+            capabilities[0].length
+        ),
         (4, 0, 0x1000)
     );
-    assert_eq!(caps[1].cfg_type, VIRTIO_CAP_NOTIFY);
-    assert_eq!((caps[1].bar, caps[1].offset), (4, 0x3000));
-    assert_eq!(caps[1].notify_off_multiplier, 4);
+    assert_eq!(capabilities[1].cfg_type, VIRTIO_CAPABILITY_NOTIFY);
+    assert_eq!((capabilities[1].bar, capabilities[1].offset), (4, 0x3000));
+    assert_eq!(capabilities[1].notify_off_multiplier, 4);
 }
 
 /// A function whose status register does not advertise a capability list is not walked. The
@@ -540,9 +550,14 @@ fn a_function_without_a_capability_list_is_not_walked() {
         func: 0,
     };
     cfg.space.insert((0, 1, 0, COMMAND), 0);
-    let mut caps = Vec::new();
-    virtio_caps(bdf, &mut |b, o| cfg.read32(b, o), &mut |c| caps.push(c));
-    assert!(caps.is_empty(), "walked a list the device does not claim");
+    let mut capabilities = Vec::new();
+    virtio_capabilities(bdf, &mut |b, o| cfg.read32(b, o), &mut |c| {
+        capabilities.push(c);
+    });
+    assert!(
+        capabilities.is_empty(),
+        "walked a list the device does not claim"
+    );
 }
 
 /// A capability list that loops must terminate, not hang: hostile or broken hardware gets a
@@ -558,10 +573,10 @@ fn a_cyclic_capability_list_terminates() {
     // Point the second cap's `next` back at the first.
     cfg.space.insert(
         (0, 1, 0, 0x50),
-        u32::from_le_bytes([0x09, 0x40, 20, VIRTIO_CAP_NOTIFY]),
+        u32::from_le_bytes([0x09, 0x40, 20, VIRTIO_CAPABILITY_NOTIFY]),
     );
     let mut n = 0;
-    virtio_caps(bdf, &mut |b, o| cfg.read32(b, o), &mut |_| n += 1);
+    virtio_capabilities(bdf, &mut |b, o| cfg.read32(b, o), &mut |_| n += 1);
     assert!(n <= 64, "the walk did not terminate promptly on a cycle");
 }
 
@@ -661,11 +676,12 @@ fn the_msix_capability_decodes_with_its_table_size_off_by_one_corrected() {
         dev: 1,
         func: 0,
     };
-    let cap = msix_cap(bdf, &mut |b, o| cfg.read32(b, o)).expect("the fake declares MSI-X");
+    let capability =
+        msix_capability(bdf, &mut |b, o| cfg.read32(b, o)).expect("the fake declares MSI-X");
     assert_eq!(
-        cap,
-        MsixCap {
-            cap_offset: 0x70,
+        capability,
+        MsixCapability {
+            capability_offset: 0x70,
             table_size: 3,
             table_bar: 1,
             table_offset: 0x2000,
@@ -687,42 +703,42 @@ fn an_msi_only_function_decodes_and_places_its_data_by_address_width() {
         func: 0,
     };
     let mut read = |_: Bdf, o: u64| match o {
-        COMMAND => u32::from(STATUS_CAP_LIST) << 16,
-        CAP_PTR => 0x70,
+        COMMAND => u32::from(STATUS_CAPABILITIES_LIST) << 16,
+        CAPABILITIES_POINTER => 0x70,
         0x70 => 0x01 | 0x80 << 8, // power management, next 0x80
-        0x80 => u32::from(CAP_ID_MSI) | u32::from(MSI_64_BIT | 0x6) << 16, // 64-bit, eight vectors
+        0x80 => u32::from(CAPABILITY_ID_MSI) | u32::from(MSI_64_BIT | 0x6) << 16, // 64-bit, eight vectors
         _ => 0,
     };
-    let msi = msi_cap(bdf, &mut read).expect("the function declares MSI");
+    let msi = msi_capability(bdf, &mut read).expect("the function declares MSI");
     assert_eq!(
         msi,
-        MsiCap {
-            cap_offset: 0x80,
+        MsiCapability {
+            capability_offset: 0x80,
             is_64: true
         }
     );
     assert_eq!((msi.address_low(), msi.data()), (0x84, 0x8c));
-    assert_eq!(msix_cap(bdf, &mut read), None);
-    let narrow = MsiCap {
-        cap_offset: 0x50,
+    assert_eq!(msix_capability(bdf, &mut read), None);
+    let narrow = MsiCapability {
+        capability_offset: 0x50,
         is_64: false,
     };
     assert_eq!(narrow.data(), 0x58);
     // A 32-bit MSI capability says so, and a function whose status has no capability list
     // is not walked even when its pointer byte happens to lead to one.
     let mut read32 = |_: Bdf, o: u64| match o {
-        COMMAND => u32::from(STATUS_CAP_LIST) << 16,
-        CAP_PTR => 0x50,
-        0x50 => u32::from(CAP_ID_MSI),
+        COMMAND => u32::from(STATUS_CAPABILITIES_LIST) << 16,
+        CAPABILITIES_POINTER => 0x50,
+        0x50 => u32::from(CAPABILITY_ID_MSI),
         _ => 0,
     };
-    assert_eq!(msi_cap(bdf, &mut read32), Some(narrow));
+    assert_eq!(msi_capability(bdf, &mut read32), Some(narrow));
     let mut unlisted = |_: Bdf, o: u64| match o {
-        CAP_PTR => 0x50,
-        0x50 => u32::from(CAP_ID_MSI),
+        CAPABILITIES_POINTER => 0x50,
+        0x50 => u32::from(CAPABILITY_ID_MSI),
         _ => 0,
     };
-    assert_eq!(msi_cap(bdf, &mut unlisted), None);
+    assert_eq!(msi_capability(bdf, &mut unlisted), None);
 }
 
 /// A function with no capability list at all answers `None` rather than walking from a
@@ -735,7 +751,7 @@ fn a_function_without_a_capability_list_declares_no_msix() {
         dev: 2,
         func: 1,
     };
-    assert_eq!(msix_cap(bdf, &mut |b, o| cfg.read32(b, o)), None);
+    assert_eq!(msix_capability(bdf, &mut |b, o| cfg.read32(b, o)), None);
 }
 
 /// **A capability list that points at itself terminates.** The walk is a device-supplied
@@ -749,12 +765,12 @@ fn a_cyclic_capability_list_terminates_instead_of_hanging() {
         func: 0,
     };
     let mut reads = 0usize;
-    let answer = msix_cap(bdf, &mut |_, off| {
+    let answer = msix_capability(bdf, &mut |_, off| {
         reads += 1;
         match off {
-            COMMAND => 0x0010 << 16, // capability list present
-            CAP_PTR => 0x40,         // first entry at 0x40
-            0x40 => 0x0000_4009,     // a vendor cap whose `next` points back at 0x40
+            COMMAND => 0x0010 << 16,      // capability list present
+            CAPABILITIES_POINTER => 0x40, // first entry at 0x40
+            0x40 => 0x0000_4009,          // a vendor cap whose `next` points back at 0x40
             _ => 0,
         }
     });
@@ -776,14 +792,14 @@ fn a_status_without_the_list_bit_hides_a_capability_that_is_there() {
             match off {
                 // Status bit 3 (an interrupt is pending) is set; bit 4 is the list.
                 COMMAND => (if present { 0x0018u32 } else { 0x0008 }) << 16,
-                CAP_PTR => 0x40,
+                CAPABILITIES_POINTER => 0x40,
                 0x40 => 0x0001_0011, // MSI-X, control 1, no next
                 _ => 0,
             }
         }
     };
-    assert!(msix_cap(bdf, &mut read(true)).is_some());
-    assert_eq!(msix_cap(bdf, &mut read(false)), None);
+    assert!(msix_capability(bdf, &mut read(true)).is_some());
+    assert_eq!(msix_capability(bdf, &mut read(false)), None);
 }
 
 /// The two MSI-X control bits are bits 15 and 14 of the Message Control word, as the

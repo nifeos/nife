@@ -16,3 +16,4 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+clock_contract = { version = "0.1.0", path = "../clock_contract" }

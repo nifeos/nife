@@ -136,7 +136,7 @@ An assertion can be live on one architecture and structurally dead on another, a
 only place. `a_read_only_segment_is_mapped_read_only` asserts `!flags.is_kernel_executable()` on a
 user `.rodata` page. On aarch64 that is a live check. `PXN` is a bit independent of `AP_USER`, and a
 kernel-executable user page is a real hazard the `Flags::user_code` doc calls out by name. On riscv64
-and x86_64 it cannot fail. Both decoders reach `CAP_KERNEL_EXEC` only through an `else` branch that
+and x86_64 it cannot fail. Both decoders reach `ACCESS_KERNEL_EXEC` only through an `else` branch that
 requires the user bit clear (`sv39.rs` `leaf_flags`, `x86_64.rs` `leaf_flags`). And the assertion two
 lines up has already established the page is user-accessible.
 

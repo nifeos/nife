@@ -4,7 +4,7 @@
 //! ordinary cached stores and the data plane's barrier: post the receive ring, fill receive buffer
 //! 0 with [`POISON`] and **read it back** (so a write-back cache the device does not snoop holds
 //! the poison when the device writes), queue [`probe_frame`], poll receive descriptor 0 for up to
-//! [`WAIT_US`], then read the channel status register. [`classify`] compares the two accounts; the
+//! [`WAIT_MICROSECONDS`], then read the channel status register. [`classify`] compares the two accounts; the
 //! status register is read over MMIO, which no cache stands in front of, so a non-coherent machine
 //! fails in a way that names the direction.
 
@@ -25,7 +25,7 @@ pub(crate) const POISON: u8 = 0xa5;
 /// How long the caller waits for receive descriptor 0 before reading the device's account. A
 /// 128-byte frame at any speed through a loopback is microseconds; a hundred milliseconds is
 /// slack for a slow first descriptor fetch, not a guess at the wire.
-pub const WAIT_US: u64 = 100_000;
+pub const WAIT_MICROSECONDS: u64 = 100_000;
 
 /// **The probe frame**: addressed from and to `station_address` (so the packet filter passes it),
 /// the experimental `EtherType`, and a payload whose every byte differs from [`POISON`] and from
@@ -213,8 +213,8 @@ mod tests {
         nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
         let mut waited = 0;
-        while !nic.with(|r, _| delivered(r)) && waited < WAIT_US {
-            nic.delay_us(1000);
+        while !nic.with(|r, _| delivered(r)) && waited < WAIT_MICROSECONDS {
+            nic.delay_microseconds(1000);
             waited += 1000;
         }
         let status = nic.read(registers::CHAN_STATUS);

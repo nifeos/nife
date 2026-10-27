@@ -35,7 +35,7 @@ What ships:
 3. `script/ci-build` gains the two `ci` rows the jobs run. The `local` row is unchanged.
 4. A local run without `std_exerciser` skips `wc < args.txt` along with the line that writes its
    input.
-5. `SWISH_CHECK_X86_LINE_SECS`, the bound for the leg under TCG, goes from 90 s to 45 s: 3.2x CI's
+5. `SWISH_CHECK_X86_LINE_SECONDS`, the bound for the leg under TCG, goes from 90 s to 45 s: 3.2x CI's
    slowest emulated line. Under KVM the leg holds the other legs' 30 s.
 
 The swish-check job took 21m07s on 624's branch. Its arm64 half now takes about five minutes and

@@ -98,8 +98,8 @@ ps,refusal,delete match arm Some(abi::Error::NoSuchSlot),killed,"killed; the led
 ps,refusal,delete match arm Some(abi::Error::WrongObject),killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 ps,state_name,delete match arm abi::survey::BLOCKED,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 ps,state_name,delete match arm abi::survey::READY,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
-ps,write_millis,replace - with +,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
-ps,write_millis,replace - with /,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
+ps,write_ms,replace - with +,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
+ps,write_ms,replace - with /,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 ps,write_thread_id,replace - with +,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 ps,write_thread_id,replace - with /,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 sealed_pair,,replace <impl std::fmt::Display for Unreadable>::fmt -> std::fmt::Result with Ok(Default::default()),killed,killed; the ledger's firmware_configuration and sealed_pair section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps
@@ -618,7 +618,7 @@ measured_boot,Sha256::update,replace < with <=,equivalent,argued in notes/mutati
 measured_boot,Sha256::compress,replace ^ with |,equivalent,argued in notes/mutation-testing/measured-boot.md; the 2026-10-07 per-crate re-run still reports it
 measured_boot,parse_hex,replace | with ^,equivalent,argued in notes/mutation-testing/measured-boot.md; the 2026-10-07 per-crate re-run still reports it
 memory_corruption_canary_gate,pause,replace pause with (),equivalent,argued in notes/mutation-testing/new-crate-backlog.md; the 2026-10-07 per-crate re-run still reports it
-network_time_protocol,,replace << with >>,equivalent,"two mutants share this key. UNIX_LIMIT is killed by the_range_limit_is_exactly_where_the_docs_say. PROVED_NANOS is a const in the cfg(kani) verification module: no build but Kani's compiles it, so the mutant changes nothing cargo test or a shipped image runs. The module is now its own file, which .cargo/mutants.toml's **/src/**/verification.rs glob excludes, and a re-run with cargo mutants at base deff22e9f no longer generates it"
+network_time_protocol,,replace << with >>,equivalent,"two mutants share this key. UNIX_LIMIT is killed by the_range_limit_is_exactly_where_the_docs_say. PROVED_NS is a const in the cfg(kani) verification module: no build but Kani's compiles it, so the mutant changes nothing cargo test or a shipped image runs. The module is now its own file, which .cargo/mutants.toml's **/src/**/verification.rs glob excludes, and a re-run with cargo mutants at base deff22e9f no longer generates it"
 network_time_protocol,,replace - with /,killed,killed; the_range_limit_is_exactly_where_the_docs_say now pins UNIX_LIMIT to 2104-02-26T09:42:24Z
 network_time_protocol,Timestamp::from_unix,replace % with +,equivalent,(secs + UNIX_DELTA) + 2^32 truncated by as u32 is the same as % 2^32
 network_time_protocol,Timestamp::from_unix,replace | with ^,equivalent,"| over operands on disjoint bits (each field masked or shifted into its own range), so | and ^ agree (seconds in the high half, ticks in the low)"
@@ -971,8 +971,8 @@ paging,AmdVi::blocked_device_table_entry,replace | with ^,equivalent,"DTE_V (bit
 paging,AmdVi::device_table_entry,replace | with ^,equivalent,"DTE_V (bit 0), DTE_TV (1), the 4-level mode (4 << 9), the root (checked inside AMD_VI_ADDR_MASK, bits 12 to 51), DTE_IR (61) and DTE_IW (62) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 paging,Sv39Mae::memory_type,replace | with ^,equivalent,"MAE_SO (63), MAE_C (62), MAE_B (61) and MAE_SH (60) are distinct bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 paging,Sv39Mae::memory_type_of,replace Sv39Mae::memory_type_of -> u64 with 0,killed,"killed by memory_and_devices_carry_linuxs_memory_types, which now reads the type back through memory_type_of"
-pci,msi_cap,replace & with ^,killed,"killed by an_msi_only_function_decodes_and_places_its_data_by_address_width (a 32-bit MSI capability, and one behind no capability list)"
-pci,msi_cap,replace & with |,killed,"killed by an_msi_only_function_decodes_and_places_its_data_by_address_width (a 32-bit MSI capability, and one behind no capability list)"
+pci,msi_capability,replace & with ^,killed,"killed by an_msi_only_function_decodes_and_places_its_data_by_address_width (a 32-bit MSI capability, and one behind no capability list)"
+pci,msi_capability,replace & with |,killed,"killed by an_msi_only_function_decodes_and_places_its_data_by_address_width (a 32-bit MSI capability, and one behind no capability list)"
 screen_console,,replace * with +,killed,killed by the_grid_holds_150_rows_at_the_widest_scale_one_screen
 screen_console,Aperture::checked,replace * with +,killed,"killed by an_aperture_survives_the_trip_through_two_words, whose stride refusal now sets a scale so the stride check is what refuses"
 screen_console,Aperture::checked,replace * with /,killed,"killed by an_aperture_survives_the_trip_through_two_words, whose stride refusal now sets a scale so the stride check is what refuses"
@@ -1482,7 +1482,7 @@ documentation,Layout::unit_wrapped,replace < with ==,gap,"a timeout in the mutat
 documentation,Layout::unit_wrapped,replace < with >,gap,"a timeout in the mutation gate: either inner bound as > is false at the first character, so take stays 0 and k never advances; no test fails faster than the harness's timeout"
 documentation,Layout::unit_wrapped,replace += with *=,gap,"a timeout in the mutation gate: take and k both start at 0 and stay there under *=, so every pass places an empty unit at the same place; no test fails faster than the harness's timeout"
 abi,RegisterShape::to_word,replace | with ^,equivalent,"reg_shift fills bits 0..8 and reg_io_width << 8 starts at bit 8, so the operands are disjoint and | and ^ give the same word"
-socket_contract,polled_wait::next,replace < with <=,equivalent,"at due == poll_micros both arms return Sleep(poll_micros), so the boundary chooses nothing"
+socket_contract,polled_wait::next,replace < with <=,equivalent,"at due == poll_microseconds both arms return Sleep(poll_microseconds), so the boundary chooses nothing"
 jh7110_clock_and_reset,sdcard_divider_for,replace < with <=,equivalent,"the branch returns 1, and at div == 1 the value returned below is also 1"
 jh7110_clock_and_reset,sdcard_divider_for,replace > with >=,equivalent,"the branch returns SDCARD_DIVIDER_MAXIMUM, and at div == SDCARD_DIVIDER_MAXIMUM the value returned below is the same"
 jh7110_clock_and_reset,with_divider,replace | with ^,equivalent,"the two operands are masked to disjoint bits (& !0x00ff_ffff and & 0x00ff_ffff), and | equals ^ on disjoint bits"

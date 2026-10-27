@@ -43,7 +43,7 @@ const MAXIMUM_REGIONS: usize = 8;
 /// hundred yields on this core can all complete inside one such tick. Two seconds is roughly two
 /// hundred ticks, far beyond any honest teardown and far under the 60 s hang watchdog, so a
 /// genuinely stuck service reports `false` instead of hanging the run.
-const RELEASE_SECS: u64 = 2;
+const RELEASE_SECONDS: u64 = 2;
 
 /// Reclaim one region, retrying until it lands or the deadline passes.
 ///
@@ -144,7 +144,8 @@ impl Holding {
             sched::kill_thread(*tid);
         }
 
-        let deadline = crate::arch::timer::now() + RELEASE_SECS * crate::arch::timer::frequency();
+        let deadline =
+            crate::arch::timer::now() + RELEASE_SECONDS * crate::arch::timer::frequency();
         let mut all = true;
 
         for region in self.regions.iter().flatten() {

@@ -80,7 +80,7 @@ pub const ATTEMPTS: u32 = 3;
 /// The gap between attempts. Milliseconds rather than NTP's 64 seconds, because this client is still
 /// one-shot (see the module docs). Asleep on a timer since milestone 106, whose resolution is the
 /// 10 ms scheduler tick, so the gap is in practice one tick.
-const RETRY_GAP_NANOS: u64 = 2 * 1_000_000;
+const RETRY_GAP_NS: u64 = 2 * 1_000_000;
 
 /// Where this client maps the shared socket frame in its own address space. Above the program's
 /// segments; the same address `socket_test_client` uses, and each address space is its own. The
@@ -114,7 +114,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
     let (_state, wall0) = call(PROPOSE, propose::req(propose::STATE), 0);
     let local = LocalClock {
         wall0,
-        mono0: monotonic_nanos(),
+        mono0: monotonic_ns(),
     };
 
     // **The nonce before the network**: a client with no unguessable bits has nothing to send,
@@ -181,7 +181,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
             Ok(sample) => {
                 // Applied to the local clock as it is now, not as it was at T4: the proposal is a
                 // claim about the present, and the service compares it against the present.
-                let corrected = local.now() as i128 + sample.offset.nanos();
+                let corrected = local.now() as i128 + sample.offset.ns();
                 let proposed = corrected.clamp(0, u64::MAX as i128) as u64;
                 let (status, _wall_after) = call(PROPOSE, propose::req(propose::PROPOSE), proposed);
                 let _ = call(socket, OPERATION_CLOSE, 0);
@@ -239,7 +239,7 @@ struct LocalClock {
 impl LocalClock {
     fn now(&self) -> u64 {
         self.wall0
-            .saturating_add(monotonic_nanos().saturating_sub(self.mono0))
+            .saturating_add(monotonic_ns().saturating_sub(self.mono0))
     }
 }
 
@@ -248,21 +248,21 @@ impl LocalClock {
 /// Whole seconds and a remainder, not `ticks * 1e9`: at 62.5 MHz the naive product overflows a
 /// `u64` about five minutes into a boot, and the clock built on it jumps backwards by six centuries.
 /// The clock service's copy of this arithmetic carries the same note.
-fn monotonic_nanos() -> u64 {
+fn monotonic_ns() -> u64 {
     let freq = cntfrq();
     let ticks = now();
-    let secs = ticks / freq;
+    let seconds = ticks / freq;
     let rem = ticks % freq;
-    secs * clock_contract::NANOS_PER_SEC + rem * clock_contract::NANOS_PER_SEC / freq
+    seconds * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
 }
 
 /// Unix nanoseconds to an NTP timestamp. `None` outside the crate's representable window, which the
 /// clock service's 2100 ceiling keeps us well inside; it is checked rather than assumed because the
 /// alternative to checking is a timestamp 136 years out.
-fn stamp(unix_nanos: u64) -> Option<Timestamp> {
+fn stamp(unix_ns: u64) -> Option<Timestamp> {
     Timestamp::from_unix(
-        unix_nanos / clock_contract::NANOS_PER_SEC,
-        (unix_nanos % clock_contract::NANOS_PER_SEC) as u32,
+        unix_ns / clock_contract::NS_PER_SECOND,
+        (unix_ns % clock_contract::NS_PER_SECOND) as u32,
     )
 }
 
@@ -283,8 +283,8 @@ fn poll_gap() {
     let timer = TIMER.load(Relaxed);
     if timer != u64::MAX {
         let ticks = abi::timer::counter_ticks_for(
-            RETRY_GAP_NANOS / 1_000_000_000,
-            (RETRY_GAP_NANOS % 1_000_000_000) as u32,
+            RETRY_GAP_NS / 1_000_000_000,
+            (RETRY_GAP_NS % 1_000_000_000) as u32,
             cntfrq(),
         );
         if sleep_until(
@@ -296,8 +296,8 @@ fn poll_gap() {
             return;
         }
     }
-    let deadline = monotonic_nanos() + RETRY_GAP_NANOS;
-    while monotonic_nanos() < deadline {
+    let deadline = monotonic_ns() + RETRY_GAP_NS;
+    while monotonic_ns() < deadline {
         yield_now();
     }
 }

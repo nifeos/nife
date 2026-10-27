@@ -10,8 +10,8 @@
 /// - Argument register 6 is the first thread pointer: zero or a user address, else `BadPointer`.
 pub const CONFIGURE: u64 = 0;
 
-/// `invoke(cap, CAP_INSERT, cap_slot, rights, target)` -> `child_slot`. Copy the capability in
-/// the caller's `cap_slot`, narrowed to `rights`, into the child's capability table, returning the slot
+/// `invoke(cap, CAP_INSERT, capability_slot, rights, target)` -> `child_slot`. Copy the capability in
+/// the caller's `capability_slot`, narrowed to `rights`, into the child's capability table, returning the slot
 /// it landed in. The child's whole initial authority is built this way, one grant at a time,
 /// before it runs. Needs `WRITE` on the TCB cap and `GRANT` on the inserted capability.
 ///

@@ -39,8 +39,8 @@ index 03860e171..fa453076e 100644
  impl Flags {
      /// Kernel code: readable and executable by the kernel, never writable, never user.
      pub const fn kernel_code() -> Self {
--        Flags(CAP_KERNEL_EXEC | CAP_GLOBAL)
-+        Flags(CAP_KERNEL_EXEC | CAP_GLOBAL | CAP_USER)
+-        Flags(ACCESS_KERNEL_EXEC | ACCESS_GLOBAL)
++        Flags(ACCESS_KERNEL_EXEC | ACCESS_GLOBAL | ACCESS_USER)
      }
  
      /// Kernel constants: readable by the kernel, never writable, never executable by anyone.

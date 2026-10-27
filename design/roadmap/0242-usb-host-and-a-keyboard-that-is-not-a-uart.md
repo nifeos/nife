@@ -71,7 +71,7 @@ by `system_initializer`).
 
 | Piece | Where |
 |---|---|
-| Find the controller (class 0c/03/30), route its interrupt: MSI-X, else MSI (new: xenon's Intel PCH xHCI has no MSI-X), else INTx | `kernel/src/pci.rs`, `crates/pci` (`msi_cap`, `MsixCap`'s pending-bit array) |
+| Find the controller (class 0c/03/30), route its interrupt: MSI-X, else MSI (new: xenon's Intel PCH xHCI has no MSI-X), else INTx | `kernel/src/pci.rs`, `crates/pci` (`msi_capability`, `MsixCapability`'s pending-bit array) |
 | Take it from the firmware (USB Legacy Support), draw the register window, refuse without IOMMU confinement, confine the DMA region | `kernel/src/extensible_host_controller_interface.rs` |
 | The `Spawn` literal: what the driver holds and is refused | `kernel/src/user/usb_keyboard_service.rs` |
 | Halt, reset, rings, port reset, Enable Slot, Address Device, descriptors, Evaluate Context, `SET_CONFIGURATION`, `SET_PROTOCOL`, `SET_IDLE`, Configure Endpoint, interrupt reads, stall recovery, hot-plug | `components/src/usb_keyboard_driver.rs` |

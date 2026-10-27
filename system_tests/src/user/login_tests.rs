@@ -683,7 +683,7 @@ fn caretaker_teardown_reclaims_a_full_session_worth_of_memory() {
              early, which is the defect that ceiling replaced. See \
              fixtures/src/login_test_client.rs's `destroy_with_retry`.",
             r[2],
-            ls::DESTROY_WAIT_MICROS,
+            ls::DESTROY_WAIT_MICROSECONDS,
         );
         assert_eq!(
             r[1] & ls::F_DEAD_AFTER_TEARDOWN,

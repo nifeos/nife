@@ -250,7 +250,7 @@ impl Capabilities {
 /// [`Capabilities::extended`] gives) through a `read` of dwords at byte offsets. `None` when the
 /// list has no such entry, ends, or leaves `limit` bytes.
 ///
-/// Bounded at 64 hops and by `limit`, for `pci::msix_cap`'s reason: the list is a linked list in
+/// Bounded at 64 hops and by `limit`, for `pci::msix_capability`'s reason: the list is a linked list in
 /// a device's register file, so a broken controller must end the walk, not hang the kernel that is
 /// walking it.
 ///

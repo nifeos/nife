@@ -27,7 +27,7 @@ unsafe extern "C" {
     fn unlink(path: *const u8) -> i32;
     fn sync();
     fn umount(target: *const u8) -> i32;
-    fn usleep(us: u32) -> i32;
+    fn usleep(microseconds: u32) -> i32;
     fn memalign(align: usize, size: usize) -> *mut u8;
     fn reboot(cmd: i32) -> i32;
     fn syscall(num: std::os::raw::c_long, ...) -> std::os::raw::c_long;

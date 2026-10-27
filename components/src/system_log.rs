@@ -37,7 +37,7 @@ use system_log_contract::kernel_ring::{self, Cursor, DETACHED, Read, Ring};
 use system_log_contract::record::{self, flags};
 use system_log_contract::{console, read};
 use user_mode_runtime::{
-    cntfrq, exit, monotonic_nanos, notification_signal, now, receive_badged, receive_badged_bound,
+    cntfrq, exit, monotonic_ns, notification_signal, now, receive_badged, receive_badged_bound,
     send, timer_arm,
 };
 
@@ -66,7 +66,7 @@ const FLUSH_BIT: u64 = 2;
 /// How long a kernel line may wait for the terminal to reach a line end before the console is
 /// told to put it on a line of its own: 250 ms, short of what a person waiting notices and far
 /// longer than a typed line's echo takes.
-const FLUSH_NANOS: u32 = 250_000_000;
+const FLUSH_NS: u32 = 250_000_000;
 
 /// How many reader windows the service maps, from the contract both sides link.
 const WINDOWS: u64 = read::WINDOWS as u64;
@@ -124,8 +124,7 @@ fn start(mode: u64, readers: u64, _a2: u64) -> ! {
         if badge == 0 && w0 as i64 == abi::Error::Gone as i64 {
             exit();
         }
-        let Handled::Read { window, cursor } = log.handle(badge, w0, w1, w2, monotonic_nanos())
-        else {
+        let Handled::Read { window, cursor } = log.handle(badge, w0, w1, w2, monotonic_ns()) else {
             continue;
         };
         if window as u64 >= readers {
@@ -150,7 +149,7 @@ fn start(mode: u64, readers: u64, _a2: u64) -> ! {
 ///
 /// The console writes a forwarded line only at a line start. The flush timer is armed when a line
 /// is forwarded and none is armed, even if the console did not queue it, so a later line queued
-/// mid-line can flush far sooner than [`FLUSH_NANOS`] and its exact redraw lands inside what a
+/// mid-line can flush far sooner than [`FLUSH_NS`] and its exact redraw lands inside what a
 /// person types. Whether that widened the window `script/swish-check` misread (`without_redraws` in
 /// `xtask/src/swish_check.rs`) is unmeasured; the fix moves the deadline to the console's queue.
 fn drain(log: &mut Log, flush_armed: &mut bool) {
@@ -190,7 +189,7 @@ fn drain(log: &mut Log, flush_armed: &mut bool) {
                     if !*flush_armed {
                         let deadline = now().saturating_add(abi::timer::counter_ticks_for(
                             0,
-                            FLUSH_NANOS,
+                            FLUSH_NS,
                             cntfrq(),
                         ));
                         *flush_armed = timer_arm(TIMER, deadline, KERNEL_NOTIFIED, FLUSH_BIT) >= 0;
