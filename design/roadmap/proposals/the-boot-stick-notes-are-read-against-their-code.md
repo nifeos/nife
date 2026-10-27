@@ -24,8 +24,8 @@ moves the sort asks for, because the pilots measured that a third of first-pass 
 something a reader needs, and only a review pass caught them. That pass is this milestone.
 
 Seventeen passages narrate what a code doc already says. Among them are the flag table
-(`stick_maker::cli`'s `USAGE`), the write-then-rename paragraph (`write.rs`), "The halves" in
-`the-program.md` (the crate's module docs), "The payload is embedded at build time"
+(`stick_maker::cli`'s `USAGE`), the write-then-rename paragraph (`write.rs`), and "The halves" in
+`the-program.md` (the crate's module docs). Others are "The payload is embedded at build time"
 (`crates/stick_maker/build.rs`), the Linux sysfs facts (`linux.rs`) and the Windows paragraphs
 (`windows.rs`).
 
@@ -43,5 +43,5 @@ Six passages belong beside their code:
 ## Exit test
 
 Each passage of the area has a row in a ledger (gone, moves, stays, contract) with the symbol it
-rests on, a review has read every gone and moves row against the code, and the note's headings and
+rests on, and a review has read every gone and moves row against the code. The note's headings and
 anchors still resolve from every file that cites them.

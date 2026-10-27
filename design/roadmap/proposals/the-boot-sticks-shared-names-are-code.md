@@ -18,8 +18,8 @@ match (`BANNER`, `SELF_TEST`), and which `xtask` already depends on.
 
 ## The failure
 
-Four names cross between the programs that build, write and boot the stick, and each is spelled
-on every side.
+Four names cross between the programs that build, write and boot the stick, and every side spells
+each one itself.
 
 | agreement | its spellings |
 |---|---|
@@ -28,8 +28,8 @@ on every side.
 | each architecture's removable-media file name | `xtask/src/stick.rs` (`PAYLOADS`), `crates/stick_maker/src/payload.rs` (`architecture`), `uefi_loader/src/placement.rs` (`BOOT_FILE_PATH`), `components/src/system_installer.rs` (`BOOT_FILE_NAME`) |
 | the payload directory xtask hands the stick program's build | `NIFE_STICK_PAYLOADS` and `NIFE_STICK_BUILD`, set in `xtask/src/stick.rs` and read in `crates/stick_maker/build.rs` |
 
-The erased stick's volume label, `NIFE`, is spelled in `host/macos.rs`, `host/linux.rs` and
-`windows.rs`'s `diskpart` steps inside `stick_maker` alone, and the bench path `/Volumes/NIFE`
+Inside `stick_maker` alone, `host/macos.rs`, `host/linux.rs` and `windows.rs`'s `diskpart` steps
+each spell the erased stick's volume label, `NIFE`, and the bench path `/Volumes/NIFE`
 depends on it.
 
 A changed handover line passes every unit test and fails every boot gate with a timeout, which
