@@ -1,0 +1,19 @@
+Falsifies `file_allocation_table::master_boot_record::verification::a_partition_device_reads_only_its_partition`.
+
+The defect: the end test is off by one, so the sector just past the partition's last one reaches the
+device, which reads the next partition's first sector as this partition's data.
+
+Expected to fail: the harness's assertion that the sector asked for is below the partition's end.
+
+diff --git a/crates/file_allocation_table/src/master_boot_record.rs b/crates/file_allocation_table/src/master_boot_record.rs
+--- a/crates/file_allocation_table/src/master_boot_record.rs
++++ b/crates/file_allocation_table/src/master_boot_record.rs
+@@ -302,7 +302,7 @@ impl<D: SectorDevice> SectorDevice for PartitionDevice<D> {
+     }
+ 
+     fn read_sector(&mut self, index: u64, buffer: &mut [u8]) -> Result<(), Self::Error> {
+-        if index >= u64::from(self.sectors) {
++        if index > u64::from(self.sectors) {
+             return Err(PartitionError::OutsidePartition(index));
+         }
+         self.device
