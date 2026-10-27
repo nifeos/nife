@@ -1669,7 +1669,7 @@ def run_bounded(argv, limit, env=None, cwd=None):
     """
     start = time.monotonic()
     p = subprocess.Popen(argv, cwd=cwd or root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                         text=True, start_new_session=True,
+                         text=True, errors="replace", start_new_session=True,
                          env=dict(os.environ, **env) if env else None)
     try:
         out, _ = p.communicate(timeout=limit)
