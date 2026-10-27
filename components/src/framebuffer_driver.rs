@@ -111,7 +111,7 @@ fn start(size: u64, layout: u64, offset: u64) -> ! {
 
     loop {
         // A CALL's Reply, or nothing to answer (milestone 706 (a `CALL` server can tell a Reply
-        // from a delegation)): a client's SEND_CAP is deleted rather than answered into.
+        // from a delegation)): a client's SEND_CAPABILITY is deleted rather than answered into.
         let req = receive_request(DISPLAY);
         let w0 = req.w0;
         let reply_slot = req.delivered.into_reply();

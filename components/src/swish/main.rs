@@ -50,9 +50,10 @@ use line_editor::proto;
 use swish::{Route, Say, Status, Untimed, sequence};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
-    call, cap_delete, cntfrq, destroy_memory_region, exit, monotonic_ns, now, reap, receive,
-    receive_cap, receive_fault, retype_into_kernel_object, retype_sleeper, send, sleep_until,
-    split_memory_region, thread_control_block_resume, thread_control_block_suspend, yield_now,
+    call, capability_delete, cntfrq, destroy_memory_region, exit, monotonic_ns, now, reap, receive,
+    receive_capability, receive_fault, retype_into_kernel_object, retype_sleeper, send,
+    sleep_until, split_memory_region, thread_control_block_resume, thread_control_block_suspend,
+    yield_now,
 };
 
 // **The shell is a directory of modules** (milestone 844 (the shell program is split along its
@@ -70,7 +71,6 @@ mod running;
 mod witness;
 
 use capabilities::*;
-use held::{drop_slot, receive_tcb};
 use jobs::*;
 use navigation::*;
 use pipeline::*;

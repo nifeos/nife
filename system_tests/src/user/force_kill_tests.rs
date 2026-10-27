@@ -374,7 +374,7 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
     let [_word, slot, _w1, _badge, ..] = sched::inter_process_communication_receive_capability(ep);
     assert_ne!(
         slot,
-        abi::rendezvous::NO_CAP,
+        abi::rendezvous::NO_CAPABILITY,
         "the CALL carried no reply capability"
     );
     assert!(

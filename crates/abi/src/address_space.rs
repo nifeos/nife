@@ -1,4 +1,4 @@
-/// `invoke(cap, MAP_INTO, va, frame_slot, writable)` -> 0. Map the frame in `frame_slot` into THIS
+/// `invoke(capability, MAP_INTO, va, frame_slot, writable)` -> 0. Map the frame in `frame_slot` into THIS
 /// address space at `va`, read-only or read/write. Needs `WRITE` on the address-space capability;
 /// the frame capability needs `READ` for a read-only mapping, `WRITE` for a writable one, the
 /// `frame::MAP` rule verbatim. Page tables and the revocation record are paid from the space's own
@@ -15,7 +15,7 @@ pub const MAP_RW: u64 = 1;
 /// Map executable code: RX, never writable (W^X).
 pub const MAP_CODE: u64 = 2;
 
-/// `invoke(cap, LIST, cursor, 0, 0) -> (next_cursor, va, kind)` (`pmap`, milestone 126 (the
+/// `invoke(capability, LIST, cursor, 0, 0) -> (next_cursor, va, kind)` (`pmap`, milestone 126 (the
 /// `procps` package), §114 (`ENUMERATE` extends to the address-space object)): list this space's
 /// mappings one entry per call, changing none, with `Rendezvous::SURVEY`'s cursors and right.
 ///
@@ -27,7 +27,7 @@ pub const MAP_CODE: u64 = 2;
 /// - Needs [`rights::ENUMERATE`](super::rights::ENUMERATE), not `WRITE`. See notes/abi/method-contracts.md.
 pub const LIST: u64 = 1;
 
-/// `invoke(cap, UNMAP, va, _, _)` -> 0 (milestone 95 (an unmap primitive), DECISIONS §162
+/// `invoke(capability, UNMAP, va, _, _)` -> 0 (milestone 95 (an unmap primitive), DECISIONS §162
 /// (whether a holder can give up a mapping), option A). **This space gives up the one page it maps
 /// at `va`, and no other holder is touched.** Needs `WRITE`, the authority [`MAP_INTO`] takes.
 ///
@@ -39,7 +39,7 @@ pub const LIST: u64 = 1;
 ///   each rule is in `notes/unmap.md` and notes/abi/method-contracts.md.
 pub const UNMAP: u64 = 2;
 
-/// `invoke(cap, WAIT, va, flags, expected)` -> `0` woken, `1` the word did not hold `expected`
+/// `invoke(capability, WAIT, va, flags, expected)` -> `0` woken, `1` the word did not hold `expected`
 /// (milestone 812, §269 (how threads share a process) fork 2). **Futex wait: park the calling
 /// thread on the word at `va` in its own space if it still holds `expected`**, checked and parked
 /// as one step against [`WAKE`]. Semantics: §276 (the thread syscalls as built).
@@ -51,7 +51,7 @@ pub const UNMAP: u64 = 2;
 ///   timeout yet (`notes/futex.md`'s `BUGS`). *(Name and number provisional.)*
 pub const WAIT: u64 = 3;
 
-/// `invoke(cap, WAKE, va, flags, count)` -> the number of threads woken (milestone 812 (real
+/// `invoke(capability, WAKE, va, flags, count)` -> the number of threads woken (milestone 812 (real
 /// threads in one address space), §269 fork 2). **Futex wake: release up to `count` threads parked
 /// by [`WAIT`] on the word at `va` in the caller's own space**, oldest first. `u64::MAX` wakes all.
 /// Refuses what [`WAIT`] refuses, except that the word need not be mapped: a wake reads no memory.

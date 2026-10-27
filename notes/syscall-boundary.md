@@ -13,7 +13,7 @@ semantics of each method are recorded in `design/decisions/`, and the wire contr
   exit(code)                          authority over yourself
   exit_thread(word)                   likewise, one thread of yourself
   yield()                             likewise
-  cap_delete(slot)                    likewise: your own capability table is your own
+  capability_delete(slot)                    likewise: your own capability table is your own
   invoke(cap, method, a0, a1, a2)     EVERYTHING ELSE
 ```
 
@@ -45,7 +45,7 @@ every method body is a measurement decision, and there are three placements.
   read a 35% shrink. Milestone 368 (`script/fastpath-footprint`'s entry set is flat, so an inlining flip
   can move 12% into it) records the pattern. The attribute also stands on its own: the dispatcher is
   a large match run once per syscall, not worth copying into a handler that also serves faults.
-- The round trip's arms are `#[inline(always)]`: `SEND`, `RECEIVE`, `SEND_CAP`, `RECEIVE_CAP`,
+- The round trip's arms are `#[inline(always)]`: `SEND`, `RECEIVE`, `SEND_CAPABILITY`, `RECEIVE_CAPABILITY`,
   `CALL` and `SURVEY` in `rendezvous.rs`. The release profile
   builds the kernel in several codegen units without LTO. A child module can land in another unit
   than its parent, where a plain private function is not inlined at all. The round trip would pay a
@@ -78,8 +78,8 @@ is a jump; a cold method pays one table read for that.
 
 | object | method | right |
 |---|---|---|
-| `Rendezvous` | `SEND`, `SEND_CAP`, `CALL` | `WRITE` on the endpoint (`SEND_CAP` also `GRANT` on what it sends) |
-| `Rendezvous` | `RECEIVE`, `RECEIVE_CAP`, `REAP` | `READ` |
+| `Rendezvous` | `SEND`, `SEND_CAPABILITY`, `CALL` | `WRITE` on the endpoint (`SEND_CAPABILITY` also `GRANT` on what it sends) |
+| `Rendezvous` | `RECEIVE`, `RECEIVE_CAPABILITY`, `REAP` | `READ` |
 | `Rendezvous` | `SURVEY` | `ENUMERATE` |
 | `Rendezvous` | `BADGE` | `GRANT` |
 | `Reply` | `REPLY`, `REPLY_CAPABILITY` | `WRITE` (minted `WRITE`-only, without `GRANT`) |
@@ -114,7 +114,7 @@ taking it back)).
 
 ## What an aborted send answers
 
-A `SEND`, `SEND_CAP` or `CALL` that did not happen answers one of two errors. `Gone` means the
+A `SEND`, `SEND_CAPABILITY` or `CALL` that did not happen answers one of two errors. `Gone` means the
 endpoint was revoked or reclaimed, and it is not `NoSuchSlot`: the slot holds a real capability to
 a destroyed object. A pipe writer branches on that difference (milestone 50 (pipes and redirection:
 one sink protocol)), which is why the ABI grew a variant rather than the sink protocol a heartbeat.

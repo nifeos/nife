@@ -31,7 +31,7 @@ The question: **what stops a session writing `activation/`**, when the progenito
   its own subtree (`components/src/login.rs`), so it cannot name `activation/`. The exposure is
   the boot prompt, the machine owner's console, and nothing a user logs into.
 - The server cannot tell its clients apart. `redoxfs_server` serves one endpoint with one handle
-  table (`serve`, `receive_cap(FILE)`: "we never learn who they are"). A handle is an integer in that
+  table (`serve`, `receive_capability(FILE)`: "we never learn who they are"). A handle is an integer in that
   shared table, so a holder of the endpoint can also use any handle another holder opened. A rule
   enforced *in the server* therefore needs the server to learn which endpoint a request came on.
 - No existing caretaker can narrow the shell's root. Milestone 31 (a capability

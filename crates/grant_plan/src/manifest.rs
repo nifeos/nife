@@ -174,7 +174,7 @@ impl ShortOptions {
 ///
 /// One constant every declarer shares: the manifest declares whether there is a second stream, and
 /// a program that declares none has no slot. Eight, above every ordinary grant, placed by
-/// `abi::thread_control_block::CAP_INSERT`'s explicit target. See notes/program-manifest.md ("The
+/// `abi::thread_control_block::CAPABILITY_INSERT`'s explicit target. See notes/program-manifest.md ("The
 /// named slots").
 pub const DIAGNOSTICS_SLOT: u64 = 8;
 

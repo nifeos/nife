@@ -133,7 +133,7 @@ fn a_bound_receiver_is_woken_out_of_receive_and_the_endpoint_still_works() {
 }
 
 /// **A signal counted while the bound thread was elsewhere ends its next receive at once**, on
-/// both receive shapes (`RECEIVE` and `RECEIVE_CAP`). §101's rule 3: "counted ... and delivered when the
+/// both receive shapes (`RECEIVE` and `RECEIVE_CAPABILITY`). §101's rule 3: "counted ... and delivered when the
 /// TCB next enters RECEIVE on any endpoint". Without the receive-side check a server that took a
 /// signal while busy would sleep on it until an unrelated message arrived.
 #[test_case]
@@ -209,7 +209,7 @@ fn a_signal_counted_while_elsewhere_ends_the_next_receive_at_once() {
             0,
             abi::notification::BOUND
         ],
-        "RECEIVE_CAP must take it too"
+        "RECEIVE_CAPABILITY must take it too"
     );
     reclaim(r);
 }
@@ -483,7 +483,7 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
     let [_, slot, ..] = sched::inter_process_communication_receive_capability(report);
     assert_ne!(
         slot,
-        abi::rendezvous::NO_CAP,
+        abi::rendezvous::NO_CAPABILITY,
         "the binder's checks failed before delegating"
     );
     let capability = sched::current_capability(slot).expect("delegated slot");

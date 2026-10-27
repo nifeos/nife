@@ -60,7 +60,7 @@ fn fresh_page(va: u64) -> Option<Argv> {
     match u64::try_from(user_mode_runtime::retype_into_page_frame(staging)) {
         Ok(frame) if map_window_frame(frame, va) => Some(Argv { staging, frame }),
         Ok(frame) => {
-            drop_slot(frame);
+            capability_delete(frame);
             release_region(staging);
             None
         }
@@ -180,7 +180,7 @@ fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
 pub(super) fn send_set(w: &WordsGrant) {
     if let Some(p) = w.set {
         user_mode_runtime::send_capability(SPAWN, p.frame, abi::rights::READ, 0);
-        drop_slot(p.frame);
+        capability_delete(p.frame);
     }
 }
 
@@ -194,14 +194,14 @@ pub(super) fn release_words_grant(w: &WordsGrant, unsent: bool) {
 /// Give back an argv's region, and its frame's slot if it was never sent.
 pub(super) fn release_argv(a: Argv, unsent: bool) {
     if unsent {
-        drop_slot(a.frame);
+        capability_delete(a.frame);
     }
     release_region(a.staging);
 }
 
 fn release_region(region: u64) {
     user_mode_runtime::destroy_memory_region(region);
-    drop_slot(region);
+    capability_delete(region);
 }
 
 /// **Where this shell writes what it sends the progenitor in frames**: the argv pages
@@ -290,7 +290,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     // The argv's frame follows the image's, before every other capability (`spawnproto::PROGRAM_ARGUMENTS_BIT`).
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
-        drop_slot(a.frame);
+        capability_delete(a.frame);
     }
     if let Some(w) = &set_grant {
         send_set(w);
@@ -299,7 +299,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
         // mints no right its budget lacks) what it builds carries the budget's rights.
         delegate(slot, abi::rights::ALL);
-        drop_slot(slot);
+        capability_delete(slot);
     }
     // **The presentation, last** (`spawnproto::RUN_UNVOUCHED_BIT`): one word on the endpoint only a
     // holder can reach. Sent on every image request this session makes, vouched or not, because
@@ -312,7 +312,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     // The frames are spent: the child was built from the progenitor's copy. Destroying the region
     // revokes every mapping of them, ours and the progenitor's, and returns the pages.
     user_mode_runtime::destroy_memory_region(staging);
-    drop_slot(staging);
+    capability_delete(staging);
     if let Some(w) = &set_grant {
         release_words_grant(w, false);
     }
@@ -519,7 +519,7 @@ fn carve_image_grants(
     let Some(staging) = memory_region_split(pages) else {
         nav.close_in(t, handle);
         if let Some(m) = mem_slot {
-            drop_slot(m);
+            capability_delete(m);
         }
         if let Some(w) = &set_grant {
             release_words_grant(w, true);
@@ -707,7 +707,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
             read_ok = false;
         }
         user_mode_runtime::send_capability(SPAWN, frame, abi::rights::READ, i);
-        drop_slot(frame);
+        capability_delete(frame);
     }
     read_ok
 }
@@ -758,7 +758,7 @@ pub(super) fn vouch(nav: &mut Nav, path: Option<&[u8]>) {
     send(SPAWN, lo, hi, name.len() as u64);
     let (r0, r1, _) = receive(RESULT);
     user_mode_runtime::destroy_memory_region(staging);
-    drop_slot(staging);
+    capability_delete(staging);
     if !read_ok {
         print(b"  (this shell could not read the whole file, so those were not its bytes)\n");
     }
@@ -1016,7 +1016,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>, hold: Option<Hold<'_>>) {
     // pass it on. The slot goes now; the region waits for the child's answer.
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
-        drop_slot(a.frame);
+        capability_delete(a.frame);
     }
     // The name set's frame follows the argv's (`spawnproto::NAMESET_BIT`).
     if let Some(w) = &set_grant {
@@ -1051,7 +1051,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>, hold: Option<Hold<'_>>) {
         // Our copy is delegated, so free the slot; a held job's budget is kept instead, because
         // this shell destroys it with the job's region and gets the pages back (milestone 933).
         if held.is_none() {
-            drop_slot(slot);
+            capability_delete(slot);
         }
     }
     delegate_machine_page(machine_wiring(&e));
@@ -1379,7 +1379,7 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
     if answer != spawnproto::SPAWN_OK {
         // The progenitor has reclaimed the region; this shell's slot for it is stale. The budget
         // it was to spend is still this shell's, and goes back above the region's pages.
-        drop_slot(held.region);
+        capability_delete(held.region);
         if let Some(slot) = budget {
             release_region(slot);
         }
@@ -1390,7 +1390,7 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
         }
         return;
     }
-    let tcb = receive_tcb();
+    let tcb = receive_capability(RESULT).1;
     match background {
         Some(jobs) => keep_background(jobs, Held::exit(label, held.region, budget, tcb, e.program)),
         None => {

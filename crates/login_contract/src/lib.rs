@@ -2,7 +2,7 @@
 //! **The wire contract between a client and the login service**: on success it
 //! delegates capabilities back rather than changing anything ambient. See notes/login.md.
 //!
-//! Not a `CALL`: a reply carries two words, and only `abi::rendezvous::SEND_CAP` hands back
+//! Not a `CALL`: a reply carries two words, and only `abi::rendezvous::SEND_CAPABILITY` hands back
 //! capabilities. `REQUEST`/`RESULT` are a front door shared by every client, carrying only a bare
 //! [`CONNECT`] (answered with a private [`CONNECTED`] channel), [`LOGOUT`] and the other bare
 //! words. Neither carries a page or a secret, so the identity and secret travel only on the
@@ -12,11 +12,11 @@
 
 //! ```text
 //!   client --send(REQUEST, connect_word(), 0, 0)-------------------------> login
-//!   client <--- receive(RESULT) -> CONNECTED, then RECEIVE_CAP x 3: ------- login
+//!   client <--- receive(RESULT) -> CONNECTED, then RECEIVE_CAPABILITY x 3: ------- login
 //!                priv_request, priv_result, page
 //!   client --place(), send(priv_request, w0, 0, 0)-----------------------> login
 //!   client <--- receive(priv_result) -> OK, DENIED or NO_TERMINAL; -------- login
-//!                RECEIVE_CAP(priv_result) x 5, only after OK
+//!                RECEIVE_CAPABILITY(priv_result) x 5, only after OK
 //!   client --send(REQUEST, logout_word(), 0, 0)--------------------------> login
 //!   client <--- receive(RESULT) -> LOGGED_OUT ----------------------------- login
 //! ```
@@ -128,12 +128,12 @@ pub const OK: u64 = 1;
 
 /// **A bit of [`OK`]'s second word: the sixth capability, the run-unvouched one, follows**
 /// (DECISIONS §219 (how the shell names an installed program to the spawner) gate D2). Carried on
-/// the reply because a client's sixth `RECEIVE_CAP` must match a sixth `SEND_CAP` exactly: a
+/// the reply because a client's sixth `RECEIVE_CAPABILITY` must match a sixth `SEND_CAPABILITY` exactly: a
 /// `login` spawned without the capability sends five, and a client waiting for six would block
 /// forever. Name: provisional.
 pub const RUN_UNVOUCHED_FOLLOWS: u64 = 1;
 /// **A bit of [`OK`]'s second word: the registration page follows** (milestone 152). After the
-/// run-unvouched capability when that is announced too, one more `RECEIVE_CAP` delivers a page frame
+/// run-unvouched capability when that is announced too, one more `RECEIVE_CAPABILITY` delivers a page frame
 /// (`WRITE`): the identity's timetable's registration page, `timetable::registration`'s whole
 /// protocol. Announced for the reason [`RUN_UNVOUCHED_FOLLOWS`] is. Name: provisional.
 pub const SCHEDULE_FOLLOWS: u64 = 2;

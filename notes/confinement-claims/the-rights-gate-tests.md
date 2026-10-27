@@ -22,9 +22,9 @@ architecture meets the parity gate of §19 (architectural parity is a tenet).
 
 ## Why it sits beside the live-swap test
 
-`live_swap_tests` is claim 26's cited test. It drives one `READ`-gated method, `RECEIVE_CAP`, from
+`live_swap_tests` is claim 26's cited test. It drives one `READ`-gated method, `RECEIVE_CAPABILITY`, from
 one fixture, and only on the two architectures with a console device page. A broken gate surfaces
-there as a watchdog hang rather than a failed assertion, because a `RECEIVE_CAP` let through simply
+there as a watchdog hang rather than a failed assertion, because a `RECEIVE_CAPABILITY` let through simply
 blocks with nothing to receive.
 
 These tests cover the other `READ`-gated methods a would-be server reaches for, `RECEIVE` and
@@ -35,7 +35,7 @@ regression is red at an assertion, not at the watchdog.
 ## The write-only holder
 
 `WRITE` lets a holder `SEND` and `CALL`, and it is the right a client holds. Becoming the server
-means `RECEIVE`, `RECEIVE_CAP` or `REAP`, which take `READ`, or `SURVEY`, which takes `ENUMERATE`.
+means `RECEIVE`, `RECEIVE_CAPABILITY` or `REAP`, which take `READ`, or `SURVEY`, which takes `ENUMERATE`.
 Each must answer `NotPermitted`. The right lives on the capability, and no method number or
 argument register can add one.
 

@@ -136,7 +136,7 @@ pub(super) fn package_manager_parts(
             (Some(i), Some(rp)) => Some((i, rp)),
             (i, rp) => {
                 for c in [i, rp].into_iter().flatten() {
-                    cap_delete(c);
+                    capability_delete(c);
                 }
                 None
             }
@@ -166,7 +166,7 @@ pub(super) fn copy_text(own_ut: u64, region: u64, catalog: &str) -> Option<u64> 
     }
     let page = retype_page_frame(region).ok()?;
     let Ok(ours) = supervision_protocol::map_scratch(page, true, own_ut) else {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     };
     // SAFETY: `ours` is a fresh page mapped read/write just above, and the catalog is shorter than
@@ -264,7 +264,7 @@ pub(super) fn activate(
     // The staged package goes back to the image pool, whose most recent carve it is.
     if let Some((st, _)) = staging {
         supervision_protocol::memory_region_destroy(st);
-        cap_delete(st);
+        capability_delete(st);
     }
     outcome
 }

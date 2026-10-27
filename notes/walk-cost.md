@@ -131,7 +131,7 @@ client channel) landed badged endpoints under §230 (badged endpoint capabilitie
 
 Half. The server can tell which endpoint a request came through, since milestone 599 (a frame per
 filesystem client channel): `rendezvous::BADGE` mints a badged copy of an endpoint capability, and
-`RECEIVE_CAP` returns the badge in x3. So the premise that it cannot is false.
+`RECEIVE_CAPABILITY` returns the badge in x3. So the premise that it cannot is false.
 
 The other half, that the caretaker is where confinement is enforced, is only partly true. The rights arithmetic is already the server's, with three Kani harnesses in `filesystem_contract` (`attenuate_never_widens`,
 `a_grandchild_is_bounded_by_the_root`, `a_root_carries_nothing_undefined`). What the subtree
@@ -143,7 +143,7 @@ table into the server.
 ### What was built, and what it costs
 
 No kernel change. The kernel pieces all came with milestone 599: `BADGE`, the badge on
-`RECEIVE_CAP`, and `SEND_CAP` to hand the badged copy over. Built on branch `milestone/606-scope`:
+`RECEIVE_CAPABILITY`, and `SEND_CAPABILITY` to hand the badged copy over. Built on branch `milestone/606-scope`:
 
 1. `crates/subtree_scope` (name provisional): `walk` resolves every path, `landing` decides the
    last step, and `admit` and `Bindings` decide what a badge reaches. Four Kani harnesses prove

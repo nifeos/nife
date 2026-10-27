@@ -103,7 +103,7 @@ pub(super) fn mounted_job_channel(tree: Fs, w: u64, own_ut: u64, mapped: &mut bo
     }
     let page = window_page(tree.page, w)?;
     let Some(ep) = window_endpoint(tree.ep, w) else {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     };
     Some(Fs { ep, page })
@@ -198,7 +198,7 @@ fn bind_window(
     }
     let page = window_page(fs.page, w)?;
     let Some(ep) = window_endpoint(fs.ep, w) else {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     };
     Some(Fs { ep, page })
@@ -306,7 +306,7 @@ pub(super) fn job_channel(fs: Fs, w: u64, own_ut: u64, mapped: &mut bool) -> Opt
     }
     let page = window_page(fs.page, w)?;
     let Some(ep) = window_endpoint(fs.ep, w) else {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     };
     Some(Fs { ep, page })

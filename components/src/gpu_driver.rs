@@ -512,7 +512,7 @@ fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
     let mut reported_flush = false;
     loop {
         // The opcode and the damage rectangle both ride in `w0` (`gfx::req` packs the rectangle
-        // into its low 56 bits); this contract does not use `w1`. A client's SEND_CAP is deleted
+        // into its low 56 bits); this contract does not use `w1`. A client's SEND_CAPABILITY is deleted
         // rather than answered into (milestone 706 (a CALL server can tell a Reply from a
         // delegation)).
         let req = receive_request(DISPLAY);

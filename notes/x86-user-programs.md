@@ -58,7 +58,7 @@ differ from the fixed four bytes of the other ports, so a constant added by hand
 | `port_out`, `port_out_then_exit` | `out dx, al` | 6 |
 | `port_out_on_cpu_then_exit` | `out dx, al`, on core `cpu` | 19 |
 | `port_out_on_cpu_then_exit` | the load from 0, on another core | 29 |
-| `cap_delete_then_port_out` | `out dx, al` | 18 |
+| `capability_delete_then_port_out` | `out dx, al` | 18 |
 | `port_in_then_exit` | `in al, dx` | 4 |
 | `port_in_then_out` | `out dx, al` | 7 |
 | `two_capability_deletes_then_port_out` | `out dx, al` | 30 |
@@ -73,7 +73,7 @@ red, and no falsification record can be attached to it. That is row 26 of
 [the confinement claims](confinement-claims.md), one object over.
 
 So the fixtures whose `out` is expected to fault end in `SYS_EXIT` rather than in a report:
-`port_out_then_exit`, `port_out_on_cpu_then_exit`, `cap_delete_then_port_out`,
+`port_out_then_exit`, `port_out_on_cpu_then_exit`, `capability_delete_then_port_out`,
 `two_capability_deletes_then_port_out` and `receive_then_port_out`. A wrongly permitted `out` then
 arrives as `EVENT_EXIT` on the supervision endpoint. The test wants `EVENT_FAULT` in that same
 message, so the assertion that states the claim is the one that fires.
@@ -83,10 +83,10 @@ succeed and receive the word.
 
 ## The delete-it-yourself fixtures
 
-`cap_delete_then_port_out` runs `SYS_CAP_DELETE` on the slot holding its `PortRange` capability,
+`capability_delete_then_port_out` runs `SYS_CAPABILITY_DELETE` on the slot holding its `PortRange` capability,
 then executes the `out`. The port grant is enforced by a cached field the context switch reads, and
 the delete must clear it: authority the thread gave up by its own hand must be gone at once.
-`SYS_CAP_DELETE` is a plain syscall number, not an `INVOKE` method, so the slot rides in `edi` and
+`SYS_CAPABILITY_DELETE` is a plain syscall number, not an `INVOKE` method, so the slot rides in `edi` and
 nothing else is read. `dx` is loaded after the syscall, so no register the syscall clobbers matters.
 
 `two_capability_deletes_then_port_out` holds one range in two slots. Deleting one must leave the

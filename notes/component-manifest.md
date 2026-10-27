@@ -35,7 +35,7 @@ receiving on its report channel and sending its answers to the operator's coordi
 nothing to see but a hang.
 
 The rights were typed by hand at six call sites. `READ` on an endpoint means the holder may park
-in `RECEIVE_CAP`; `WRITE` means it may only ask. §41's whole confinement claim is that a client of the
+in `RECEIVE_CAPABILITY`; `WRITE` means it may only ask. §41's whole confinement claim is that a client of the
 stable endpoint cannot become its server, and the test that proves it endows an attacker with the
 honest client's exact capabilities. One character wrong in `client_caps` and that test fails for a
 reason no reader could find from the operator's source.
@@ -284,7 +284,7 @@ program with no allocator, so the bound is a real limit: a manifest past it is r
 served. Both are roughly double what the widest declaration in this tree asks for.
 
 Nothing checks that a routed object is the *kind* the role wants. A supervisor that routes a frame
-where the component declared an endpoint gets a plan, and the kernel refuses the `CAP_INSERT` or the
+where the component declared an endpoint gets a plan, and the kernel refuses the `CAPABILITY_INSERT` or the
 component's first `RECEIVE` instead. This is deliberate rather than an omission: the declaration carries
 the direction and the address, which is what a supervisor can get wrong *silently*, and the object
 type is what the kernel already refuses loudly.

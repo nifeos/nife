@@ -290,7 +290,7 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
                     ) || sched.threads.get(sender).unwrap().handshake.state
                         == State::Dead;
                     if !leave_blocked {
-                        // A plain RECEIVE delivers no capability: drop the delegation a `SEND_CAP`
+                        // A plain RECEIVE delivers no capability: drop the delegation a `SEND_CAPABILITY`
                         // sender parked, or it rides that sender's next plain `SEND` to another
                         // rendezvous. The sender keeps its own copy.
                         sched.threads.get_mut(sender).unwrap().outgoing_capability = None;
@@ -336,9 +336,9 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
     }
 }
 
-/// The x1 value a `RECEIVE_CAP` returns when no capability accompanied the message. Mirrors
-/// `abi::rendezvous::NO_CAP`; kept here too so the scheduler names it without reaching into the ABI.
-pub(super) const NO_CAP: u64 = u64::MAX;
+/// The x1 value a `RECEIVE_CAPABILITY` returns when no capability accompanied the message. Mirrors
+/// `abi::rendezvous::NO_CAPABILITY`; kept here too so the scheduler names it without reaching into the ABI.
+pub(super) const NO_CAPABILITY: u64 = u64::MAX;
 
 /// **A `CALL` met a receiver parked in plain `RECEIVE`** (§246 (a plain `RECEIVE` never takes a
 /// capability), PROVISIONAL number; calef's ruling A, 2026-10-04 UTC). The receiver gets the
@@ -348,7 +348,7 @@ pub(super) const NO_CAP: u64 = u64::MAX;
 /// holds `IPC_TABLES`; `caller` is the running thread and has not parked.
 ///
 /// `#[cold]` and out of line for `set_ipc_aborted`'s reason: every `CALL` server in the tree
-/// receives with `RECEIVE_CAP`, so the `CALL` fastpath pays one branch for this and none of its bytes.
+/// receives with `RECEIVE_CAPABILITY`, so the `CALL` fastpath pays one branch for this and none of its bytes.
 #[cold]
 #[inline(never)]
 pub(super) fn call_meets_plain_receive(
@@ -420,10 +420,10 @@ pub(super) fn hand_over_label(receiver: &crate::thread::Thread, label: u64) {
 /// from a delegation)): `abi::rendezvous::REPLY_DELIVERED` when the Reply was installed, `0` when
 /// the receiver's table was full and there is no Reply to name. Written only on the two paths a
 /// `CALL` reaches a receiver (`ipc_call_badged`'s rendezvous and `inter_process_communication_receive_capability`'s collect of a
-/// parked caller), so a `SEND_CAP` delegation, which reaches the same `x1`, never carries it.
+/// parked caller), so a `SEND_CAPABILITY` delegation, which reaches the same `x1`, never carries it.
 #[inline(always)]
 pub(super) fn reply_tag(slot: u64) -> u64 {
-    if slot == NO_CAP {
+    if slot == NO_CAPABILITY {
         0
     } else {
         abi::rendezvous::REPLY_DELIVERED
@@ -432,10 +432,10 @@ pub(super) fn reply_tag(slot: u64) -> u64 {
 
 /// **Send a `capability` the caller minted, plus one `data` word and `badge`, to `ep`.**
 ///
-/// A receiver parked in `RECEIVE_CAP` gets the capability filed in its table and the slot in its
+/// A receiver parked in `RECEIVE_CAPABILITY` gets the capability filed in its table and the slot in its
 /// mailbox, and is woken; a plain `RECEIVE` gets the data word and no capability. Otherwise the
 /// word and the capability are parked for a later receiver. A full receiver table drops the
-/// capability and reports `NO_CAP`. A copy of a held capability goes through [`inter_process_communication_delegate_capability`]
+/// capability and reports `NO_CAPABILITY`. A copy of a held capability goes through [`inter_process_communication_delegate_capability`]
 /// ([`Delegation`]); only system tests call this, hence the `allow`.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
@@ -444,7 +444,7 @@ pub(super) fn reply_tag(slot: u64) -> u64 {
 pub fn inter_process_communication_send_capability(
     ep: RendezvousId,
     data: u64,
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
     badge: u64,
 ) {
     let sent =
@@ -452,7 +452,7 @@ pub fn inter_process_communication_send_capability(
     debug_assert!(sent.is_ok(), "a minted capability has no source to lose");
 }
 
-/// **`SEND_CAP`'s body: send a narrowed copy of a capability the running thread holds.** The source
+/// **`SEND_CAPABILITY`'s body: send a narrowed copy of a capability the running thread holds.** The source
 /// is read, checked and copied under the `IPC_TABLES` hold that delivers or parks the copy, so no
 /// revocation sweep can fall between the read and the filing ([`Delegation`]). `Err` is the source's
 /// answer (`NoSuchSlot`, `NotPermitted`), with nothing sent; a stale or refusing rendezvous is
@@ -479,7 +479,10 @@ pub(super) fn inter_process_communication_send_capability_from(
     ep: RendezvousId,
     data: u64,
     badge: u64,
-    source: impl FnOnce(&IpcTables, ThreadId) -> Result<crate::capability_object::Cap, abi::Error>,
+    source: impl FnOnce(
+        &IpcTables,
+        ThreadId,
+    ) -> Result<crate::capability_object::Capability, abi::Error>,
 ) -> Result<(), abi::Error> {
     let block = {
         let mut guard = IPC_TABLES.lock();
@@ -500,9 +503,9 @@ pub(super) fn inter_process_communication_send_capability_from(
                 if r.receiving_capability {
                     let slot = deliver_capability(capabilities, capability);
                     // Word 3 carries the sender's badge (milestone 599 (a frame per filesystem client channel)): the same store that used to
-                    // write a zero here, so RECEIVE_CAP surfaces it at no extra instruction on this path.
+                    // write a zero here, so RECEIVE_CAPABILITY surfaces it at no extra instruction on this path.
                     r.mailbox = [data, slot, 0, badge, 0];
-                    // A capability was installed, so RECEIVE_CAP's x1 is a real slot (milestone 634 (a plain SEND
+                    // A capability was installed, so RECEIVE_CAPABILITY's x1 is a real slot (milestone 634 (a plain SEND
                     // received by RECEIVE_CAP never hands the receiver a sender-chosen slot)).
                     r.capability_delivered = true;
                 } else {
@@ -518,7 +521,7 @@ pub(super) fn inter_process_communication_send_capability_from(
             }
             inter_process_communication::Send::Blocked => {
                 // `send` queued `current`; we park the data word and the capability to hand over.
-                // Word 3 is the badge, read back by the eventual RECEIVE_CAP (milestone 599).
+                // Word 3 is the badge, read back by the eventual RECEIVE_CAPABILITY (milestone 599).
                 let me = sched.threads.get_mut(current).unwrap();
                 me.mailbox = [data, 0, 0, badge, 0];
                 me.outgoing_capability = Some(capability);
@@ -541,7 +544,7 @@ pub(super) fn inter_process_communication_send_capability_from(
     Ok(())
 }
 
-/// **File a capability an IPC is delivering in the receiving thread's table**, or [`NO_CAP`] if the
+/// **File a capability an IPC is delivering in the receiving thread's table**, or [`NO_CAPABILITY`] if the
 /// table is full (the receiver still gets the data words). Caller holds `IPC_TABLES`; this takes the
 /// table's own lock beneath it (rank 60 then 57, `sync::rank::CAPABILITY_TABLE`).
 ///
@@ -556,14 +559,14 @@ pub(super) fn inter_process_communication_send_capability_from(
 )]
 pub(super) fn deliver_capability(
     table: &CapabilityTableLock,
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
 ) -> u64 {
-    table.lock().insert(capability).unwrap_or(NO_CAP)
+    table.lock().insert(capability).unwrap_or(NO_CAPABILITY)
 }
 
 /// **Receive a data word and, if one was sent, a capability.** The mirror of [`inter_process_communication_send_capability`], and
 /// the receiver's half of delegation. Returns `[data, received_slot, w1, badge]`, where
-/// `received_slot` is where an incoming capability landed in *our* capability table, or [`NO_CAP`]
+/// `received_slot` is where an incoming capability landed in *our* capability table, or [`NO_CAPABILITY`]
 /// if the message carried none, and `badge` is the badge on the endpoint capability the sender
 /// invoked (milestone 599, provisional; 0 when the sender's capability was unbadged).
 ///
@@ -601,7 +604,7 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
                 // An interrupt signal is not a delegation; it carries no capability and no badge.
                 inter_process_communication::Receive::Signal(me) => {
                     hold_token(me);
-                    Some([1, NO_CAP, 0, 0, 0])
+                    Some([1, NO_CAPABILITY, 0, 0, 0])
                 }
                 inter_process_communication::Receive::FromSender(sender, me) => {
                     hold_token(me);
@@ -614,15 +617,15 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
                         .outgoing_capability
                         .take();
                     // A caller's outgoing cap is the one-shot Reply the kernel minted for its CALL (§12); a
-                    // SEND_CAP sender's is the capability it chose to delegate. The difference is liveness:
-                    // a caller stays blocked awaiting its reply, so it must NOT be woken here; a SEND_CAP
+                    // SEND_CAPABILITY sender's is the capability it chose to delegate. The difference is liveness:
+                    // a caller stays blocked awaiting its reply, so it must NOT be woken here; a SEND_CAPABILITY
                     // sender's rendezvous is complete the moment we take the cap.
                     let is_reply = matches!(capability, Some(c) if matches!(c.object, crate::capability_object::Object::Reply(_)));
                     let slot = match capability {
                         Some(c) => {
                             deliver_capability(sched.threads.capabilities(current).unwrap(), c)
                         }
-                        None => NO_CAP,
+                        None => NO_CAPABILITY,
                     };
                     if !is_reply {
                         // Collected: the sender's rendezvous is complete (the boot-8 gate).
@@ -631,7 +634,7 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
                         wake(sched, sender);
                     }
                     // x0 = word0, x1 = the delivered slot, x2 = word1 (a CALL's second word; 0 for a plain
-                    // SEND_CAP, whose sender parked mailbox[1] = 0), x3 = the sender's badge (msg[3],
+                    // SEND_CAPABILITY, whose sender parked mailbox[1] = 0), x3 = the sender's badge (msg[3],
                     // milestone 599), x4 = REPLY_DELIVERED iff x1 is this caller's Reply (milestone
                     // 706), else 0. Never BOUND: that is the arm above.
                     let tag = if is_reply { reply_tag(slot) } else { 0 };
@@ -663,18 +666,18 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
             let t = sched.threads.get_mut(current_thread_id()).unwrap();
             debug_assert!(
                 t.handshake.is_delivered(),
-                "receive_cap resumed with nothing delivered"
+                "receive_capability resumed with nothing delivered"
             );
-            // No longer parked in RECEIVE_CAP (§246, PROVISIONAL number). Cleared here rather than
+            // No longer parked in RECEIVE_CAPABILITY (§246, PROVISIONAL number). Cleared here rather than
             // at a plain RECEIVE's park, which keeps the store off `ipc_send_receive`'s closure:
             // with it there, x86_64's closure went over `script/fastpath-footprint`'s 5% band.
             t.receiving_capability = false;
-            // The whole mailbox: RECEIVE_CAP's three words, the sender's badge at m[3] (milestone 599),
+            // The whole mailbox: RECEIVE_CAPABILITY's three words, the sender's badge at m[3] (milestone 599),
             // and `w4`, which is `abi::notification::BOUND` when the bound notification ended this
             // receive, `abi::rendezvous::REPLY_DELIVERED` when a CALL's Reply was installed
             // (milestone 706, written by `ipc_call_badged`), and `0` for every other delivery a
             // sender or the kernel's death path makes (milestone 151).
-            // **x1 is NO_CAP unless a capability was installed for this delivery** (milestone 634,
+            // **x1 is NO_CAPABILITY unless a capability was installed for this delivery** (milestone 634,
             // fatal risk 7). A plain SEND that reached us parked drops its three words straight into
             // the mailbox, so m[1] is the sender's chosen word; returning it would hand a sender a
             // slot number where a CALL server reads a reply slot. A bound-notification delivery is
@@ -683,7 +686,7 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
             if t.capability_delivered || m[4] == abi::notification::BOUND {
                 m
             } else {
-                [m[0], NO_CAP, m[1], m[3], 0]
+                [m[0], NO_CAPABILITY, m[1], m[3], 0]
             }
         }
     }
@@ -742,7 +745,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
             inter_process_communication::Send::Rendezvous(receiver, me) => {
                 hold_token(me);
                 let receiver = hold_token(receiver);
-                // A server is parked in RECEIVE_CAP: hand it the reply cap and the two words now.
+                // A server is parked in RECEIVE_CAPABILITY: hand it the reply cap and the two words now.
                 let (r, capabilities) = sched.threads.get_mut_with_capabilities(receiver).unwrap();
                 if !r.receiving_capability {
                     // A plain RECEIVE cannot hold the Reply, so this CALL is answered `Gone`
@@ -752,11 +755,11 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
                 }
                 let slot = deliver_capability(capabilities, reply);
                 // Word 3 is the caller's badge (milestone 599): the same store as before with a
-                // value instead of a zero, so the server's RECEIVE_CAP surfaces which client called.
+                // value instead of a zero, so the server's RECEIVE_CAPABILITY surfaces which client called.
                 // Word 4 says x1 is a Reply (milestone 706), which only this path and the collect
-                // in `inter_process_communication_receive_capability` may say; a SEND_CAP's delivery leaves it 0.
+                // in `inter_process_communication_receive_capability` may say; a SEND_CAPABILITY's delivery leaves it 0.
                 r.mailbox = [msg[0], slot, msg[1], badge, reply_tag(slot)];
-                // A Reply capability was installed, so RECEIVE_CAP's x1 is a real slot (milestone 634).
+                // A Reply capability was installed, so RECEIVE_CAPABILITY's x1 is a real slot (milestone 634).
                 r.capability_delivered = true;
                 r.handshake.serve(); // delivered: this wake passes the boot-8 gate
                 trace::record(trace::Event::Served, receiver, 5);
@@ -764,10 +767,10 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
             }
             inter_process_communication::Send::Blocked => {
                 // No server yet; `send` queued us as a sender. Park the words and ride the reply cap
-                // in `outgoing_capability` so the eventual RECEIVE_CAP hands it over and, seeing a Reply, leaves
+                // in `outgoing_capability` so the eventual RECEIVE_CAPABILITY hands it over and, seeing a Reply, leaves
                 // us blocked (see inter_process_communication_receive_capability).
                 // Park the words with the badge at word 3 (milestone 599), where the eventual
-                // RECEIVE_CAP reads it back out of this caller's mailbox.
+                // RECEIVE_CAPABILITY reads it back out of this caller's mailbox.
                 let me = sched.threads.get_mut(current).unwrap();
                 me.mailbox = [msg[0], msg[1], 0, badge, 0];
                 me.outgoing_capability = Some(reply);
@@ -820,10 +823,10 @@ pub fn ipc_reply(caller: ThreadId, msg: [u64; 2]) {
         ) {
             return;
         }
-        // Word 2 is `NO_CAP`: a plain `REPLY` carries no capability, and `CALL` returns word 2 in
+        // Word 2 is `NO_CAPABILITY`: a plain `REPLY` carries no capability, and `CALL` returns word 2 in
         // `x2` so a caller of a `REPLY_CAPABILITY` server can tell "none" from slot 0 (§255
         // (each socket is its own capability)). The store was a zero; it costs the round trip nothing.
-        t.mailbox = [msg[0], msg[1], NO_CAP, 0, 0];
+        t.mailbox = [msg[0], msg[1], NO_CAPABILITY, 0, 0];
         t.handshake.serve(); // delivered: this wake passes the boot-8 gate
         trace::record(trace::Event::Served, caller, 6);
         wake(sched, caller);
@@ -836,7 +839,7 @@ pub fn ipc_reply(caller: ThreadId, msg: [u64; 2]) {
 /// Read, checked (`GRANT`) and filed under one hold of `IPC_TABLES` ([`Delegation`]); the copy
 /// keeps its rights, so a server narrows first. `Err` is the source's answer, the caller still
 /// waiting. `Ok(true)`: the copy is in the caller's table. `Ok(false)`: the caller was not awaiting
-/// a reply, or its full table got the words and `NO_CAP`. Out of line, off the `REPLY` round trip.
+/// a reply, or its full table got the words and `NO_CAPABILITY`. Out of line, off the `REPLY` round trip.
 ///
 /// Context: takes `IPC_TABLES`, and capability-table locks beneath it.
 #[inline(never)]
@@ -879,7 +882,7 @@ pub(crate) fn ipc_reply_capability(
     }
     trace::record(trace::Event::Served, caller, 6);
     wake(sched, caller);
-    Ok(delivered != NO_CAP)
+    Ok(delivered != NO_CAPABILITY)
 }
 
 /// **Delete every unconsumed `Reply` capability naming `caller`**, in every capability table and

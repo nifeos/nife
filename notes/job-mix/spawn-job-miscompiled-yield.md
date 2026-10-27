@@ -8,7 +8,7 @@ job and two wedged. It tagged the refusal to the spawn job's `DESTROY` of its ch
 build that counted `DESTROY`'s retries pass, and read the shape as fatal risk 5's (multicore
 reliability). Lane `lane/hvf-spawn-destroy-gone` took it on 2026-10-05 (UTC).
 
-**It was not a multicore defect in the kernel.** `user_mode_runtime::yield_now` and `cap_delete`
+**It was not a multicore defect in the kernel.** `user_mode_runtime::yield_now` and `capability_delete`
 told the compiler that no register changes across their trap, the kernel writes `x0` on the way
 out of every syscall, and an optimized loop in the spawn job kept `DESTROY`'s arguments in `x0..x4`
 across a yield.
@@ -98,7 +98,7 @@ A passing sweep takes about 16 s on this host.
 
 - One trap per architecture in `crates/user_mode_runtime` (`trap6`), declaring all six ABI
   words as outputs (the sixth is milestone 105 (the two forks)'s label register). `invoke6`,
-  `invoke5`, `yield_now`, `cap_delete` and `exit` all go through it, so no
+  `invoke5`, `yield_now`, `capability_delete` and `exit` all go through it, so no
   wrapper can declare fewer registers than the kernel writes. `yield_now` also lost `nomem`: a
   yield is when other threads write the memory this one shares with them.
 - The std overlay had the same declarations (`patches/std-nife/overlay/std/src/sys/pal/nife/rt.rs`:

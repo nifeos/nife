@@ -112,15 +112,15 @@ fn release(h: Held) {
     }
     if h.budget != 0 {
         destroy_memory_region(h.budget);
-        drop_slot(h.budget);
+        capability_delete(h.budget);
     }
     supervision_protocol::forget_thread_control_block(h.tcb);
 }
 
 /// Delete this shell's slots for a job's frame and region, on every path that ends with them.
 fn give_back(job_fr: u64, job_ut: u64) {
-    drop_slot(job_fr);
-    drop_slot(job_ut);
+    capability_delete(job_fr);
+    capability_delete(job_ut);
 }
 
 /// **Mint, direct and start a supervised job**, and hand back what this shell holds for it once the
@@ -135,7 +135,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
         return None;
     };
     let Some(job_ut) = memory_region_split(JOB_UNTYPED_PAGES) else {
-        drop_slot(job_fr);
+        capability_delete(job_fr);
         failed();
         print(b"  this shell's memory budget is exhausted; nothing left to grant\n");
         return None;
@@ -234,7 +234,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
     // `ThreadControlBlock` goes to the shell that asked for it)), received before anything else
     // because the progenitor is blocked sending it. `WRITE` without `GRANT`: this shell can
     // suspend and resume its job and cannot pass that on.
-    let tcb = receive_tcb();
+    let tcb = receive_capability(RESULT).1;
     Some(Held {
         watch: Watch::Frame { jf, job_fr },
         job_ut,

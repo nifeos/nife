@@ -50,6 +50,11 @@ address_space_identifier = { version = "0.1.0", path = "../crates/address_space_
 # Do not add an `allow` for it either, because that would hide a second, real one.
 memory_corruption_canary_gate = { version = "0.1.0", path = "../crates/memory_corruption_canary_gate" }
 capability = { version = "0.1.0", path = "../crates/capability" }
+# The timer re-arm's arithmetic (milestone 360 (`crates/timetable`'s proved `next_after` is not what
+# the timer calls), §178 (where the timer re-arm seam goes)). The aarch64 and riscv64 `rearm` call
+# the Kani-proved `next_after` rather than keeping a copy, so the proof binds the code that runs.
+# The `timetable` scheduler links the same crate.
+periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # The shell's grant-expression logic (milestone 47's `rm -r`). The kernel plans nothing; its `rm`
 # test **starts the program the way the shell would**, so the option bits it packs come from the
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as

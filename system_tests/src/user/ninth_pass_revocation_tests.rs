@@ -6,7 +6,7 @@
 //! window for `DeviceFrame` and `PortRange`, which `revocation_in_flight_tests`' `# BUGS` says were
 //! reasoned from the code, not measured. As there, a sender parks a copy on a rendezvous nobody
 //! receives on, the revoke runs, and the receiver must get nothing; `inter_process_communication_receive_capability` returns
-//! `NO_CAP` or a slot, and both are inspected.
+//! `NO_CAPABILITY` or a slot, and both are inspected.
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
 //! function. Cross-ISA: the `DeviceFrame` sweep is portable kernel code, so its test runs on every
@@ -27,7 +27,7 @@ use crate::sched::{
 /// An MMIO page is sharper than a RAM frame: `revoke_device_from_others` gives a swapped device one
 /// owner, and a parked copy would be a second the revoke never saw. The frame names a fresh RAM
 /// page nothing else aliases. The sender holds it (the premise check reads that the revoke took it)
-/// and parks a copy; the main thread, the spared revoker, must then receive `NO_CAP`.
+/// and parks a copy; the main thread, the spared revoker, must then receive `NO_CAPABILITY`.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -65,7 +65,7 @@ fn a_device_frame_revoked_while_in_flight_does_not_reach_the_receiver() {
     crate::revoke::revoke_device_from_others(phys);
 
     let [_word, slot, _second, _badge, ..] = inter_process_communication_receive_capability(ep);
-    let delivered = if slot == abi::rendezvous::NO_CAP {
+    let delivered = if slot == abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         current_capability(slot).ok()
@@ -139,7 +139,7 @@ fn a_port_range_revoked_while_in_flight_does_not_reach_the_receiver() {
     sched::delete_port_range_capabilities(BASE, COUNT);
 
     let [_word, slot, _second, _badge, ..] = inter_process_communication_receive_capability(ep);
-    let delivered = if slot == abi::rendezvous::NO_CAP {
+    let delivered = if slot == abi::rendezvous::NO_CAPABILITY {
         None
     } else {
         current_capability(slot).ok()

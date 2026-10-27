@@ -43,7 +43,8 @@ The timer is one-shot. Once it fires it holds the line high until the handler wr
 deadline, and that write is what lowers it. The handler re-arms from `CVAL` as `previous +
 interval`, so the deadlines sit on a grid anchored at boot and a slow handler makes one tick late
 rather than every tick after it. When the next deadline is already past, the handler counts a
-missed tick and re-anchors to now instead of firing in a loop. The measurement that chose `CVAL`
+missed tick and the proved `periodic_deadline::next_after` skips the periods it missed, so the tick fires once
+and returns to its original beat instead of firing in a loop. The measurement that chose `CVAL`
 over `TVAL` is in interrupts.md, "The bug we shipped and then measured".
 
 The tick is per core, a banked PPI, and so is its count. A kernel thread can be stolen by an idle

@@ -1,4 +1,4 @@
-Falsifies `timetable::proofs::nothing_on_the_beat_is_skipped_between_now_and_the_answer`.
+Falsifies `periodic_deadline::proofs::nothing_on_the_beat_is_skipped_between_now_and_the_answer`.
 
 The defect: a second period is added after the snap, which is what someone writes who reads
 `now - r` as the *next* occurrence rather than the last one and then adds a period to get past
@@ -9,9 +9,9 @@ Expected to fail: the harness's `assert!(next - period <= now)`, for any `now` o
 where the returned fire has a whole occurrence sitting between `now` and itself: exactly the
 skipped tick this proof exists to rule out.
 
-diff --git a/crates/timetable/src/registry.rs b/crates/timetable/src/registry.rs
---- a/crates/timetable/src/registry.rs
-+++ b/crates/timetable/src/registry.rs
+diff --git a/crates/periodic_deadline/src/lib.rs b/crates/periodic_deadline/src/lib.rs
+--- a/crates/periodic_deadline/src/lib.rs
++++ b/crates/periodic_deadline/src/lib.rs
 @@ -454,3 +454,3 @@ pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
      let r = (now - prev) % period;
 -    (now - r).saturating_add(period)

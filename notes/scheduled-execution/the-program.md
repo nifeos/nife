@@ -52,7 +52,7 @@ firing long after its session's key was dropped is the one it would miss.
 The check runs once, at `_start`, and once suffices. A job's authority is built in `fire` and
 `fire_with_grant` from two sources only: the report endpoint, and a region split from the budget.
 Neither can be the capability unless this process holds it. It can hold it only if a spawn site
-put it there, because the program makes no `RECEIVE_CAP` after `_start`. A timetable that does not
+put it there, because the program makes no `RECEIVE_CAPABILITY` after `_start`. A timetable that does not
 hold it at `_start` can never endow a job with it, and one that does runs nothing.
 
 ## Store mode

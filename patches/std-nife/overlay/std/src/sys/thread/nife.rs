@@ -135,7 +135,7 @@ impl Thread {
             block as u64,
         );
         if page < 0 {
-            rt::cap_delete(tcb);
+            rt::capability_delete(tcb);
             undo(packet, data);
             return Err(error(page, "the thread could not join this process"));
         }
@@ -153,7 +153,7 @@ impl Thread {
             )
         };
         if started < 0 {
-            rt::cap_delete(tcb);
+            rt::capability_delete(tcb);
             undo(packet, data);
             return Err(error(started, "the thread could not start"));
         }
@@ -180,7 +180,7 @@ impl Thread {
     /// Free what the joiner owns: the stack, the packet, the TCB capability.
     unsafe fn release(&self) {
         use crate::alloc::{GlobalAlloc, System};
-        rt::cap_delete(self.tcb);
+        rt::capability_delete(self.tcb);
         // SAFETY: the caller's contract: the thread is gone from user mode.
         unsafe {
             drop(Box::from_raw(self.packet));
@@ -196,7 +196,7 @@ impl Drop for Thread {
         // SAFETY: as `join`'s.
         let state = unsafe { &(*self.packet).state };
         match state.compare_exchange(RUNNING, DETACHED, Ordering::AcqRel, Ordering::Acquire) {
-            Ok(_) => rt::cap_delete(self.tcb),
+            Ok(_) => rt::capability_delete(self.tcb),
             Err(_) => {
                 while state.load(Ordering::Acquire) != DONE {
                     crate::sys::sync::futex::futex_wait(state, EXITING, None);
