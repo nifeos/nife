@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-27
+ratified_by: calef
 ---
 
 # 165. Where a stored secret comes from on a boot that is not a test
@@ -9,8 +11,21 @@ Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decisio
 down)'s lane. That lane found milestone 131 (a share is configured, not compiled, and its secret
 arrives from somewhere) gated on `DECISION` with no decision anywhere a reader can open. The block
 has carried the fork with four options and no recommendation since it was filed, and says outright
-that *"the choice is calef's, it is a fact that leaves the machine."* *(Section number provisional
-until the merge queue lands it.)*
+that *"the choice is calef's, it is a fact that leaves the machine."*
+
+## Ruled 2026-10-27 (UTC)
+
+1. Question 1: an unattended boot is not in scope yet. On a real boot a secret is typed at a console
+   (option A), before the store is sealed with `provision::SEAL`. A separate device (B) and
+   measured-boot sealing (D) are decided when a deployment needs an unattended boot. Provisioning at
+   image build (C) stays a test path only and a known defect, not a candidate. §220 (signed builds
+   and scoped key trust), whose signing keys rest in the same place, inherits this answer.
+2. Question 2: milestone 131 is re-aimed, not retired. It now delivers (a) a configuration document
+   for one real service whose settings are compiled-in constants today, and (b) console
+   provisioning of a secret before `provision::SEAL`. The SMB parts are struck as overtaken by the
+   2026-08-30 removal of the SMB implementation.
+
+The sections below are the analysis that preceded the ruling.
 
 ## Two questions, because the block's subject was removed under it
 
@@ -47,15 +62,13 @@ that is not a test.
 | **C** | **Provisioned at image build.** | Simplest, and what the test path does today. The secret is in the image, so **the image becomes the secret** and every copy of it is a copy of the password. |
 | **D** | **Bound by measured boot**, sealed to the measurement milestone 22 already takes. | Strongest and largest. Needs a sealing story this tree does not have, and fails closed in ways that are hard to recover from at 2am. |
 
-No recommendation, and that is deliberate rather than an omission. AGENTS.md says to recommend
-on reversible forks and to give options on irreversible ones, and a secret's resting place is the
-irreversible category by its own definition: it cannot be un-decided by deleting code. The block
-made the same call when it was written and it still holds.
+The record offered no recommendation, because a secret's resting place is the irreversible category
+by AGENTS.md's own definition: it cannot be un-decided by deleting code.
 
-What can be said without deciding it is that A and C are not alternatives on the same axis. C is
-what the tree does today and is a known defect rather than a candidate; A is the smallest thing that
-is not that. Whether B or D is needed is a question about whether an unattended boot is in scope,
-which is a different question and should be answered first.
+A and C are not alternatives on the same axis. C is what the tree does today and is a known defect
+rather than a candidate; A is the smallest thing that is not that. Whether B or D is needed is a
+question about whether an unattended boot is in scope, which is a different question and was
+answered first.
 
 ## What this tree already does in the analogous case
 
@@ -80,13 +93,10 @@ in an image is compromised in every copy of that image, forever, and no later de
 Question 2 is cheap. Re-aiming a roadmap block or retiring it is a text edit, and AGENTS.md's
 *move fast on what can be undone* says to decide it quickly rather than deliberate it.
 
-## What is blocked until this is answered
+## What was blocked
 
-Milestone 131, both halves. The configuration-document half could be built against any service
-today and is not blocked by question 1; it is blocked by question 2, because nobody knows whether
-this block is the place for it.
+Milestone 131, both halves. Both are now unblocked by the ruling above.
 
-**Not blocked:** the fixed port and the guest-writable demo share, which have no subject left. And
-the parser caution stands whatever is decided: a configuration document read from anywhere but the
-image is a new parser reading attacker-adjacent bytes, and should be host-tested and fuzzed on day
-one rather than after.
+The parser caution stands: a configuration document read from anywhere but the image is a new
+parser reading attacker-adjacent bytes, and should be host-tested and fuzzed on day one rather than
+after.
