@@ -26,7 +26,7 @@ the code is fed by the network.
 
 ## The nanosecond round trip is the exception
 
-The property is `ticks_to_nanos(nanos_to_ticks(n)) == n`, and it is real. A tick is 2^-32 s, about
+The property is `ticks_to_ns(ns_to_ticks(n)) == n`, and it is real. A tick is 2^-32 s, about
 233 ps, so nanoseconds fit inside ticks, but only if both directions round to nearest. Truncate
 either way and 1 ns becomes 4 ticks becomes 0 ns. Kani is bad at it, because a bit-blasting model
 checker is bad at multiplication and this is two of them composed. Measured on an M-series laptop

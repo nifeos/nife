@@ -276,8 +276,8 @@ fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
 #[cfg(feature = "input_race_probe")]
 fn hold_after_drain() {
     const HOLD_NANOS: u64 = 200_000_000;
-    let start = user_mode_runtime::monotonic_nanos();
-    while user_mode_runtime::monotonic_nanos().wrapping_sub(start) < HOLD_NANOS {
+    let start = user_mode_runtime::monotonic_ns();
+    while user_mode_runtime::monotonic_ns().wrapping_sub(start) < HOLD_NANOS {
         core::hint::spin_loop();
     }
 }

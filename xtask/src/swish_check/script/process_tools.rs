@@ -114,7 +114,7 @@ pub(super) const LINES: &[Line] = &[
     line(1, "slabtop 2> slabtop.txt", &[]),
     line(1, "wc < slabtop.txt", &["0 0 0"]),
     // **`uptime`, at the real prompt** (milestone 126). No domain, no clock: the manifest is
-    // `least_authority_demo`'s, because `monotonic_nanos` is granted to every process unconditionally
+    // `least_authority_demo`'s, because `monotonic_ns` is granted to every process unconditionally
     // (kernel/src/arch/*/timer.rs's exception to DECISIONS §10). A green line here proves the
     // program was loaded, measured, granted its report endpoint and actually ran at EL0; the exact
     // elapsed time is not asserted because a real boot's timing is not this check's business.

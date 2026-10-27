@@ -13,7 +13,7 @@
 //! | 8 | the diagnostics sink, `WRITE` | where a withheld page is said |
 //! | 11 | the machine statistics page, `READ`, also mapped read-only | every figure |
 //!
-//! No clock and no budget: the seconds are `user_mode_runtime::monotonic_nanos`, which every
+//! No clock and no budget: the seconds are `user_mode_runtime::monotonic_ns`, which every
 //! process holds (`uptime`'s finding), and `vmstat` says nothing about "yours".
 
 //! # EXAMPLES
@@ -38,7 +38,7 @@
 #![no_main]
 
 use machine_statistics_contract::{PAGE_VA, Snapshot};
-use user_mode_runtime::{exit, is_granted, monotonic_nanos, send};
+use user_mode_runtime::{exit, is_granted, monotonic_ns, send};
 
 const REPORT: u64 = 0;
 const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
@@ -56,7 +56,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     } else {
         None
     };
-    let now = monotonic_nanos();
+    let now = monotonic_ns();
     let diag = if has_diag { DIAG_SLOT } else { REPORT };
     vmstat::write_diagnostics(granted, machine.as_ref(), &mut |b| write_on(diag, b));
     if has_diag {

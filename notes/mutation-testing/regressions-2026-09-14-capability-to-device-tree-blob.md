@@ -158,7 +158,7 @@ The twelve real survivors sat in the parser, the admission check and the plan wr
   compares whole `Error` values, so the line is checked but the accessor is never called. It is
   what sends a person to the fault. Closed by `error_line_reads_the_number_each_variant_carries`.
 - The plan writer's millisecond branch (3), which no test ever rendered. Every plan in the suite
-  used seconds or minutes. So `nanos / (NANOS_PER_SEC / 1000)` could become `%`, and either `/`
+  used seconds or minutes. So `nanos / (NS_PER_SECOND / 1000)` could become `%`, and either `/`
   could become `*`, with nothing to see it.
 - The plan writer's length arithmetic (3). `write_schedule` fills a 32-byte space-filled buffer
   and emits `buf[..n.max(SCHEDULE_COLUMN)]`. For any schedule inside twelve columns the returned

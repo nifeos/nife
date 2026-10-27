@@ -386,11 +386,12 @@ size = {s: last.get(s, start[s]) - start[s] + 4 for s in start}
 SHAPES = [
     ("ipc_send_receive",
      ["10rendezvous8ipc_send", "10rendezvous15ipc_send_badged", "10rendezvous11ipc_receive",
-      "6switch8schedule", "6switch13finish_switch", "12capabilities11current_cap"]),
+      "6switch8schedule", "6switch13finish_switch", "12capabilities18current_capability"]),
     ("ipc_call_reply",
-     ["10rendezvous8ipc_call", "10rendezvous15ipc_call_badged", "10rendezvous15ipc_receive_cap",
+     ["10rendezvous8ipc_call", "10rendezvous15ipc_call_badged",
+      "10rendezvous46inter_process_communication_receive_capability",
       "10rendezvous9ipc_reply", "6switch8schedule", "6switch13finish_switch",
-      "12capabilities11current_cap"]),
+      "12capabilities18current_capability"]),
 ]
 INLINED = {"10rendezvous8ipc_send", "10rendezvous8ipc_call"}
 # **`ipc_call_badged` is a root because it IS the CALL body** (milestone 599 (a frame per filesystem

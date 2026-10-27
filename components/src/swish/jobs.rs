@@ -367,12 +367,12 @@ const RECLAIM_PATIENCE_NS: u64 = 1_000_000_000;
 /// `interrupt_ignorer` teardowns printed "teardown refused", and each refusal also leaked the job's
 /// pages from this shell's budget, which ran out on the seventh job.
 pub(super) fn reclaim(job_ut: u64) -> bool {
-    let start = monotonic_nanos();
+    let start = monotonic_ns();
     loop {
         if destroy_memory_region(job_ut) == 0 {
             return true;
         }
-        if monotonic_nanos().wrapping_sub(start) > RECLAIM_PATIENCE_NS {
+        if monotonic_ns().wrapping_sub(start) > RECLAIM_PATIENCE_NS {
             return false;
         }
         yield_now();

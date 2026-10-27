@@ -238,7 +238,7 @@ programs! {
         /// **Print how long the ambient monotonic counter has been running** (milestone 126,
         /// `components/src/uptime.rs`, `crates/uptime`).
         ///
-        /// [`Program::LeastAuthorityDemo`]'s manifest, not [`Program::Date`]'s: `user_mode_runtime::monotonic_nanos` is granted to
+        /// [`Program::LeastAuthorityDemo`]'s manifest, not [`Program::Date`]'s: `user_mode_runtime::monotonic_ns` is granted to
         /// **every** process unconditionally (`kernel/src/arch/*/timer.rs`'s documented, deliberate
         /// exception to DECISIONS §10's no-ambient-authority rule), so this program needed no clock
         /// capability, no domain, no memory, no file, nothing beyond the report channel every spawn

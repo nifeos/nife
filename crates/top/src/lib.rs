@@ -20,7 +20,7 @@
 /// **The line above the table**: how long the machine has been counting, how many threads the
 /// domain holds, and what they are doing, ending in a newline, for the output stream.
 ///
-/// `uptime_nanos` is `user_mode_runtime::monotonic_nanos()`, passed in so this stays a pure
+/// `uptime_nanos` is `user_mode_runtime::monotonic_ns()`, passed in so this stays a pure
 /// function a host test can assert on. A refused caller prints neither this nor the table. See
 /// notes/process-view/top.md, "The summary line".
 ///

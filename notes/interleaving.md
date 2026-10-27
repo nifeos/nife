@@ -108,7 +108,7 @@ impossible.
 ```
 a torn reading: (1, 2000) is neither publish
 a reader saw a recognized page with garbage in it: (0, 1000)
-the generation disagrees with the reading it came with: Reading { state: 1, offset_nanos: 0, generation: 0 }
+the generation disagrees with the reading it came with: Reading { state: 1, offset_ns: 0, generation: 0 }
 ```
 
 The fix is one line, a `fence(Release)` between the claim and the data stores, which is exactly the

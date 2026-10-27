@@ -174,7 +174,7 @@ rows would have been.
 ## `uptime` needed none of this
 
 `free`, `uptime` and `vmstat` look alike as machine statistics, but `uptime` does not want
-kernel-side accounting nothing exposes. `monotonic_nanos` is the same counter `date`
+kernel-side accounting nothing exposes. `monotonic_ns` is the same counter `date`
 already reads, granted to every process unconditionally, as `kernel/src/arch/*/timer.rs`
 documents (the deliberate exception to §10 (process model: capability-based, microkernel)'s
 no-ambient-authority rule). So `uptime`'s manifest is `least_authority_demo`'s, not `date`'s: no

@@ -574,7 +574,7 @@ pub(super) fn deliver_capability(
 /// `inter_process_communication_receive_capability` under the capability ruling of 2026-10-06 (UTC).
 #[cfg_attr(
     target_os = "none",
-    unsafe(link_section = ".text.hot.sched.inter_process_communication_receive_capability")
+    unsafe(link_section = ".text.hot.sched.ipc_receive_capability")
 )]
 pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64; 5] {
     let immediate = {

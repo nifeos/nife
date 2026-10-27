@@ -425,9 +425,11 @@ pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    use clock_contract::NS_PER_SECOND;
+
     use super::*;
+    use crate::parse;
     use crate::test_support::with_clock;
-    use crate::{NANOS_PER_SEC, parse};
 
     #[test]
     fn arming_puts_at_boot_first_and_an_interval_one_interval_out() {
@@ -435,7 +437,7 @@ mod tests {
             parse("every 30s least_authority_demo 7\nat-boot least_authority_demo 3\n").unwrap();
         let mut reg = Registry::register(&doc, Held::default());
         reg.arm(1_000);
-        assert_eq!(reg.rows()[0].next_fire(), Some(1_000 + 30 * NANOS_PER_SEC));
+        assert_eq!(reg.rows()[0].next_fire(), Some(1_000 + 30 * NS_PER_SECOND));
         assert_eq!(reg.rows()[1].next_fire(), Some(1_000));
         assert_eq!(reg.next_deadline(), Some(1_000));
     }
@@ -457,7 +459,7 @@ mod tests {
         let mut reg = Registry::register(&doc, Held::default());
         reg.arm(0);
         for t in 0..1_000 {
-            assert_eq!(reg.due(t * NANOS_PER_SEC), None, "at t={t}");
+            assert_eq!(reg.due(t * NS_PER_SECOND), None, "at t={t}");
         }
         assert_eq!(reg.next_deadline(), None);
     }
@@ -467,7 +469,7 @@ mod tests {
         let doc = parse("every 10ms least_authority_demo 1\nevery 10ms least_authority_demo 2\nat-boot least_authority_demo 3\n").unwrap();
         let mut reg = Registry::register(&doc, Held::default());
         reg.arm(0);
-        let now = 50 * NANOS_PER_SEC;
+        let now = 50 * NS_PER_SECOND;
         let mut seen = [false; 3];
         while let Some(i) = reg.due(now) {
             assert!(!seen[i], "row {i} came due twice in one pass");
@@ -483,7 +485,7 @@ mod tests {
         let doc = parse("every 10ms least_authority_demo 7\n").unwrap();
         let mut reg = Registry::register(&doc, Held::default());
         reg.arm(0);
-        let hour = 3_600 * NANOS_PER_SEC;
+        let hour = 3_600 * NS_PER_SECOND;
         assert_eq!(reg.due(hour), Some(0));
         assert_eq!(reg.due(hour), None, "it caught up instead of skipping");
         // And it is back on its original beat rather than carrying the delay forever.
