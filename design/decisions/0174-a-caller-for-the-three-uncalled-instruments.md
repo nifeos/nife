@@ -10,6 +10,13 @@ Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decisio
 2026-09-03 proposal sweep carried it forward. *(Section number provisional until the merge queue
 lands it.)*
 
+## State of the first instrument
+
+`script/interleaving-check` has run on every pull request since commit `b43a6c93b` (2026-10-03,
+milestone 746): the `interleavings` job in `.github/workflows/ci.yml`. That settles its caller. The
+other two instruments, `script/crate-probes` and `script/rule-violations --check`, are still
+uncalled and this section stays open for them.
+
 ## What is being decided
 
 Three instruments in this tree render a verdict and nothing calls them. Each needs a caller, and the
