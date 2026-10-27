@@ -26,7 +26,7 @@ helpers/cap_abbreviation.py, whose lexer this reads through):
 - `micros`, `us` and `usec` (family `micros`, becomes `microseconds`);
 - `sec` and `secs` (family `sec`, becomes `seconds`);
 - `mins` (family `mins`, becomes `minutes`), and `min` straight after `per` (`SECS_PER_MIN`);
-- a bare `s` straight after `per` or a number (`kib_per_second`, `within_30_s`; family `s`, becomes
+- a bare `s` straight after `per` or a number (`kib_per_s`, `within_30_s`; family `s`, becomes
   `seconds`). A bare `s` anywhere else is a variable, a mode-bit prefix or a possessive, and the
   ruling does not reach it.
 
@@ -286,10 +286,10 @@ def selftest():
     def names(src, path=''):
         return [w for _, _, w in file_hits(src, path)]
     cases = [
-        ('let now_microseconds = 1; let secs = 2; let nanos = 3; let millis = 4; let micros = 5;',
-         ['now_microseconds', 'secs', 'nanos', 'millis', 'micros']),
-        ('const NANOS_PER_SEC: u64 = 1; const SECS_PER_MIN: u64 = 60; let kib_per_second = 1;',
-         ['NANOS_PER_SEC', 'SECS_PER_MIN', 'kib_per_second']),
+        ('let now_us = 1; let secs = 2; let nanos = 3; let millis = 4; let micros = 5;',
+         ['now_us', 'secs', 'nanos', 'millis', 'micros']),
+        ('const NANOS_PER_SEC: u64 = 1; const SECS_PER_MIN: u64 = 60; let kib_per_s = 1;',
+         ['NANOS_PER_SEC', 'SECS_PER_MIN', 'kib_per_s']),
         ('let within_30_s = 1; let TICKS_PER_SEC = 1; let mins = 2; let tv_usec = 0;',
          ['within_30_s', 'TICKS_PER_SEC', 'mins']),
         # The allowed list, the spelled-out names and the std methods are never hits.
@@ -300,7 +300,7 @@ def selftest():
         # `min` is a minimum unless it follows `per`.
         ('let min = 1; const MIN_ALIGN: u64 = 1;', []),
         ('let (sec, sub) = f();', ['sec']),
-        ('// secs in a comment\nlet x = "now_microseconds";', []),
+        ('// secs in a comment\nlet x = "now_us";', []),
         ('let sec1 = 1; const STGCLK_SEC_AHB: u32 = 1; let tv_sec = 1; let Sec1Point = 2;', []),
     ]
     failed = 0
@@ -319,7 +319,7 @@ def selftest():
         failed += 1
         print('unit selftest: unclear lookalikes', file=sys.stderr)
     for old, new in (('NANOS_PER_SEC', 'NS_PER_SECOND'), ('SECS_PER_MIN', 'SECONDS_PER_MINUTE'),
-                     ('unix_nanos', 'unix_ns'), ('delay_microseconds', 'delay_microseconds'),
+                     ('unix_nanos', 'unix_ns'), ('delay_us', 'delay_microseconds'),
                      ('within_30_s', 'within_30_seconds'), ('cpu_millis', 'cpu_ms'),
                      ('hz', 'hz')):
         if respell(old) != new:

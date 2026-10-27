@@ -45,7 +45,7 @@ Measured on `396187b0b` from the file's own top-level items. Ranges are approxim
 | 185 to 264 | 80 | `system_test_access`, the facade for the system-test image |
 | 265 to 334 | 70 | `system_tests_main`, `run_test_suite`, `DTB`, `device_tree` |
 | 335 to 2387 | 2,053 | `kernel_main`, one function (broken down below) |
-| 2388 to 2475 | 88 | riscv64 timing helpers: `micros`, `microseconds_between`, `bytes_per_second`, `mode_note` |
+| 2388 to 2475 | 88 | riscv64 timing helpers: `micros`, `micros_between`, `bytes_per_second`, `mode_note` |
 | 2476 to 2515 | 40 | `image_for_virtio`, `interrupts_init`, `stack_top` |
 | 2516 to 2585 | 70 | `riscv_hand_over` |
 | 2586 to 2673 | 88 | `x86_hand_over` |
