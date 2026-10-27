@@ -25,9 +25,9 @@ Every cleanup path the count found is among them.
 Ruled 2026-10-27 (UTC) by the architect. Build the test kernel, and then the services, with `-C
 instrument-coverage` and a `no_std` profiler runtime that only test builds depend on. Dump the
 counters at QEMU exit. The report uses the same regions as the host `script/coverage` report, so
-`helpers/error_paths.py` reads it unchanged. The alternative, a QEMU TCG plugin that records
-executed blocks, is not built: blocks give lines and not regions, a `?` error edge needs a search by address, and user programs that share virtual addresses need
-telling apart by address space.
+`helpers/error_paths.py` reads it unchanged. The alternative is a QEMU TCG plugin that records executed blocks, and it is not built. Blocks give
+lines and not regions. A `?` error edge needs a search by address. User programs that share virtual
+addresses need telling apart by address space.
 
 The runtime is a dependency under §46 (thin primitives or whole subsystems), so it carries a
 dependency audit and the kernel's bar. [`notes/kernel-coverage.md`](../../notes/kernel-coverage.md)
