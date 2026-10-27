@@ -98,7 +98,7 @@ Re-arming with `TVAL = interval` in the handler makes the real period
 ```
 
 Every tick starts its countdown *late*, and **the lateness is never recovered**: the clock runs slow
-forever, silently.
+forever.
 
 Measured in QEMU at 100 Hz configured:
 
@@ -113,23 +113,20 @@ slow handler makes *one* tick late; it does not push the next one out too.
   +250ms: 25 ticks fired   <- correct
 ```
 
-One register.
 
 ### The safety valve
 
 If we fall so far behind that the next deadline is *already in the past*, `previous + interval`
-would fire immediately, and again, and we'd spin in the handler forever paying down a debt we
-cannot pay.
+would fire at once and again, and the handler would spin paying down a debt it cannot pay.
 
-So: give up on the missed ticks and skip to the next grid point after now, which
-`timetable::next_after` computes (§178 (where the timer re-arm seam goes)). The grid keeps its
-phase, so a late tick does not delay the ones after it. Every kernel drops ticks, and it is worth
-counting: a nonzero count means the handler is taking longer than a
-whole tick period.
+So: give up on the missed ticks and skip to the next grid point after now
+(`periodic_deadline::next_after`, §178 (where the timer re-arm seam goes)), so a late tick does not
+delay the later ones. Count the misses: a nonzero count means the handler runs longer than a whole
+tick period.
 
 ## Uptime comes from the counter, not the tick count
 
-`uptime_ms()` reads `CNTPCT_EL0` and divides. Deliberately not `ticks * 10`.
+`uptime_ms()` reads `CNTPCT_EL0` and divides.
 
 If a tick is ever missed (a long critical section, a slow handler), the tick count undercounts
 and *time appears to slow down*. The hardware counter cannot lie.

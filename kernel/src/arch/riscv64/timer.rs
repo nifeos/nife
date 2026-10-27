@@ -216,7 +216,7 @@ pub(crate) fn tick() {
 /// Move this hart's deadline forward by exactly one interval, or by the whole periods a late tick
 /// skipped.
 ///
-/// The arithmetic is `timetable::next_after(fired, interval, now)`, the proved function (§178
+/// The arithmetic is `periodic_deadline::next_after(fired, interval, now)`, the proved function (§178
 /// (where the timer re-arm seam goes), milestone 360 (`crates/timetable`'s proved `next_after` is
 /// not what the timer calls)). A tick that arrives late is counted in [`MISSED_TICKS`] and comes
 /// back onto its original beat, firing once rather than in a loop. The arch layer only reads the
@@ -229,7 +229,7 @@ fn rearm() {
     // Named, not folded into the sum: the icount instrument measures arrival against it.
     let fired = DEADLINE[id].load(Ordering::Relaxed);
     let interval = interval();
-    let next = timetable::next_after(fired, interval, now);
+    let next = periodic_deadline::next_after(fired, interval, now);
 
     // Late: the deadline after `fired` had already passed, so `next_after` skipped it.
     let due = fired.saturating_add(interval);

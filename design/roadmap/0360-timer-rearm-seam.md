@@ -11,10 +11,12 @@ needs_person: no
 # 360. `crates/timetable`'s proved `next_after` is not what the timer calls, so nothing runs the proof
 
 Built 2026-10-27 under §178 (where the timer re-arm seam goes), option A. The aarch64 and riscv64
-`rearm` read their registers, call `timetable::next_after(fired, interval, now)` and arm the result, so
+`rearm` read their registers, call `periodic_deadline::next_after(fired, interval, now)` and arm the result, so
 the Kani-proved function is the one the timer runs and a late tick returns to its original beat.
-Lateness detection and `MISSED_TICKS` stay in the arch layer; x86_64 is unchanged. The suite's
-`a_late_tick_returns_to_the_grid` binds the behavior on both ISAs.
+Lateness detection and `MISSED_TICKS` stay in the arch layer, and x86_64 keeps its hardware reload.
+The suite's `a_late_tick_returns_to_the_grid` binds the behavior on both ISAs. The function and its
+Kani proofs moved from `crates/timetable` into the new `periodic_deadline` crate (name provisional),
+which the kernel and `timetable` both link, so the kernel does not depend on the scheduler.
 
 Filed as a proposal on 2026-09-03 by the milestone 247 sweep, from
 milestone 197's block; promoted by milestone 433 on 2026-09-19. Checked against the tree that day
@@ -32,7 +34,7 @@ thing the crate exists to stop. A lane can prepare the options and measure them,
 the line.
 
 **In brief.** The timer re-arm arithmetic is currently written inside the register access, per
-architecture. `crates/timetable::next_after` computes the same thing, is proved, and nothing on the
+architecture. `crates/timetable::next_after` computes the same thing, has a proof, and nothing on the
 running path calls it. The work is to lift the arithmetic out of the register write so the proved
 function is the one the timer actually uses, and the design question is which side of the seam each
 piece lands on.
@@ -52,8 +54,8 @@ arithmetic and has its own chance to restate the bug with it.
 ## What would settle the decision
 
 Two things a lane can produce before calef rules, and neither of them presumes the answer. The
-first is what each architecture's re-arm actually does today, side by side, so the shared part and
-the genuinely ISA-specific part are separated by reading rather than by assertion. The second is
+first is what each architecture's re-arm actually does today, side by side, so reading, not
+assertion, separates the shared part from the genuinely ISA-specific part. The second is
 what `next_after`'s signature would have to become to serve all three, since the seam is really the
 question of what crosses that signature: a deadline, a delta, or a raw counter value.
 
@@ -67,8 +69,8 @@ the tree's sharpest counterfactual is a property proved over code that nothing r
 
 ## Index row
 
-The timer re-arm arithmetic is written inside the register access, per architecture.
-`crates/timetable::next_after` computes the same thing, is proved by Kani, and nothing on the running
+The timer re-arm arithmetic sits inside the register access, per architecture.
+`crates/timetable::next_after` computes the same thing, has a Kani proof, and nothing on the running
 path calls it. That is the sharpest counterfactual the verification story has and it currently points
 the wrong way: `script/verify` reports it green beside proofs that do bind, with no way for a reader
 to tell the two apart. The bug on the other side is concrete, since milestone 6's drift defect lives
@@ -77,3 +79,8 @@ call and is the whole of the work rather than a detail of it. Too high and the a
 drift bug; too low and every ISA restates the arithmetic the crate exists to hold. A lane can put
 the two re-arms side by side and say what `next_after`'s signature would have to become, which is
 really the question of what crosses it: a deadline, a delta, or a raw counter value.
+
+## Follow-on
+
+- **None.** The seam is placed and built under §178 (where the timer re-arm seam goes). x86_64 has no
+  software re-arm to lift.

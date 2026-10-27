@@ -41,7 +41,8 @@ mod test_support;
 pub use admission::{Admission, Held, SHIPPED_HELD, Unbacked, schedulable};
 pub use document::{Document, Entry, Error, Schedule, parse};
 pub use plan_text::{Audit, write_plan};
-pub use registry::{Registry, Row, SPENT, UNARMED, UNSTAMPED, WallReading, next_after};
+pub use periodic_deadline::next_after;
+pub use registry::{Registry, Row, SPENT, UNARMED, UNSTAMPED, WallReading};
 
 /// The most entries one document may carry.
 ///

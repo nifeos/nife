@@ -157,7 +157,7 @@ fn start(interval: u64) {
 
 /// Move the deadline forward by exactly one interval, or by the whole periods a late tick skipped.
 ///
-/// The arithmetic is `timetable::next_after(fired, interval, now)`, the proved function (§178
+/// The arithmetic is `periodic_deadline::next_after(fired, interval, now)`, the proved function (§178
 /// (where the timer re-arm seam goes), milestone 360 (`crates/timetable`'s proved `next_after` is
 /// not what the timer calls)): **`previous + interval`, not `now + interval`**, so the deadlines
 /// stay on the boot grid. A tick that arrives late comes back onto its original beat and fires
@@ -167,7 +167,7 @@ fn rearm(interval: u64) {
     let now = instructions::read_cntvct();
     // Read before the write below: the icount instrument compares the arrival against it.
     let fired = instructions::read_cntv_cval();
-    let next = timetable::next_after(fired, interval, now);
+    let next = periodic_deadline::next_after(fired, interval, now);
 
     // Late: the deadline after `fired` had already passed, so `next_after` skipped it.
     let due = fired.saturating_add(interval);

@@ -1,6 +1,6 @@
 //! **The registered timetable**: every entry with its decision, and the firing state. Arming,
-//! reading the wall clock, replacing a document while keeping its beats, and the fire arithmetic
-//! the Kani proofs in `proofs.rs` cover.
+//! reading the wall clock, replacing a document while keeping its beats, and the fire arithmetic,
+//! which is [`periodic_deadline::next_after`], proved in its own crate.
 //!
 //! The crate root re-exports every public item, as §294 (the timetable crate root splits into
 //! private modules) lays out.
@@ -8,6 +8,7 @@
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
 use grant_plan::{Endowment, Manifest};
+use periodic_deadline::next_after;
 
 use crate::admission::{admit, admit_installed_row};
 use crate::{Admission, Document, Entry, Held, MAXIMUM_ENTRIES, Schedule, Unbacked, recurrence};
@@ -70,7 +71,7 @@ impl<'a> Row<'a> {
 /// The "never fires again" deadline. `u64::MAX` rather than an `Option` inside the hot loop,
 /// because [`Registry::due`] compares it against a reading every pass and a branch that is always
 /// taken is cheaper to read than one that is sometimes there.
-const NEVER: u64 = u64::MAX;
+const NEVER: u64 = periodic_deadline::NEVER;
 
 /// The registered timetable: every entry with its decision, and the firing state.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -379,50 +380,6 @@ impl<'a> Registry<'a> {
     }
 }
 
-// ===============================================================================================
-// The arithmetic.
-// ===============================================================================================
-
-/// **The next fire after `now`, given the one that was scheduled at `prev` and a period.**
-///
-/// The result is **strictly after `now`**, so a fire never repeats within a polling pass; keeps the
-/// **phase** (congruent to `prev` modulo `period`), so a late entry returns to its beat; and
-/// **skips rather than catches up**, as Vixie cron does: an entry that missed two hundred fires
-/// fires once, because catching up turns a stall into a stampede. Skipped occurrences are lost;
-/// work that must not be wants a durable queue. `period == 0` answers [`u64::MAX`] (never), so the
-/// function is total, though [`parse`](crate::parse) refuses a zero interval. All but the phase are
-/// machine-checked (`src/proofs.rs`). See notes/scheduled-execution/next-after-proofs.md.
-///
-/// # Examples
-///
-/// ```
-/// # use timetable::next_after;
-/// // The ordinary case: one period on.
-/// assert_eq!(next_after(100, 10, 100), 110);
-///
-/// // Late by eight periods, and it does not fire eight times to make up.
-/// assert_eq!(next_after(100, 10, 185), 190);
-/// assert_eq!(next_after(100, 10, 190), 200);
-///
-/// // The phase survives the skip: every result is congruent to `prev` mod `period`.
-/// assert_eq!(next_after(103, 10, 1_000) % 10, 3);
-/// ```
-pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
-    if period == 0 {
-        return NEVER;
-    }
-    let first = prev.saturating_add(period);
-    if first > now {
-        return first;
-    }
-    // Snap `now` back onto the beat and add one period, rather than counting the periods that went
-    // by: no multiplication, which keeps the Kani harnesses to seconds
-    // (notes/scheduled-execution/next-after-proofs.md).
-    // `now >= first > prev`, so the subtraction cannot wrap, and `r < period`, so `now - r` cannot.
-    let r = (now - prev) % period;
-    (now - r).saturating_add(period)
-}
-
 #[cfg(test)]
 mod tests {
     use clock_contract::NS_PER_SECOND;
@@ -490,33 +447,6 @@ mod tests {
         assert_eq!(reg.due(hour), None, "it caught up instead of skipping");
         // And it is back on its original beat rather than carrying the delay forever.
         assert_eq!(reg.rows()[0].next_fire().unwrap() % 10_000_000, 0);
-    }
-
-    #[test]
-    fn next_after_is_strictly_in_the_future_and_keeps_its_phase() {
-        // The ordinary case.
-        assert_eq!(next_after(100, 10, 100), 110);
-        // Exactly on a boundary: strictly greater, so a polling loop cannot fire twice.
-        assert_eq!(next_after(100, 10, 110), 120);
-        // Late, by a whole number of periods and by a fraction of one.
-        assert_eq!(next_after(100, 10, 185), 190);
-        assert_eq!(next_after(100, 10, 190), 200);
-        // The phase survives.
-        for prev in [0u64, 3, 97, 1_000_003] {
-            for period in [1u64, 7, 1_000, 999_983] {
-                for now in [0u64, 1, 50, 1_000_000, u64::MAX / 4] {
-                    let next = next_after(prev, period, now);
-                    assert!(next > now, "{prev} {period} {now} -> {next}");
-                    assert!(next >= prev.saturating_add(period));
-                    assert_eq!(next % period, prev % period);
-                    if now >= prev {
-                        assert!(next <= now.saturating_add(period));
-                    }
-                }
-            }
-        }
-        // Total rather than panicking, for a period `parse` will never produce.
-        assert_eq!(next_after(1, 0, 5), u64::MAX);
     }
 
     /// **§222's third sub-ruling: a byte-identical entry keeps its beat, and nothing else does.**

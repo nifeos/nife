@@ -1,4 +1,4 @@
-Falsifies `timetable::proofs::a_zero_period_is_never_due`.
+Falsifies `periodic_deadline::proofs::a_zero_period_is_never_due`.
 
 The defect: the zero guard is deleted. This is the plausible one rather than a contrived one,
 because the guard looks dead: `parse` refuses `every 0s`, so no document can reach it, and a
@@ -10,9 +10,9 @@ Expected to fail: the harness's `assert_eq!(next_after(prev, 0, now), u64::MAX)`
 answer (`prev` is returned when `prev > now`) or on the remainder operation, which Kani reports
 as a division by zero on the path where it is reached.
 
-diff --git a/crates/timetable/src/registry.rs b/crates/timetable/src/registry.rs
---- a/crates/timetable/src/registry.rs
-+++ b/crates/timetable/src/registry.rs
+diff --git a/crates/periodic_deadline/src/lib.rs b/crates/periodic_deadline/src/lib.rs
+--- a/crates/periodic_deadline/src/lib.rs
++++ b/crates/periodic_deadline/src/lib.rs
 @@ -436,5 +436,2 @@ impl<'a> Registry<'a> {
  pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
 -    if period == 0 {

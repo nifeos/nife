@@ -769,6 +769,7 @@ dependencies = [
  "page_frames",
  "paging",
  "pci",
+ "periodic_deadline",
  "screen_console",
  "soak_page",
  "socket_contract",
@@ -777,7 +778,6 @@ dependencies = [
  "system_log_contract",
  "test_times",
  "thread_wake_handshake",
- "timetable",
  "video_terminal",
  "work_steal_slot",
 ]
@@ -998,6 +998,10 @@ version = "0.1.0"
 dependencies = [
  "device_tree_blob",
 ]
+
+[[package]]
+name = "periodic_deadline"
+version = "0.1.0"
 
 [[package]]
 name = "pgrep"
@@ -1460,6 +1464,7 @@ dependencies = [
  "calendar",
  "clock_contract",
  "grant_plan",
+ "periodic_deadline",
 ]
 
 [[package]]
