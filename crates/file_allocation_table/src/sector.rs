@@ -3,28 +3,44 @@
 //! The crate never names a device. A caller wraps whatever holds the bytes (a block driver, a
 //! file holding a disk image, a slice in memory) in [`SectorDevice`], and every read the crate
 //! makes goes through it, one whole sector at a time.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 /// **The size of one sector**, in the four sizes the FAT specification permits.
 ///
 /// A device states its own; the boot sector states the volume's in `BPB_BytsPerSec`. A volume
 /// whose size differs from its device's is refused rather than read at the wrong offsets.
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SectorSize {
     /// 512 bytes, which nearly every disk and image reports.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Bytes512,
     /// 1024 bytes.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Bytes1024,
     /// 2048 bytes, the sector of optical media.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Bytes2048,
     /// 4096 bytes, the sector of a 4K-native disk.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     Bytes4096,
 }
 
 impl SectorSize {
     /// The largest size, and so the largest buffer this crate ever passes to a device.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const MAX: usize = 4096;
 
     /// The size for `bytes`, or `None` when the specification does not permit it.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn from_bytes(bytes: u16) -> Option<SectorSize> {
         match bytes {
             512 => Some(SectorSize::Bytes512),
@@ -36,6 +52,8 @@ impl SectorSize {
     }
 
     /// The size in bytes.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn bytes(self) -> usize {
         match self {
             SectorSize::Bytes512 => 512,
@@ -46,6 +64,8 @@ impl SectorSize {
     }
 
     /// The base-two logarithm of the size, so that dividing by it is a shift.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn shift(self) -> u32 {
         match self {
             SectorSize::Bytes512 => 9,
@@ -87,6 +107,8 @@ impl SectorSize {
 ///     }
 /// }
 /// ```
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub trait SectorDevice {
     /// Why a read failed. The crate hands it back to the caller unchanged.
     type Error;

@@ -40,11 +40,9 @@ this stage reads no macOS-made boot sector. Stage 4 reads both images to their h
 
 ## Names
 
-The crate's sources carry no `Name:` blocks, because the crate publishes on its own and its
-sources cite nothing of this tree. The ruling of 2026-10-25 (UTC) ratified every name below and
-refused `tables` for `BootSector::table_count`. The record is
-[file-allocation-table-names.md](../0857-crates-released-on-their-own/file-allocation-table-names.md).
-The table gives the reason for each:
+The crate's sources carry `Name:` blocks until the crate breaks out, when the change that breaks it
+out strips them (ruled 2026-10-26 UTC). The ruling of 2026-10-25 (UTC) ratified every
+name below and refused `tables` for `BootSector::table_count`. The table gives the reason for each:
 
 | name | why this one |
 |---|---|

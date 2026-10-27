@@ -630,7 +630,7 @@ pub(crate) fn print_summary() {
             Slot::Up(u) => {
                 any = true;
                 crate::println!(
-                    "  iommu           : VT-d drhd at {:#018x}, root table default-deny, translating, \
+                    "  iommu            : VT-d drhd at {:#018x}, root table default-deny, translating, \
                      {}",
                     u.base,
                     InterruptRemappingClaims {
@@ -641,14 +641,14 @@ pub(crate) fn print_summary() {
             }
             Slot::Refused(why) => {
                 any = true;
-                crate::println!("  iommu           : VT-d unit refused: {why}");
+                crate::println!("  iommu            : VT-d unit refused: {why}");
             }
             Slot::Absent => {}
         }
     }
     if !any {
         crate::println!(
-            "  iommu           : none (this machine's ACPI names neither a DMAR nor an IVRS); device \
+            "  iommu            : none (this machine's ACPI names neither a DMAR nor an IVRS); device \
              DMA is NOT confined",
         );
     }

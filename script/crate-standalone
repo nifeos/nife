@@ -23,10 +23,13 @@
 # 0. The names. `script/names <crate>` must report the crate's name ratified, because the copy, the
 #    `nifeos/<name>` repository and the crates.io package all carry it (calef, 2026-10-11 UTC: "We
 #    should ensure that we ratify the crate names before we break them out."). And every name a
-#    stranger meets in it is ratified too (ruled 2026-10-25 UTC): the crate's record outside its
-#    shipped files (helpers/name_release.py) must be in force, its `Ratified:` line dated, with
-#    every row ratified. Before that the crate keeps its `Name:` blocks, which step 3 refuses, so
-#    the two steps pass together only once the names are ratified and the blocks have moved out.
+#    stranger meets in it is ratified too: every module and `pub` item must have a `Name:` block
+#    (ruled 2026-10-25 UTC: every name a stranger meets is ratified), and every block in the crate
+#    must read `ratified` (ruled 2026-10-26 UTC: a crate that leaves is a third-party crate and
+#    nife keeps no record of its names, so the blocks in its source are the only record until it
+#    breaks out). Ratification is a pull request whose body carries
+#    `python3 helpers/name_release.py --draft <crate>`. A crate's release milestone holds its open
+#    name flags (the names a stranger may misread).
 # 1. The manifest. Fails on a path dependency that leaves the copy, on a key inherited from the
 #    workspace (`license.workspace = true`, `[lints] workspace = true`), on a missing `rust-version`,
 #    and on a feature whose name says `nife`. Inherited keys are then inlined from the workspace
@@ -34,9 +37,13 @@
 # 2. Files a stranger needs: a README, and `LICENSE-MIT` and `LICENSE-APACHE` at the crate's root
 #    with `license = "MIT OR Apache-2.0"` in the manifest, nife's own license.
 # 3. Citations of this tree, in every shipped text file (and an `include_bytes!` or `include_str!`
-#    that reads outside the crate, which `cargo package` cannot ship): `§N`, `milestone N`, paths into `design/`,
-#    `notes/`, `script/`, `helpers/` or `briefs/`, provenance blocks (`Name: provisional`, and the
-#    rest), the architect's name, and `cfg(target_os = "nife")`. A stranger can follow none of them.
+#    that reads outside the crate, which `cargo package` cannot ship): `§N`, `milestone N`, paths
+#    into `design/`, `notes/`, `script/`, `helpers/` or `briefs/`, the architect's name, and
+#    `cfg(target_os = "nife")`.
+#    A stranger can follow none of them. `Name:` blocks are not reported: the text scanned has them
+#    stripped (`crate_release.strip_name_blocks`), because the change that breaks the crate out
+#    strips them from the outgoing copy. The copy on disk keeps them, since a falsification patch
+#    is written against this tree's lines, blocks included.
 # 4. The build, on stable at the crate's `rust-version` (or `stable` when it states none, which
 #    step 1 has already failed): `cargo test` on the host, then `cargo build --lib` for each target
 #    in `[package.metadata.docs.rs] targets`, or for nife's three bare-metal targets when it lists
@@ -88,7 +95,7 @@ workspace = tomllib.load(open(os.path.join(root, "Cargo.toml"), "rb"))["workspac
 # script cannot disagree about what "clean" means.
 sys.path.insert(0, os.path.join(root, "helpers"))
 import crate_release  # noqa: E402
-import name_release  # noqa: E402
+import name_census  # noqa: E402
 
 
 def run(argv, cwd, env=None):
@@ -120,7 +127,8 @@ def copy_crate(crate, dest):
 
 def check_static(copy, files, fail):
     """Steps 1 to 3. Returns the toolchain, the targets, and whether any dependency leaves the copy."""
-    for step, why in crate_release.static_findings(files, set(os.listdir(copy))):
+    scanned = {path: crate_release.strip_name_blocks(text) for path, text in files.items()}
+    for step, why in crate_release.static_findings(scanned, set(os.listdir(copy))):
         fail(step, why)
     _found, leaves = crate_release.manifest_findings(files["Cargo.toml"])
     path = os.path.join(copy, "Cargo.toml")
@@ -151,11 +159,11 @@ def check_name(crate, fail):
             break
     else:
         fail("name", "`script/names` has no crate by this name")
-    check_record(crate, fail)
+    check_blocks(crate, fail)
 
 
-def check_record(crate, fail):
-    """Step 0's second half: the crate's names are ratified in a record outside its shipped files."""
+def check_blocks(crate, fail):
+    """Step 0's second half: every `Name:` block in the crate is ratified, and no name lacks one."""
     paths = subprocess.run(["git", "-C", root, "ls-files"], capture_output=True, text=True,
                            check=True).stdout.split()
 
@@ -164,19 +172,16 @@ def check_record(crate, fail):
             return open(os.path.join(root, rel), errors="replace").read()
         except OSError:
             return None
-    found, _problems = name_release.load(paths, read)
-    record = name_release.record_path(crate)
-    if crate not in found:
-        fail("names", f"no record of the crate's names at {record}; its names are ratified there "
-                      f"before it leaves, and its `Name:` blocks move out of the crate")
-        return
-    _path, ratified, rows = found[crate]
-    if not ratified:
-        fail("names", f"{record} has no dated `Ratified:` line, so the crate's `Name:` blocks are "
-                      f"still its record")
-    waiting = [name for _n, name, _k, _p, cell in rows if not cell.startswith("ratified")]
+    records, _problems, _missing, unblocked = name_census.census(paths, read)
+    prefix = f"crates/{crate}/"
+    waiting = [f"{r['name']} ({r['status']})" for r in records
+               if r["path"].startswith(prefix) and r["status"] != "ratified"]
+    waiting += [f"{row.partition('::')[2] or row.partition('::')[0]} (no block)"
+                for row in unblocked if row.startswith(prefix)]
     if waiting:
-        fail("names", f"{len(waiting)} name(s) in {record} not ratified, first `{waiting[0]}`")
+        fail("names", f"{len(waiting)} name(s) in the crate not ratified, first {waiting[0]}; "
+                      f"`python3 helpers/name_release.py --draft {crate}` prints the table for the "
+                      f"pull request that ratifies them")
 
 
 def check_build(copy, toolchain, targets, fail, env):

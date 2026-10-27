@@ -54,8 +54,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   blocks, and their names become permanent with the crate. `discover_aon` and `discover_sys` left
   the crate with the walk, so their provisional names no longer bind it.
 - crates.io answers 404 for the name (checked 2026-10-07).
-- A ruling of 2026-10-26 (UTC) ratified the crate's names and renamed eight of them first. [The
-  names record](0857-crates-released-on-their-own/jh7110-clock-and-reset-names.md) holds them.
+- A ruling of 2026-10-26 (UTC) ratified the crate's names and renamed eight of them first. The
+  `Name:` blocks of its source hold them.
 
 **Reuse:** the alternatives were surveyed in #1806's `other-implementations.md` appendix (looked up 2026-10-07),
 and none is taken, because calef ruled this crate "publish ours". The only Rust JH7110 crates found,

@@ -211,11 +211,11 @@ pub fn initialize(base: u64) {
 pub(crate) fn print_summary() {
     match SMMU.lock().as_ref() {
         Some(s) => crate::println!(
-            "  iommu           : SMMUv3 at {:#018x}, stream table default-deny, translating",
+            "  iommu            : SMMUv3 at {:#018x}, stream table default-deny, translating",
             s.base,
         ),
         None => crate::println!(
-            "  iommu           : none (this machine's device tree names no smmuv3 node)",
+            "  iommu            : none (this machine's device tree names no smmuv3 node)",
         ),
     }
 }

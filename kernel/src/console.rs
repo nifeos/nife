@@ -179,9 +179,9 @@ pub(crate) fn print_summary() {
     let screen = CONSOLE.lock().screen.as_ref().map(|s| (s.pixels, s.len));
 
     #[cfg(target_arch = "x86_64")]
-    crate::print!("  console         : 16550 at i/o port {UART_BASE:#06x}");
+    crate::print!("  console          : 16550 at i/o port {UART_BASE:#06x}");
     #[cfg(not(target_arch = "x86_64"))]
-    crate::print!("  console         : {CONSOLE_KIND} at {UART_BASE:#018x}");
+    crate::print!("  console          : {CONSOLE_KIND} at {UART_BASE:#018x}");
     match interrupt_number {
         Some(line) => crate::print!(", interrupt line {line}"),
         // Not a failure: the x86 console is polled, and a tree may name no UART interrupt.

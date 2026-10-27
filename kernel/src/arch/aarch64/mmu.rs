@@ -941,12 +941,12 @@ pub fn translate_user(va: u64) -> Option<(u64, Flags)> {
 )]
 pub(crate) fn print_summary() {
     println!(
-        "  mmu             : {}, kernel in TTBR1 at {:#018x}, TTBR0 free for userspace",
+        "  mmu              : {}, kernel in TTBR1 at {:#018x}, TTBR0 free for userspace",
         if is_enabled() { "on" } else { "OFF" },
         KERNEL_VA_BASE,
     );
     println!(
-        "  stack guard     : {:#018x} (unmapped; a stack overflow faults here)",
+        "  stack guard      : {:#018x} (unmapped; a stack overflow faults here)",
         stack_guard(),
     );
 }

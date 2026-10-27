@@ -11,11 +11,12 @@ released on its own), and every later extraction runs the same list.
 - The tree-wide citation lint accepts a citation into a crate repository at a tag, by symbol, in
   the form §277 (cite a heading or a symbol, never a line number) allows. Until it does, repointing
   the citations below fails `script/lint`.
-- The crate's name is ratified (Fork 5), and so is every name a stranger meets in it (ruled
-  2026-10-25 UTC). The record is `<crate, hyphenated>-names.md` beside this file, and once it
-  carries a dated `Ratified:` line, `script/names` reads the crate's names there and its `Name:`
-  blocks leave its shipped files. `helpers/name_release.py` holds the format. Then
-  `script/crate-standalone` exits 0.
+- Ratify the crate's name (Fork 5) and every name a stranger meets in it (ruled 2026-10-25 UTC). This tree keeps no record of a third-party crate's names (ruled
+  2026-10-26 UTC), so the `Name:` blocks in the crate's source are the record until it breaks
+  out. Ratification is a pull request: its body carries the table `python3 helpers/name_release.py
+  --draft <crate>` prints, and it sets each block to `ratified <date> (#PR)`. Then
+  `script/crate-standalone` exits 0, and the change that breaks the crate out strips the blocks
+  from the outgoing copy.
 
 ## At each extraction
 
@@ -29,8 +30,7 @@ released on its own), and every later extraction runs the same list.
 - The dependency rule of the architect-label workflow fires once, on the first crates.io adoption,
   and is left to fire; that pull request is the ruling that nife depends on its own release.
 - `cargo-deny` applies to the crate as to any dependency.
-- The name leaves `script/names`, which tracks names in this tree; its record stays beside this
-  file.
+- The name leaves `script/names`, which tracks names in this tree, and no record of it is kept.
 
 ## What the metrics do
 

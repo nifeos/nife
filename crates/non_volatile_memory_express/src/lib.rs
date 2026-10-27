@@ -4,54 +4,88 @@
 //! volatile layer over this), so the queue logic is host-testable and Kani-reachable. The protocol
 //! (NVMe 1.4, chapters 4 and 5: submission and completion queues, doorbells, the phase tag, the
 //! admin queue and PRPs) is what this crate implements, and no more of it.
+//!
+//! Name: ratified 2026-09-17 (#1806). NVMe spelled out, as the acronym test asks; permanent once
+//! published.
 
 /// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
 /// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
 pub mod registers {
     /// Controller Capabilities, 64-bit read-only. See [`super::Capabilities`].
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const CAP: u64 = 0x00;
     /// Controller Configuration, 32-bit. See [`super::enabled_controller_configuration`].
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const CC: u64 = 0x14;
     /// Controller Status, 32-bit read-only. See [`super::CSTS_RDY`].
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const CSTS: u64 = 0x1c;
     /// Admin Queue Attributes: (ACQ entries - 1) << 16 | (ASQ entries - 1).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const AQA: u64 = 0x24;
     /// Admin Submission Queue base, 64-bit, page-aligned physical.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const ASQ: u64 = 0x28;
     /// Admin Completion Queue base, 64-bit, page-aligned physical.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const ACQ: u64 = 0x30;
     /// The first doorbell. Doorbell N is at `DOORBELL_BASE + N * (4 << CAP.DSTRD)`; see
     /// [`super::doorbell`].
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const DOORBELL_BASE: u64 = 0x1000;
 }
 
 /// CSTS.RDY: the controller has come up (after CC.EN is set) or gone down (after it is cleared).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CSTS_RDY: u32 = 1;
 /// CSTS.CFS: Controller Fatal Status. The controller gave up; no doorbell will help.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CSTS_CFS: u32 = 1 << 1;
 
 /// The decoded fields of CAP this driver acts on. A newtype over the raw register value so the
 /// bit positions live in exactly one place.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `Cap` (an abbreviation of the register's
+/// name).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Capabilities(pub u64);
 
 impl Capabilities {
     /// Maximum Queue Entries Supported, converted from the register's 0-based field to a count.
     /// Every queue this driver creates must be no deeper than this.
+    ///
+    /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `max_queue_entries` (max spelled out, as
+    /// the tree-wide ruling asks).
     pub fn maximum_queue_entries(self) -> u32 {
         (self.0 as u32 & 0xffff) + 1
     }
     /// Doorbell Stride: doorbell N is at `0x1000 + N * (4 << DSTRD)` (a 4-bit field, so the shift
     /// is at most 19 and the multiply cannot overflow a u64 for any real doorbell index).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn doorbell_stride(self) -> u32 {
         (self.0 >> 32) as u32 & 0xf
     }
     /// Timeout for CSTS.RDY to follow CC.EN, in 500 ms units.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn timeout_500ms(self) -> u32 {
         (self.0 >> 24) as u32 & 0xff
     }
     /// Memory Page Size Minimum, as a byte count (the field is `2^(12+MPSMIN)`). This driver runs
     /// with CC.MPS = 0, i.e. 4 KiB pages, so bring-up checks this is at most 4096.
+    ///
+    /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `min_page_size` (min spelled out, as the
+    /// tree-wide ruling asks).
     pub fn minimum_page_size(self) -> u64 {
         1u64 << (12 + ((self.0 >> 48) & 0xf))
     }
@@ -62,12 +96,17 @@ impl Capabilities {
 /// IOSQES=6 (64-byte submission entries), IOCQES=4 (16-byte completion entries). The entry sizes
 /// are the spec's only defined ones and the controller checks them before honoring a queue
 /// creation, which is why they are set here rather than defaulted.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `cc_enabled` (it returns the Controller Configuration
+/// value that enables the controller, which `cc_enabled` did not say).
 pub fn enabled_controller_configuration() -> u32 {
     1 | (6 << 16) | (4 << 20)
 }
 
 /// A queue's role, which picks its doorbell: submission tails are even doorbells, completion
 /// heads odd (NVMe 1.4 sections 3.1.24-25).
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Doorbell {
     /// The submission queue's tail doorbell: even index.
@@ -98,6 +137,8 @@ pub enum Doorbell {
 /// assert_eq!(doorbell(1, Doorbell::SubmissionTail, 0), 0x1008);
 /// assert_eq!(doorbell(1, Doorbell::CompletionHead, 0), 0x100c);
 /// ```
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub fn doorbell(qid: u16, which: Doorbell, dstrd: u32) -> u64 {
     let index = 2 * qid as u64
         + match which {
@@ -110,33 +151,54 @@ pub fn doorbell(qid: u16, which: Doorbell, dstrd: u32) -> u64 {
 // --- commands -------------------------------------------------------------------------------
 
 /// Admin opcodes (NVMe 1.4 section 5).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ADMIN_CREATE_IO_SQ: u8 = 0x01;
 /// Create an I/O completion queue.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ADMIN_CREATE_IO_CQ: u8 = 0x05;
 /// Fetch a controller or namespace data structure ([`CNS_CONTROLLER`], [`CNS_NAMESPACE`]).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ADMIN_IDENTIFY: u8 = 0x06;
 
 /// Non-volatile memory (NVM, the I/O command set's) opcodes (NVMe 1.4 section 6). Flush is opcode 0, and it is mandatory: section 6.8
 /// requires every controller to implement it, which is why the block server can offer
 /// `filesystem_contract::blk::FLUSH` unconditionally where the virtio one has to negotiate a
 /// feature bit and refuse when it is absent.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `NVM_FLUSH` (NVM spelled out, as the acronym
+/// test asks).
 #[doc(alias = "nvm")]
 pub const NON_VOLATILE_MEMORY_FLUSH: u8 = 0x00;
 /// Write logical blocks.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `NVM_WRITE` (NVM spelled out, as the acronym
+/// test asks).
 #[doc(alias = "nvm")]
 pub const NON_VOLATILE_MEMORY_WRITE: u8 = 0x01;
 /// Read logical blocks.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `NVM_READ` (NVM spelled out, as the acronym
+/// test asks).
 #[doc(alias = "nvm")]
 pub const NON_VOLATILE_MEMORY_READ: u8 = 0x02;
 
 /// Identify CNS values: the namespace data structure, and the controller's.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CNS_NAMESPACE: u32 = 0x00;
 /// The controller's own identify data structure, rather than a namespace's.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CNS_CONTROLLER: u32 = 0x01;
 
 /// One 64-byte submission queue entry, as the sixteen dwords the driver writes. `#[repr(C)]` so
 /// the kernel can copy it into the ring as-is; the wire format is little-endian dwords and both
 /// target ISAs are little-endian (the same layout argument `filesystem_contract` records).
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Command(pub [u32; 16]);
@@ -156,6 +218,8 @@ impl Command {
     }
 
     /// IDENTIFY (admin): the 4096-byte data structure named by `cns` lands at `prp1`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn identify(cid: u16, cns: u32, nsid: u32, prp1: u64) -> Self {
         let mut c = Self::new(ADMIN_IDENTIFY, cid, nsid, prp1, 0);
         c.0[10] = cns;
@@ -165,6 +229,9 @@ impl Command {
     /// CREATE I/O COMPLETION QUEUE (admin): queue `qid`, `entries` deep, physically contiguous
     /// (PC=1) at `prp1`. Interrupts stay off (IEN=0): the kernel driver completes by polling the
     /// phase tag, so no vector is named and none is needed.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `create_io_cq` (spelled out, as the acronym test
+    /// asks).
     pub fn create_io_completion_queue(cid: u16, qid: u16, entries: u16, prp1: u64) -> Self {
         let mut c = Self::new(ADMIN_CREATE_IO_CQ, cid, 0, prp1, 0);
         c.0[10] = qid as u32 | ((entries as u32 - 1) << 16);
@@ -175,6 +242,9 @@ impl Command {
     /// CREATE I/O SUBMISSION QUEUE (admin): queue `qid`, `entries` deep, physically contiguous at
     /// `prp1`, completing into completion queue `cqid` (which must already exist; the kernel
     /// creates the pair CQ-first for exactly that reason).
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `create_io_sq` (spelled out, as the acronym test
+    /// asks).
     pub fn create_io_submission_queue(
         cid: u16,
         qid: u16,
@@ -191,6 +261,8 @@ impl Command {
     /// READ (I/O): `blocks` logical blocks starting at `slba`, into the PRPs. `blocks` is the real
     /// count; the wire field is 0-based and this builder does the subtraction, so a caller cannot
     /// get the off-by-one wrong. `blocks` must be nonzero (asserted: zero would wrap to 65536).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn read(cid: u16, nsid: u32, slba: u64, blocks: u16, prp1: u64, prp2: u64) -> Self {
         assert!(blocks != 0, "a zero-block transfer has no wire encoding");
         let mut c = Self::new(NON_VOLATILE_MEMORY_READ, cid, nsid, prp1, prp2);
@@ -208,11 +280,15 @@ impl Command {
     /// `filesystem_contract::blk::FLUSH` without negotiating anything. A controller with no
     /// volatile write cache completes it as a no-op, and that is a truthful yes rather than the
     /// silent one a flush verb exists to forbid: the data really is durable.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn flush(cid: u16, nsid: u32) -> Self {
         Self::new(NON_VOLATILE_MEMORY_FLUSH, cid, nsid, 0, 0)
     }
 
     /// WRITE (I/O): the same addressing as [`Command::read`], the other direction.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn write(cid: u16, nsid: u32, slba: u64, blocks: u16, prp1: u64, prp2: u64) -> Self {
         assert!(blocks != 0, "a zero-block transfer has no wire encoding");
         let mut c = Self::new(NON_VOLATILE_MEMORY_WRITE, cid, nsid, prp1, prp2);
@@ -245,6 +321,8 @@ impl Command {
 /// // Three pages would need a list. Not expressible, and said so.
 /// assert_eq!(prp_pair(0x4000_0000, 3 * 4096, 4096), None);
 /// ```
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[doc(alias = "physical region page")]
 pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
     assert!(page_size.is_power_of_two() && page_size >= 512);
@@ -284,6 +362,9 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
 /// assert_eq!(cmd.0[0] & 0xff, NON_VOLATILE_MEMORY_READ as u32);
 /// assert!(namespace.transfer_command(7, 1, 2048, 4096, 0x4001_5000, 4096, false).is_none());
 /// ```
+///
+/// Name: provisional. A namespace's capacity and its logical blocks per transfer, what the bounds
+/// check and the transfer builder need.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Namespace {
     /// The namespace's capacity in bytes.
@@ -300,6 +381,9 @@ impl Namespace {
     ///
     /// `false` for any `block` whose transfer would run past [`Namespace::size_bytes`], for one
     /// whose end overflows a `u64`, and for a `unit` of zero.
+    ///
+    /// Name: provisional. The method form of `namespace_holds_block` (ratified 2026-10-26 (UTC), on
+    /// #2749), whose subject is now the receiver.
     pub fn holds_block(&self, block: u64, unit: u64) -> bool {
         match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
             Some(end) => end <= self.size_bytes,
@@ -314,6 +398,9 @@ impl Namespace {
     ///
     /// `cid` and `nsid` go to the command as they are, `data_physical_address` is the buffer's bus
     /// address, and `write` picks [`Command::write`] over [`Command::read`].
+    ///
+    /// Name: provisional. Ratified 2026-10-26 (UTC), on #2749, as a free function; the method on
+    /// `Namespace` keeps the word.
     #[allow(clippy::too_many_arguments)]
     pub fn transfer_command(
         &self,
@@ -342,6 +429,8 @@ impl Namespace {
 // --- completions ----------------------------------------------------------------------------
 
 /// One 16-byte completion queue entry, decoded from the four dwords the controller wrote.
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Completion {
     /// Command-specific result (dword 0).
@@ -361,6 +450,8 @@ pub struct Completion {
 
 impl Completion {
     /// Decode the four dwords the controller wrote into a completion queue slot.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn from_dwords(dw: [u32; 4]) -> Self {
         Completion {
             result: dw[0],
@@ -380,6 +471,9 @@ impl Completion {
 /// this driver completes every command before submitting the next, so the ring can never fill,
 /// and [`SubmissionQueue::push`] asserts the invariant that guards that assumption instead of carrying a
 /// free-slot count nothing would exercise.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `SqState` (an abbreviation, and the type is the
+/// queue, not a state beside it).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SubmissionQueue {
     entries: u16,
@@ -391,6 +485,8 @@ pub struct SubmissionQueue {
 impl SubmissionQueue {
     /// A fresh ring of `entries` slots (at least 2: a one-slot ring cannot distinguish full from
     /// empty in tail/head form, and the spec's minimum queue size is 2).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn new(entries: u16) -> Self {
         assert!(entries >= 2);
         SubmissionQueue {
@@ -403,6 +499,8 @@ impl SubmissionQueue {
     /// Claim the slot for one command: returns the slot index to write, advancing the tail. The
     /// caller then rings [`doorbell`] with [`SubmissionQueue::tail`]. Panics if the ring is full, which
     /// for this driver is a logic bug (one command in flight per queue), not a load condition.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn push(&mut self) -> u16 {
         let next = (self.tail + 1) % self.entries;
         assert!(next != self.head, "submission ring full");
@@ -412,11 +510,16 @@ impl SubmissionQueue {
     }
 
     /// The tail value to write to the doorbell after [`SubmissionQueue::push`].
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn tail(&self) -> u16 {
         self.tail
     }
 
     /// Record the controller's consumption, from a completion's `submission_queue_head`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `note_head` (it records the head the controller
+    /// reported).
     pub fn record_head(&mut self, head: u16) {
         assert!(
             head < self.entries,
@@ -459,6 +562,8 @@ impl SubmissionQueue {
 /// assert!(!cq.is_owned(&fresh));
 /// assert!(cq.is_owned(&stale));
 /// ```
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `CqState` (the same reason as `SqState`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompletionQueue {
     entries: u16,
@@ -468,6 +573,8 @@ pub struct CompletionQueue {
 
 impl CompletionQueue {
     /// A fresh ring of `entries` slots, phase starting true (see the struct docs).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn new(entries: u16) -> Self {
         assert!(entries >= 2);
         CompletionQueue {
@@ -478,18 +585,24 @@ impl CompletionQueue {
     }
 
     /// The slot to poll for the next completion.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn head(&self) -> u16 {
         self.head
     }
 
     /// Does this completion belong to the driver yet? True when its phase tag matches the phase
     /// this lap expects; a stale entry (last lap's, or the initial zeros) fails the match.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn is_owned(&self, c: &Completion) -> bool {
         c.phase == self.phase
     }
 
     /// Consume the entry at the head: advance, flipping the expected phase on wrap. Returns the
     /// new head, which the caller writes to this queue's [`doorbell`].
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn pop(&mut self) -> u16 {
         self.head += 1;
         if self.head == self.entries {
@@ -509,6 +622,8 @@ impl CompletionQueue {
 /// carry, or describes a block size outside what a driver of 4096-byte filesystem blocks can
 /// serve (LBADS below 9 is the spec's "unsupported" marker; above 12 a block would outgrow the
 /// transfer buffer).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
     if data.len() < 384 {
         return None; // NSZE..the LBA format table must be present
@@ -533,6 +648,9 @@ pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
 /// It exists so a refusal can say what it refused. A drive on the bench must be formatted so that
 /// `blocks_per_transfer` falls in `1..=8`, and a namespace this driver declines has to print its
 /// LBA size rather than arrive at the bench as a server that never started and a test that reads "skipped".
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `lba_format_shift` (`lba` spelled out, as the
+/// acronym test asks).
 pub fn logical_block_address_format_shift(data: &[u8]) -> Option<u8> {
     if data.len() < 384 {
         return None;
@@ -542,6 +660,8 @@ pub fn logical_block_address_format_shift(data: &[u8]) -> Option<u8> {
 }
 
 /// See [`parse_identify_namespace`].
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IdentifyNamespace {
     /// The namespace's size in logical blocks.
@@ -552,12 +672,17 @@ pub struct IdentifyNamespace {
 
 impl IdentifyNamespace {
     /// The namespace's capacity in bytes.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `bytes` (it is the namespace's capacity in bytes,
+    /// not its bytes).
     pub fn capacity_bytes(&self) -> u64 {
         self.blocks << self.logical_block_address_shift
     }
     /// How many logical blocks one `unit`-byte transfer covers, or `None` if `unit` is not a
     /// whole number of logical blocks (a namespace this driver cannot serve 4096-byte filesystem
     /// blocks on; `parse_identify_namespace`'s shift bounds make it impossible for unit 4096).
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `blocks_per` (it did not say per what).
     pub fn blocks_per_transfer(&self, unit: u64) -> Option<u16> {
         if unit == 0 || unit & ((1 << self.logical_block_address_shift) - 1) != 0 {
             return None;

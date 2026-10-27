@@ -267,7 +267,7 @@ pub(crate) fn print_summary() {
             distributor,
             cpu_interface,
         }) => crate::println!(
-            "  interrupts      : GICv2, distributor {:#018x}, cpu interface {:#018x}",
+            "  interrupts       : GICv2, distributor {:#018x}, cpu interface {:#018x}",
             distributor.start,
             cpu_interface.start,
         ),
@@ -275,13 +275,13 @@ pub(crate) fn print_summary() {
             distributor,
             redistributors,
         }) => crate::println!(
-            "  interrupts      : GICv3, distributor {:#018x}, redistributors {:#018x}, cpu \
+            "  interrupts       : GICv3, distributor {:#018x}, redistributors {:#018x}, cpu \
              interface in system registers",
             distributor.start,
             redistributors.start,
         ),
         None => {
-            crate::println!("  interrupts      : none (this machine's device tree names no GIC)");
+            crate::println!("  interrupts       : none (this machine's device tree names no GIC)");
         }
     }
 }

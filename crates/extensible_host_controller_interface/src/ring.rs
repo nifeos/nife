@@ -1,4 +1,6 @@
 //! **The rings**: the producer rings the driver fills and the event ring it drains.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 use super::*;
 
@@ -26,6 +28,8 @@ use super::*;
 /// assert_eq!((d.index, d.transfer_request_block.cycle()), (0, false)); // second lap, cycle flipped
 /// assert_eq!(ring.address_of(d.index), 0x1000);
 /// ```
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProducerRing {
     pub(crate) base: u64,
@@ -40,6 +44,8 @@ pub struct ProducerRing {
 /// The driver writes `transfer_request_block` and then `link`, each with the cycle dword last: until a TRB's cycle bit
 /// matches, the controller treats it as not yet produced, so the dword that carries it goes in
 /// after the rest.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `Placement` (it did not say what is placed).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TransferRequestBlockPlacement {
     /// Where the TRB goes.
@@ -57,6 +63,8 @@ impl ProducerRing {
     /// # Panics
     /// When `entries` is under 2, which is a ring with no room for anything but its link; every
     /// caller passes a constant.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn new(base: u64, entries: u16) -> ProducerRing {
         assert!(
             entries >= 2,
@@ -71,17 +79,23 @@ impl ProducerRing {
     }
 
     /// The physical address of entry `index`.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn address_of(&self, index: u16) -> u64 {
         self.base + index as u64 * 16
     }
 
     /// The physical address and cycle of the next TRB to be written: what a TR Dequeue Pointer or
     /// `CRCR` is set to (the cycle in bit 0, as both registers take it).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn dequeue_pointer(&self) -> u64 {
         self.address_of(self.enqueue) | self.cycle as u64
     }
 
     /// **Place one TRB**, and the link if this fills the lap.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn enqueue(
         &mut self,
         transfer_request_block: TransferRequestBlock,
@@ -107,6 +121,8 @@ impl ProducerRing {
 }
 
 /// **The event ring, from the consumer's side**: one segment of `entries` TRBs at a physical base.
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventRing {
     base: u64,
@@ -120,6 +136,8 @@ impl EventRing {
     ///
     /// # Panics
     /// When `entries` is zero; every caller passes a constant.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn new(base: u64, entries: u16) -> EventRing {
         assert!(entries > 0, "an event ring needs an entry");
         EventRing {
@@ -131,17 +149,23 @@ impl EventRing {
     }
 
     /// The entry the next event will be at.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn index(&self) -> u16 {
         self.dequeue
     }
 
     /// Whether `transfer_request_block`, read at [`index`](Self::index), is an event the controller
     /// has written this lap.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn is_ready(&self, transfer_request_block: &TransferRequestBlock) -> bool {
         transfer_request_block.cycle() == self.cycle
     }
 
     /// Consume the entry at [`index`](Self::index).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn advance(&mut self) {
         self.dequeue += 1;
         if self.dequeue == self.entries {
@@ -151,11 +175,15 @@ impl EventRing {
     }
 
     /// The physical address to write to `ERDP`: where the next event will be.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn dequeue_pointer(&self) -> u64 {
         self.base + self.dequeue as u64 * 16
     }
 
     /// The one event ring segment table entry describing this ring.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn segment_table_entry(&self) -> [u32; 4] {
         [
             self.base as u32,
