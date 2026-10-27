@@ -254,7 +254,9 @@ impl Session {
     }
 
     fn rights(u: &mut Unstructured) -> ArbResult<u64> {
-        Ok(if u.ratio(3, 4)? {
+        Ok(if u.ratio(1, 8)? {
+            dir::PARENT_RIGHTS
+        } else if u.ratio(3, 4)? {
             dir::ALL
         } else {
             u.int_in_range(0..=dir::ALL)?

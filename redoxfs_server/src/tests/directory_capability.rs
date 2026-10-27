@@ -175,6 +175,95 @@ fn opendir_takes_a_path_and_narrows_to_the_request() {
     );
 }
 
+/// **The parent-rights sentinel asks for whatever the parent holds** (§98): the child carries
+/// exactly the parent's rights under a full grant and under a narrowed one, where asking for `ALL`
+/// is `EPERM`. `OPENDIR` and `MKDIR` both take it, along a path as at one name, and it never
+/// widens.
+#[test]
+fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
+    let mut srv = server_with_tree();
+    let root = filesystem_contract::fs::ROOT as u32;
+    let errno = |r: Result<u32>| r.err().map(|e| e.errno);
+    let held = |srv: &mut Server<DiskMemory>, h: u32| {
+        // What a handle carries, read by what it can do: the rights are not reported on the wire.
+        let mut seen = 0;
+        for right in [dir::ENUMERATE, dir::DESCEND] {
+            let ok = match right {
+                dir::ENUMERATE => srv.read_dir(h, 0, &mut [0u8; 4096]).is_ok(),
+                _ => srv
+                    .open_dir(h, &named("deeper"), dir::PARENT_RIGHTS)
+                    .map(|d| srv.close(d).unwrap())
+                    .is_ok(),
+            };
+            if ok {
+                seen |= right;
+            }
+        }
+        seen
+    };
+
+    // Under a full grant the sentinel is everything, where a client used to have to say `ALL`.
+    let all = srv
+        .open_dir(root, &named("sub"), dir::PARENT_RIGHTS)
+        .unwrap();
+    assert_eq!(held(&mut srv, all), dir::ENUMERATE | dir::DESCEND);
+
+    // Under a narrowed grant, `ALL` is refused and the sentinel is not.
+    let narrow = srv
+        .open_dir(root, &named("sub"), dir::ENUMERATE | dir::DESCEND)
+        .unwrap();
+    assert_eq!(
+        errno(srv.open_dir(narrow, &named("deeper"), dir::ALL)),
+        Some(EPERM)
+    );
+    let child = srv
+        .open_dir(narrow, &named("deeper"), dir::PARENT_RIGHTS)
+        .unwrap();
+    // `deeper` was reached with exactly the narrowed rights: it can list and cannot read.
+    assert!(srv.read_dir(child, 0, &mut [0u8; 4096]).is_ok());
+    assert_eq!(errno(srv.open_file_at(child, &named("leaf"))), Some(ENOENT));
+    // A path takes it at every hop.
+    let deep = srv
+        .open_dir(root, &named("sub/deeper"), dir::PARENT_RIGHTS)
+        .unwrap();
+    assert!(srv.open_file_at(deep, &named("leaf")).is_ok());
+    let deep_narrow = srv
+        .open_dir(narrow, &named("deeper"), dir::PARENT_RIGHTS)
+        .unwrap();
+    assert_eq!(
+        errno(srv.open_file_at(deep_narrow, &named("leaf"))),
+        Some(ENOENT)
+    );
+
+    // MKDIR takes it too, and gets the parent's rights back: listable here, since `narrow` can
+    // create only if it carries CREATE, which it does not.
+    assert_eq!(
+        errno(srv.make_dir(narrow, &named("made"), dir::PARENT_RIGHTS)),
+        Some(EROFS)
+    );
+    let creator = srv
+        .open_dir(
+            root,
+            &named("sub"),
+            dir::CREATE | dir::DESCEND | dir::ENUMERATE,
+        )
+        .unwrap();
+    let made = srv
+        .make_dir(creator, &named("made"), dir::PARENT_RIGHTS)
+        .unwrap();
+    assert!(srv.read_dir(made, 0, &mut [0u8; 4096]).is_ok());
+    assert_eq!(
+        errno(srv.make_dir(made, &named("x"), dir::ALL)),
+        Some(EPERM)
+    );
+
+    // A word that only has bit 63 among others is not the sentinel and widens nothing.
+    assert_eq!(
+        errno(srv.open_dir(narrow, &named("deeper"), dir::PARENT_RIGHTS | dir::ALL)),
+        Some(EPERM)
+    );
+}
+
 /// **A badge the server has no window for reaches nothing** (milestone 726 (an unknown badge fails closed in subtree_scope), calef's ruling of
 /// 2026-10-03). A nonzero badge at or past `CLIENT_WINDOWS` used to fold onto badge 0 and carry
 /// the endpoint's whole authority; now `admit` refuses it `EBADF`, and badge 0 stays open.

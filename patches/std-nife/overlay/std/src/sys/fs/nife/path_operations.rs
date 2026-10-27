@@ -336,13 +336,9 @@ impl DirBuilder {
         let mut page = page();
         let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::dir::CREATE | fsproto::dir::DESCEND)?;
         page.put(name.as_bytes());
-        // **The second word asks for rights on the child, and asking for too much is a refusal
-        // rather than an attenuation.** The server intersects the request with the parent's rights
-        // and answers `EPERM` if the result is smaller than what was asked (§47's monotonicity is
-        // the intersection; the refusal is it telling the truth about it). A PAL cannot know what
-        // its own directory capability carries, so it must ask for the *minimum the operation
-        // needs* or it breaks under every narrowed grant. `create_dir` needs nothing from the
-        // handle it gets back, because it closes it.
+        // The second word asks for rights on the child. `create_dir` needs nothing from the handle
+        // it gets back, because it closes it, so it asks for none. A caller that kept the handle
+        // would send `fsproto::dir::PARENT_RIGHTS` (§98) rather than guess a mask.
         let handle = request(proto::req(proto::MKDIR, at.0, name.len() as u64), 0)?;
         let _ = request(proto::req(proto::CLOSE, handle, 0), 0);
         Ok(())
