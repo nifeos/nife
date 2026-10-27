@@ -31,7 +31,8 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const EXTRA_STACK_PAGES: usize = 3;
 
 /// The most mappings one spawn makes: every work page, every register page, and the stack.
-const MAXIMUM_MAPS: usize = WORK_PAGES as usize + MAXIMUM_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
+const MAXIMUM_MAPS: usize =
+    WORK_PAGES as usize + MAXIMUM_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
 
 /// What [`start`] hands back.
 pub(crate) struct Wiring {
