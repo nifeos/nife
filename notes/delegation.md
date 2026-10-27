@@ -15,7 +15,7 @@ endpoint, and that is the operation that makes the model composable by the proce
 
 The delegation path reuses the endpoints we already had. Two new methods:
 
-- `SEND_CAP(channel, cap_slot, rights, data)`: pass the capability in `cap_slot`, narrowed to
+- `SEND_CAP(channel, capability_slot, rights, data)`: pass the capability in `capability_slot`, narrowed to
   `rights`, plus one data word, over `channel`. Blocks until a receiver takes it, like `SEND`.
 - `RECEIVE_CAP(channel)`: receive a data word and, if one was delegated, a capability. The capability
   lands in a free slot of the *receiver's own* capability table, chosen by the kernel, and `RECEIVE_CAP` returns

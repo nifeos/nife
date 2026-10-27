@@ -66,7 +66,7 @@ crossed. It proves the test is wired to the real root handle; it does not demons
 
 The aarch64 falsifications map the kernel's own memory EL0-readable, one flag at one call site, and
 the tests watch the hardware refuse. That defect cannot be booted on RISC-V. `crates/paging`'s Sv39
-encoder turns `CAP_USER` into the `U` bit. S-mode access to a `U` page faults unless `sstatus.SUM` is
+encoder turns `ACCESS_USER` into the `U` bit. S-mode access to a `U` page faults unless `sstatus.SUM` is
 set, which this kernel sets only inside a test helper. A kernel that marked its own `.rodata`
 user-readable there would not be a kernel userspace can read. It would be a kernel that cannot read
 itself, dead before the first test. So the RISC-V evidence is against the software walk instead, and

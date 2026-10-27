@@ -48,7 +48,9 @@ pub const COMMAND: u64 = 0x04;
 pub const CLASS_REVISION: u64 = 0x08;
 pub const HEADER_TYPE: u64 = 0x0e;
 pub const BAR0: u64 = 0x10;
-pub const CAP_PTR: u64 = 0x34;
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `CAP_PTR` under the capability ruling of 2026-10-06 (UTC).
+pub const CAPABILITIES_POINTER: u64 = 0x34;
 pub const INTERRUPT_PIN: u64 = 0x3d;
 
 /// **Header type 1: a PCI-to-PCI bridge**, which is what a PCIe root port and every switch port
@@ -86,7 +88,7 @@ pub const CMD_MEMORY_SPACE: u16 = 1 << 1;
 pub const CMD_BUS_MASTER: u16 = 1 << 2;
 
 /// Status register bit 4: this function has a capability list.
-const STATUS_CAP_LIST: u16 = 1 << 4;
+const STATUS_CAPABILITIES_LIST: u16 = 1 << 4;
 
 /// virtio's PCI vendor id, and the modern virtio-blk device id (0x1040 + device type 2).
 pub const VIRTIO_VENDOR: u16 = 0x1af4;
@@ -423,17 +425,29 @@ pub fn read_bars(
 }
 
 /// What each virtio vendor capability describes (virtio spec 4.1.4: `cfg_type`).
-pub const VIRTIO_CAP_COMMON: u8 = 1;
-pub const VIRTIO_CAP_NOTIFY: u8 = 2;
-pub const VIRTIO_CAP_ISR: u8 = 3;
-pub const VIRTIO_CAP_DEVICE: u8 = 4;
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `VIRTIO_CAP_COMMON` under the capability ruling of 2026-10-06 (UTC).
+pub const VIRTIO_CAPABILITY_COMMON: u8 = 1;
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `VIRTIO_CAP_NOTIFY` under the capability ruling of 2026-10-06 (UTC).
+pub const VIRTIO_CAPABILITY_NOTIFY: u8 = 2;
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `VIRTIO_CAP_ISR` under the capability ruling of 2026-10-06 (UTC).
+pub const VIRTIO_CAPABILITY_ISR: u8 = 3;
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `VIRTIO_CAP_DEVICE` under the capability ruling of 2026-10-06 (UTC).
+pub const VIRTIO_CAPABILITY_DEVICE: u8 = 4;
 
 /// A virtio vendor capability, decoded: which register block it names, and where that block
 /// lives as (BAR index, offset into the BAR, length). `notify_off_multiplier` is meaningful only
 /// for the notify capability (the doorbell for queue N is at
 /// `offset + queue_notify_off * multiplier`).
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `VirtioCap` under the capability ruling of 2026-10-06 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VirtioCap {
+pub struct VirtioCapability {
     pub cfg_type: u8,
     pub bar: u8,
     pub offset: u32,
@@ -443,38 +457,41 @@ pub struct VirtioCap {
 
 /// Walk the capability list and call `f` for each **virtio vendor capability** (cap id 0x09).
 /// The list is a linked list in config space: status bit 4 says one exists, 0x34 points at the
-/// first entry, each entry is `{cap_id: u8, next: u8, ...}`. Bounded at 64 hops so a cycle in a
+/// first entry, each entry is `{capability_id: u8, next: u8, ...}`. Bounded at 64 hops so a cycle in a
 /// hostile or broken device terminates instead of hanging the walk.
-pub fn virtio_caps(
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `virtio_caps` under the capability ruling of 2026-10-06 (UTC).
+pub fn virtio_capabilities(
     bdf: Bdf,
     read32: &mut dyn FnMut(Bdf, u64) -> u32,
-    f: &mut dyn FnMut(VirtioCap),
+    f: &mut dyn FnMut(VirtioCapability),
 ) {
-    const CAP_ID_VENDOR: u8 = 0x09;
+    const CAPABILITY_ID_VENDOR: u8 = 0x09;
 
     let status = (read32(bdf, COMMAND) >> 16) as u16;
-    if status & STATUS_CAP_LIST == 0 {
+    if status & STATUS_CAPABILITIES_LIST == 0 {
         return;
     }
-    let mut at = (read32(bdf, CAP_PTR) & 0xfc) as u64;
+    let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
     for _ in 0..64 {
         if at == 0 {
             return;
         }
         let head = read32(bdf, at);
-        let cap_id = (head & 0xff) as u8;
+        let capability_id = (head & 0xff) as u8;
         let next = ((head >> 8) & 0xfc) as u64;
-        if cap_id == CAP_ID_VENDOR {
+        if capability_id == CAPABILITY_ID_VENDOR {
             // struct virtio_pci_cap: u8 id, next, cap_len, cfg_type; u8 bar; 3 pad; u32 offset,
             // length; the notify capability carries one extra u32 after that.
             let cfg_type = ((head >> 24) & 0xff) as u8;
             let bar = (read32(bdf, at + 4) & 0xff) as u8;
-            f(VirtioCap {
+            f(VirtioCapability {
                 cfg_type,
                 bar,
                 offset: read32(bdf, at + 8),
                 length: read32(bdf, at + 12),
-                notify_off_multiplier: if cfg_type == VIRTIO_CAP_NOTIFY {
+                notify_off_multiplier: if cfg_type == VIRTIO_CAPABILITY_NOTIFY {
                     read32(bdf, at + 16)
                 } else {
                     0
@@ -495,11 +512,17 @@ pub fn virtio_caps(
 /// deciding property is not the count: it is that neither of them consults a board-specific
 /// interrupt routing table, because the *device* is told where to deliver. See
 /// `kernel/src/pci.rs` and design/roadmap/0215-x86-64-pci-interrupt-routing.md.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `MsixCap` under the capability ruling of 2026-10-06 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct MsixCap {
+pub struct MsixCapability {
     /// Where the capability structure starts in config space, so [`MESSAGE_CONTROL`] can be
     /// written to enable the function's MSI-X.
-    pub cap_offset: u64,
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+    /// `cap_offset` under the capability ruling of 2026-10-06 (UTC).
+    pub capability_offset: u64,
     /// How many table entries the function has. At least 1, at most 2048, by the field's own
     /// encoding (it holds the count minus one in eleven bits).
     pub table_size: u16,
@@ -516,10 +539,16 @@ pub struct MsixCap {
 }
 
 /// The MSI-X capability id in a config-space capability list.
-pub const CAP_ID_MSIX: u8 = 0x11;
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `CAP_ID_MSIX` under the capability ruling of 2026-10-06 (UTC).
+pub const CAPABILITY_ID_MSIX: u8 = 0x11;
 
 /// The MSI capability id in a config-space capability list.
-pub const CAP_ID_MSI: u8 = 0x05;
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `CAP_ID_MSI` under the capability ruling of 2026-10-06 (UTC).
+pub const CAPABILITY_ID_MSI: u8 = 0x05;
 
 /// MSI Message Control bit 0: **MSI Enable**.
 pub const MSI_ENABLE: u16 = 1 << 0;
@@ -531,47 +560,56 @@ pub const MSI_64_BIT: u16 = 1 << 7;
 /// A function's **MSI capability** (PCI 3.0 section 6.8.1), decoded: where it is, and where its
 /// message data register sits, which depends on whether the address is 64-bit.
 ///
-/// **Why this exists beside [`MsixCap`]** (milestone 242 (USB host and HID)): some functions have
+/// **Why this exists beside [`MsixCapability`]** (milestone 242 (USB host and HID)): some functions have
 /// MSI and no MSI-X, and the one that made it matter is the xHCI on an Intel PCH, which is the USB
 /// controller on xenon. MSI keeps its address and data in config space rather than in a BAR, so a
 /// driver mapped every page of its BAR still cannot reach them.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `MsiCap` under the capability ruling of 2026-10-06 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct MsiCap {
+pub struct MsiCapability {
     /// Where the capability starts in config space.
-    pub cap_offset: u64,
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+    /// `cap_offset` under the capability ruling of 2026-10-06 (UTC).
+    pub capability_offset: u64,
     /// Whether the message address is 64 bits.
     pub is_64: bool,
 }
 
-impl MsiCap {
+impl MsiCapability {
     /// Config-space offset of the message address's low dword.
     pub const fn address_low(&self) -> u64 {
-        self.cap_offset + 4
+        self.capability_offset + 4
     }
 
     /// Config-space offset of the message data word: 8 past the capability for a 32-bit
     /// address, 12 for a 64-bit one.
     pub const fn data(&self) -> u64 {
-        self.cap_offset + if self.is_64 { 12 } else { 8 }
+        self.capability_offset + if self.is_64 { 12 } else { 8 }
     }
 }
 
-/// Find the **MSI capability** of `bdf`, or `None`. The same bounded walk as [`msix_cap`].
-pub fn msi_cap(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<MsiCap> {
+/// Find the **MSI capability** of `bdf`, or `None`. The same bounded walk as [`msix_capability`].
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `msi_cap` under the capability ruling of 2026-10-06 (UTC).
+pub fn msi_capability(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<MsiCapability> {
     let status = (read32(bdf, COMMAND) >> 16) as u16;
-    if status & STATUS_CAP_LIST == 0 {
+    if status & STATUS_CAPABILITIES_LIST == 0 {
         return None;
     }
-    let mut at = (read32(bdf, CAP_PTR) & 0xfc) as u64;
+    let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
     for _ in 0..64 {
         if at == 0 {
             return None;
         }
         let head = read32(bdf, at);
-        if (head & 0xff) as u8 == CAP_ID_MSI {
+        if (head & 0xff) as u8 == CAPABILITY_ID_MSI {
             let control = (head >> 16) as u16;
-            return Some(MsiCap {
-                cap_offset: at,
+            return Some(MsiCapability {
+                capability_offset: at,
                 is_64: control & MSI_64_BIT != 0,
             });
         }
@@ -615,7 +653,7 @@ pub const VIRTIO_MSIX_NO_VECTOR: u16 = 0xffff;
 /// The kernel's enumerator writes whatever pair the machine hands it and understands neither.
 ///
 /// Name: provisional (milestone 215 (a PCI function's interrupt reaches nothing)), with
-/// [`MsixCap`] and [`msix_cap`]: calef names public items.
+/// [`MsixCapability`] and [`msix_capability`]: calef names public items.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MsiTarget {
     /// The address the device writes to. 64-bit, written to the entry's low two dwords.
@@ -626,26 +664,32 @@ pub struct MsiTarget {
 
 /// Find the **MSI-X capability** of `bdf`, or `None` if the function has none.
 ///
-/// Same walk as [`virtio_caps`], and bounded the same way (64 hops), for the same reason: the
+/// Same walk as [`virtio_capabilities`], and bounded the same way (64 hops), for the same reason: the
 /// list is a device-supplied linked list, so a broken or hostile function must terminate the walk
 /// rather than hang the kernel that is enumerating it.
-pub fn msix_cap(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<MsixCap> {
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
+/// `msix_cap` under the capability ruling of 2026-10-06 (UTC).
+pub fn msix_capability(
+    bdf: Bdf,
+    read32: &mut dyn FnMut(Bdf, u64) -> u32,
+) -> Option<MsixCapability> {
     let status = (read32(bdf, COMMAND) >> 16) as u16;
-    if status & STATUS_CAP_LIST == 0 {
+    if status & STATUS_CAPABILITIES_LIST == 0 {
         return None;
     }
-    let mut at = (read32(bdf, CAP_PTR) & 0xfc) as u64;
+    let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
     for _ in 0..64 {
         if at == 0 {
             return None;
         }
         let head = read32(bdf, at);
-        if (head & 0xff) as u8 == CAP_ID_MSIX {
+        if (head & 0xff) as u8 == CAPABILITY_ID_MSIX {
             let control = (head >> 16) as u16;
             let table = read32(bdf, at + 4);
             let pba = read32(bdf, at + 8);
-            return Some(MsixCap {
-                cap_offset: at,
+            return Some(MsixCapability {
+                capability_offset: at,
                 // Bits 10:0 hold the count MINUS ONE, so a one-entry table reads as zero and the
                 // maximum 2048-entry table reads as 0x7ff. Reading it as the count itself gives a
                 // table one short of the truth on every device, and zero entries on a device that
@@ -810,7 +854,7 @@ mod verification {
             func: kani::any(),
         };
         let mut calls = 0u32;
-        virtio_caps(bdf, &mut |_, _| kani::any(), &mut |_| calls += 1);
+        virtio_capabilities(bdf, &mut |_, _| kani::any(), &mut |_| calls += 1);
         assert!(calls <= 64);
     }
 
@@ -828,10 +872,10 @@ mod verification {
             dev: kani::any(),
             func: kani::any(),
         };
-        if let Some(cap) = msix_cap(bdf, &mut |_, _| kani::any()) {
-            assert!(cap.table_size >= 1 && cap.table_size <= 2048);
-            assert!(cap.table_bar < 8);
-            assert!(cap.table_offset % 8 == 0);
+        if let Some(capability) = msix_capability(bdf, &mut |_, _| kani::any()) {
+            assert!(capability.table_size >= 1 && capability.table_size <= 2048);
+            assert!(capability.table_bar < 8);
+            assert!(capability.table_offset % 8 == 0);
         }
     }
 

@@ -10,8 +10,8 @@
 //! ```
 
 use crate::{
-    CAP_DEVICE, CAP_GLOBAL, CAP_KERNEL_EXEC, CAP_USER, CAP_USER_EXEC, CAP_WRITE, CAP_WRITE_COMBINE,
-    Flags, PageFormat, PageSize,
+    ACCESS_DEVICE, ACCESS_GLOBAL, ACCESS_KERNEL_EXEC, ACCESS_USER, ACCESS_USER_EXEC, ACCESS_WRITE,
+    ACCESS_WRITE_COMBINE, Flags, PageFormat, PageSize,
 };
 
 /// **What the eight PAT entries mean**, as `arch::x86_64::initialize` programs `IA32_PAT` on every core.
@@ -141,30 +141,30 @@ impl PageFormat for Ia32e {
     }
 
     fn leaf_flags(entry: u64) -> Flags {
-        let mut caps = 0;
+        let mut capabilities = 0;
         if entry & RW != 0 {
-            caps |= CAP_WRITE;
+            capabilities |= ACCESS_WRITE;
         }
         if entry & US != 0 {
-            caps |= CAP_USER;
+            capabilities |= ACCESS_USER;
         }
         if entry & XD == 0 {
             if entry & US != 0 {
-                caps |= CAP_USER_EXEC;
+                capabilities |= ACCESS_USER_EXEC;
             } else if entry & SW_KERNEL_EXEC != 0 {
-                caps |= CAP_KERNEL_EXEC;
+                capabilities |= ACCESS_KERNEL_EXEC;
             }
         }
         if entry & G != 0 {
-            caps |= CAP_GLOBAL;
+            capabilities |= ACCESS_GLOBAL;
         }
         if entry & SW_DEVICE != 0 {
-            caps |= CAP_DEVICE;
+            capabilities |= ACCESS_DEVICE;
             if entry & PCD == 0 {
-                caps |= CAP_WRITE_COMBINE;
+                capabilities |= ACCESS_WRITE_COMBINE;
             }
         }
-        Flags::from_caps(caps)
+        Flags::from_access(capabilities)
     }
 
     /// A PD entry (2 MiB) or a PDPT entry (1 GiB) with `PS` set, and otherwise the page leaf's
@@ -259,11 +259,11 @@ impl PageFormat for Vtd {
 
     /// The only two facts a second-level leaf carries: read (always, once present) and write.
     fn leaf_flags(entry: u64) -> Flags {
-        let mut caps = 0;
+        let mut capabilities = 0;
         if entry & VTD_W != 0 {
-            caps |= CAP_WRITE;
+            capabilities |= ACCESS_WRITE;
         }
-        Flags::from_caps(caps)
+        Flags::from_access(capabilities)
     }
 
     /// **Pages only.** VT-d has second-level superpages (bit 7, `SP`), but whether this unit
@@ -356,11 +356,11 @@ impl PageFormat for AmdVi {
     }
 
     fn leaf_flags(entry: u64) -> Flags {
-        let mut caps = 0;
+        let mut capabilities = 0;
         if entry & AMD_VI_IW != 0 {
-            caps |= CAP_WRITE;
+            capabilities |= ACCESS_WRITE;
         }
-        Flags::from_caps(caps)
+        Flags::from_access(capabilities)
     }
 
     /// **Pages only**, the same call [`Vtd`] makes and for the same reason: a DMA domain is a few
@@ -644,7 +644,7 @@ mod tests {
     }
 
     /// **The domain builder's only flags, `Flags::user_data`, round-trips on what VT-d actually
-    /// has to say: writable.** `CAP_USER` has no VT-d encoding (see [`Vtd`]'s own doc) and is not
+    /// has to say: writable.** `ACCESS_USER` has no VT-d encoding (see [`Vtd`]'s own doc) and is not
     /// expected back.
     #[test]
     fn a_vtd_leaf_is_present_and_writable_for_user_data() {

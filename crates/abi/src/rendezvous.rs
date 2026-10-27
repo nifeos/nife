@@ -22,8 +22,8 @@ pub const SEND: u64 = 0;
 ///   reads as that error to a wrapper that checks the sign (notes/abi/method-contracts.md).
 pub const RECEIVE: u64 = 1;
 
-/// `invoke(cap, SEND_CAP, cap_slot, rights, w0)` -> 0. **Delegate a capability.** Passes the
-/// capability in the sender's `cap_slot`, narrowed to `rights` (see [`crate::rights`]), plus one
+/// `invoke(cap, SEND_CAP, capability_slot, rights, w0)` -> 0. **Delegate a capability.** Passes the
+/// capability in the sender's `capability_slot`, narrowed to `rights` (see [`crate::rights`]), plus one
 /// data word, over this endpoint; blocks until a receiver takes it. The endpoint capability needs
 /// `WRITE` (you may send here), and the *delegated* capability needs `GRANT` (you were trusted to
 /// pass it on). `rights` may only narrow what the sender holds, never widen it. This is the

@@ -207,7 +207,7 @@ pub enum Error {
 ///
 /// The word is a `u64` (milestone 754 (the capability table grows to 64 slots), calef's ruling A on
 /// #1608, 2026-10-04, UTC), so [`CapabilityTable::new`] asserts `N <= 64` at compile time and
-/// `kernel/src/cap.rs` asserts it again beside `CAPABILITY_TABLE_SLOTS`. Growing past 64 is a
+/// `kernel/src/capability.rs` asserts it again beside `CAPABILITY_TABLE_SLOTS`. Growing past 64 is a
 /// wider word or a second one; `design/roadmap/0778-capability-tables-sized-per-process.md` is the
 /// question to answer first.
 ///
@@ -317,13 +317,13 @@ mod storage {
             self.free == Self::ALL_FREE
         }
 
-        /// **Door one: put `cap` in `slot`**, occupied or not. `None` if `slot` is out of range;
+        /// **Door one: put `capability` in `slot`**, occupied or not. `None` if `slot` is out of range;
         /// otherwise whether it was empty before. Clears the slot's free bit, and if the slot was
         /// empty, counts the growth and raises the high-water mark.
-        pub(super) fn fill(&mut self, slot: usize, cap: Cap<O>) -> Option<bool> {
+        pub(super) fn fill(&mut self, slot: usize, capability: Cap<O>) -> Option<bool> {
             let s = self.slots.get_mut(slot)?;
             let was_empty = s.is_none();
-            *s = Some(cap);
+            *s = Some(capability);
             self.free &= !(1u64 << slot);
             if was_empty {
                 // Wrapping, because the wrap cannot happen and this is on every reply-capability
@@ -344,10 +344,10 @@ mod storage {
         /// the loss. `peak` is untouched: a mark that fell when the table drained would report
         /// what a boot holds, not what it reached.
         pub(super) fn empty(&mut self, slot: usize) -> Option<Cap<O>> {
-            let cap = self.slots.get_mut(slot)?.take()?;
+            let capability = self.slots.get_mut(slot)?.take()?;
             self.free |= 1u64 << slot;
             self.used -= 1;
-            Some(cap)
+            Some(capability)
         }
 
         /// How many slots are occupied right now.
@@ -392,19 +392,19 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// is deliberate: **"you may not" and "there is nothing there" are different answers**, and
     /// the second one leaks less.
     pub fn get_with(&self, slot: u64, needed: Rights) -> Result<Cap<O>, Error> {
-        let cap = self.get(slot)?;
-        if !cap.rights.allows(needed) {
+        let capability = self.get(slot)?;
+        if !capability.rights.allows(needed) {
             return Err(Error::CannotWiden);
         }
-        Ok(cap)
+        Ok(capability)
     }
 
     /// Put a capability in the first free slot. Used at spawn, to hand a process its world, and
     /// on every `CALL` for the one-shot Reply, which is why it is one `trailing_zeros` and not a
     /// scan (see the free-slot word's own doc).
-    pub fn insert(&mut self, cap: Cap<O>) -> Result<u64, Error> {
+    pub fn insert(&mut self, capability: Cap<O>) -> Result<u64, Error> {
         let slot = self.first_free().ok_or(Error::NoFreeSlot)?;
-        self.fill(slot, cap);
+        self.fill(slot, capability);
         Ok(slot as u64)
     }
 
@@ -425,20 +425,21 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// child's supervision rendezvous in the reserved fault slot (abi's `FAULT_EP_SLOT`) rather than
     /// wherever first-free would fall, and refusing an occupied slot keeps that reservation honest:
     /// two things must never share the slot the kernel reads at `START`.
-    pub fn insert_at(&mut self, slot: u64, cap: Cap<O>) -> Result<u64, Error> {
+    pub fn insert_at(&mut self, slot: u64, capability: Cap<O>) -> Result<u64, Error> {
         if slot >= N as u64 {
             return Err(Error::NoSuchSlot);
         }
         if self.slot(slot as usize).is_some() {
             return Err(Error::NoFreeSlot);
         }
-        self.fill(slot as usize, cap);
+        self.fill(slot as usize, capability);
         Ok(slot)
     }
 
     /// Put a capability in a specific slot, replacing whatever was there.
-    pub fn put(&mut self, slot: u64, cap: Cap<O>) -> Result<(), Error> {
-        self.fill(slot as usize, cap).ok_or(Error::NoSuchSlot)?;
+    pub fn put(&mut self, slot: u64, capability: Cap<O>) -> Result<(), Error> {
+        self.fill(slot as usize, capability)
+            .ok_or(Error::NoSuchSlot)?;
         Ok(())
     }
 
@@ -643,20 +644,20 @@ mod verification {
                 .filter(|&i| cs.slot(i).is_none())
                 .fold(0, |m, i| m | (1 << i))
         }
-        let cap = || Cap {
+        let capability = || Cap {
             object: kani::any(),
             rights: Rights(kani::any()),
         };
         let mut cs = any_small_capability_table();
         assert_eq!(cs.free_mask(), empties(&cs), "wrong after put");
 
-        let _ = cs.insert(cap());
+        let _ = cs.insert(capability());
         assert_eq!(cs.free_mask(), empties(&cs), "wrong after insert");
 
         let _ = cs.delete(kani::any());
         assert_eq!(cs.free_mask(), empties(&cs), "wrong after delete");
 
-        let _ = cs.insert_at(kani::any(), cap());
+        let _ = cs.insert_at(kani::any(), capability());
         assert_eq!(cs.free_mask(), empties(&cs), "wrong after insert_at");
 
         let _ = cs.derive(kani::any(), kani::any(), Rights(kani::any()));
