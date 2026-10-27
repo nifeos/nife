@@ -191,7 +191,7 @@ impl<R: Registers> Host<R> {
         }
         let depth = match queue_depth {
             Some(d) if d > 0 => d,
-            _ => registers::fifoth_rx_watermark(id.fifoth) + 1,
+            _ => registers::fifoth_receive_watermark(id.fifoth) + 1,
         };
         Ok((
             Host {
@@ -308,7 +308,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     fn update_clock(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CMD, UPDATE_CLOCK);
         if self.wait(COMMAND_DEADLINE_US, |registers| {
-            registers.read(registers::CMD) & registers::CMD_START == 0
+            registers.read(registers::CMD) & registers::CMD_START_CMD == 0
         }) {
             Ok(())
         } else {
@@ -332,7 +332,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         self.update_clock()?;
         self.registers.write(
             registers::CLKENA,
-            registers::CLKENA_ENABLE | registers::CLKENA_LOW_POWER,
+            registers::CLKENA_CCLK_ENABLE | registers::CLKENA_CCLK_LOW_POWER,
         );
         self.update_clock()?;
         Ok(card_clock(self.base_hz, divider))
@@ -386,25 +386,26 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 self.internal_direct_memory_access_start()?;
             }
         }
-        self.registers.write(registers::RINTSTS, registers::INT_ALL);
+        self.registers
+            .write(registers::RINTSTS, registers::RINTSTS_ALL);
         self.registers.write(registers::CMDARG, command.argument);
         self.registers.write(registers::CMD, command.word());
         if !self.wait(COMMAND_DEADLINE_US, |registers| {
-            registers.read(registers::CMD) & registers::CMD_START == 0
+            registers.read(registers::CMD) & registers::CMD_START_CMD == 0
         }) {
             return Err(Error::CommandNotTaken(command.index));
         }
         let mut status = 0;
         if !self.wait(COMMAND_DEADLINE_US, |registers| {
             status = registers.read(registers::RINTSTS);
-            status & registers::INT_CD != 0
+            status & registers::RINTSTS_CD != 0
         }) {
             return Err(Error::CommandTimeout(command.index, status));
         }
-        if status & registers::INT_RTO != 0 {
+        if status & registers::RINTSTS_RTO != 0 {
             return Err(Error::NoResponse(command.index));
         }
-        if status & (registers::INT_RCRC | registers::INT_RE) != 0 {
+        if status & (registers::RINTSTS_RCRC | registers::RINTSTS_RE) != 0 {
             return Err(Error::BadResponse(command.index, status));
         }
         Ok(if command.response.is_long() {
@@ -467,7 +468,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         while done < buffer.len() {
             let (status, rint) = self.wait_queue(
                 command.index,
-                registers::INT_RXDR,
+                registers::RINTSTS_RXDR,
                 (buffer.len() - done) as u32,
             )?;
             let n = queue_step(status, self.depth, false, (buffer.len() - done) as u32) as usize;
@@ -476,7 +477,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             }
             done += n;
             self.registers
-                .write(registers::RINTSTS, rint & registers::INT_RXDR);
+                .write(registers::RINTSTS, rint & registers::RINTSTS_RXDR);
         }
         self.finish(command)?;
         Ok(resp)
@@ -511,7 +512,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         while done < buffer.len() {
             let (status, rint) = self.wait_queue(
                 command.index,
-                registers::INT_TXDR,
+                registers::RINTSTS_TXDR,
                 (buffer.len() - done) as u32,
             )?;
             let n = queue_step(status, self.depth, true, (buffer.len() - done) as u32) as usize;
@@ -521,7 +522,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             }
             done += n;
             self.registers
-                .write(registers::RINTSTS, rint & registers::INT_TXDR);
+                .write(registers::RINTSTS, rint & registers::RINTSTS_TXDR);
         }
         self.finish(command)?;
         self.wait_not_busy()?;
@@ -534,19 +535,19 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let mut rint = 0;
         let mut status = 0;
         let depth = self.depth;
-        let write = want == registers::INT_TXDR;
+        let write = want == registers::RINTSTS_TXDR;
         let ok = self.wait(DATA_DEADLINE_US, |registers| {
             rint = registers.read(registers::RINTSTS);
-            if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
+            if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
                 return true;
             }
             status = registers.read(registers::STATUS);
             // Something to move: the controller's request, or (at the tail of a read, below the
             // watermark) words sitting in the FIFO after the transfer is over.
             rint & want != 0 && queue_step(status, depth, write, owed) > 0
-                || rint & registers::INT_DTO != 0 && queue_step(status, depth, write, owed) > 0
+                || rint & registers::RINTSTS_DTO != 0 && queue_step(status, depth, write, owed) > 0
         });
-        if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
+        if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
             return Err(Error::Data(index, rint));
         }
         if !ok {
@@ -559,15 +560,15 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     fn finish(&mut self, command: &Command) -> Result<(), Error> {
         let mut rint = 0;
         let want = match command.data {
-            Some(d) if d.blocks > 1 => registers::INT_DTO | registers::INT_ACD,
-            _ => registers::INT_DTO,
+            Some(d) if d.blocks > 1 => registers::RINTSTS_DTO | registers::RINTSTS_ACD,
+            _ => registers::RINTSTS_DTO,
         };
         let ok = self.wait(DATA_DEADLINE_US, |registers| {
             rint = registers.read(registers::RINTSTS);
             rint & want == want
-                || rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0
+                || rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0
         });
-        if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
+        if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
             return Err(Error::Data(command.index, rint));
         }
         if !ok {
@@ -642,11 +643,12 @@ mod tests {
     /// Runs `f` on a worker and fails if it has not returned in ten seconds. A wait whose deadline
     /// never fires spins forever, and this turns that into a named failure rather than a hung test.
     fn within_ten_seconds<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T {
-        let (tx, rx) = mpsc::channel();
+        let (sender, receiver) = mpsc::channel();
         std::thread::spawn(move || {
-            let _ = tx.send(f());
+            let _ = sender.send(f());
         });
-        rx.recv_timeout(Duration::from_secs(10))
+        receiver
+            .recv_timeout(Duration::from_secs(10))
             .expect("the driver neither returned nor gave up: a deadline never fired")
     }
 
@@ -662,7 +664,7 @@ mod tests {
         h.registers().write(registers::CTRL, firmware);
         h.registers().write(
             registers::CARDTHRCTL,
-            512 << 16 | registers::CARDTHRCTL_READ_ENABLE,
+            512 << 16 | registers::CARDTHRCTL_RDTHREN,
         );
         h.registers().writes.clear();
         h.reset().unwrap();
@@ -767,7 +769,7 @@ mod tests {
         h.command(&Command::new(0, 0, Response::None)).unwrap();
         assert!(matches!(
             h.command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7)),
-            Err(Error::BadResponse(SEND_IF_COND, s)) if s & registers::INT_RCRC != 0
+            Err(Error::BadResponse(SEND_IF_COND, s)) if s & registers::RINTSTS_RCRC != 0
         ));
     }
 
@@ -882,7 +884,7 @@ mod tests {
         let start = h.registers().now_us();
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &[0u8; 512]),
-            Err(IoError::Host(Error::Data(24, rint))) if rint & registers::INT_DCRC != 0
+            Err(IoError::Host(Error::Data(24, rint))) if rint & registers::RINTSTS_DCRC != 0
         ));
         assert!(h.registers().now_us() - start < DATA_DEADLINE_US);
     }
@@ -911,7 +913,7 @@ mod tests {
         let mut blocks = [0u8; 4 * 512];
         sd::read_blocks(&mut h, &card, 1, &mut blocks).unwrap();
         assert_ne!(
-            h.registers().peek(registers::RINTSTS) & registers::INT_ACD,
+            h.registers().peek(registers::RINTSTS) & registers::RINTSTS_ACD,
             0
         );
     }

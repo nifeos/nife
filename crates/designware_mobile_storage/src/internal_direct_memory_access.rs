@@ -259,10 +259,9 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let Some(bus) = self.direct_memory_access.as_ref().map(|d| d.bus) else {
             return Ok(());
         };
-        self.registers
-            .write(registers::BMOD, registers::BMOD_SOFTWARE_RESET);
+        self.registers.write(registers::BMOD, registers::BMOD_SWR);
         if !self.wait(COMMAND_DEADLINE_US, |registers| {
-            registers.read(registers::BMOD) & registers::BMOD_SOFTWARE_RESET == 0
+            registers.read(registers::BMOD) & registers::BMOD_SWR == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::BMOD)));
         }
@@ -278,10 +277,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             registers::CTRL,
             ctrl | registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE,
         );
-        self.registers.write(
-            registers::BMOD,
-            registers::BMOD_DMA_ENABLE | registers::BMOD_FIXED_BURST,
-        );
+        self.registers
+            .write(registers::BMOD, registers::BMOD_DE | registers::BMOD_FB);
         self.registers.write(registers::PLDMND, 1);
         Ok(())
     }
@@ -295,8 +292,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         count: u32,
     ) -> Result<(), Error> {
         let want = match command.data {
-            Some(d) if d.blocks > 1 => registers::INT_DTO | registers::INT_ACD,
-            _ => registers::INT_DTO,
+            Some(d) if d.blocks > 1 => registers::RINTSTS_DTO | registers::RINTSTS_ACD,
+            _ => registers::RINTSTS_DTO,
         };
         let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
             return Err(Error::BufferSize);
@@ -305,7 +302,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let mut start = self.registers.now_us();
         loop {
             let rint = self.registers.read(registers::RINTSTS);
-            if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
+            if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
                 return Err(Error::Data(command.index, rint));
             }
             let idsts = self.registers.read(registers::IDSTS);
@@ -336,8 +333,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// firmware's to keep. A reset that does not clear is reported with the `CTRL` word if that is
     /// the one held, else the `BMOD` word.
     fn internal_direct_memory_access_stop(&mut self) -> Result<(), Error> {
-        self.registers
-            .write(registers::BMOD, registers::BMOD_SOFTWARE_RESET);
+        self.registers.write(registers::BMOD, registers::BMOD_SWR);
         let ctrl = self.registers.read(registers::CTRL)
             & !(registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE);
         self.registers.write(
@@ -348,7 +344,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             registers.read(registers::CTRL)
                 & (registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET)
                 == 0
-                && registers.read(registers::BMOD) & registers::BMOD_SOFTWARE_RESET == 0
+                && registers.read(registers::BMOD) & registers::BMOD_SWR == 0
         });
         self.registers.write(registers::IDSTS, registers::IDSTS_ALL);
         self.registers
@@ -555,7 +551,7 @@ mod tests {
             ),
             (
                 |s| s.fail_next_read_crc = true,
-                |e| matches!(e, Error::Data(18, r) if r & registers::INT_DCRC != 0),
+                |e| matches!(e, Error::Data(18, r) if r & registers::RINTSTS_DCRC != 0),
             ),
         ];
         for (inject, expected) in cases {
@@ -573,7 +569,7 @@ mod tests {
             let direct_memory_access =
                 registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
             assert_eq!(sim.peek(registers::CTRL) & direct_memory_access, 0);
-            assert_eq!(sim.peek(registers::BMOD) & registers::BMOD_DMA_ENABLE, 0);
+            assert_eq!(sim.peek(registers::BMOD) & registers::BMOD_DE, 0);
             assert_eq!(sim.peek(registers::FIFOTH), registers::fifoth_for_pio(32));
             sim.stall_after = None;
             sim.bus_error_at = None;
@@ -600,20 +596,20 @@ mod tests {
         h.registers().stall_after = Some(512);
         h.registers().clock_step = 7;
         assert_ne!(DATA_DEADLINE_US % 7, 0);
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (sender, receiver) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let mut back = vec![0u8; 9 * 512];
             let r = sd::read_blocks(&mut h, &card, 60, &mut back);
-            let _ = tx.send((r, h.registers().peek(registers::BMOD)));
+            let _ = sender.send((r, h.registers().peek(registers::BMOD)));
         });
-        let (r, bmod) = rx
+        let (r, bmod) = receiver
             .recv_timeout(std::time::Duration::from_secs(10))
             .expect("the deadline never fired");
         assert!(matches!(
             r,
             Err(IoError::Host(Error::DataTimeout(18, _, 4608)))
         ));
-        assert_eq!(bmod & registers::BMOD_DMA_ENABLE, 0);
+        assert_eq!(bmod & registers::BMOD_DE, 0);
     }
 
     /// **The register contract of one transfer**, write by write, on a controller whose firmware
@@ -632,11 +628,11 @@ mod tests {
         sd::read_blocks(&mut h, &card, 7, &mut block).unwrap();
         let writes = &h.registers().writes;
         let from = |w: (u32, u32)| writes.iter().position(|&x| x == w).unwrap();
-        let armed = from((registers::BMOD, registers::BMOD_SOFTWARE_RESET));
+        let armed = from((registers::BMOD, registers::BMOD_SWR));
         assert_eq!(
             writes[armed..armed + 8],
             [
-                (registers::BMOD, registers::BMOD_SOFTWARE_RESET),
+                (registers::BMOD, registers::BMOD_SWR),
                 (
                     registers::FIFOTH,
                     registers::fifoth_for_direct_memory_access(32)
@@ -645,10 +641,7 @@ mod tests {
                 (registers::IDSTS, registers::IDSTS_ALL),
                 (registers::DBADDR, BASE as u32),
                 (registers::CTRL, firmware),
-                (
-                    registers::BMOD,
-                    registers::BMOD_DMA_ENABLE | registers::BMOD_FIXED_BURST
-                ),
+                (registers::BMOD, registers::BMOD_DE | registers::BMOD_FB),
                 (registers::PLDMND, 1),
             ]
         );
@@ -656,12 +649,12 @@ mod tests {
             + 1
             + writes[armed + 1..]
                 .iter()
-                .position(|&x| x == (registers::BMOD, registers::BMOD_SOFTWARE_RESET))
+                .position(|&x| x == (registers::BMOD, registers::BMOD_SWR))
                 .unwrap();
         assert_eq!(
             writes[stopped..stopped + 4],
             [
-                (registers::BMOD, registers::BMOD_SOFTWARE_RESET),
+                (registers::BMOD, registers::BMOD_SWR),
                 (
                     registers::CTRL,
                     1 << 8 | registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET
@@ -682,7 +675,7 @@ mod tests {
         let mut blocks = [0u8; 2 * 512];
         sd::read_blocks(&mut h, &card, 7, &mut blocks).unwrap();
         assert_ne!(
-            h.registers().peek(registers::RINTSTS) & registers::INT_ACD,
+            h.registers().peek(registers::RINTSTS) & registers::RINTSTS_ACD,
             0
         );
     }
@@ -698,11 +691,11 @@ mod tests {
         let cases: [(Hold, Word); 3] = [
             (
                 |s| s.bus_mode_resets_cleared = Some(0),
-                |w| w == registers::BMOD_SOFTWARE_RESET,
+                |w| w == registers::BMOD_SWR,
             ),
             (
                 |s| s.bus_mode_resets_cleared = Some(1),
-                |w| w == registers::BMOD_SOFTWARE_RESET,
+                |w| w == registers::BMOD_SWR,
             ),
             (
                 |s| s.control_resets_cleared = Some(1),
@@ -735,7 +728,7 @@ mod tests {
         sd::read_blocks(&mut h, &card, 2048, &mut reference).unwrap();
         let report = crate::bench::ReadReport {
             card,
-            mbr: None,
+            master_boot_record: None,
             partition_boot_signature: false,
             file_system_type: [0; 8],
             timed_from: 2048,

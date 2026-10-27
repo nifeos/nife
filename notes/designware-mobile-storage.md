@@ -90,10 +90,10 @@ from (notes/visionfive2.md). Three rules keep this driver from costing that card
 - **The first bench step cannot write.** `storage_bench` without `NIFE_STORAGE_BENCH_WRITE=scratch`
   compiles no write test at all, and `bench::read_only` sends no write command (a host test checks
   the command log).
-- **A write test lands only before the first partition.** `partition::Mbr::scratch` names at most
-  eight sectors, ending just before the first partition and starting no lower than sector 1. It
-  refuses a GPT disk, an empty table, or a partition at sector 1. A Kani harness proves that range
-  touches no partition for every possible table.
+- **A write test lands only before the first partition.** `partition::MasterBootRecord::scratch`
+  names at most eight sectors, ending just before the first partition and starting no lower than
+  sector 1. It refuses a GPT disk, an empty table, or a partition at sector 1. A Kani harness
+  proves that range touches no partition for every possible table.
 - **It puts back what it found.** The test reads the range first, writes a pattern, reads it back,
   writes the original back, and reads that back too. The eMMC socket is never written by this
   boot.
@@ -223,7 +223,7 @@ Each row's log and how it ran are in `bench/radon-<date>/`: `53-storage-write.lo
   and nothing else: no CRC error (`DCRC`), no start-bit or end-bit error, no read timeout
   (`DRTO`, `HTO`). `RXDR` is absent, but `Host::read` clears it after each batch it drains, so
   its absence does not say whether any words moved. The card answered and sent its block; the
-  FIFO's accounting between the card and the CPU broke. `FRUN` is in `INT_DATA_ERRORS`, so the
+  FIFO's accounting between the card and the CPU broke. `FRUN` is in `RINTSTS_DATA_ERR`, so the
   driver stopped there.
 - Slot 0: no eMMC answered `CMD1`, consistent with no module fitted.
 

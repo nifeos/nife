@@ -2,7 +2,7 @@ use crate::host::queue_step;
 use crate::internal_direct_memory_access::{
     DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for,
 };
-use crate::partition::{Entry, Mbr};
+use crate::partition::{Entry, MasterBootRecord};
 use crate::sd::in_range;
 
 /// No partition table makes the write test's range touch a partition or sector 0.
@@ -16,17 +16,17 @@ fn the_scratch_range_never_touches_a_partition_or_sector_zero() {
         start: kani::any(),
         sectors: kani::any(),
     };
-    let mbr = Mbr {
+    let master_boot_record = MasterBootRecord {
         entries: [entry(), entry(), entry(), entry()],
     };
     let want: u32 = kani::any();
-    if let Some((first, count)) = mbr.scratch(want) {
+    if let Some((first, count)) = master_boot_record.scratch(want) {
         assert!(first >= 1);
         assert!((1..=want).contains(&count));
         let k: u32 = kani::any();
         kani::assume(k < count);
         let sector = u64::from(first) + u64::from(k);
-        for e in &mbr.entries {
+        for e in &master_boot_record.entries {
             assert!(!e.contains(sector));
         }
     }

@@ -12,7 +12,7 @@ use crate::registers;
 /// `GO_IDLE_STATE`: every card back to idle.
 pub const GO_IDLE_STATE: u8 = 0;
 /// `SEND_OP_COND` (eMMC): negotiate voltage and wait for power-up.
-pub(crate) const MMC_SEND_OP_COND: u8 = 1;
+pub(crate) const SEND_OP_COND: u8 = 1;
 /// `ALL_SEND_CID`: the card's identity, 128 bits.
 pub(crate) const ALL_SEND_CID: u8 = 2;
 /// `SEND_RELATIVE_ADDR` (SD: the card picks one) or `SET_RELATIVE_ADDR` (eMMC: the host does).
@@ -43,7 +43,7 @@ pub(crate) const WRITE_MULTIPLE_BLOCK: u8 = 25;
 /// `APP_CMD`: the next command is application-specific (`ACMD`).
 pub(crate) const APP_CMD: u8 = 55;
 /// `ACMD6`, `SET_BUS_WIDTH`.
-pub(crate) const SD_SET_BUS_WIDTH: u8 = 6;
+pub(crate) const SET_BUS_WIDTH: u8 = 6;
 /// `ACMD41`, `SD_SEND_OP_COND`.
 pub(crate) const SD_SEND_OP_COND: u8 = 41;
 
@@ -150,26 +150,27 @@ impl Command {
     ///
     /// let w = Command::new(GO_IDLE_STATE, 0, Response::None).word();
     /// assert_eq!(w & 0x3f, 0);
-    /// assert_ne!(w & CMD_START, 0);
-    /// assert_ne!(w & CMD_SEND_INIT, 0);
+    /// assert_ne!(w & CMD_START_CMD, 0);
+    /// assert_ne!(w & CMD_SEND_INITIALIZATION, 0);
     /// assert_eq!(w & CMD_RESPONSE_EXPECT, 0);
     /// ```
     #[must_use]
     pub const fn word(&self) -> u32 {
-        let mut w = registers::CMD_START | registers::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
+        let mut w =
+            registers::CMD_START_CMD | registers::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
         if self.index == STOP_TRANSMISSION {
-            w |= registers::CMD_STOP_ABORT;
+            w |= registers::CMD_STOP_ABORT_CMD;
         } else if self.index != SEND_STATUS {
-            w |= registers::CMD_WAIT_PREVIOUS_DATA;
+            w |= registers::CMD_WAIT_PRVDATA_COMPLETE;
         }
         if self.index == GO_IDLE_STATE {
-            w |= registers::CMD_SEND_INIT;
+            w |= registers::CMD_SEND_INITIALIZATION;
         }
         if !matches!(self.response, Response::None) {
             w |= registers::CMD_RESPONSE_EXPECT;
         }
         if self.response.is_long() {
-            w |= registers::CMD_LONG_RESPONSE;
+            w |= registers::CMD_RESPONSE_LENGTH;
         }
         if self.response.checks_crc() {
             w |= registers::CMD_CHECK_RESPONSE_CRC;
@@ -177,7 +178,7 @@ impl Command {
         if let Some(d) = self.data {
             w |= registers::CMD_DATA_EXPECTED;
             if d.write {
-                w |= registers::CMD_WRITE;
+                w |= registers::CMD_WR;
             }
             if d.blocks > 1 {
                 w |= registers::CMD_SEND_AUTO_STOP;
@@ -188,8 +189,9 @@ impl Command {
 }
 
 /// The word that loads new clock settings into the card clock domain and sends nothing.
-pub(crate) const UPDATE_CLOCK: u32 =
-    registers::CMD_START | registers::CMD_WAIT_PREVIOUS_DATA | registers::CMD_UPDATE_CLOCK_ONLY;
+pub(crate) const UPDATE_CLOCK: u32 = registers::CMD_START_CMD
+    | registers::CMD_WAIT_PRVDATA_COMPLETE
+    | registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY;
 
 #[cfg(test)]
 mod tests {
@@ -201,11 +203,11 @@ mod tests {
         let w = Command::new(ALL_SEND_CID, 0, Response::R2).word();
         assert_eq!(
             w,
-            CMD_START
+            CMD_START_CMD
                 | CMD_USE_HOLD_REG
-                | CMD_WAIT_PREVIOUS_DATA
+                | CMD_WAIT_PRVDATA_COMPLETE
                 | CMD_RESPONSE_EXPECT
-                | CMD_LONG_RESPONSE
+                | CMD_RESPONSE_LENGTH
                 | CMD_CHECK_RESPONSE_CRC
                 | 2
         );
@@ -221,10 +223,10 @@ mod tests {
     #[test]
     fn status_and_stop_do_not_wait_behind_the_data_they_report_on() {
         let status = Command::new(SEND_STATUS, 1 << 16, Response::R1).word();
-        assert_eq!(status & CMD_WAIT_PREVIOUS_DATA, 0);
+        assert_eq!(status & CMD_WAIT_PRVDATA_COMPLETE, 0);
         let stop = Command::new(STOP_TRANSMISSION, 0, Response::R1b).word();
-        assert_eq!(stop & CMD_WAIT_PREVIOUS_DATA, 0);
-        assert_ne!(stop & CMD_STOP_ABORT, 0);
+        assert_eq!(stop & CMD_WAIT_PRVDATA_COMPLETE, 0);
+        assert_ne!(stop & CMD_STOP_ABORT_CMD, 0);
     }
 
     #[test]
@@ -239,10 +241,10 @@ mod tests {
         let r8 = Command::with_data(READ_MULTIPLE_BLOCK, 0, Response::R1, many).word();
         assert_eq!(r1 & CMD_SEND_AUTO_STOP, 0);
         assert_ne!(r8 & CMD_SEND_AUTO_STOP, 0);
-        assert_eq!(r8 & CMD_WRITE, 0);
+        assert_eq!(r8 & CMD_WR, 0);
         let w =
             Command::with_data(WRITE_BLOCK, 0, Response::R1, Data { write: true, ..one }).word();
-        assert_ne!(w & (CMD_WRITE | CMD_DATA_EXPECTED), 0);
+        assert_ne!(w & (CMD_WR | CMD_DATA_EXPECTED), 0);
     }
 
     /// Only R2 is 136 bits: a 48-bit response asked for as a long one would never complete.
@@ -257,7 +259,7 @@ mod tests {
         ] {
             assert!(!r.is_long(), "{r:?}");
             assert_eq!(
-                Command::new(SEND_STATUS, 0, r).word() & CMD_LONG_RESPONSE,
+                Command::new(SEND_STATUS, 0, r).word() & CMD_RESPONSE_LENGTH,
                 0
             );
         }
