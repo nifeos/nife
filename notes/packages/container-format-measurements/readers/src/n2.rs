@@ -1,7 +1,7 @@
 //! NIFEPKG2 as §307 (how long a name may be) rule 3 describes it: magic, three u16-length fields,
 //! count, reserved, then a walked table of (u16 name length, name, u32 offset, u32 len, 32-byte
 //! digest).
-pub const MAX_MEMBERS: usize = 64;
+pub const MAXIMUM_MEMBERS: usize = 64;
 pub const MAX_PATH: usize = 4096;
 #[derive(Clone, Copy)]
 pub struct Package<'a> { b: &'a [u8], count: usize, table: usize, id: [(usize, usize); 3] }
@@ -14,7 +14,7 @@ impl<'a> Package<'a> {
         if b.get(..8)? != b"NIFEPKG2" { return None; }
         let mut at = 8; let mut id = [(0, 0); 3];
         for f in &mut id { let n = u16_at(b, at)?; text(b, at + 2, n)?; *f = (at + 2, n); at += 2 + n; }
-        let count = u32_at(b, at)?; if count > MAX_MEMBERS { return None; }
+        let count = u32_at(b, at)?; if count > MAXIMUM_MEMBERS { return None; }
         let p = Package { b, count, table: at + 8, id };
         let mut e = p.table;
         for _ in 0..count { e = p.entry_at(e)?.1; }

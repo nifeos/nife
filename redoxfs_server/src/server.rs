@@ -154,11 +154,11 @@ impl<D: Disk> Server<D> {
         }
         self.clock += 1;
         let now = self.clock;
-        let node = self.change(|tx| {
-            if tx.find_node(parent, name).is_ok() {
+        let node = self.change(|transaction| {
+            if transaction.find_node(parent, name).is_ok() {
                 return Err(Error::new(EEXIST));
             }
-            tx.create_node(parent, name, Node::MODE_DIR | 0o755, now, 0)
+            transaction.create_node(parent, name, Node::MODE_DIR | 0o755, now, 0)
         })?;
         Ok(self.install(Entry::Dir(node.ptr(), granted)))
     }
@@ -180,7 +180,7 @@ impl<D: Disk> Server<D> {
         if let Some(listing) = self.memo.listing(ptr) {
             return Ok(encode_listing(listing, cursor, out));
         }
-        let listing = self.look(|tx| list(tx, ptr))?;
+        let listing = self.look(|transaction| list(transaction, ptr))?;
         let used = encode_listing(&listing, cursor, out);
         self.memo.keep_listing(ptr, listing);
         Ok(used)
@@ -196,13 +196,13 @@ impl<D: Disk> Server<D> {
         let ptr = self.file_at(handle, dir::READ, EBADF)?;
         if self.memo.file(ptr).is_none() && !self.memo.is_large(ptr) {
             // First read of this file since anything changed: a small one is read whole, once.
-            let body = self.look(|tx| {
-                let size = tx.read_tree(ptr)?.data().size();
+            let body = self.look(|transaction| {
+                let size = transaction.read_tree(ptr)?.data().size();
                 if !Memo::would_keep(size) {
                     return Ok(None);
                 }
                 let mut body = alloc::vec![0u8; size as usize];
-                let n = tx.read_node(ptr, 0, &mut body, 0, 0)?;
+                let n = transaction.read_node(ptr, 0, &mut body, 0, 0)?;
                 body.truncate(n);
                 Ok(Some(body))
             })?;
@@ -217,24 +217,26 @@ impl<D: Disk> Server<D> {
             buf[..n].copy_from_slice(&body[start..start + n]);
             return Ok(n);
         }
-        self.look(|tx| tx.read_node(ptr, offset, buf, 0, 0))
+        self.look(|transaction| transaction.read_node(ptr, offset, buf, 0, 0))
     }
 
     /// Write `data` to `handle` at `offset`, returning the count, and advance the logical clock so
     /// the node's mtime moves forward.
     ///
     /// [`dir::EROFS`] without [`dir::WRITE`]. `EFBIG` when `offset + data.len()` overflows or passes
-    /// [`MAX_FILE_END`], checked before the engine, which adds the two unchecked (found by the
+    /// [`MAXIMUM_FILE_END`], checked before the engine, which adds the two unchecked (found by the
     /// `redoxfs_server_session` fuzz target; notes/fs-server/the-core.md).
     pub fn write(&mut self, handle: u32, offset: u64, data: &[u8]) -> Result<usize> {
         let ptr = self.file_at(handle, dir::WRITE, EROFS)?;
         match offset.checked_add(data.len() as u64) {
-            Some(end) if end <= MAX_FILE_END => {}
+            Some(end) if end <= MAXIMUM_FILE_END => {}
             _ => return Err(Error::new(EFBIG)),
         }
         self.clock += 1;
         let now = self.clock;
-        self.change_file(ptr, |tx| tx.write_node(ptr, offset, data, now, 0))
+        self.change_file(ptr, |transaction| {
+            transaction.write_node(ptr, offset, data, now, 0)
+        })
     }
 
     /// The current size, in bytes, of the file a handle names. Allowed through any file handle: a
@@ -244,7 +246,7 @@ impl<D: Disk> Server<D> {
         if let Some(body) = self.memo.file(ptr) {
             return Ok(body.len() as u64);
         }
-        self.look(|tx| Ok(tx.read_tree(ptr)?.data().size()))
+        self.look(|transaction| Ok(transaction.read_tree(ptr)?.data().size()))
     }
 
     /// Create `name` under the bound directory and return a handle for it (milestone 31 phase 2).
@@ -270,14 +272,14 @@ impl<D: Disk> Server<D> {
         // one name cannot both be told they created it.
         self.clock += 1;
         let now = self.clock;
-        let ptr = self.change(|tx| {
-            if tx.find_node(parent, name).is_ok() {
+        let ptr = self.change(|transaction| {
+            if transaction.find_node(parent, name).is_ok() {
                 return Err(Error::new(EEXIST));
             }
-            let node = tx.create_node(parent, name, Node::MODE_FILE | 0o644, now, 0)?;
+            let node = transaction.create_node(parent, name, Node::MODE_FILE | 0o644, now, 0)?;
             // Registered as open exactly as `open_file_at` registers, and for its reason: a file
             // created and then unlinked with its handle still open is the temp-file idiom.
-            tx.on_open_node(node.ptr())?;
+            transaction.on_open_node(node.ptr())?;
             Ok(node.ptr())
         })?;
         Ok(self.install(Entry::File(ptr, rights.attenuate(dir::READ | dir::WRITE))))
@@ -286,7 +288,7 @@ impl<D: Disk> Server<D> {
     /// Set the size of the file a handle names to exactly `size` bytes (milestone 31 phase 2).
     /// Shrinking discards the tail and growing extends with zeroes, POSIX `ftruncate`, so a shorter
     /// write can replace a file's contents (§27). [`dir::EROFS`] without [`dir::WRITE`], `EFBIG`
-    /// past [`MAX_FILE_END`].
+    /// past [`MAXIMUM_FILE_END`].
     ///
     /// # BUGS
     ///
@@ -296,13 +298,15 @@ impl<D: Disk> Server<D> {
     pub fn truncate(&mut self, handle: u32, size: u64) -> Result<()> {
         // A truncate destroys a file as thoroughly as a write, so it takes the same right and word.
         let ptr = self.file_at(handle, dir::WRITE, EROFS)?;
-        // A file grown past the tree reads past it later; [`MAX_FILE_END`] has the defect.
-        if size > MAX_FILE_END {
+        // A file grown past the tree reads past it later; [`MAXIMUM_FILE_END`] has the defect.
+        if size > MAXIMUM_FILE_END {
             return Err(Error::new(EFBIG));
         }
         self.clock += 1;
         let now = self.clock;
-        self.change_file(ptr, |tx| tx.truncate_node(ptr, size, now, 0))
+        self.change_file(ptr, |transaction| {
+            transaction.truncate_node(ptr, size, now, 0)
+        })
     }
 
     /// Move `src` under the directory `src_dir` names to `dst` under the directory `dst_dir` names
@@ -328,8 +332,8 @@ impl<D: Disk> Server<D> {
             return Err(Error::new(EROFS));
         }
         let same_dir = src_parent.id() == dst_parent.id();
-        self.change(|tx| {
-            let node = tx.find_node(src_parent, src)?;
+        self.change(|transaction| {
+            let node = transaction.find_node(src_parent, src)?;
             if node.data().is_dir() && !same_dir {
                 return Err(Error::new(EINVAL));
             }
@@ -337,7 +341,7 @@ impl<D: Disk> Server<D> {
             // transaction: `rename_node` discards the freed id, and a leaked blob would pass to
             // the next node the engine gives that id.
             let mut replaced = None;
-            if let Ok(existing) = tx.find_node(dst_parent, dst) {
+            if let Ok(existing) = transaction.find_node(dst_parent, dst) {
                 // A no-op rename is a success, not a self-replacement: `remove_node` would take the
                 // only link and `link_node` would then have nothing to point at.
                 if existing.id() == node.id() {
@@ -354,10 +358,10 @@ impl<D: Disk> Server<D> {
                     replaced = Some(existing.id());
                 }
             }
-            tx.rename_node(src_parent, src, dst_parent, dst)?;
+            transaction.rename_node(src_parent, src, dst_parent, dst)?;
             // The source keeps its node, and so its attributes: the store keys on nodes, not paths.
             if let Some(id) = replaced {
-                purge_attrs(tx, id)?;
+                purge_attrs(transaction, id)?;
             }
             Ok(())
         })
@@ -382,9 +386,9 @@ impl<D: Disk> Server<D> {
         // `remove_node` checks the kind against the mode, so `EISDIR` is the engine's. It answers
         // `Some(id)` exactly when the last link went, when the attributes must go too, in this
         // transaction so a crash cannot leave them for the id's next node (DECISIONS §34).
-        self.change(|tx| {
-            if let Some(id) = tx.remove_node(parent, name, Node::MODE_FILE)? {
-                purge_attrs(tx, id)?;
+        self.change(|transaction| {
+            if let Some(id) = transaction.remove_node(parent, name, Node::MODE_FILE)? {
+                purge_attrs(transaction, id)?;
             }
             Ok(())
         })
@@ -409,9 +413,9 @@ impl<D: Disk> Server<D> {
         // `remove_node` answers `ENOTDIR` and `ENOTEMPTY` itself, inside this transaction; a check
         // out here could only disagree with it. A directory's attributes are purged as a file's
         // are ([`Server::unlink`]).
-        self.change(|tx| {
-            if let Some(id) = tx.remove_node(parent, name, Node::MODE_DIR)? {
-                purge_attrs(tx, id)?;
+        self.change(|transaction| {
+            if let Some(id) = transaction.remove_node(parent, name, Node::MODE_DIR)? {
+                purge_attrs(transaction, id)?;
             }
             Ok(())
         })
@@ -435,7 +439,7 @@ impl<D: Disk> Server<D> {
         if !rights.allows(dir::READ) {
             return Err(Error::new(ENOENT));
         }
-        let node = self.look(|tx| tx.find_node(parent, name))?;
+        let node = self.look(|transaction| transaction.find_node(parent, name))?;
         Ok(node.data().mtime().0)
     }
 
@@ -453,10 +457,10 @@ impl<D: Disk> Server<D> {
         }
         self.clock += 1;
         let now = self.clock;
-        self.change(|tx| {
-            let mut node = tx.find_node(parent, name)?;
+        self.change(|transaction| {
+            let mut node = transaction.find_node(parent, name)?;
             node.data_mut().set_mtime(now, 0);
-            tx.sync_tree(node)
+            transaction.sync_tree(node)
         })
     }
 
@@ -472,10 +476,10 @@ impl<D: Disk> Server<D> {
         if !rights.allows(dir::WRITE | dir::SETTIME) {
             return Err(Error::new(EROFS));
         }
-        self.change(|tx| {
-            let mut node = tx.find_node(parent, name)?;
+        self.change(|transaction| {
+            let mut node = transaction.find_node(parent, name)?;
             node.data_mut().set_mtime(seconds, 0);
-            tx.sync_tree(node)
+            transaction.sync_tree(node)
         })
     }
 
@@ -491,14 +495,14 @@ impl<D: Disk> Server<D> {
     /// `EBADF` without [`dir::READ`], as [`Server::read`] answers. `ENODATA` if the attribute is
     /// not set, the only error that means absence (notes/fs-server.md). `ERANGE` if `out` is
     /// shorter than the value, never a short read (DECISIONS §42); on the wire `out` is the shared
-    /// page, larger than [`xattr::MAX_VALUE`], so it cannot fire there.
+    /// page, larger than [`xattr::MAXIMUM_VALUE`], so it cannot fire there.
     pub fn get_xattr(&mut self, handle: u32, name: &[u8], out: &mut [u8]) -> Result<(u32, usize)> {
         if !xattr::is_valid_name(name) {
             return Err(Error::new(xattr::ERANGE));
         }
         let ptr = self.node_at(handle, dir::READ, EBADF)?;
-        self.look(|tx| {
-            let blob = read_attrs(tx, ptr.id())?;
+        self.look(|transaction| {
+            let blob = read_attrs(transaction, ptr.id())?;
             let (kind, value) = xattr::store::get(&blob, name).ok_or(Error::new(xattr::ENODATA))?;
             if out.len() < value.len() {
                 return Err(Error::new(xattr::ERANGE));
@@ -521,20 +525,20 @@ impl<D: Disk> Server<D> {
         if !xattr::is_valid_name(name) {
             return Err(Error::new(xattr::ERANGE));
         }
-        if value.len() > xattr::MAX_VALUE {
+        if value.len() > xattr::MAXIMUM_VALUE {
             return Err(Error::new(xattr::E2BIG));
         }
         let ptr = self.node_at(handle, dir::WRITE, EROFS)?;
         self.clock += 1;
         let now = self.clock;
-        self.change(|tx| {
-            let blob = read_attrs(tx, ptr.id())?;
+        self.change(|transaction| {
+            let blob = read_attrs(transaction, ptr.id())?;
             // Replacing can only shrink, so the old blob plus one whole new record is always enough
             // and `store::set` never has to refuse for want of room.
             let mut out =
                 alloc::vec![0u8; blob.len() + xattr::store::record_len(name.len(), value.len())];
             let n = xattr::store::set(&blob, name, kind, value, &mut out).map_err(Error::new)?;
-            write_attrs(tx, ptr.id(), &out[..n], now)
+            write_attrs(transaction, ptr.id(), &out[..n], now)
         })
     }
 
@@ -543,12 +547,12 @@ impl<D: Disk> Server<D> {
     /// `EBADF`.
     ///
     /// No cursor, unlike [`Server::read_dir`]: a complete listing fits one page by construction
-    /// ([`xattr::MAX_COUNT`]), so it cannot be observed half-changed the way a cursored directory
-    /// walk can.
+    /// ([`xattr::MAXIMUM_COUNT`]), so it cannot be observed half-changed the way a cursored
+    /// directory walk can.
     pub fn list_xattr(&mut self, handle: u32, out: &mut [u8]) -> Result<usize> {
         let ptr = self.node_at(handle, dir::READ, EBADF)?;
         self.fs
-            .tx(|tx| Ok(xattr::store::list(&read_attrs(tx, ptr.id())?, out)))
+            .tx(|transaction| Ok(xattr::store::list(&read_attrs(transaction, ptr.id())?, out)))
     }
 
     /// **Remove one extended attribute from the node `handle` names.** Needs [`dir::WRITE`],
@@ -561,11 +565,11 @@ impl<D: Disk> Server<D> {
         let ptr = self.node_at(handle, dir::WRITE, EROFS)?;
         self.clock += 1;
         let now = self.clock;
-        self.change(|tx| {
-            let blob = read_attrs(tx, ptr.id())?;
+        self.change(|transaction| {
+            let blob = read_attrs(transaction, ptr.id())?;
             let mut out = alloc::vec![0u8; blob.len()];
             let n = xattr::store::remove(&blob, name, &mut out).map_err(Error::new)?;
-            write_attrs(tx, ptr.id(), &out[..n], now)
+            write_attrs(transaction, ptr.id(), &out[..n], now)
         })
     }
 
@@ -606,7 +610,7 @@ impl<D: Disk> Server<D> {
                 Some(_) if self.fs.header.release.is_null() => {
                     self.fs.node_usages.remove(&ptr.id());
                 }
-                Some(_) => self.fs.tx(|tx| tx.on_close_node(ptr))?,
+                Some(_) => self.fs.tx(|transaction| transaction.on_close_node(ptr))?,
                 None => {}
             }
         }
@@ -829,7 +833,7 @@ impl<D: Disk> Server<D> {
             Some(Some(found)) => Ok(found),
             Some(None) => Err(Error::new(ENOENT)),
             None => {
-                let node = self.look(|tx| tx.find_node(parent, name))?;
+                let node = self.look(|transaction| transaction.find_node(parent, name))?;
                 let kind = kind_of(node.data());
                 self.memo.keep_found(parent, name, node.ptr(), kind);
                 Ok((node.ptr(), kind))

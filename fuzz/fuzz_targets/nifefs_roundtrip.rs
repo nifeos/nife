@@ -11,14 +11,14 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use nifefs::{Fs, MAX_FILES, NAME_LEN, image_size, write_image};
+use nifefs::{Fs, MAXIMUM_FILES, NAME_LEN, image_size, write_image};
 
 fuzz_target!(|files: Vec<(String, Vec<u8>)>| {
     // The writer's own limits, applied here so the target explores the accepted region rather than
     // re-testing the two rejections (`TooManyFiles`, `NameTooLong`) that the crate's unit tests
     // already pin by example. The interesting inputs are the ones that are *legal*, including the
     // awkward legal ones: an empty name, a zero-byte file, a name that is exactly NAME_LEN.
-    if files.len() > MAX_FILES {
+    if files.len() > MAXIMUM_FILES {
         return;
     }
     if files.iter().any(|(name, _)| name.len() > NAME_LEN) {

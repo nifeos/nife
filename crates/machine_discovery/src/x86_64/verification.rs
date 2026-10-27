@@ -60,7 +60,7 @@ fn a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer() {
         leaf0: [kani::any(), 0, 0, 0],
         leaf1_ecx: kani::any(),
         leaf7_0: [0, kani::any(), 0, 0],
-        extended_max_leaf: kani::any(),
+        extended_maximum_leaf: kani::any(),
         extended_leaf1_edx: kani::any(),
         extended_leaf7_edx: kani::any(),
         // One symbolic word repeated. The brand claim below is about whether the bytes were
@@ -69,7 +69,7 @@ fn a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer() {
     };
     let isa = Isa::decode(&w);
 
-    if w.extended_max_leaf < 0x8000_0001 {
+    if w.extended_maximum_leaf < 0x8000_0001 {
         assert!(!isa.features.contains(NX));
         assert!(!isa.features.contains(SYSCALL));
         // The two required rows both live in that leaf, so a part which does not answer it can
@@ -77,10 +77,10 @@ fn a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer() {
         // of the branch above it.
         assert!(isa.missing_requirements().any());
     }
-    if w.extended_max_leaf < 0x8000_0007 {
+    if w.extended_maximum_leaf < 0x8000_0007 {
         assert!(!isa.features.contains(INVARIANT_TSC));
     }
-    if w.extended_max_leaf < 0x8000_0004 {
+    if w.extended_maximum_leaf < 0x8000_0004 {
         // Not `brand_str`, which trims and validates: the claim is that nothing was copied.
         assert_eq!(isa.brand, [0u8; 48]);
     }

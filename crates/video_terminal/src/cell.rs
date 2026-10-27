@@ -59,7 +59,7 @@ impl Colour {
 ///
 /// Fourteen bytes: three [`Colour`]s (the underline's is optional and follows the foreground when
 /// absent), a byte of flags and a byte of underline style. A [`Cell`] is twenty bytes with a
-/// `char` beside it; the cost is priced where it lands, in [`MAX_CELLS`]'s doc.
+/// `char` beside it; the cost is priced where it lands, in [`MAXIMUM_CELLS`]'s doc.
 ///
 /// **Bold is a face, not a brightness.** SGR 1 draws `glyph_atlas::BOLD` and leaves the color as
 /// it was set, and SGR 3 draws `glyph_atlas::OBLIQUE`; both together draw `BOLD_OBLIQUE`. A
@@ -264,8 +264,8 @@ pub struct Cell {
 }
 
 // **Twenty bytes a cell, as a gate rather than a hope.** A `char` (four) beside an [`Attr`]
-// (fourteen, alignment one) pads to twenty. Every `Vt` holds `MAX_CELLS + SCROLLBACK_CELLS` of
-// these, so this number is what the memory cost in [`MAX_CELLS`]'s doc is computed from, and a
+// (fourteen, alignment one) pads to twenty. Every `Vt` holds `MAXIMUM_CELLS + SCROLLBACK_CELLS` of
+// these, so this number is what the memory cost in [`MAXIMUM_CELLS`]'s doc is computed from, and a
 // change that grew the cell again must fail here and be priced there.
 const _: () = assert!(core::mem::size_of::<Cell>() == 20);
 

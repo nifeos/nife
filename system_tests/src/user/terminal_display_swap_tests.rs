@@ -34,21 +34,21 @@ use crate::user::holding::Holding;
 
 /// `display_terminal`'s image is the largest, about 220 pages: its `Vt` is initialized to
 /// blank cells, which are not zero bytes, so the grid is in `.data` rather than `.bss`.
-const MAX_ELF_PAGES: usize = 256;
+const MAXIMUM_ELF_PAGES: usize = 256;
 /// Stack pages below the one `run` maps; `terminal_swap_tests`' constant, for its reason.
 const EXTRA_STACK_PAGES: usize = 7;
-const MAX_WINDOWS: usize = 3 * MAX_ELF_PAGES + EXTRA_STACK_PAGES;
+const MAXIMUM_WINDOWS: usize = 3 * MAXIMUM_ELF_PAGES + EXTRA_STACK_PAGES;
 /// The swap endpoint's slot in the supervisor, after the eight terminal objects.
 const SWAP_SLOT: u64 = 8;
 
 /// The supervisor's view of its three images, a static for `spawn`'s 1 KiB capture limit.
-static mut ELF_MAPS: [Mapping; MAX_WINDOWS] = [const {
+static mut ELF_MAPS: [Mapping; MAXIMUM_WINDOWS] = [const {
     Mapping {
         va: 0,
         phys: 0,
         flags: Flags::user_rodata(),
     }
-}; MAX_WINDOWS];
+}; MAXIMUM_WINDOWS];
 
 /// The engine the kernel runs beside the terminal, fed every byte the terminal is: what the screen
 /// and the blob must be. A static because a `Vt` is far past a kernel stack.
@@ -234,7 +234,7 @@ impl Rig {
         );
         let maps_p = &raw const ELF_MAPS;
         // SAFETY: written above, and read only by the supervisor's spawn below.
-        let maps: &'static [Mapping; MAX_WINDOWS] = unsafe { &*maps_p };
+        let maps: &'static [Mapping; MAXIMUM_WINDOWS] = unsafe { &*maps_p };
 
         let lengths = s::image_lengths(
             editor_image.len() as u64,
@@ -298,8 +298,8 @@ impl Rig {
 #[test_case]
 fn the_display_terminal_is_replaced_live_and_its_screen_and_history_survive() {
     // The kernel's display stand-in rather than the GPU: every `start_driver` takes a virtio slot
-    // for the rest of the boot (`kernel::virtio`'s `MAX_DEVICES`), and the pixels this test grades
-    // are the surface's, which the stand-in's frames hold as a driver's would.
+    // for the rest of the boot (`kernel::virtio`'s `MAXIMUM_DEVICES`), and the pixels this test
+    // grades are the surface's, which the stand-in's frames hold as a driver's would.
     let (display_ep, surface, display_region) = super::compositor_tests::kernel_display();
     let rig = Rig::start(display_ep, surface);
     let (swap, sink, sink_page) = (rig.swap, rig.sink, rig.sink_page);
@@ -429,11 +429,11 @@ fn a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_superviso
 fn copy_the_images_into_frames(images: [(&[u8], u64); 3], alloc: impl Fn() -> u64) -> usize {
     let maps_p = &raw mut ELF_MAPS;
     // SAFETY: this test is its only user, and the supervisor it is written for has not started.
-    let maps: &mut [Mapping; MAX_WINDOWS] = unsafe { &mut *maps_p };
+    let maps: &mut [Mapping; MAXIMUM_WINDOWS] = unsafe { &mut *maps_p };
     let mut windows = 0;
     for (image, va) in images {
         assert!(
-            image.len().div_ceil(FRAME_SIZE as usize) <= MAX_ELF_PAGES,
+            image.len().div_ceil(FRAME_SIZE as usize) <= MAXIMUM_ELF_PAGES,
             "an image of {} bytes outgrew the test's mapping",
             image.len()
         );

@@ -224,10 +224,10 @@ impl<const N: usize> RegionTable<N> {
     /// **How many regions are live right now**, roots and split children together.
     ///
     /// The kernel reads this under its lock after every insert, to keep the high-water mark the
-    /// test suite's closing `regions:` line prints (`memory_region::MAX_REGIONS` has the ledger).
-    /// An observer about the table rather than about any region, so it names nothing a caller
-    /// could act on after the answer stopped being true, which is the argument `script/lint`'s
-    /// surface pin asks of a new `&self` method.
+    /// test suite's closing `regions:` line prints (`memory_region::MAXIMUM_REGIONS` has the
+    /// ledger). An observer about the table rather than about any region, so it names nothing a
+    /// caller could act on after the answer stopped being true, which is the argument
+    /// `script/lint`'s surface pin asks of a new `&self` method.
     ///
     /// Name: provisional, from milestone 601 (the region table prints its peak). It is
     /// `generational_table`'s own spelling of the same question.

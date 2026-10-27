@@ -112,11 +112,11 @@ pub const THROUGHPUT_NAME: &str = "throughput";
 /// constant written twice (CLAUDE.md rule 7).
 pub mod throughput {
     /// **The transfer unit: the whole file channel, the most one `filesystem_contract` request can
-    /// carry.** It is [`filesystem_contract::fs::TRANSFER_MAX`], so this phase measures the
+    /// carry.** It is [`filesystem_contract::fs::TRANSFER_MAXIMUM`], so this phase measures the
     /// protocol's own ceiling and the tuning lives at that one constant. A figure here is how fast
     /// this architecture moves one request's worth, so a comparison against a system whose client
     /// passes a differently sized buffer compares two different things; see notes/benchmarks.md.
-    pub const UNIT: usize = filesystem_contract::fs::TRANSFER_MAX;
+    pub const UNIT: usize = filesystem_contract::fs::TRANSFER_MAXIMUM;
 
     /// **Bytes moved per phase, held constant across transfer sizes on purpose.** 1 MiB, bounded by
     /// the 16 MiB fixture image rather than chosen for statistics: the write phases fit beside
@@ -543,7 +543,7 @@ pub mod walk {
     /// The byte region.
     pub const SIZES: &str = "sizes";
     /// Its files and their sizes. 4 KiB is one page; 256 KiB is sixteen of the file channel's
-    /// largest requests ([`filesystem_contract::fs::TRANSFER_MAX`] at the time of writing).
+    /// largest requests ([`filesystem_contract::fs::TRANSFER_MAXIMUM`] at the time of writing).
     pub const SIZE_FILES: [(&str, usize); 3] =
         [("s4k", 4096), ("s64k", 65_536), ("s256k", 262_144)];
     /// What every file in [`CHAIN`], [`WIDE`] and [`NARROW`] holds. Sixteen bytes, so a small
@@ -1041,7 +1041,7 @@ pub mod attrs {
     /// on-device half of "deletion is in the same transaction as the file's": a leaked blob is
     /// not wasted space, it is somebody else's metadata on a file that never asked for it.
     pub const GONE_AFTER_UNLINK: u64 = 1 << 4;
-    /// A value past [`filesystem_contract::xattr::MAX_VALUE`] was refused with
+    /// A value past [`filesystem_contract::xattr::MAXIMUM_VALUE`] was refused with
     /// [`filesystem_contract::xattr::E2BIG`], loudly, rather than stored short (DECISIONS §42 (a filesystem declares what it offers and must be truthful)).
     pub const OVERSIZE_REFUSED: u64 = 1 << 5;
     /// The store's directory could not be opened, created, or descended into. A client that

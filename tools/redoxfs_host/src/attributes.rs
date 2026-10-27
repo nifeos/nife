@@ -27,9 +27,9 @@ pub struct Attr {
 /// quietly recover a backup without its metadata and report success. That is the same false negative
 /// the FS server's own `find_store` refuses to make (notes/fs-server.md).
 pub(crate) fn find_store<D: Disk>(
-    tx: &mut Transaction<D>,
+    transaction: &mut Transaction<D>,
 ) -> Result<Option<TreePtr<Node>>, String> {
-    match tx.find_node(TreePtr::root(), xattr::STORE_DIR) {
+    match transaction.find_node(TreePtr::root(), xattr::STORE_DIR) {
         Ok(node) => Ok(Some(node.ptr())),
         Err(e) if e.errno == syscall::error::ENOENT => Ok(None),
         Err(e) => Err(format!(
@@ -41,10 +41,11 @@ pub(crate) fn find_store<D: Disk>(
 
 /// One node's raw attribute blob, empty if it has none.
 ///
-/// A blob longer than [`xattr::store::MAX_BYTES`] is refused rather than clipped: the layer cannot
-/// have written it, so reading its first 53 KB would be reading a file this format does not describe.
+/// A blob longer than [`xattr::store::MAXIMUM_BYTES`] is refused rather than clipped: the layer
+/// cannot have written it, so reading its first 53 KB would be reading a file this format does not
+/// describe.
 pub(crate) fn attr_blob<D: Disk>(
-    tx: &mut Transaction<D>,
+    transaction: &mut Transaction<D>,
     store: Option<TreePtr<Node>>,
     node_id: u32,
 ) -> Result<Vec<u8>, String> {
@@ -56,20 +57,20 @@ pub(crate) fn attr_blob<D: Disk>(
     // future change there cannot silently alias two nodes onto one blob.
     let name = std::str::from_utf8(&file)
         .map_err(|_| format!("node {node_id:#010x}: its store file name is not UTF-8"))?;
-    let node = match tx.find_node(dir_ptr, name) {
+    let node = match transaction.find_node(dir_ptr, name) {
         Ok(node) => node,
         Err(e) if e.errno == syscall::error::ENOENT => return Ok(Vec::new()),
         Err(e) => return Err(format!("{}/{name}: {e}", xattr::STORE_DIR)),
     };
     let size = node.data().size() as usize;
-    if size > xattr::store::MAX_BYTES {
+    if size > xattr::store::MAXIMUM_BYTES {
         return Err(format!(
             "{}/{name}: {size} bytes, more than the {} an attribute blob can be; not read",
             xattr::STORE_DIR,
-            xattr::store::MAX_BYTES,
+            xattr::store::MAXIMUM_BYTES,
         ));
     }
-    read_all(tx, &node)
+    read_all(transaction, &node)
 }
 
 /// Decode a blob into attributes, plus the number of **trailing bytes that are not a record**.
@@ -104,17 +105,17 @@ pub(crate) fn decode_attrs(blob: &[u8]) -> (Vec<Attr>, usize) {
 pub fn attrs(volume: Volume, path: &str) -> Result<Vec<Attr>, String> {
     let comps = components(path)?;
     let mut fs = open_ro(volume)?;
-    fs.tx(|tx| Ok(attrs_tx(tx, &comps)))
+    fs.tx(|transaction| Ok(attrs_transaction(transaction, &comps)))
         .map_err(|e| format!("reading the attributes of {path} failed: {e}"))?
 }
 
-pub(crate) fn attrs_tx<D: Disk>(
-    tx: &mut Transaction<D>,
+pub(crate) fn attrs_transaction<D: Disk>(
+    transaction: &mut Transaction<D>,
     comps: &[&str],
 ) -> Result<Vec<Attr>, String> {
-    let node = resolve(tx, comps)?;
-    let store = find_store(tx)?;
-    let blob = attr_blob(tx, store, node.ptr().id())?;
+    let node = resolve(transaction, comps)?;
+    let store = find_store(transaction)?;
+    let blob = attr_blob(transaction, store, node.ptr().id())?;
     let (attrs, unread) = decode_attrs(&blob);
     if unread > 0 {
         eprintln!(

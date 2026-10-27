@@ -92,7 +92,7 @@ def non_blank(text):
 #     which is a linkage declaration and not a block anybody reasons about (zero in the tree today,
 #     subtracted anyway so the day one lands it does not read as unsafe code);
 #   - a thread-safety claim is an `unsafe impl` of Send or Sync SPECIFICALLY, which is a different
-#     animal from an `unsafe impl` of an unsafe trait (`GlobalAlloc`, `intrusive_fifo::Node`): the
+#     animal from an `unsafe impl` of an unsafe trait (`GlobalAlloc`, `intrusive_queue::Node`): the
 #     trait is unsafe there because its own contract is, while `unsafe impl Send for T` is a
 #     hand-written assertion that the compiler is wrong about T, and it is the most consequential
 #     unsafe in this tree. The `[^{;]*?` tail keeps it inside one item header so a body cannot
@@ -105,7 +105,7 @@ UNSAFE_BLOCK = re.compile(r'\bunsafe\s*\{')
 UNSAFE_EXTERN = re.compile(r'\bunsafe\s+extern\s+"[^"]*"\s*\{')
 THREAD_SAFETY = re.compile(r'\bunsafe\s+impl\b[^{;]*?\b(?:Send|Sync)\s+for\b')
 # Every `unsafe impl`, so the census can report the OTHER population too: an `unsafe impl` of an
-# unsafe trait (`GlobalAlloc`, `intrusive_fifo::Node`, `ns16550::RegisterSpace`). Counted as all
+# unsafe trait (`GlobalAlloc`, `intrusive_queue::Node`, `ns16550::RegisterSpace`). Counted as all
 # impls minus the thread-safety claims above, so the two numbers partition one population and
 # cannot overlap (milestone 139 (drive the unsafe count down), 2026-10-07 UTC).
 UNSAFE_IMPL = re.compile(r'\bunsafe\s+impl\b')

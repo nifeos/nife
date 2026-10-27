@@ -20,7 +20,7 @@ index 85f631331..3da0e3a5b 100644
  pub unsafe fn install(id: usize, percpu: u64) {
      for k in 0..VECTORS.len() {
 -        let ist_top = span(id, k).1 - TOP_RESERVE;
-+        let ist_top = span((id + 1) % MAX_CPUS, k).1 - TOP_RESERVE;
++        let ist_top = span((id + 1) % MAXIMUM_CPUS, k).1 - TOP_RESERVE;
          // SAFETY: `ist_top` is 16 bytes below the top of this core's own stack `k`, inside the slot,
          // 8-aligned, and nothing has run on the stack yet (no IST vector can be delivered before
          // the IDT this core loads after this call).

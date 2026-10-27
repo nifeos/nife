@@ -196,7 +196,7 @@ fn record_workload() -> Recorded {
     // puts the files in, and the server only ever opens it.
     let mut fs = FileSystem::create(BlockDisk(MemIo(blank_image(IMAGE_MIB))), None, 0, 0)
         .expect("mkfs the fixture");
-    fs.tx(|tx| {
+    fs.tx(|transaction| {
         for (name, body) in [
             ("motd", &b"redoxfs served this file to an EL0 client\n"[..]),
             (
@@ -204,10 +204,10 @@ fn record_workload() -> Recorded {
                 &b"(placeholder overwritten by the crash test)"[..],
             ),
         ] {
-            let ptr = tx
+            let ptr = transaction
                 .create_node(TreePtr::root(), name, Node::MODE_FILE | 0o644, 0, 0)?
                 .ptr();
-            tx.write_node(ptr, 0, body, 0, 0)?;
+            transaction.write_node(ptr, 0, body, 0, 0)?;
         }
         Ok(())
     })

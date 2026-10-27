@@ -237,7 +237,7 @@ pub fn write_capabilities(
             Ok(e) => {
                 // Narrowed by the line's verb, as the progenitor narrows it reading the same word
                 // off the argv (milestone 809 (the package client becomes a program), option V2).
-                let mut verb = [0u8; grant_plan::MAX_VERB];
+                let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
                 let verb = grant_plan::verb_of(stage, &mut verb);
                 let m = grant_plan::narrow_by_verb(&e.program.manifest(), e.program.verbs(), verb);
                 out(b"  ");
@@ -375,7 +375,7 @@ fn write_file_and_directory_rows(
             out,
         );
         out(b"endpoint  dir      ");
-        let mut buf = [0u8; nav::RENDER_MAX];
+        let mut buf = [0u8; nav::RENDER_MAXIMUM];
         let n = holdings.place(g.which, &g.directory).render(&mut buf);
         out(&buf[..n]);
         if let grant_plan::ProgramArgumentDeclaration::Words(w) = m.program_argument {

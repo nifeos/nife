@@ -13,9 +13,9 @@
 //! - **slot 2**: the file-service endpoint, `READ`. Clients `CALL` here; this is the directory
 //!   capability, bound in the server to the image's root (phase 2). A client without it opens
 //!   nothing.
-//! - **[`BLK_PAGE`]**: the base of the block channel shared with the block server, `blk::TRANSFER_MAX`
-//!   bytes of contiguous pages (the block buffer).
-//! - **[`FILE_PAGE`]**: the base of the file channel shared with the client, `fs::TRANSFER_MAX`
+//! - **[`BLK_PAGE`]**: the base of the block channel shared with the block server,
+//!   `blk::TRANSFER_MAXIMUM` bytes of contiguous pages (the block buffer).
+//! - **[`FILE_PAGE`]**: the base of the file channel shared with the client, `fs::TRANSFER_MAXIMUM`
 //!   bytes of contiguous pages (a name on open, file bytes on read/write).
 
 //! # BUGS
@@ -54,16 +54,16 @@ const READY: u64 = 3;
 /// Where the kernel maps the two shared regions: the block channel, a service window on the
 /// address-space map (`crates/address_space_map`), above the heap band and below the image band.
 ///
-/// [`BLK_PAGE`] is `blk::TRANSFER_MAX` bytes wide rather than one page (milestone 138 step 4) and
-/// [`FILE_PAGE`] is `fs::TRANSFER_MAX` bytes wide rather than one page (step 3); [`FILE_PAGE`] sits
-/// above [`BLK_PAGE`] by exactly `blk::TRANSFER_MAX` so growing either region stays inside the 8 MiB
-/// nothing else this process maps comes within.
+/// [`BLK_PAGE`] is `blk::TRANSFER_MAXIMUM` bytes wide rather than one page (milestone 138 step 4)
+/// and [`FILE_PAGE`] is `fs::TRANSFER_MAXIMUM` bytes wide rather than one page (step 3);
+/// [`FILE_PAGE`] sits above [`BLK_PAGE`] by exactly `blk::TRANSFER_MAXIMUM` so growing either
+/// region stays inside the 8 MiB nothing else this process maps comes within.
 const BLK_PAGE: u64 = address_space_map::service_window(0x5000_0000);
-const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAX as u64;
+const FILE_PAGE: u64 = BLK_PAGE + blk::TRANSFER_MAXIMUM as u64;
 
 /// One filesystem block, in bytes: the unit [`BLK_PAGE`] is carved into. The transfer unit for
 /// [`fs::READDIR`] and every other verb whose reply the server itself sizes; a [`fs::READ`] or
-/// [`fs::WRITE`] moves up to `fs::TRANSFER_MAX` of these through [`FILE_PAGE`] instead.
+/// [`fs::WRITE`] moves up to `fs::TRANSFER_MAXIMUM` of these through [`FILE_PAGE`] instead.
 const BLOCK: usize = blk::BLOCK_SIZE;
 
 /// The heap cap. RedoxFS keeps a compress buffer sized by `RECORD_SIZE` (128 KiB, still the ceiling after milestone
@@ -71,7 +71,7 @@ const BLOCK: usize = blk::BLOCK_SIZE;
 /// rewrite), block buffers, and small
 /// tree structures; a few MiB is comfortable for the small images phase 2 serves. The untyped the
 /// kernel grants is the real ceiling.
-const HEAP_MAX: u64 = 8 * 1024 * 1024;
+const HEAP_MAXIMUM: u64 = 8 * 1024 * 1024;
 
 /// How many single blocks [`redoxfs_server::CachedDisk`] holds (milestone 138 (close the read
 /// gap) step 2, resized by milestone 606 (a directory walk costs what it does on Linux)). The number
@@ -159,15 +159,15 @@ impl IpcDisk {
 
     /// Copy `n` bytes out of the shared block region (a completed read landed there, at its start).
     fn from_page(dst: &mut [u8]) {
-        // SAFETY: BLK_PAGE is a mapped, writable region of exactly blk::TRANSFER_MAX bytes; `dst`
-        // is no larger (every caller passes at most blk::TRANSFER_BLOCKS * BLOCK).
+        // SAFETY: BLK_PAGE is a mapped, writable region of exactly blk::TRANSFER_MAXIMUM bytes;
+        // `dst` is no larger (every caller passes at most blk::TRANSFER_BLOCKS * BLOCK).
         unsafe {
             core::ptr::copy_nonoverlapping(BLK_PAGE as *const u8, dst.as_mut_ptr(), dst.len())
         }
     }
 
     /// Copy `src` into the shared block region (to be written), at its start. `src` is at most
-    /// `blk::TRANSFER_MAX` bytes.
+    /// `blk::TRANSFER_MAXIMUM` bytes.
     fn to_page(src: &[u8]) {
         // SAFETY: as above; `src` is no larger than the region.
         unsafe { core::ptr::copy_nonoverlapping(src.as_ptr(), BLK_PAGE as *mut u8, src.len()) }
@@ -320,7 +320,7 @@ impl IpcDisk {
 /// from [`FILE_PAGE`] and writes read results back into it.
 ///
 /// # Safety
-/// `len` must be at most [`fs::TRANSFER_MAX`]. [`FILE_PAGE`] is the base of that many mapped,
+/// `len` must be at most [`fs::TRANSFER_MAXIMUM`]. [`FILE_PAGE`] is the base of that many mapped,
 /// writable, contiguous bytes shared with the clients bound to this endpoint, and every call site
 /// clamps before this runs. The returned slice is `'static` and aliases that region, so no two live
 /// slices from here may overlap in a way that outlives one request.
@@ -329,7 +329,7 @@ unsafe fn file_page(base: u64, len: usize) -> &'static mut [u8] {
 }
 
 /// The base of the client channel a request's badge names (milestone 599). Window `badge` sits
-/// `badge * fs::TRANSFER_MAX` above [`FILE_PAGE`]; badge 0 is window 0, the unbadged default. A
+/// `badge * fs::TRANSFER_MAXIMUM` above [`FILE_PAGE`]; badge 0 is window 0, the unbadged default. A
 /// badge at or past [`fs::CLIENT_WINDOWS`] would point outside the mapped region, so it is clamped
 /// to window 0 rather than trusted: the kernel only ever delivers a badge this server's own wiring
 /// stamped, so an out-of-range one is a wiring bug, and folding it onto window 0 fails loudly (two
@@ -341,7 +341,7 @@ fn window_base(badge: u64) -> u64 {
     } else {
         0
     };
-    FILE_PAGE + w * fs::TRANSFER_MAX as u64
+    FILE_PAGE + w * fs::TRANSFER_MAXIMUM as u64
 }
 
 /// Answer a caller through its one-shot Reply capability, then return to serving. `None` is a
@@ -383,9 +383,9 @@ fn serve(server: &mut Server<CachedDisk<IpcDisk>>) -> ! {
         // `CALL` server tells a Reply from a delegation)), so a `SEND_CAP`'d capability is deleted.
         let req = receive_request(FILE);
         let reply_slot = req.delivered.into_reply();
-        // SAFETY: `fs::TRANSFER_MAX` is exactly the window's mapped length, and this slice is the
-        // only one taken from it until the request is answered.
-        let window = unsafe { file_page(window_base(req.badge), fs::TRANSFER_MAX) };
+        // SAFETY: `fs::TRANSFER_MAXIMUM` is exactly the window's mapped length, and this slice is
+        // the only one taken from it until the request is answered.
+        let window = unsafe { file_page(window_base(req.badge), fs::TRANSFER_MAXIMUM) };
         let (r0, r1) = server.handle(req.badge, req.w0, req.w1, window, &mut IpcEdges);
         reply(reply_slot, r0, r1);
     }
@@ -402,7 +402,11 @@ fn start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) ->
         inject::AFTER_BLOCKS.store(crash_after_blocks, Ordering::Relaxed);
         inject::TEAR_BYTES.store(crash_tear_bytes, Ordering::Relaxed);
     }
-    HEAP.initialize(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.initialize(
+        MEMORY_REGION,
+        memory_region_heap::DEFAULT_BASE,
+        HEAP_MAXIMUM,
+    );
 
     // A bad image, or a block server that never answers correctly, faults here; the server never
     // creates. CachedDisk holds the tree spine's single-block reads (milestone 138 step 2).

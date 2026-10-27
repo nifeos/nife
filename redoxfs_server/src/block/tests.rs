@@ -176,11 +176,11 @@ fn a_multi_block_read_bypasses_the_cache() {
 fn cached_disk_reads_the_same_bytes_as_uncached() {
     let mut fs = FileSystem::create(BlockDisk(VecIo(vec![0u8; 16 * 1024 * 1024])), None, 0, 0)
         .expect("mkfs through BlockDisk");
-    fs.tx(|tx| {
-        let ptr = tx
+    fs.tx(|transaction| {
+        let ptr = transaction
             .create_node(TreePtr::root(), "f", Node::MODE_FILE | 0o644, 0, 0)?
             .ptr();
-        tx.write_node(ptr, 0, b"cached-disk-content", 0, 0)?;
+        transaction.write_node(ptr, 0, b"cached-disk-content", 0, 0)?;
         Ok(())
     })
     .expect("populate");

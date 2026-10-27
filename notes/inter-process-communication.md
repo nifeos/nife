@@ -14,7 +14,7 @@ A rendezvous owns two wait queues, senders and receivers, and a count of pending
 decides what a send, a receive or a signal does with them. The scheduler calls it for that
 decision rather than writing the same branch at each of its call sites.
 
-The queues are intrusive (`crates/intrusive_fifo`). In the kernel a queue entry is the TCB,
+The queues are intrusive (`crates/intrusive_queue`). In the kernel a queue entry is the TCB,
 threaded through the same link the run queues use. A blocked thread therefore waits on exactly one
 rendezvous, because it has one link, and queueing never allocates.
 
@@ -60,7 +60,7 @@ of §26 (the fault endpoint). A fifth path cannot forget.
 
 ### Taking a thread back off a queue
 
-An intrusive `Fifo` offers no arbitrary remove, and the rendezvous needs one in two cases.
+An intrusive `Queue` offers no arbitrary remove, and the rendezvous needs one in two cases.
 
 A corpse can be a queued sender. A supervised thread that dies with nobody in `RECEIVE` parks on
 its supervision rendezvous's sender queue, its death message in its mailbox. That is item 2 of
@@ -77,7 +77,7 @@ commonest such thread is a server parked in `RECEIVE` on a rendezvous that belon
 else. Its TCB is linked there, so the reclaim unlinks it with `remove_receiver` before freeing the
 page the TCB sits on.
 
-Both removes drain the queue and push the survivors back, rather than adding a remove to `Fifo`.
+Both removes drain the queue and push the survivors back, rather than adding a remove to `Queue`.
 That keeps the queue's own contract, one link and no arbitrary remove, and its proved invariants
 are the only ones in play. The cost is linear in the queue's length, on a teardown path, and FIFO
 order among the survivors is kept. Both are safe: the victim is compared by pointer and never
@@ -152,7 +152,7 @@ They are inductive steps: assume an arbitrary valid state, apply one operation, 
 non-empty queue is modeled with a single waiter, because every decision and both invariants
 depend only on whether a queue is empty. An operation pops, which only shrinks a queue, and pushes
 only to a queue that was empty. So the pattern of empty and non-empty queues changes the same way
-for one waiter or many. FIFO order within a queue is `intrusive_fifo`'s own proof.
+for one waiter or many. FIFO order within a queue is `intrusive_queue`'s own proof.
 
 The one `unsafe` left in each harness mints the tokens. Two obligations hold for every harness,
 and they are properties of the harness that Kani does not check:

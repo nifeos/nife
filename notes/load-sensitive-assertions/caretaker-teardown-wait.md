@@ -226,7 +226,7 @@ and none has a clock in it.
 | `crates/system_initializer::reclaim` (`RECLAIM_ATTEMPTS`) | returns; a stranded region |
 | `components/src/login.rs`'s `reclaim` (`RECLAIM_ATTEMPTS`) | returns; a stranded region |
 | `components/src/swish/running.rs`'s `await_screen` (`SCREEN_REAP_ATTEMPTS`) | returns; leaks one job's pool |
-| `components/src/job_undertaker.rs`'s `collect` (`MAX_ATTEMPTS`) | **`user_mode_runtime::trap()`** |
+| `components/src/job_undertaker.rs`'s `collect` (`MAXIMUM_ATTEMPTS`) | **`user_mode_runtime::trap()`** |
 | `components/src/timetable.rs`'s `collect` (`REAP_ATTEMPTS`) | **`user_mode_runtime::trap()`** |
 
 That is the reading order's fourth grep, and the first that leaves this repository's kernel: a

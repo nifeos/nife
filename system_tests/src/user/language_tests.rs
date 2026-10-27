@@ -1,5 +1,5 @@
 use pipeline_service::{answer, counts};
-use redirection_tests::{TRANSCRIPT_MAX, transcript};
+use redirection_tests::{TRANSCRIPT_MAXIMUM, transcript};
 
 use super::*;
 
@@ -17,7 +17,7 @@ fn said<'a>(t: &'a [u8], line: &[u8]) -> &'a str {
 /// dropped bytes or a quote that swallowed a word fails even though a file would still exist.
 #[test_case]
 fn a_name_with_a_space_in_it_can_be_written_and_read_back() {
-    let mut buf = [0u8; TRANSCRIPT_MAX];
+    let mut buf = [0u8; TRANSCRIPT_MAXIMUM];
     let Some(n) = transcript(&mut buf) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
@@ -49,7 +49,7 @@ fn a_name_with_a_space_in_it_can_be_written_and_read_back() {
 /// worth of grammar later.
 #[test_case]
 fn a_quoted_name_is_the_grant_with_the_operator_left_out() {
-    let mut buf = [0u8; TRANSCRIPT_MAX];
+    let mut buf = [0u8; TRANSCRIPT_MAXIMUM];
     let Some(n) = transcript(&mut buf) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
@@ -73,7 +73,7 @@ fn a_quoted_name_is_the_grant_with_the_operator_left_out() {
 /// hands over everything the pattern matched.
 #[test_case]
 fn the_same_word_is_a_name_quoted_and_a_set_unquoted() {
-    let mut buf = [0u8; TRANSCRIPT_MAX];
+    let mut buf = [0u8; TRANSCRIPT_MAXIMUM];
     let Some(n) = transcript(&mut buf) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
@@ -106,7 +106,7 @@ fn the_same_word_is_a_name_quoted_and_a_set_unquoted() {
 /// this and fail the other half.
 #[test_case]
 fn a_connector_runs_the_second_command_only_when_it_should() {
-    let mut buf = [0u8; TRANSCRIPT_MAX];
+    let mut buf = [0u8; TRANSCRIPT_MAXIMUM];
     let Some(n) = transcript(&mut buf) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
@@ -147,7 +147,7 @@ fn a_connector_runs_the_second_command_only_when_it_should() {
 /// kind of integer; here they are different events and the shell knows which.
 #[test_case]
 fn a_refusal_and_a_success_report_different_numbers() {
-    let mut buf = [0u8; TRANSCRIPT_MAX];
+    let mut buf = [0u8; TRANSCRIPT_MAXIMUM];
     let Some(n) = transcript(&mut buf) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
@@ -194,7 +194,7 @@ fn a_refusal_and_a_success_report_different_numbers() {
 /// in this shell has: decided at the prompt, before anything is spawned or opened.
 #[test_case]
 fn a_line_the_grammar_cannot_read_runs_nothing() {
-    let mut buf = [0u8; TRANSCRIPT_MAX];
+    let mut buf = [0u8; TRANSCRIPT_MAXIMUM];
     let Some(n) = transcript(&mut buf) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };

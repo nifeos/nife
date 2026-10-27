@@ -460,7 +460,8 @@ pub fn spawn_client(
     let scratch =
         crate::memory_region::create(CLIENT_SCRATCH_UT_PAGES).expect("no scratch region for a run");
     // From the scratch, not `sched::create_rendezvous`, whose chunks are never given back: the
-    // machine shares `sched::MAX_RENDEZVOUS` live endpoints, and the suite's runs would reach it.
+    // machine shares `sched::MAXIMUM_RENDEZVOUS` live endpoints, and the suite's runs would reach
+    // it.
     let report =
         sched::create_rendezvous_from(scratch).expect("no report endpoint in a run's scratch");
     let (request, result) = (w.request, w.result);

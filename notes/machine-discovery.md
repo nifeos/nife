@@ -125,8 +125,8 @@ The kernel asks this question only on aarch64. On RISC-V a node named `interrupt
 is the PLIC, and each `cpu@` node has a `riscv,cpu-intc` child. How the kernel drives each version
 is in [interrupts.md](interrupts.md). The binding allows several redistributor regions
 (`#redistributor-regions`) for machines whose frames are not contiguous; QEMU `virt` needs a second
-only past 123 cores, and the kernel's `cpu::MAX_CPUS` is eight, so the decoder refuses more than one.
-The GICv2 binding list stops at the three strings an aarch64 GICv2 carries (`arm,gic-400`,
+only past 123 cores, and the kernel's `cpu::MAXIMUM_CPUS` is eight, so the decoder refuses more than
+one. The GICv2 binding list stops at the three strings an aarch64 GICv2 carries (`arm,gic-400`,
 `arm,cortex-a15-gic`, `arm,cortex-a7-gic`), checked against Linux's `IRQCHIP_DECLARE` table in
 `drivers/irqchip/irq-gic.c` at v6.16; the version-1 parts it also lists exist only on 32-bit
 machines.
@@ -139,9 +139,9 @@ line instead of a new handoff field is in [serial-less-output.md](serial-less-ou
 
 The token is `screen=` followed by the base in `0x` hex and the width, height and stride in
 decimal, then the pixel order. It is written by hand rather than through `core::fmt`, because the
-only writer is a `no_std` UEFI application with no allocator. `MAX_LEN` is 72 against a worst case
-of 63. One byte of headroom would be a trap for whoever adds a field. A malformed token reads as
-no screen, because a kernel that refused to boot over a display description it could do without
+only writer is a `no_std` UEFI application with no allocator. `MAXIMUM_LEN` is 72 against a worst
+case of 63. One byte of headroom would be a trap for whoever adds a field. A malformed token reads
+as no screen, because a kernel that refused to boot over a display description it could do without
 would be the wrong trade for a diagnostic path.
 
 `PixelOrder` is named for the order of the bytes in memory, not for the `u32` value. The memory

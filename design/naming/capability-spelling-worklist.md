@@ -77,7 +77,7 @@ becomes `capability`, `caps` becomes `capabilities`, `Cap` becomes `Capability`,
 | Today | Proposed | Note |
 |---|---|---|
 | `CapNeed` (`crates/capability_plan`) | `CapabilityNeed` | |
-| `MAX_CAPS`, `TooManyCaps`, `FULL_CAPS`, `OVER_CAPS`, `CAP_TWICE`, `caps()` | `MAX_CAPABILITIES`, `TooManyCapabilities` and so on | |
+| `MAXIMUM_CAPS`, `TooManyCaps`, `FULL_CAPS`, `OVER_CAPS`, `CAP_TWICE`, `caps()` | `MAXIMUM_CAPABILITIES`, `TooManyCapabilities` and so on | |
 | `Command::Caps` (`crates/grant_plan`) | `Command::Capabilities` | see the swish builtin below. `CapKind` is done: it became `CapabilityKind` on 2026-10-11 (UTC), #1913 |
 | `CAP_TAG` (`crates/grant_plan/src/spawnproto.rs`) | `CAPABILITY_TAG` | the value `0x6361_705f` stays: it is a wire marker |
 | `CAP_WRITE`, `CAP_USER`, `CAP_USER_EXEC`, `CAP_KERNEL_EXEC`, `CAP_DEVICE`, `CAP_GLOBAL`, `CAP_WRITE_COMBINE`, `from_caps` (`crates/paging`) | `ACCESS_WRITE` and so on, `from_access` | private bits for what a mapping grants; `CAPABILITY_WRITE` would read as an object capability, so propose `ACCESS_`. A word for calef. |

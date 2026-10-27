@@ -1,7 +1,8 @@
 # Intrusive queues
 
-*(Milestone 14 phase A.2. The mechanism behind `crates/intrusive_fifo`, which the per-CPU run queues
-and migration inboxes are built on. See design/kernel-objects-from-untyped.md, decision D1.)*
+*(Milestone 14 (kernel objects from untyped) phase A.2. The mechanism behind
+`crates/intrusive_queue`, which the per-CPU run queues and migration inboxes are built on. See
+design/kernel-objects-from-untyped.md, decision D1.)*
 
 ## The idea
 
@@ -55,7 +56,7 @@ safety is a discipline, stated once and kept:
 
 ## The crate's contract, and the `Unqueued` token
 
-`crates/intrusive_fifo` states its caller's contract as three rules, and its doc comments cite them
+`crates/intrusive_queue` states its caller's contract as three rules, and its doc comments cite them
 by number:
 
 1. A node is pushed onto at most one queue, and not pushed again until popped. A push takes the
@@ -81,7 +82,7 @@ node: queueing the node again needs a second token, which is the `unsafe` the ty
 
 ## What is proved
 
-The crate's Kani harness (`script/verify`) drives the real `Fifo` with a symbolic operation
+The crate's Kani harness (`script/verify`) drives the real `Queue` with a symbolic operation
 sequence: six steps, each an arbitrary push-or-pop over three nodes, checked against a
 trivially-correct model. Every interleaving up to that depth at once, including the
 drained-to-empty transitions where head/tail bugs live. FIFO order, no loss, no invention,

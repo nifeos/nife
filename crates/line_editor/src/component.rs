@@ -309,13 +309,13 @@ mod tests {
     /// same function here: the lengths' bits never overlap.)
     #[test]
     fn every_image_length_survives_the_packed_start_argument() {
-        let max = (1 << 21) - 1;
+        let maximum = (1 << 21) - 1;
         for lengths in [
             (160_872, 155_600, 0),
             (160_872, 0, 0),
             (160_872, 155_600, 98_304),
-            (max, max, max),
-            (0, max, 0),
+            (maximum, maximum, maximum),
+            (0, maximum, 0),
         ] {
             let (e, o, d) = lengths;
             assert_eq!(
@@ -324,6 +324,6 @@ mod tests {
             );
         }
         // One bit too long for its field is refused rather than spilling into the next length.
-        assert_eq!(image_lengths(0, max + 1, 0), None);
+        assert_eq!(image_lengths(0, maximum + 1, 0), None);
     }
 }

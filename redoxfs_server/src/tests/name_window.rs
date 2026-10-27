@@ -62,7 +62,7 @@ fn root_listing(srv: &mut Server<DiskMemory>) -> Vec<(String, bool)> {
 #[test]
 fn open_refuses_every_refused_name_and_opens_a_legal_one() {
     let mut srv = server_with_tree();
-    let mut window = vec![0u8; fs::TRANSFER_MAX];
+    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
     for &name in REFUSED {
         let len = stage(&mut window, name);
         let (r0, _) = srv.handle(
@@ -94,7 +94,7 @@ fn open_refuses_every_refused_name_and_opens_a_legal_one() {
 #[test]
 fn opendir_refuses_every_refused_name_and_descends_a_legal_one() {
     let mut srv = server_with_tree();
-    let mut window = vec![0u8; fs::TRANSFER_MAX];
+    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
     for &name in REFUSED {
         let len = stage(&mut window, name);
         let (r0, _) = srv.handle(
@@ -129,7 +129,7 @@ fn opendir_refuses_every_refused_name_and_descends_a_legal_one() {
 fn create_and_mkdir_refuse_every_refused_name_and_change_nothing() {
     let mut srv = server_with_tree();
     let before = root_listing(&mut srv);
-    let mut window = vec![0u8; fs::TRANSFER_MAX];
+    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
     for &code in &[fs::CREATE, fs::MKDIR] {
         for &name in REFUSED {
             let len = stage(&mut window, name);
@@ -180,7 +180,7 @@ fn create_and_mkdir_refuse_every_refused_name_and_change_nothing() {
 fn unlink_and_rmdir_refuse_every_refused_name_and_remove_nothing() {
     let mut srv = server_with_tree();
     let before = root_listing(&mut srv);
-    let mut window = vec![0u8; fs::TRANSFER_MAX];
+    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
     for &code in &[fs::UNLINK, fs::RMDIR] {
         for &name in REFUSED {
             let len = stage(&mut window, name);
@@ -211,7 +211,7 @@ fn unlink_and_rmdir_refuse_every_refused_name_and_remove_nothing() {
 #[test]
 fn the_mtime_verbs_refuse_every_refused_name() {
     let mut srv = server_with_tree();
-    let mut window = vec![0u8; fs::TRANSFER_MAX];
+    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
     for &code in &[fs::GETMTIME, fs::SETMTIME, fs::SETMTIME_AT] {
         for &name in REFUSED {
             let len = stage(&mut window, name);
@@ -251,7 +251,7 @@ fn the_mtime_verbs_refuse_every_refused_name() {
 fn rename_refuses_a_refused_name_in_either_operand_and_changes_nothing() {
     let mut srv = server_with_tree();
     let before = root_listing(&mut srv);
-    let mut window = vec![0u8; fs::TRANSFER_MAX];
+    let mut window = vec![0u8; fs::TRANSFER_MAXIMUM];
     let rename = |srv: &mut Server<DiskMemory>, window: &mut [u8], src: &[u8], dst: &[u8]| -> i64 {
         window[..src.len()].copy_from_slice(src);
         window[src.len()..src.len() + dst.len()].copy_from_slice(dst);

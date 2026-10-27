@@ -209,7 +209,7 @@ milestone 765's lane as a question, below.
 3. Prior art. Read above. seL4 for authority, Zircon for lifetime; both explicit.
 4. Premise. True, as checked. The proposal's framing that seL4's VSpace cap is how a task gives
    pages up was not true.
-5. Cost. None measured. A: one registry entry kept per bound thread, which `MAX_USER_SPACES`
+5. Cost. None measured. A: one registry entry kept per bound thread, which `MAXIMUM_USER_SPACES`
    (32, in `kernel/src/user/address_space_registry.rs`) does not hold today, since every process
    would now occupy one; that bound must grow or bound spaces live elsewhere. A cached root and tag
    per thread. B: a slot per thread and a capability minted at every `START`. C: nothing.

@@ -558,7 +558,7 @@ fn schedule(behaviour: u64, budget: u64, dir: u64) -> u64 {
         flags |= F_REPLACED;
     }
     if behaviour == OPEN_SCHEDULE && replaced {
-        let len = (word(reg::PLAN_LEN).load(Ordering::Acquire) as usize).min(reg::BODY_MAX);
+        let len = (word(reg::PLAN_LEN).load(Ordering::Acquire) as usize).min(reg::BODY_MAXIMUM);
         // SAFETY: the reply is published (the sequence above), so the plan it wrote into the body
         // is complete and nothing writes the page until this client's next request.
         let plan = unsafe {

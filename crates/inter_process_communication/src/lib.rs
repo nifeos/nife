@@ -14,7 +14,7 @@
 
 use core::ptr::NonNull;
 
-use intrusive_fifo::{Fifo, Node, Unqueued};
+use intrusive_queue::{Node, Queue, Unqueued};
 
 pub mod futex;
 pub mod notification;

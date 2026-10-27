@@ -74,8 +74,8 @@ fn the_cpu_list_knows_the_s7_is_unusable() {
     }
     // The startable set is all four U74s, hart 4 included. The kernel seats each core at the slot
     // its own hart id names (smp::read_cpu_list), so the excluded S7 occupies only slot 0 and
-    // hart 4 gets seat 4; the old positional take(MAX_CPUS) let the S7 consume a seat the fourth
-    // U74 needed, and this pins the arithmetic that replaced it: 5 harts, 4 startable.
+    // hart 4 gets seat 4; the old positional take(MAXIMUM_CPUS) let the S7 consume a seat the
+    // fourth U74 needed, and this pins the arithmetic that replaced it: 5 harts, 4 startable.
     let startable: Vec<u64> = list
         .cpus()
         .iter()

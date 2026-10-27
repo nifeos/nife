@@ -801,9 +801,9 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
 }
 
 /// **Each walker's own per-depth arrays have their own edge.** The four walkers beside `node_reg`
-/// keep 16-entry arrays behind the same `depth < MAX_DEPTH` guard, and milestone 326 (nobody has
-/// been assigned to turn a mutation score upward) found `<=` alive in every one; at depth exactly
-/// 16 that is an out-of-bounds index on firmware bytes, before a boot can report a failure.
+/// keep 16-entry arrays behind the same `depth < MAXIMUM_DEPTH` guard, and milestone 326 (nobody
+/// has been assigned to turn a mutation score upward) found `<=` alive in every one; at depth
+/// exactly 16 that is an out-of-bounds index on firmware bytes, before a boot can report a failure.
 ///
 /// The tree is nested to exactly the edge and carries the property, the `compatible` and the
 /// `phandle` there, so each arm of each walker is asked to record something where recording it
@@ -839,8 +839,8 @@ fn every_walkers_stack_edge_is_ignored_rather_than_indexed() {
 /// **A node's slot is cleared when the node opens, and a sibling must not inherit what the last
 /// one left there.** Three walkers remember a candidate value per open depth and decide at the
 /// closing token, so the reset in `FDT_BEGIN_NODE` is the only thing standing between a sibling's
-/// answer and this one's. Milestone 326's run found `depth < MAX_DEPTH` alive under `==` and under
-/// `>` in all three, both of which skip the reset for every depth a real tree reaches.
+/// answer and this one's. Milestone 326's run found `depth < MAXIMUM_DEPTH` alive under `==` and
+/// under `>` in all three, both of which skip the reset for every depth a real tree reaches.
 ///
 /// The fixture is the same shape for each: the **first** sibling carries the property but does not
 /// identify, the **second** identifies but carries no property. The honest answer is "that node has
@@ -947,8 +947,8 @@ fn an_inherited_property_comes_from_the_named_node_not_the_first_one() {
 /// and the cap is what decides it.
 #[test]
 fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
-    use device_tree_blob::MAX_TOTALSIZE;
-    let claimed = MAX_TOTALSIZE + 1;
+    use device_tree_blob::MAXIMUM_TOTALSIZE;
+    let claimed = MAXIMUM_TOTALSIZE + 1;
     let mut buffer = minimal_tree();
     buffer[4..8].copy_from_slice(&(claimed as u32).to_be_bytes());
     buffer.resize(claimed + 64, 0);
@@ -960,10 +960,10 @@ fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
 
     // Exactly the ceiling is still believed: the header lies about the length, so the parse fails
     // on its offsets, but it fails as a parse and not as a refusal to look.
-    buffer[4..8].copy_from_slice(&(MAX_TOTALSIZE as u32).to_be_bytes());
-    // SAFETY: as above; `buffer` is longer than `MAX_TOTALSIZE`.
+    buffer[4..8].copy_from_slice(&(MAXIMUM_TOTALSIZE as u32).to_be_bytes());
+    // SAFETY: as above; `buffer` is longer than `MAXIMUM_TOTALSIZE`.
     let looked = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
-    assert_ne!(looked.err(), Some(Error::TooLarge(MAX_TOTALSIZE)));
+    assert_ne!(looked.err(), Some(Error::TooLarge(MAXIMUM_TOTALSIZE)));
 }
 
 /// The ceiling is 2 MiB, a figure borrowed from Linux, so a tree well under it (a board with a

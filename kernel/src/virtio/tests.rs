@@ -247,7 +247,7 @@ fn a_pci_queue_has_no_doorbell_until_it_is_set_up() {
         notify_base: 0x4010_3000,
         notify_mult: 4,
         device_type: 2,
-        notify_addr: [0; MAX_QUEUES],
+        notify_addr: [0; MAXIMUM_QUEUES],
         isr: 0x4010_2000,
         msix_vector: pci::VIRTIO_MSIX_NO_VECTOR,
         device_config: None,
@@ -357,7 +357,7 @@ fn a_second_queue_validates_on_its_own_block() {
     w64(shadow + DESC_OFF, SENTINEL);
 
     // A good transmit chain on queue 1: header + data, wholly in-region, above every ring block.
-    let data = MAX_QUEUES as u64 * RING_BLOCK; // first byte past all queues' rings
+    let data = MAXIMUM_QUEUES as u64 * RING_BLOCK; // first byte past all queues' rings
     write_desc(desc1, 0, driver + data, 60, VIRTQ_DESC_F_NEXT, 1);
     write_desc(desc1, 1, driver + data + 64, 8, 0, 0);
     w16(avail1 + 4, 0); // ring[0] = head 0

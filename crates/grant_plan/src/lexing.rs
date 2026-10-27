@@ -5,16 +5,22 @@
 
 use super::*;
 
-/// The longest file name the shell can name and grant. Duplicated from `filesystem_contract::grant::MAX_NAME`
-/// rather than imported, because `grant_plan` is the shell's parser and must not depend on the filesystem
-/// contract to check a command line; the pair is pinned by a test in each crate so a change to one
-/// without the other fails on the host in milliseconds. 252, calef's ruling of 2026-10-24 (UTC) on milestone 946 (a granted file name can be longer than sixteen bytes)).
-pub const MAX_FILE_NAME: usize = 252;
+/// The longest file name the shell can name and grant. Duplicated from
+/// `filesystem_contract::grant::MAXIMUM_NAME` rather than imported, because `grant_plan` is the
+/// shell's parser and must not depend on the filesystem contract to check a command line; the pair
+/// is pinned by a test in each crate so a change to one without the other fails on the host in
+/// milliseconds. 252, calef's ruling of 2026-10-24 (UTC) on milestone 946 (a granted file name can
+/// be longer than sixteen bytes)).
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_FILE_NAME`.
+pub const MAXIMUM_FILE_NAME: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, duplicated from
-/// `filesystem_contract::grant::WORDS_NAME` for [`MAX_FILE_NAME`]'s reason and pinned the same way.
-/// A name the shell sends that way is held to it at the prompt: the directory a grant descends into
-/// ([`crate::nav::MAX_DIRECTORY_NAME`]), an identity `user` names, and the name `vouch` records.
+/// `filesystem_contract::grant::WORDS_NAME` for [`MAXIMUM_FILE_NAME`]'s reason and pinned the same
+/// way. A name the shell sends that way is held to it at the prompt: the directory a grant descends
+/// into ([`crate::nav::MAXIMUM_DIRECTORY_NAME`]), an identity `user` names, and the name `vouch`
+/// records.
 ///
 /// Name: provisional (milestone 946), after the constant it mirrors.
 pub const WORDS_NAME: usize = 16;
@@ -24,7 +30,7 @@ pub const WORDS_NAME: usize = 16;
 /// because there is no namespace here to walk.
 pub fn file_name_fits(name: &[u8]) -> bool {
     !name.is_empty()
-        && name.len() <= MAX_FILE_NAME
+        && name.len() <= MAXIMUM_FILE_NAME
         && name != b"."
         && name != b".."
         && !name.contains(&b'/')

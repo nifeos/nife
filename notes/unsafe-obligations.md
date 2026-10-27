@@ -120,11 +120,12 @@ fn that would be unsound if the sentence were false.
 2. `#[cfg(kani)]` code is invisible to both lints. FIXED in milestone 113 (the proofs' own unsafe
 code); [kani-gate.md](unsafe-obligations/kani-gate.md) records what the gate found. `cfg(kani)` is set by the model checker and by nothing else, so
 `script/lint` never compiled those modules and neither lint could fire in them. The tree has 14
-`unsafe {}` blocks under `#[cfg(kani)]`, in `crates/intrusive_fifo` and `crates/inter_process_communication`. `intrusive_fifo`'s two
-both carry SAFETY comments. **Eleven of `inter_process_communication`'s twelve do not**, and the gate had never said so. A
-real fix is a gate rather than a pass of comments (a clippy invocation with `--cfg kani`, or
-`-D warnings` on the `script/verify` build); adding the comments alone leaves nothing to stop the
-next harness from skipping them.
+`unsafe {}` blocks under `#[cfg(kani)]`, in `crates/intrusive_queue` and
+`crates/inter_process_communication`. `intrusive_queue`'s two both carry SAFETY comments. **Eleven
+of `inter_process_communication`'s twelve do not**, and the gate had never said so. A real fix is a
+gate rather than a pass of comments (a clippy invocation with `--cfg kani`, or `-D warnings` on the
+`script/verify` build); adding the comments alone leaves nothing to stop the next harness from
+skipping them.
 
 3. Neither lint reads the comment. `undocumented_unsafe_blocks` checks that a comment exists,
 not that it is true, which is why DECISIONS §61 carries a BUGS note about a generated pass that

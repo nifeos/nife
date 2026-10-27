@@ -1,16 +1,16 @@
 Falsifies `machine_discovery::framebuffer::verification::an_encoded_token_never_exceeds_the_maximum_it_advertises`.
 
-The defect: `MAX_LEN` drops to 62, one below the encoder's real worst case of 63.
+The defect: `MAXIMUM_LEN` drops to 62, one below the encoder's real worst case of 63.
 
 This is not an invented mistake, it is the one the constant's own doc records
-happening. `MAX_LEN` is "rounded up rather than derived", so nothing ties it to
+happening. `MAXIMUM_LEN` is "rounded up rather than derived", so nothing ties it to
 what `encode` writes: the token was `fb=` when 64 was chosen, calef ratified the
 four-characters-longer `screen=` on 2026-09-04, and the worst case went to 63 of
 64 with nothing noticing. One byte of headroom is what the doc calls "a trap for
 whoever adds a field".
 
 The failure is sharp because the constant is what every caller sizes its buffer
-by: the harness allocates `[u8; MAX_LEN]` exactly as the UEFI loader does, so an
+by: the harness allocates `[u8; MAXIMUM_LEN]` exactly as the UEFI loader does, so an
 encoder that writes past the advertised maximum writes past the buffer. The
 round-trip test in this file cannot catch it, because its descriptions are
 realistic geometries whose tokens are far shorter than the worst case.
@@ -19,14 +19,16 @@ Expected to fail: the bounds check inside `encode`'s `put` closure, on a base ne
 `u64::MAX` with three ten-digit fields.
 
 diff --git a/crates/machine_discovery/src/framebuffer.rs b/crates/machine_discovery/src/framebuffer.rs
+index fff36c7c0..a8bb8f312 100644
 --- a/crates/machine_discovery/src/framebuffer.rs
 +++ b/crates/machine_discovery/src/framebuffer.rs
-@@ -85,7 +85,7 @@ impl Framebuffer {
-     /// with their commas, and a four-character order. Rounded up rather than derived, so nothing
-     /// ties it to the encoder: when the key grew from `fb=` to `screen=`, the worst case reached 63
+@@ -87,7 +87,7 @@ impl Framebuffer {
      /// of the old 64 unnoticed, and one byte of headroom is a trap for whoever adds a field.
--    pub const MAX_LEN: usize = 72;
-+    pub const MAX_LEN: usize = 62;
+     ///
+     /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+     /// 2026-10-26 (UTC), renamed from `MAX_LEN`.
+-    pub const MAXIMUM_LEN: usize = 72;
++    pub const MAXIMUM_LEN: usize = 62;
  
      /// How many bytes the console may touch: `stride * height`.
      ///

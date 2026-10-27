@@ -252,7 +252,7 @@ fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
         object: Obj::PageFrame(3),
         rights: Rights::READ,
     };
-    // Full at sixty-four, the most a table may have (`MAX_SLOTS`).
+    // Full at sixty-four, the most a table may have (`MAXIMUM_SLOTS`).
     let mut cs: CapabilityTable<Obj, 64> = CapabilityTable::new();
     for _ in 0..64 {
         cs.insert(cap).expect("sixty-four slots hold sixty-four");

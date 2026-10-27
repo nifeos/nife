@@ -209,8 +209,8 @@ pub(crate) enum Transport {
         device_type: u32,
         /// Each queue's resolved doorbell, computed at `setup_queue` (it needs `queue_notify_off`,
         /// which is only readable with that queue selected, and it differs per queue). Zero until
-        /// the queue is set up. Indexed by queue number; see `MAX_QUEUES`.
-        notify_addr: [u64; MAX_QUEUES],
+        /// the queue is set up. Indexed by queue number; see `MAXIMUM_QUEUES`.
+        notify_addr: [u64; MAXIMUM_QUEUES],
         isr: u64,
         /// Which MSI-X table entry this function's queues should raise, or
         /// `pci::VIRTIO_MSIX_NO_VECTOR` when it delivers INTx. Written at
@@ -269,7 +269,7 @@ impl Transport {
             notify_base: d.notify_base,
             notify_mult: d.notify_mult,
             device_type: d.device_type,
-            notify_addr: [0; MAX_QUEUES],
+            notify_addr: [0; MAXIMUM_QUEUES],
             isr: d.isr,
             msix_vector: d.msix_vector,
             device_config: d.device_config,
@@ -433,8 +433,8 @@ const RING_END: u64 = direct_memory_access_validator::RING_END;
 /// The most virtqueues the confinement drives per device. A virtio-net device needs two (receive =
 /// queue 0, transmit = queue 1); the disk uses only queue 0. Fixed and small on purpose: one
 /// kernel-private shadow frame per device holds every queue's shadow rings, so the ceiling is what
-/// fits there (`MAX_QUEUES * RING_BLOCK <= FRAME_SIZE`), asserted below, not a policy dial.
-pub(crate) const MAX_QUEUES: usize = direct_memory_access_validator::MAX_QUEUES as usize;
+/// fits there (`MAXIMUM_QUEUES * RING_BLOCK <= FRAME_SIZE`), asserted below, not a policy dial.
+pub(crate) const MAXIMUM_QUEUES: usize = direct_memory_access_validator::MAXIMUM_QUEUES as usize;
 
 /// The stride between successive queues' ring areas, in both the driver's DMA region and the
 /// kernel-private shadow. 0x200 holds a whole ring area (`RING_END`) and keeps queue 0 identical to
@@ -448,7 +448,7 @@ const _: () = assert!(
     "a queue's rings overflow its ring block"
 );
 const _: () = assert!(
-    MAX_QUEUES as u64 * RING_BLOCK <= page_frames::FRAME_SIZE,
+    MAXIMUM_QUEUES as u64 * RING_BLOCK <= page_frames::FRAME_SIZE,
     "the shadow frame cannot hold every queue's ring block",
 );
 
@@ -473,7 +473,7 @@ struct Device {
     /// The last available-ring index we have already validated and forwarded, **per queue**.
     /// Descriptors are only ever *added* by the driver, so we validate the new ones each notify;
     /// RX and TX advance independently, so each queue keeps its own high-water mark.
-    last_avail: [u16; MAX_QUEUES],
+    last_avail: [u16; MAXIMUM_QUEUES],
     /// Which 32-bit word of the feature bits the driver's next `DRIVER_FEATURES` write targets
     /// (`DRIVER_FEATURES_SEL`: 0 = features 0..31, 1 = 32..63). Tracked so a feature write can have
     /// the ring-layout features the validator cannot police stripped from whichever word carries
@@ -493,11 +493,11 @@ struct Device {
 /// This is an exception and a foot gun: see notes/virtio.md, "The kernel's half", and
 /// `design/roadmap/0647-a-virtio-slot-comes-back-when-its-driver-dies.md`, which the next lane that
 /// needs a device should take rather than a bump.
-const MAX_DEVICES: usize = 34;
+const MAXIMUM_DEVICES: usize = 34;
 
 /// The device table, fixed. `get`/`get_mut` mirror the slice API the call sites already used.
 struct Devices {
-    entries: [Option<Device>; MAX_DEVICES],
+    entries: [Option<Device>; MAXIMUM_DEVICES],
     count: usize,
 }
 
@@ -514,7 +514,7 @@ impl Devices {
 static DEVICES: IrqSafeMutex<Devices> = IrqSafeMutex::new(
     rank::VIRTIO,
     Devices {
-        entries: [const { None }; MAX_DEVICES],
+        entries: [const { None }; MAXIMUM_DEVICES],
         count: 0,
     },
 );
@@ -553,15 +553,15 @@ pub(crate) fn register(
 
     let mut devs = DEVICES.lock();
     assert!(
-        devs.count < MAX_DEVICES,
-        "more virtio devices than MAX_DEVICES"
+        devs.count < MAXIMUM_DEVICES,
+        "more virtio devices than MAXIMUM_DEVICES"
     );
     let id = devs.count;
     devs.entries[id] = Some(Device {
         transport,
         direct_memory_access_base,
         direct_memory_access_size,
-        last_avail: [0; MAX_QUEUES],
+        last_avail: [0; MAXIMUM_QUEUES],
         driver_features_sel: 0,
         shadow_base,
     });
@@ -726,14 +726,14 @@ fn sanitize_driver_features(sel: u32, val: u32) -> u32 {
 /// (the device writes only indices and lengths there). Each queue's rings sit at
 /// `queue * RING_BLOCK` in both. Refuses a queue that is out of range or does not fit.
 pub(crate) fn setup_queue(id: usize, num: u16, queue: u16) -> Result<(), TransportError> {
-    if queue as usize >= MAX_QUEUES {
+    if queue as usize >= MAXIMUM_QUEUES {
         return Err(TransportError::BadQueue);
     }
     let mut devs = DEVICES.lock();
     let dev = devs.get_mut(id).ok_or(TransportError::NoDevice)?;
 
     // Every queue's ring block must lie inside the driver's DMA region. The last block ends at
-    // `MAX_QUEUES * RING_BLOCK`, but this queue only needs its own block plus a ring area.
+    // `MAXIMUM_QUEUES * RING_BLOCK`, but this queue only needs its own block plus a ring area.
     let block = queue_block(queue);
     if num == 0 || num > QSIZE || dev.direct_memory_access_size < block + RING_END {
         return Err(TransportError::BadQueue);
@@ -755,7 +755,7 @@ pub(crate) fn setup_queue(id: usize, num: u16, queue: u16) -> Result<(), Transpo
 /// not published, the device is NOT notified, and the driver gets `DmaEscape`. Each queue keeps its
 /// own last-validated index, so a receive submit and a transmit submit never interfere.
 pub(crate) fn notify(id: usize, queue: u16) -> Result<(), TransportError> {
-    if queue as usize >= MAX_QUEUES {
+    if queue as usize >= MAXIMUM_QUEUES {
         return Err(TransportError::BadQueue);
     }
     let mut devs = DEVICES.lock();

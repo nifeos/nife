@@ -65,7 +65,7 @@ refused, folded into the same `DENIED` a wrong password gets.
 
 Two bounds came with that change, and both still hold. An identity longer than
 `filesystem_contract::grant::WORDS_NAME` (16 bytes) cannot get a per-identity subtree in this slice
-at all, though `login_contract::MAX_IDENTITY` (64 bytes) would otherwise accept it. The grant
+at all, though `login_contract::MAXIMUM_IDENTITY` (64 bytes) would otherwise accept it. The grant
 name travels in two `START` argument words. `grant::pack_name` refuses rather than truncate a
 name two identities agreeing on their first 16 bytes would share. Lifting it means a frame for the
 subtree caretaker's directory name. And the
@@ -284,8 +284,8 @@ and 1,648 on riscv64.
 Each `login_test_client` run gets a five-page scratch region of its own. It pays the page tables for
 mapping the frame `CONNECT` delegates, before the run holds any other budget, and its report endpoint
 is retyped from it. The kernel's own endpoint chunks are never given back, and the machine shares
-`sched::MAX_RENDEZVOUS` endpoints and `memory_region::MAX_REGIONS` regions. So `wait_client` reclaims
-the scratch once the run's thread is dead, and the endpoint goes with it.
+`sched::MAXIMUM_RENDEZVOUS` endpoints and `memory_region::MAXIMUM_REGIONS` regions. So `wait_client`
+reclaims the scratch once the run's thread is dead, and the endpoint goes with it.
 
 ## BUGS
 

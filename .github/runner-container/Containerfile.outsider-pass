@@ -7,15 +7,29 @@
 # dependencies; the pass's own volume, mounted at /cache, holds what script/ci-qemu and
 # script/bootstrap build there, and the harness's session state under HOME.
 #
+# Claude Code installs from npm at the pinned version. opencode does not: the 2.x line ships as
+# per-platform packages under the `@opencode` scope, and the `opencode-ai` line this file installed
+# from before stopped at 1.19.4, so a host on 2.x could never be reproduced here. The pinned
+# tarball is unpacked directly rather than through an installer script, and lands in /usr/local/bin
+# because the base image's /cache is covered by the pass's volume at run time. OPENCODE_TARGET
+# names the platform package; the image is built on patagonia's arm64 podman machine, which is the
+# only shape it is built in.
+#
 # Name: provisional, minted by milestone 920 (an outsider pass is launched pinned and
 # floor-checked)'s lane on 2026-10-14 (UTC). calef names files.
 FROM localhost/nife-runner-container
 
 ARG CLAUDE_CODE_VERSION
 ARG OPENCODE_VERSION
+ARG OPENCODE_TARGET=linux-arm64
 
 RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install --global --prefix /usr/local \
-        "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION:?}" "opencode-ai@${OPENCODE_VERSION:?}" \
-    && npm cache clean --force
+    && npm install --global --prefix /usr/local "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION:?}" \
+    && npm cache clean --force \
+    && curl -fsSL "https://registry.npmjs.org/@opencode/cli-${OPENCODE_TARGET}/-/cli-${OPENCODE_TARGET}-${OPENCODE_VERSION:?}.tgz" \
+        -o /tmp/opencode.tgz \
+    && mkdir -p /tmp/opencode \
+    && tar -xzf /tmp/opencode.tgz -C /tmp/opencode \
+    && install -m 0755 /tmp/opencode/package/bin/opencode /usr/local/bin/opencode \
+    && rm -rf /tmp/opencode /tmp/opencode.tgz

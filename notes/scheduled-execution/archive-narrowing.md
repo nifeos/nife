@@ -13,7 +13,7 @@ site, how a written list is held equal to the plan, and the audit line that meas
 The obvious shape is for the spawn site to register the document itself and read `programs()` off
 the result. The kernel cannot do that, and the reason is worth knowing before anyone tries again.
 
-`timetable::Registry` is a `[Row; MAX_ENTRIES]`. A `Row` carries an `Admission`, which carries a
+`timetable::Registry` is a `[Row; MAXIMUM_ENTRIES]`. A `Row` carries an `Admission`, which carries a
 kilobyte of `grant_plan::Endowment`. So `Registry::register` compiles to a 21632-byte stack frame,
 and the `grant_plan::plan` underneath it to a further 12048.
 

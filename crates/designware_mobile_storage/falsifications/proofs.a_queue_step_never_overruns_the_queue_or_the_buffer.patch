@@ -1,4 +1,4 @@
-Falsifies `designware_mobile_storage::proofs::a_fifo_step_never_overruns_the_fifo_or_the_buffer`.
+Falsifies `designware_mobile_storage::proofs::a_queue_step_never_overruns_the_queue_or_the_buffer`.
 
 The defect: a write step offers the whole FIFO instead of the room left in it, so a write into a
 FIFO that still holds words overruns it (the controller raises FRUN and the block is lost).
@@ -9,8 +9,8 @@ diff --git a/crates/designware_mobile_storage/src/host.rs b/crates/designware_mo
 --- a/crates/designware_mobile_storage/src/host.rs
 +++ b/crates/designware_mobile_storage/src/host.rs
 @@ -136,7 +136,7 @@
- pub const fn fifo_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
-     let filled = regs::fifo_count(status);
+ pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
+     let filled = registers::queue_count(status);
      let filled = if filled > depth { depth } else { filled };
 -    let words = if write { depth - filled } else { filled };
 +    let words = if write { depth } else { filled };
