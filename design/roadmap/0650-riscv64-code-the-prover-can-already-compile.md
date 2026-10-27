@@ -11,10 +11,10 @@ needs_person: no
 ---
 # 650. Some of `arch/riscv64/` compiles under Kani on an aarch64 host today, and the tree says none can
 
-Overtaken by §218 (carry a Kani patch so riscv64 is proved) and milestone 589: the carried patch lets
-Kani target riscv64 from the aarch64 and x86_64 hosts, so all of `arch/riscv64/` is reachable with
-its real `cfg` dispatch, which this block's probe module reached for one file only. The text below is
-the block as filed.
+§218 (carry a Kani patch) and milestone 589 (Kani can prove riscv64 from the
+hosts we already have) overtake this block. The carried patch lets Kani target riscv64 from the
+aarch64 and x86_64 hosts. It reaches all of `arch/riscv64/` with its real `cfg` dispatch, where this
+block's probe module reached one file. The text below is the block as filed.
 
 *Title and slug are drafts.*
 Raised while pricing `design/fatal-risks/README.md` risk 2 (the proofs prove trivia) (pull request

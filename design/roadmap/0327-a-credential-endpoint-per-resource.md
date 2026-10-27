@@ -10,9 +10,9 @@ needs_person: no
 ---
 # 327. A credential endpoint that is the credential for one resource
 
-Refused by §172 (whether a verify endpoint names the identity it asks about), ruled 2026-10-27
-(UTC): the identity stays on the verify request, and the limitation is recorded in the
-`credential_contract` crate documentation. The text below is the block as filed.
+§172 (whether a verify endpoint names the identity it asks about) refuses this block, ruled
+2026-10-27 (UTC): the identity stays on the verify request, and the `credential_contract` crate
+documentation records the limitation. The text below is the block as filed.
 
 ## Revisit
 

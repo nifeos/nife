@@ -11,8 +11,8 @@ needs_person: no
 # 358. `revoke.rs`'s log-page walk restates one safety argument in six places
 
 Overtaken by commit `f549607d1` (2026-10-07, milestone 139's round 8): `revoke::chain` now holds the
-walk, `kernel/src/revoke.rs` calls `log_page` inside one `unsafe` block, and the lock and membership
-are held by types. The text below is the block as filed.
+walk, `kernel/src/revoke.rs` calls `log_page` inside one `unsafe` block, and types hold the lock and
+membership. The text below is the block as filed.
 
 Filed as a proposal on 2026-09-03 by the milestone 252 sweep, from
 milestone 139's block; promoted by milestone 433 on 2026-09-19. Counted against the tree that day

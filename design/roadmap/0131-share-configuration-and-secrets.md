@@ -7,13 +7,13 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# 131. A service is configured, not compiled, and its secret is typed at a console
+# 131. Configure a service instead of compiling it, and type its secret at a console
 
 Two deliverables, re-aimed by §165 (where a stored secret comes from) on 2026-10-27 (UTC):
 
-1. **A configuration document** for one real service whose settings are compiled-in constants
+1. A configuration document for one real service whose settings are compiled-in constants
    today. The service is chosen when a lane takes the block; it names the one it picked and why.
-2. **Console provisioning of a secret** before `provision::SEAL`. A person types the secret at a
+2. Console provisioning of a secret before `provision::SEAL`. A person types the secret at a
    console on an interactive boot, and the credential service stores it ahead of the seal. An
    unattended boot is out of scope; a separate device and measured-boot sealing wait for a
    deployment that needs one (§165). Image-build provisioning stays a test path.

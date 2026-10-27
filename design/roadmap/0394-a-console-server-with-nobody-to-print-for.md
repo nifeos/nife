@@ -10,7 +10,7 @@ needs_person: no
 ---
 # 394. The boot-time console server comes up with no client and nothing notices
 
-Overtaken by commit `bcf864dc7` (2026-10-20, milestone 890): under the ruling on #2447 the tour boots
+Overtaken by commit `bcf864dc7` (2026-10-20, milestone 890 (riscv64 and x86_64 join the shared boot path)): under the ruling on #2447 the tour boots
 went, and `kernel/src/user/console_service.rs` with them, so no console server starts without a
 client. §179 records the outcome. The text below is the block as filed.
 

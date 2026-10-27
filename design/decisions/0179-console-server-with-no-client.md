@@ -16,8 +16,8 @@ the merge queue lands it.)*
 ## Overtaken 2026-10-20 (UTC)
 
 The question no longer exists. The ruling on #2447 turned the boot tours into self-test checks, and
-commit `bcf864dc7` (milestone 890) deleted the tour boots, `kernel/src/user/console_service.rs` and
-the `#[expect(dead_code)]` this section was raised for. Nothing starts a console server with no
+commit `bcf864dc7` (milestone 890 (riscv64 and x86_64 join the shared boot path)) deleted the tour boots, `kernel/src/user/console_service.rs` and
+the `#[expect(dead_code)]` that prompted this section. Nothing starts a console server with no
 client. This is the outcome of option B, reached by removing the tour rather than the one line.
 
 ## What is being decided

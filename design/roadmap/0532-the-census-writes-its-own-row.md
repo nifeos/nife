@@ -11,8 +11,8 @@ needs_person: no
 ---
 # 532. The mutation census should write its own row, rather than a person remembering to
 
-Overtaken by commit `c2d34982f` (2026-10-03, milestone 740): the weekly mutation workflow's
-`record` job appends each census to the tree through a pull request, so capture no longer depends on
+Commit `c2d34982f` (2026-10-03) overtakes this block, under milestone 740 (the survivors a merged pull
+request adds). The weekly mutation workflow's `record` job appends each census to the tree through a pull request, so capture no longer depends on
 someone running `script/mutation-census --add-run`. That is this block's option 2. The text below is
 the block as filed.
 

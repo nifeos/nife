@@ -8,22 +8,22 @@ ratified_by: calef
 # 165. Where a stored secret comes from on a boot that is not a test
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote
-down)'s lane. That lane found milestone 131 (a service is configured, not compiled, and its secret is
-typed at a console) gated on `DECISION` with no decision anywhere a reader can open. The block
+down)'s lane. That lane found milestone 131 (configure a service instead of compiling it, and type its secret at a console) gated on `DECISION` with no decision anywhere a reader can open. The block
 has carried the fork with four options and no recommendation since it was filed, and says outright
 that *"the choice is calef's, it is a fact that leaves the machine."*
 
 ## Ruled 2026-10-27 (UTC)
 
-1. Question 1: an unattended boot is not in scope yet. On a real boot a secret is typed at a console
-   (option A), before the store is sealed with `provision::SEAL`. A separate device (B) and
-   measured-boot sealing (D) are decided when a deployment needs an unattended boot. Provisioning at
-   image build (C) stays a test path only and a known defect, not a candidate. §220 (signed builds
-   and scoped key trust), whose signing keys rest in the same place, inherits this answer.
+1. Question 1: an unattended boot is not in scope yet. On a real boot a person types the secret at a
+   console (option A), before `provision::SEAL` seals the store. A deployment that needs an
+   unattended boot decides a separate device (B) and measured-boot sealing (D). Provisioning at
+   image build (C) stays a test path only and a known defect, not a candidate. The signing keys of
+   §220 (signed builds: a vendor signs, a developer self-signs, and trusting a key is scoped) rest in
+   the same place, so §220 inherits this answer.
 2. Question 2: milestone 131 is re-aimed, not retired. It now delivers (a) a configuration document
    for one real service whose settings are compiled-in constants today, and (b) console
-   provisioning of a secret before `provision::SEAL`. The SMB parts are struck as overtaken by the
-   2026-08-30 removal of the SMB implementation.
+   provisioning of a secret before `provision::SEAL`. The 2026-08-30 removal of the SMB implementation
+   overtakes the SMB parts, and the block strikes them.
 
 The sections below are the analysis that preceded the ruling.
 
@@ -67,7 +67,7 @@ by AGENTS.md's own definition: it cannot be un-decided by deleting code.
 
 A and C are not alternatives on the same axis. C is what the tree does today and is a known defect
 rather than a candidate; A is the smallest thing that is not that. Whether B or D is needed is a
-question about whether an unattended boot is in scope, which is a different question and was
+question about whether an unattended boot is in scope, which is a different question that the ruling
 answered first.
 
 ## What this tree already does in the analogous case

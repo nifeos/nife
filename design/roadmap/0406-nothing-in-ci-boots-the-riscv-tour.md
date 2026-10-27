@@ -10,7 +10,7 @@ needs_person: no
 ---
 # 406. Nothing on a pull request boots the riscv64 tour, so its userspace step is unasserted
 
-Overtaken by commit `bcf864dc7` (2026-10-20, milestone 890): under the ruling on #2447 the riscv64
+Overtaken by commit `bcf864dc7` (2026-10-20, milestone 890 (riscv64 and x86_64 join the shared boot path)): under the ruling on #2447 the riscv64
 tour went, so there is no tour boot to assert. The self-test verdict that `script/boot-check` reads
 on every pull request carries what the tour asserted. §186 records the outcome. The text below is
 the block as filed.

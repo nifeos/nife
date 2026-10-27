@@ -13,7 +13,7 @@ lands it.)*
 ## State of the first instrument
 
 `script/interleaving-check` has run on every pull request since commit `b43a6c93b` (2026-10-03,
-milestone 746): the `interleavings` job in `.github/workflows/ci.yml`. That settles its caller. The
+milestone 746 (Loom runs in CI)): the `interleavings` job in `.github/workflows/ci.yml`. That settles its caller. The
 other two instruments, `script/crate-probes` and `script/rule-violations --check`, are still
 uncalled and this section stays open for them.
 

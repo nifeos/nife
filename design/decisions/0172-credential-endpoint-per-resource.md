@@ -14,15 +14,15 @@ posed it, `notes/smb.md` recorded it as a next step rather than as an accepted l
 
 ## Ruled 2026-10-27 (UTC)
 
-Option A: the identity stays on the verify request, and no endpoint is minted per identity.
+Option A: the identity stays on the verify request, and nothing mints an endpoint per identity.
 
-1. The limitation is recorded where a reader meets the endpoint, in the `credential_contract` crate
-   documentation: a verify holder can test a guess against any name and cannot enumerate names.
+1. The `credential_contract` crate documentation records the limitation where a reader meets the
+   endpoint: a verify holder can test a guess against any name and cannot enumerate names.
    `MISMATCH` answers a wrong secret and an unknown identity alike.
 2. The reason: the one remaining sender, `login`, must check whatever name a person types, so an
    endpoint per identity would split the same authority across many endpoints without removing it.
-3. A per-identity endpoint kind (option C) can be added beside the general one when a program that
-   acts for one identity needs it. Nothing is built for that case now.
+3. When a program that acts for one identity needs it, a lane adds a per-identity endpoint kind
+   (option C) beside the general one. No lane builds that case now.
 4. Milestone 327 (a credential endpoint that is the credential for one resource) closes as `REFUSED`
    by this section, with its revisit condition written in the block.
 
@@ -102,7 +102,7 @@ Nothing in the tree today is visibly harmed by the extra authority.
 
 ## What is blocked until this is answered
 
-Nothing. Milestone 327 was the only block that cited it, and it is closed. The direction of the cost
+Nothing. Milestone 327 was the only block that cited it, and it now closes. The direction of the cost
 is why the question was worth answering without a live defect: every program written against the
 current shape makes B more expensive, and the next thing that authenticates anything gets written
 against whatever is there.
