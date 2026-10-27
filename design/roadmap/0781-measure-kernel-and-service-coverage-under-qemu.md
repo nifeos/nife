@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: measure-kernel-and-service-coverage-under-qemu
 raised: 2026-10-04
 milestone_dependencies: none
@@ -22,28 +22,64 @@ Every cleanup path the count found is among them.
 
 ## Ruling
 
-Ruled 2026-10-27 (UTC) by the architect: option 2. Build the test kernel, and then the services,
-with `-C instrument-coverage` and a `no_std` profiler runtime that only test builds depend on, and
-dump the counters at QEMU exit through semihosting. The report uses the same regions as the host
-`script/coverage` report, so `helpers/error_paths.py` reads it unchanged. The QEMU TCG plugin of
-option 1 is not built: blocks give lines and not regions, a `?` error edge would have to be found by
-address, and user programs that share virtual addresses would have to be told apart by address space.
+Ruled 2026-10-27 (UTC) by the architect. Build the test kernel, and then the services, with `-C
+instrument-coverage` and a `no_std` profiler runtime that only test builds depend on. Dump the
+counters at QEMU exit. The report uses the same regions as the host `script/coverage` report, so
+`helpers/error_paths.py` reads it unchanged. The alternative, a QEMU TCG plugin that records
+executed blocks, is not built: blocks give lines and not regions, a `?` error edge needs a search by address, and user programs that share virtual addresses need
+telling apart by address space.
 
-Conditions on the build:
+The runtime is a dependency under §46 (thin primitives or whole subsystems), so it carries a
+dependency audit and the kernel's bar. [`notes/kernel-coverage.md`](../../notes/kernel-coverage.md)
+holds both, the numbers and the method.
 
-- The runtime is a dependency under §46 (thin primitives or whole subsystems). Before it is added,
-  the candidate (`minicov` is the usual one) is audited for version, licence, transitive
-  dependencies, any C build step and maintenance, and the result is recorded where the tree records
-  a dependency. A runtime that is more than a thin one, or that needs a C toolchain the CI lacks,
-  stops the work and goes back to an architect.
-- The version is pinned exactly and is at least two weeks old.
-- The first pull request covers the kernel on one architecture end to end: the instrumented build,
-  the counter dump, an lcov or JSON report, and `helpers/error_paths.py` reading it. It reports how
-  many of the kernel's error paths the tests reach. The services and the other two architectures
-  follow in later pull requests.
-- QEMU runs under `helpers/qemu-bounded.sh`. No recurring heavy CI job is added; any schedule goes in
-  the Pacific-night window (about 08:00 to 13:00 UTC) and needs a report first.
+## What the first pull request builds
+
+The kernel's own unit-test image on aarch64:
+
+- `cargo xtask coverage` builds it with `-C instrument-coverage` in a target directory of its own,
+  behind the kernel's `coverage` feature, which is the only thing that links `minicov`.
+- The image writes its counters to a file on the host through ARM semihosting as it exits, on the
+  failing paths as well as the passing one.
+- The same command renders an HTML report and an lcov file with `llvm-cov`, and runs
+  `helpers/error_paths.py` on the HTML.
+
+## What remains
+
+Each is its own pull request:
+
+1. The whole-system image (`system_tests/`), which boots the kernel as a library with the services
+   running, merged with the unit-test profile.
+2. The services' own programs at EL0, each with its own dump, since no kernel semihosting call
+   reaches a user address space.
+3. riscv64 and x86_64: the same feature, with each architecture's exit and file channel.
+4. A scheduled run in the Pacific-night window (about 08:00 to 13:00 UTC), after a report on what
+   one run costs. No recurring job exists today.
+
+## Follow-on
+
+- **Outstanding.** The four numbered items under "What remains". Checked 2026-10-27 (UTC): `kernel/src/coverage.rs`
+  exists for aarch64 only. `kernel/src/lib.rs` refuses the `coverage` feature on the other two
+  targets. `xtask/src/coverage.rs` boots the kernel's unit-test image and nothing else.
+
+## Reuse
+
+`minicov` 0.3.9 (MIT or Apache-2.0), Amanieu d'Antras's libc-free copy of LLVM's profiling runtime.
+`cargo-llvm-cov` and `grcov` need a host process and a filesystem, which a kernel image has
+neither of. Writing a serializer for the raw profile format would be a fork of LLVM's format with
+nothing to track it.
+
+## BUGS
+
+- The report covers the kernel's unit-test image, on aarch64. The whole-system image, the services
+  and the other two architectures are the list above; until they land the report undercounts what
+  the full suite reaches.
+- The instrumented image is slower and its stack frames are larger. A test that measures time or
+  stack depth runs against different numbers than the plain image, so the report says what the
+  tests reach and never whether they pass.
+- Counters are plain integers, bumped without atomics on every core. A count can lose an increment
+  when two cores bump one counter together; whether a region ran stays the same.
 
 ## Index row
 
-`script/coverage` sees only host crates, so about half the tree's 1,761 error paths, including every cleanup path the count found, are invisible to it. The ruling builds the kernel's unit-test image first, with `-C instrument-coverage` and a `no_std` profiler runtime, dumps the counters through semihosting at exit, and reads them with `helpers/error_paths.py`; the services and the other two architectures follow.
+`script/coverage` sees only host crates, so about half the tree's 1,761 error paths, including every cleanup path the count found, are invisible to it. The block builds the kernel's unit-test image with `-C instrument-coverage` and a `no_std` profiler runtime, dumps the counters through semihosting at exit, and reads them with `helpers/error_paths.py`; the whole-system image, the services and the other two architectures follow.

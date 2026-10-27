@@ -233,6 +233,12 @@ video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }
 # fourth bench stop's audit. See notes/interleaving.md.
 thread_wake_handshake = { version = "0.1.0", path = "../crates/thread_wake_handshake" }
 
+# **A test-build dependency only** (milestone 781 (measure kernel and service coverage under QEMU),
+# ruled 2026-10-27). `minicov` is the LLVM profiling runtime without a libc: the `.profraw`
+# serializer behind `-C instrument-coverage`. Optional, behind `coverage`, so no shipping build links
+# it. Pinned exactly. Audit and bar: notes/kernel-coverage.md.
+minicov = { version = "=0.3.9", default-features = false, optional = true }
+
 [build-dependencies]
 # The measured-boot digest parser, shared with the kernel proper so the manifest the build writes and
 # the trust root the kernel checks have exactly one definition of the format (milestone 22 phase B.1).
@@ -246,6 +252,10 @@ measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
 soak_page = { version = "0.1.0", path = "../crates/soak_page" }
 
 [features]
+# Instrumented test image: counters dumped through semihosting at exit. Built by `cargo xtask
+# coverage` with `-C instrument-coverage` and never by any gate. aarch64 only so far. Name
+# provisional. See kernel/src/coverage.rs.
+coverage = ["dep:minicov"]
 # **This kernel is the system-test image's** (milestone 609 (the system tests leave the kernel
 # crate)). Only `system_tests/` turns it on. It makes the boot a test boot, the way `cfg(test)` does
 # for `cargo test -p kernel`, exposes `system_test_access` (lib.rs), and calls the suite that crate

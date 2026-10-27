@@ -35,6 +35,11 @@ mod arch;
 mod bench;
 mod capability_object;
 mod console;
+// The coverage counters, written to the host at exit (milestone 781). aarch64 first.
+#[cfg(all(feature = "coverage", target_arch = "aarch64"))]
+mod coverage;
+#[cfg(all(feature = "coverage", not(target_arch = "aarch64")))]
+compile_error!("the coverage feature writes through aarch64 semihosting; riscv64 and x86_64 follow");
 mod cpu;
 mod drivers;
 #[cfg(feature = "fastpath_pad")]

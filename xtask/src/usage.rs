@@ -13,7 +13,7 @@ pub(crate) fn print_usage(other: &str) {
         eprintln!("unknown command: {other}\n");
     }
     eprintln!(
-        "usage: cargo xtask <build|run|shell|swish-check|boot-check|initial-ramdisk-aarch64|initial-ramdisk-riscv|initial-ramdisk-x86|uefi-image|uefi-boot|uefi-test|package|install-boot|rollback-boot|confirm-boot|stick|stick-boot|acpi-boot|screen-boot|manual|apropos|std-src|std-stamp|std-exerciser|std-aborts|foreign-note|basalt-fetch|test|time-summary|undefined-behavior-check|bench|icount|gdb|objdump|image|board-console|soak-test|board-script|card-check> [--hvf]"
+        "usage: cargo xtask <build|run|shell|swish-check|boot-check|initial-ramdisk-aarch64|initial-ramdisk-riscv|initial-ramdisk-x86|uefi-image|uefi-boot|uefi-test|package|install-boot|rollback-boot|confirm-boot|stick|stick-boot|acpi-boot|screen-boot|manual|apropos|std-src|std-stamp|std-exerciser|std-aborts|foreign-note|basalt-fetch|test|coverage|time-summary|undefined-behavior-check|bench|icount|gdb|objdump|image|board-console|soak-test|board-script|card-check> [--hvf]"
     );
     eprintln!("       cargo xtask swish-check [--arch aarch64|riscv64]");
     eprintln!(
@@ -38,6 +38,7 @@ pub(crate) fn print_usage(other: &str) {
     eprintln!(
         "       cargo xtask test [--arch aarch64|riscv64|x86_64[,...]] [--no-host] [--cpu <qemu-cpu-model>] [--hvf] [--test <substring>]"
     );
+    eprintln!("       cargo xtask coverage   (the aarch64 kernel test image, instrumented; target/kernel-coverage)");
     eprintln!("       cargo xtask icount [--arch aarch64|riscv64]");
     eprintln!(
         "       cargo xtask board-console [--port <dev>] [--replay <log>] [--log <file>] [--for <duration>] [--until spl|opensbi|uboot|handoff|banner|machine|selftest|tour|prompt|none] [--quiet-after <duration>] [--stop | --stop-after <n>]"

@@ -7,6 +7,14 @@
 # measures exactly those (abi, capability, nifefs, device_tree_blob, elf, frames, paging, pci, ...). Requires
 # cargo-llvm-cov. Not one of the canonical "Scripts to Rule Them All"; see notes/scripts.md.
 #
+#     script/coverage            the host crates, gated at the per-file floor (CI runs this)
+#     script/coverage --kernel   the kernel's unit-test image on aarch64, instrumented and booted
+#                                under QEMU (milestone 781); a report, never a gate, and in no CI job
+#
+# `--kernel` is `cargo xtask coverage`: it builds the image with `-C instrument-coverage`, boots it
+# bounded, and reads the counters the kernel wrote to the host through semihosting. It needs QEMU
+# and clang, not cargo-llvm-cov. notes/kernel-coverage.md has the method and the numbers.
+#
 # Name: ratified 2026-08-03 (calef), retroactively and as a pattern rather than as a rename. When he
 # renamed `script/miri` and `script/mutants`, the argument was that `script/verify` runs Kani,
 # `script/fuzz` runs cargo-fuzz and `script/coverage` runs llvm-cov, and none of them says so in its
@@ -16,6 +24,11 @@ set -e
 # A heavy job: wait for one of the machine's heavy-job slots first (helpers/heavy_slot.py).
 . "$(dirname "$0")/../helpers/heavy-slot.sh"
 cd "$(dirname "$0")/.."
+
+if [ "$1" = "--kernel" ]; then
+    . helpers/qemu-path.sh
+    exec cargo xtask coverage
+fi
 
 # Auto-install the one tool this script needs, the first time it is run. It lives here rather than
 # in script/bootstrap on purpose: bootstrap runs in the CI test job, which must not spend minutes
