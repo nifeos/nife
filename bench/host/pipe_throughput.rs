@@ -29,13 +29,13 @@ fn main() {
     // The small size first, because it is the one the nife number is compared against.
     for chunk in [16usize, 64 * 1024] {
         let ns = run_one(chunk);
-        let secs = ns as f64 / 1e9;
+        let seconds = ns as f64 / 1e9;
         let mib = TOTAL as f64 / (1024.0 * 1024.0);
         let name = if chunk == 16 { "pipe_16" } else { "pipe_64k" };
         println!(
             "bench: {name} {TOTAL} bytes in {:.3} ms = {:.1} MiB/s ({:.0} ns per {chunk}-byte write)",
             ns as f64 / 1e6,
-            mib / secs,
+            mib / seconds,
             ns as f64 / (TOTAL / chunk) as f64,
         );
     }

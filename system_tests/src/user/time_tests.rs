@@ -33,7 +33,7 @@ fn clock() -> clock_service::Wiring {
 /// is exactly the assertion that would survive every bug worth catching. A unit this does not know
 /// is a failure: a renderer that grew a fourth unit and a reader that silently ignored it would let
 /// a wrong number through.
-fn nanos_of(said: &[u8]) -> u64 {
+fn ns_of(said: &[u8]) -> u64 {
     let text = core::str::from_utf8(said).expect("the shell printed non-UTF-8");
     let line = text
         .lines()
@@ -99,7 +99,7 @@ fn a_command_is_timed_by_the_shells_clock_and_holds_none_itself() {
     // Ten seconds, because this is not a benchmark: `bench` measures spawn latency and this proves a
     // stopwatch exists. See notes/time-command.md.
     const SANE: u64 = 10_000_000_000;
-    let spawned = nanos_of(timed);
+    let spawned = ns_of(timed);
     assert!(
         spawned > 0 && spawned < SANE,
         "a spawn took {spawned} ns, which is not a duration this machine could have spent",
@@ -112,7 +112,7 @@ fn a_command_is_timed_by_the_shells_clock_and_holds_none_itself() {
         "the timed builtin did not run: {:?}",
         core::str::from_utf8(builtin).unwrap(),
     );
-    let echoed = nanos_of(builtin);
+    let echoed = ns_of(builtin);
     assert!(
         echoed > 0 && echoed < SANE,
         "a timed builtin took {echoed} ns",
@@ -157,8 +157,8 @@ fn a_shell_with_no_usable_clock_times_the_command_anyway() {
         let t = &buf[..n];
         let timed = core::str::from_utf8(answer(t, b"time least_authority_demo 3")).unwrap();
         assert!(timed.contains("3*3 = 9"), "the command must run: {timed:?}",);
-        let nanos = nanos_of(answer(t, b"time least_authority_demo 3"));
-        assert!(nanos > 0 && nanos < SANE, "duration out of range: {nanos}");
+        let ns = ns_of(answer(t, b"time least_authority_demo 3"));
+        assert!(ns > 0 && ns < SANE, "duration out of range: {ns}");
         // The two sentences §72 retired must be gone from the whole transcript, not merely from
         // this line: a shell that printed them anywhere would still be claiming the old boundary.
         let whole = core::str::from_utf8(t).unwrap();

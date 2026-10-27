@@ -127,7 +127,7 @@ is a transcript to read as "this host was saturated".
 
 `fixtures/src/login_test_client.rs`'s `destroy_with_retry` now waits on the property (the region
 genuinely coming down) and bounds itself with a clock rather than a count. The ceiling is
-`DESTROY_WAIT_SECS`, five seconds of counter time. It is a watchdog rather than a rate: only a run
+`DESTROY_WAIT_SECONDS`, five seconds of counter time. It is a watchdog rather than a rate: only a run
 that is going to fail ever pays it, because the loop returns the moment the region comes down.
 
 The ceiling has an argument rather than a feel, and the argument is the tail, measured here:

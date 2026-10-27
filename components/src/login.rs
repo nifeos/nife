@@ -18,7 +18,7 @@
 
 //! # BUGS
 //! - One durable session at a time ([`DURABLE_SESSIONS`]); a second identity gets an ordinary one.
-//! - Start-up waits up to [`END_WAIT_SECS`] per re-derived session, unmeasured.
+//! - Start-up waits up to [`END_WAIT_SECONDS`] per re-derived session, unmeasured.
 //! - A stopped durable session is retired only at its identity's next login.
 //! - Ending a durable session waits for a running job (§222), and `SUSPEND` waits on the terminal.
 //! - A `user_timetable_keeper` that fails half way leaves its splits in the user's budget.
@@ -191,7 +191,7 @@ const DURABLE_PAGE_VA: u64 = 0x0000_0000_0300_0000;
 const DURABLE_PAGE_STRIDE: u64 = 0x1_0000;
 /// How long [`Durable::end`] waits for a timetable to stop, in seconds of counter time: a job
 /// already running finishes first, and a scheduled job is short-lived by design.
-const END_WAIT_SECS: u64 = 5;
+const END_WAIT_SECONDS: u64 = 5;
 
 user_mode_runtime::program_entry!(start);
 
@@ -914,7 +914,7 @@ impl Durable {
     /// the page, as its user could, wait for the timetable's exit word, then [`Durable::retire`].
     /// The timetable stops firing at once and lets a job already running finish (the fourth
     /// sub-ruling of §222 (who holds a user's schedule)), so "now" means within one job's run.
-    /// `Err` hands the session back when the timetable has not stopped within [`END_WAIT_SECS`];
+    /// `Err` hands the session back when the timetable has not stopped within [`END_WAIT_SECONDS`];
     /// see this program's BUGS.
     fn end(self) -> Result<(), Self> {
         use core::sync::atomic::{AtomicU64, Ordering};
@@ -924,7 +924,7 @@ impl Durable {
             // (`timetable::registration`'s layout).
             unsafe { &*((self.va + off as u64) as *const AtomicU64) }
         };
-        let ceiling = user_mode_runtime::cntfrq().saturating_mul(END_WAIT_SECS);
+        let ceiling = user_mode_runtime::cntfrq().saturating_mul(END_WAIT_SECONDS);
         let started = user_mode_runtime::now();
         let mut asked = 0u64;
         while !self.exited() {
@@ -952,7 +952,7 @@ impl Durable {
 
     /// **Put a stored document in force** before the page is handed out: the replace its user
     /// staged last time, staged again by this process as sequence 1. Waits for the answer, up to
-    /// [`END_WAIT_SECS`]; a client reads the verdict and the plan in the page either way. `true`
+    /// [`END_WAIT_SECONDS`]; a client reads the verdict and the plan in the page either way. `true`
     /// when the timetable answered and took the document ([`registration::STATUS_REPLACED`]).
     fn restore(&self, doc: &[u8]) -> bool {
         use core::sync::atomic::{AtomicU64, Ordering};
@@ -972,7 +972,7 @@ impl Durable {
             registration::request(registration::REPLACE, 1),
             Ordering::Release,
         );
-        let ceiling = user_mode_runtime::cntfrq().saturating_mul(END_WAIT_SECS);
+        let ceiling = user_mode_runtime::cntfrq().saturating_mul(END_WAIT_SECONDS);
         let started = user_mode_runtime::now();
         while word(registration::REPLY).load(Ordering::Acquire) != 1 {
             if user_mode_runtime::now().wrapping_sub(started) >= ceiling {
