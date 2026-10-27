@@ -56,7 +56,7 @@ use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
-    call, exit, interrupt_acknowledge, interrupt_wait, monotonic_ns, receive_cap, send,
+    call, exit, interrupt_acknowledge, interrupt_wait, monotonic_ns, receive_capability, send,
 };
 use video_terminal::keymap::{EV_KEY, Keyboard};
 
@@ -964,10 +964,10 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         ),
     };
 
-    // **The attach handshake, first and alone**: the progenitor's `SEND_CAP` waits for this
+    // **The attach handshake, first and alone**: the progenitor's `SEND_CAPABILITY` waits for this
     // receive, so nothing that could fail goes before it. What arrives is `WRITE` on the line
     // discipline's endpoint, and it is the only destination this program ever names.
-    let (_, out, _) = receive_cap(ATTACH);
+    let (_, out, _) = receive_capability(ATTACH);
 
     loop {
         interrupt_wait(INTERRUPT);

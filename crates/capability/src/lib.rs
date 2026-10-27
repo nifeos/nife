@@ -36,7 +36,7 @@
 //! ```
 //!
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `caps`. Refused `caps` (a container's
-//! name for what is the capability model: it exports `Cap`, `Rights`, `Object`, `Reap` and
+//! name for what is the capability model: it exports `Capability`, `Rights`, `Object`, `Reap` and
 //! `CapabilityTable`) and `cap_space` (names one of five exports, and stutters as `cap_space::CapabilityTable`).
 //! The exported type was originally kept as `CSpace`, seL4's own spelling; DECISIONS §113's
 //! amendment (calef, 2026-08-25) renamed it to `CapabilityTable`, the plain term this crate's own
@@ -119,15 +119,18 @@ impl Rights {
 }
 
 /// A capability: **an object, and what you may do with it.**
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `Cap` under the capability ruling of 2026-10-06 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Cap<O> {
+pub struct Capability<O> {
     /// What this capability names.
     pub object: O,
     /// What the holder may do with it.
     pub rights: Rights,
 }
 
-impl<O> Cap<O> {
+impl<O> Capability<O> {
     /// **Mint a fresh capability to `object` with exactly this one's rights.** The mint site for
     /// authority created outside [`CapabilityTable::derive`]: `MemoryRegion::SPLIT` (milestone 31
     /// (a capability shell: designation is authorization)), `MemoryRegion::RETYPE` and every
@@ -136,8 +139,8 @@ impl<O> Cap<O> {
     /// (GRANT-less) budget cannot split itself a GRANT-bearing child. See §16 (object revocation:
     /// reclaim the objects a process built) and notes/capabilities/table.md ("Minting outside
     /// `derive`").
-    pub fn mint_child(&self, object: O) -> Cap<O> {
-        Cap {
+    pub fn mint_child(&self, object: O) -> Capability<O> {
+        Capability {
             object,
             rights: self.rights,
         }
@@ -225,12 +228,12 @@ pub use storage::CapabilityTable;
 /// `the_count_is_the_slots` check the two doors against the array. See
 /// notes/capabilities/table.md ("Two doors").
 mod storage {
-    use super::{Cap, MAXIMUM_SLOTS, note_peak};
+    use super::{Capability, MAXIMUM_SLOTS, note_peak};
 
     /// A thread's capability table: a flat array, an fd table with a type tag on each entry,
     /// rather than seL4's tree of CNodes. See notes/capabilities/table.md ("The table").
     pub struct CapabilityTable<O, const N: usize> {
-        slots: [Option<Cap<O>>; N],
+        slots: [Option<Capability<O>>; N],
         /// **Bit `i` set means slot `i` is empty** (milestone 126 (the `procps` package), calef's
         /// ruling on #1360, 2026-09-27, UTC), so `insert`'s first free slot is one
         /// `trailing_zeros`, and bits at and above `N` stay clear, so a full table is a zero word.
@@ -274,7 +277,7 @@ mod storage {
         }
 
         /// The capability in `slot`, or `None` for an empty or out-of-range one.
-        pub(super) fn slot(&self, slot: usize) -> Option<Cap<O>> {
+        pub(super) fn slot(&self, slot: usize) -> Option<Capability<O>> {
             self.slots.get(slot).copied().flatten()
         }
 
@@ -320,7 +323,7 @@ mod storage {
         /// **Door one: put `capability` in `slot`**, occupied or not. `None` if `slot` is out of range;
         /// otherwise whether it was empty before. Clears the slot's free bit, and if the slot was
         /// empty, counts the growth and raises the high-water mark.
-        pub(super) fn fill(&mut self, slot: usize, capability: Cap<O>) -> Option<bool> {
+        pub(super) fn fill(&mut self, slot: usize, capability: Capability<O>) -> Option<bool> {
             let s = self.slots.get_mut(slot)?;
             let was_empty = s.is_none();
             *s = Some(capability);
@@ -343,7 +346,7 @@ mod storage {
         /// range or already empty, and then nothing changes. Sets the slot's free bit and counts
         /// the loss. `peak` is untouched: a mark that fell when the table drained would report
         /// what a boot holds, not what it reached.
-        pub(super) fn empty(&mut self, slot: usize) -> Option<Cap<O>> {
+        pub(super) fn empty(&mut self, slot: usize) -> Option<Capability<O>> {
             let capability = self.slots.get_mut(slot)?.take()?;
             self.free |= 1u64 << slot;
             self.used -= 1;
@@ -382,7 +385,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     }
 
     /// Look up a slot. **The entire security mechanism, and it is a bounds check.**
-    pub fn get(&self, slot: u64) -> Result<Cap<O>, Error> {
+    pub fn get(&self, slot: u64) -> Result<Capability<O>, Error> {
         self.slot(slot as usize).ok_or(Error::NoSuchSlot)
     }
 
@@ -391,7 +394,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// Returns [`Error::NoSuchSlot`] for an empty slot even when the caller wanted rights, which
     /// is deliberate: **"you may not" and "there is nothing there" are different answers**, and
     /// the second one leaks less.
-    pub fn get_with(&self, slot: u64, needed: Rights) -> Result<Cap<O>, Error> {
+    pub fn get_with(&self, slot: u64, needed: Rights) -> Result<Capability<O>, Error> {
         let capability = self.get(slot)?;
         if !capability.rights.allows(needed) {
             return Err(Error::CannotWiden);
@@ -402,7 +405,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// Put a capability in the first free slot. Used at spawn, to hand a process its world, and
     /// on every `CALL` for the one-shot Reply, which is why it is one `trailing_zeros` and not a
     /// scan (see the free-slot word's own doc).
-    pub fn insert(&mut self, capability: Cap<O>) -> Result<u64, Error> {
+    pub fn insert(&mut self, capability: Capability<O>) -> Result<u64, Error> {
         let slot = self.first_free().ok_or(Error::NoFreeSlot)?;
         self.fill(slot, capability);
         Ok(slot as u64)
@@ -412,7 +415,11 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// (`std::thread::spawn` runs real threads in one address space)). [`insert`](Self::insert) is
     /// `floor` 0. A `std` program's low slots are fixed by number and an empty one means "not
     /// granted", so what the program makes for itself must land above them.
-    pub fn insert_at_or_above(&mut self, floor: u64, capability: Cap<O>) -> Result<u64, Error> {
+    pub fn insert_at_or_above(
+        &mut self,
+        floor: u64,
+        capability: Capability<O>,
+    ) -> Result<u64, Error> {
         let floor = usize::try_from(floor).unwrap_or(usize::MAX);
         let slot = self.first_free_from(floor).ok_or(Error::NoFreeSlot)?;
         self.fill(slot, capability);
@@ -425,7 +432,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// child's supervision rendezvous in the reserved fault slot (abi's `FAULT_EP_SLOT`) rather than
     /// wherever first-free would fall, and refusing an occupied slot keeps that reservation honest:
     /// two things must never share the slot the kernel reads at `START`.
-    pub fn insert_at(&mut self, slot: u64, capability: Cap<O>) -> Result<u64, Error> {
+    pub fn insert_at(&mut self, slot: u64, capability: Capability<O>) -> Result<u64, Error> {
         if slot >= N as u64 {
             return Err(Error::NoSuchSlot);
         }
@@ -437,7 +444,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     }
 
     /// Put a capability in a specific slot, replacing whatever was there.
-    pub fn put(&mut self, slot: u64, capability: Cap<O>) -> Result<(), Error> {
+    pub fn put(&mut self, slot: u64, capability: Capability<O>) -> Result<(), Error> {
         self.fill(slot as usize, capability)
             .ok_or(Error::NoSuchSlot)?;
         Ok(())
@@ -457,7 +464,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 
         self.put(
             to,
-            Cap {
+            Capability {
                 object: src.object,
                 rights,
             },
@@ -580,7 +587,7 @@ mod verification {
             if kani::any() {
                 cs.put(
                     slot,
-                    Cap {
+                    Capability {
                         object: kani::any(),
                         rights: Rights(kani::any()),
                     },
@@ -644,7 +651,7 @@ mod verification {
                 .filter(|&i| cs.slot(i).is_none())
                 .fold(0, |m, i| m | (1 << i))
         }
-        let capability = || Cap {
+        let capability = || Capability {
             object: kani::any(),
             rights: Rights(kani::any()),
         };
@@ -720,7 +727,7 @@ mod verification {
         let mut cs: CapabilityTable<u8, 2> = CapabilityTable::new();
         cs.put(
             0,
-            Cap {
+            Capability {
                 object: 0u8,
                 rights: src_rights,
             },
@@ -752,7 +759,7 @@ mod verification {
 
     /// **Authority never widens at the other mint site either: `split` inherits, it does not
     /// grant.** `MemoryRegion::SPLIT` mints outside [`CapabilityTable::derive`] through
-    /// [`Cap::mint_child`], and this proves the child's rights are exactly the parent's (milestone
+    /// [`Capability::mint_child`], and this proves the child's rights are exactly the parent's (milestone
     /// 35 (prove the DMA-confinement boundary)), which implies the subset relation. Equality is the
     /// precise claim because §16's amendment has `SPLIT` pass `GRANT` down only when the parent
     /// holds it, so delegability comes from the root's mint, and rights down a budget tree never
@@ -760,7 +767,7 @@ mod verification {
     /// Falsification: replayable `crates/capability/falsifications/verification.split_never_widens_rights.patch`
     #[kani::proof]
     fn split_never_widens_rights() {
-        let parent = Cap {
+        let parent = Capability {
             object: 7u8,
             rights: Rights(kani::any()),
         };
@@ -782,7 +789,7 @@ mod verification {
     /// every pair of rendezvous names and every liveness, `Permitted` implies the thread's recorded
     /// fault rendezvous *is* the rendezvous being invoked and the thread is dead, so no
     /// unsupervised thread, other supervisor's child or stale name is reapable. The proof pins the
-    /// gate; `reap_decision` taking and returning no `Cap` pins the absence of a grant.
+    /// gate; `reap_decision` taking and returning no `Capability` pins the absence of a grant.
     /// Falsification: replayable `crates/capability/falsifications/verification.reap_is_permitted_only_to_the_supervising_rendezvous.patch`
     #[kani::proof]
     fn reap_is_permitted_only_to_the_supervising_rendezvous() {

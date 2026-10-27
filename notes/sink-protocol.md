@@ -110,7 +110,7 @@ amount of userspace protocol design could have recovered the distinction, becaus
 the kernel.
 
 So the ABI grew one variant, `abi::Error::Gone` (-11): *the capability names an object that no
-longer exists*. It applies to all five endpoint IPC paths (SEND, RECEIVE, SEND_CAP, RECEIVE_CAP,
+longer exists*. It applies to all five endpoint IPC paths (SEND, RECEIVE, SEND_CAPABILITY, RECEIVE_CAPABILITY,
 CALL), because the fact is about the endpoint and not about the direction.
 
 This is the second time a distinction like this came up and it was resolved the other way the first

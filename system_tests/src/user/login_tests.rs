@@ -239,7 +239,7 @@ fn login_grants_a_working_capability_set_to_the_identity_it_verified() {
 }
 
 /// A real identity with the wrong secret is denied, and nothing follows the refusal.
-/// `login_test_client` never calls `RECEIVE_CAP` after a refusal, so a capability sent anyway
+/// `login_test_client` never calls `RECEIVE_CAPABILITY` after a refusal, so a capability sent anyway
 /// leaves the role short of its report and the test hangs: the honest failure for a promise broken
 /// at the sender.
 #[test_case]
@@ -829,7 +829,7 @@ fn login_hands_out_the_terminal_once_and_denies_a_concurrent_second_login_until_
 /// presentation, delivered only here; `script/swish-check` proves the progenitor's half.
 ///
 /// Falsified by hand before it was committed (aarch64, 2026-09-26): delegating the sixth capability
-/// `WRITE | GRANT` in `components/src/login.rs` turned this test red. The client's `SEND_CAP` of it
+/// `WRITE | GRANT` in `components/src/login.rs` turned this test red. The client's `SEND_CAPABILITY` of it
 /// then succeeded, onto the report endpoint, and arrived in place of the report (word 0 read 0).
 #[test_case]
 fn login_hands_a_listed_session_the_run_unvouched_capability_and_it_cannot_be_passed_on() {

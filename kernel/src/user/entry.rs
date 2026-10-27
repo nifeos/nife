@@ -36,7 +36,7 @@ pub struct Spawn<'a> {
     /// it the slot begins.
     pub arg2: u64,
     /// Capabilities, granted into slots 0, 1, 2, ... in order.
-    pub grants: &'a [crate::capability_object::Cap],
+    pub grants: &'a [crate::capability_object::Capability],
     /// Extra pages: a shared buffer, a device's registers. Mapped after the ELF's own segments.
     pub maps: &'a [Mapping],
 }

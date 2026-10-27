@@ -13,7 +13,7 @@
 //!   the mix in this task's own order, report `[jobs, ticks, index]`, block again. A go word of
 //!   [`job_mix::GO_BREAKDOWN`] instead asks for the last subrun's per-kind ticks, untimed. It never
 //!   exits; the supervisor halts the machine when the sweep is done.
-//! - [`job_mix::ROLE_ECHO`]: `RECEIVE_CAP` and `REPLY`, forever: the [`job_mix::ROUND_TRIP`] job's
+//! - [`job_mix::ROLE_ECHO`]: `RECEIVE_CAPABILITY` and `REPLY`, forever: the [`job_mix::ROUND_TRIP`] job's
 //!   other half.
 //!
 
@@ -155,9 +155,9 @@ fn map_job() -> Result<u64, Refused> {
     region_ticks += now() - t1;
     // The objects are gone with their region; the slots that named them are not, and a fixed
     // table would fill over a subrun if they stayed.
-    user_mode_runtime::cap_delete(frame);
-    user_mode_runtime::cap_delete(aspace);
-    user_mode_runtime::cap_delete(region);
+    user_mode_runtime::capability_delete(frame);
+    user_mode_runtime::capability_delete(aspace);
+    user_mode_runtime::capability_delete(region);
     Ok(region_ticks)
 }
 
@@ -195,7 +195,7 @@ fn spawn_job(code_frame: u64) -> Result<u64, Refused> {
             stack,
             abi::address_space::MAP_RW,
         ))?;
-        user_mode_runtime::cap_delete(stack);
+        user_mode_runtime::capability_delete(stack);
         let tcb = slot(user_mode_runtime::retype_into_kernel_object(
             child,
             abi::objtype::THREAD_CONTROL_BLOCK,
@@ -233,8 +233,8 @@ fn spawn_job(code_frame: u64) -> Result<u64, Refused> {
             }
             yield_now();
         }
-        user_mode_runtime::cap_delete(tcb);
-        user_mode_runtime::cap_delete(child);
+        user_mode_runtime::capability_delete(tcb);
+        user_mode_runtime::capability_delete(child);
         n += 1;
     }
     Ok(region_ticks)

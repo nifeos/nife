@@ -194,7 +194,7 @@ thing. A third way, found later and not by this page, is in use: see below.
 
 A pull-based source, which is the exact answer to the constraint. The reason the shell needs two
 wait points is that it holds two channels to one child. Make it one: hand the stage a single
-endpoint on which it `CALL`s for input and `SEND`s output, and the shell's loop is one `RECEIVE_CAP`
+endpoint on which it `CALL`s for input and `SEND`s output, and the shell's loop is one `RECEIVE_CAPABILITY`
 that either replies with bytes or writes bytes out. One wait point, arbitrary interleaving, no
 deadlock ever. What it costs is everything [this note](../pipes.md) calls a finding: "a source is
 the sink contract received rather than sent" stops being true, `<` and the right-hand side of `|`

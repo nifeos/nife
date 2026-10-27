@@ -26,7 +26,7 @@ The re-audit of the fourth stop's endpoint census confirmed its two positive cla
 its conclusion. At the park point on this path the report endpoint is the only endpoint (`0x0`).
 The tour's release build creates no other, since `boot_via_progenitor` and the service modules are
 aarch64- or test-gated. And `components/src/builder.rs` issues no receive. Its verbs are `invoke`,
-`send`, `cap_delete` and `exit`, and its retypes are ASPACE, FRAME and TCB, never ENDPOINT.
+`send`, `capability_delete` and `exit`, and its retypes are ASPACE, FRAME and TCB, never ENDPOINT.
 
 What the census never asked is what the machine looks like *after* the receive returns. The answer
 is: exactly like those dumps. There are five independent identifications, each checkable from the

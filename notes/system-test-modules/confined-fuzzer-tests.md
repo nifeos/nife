@@ -15,12 +15,12 @@ made between calls, so a wrong answer cannot steer what the generator does next.
 
 - The table diff. A slot may empty freely. It may fill only four ways: `RETYPE_OBJ` (the object's
   page in the fuzzer's own region), `BADGE` (the same object, restamped), `SLICE` (a sub-run of a
-  held frame at its rights, from a capability holding `GRANT`), or `RECEIVE_CAP`. A `RECEIVE_CAP`
+  held frame at its rights, from a capability holding `GRANT`), or `RECEIVE_CAPABILITY`. A `RECEIVE_CAPABILITY`
   fill must be a delegation the conductor watched leave a sender, no wider and with the same badge,
   or the `Reply` of a parked caller. Any other fill, a plain `RECEIVE` included, is an escape.
-- The delegation ledger. It records each parked `SEND_CAP`, marks it dead on revocation, and drops
+- The delegation ledger. It records each parked `SEND_CAPABILITY`, marks it dead on revocation, and drops
   it when its sender returns. A fill naming a dead or unknown delegation is an escape (#1525).
-- Register truth. After `RECEIVE_CAP`, `x1` names the slot that filled or is `NO_CAP`, and `x4`
+- Register truth. After `RECEIVE_CAPABILITY`, `x1` names the slot that filled or is `NO_CAPABILITY`, and `x4`
   carries `REPLY_DELIVERED` exactly when the fill is a `Reply`.
 - The badge. Everything drained off the server endpoint carries a fuzzer's badge or one it minted
   under the conductor's eye. Badge 0 is the shape of #1494.
@@ -50,4 +50,4 @@ one the same way.
 No fuzzer can bind an interrupt or hold a supervision channel, so interrupt and death deliveries
 never happen. The step protocol also closes the orders in which two fuzzers' messages can arrive.
 Four recorded falsifications depend on exactly those, so this module cannot turn red under them;
-`receive_cap_attack_tests` keeps those records.
+`receive_capability_attack_tests` keeps those records.

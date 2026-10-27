@@ -12,7 +12,7 @@
 //! # What the generator reaches
 //!
 //! `SYS_INVOKE` on any slot but [`GO`] with any method and any words, biased toward the endowment
-//! and the methods objects have; `SYS_CAP_DELETE`; `SYS_YIELD`; and unknown syscall numbers. Words
+//! and the methods objects have; `SYS_CAPABILITY_DELETE`; `SYS_YIELD`; and unknown syscall numbers. Words
 //! are small integers, slot numbers, rights masks, page-aligned addresses in the playground, report
 //! page, image and stack, the ABI's tag values, and raw random words. It is spawned with
 //! `user::run` and enters through `svc`/`ecall`/`syscall`, so it reaches what milestone 752 (a
@@ -23,7 +23,7 @@
 //! # BUGS
 //!
 //! - [`GO`] is never fuzzed: the conductor needs it. It holds `READ` alone, so `RECEIVE` and
-//!   `RECEIVE_CAP` on it go unexercised.
+//!   `RECEIVE_CAPABILITY` on it go unexercised.
 //! - No thread or timer is ever made: a `MemoryRegion::RETYPE_OBJ` for either is rewritten to a
 //!   rendezvous, since a thread or a timer would make a seed's run depend on timing.
 //! - `SYS_EXIT` and `SYS_EXIT_THREAD` are never drawn; either would end the run.
@@ -136,7 +136,7 @@ fn pick(rng: &mut Rng) -> (u64, [u64; 6]) {
     let (nr, mut words) = draw(rng);
     // `MemoryRegion::RETYPE_OBJ`'s first word is the object type. A TCB or a timer would run on its
     // own clock and break the seed's determinism (see the module's `BUGS`), so either becomes a
-    // rendezvous. Applied whatever the slot holds, which nudges a `SEND_CAP`'s capability argument
+    // rendezvous. Applied whatever the slot holds, which nudges a `SEND_CAPABILITY`'s capability argument
     // off 3 and 5 too; that is the price of not knowing the slot's type.
     if nr == SYS_INVOKE
         && words[1] == abi::memory_region::RETYPE_OBJ

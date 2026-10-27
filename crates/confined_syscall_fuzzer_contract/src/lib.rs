@@ -73,11 +73,6 @@ pub mod report {
     pub const WORDS: usize = 14;
 }
 
-pub use abi::SYS_CAP_DELETE as SYS_CAPABILITY_DELETE;
-/// The ABI names these with `CAP` today. Both binaries this crate serves spell `capability` out
-/// (calef's ruling, 2026-10-06; see `design/naming/capability-spelling-worklist.md`), so each pre-sweep
-/// name appears exactly once in this crate, aliased to the spelling the sweep itself proposes,
-/// and nowhere else in the milestone's code.
-pub use abi::rendezvous::{
-    NO_CAP as NO_CAPABILITY, RECEIVE_CAP as RECEIVE_CAPABILITY, SEND_CAP as SEND_CAPABILITY,
-};
+/// The ABI names both binaries this crate serves share, re-exported so each spells them from one place.
+pub use abi::SYS_CAPABILITY_DELETE;
+pub use abi::rendezvous::{NO_CAPABILITY, RECEIVE_CAPABILITY, SEND_CAPABILITY};

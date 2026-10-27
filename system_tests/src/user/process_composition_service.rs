@@ -32,7 +32,7 @@ pub struct Witness {
 /// `INITIAL_RAMDISK_VA` with its length in `x1`, a memory region in slot 0, and a `WRITE`-only
 /// report line in slot 1, narrower than the progenitor's `WRITE|GRANT` because the witness never
 /// delegates it. The region is the lending budget, every right: the witness endows its child's slot
-/// 0 through `CAP_INSERT`, which gates on `GRANT`, and milestone 824 (a retype mints no right its
+/// 0 through `CAPABILITY_INSERT`, which gates on `GRANT`, and milestone 824 (a retype mints no right its
 /// budget lacks) means the budget must carry `GRANT` itself, as `memory_region_lending_capability`
 /// mints it.
 pub fn wire() -> Witness {

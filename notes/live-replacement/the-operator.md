@@ -14,7 +14,7 @@ revocation: §13 (capability revocation and untyped reclamation), §16, and the 
 ## The roles
 
 - `ROLE_DIRECT` is the default rung. The stable name a client holds is the endpoint object itself,
-  and the swap changes who is parked in `RECEIVE_CAP` on it. No process sits in the data path, so
+  and the swap changes who is parked in `RECEIVE_CAPABILITY` on it. No process sits in the data path, so
   the steady state costs exactly what an unbrokered call costs.
 - `ROLE_QUEUED` is the opt-in rung. A `broker` stands between producer and backend, so the producer
   never blocks on an absent consumer. It costs one extra hop, priced by the `broker_rtt` benchmark,
@@ -78,12 +78,12 @@ capabilities, wired from the client's own declaration and routing table. It trie
 server on the endpoint it is a client of. A plant, wired the same way, parks one message on the
 endpoint and exits when anyone takes it.
 
-The replacement is retired first, and that order is the point. A `RECEIVE_CAP` the kernel fails to
+The replacement is retired first, and that order is the point. A `RECEIVE_CAPABILITY` the kernel fails to
 refuse takes from the queue or blocks. With a live server receiving, the queue is always empty, so
 a break surfaced as a watchdog hang rather than a report (measured 2026-09-16 (UTC), milestone 305
 (the six kernel confinement rows get a falsification a machine can replay)). Once the replacement
 has answered `QUIESCE` it never receives on the endpoint again, so the plant's message is the only
-thing in the queue. A let-open `RECEIVE_CAP` returns it, the attacker reports a word nothing honest
+thing in the queue. A let-open `RECEIVE_CAPABILITY` returns it, the attacker reports a word nothing honest
 produces, and the test fails at its own assertion.
 
 No handshake orders the plant and the attacker, and none would help. If the attacker has already
@@ -145,7 +145,7 @@ Recovery needs no authority the operator did not already hold, although §32 say
 must restart a hung child "still needs the stronger right". For restarting the service that is not
 so. The device comes back with `PageFrame::REVOKE`, `GRANT`-gated take-back (§41) that asks the
 holder for nothing. There is nothing to drain, because a component that is not receiving has already
-done what `OPERATION_QUIESCE` exists for. The replacement parks in `RECEIVE_CAP` and picks up whatever
+done what `OPERATION_QUIESCE` exists for. The replacement parks in `RECEIVE_CAPABILITY` and picks up whatever
 queued behind the silence, because the kernel's sender queue is the buffer.
 
 Reclaiming the hung incumbent is where §32's stronger right was right, and the right is the kept

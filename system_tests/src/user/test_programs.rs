@@ -12,7 +12,7 @@
 //! userspace test file is split by topic).
 
 use super::*;
-use crate::capability_object::{Cap, Rights};
+use crate::capability_object::{Capability, Rights};
 use crate::sched;
 
 /// **The `image_self_checker` program's ELF bytes**: the loader's subject.
@@ -148,7 +148,7 @@ pub(super) fn spawn_progenitor_shaped(
     budget_rights: Rights,
     report: sched::RendezvousId,
     report_rights: Rights,
-    further_capabilities: &[(Cap, &str)],
+    further_capabilities: &[(Capability, &str)],
     bound_notification: Option<sched::NotificationId>,
     x0: u64,
 ) -> Started {

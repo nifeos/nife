@@ -481,16 +481,16 @@ fn a_quoted_word_is_known_by_its_position_and_the_last_slot_is_readable() {
 /// prefix, so the line that fills the page exactly is taken and one byte more is not.
 #[test]
 fn a_line_that_exactly_fills_the_argument_page_is_taken() {
-    let capability = program_argument_contract::CAPACITY;
+    let cap = program_argument_contract::CAPACITY;
     let word = |n: usize| {
         let mut line = [b'a'; 8192];
         line[..n].fill(b'a');
         line
     };
-    let exact = word(capability - 4);
-    assert_eq!(check_words(&exact[..capability - 4]), Ok(()));
+    let exact = word(cap - 4);
+    assert_eq!(check_words(&exact[..cap - 4]), Ok(()));
     assert_eq!(
-        check_words(&exact[..capability - 3]),
+        check_words(&exact[..cap - 3]),
         Err(Refusal::ArgumentsTooLong)
     );
     // The cost is bytes plus four, not four times the bytes: two 1,100-byte words fit.

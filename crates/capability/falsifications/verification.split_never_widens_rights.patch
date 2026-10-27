@@ -19,8 +19,8 @@ index dcd2cbb5..31a11508 100644
 --- a/crates/capability/src/lib.rs
 +++ b/crates/capability/src/lib.rs
 @@ -167,7 +167,7 @@ impl<O> Cap<O> {
-     pub fn mint_child(&self, object: O) -> Cap<O> {
-         Cap {
+     pub fn mint_child(&self, object: O) -> Capability<O> {
+         Capability {
              object,
 -            rights: self.rights,
 +            rights: self.rights.union(Rights::GRANT),

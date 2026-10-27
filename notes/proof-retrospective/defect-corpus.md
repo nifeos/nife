@@ -108,7 +108,7 @@ service to exactly eight successful logins ever, and a ninth correctly-authentic
 answered `DENIED`, indistinguishable from a wrong password.
 
 `login::connect()` had the same shape one level out. It made two rendezvous objects per connect,
-retyped from a shared region and released with `cap_delete`. That drops login's reference but leaves
+retyped from a shared region and released with `capability_delete`. That drops login's reference but leaves
 the kernel object in a global 512-slot registry until the region is destroyed. Roughly twenty-nine
 test-run connects were enough to fail an unrelated later test with "out of rendezvous points: 512
 live at once".

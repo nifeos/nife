@@ -13,7 +13,7 @@ pub const ADDRESS_SPACE: u64 = 2;
 /// A thread (milestone 19c.3): the retyped page holds the TCB, and the object is born an
 /// **embryo**, in no queue and not runnable. It becomes a running thread only through
 /// [`crate::thread_control_block::CONFIGURE`] (bind an address space, set entry and stack) and [`crate::thread_control_block::START`], with
-/// [`crate::thread_control_block::CAP_INSERT`] granting its initial authority in between. A half-built TCB can never
+/// [`crate::thread_control_block::CAPABILITY_INSERT`] granting its initial authority in between. A half-built TCB can never
 /// run: `START` refuses one with no bound space or no entry.
 pub const THREAD_CONTROL_BLOCK: u64 = 3;
 

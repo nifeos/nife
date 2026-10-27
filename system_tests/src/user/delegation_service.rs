@@ -21,7 +21,7 @@ use crate::sched::RendezvousId;
 pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
     let granter = program("delegation_granter").expect("no delegation_granter in the archive");
     let receiver = program("delegation_receiver").expect("no delegation_receiver in the archive");
-    let channel = crate::sched::create_rendezvous_from(endpoints).expect("no channel rendezvous"); // granter SEND_CAP -> receiver RECEIVE_CAP
+    let channel = crate::sched::create_rendezvous_from(endpoints).expect("no channel rendezvous"); // granter SEND_CAPABILITY -> receiver RECEIVE_CAPABILITY
     let resource = crate::sched::create_rendezvous_from(endpoints).expect("no resource rendezvous"); // the capability being delegated
     let loopback = crate::sched::create_rendezvous_from(endpoints).expect("no loopback rendezvous"); // the receiver's refused re-delegation target
     let report = crate::sched::create_rendezvous_from(endpoints).expect("no report rendezvous"); // the receiver's verdict
@@ -34,7 +34,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_capability(channel, Rights::WRITE), // slot 0: SEND_CAP over it
+                    rendezvous_capability(channel, Rights::WRITE), // slot 0: SEND_CAPABILITY over it
                     rendezvous_capability(resource, Rights::WRITE.union(Rights::GRANT)), // slot 1: delegate this
                 ],
                 maps: &[],
@@ -51,7 +51,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_capability(channel, Rights::READ), // slot 0: RECEIVE_CAP
+                    rendezvous_capability(channel, Rights::READ), // slot 0: RECEIVE_CAPABILITY
                     rendezvous_capability(report, Rights::WRITE), // slot 1: report the verdict
                     rendezvous_capability(loopback, Rights::WRITE), // slot 2: attempt re-delegation here
                 ],

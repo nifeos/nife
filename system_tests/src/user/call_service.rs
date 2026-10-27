@@ -20,7 +20,7 @@ use crate::sched::RendezvousId;
 pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
     let server = program("call_server").expect("no call_server program in the archive");
     let client = program("call_client").expect("no call_client program in the archive");
-    let ep = crate::sched::create_rendezvous_from(endpoints).expect("no ep rendezvous"); // client CALL <-> server RECEIVE_CAP
+    let ep = crate::sched::create_rendezvous_from(endpoints).expect("no ep rendezvous"); // client CALL <-> server RECEIVE_CAPABILITY
     let call_report =
         crate::sched::create_rendezvous_from(endpoints).expect("no call_report rendezvous");
     let oneshot_report =

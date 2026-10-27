@@ -41,7 +41,7 @@ pub(super) fn reply_other(
     Ok(if filed { 0 } else { 1 })
 }
 
-/// **Which error an aborted `SEND`, `SEND_CAP` or `CALL` answers.** `NotPermitted` when the
+/// **Which error an aborted `SEND`, `SEND_CAPABILITY` or `CALL` answers.** `NotPermitted` when the
 /// endpoint carries an interrupt and refused the deposit (DECISIONS §101 (notification objects),
 /// its amendment "an endpoint bound to an interrupt refuses every send"), `Gone` when it was stale
 /// or revoked. `#[cold]`, because the three arms that call it are on the IPC fastpath.
@@ -152,7 +152,7 @@ pub(super) fn timer_invoke(
 /// holder's own `rights` and `new_badge`, in a free slot of the caller's table, and returns the
 /// slot; `OutOfMemory` when the table is full.
 ///
-/// `NotPermitted` without `GRANT` (minting a delegatable view is delegation, the gate `SEND_CAP`
+/// `NotPermitted` without `GRANT` (minting a delegatable view is delegation, the gate `SEND_CAPABILITY`
 /// uses), for a zero badge, or for an already-badged source: a badge is set once and never
 /// changed, seL4's rule, so a server can trust the badge it is delivered.
 #[inline(never)]

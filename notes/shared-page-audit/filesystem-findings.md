@@ -58,7 +58,7 @@ caretaker touches the page exactly once at startup and then only relays handles.
 writes it at all, worth stating because it holds the capability: it maps the frame into children
 and does not speak `filesystem_contract`.
 In the kernel test suite several caretaker chains do coexist on the one frame, but each is blocked on
-`receive_cap` between tests, and the confined clients `exit()` after reporting.
+`receive_capability` between tests, and the confined clients `exit()` after reporting.
 
 The remaining opening is a runnable third party, and it opened on 2026-09-27.
 The open question was whether, once init could build a caretaker per grant, "a runnable shell

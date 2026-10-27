@@ -313,7 +313,7 @@ pub(super) fn start_device_services(
 ) -> DeviceServices {
     // First: only these slots matter, and every peak below is lower without them.
     for &c in g.for_test_roles {
-        cap_delete(c);
+        capability_delete(c);
     }
 
     let screen = graphical_terminal_grants(fs, table, g);
@@ -418,23 +418,23 @@ fn start_virtio_entropy(
                 direct_memory_access_phys,
                 0,
             ));
-            cap_delete(g.virtio_rng_interrupt);
-            cap_delete(g.virtio_rng);
-            cap_delete(g.virtio_rng_dma);
+            capability_delete(g.virtio_rng_interrupt);
+            capability_delete(g.virtio_rng);
+            capability_delete(g.virtio_rng_dma);
             // `READY` comes after the service's first bufferful from the device.
             let (verdict, _, _) = receive(ready);
-            cap_delete(ready);
+            capability_delete(ready);
             let entropy_ready = verdict == entropy_contract::READY;
             if entropy_ready {
                 Some(request)
             } else {
-                cap_delete(request);
+                capability_delete(request);
                 None
             }
         } else {
-            cap_delete(g.virtio_rng_interrupt);
-            cap_delete(g.virtio_rng);
-            cap_delete(g.virtio_rng_dma);
+            capability_delete(g.virtio_rng_interrupt);
+            capability_delete(g.virtio_rng);
+            capability_delete(g.virtio_rng_dma);
             None
         }
     } else {
@@ -458,11 +458,11 @@ fn start_network(
             network = Some(build_net_stack(ut, net_program, g));
         }
         for trio in [g.virtio_net_interrupt, g.virtio_net, g.virtio_net_dma] {
-            cap_delete(trio);
+            capability_delete(trio);
         }
     } else if is_granted(g.net_stack_ep) {
         let (lease, server, _) = receive(g.net_stack_report);
-        cap_delete(g.net_stack_report);
+        capability_delete(g.net_stack_report);
         network = Some((g.net_stack_ep, lease, server));
     }
     network
@@ -526,7 +526,7 @@ pub(super) fn start_terminal_stack(
 
         // Both children hold their own copies; freed now to lower the shell's peak.
         for c in [request, reply, con_shared] {
-            cap_delete(c);
+            capability_delete(c);
         }
     }
     Terminal {
@@ -619,10 +619,10 @@ fn start_console(
     ));
     // The binding lives in the objects, not in our copies of them.
     if has_screen {
-        cap_delete(g.disp_term_ep);
-        cap_delete(g.disp_term_page);
-        cap_delete(con_batch.0);
-        cap_delete(con_batch.1);
+        capability_delete(g.disp_term_ep);
+        capability_delete(g.disp_term_page);
+        capability_delete(con_batch.0);
+        capability_delete(con_batch.1);
     }
 }
 
@@ -670,13 +670,13 @@ fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'stati
         must_ok(user_mode_runtime::notification_bind(g.kernel_ring_notification, log.tcb) >= 0);
         must_ok(start_child(log, LOG_MODE_KERNEL, 0, 0));
         // No log writer registers yet, so the intake is not kept (the service's BUGS).
-        cap_delete(intake);
-        cap_delete(timer);
+        capability_delete(intake);
+        capability_delete(timer);
     }
     // Either way, so none is carried across the login block's peak.
-    cap_delete(g.kernel_ring);
-    cap_delete(g.kernel_ring_cursor);
-    cap_delete(g.kernel_ring_notification);
+    capability_delete(g.kernel_ring);
+    capability_delete(g.kernel_ring_cursor);
+    capability_delete(g.kernel_ring_notification);
 }
 
 /// Halt, saying why through the console, when `input`, `swish` or `job_undertaker` is not the
@@ -763,12 +763,12 @@ pub(super) fn start_keystroke_sources(
     // The driver receives on its attach endpoint before anything else, so this send cannot hang.
     if is_granted(g.usb_keyboard_attach) {
         must_ok(send_capability(g.usb_keyboard_attach, term_ep, abi::rights::WRITE, 0) >= 0);
-        cap_delete(g.usb_keyboard_attach);
+        capability_delete(g.usb_keyboard_attach);
     }
 
     // Before the shell is built, and so that no later child can be handed the UART.
-    cap_delete(g.uart_dev);
-    cap_delete(g.uart_interrupt);
+    capability_delete(g.uart_dev);
+    capability_delete(g.uart_interrupt);
 }
 
 /// Retype the spawn channel and the supervision endpoint, after the drivers are built: held
@@ -859,9 +859,9 @@ pub(super) fn build_shell(
             ..ChildEndowment::new(Retention::Nothing)
         },
     ));
-    cap_delete(sh_budget); // our copy; the shell holds its own now
+    capability_delete(sh_budget); // our copy; the shell holds its own now
     if let Some(zero) = sh_window {
-        cap_delete(zero.page); // the slice was only the means; the shell holds the mapping
+        capability_delete(zero.page); // the slice was only the means; the shell holds the mapping
     }
     // Before the shell starts, which is what makes its `_start` probe of this slot sound.
     must_ok(place_at(
@@ -892,7 +892,7 @@ pub(super) fn finish_shell_endowment(
             spawnproto::MACHINE_PAGE_SLOT,
         ));
     }
-    cap_delete(g.machine_page);
+    capability_delete(g.machine_page);
     // Unbadged: the disk tree's window 0 is the frame the shell maps at [`SH_FS_VA`], sound while
     // the shell has one `CALL` in flight. Our copy stays, for the spawn service to badge per job.
     if let Some(t) = mounted_tree {
@@ -1024,12 +1024,12 @@ fn start_credential_services(
         },
     ));
     must_ok(start_child(cred_child, 0, 0, 0));
-    cap_delete(cred_budget);
+    capability_delete(cred_budget);
 
     // `cred_ready` is not read until after the seal below: `credentialer` sends `RPT_READY` only
     // once `SEAL` ends its provisioning phase, so reading it here would never wake.
     let mut login_ready = provision_identity(w, p, prov, prov_page, login_password);
-    cap_delete(prov_page);
+    capability_delete(prov_page);
 
     // Sealed whatever provisioning did: `VERIFY` answers nothing until the store is sealed.
     call(
@@ -1037,14 +1037,14 @@ fn start_credential_services(
         credential_contract::req(credential_contract::provision::SEAL, 0, 0),
         0,
     );
-    cap_delete(prov);
+    capability_delete(prov);
 
     // A service that failed at start-up answers too, with its own `0xDEAD_...` word.
     let (cred_rv, _, _) = receive(cred_ready);
-    cap_delete(cred_ready);
+    capability_delete(cred_ready);
     if cred_rv != CRED_RPT_READY {
-        cap_delete(verify);
-        cap_delete(verify_page);
+        capability_delete(verify);
+        capability_delete(verify_page);
         login_ready = false;
     } else {
         start_login(w, p, table, verify, verify_page, run_unvouched);
@@ -1065,7 +1065,7 @@ fn provision_identity(
     let ut = w.ut;
     let req_frame = must(retype_page_frame(ut));
     if !map_page_frame(req_frame, PROVISION_SCRATCH_VA, true, ut) {
-        cap_delete(req_frame);
+        capability_delete(req_frame);
         false
     } else {
         // SAFETY: just mapped read/write, one page, ours alone until it is delegated
@@ -1092,7 +1092,7 @@ fn provision_identity(
         let idp_report =
             start_identity_provisioner(w, p, prov, req_frame, prov_page, login_password);
         let (idp_code, _, _) = receive(idp_report);
-        cap_delete(idp_report);
+        capability_delete(idp_report);
         let login_ready = idp_code == IDP_RPT_OK;
 
         // SAFETY: still the same page this process mapped above, and the only writer
@@ -1143,11 +1143,11 @@ fn start_identity_provisioner(
             ..ChildEndowment::new(Retention::Nothing)
         },
     ));
-    cap_delete(req_frame);
+    capability_delete(req_frame);
     let idp_page = must(window_page(g.fs_page, 0).ok_or(()));
     let mapped =
         address_space_map_into(idp_aspace, IDP_FS_VA, idp_page, abi::address_space::MAP_RW) == 0;
-    cap_delete(idp_page);
+    capability_delete(idp_page);
     must(mapped.then_some(()).ok_or(()));
     must(supervision_protocol::configure_child(
         idp_child.tcb,
@@ -1222,13 +1222,13 @@ fn start_login(
         table.len() as u64,
         login_contract::schedule_lengths(p.keeper_blob.len() as u64, p.timetable_blob.len() as u64),
     ));
-    cap_delete(login_page);
-    cap_delete(login_request);
-    cap_delete(login_result);
-    cap_delete(verify);
-    cap_delete(verify_page);
-    cap_delete(login_ut);
-    cap_delete(audit);
+    capability_delete(login_page);
+    capability_delete(login_request);
+    capability_delete(login_result);
+    capability_delete(verify);
+    capability_delete(verify_page);
+    capability_delete(login_ut);
+    capability_delete(audit);
 }
 
 /// Build and start `login_audit_receiver`; returns the endpoint `login` sends its audit on.
@@ -1271,7 +1271,7 @@ fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Opti
         abi::rights::WRITE | abi::rights::GRANT,
         login_contract::DURABLE_WINDOW_SLOT,
     ));
-    cap_delete(durable_page);
+    capability_delete(durable_page);
 }
 
 /// Place the run-unvouched endpoint in the shell (`WRITE` alone), carve the progenitor's three
@@ -1311,7 +1311,7 @@ pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option
     ) {
         fail()
     }
-    cap_delete(ut);
+    capability_delete(ut);
 
     // `NoSuchSlot` (-1), not `NotPermitted` (-3): gone, not narrowed. `script/swish-check` reads
     // the sentence.

@@ -49,7 +49,7 @@ pub(crate) fn delete_page_frame_capabilities_overlapping(base: u64, size: u64) {
 /// every thread's table, and the [`Thread::outgoing_capability`] parked in its hand-off slot.
 ///
 /// A capability in flight to a receiver is in no table, so a sweep of tables alone would leave it
-/// alive. The send still delivers its data word and the receiver sees `NO_CAP`. See
+/// alive. The send still delivers its data word and the receiver sees `NO_CAPABILITY`. See
 /// notes/capability-lifecycle.md.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
@@ -231,7 +231,7 @@ pub fn delete_current_capability(slot: u64) -> Result<(), crate::capability_obje
 )]
 pub fn current_capability(
     slot: u64,
-) -> Result<crate::capability_object::Cap, crate::capability_object::Error> {
+) -> Result<crate::capability_object::Capability, crate::capability_object::Error> {
     // The lock-wait instrument marks this call as `site=current_capability`. The closure takes no other
     // lock, so that marks exactly the table lock's acquisition (`crate::lock_wait`).
     #[cfg(feature = "lock_wait")]
@@ -249,7 +249,7 @@ pub fn current_capability(
 ///
 /// The running thread's own table, under its own lock and not `IPC_TABLES`, as [`current_capability`].
 pub fn grant(
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
 ) -> Result<u64, crate::capability_object::Error> {
     current_capabilities().map_or(Err(crate::capability_object::Error::NoFreeSlot), |mut t| {
         t.insert(capability)
@@ -269,10 +269,10 @@ pub fn current_capability_slots() -> (usize, usize) {
 ///
 /// [`grant`] fills the first free slot. Some conventions (notes/abi.md, section 4) name a fixed
 /// slot whose lower neighbors' emptiness is meaningful: a std program holding slot 4 with 2 and 3
-/// empty has no network. The kernel's counterpart of `ThreadControlBlock::CAP_INSERT`.
+/// empty has no network. The kernel's counterpart of `ThreadControlBlock::CAPABILITY_INSERT`.
 pub fn grant_at(
     slot: u64,
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
 ) -> Result<u64, crate::capability_object::Error> {
     current_capabilities().map_or(Err(crate::capability_object::Error::NoFreeSlot), |mut t| {
         t.insert_at(slot, capability)
@@ -298,7 +298,7 @@ pub(crate) fn current_mappable_pages() -> u64 {
 /// word, so a `std` program can make objects without filling a fixed slot it was not given.
 pub(crate) fn grant_from(
     floor: u64,
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
 ) -> Result<u64, crate::capability_object::Error> {
     current_capabilities().map_or(Err(crate::capability_object::Error::NoFreeSlot), |mut t| {
         t.insert_at_or_above(floor, capability)
@@ -327,7 +327,7 @@ impl Delegation {
     pub(super) fn derive(
         self,
         table: &crate::capability_object::CapabilityTable,
-    ) -> Result<crate::capability_object::Cap, abi::Error> {
+    ) -> Result<crate::capability_object::Capability, abi::Error> {
         let src = table.get(self.slot).map_err(|_| abi::Error::NoSuchSlot)?;
         if !src.rights.allows(crate::capability_object::Rights::GRANT) {
             return Err(abi::Error::NotPermitted); // holder may not pass this on
@@ -335,7 +335,7 @@ impl Delegation {
         if !self.rights.is_subset_of(src.rights) {
             return Err(abi::Error::NotPermitted); // delegation may only narrow, never widen
         }
-        Ok(crate::capability_object::Cap {
+        Ok(crate::capability_object::Capability {
             object: src.object,
             rights: self.rights,
         })
@@ -349,8 +349,8 @@ impl Delegation {
 pub(crate) fn grant_derived(
     slot: u64,
     derive: impl FnOnce(
-        crate::capability_object::Cap,
-    ) -> Result<crate::capability_object::Cap, abi::Error>,
+        crate::capability_object::Capability,
+    ) -> Result<crate::capability_object::Capability, abi::Error>,
 ) -> Result<u64, abi::Error> {
     let mut table = current_capabilities().ok_or(abi::Error::NoSuchSlot)?;
     let src = table.get(slot).map_err(|_| abi::Error::NoSuchSlot)?;

@@ -86,28 +86,28 @@ impl PageFormat for Sv39 {
     }
 
     fn leaf_flags(entry: u64) -> Flags {
-        let mut capabilities = 0;
+        let mut access = 0;
         if entry & W != 0 {
-            capabilities |= ACCESS_WRITE;
+            access |= ACCESS_WRITE;
         }
         if entry & U != 0 {
-            capabilities |= ACCESS_USER;
+            access |= ACCESS_USER;
         }
         if entry & X != 0 {
             // Execute permission belongs to whichever privilege the U bit names.
             if entry & U != 0 {
-                capabilities |= ACCESS_USER_EXEC;
+                access |= ACCESS_USER_EXEC;
             } else {
-                capabilities |= ACCESS_KERNEL_EXEC;
+                access |= ACCESS_KERNEL_EXEC;
             }
         }
         if entry & G != 0 {
-            capabilities |= ACCESS_GLOBAL;
+            access |= ACCESS_GLOBAL;
         }
         if entry & SW_DEVICE != 0 {
-            capabilities |= ACCESS_DEVICE;
+            access |= ACCESS_DEVICE;
         }
-        Flags::from_access(capabilities)
+        Flags::from_access(access)
     }
 
     /// A megapage (2 MiB, at level 1) or gigapage (1 GiB, at level 0): **the same leaf encoding at
