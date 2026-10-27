@@ -36,6 +36,6 @@ fn fork_exit_ns(iters: u64) -> f64 {
 fn main() {
     let _ = fork_exit_ns(200); // warm the fork/exec path and the allocator
     let ns = fork_exit_ns(2_000);
-    let os = if cfg!(target_os = "macos") { "macos" } else { "linux" };
-    println!("{os} spawn (fork+exit+wait): {ns:.0} ns/iter");
+    let operating_system = if cfg!(target_os = "macos") { "macos" } else { "linux" };
+    println!("{operating_system} spawn (fork+exit+wait): {ns:.0} ns/iter");
 }

@@ -55,7 +55,7 @@ pub fn discover() -> Result<Vec<Disk>, String> {
         let drive_type = unsafe { system::GetDriveTypeW(root.as_ptr()) };
         let mut label = [0u16; 261];
         let mut fs = [0u16; 261];
-        let (mut serial, mut max, mut flags) = (0u32, 0u32, 0u32);
+        let (mut serial, mut maximum, mut flags) = (0u32, 0u32, 0u32);
         // SAFETY: every out-pointer is to a local sized as passed.
         let have_volume = unsafe {
             system::GetVolumeInformationW(
@@ -63,7 +63,7 @@ pub fn discover() -> Result<Vec<Disk>, String> {
                 label.as_mut_ptr(),
                 label.len() as u32,
                 &mut serial,
-                &mut max,
+                &mut maximum,
                 &mut flags,
                 fs.as_mut_ptr(),
                 fs.len() as u32,

@@ -94,18 +94,24 @@ fn memory_grant_depleter_mem_out_of_range() {
     };
     assert_eq!(
         plan(&r, Holdings::default()),
-        Err(Refusal::MemoryGrantOutOfRange { min: 1, max: 64 })
+        Err(Refusal::MemoryGrantOutOfRange {
+            minimum: 1,
+            maximum: 64
+        })
     );
     let Command::Run(r0) = parse(b"memory_grant_depleter --mem 0") else {
         panic!()
     };
     assert_eq!(
         plan(&r0, Holdings::default()),
-        Err(Refusal::MemoryGrantOutOfRange { min: 1, max: 64 })
+        Err(Refusal::MemoryGrantOutOfRange {
+            minimum: 1,
+            maximum: 64
+        })
     );
 }
 
-/// The declared range is inclusive at both ends: a grant of exactly `min` or exactly `max`
+/// The declared range is inclusive at both ends: a grant of exactly `minimum` or exactly `maximum`
 /// pages plans, and only one past either edge refuses.
 #[test]
 fn a_memory_grant_at_either_end_of_the_declared_range_plans() {

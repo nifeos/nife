@@ -369,11 +369,11 @@ fn report_page_frame_ledger() {
 /// wrong kind of growth. See `sched::MAX_THREADS`.
 fn report_thread_peak() {
     let peak = crate::sched::peak_thread_count();
-    let max = crate::sched::MAX_THREADS;
+    let maximum = crate::sched::MAX_THREADS;
     println!(
-        "threads: {peak} live at the peak, of {max} the image allows ({} spare). \
+        "threads: {peak} live at the peak, of {maximum} the image allows ({} spare). \
          See sched::MAX_THREADS.",
-        max.saturating_sub(peak)
+        maximum.saturating_sub(peak)
     );
 }
 
@@ -389,12 +389,13 @@ static REGION_PEAK_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 /// says who holds what.
 fn report_region_peak() {
     let peak = crate::memory_region::peak_region_count();
-    let max = crate::memory_region::MAX_REGIONS;
+    let maximum = crate::memory_region::MAX_REGIONS;
     let during = stored_name(&REGION_PEAK_NAME_PTR, &REGION_PEAK_NAME_LEN);
     println!(
-        "regions: {peak} live at the peak, of {max} the image allows ({} spare), set during {}. \
+        "regions: {peak} live at the peak, of {maximum} the image allows ({} spare), set during \
+        {}. \
          See memory_region::MAX_REGIONS.",
-        max.saturating_sub(peak),
+        maximum.saturating_sub(peak),
         during.unwrap_or("the boot, before the first test"),
     );
 }
@@ -410,11 +411,12 @@ static RENDEZVOUS_PEAK_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 /// is at `sched::PEAK_RENDEZVOUS`.
 fn report_rendezvous_peak() {
     let (peak, kernel) = crate::sched::rendezvous_pressure();
-    let max = crate::sched::MAX_RENDEZVOUS;
+    let maximum = crate::sched::MAX_RENDEZVOUS;
     println!(
-        "rendezvous: {peak} live at the peak, of {max} the image allows ({} spare), set during {}; \
+        "rendezvous: {peak} live at the peak, of {maximum} the image allows ({} spare), set during \
+        {}; \
          {kernel} were created on kernel chunks, which are never freed. See sched::MAX_RENDEZVOUS.",
-        max.saturating_sub(peak),
+        maximum.saturating_sub(peak),
         stored_name(&RENDEZVOUS_PEAK_NAME_PTR, &RENDEZVOUS_PEAK_NAME_LEN)
             .unwrap_or("the boot, before the first test"),
     );

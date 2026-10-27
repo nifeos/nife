@@ -415,7 +415,7 @@ pub enum MemoryGrantDeclaration {
     Forbidden,
     /// The program must be granted a budget in `[min, max]` pages. Omitting it is
     /// [`Refusal::MemoryGrantRequired`](crate::Refusal::MemoryGrantRequired); out of range is [`Refusal::MemoryGrantOutOfRange`](crate::Refusal::MemoryGrantOutOfRange).
-    Required { min: u64, max: u64 },
+    Required { minimum: u64, maximum: u64 },
 }
 
 /// A program's expectation about a **file grant**, milestone 31 (a capability shell: designation is authorization) phase 2.

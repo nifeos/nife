@@ -59,6 +59,6 @@ fn main() {
     // faulted they stay resident and a second touch would measure a hit, not a map.
     let _ = map_fault_ns(2_000);
     let ns = map_fault_ns(50_000);
-    let os = if cfg!(target_os = "macos") { "macos" } else { "linux" };
-    println!("{os} map (first-touch fault-in): {ns:.1} ns/page");
+    let operating_system = if cfg!(target_os = "macos") { "macos" } else { "linux" };
+    println!("{operating_system} map (first-touch fault-in): {ns:.1} ns/page");
 }

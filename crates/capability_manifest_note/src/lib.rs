@@ -250,10 +250,10 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
         ProgramArgumentDeclaration::Words(WordGrant::ReadWrite) => 3,
         ProgramArgumentDeclaration::Words(WordGrant::Create) => 4,
     };
-    if let MemoryGrantDeclaration::Required { min, max } = m.memory_grant {
+    if let MemoryGrantDeclaration::Required { minimum, maximum } = m.memory_grant {
         out[MEM] = 1;
-        put8(&mut out, MEM_MIN, min);
-        put8(&mut out, MEM_MAX, max);
+        put8(&mut out, MEM_MIN, minimum);
+        put8(&mut out, MEM_MAX, maximum);
     }
     out[FILE] = match m.file {
         FileGrantDeclaration::Forbidden => 0,
@@ -441,11 +441,11 @@ fn decode_mem(d: &[u8]) -> Result<MemoryGrantDeclaration, Error> {
             MemoryGrantDeclaration::Forbidden
         }
         1 => {
-            let (min, max) = (get8(d, MEM_MIN), get8(d, MEM_MAX));
-            if min > max {
+            let (minimum, maximum) = (get8(d, MEM_MIN), get8(d, MEM_MAX));
+            if minimum > maximum {
                 return Err(Error::BadField(MEM_MIN));
             }
-            MemoryGrantDeclaration::Required { min, max }
+            MemoryGrantDeclaration::Required { minimum, maximum }
         }
         _ => return Err(Error::BadField(MEM)),
     })
@@ -1429,7 +1429,10 @@ mod tests {
     #[test]
     fn a_memory_range_upside_down_is_refused() {
         let m = Manifest {
-            memory_grant: MemoryGrantDeclaration::Required { min: 4, max: 8 },
+            memory_grant: MemoryGrantDeclaration::Required {
+                minimum: 4,
+                maximum: 8,
+            },
             ..Program::Uptime.manifest()
         };
         let mut d = encode(&m);
@@ -1567,7 +1570,10 @@ mod tests {
         assert_eq!(decode(&encode(&m)), Ok(m));
 
         let m = Manifest {
-            memory_grant: MemoryGrantDeclaration::Required { min: 8, max: 8 },
+            memory_grant: MemoryGrantDeclaration::Required {
+                minimum: 8,
+                maximum: 8,
+            },
             ..base()
         };
         assert_eq!(decode(&encode(&m)), Ok(m));
