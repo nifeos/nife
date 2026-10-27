@@ -103,7 +103,7 @@ pub fn spawn_elf_child_builder(
     // On QEMU RISC-V it is the same source as DELEGATED_TEST_INTERRUPT, and binding it twice would
     // leave the first endpoint routed to nothing, so bind once and grant twice.
     let (uart_receive_intid, uart_interrupt_source) = uart_interrupt_number_and_source();
-    crate::println!("  uart interrupt  : {uart_receive_intid} ({uart_interrupt_source})");
+    crate::println!("  uart interrupt   : {uart_receive_intid} ({uart_interrupt_source})");
     if uart_receive_intid != DELEGATED_TEST_INTERRUPT {
         crate::sched::bind_interrupt(uart_receive_intid, crate::sched::create_rendezvous());
         crate::arch::interrupt_controller::enable(uart_receive_intid);

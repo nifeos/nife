@@ -808,14 +808,14 @@ pub(crate) fn print_summary() -> bool {
             Slot::Up(u) => {
                 any = true;
                 crate::println!(
-                    "  iommu           : AMD-Vi unit at {:#018x}, device table default-deny, \
+                    "  iommu            : AMD-Vi unit at {:#018x}, device table default-deny, \
                      translating, interrupt remapping not enabled",
                     u.base,
                 );
             }
             Slot::Refused(why) => {
                 any = true;
-                crate::println!("  iommu           : AMD-Vi unit refused: {why}");
+                crate::println!("  iommu            : AMD-Vi unit refused: {why}");
             }
             Slot::Absent => {}
         }

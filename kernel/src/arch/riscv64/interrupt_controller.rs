@@ -201,11 +201,11 @@ pub(crate) fn send_reschedule(target_cpu: usize) {
 pub(crate) fn print_summary() {
     match crate::memory::plic_region() {
         Some((plic, _)) => crate::println!(
-            "  interrupts      : PLIC at {plic:#018x}, this hart's S-mode context {}",
+            "  interrupts       : PLIC at {plic:#018x}, this hart's S-mode context {}",
             this_s_context(),
         ),
         None => {
-            crate::println!("  interrupts      : none (this machine's device tree names no PLIC)");
+            crate::println!("  interrupts       : none (this machine's device tree names no PLIC)");
         }
     }
 }

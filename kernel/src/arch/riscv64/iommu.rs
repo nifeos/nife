@@ -252,13 +252,13 @@ pub fn initialize(base: u64) {
 pub(crate) fn print_summary() {
     match IOMMU.lock().as_ref() {
         Some(s) => crate::println!(
-            "  iommu           : riscv-iommu at {:#018x}, device directory default-deny, \
+            "  iommu            : riscv-iommu at {:#018x}, device directory default-deny, \
              translating, MSI page table {} (mode off)",
             s.base,
             if s.msi_flat { "offered" } else { "absent" },
         ),
         None => crate::println!(
-            "  iommu           : none (no riscv-iommu-pci function on this machine's bus)",
+            "  iommu            : none (no riscv-iommu-pci function on this machine's bus)",
         ),
     }
 }

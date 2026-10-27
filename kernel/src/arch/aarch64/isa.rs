@@ -160,8 +160,8 @@ pub(crate) fn print_summary() {
     let cpu = get();
 
     match cpu.implementer_name() {
-        Some(name) => print!("  cpu             : {name}"),
-        None => print!("  cpu             : implementer {:#04x}", cpu.implementer),
+        Some(name) => print!("  cpu              : {name}"),
+        None => print!("  cpu              : implementer {:#04x}", cpu.implementer),
     }
     println!(" part {:#05x} r{}p{}", cpu.part, cpu.variant, cpu.revision);
     println!(

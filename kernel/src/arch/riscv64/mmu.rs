@@ -1032,7 +1032,7 @@ pub(crate) fn share_kernel_half(root: u64) {
 )]
 pub(crate) fn print_summary() {
     crate::println!(
-        "  mmu             : Sv39 {}, one satp, kernel high half at {:#018x}",
+        "  mmu              : Sv39 {}, one satp, kernel high half at {:#018x}",
         if is_enabled() {
             "on, fine-grained W^X tables installed"
         } else {
