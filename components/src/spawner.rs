@@ -22,7 +22,7 @@
 // builds nothing, the supervisor holds no memory), so the unused halves are expected, not dead. This
 // is the one shape where a blanket allow is the honest one: no single binary uses all of it (§38).
 use supervision_protocol::{ChildEndowment, REP_BUILT, REP_FAILED, REQ_BUILD, Retention};
-use user_mode_runtime::{badge, cap_delete, receive, send};
+use user_mode_runtime::{badge, capability_delete, receive, send};
 
 /// The capabilities `root_supervisor` endowed us with, in order.
 const REQ: u64 = 0; // READ: build/reap requests arrive here
@@ -77,7 +77,7 @@ fn build(elf: &elf::Elf, attempt: u64, label: u64) -> bool {
     }
     let labelled = labelled as u64;
     let built = build_labelled(elf, attempt, labelled);
-    cap_delete(labelled);
+    capability_delete(labelled);
     built
 }
 
@@ -103,7 +103,7 @@ fn build_labelled(elf: &elf::Elf, attempt: u64, fault: u64) -> bool {
     if !supervision_protocol::start_child(child, 0, attempt, 0) {
         return false;
     }
-    cap_delete(region);
+    capability_delete(region);
     true
 }
 

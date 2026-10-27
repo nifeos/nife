@@ -32,7 +32,7 @@ right now.
 | Option | Shape | Loses because |
 |---|---|---|
 | **A. Shared VSpace, kernel-level** | `ThreadControlBlock::CONFIGURE`'s existing contract changes so an `AddressSpace` capability can be *bound* to more than one TCB instead of consumed by the first one. The object itself gains multi-holder liveness tracking. | Real cost: a syscall-surface change, the exact irreversible category CLAUDE.md names. Not proposed as a loser, just costed below. |
-| **B. Sibling processes, shared frames** | Keep every existing verb's contract unchanged (`RETYPE_OBJ`, `MAP_INTO`, `CONFIGURE`, `CAP_INSERT`, `START`, all exactly as they are). A "thread" is a second TCB with its own fresh `AddressSpace`, into which the parent re-maps its own frames at matching virtual addresses. | Looks free (no syscall touched) until you account for what a *growing* heap needs: every future allocation has to be mapped into every sibling space, at the same VA, before either side can safely dereference it. That is a live synchronization protocol built from scratch in userspace, is race-prone the instant two "threads" grow the heap concurrently (which is the ordinary case), and no prior art actually does this for the general shared-heap case. Costed in full below. |
+| **B. Sibling processes, shared frames** | Keep every existing verb's contract unchanged (`RETYPE_OBJ`, `MAP_INTO`, `CONFIGURE`, `CAPABILITY_INSERT`, `START`, all exactly as they are). A "thread" is a second TCB with its own fresh `AddressSpace`, into which the parent re-maps its own frames at matching virtual addresses. | Looks free (no syscall touched) until you account for what a *growing* heap needs: every future allocation has to be mapped into every sibling space, at the same VA, before either side can safely dereference it. That is a live synchronization protocol built from scratch in userspace, is race-prone the instant two "threads" grow the heap concurrently (which is the ordinary case), and no prior art actually does this for the general shared-heap case. Costed in full below. |
 | **C. Decline** | `thread::spawn` stays `Unsupported`, permanently rather than "phase one". Parallelism on nife stays process-plus-IPC-shaped, which is what the rest of the system already is. | Not really a loser: it is the cheapest, most reversible option and the one this note ends up suggesting for *now*, precisely because it forecloses nothing. |
 
 Two things that were not separately costed. A pure userspace "green threads" library
@@ -49,7 +49,7 @@ mechanism at reduced scope.
 
 ## 2. What this tree already does in the analogous case
 
-**Process spawn already does exactly the RETYPE/CONFIGURE/CAP_INSERT/START sequence Option B
+**Process spawn already does exactly the RETYPE/CONFIGURE/CAPABILITY_INSERT/START sequence Option B
 would reuse**, unprivileged, from userspace. `kernel/src/user/entry.rs`'s `Spawn` struct documents a
 process's entire authority as "a function of `arg0`, `grants`, and `maps`". The progenitor itself
 becomes "the spawn service" after boot (`PROGENITOR_ROLE`'s doc comment) and spawns every other

@@ -17,6 +17,6 @@ shared with `OPERATION_WRITE`, so a newline from an adapter gets the same manner
 shell. Two writers, one terminal, one set of manners, no second frame.
 
 Eight rather than sixteen is the contract's request shape and not a choice: a served request arrives
-through `receive_cap`, which hands the server a reply capability and two data words. `OPERATION_BYTES`
+through `receive_capability`, which hands the server a reply capability and two data words. `OPERATION_BYTES`
 carries eight for the same reason, from the input direction, which is why the shape was already
 there to copy.

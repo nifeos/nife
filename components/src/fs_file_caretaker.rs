@@ -98,7 +98,7 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
     use filesystem_contract::verb::{self};
 
     loop {
-        // A CALL-only contract: a plain SEND or a client's SEND_CAP has nobody waiting, so it does
+        // A CALL-only contract: a plain SEND or a client's SEND_CAPABILITY has nobody waiting, so it does
         // no work here, and a delegated capability is deleted rather than answered into (milestone
         // 706 (a CALL server can tell a Reply from a delegation)).
         let req = receive_request(CLIENT);

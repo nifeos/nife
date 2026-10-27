@@ -26,6 +26,13 @@ fn main() {
     };
 
     // Without `rerun-if-env-changed` a new filter would silently reuse the last binary.
+    // Only the coverage build reads this; it names the host file the counters land in.
+    println!("cargo::rerun-if-env-changed=NIFE_COVERAGE_PROFILE");
+    println!(
+        "cargo::rustc-env=NIFE_COVERAGE_PROFILE={}",
+        std::env::var("NIFE_COVERAGE_PROFILE").unwrap_or_default()
+    );
+
     println!("cargo::rerun-if-env-changed=NIFE_TEST_FILTER");
     println!(
         "cargo::rustc-env=NIFE_TEST_FILTER={}",

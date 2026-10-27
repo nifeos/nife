@@ -5,7 +5,7 @@
 //! # BUGS
 //!
 //! - The attach handshake is a blocking send: a driver that died between its report and its first
-//!   receive there would block the progenitor's `SEND_CAP`, and the boot.
+//!   receive there would block the progenitor's `SEND_CAPABILITY`, and the boot.
 //! - A device refused after the report is refused silently: the report endpoint has one message.
 //!
 //! Name: provisional. A `<program>_service`, as `non_volatile_memory_express_service` is, so its

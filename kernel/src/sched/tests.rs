@@ -13,7 +13,7 @@ use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 ///
 /// It asks on behalf of the caller, which is the strongest available form of the question: this
 /// thread is `Running` by definition of executing this line, and it holds every authority a
-/// kernel thread has. `WrongObject` is the same refusal `CONFIGURE` and `CAP_INSERT` make on a
+/// kernel thread has. `WrongObject` is the same refusal `CONFIGURE` and `CAPABILITY_INSERT` make on a
 /// started thread, reused rather than a new error minted for a new way of being too late.
 #[test_case]
 fn a_running_thread_cannot_be_granted_the_cycle_counter() {

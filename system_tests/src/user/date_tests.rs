@@ -68,7 +68,7 @@ fn spawn_date(
 /// reading (see [`spawn_date`]).
 ///
 /// The diagnostic endpoint goes in at the slot `date`'s manifest declares, through `grant_at`, as
-/// the real progenitor does with `abi::thread_control_block::CAP_INSERT`'s explicit target: the
+/// the real progenitor does with `abi::thread_control_block::CAPABILITY_INSERT`'s explicit target: the
 /// named slot of DECISIONS §67 (a program's second stream is a declaration, not a number), which
 /// does not move with whatever else the child was granted. No clock, deliberately: a `date` granted
 /// no clock is one of the two real unknown-clock causes rather than an injected fault, and it

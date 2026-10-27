@@ -121,7 +121,7 @@ above as current would be wrong about all four:
   §11 (SMP: per-CPU run queues, message-based migration). What was checked by reading here is now searched by loom
   (notes/interleaving.md) and inventoried by notes/memory-ordering.md, and neither existed when
   this was written.
-- **"delegation is not even exposed to userspace yet".** It is. `SEND_CAP` hands a capability over
+- **"delegation is not even exposed to userspace yet".** It is. `SEND_CAPABILITY` hands a capability over
   an endpoint, and notes/delegation.md is honest that until it existed the kernel was "a central
   authority-granting oracle", which is a sharper statement of the same gap this audit recorded.
 - **"without an IOMMU".** Milestone 16b built one, on both architectures, at the QEMU tier: an

@@ -178,7 +178,7 @@ fn ring_publish(tail: u32) {
     // matching `fence(SeqCst)`; `drain_input` in components/src/compositor.rs is the half milestone 43's
     // audit found missing (finding 7). The `call(OUT, ...)` this program makes immediately
     // after `ring_publish` orders it against the compositor anyway, because the compositor is
-    // blocked in `receive_cap` on that doorbell. See notes/memory-ordering.md.
+    // blocked in `receive_capability` on that doorbell. See notes/memory-ordering.md.
     core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
     RING.w32(ring::TAIL, tail);
 }

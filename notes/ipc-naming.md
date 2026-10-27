@@ -69,7 +69,7 @@ capabilities exist to avoid.
   of a
   device event is the *same* as the naming of a peer's message: a rendezvous. "An interrupt becomes
   a message" is literal. See [interrupts.md](interrupts.md).
-- The name is transferable. `SEND_CAP` / `RECEIVE_CAP` let one process hand a rendezvous
+- The name is transferable. `SEND_CAPABILITY` / `RECEIVE_CAPABILITY` let one process hand a rendezvous
   capability to another over IPC, narrowed but never widened. Authority to name a channel is
   itself something you can pass along. See [delegation.md](delegation.md).
 
@@ -102,7 +102,7 @@ DECISIONS §12. What follows is the design that led there, kept because the reas
 and written in the present tense of *before* it existed.
 
 Before milestone 12 there was no Reply capability and no `Call` (atomic send-and-wait) primitive: the
-rendezvous methods were `SEND`, `RECEIVE`, `SEND_CAP`, `RECEIVE_CAP`, and that was all (`crates/abi`).
+rendezvous methods were `SEND`, `RECEIVE`, `SEND_CAPABILITY`, `RECEIVE_CAPABILITY`, and that was all (`crates/abi`).
 
 The gap is the direct consequence of the anonymity above. A server that `RECEIVE`s a request has no
 idea who sent it, so it cannot reply to that specific caller. seL4 solves this with a
@@ -130,7 +130,7 @@ chain so no priority donation. The server's reply `SEND` blocks until the client
 its `RECEIVE` (a real Reply cap delivers to a caller already parked, without blocking the server).
 
 We could go part of the way with the machinery we already have: a client could create a reply
-rendezvous and pass a `SEND` cap to it *in the request* via `SEND_CAP`, so the server receives "reply
+rendezvous and pass a `SEND` cap to it *in the request* via `SEND_CAPABILITY`, so the server receives "reply
 here" alongside the message. That fixes anonymity without pre-wiring. It still would not be
 one-shot, and still would carry no call chain: those need real kernel support (a `Reply` object and
 a `Call` syscall).

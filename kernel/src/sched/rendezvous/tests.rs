@@ -72,7 +72,7 @@ fn reply_parked_callers(ep: super::RendezvousId) -> usize {
 
 /// How many live `Reply` capabilities anywhere in the machine still name `caller`: the sweep's
 /// own assertion. `outgoing_capability` counts too, because a caller that met no
-/// server rides its own reply capability there awaiting a `RECEIVE_CAP` hand-off, and a live one
+/// server rides its own reply capability there awaiting a `RECEIVE_CAPABILITY` hand-off, and a live one
 /// left in that slot is the same forgery one step earlier.
 fn outstanding_reply_capabilities(caller: super::ThreadId) -> usize {
     let guard = super::IPC_TABLES.lock();
@@ -561,7 +561,7 @@ fn a_retyped_rendezvous_carries_ipc_and_pins_its_region() {
 
 /// **Milestone 12: a call gets a reply, over one rendezvous, via a one-shot Reply cap.**
 ///
-/// The client `CALL`s and blocks; the server `RECEIVE_CAP`s (receiving the request word plus a
+/// The client `CALL`s and blocks; the server `RECEIVE_CAPABILITY`s (receiving the request word plus a
 /// kernel-minted `Reply` cap naming the caller), answers through that cap, and consumes it. One
 /// rendezvous, not the two the pre-`Call` pattern needs, and the server was never wired to this
 /// client.
@@ -579,7 +579,7 @@ fn a_call_gets_a_reply() {
         let crate::capability_object::Object::Reply(caller) =
             super::current_capability(slot).unwrap().object
         else {
-            panic!("RECEIVE_CAP of a CALL did not deliver a Reply capability");
+            panic!("RECEIVE_CAPABILITY of a CALL did not deliver a Reply capability");
         };
         super::ipc_reply(caller, [m[0] + 1, 0]);
         super::delete_current_capability(slot).expect("consume the one-shot reply");

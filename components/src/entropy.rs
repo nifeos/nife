@@ -376,7 +376,7 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
         let req = receive_request(REQ);
         let w0 = req.w0;
         let Some(capability) = req.delivered.into_reply() else {
-            // A plain SEND, or a SEND_CAP, on a CALL-only contract. Nobody is waiting for an
+            // A plain SEND, or a SEND_CAPABILITY, on a CALL-only contract. Nobody is waiting for an
             // answer, so there is nothing to do and nothing to report; drop it (a delegation's slot
             // is deleted, milestone 706 (a `CALL` server can tell a Reply from a delegation))
             // rather than replying into a slot that is not a Reply. (The clock service answers the

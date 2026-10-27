@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::receive_cap_attack_tests::a_call_to_a_plain_receive_is_answered_gone_whichever_side_parks_first`.
+Falsifies `system_tests::user::receive_capability_attack_tests::a_call_to_a_plain_receive_is_answered_gone_whichever_side_parks_first`.
 
 Architecture: aarch64
 
@@ -56,7 +56,7 @@ index c59bccd96..90212c657 100644
  
 @@ -743,12 +743,6 @@
                  let receiver = hold_token(receiver);
-                 // A server is parked in RECEIVE_CAP: hand it the reply cap and the two words now.
+                 // A server is parked in RECEIVE_CAPABILITY: hand it the reply cap and the two words now.
                  let (r, capabilities) = sched.threads.get_mut_with_capabilities(receiver).unwrap();
 -                if !r.receiving_capability {
 -                    // A plain RECEIVE cannot hold the Reply, so this CALL is answered `Gone`
@@ -66,4 +66,4 @@ index c59bccd96..90212c657 100644
 -                }
                  let slot = deliver_capability(capabilities, reply);
                  // Word 3 is the caller's badge (milestone 599): the same store as before with a
-                 // value instead of a zero, so the server's RECEIVE_CAP surfaces which client called.
+                 // value instead of a zero, so the server's RECEIVE_CAPABILITY surfaces which client called.

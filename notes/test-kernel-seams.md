@@ -19,8 +19,8 @@ IPC round trip.
 
 ## Holding a delegation open
 
-A delegation is a syscall that files a copy of a capability its caller holds: `SEND_CAP`,
-`ThreadControlBlock::CAP_INSERT` and `PageFrame::SLICE`. Each decodes its arguments, finds the
+A delegation is a syscall that files a copy of a capability its caller holds: `SEND_CAPABILITY`,
+`ThreadControlBlock::CAPABILITY_INSERT` and `PageFrame::SLICE`. Each decodes its arguments, finds the
 source capability and files a narrowed copy. A revocation sweep on another core must either see the
 copy and delete it, or find the source gone before the copy is made. The seam lets a test ask what
 happens when the sweep lands after the syscall has started and before the copy is filed. The same

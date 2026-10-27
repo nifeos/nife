@@ -37,7 +37,7 @@
 use supervision_protocol::{
     ChildEndowment, Retention, SCRATCH_WINDOW, build_child, give_up_scratch_through,
 };
-use user_mode_runtime::{cap_delete, exit, is_granted, send};
+use user_mode_runtime::{capability_delete, exit, is_granted, send};
 
 const MEMORY_REGION: u64 = 0;
 const REPORT: u64 = 1;
@@ -101,7 +101,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         {
             user_mode_runtime::trap()
         }
-        cap_delete(frame as u64);
+        capability_delete(frame as u64);
     }
     build_then_reach()
 }
@@ -132,7 +132,7 @@ fn build_then_reach() -> ! {
         exit()
     };
     // Never started: the kernel's test reclaims the budget, and the child with it.
-    cap_delete(child.tcb);
+    capability_delete(child.tcb);
 
     // The first page this process ever mapped in its scratch window, which is where the loader
     // filled the child's code page: the cursor starts at the window's base, and nothing else here

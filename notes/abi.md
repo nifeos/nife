@@ -36,7 +36,7 @@ Five syscall numbers <!--count:syscalls-->, and that is the whole width of the t
 | 0 | `SYS_EXIT` | end the calling thread's process, every thread in it. Never returns. |
 | 1 | `SYS_YIELD` | give up the CPU voluntarily. |
 | 2 | `SYS_INVOKE` | invoke a capability. **This one carries the entire capability world** (see §2). |
-| 3 | `SYS_CAP_DELETE` | drop the capability in a capability table slot, so the slot can be reused. |
+| 3 | `SYS_CAPABILITY_DELETE` | drop the capability in a capability table slot, so the slot can be reused. |
 | 4 | `SYS_EXIT_THREAD` | end the calling thread alone, clearing and waking a joiner's word (§276 (the thread syscalls as built)). |
 
 That narrowness is deliberate (DECISIONS rule 3: the syscall surface stays a boundary, not a habit).
@@ -53,13 +53,13 @@ at, and `a0..a2` are the operation's arguments. The kernel checks that the slot 
 that its *rights* permit the method, and that the object's type understands it. The method numbers
 live per object type in `crates/abi`:
 
-- Rendezvous (`rendezvous::`): `SEND`, `RECEIVE`, `CALL`, and the capability-passing pair `SEND_CAP` /
-  `RECEIVE_CAP`. The synchronous-IPC primitive the whole system talks over. `WRITE` rights permit
+- Rendezvous (`rendezvous::`): `SEND`, `RECEIVE`, `CALL`, and the capability-passing pair `SEND_CAPABILITY` /
+  `RECEIVE_CAPABILITY`. The synchronous-IPC primitive the whole system talks over. `WRITE` rights permit
   `SEND`; `READ` rights permit `RECEIVE`; `GRANT` permits passing a capability along.
 - Reply (`reply::REPLY`): the one-shot return leg of a `CALL`.
 - MemoryRegion / objects (`objtype::`): `RETYPE` a region into a `RENDEZVOUS`, an `ADDRESS_SPACE`,
   or a `THREAD_CONTROL_BLOCK`. This is how a process builds new kernel objects out of a raw memory budget it holds.
-- ThreadControlBlock (`thread_control_block::`): `CONFIGURE` (entry, stack, address space), `CAP_INSERT` (place a capability into
+- ThreadControlBlock (`thread_control_block::`): `CONFIGURE` (entry, stack, address space), `CAPABILITY_INSERT` (place a capability into
   the child's capability table), `START` (see §3).
 - AddressSpace (`address_space::MAP_INTO`, with modes `MAP_RO` / `MAP_RW` / `MAP_CODE`): map a
   frame into an address space at a chosen virtual address with chosen permissions.
@@ -140,7 +140,7 @@ is the contract, and it is per program, published in that program's own source:
   directory but no network holds 0, 1, and 4, with 2 and 3 empty, because empty 2 and 3 are exactly
   how `std::net` knows it has no network. `Spawn.grants` fills slots from zero in order and cannot
   express a gap, so the kernel-side wiring places slot 4 with `sched::grant_at` first and lets the
-  ordered grants land at 0 and 1 behind it. That is the same explicit-target move `ThreadControlBlock::CAP_INSERT`
+  ordered grants land at 0 and 1 behind it. That is the same explicit-target move `ThreadControlBlock::CAPABILITY_INSERT`
   offers a userspace loader (§5's fault slot uses it), available to the kernel's own service wiring.
 
 This is out-of-band agreement, not discovery: the program does not ask "what am I holding," it knows
@@ -158,7 +158,7 @@ message-format convention (both in `crates/abi`, module `fault`).
 The spawn-slot convention. A supervised child is spawned with its supervision endpoint in the
 reserved fault slot, `abi::fault::FAULT_EP_SLOT` (the last capability table slot, `CAPABILITY_TABLE_SLOTS - 1`, 63 now).
 A supervisor building a child through the TCB surface places it there with
-`ThreadControlBlock::CAP_INSERT`'s explicit target argument (`invoke(tcb, CAP_INSERT, capability_slot,
+`ThreadControlBlock::CAPABILITY_INSERT`'s explicit target argument (`invoke(tcb, CAPABILITY_INSERT, capability_slot,
 rights, target)`, where `target` is `slot + 1` and `0` keeps the original first-free behavior). At
 `START` the kernel reads the fault slot. If it holds a `Rendezvous` capability the thread is
 supervised. The kernel records that endpoint as the thread's fault target and clears the slot, so

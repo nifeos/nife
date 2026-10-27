@@ -345,7 +345,7 @@ fn window_base(badge: u64) -> u64 {
 }
 
 /// Answer a caller through its one-shot Reply capability, then return to serving. `None` is a
-/// request nobody is waiting on (a plain `SEND`, or a `SEND_CAP` whose capability
+/// request nobody is waiting on (a plain `SEND`, or a `SEND_CAPABILITY` whose capability
 /// `receive_request` deleted), which gets no answer (milestone 706 (a `CALL` server can tell a Reply
 /// from a delegation)).
 fn reply(to: Option<Reply>, r0: i64, r1: u64) {
@@ -375,12 +375,12 @@ impl ServeEdges for IpcEdges {
 /// is only the IO around it.
 fn serve(server: &mut Server<CachedDisk<IpcDisk>>) -> ! {
     loop {
-        // RECEIVE_CAP delivers the first word, the Reply's slot, the second word and the caller's
+        // RECEIVE_CAPABILITY delivers the first word, the Reply's slot, the second word and the caller's
         // badge. The badge (milestone 599) names the client's own window, which is how two clients
         // are kept apart; a plain `SEND` carries its badge too (milestone 613 (a system log service:
         // the in-memory half), amending §230 (badged endpoint capabilities); `system_log_tests`
         // pins it). The Reply is typed by the kernel's `x4` (milestone 706, DECISIONS §245 (a
-        // `CALL` server tells a Reply from a delegation)), so a `SEND_CAP`'d capability is deleted.
+        // `CALL` server tells a Reply from a delegation)), so a `SEND_CAPABILITY`'d capability is deleted.
         let req = receive_request(FILE);
         let reply_slot = req.delivered.into_reply();
         // SAFETY: `fs::TRANSFER_MAXIMUM` is exactly the window's mapped length, and this slice is

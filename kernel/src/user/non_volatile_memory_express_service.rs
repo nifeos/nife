@@ -387,7 +387,7 @@ impl Wiring {
     /// Window 0 is unbadged, as the filesystem server has always held it.
     ///
     /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-    pub fn client_capability(&self, window: u64) -> crate::capability_object::Cap {
+    pub fn client_capability(&self, window: u64) -> crate::capability_object::Capability {
         assert!(
             ::driver_process_contract::non_volatile_memory_express::client_window(window).is_some()
         );

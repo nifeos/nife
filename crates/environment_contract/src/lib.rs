@@ -269,20 +269,14 @@ impl<'a> PageBuilder<'a> {
     }
 }
 
-/// Write one length-prefixed field. `val`'s bytes are truncated to `capability` rather than causing a
+/// Write one length-prefixed field. `val`'s bytes are truncated to `cap` rather than causing a
 /// panic if a future domain member ever exceeds its field's cap (see the crate's `BUGS`
 /// section); a host test pins every domain member's length against its cap so this path is not
 /// how that gets caught in practice.
-fn write_field(
-    page: &mut [u8],
-    len_off: usize,
-    data_off: usize,
-    capability: usize,
-    val: Option<&str>,
-) {
+fn write_field(page: &mut [u8], len_off: usize, data_off: usize, cap: usize, val: Option<&str>) {
     let Some(v) = val else { return };
     let bytes = v.as_bytes();
-    let n = bytes.len().min(capability).min(u8::MAX as usize);
+    let n = bytes.len().min(cap).min(u8::MAX as usize);
     page[len_off] = n as u8;
     page[data_off..data_off + n].copy_from_slice(&bytes[..n]);
 }

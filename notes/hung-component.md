@@ -148,7 +148,7 @@ test is the argument. Milestone 23's four steps against a hung incumbent:
   3 REVOKED  unchanged. DeviceFrame::REVOKE take-back (§41) is GRANT-gated on the operator's own device
              capability and asks the holder for nothing. It works on a live, wedged, wholly
              uncooperative holder exactly as on a quiesced one.
-  4 STARTED  unchanged. The replacement parks in RECEIVE_CAP on the stable rendezvous and picks up
+  4 STARTED  unchanged. The replacement parks in RECEIVE_CAPABILITY on the stable rendezvous and picks up
              whatever queued behind the silence, because the stable name is the rendezvous object and
              the kernel's sender queue is the buffer (§41).
   5 REAPED   UNAVAILABLE. There is no corpse. Rendezvous::REAP answers StillAlive. In its place,

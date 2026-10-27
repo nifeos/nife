@@ -12,7 +12,7 @@
 //! `delegation_` because `granter` alone is one of AGENTS.md's generic words: half this system
 //! grants something to something. Refused `capability_granter`: every capability in this tree is a
 //! capability, so the word distinguishes nothing, where `delegation` names the specific act
-//! (`SEND_CAP` over a channel) this program exists to perform.
+//! (`SEND_CAPABILITY` over a channel) this program exists to perform.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

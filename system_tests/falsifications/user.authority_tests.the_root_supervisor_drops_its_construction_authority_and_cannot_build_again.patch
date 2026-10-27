@@ -3,7 +3,7 @@ Falsifies `system_tests::user::authority_tests::the_root_supervisor_drops_its_co
 Architecture: aarch64, riscv64, x86_64
 
 The defect is the progenitor keeping the construction budget it is supposed to give away: one
-line deleted from `root_supervisor`, the `cap_delete(ROOT_UT)` that drops the untyped itself.
+line deleted from `root_supervisor`, the `capability_delete(ROOT_UT)` that drops the untyped itself.
 Everything else runs unchanged, including the four wiring capabilities it still deletes and the
 two proof attempts immediately below, which now succeed.
 
@@ -41,9 +41,9 @@ index e46d7d5d..b2c84cf1 100644
 +++ b/components/src/root_supervisor.rs
 @@ -159,7 +159,6 @@ pub extern "C" fn _start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
      for c in [req, rep, childfault, sp_ut] {
-         cap_delete(c);
+         capability_delete(c);
      }
--    cap_delete(ROOT_UT);
+-    capability_delete(ROOT_UT);
  
      // And prove it, from the inside, on the two primitives that build things: retype a page, and
      // retype a kernel object. Both must now fail with `NoSuchSlot` (-1), which is what
