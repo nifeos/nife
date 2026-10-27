@@ -52,9 +52,9 @@ fn a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver() {
             Rights::ALL,
         ))
         .expect("the sender could not be granted the frame it is about to delegate");
-        let cap = sched::current_capability(slot).expect("the grant did not land");
+        let capability = sched::current_capability(slot).expect("the grant did not land");
         PARKED.store(true, Ordering::SeqCst);
-        sched::inter_process_communication_send_capability(ep, 0, cap, 0);
+        sched::inter_process_communication_send_capability(ep, 0, capability, 0);
         SENDER_STILL_HELD.store(sched::current_capability(slot).is_ok(), Ordering::SeqCst);
         RETURNED.store(true, Ordering::SeqCst);
     })

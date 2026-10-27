@@ -43,13 +43,14 @@ hold about 965, and those leave the count by exclusion.
 ## What one mutant costs
 
 - Rebuilding the kernel's test binary after a one-line mutation took 3.5 seconds on an 80-core
-  Linux host, and the system tests' binary 8.9 seconds. A four-core CI runner takes longer, and
-  part 1 measures it there.
+  Linux host, and the system tests' binary 8.9 seconds. That is the compile alone.
 - In merge-group run 40537138863 (2026-10-27), the kernel suite ran 141 tests in 8 seconds on
   aarch64 and 152 in 10 seconds on x86_64. The system tests ran 388 in 133 seconds on x86_64.
 
-A kernel mutant therefore costs about 20 seconds against the kernel suite and about 150 against
-both. `components` has no tests of its own, so every one of its mutants pays the system tests.
+Part 1 measured the whole replay, build and image preparation included, in the section below: a
+mutant costs about 18 seconds against the kernel suite and about 125 more against the system
+tests, on a hosted runner. `components` has no tests of its own, so every one of its mutants pays
+the system tests.
 
 ## The options
 
@@ -110,14 +111,15 @@ already keys on, and execution stays with the driver that already knows how to b
 
 ## How the work splits
 
-1. The driver and the measurement. Feed `--list --diff` patches to the falsification driver for
-   one module on one architecture, and record the per-mutant cost on a CI runner for each tier. One
-   lane, and every number below is an estimate until it lands.
+1. The driver and the measurement. `script/falsifications --mutants` feeds `--list --diff` patches
+   to the replay, and `.github/workflows/kernel-mutants-cost.yml` measures the cost on a hosted
+   runner. Built; the numbers are below.
 2. The kernel's exclusions: test, bench and self-test modules, each with its reason, in the
    kernel's own section of `.cargo/mutants.toml`.
-3. The diff-scoped check, advisory, sharded so each job stays under 20 minutes. At about 150
-   seconds per mutant and two jobs per runner, one job holds about 16 mutants. A larger diff takes
-   more shards, never a longer job. One lane.
+3. The diff-scoped check, advisory, sharded so each job stays under 20 minutes. Each job pays its
+   baseline first (380 seconds on aarch64, 785 on x86_64, build included), so a 20-minute job on
+   aarch64 holds about 10 mutants at the measured 81 seconds each. A larger diff takes more shards,
+   never a longer job. One lane.
 4. The rolling census, one workflow with a slice list, two jobs a night and the schedule below. The
    slices go in order of what a wrong line costs: `syscall/`, `revoke`, `cap`, `memory_region`,
    `sched/`, then `arch/` per architecture, then `user/`, then `components` against the system
@@ -132,19 +134,43 @@ already keys on, and execution stays with the driver that already knows how to b
 - The census-wide check from `a-survivor-accepted-once-is-not-accepted-forever.md` covers the
   kernel's rows like any other crate's.
 
-## Cost, estimated until part 1 measures it
+## Cost, measured by part 1 and estimated beyond it
 
-At 20 seconds per mutant, the kernel's first tier is 58 runner-hours a pass. If half its mutants
-survive that tier, the second adds about 190. `components` is about 236 at 150 seconds each, and the
-other crates that need a kernel about 100. At the ruled 60 runner-hours a week:
+Measured on 2026-10-27 (UTC) on `ubuntu-24.04-arm` hosted runners (4 cpus, 15.6 GiB), in
+`kernel-mutants-cost.yml` run 40587528953 (the first run, 40584191045, agrees on aarch64). The
+sample is the first eight mutants of `kernel/src/revoke.rs` on aarch64 and the first six on x86_64.
+The x86_64 boots run under TCG on the same pool, as the x86_64 leg of `ci.yml` does. The sample is
+small and from one file, and every mutant in it was caught, so the survivor cost below is a local
+figure.
 
-| pass | runner-hours | weeks at 60 |
+| tier | aarch64 | x86_64 |
 |---|---|---|
-| kernel, first tier | 58 | 1 |
-| kernel, second tier | 190 | 3 |
-| `components` | 236 | 4 |
-| the other crates that need a kernel | 100 | 2 |
-| one full rotation | 584 | about 10 |
+| baseline, kernel image (cold build, once per job) | 225 s | 441 s |
+| baseline, system image (once per job) | 155 s | 344 s |
+| kernel image, per mutant | 18 s (15.6 to 20.5) | 17 s for three, 195 s for three |
+| system image, per mutant | 125 s (124 to 127) | none reached it |
+| per mutant, both tiers as run | 81 s over 8 | 106 s over 6 |
+
+- Half the aarch64 sample passed the kernel image and paid the system image: 143 s for such a
+  mutant, 16 s for one the kernel image caught. The x86_64 kernel image caught all six, three of
+  them after about 195 s, which is a hung or panicked boot waiting out a watchdog.
+- aarch64 is the cheaper architecture for code that is not `arch/`: it is 24% cheaper per mutant on
+  this sample and its baseline is half as long. Arch-independent code runs there.
+- A local run on the 80-core Linux host covered twelve `cap.rs` mutants, all survivors, and eight
+  `revoke.rs` mutants. The kernel image took 36 to 44 s, the system image 175 to 220 s, and a mutant
+  that survived both 255 s. Three of the eight `revoke.rs` mutants did not compile and cost 23 to
+  25 s each.
+
+The rest is estimated from those figures. It assumes half the kernel's mutants survive the first
+tier, as half of eight did; that fraction is the weakest number here.
+
+| pass | runner-hours | weeks at 60 | basis |
+|---|---|---|---|
+| kernel, first tier | 52 | 1 | 10,461 at 18 s, measured |
+| kernel, second tier | 182 | 3 | half at 125 s, fraction estimated |
+| `components` | 228 | 4 | 5,663 at 145 s, estimated: nothing in it was run |
+| the other crates that need a kernel | 100 | 2 | estimated |
+| one full rotation | 562 | about 9.5 | |
 
 The kernel alone, both tiers, passes in about four weeks.
 

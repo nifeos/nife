@@ -55,7 +55,7 @@ fn a_process_can_build_start_and_run_a_child_thread() {
     // The child's one authority: WRITE on a report rendezvous, so it can SEND but not receive.
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let report = crate::sched::create_rendezvous_from(endpoints).expect("no report rendezvous");
-    let report_cap = crate::capability_object::rendezvous_capability(
+    let report_capability = crate::capability_object::rendezvous_capability(
         report,
         crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
     );
@@ -64,7 +64,7 @@ fn a_process_can_build_start_and_run_a_child_thread() {
     let thread_control_block_region = crate::memory_region::create(2).expect("no tcb region");
     let tid =
         crate::sched::create_thread_control_block(thread_control_block_region).expect("no tcb");
-    let slot = crate::sched::thread_control_block_insert_capability(tid, report_cap, None)
+    let slot = crate::sched::thread_control_block_insert_capability(tid, report_capability, None)
         .expect("cap insert");
     assert_eq!(
         slot, 0,
@@ -148,7 +148,7 @@ fn reclaim_frees_a_started_then_exited_childs_regions() {
     )
     .expect("map stack");
 
-    let report_cap = crate::capability_object::rendezvous_capability(
+    let report_capability = crate::capability_object::rendezvous_capability(
         report,
         crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
     );
@@ -163,7 +163,7 @@ fn reclaim_frees_a_started_then_exited_childs_regions() {
     let tcb_run = crate::testing::RegionRun::of(thread_control_block_region);
     let tid =
         crate::sched::create_thread_control_block(thread_control_block_region).expect("no tcb");
-    crate::sched::thread_control_block_insert_capability(tid, report_cap, None)
+    crate::sched::thread_control_block_insert_capability(tid, report_capability, None)
         .expect("cap insert");
     crate::sched::configure_thread_control_block(
         tid,
@@ -240,7 +240,7 @@ fn spawn_to_reap_repeats_without_leaking() {
         )
         .expect("map stack");
 
-        let report_cap = crate::capability_object::rendezvous_capability(
+        let report_capability = crate::capability_object::rendezvous_capability(
             report,
             crate::capability_object::Rights::WRITE.union(crate::capability_object::Rights::GRANT),
         );
@@ -252,7 +252,7 @@ fn spawn_to_reap_repeats_without_leaking() {
         let tcb_run = crate::testing::RegionRun::of(thread_control_block_region);
         let tid =
             crate::sched::create_thread_control_block(thread_control_block_region).expect("tcb");
-        crate::sched::thread_control_block_insert_capability(tid, report_cap, None)
+        crate::sched::thread_control_block_insert_capability(tid, report_capability, None)
             .expect("cap insert");
         crate::sched::configure_thread_control_block(
             tid,

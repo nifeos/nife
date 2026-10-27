@@ -1,14 +1,35 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-27
+ratified_by: calef
 ---
 
 # 178. Where the timer re-arm seam goes, and which miss behavior the kernel tick is meant to have
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice B, which read milestone 360 (`crates/timetable`'s proved `next_after` is not what the timer calls)'s
 `DECISION` gate and found it naming no section. Milestone 197 named the fork and declined to take
-it; the 2026-09-03 proposal sweep carried it forward. *(Section number provisional until the merge
-queue lands it.)*
+it; the 2026-09-03 proposal sweep carried it forward.
+
+## The ruling
+
+Decided 2026-10-27 (UTC): option A. Lift the arithmetic only.
+
+- Each software re-arm, `kernel/src/arch/aarch64/timer.rs::rearm` and
+  `kernel/src/arch/riscv64/timer.rs::rearm`, reads its registers, calls
+  `timetable::next_after(fired, interval, now)`, and arms the result.
+- A kernel tick that arrives late comes back onto its original beat. It does not start a fresh
+  interval from where it woke up. The behavior change on the late path is intended, and it restores
+  the property milestone 6 (threads, the context switch, and preemption) chose the compare register for.
+- Lateness detection and the `MISSED_TICKS` accounting stay in the arch layer, as does the
+  `#[cfg(test)] miss_detail::record` hook. The crate returns a deadline, not a verdict.
+- x86_64 is unchanged, because the local APIC reloads in periodic mode and there is no software
+  re-arm to lift.
+- The signature stays `pub const fn next_after(prev: u64, period: u64, now: u64) -> u64`.
+
+Options B and C are not taken. The drift test and `miss_detail` are re-read against the new late
+path by the lane that builds milestone 360 (`crates/timetable`'s proved `next_after` is not what the
+timer calls, so nothing runs the proof), not assumed to hold.
 
 ## What is being decided
 
@@ -70,17 +91,15 @@ whether that change is wanted is the question underneath "where does the seam go
 | **B** | **Lift the arithmetic and the miss accounting**, so the crate answers with both the next deadline and whether it was late, and the arch layer only reads and writes registers. | Binds more of the code to a proof. `MISSED_TICKS` and the `#[cfg(test)] miss_detail::record` are per-CPU kernel state, so the crate would return a verdict rather than own the counter, which is one more thing on a boundary that exists to be thin. |
 | **C** | **Leave it, and record the counterfactual where the reader meets it.** | Free. The standing cost is the one milestone 360 names: `script/verify` reports a green proof beside proofs that do bind, with no way for a reader to tell them apart, and the demonstrator's claim is a verified core. |
 
-No recommendation, deliberately. The seam is *"the whole of the work rather than a detail of
-it"*, and A carries a behaviour change to the kernel tick that is calef's rather than a lane's. What
-this section does instead is put the two re-arms side by side and name the behavior change, which
-is what milestone 360 said a lane could produce before a ruling.
+The proposal made no recommendation, because A carries a behavior change to the kernel tick that
+is an architect's call rather than a lane's.
 
-If A, the prior question has to be answered first and in one sentence: should a kernel tick that
+The prior question for A, answered by the ruling above, was: should a kernel tick that
 arrives late come back onto its original beat, or start a fresh interval from where it woke up?
 `next_after` answers the first; both `rearm`s answer the second.
 
-## What is blocked until this is answered
+## What was blocked until this was answered
 
-Milestone 360. Nothing else cites it. Three of `next_after`'s four properties are machine-checked
+Milestone 360, now unblocked. Nothing else cites it. Three of `next_after`'s four properties are machine-checked
 and the phase one is host-tested, and `crates/timetable/src/proofs.rs` says why in the place a reader
 of the proofs would look, so the proof itself needs nothing from this.
