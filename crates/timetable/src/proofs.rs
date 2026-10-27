@@ -1,6 +1,6 @@
 //! Machine-checked proofs for the calendar arithmetic (milestone 129 (scheduled execution)). The
 //! proofs of `next_after` moved with the function to `crates/periodic_deadline/src/proofs.rs`
-//! (milestone 360).
+//! (milestone 360 (`crates/timetable`'s proved `next_after` is not what the timer calls)).
 //!
 //! A wrong calendar answer is quiet: a monthly job a week off, a time of day listed twice. The
 //! inputs that reach those are ones nobody thinks to type, so Kani holds them rather than samples.

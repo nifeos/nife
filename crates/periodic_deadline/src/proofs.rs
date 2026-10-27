@@ -1,5 +1,5 @@
 //! Machine-checked proofs for the deadline arithmetic (milestone 129 (scheduled execution)), moved
-//! with `next_after` from the `timetable` crate by milestone 360.
+//! with `next_after` from the `timetable` crate by milestone 360 (`crates/timetable`'s proved `next_after` is not what the timer calls).
 //!
 //! The arithmetic rather than the parser: a wrong parse is a document that does not load, which is
 //! loud, while a wrong fire is quiet (an occurrence fired twice at a period boundary, a phase that
