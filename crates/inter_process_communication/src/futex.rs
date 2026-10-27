@@ -11,7 +11,7 @@
 //!
 //! ```
 //! use core::ptr::NonNull;
-//! use intrusive_fifo::{Node, Unqueued};
+//! use intrusive_queue::{Node, Unqueued};
 //! use inter_process_communication::futex::{Futexes, Key};
 //!
 //! struct Thread { next: Option<NonNull<Thread>>, key: Key }
@@ -39,7 +39,7 @@
 
 use core::ptr::NonNull;
 
-use intrusive_fifo::{Fifo, Node, Unqueued};
+use intrusive_queue::{Node, Queue, Unqueued};
 
 /// **What a waiter is parked under**: the address space it waits in, by the kernel's generational
 /// name for it, and the virtual address of the 32-bit word in that space.
@@ -53,7 +53,7 @@ pub struct Key {
 
 /// **The wait queues**, `B` buckets of intrusive FIFOs.
 pub struct Futexes<T: Node, const B: usize> {
-    buckets: [Fifo<T>; B],
+    buckets: [Queue<T>; B],
 }
 
 impl<T: Node, const B: usize> Default for Futexes<T, B> {
@@ -66,7 +66,7 @@ impl<T: Node, const B: usize> Futexes<T, B> {
     /// No one waiting on anything.
     pub const fn new() -> Self {
         Self {
-            buckets: [const { Fifo::new() }; B],
+            buckets: [const { Queue::new() }; B],
         }
     }
 
@@ -84,16 +84,21 @@ impl<T: Node, const B: usize> Futexes<T, B> {
         self.buckets[Self::bucket(key)].push_back(waiter);
     }
 
-    /// **Take up to `max` waiters parked under `key`**, first parked first, and hand them back as a
-    /// queue of their own so the caller can wake each one without holding a borrow of this table.
-    /// Waiters under other keys in the same bucket stay, in their order.
-    pub fn take(&mut self, key: Key, max: usize, key_of: impl Fn(NonNull<T>) -> Key) -> Fifo<T> {
+    /// **Take up to `maximum` waiters parked under `key`**, first parked first, and hand them back
+    /// as a queue of their own so the caller can wake each one without holding a borrow of this
+    /// table. Waiters under other keys in the same bucket stay, in their order.
+    pub fn take(
+        &mut self,
+        key: Key,
+        maximum: usize,
+        key_of: impl Fn(NonNull<T>) -> Key,
+    ) -> Queue<T> {
         let bucket = &mut self.buckets[Self::bucket(key)];
-        let mut kept = Fifo::new();
-        let mut taken = Fifo::new();
+        let mut kept = Queue::new();
+        let mut taken = Queue::new();
         let mut count = 0;
         while let Some(waiter) = bucket.pop_front() {
-            if count < max && key_of(waiter.as_non_null()) == key {
+            if count < maximum && key_of(waiter.as_non_null()) == key {
                 taken.push_back(waiter);
                 count += 1;
             } else {
@@ -108,7 +113,7 @@ impl<T: Node, const B: usize> Futexes<T, B> {
     /// destroyed). `None` if it was not parked under `key`.
     pub fn remove(&mut self, key: Key, victim: NonNull<T>) -> Option<Unqueued<T>> {
         let bucket = &mut self.buckets[Self::bucket(key)];
-        let mut kept = Fifo::new();
+        let mut kept = Queue::new();
         let mut found = None;
         while let Some(waiter) = bucket.pop_front() {
             if waiter == victim {
@@ -125,14 +130,14 @@ impl<T: Node, const B: usize> Futexes<T, B> {
     /// whether they still have one. What catches a teardown that forgot to unlink a thread: a dead
     /// TCB has no key to count it by, but it is still a link.
     pub fn queued(&self) -> usize {
-        self.buckets.iter().map(Fifo::len).sum()
+        self.buckets.iter().map(Queue::len).sum()
     }
 
     /// How many waiters are parked under `key`. For tests and diagnostics; a wake does not need it.
     /// `&mut` because the queue is intrusive and walked by popping, in order, then put back as it was.
     pub fn waiters(&mut self, key: Key, key_of: impl Fn(NonNull<T>) -> Key) -> usize {
         let bucket = &mut self.buckets[Self::bucket(key)];
-        let mut kept = Fifo::new();
+        let mut kept = Queue::new();
         let mut count = 0;
         while let Some(waiter) = bucket.pop_front() {
             if key_of(waiter.as_non_null()) == key {
@@ -184,7 +189,7 @@ mod tests {
         }
     }
 
-    fn drain(mut q: Fifo<T>) -> usize {
+    fn drain(mut q: Queue<T>) -> usize {
         let mut n = 0;
         while q.pop_front().is_some() {
             n += 1;
@@ -193,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    fn a_wake_takes_only_its_own_key_in_order_and_at_most_max() {
+    fn a_wake_takes_only_its_own_key_in_order_and_at_most_maximum() {
         let a = key(1, 0x1000);
         let b = key(1, 0x1004);
         let c = key(2, 0x1000); // the same address in another space is another futex

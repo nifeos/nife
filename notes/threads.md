@@ -266,7 +266,7 @@ A dead thread's address range is reused. `unmap_page` frees the leaf mapping but
 intermediate tables standing ([teardown](teardown.md)), so bump-allocating addresses forever would
 cost an L2 and an L3 table for every 2 MiB consumed. A reused range lands in tables that already
 exist, and a test asserts that a second batch of threads costs zero additional frames. The free
-list is sized from `sched::MAX_THREADS`, so raising the thread ceiling cannot overflow it.
+list is sized from `sched::MAXIMUM_THREADS`, so raising the thread ceiling cannot overflow it.
 
 The physical pages come from the kernel's own budget (`kmem`), not the frame allocator, so the
 kernel's stack spending is bounded by its boot carve. Unmapping a dead stack must invalidate the

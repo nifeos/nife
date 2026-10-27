@@ -10,11 +10,17 @@
 use crate::output::Sink;
 
 /// The longest line the discipline will assemble. Longer input is refused with a bell.
-pub const LINE_MAX: usize = 256;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `LINE_MAX`.
+pub const LINE_MAXIMUM: usize = 256;
 /// How many history entries the ring holds.
 pub const HIST: usize = 8;
 /// The longest prompt the discipline will repaint. Longer prompts are truncated.
-pub const PROMPT_MAX: usize = 64;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `PROMPT_MAX`.
+pub const PROMPT_MAXIMUM: usize = 64;
 
 const BS: u8 = 0x08;
 const BEL: u8 = 0x07;
@@ -122,21 +128,21 @@ enum EscState {
 /// assert!(out.0.starts_with(b"$ "));
 /// ```
 pub struct LineDisc {
-    pub(super) buf: [u8; LINE_MAX],
+    pub(super) buf: [u8; LINE_MAXIMUM],
     pub(super) len: usize,
     pub(super) cur: usize,
     /// The completed line, snapshotted when [`Event::Line`] is returned.
-    done: [u8; LINE_MAX],
+    done: [u8; LINE_MAXIMUM],
     done_len: usize,
-    pub(super) kill: [u8; LINE_MAX],
+    pub(super) kill: [u8; LINE_MAXIMUM],
     pub(super) kill_len: usize,
-    pub(super) hist: [([u8; LINE_MAX], usize); HIST],
+    pub(super) hist: [([u8; LINE_MAXIMUM], usize); HIST],
     pub(super) hist_count: usize,
     pub(super) hist_next: usize,
     /// `Some(k)`: showing the k-th most recent history entry (k in `1..=hist_count`).
     pub(super) browse: Option<usize>,
-    stash: ([u8; LINE_MAX], usize, usize),
-    pub(super) prompt: [u8; PROMPT_MAX],
+    stash: ([u8; LINE_MAXIMUM], usize, usize),
+    pub(super) prompt: [u8; PROMPT_MAXIMUM],
     pub(super) prompt_len: usize,
     esc: EscState,
     last_was_cr: bool,
@@ -156,19 +162,19 @@ impl LineDisc {
     /// (`display_terminal.rs`'s `TERMINAL` is the same fix for the same reason, one program over).
     pub const fn new() -> Self {
         LineDisc {
-            buf: [0; LINE_MAX],
+            buf: [0; LINE_MAXIMUM],
             len: 0,
             cur: 0,
-            done: [0; LINE_MAX],
+            done: [0; LINE_MAXIMUM],
             done_len: 0,
-            kill: [0; LINE_MAX],
+            kill: [0; LINE_MAXIMUM],
             kill_len: 0,
-            hist: [([0; LINE_MAX], 0); HIST],
+            hist: [([0; LINE_MAXIMUM], 0); HIST],
             hist_count: 0,
             hist_next: 0,
             browse: None,
-            stash: ([0; LINE_MAX], 0, 0),
-            prompt: [0; PROMPT_MAX],
+            stash: ([0; LINE_MAXIMUM], 0, 0),
+            prompt: [0; PROMPT_MAXIMUM],
             prompt_len: 0,
             esc: EscState::Idle,
             last_was_cr: false,
@@ -195,7 +201,7 @@ impl LineDisc {
     /// [`start_line`](LineDisc::start_line) does, but paint nothing, because the screen already
     /// shows the prompt and the half-typed line. Painting again would print them twice.
     pub fn resume_line(&mut self, prompt: &[u8]) {
-        let n = prompt.len().min(PROMPT_MAX);
+        let n = prompt.len().min(PROMPT_MAXIMUM);
         self.prompt[..n].copy_from_slice(&prompt[..n]);
         self.prompt_len = n;
     }
@@ -208,7 +214,7 @@ impl LineDisc {
 
     /// Insert `text` at the cursor as if it had been typed, echoing it. Printable bytes only; any
     /// other byte is skipped rather than inserted, so a completion cannot smuggle a control
-    /// sequence into the line. What does not fit in [`LINE_MAX`] is refused with a bell.
+    /// sequence into the line. What does not fit in [`LINE_MAXIMUM`] is refused with a bell.
     pub fn insert_text(&mut self, text: &[u8], out: &mut impl Sink) {
         for &b in text {
             if (0x20..=0x7e).contains(&b) {
@@ -228,7 +234,7 @@ impl LineDisc {
     /// Begin a read: remember `prompt` (for repaints) and paint it, followed by whatever the
     /// user has already typed ahead. Called by the server when a READLINE request arrives.
     pub fn start_line(&mut self, prompt: &[u8], out: &mut impl Sink) {
-        let n = prompt.len().min(PROMPT_MAX);
+        let n = prompt.len().min(PROMPT_MAXIMUM);
         self.prompt[..n].copy_from_slice(&prompt[..n]);
         self.prompt_len = n;
         out.put(&self.prompt[..n]);
@@ -478,7 +484,7 @@ impl LineDisc {
     }
 
     fn insert(&mut self, b: u8, out: &mut impl Sink) {
-        if self.len >= LINE_MAX {
+        if self.len >= LINE_MAXIMUM {
             out.put(&[BEL]);
             return;
         }
@@ -535,7 +541,7 @@ impl LineDisc {
     }
 
     fn yank(&mut self, out: &mut impl Sink) {
-        let n = self.kill_len.min(LINE_MAX - self.len);
+        let n = self.kill_len.min(LINE_MAXIMUM - self.len);
         if n == 0 {
             if self.kill_len > 0 {
                 out.put(&[BEL]); // there was something to yank and no room for it
@@ -625,7 +631,7 @@ impl LineDisc {
     /// Replace the whole edit line with `text` and repaint the input region, cursor at the end.
     fn replace_line(&mut self, text: &[u8], out: &mut impl Sink) {
         csi_left(out, self.cur);
-        let n = text.len().min(LINE_MAX);
+        let n = text.len().min(LINE_MAXIMUM);
         self.buf[..n].copy_from_slice(&text[..n]);
         self.len = n;
         self.cur = n;

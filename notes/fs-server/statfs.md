@@ -24,8 +24,8 @@ carries one `i64`, and two 64-bit counts do not fit in one however they are pack
   page. A client that assumed they were equal would mis-size a volume the day a filesystem with
   64 KiB records is served through this contract. The IPC transfer unit stopped being either of them
   at milestone 138 (close the read gap: a 4 KiB request must stop moving 128 KiB) step 3. It is now
-  `filesystem_contract::fs::TRANSFER_MAX`, which is the same distinction arriving a second time and
-  proving the field was worth having.
+  `filesystem_contract::fs::TRANSFER_MAXIMUM`, which is the same distinction arriving a second time
+  and proving the field was worth having.
 - The record's length is its version. A later field extends the record and raises `LEN`. A client
   written against this version reads its prefix correctly, because it checks `r0 >= LEN` for the
   fields it knows, which is how `statfs::decode` is written. There is deliberately no version word,

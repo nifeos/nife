@@ -3,7 +3,7 @@ Falsifies `machine_discovery::x86_64::verification::a_feature_is_never_reported_
 The defect: an *extended* leaf is gated on the *standard* maximum.
 
 `CpuidWords` carries two maxima, `leaf0[0]` for the standard leaf space and
-`extended_max_leaf` for the `0x8000_0000`-based one, and a part can answer every
+`extended_maximum_leaf` for the `0x8000_0000`-based one, and a part can answer every
 standard leaf while implementing no extended leaf at all. This patch reads
 `CPUID.80000001H:EDX` whenever the part answers standard leaf 1, which every
 part made since 1993 does, so NX and SYSCALL are believed on the strength of a
@@ -19,7 +19,7 @@ which is exactly why the claim is proved over symbolic words instead of captured
 ones.
 
 Expected to fail: `assert!(!isa.features.contains(NX))`, under the
-`w.extended_max_leaf < 0x8000_0001` branch, for words where `leaf0[0] >= 1` and
+`w.extended_maximum_leaf < 0x8000_0001` branch, for words where `leaf0[0] >= 1` and
 bit 20 of `extended_leaf1_edx` is set. `assert!(isa.missing_requirements().any())`
 two lines below it fails on the same counterexample.
 
@@ -31,7 +31,7 @@ index f21de9f20..ce4118889 100644
          }
  
          let mut features = Features::NONE;
--        if w.extended_max_leaf >= 0x8000_0001 {
+-        if w.extended_maximum_leaf >= 0x8000_0001 {
 +        if w.leaf0[0] >= 1 {
              if w.extended_leaf1_edx & (1 << 20) != 0 {
                  features = features.union(NX);

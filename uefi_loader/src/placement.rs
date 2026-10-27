@@ -101,7 +101,7 @@ pub(crate) const BOOT_FILE_PATH: &str = "\\EFI\\BOOT\\BOOTX64.EFI";
 /// 19 MiB, so the 64 MiB ceiling exists to refuse something that is not this file at all, rather
 /// than spend the machine's RAM on it.
 #[cfg(target_arch = "x86_64")]
-pub(crate) const BOOT_FILE_MAX: u64 = 64 * 1024 * 1024;
+pub(crate) const BOOT_FILE_MAXIMUM: u64 = 64 * 1024 * 1024;
 
 /// **Seek here and the file protocol puts the position at the end**, which is the specification's
 /// own way of asking a file how long it is without decoding an `EFI_FILE_INFO`. `r-efi` names no
@@ -196,7 +196,7 @@ pub(crate) fn place_boot_file(
             && ((*file).get_position)(file, &mut length) == SUCCESS
             && ((*file).set_position)(file, 0) == SUCCESS
     };
-    if !sized || length == 0 || length > BOOT_FILE_MAX {
+    if !sized || length == 0 || length > BOOT_FILE_MAXIMUM {
         say(table, "uefi_loader: could not size the boot file\r\n");
         // SAFETY: both handles are open.
         unsafe {

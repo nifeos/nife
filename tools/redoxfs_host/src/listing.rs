@@ -54,23 +54,24 @@ pub struct LsEntry {
 pub fn ls(volume: Volume, path: &str) -> Result<Vec<LsEntry>, String> {
     let comps = components(path)?;
     let mut fs = open_ro(volume)?;
-    fs.tx(|tx| Ok(ls_tx(tx, &comps)))
+    fs.tx(|transaction| Ok(ls_transaction(transaction, &comps)))
         .map_err(|e| format!("listing {} failed: {e}", volume.path.display()))?
 }
 
-pub(crate) fn ls_tx<D: Disk>(
-    tx: &mut Transaction<D>,
+pub(crate) fn ls_transaction<D: Disk>(
+    transaction: &mut Transaction<D>,
     comps: &[&str],
 ) -> Result<Vec<LsEntry>, String> {
-    let node = resolve(tx, comps)?;
+    let node = resolve(transaction, comps)?;
     if !node.data().is_dir() {
         return Err(format!("/{}: not a directory", comps.join("/")));
     }
     let mut children = Vec::new();
-    tx.child_nodes(node.ptr(), &mut children)
+    transaction
+        .child_nodes(node.ptr(), &mut children)
         .map_err(|e| format!("/{}: listing failed: {e}", comps.join("/")))?;
-    let store = find_store(tx)?;
-    // Names and pointers first, so the store lookup below can borrow `tx` mutably (a `DirEntry`
+    let store = find_store(transaction)?;
+    // Names and pointers first, so the store lookup below can borrow `transaction` mutably (a `DirEntry`
     // would keep it borrowed for the whole loop). Same shape as `extract_node`'s.
     let entries: Vec<(String, TreePtr<Node>)> = children
         .iter()
@@ -78,12 +79,12 @@ pub(crate) fn ls_tx<D: Disk>(
         .collect();
     let mut out = Vec::new();
     for (name, ptr) in entries {
-        let child = tx
+        let child = transaction
             .read_tree(ptr)
             .map_err(|e| format!("{name}: cannot read its node: {e}"))?;
         // A store that cannot be read is a listing that says nothing about attributes, not a listing
         // that fails: `ls` is the first thing a person runs on a damaged image.
-        let attrs = match attr_blob(tx, store, ptr.id()) {
+        let attrs = match attr_blob(transaction, store, ptr.id()) {
             Ok(blob) => xattr::store::count(&blob),
             Err(msg) => {
                 eprintln!("redoxfs_host: {name}: {msg}");
@@ -105,14 +106,17 @@ pub(crate) fn ls_tx<D: Disk>(
 pub fn cat(volume: Volume, path: &str) -> Result<Vec<u8>, String> {
     let comps = components(path)?;
     let mut fs = open_ro(volume)?;
-    fs.tx(|tx| Ok(cat_tx(tx, &comps)))
+    fs.tx(|transaction| Ok(cat_transaction(transaction, &comps)))
         .map_err(|e| format!("reading {path} from {} failed: {e}", volume.path.display()))?
 }
 
-pub(crate) fn cat_tx<D: Disk>(tx: &mut Transaction<D>, comps: &[&str]) -> Result<Vec<u8>, String> {
-    let node = resolve(tx, comps)?;
+pub(crate) fn cat_transaction<D: Disk>(
+    transaction: &mut Transaction<D>,
+    comps: &[&str],
+) -> Result<Vec<u8>, String> {
+    let node = resolve(transaction, comps)?;
     if node.data().is_dir() {
         return Err(format!("/{}: is a directory", comps.join("/")));
     }
-    read_all(tx, &node)
+    read_all(transaction, &node)
 }

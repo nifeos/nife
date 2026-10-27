@@ -239,13 +239,13 @@ where
 
     // 4b. The secondary stacks, slot by slot so each slot's bottom page stays a guard. They are
     // outside `.bss` because step 2 maps that in one range. See notes/stack-high-water.md.
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::smp::secondary_stack_span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
 
     // 4c. The interrupt stacks, slot by slot as in 4b. See kernel/src/interrupt_stack.rs.
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::interrupt_stack::span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
@@ -414,14 +414,14 @@ where
         "the guard page IS mapped: stack overflow protection is off"
     );
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::smp::secondary_stack_guard(id)).is_none(),
             "a secondary's guard page IS mapped: its stack overflow protection is off"
         );
     }
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::interrupt_stack::guard(id)).is_none(),
             "an interrupt stack's guard page IS mapped: its overflow protection is off"

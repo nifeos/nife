@@ -116,7 +116,7 @@ table and the reasoning.
 | `device_tree_blob` | 4 | the big-endian leaf readers are total | [core](verification/core-harnesses.md) |
 | `inter_process_communication` | 6 | at most one wait queue is non-empty; rendezvous is exact; a collected sender is forgotten | [core](verification/core-harnesses.md) |
 | `generational_table` | 3 | a removed name never resolves again | [core](verification/core-harnesses.md) |
-| `intrusive_fifo` | 1 | any push/pop interleaving is FIFO and lossless | [core](verification/core-harnesses.md) |
+| `intrusive_queue` | 1 | any push/pop interleaving is FIFO and lossless | [core](verification/core-harnesses.md) |
 | `address_space_identifier` | 3 | ASID 0 is never allocated; live ASIDs are distinct | [core](verification/core-harnesses.md) |
 | `elf` | 4 | segment bounds arithmetic is total and yields in-bounds ranges | [parsers](verification/parser-harnesses.md) |
 | `nifefs` | 2 | the initrd parse's acceptance makes reads in-bounds | [parsers](verification/parser-harnesses.md) |

@@ -431,13 +431,13 @@ where
     map_range(m, stack_bottom(), stack_top(), Flags::kernel_data())?;
 
     // 4b. Secondary stacks one slot at a time, so each slot's bottom page stays a guard hole.
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::smp::secondary_stack_span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
 
     // 4c. Interrupt stacks, slot by slot for 4b's reason.
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         let (bottom, top) = crate::interrupt_stack::span(id);
         map_range(m, bottom, top, Flags::kernel_data())?;
     }
@@ -526,7 +526,7 @@ where
     // 10. The JH7110's SD/MMC controllers, the registers and data FIFO the driver touches.
     if let Some(slots) = memory::jh7110_storage() {
         for s in slots.iter().flatten() {
-            let used = u64::from(designware_mobile_storage::regs::WINDOW_USED).min(s.size);
+            let used = u64::from(designware_mobile_storage::registers::WINDOW_USED).min(s.size);
             direct_map(m, s.base, s.base + used, Flags::device())?;
         }
     }
@@ -614,14 +614,14 @@ where
         "the guard page IS mapped: stack overflow protection is off"
     );
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::smp::secondary_stack_guard(id)).is_none(),
             "a secondary's guard page IS mapped: its stack overflow protection is off"
         );
     }
 
-    for id in 0..crate::cpu::MAX_CPUS {
+    for id in 0..crate::cpu::MAXIMUM_CPUS {
         assert!(
             m.translate(crate::interrupt_stack::guard(id)).is_none(),
             "an interrupt stack's guard page IS mapped: its overflow protection is off"

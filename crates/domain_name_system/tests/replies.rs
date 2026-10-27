@@ -8,8 +8,8 @@
 //! captures a forgery.
 
 use domain_name_system::{
-    CLASS_IN, Error, FLAG_TC, Header, MAX_ADDRESSES, MAX_CHAIN, Name, Query, Reader, Reject,
-    TcpReply, cname_target, decode_name, record_type,
+    CLASS_IN, Error, FLAG_TC, Header, MAXIMUM_ADDRESSES, MAXIMUM_CHAIN, Name, Query, Reader,
+    Reject, TcpReply, cname_target, decode_name, record_type,
 };
 
 /// `example.com` A, id 0x1111: two A records, owners compressed to the question.
@@ -277,8 +277,8 @@ fn a_cname_loop_stops_at_the_chain_limit() {
 }
 
 #[test]
-fn the_chain_limit_is_exactly_max_chain_links() {
-    let names: Vec<String> = (0..=MAX_CHAIN + 1)
+fn the_chain_limit_is_exactly_maximum_chain_links() {
+    let names: Vec<String> = (0..=MAXIMUM_CHAIN + 1)
         .map(|i| {
             if i == 0 {
                 OURS.to_string()
@@ -294,8 +294,8 @@ fn the_chain_limit_is_exactly_max_chain_links() {
         }
         r.a(&names[links], [10, 0, 2, 9])
     };
-    assert_eq!(chain(MAX_CHAIN).judged(), Ok(vec![[10, 0, 2, 9]]));
-    assert_eq!(chain(MAX_CHAIN + 1).judged(), Err(Reject::ChainTooLong));
+    assert_eq!(chain(MAXIMUM_CHAIN).judged(), Ok(vec![[10, 0, 2, 9]]));
+    assert_eq!(chain(MAXIMUM_CHAIN + 1).judged(), Err(Reject::ChainTooLong));
 }
 
 #[test]
@@ -318,12 +318,15 @@ fn other_record_types_are_ignored() {
 #[test]
 fn addresses_past_the_cap_are_dropped_and_the_rest_kept() {
     let mut r = Reply::to(OURS);
-    for i in 0..(MAX_ADDRESSES as u8 + 2) {
+    for i in 0..(MAXIMUM_ADDRESSES as u8 + 2) {
         r = r.a(OURS, [10, 0, 2, i]);
     }
     let got = r.judged().unwrap();
-    assert_eq!(got.len(), MAX_ADDRESSES);
-    assert_eq!(got[MAX_ADDRESSES - 1], [10, 0, 2, MAX_ADDRESSES as u8 - 1]);
+    assert_eq!(got.len(), MAXIMUM_ADDRESSES);
+    assert_eq!(
+        got[MAXIMUM_ADDRESSES - 1],
+        [10, 0, 2, MAXIMUM_ADDRESSES as u8 - 1]
+    );
 }
 
 #[test]

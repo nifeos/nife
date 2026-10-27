@@ -144,7 +144,7 @@ fn wr32(va: u64, v: u32) {
 /// `spawn_client` time to exactly `SCENE[i].frames()` pages (`kernel/src/user/compositor_service.rs`),
 /// which differs per client and is not knowable at this program's compile time. The bound this
 /// process itself can trust is `bytes`, the `w * h * 4` computed and checked against
-/// `compositor::MAX_SURFACE_BYTES` in `_start` below (milestone 43, notes/shared-page-audit.md
+/// `compositor::MAXIMUM_SURFACE_BYTES` in `_start` below (milestone 43, notes/shared-page-audit.md
 /// finding 4) before any pixel is painted, so the window is constructed there, once, right after
 /// that check passes, and threaded to every `px_write`/`px_read` call rather than declared as a
 /// file-level constant (milestone 139 round 4).
@@ -406,7 +406,7 @@ fn read_validated_geometry() -> (u32, u32, u32, u32) {
         .checked_mul(h)
         .and_then(|px| px.checked_mul(4))
         .unwrap_or(u32::MAX);
-    if w == 0 || h == 0 || bytes > compositor::MAX_SURFACE_BYTES {
+    if w == 0 || h == 0 || bytes > compositor::MAXIMUM_SURFACE_BYTES {
         die(E_GEOMETRY);
     }
     (id, w, h, bytes)

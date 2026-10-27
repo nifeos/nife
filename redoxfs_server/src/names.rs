@@ -62,22 +62,22 @@ impl From<subtree_scope::Refusal> for Fault {
 ///
 /// Name: provisional (lane milestone/825, 2026-10-15 UTC); an architect names types.
 pub struct NameCopy {
-    bytes: [u8; NAME_MAX],
+    bytes: [u8; NAME_MAXIMUM],
     len: usize,
 }
 
 /// The longest name a [`NameCopy`] holds: one block, the length `Server::handle` clamps every
 /// name to, so a copy from the window never truncates.
-const NAME_MAX: usize = filesystem_contract::blk::BLOCK_SIZE;
+const NAME_MAXIMUM: usize = filesystem_contract::blk::BLOCK_SIZE;
 
 impl NameCopy {
     /// Copy `src` into a new value and validate UTF-8 on the copy. `EINVAL` for invalid UTF-8 or a
     /// name longer than one block, the answers a malformed name has always had.
     pub fn copy_in(src: &[u8]) -> Result<Self> {
-        if src.len() > NAME_MAX {
+        if src.len() > NAME_MAXIMUM {
             return Err(Error::new(EINVAL));
         }
-        let mut bytes = [0u8; NAME_MAX];
+        let mut bytes = [0u8; NAME_MAXIMUM];
         bytes[..src.len()].copy_from_slice(src);
         core::str::from_utf8(&bytes[..src.len()]).map_err(|_| Error::new(EINVAL))?;
         Ok(Self {

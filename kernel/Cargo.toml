@@ -178,7 +178,7 @@ designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet
 extensible_host_controller_interface = { version = "0.1.0", path = "../crates/extensible_host_controller_interface" }
 elf = { version = "0.1.0", path = "../crates/elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
-intrusive_fifo = { version = "0.1.0", path = "../crates/intrusive_fifo" }
+intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
 inter_process_communication = { version = "0.1.0", path = "../crates/inter_process_communication" }
 # What machine is this (milestone 60). The kernel reads the device tree and the ID registers; every
 # decoding of what it finds lives in the crate, host-tested against a real device tree and against

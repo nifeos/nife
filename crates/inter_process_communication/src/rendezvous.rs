@@ -15,7 +15,7 @@ use super::*;
 ///
 /// ```
 /// # use core::ptr::NonNull;
-/// # use intrusive_fifo::{Node, Unqueued};
+/// # use intrusive_queue::{Node, Unqueued};
 /// # use inter_process_communication::{Rendezvous, Receive, Send};
 /// # struct ThreadControlBlock { next: Option<NonNull<ThreadControlBlock>> }
 /// # // SAFETY: plain field storage, which is the whole of the `Node` contract.
@@ -47,9 +47,9 @@ use super::*;
 /// ```
 pub struct Rendezvous<T: Node> {
     /// Senders blocked here, waiting for a receiver.
-    pub(crate) senders: Fifo<T>,
+    pub(crate) senders: Queue<T>,
     /// Receivers blocked here, waiting for a sender.
-    pub(crate) receivers: Fifo<T>,
+    pub(crate) receivers: Queue<T>,
     /// Async signals that arrived with nobody waiting. Drained by the next receive, never lost.
     pub(crate) pending: u32,
     /// This rendezvous carries a hardware interrupt, so it takes no message. Set once by
@@ -148,8 +148,8 @@ impl<T: Node> Rendezvous<T> {
     /// build the rendezvous table at compile time rather than at boot.
     pub const fn new() -> Self {
         Self {
-            senders: Fifo::new(),
-            receivers: Fifo::new(),
+            senders: Queue::new(),
+            receivers: Queue::new(),
             pending: 0,
             bound_to_interrupt: false,
         }
@@ -212,7 +212,7 @@ impl<T: Node> Rendezvous<T> {
     /// and the cost is the queue's length. See `notes/inter-process-communication.md` ("Taking a
     /// thread back off a queue").
     pub fn remove_sender(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
-        let mut kept: Fifo<T> = Fifo::new();
+        let mut kept: Queue<T> = Queue::new();
         let mut found = None;
         while let Some(node) = self.senders.pop_front() {
             if node == victim {
@@ -230,7 +230,7 @@ impl<T: Node> Rendezvous<T> {
     /// blocked in `RECEIVE` here. The kernel asks both queues, because a thread's recorded wait
     /// role does not say which queue holds it.
     pub fn remove_receiver(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
-        let mut kept: Fifo<T> = Fifo::new();
+        let mut kept: Queue<T> = Queue::new();
         let mut found = None;
         while let Some(node) = self.receivers.pop_front() {
             if node == victim {
@@ -284,7 +284,7 @@ impl<T: Node> Rendezvous<T> {
     ///
     /// ```
     /// # use core::ptr::NonNull;
-    /// # use intrusive_fifo::{Node, Unqueued};
+    /// # use intrusive_queue::{Node, Unqueued};
     /// # use inter_process_communication::{Rendezvous, Receive};
     /// # struct ThreadControlBlock { next: Option<NonNull<ThreadControlBlock>> }
     /// # unsafe impl Node for ThreadControlBlock {

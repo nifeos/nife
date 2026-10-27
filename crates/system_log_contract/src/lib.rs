@@ -12,7 +12,7 @@
 //! # BUGS
 //!
 //! - Badges are 32 bits here, and the kernel's are 64: [`control::badge_fits`] refuses the rest.
-//! - A name is at most [`control::NAME_MAX`] bytes, and a longer one is cut at registration.
+//! - A name is at most [`control::NAME_MAXIMUM`] bytes, and a longer one is cut at registration.
 //!
 //! Name: ratified 2026-10-18 (calef): "Yes". A wire contract for the system log.
 
@@ -57,7 +57,7 @@ pub mod severity {
 }
 
 /// **F3, the binary record** (§242, Question 4): a fixed header, then text. The header plus
-/// [`record::TEXT_MAX`] is 256 bytes, Zircon's debuglog record's total.
+/// [`record::TEXT_MAXIMUM`] is 256 bytes, Zircon's debuglog record's total.
 ///
 /// | bytes | field | written by |
 /// |---|---|---|
@@ -75,10 +75,16 @@ pub mod record {
 
     /// The most text one record carries. §242 measured it against a whole xenon boot (longest
     /// kernel line 123 bytes) and an eight-hour radon soak (99% of lines fit).
-    pub const TEXT_MAX: usize = 224;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `TEXT_MAX`.
+    pub const TEXT_MAXIMUM: usize = 224;
 
     /// Header and text together, at most.
-    pub const RECORD_MAX: usize = HEADER_LEN + TEXT_MAX;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `RECORD_MAX`.
+    pub const RECORD_MAXIMUM: usize = HEADER_LEN + TEXT_MAXIMUM;
 
     /// The `flags` byte's bits.
     pub mod flags {
@@ -88,8 +94,8 @@ pub mod record {
         /// Records were lost immediately before this one (a kernel ring that overflowed before it
         /// was drained).
         pub const DROPPED_BEFORE: u8 = 1 << 1;
-        /// The line was longer than [`super::TEXT_MAX`] and this record is its first part; or the
-        /// writer ended (or was crowded out) mid-line.
+        /// The line was longer than [`super::TEXT_MAXIMUM`] and this record is its first part; or
+        /// the writer ended (or was crowded out) mid-line.
         pub const CUT: u8 = 1 << 2;
         /// The kernel already wrote this line to the UART itself (before a drainer attached, in a
         /// fallback, or in a panic's flush), so the log service stores it and does not forward it.
@@ -109,7 +115,7 @@ pub mod record {
         pub severity: u8,
         /// [`flags`].
         pub flags: u8,
-        /// How many text bytes follow, at most [`TEXT_MAX`].
+        /// How many text bytes follow, at most [`TEXT_MAXIMUM`].
         pub len: u16,
         /// The body kind; 0 is text.
         pub kind: u8,
@@ -129,9 +135,10 @@ pub mod record {
             b
         }
 
-        /// Decode a header, or `None` when it cannot be one: a length past [`TEXT_MAX`] (obeying it
-        /// would be a read past the record), a level past 7, or a reserved byte that is not zero.
-        /// Refused rather than repaired, for `byte_sink_contract::Msg::Malformed`'s reason.
+        /// Decode a header, or `None` when it cannot be one: a length past [`TEXT_MAXIMUM`]
+        /// (obeying it would be a read past the record), a level past 7, or a reserved byte that is
+        /// not zero. Refused rather than repaired, for `byte_sink_contract::Msg::Malformed`'s
+        /// reason.
         pub fn decode(b: &[u8; HEADER_LEN]) -> Option<Header> {
             let word = |i: usize| {
                 let mut w = [0u8; 8];
@@ -139,7 +146,7 @@ pub mod record {
                 u64::from_le_bytes(w)
             };
             let len = u16::from_le_bytes([b[26], b[27]]);
-            if len as usize > TEXT_MAX || b[24] > 7 || b[29..32] != [0, 0, 0] {
+            if len as usize > TEXT_MAXIMUM || b[24] > 7 || b[29..32] != [0, 0, 0] {
                 return None;
             }
             Some(Header {
@@ -190,7 +197,10 @@ pub mod control {
     pub const SCOPE_USER: u64 = 0;
 
     /// The longest name a registration carries: two chunks of sixteen.
-    pub const NAME_MAX: usize = 32;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `NAME_MAX`.
+    pub const NAME_MAXIMUM: usize = 32;
 
     /// A control word.
     pub const fn word(operation: u64, field: u64, arg: u64, badge: u32) -> u64 {
@@ -212,10 +222,11 @@ pub mod control {
         badge != 0 && badge <= u32::MAX as u64
     }
 
-    /// The [`OPERATION_NAME`] messages naming `badge`'s `field` as `name` (cut at [`NAME_MAX`]): one when
-    /// it fits in sixteen bytes, two otherwise. Unused entries are `None`.
+    /// The [`OPERATION_NAME`] messages naming `badge`'s `field` as `name` (cut at
+    /// [`NAME_MAXIMUM`]): one when it fits in sixteen bytes, two otherwise. Unused entries are
+    /// `None`.
     pub fn name_messages(badge: u32, field: u64, name: &[u8]) -> [Option<(u64, u64, u64)>; 2] {
-        let name = &name[..name.len().min(NAME_MAX)];
+        let name = &name[..name.len().min(NAME_MAXIMUM)];
         let chunk = |i: usize| {
             let mut b = [0u8; 16];
             let part = name.get(i * 16..).unwrap_or(&[]);
@@ -269,7 +280,10 @@ pub mod read {
     /// Where the lines start in a window.
     pub const DATA: usize = 16;
     /// The most JSONL one read returns.
-    pub const DATA_MAX: usize = WINDOW_BYTES - DATA;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `DATA_MAX`.
+    pub const DATA_MAXIMUM: usize = WINDOW_BYTES - DATA;
 
     /// A read's outcome, at window bytes 12..16.
     pub mod status {
@@ -293,7 +307,7 @@ pub mod read {
         window[12..16].copy_from_slice(&status.to_le_bytes());
     }
 
-    /// Read a window's header: `(next, len, status)`. `len` is clamped to [`DATA_MAX`], because
+    /// Read a window's header: `(next, len, status)`. `len` is clamped to [`DATA_MAXIMUM`], because
     /// the page is shared and its bytes are only as honest as whoever wrote them last.
     pub fn header(window: &[u8]) -> (u64, usize, u32) {
         let mut next = [0u8; 8];
@@ -304,7 +318,7 @@ pub mod read {
         status.copy_from_slice(&window[12..16]);
         (
             u64::from_le_bytes(next),
-            (u32::from_le_bytes(len) as usize).min(DATA_MAX),
+            (u32::from_le_bytes(len) as usize).min(DATA_MAXIMUM),
             u32::from_le_bytes(status),
         )
     }
@@ -327,7 +341,7 @@ pub mod kernel_ring {
 
     use core::sync::atomic::{AtomicU64, Ordering, fence};
 
-    use super::record::{Header, TEXT_MAX};
+    use super::record::{Header, TEXT_MAXIMUM};
 
     /// The ring's frames: §242 Question 5's 16 KiB.
     pub const PAGES: usize = 4;
@@ -336,7 +350,7 @@ pub mod kernel_ring {
     /// The ring's size in words, which is how both sides address it.
     pub const WORDS: usize = BYTES / 8;
     /// One slot: an F3 header and the most text it carries.
-    pub const SLOT_WORDS: usize = super::record::RECORD_MAX / 8;
+    pub const SLOT_WORDS: usize = super::record::RECORD_MAXIMUM / 8;
     /// How many records the ring holds. The first slot's worth of words is the header.
     pub const SLOTS: u64 = (WORDS / SLOT_WORDS - 1) as u64;
     /// The header's first word once the kernel has formatted the ring.
@@ -354,7 +368,7 @@ pub mod kernel_ring {
     const W_NEXT: usize = 1;
     const W_FALLBACK: usize = 2;
     const W_SLOTS: usize = 3;
-    const TEXT_WORDS: usize = TEXT_MAX / 8;
+    const TEXT_WORDS: usize = TEXT_MAXIMUM / 8;
 
     /// What [`Ring::read`] found.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -417,11 +431,11 @@ pub mod kernel_ring {
         }
 
         /// **Writer only.** Append a record and return its sequence number. `text` past
-        /// [`TEXT_MAX`] is cut; the caller splits long lines.
+        /// [`TEXT_MAXIMUM`] is cut; the caller splits long lines.
         pub fn append(&self, time: u64, severity: u8, flags: u8, text: &[u8]) -> u64 {
             let seq = self.w[W_NEXT].load(Ordering::Relaxed);
             let base = slot(seq);
-            let len = text.len().min(TEXT_MAX);
+            let len = text.len().min(TEXT_MAXIMUM);
             self.w[base].store(BUSY, Ordering::Relaxed);
             // PAIR: `Ring::read`'s fence(Acquire) before its second look at the slot: the BUSY
             // store above is ordered before the body stores below, so a copy that overlaps them
@@ -459,7 +473,7 @@ pub mod kernel_ring {
         }
 
         /// Copy record `seq` out: its header, and its text into `out`.
-        pub fn read(&self, seq: u64, out: &mut [u8; TEXT_MAX]) -> Read {
+        pub fn read(&self, seq: u64, out: &mut [u8; TEXT_MAXIMUM]) -> Read {
             let next = self.next_seq();
             if seq >= next {
                 return Read::NotYet;
@@ -485,7 +499,7 @@ pub mod kernel_ring {
             if self.w[base].load(Ordering::Relaxed) != seq {
                 return Read::Overwritten;
             }
-            let len = (((m >> 16) & 0xffff) as usize).min(TEXT_MAX);
+            let len = (((m >> 16) & 0xffff) as usize).min(TEXT_MAXIMUM);
             Read::Record(
                 Header {
                     seq,
@@ -550,22 +564,31 @@ pub mod console {
     }
 
     /// The longest kernel line the console assembles before writing it as cut.
-    pub const LINE_MAX: usize = 256;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `LINE_MAX`.
+    pub const LINE_MAXIMUM: usize = 256;
     /// What ends every line the console writes for the kernel: see [`Inserter::kernel_chunk`].
     pub const LINE_END: &[u8] = b"\r\n";
     /// How much of the terminal's current partial line is kept for a redraw.
-    pub const PARTIAL_MAX: usize = 512;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `PARTIAL_MAX`.
+    pub const PARTIAL_MAXIMUM: usize = 512;
     /// How many bytes of kernel lines wait for a line end.
-    pub const QUEUE_MAX: usize = 2048;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `QUEUE_MAX`.
+    pub const QUEUE_MAXIMUM: usize = 2048;
 
     /// The console's kernel-line state. See the module doc.
     pub struct Inserter {
-        partial: [u8; PARTIAL_MAX],
+        partial: [u8; PARTIAL_MAXIMUM],
         plen: usize,
         partial_lost: bool,
-        kline: [u8; LINE_MAX],
+        kline: [u8; LINE_MAXIMUM],
         klen: usize,
-        queue: [u8; QUEUE_MAX],
+        queue: [u8; QUEUE_MAXIMUM],
         qlen: usize,
     }
 
@@ -579,12 +602,12 @@ pub mod console {
         /// At the start of a line, nothing queued.
         pub const fn new() -> Self {
             Inserter {
-                partial: [0; PARTIAL_MAX],
+                partial: [0; PARTIAL_MAXIMUM],
                 plen: 0,
                 partial_lost: false,
-                kline: [0; LINE_MAX],
+                kline: [0; LINE_MAXIMUM],
                 klen: 0,
-                queue: [0; QUEUE_MAX],
+                queue: [0; QUEUE_MAXIMUM],
                 qlen: 0,
             }
         }
@@ -606,7 +629,7 @@ pub mod console {
                 if b == b'\n' {
                     self.plen = 0;
                     self.partial_lost = false;
-                } else if self.plen < PARTIAL_MAX {
+                } else if self.plen < PARTIAL_MAXIMUM {
                     self.partial[self.plen] = b;
                     self.plen += 1;
                 } else {
@@ -640,7 +663,7 @@ pub mod console {
                 }
                 // A cut leaves room for the line end, so it gets a line of its own rather than
                 // running into the next.
-                if b == b'\n' || self.klen == LINE_MAX - LINE_END.len() {
+                if b == b'\n' || self.klen == LINE_MAXIMUM - LINE_END.len() {
                     self.kline[self.klen..self.klen + LINE_END.len()].copy_from_slice(LINE_END);
                     self.klen += LINE_END.len();
                     self.finish_line(&mut out);
@@ -652,7 +675,7 @@ pub mod console {
             if self.at_line_start() && self.qlen == 0 {
                 out(&self.kline[..self.klen]);
             } else {
-                if self.qlen + self.klen > QUEUE_MAX {
+                if self.qlen + self.klen > QUEUE_MAXIMUM {
                     self.flush(&mut *out);
                 }
                 if self.at_line_start() {
@@ -700,7 +723,7 @@ mod tests {
             source: 7,
             severity: severity::WARNING,
             flags: record::flags::KERNEL | record::flags::CUT,
-            len: record::TEXT_MAX as u16,
+            len: record::TEXT_MAXIMUM as u16,
             kind: 0,
         };
         let b = h.encode();
@@ -708,7 +731,7 @@ mod tests {
         assert_eq!(record::Header::decode(&b), Some(h));
 
         let mut long = b;
-        long[26..28].copy_from_slice(&(record::TEXT_MAX as u16 + 1).to_le_bytes());
+        long[26..28].copy_from_slice(&(record::TEXT_MAXIMUM as u16 + 1).to_le_bytes());
         assert_eq!(record::Header::decode(&long), None);
         let mut loud = b;
         loud[24] = 8;
@@ -784,7 +807,7 @@ mod tests {
         read::put_header(&mut w, 9, 100, read::status::OK);
         assert_eq!(read::header(&w), (9, 100, read::status::OK));
         read::put_header(&mut w, 9, u32::MAX, read::status::OK);
-        assert_eq!(read::header(&w).1, read::DATA_MAX);
+        assert_eq!(read::header(&w).1, read::DATA_MAXIMUM);
     }
 
     /// The names are syslog's keywords, one per level, and none repeats.
@@ -814,7 +837,7 @@ mod tests {
         ring.format();
         assert!(ring.is_formatted());
         assert_eq!(SLOTS, 63);
-        let mut out = [0u8; record::TEXT_MAX];
+        let mut out = [0u8; record::TEXT_MAXIMUM];
         assert_eq!(ring.read(0, &mut out), Read::NotYet);
         ring.append(
             7,
@@ -842,7 +865,7 @@ mod tests {
         let Read::Record(h, n) = ring.read(SLOTS, &mut out) else {
             panic!()
         };
-        assert_eq!((h.seq, n), (SLOTS, record::TEXT_MAX));
+        assert_eq!((h.seq, n), (SLOTS, record::TEXT_MAXIMUM));
         assert!(!ring.add_flags(0, record::flags::DIRECT));
     }
 
@@ -862,7 +885,7 @@ mod tests {
         ring.append(1, 6, 0, b"whole");
         // The writer is mid-rewrite of slot 0: what a reader sees then.
         words[SLOT_WORDS].store(BUSY, Ordering::Relaxed);
-        let mut out = [0u8; record::TEXT_MAX];
+        let mut out = [0u8; record::TEXT_MAXIMUM];
         assert_eq!(ring.read(0, &mut out), Read::Overwritten);
     }
 
@@ -888,11 +911,11 @@ mod tests {
         assert!(!ring.is_formatted());
         ring.format();
 
-        let a = [b'a'; record::TEXT_MAX];
-        let b = [b'b'; record::TEXT_MAX];
+        let a = [b'a'; record::TEXT_MAXIMUM];
+        let b = [b'b'; record::TEXT_MAXIMUM];
         ring.append(1, severity::INFO, record::flags::KERNEL, &a);
         ring.append(2, severity::WARNING, 0, &b);
-        let mut out = [0u8; record::TEXT_MAX];
+        let mut out = [0u8; record::TEXT_MAXIMUM];
         let Read::Record(h, n) = ring.read(0, &mut out) else {
             panic!()
         };
@@ -943,28 +966,28 @@ mod tests {
         assert_eq!(w & 0xff, 16);
     }
 
-    /// **The queue holds exactly [`QUEUE_MAX`](console::QUEUE_MAX) bytes before it flushes**, and
-    /// a client's write that does not end the line never releases it. Eight 256-byte lines fill it
-    /// to the byte and go nowhere; the ninth flushes them first.
+    /// **The queue holds exactly [`QUEUE_MAXIMUM`](console::QUEUE_MAXIMUM) bytes before it
+    /// flushes**, and a client's write that does not end the line never releases it. Eight 256-byte
+    /// lines fill it to the byte and go nowhere; the ninth flushes them first.
     #[test]
     fn the_queue_flushes_only_past_its_size_and_only_at_a_line_end() {
         extern crate std;
         use std::vec::Vec;
         let mut c = console::Inserter::new();
         c.wrote(b"$ ", |_| unreachable!());
-        let line = [b'k'; console::LINE_MAX - console::LINE_END.len()];
+        let line = [b'k'; console::LINE_MAXIMUM - console::LINE_END.len()];
         for _ in 0..8 {
             c.kernel_chunk(&line, |_| panic!("flushed before the queue was full"));
         }
-        assert_eq!(c.queued(), console::QUEUE_MAX);
+        assert_eq!(c.queued(), console::QUEUE_MAXIMUM);
         c.wrote(b"more", |_| panic!("released mid-line"));
         let mut t: Vec<u8> = Vec::new();
         c.kernel_chunk(&line, |b| t.extend_from_slice(b));
         assert_eq!(
             t.len(),
-            console::LINE_END.len() + console::QUEUE_MAX + b"$ more".len()
+            console::LINE_END.len() + console::QUEUE_MAXIMUM + b"$ more".len()
         );
-        assert_eq!(c.queued(), console::LINE_MAX);
+        assert_eq!(c.queued(), console::LINE_MAXIMUM);
     }
 
     /// At a line start with nothing queued, the client's own write sends no kernel bytes at all.
@@ -981,7 +1004,7 @@ mod tests {
         extern crate std;
         use std::vec::Vec;
         let mut c = console::Inserter::new();
-        c.wrote(&[b'p'; console::PARTIAL_MAX + 1], |_| unreachable!());
+        c.wrote(&[b'p'; console::PARTIAL_MAXIMUM + 1], |_| unreachable!());
         c.kernel_chunk(b"k\n", |_| unreachable!());
         let mut t: Vec<u8> = Vec::new();
         c.flush(|b| t.extend_from_slice(b));
@@ -1028,7 +1051,7 @@ mod tests {
         c.kernel_chunk(b"bare\nwindows\r\n", |b| t.extend_from_slice(b));
         assert_eq!(t, b"bare\r\nwindows\r\n");
         t.clear();
-        let long = [b'x'; console::LINE_MAX + 10];
+        let long = [b'x'; console::LINE_MAXIMUM + 10];
         c.kernel_chunk(&long, |b| t.extend_from_slice(b));
         c.kernel_chunk(b"\n", |b| t.extend_from_slice(b));
         let text: Vec<u8> = t.iter().copied().filter(|&b| b == b'x').collect();
@@ -1041,8 +1064,8 @@ mod tests {
     /// page less the 16-byte header, and the four flag bits are the four low bits.
     #[test]
     fn the_quoted_sizes_and_flag_bits_are_what_the_notes_say() {
-        assert_eq!(record::RECORD_MAX, 256);
-        assert_eq!(read::DATA_MAX, 4080);
+        assert_eq!(record::RECORD_MAXIMUM, 256);
+        assert_eq!(read::DATA_MAXIMUM, 4080);
         assert_eq!(record::flags::KERNEL, 1);
         assert_eq!(record::flags::DROPPED_BEFORE, 2);
         assert_eq!(record::flags::CUT, 4);

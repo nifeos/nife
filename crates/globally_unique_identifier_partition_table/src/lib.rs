@@ -32,11 +32,17 @@ pub use header::Header;
 use uuid::Uuid;
 
 /// The smallest logical block a GPT disk can have, and what almost every disk reports.
-pub const MIN_BLOCK_SIZE: usize = 512;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MIN_BLOCK_SIZE`.
+pub const MINIMUM_BLOCK_SIZE: usize = 512;
 
 /// The largest logical block this crate handles. 4096 is what a native-4K drive reports, and the
 /// header still occupies exactly one block, so the only thing that changes is the LBA arithmetic.
-pub const MAX_BLOCK_SIZE: usize = 4096;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_BLOCK_SIZE`.
+pub const MAXIMUM_BLOCK_SIZE: usize = 4096;
 
 /// The primary header always lives at LBA 1, immediately after the protective MBR. Not a
 /// convention: the spec fixes it, because it is the one address a reader can know before it has
@@ -57,13 +63,13 @@ pub const DEFAULT_ENTRY_COUNT: u32 = 128;
 pub const ENTRY_ARRAY_BYTES: usize = DEFAULT_ENTRY_COUNT as usize * entry::SIZE;
 
 /// True if `len` is a logical block size this crate accepts: a power of two from
-/// [`MIN_BLOCK_SIZE`] to [`MAX_BLOCK_SIZE`].
+/// [`MINIMUM_BLOCK_SIZE`] to [`MAXIMUM_BLOCK_SIZE`].
 ///
 /// Block size is never a parameter in this crate's API. A caller passes the block it read, and the
 /// slice's own length is the block size, which removes a whole class of "we told it 512 and handed
 /// it 4096" bug.
 pub const fn is_block_size_ok(len: usize) -> bool {
-    len >= MIN_BLOCK_SIZE && len <= MAX_BLOCK_SIZE && len.is_power_of_two()
+    len >= MINIMUM_BLOCK_SIZE && len <= MAXIMUM_BLOCK_SIZE && len.is_power_of_two()
 }
 
 /// The protective MBR at LBA 0: one classic MBR record of type `0xEE` covering the whole disk, so

@@ -394,14 +394,14 @@ impl Wiring {
     /// landed. Stops at the first short reply, since a service short of bytes is out.
     ///
     /// [`get`](Wiring::get) is one exchange of at most
-    /// [`MAX_BYTES`](entropy_contract::MAX_BYTES) bytes, so `get(32, ..)` returns 8; a caller that
-    /// wants a bufferful uses this rather than comparing one `get` against its request.
+    /// [`MAXIMUM_BYTES`](entropy_contract::MAXIMUM_BYTES) bytes, so `get(32, ..)` returns 8; a
+    /// caller that wants a bufferful uses this rather than comparing one `get` against its request.
     pub fn fill(&self, out: &mut [u8]) -> usize {
         let mut got = 0;
         while got < out.len() {
-            let n = self.get(entropy_contract::MAX_BYTES, &mut out[got..]);
+            let n = self.get(entropy_contract::MAXIMUM_BYTES, &mut out[got..]);
             got += n;
-            if n == 0 || (n as u64) < entropy_contract::MAX_BYTES {
+            if n == 0 || (n as u64) < entropy_contract::MAXIMUM_BYTES {
                 break;
             }
         }

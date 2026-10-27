@@ -175,7 +175,7 @@ pub struct Selection<'a> {
 /// From a host test, with no kernel and no emulator:
 ///
 /// ```
-/// use ps::{MAX_ROWS, Row};
+/// use ps::{MAXIMUM_ROWS, Row};
 ///
 /// // A domain of one blocked thread and one corpse.
 /// let mut reader = |cursor: u64| match cursor {
@@ -183,7 +183,7 @@ pub struct Selection<'a> {
 ///     1 => (2, 9, abi::survey::DEAD),
 ///     _ => (abi::survey::DONE as i64, 0, 0),
 /// };
-/// let mut rows = [Row::default(); MAX_ROWS];
+/// let mut rows = [Row::default(); MAXIMUM_ROWS];
 /// let survey = ps::collect(&mut rows, &mut reader);
 ///
 /// let corpses = pgrep::Selector::from_pattern(b"dead");
@@ -303,7 +303,7 @@ fn write_num(v: u64, out: &mut dyn FnMut(&[u8])) {
 
 #[cfg(test)]
 mod tests {
-    use ps::{MAX_ROWS, Row};
+    use ps::{MAXIMUM_ROWS, Row};
 
     use super::*;
 
@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn the_report_is_the_matching_thread_ids_one_per_line() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let survey = ps::collect(&mut rows, &mut domain(MIXED));
         let found = select(&survey, Selector::from_pattern(b"dead"));
         assert_eq!(found.matched(), 1);
@@ -407,7 +407,7 @@ mod tests {
     /// `ps` without the columns.
     #[test]
     fn no_selector_names_every_member() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let survey = ps::collect(&mut rows, &mut domain(MIXED));
         let found = select(&survey, Selector::from_wire(0));
         assert_eq!(found.matched(), 3);
@@ -421,22 +421,22 @@ mod tests {
     /// does.
     #[test]
     fn matched_nothing_empty_domain_and_refused_are_three_different_answers() {
-        let mut rows_a = [Row::default(); MAX_ROWS];
+        let mut rows_a = [Row::default(); MAXIMUM_ROWS];
         let live = ps::collect(&mut rows_a, &mut domain(MIXED));
         let missed = select(&live, Selector::from_pattern(b"ready"));
 
-        let mut rows_b = [Row::default(); MAX_ROWS];
+        let mut rows_b = [Row::default(); MAXIMUM_ROWS];
         let vacant = ps::collect(&mut rows_b, &mut domain(&[]));
         let empty = select(&vacant, Selector::EVERY);
 
-        let mut rows_c = [Row::default(); MAX_ROWS];
+        let mut rows_c = [Row::default(); MAXIMUM_ROWS];
         let denied = ps::collect(&mut rows_c, &mut |_| {
             (abi::Error::NotPermitted as i64, 0, 0)
         });
         let refused = select(&denied, Selector::EVERY);
 
         let matched = {
-            let mut rows_d = [Row::default(); MAX_ROWS];
+            let mut rows_d = [Row::default(); MAXIMUM_ROWS];
             let s = ps::collect(&mut rows_d, &mut domain(MIXED));
             shown(|o| select(&s, Selector::EVERY).write_diagnostics(o))
         };
@@ -474,7 +474,7 @@ mod tests {
     #[test]
     fn a_selector_that_names_no_state_says_so_ahead_of_the_domain() {
         for entries in [MIXED, &[][..]] {
-            let mut rows = [Row::default(); MAX_ROWS];
+            let mut rows = [Row::default(); MAXIMUM_ROWS];
             let survey = ps::collect(
                 &mut rows,
                 &mut |cursor| match entries.get(cursor as usize) {
@@ -493,7 +493,7 @@ mod tests {
     /// verdict about a listing that is not the domain is not a verdict.
     #[test]
     fn a_refused_walk_is_reported_ahead_of_a_bad_selector() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let denied = ps::collect(&mut rows, &mut |_| (abi::Error::NoSuchSlot as i64, 0, 0));
         let found = select(&denied, Selector::from_pattern(b"nonesuch"));
         let diag = shown(|o| found.write_diagnostics(o));
@@ -537,7 +537,7 @@ mod tests {
     #[test]
     fn a_wide_thread_id_is_printed_whole_and_unpadded() {
         let big = (1u64 << 32) | 6;
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let survey = ps::collect(&mut rows, &mut |cursor| match cursor {
             0 => (1, big, abi::survey::DEAD),
             _ => (abi::survey::DONE as i64, 0, 0),
@@ -551,7 +551,7 @@ mod tests {
     /// here, so an unknown state is never counted as any known one.
     #[test]
     fn an_unknown_state_matches_no_selector() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let survey = ps::collect(&mut rows, &mut domain(&[(3, 99)]));
         let found = select(&survey, Selector::EVERY);
         assert_eq!(found.members(), 1);

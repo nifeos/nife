@@ -126,7 +126,7 @@ fn receiver_first_then_sender_rendezvous() {
 
 /// Two senders queue in FIFO order; two receivers drain them in the same order.
 #[test]
-fn senders_queue_fifo() {
+fn senders_queue_in_arrival_order() {
     let (mut a, mut b, mut r) = (node(), node(), node());
     let (ap, bp) = (NonNull::from(&mut *a), NonNull::from(&mut *b));
     let (at, bt, rt) = (token(&mut a), token(&mut b), token(&mut r));

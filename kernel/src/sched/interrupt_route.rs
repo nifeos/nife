@@ -12,10 +12,10 @@ use super::*;
 /// A plain atomic array, read lock-free from the interrupt handler, where taking a lock to find
 /// the destination would be one more thing to go wrong. 256 covers every INTID in use (SGIs 0-15,
 /// the timer PPI at 30, virtio SPIs in the 40s).
-pub(super) const MAX_INTID: usize = 256;
+pub(super) const MAXIMUM_INTID: usize = 256;
 #[doc(alias = "irq")]
-pub(super) static INTERRUPT_ROUTES: [AtomicU64; MAX_INTID] =
-    [const { AtomicU64::new(0) }; MAX_INTID];
+pub(super) static INTERRUPT_ROUTES: [AtomicU64; MAXIMUM_INTID] =
+    [const { AtomicU64::new(0) }; MAXIMUM_INTID];
 
 /// Route hardware interrupt `intid` to the rendezvous `ep`: when it fires, whoever is blocked on
 /// `ep` wakes, and if nobody is, the signal is counted so it is not lost.
@@ -29,7 +29,10 @@ pub(super) static INTERRUPT_ROUTES: [AtomicU64; MAX_INTID] =
 /// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub fn bind_interrupt(intid: u32, ep: RendezvousId) {
-    assert!((intid as usize) < MAX_INTID, "intid {intid} out of range");
+    assert!(
+        (intid as usize) < MAXIMUM_INTID,
+        "intid {intid} out of range"
+    );
     {
         let guard = IPC_TABLES.lock();
         if let Some(rendezvous) = guard.as_ref().and_then(|sched| rendezvous_of(sched, ep)) {
@@ -45,7 +48,7 @@ pub fn bind_interrupt(intid: u32, ep: RendezvousId) {
 /// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
 #[doc(alias = "irq")]
 pub fn interrupt_route(intid: u32) -> Option<RendezvousId> {
-    if (intid as usize) >= MAX_INTID {
+    if (intid as usize) >= MAXIMUM_INTID {
         return None;
     }
     match INTERRUPT_ROUTES[intid as usize].load(Ordering::Acquire) {

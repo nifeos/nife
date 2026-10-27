@@ -260,19 +260,19 @@ def run_check():
     return 0
 
 
-def bank(init=False):
-    if init and os.path.exists(BASELINE):
+def bank(initialize=False):
+    if initialize and os.path.exists(BASELINE):
         print(f'file-length ratchet: {BASELINE} already exists. --init wrote it once, in '
               f'milestone 841; it is refused now, and --bank is the verb that never raises',
               file=sys.stderr)
         return 2
-    if not init and not os.path.exists(BASELINE):
+    if not initialize and not os.path.exists(BASELINE):
         print(f'file-length ratchet: {BASELINE} does not exist; there is nothing to bank',
               file=sys.stderr)
         return 2
     counts = line_counts(tracked_rust(),
                          lambda p: open(p, encoding='utf-8', errors='replace').read())
-    if init:
+    if initialize:
         rows = {p: n for p, n in counts.items() if n > CEILING}
     else:
         rows = banked(read_baseline(open(BASELINE).read()), counts)
@@ -370,8 +370,11 @@ def main(argv):
         return selftest()
     if not argv or argv[0] == '--check':
         return run_check()
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
     if argv[0] in ('--bank', '--init'):
-        return bank(init=argv[0] == '--init')
+        return bank(initialize=argv[0] == '--init')
     print(__doc__.split('\n\n')[1], file=sys.stderr)
     return 2
 

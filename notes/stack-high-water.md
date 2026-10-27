@@ -64,9 +64,9 @@ already existed for the canary.
 | Stack | Where declared | Size | Guarded? | Painted |
 |---|---|---|---|---|
 | Boot stack (boot core) | `link-aarch64.ld` / `link-riscv64.ld`, `__stack_bottom`..`__stack_top` | 64 KiB | guard page below | at `stack::initialize` time, canary to a margin below live `sp` |
-| Secondary stacks (per core) | `SECONDARY_STACKS` in `kernel/src/smp.rs`, `.secondary_stacks` | 64 KiB x MAX_CPUS | guard page below (milestone 90 (a guard page under the per-CPU secondary stacks)) | whole stack, before `CPU_ON` |
+| Secondary stacks (per core) | `SECONDARY_STACKS` in `kernel/src/smp.rs`, `.secondary_stacks` | 64 KiB x MAXIMUM_CPUS | guard page below (milestone 90 (a guard page under the per-CPU secondary stacks)) | whole stack, before `CPU_ON` |
 | Kernel thread stacks | `KernelStack` in `kernel/src/thread.rs` | 24 KiB (6 pages) | guard page below | whole stack, at allocation |
-| Interrupt stacks (per core) | `kernel/src/interrupt_stack.rs`, `.interrupt_stacks` | 16 KiB x MAX_CPUS | guard page below | whole region, at `interrupt_stack::initialize` |
+| Interrupt stacks (per core) | `kernel/src/interrupt_stack.rs`, `.interrupt_stacks` | 16 KiB x MAXIMUM_CPUS | guard page below | whole region, at `interrupt_stack::initialize` |
 
 The trap frame is built on the interrupted stack on both ISAs. aarch64's `vectors.s` builds its
 272-byte frame on `SP_EL1`, which is whatever kernel stack is live (the hardware banks `SP_EL0`

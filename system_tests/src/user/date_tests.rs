@@ -294,7 +294,7 @@ fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
                 m[0],
                 m[1],
                 m[2],
-                &mut [0u8; byte_sink_contract::INLINE_MAX]
+                &mut [0u8; byte_sink_contract::INLINE_MAXIMUM]
             ),
             byte_sink_contract::Msg::Eof
         ),
@@ -310,7 +310,7 @@ fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
                 m[0],
                 m[1],
                 m[2],
-                &mut [0u8; byte_sink_contract::INLINE_MAX]
+                &mut [0u8; byte_sink_contract::INLINE_MAXIMUM]
             ),
             byte_sink_contract::Msg::Eof
         ),

@@ -6,7 +6,7 @@
 //!
 //! Name: provisional (milestone 877, 2026-10-12), as are its sibling modules' names.
 
-use crate::{MAX_ENTRIES, NANOS_PER_SEC, recurrence};
+use crate::{MAXIMUM_ENTRIES, NANOS_PER_SEC, recurrence};
 
 /// **When an entry fires.** Two shapes on the monotonic counter, and one on the wall clock.
 ///
@@ -43,7 +43,7 @@ pub struct Entry<'a> {
 /// A parsed document: the entries, in the order written.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Document<'a> {
-    entries: [Entry<'a>; MAX_ENTRIES],
+    entries: [Entry<'a>; MAXIMUM_ENTRIES],
     n: usize,
 }
 
@@ -65,7 +65,8 @@ pub enum Error {
     ZeroInterval(usize),
     /// A schedule word with nothing after it. There is nothing to run.
     MissingCommand(usize),
-    /// More entries than [`MAX_ENTRIES`], reported at the line that overflowed rather than dropped.
+    /// More entries than [`MAXIMUM_ENTRIES`], reported at the line that overflowed rather than
+    /// dropped.
     TooManyEntries(usize),
     /// A calendar line the G5 grammar refuses, and why (`recurrence::Refusal`).
     Calendar(usize, recurrence::Refusal),
@@ -137,7 +138,7 @@ pub fn parse(doc: &str) -> Result<Document<'_>, Error> {
         line: 0,
         schedule: Schedule::AtBoot,
         command: b"",
-    }; MAX_ENTRIES];
+    }; MAXIMUM_ENTRIES];
     let mut n = 0usize;
 
     for (i, raw) in doc.lines().enumerate() {
@@ -166,7 +167,7 @@ pub fn parse(doc: &str) -> Result<Document<'_>, Error> {
         if command.is_empty() {
             return Err(Error::MissingCommand(no));
         }
-        if n == MAX_ENTRIES {
+        if n == MAXIMUM_ENTRIES {
             return Err(Error::TooManyEntries(no));
         }
         entries[n] = Entry {
@@ -302,10 +303,10 @@ mod tests {
     #[test]
     fn more_entries_than_the_table_holds_is_refused_rather_than_dropped() {
         let mut doc = String::new();
-        for _ in 0..MAX_ENTRIES + 1 {
+        for _ in 0..MAXIMUM_ENTRIES + 1 {
             doc.push_str("every 30s least_authority_demo 7\n");
         }
-        assert_eq!(parse(&doc), Err(Error::TooManyEntries(MAX_ENTRIES + 1)));
+        assert_eq!(parse(&doc), Err(Error::TooManyEntries(MAXIMUM_ENTRIES + 1)));
     }
 
     /// **The accessor, as distinct from the variant.**

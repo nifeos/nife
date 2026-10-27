@@ -110,8 +110,8 @@ is the Mac's own addition to a freshly written file, not something out of the im
   (`XATTR_NOFOLLOW`). So the same image extracted on the two hosts can differ in exactly that one
   place, and only the Linux run says so.
 - A value larger than the destination filesystem's ceiling is refused by the host, counted, and
-  named. `MAX_VALUE` here is 3 KiB, well under any host's limit, so this is a guard rather than a
-  case anyone has hit.
+  named. `MAXIMUM_VALUE` here is 3 KiB, well under any host's limit, so this is a guard rather than
+  a case anyone has hit.
 - The tool has no attribute call for a platform that is neither macOS nor Linux. It refuses with
   a message saying the attributes are still in the extracted `.nife-attrs`, rather than compiling
   to a silent success. FreeBSD spells this `extattr_set_link` and is not wired up.

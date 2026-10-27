@@ -22,7 +22,8 @@
 //! - One Fault Recording Register per unit is read, so one device's faults can hide another's.
 
 use machine_discovery::acpi::{
-    DmarUnits, Drhd, InterruptRemappingClaims, MAX_DRHDS, MAX_RMRR_SCOPES, SCOPE_PCI_ENDPOINT,
+    DmarUnits, Drhd, InterruptRemappingClaims, MAXIMUM_DRHDS, MAXIMUM_RMRR_SCOPES,
+    SCOPE_PCI_ENDPOINT,
 };
 use paging::PageFormat;
 use paging::x86_64::Vtd;
@@ -245,11 +246,11 @@ enum Slot {
 /// unit's context tables beside it rather than inside [`Unit`], so a unit is a few dozen bytes to
 /// build on the boot stack and only this static holds the 4 KiB of table pointers per unit.
 struct Units {
-    slots: [Slot; MAX_DRHDS],
+    slots: [Slot; MAXIMUM_DRHDS],
     /// Per unit, one context-table root per PCI bus, allocated the first time a device on that
     /// bus is attached. `None` is the default-deny state: a bus with no table here has no
     /// root-table entry pointing at one either, so every device on it faults.
-    ctx: [[Option<u64>; 256]; MAX_DRHDS],
+    ctx: [[Option<u64>; 256]; MAXIMUM_DRHDS],
 }
 
 impl Units {
@@ -261,8 +262,8 @@ impl Units {
 static IOMMU: InterruptSafeMutex<Units> = InterruptSafeMutex::new(
     rank::IOMMU,
     Units {
-        slots: [const { Slot::Absent }; MAX_DRHDS],
-        ctx: [[None; 256]; MAX_DRHDS],
+        slots: [const { Slot::Absent }; MAXIMUM_DRHDS],
+        ctx: [[None; 256]; MAXIMUM_DRHDS],
     },
 );
 
@@ -417,7 +418,7 @@ pub fn initialize(dmar: &DmarUnits) {
 
     // Step 2. A device named by two scopes (two RMRRs, say) is confined once, with both regions:
     // `confine` asks `for_each_reserved_region` for all of them.
-    let mut done = [0u32; MAX_RMRR_SCOPES];
+    let mut done = [0u32; MAXIMUM_RMRR_SCOPES];
     let mut done_count = 0;
     for s in &dmar.rmrr_scopes[..dmar.rmrr_scope_count] {
         let region = dmar.rmrrs[s.unit as usize];
@@ -540,7 +541,7 @@ pub(crate) fn scope_of(rid: u32) -> crate::iommu::Scope {
     }
     // Copied out rather than held, so the config-space reads that resolve a path run with no
     // lock taken.
-    let mut up = [false; MAX_DRHDS];
+    let mut up = [false; MAXIMUM_DRHDS];
     let mut translating = None;
     for (i, s) in IOMMU.lock().iter().enumerate() {
         if let Slot::Up(u) = s {

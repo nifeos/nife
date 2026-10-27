@@ -16,7 +16,7 @@
 //! - A fault report parks this loop when nobody reads the result endpoint, as after a faulting
 //!   non-tail stage of a screen-narrowed line (notes/supervision.md).
 //! - A refused reclaim is retried, since a job behind a directory grant shares its region with its
-//!   caretaker ([`MAX_ATTEMPTS`]).
+//!   caretaker ([`MAXIMUM_ATTEMPTS`]).
 //! - It cannot reap a hung job (§32 refuses a live thread); `^C` twice covers what a person sees.
 //!
 //! Name: ratified 2026-08-03 (calef), replacing `job_reaper`. Refused `job_reaper` (named for what
@@ -57,7 +57,7 @@ const SPAWN: u64 = 2;
 /// (notes/grant-expression/per-file-grants.md). The number is far past the one preemption that
 /// needs, and running out is still [`fail`]: a corpse that never becomes collectable is a leak,
 /// and a leak here ends the prompt's memory a few commands later with nothing to point at.
-const MAX_ATTEMPTS: usize = 1024;
+const MAXIMUM_ATTEMPTS: usize = 1024;
 
 user_mode_runtime::program_entry!(start);
 
@@ -110,11 +110,11 @@ fn report() {
 /// The tid arrived on a death message from this very endpoint, so two of §32's refusals are
 /// unreachable: it cannot be `StillAlive` and it cannot be another supervisor's child. The third,
 /// `NotPermitted`, means the *region* is not yet reclaimable, which is a fact about the region's
-/// other residents rather than about this corpse; see [`MAX_ATTEMPTS`]. Yielding between attempts
-/// is what lets the armed kill be spent: the thread standing in the way has to reach a preemption,
-/// and spinning without giving up the core would be racing it on a single-core machine.
+/// other residents rather than about this corpse; see [`MAXIMUM_ATTEMPTS`]. Yielding between
+/// attempts is what lets the armed kill be spent: the thread standing in the way has to reach a
+/// preemption, and spinning without giving up the core would be racing it on a single-core machine.
 fn collect(tid: u64) {
-    for _ in 0..MAX_ATTEMPTS {
+    for _ in 0..MAXIMUM_ATTEMPTS {
         if reap(DEATHS, tid) == 0 {
             return;
         }

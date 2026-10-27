@@ -193,8 +193,8 @@ to block: it is a single-threaded, event-driven kernel for low-power uniprocesso
 to run something else and no other core to wait for. `TakeCell` is the mutual exclusion you are left
 with when blocking is not available.
 
-nife has both. It has threads, a scheduler and up to `MAX_CPUS` cores, so it takes a lock:
-`kernel/src/sync.rs`'s `InterruptSafeMutex`, which masks interrupts before acquiring and restores on
+nife has both. It has threads, a scheduler and up to `MAXIMUM_CPUS` cores, so it takes a lock:
+`kernel/src/sync.rs`'s `InterruptSafeSpinLock`, which masks interrupts before acquiring and restores on
 release. A global lock ranking is enforced by the type (DECISIONS §9 (locking: IrqSafeMutex, plus a
 discipline) governs both halves). A lock
 hands out `&mut` through its guard. No copy is made, and no closure indirection is needed, so

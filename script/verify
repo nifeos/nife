@@ -373,7 +373,7 @@ address_space_map	4	the user address-space map: every address in exactly one ban
 device_tree_blob	4	the device-tree parser's leaf readers
 inter_process_communication	14	the rendezvous state machine
 generational_table	10	the generational thread table
-intrusive_fifo	9	the scheduler's queue structure
+intrusive_queue	9	the scheduler's queue structure
 address_space_identifier	1	the TLB tag allocator
 nifefs	2	the initial ramdisk parser the kernel runs on boot input
 capability_manifest_note	131	a manifest note has one encoding, and decoding hostile bytes never panics

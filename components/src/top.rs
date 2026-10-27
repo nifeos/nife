@@ -51,7 +51,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 
     // Walk first, complain second, print third (§67): a survey cannot know its complaints up front,
     // and the second stream's reader drains it to end-of-stream before it reads the first.
-    let mut rows = [ps::Row::default(); ps::MAX_ROWS];
+    let mut rows = [ps::Row::default(); ps::MAXIMUM_ROWS];
     let mut found = ps::collect(&mut rows, &mut |cursor| survey(DOMAIN_SLOT, cursor));
     found.join_cpu_time(&mut |cursor| {
         survey_record(DOMAIN_SLOT, cursor, abi::survey::record::CPU_TIME)

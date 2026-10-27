@@ -139,9 +139,9 @@ pub const CAPABILITY_TABLE_SLOTS: usize = 64;
 
 // The free-slot word is a `u64`, so 64 is also the ceiling the type allows. `capability` asserts it
 // for every size; it is repeated here, where the next raise will be typed. Raising past it needs a
-// wider word or a second one (`capability::MAX_SLOTS`).
+// wider word or a second one (`capability::MAXIMUM_SLOTS`).
 const _: () = assert!(
-    CAPABILITY_TABLE_SLOTS <= capability::MAX_SLOTS,
+    CAPABILITY_TABLE_SLOTS <= capability::MAXIMUM_SLOTS,
     "the capability table's free-slot bitmap is one u64; widen it before raising the slot count"
 );
 // The table's layout, pinned: 64 slots of 32 bytes, the `u64` free word and two `u16` counts,

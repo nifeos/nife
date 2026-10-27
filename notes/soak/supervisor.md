@@ -52,7 +52,7 @@ trace counters.
   counter moves, and the rest say it still does.
 - `WEDGE_AFTER_SECONDS` is 30, six beats, so the log shows the watchdog petted before it is starved.
 - A worker's core in the census is `u8::try_from` rather than `as`. An online cpu id is bounded by
-  `MAX_CPUS` and cannot truncate, but a topology that broke that would report `u8::MAX`, the
+  `MAXIMUM_CPUS` and cannot truncate, but a topology that broke that would report `u8::MAX`, the
   census's "no answer", instead of a wrong core number.
 
 ## The orderings

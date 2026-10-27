@@ -111,7 +111,7 @@ Ruled 2026-10-26 (UTC), tree-wide: where a name this tree authors says `fifo`, i
 TQS), and the renamed item carries `#[doc(alias = "fifo")]`. Register names copied from a
 datasheet (`FIFOTH`) keep their spelling. The ruling reaches the crate ratified on 2026-08-23
 (Decision 41, ruled 2026-10-26 (UTC)): `intrusive_fifo` becomes `intrusive_queue` and its `Fifo`
-becomes `Queue`, with `#[doc(alias = "fifo")]`, applied by the second sweep.
+becomes `Queue`, with `#[doc(alias = "fifo")]`.
 
 ## Abbreviation sweeps owed under §154
 

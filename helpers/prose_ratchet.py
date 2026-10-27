@@ -1390,10 +1390,10 @@ def remeasure():
     return moved
 
 
-def bank_passive(init=False):
-    """Write the passive baseline. `init` writes every document over the limit, once; otherwise
+def bank_passive(initialize=False):
+    """Write the passive baseline. `initialize` writes every document over the limit, once; otherwise
     each row falls to the document's count, a row at or under the limit goes, and none is added."""
-    old = {} if init else read_passive_baseline(
+    old = {} if initialize else read_passive_baseline(
         open(PASSIVE_BASELINE).read() if os.path.exists(PASSIVE_BASELINE) else '')
     rows = {}
     for path in documents(tracked()):
@@ -1401,7 +1401,7 @@ def bank_passive(init=False):
         m = measured(path, text)
         if not passive_over(m) or PASSIVE_FAMILY in exceptions(text):
             continue
-        if init:
+        if initialize:
             rows[path] = m['passives']
         elif path in old:
             rows[path] = min(m['passives'], old[path])
@@ -1426,9 +1426,9 @@ def remeasure_passive():
     return moved
 
 
-def bank(init=False):
+def bank(initialize=False):
     docs = documents(tracked())
-    old = {} if init or not os.path.exists(BASELINE) else read_baseline(open(BASELINE).read())
+    old = {} if initialize or not os.path.exists(BASELINE) else read_baseline(open(BASELINE).read())
     rows = {}
     for path in docs:
         text = open(path).read()
@@ -1436,7 +1436,7 @@ def bank(init=False):
         o = {c: v for c, v in over(measured(path, text)).items() if FAMILY[c] not in exc}
         if not o:
             continue
-        if init:
+        if initialize:
             rows[path] = o
             continue
         if path not in old:
@@ -1673,8 +1673,11 @@ def main(argv):
         moved = remeasure()
         print(f'prose ratchet: re-measured {len(moved)} rows under measure {MEASURE}')
         return 0
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
     if argv[0] in ('--bank', '--init'):
-        rows = bank(init=argv[0] == '--init')
+        rows = bank(initialize=argv[0] == '--init')
         print(f'prose ratchet: {len(rows)} rows written to {BASELINE}')
         if argv[0] == '--bank' and os.path.exists(PASSIVE_BASELINE):
             rows = bank_passive()
@@ -1687,7 +1690,7 @@ def main(argv):
             print(f'prose ratchet: {PASSIVE_BASELINE} exists, and it is written once; '
                   f'--bank lowers it', file=sys.stderr)
             return 1
-        rows = bank_passive(init=True)
+        rows = bank_passive(initialize=True)
         print(f'prose ratchet: {len(rows)} rows written to {PASSIVE_BASELINE}')
         return 0
     if argv[0] == '--remeasure-passive':

@@ -201,7 +201,7 @@ fn eof_flushes_and_a_long_line_is_split_not_truncated() {
     reader(&mut log, 9, b"", true, 0);
     write(&mut log, 1, b"no newline", 0);
     log.handle(1, eof(), 0, 0, 1);
-    let long = [b'x'; record::TEXT_MAX + 10];
+    let long = [b'x'; record::TEXT_MAXIMUM + 10];
     write(&mut log, 1, &long, 2);
     write(&mut log, 1, b"\n", 3);
     let (_, lines) = read_all(&mut log, 9, 0);
@@ -219,12 +219,14 @@ fn overflow_evicts_the_oldest_and_a_late_reader_gets_one_dropped_line() {
     register(&mut log, 1, b"w", b"");
     reader(&mut log, 9, b"", true, 0);
     let line = [b'y'; 150];
+    // Bounded, so a log that never evicts fails the assertion instead of hanging.
     let mut total = 0u64;
-    while log.store.ring.first_seq() == 0 {
+    while log.store.ring.first_seq() == 0 && total < 100_000 {
         write(&mut log, 1, &line, total);
         write(&mut log, 1, b"\n", total);
         total += 1;
     }
+    assert!(total < 100_000, "the ring never overflowed");
     let first = log.store.ring.first_seq();
     let (next, lines) = read_all(&mut log, 9, 0);
     assert_eq!(

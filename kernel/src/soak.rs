@@ -48,7 +48,7 @@ compile_error!(
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 use paging::Flags;
-use soak_page::MAX_WORKERS;
+use soak_page::MAXIMUM_WORKERS;
 
 use crate::cap::{Rights, interrupt_cap, rendezvous_cap};
 use crate::user::{self, Mapping, Spawn};
@@ -88,7 +88,7 @@ pub fn run() -> ! {
     let shared = frame.addr();
 
     // One tick rendezvous per group: a shared one starves all but one waiter on a loaded host.
-    let mut tick_endpoints = [0u64; MAX_GROUPS];
+    let mut tick_endpoints = [0u64; MAXIMUM_GROUPS];
     for slot in tick_endpoints.iter_mut().take(groups) {
         *slot = sched::create_rendezvous();
     }
@@ -128,9 +128,9 @@ fn spawn_workers(
     image: &'static [u8],
     shared: u64,
     groups: usize,
-) -> ([u64; MAX_WORKERS], [u8; MAX_WORKERS]) {
-    let mut tids = [0u64; MAX_WORKERS];
-    let mut placed = [u8::MAX; MAX_WORKERS];
+) -> ([u64; MAXIMUM_WORKERS], [u8; MAXIMUM_WORKERS]) {
+    let mut tids = [0u64; MAXIMUM_WORKERS];
+    let mut placed = [u8::MAX; MAXIMUM_WORKERS];
 
     for group in 0..groups {
         let endpoint = sched::create_rendezvous();
@@ -702,7 +702,7 @@ fn wedge(elapsed: u64) -> ! {
 }
 
 /// The most groups the shared page has room for, and so the most tick routes there can be.
-const MAX_GROUPS: usize = MAX_WORKERS / MEMBERS_PER_GROUP;
+const MAXIMUM_GROUPS: usize = MAXIMUM_WORKERS / MEMBERS_PER_GROUP;
 
 /// The interrupt number group `g`'s waiter holds. See [`TICK_INTID_TOP`].
 const fn tick_intid(g: usize) -> u32 {
@@ -713,7 +713,7 @@ const fn tick_intid(g: usize) -> u32 {
 ///
 /// Plain atomics, because the reader is an interrupt handler on every core. Written once each, by
 /// the boot thread. See notes/soak/supervisor.md.
-static TICK_ROUTES: [AtomicU64; MAX_GROUPS] = [const { AtomicU64::new(0) }; MAX_GROUPS];
+static TICK_ROUTES: [AtomicU64; MAXIMUM_GROUPS] = [const { AtomicU64::new(0) }; MAXIMUM_GROUPS];
 
 /// How many of [`TICK_ROUTES`] are armed. Zero until [`arm_tick_hook`], which keeps the hook inert
 /// during setup; [`signal_waiters`] loads it first.
@@ -752,7 +752,7 @@ pub fn signal_waiters() {
 /// already routed. Called before the first waiter is spawned, so none meets `WrongObject` at
 /// `Interrupt::WAIT`; [`arm_tick_hook`] starts the signaling later. See notes/soak/tick-route.md.
 fn bind_tick_routes(endpoints: &[sched::RendezvousId]) -> bool {
-    if endpoints.is_empty() || endpoints.len() > MAX_GROUPS {
+    if endpoints.is_empty() || endpoints.len() > MAXIMUM_GROUPS {
         return false;
     }
     if (0..endpoints.len()).any(|g| sched::interrupt_route(tick_intid(g)).is_some()) {
@@ -779,7 +779,7 @@ fn arm_tick_hook(groups: usize) {
 /// than one endpoint in it. Capped by what the shared page has slots for.
 fn topology_groups(cpus: usize) -> usize {
     let groups = cpus.max(2);
-    groups.min(MAX_WORKERS / MEMBERS_PER_GROUP)
+    groups.min(MAXIMUM_WORKERS / MEMBERS_PER_GROUP)
 }
 
 /// Which slot of the shared page belongs to this group's `member`.
@@ -802,11 +802,16 @@ fn read_counter(shared: u64, offset: u64) -> u64 {
 /// `tids` and `placed` are each worker's thread and spawn core, against which every beat reports
 /// drift. Pets the watchdog and asks the reboot questions after each verdict. See
 /// notes/soak/supervisor.md.
-fn watch(shared: u64, workers: usize, tids: &[u64; MAX_WORKERS], placed: &[u8; MAX_WORKERS]) -> ! {
+fn watch(
+    shared: u64,
+    workers: usize,
+    tids: &[u64; MAXIMUM_WORKERS],
+    placed: &[u8; MAXIMUM_WORKERS],
+) -> ! {
     let hz = arch::timer::frequency();
     let started = arch::timer::now();
-    let mut previous = [0u64; MAX_WORKERS];
-    let mut here = [u8::MAX; MAX_WORKERS];
+    let mut previous = [0u64; MAXIMUM_WORKERS];
+    let mut here = [u8::MAX; MAXIMUM_WORKERS];
     // The arrangement the log currently claims, which starts as the spawn placement `run` printed.
     let mut census = *placed;
     let mut last_total = 0u64;
@@ -900,7 +905,11 @@ struct BeatSample {
 ///
 /// A worker's progress is its `rounds` plus its `wakes`, which covers every role because each
 /// leaves one of them at zero and neither falls.
-fn sample_workers(shared: u64, previous: &mut [u64; MAX_WORKERS], workers: usize) -> BeatSample {
+fn sample_workers(
+    shared: u64,
+    previous: &mut [u64; MAXIMUM_WORKERS],
+    workers: usize,
+) -> BeatSample {
     let mut total = 0u64;
     let mut wakes = 0u64;
     let mut mismatches = 0u64;
@@ -936,10 +945,10 @@ fn sample_workers(shared: u64, previous: &mut [u64; MAX_WORKERS], workers: usize
 /// Tick waiters, whose movement is `crossings=`, and threads not yet run are not counted. See
 /// notes/soak/supervisor.md.
 fn count_drift(
-    tids: &[u64; MAX_WORKERS],
+    tids: &[u64; MAXIMUM_WORKERS],
     workers: usize,
-    here: &mut [u8; MAX_WORKERS],
-    census: &[u8; MAX_WORKERS],
+    here: &mut [u8; MAXIMUM_WORKERS],
+    census: &[u8; MAXIMUM_WORKERS],
 ) -> usize {
     sched::last_cpus(&tids[..workers], &mut here[..workers]);
     (0..workers)

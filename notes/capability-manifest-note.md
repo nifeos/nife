@@ -39,6 +39,6 @@ installed with `jig`)). Until a reader honors it, the progenitor refuses install
 it, rather than endow them with every verb's grants at once.
 
 The descriptor is a version word, a count word, and exactly that many records, each the word
-zero-padded to `grant_plan::MAX_VERB` bytes, then the grants' bits little-endian, then two zero
+zero-padded to `grant_plan::MAXIMUM_VERB` bytes, then the grants' bits little-endian, then two zero
 bytes. Its length varies, as calef ruled on #1903 (2026-10-10 UTC). One table still has one
 encoding, because the records are sorted ascending by their words' bytes and each verb appears once.

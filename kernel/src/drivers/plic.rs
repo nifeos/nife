@@ -145,7 +145,7 @@ pub fn complete(source: u32, context: usize) {
 
 /// One past the last byte any context's claim register can occupy, as an offset from the base:
 /// every context this kernel holds is at most `u16::MAX` (`machine_discovery::plic` stores the
-/// device tree's as `u16`, and the `2h + 1` fallback is bounded by `MAX_CPUS`).
+/// device tree's as `u16`, and the `2h + 1` fallback is bounded by `MAXIMUM_CPUS`).
 const CLAIM_REACH: usize = THRESHOLD_BASE + u16::MAX as usize * CONTEXT_STRIDE + CLAIM_OFFSET + 4;
 
 /// `context`'s claim/complete register.

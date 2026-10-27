@@ -210,10 +210,10 @@ head. A host test feeds one real response at every split length, and the fuzzer 
 inputs that status, body and verdict never depend on where the reads fell
 (fuzz/fuzz_targets/http_response_feed.rs). No read assumes it fills anything: `OPERATION_RECEIVE` returns
 whatever smoltcp had buffered, at most the 2,048-byte socket buffer, and any length from one byte to
-`DATA_MAX` is accepted. The one length prefix, `Content-Length`, is parsed from the accumulated head
-only after the blank line, so a split head cannot misread it. The declaration bounds the staging
-carve, the copy, and completion itself: `Ok` only at exactly that many body bytes, more refused,
-zero or oversized refused before anything is carved.
+`DATA_MAXIMUM` is accepted. The one length prefix, `Content-Length`, is parsed from the accumulated
+head only after the blank line, so a split head cannot misread it. The declaration bounds the
+staging carve, the copy, and completion itself: `Ok` only at exactly that many body bytes, more
+refused, zero or oversized refused before anything is carved.
 
 The timing bounds are real and were not hit. Each `OPERATION_RECEIVE` and the connect wait inside
 `service_until`'s 15 s bound (components/src/net_stack.rs), under the gate's 30 s per line. Both

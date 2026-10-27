@@ -22,7 +22,7 @@ pub struct RegisterShape {
 /// The device frame both drivers map is one page, and register 7 at this shift is the last that
 /// still lands inside it. A larger shift from a malformed word is clamped rather than shifted off
 /// the page.
-const MAX_SHIFT: u8 = 9;
+const MAXIMUM_SHIFT: u8 = 9;
 
 impl RegisterShape {
     /// Consecutive byte registers: QEMU `virt`, and the meaning of a zero word.
@@ -38,8 +38,8 @@ impl RegisterShape {
     /// Name: provisional, minted 2026-10-20 (UTC) by milestone/890-radon-console-shape.
     pub const fn new(reg_shift: u8, reg_io_width: u8) -> Self {
         Self {
-            reg_shift: if reg_shift > MAX_SHIFT {
-                MAX_SHIFT
+            reg_shift: if reg_shift > MAXIMUM_SHIFT {
+                MAXIMUM_SHIFT
             } else {
                 reg_shift
             },

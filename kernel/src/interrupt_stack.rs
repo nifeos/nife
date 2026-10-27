@@ -14,12 +14,12 @@
 //! - A trap from user mode does not switch, so a deep syscall is still charged to the thread.
 //! - The trap frame itself is still built on the interrupted stack, which must keep it.
 //! - An overflow whose first fault is the vector's own frame store still cascades.
-//! - The stacks cost `MAX_CPUS` slots whether or not the cores exist.
+//! - The stacks cost `MAXIMUM_CPUS` slots whether or not the cores exist.
 
 use core::cell::UnsafeCell;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use crate::cpu::MAX_CPUS;
+use crate::cpu::MAXIMUM_CPUS;
 
 /// The usable stack in one core's slot: four pages.
 ///
@@ -40,14 +40,14 @@ const SLOT: usize = GUARD + SIZE;
 /// `link_section` gives the mapper a region of its own to punch the guard pages in; in `.bss` it
 /// would be mapped as one range.
 #[repr(C, align(4096))]
-struct Stacks(UnsafeCell<[[u8; SLOT]; MAX_CPUS]>);
+struct Stacks(UnsafeCell<[[u8; SLOT]; MAXIMUM_CPUS]>);
 
 // SAFETY: each core writes only its own slot, and only as its stack through `sp`. No two cores ever
 // touch the same bytes; the cell exists to place the stacks in writable memory, not to share them.
 unsafe impl Sync for Stacks {}
 
 #[cfg_attr(target_os = "none", unsafe(link_section = ".interrupt_stacks"))]
-static STACKS: Stacks = Stacks(UnsafeCell::new([[0; SLOT]; MAX_CPUS]));
+static STACKS: Stacks = Stacks(UnsafeCell::new([[0; SLOT]; MAXIMUM_CPUS]));
 
 /// Whether the switch is live.
 ///
@@ -57,8 +57,8 @@ static ARMED: AtomicBool = AtomicBool::new(false);
 
 /// The low end of core `id`'s slot, which is its guard page.
 ///
-/// An array index rather than a multiply, so `id` is bounds-checked against `MAX_CPUS`; a
-/// multiply's overflow check would pass an `id` of `MAX_CPUS` (notes/overflow-checks.md).
+/// An array index rather than a multiply, so `id` is bounds-checked against `MAXIMUM_CPUS`; a
+/// multiply's overflow check would pass an `id` of `MAXIMUM_CPUS` (notes/overflow-checks.md).
 pub(crate) fn guard(id: usize) -> u64 {
     // SAFETY: `STACKS.0.get()` points at the live static. `&raw const` of an element place projects
     // the address (bounds-checked) and neither reads the slot nor makes a reference to memory a
@@ -78,7 +78,7 @@ pub(crate) fn span(id: usize) -> (u64, u64) {
 #[cfg(test)]
 pub fn region() -> (u64, u64) {
     let start = STACKS.0.get() as u64;
-    (start, start + (MAX_CPUS * SLOT) as u64)
+    (start, start + (MAXIMUM_CPUS * SLOT) as u64)
 }
 
 /// Arm the switch, once, on the boot core, after the fine kernel map is installed.
@@ -91,7 +91,7 @@ pub fn region() -> (u64, u64) {
 pub fn initialize() {
     #[cfg(any(test, feature = "system_tests"))]
     {
-        for id in 0..MAX_CPUS {
+        for id in 0..MAXIMUM_CPUS {
             let (bottom, top) = span(id);
             // SAFETY: the slot is mapped (`map_everything` mapped every slot above its guard
             // page), page-aligned, and unused: nothing switches to an interrupt stack until the
@@ -132,12 +132,12 @@ pub(crate) fn top_for_trap(from_user: bool) -> u64 {
 /// (notes/stack/interrupt-stack.md). An `sp` in a guard page would already have faulted.
 #[inline(always)]
 pub(crate) fn contains(addr: u64) -> bool {
-    addr.wrapping_sub(STACKS.0.get() as u64) < (MAX_CPUS * SLOT) as u64
+    addr.wrapping_sub(STACKS.0.get() as u64) < (MAXIMUM_CPUS * SLOT) as u64
 }
 
 /// Which core's interrupt-stack guard page `addr` falls in, if any, for `stack::guard_page_at`.
 pub(crate) fn guard_page_at(addr: u64) -> Option<usize> {
-    (0..MAX_CPUS).find(|&id| {
+    (0..MAXIMUM_CPUS).find(|&id| {
         let g = guard(id);
         (g..g + GUARD as u64).contains(&addr)
     })
@@ -177,7 +177,7 @@ mod tests {
     /// Reading a fault at a guard base depends on it (notes/stack/reading-a-guard-page-report.md).
     #[test_case]
     fn a_slots_guard_page_begins_where_the_slot_below_it_ends() {
-        for id in 1..MAX_CPUS {
+        for id in 1..MAXIMUM_CPUS {
             let (_, below_top) = span(id - 1);
             assert_eq!(
                 guard(id),
@@ -195,7 +195,7 @@ mod tests {
     /// a depth threshold: `stack::report_high_water` and `script/stack-depth-check` own that.
     #[test_case]
     fn interrupts_are_handled_on_the_interrupt_stack() {
-        let used = (0..MAX_CPUS).any(|id| {
+        let used = (0..MAXIMUM_CPUS).any(|id| {
             let (bottom, top) = span(id);
             // SAFETY: a slot of the region `initialize` mapped and painted, read one word at a
             // time.

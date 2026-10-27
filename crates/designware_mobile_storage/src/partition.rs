@@ -9,8 +9,9 @@
 
 /// The MBR's last two bytes on a valid table.
 pub const SIGNATURE: [u8; 2] = [0x55, 0xaa];
-/// The partition type a GPT disk's protective MBR carries.
-pub(crate) const TYPE_PROTECTIVE_GPT: u8 = 0xee;
+/// The partition type a GUID partition table (GPT) disk's protective MBR carries.
+#[doc(alias = "gpt")]
+pub(crate) const TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE: u8 = 0xee;
 
 /// One of the four primary partition entries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -40,18 +41,22 @@ impl Entry {
     }
 }
 
-/// A parsed MBR: the four primary entries.
+/// **A parsed master boot record (MBR)**: the four primary entries.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells
+/// out, with the specification's abbreviation as a `doc(alias)`; was `Mbr`.
+#[doc(alias = "mbr")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Mbr {
+pub struct MasterBootRecord {
     /// Entries 0 to 3, as on disk.
     pub entries: [Entry; 4],
 }
 
-impl Mbr {
+impl MasterBootRecord {
     /// **Parse sector 0**, or `None` without the signature.
     ///
     /// ```
-    /// use designware_mobile_storage::partition::Mbr;
+    /// use designware_mobile_storage::partition::MasterBootRecord;
     ///
     /// let mut s = [0u8; 512];
     /// s[446 + 4] = 0x0b; // FAT32
@@ -59,13 +64,13 @@ impl Mbr {
     /// s[446 + 12..446 + 16].copy_from_slice(&61_000_000u32.to_le_bytes());
     /// s[510] = 0x55;
     /// s[511] = 0xaa;
-    /// let mbr = Mbr::parse(&s).unwrap();
+    /// let mbr = MasterBootRecord::parse(&s).unwrap();
     /// assert_eq!(mbr.entries[0].start, 2048);
     /// // Eight sectors ending just before the partition.
     /// assert_eq!(mbr.scratch(8), Some((2040, 8)));
     /// ```
     #[must_use]
-    pub fn parse(sector: &[u8; 512]) -> Option<Mbr> {
+    pub fn parse(sector: &[u8; 512]) -> Option<MasterBootRecord> {
         if sector[510..512] != SIGNATURE {
             return None;
         }
@@ -86,7 +91,7 @@ impl Mbr {
                 sectors: le(12),
             };
         }
-        Some(Mbr { entries })
+        Some(MasterBootRecord { entries })
     }
 
     /// The first used partition's start, or `None` when nothing is partitioned.
@@ -109,15 +114,20 @@ impl Mbr {
     /// A write test on radon's boot card may only land before the first partition:
     ///
     /// ```
-    /// use designware_mobile_storage::partition::{Entry, Mbr};
+    /// use designware_mobile_storage::partition::{Entry, MasterBootRecord};
     ///
     /// let fat = Entry { kind: 0x0b, start: 2048, sectors: 1 << 20 };
-    /// let mbr = Mbr { entries: [fat, Entry::default(), Entry::default(), Entry::default()] };
+    /// let mbr = MasterBootRecord { entries: [fat, Entry::default(), Entry::default(), Entry::default()] };
     /// assert_eq!(mbr.scratch(8), Some((2040, 8)));
     /// ```
     #[must_use]
     pub fn scratch(&self, want: u32) -> Option<(u32, u32)> {
-        if want == 0 || self.entries.iter().any(|e| e.kind == TYPE_PROTECTIVE_GPT) {
+        if want == 0
+            || self
+                .entries
+                .iter()
+                .any(|e| e.kind == TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE)
+        {
             return None;
         }
         let first = self.first_start()?;
@@ -152,35 +162,43 @@ mod tests {
     fn no_signature_no_table() {
         let mut s = sector(&[(0x0b, 2048, 100)]);
         s[511] = 0;
-        assert_eq!(Mbr::parse(&s), None);
+        assert_eq!(MasterBootRecord::parse(&s), None);
     }
 
     #[test]
     fn the_scratch_range_ends_before_the_lowest_partition_whatever_its_slot() {
-        let mbr = Mbr::parse(&sector(&[(0x83, 1_000_000, 10), (0x0b, 2048, 900_000)])).unwrap();
-        assert_eq!(mbr.scratch(8), Some((2040, 8)));
+        let master_boot_record =
+            MasterBootRecord::parse(&sector(&[(0x83, 1_000_000, 10), (0x0b, 2048, 900_000)]))
+                .unwrap();
+        assert_eq!(master_boot_record.scratch(8), Some((2040, 8)));
         // A gap smaller than the ask is used whole, and never reaches sector 0.
-        let mbr = Mbr::parse(&sector(&[(0x0b, 4, 100)])).unwrap();
-        assert_eq!(mbr.scratch(8), Some((1, 3)));
+        let master_boot_record = MasterBootRecord::parse(&sector(&[(0x0b, 4, 100)])).unwrap();
+        assert_eq!(master_boot_record.scratch(8), Some((1, 3)));
     }
 
     #[test]
     fn a_gpt_disk_or_a_partition_at_sector_one_has_no_scratch() {
-        let gpt = Mbr::parse(&sector(&[(TYPE_PROTECTIVE_GPT, 1, u32::MAX)])).unwrap();
-        assert_eq!(gpt.scratch(1), None);
-        let tight = Mbr::parse(&sector(&[(0x0b, 1, 100)])).unwrap();
+        let protective = MasterBootRecord::parse(&sector(&[(
+            TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE,
+            1,
+            u32::MAX,
+        )]))
+        .unwrap();
+        assert_eq!(protective.scratch(1), None);
+        let tight = MasterBootRecord::parse(&sector(&[(0x0b, 1, 100)])).unwrap();
         assert_eq!(tight.scratch(1), None);
-        let empty = Mbr::parse(&sector(&[])).unwrap();
+        let empty = MasterBootRecord::parse(&sector(&[])).unwrap();
         assert_eq!(empty.scratch(1), None);
-        let mbr = Mbr::parse(&sector(&[(0x0b, 2048, 100)])).unwrap();
-        assert_eq!(mbr.scratch(0), None);
+        let master_boot_record = MasterBootRecord::parse(&sector(&[(0x0b, 2048, 100)])).unwrap();
+        assert_eq!(master_boot_record.scratch(0), None);
     }
 
     #[test]
     fn unused_entries_with_a_start_do_not_count() {
         // Type 0 with a start of 16 is an unused slot, not a partition at 16.
-        let mbr = Mbr::parse(&sector(&[(0, 16, 100), (0x0b, 2048, 100)])).unwrap();
-        assert_eq!(mbr.scratch(4), Some((2044, 4)));
+        let master_boot_record =
+            MasterBootRecord::parse(&sector(&[(0, 16, 100), (0x0b, 2048, 100)])).unwrap();
+        assert_eq!(master_boot_record.scratch(4), Some((2044, 4)));
     }
 
     /// Every byte of the start and length words is read, little-endian, from its own entry: the
@@ -190,7 +208,7 @@ mod tests {
         let mut s = sector(&[(0, 0, 0), (0x83, 0x1234_5678, 0x0abc_def0)]);
         // CHS end address bytes (offsets 5 to 7) set, so a misplaced read cannot pass by zeros.
         s[446 + 16 + 5..446 + 16 + 8].copy_from_slice(&[0xfe, 0xff, 0xff]);
-        let e = Mbr::parse(&s).unwrap().entries[1];
+        let e = MasterBootRecord::parse(&s).unwrap().entries[1];
         assert_eq!(
             (e.kind, e.start, e.sectors),
             (0x83, 0x1234_5678, 0x0abc_def0)

@@ -241,7 +241,7 @@ its site, in one of four kinds:
   under its Kani proof), the capability table's count (`the_count_is_the_slots`), `cpu::id`'s
   subtraction, the current-CPU page offset, riscv64's two `sepc` steps.
 - *A stronger check for a weaker one*: `interrupt_stack::guard` indexes the array, so an id of
-  `MAX_CPUS` is refused where the multiply let it through.
+  `MAXIMUM_CPUS` is refused where the multiply let it through.
 - *A check moved to where the value enters*: the PLIC claim register's reach, once in
   `plic::initialize`.
 - *No arithmetic*: the current-CPU page's direct-map address is computed once, at attach.

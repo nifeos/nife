@@ -218,7 +218,7 @@ fn a_sync_only_badge_answers_sync_and_refuses_everything_else() {
     let file = srv.open_file(&named("motd")).unwrap() as u64;
     srv.bind_sync_only(0, 3).unwrap();
     assert!(srv.is_sync_only(3));
-    let mut window = vec![0u8; filesystem_contract::fs::TRANSFER_MAX];
+    let mut window = vec![0u8; filesystem_contract::fs::TRANSFER_MAXIMUM];
     window[..4].copy_from_slice(b"motd");
     let mut edges = Flushes(0);
     use filesystem_contract::fs;
@@ -357,11 +357,11 @@ fn a_write_past_the_last_offset_is_refused() {
 /// `redoxfs_server_session` fuzz target, `lane/fuzz-service-handlers`). Upstream's
 /// `NodeLevel::new` admits twelve level-4 entries where `NodeLevelData::level4` has eight, so a
 /// write ending in that band, or a read in it after a truncate grew the file there, indexed past
-/// the array and killed the server. Both are refused `EFBIG` at [`MAX_FILE_END`].
-/// Falsification: attested 2026-10-04. Define `MAX_FILE_END` but drop its two checks; the engine
-/// panicked in `Transaction::sync_node_record_ptr` (`vendor/redoxfs/src/transaction.rs`). Not swept
-/// (separate workspace, see script/falsifications BUGS); replay by hand with the edit and `cargo test --manifest-path
-/// redoxfs_server/Cargo.toml --lib <this test>`.
+/// the array and killed the server. Both are refused `EFBIG` at [`MAXIMUM_FILE_END`].
+/// Falsification: attested 2026-10-04. Define `MAXIMUM_FILE_END` but drop its two checks; the
+/// engine panicked in `Transaction::sync_node_record_ptr` (`vendor/redoxfs/src/transaction.rs`).
+/// Not swept (separate workspace, see script/falsifications BUGS); replay by hand with the edit and
+/// `cargo test --manifest-path redoxfs_server/Cargo.toml --lib <this test>`.
 #[test]
 fn a_file_never_reaches_past_the_tree() {
     let mut srv = server_with_tree();
@@ -370,7 +370,7 @@ fn a_file_never_reaches_past_the_tree() {
         .unwrap();
     let errno = |r: Result<()>| r.err().map(|e| e.errno);
     // Just past the tree for this build's 8 KiB records: the band that panicked.
-    let band = (MAX_FILE_END / BLOCK as u64) * 8192 + 8192;
+    let band = (MAXIMUM_FILE_END / BLOCK as u64) * 8192 + 8192;
     assert_eq!(
         errno(srv.write(f, band, b"x").map(|_| ())),
         Some(EFBIG),
@@ -382,14 +382,14 @@ fn a_file_never_reaches_past_the_tree() {
         "a truncate into it"
     );
     assert_eq!(
-        errno(srv.write(f, MAX_FILE_END, b"x").map(|_| ())),
+        errno(srv.write(f, MAXIMUM_FILE_END, b"x").map(|_| ())),
         Some(EFBIG),
         "one byte past the end"
     );
-    srv.truncate(f, MAX_FILE_END).unwrap();
+    srv.truncate(f, MAXIMUM_FILE_END).unwrap();
     assert_eq!(
         srv.fstat(f).unwrap(),
-        MAX_FILE_END,
+        MAXIMUM_FILE_END,
         "the end itself is a size"
     );
 }
@@ -438,13 +438,15 @@ fn a_grant_root_cannot_be_closed_while_bound() {
 fn a_symbolic_link_is_never_followed_or_opened() {
     let disk = DiskMemory::new(16 * 1024 * 1024);
     let mut fs = FileSystem::create(disk, None, 0, 0).expect("create");
-    fs.tx(|tx| {
-        let sub = tx.create_node(TreePtr::root(), "sub", Node::MODE_DIR | 0o755, 0, 0)?;
-        let other = tx.create_node(TreePtr::root(), "other", Node::MODE_DIR | 0o755, 0, 0)?;
-        let secret = tx.create_node(other.ptr(), "secret", Node::MODE_FILE | 0o644, 0, 0)?;
-        tx.write_node(secret.ptr(), 0, b"in the sibling", 0, 0)?;
-        let link = tx.create_node(sub.ptr(), "link", Node::MODE_SYMLINK | 0o777, 0, 0)?;
-        tx.write_node(link.ptr(), 0, b"../other", 0, 0)?;
+    fs.tx(|transaction| {
+        let sub = transaction.create_node(TreePtr::root(), "sub", Node::MODE_DIR | 0o755, 0, 0)?;
+        let other =
+            transaction.create_node(TreePtr::root(), "other", Node::MODE_DIR | 0o755, 0, 0)?;
+        let secret =
+            transaction.create_node(other.ptr(), "secret", Node::MODE_FILE | 0o644, 0, 0)?;
+        transaction.write_node(secret.ptr(), 0, b"in the sibling", 0, 0)?;
+        let link = transaction.create_node(sub.ptr(), "link", Node::MODE_SYMLINK | 0o777, 0, 0)?;
+        transaction.write_node(link.ptr(), 0, b"../other", 0, 0)?;
         Ok(())
     })
     .expect("populate");

@@ -173,7 +173,7 @@ rule out.
 
 ### `ARG_MAX` as a capability limit
 
-You cannot hand a child a hundred thousand names. `nameset::MAX_NAMES` is 8, and exceeding it is
+You cannot hand a child a hundred thousand names. `nameset::MAXIMUM_NAMES` is 8, and exceeding it is
 `Refusal::TooManyNames`: a loud refusal at the prompt, never a truncation. A glob that quietly
 granted a prefix of what it matched would be the worst outcome this mechanism has, because the
 printed preview and the actual transfer would disagree and only the printed one is checkable.

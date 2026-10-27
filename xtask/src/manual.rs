@@ -272,7 +272,7 @@ pub(crate) fn tree_apropos(term: Option<String>) -> bool {
         // A path the record cannot hold is reported rather than silently shortened, because the
         // path is the whole answer here: a result a reader cannot open is worse than no result.
         for d in &shelf.docs {
-            if d.path.len() > documentation::index::PATH_MAX {
+            if d.path.len() > documentation::index::PATH_MAXIMUM {
                 long.push(d.path.clone());
             }
         }
@@ -326,25 +326,26 @@ pub(crate) fn tree_apropos(term: Option<String>) -> bool {
     // worse than no result, so it exits 1 and is named; an over-long path that never reached the
     // output is a fact about the corpus and gets one line, so the tool does not fail on its own
     // README example.
-    let max = documentation::index::PATH_MAX;
+    let maximum = documentation::index::PATH_MAXIMUM;
     let shown: Vec<&String> = long
         .iter()
         .filter(|p| {
             ranked
                 .results()
                 .iter()
-                .any(|f| p.as_bytes().starts_with(f.origin()) && f.origin().len() == max)
+                .any(|f| p.as_bytes().starts_with(f.origin()) && f.origin().len() == maximum)
         })
         .collect();
     for p in &shown {
         eprintln!(
-            "apropos: {p} is longer than the {max} bytes a page record holds, so the result above \
+            "apropos: {p} is longer than the {maximum} bytes a page record holds, so the result \
+            above \
              that names it is truncated"
         );
     }
     if long.len() > shown.len() {
         eprintln!(
-            "apropos: {} other paths are longer than the {max} bytes a page record holds; none \
+            "apropos: {} other paths are longer than the {maximum} bytes a page record holds; none \
              is in these results",
             long.len() - shown.len()
         );

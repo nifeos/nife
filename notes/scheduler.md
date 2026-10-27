@@ -184,8 +184,8 @@ every run on both ISAs; deleting the probe fixed it on any machine at any speed.
 sightings were riscv64 because CI boots riscv64 six times per pull request to aarch64's once, not
 because of the ISA. The accumulation is not this bug: the 101 leaked threads everyone suspected were
 not the cause, and the A/B
-showed it. They were real, though: the table later hit 128, and `MAX_THREADS` is 256 now with the
-peak reported at every boot.
+showed it. They were real, though: the table later hit 128, and `MAXIMUM_THREADS` is 256 now with
+the peak reported at every boot.
 
 The general lesson: a call that returns `Err` may still have done something. The mechanism, the
 proof, the occurrences table and the thread-table follow-up are in

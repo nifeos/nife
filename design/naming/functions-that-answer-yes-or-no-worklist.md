@@ -138,9 +138,9 @@ The private names followed under the same ruling: the virtio-net queue constants
 (`NET_RECEIVE_*`, `NET_TRANSMIT_*` in `crates/virtio`, `RECEIVE_*`, `TRANSMIT_*` in
 `components/src/virtio_net_transport.rs`) and the helpers beside them (`post_receive`,
 `wait_receive`, `receive_frame`, `transmit_frame`, `receive_buf`, `transmit_buf`).
-`tools/redoxfs_host`'s `ls_tx`, `put_tx` and the rest are a different word: there `tx` means a
-RedoxFS transaction, the closure argument of RedoxFS's own `Filesystem::tx`. That is the best
-argument that the abbreviation does not decode itself.
+In `tools/redoxfs_host` and `redoxfs_server`, `tx` meant a RedoxFS transaction, the closure argument of
+RedoxFS's own `Filesystem::tx`. It reads as transmit in this tree, so those names spell `transaction`
+(`ls_transaction`, `put_transaction` and the rest). Only RedoxFS's own `Filesystem::tx` keeps upstream's spelling.
 
 ## Fits as written
 

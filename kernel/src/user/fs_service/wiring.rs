@@ -14,7 +14,7 @@ const ROLE_BLK_SERVER: u64 = 32;
 
 /// The heap budget the FS server draws RedoxFS's allocations from. RedoxFS keeps a 128 KiB
 /// compress buffer, block buffers, and small tree structures for the images phase 2 serves; 8 MiB
-/// is comfortable and is the process's hard ceiling (its `HEAP_MAX` matches).
+/// is comfortable and is the process's hard ceiling (its `HEAP_MAXIMUM` matches).
 pub(super) const FS_BUDGET_PAGES: u64 = 2048;
 
 /// One boot, one FS service, remembered here: a second wiring would put a second driver on the

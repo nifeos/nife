@@ -7,7 +7,7 @@
 
 //! # BUGS
 //!
-//! - A core past [`MAX_CPU_NODES`] is counted in [`CpuList::described`] and not recorded, and a
+//! - A core past [`MAXIMUM_CPU_NODES`] is counted in [`CpuList::described`] and not recorded, and a
 //!   caller cannot see which part it missed.
 //! - `status`, `enable-method` and `supervisor` are recorded, not obeyed. [`Cpu::is_startable`] is
 //!   the caller's decision as a predicate, applied by `smp::read_cpu_list`.
@@ -18,10 +18,13 @@ use device_tree_blob::{DeviceTreeBlob, Error};
 
 /// The most `cpu@` nodes [`CpuList::from_device_tree`] will record.
 ///
-/// Sixteen, matching [`crate::riscv64::MAX_HARTS`], which is twice the kernel's `MAX_CPUS` and
-/// costs 24 bytes each. A machine with more is reported as truncated ([`CpuList::described`] keeps
-/// counting) rather than silently half-read.
-pub const MAX_CPU_NODES: usize = 16;
+/// Sixteen, matching [`crate::riscv64::MAXIMUM_HARTS`], which is twice the kernel's `MAXIMUM_CPUS`
+/// and costs 24 bytes each. A machine with more is reported as truncated ([`CpuList::described`]
+/// keeps counting) rather than silently half-read.
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CPU_NODES`.
+pub const MAXIMUM_CPU_NODES: usize = 16;
 
 /// How firmware says a core is started, from `enable-method`.
 ///
@@ -107,11 +110,11 @@ impl Cpu {
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct CpuList {
     /// The cores that fit, `[..len]` of them.
-    pub cpus: [Cpu; MAX_CPU_NODES],
+    pub cpus: [Cpu; MAXIMUM_CPU_NODES],
     /// How many entries of [`cpus`](CpuList::cpus) are written.
     pub len: usize,
     /// How many `cpu@` nodes the tree has. Greater than `len` exactly when the machine has more
-    /// cores than [`MAX_CPU_NODES`], which is the case a caller must be able to see.
+    /// cores than [`MAXIMUM_CPU_NODES`], which is the case a caller must be able to see.
     pub described: usize,
     /// How many address cells `/cpus` declared, kept for the boot line: a two-cell tree is worth
     /// seeing, because it means the machine has affinity beyond `Aff2`.
@@ -128,7 +131,7 @@ pub struct CpuList {
 impl Default for CpuList {
     fn default() -> Self {
         Self {
-            cpus: [Cpu::default(); MAX_CPU_NODES],
+            cpus: [Cpu::default(); MAXIMUM_CPU_NODES],
             len: 0,
             described: 0,
             address_cells: 1,
@@ -160,16 +163,16 @@ impl CpuList {
             ..CpuList::default()
         };
 
-        let mut regs = [None; MAX_CPU_NODES];
-        let mut status = [None; MAX_CPU_NODES];
-        let mut methods = [None; MAX_CPU_NODES];
-        let mut isa_strings = [None; MAX_CPU_NODES];
+        let mut regs = [None; MAXIMUM_CPU_NODES];
+        let mut status = [None; MAXIMUM_CPU_NODES];
+        let mut methods = [None; MAXIMUM_CPU_NODES];
+        let mut isa_strings = [None; MAXIMUM_CPU_NODES];
         list.described = dt.node_props(b"cpu@", b"reg", &mut regs)?;
         dt.node_props(b"cpu@", b"status", &mut status)?;
         dt.node_props(b"cpu@", b"enable-method", &mut methods)?;
         dt.node_props(b"cpu@", b"riscv,isa", &mut isa_strings)?;
 
-        list.len = list.described.min(MAX_CPU_NODES);
+        list.len = list.described.min(MAXIMUM_CPU_NODES);
         for i in 0..list.len {
             list.cpus[i] = Cpu {
                 // A `cpu@` node with no `reg` is malformed, and there is no id to invent. Zero is

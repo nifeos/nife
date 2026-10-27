@@ -14,7 +14,10 @@ const ALL: &[Refusal] = &[
     Refusal::FileNotNameable,
     Refusal::MemoryGrantForbidden,
     Refusal::MemoryGrantRequired,
-    Refusal::MemoryGrantOutOfRange { min: 1, max: 2 },
+    Refusal::MemoryGrantOutOfRange {
+        minimum: 1,
+        maximum: 2,
+    },
     Refusal::ProgramArgumentRequired,
     Refusal::ProgramArgumentForbidden,
     Refusal::NoMatch,
@@ -88,33 +91,33 @@ fn spelled(mut n: usize, buf: &mut [u8; 32]) -> &str {
 /// **A limit a line quotes is the limit the code enforces.** Each of these five strings states a
 /// number as text, and nothing else ties that text to the constant, so a ceiling raised in one
 /// place would leave the prompt quoting the old one. The segment ceiling `TooManySegments` quotes
-/// lives in the shell (`swish::sequence::MAX_SEGMENTS`), which this crate cannot see.
+/// lives in the shell (`swish::sequence::MAXIMUM_SEGMENTS`), which this crate cannot see.
 #[test]
 fn a_quoted_limit_is_the_constant_behind_it() {
     let cases: &[(Refusal, &str, usize, &str)] = &[
         (
             Refusal::FileNotNameable,
             "at most {} bytes a file",
-            crate::MAX_FILE_NAME,
-            "MAX_FILE_NAME",
+            crate::MAXIMUM_FILE_NAME,
+            "MAXIMUM_FILE_NAME",
         ),
         (
             Refusal::FileNotNameable,
             "{} a directory",
-            crate::nav::MAX_DIRECTORY_NAME,
-            "nav::MAX_DIRECTORY_NAME",
+            crate::nav::MAXIMUM_DIRECTORY_NAME,
+            "nav::MAXIMUM_DIRECTORY_NAME",
         ),
         (
             Refusal::FileNotNameable,
             "{} deep",
-            crate::nav::MAX_DEPTH,
-            "nav::MAX_DEPTH",
+            crate::nav::MAXIMUM_DEPTH,
+            "nav::MAXIMUM_DEPTH",
         ),
         (
             Refusal::TooManyNames,
             "at most {},",
-            crate::expand::MAX_NAMES,
-            "expand::MAX_NAMES",
+            crate::expand::MAXIMUM_NAMES,
+            "expand::MAXIMUM_NAMES",
         ),
         (
             Refusal::TooManyNames,
@@ -125,14 +128,14 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         (
             Refusal::MatchNotNameable,
             "at most {} bytes",
-            crate::expand::MAX_NAME,
-            "expand::MAX_NAME",
+            crate::expand::MAXIMUM_NAME,
+            "expand::MAXIMUM_NAME",
         ),
         (
             Refusal::TooManyStages,
             "at most {}",
-            crate::line::MAX_STAGES,
-            "line::MAX_STAGES",
+            crate::line::MAXIMUM_STAGES,
+            "line::MAXIMUM_STAGES",
         ),
         (
             Refusal::ArgumentsTooLong,

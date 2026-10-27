@@ -52,7 +52,7 @@ pub(super) const LINES: &[Line] = &[
     // any page.
     line(0, "mdr", &["name a file"]),
     // **The named file reaches the viewer and comes back rendered.** The input operand comes off
-    // the plan (`components/src/swish.rs`), and `MAX_OUTPUT_CHUNKS` (4096) holds a whole page.
+    // the plan (`components/src/swish.rs`), and `MAXIMUM_OUTPUT_CHUNKS` (4096) holds a whole page.
     // `gate.txt` is 2 lines, 4 words, 24 bytes; rendered it is **1 line, 4 words, 26 bytes**, one
     // reflowed paragraph plus a two-byte body indent. An empty stream would answer `0 0 0`, so the
     // count is what separates rendering from silence.

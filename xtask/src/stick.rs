@@ -225,7 +225,7 @@ fn build_label() -> String {
 fn download_name(triple: &str) -> String {
     let cpu = triple.split('-').next().unwrap_or("unknown");
     let cpu = if cpu == "aarch64" { "arm64" } else { cpu };
-    let (os, suffix) = if triple.contains("apple") {
+    let (operating_system, suffix) = if triple.contains("apple") {
         ("macos", "")
     } else if triple.contains("windows") {
         ("windows", ".exe")
@@ -234,7 +234,7 @@ fn download_name(triple: &str) -> String {
     } else {
         ("other", "")
     };
-    format!("stick_maker-{os}-{cpu}{suffix}")
+    format!("stick_maker-{operating_system}-{cpu}{suffix}")
 }
 
 fn host_triple() -> String {
@@ -536,7 +536,7 @@ mod tests {
     use super::download_name;
 
     #[test]
-    fn downloads_are_named_by_os_and_cpu() {
+    fn downloads_are_named_by_operating_system_and_cpu() {
         assert_eq!(
             download_name("aarch64-apple-darwin"),
             "stick_maker-macos-arm64"
