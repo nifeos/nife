@@ -135,6 +135,9 @@
 #   script/falsifications --affected-since <base>   sweep only what a diff can reach (the per-PR half)
 #   script/falsifications --plan-since <base>       how many shards that needs, as a JSON list last
 #   script/falsifications --affected-since <base> --shard k/n   replay one of those shards
+#   script/falsifications --mutants --file <rs> [--arch A] [--limit N] [--offset K] [--tiers T] [--budget S] [--out F]
+#                                           run one kernel file's cargo-mutants diffs under QEMU, two
+#                                           tiers, and report the wall clock per mutant (below)
 #   script/falsifications --record-times <transcript>...      merge a sweep's per-record times into
 #                                           notes/project-metrics/falsification-times.tsv
 #
@@ -1666,7 +1669,7 @@ def run_bounded(argv, limit, env=None, cwd=None):
     """
     start = time.monotonic()
     p = subprocess.Popen(argv, cwd=cwd or root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                         text=True, start_new_session=True,
+                         text=True, errors="replace", start_new_session=True,
                          env=dict(os.environ, **env) if env else None)
     try:
         out, _ = p.communicate(timeout=limit)
@@ -2403,6 +2406,199 @@ def record_times(logs):
     print("%d record time(s) read; %s holds %d" % (found, TIMES, len(times)))
     return 0 if found else 1
 
+
+# **Mutants under QEMU, part 1 of "the kernel and its programs are mutated under QEMU"**
+# (design/roadmap/proposals/the-kernel-and-its-programs-are-mutated-under-qemu.md). Provisional
+# flags; an architect names things.
+#
+#   script/falsifications --mutants --file <path.rs> [--arch aarch64] [--limit N] [--offset K]
+#                         [--tiers kernel|kernel,system] [--in-diff <git diff>] [--budget <s>]
+#                         [--out <tsv>]
+#
+# `--budget` stops the run cleanly before the next mutant once that many seconds have passed, so a
+# CI job stays under its time bound and still prints the summary.
+#
+# cargo-mutants generates the mutants (`cargo mutants --list --diff`, one unified diff each) and
+# this driver runs them, the way a falsification record runs: apply, boot, read the verdict, revert.
+# cargo-mutants' own runner cannot do it, because its `--test-tool` takes `cargo` or `nextest` and
+# the system tests need `cargo xtask test`'s images.
+#
+# **Two tiers, and each is a verdict of its own.** The first runs the kernel's unit-test image
+# (`cargo xtask test --image kernel`), about 10 s of suite. Only a mutant that survives it pays the
+# second, the whole-system image (`--image system`), about 130 s. A mutant that does not compile is
+# `unviable` and costs its build only. A tier that outruns the limit is `timeout`, which
+# cargo-mutants counts as caught, and is reported apart so it cannot hide a hang.
+#
+# **The cost it reports is wall clock per mutant, build and image preparation included**, because
+# that is what a runner pays. It runs the unmutated tree through each tier first, so what a mutant
+# adds over a clean run is visible, and a baseline that fails stops the run: a mutant "caught" by
+# a broken baseline is no evidence.
+#
+# BUGS.
+#
+# - It lists with `--no-config`, so `.cargo/mutants.toml` and its exclusions do not apply; part 2
+#   of the proposal puts the kernel's own section there.
+# - `arch/` code for an architecture other than `--arch` is listed and applied, but never compiled
+#   into the boot. Such a mutant survives for want of a leg, so a run over `arch/` must name the
+#   architecture whose file it mutates.
+# - One mutant at a time, in the checkout. It refuses a dirty tree for the reason `--sweep` does.
+MUTANT_HEADER = re.compile(r"^(\S+\.rs):(\d+):(\d+): (.*)$")
+MUTANT_TIERS = ("kernel", "system")
+
+
+def mutant_patches(listing, rel):
+    """Split `cargo mutants --list --diff` output into (name, patch) pairs for file `rel`.
+
+    The tool prints `file:line:col: description`, then a diff whose headers are `--- file` and
+    `+++ <description>`, then a blank line. `git apply` wants real paths, so the headers are
+    rewritten to `a/` and `b/`. A diff body line always starts with a space, `+`, `-` or `@@`, so
+    a truly empty line ends the block.
+    """
+    out, cur, name = [], None, None
+    for line in listing.splitlines():
+        if cur is None:
+            if MUTANT_HEADER.match(line):
+                cur, name = [], line
+            continue
+        if line == "":
+            out.append((name, "".join(l + "\n" for l in cur)))
+            cur, name = None, None
+        elif line.startswith("--- "):
+            cur.append("--- a/%s" % rel)
+        elif line.startswith("+++ "):
+            cur.append("+++ b/%s" % rel)
+        else:
+            cur.append(line)
+    if cur:
+        out.append((name, "".join(l + "\n" for l in cur)))
+    return out
+
+
+def mutants_tier(arch, tier, limit):
+    """One tier's boot. Returns (verdict, seconds); verdict is caught, passed, unviable or timeout."""
+    argv = ["cargo", "xtask", "test", "--arch", arch, "--no-host", "--image", tier]
+    rc, out, took, hung = run_bounded(argv, limit)
+    if hung:
+        return "timeout", took
+    if rc == 0:
+        return "passed", took
+    # A non-zero exit is not a caught mutant: one that does not compile, or a kernel that dies
+    # before its runner, says nothing about the tests. The runner prints `running N tests` once
+    # the kernel is up.
+    if not re.search(r"running \d+ (of \d+ )?tests", out):
+        return "unviable", took
+    return "caught", took
+
+
+def mutants(a):
+    opts, i = {"--arch": "aarch64", "--tiers": "kernel,system", "--offset": "0"}, 0
+    while i < len(a):
+        if a[i] not in ("--file", "--arch", "--limit", "--offset", "--tiers", "--in-diff", "--out", "--budget"):
+            sys.exit("script/falsifications --mutants: unknown option %r" % a[i])
+        if i + 1 >= len(a):
+            sys.exit("script/falsifications --mutants: %s needs a value" % a[i])
+        opts[a[i]] = a[i + 1]
+        i += 2
+    if "--file" not in opts:
+        sys.exit("usage: script/falsifications --mutants --file <path.rs> [--arch A] [--limit N] "
+                 "[--offset K] [--tiers kernel|kernel,system] [--in-diff <diff>] [--budget S] "
+                 "[--out <tsv>]")
+    tiers = opts["--tiers"].split(",")
+    if tiers[0] != "kernel" or any(t not in MUTANT_TIERS for t in tiers) or len(tiers) > 2:
+        sys.exit("script/falsifications --mutants: --tiers is kernel or kernel,system")
+    arch = opts["--arch"]
+    d = dirty()
+    if d:
+        print("script/falsifications --mutants refuses to run on a dirty working tree: it applies")
+        print("and reverts patches with `git apply`. Commit or set the change aside first.\n")
+        print(d)
+        return 2
+    rel = opts["--file"]
+    cmd = ["cargo", "mutants", "--no-config", "--list", "--diff", "-p", "kernel", "--file", rel]
+    if "--in-diff" in opts:
+        cmd += ["--in-diff", opts["--in-diff"]]
+    listed = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
+    if listed.returncode != 0:
+        print(listed.stderr)
+        return 2
+    patches = mutant_patches(listed.stdout, rel)
+    first = int(opts["--offset"])
+    patches = patches[first:first + int(opts["--limit"])] if "--limit" in opts else patches[first:]
+    if not patches:
+        print("no mutants listed for %s" % rel)
+        return 1
+    limit = LIMIT_KERNEL_TEST
+    print("%d mutant(s) of %s on %s, tiers %s" % (len(patches), rel, arch, ",".join(tiers)))
+    base = {}
+    for t in tiers:
+        v, took = mutants_tier(arch, t, limit)
+        base[t] = took
+        print("baseline %-6s %-8s %7.1f s" % (t, v, took))
+        if v != "passed":
+            print("the unmutated tree does not pass the %s tier, so no mutant verdict means anything" % t)
+            return 2
+    rows = []
+    began = time.monotonic()
+    tmp = os.path.join(root, "target", "mutant.patch")
+    os.makedirs(os.path.dirname(tmp), exist_ok=True)
+    for name, patch in patches:
+        if "--budget" in opts and time.monotonic() - began > int(opts["--budget"]):
+            print("budget of %s s spent after %d mutant(s); stopping" % (opts["--budget"], len(rows)))
+            break
+        with open(tmp, "w") as f:
+            f.write(patch)
+        applied = subprocess.run(["git", "-C", root, "apply", tmp], capture_output=True, text=True)
+        if applied.returncode != 0:
+            print("STALE    %s: %s" % (name, applied.stderr.strip()))
+            rows.append((name, "stale", {}))
+            continue
+        times, verdict = {}, "survived"
+        try:
+            for t in tiers:
+                v, took = mutants_tier(arch, t, limit)
+                times[t] = took
+                if v == "passed":
+                    continue
+                verdict = {"caught": "caught-" + t, "unviable": "unviable",
+                           "timeout": "timeout-" + t}[v]
+                break
+        finally:
+            rev = subprocess.run(["git", "-C", root, "apply", "-R", tmp],
+                                 capture_output=True, text=True)
+        if rev.returncode != 0:
+            print("COULD NOT REVERT %s; the tree is modified\n%s" % (name, rev.stderr.strip()))
+            return 2
+        rows.append((name, verdict, times))
+        print("%-14s %s  (%s)" % (verdict, name,
+                                  ", ".join("%s %.1f s" % (t, s) for t, s in times.items())))
+    print("")
+    print("summary: %d mutant(s), arch %s, host %s cpus" % (len(rows), arch, os.cpu_count()))
+    kinds = {}
+    for _, v, _ in rows:
+        kinds[v] = kinds.get(v, 0) + 1
+    print("verdicts: " + ", ".join("%s %d" % kv for kv in sorted(kinds.items())))
+    for t in tiers:
+        paid = [x[2][t] for x in rows if t in x[2]]
+        ran = [x[2][t] for x in rows if t in x[2] and x[1] != "unviable"]
+        if paid:
+            print("tier %-6s ran %3d times, mean %.1f s (viable only: %.1f s over %d), baseline %.1f s"
+                  % (t, len(paid), sum(paid) / len(paid),
+                     sum(ran) / len(ran) if ran else 0.0, len(ran), base[t]))
+    total = sum(sum(x[2].values()) for x in rows)
+    viable = [x for x in rows if x[1] not in ("unviable", "stale")]
+    print("total %.1f s; per mutant %.1f s over all, %.1f s over the %d viable"
+          % (total, total / len(rows),
+             sum(sum(x[2].values()) for x in viable) / len(viable) if viable else 0.0, len(viable)))
+    if "--out" in opts:
+        with open(opts["--out"], "w") as f:
+            f.write("mutant\tverdict\tkernel_s\tsystem_s\n")
+            for name, v, times in rows:
+                f.write("%s\t%s\t%s\t%s\n" % (name, v, times.get("kernel", ""), times.get("system", "")))
+    return 0
+
+
+if mode == "--mutants":
+    sys.exit(mutants(args[1:]))
 
 if mode == "--record-times":
     if len(args) < 2:

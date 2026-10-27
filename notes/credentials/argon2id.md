@@ -68,6 +68,10 @@ lives.
 **The parameters travel in the record, not in the code.** Raising them on real hardware is a
 provisioning change plus a budget change, and both fail loudly rather than silently.
 
+Because a record carries its own cost, `Cost::new` also limits passes to `Cost::MAXIMUM_PASSES` (10).
+That is twice OWASP's highest recommended count (5, at 7 MiB) and over three times the 3 this tree
+wires. A corrupt record now fails to decode instead of asking `verify` for hours of work.
+
 Measured on the development machine (Apple Silicon, native, not under QEMU):
 
 | build | m=1 MiB t=2 | m=4 MiB t=3 | m=8 MiB t=3 |

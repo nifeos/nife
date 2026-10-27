@@ -3607,6 +3607,14 @@ python3 helpers/mutation_inflow.py orphans
 python3 helpers/mutation_real_holes.py --selftest >/dev/null
 echo "==> the survivor classification is current"
 python3 helpers/mutation_real_holes.py check
+# Part 2 of the same proposal: the triage file's `kind`, `verified` and `home` columns. A new
+# `equivalent` row arrives classified and a new `gap` row arrives housed; the two legacy counts sit
+# under a baseline that only falls, every home names something that exists, and a key leaves the
+# carried list of rowless survivors in the pull request that gives it a row.
+python3 helpers/mutation_survivor_rows.py --selftest >/dev/null
+python3 helpers/mutation_gate_replay.py --selftest >/dev/null
+echo "==> the mutation triage rows are classified and housed (a baseline that only falls)"
+python3 helpers/mutation_survivor_rows.py lint
 # The baseline every `script/mutation --report` diffs against names the census it holds, and holds
 # it row for row. Without the name, the reader dated the file by a literal that outlived its contents.
 echo "==> the mutation baseline is the recorded census it names"

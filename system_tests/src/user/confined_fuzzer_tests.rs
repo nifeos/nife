@@ -27,9 +27,6 @@ use confined_syscall_fuzzer_contract as proto;
 use confined_syscall_fuzzer_contract::report;
 
 use super::*;
-// The `capability` module and these constructors still carry their pre-sweep names
-// (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
-// this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
 use crate::capability_object::{
     Cap as Capability, Object, Rights, address_space_capability, memory_region_capability_rights,
     notification_capability, page_frame_capability, rendezvous_capability,

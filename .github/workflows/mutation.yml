@@ -353,6 +353,18 @@ jobs:
             --summary "$GITHUB_STEP_SUMMARY" \
             "${dirs[@]}"
 
+      # The census-wide check (part 2 of the survivor proposal): every survivor key needs a live row,
+      # not only the ones a merged pull request added. The 50 keys that lacked one when this was
+      # written are carried in notes/project-metrics/mutation-rowless-survivors.csv, so this is red
+      # only for a new problem; helpers/mutation_survivor_rows.py has the rules and how to extend them.
+      - name: Check every survivor against the triage record
+        id: rows
+        if: steps.shards.outputs.complete == 'true'
+        continue-on-error: true  # outcome: re-raised
+        run: |
+          mapfile -t dirs < <(find shards -name missed.txt -exec dirname {} \; | sort)
+          python3 helpers/mutation_survivor_rows.py census --summary "$GITHUB_STEP_SUMMARY" "${dirs[@]}"
+
       - name: Keep this census's survivor list
         if: steps.shards.outputs.complete == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -362,9 +374,9 @@ jobs:
           if-no-files-found: error
 
       - name: Fail if any inflow survivor is untriaged
-        if: steps.check.outcome == 'failure'
+        if: steps.check.outcome == 'failure' || steps.rows.outcome == 'failure'
         run: |
-          echo "Untriaged inflow survivors: the list is in this run's summary."
+          echo "Untriaged survivors (new inflow, or a survivor with no live row): the list is in this run's summary."
           echo "Add a row per survivor to notes/project-metrics/mutation-triage.csv (notes/mutation-testing.md, the ledger)."
           exit 1
 

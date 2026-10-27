@@ -37,6 +37,10 @@ Each flag defaults to a full run, so a plain `script/test` always means the whol
   falsification costs a whole suite)). `kernel/build.rs` bakes it into the test binary as a
   `rustc-env`, because a booted kernel has no command line. A change costs a kernel relink of about
   2.3 seconds and saves the roughly 53 seconds the aarch64 suite spends running 312 tests.
+- `--image kernel|system` boots one of each leg's two test images: the kernel's unit tests or the
+  whole-system suite. It skips the screen tour, the post-run image checks and the extra x86_64
+  machines, and refuses `--test` and `--hvf`. `script/falsifications --mutants` runs a kernel
+  mutant against `kernel` first and pays for `system` only when the mutant survives.
 - `--repeat <N>` runs the `--test` selection N times in one boot, so a rare failure gets a frequency
   from one bench visit (milestone 321 (a corpse that did not park, on four real cores)).
 
