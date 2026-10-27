@@ -97,7 +97,7 @@ fn a_proposer_can_ask_and_cannot_tell() {
             "backwards, where instants would happen twice",
         ),
     ] {
-        let (got, _) = w.propose_nanos(proposed);
+        let (got, _) = w.propose_ns(proposed);
         assert_eq!(got, want, "proposing {what}");
         assert_eq!(
             w.page().read().generation,
@@ -108,7 +108,7 @@ fn a_proposer_can_ask_and_cannot_tell() {
 
     // And the bounded case it exists to allow: a small correction is accepted, and the
     // provenance says it came from a proposal rather than from a human.
-    let (got, after) = w.propose_nanos(now + clock_contract::NS_PER_SECOND / 2);
+    let (got, after) = w.propose_ns(now + clock_contract::NS_PER_SECOND / 2);
     assert_eq!(got, status::ACCEPTED);
     assert!(after >= now);
     let r = w.page().read();
@@ -134,7 +134,7 @@ fn adjusting_the_wall_clock_leaves_the_monotonic_counter_alone() {
 
     let mono_before = clock_service::monotonic_ns();
     let wall_before = w.wall_ns();
-    let (got, wall_after) = w.propose_nanos(wall_before + step);
+    let (got, wall_after) = w.propose_ns(wall_before + step);
     assert_eq!(got, status::ACCEPTED);
     let mono_after = clock_service::monotonic_ns();
 

@@ -61,12 +61,12 @@ const KBC_PULSE_RESET: u8 = 0xfe;
 const PCI_CONFIG_ADDRESS: u16 = 0xcf8;
 const PCI_CONFIG_DATA: u16 = 0xcfc;
 
-/// Spin for `millis` of wall clock. Only on the way to a reset, where yielding would hand the core
+/// Spin for `ms` of wall clock. Only on the way to a reset, where yielding would hand the core
 /// to a workload that is about to stop existing.
-fn wait_ms(millis: u64) {
+fn wait_ms(ms: u64) {
     let hz = super::timer::frequency();
     let start = super::timer::now();
-    while super::timer::now().wrapping_sub(start) < hz / 1000 * millis {
+    while super::timer::now().wrapping_sub(start) < hz / 1000 * ms {
         core::hint::spin_loop();
     }
 }

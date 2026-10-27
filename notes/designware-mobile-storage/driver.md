@@ -77,5 +77,5 @@ describe it, and no more.
   last words reach memory after `DTO`, as on silicon, so the driver must wait for the descriptor
   too.
 
-Time is one microsecond per call to `now_us`, so every deadline is reached in a bounded number of
+Time is one microsecond per call to `now_microseconds`, so every deadline is reached in a bounded number of
 polls, and a test that would hang on silicon fails here instead.

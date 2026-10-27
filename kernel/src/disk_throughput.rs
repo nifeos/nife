@@ -232,8 +232,8 @@ fn ipc_floor(disk: &Wiring) -> Result<(), Verdict> {
     let floor = arch::timer::now().wrapping_sub(start);
     println!(
         "disk-throughput: ipc floor   {FLOOR_CALLS} SIZE round trips in {} us ({} ns each, no device)",
-        micros(floor),
-        nanos(floor) / FLOOR_CALLS,
+        microseconds(floor),
+        ns(floor) / FLOOR_CALLS,
     );
     Ok(())
 }
@@ -268,7 +268,7 @@ fn timed_flush(disk: &Wiring) -> Result<(), Verdict> {
     }
     println!(
         "disk-throughput: flush       one FLUSH in {} us",
-        micros(flush)
+        microseconds(flush)
     );
     Ok(())
 }
@@ -322,9 +322,9 @@ fn print_scope(rid: u32, scope: crate::iommu::Scope) -> bool {
 fn print_phase(what: &str, count: u64, ticks: u64) {
     println!(
         "disk-throughput: {what:<11} {count} x 4096 B in {} us = {} B/s ({} ns per block)",
-        micros(ticks),
+        microseconds(ticks),
         rate(count * BLOCK_SIZE as u64, ticks),
-        nanos(ticks) / count.max(1),
+        ns(ticks) / count.max(1),
     );
 }
 
@@ -352,11 +352,11 @@ fn is_stamped(disk: &Wiring, block: u64) -> bool {
         && buf[STAMP_WORD] == 0x5a
 }
 
-fn micros(ticks: u64) -> u64 {
+fn microseconds(ticks: u64) -> u64 {
     ticks.saturating_mul(1_000_000) / arch::timer::frequency()
 }
 
-fn nanos(ticks: u64) -> u64 {
+fn ns(ticks: u64) -> u64 {
     // u128 because a 2.7 GHz counter over a minute already overflows `ticks * 1e9` in a u64.
     ((ticks as u128 * 1_000_000_000) / arch::timer::frequency() as u128) as u64
 }

@@ -38,7 +38,7 @@ fn capabilities_of(regs_va: u64) -> Capabilities {
     )
 }
 
-fn millis() -> u64 {
+fn now_ms() -> u64 {
     crate::arch::timer::now() * 1000 / crate::arch::timer::frequency()
 }
 
@@ -95,10 +95,10 @@ pub(crate) fn after_report() {
     }
     let capabilities = capabilities_of(regs_va);
     let mut last = [0u32; 256];
-    let start = millis();
+    let start = now_ms();
     dump("at report  ", regs_va, &capabilities, Some(&mut last));
     for ms in SAMPLES_MS {
-        while millis() < start + ms {
+        while now_ms() < start + ms {
             core::hint::spin_loop();
         }
         let mut label = [b' '; 11];

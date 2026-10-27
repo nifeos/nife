@@ -18,8 +18,8 @@ pub trait Hardware {
     /// Read the 16-bit register at `offset`. Only the flash status word
     /// ([`non_volatile_memory::HSFSTS`]) is read this way, as FreeBSD reads it.
     fn read16(&mut self, offset: u64) -> u16;
-    /// Wait at least `us` microseconds.
-    fn delay_us(&mut self, us: u64);
+    /// Wait at least `microseconds` microseconds.
+    fn delay_microseconds(&mut self, microseconds: u64);
     /// The function's PCI vendor id, read from configuration space. The read is the point: it is
     /// the delay `e1000_reset_hw_ich8lan` needs around the global reset.
     fn pci_vendor_id(&mut self) -> u16;
@@ -28,7 +28,7 @@ pub trait Hardware {
 }
 
 pub(super) fn delay_ms(hardware: &mut impl Hardware, ms: u64) {
-    hardware.delay_us(ms * 1000);
+    hardware.delay_microseconds(ms * 1000);
 }
 
 /// A posted-write flush (`E1000_WRITE_FLUSH`): any read of BAR0 will do; FreeBSD reads `STATUS`.

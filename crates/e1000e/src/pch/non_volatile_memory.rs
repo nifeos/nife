@@ -155,7 +155,7 @@ fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
             hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(now | status::DONE));
             return Ok(());
         }
-        hardware.delay_us(1);
+        hardware.delay_microseconds(1);
     }
     Err(Error::Busy)
 }
@@ -170,7 +170,7 @@ fn cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
         if s & status::DONE != 0 {
             break;
         }
-        hardware.delay_us(1);
+        hardware.delay_microseconds(1);
     }
     if s & status::DONE != 0 && s & status::ERROR == 0 {
         Ok(())
@@ -188,7 +188,7 @@ pub(crate) fn read_u32_at_byte(hardware: &mut impl Hardware, byte: u32) -> Resul
     }
     let mut last = Err(Error::Cycle);
     for _ in 0..=CYCLE_REPEAT_COUNT {
-        hardware.delay_us(1);
+        hardware.delay_microseconds(1);
         initialize_cycle(hardware)?;
         let mut ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16;
         ctl = (ctl & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);

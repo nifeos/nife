@@ -36,16 +36,16 @@ pub fn cpu_start(target_cpu: u64, entry: u64, context: u64) -> i64 {
     // The universal INIT-SIPI-SIPI startup algorithm (Intel MP spec, appendix B.4): INIT, a settle
     // delay, then a STARTUP IPI.
     interrupt_controller::send_init(dest);
-    busy_wait_us(10_000);
+    busy_wait_microseconds(10_000);
     let vector = (entry >> 12) as u8;
     interrupt_controller::send_startup(dest, vector);
-    busy_wait_us(200);
+    busy_wait_microseconds(200);
 
     // A second STARTUP only if the first has not visibly worked: a core that has left
     // wait-for-SIPI ignores another (QEMU's `apic_sipi` too), so this is as correct as two.
     if crate::smp::online_count() == before {
         interrupt_controller::send_startup(dest, vector);
-        busy_wait_us(200);
+        busy_wait_microseconds(200);
     }
 
     // Bounded, so a core the firmware declines to start cannot hang bring-up. Ten seconds, because
@@ -63,11 +63,11 @@ pub fn cpu_start(target_cpu: u64, entry: u64, context: u64) -> i64 {
     0
 }
 
-/// Busy-wait roughly `us` microseconds, against the calibrated TSC. No `wfi`/`hlt` equivalent
+/// Busy-wait roughly `microseconds` microseconds, against the calibrated TSC. No `wfi`/`hlt` equivalent
 /// here: INIT-SIPI-SIPI's delays are a handful of instructions on real hardware, and parking this
 /// core for them would need an interrupt to wake it that nothing is going to send.
-pub(super) fn busy_wait_us(us: u64) {
-    let ticks = crate::arch::timer::frequency() / 1_000_000 * us;
+pub(super) fn busy_wait_microseconds(microseconds: u64) {
+    let ticks = crate::arch::timer::frequency() / 1_000_000 * microseconds;
     let start = crate::arch::timer::now();
     while crate::arch::timer::now().wrapping_sub(start) < ticks {
         core::hint::spin_loop();

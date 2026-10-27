@@ -104,7 +104,7 @@ pub(crate) fn bound_for(stage: &Stage) -> Option<Duration> {
     let secs = match stage {
         Stage::Build => return None,
         Stage::Boot | Stage::Exit => test_times::DEFAULT_BUDGET_SECS,
-        Stage::Test(path) => test_times::budget_secs_for(path),
+        Stage::Test(path) => test_times::budget_seconds_for(path),
     };
     Some(Duration::from_secs(secs + HOST_GRACE_SECS))
 }

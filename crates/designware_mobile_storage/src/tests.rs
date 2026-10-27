@@ -195,7 +195,7 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
         assert_eq!(r.result, Ok(()), "{r:?}");
         assert!(r.maximum_fill > 0, "{r:?}");
         assert!(
-            r.us > 0,
+            r.microseconds > 0,
             "the read took no time on a clock that advances: {r:?}"
         );
         asked.push(r.asked_hz);
@@ -225,7 +225,7 @@ fn the_watch_counts_status_fill_and_nothing_else() {
             }
         }
         fn write(&mut self, _: u32, _: u32) {}
-        fn now_us(&mut self) -> u64 {
+        fn now_microseconds(&mut self) -> u64 {
             0
         }
     }
@@ -305,8 +305,8 @@ fn a_sixteen_bit_queue_is_refused_at_the_door() {
         fn write(&mut self, o: u32, v: u32) {
             self.0.write(o, v);
         }
-        fn now_us(&mut self) -> u64 {
-            self.0.now_us()
+        fn now_microseconds(&mut self) -> u64 {
+            self.0.now_microseconds()
         }
     }
     let narrow = Narrow(Sim::new(CardKind::SdHighCapacity, 1024, 32));
@@ -779,7 +779,7 @@ fn an_emmc_is_sized_by_extended_card_specific_data_only_when_it_is_sector_addres
 /// clock's need not. A worker with its own deadline turns a spin into a named failure.
 #[test]
 fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
-    assert_ne!(sd::POWER_UP_DEADLINE_US % 7, 0);
+    assert_ne!(sd::POWER_UP_DEADLINE_MICROSECONDS % 7, 0);
     let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         let mut sim = Sim::new(CardKind::MultimediaCard, 4096, 32);
@@ -803,7 +803,7 @@ fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
 /// the clock steps, so the loop's deadline is `>` and never `==`.
 #[test]
 fn an_sd_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
-    assert_ne!(sd::POWER_UP_DEADLINE_US % 7, 0);
+    assert_ne!(sd::POWER_UP_DEADLINE_MICROSECONDS % 7, 0);
     let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         let mut sim = Sim::new(CardKind::SdHighCapacity, 4096, 32);

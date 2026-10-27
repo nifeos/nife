@@ -44,7 +44,7 @@ static void check(int good, const char *name, const char *why) {
     }
 }
 
-static long long now_us(void) {
+static long long now_microseconds(void) {
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
     return (long long)t.tv_sec * 1000000 + t.tv_nsec / 1000;
@@ -113,9 +113,9 @@ static void check_select(void) {
     FD_ZERO(&r);
     FD_SET(pipe_fds[0], &r);
     struct timeval tv = {0, 500};
-    long long t0 = now_us();
+    long long t0 = now_microseconds();
     int n = select(pipe_fds[0] + 1, &r, NULL, NULL, &tv);
-    long long waited = now_us() - t0;
+    long long waited = now_microseconds() - t0;
     check(n == 0 && !FD_ISSET(pipe_fds[0], &r) && waited >= 500, "select times out",
           "returned early or reported a descriptor");
 

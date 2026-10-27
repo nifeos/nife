@@ -111,7 +111,7 @@ pub const F_NO_REPORT: u64 = 1 << 20;
 /// [`LOGOUT`]'s third report word is that wait (`waited_micros`), not an identity hint, so a failure
 /// can say whether the host was slow or the caretaker never died. Must match
 /// `fixtures/src/login_test_client.rs`'s `DESTROY_WAIT_SECS`.
-pub const DESTROY_WAIT_MICROS: u64 = 5 * 1_000_000;
+pub const DESTROY_WAIT_MICROSECONDS: u64 = 5 * 1_000_000;
 
 /// A running login service and the endpoints that reach it.
 pub struct Wiring {

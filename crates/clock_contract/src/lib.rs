@@ -499,7 +499,7 @@ pub mod rtc {
     /// 176; DECISIONS §121, §130). `PL031` and `GOLDFISH` name a register layout `components/src/clock.rs`
     /// polls itself, through a mapping the service holds; CMOS is two fixed I/O ports with no page,
     /// so no such mapping can ever exist under §121's current recommendation. The kernel reads the
-    /// device once (`arch::x86_64::rtc::read_unix_nanos`) and hands the already-converted result
+    /// device once (`arch::x86_64::rtc::read_unix_ns`) and hands the already-converted result
     /// straight through as the wall clock's second `Spawn` argument, **nanoseconds since the Unix
     /// epoch, ready to publish**. `components/src/clock.rs` takes it as data for this kind: `Some(a1)`,
     /// no register read, no base address, nothing to poll.

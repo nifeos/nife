@@ -13,7 +13,9 @@
 //! name for the engine.
 
 use crate::command::Command;
-use crate::host::{COMMAND_DEADLINE_US, DATA_DEADLINE_US, Error, Host, Identity, Registers};
+use crate::host::{
+    COMMAND_DEADLINE_MICROSECONDS, DATA_DEADLINE_MICROSECONDS, Error, Host, Identity, Registers,
+};
 use crate::registers;
 
 /// **The DMA region**, as the driver reads and writes it. Offsets are bytes from the region's
@@ -270,7 +272,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             return Ok(());
         };
         self.registers.write(registers::BMOD, registers::BMOD_SWR);
-        if !self.wait(COMMAND_DEADLINE_US, |window| {
+        if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::BMOD) & registers::BMOD_SWR == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::BMOD)));
@@ -309,7 +311,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             return Err(Error::BufferSize);
         };
         let mut owed = direct_memory_access.owed(count);
-        let mut start = self.registers.now_us();
+        let mut start = self.registers.now_microseconds();
         loop {
             let rint = self.registers.read(registers::RINTSTS);
             if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
@@ -326,11 +328,11 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             if rint & want == want && now_owed == 0 {
                 return Ok(());
             }
-            let now = self.registers.now_us();
+            let now = self.registers.now_microseconds();
             if now_owed != owed {
                 owed = now_owed;
                 start = now;
-            } else if now.wrapping_sub(start) > DATA_DEADLINE_US {
+            } else if now.wrapping_sub(start) > DATA_DEADLINE_MICROSECONDS {
                 return Err(Error::DataTimeout(command.index, rint, owed));
             }
         }
@@ -350,7 +352,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             registers::CTRL,
             ctrl | registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET,
         );
-        let quiet = self.wait(COMMAND_DEADLINE_US, |window| {
+        let quiet = self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CTRL) & (registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET)
                 == 0
                 && window.read(registers::BMOD) & registers::BMOD_SWR == 0
@@ -605,7 +607,7 @@ mod tests {
         let mut h = with_internal_direct_memory_access(h, &memory);
         h.registers().stall_after = Some(512);
         h.registers().clock_step = 7;
-        assert_ne!(DATA_DEADLINE_US % 7, 0);
+        assert_ne!(DATA_DEADLINE_MICROSECONDS % 7, 0);
         let (sender, receiver) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let mut back = vec![0u8; 9 * 512];
@@ -743,7 +745,7 @@ mod tests {
             file_system_type: [0; 8],
             timed_from: 2048,
             timed_blocks: 0,
-            timed_us: 0,
+            timed_microseconds: 0,
         };
         let mut h = with_internal_direct_memory_access(h, &memory);
         let mut buffer = vec![0u8; 128 * 512];
