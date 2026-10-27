@@ -15,11 +15,11 @@ filed 2026-09-17 by milestone 319, which proved the parsing half and so narrowed
 half is actually for.
 
 The decision is
-§192 (does the ACPI walk's direct-map read take a bound, and is the bound per-read or a region it holds?),
-written up 2026-09-19 by milestone 435's slice-c lane because this gate named no section. It was ruled
-2026-10-27 (UTC): shape 2. The walk holds one region, an extent handed over once at boot, and every
-read is checked against it. The accessor is a new item at a trust boundary, so its name ships
-provisional and goes through `script/names`.
+§192 (does the ACPI walk's direct-map read take a bound, and is the bound per-read or a region it holds?).
+A lane wrote it up on 2026-09-19 because this gate named no section. The architect ruled on 2026-10-27 (UTC):
+shape 2. The walk holds one region, an extent the boot path gives it once, and checks every read
+against that extent. The accessor is a new item at a trust boundary. Its name ships provisional and
+goes through `script/names`.
 
 Premise re-checked 2026-09-19 and still true, and this block subsumes milestone 431 (acpi).
 `kernel/src/arch/x86_64/machine.rs` is 847 lines with no bounded accessor: `read_acpi` still takes a
