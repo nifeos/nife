@@ -72,10 +72,9 @@ the authority to wipe the disk does not exist until the answer does.
 too, so an offer that did not look at the disk first would ask every installed machine, once per
 boot, whether to wipe itself. Looking means reading a partition table, and the kernel does not parse
 partition tables (notes/block-devices.md). So the looking is done by a process holding the disk and
-no entropy endpoint: the `disk_partitioner` verify role of milestone 57 (partitioning and formatting
-a real drive), one milestone along. It is the same demonstration: a program that cannot draw a
-unique id cannot write a table anything reads
-back.
+no entropy endpoint: `system_installer`'s `ROLE_SURVEY`, the shape of the `disk_partitioner` verify
+role of milestone 57 (partitioning and formatting a real drive). It is the same demonstration: a
+program that cannot draw a unique id cannot write a table anything reads back.
 
 ## The three things the building changed
 
@@ -94,8 +93,8 @@ is a contract stated at both ends.
 **The kernel and the archive therefore move as a set for free**, which was the failure this had to
 make unexpressible. A disk carrying a new kernel beside an archive it does not vouch for halts at
 `MEASURED BOOT REFUSED`, and that cost a boot on 2026-09-01. They are sealed together inside the one
-file at build time (`uefi_loader/build.rs`'s `refuse_an_unsealed_pair`), and the installer copies the
-file.
+file at build time (`uefi_loader/build.rs`'s `refuse_an_unsealed_pair`), and the installer copies
+the file.
 
 Two candidates were priced in milestone 515 and lost. Reading the stick over USB mass storage waits
 on milestone 242 (USB host and HID), which milestone 192 (a keyboard on real silicon) prices at
@@ -119,9 +118,8 @@ With the data partition at LBA 2048 it begins at block 256.
 
 What that deletes from this rung: a partition-aware mount in `redoxfs_server`, and a base-block
 field on the `blk` wire (a wire value two programs agree on, and therefore calef's). Also a
-caretaker
-process in the middle of every filesystem block. `kernel/src/user/fs_service.rs` grew an NVMe arm and
-nothing else.
+caretaker process in the middle of every filesystem block. `kernel/src/user/fs_service` grew an NVMe
+arm (`wiring.rs`) and nothing else.
 
 What it costs is real and is recorded in `system_installer`'s `BUGS`: the filesystem server on an
 installed machine can address the EFI system partition and the partition table. What keeps it inside
@@ -134,10 +132,11 @@ reader of this page should consider taking.
 ### 3. FAT32 had to be written, and the alignment is the part that bites
 
 Nothing in this tree could write a FAT volume. Every path around it (QEMU's `vvfat`, macOS's
-`diskutil`, Linux's `mkfs.vfat`) is a host tool the target cannot reach. The FAT32 stratum of
-milestone 140 (mount a drive this system did not create) is read-first and unbuilt. `crates/file_allocation_table` is the smallest thing that closes
-it: it creates one volume holding one file at one path, as pure computation with no I/O, and is then
-finished.
+`diskutil`, Linux's `mkfs.vfat`) is a host tool the target cannot reach.
+`crates/file_allocation_table`'s writer closes it: it creates one volume holding one file at one
+path, as pure computation with no I/O. The rest of that crate, a reader and a general writer for
+FAT12, FAT16 and FAT32, is milestone 813 (a proven FAT crate, released on its own). Milestone 140
+(mount a drive this system did not create) builds its FAT32 stratum on it.
 
 Two numbers in it are load-bearing and neither is obvious.
 
@@ -176,9 +175,9 @@ the strong ones from a distance.
 | any of this works on real firmware | nothing | rung 2b, on xenon, and it is somebody's hands rather than a lane's |
 
 The third row is milestone 515's B1, which that proposal recommended and called unmeasured on
-anything but OVMF. It is now measured on OVMF and on nothing else. The deletion of the variable store
-is what makes it a measurement at all. The default store persists across runs in a checkout, so
-without it the second boot would have been riding a boot option the first one left behind.
+anything but OVMF. It is now measured on OVMF and on nothing else. The deletion of the variable
+store is what makes it a measurement at all. The default store persists across runs in a checkout,
+so without it the second boot would have been riding a boot option the first one left behind.
 
 ## What this does not do
 
@@ -188,16 +187,15 @@ system did not create) and a different order of risk to somebody's data.
 
 Everything else this rung found that it did not do is written where the next person meets it. That
 is the `BUGS` section beside the feature and, for the five that want work rather than only a record,
-as a
-proposal in `design/roadmap/proposals/`. The five, and what each is actually about:
+a milestone. The five, and what each is actually about:
 
-| proposal | the thing it is about |
+| milestone | the thing it is about |
 |---|---|
-| `the-disk-an-installer-names-has-no-model.md` | the offer says "the NVMe disk attached to this machine", which is a guess on the first machine with two. The single most load-bearing sentence a stranger reads |
-| `the-install-offer-should-say-what-is-already-on-the-disk.md` | the survey asks only whether nife is there, so a disk holding Windows is described as an unqualified target |
-| `there-is-no-way-back-from-the-stick.md` | an installed disk is never offered an install again, which is right, and turns a power cut between the installer and `mkfs` into an unrecoverable state |
-| `a-long-file-name-or-riscv64-cannot-be-installed.md` | `BOOTRISCV64.EFI` is not 8.3; built as milestone 560 (a long file name, or riscv64 cannot be installed), so the FAT writer gives it long-name entries |
-| `the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md` | `/chosen` has one initrd slot and no second one, which is why this rung is an `x86_64` claim |
+| [569](../design/roadmap/0569-the-disk-an-installer-names-has-no-model.md) | the offer says "the NVMe disk attached to this machine", which is a guess on the first machine with two. The single most load-bearing sentence a stranger reads |
+| [570](../design/roadmap/0570-the-install-offer-should-say-what-is-already-on-the-disk.md) | the survey asks only whether nife is there, so a disk holding Windows is described as an unqualified target |
+| [572](../design/roadmap/0572-there-is-no-way-back-from-the-stick.md) | an installed disk is never offered an install again, which is right, and turns a power cut between the installer and `mkfs` into an unrecoverable state |
+| [560](../design/roadmap/0560-a-long-file-name-or-riscv64-cannot-be-installed.md), built | `BOOTRISCV64.EFI` is not 8.3, so the FAT writer gives it long-name entries |
+| [568](../design/roadmap/0568-the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md) | `/chosen` has one initrd slot and no second one, which is why this rung is an `x86_64` claim |
 
 A stick boot used to write the installed disk (the live stick proposal's G2, measured 2026-10-04).
 With no virtio disk the kernel mounted the NVMe filesystem whatever the boot medium was, and RedoxFS
@@ -208,18 +206,18 @@ chooser started it from a slot. The kernel mounts the NVMe only when that token 
 stick, a `-kernel` boot and the device-tree architectures leave the internal disk alone. Boot 3 now
 finds the disk byte-identical.
 
-The sixth, the partition-bounded mount, is a `BUGS` entry in `system_installer` rather than a proposal,
-because what closes it is a wire value two programs agree on and that is an architect's to name
-rather than a lane's to propose.
+The sixth, the partition-bounded mount, is a `BUGS` entry in `system_installer` rather than a
+proposal, because what closes it is a wire value two programs agree on and that is an architect's to
+name rather than a lane's to propose.
 
 ## The install gate's BUGS, in full
 
 The `BUGS` in `xtask/src/install.rs` are one line each. Here is what stands behind them.
 
 - The disk is one 1 GiB image. The installer's layout arithmetic has a floor and a rounding step
-  that nothing varies, and a disk under about 600 MiB is refused by code no test exercises.
-- The gate takes about 42 seconds warm. It is still not in `script/test`'s default legs, and
-  nothing schedules it.
+  that nothing varies, and a disk under about 700 MiB is refused by code no test exercises.
+- The gate takes about 42 seconds warm. It is not in `script/test`'s default legs, and nothing
+  schedules it (milestone 712 (the install gates run nowhere)).
 - Boot 3 proves the stick left the disk alone under OVMF, and only there. What keeps it so is the
   `boot_slot::medium` token above. The loader writes it only when its file is on an NVMe namespace.
   A real firmware that built that device path differently would leave an installed machine without
