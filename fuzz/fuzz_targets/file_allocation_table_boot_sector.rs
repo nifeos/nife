@@ -158,7 +158,11 @@ fn partitions(bytes: &[u8], size: SectorSize) {
 
 /// Read the file `entry` names to its end, a sector or less at a time, holding the bytes returned
 /// to its size and a failed reader to its error.
-fn read_file(volume: &mut Volume<Image<'_>>, entry: &file_allocation_table::NamedEntry, budget: &mut u32) {
+fn read_file(
+    volume: &mut Volume<Image<'_>>,
+    entry: &file_allocation_table::NamedEntry,
+    budget: &mut u32,
+) {
     let Ok(mut file) = volume.open_file(entry) else {
         return;
     };
@@ -178,7 +182,10 @@ fn read_file(volume: &mut Volume<Image<'_>>, entry: &file_allocation_table::Name
             }
             Err(FileReadError::AfterAFailure) => panic!("a reader failed before it was used"),
             Err(_) => {
-                assert!(matches!(file.read(&mut buffer), Err(FileReadError::AfterAFailure)));
+                assert!(matches!(
+                    file.read(&mut buffer),
+                    Err(FileReadError::AfterAFailure)
+                ));
                 return;
             }
         }
