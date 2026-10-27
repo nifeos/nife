@@ -584,7 +584,6 @@ crates/clock_contract/src/lib.rs::MAGIC
 crates/clock_contract/src/lib.rs::NONE
 crates/clock_contract/src/lib.rs::NOT_AFTER_NS
 crates/clock_contract/src/lib.rs::NOT_BEFORE_NS
-crates/clock_contract/src/lib.rs::NS_PER_SECOND
 crates/clock_contract/src/lib.rs::OPERATION_SHIFT
 crates/clock_contract/src/lib.rs::PL031
 crates/clock_contract/src/lib.rs::PROPOSE
@@ -607,7 +606,6 @@ crates/clock_contract/src/lib.rs::operation
 crates/clock_contract/src/lib.rs::publish
 crates/clock_contract/src/lib.rs::read
 crates/clock_contract/src/lib.rs::req
-crates/clock_contract/src/lib.rs::wall_ns
 crates/compositor/src/lib.rs::ACKED
 crates/compositor/src/lib.rs::BYTES
 crates/compositor/src/lib.rs::CAPACITY

@@ -40,6 +40,8 @@ fn spin_hint() {
 }
 
 /// Nanoseconds in a second, the conversion every reader does exactly once.
+///
+/// Name: ratified 2026-10-27 (calef): the one definition the unit-symbol ruling of that date names.
 pub const NS_PER_SECOND: u64 = 1_000_000_000;
 
 /// Wall-clock nanoseconds, from the offset the clock page carries and the monotonic nanoseconds
@@ -47,6 +49,9 @@ pub const NS_PER_SECOND: u64 = 1_000_000_000;
 ///
 /// Saturating rather than wrapping: an implausible offset should read as an implausible time, not
 /// as a plausible one on the other side of the wrap.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane/unit-symbols-sweep-1: `wall_nanos` under the
+/// unit-symbol ruling of that date.
 ///
 /// # Examples
 ///
@@ -72,6 +77,21 @@ pub const NS_PER_SECOND: u64 = 1_000_000_000;
 /// ```
 pub const fn wall_ns(offset_ns: u64, monotonic_ns: u64) -> u64 {
     offset_ns.saturating_add(monotonic_ns)
+}
+
+/// The spelling of [`NS_PER_SECOND`] that `xtask`'s generated copy of this file hands the std
+/// overlay under `patches/std-nife`, which reads it by this name and which no sweep rewrites.
+///
+/// Name: provisional. Kept for that reader; the unit-symbol ruling of 2026-10-27 (UTC) spells the
+/// name `NS_PER_SECOND`, and the overlay moves with an architect's edit to `patches/`.
+pub const NANOS_PER_SEC: u64 = NS_PER_SECOND;
+
+/// The spelling of [`wall_ns`] that the std overlay under `patches/std-nife` reads; see
+/// [`NANOS_PER_SEC`].
+///
+/// Name: provisional. Kept for the overlay, as [`NANOS_PER_SEC`] is.
+pub const fn wall_nanos(offset_nanos: u64, monotonic_nanos: u64) -> u64 {
+    wall_ns(offset_nanos, monotonic_nanos)
 }
 
 /// The offset that makes `monotonic_ns` read as `wall_ns`: what the clock service writes
@@ -137,7 +157,7 @@ pub struct Reading {
     /// One of [`state`]'s values.
     pub state: u64,
     /// Wall-clock nanoseconds at monotonic zero. Meaningless unless [`state::is_known`].
-    pub offset_ns: u64,
+    pub offset_nanos: u64,
     /// How many times the page has been published to, which is `seq / 2`. A reader that cares
     /// whether the clock stepped under it (a log, a cache with an expiry) compares this across two
     /// readings instead of comparing timestamps and guessing.
@@ -209,7 +229,7 @@ impl ClockPage {
     pub fn read(&self) -> Reading {
         const UNKNOWN: Reading = Reading {
             state: state::UNKNOWN,
-            offset_ns: 0,
+            offset_nanos: 0,
             generation: 0,
         };
         if self.word(W_MAGIC).load(Ordering::Acquire) != MAGIC {
@@ -238,7 +258,7 @@ impl ClockPage {
             if self.word(W_SEQ).load(Ordering::Relaxed) == s1 {
                 return Reading {
                     state: st,
-                    offset_ns: off,
+                    offset_nanos: off,
                     generation: s1 / 2,
                 };
             }
@@ -581,6 +601,14 @@ mod tests {
         }
     }
 
+    /// The std overlay reads the older spellings; they must stay the same value and the same sum.
+    #[test]
+    fn the_overlay_spellings_agree_with_the_ruled_ones() {
+        assert_eq!(NANOS_PER_SEC, NS_PER_SECOND);
+        assert_eq!(wall_nanos(40, 2), wall_ns(40, 2));
+        assert_eq!(wall_nanos(u64::MAX, 1), u64::MAX);
+    }
+
     /// The asymmetry is a decision, not an accident, so it gets a test that fails if someone
     /// "tidies" the two constants into one.
     #[test]
@@ -621,7 +649,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::UNKNOWN,
-                    offset_ns: 0,
+                    offset_nanos: 0,
                     generation: 0,
                 }
             );
@@ -645,7 +673,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::RTC,
-                    offset_ns: 7,
+                    offset_nanos: 7,
                     generation: 1,
                 }
             );
@@ -684,7 +712,7 @@ mod tests {
                 page.read(),
                 Reading {
                     state: state::SYNCED,
-                    offset_ns: 11,
+                    offset_nanos: 11,
                     generation: 2,
                 }
             );
@@ -797,7 +825,7 @@ mod interleavings {
             };
 
             let r = page.read();
-            match (r.state, r.offset_ns) {
+            match (r.state, r.offset_nanos) {
                 (state::RTC, 1_000) => SAW_THE_OLD.mark(),
                 (state::SYNCED, 2_000) => SAW_THE_NEW.mark(),
                 other => panic!("a torn reading: {other:?} is neither publish"),
@@ -873,7 +901,7 @@ mod interleavings {
             );
             assert!(
                 matches!(
-                    (r.state, r.offset_ns),
+                    (r.state, r.offset_nanos),
                     (state::RTC, 1_000) | (state::SYNCED, 2_000)
                 ),
                 "the page holds a pair neither writer published: {r:?}"
@@ -907,7 +935,7 @@ mod interleavings {
             };
 
             let r = page.read();
-            match (r.state, r.offset_ns) {
+            match (r.state, r.offset_nanos) {
                 (state::UNKNOWN, 0) => SAW_UNRECOGNISED.mark(),
                 (state::RTC, 1_000) => SAW_INITIALISED.mark(),
                 other => panic!("a reader saw a recognised page with garbage in it: {other:?}"),

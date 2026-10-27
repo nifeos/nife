@@ -158,7 +158,7 @@ impl Wiring {
     pub fn wall_ns(&self) -> u64 {
         let r = self.page().read();
         if clock_contract::state::is_known(r.state) {
-            clock_contract::wall_ns(r.offset_ns, monotonic_ns())
+            clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
         } else {
             0
         }
