@@ -9,6 +9,11 @@
 //!
 //! Name: provisional, minted 2026-10-27 (UTC) by the lane for milestone 781.
 
+#[cfg(not(target_arch = "aarch64"))]
+compile_error!(
+    "the coverage feature writes through aarch64 semihosting; riscv64 and x86_64 follow"
+);
+
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use crate::arch::semihosting::HostFile;
