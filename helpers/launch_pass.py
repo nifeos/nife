@@ -337,7 +337,9 @@ class Opencode:
     """opencode headless: the event stream names the session; its exported record, the model.
 
     No `--dir` argument: opencode 2.x dropped it, and the clone is already the container's
-    working directory (`-w` in Box.argv), which is what both calls below rely on.
+    working directory (`-w` in Box.argv), which is what both calls below rely on. The model
+    read-back is `opencode session export <id>` (2.x moved it under `session`), whose assistant
+    messages carry `model` as `{providerID, id}`.
     """
     name = 'opencode'
     version_arg = 'OPENCODE_VERSION'
@@ -347,11 +349,15 @@ class Opencode:
 
     @staticmethod
     def models(session, box, log):
-        _, out = box.run(['opencode', 'export', session], log)
+        _, out = box.run(['opencode', 'session', 'export', session], log)
         start = out.find('{')
         record = json.loads(out[start:]) if start >= 0 else {}
-        return {'%s/%s' % (m['info'].get('providerID'), m['info'].get('modelID'))
-                for m in record.get('messages', []) if m.get('info', {}).get('role') == 'assistant'}
+        found = set()
+        for m in record.get('messages', []):
+            model = m.get('model') if m.get('type') == 'assistant' else None
+            if model and model.get('providerID') and model.get('id'):
+                found.add('%s/%s' % (model['providerID'], model['id']))
+        return found
 
     def probe(self, model, box, log):
         inner = ['opencode', 'run', '-m', model, '--format', 'json', PROBE]
@@ -496,9 +502,11 @@ with open(os.environ['FAKE_CALLS'], 'a') as calls:
 model = os.environ['FAKE_SERVED']
 if argv[:1] == ['--version']:
     print('1.0 (fake)')
-elif argv[:1] == ['export']:
-    print('Exporting session'); print(json.dumps({'messages': [{'info': {'role': 'assistant',
-        'providerID': model.split('/')[0], 'modelID': model.split('/')[-1]}}]}))
+elif argv[:2] == ['session', 'export']:
+    print('Exporting session'); print(json.dumps({'info': {'id': 's'}, 'messages': [
+        {'type': 'user', 'text': 'probe'},
+        {'type': 'assistant', 'agent': 'build', 'model': {'providerID': model.split('/')[0],
+                                                          'id': model.split('/')[-1]}}]}))
 elif argv[:1] == ['run']:
     print(json.dumps({'type': 'text', 'sessionID': 'ses_fake'}))
 else:
@@ -690,6 +698,9 @@ def selftest():
             assert status == 1 and record['status'].startswith('stopped'), record
             assert not any('### Your job' in ' '.join(c) for c in calls), 'the brief went out'
             assert not any('--resume' in c or '--session' in c for c in calls), calls
+        status, record, calls, _ = selftest_launch(tree, tmp, 'glm', 'zai-coding-plan/glm-5.3', commit)
+        assert status == 0 and record['status'] == 'reported' and record['model_reported'] == ['zai-coding-plan/glm-5.3']
+        assert record['key_variable'] == 'ZHIPU_API_KEY' and SECRET not in json.dumps(record)
         status, record, calls, path = selftest_launch(tree, tmp, 'fable', 'claude-fable-5-1', commit)
         assert status == 0 and record['status'] == 'reported' and record['model_reported'] == ['claude-fable-5-1']
         assert record['image_digest'] == 'sha256:fakeimage' and record['harness_version'] == '1.0'
