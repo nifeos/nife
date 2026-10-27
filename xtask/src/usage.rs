@@ -38,7 +38,9 @@ pub(crate) fn print_usage(other: &str) {
     eprintln!(
         "       cargo xtask test [--arch aarch64|riscv64|x86_64[,...]] [--no-host] [--cpu <qemu-cpu-model>] [--hvf] [--test <substring>]"
     );
-    eprintln!("       cargo xtask coverage   (the aarch64 kernel test image, instrumented; target/kernel-coverage)");
+    eprintln!(
+        "       cargo xtask coverage   (the aarch64 kernel test image, instrumented; target/kernel-coverage)"
+    );
     eprintln!("       cargo xtask icount [--arch aarch64|riscv64]");
     eprintln!(
         "       cargo xtask board-console [--port <dev>] [--replay <log>] [--log <file>] [--for <duration>] [--until spl|opensbi|uboot|handoff|banner|machine|selftest|tour|prompt|none] [--quiet-after <duration>] [--stop | --stop-after <n>]"

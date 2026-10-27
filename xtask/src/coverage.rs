@@ -63,13 +63,12 @@ pub(crate) fn coverage() -> bool {
         // Instrument the kernel and every crate it links. Set only now, after the userspace
         // archive is built: nothing built before this line is instrumented. The explicit
         // `--target` below keeps build scripts and proc macros uninstrumented.
-        std::env::set_var(
-            "RUSTFLAGS",
-            "-C instrument-coverage -Zno-profiler-runtime",
-        );
+        std::env::set_var("RUSTFLAGS", "-C instrument-coverage -Zno-profiler-runtime");
     }
 
-    eprintln!("--- kernel unit tests, aarch64, instrumented (QEMU, bounded to {BOUND_SECONDS} s) ---");
+    eprintln!(
+        "--- kernel unit tests, aarch64, instrumented (QEMU, bounded to {BOUND_SECONDS} s) ---"
+    );
     let out_arg = OUT;
     let Some(elf) = kernel_test_elf_with(
         "kernel",
@@ -162,7 +161,10 @@ fn export_lcov(llvm_cov: &str, ignore: &str, merged: &Path, elf: &Path, lcov: &P
     match exported {
         Ok(o) if o.status.success() => std::fs::write(lcov, o.stdout).is_ok(),
         Ok(o) => {
-            eprintln!("coverage: llvm-cov export failed: {}", String::from_utf8_lossy(&o.stderr));
+            eprintln!(
+                "coverage: llvm-cov export failed: {}",
+                String::from_utf8_lossy(&o.stderr)
+            );
             false
         }
         Err(e) => {

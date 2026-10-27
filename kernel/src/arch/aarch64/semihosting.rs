@@ -83,7 +83,11 @@ impl HostFile {
     /// counted in the length the host is given. `None` when the host refuses.
     pub(crate) fn create(path: &'static str) -> Option<Self> {
         assert!(path.ends_with('\0'), "a semihosting path ends in NUL");
-        let block = [path.as_ptr() as u64, OPEN_WRITE_BINARY, (path.len() - 1) as u64];
+        let block = [
+            path.as_ptr() as u64,
+            OPEN_WRITE_BINARY,
+            (path.len() - 1) as u64,
+        ];
         let handle = call(SYS_OPEN, block.as_ptr() as u64);
         // The host returns -1 for a file it could not open.
         (handle as i64 != -1).then_some(Self(handle))
