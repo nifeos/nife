@@ -10,7 +10,7 @@
 //!   spin-table core, more cores than the ceiling, and PSCI 0.1 with its own function id.
 
 use machine_discovery::aarch64::{Conduit, PSCI_CPU_ON_64, Psci};
-use machine_discovery::cpu_list::{CpuList, EnableMethod, MAX_CPU_NODES};
+use machine_discovery::cpu_list::{CpuList, EnableMethod, MAXIMUM_CPU_NODES};
 
 /// The machine `script/test` boots on aarch64, at the `-smp 4` the runner passes.
 const QEMU_VIRT_SMP4: &[u8] =
@@ -180,9 +180,9 @@ fn a_disabled_cpu_and_a_spin_table_cpu_are_reported_as_such() {
 
 /// **A machine with more cores than fit is reported as truncated, not as smaller.**
 ///
-/// `described` keeps counting past `MAX_CPU_NODES`, so a caller can print "this machine has more
-/// cores than this kernel was built for" instead of quietly reading a prefix and calling it the
-/// machine. Seven cores is not enough to overflow sixteen slots, so the equality below is the
+/// `described` keeps counting past `MAXIMUM_CPU_NODES`, so a caller can print "this machine has
+/// more cores than this kernel was built for" instead of quietly reading a prefix and calling it
+/// the machine. Seven cores is not enough to overflow sixteen slots, so the equality below is the
 /// honest state of the fixture and the inequality is what a bigger machine would hit.
 #[test]
 fn the_described_count_is_the_machines_and_the_length_is_ours() {
@@ -192,7 +192,7 @@ fn the_described_count_is_the_machines_and_the_length_is_ours() {
     assert_eq!(list.len, 7);
     assert!(!list.is_truncated());
     assert!(
-        list.described <= MAX_CPU_NODES,
+        list.described <= MAXIMUM_CPU_NODES,
         "widen the array if this trips"
     );
 }
@@ -237,7 +237,7 @@ fn a_machine_with_more_cpus_than_fit_says_so() {
     let list = cpus(MANY_HARTS);
 
     assert_eq!(list.described, 18, "the tree describes eighteen");
-    assert_eq!(list.len, MAX_CPU_NODES, "the record holds sixteen");
+    assert_eq!(list.len, MAXIMUM_CPU_NODES, "the record holds sixteen");
     assert!(
         list.is_truncated(),
         "and a caller has to be able to see that"

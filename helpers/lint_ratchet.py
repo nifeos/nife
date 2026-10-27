@@ -433,19 +433,19 @@ def run_check(directory):
     return 0
 
 
-def bank(init=False):
-    if init and os.path.exists(BASELINE):
+def bank(initialize=False):
+    if initialize and os.path.exists(BASELINE):
         print(f'lint ratchet: {BASELINE} already exists; --init wrote it once, in milestone 888, '
               f'and --bank is the verb that never raises', file=sys.stderr)
         return 2
-    if not init and not os.path.exists(BASELINE):
+    if not initialize and not os.path.exists(BASELINE):
         print(f'lint ratchet: {BASELINE} does not exist; there is nothing to bank',
               file=sys.stderr)
         return 2
     # Banking reads the text measure only, so it runs without cargo. A count lint's rows need
     # clippy's hits and are left as they stand until such a lint is registered.
     values = measured(fl.measure(fl.working_tree()))
-    if init:
+    if initialize:
         rows = values
     else:
         old = read_baseline(open(BASELINE).read())
@@ -601,8 +601,11 @@ def main(argv):
         return 0
     if argv[:1] == ['--check'] and len(argv) == 2:
         return run_check(argv[1])
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
     if argv[:1] in (['--bank'], ['--init']):
-        return bank(init=argv[0] == '--init')
+        return bank(initialize=argv[0] == '--init')
     print(__doc__.split('\n\n')[2], file=sys.stderr)
     return 2
 

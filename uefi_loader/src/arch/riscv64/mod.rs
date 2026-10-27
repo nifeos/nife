@@ -119,7 +119,7 @@ fn boot_hart_from_device_tree(device_tree: *const u8) -> Option<u64> {
     let total = u32::from_be_bytes([header[4], header[5], header[6], header[7]]) as usize;
     // The same ceiling `DeviceTreeBlob::from_ptr` applies, for the same reason: the header's
     // length is believed before anything is checked, and a lying one must not become a slice.
-    if total > device_tree_blob::MAX_TOTALSIZE {
+    if total > device_tree_blob::MAXIMUM_TOTALSIZE {
         return None;
     }
     // SAFETY: as above, and `total` is now bounded.
@@ -146,11 +146,11 @@ pub fn hand_over(
     kernel: &Placed,
     module: Option<(u64, u64)>,
     // **Always `None` here**, and that is a recorded gap rather than an unused parameter.
-    // `main.rs`'s `place_boot_file` reads this loader's own file so the running system can install
-    // itself, and hands it over as a second PVH module. A device-tree handoff has `/chosen` with
-    // one initial ramdisk and no second slot, so there is nowhere to put it; see that function's
-    // BUGS and milestone 198 (a package manager, and the trivial install that makes a second
-    // customer possible)'s rung 2a, which is an x86_64 claim for this reason.
+    // `placement.rs`'s `place_boot_file` reads this loader's own file so the running system can
+    // install itself, and hands it over as a second PVH module. A device-tree handoff has `/chosen`
+    // with one initial ramdisk and no second slot, so there is nowhere to put it; see that
+    // function's BUGS and milestone 198 (a package manager, and the trivial install that makes a
+    // second customer possible)'s rung 2a, which is an x86_64 claim for this reason.
     _boot_file: Option<(u64, u64)>,
     // **Always `None` here**, and that is a scope note (DECISIONS
     // §19 (architectural parity is a tenet; the targets are aarch64, riscv64, and x86_64)) rather than an unused parameter. The chooser that would set it is

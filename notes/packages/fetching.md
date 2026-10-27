@@ -68,11 +68,11 @@ stack it built, and hands `jig` the same endpoint on all three. Until then the x
 leaves `greeting` running.
 
 The kernel drives an `e1000e` at boot only when the part is one a gate has driven and its link is
-up, and says which refusal it took. xenon's I219 is neither yet: its bring-up runs FreeBSD's
-MAC-register steps, which nothing here has executed, so its booted system has no network until
-milestone 494's bench boot proves the part. A link with no DHCP server behind it still holds the
-prompt back, as on the virtio path (milestone 590 (the booted system starts its network stack)'s
-`BUGS`).
+up, and says which refusal it took. xenon's I219 is neither yet. Its bring-up runs FreeBSD's I219
+passes (`crates/e1000e/src/pch/sequence.rs`), which have run on silicon once, with no cable. So its
+booted system has no network until milestone 494's bench boot proves the part. A link with no DHCP
+server behind it still holds the prompt back, as on the virtio path (milestone 590 (the booted
+system starts its network stack)'s `BUGS`).
 
 ## The HTTP client's rules
 
@@ -82,9 +82,9 @@ HTTPS for the internet rung, and under §195 (a reviewed recipe vouches for a pa
 digest, not its transport, decides whether its bytes may run.
 
 The reader is incremental and holds only the head. A response arrives one socket read at a time,
-at most `socket_contract::DATA_MAX` bytes each, and the body is a package that may be a megabyte.
-That is the borrowing shape `package_archive` uses, for the same reason: the first consumer has no
-allocator.
+at most `socket_contract::DATA_MAXIMUM` bytes each, and the body is a package that may be a
+megabyte. That is the borrowing shape `package_archive` uses, for the same reason: the first
+consumer has no allocator.
 
 `httparse`, the parser under `hyper`, parses the head. It is `no_std`, has no dependencies and
 no allocator, and is fuzzed upstream (OSS-Fuzz). Its `Partial` status tells the reader the head has
@@ -109,8 +109,8 @@ The limits it carries, in full:
   design/decisions/0046-dependency-rule.md takes the parser rather than proving one, and the harness
   the hand-written parser had never finished in a CI shard's minutes.
 - `httparse` parses into a caller-supplied array and this crate has no allocator, so a head with
-  more than `MAX_HEADERS` lines is refused even under the byte cap. The array lives on the stack for
-  one parse (4 KiB).
+  more than `MAXIMUM_HEADERS` lines is refused even under the byte cap. The array lives on the stack
+  for one parse (4 KiB).
 - `httparse` does not resume, so the head is parsed again on every read until it ends. That is
   bounded by the head cap, quadratic in it for a peer that sends one byte per read, and not measured.
 - Header values other than the two it reads are skipped, so a malformed `Date` costs nothing; a

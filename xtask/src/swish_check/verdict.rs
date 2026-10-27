@@ -76,7 +76,7 @@ pub(super) const LEG_COST_FACTOR: f64 = 5.0;
 /// A boot that typed fewer lines than this reports its median and is not judged: the second boot's
 /// eight lines are mostly a fixed cost of reaching a prompt, and eight samples is one slow line from
 /// any median at all.
-const LEG_COST_MIN_LINES: usize = 20;
+const LEG_COST_MINIMUM_LINES: usize = 20;
 
 /// The leg's median seconds a line, its baseline row if it has one, and whether it is over.
 #[derive(Debug, PartialEq)]
@@ -100,8 +100,8 @@ pub(super) fn leg_cost_verdict(arch: &str, accel: &str, secs: &[f64]) -> LegCost
         .iter()
         .find(|(a, x, _)| *a == arch && *x == accel)
         .map(|(_, _, s)| *s);
-    let over =
-        secs.len() >= LEG_COST_MIN_LINES && baseline.is_some_and(|b| median > b * LEG_COST_FACTOR);
+    let over = secs.len() >= LEG_COST_MINIMUM_LINES
+        && baseline.is_some_and(|b| median > b * LEG_COST_FACTOR);
     LegCost {
         median,
         baseline,

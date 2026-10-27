@@ -31,7 +31,7 @@ pub fn initialize() {
 
     // Install the empty tables first, then insert the boot thread into them: built as a local and
     // moved in, an unoptimised build carries the thread table twice on the boot stack, which caps
-    // [`MAX_THREADS`]. Assigning the `const` [`EMPTY_TABLES`] copies from `.rodata`.
+    // [`MAXIMUM_THREADS`]. Assigning the `const` [`EMPTY_TABLES`] copies from `.rodata`.
     *sched = Some(EMPTY_TABLES);
     let tables = sched
         .as_mut()

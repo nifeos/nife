@@ -4,7 +4,7 @@
 # it lives in `crates/` beside the other host tools (`serial_console`) rather than in `components/`.
 #
 # **No external dependencies**, deliberately (DECISIONS §46). Finding a stick is `diskutil` on macOS,
-# sysfs on Linux and four `kernel32` calls on Windows; erasing is each host's own tool. A USB or FAT
+# sysfs on Linux and five `kernel32` calls on Windows; erasing is each host's own tool. A USB or FAT
 # crate would have been a dependency decision this lane has no authority to take, and none was
 # needed. `measured_boot` is ours: it is the tree's one SHA-256, used for the digests in the note
 # the program leaves on the stick.

@@ -24,8 +24,10 @@ pub(crate) fn store_file(id: u32) -> Result<([u8; 8], usize)> {
 /// attributes" is exactly the false negative that made milestone 37's harness report filesystems
 /// that never existed (notes/fs-server.md). Here it would silently hand a client an empty attribute
 /// set for a file that has some.
-pub(crate) fn find_store<D: Disk>(tx: &mut Transaction<D>) -> Result<Option<TreePtr<Node>>> {
-    match tx.find_node(TreePtr::root(), xattr::STORE_DIR) {
+pub(crate) fn find_store<D: Disk>(
+    transaction: &mut Transaction<D>,
+) -> Result<Option<TreePtr<Node>>> {
+    match transaction.find_node(TreePtr::root(), xattr::STORE_DIR) {
         Ok(node) => Ok(Some(node.ptr())),
         Err(e) if e.errno == ENOENT => Ok(None),
         Err(e) => Err(e),
@@ -34,24 +36,27 @@ pub(crate) fn find_store<D: Disk>(tx: &mut Transaction<D>) -> Result<Option<Tree
 
 /// One node's attribute blob, or empty if it has none. Never partial: a blob longer than the layer
 /// can hold is `EIO`, because the alternative is reading whatever is in the first
-/// [`xattr::store::MAX_BYTES`] of a file this layer did not write.
-pub(crate) fn read_attrs<D: Disk>(tx: &mut Transaction<D>, node_id: u32) -> Result<Vec<u8>> {
-    let Some(dir_ptr) = find_store(tx)? else {
+/// [`xattr::store::MAXIMUM_BYTES`] of a file this layer did not write.
+pub(crate) fn read_attrs<D: Disk>(
+    transaction: &mut Transaction<D>,
+    node_id: u32,
+) -> Result<Vec<u8>> {
+    let Some(dir_ptr) = find_store(transaction)? else {
         return Ok(Vec::new());
     };
     let (bytes, n) = store_file(node_id)?;
     let name = core::str::from_utf8(&bytes[..n]).map_err(|_| Error::new(EIO))?;
-    let node = match tx.find_node(dir_ptr, name) {
+    let node = match transaction.find_node(dir_ptr, name) {
         Ok(node) => node,
         Err(e) if e.errno == ENOENT => return Ok(Vec::new()),
         Err(e) => return Err(e),
     };
     let size = node.data().size() as usize;
-    if size > xattr::store::MAX_BYTES {
+    if size > xattr::store::MAXIMUM_BYTES {
         return Err(Error::new(EIO));
     }
     let mut blob = alloc::vec![0u8; size];
-    let read = tx.read_node(node.ptr(), 0, &mut blob, 0, 0)?;
+    let read = transaction.read_node(node.ptr(), 0, &mut blob, 0, 0)?;
     blob.truncate(read);
     Ok(blob)
 }
@@ -60,21 +65,21 @@ pub(crate) fn read_attrs<D: Disk>(tx: &mut Transaction<D>, node_id: u32) -> Resu
 /// zero-length one behind, so "no file" and "no attributes" stay the same statement and the store
 /// does not accumulate an entry per node that ever held an attribute.
 pub(crate) fn write_attrs<D: Disk>(
-    tx: &mut Transaction<D>,
+    transaction: &mut Transaction<D>,
     node_id: u32,
     blob: &[u8],
     now: u64,
 ) -> Result<()> {
     if blob.is_empty() {
-        return purge_attrs(tx, node_id);
+        return purge_attrs(transaction, node_id);
     }
     let (bytes, n) = store_file(node_id)?;
     let name = core::str::from_utf8(&bytes[..n]).map_err(|_| Error::new(EIO))?;
-    let dir_ptr = match find_store(tx)? {
+    let dir_ptr = match find_store(transaction)? {
         Some(ptr) => ptr,
         // 0o700 rather than 0o755: the mode is decoration here (this contract has no uid to check
         // it against), and the narrower one is what a recovery tool's listing should suggest.
-        None => tx
+        None => transaction
             .create_node(
                 TreePtr::root(),
                 xattr::STORE_DIR,
@@ -84,18 +89,18 @@ pub(crate) fn write_attrs<D: Disk>(
             )?
             .ptr(),
     };
-    let ptr = match tx.find_node(dir_ptr, name) {
+    let ptr = match transaction.find_node(dir_ptr, name) {
         Ok(node) => node.ptr(),
-        Err(e) if e.errno == ENOENT => tx
+        Err(e) if e.errno == ENOENT => transaction
             .create_node(dir_ptr, name, Node::MODE_FILE | 0o600, now, 0)?
             .ptr(),
         Err(e) => return Err(e),
     };
-    tx.write_node(ptr, 0, blob, now, 0)?;
+    transaction.write_node(ptr, 0, blob, now, 0)?;
     // Then shrink to exactly the new length: a write does not truncate, and a shorter blob would
     // leave the old tail for the reader to walk (DECISIONS §27 (the filesystem service: a
     // capability-shaped contract)'s failure).
-    tx.truncate_node(ptr, blob.len() as u64, now, 0)?;
+    transaction.truncate_node(ptr, blob.len() as u64, now, 0)?;
     Ok(())
 }
 
@@ -104,16 +109,16 @@ pub(crate) fn write_attrs<D: Disk>(
 /// freed node id cannot hand its attributes to the next node issued that id.
 ///
 /// A node with no store file is not an error: most nodes have no attributes.
-pub(crate) fn purge_attrs<D: Disk>(tx: &mut Transaction<D>, node_id: u32) -> Result<()> {
-    let Some(dir_ptr) = find_store(tx)? else {
+pub(crate) fn purge_attrs<D: Disk>(transaction: &mut Transaction<D>, node_id: u32) -> Result<()> {
+    let Some(dir_ptr) = find_store(transaction)? else {
         return Ok(());
     };
     let (bytes, n) = store_file(node_id)?;
     let name = core::str::from_utf8(&bytes[..n]).map_err(|_| Error::new(EIO))?;
-    match tx.remove_node(dir_ptr, name, Node::MODE_FILE) {
+    match transaction.remove_node(dir_ptr, name, Node::MODE_FILE) {
         // Only when a blob really went, so the cost falls on attribute removals rather than on
         // every unlink on the filesystem.
-        Ok(_) => drop_store_if_empty(tx),
+        Ok(_) => drop_store_if_empty(transaction),
         Err(e) if e.errno == ENOENT => Ok(()),
         Err(e) => Err(e),
     }
@@ -126,8 +131,8 @@ pub(crate) fn purge_attrs<D: Disk>(tx: &mut Transaction<D>, node_id: u32) -> Res
 /// check is the emptiness test and costs one lookup. `ENOENT` is tolerated too; every other error is
 /// propagated, because a store that failed to be removed is not a store known to be gone. See
 /// notes/fs-server/the-core.md.
-pub(crate) fn drop_store_if_empty<D: Disk>(tx: &mut Transaction<D>) -> Result<()> {
-    match tx.remove_node(TreePtr::root(), xattr::STORE_DIR, Node::MODE_DIR) {
+pub(crate) fn drop_store_if_empty<D: Disk>(transaction: &mut Transaction<D>) -> Result<()> {
+    match transaction.remove_node(TreePtr::root(), xattr::STORE_DIR, Node::MODE_DIR) {
         Ok(_) => Ok(()),
         Err(e) if e.errno == ENOTEMPTY || e.errno == ENOENT => Ok(()),
         Err(e) => Err(e),

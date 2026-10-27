@@ -25,7 +25,7 @@ the counters that watch them begin here too.
 
 Initialization installs the tables empty first and then inserts the boot thread into them. Built as
 a local and moved into the `Option`, the thread table sits twice on the boot stack in an unoptimised
-build. Each slot added to `MAX_THREADS` then cost about 80 bytes of boot stack, not 40. Measured
+build. Each slot added to `MAXIMUM_THREADS` then cost about 80 bytes of boot stack, not 40. Measured
 2026-08-27 (UTC): at 128 slots, `init`'s frame was 43,952 bytes, the deepest in the kernel. The
 suite's boot-stack high-water stood at 54,336 of 65,504 bytes (82%). A probe raise to 256 slots took
 it to 64,640 (98%) and failed `stack::report_high_water`'s gate. Assigning `EMPTY_TABLES`, a
@@ -68,7 +68,7 @@ paths are identical from its first line. Its rules, in the order the code meets 
 1. **Not on an interrupt stack.** A switch parks the running `sp` in the outgoing thread's
    `Context` and resumes it there later. A per-core interrupt stack cannot promise those bytes stay
    the thread's. The interrupt path defers its switch to `preempt_if_needed`, one frame outside the
-   trampoline. The runtime check is a `debug_assert!`, since it scans `MAX_CPUS` spans on the
+   trampoline. The runtime check is a `debug_assert!`, since it scans `MAXIMUM_CPUS` spans on the
    hottest path. `script/stack-depth-check` proves the same property statically in CI. The
    assertion covers the edges a call graph cannot see.
 2. **Interrupts masked across the decision and the switch.** Otherwise the timer could choose again

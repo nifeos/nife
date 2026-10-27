@@ -20,7 +20,7 @@ use super::mmu::phys_to_virt;
 /// a real machine with an assortment of firmware reservations produces a couple of dozen. The cap
 /// exists because this walks a structure a loader wrote, and a corrupt entry count must bound the
 /// loop rather than hang the boot before the console has said anything useful.
-const MAX_ENTRIES: usize = 64;
+const MAXIMUM_ENTRIES: usize = 64;
 
 /// Read the `hvm_start_info` at physical address `at`.
 ///
@@ -43,8 +43,8 @@ pub(crate) fn boot_info(at: usize) -> Option<BootInfo> {
 ///
 /// A NUL-terminated string at a physical address a previous stage chose, so the terminator is a
 /// claim rather than a guarantee, and the loop below has to stop somewhere whether or not it finds
-/// one. `Framebuffer::MAX_LEN` is the only thing written there today and is well under this.
-const MAX_CMDLINE: usize = 256;
+/// one. `Framebuffer::MAXIMUM_LEN` is the only thing written there today and is well under this.
+const MAXIMUM_CMDLINE: usize = 256;
 
 /// The boot command line the loader wrote, or `None` when this boot chain did not write one.
 ///
@@ -58,12 +58,15 @@ fn cmdline(info: &BootInfo) -> Option<&'static str> {
     }
     // SAFETY: a physical address the loader wrote into its own handoff, reached through the direct
     // map the boot page tables installed over the low 4 GiB. The length is capped rather than
-    // trusted, so an unterminated string reads `MAX_CMDLINE` bytes of the loader's own page and
+    // trusted, so an unterminated string reads `MAXIMUM_CMDLINE` bytes of the loader's own page and
     // stops; the bytes are only ever compared against ASCII.
     let bytes = unsafe {
-        core::slice::from_raw_parts(phys_to_virt(info.cmdline) as *const u8, MAX_CMDLINE)
+        core::slice::from_raw_parts(phys_to_virt(info.cmdline) as *const u8, MAXIMUM_CMDLINE)
     };
-    let len = bytes.iter().position(|b| *b == 0).unwrap_or(MAX_CMDLINE);
+    let len = bytes
+        .iter()
+        .position(|b| *b == 0)
+        .unwrap_or(MAXIMUM_CMDLINE);
     core::str::from_utf8(&bytes[..len]).ok()
 }
 
@@ -131,8 +134,8 @@ pub(crate) fn memory_map_entry(info: &BootInfo, index: usize) -> Option<MemoryEn
 ///
 /// QEMU's PVH loader turns `-initrd FILE` into an entry in the module list `hvm_start_info` points
 /// at, and `uefi_loader` writes the same. Module 0 is the archive and module 1 the boot file
-/// ([`boot_file`]), an order both ends state (`uefi_loader/src/arch/x86_64/mod.rs`'s `hand_over`).
-/// A third module is ignored.
+/// ([`boot_file`]), an order both ends state (`uefi_loader/src/arch/x86_64/mod.rs`'s
+/// `write_start_info`). A third module is ignored.
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `initrd` (the foreign spelling, which stops at the boundary
@@ -177,7 +180,7 @@ pub(crate) fn print_memory_map(info: &BootInfo) {
         );
         return;
     }
-    let shown = (info.memmap_entries as usize).min(MAX_ENTRIES);
+    let shown = (info.memmap_entries as usize).min(MAXIMUM_ENTRIES);
     let mut usable = 0u64;
     crate::println!(
         "  memory      : {} regions from the PVH handoff, rsdp {:#x}",
@@ -232,17 +235,17 @@ const EBDA_SEGMENT_PTR: u64 = 0x0000_040e;
 
 /// The most root-table entries the walk will follow. A machine has a dozen or two tables; the cap
 /// exists because the count comes from a length field firmware wrote.
-const MAX_TABLES: usize = 64;
+const MAXIMUM_TABLES: usize = 64;
 
 /// The most MADT entries the walk will report, for the same reason.
-const MAX_MADT_ENTRIES: usize = 256;
+const MAXIMUM_MADT_ENTRIES: usize = 256;
 
 /// The most `LocalApic` entries [`Acpi::cpus`] records (milestone 161's SMP item). Bounded well
-/// past `cpu::MAX_CPUS` on purpose: a MADT can list more processor entries than this kernel can
+/// past `cpu::MAXIMUM_CPUS` on purpose: a MADT can list more processor entries than this kernel can
 /// seat (disabled sockets, a bigger machine than this build is sized for), and `smp::
 /// seat_cpus_from_acpi` needs the true count to report "N described, only M startable" honestly,
 /// the same distinction `read_cpu_list` draws on the device-tree architectures.
-const MAX_ACPI_CPUS: usize = 32;
+const MAXIMUM_ACPI_CPUS: usize = 32;
 
 /// What the tables said, kept so the APIC and PCI bring-up can read it rather than re-walking.
 ///
@@ -269,9 +272,9 @@ pub(crate) struct Acpi {
     /// **Every `LocalApic` entry the MADT listed**: `(local_apic_id, enabled)`, in the table's own
     /// order, past `cpu_count`. Fed to `smp::seat_cpus_from_acpi` (milestone 161's SMP item), the
     /// ACPI analog of `read_cpu_list`'s device-tree walk.
-    pub cpus: [(u8, bool); MAX_ACPI_CPUS],
-    /// How many entries of [`Acpi::cpus`] are real. May exceed `MAX_ACPI_CPUS` conceptually (the
-    /// table can list more than that), in which case this saturates at `MAX_ACPI_CPUS` and
+    pub cpus: [(u8, bool); MAXIMUM_ACPI_CPUS],
+    /// How many entries of [`Acpi::cpus`] are real. May exceed `MAXIMUM_ACPI_CPUS` conceptually
+    /// (the table can list more than that), in which case this saturates at `MAXIMUM_ACPI_CPUS` and
     /// `enabled_cpus`/`disabled_cpus` above are still the true totals.
     pub cpu_count: usize,
     /// True when the machine also has 8259 PICs, which must be masked before the APICs are used.
@@ -301,7 +304,7 @@ impl Default for Acpi {
             isa_irqs: core::array::from_fn(|irq| IsaIrqRouting::isa_default(irq as u8)),
             enabled_cpus: 0,
             disabled_cpus: 0,
-            cpus: [(0, false); MAX_ACPI_CPUS],
+            cpus: [(0, false); MAXIMUM_ACPI_CPUS],
             cpu_count: 0,
             has_8259: false,
             ecam: None,
@@ -440,7 +443,7 @@ pub(crate) fn read_acpi(hint: u64) -> Acpi {
         crate::println!("                root table unreadable or failed its checksum");
         return found;
     };
-    let count = root_entry_count(root_header.length, wide).min(MAX_TABLES);
+    let count = root_entry_count(root_header.length, wide).min(MAXIMUM_TABLES);
 
     for i in 0..count {
         let Some(pa) = root_entry(root_body, i, wide) else {
@@ -482,7 +485,7 @@ fn read_madt(body: &[u8], into: &mut Acpi) {
     // _gsi_2` test for the case this whole table exists for.
     into.isa_irqs = isa_irq_table(body);
 
-    for entry in madt_entries(body).take(MAX_MADT_ENTRIES) {
+    for entry in madt_entries(body).take(MAXIMUM_MADT_ENTRIES) {
         match entry {
             MadtEntry::LocalApic {
                 apic_id, enabled, ..
@@ -492,7 +495,7 @@ fn read_madt(body: &[u8], into: &mut Acpi) {
                 } else {
                     into.disabled_cpus += 1;
                 }
-                if into.cpu_count < MAX_ACPI_CPUS {
+                if into.cpu_count < MAXIMUM_ACPI_CPUS {
                     into.cpus[into.cpu_count] = (apic_id, enabled);
                     into.cpu_count += 1;
                 }
@@ -757,7 +760,7 @@ fn print_isa_overrides(found: &Acpi) {
 
 /// The most RAM regions handed to the allocator. `memory::bring_up_page_frames` indexes a fixed map of
 /// this size, so more than this cannot be described; q35 produces three.
-const MAX_RAM_REGIONS: usize = 16;
+const MAXIMUM_RAM_REGIONS: usize = 16;
 
 /// **The whole first megabyte is never allocatable**, and this is the one x86 reservation with no
 /// counterpart on the other two architectures.
@@ -775,14 +778,14 @@ const LOW_MEGABYTE: u64 = 0x0010_0000;
 /// into the two slices `memory::bring_up_page_frames` takes, and nothing else.
 ///
 /// Returns how many RAM regions were used, which the boot print reports; a machine describing more
-/// than [`MAX_RAM_REGIONS`] gets the first that many, and saying how many were taken is what makes
-/// that visible rather than silent.
+/// than [`MAXIMUM_RAM_REGIONS`] gets the first that many, and saying how many were taken is what
+/// makes that visible rather than silent.
 pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
-    let mut ram = [device_tree_blob::Region { start: 0, size: 0 }; MAX_RAM_REGIONS];
+    let mut ram = [device_tree_blob::Region { start: 0, size: 0 }; MAXIMUM_RAM_REGIONS];
     let mut count = 0;
 
     for i in 0..info.memmap_entries as usize {
-        if count == MAX_RAM_REGIONS {
+        if count == MAXIMUM_RAM_REGIONS {
             break;
         }
         let Some(e) = memory_map_entry(info, i) else {

@@ -23,12 +23,15 @@
 
 #![cfg_attr(not(test), no_std)]
 
-/// The widest domain a survey can produce: the kernel's entire thread table (`MAX_THREADS` in
+/// The widest domain a survey can produce: the kernel's entire thread table (`MAXIMUM_THREADS` in
 /// `kernel/src/sched.rs`). **A buffer this size makes truncation unreachable rather than handled**,
 /// and a compile-time assertion in `kernel::user::survey_tests` keeps the two in step. The buffer
 /// is a stack allocation in `ps` and `pgrep`; notes/process-view/the-ps-crate.md has its measured
 /// cost against the child stack.
-pub const MAX_ROWS: usize = 256;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ROWS`.
+pub const MAXIMUM_ROWS: usize = 256;
 
 /// One line of the listing: a thread and what it is doing.
 ///
@@ -67,7 +70,8 @@ pub struct Survey<'a> {
     /// a total function and could not be fuzzed or property-tested.
     stalled: bool,
     /// The buffer filled and the domain had more in it. Unreachable for a caller that sized its
-    /// buffer at [`MAX_ROWS`], which `ps` does; reported rather than silent for one that did not.
+    /// buffer at [`MAXIMUM_ROWS`], which `ps` does; reported rather than silent for one that did
+    /// not.
     truncated: bool,
 }
 
@@ -84,14 +88,14 @@ pub struct Survey<'a> {
 /// Driving it from a host test is the whole contract, and it needs no kernel:
 ///
 /// ```
-/// use ps::{MAX_ROWS, Row, collect};
+/// use ps::{MAXIMUM_ROWS, Row, collect};
 ///
 /// // A domain of one running thread: cursor 0 yields it, cursor 1 says done.
 /// let mut reader = |cursor: u64| match cursor {
 ///     0 => (1, 7, abi::survey::RUNNING),
 ///     _ => (abi::survey::DONE as i64, 0, 0),
 /// };
-/// let mut rows = [Row::default(); MAX_ROWS];
+/// let mut rows = [Row::default(); MAXIMUM_ROWS];
 /// let survey = collect(&mut rows, &mut reader);
 /// assert_eq!(survey.rows().len(), 1);
 /// assert_eq!(survey.rows()[0].tid, 7);
@@ -403,7 +407,7 @@ mod tests {
 
     #[test]
     fn a_domain_walks_to_its_end() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(
             &mut rows,
             &mut domain(&[
@@ -429,9 +433,9 @@ mod tests {
     /// not look reads exactly like a quiet machine.
     #[test]
     fn an_empty_domain_and_a_refusal_are_different_answers() {
-        let mut rows_a = [Row::default(); MAX_ROWS];
+        let mut rows_a = [Row::default(); MAXIMUM_ROWS];
         let empty = collect(&mut rows_a, &mut domain(&[]));
-        let mut rows_b = [Row::default(); MAX_ROWS];
+        let mut rows_b = [Row::default(); MAXIMUM_ROWS];
         let refused = collect(&mut rows_b, &mut |_| {
             (abi::Error::NotPermitted as i64, 0, 0)
         });
@@ -456,7 +460,7 @@ mod tests {
     #[test]
     fn a_refusal_halfway_through_discards_the_partial_table() {
         let mut calls = 0;
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(&mut rows, &mut |cursor| {
             calls += 1;
             match cursor {
@@ -483,7 +487,7 @@ mod tests {
     /// arbitrary closure, which is what every test above does.
     #[test]
     fn a_cursor_that_does_not_advance_ends_the_walk() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(&mut rows, &mut |_| (1, 4, abi::survey::READY));
         assert!(s.is_refused());
         assert!(shown(|o| s.write_diagnostics(o)).contains("did not advance"));
@@ -491,8 +495,9 @@ mod tests {
 
     /// **A short buffer is not a short listing, it is a stated one.** The whole design refuses to
     /// let a monitor report less than it saw without saying so, and running out of room is one more
-    /// way that could happen. `ps` cannot reach this, because it sizes its buffer at [`MAX_ROWS`];
-    /// a future caller with a smaller one gets told rather than getting a plausible table.
+    /// way that could happen. `ps` cannot reach this, because it sizes its buffer at
+    /// [`MAXIMUM_ROWS`]; a future caller with a smaller one gets told rather than getting a
+    /// plausible table.
     #[test]
     fn a_buffer_too_small_for_the_domain_says_so_and_prints_nothing() {
         let mut rows = [Row::default(); 2];
@@ -517,21 +522,21 @@ mod tests {
     /// truncation case.
     #[test]
     fn the_widest_possible_domain_fits() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(&mut rows, &mut |cursor| {
-            if (cursor as usize) < MAX_ROWS {
+            if (cursor as usize) < MAXIMUM_ROWS {
                 (cursor as i64 + 1, cursor + 100, abi::survey::READY)
             } else {
                 (abi::survey::DONE as i64, 0, 0)
             }
         });
         assert!(!s.is_refused());
-        assert_eq!(s.rows().len(), MAX_ROWS);
+        assert_eq!(s.rows().len(), MAXIMUM_ROWS);
     }
 
     #[test]
     fn the_table_has_a_header_and_one_line_per_thread() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(
             &mut rows,
             &mut domain(&[(3, abi::survey::RUNNING), (5, abi::survey::DEAD)]),
@@ -550,7 +555,7 @@ mod tests {
     /// `REAP` accepts, so a truncated one would be a name that no longer works.
     #[test]
     fn a_wide_thread_id_keeps_every_digit() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(
             &mut rows,
             &mut domain(&[((1u64 << 32) | 6, abi::survey::DEAD)]),
@@ -616,7 +621,7 @@ mod tests {
     /// mis-attribute every figure the first time a slot was reused between two calls.
     #[test]
     fn a_second_walk_fills_the_time_column_by_tid() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = collect(
             &mut rows,
             &mut domain(&[(3, abi::survey::RUNNING), (5, abi::survey::BLOCKED)]),
@@ -635,7 +640,7 @@ mod tests {
     /// one column over.
     #[test]
     fn a_thread_missing_from_the_second_walk_keeps_no_figure() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = collect(
             &mut rows,
             &mut domain(&[(3, abi::survey::RUNNING), (5, abi::survey::RUNNING)]),
@@ -652,7 +657,7 @@ mod tests {
     /// new hat.
     #[test]
     fn a_refusal_in_the_second_walk_is_still_a_refusal() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = collect(&mut rows, &mut domain(&[(3, abi::survey::RUNNING)]));
         assert!(!s.is_refused());
         s.join_cpu_time(&mut |_| (abi::Error::Gone as i64, 0, 0));
@@ -664,7 +669,7 @@ mod tests {
     /// A second walk whose cursor does not advance terminates, the same guard `collect` carries.
     #[test]
     fn a_second_walk_that_does_not_advance_ends() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = collect(&mut rows, &mut domain(&[(3, abi::survey::RUNNING)]));
         s.join_cpu_time(&mut |_| (1, 3, 10));
         assert!(s.is_refused());
@@ -674,7 +679,7 @@ mod tests {
     /// with no figure last rather than first.
     #[test]
     fn ranking_puts_the_busiest_first_and_the_unknown_last() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = collect(
             &mut rows,
             &mut domain(&[
@@ -696,7 +701,7 @@ mod tests {
     /// not handed a column of dashes to explain.
     #[test]
     fn the_time_column_appears_only_when_it_was_asked_for() {
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = collect(&mut rows, &mut domain(&[(3, abi::survey::RUNNING)]));
         assert!(!shown(|o| s.write_report(o)).contains("TIME"));
         s.join_cpu_time(&mut times(&[(3, 250)]));
@@ -710,7 +715,7 @@ mod tests {
     #[test]
     fn an_unknown_state_is_shown_as_unknown() {
         assert_eq!(state_name(99), "?");
-        let mut rows = [Row::default(); MAX_ROWS];
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
         let s = collect(&mut rows, &mut domain(&[(3, 99)]));
         assert!(shown(|o| s.write_report(o)).contains('?'));
     }

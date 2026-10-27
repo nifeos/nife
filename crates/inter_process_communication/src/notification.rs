@@ -12,7 +12,7 @@
 
 use core::ptr::NonNull;
 
-use intrusive_fifo::{Fifo, Node, Unqueued};
+use intrusive_queue::{Node, Queue, Unqueued};
 
 /// One notification object: the accumulated word and the threads waiting for it to become
 /// non-zero. See `notes/inter-process-communication.md`.
@@ -21,7 +21,7 @@ use intrusive_fifo::{Fifo, Node, Unqueued};
 ///
 /// ```
 /// use core::ptr::NonNull;
-/// use intrusive_fifo::{Node, Unqueued};
+/// use intrusive_queue::{Node, Unqueued};
 /// use inter_process_communication::notification::{Notification, Signal, Wait};
 ///
 /// # struct ThreadControlBlock {
@@ -59,7 +59,7 @@ pub struct Notification<T: Node> {
     /// semaphores, as seL4's is: a signal ORs in, a take clears all of it.
     word: u64,
     /// Threads blocked in `WAIT`, oldest first.
-    waiters: Fifo<T>,
+    waiters: Queue<T>,
 }
 
 /// What a [`signal`](Notification::signal) decided.
@@ -136,7 +136,7 @@ impl<T: Node> Notification<T> {
     pub const fn new() -> Self {
         Self {
             word: 0,
-            waiters: Fifo::new(),
+            waiters: Queue::new(),
         }
     }
 
@@ -214,7 +214,7 @@ impl<T: Node> Notification<T> {
     /// [`Rendezvous::remove_receiver`](crate::Rendezvous::remove_receiver): `victim` is only
     /// compared.
     pub fn remove_waiter(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
-        let mut kept: Fifo<T> = Fifo::new();
+        let mut kept: Queue<T> = Queue::new();
         let mut found = None;
         while let Some(node) = self.waiters.pop_front() {
             if node == victim {

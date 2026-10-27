@@ -105,11 +105,11 @@ pub fn hand_over(
     kernel: &Placed,
     module: Option<(u64, u64)>,
     // **Always `None` here**, and that is a recorded gap rather than an unused parameter.
-    // `main.rs`'s `place_boot_file` reads this loader's own file so the running system can install
-    // itself, and hands it over as a second PVH module. A device-tree handoff has `/chosen` with
-    // one initial ramdisk and no second slot, so there is nowhere to put it; see that function's
-    // BUGS and milestone 198 (a package manager, and the trivial install that makes a second
-    // customer possible)'s rung 2a, which is an x86_64 claim for this reason.
+    // `placement.rs`'s `place_boot_file` reads this loader's own file so the running system can
+    // install itself, and hands it over as a second PVH module. A device-tree handoff has `/chosen`
+    // with one initial ramdisk and no second slot, so there is nowhere to put it; see that
+    // function's BUGS and milestone 198 (a package manager, and the trivial install that makes a
+    // second customer possible)'s rung 2a, which is an x86_64 claim for this reason.
     _boot_file: Option<(u64, u64)>,
     // **Always `None` here**, and that is a scope note (DECISIONS
     // §19 (architectural parity is a tenet; the targets are aarch64, riscv64, and x86_64)) rather than an unused parameter. The chooser that would set it is
@@ -238,7 +238,7 @@ unsafe fn find_table(rsdp: u64, signature: &[u8; 4]) -> Option<&'static [u8]> {
 /// describes the same machine.
 fn read_ram(
     services: &BootServices,
-    out: &mut [device_tree_from_acpi::Ram; device_tree_from_acpi::MAX_RAM],
+    out: &mut [device_tree_from_acpi::Ram; device_tree_from_acpi::MAXIMUM_RAM],
 ) -> Result<usize, &'static str> {
     // The walk below strides by the firmware's own `descriptor_size`; see `memory_map_size`.
     let (bytes, descriptor_size) =
@@ -290,7 +290,7 @@ fn read_ram(
             out[count - 1].len += len;
             continue;
         }
-        if count == device_tree_from_acpi::MAX_RAM {
+        if count == device_tree_from_acpi::MAXIMUM_RAM {
             break;
         }
         out[count] = device_tree_from_acpi::Ram { start, len };
@@ -327,7 +327,7 @@ fn tree_from_acpi(
     // --- The rest, every one of which a machine may legitimately not have ---
     let (timer, psci_hvc, uart) = optional_tables(rsdp);
 
-    let mut ram = [device_tree_from_acpi::Ram::default(); device_tree_from_acpi::MAX_RAM];
+    let mut ram = [device_tree_from_acpi::Ram::default(); device_tree_from_acpi::MAXIMUM_RAM];
     let ram_count = read_ram(services, &mut ram)?;
 
     let machine = device_tree_from_acpi::Machine {
@@ -352,7 +352,7 @@ struct Madt {
     redistributors: Region,
     cpu_interface: u64,
     per_cpu_redistributor: u64,
-    cpus: [device_tree_from_acpi::Cpu; device_tree_from_acpi::MAX_CPUS],
+    cpus: [device_tree_from_acpi::Cpu; device_tree_from_acpi::MAXIMUM_CPUS],
     cpu_count: usize,
     /// The first GIC ITS entry's frame, and how many the MADT states. Reported, not written into
     /// the tree: see `device_tree_from_acpi`'s BUGS.
@@ -360,14 +360,14 @@ struct Madt {
     its_count: u32,
 }
 
-/// Walk the MADT's entries once, keeping the GIC's frames and up to `MAX_CPUS` cores.
+/// Walk the MADT's entries once, keeping the GIC's frames and up to `MAXIMUM_CPUS` cores.
 fn read_madt(body: &[u8]) -> Madt {
     let mut distributor = 0u64;
     let mut version = 0u8;
     let mut redistributors = Region { start: 0, size: 0 };
     let mut cpu_interface = 0u64;
     let mut per_cpu_redistributor = 0u64;
-    let mut cpus = [device_tree_from_acpi::Cpu::default(); device_tree_from_acpi::MAX_CPUS];
+    let mut cpus = [device_tree_from_acpi::Cpu::default(); device_tree_from_acpi::MAXIMUM_CPUS];
     let mut cpu_count = 0usize;
     let mut first_its = 0u64;
     let mut its_count = 0u32;
@@ -400,7 +400,7 @@ fn read_madt(body: &[u8]) -> Madt {
                 if redistributor != 0 && per_cpu_redistributor == 0 {
                     per_cpu_redistributor = redistributor;
                 }
-                if cpu_count < device_tree_from_acpi::MAX_CPUS {
+                if cpu_count < device_tree_from_acpi::MAXIMUM_CPUS {
                     cpus[cpu_count] = device_tree_from_acpi::Cpu {
                         mpidr,
                         // `online_capable` is a socket firmware would start later, and the kernel's

@@ -195,6 +195,12 @@ fn hand_over() {
 /// The bring-up's own demonstration lines (`traps`, `timer`, `memory`, `paging`) are not printed
 /// here: `self_test::run` makes each of those claims on all three architectures as its
 /// `exceptions`, `timer`, `frames` and `mapping` checks, and `serial_console` reads the ladder.
+///
+/// # BUGS
+///
+/// - It prints a hard-coded `hart 0 booted`. On RISC-V the boot hart's logical id is its physical
+///   hart id (`arch::riscv64::percpu::boot_cpu_id`), which need not be 0, so a board that boots on
+///   another hart prints `hart 0` after the loader's `boot hart from ...: N`.
 #[cfg(target_arch = "riscv64")]
 fn riscv64_banner(
     boot_info_pointer: usize,

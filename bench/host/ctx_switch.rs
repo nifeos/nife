@@ -93,6 +93,7 @@ fn main() {
     let p = self_pipe_pass_ns(1_000_000);
     let r = round_trip_ns(200_000);
     let ctx = r / 2.0 - p;
-    let os = if cfg!(target_os = "macos") { "macOS" } else { "linux" };
-    println!("{os} self_pipe_pass: {p:.1} ns  round_trip: {r:.1} ns  ctx_switch (derived): {ctx:.1} ns");
+    let operating_system = if cfg!(target_os = "macos") { "macOS" } else { "linux" };
+    println!("{operating_system} self_pipe_pass: {p:.1} ns  round_trip: {r:.1} ns  ctx_switch \
+    (derived): {ctx:.1} ns");
 }

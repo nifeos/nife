@@ -63,10 +63,10 @@ fn a_userspace_thread_reads_a_cpu_that_is_really_online() {
     // and impossible anywhere else: a host test can only compare the crate against itself.
     assert_eq!(
         bound,
-        crate::cpu::MAX_CPUS as u64,
+        crate::cpu::MAXIMUM_CPUS as u64,
         "userspace sizes its per-cpu arrays by {bound} and the kernel hands out ids under {}; one \
          of them is a stale copy of the other",
-        crate::cpu::MAX_CPUS,
+        crate::cpu::MAXIMUM_CPUS,
     );
 }
 

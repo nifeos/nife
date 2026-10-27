@@ -77,7 +77,7 @@ gates in one line.
 | Crate | Sites | Shape |
 |---|---|---|
 | `inter_process_communication` | 11 blocks + 1 `unsafe impl` | the harness's `seed`, and every call into `send`/`receive` |
-| `intrusive_fifo` | 1 `unsafe impl` | `Node for N` in the proof module (its two blocks were already commented) |
+| `intrusive_queue` | 1 `unsafe impl` | `Node for N` in the proof module (its two blocks were already commented) |
 
 The other thirteen are ordinary clippy, in crates nobody suspected: `doc_markdown` (4),
 `manual_range_contains` (4), `manual_let_else` (2), `len_zero` (2), `needless_range_loop` (1),

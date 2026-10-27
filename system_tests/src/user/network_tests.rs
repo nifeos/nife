@@ -282,7 +282,7 @@ fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
 
 /// **A host name resolves through the socket contract, and the lies do not** (milestone 384 (in a
 /// capability system the resolver is a grant)). Two halves in one client, because a second
-/// `net_stack` would need a virtio slot past `MAX_DEVICES`.
+/// `net_stack` would need a virtio slot past `MAXIMUM_DEVICES`.
 ///
 /// The first half gates: the client asks `helpers/name-server-peer` (a `guestfwd` at 10.0.2.9:53,
 /// DNS over TCP) about six names through `domain_name_system`. Two resolve, one via a compressed
@@ -366,8 +366,8 @@ fn a_client_echoes_over_tcp_through_the_socket_contract() {
 /// peer's copy with one byte flipped, which must be refused**: that half is what gives the first
 /// its meaning, because the tampered response is a complete, correct HTTP exchange and only the
 /// digest can tell. Both fetches share one `net_stack`, because every stack a test starts holds a
-/// virtio slot for the rest of the boot (`MAX_DEVICES`). Nothing else in the tree fetches a file
-/// over TCP or checks a package's digest on a target.
+/// virtio slot for the rest of the boot (`MAXIMUM_DEVICES`). Nothing else in the tree fetches a
+/// file over TCP or checks a package's digest on a target.
 // RISC-V twin:
 // `riscv_virtio_tests::a_package_fetched_over_http_is_accepted_only_by_the_image_digest`.
 #[cfg(target_arch = "aarch64")]

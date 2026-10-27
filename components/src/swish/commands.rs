@@ -124,16 +124,16 @@ pub(super) fn time_command(nav: &mut Nav, tail: &[u8]) {
 /// bounded number of spawns rather than a prompt that never comes back, in exactly the spirit of
 /// [`ROUNDS`]. Eight names a batch, so this is 2048 names, and a directory that large is a machine's
 /// problem before it is this shell's.
-pub(super) const MAX_BATCHES: u64 = 256;
+pub(super) const MAXIMUM_BATCHES: u64 = 256;
 
 /// **Run a command once per batch of what its pattern matched** (milestone 109).
 ///
 /// A prefix word and not a program: a batching program would have to hold the union of every
-/// batch, more than [`grant_plan::expand::MAX_NAMES`], which nothing can carry, so the batching goes
-/// where the directory authority already is. The iteration is the builtin; `rm` stays a program
-/// with an attenuated grant. The sweep stops at the first batch that does not run, so what ran is a
-/// prefix of the match, and each batch's set is printed before it runs, so the shell can name the
-/// boundary. See notes/glob-grant/xargs.md.
+/// batch, more than [`grant_plan::expand::MAXIMUM_NAMES`], which nothing can carry, so the batching
+/// goes where the directory authority already is. The iteration is the builtin; `rm` stays a
+/// program with an attenuated grant. The sweep stops at the first batch that does not run, so what
+/// ran is a prefix of the match, and each batch's set is printed before it runs, so the shell can
+/// name the boundary. See notes/glob-grant/xargs.md.
 pub(super) fn xargs(nav: &mut Nav, tail: &[u8]) {
     // Collapse a nested prefix rather than recursing, [`time_command`]'s reason: `xargs xargs rm
     // *.txt` is a line a person can type, batching a batch is still one sweep, and every level of
@@ -149,7 +149,7 @@ pub(super) fn xargs(nav: &mut Nav, tail: &[u8]) {
     }
     let mut sweep = swish::Sweep::default();
     let mut resume = Resume::Start;
-    for _ in 0..MAX_BATCHES {
+    for _ in 0..MAXIMUM_BATCHES {
         nav.batching = Batching {
             resume: Some(resume),
             index: sweep.batches + 1,
@@ -258,9 +258,9 @@ pub(super) fn user(nav: &mut Nav, verb: grant_plan::UserVerb<'_>) {
     // system's, whichever tree this shell stands in.
     let t = nav.first();
     let file = login_contract::SUSPENDED_LIST.as_bytes();
-    let mut list = [0u8; USER_LIST_MAX];
+    let mut list = [0u8; USER_LIST_MAXIMUM];
     let had = read_named(nav, t, fs::ROOT, file, &mut list).unwrap_or(0);
-    let mut edited = [0u8; USER_LIST_MAX];
+    let mut edited = [0u8; USER_LIST_MAXIMUM];
     let n = if suspend {
         login_contract::with_listed(&list[..had], name, &mut edited)
     } else {
@@ -298,7 +298,7 @@ pub(super) fn user(nav: &mut Nav, verb: grant_plan::UserVerb<'_>) {
 }
 
 /// The longest suspended list `user` edits: two kilobytes, more than a hundred names.
-pub(super) const USER_LIST_MAX: usize = 2048;
+pub(super) const USER_LIST_MAXIMUM: usize = 2048;
 
 /// Print where we are, relative to our own root.
 pub(super) fn print_pwd(nav: &Nav) {

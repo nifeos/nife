@@ -56,7 +56,7 @@ use grant_plan::{
 pub use number::write_num;
 pub use preview::{Vouched, write_capabilities, write_image_capabilities, write_preview};
 pub use routing::{Route, route};
-pub use say::{HEAP_MAX_BYTES, Say, write_say};
+pub use say::{HEAP_MAXIMUM_BYTES, Say, write_say};
 pub use sentences::{
     FAULTED_SENTENCE, NO_DISPLAY_SENTENCE, REFUSED_BY_MANIFEST_SENTENCE, UNVOUCHED_SENTENCE,
     USER_USAGE, VOUCH_USAGE, image_refusal_sentence, spawn_failure_sentence, write_help,

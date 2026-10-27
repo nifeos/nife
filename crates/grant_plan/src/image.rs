@@ -177,7 +177,9 @@ pub fn image_request_fits(m: &Manifest, arg: u64, mem_pages: u64, words: bool) -
     let arg_ok = m.program_argument == ProgramArgumentDeclaration::Required || arg == 0;
     let mem_ok = match m.memory_grant {
         MemoryGrantDeclaration::Forbidden => mem_pages == 0,
-        MemoryGrantDeclaration::Required { min, max } => mem_pages >= min && mem_pages <= max,
+        MemoryGrantDeclaration::Required { minimum, maximum } => {
+            mem_pages >= minimum && mem_pages <= maximum
+        }
     };
     arg_ok && mem_ok
 }

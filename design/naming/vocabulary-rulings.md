@@ -154,7 +154,7 @@ The four words, and why only one was open. Measured on 2026-09-14, tree-wide:
 
 `identity` is fixed by an interface rather than by taste. DECISIONS §117 (a principal's subtree is
 named by its identity string) names a principal's subtree by the identity string used directly, with
-no lookup table, and `MAX_IDENTITY` caps it on the wire. `credential` was ratified with
+no lookup table, and `MAXIMUM_IDENTITY` caps it on the wire. `credential` was ratified with
 `credentialer` on 2026-08-01. `user` means a person, which calef settled when the `user_` prefix
 became `user_mode_`. It is otherwise spoken for: 1079 occurrences in code, essentially all of them
 the kernel's `user::` module or the `user_mode_` prefix. That left `principal`, which the tree leans

@@ -80,8 +80,11 @@ _SBI = "RISC-V SBI's own name, kept as the precedents keep `sbi_send_ipi`"
 _ACTS = ("acts and reports whether it worked, which design/naming.md exempts from the question "
          "shape")
 KEPT = {
-    "crates/designware_ethernet/src/mdio.rs::PA_SHIFT":
+    "crates/designware_ethernet/src/management_data_input_output.rs::PA_SHIFT":
         ({"spelled-out"}, "DesignWare's `PA` field, the PHY address, not a physical address"),
+    "crates/designware_ethernet/src/registers.rs::CONFIG_LM":
+        ({"spelled-out"},
+         "Linux's `GMAC_CONFIG_LM` (`dwmac4.h`), copied strictly under Decision 37c"),
     "kernel/src/arch/riscv64/harts.rs::sbi_send_ipi": ({"spelled-out"}, _SBI),
     "kernel/src/arch/riscv64/remote_fence.rs::sbi_remote_sfence_vma_asid": ({"spelled-out"}, _SBI),
     "kernel/src/arch/aarch64/interrupts.rs::disable": ({"question-shape"}, _ACTS),
@@ -626,6 +629,9 @@ def main(argv):
         _selftest()
         return 0
     mode = argv[0] if argv and argv[0].startswith("-") else "--list"
+    # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
+    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
+    # abbreviates and the code behind it does not").
     prefixes = tuple(a for a in argv if not a.startswith("-"))
     if mode not in ("--list", "--check", "--bank", "--init"):
         sys.exit(__doc__.split("\n\n")[2])

@@ -534,7 +534,7 @@ fn wait_until(seconds: u64, mut done: impl FnMut() -> bool) -> bool {
 fn preemption(tally: &mut Tally) {
     use core::sync::atomic::AtomicBool;
 
-    const MAX: usize = crate::cpu::MAX_CPUS + 1;
+    const MAX: usize = crate::cpu::MAXIMUM_CPUS + 1;
     static PROGRESS: [AtomicU64; MAX] = [const { AtomicU64::new(0) }; MAX];
     static STOP: AtomicBool = AtomicBool::new(false);
 
@@ -1085,8 +1085,8 @@ impl Draw {
 
 /// **Wait for an entropy service to be ready, then draw two 32-byte buffers from it as a client**,
 /// on a helper thread so the wait keeps a deadline. Each draw is four `entropy_contract` round
-/// trips (`MAX_BYTES` is 8), and the second empties a different device generation than the first.
-/// `None` if the service did not answer within `seconds`.
+/// trips (`MAXIMUM_BYTES` is 8), and the second empties a different device generation than the
+/// first. `None` if the service did not answer within `seconds`.
 fn draw_twice(w: crate::user::entropy_service::Wiring, seconds: u64) -> Option<Draw> {
     use core::sync::atomic::AtomicBool;
 

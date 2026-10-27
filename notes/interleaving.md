@@ -30,13 +30,14 @@ not a proof about the silicon.
 ## The survey: where the hand-rolled protocols actually are
 
 The roadmap named three candidates (the per-CPU run-queue handoff, the reaper handoff, the IPC
-sender queue) and the brief added two more (`crates/intrusive_fifo`, `crates/generational_table`). Four of those five
-have no atomic protocol at all, and finding that out is most of what the survey was for.
+sender queue) and the brief added two more (`crates/intrusive_queue`, `crates/generational_table`).
+Four of those five have no atomic protocol at all, and finding that out is most of what the survey
+was for.
 
 | Candidate | What it actually is | Reachable by loom |
 |---|---|---|
 | The IPC sender queue (`crates/inter_process_communication`) | zero atomics. `Rendezvous` is plain data under the `SCHED` `IrqSafeMutex` | nothing to explore |
-| `crates/intrusive_fifo` (the run queues) | zero atomics. Single-owner with interrupts masked, plus an `UnsafeCell` | nothing to explore |
+| `crates/intrusive_queue` (the run queues) | zero atomics. Single-owner with interrupts masked, plus an `UnsafeCell` | nothing to explore |
 | `crates/generational_table` (the thread table) | zero atomics. Under `SCHED` | nothing to explore **as atomics**, and that reading was too narrow: `crates/memory_regions` is a `generational_table` table under a lock, and its protocol had a real double free in it. See the `thread_wake_handshake` and `memory_regions` sections of [what-was-modeled.md](interleaving/what-was-modeled.md) |
 | The reaper handoff (`PerCpu::switched_from`) | one `AtomicU64`, both accesses `Relaxed`, written and read **by the same core** with interrupts masked. The atomic is interior mutability, not synchronization | nothing to explore |
 | The run-queue handoff | the migration inbox is an `IrqSafeMutex`; the *steal request slot* is the lock-free part | **yes**, and it is the pilot |

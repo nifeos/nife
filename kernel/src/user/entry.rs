@@ -230,7 +230,7 @@ pub(crate) struct DeviceRun {
     /// The first page's physical address. Page-aligned.
     pub phys: u64,
     /// How many pages. The intermediate page tables come out of the address space's own
-    /// `AS_OVERHEAD`, so a caller bounds this (`display_service`'s `MAX_APERTURE_PAGES`).
+    /// `AS_OVERHEAD`, so a caller bounds this (`display_service`'s `MAXIMUM_APERTURE_PAGES`).
     pub pages: u64,
     /// **Map it write-combining** (`paging::Flags::user_write_combining`) rather than as
     /// registers. True only for memory the process writes and never reads, which on this tree is

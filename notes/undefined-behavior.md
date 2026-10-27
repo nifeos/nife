@@ -17,7 +17,7 @@ The rest of the tree's analysis surface cannot see that class, and Miri is its t
 proofs and the fuzzers ([interleaving.md](interleaving.md) is the fourth). Kani proves the properties it is
 asked about; the fuzzers see crashes and hangs; clippy sees shapes; the type system stops at every
 `unsafe` block. There are 224 `unsafe` occurrences under `crates/`, concentrated in `ipc`,
-`intrusive_fifo`, `virtio`, and `paging`, and an aliasing bug in one of them passes every
+`intrusive_queue`, `virtio`, and `paging`, and an aliasing bug in one of them passes every
 existing gate while being real UB on every target. Miri is the one tool here whose whole job is
 that class, and the first full run proved the point: it found two genuine UB defects in
 `user_mode_heap`, both invisible to 60 passing native tests.

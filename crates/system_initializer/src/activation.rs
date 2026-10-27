@@ -60,7 +60,7 @@ pub(super) struct Answer {
     pub(super) status: spawnproto::ActivationStatus,
     pub(super) live: u32,
     pub(super) member: u64,
-    holder: [u8; spawnproto::HOLDER_MAX],
+    holder: [u8; spawnproto::HOLDER_MAXIMUM],
     holder_len: usize,
 }
 
@@ -91,11 +91,11 @@ impl Answer {
             status,
             live,
             member,
-            holder: [0; spawnproto::HOLDER_MAX],
+            holder: [0; spawnproto::HOLDER_MAXIMUM],
             holder_len: 0,
         };
         if let Some(holder) = refused.holder {
-            let len = holder.len().min(spawnproto::HOLDER_MAX);
+            let len = holder.len().min(spawnproto::HOLDER_MAXIMUM);
             answer.holder[..len].copy_from_slice(&holder.as_bytes()[..len]);
             answer.holder_len = len;
         }
@@ -109,7 +109,7 @@ impl From<(spawnproto::ActivationStatus, u32)> for Answer {
             status,
             live,
             member: 0,
-            holder: [0; spawnproto::HOLDER_MAX],
+            holder: [0; spawnproto::HOLDER_MAXIMUM],
             holder_len: 0,
         }
     }

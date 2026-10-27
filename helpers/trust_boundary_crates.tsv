@@ -97,7 +97,7 @@ http_response	userspace	components,jig,pinned_tls_client
 installed_programs	shared	components,fixtures,jig,kernel
 inter_process_communication	kernel	kernel
 intrusive	kernel	retired
-intrusive_fifo	kernel	kernel
+intrusive_queue	kernel	kernel
 ipc	kernel	retired
 isa	kernel	retired
 jh7110_clock_and_reset	shared	components,kernel,uefi_loader

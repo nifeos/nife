@@ -128,8 +128,8 @@ All four are fields of `Transport::Pci`, set in one place, `Transport::pci`, fro
 checkable. One gap: `notify_addr[q]` is zero until `setup_queue` resolves it, so `notify` refuses a
 queue whose doorbell is not ready rather than write through `phys_to_virt(0)`.
 
-`MAX_DEVICES` is an exception and a foot gun. Nothing unregisters, so it counts the devices a boot
-has ever wired, and the test suite spawns a driver per gate (tests share a transport where they
+`MAXIMUM_DEVICES` is an exception and a foot gun. Nothing unregisters, so it counts the devices a
+boot has ever wired, and the test suite spawns a driver per gate (tests share a transport where they
 can). The fix is reuse on driver death, which needs a generational name so a stale `Object::Virtio`
 capability cannot resolve to a different device. That is a design fork under §16 (object
 revocation). Milestone 647 (a virtio slot should come back when its driver dies) proposes it.

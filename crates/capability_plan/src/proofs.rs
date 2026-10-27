@@ -332,7 +332,7 @@ fn dependents_finds_exactly_the_non_target_instances_that_declared_it() {
                     reqs: r1,
                 },
             ];
-            let d = dependents("a", &live).expect("two instances is under MAX_LIVE");
+            let d = dependents("a", &live).expect("two instances is under MAXIMUM_LIVE");
             // **The expectation is computed with Rust's own `==`, never with `str_eq`**
             // (milestone 211). `dependents` decides membership by calling `str_eq`, so an
             // expectation that called it too would prove the two agree rather than that
@@ -365,7 +365,7 @@ fn dependents_finds_exactly_the_non_target_instances_that_declared_it() {
     }
 }
 
-/// **A registry past `MAX_LIVE` is refused rather than silently truncated**, for every length
+/// **A registry past `MAXIMUM_LIVE` is refused rather than silently truncated**, for every length
 /// one past the bound could conceivably be constructed at (the proof only needs one, since the
 /// check is a single `>` against a fixed constant, but the point of proving it at all is that a
 /// truncated answer here is the dangerous failure: a supervisor that got fewer dependents back
@@ -373,12 +373,12 @@ fn dependents_finds_exactly_the_non_target_instances_that_declared_it() {
 /// Falsification: replayable `crates/capability_plan/falsifications/proofs.too_many_live_instances_never_silently_truncates.patch`
 #[kani::proof]
 fn too_many_live_instances_never_silently_truncates() {
-    let entries: [LiveInstance; MAX_LIVE + 1] = [LiveInstance {
+    let entries: [LiveInstance; MAXIMUM_LIVE + 1] = [LiveInstance {
         id: 0,
         reqs: &OTHER_DEP,
-    }; MAX_LIVE + 1];
+    }; MAXIMUM_LIVE + 1];
     assert!(matches!(
         dependents("a", &entries),
-        Err(OrchestrationRefusal::TooManyLive { asked }) if asked == MAX_LIVE + 1
+        Err(OrchestrationRefusal::TooManyLive { asked }) if asked == MAXIMUM_LIVE + 1
     ));
 }

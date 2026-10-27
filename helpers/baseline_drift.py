@@ -662,7 +662,7 @@ def new_reasons(prev, save):
     A baseline file keeps every `# why:` line since its last `--save`, and the nightly
     `--restamp` appends one a day, so a save's whole list repeats every line the rows above it
     already showed. Rendering the whole list grew the newest cell by a restamp line a day, and on
-    2026-10-02 one cell reached 2,472 bytes, past `documentation::LINE_MAX` (2048), which a line in
+    2026-10-02 one cell reached 2,472 bytes, past `documentation::LINE_MAXIMUM` (2048), which a line in
     the shipped manual must fit. A row says why THAT save moved; the earlier reasons are on the rows
     above it.
     """

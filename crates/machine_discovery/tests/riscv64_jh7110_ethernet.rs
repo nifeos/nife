@@ -27,14 +27,17 @@ fn radons_vendor_tree_gives_gmac0_its_physical_layer_device_settings_and_its_add
     assert_eq!((d.base, d.size), (GMAC0_BASE, 0x1_0000));
     assert_eq!(d.compatible, COMPATIBLE_VENDOR);
     assert_eq!(d.interrupt, Some(7));
-    assert!(d.status_okay && d.rgmii);
-    assert_eq!(d.mac, Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c]));
-    assert_eq!(d.phy_address, 0);
-    assert_eq!(d.phy.source, Source::VendorTree);
+    assert!(d.status_okay && d.reduced_gigabit_media_independent_interface);
+    assert_eq!(
+        d.station_address,
+        Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
+    );
+    assert_eq!(d.physical_layer_device_address, 0);
+    assert_eq!(d.physical_layer_device.source, Source::VendorTree);
     assert_eq!(
         Settings {
             source: Source::Fallback,
-            ..d.phy
+            ..d.physical_layer_device
         },
         Settings::FALLBACK_GMAC0,
         "the vendor's gmac0 values are the fallback's, field for field"
@@ -47,12 +50,15 @@ fn mainlines_tree_reaches_the_same_registers_through_phy_handle() {
     let d = discover(&tree).unwrap().unwrap();
     assert_eq!(d.base, GMAC0_BASE);
     assert_eq!(d.compatible, COMPATIBLE_MAINLINE);
-    assert_eq!(d.mac, None);
-    assert_eq!(d.phy.source, Source::MainlineTree);
-    assert_eq!(d.phy.rx_delay, 0xa);
-    assert_eq!(d.phy.tx_delay, 0xa);
-    assert!(!d.phy.rx_fixed_delay);
-    assert_eq!(d.phy.tx_clock_inverted, [false, true, true]);
+    assert_eq!(d.station_address, None);
+    assert_eq!(d.physical_layer_device.source, Source::MainlineTree);
+    assert_eq!(d.physical_layer_device.receive_delay, 0xa);
+    assert_eq!(d.physical_layer_device.transmit_delay, 0xa);
+    assert!(!d.physical_layer_device.receive_fixed_delay);
+    assert_eq!(
+        d.physical_layer_device.transmit_clock_inverted,
+        [false, true, true]
+    );
 }
 
 #[test]
@@ -81,11 +87,23 @@ fn both_trees_name_the_aon_syscon() {
 fn a_mainline_physical_layer_device_with_one_delay_is_read_not_replaced_by_the_fallback() {
     let one_delay = tree(ONE_DELAY);
     let d = discover(&one_delay).unwrap().unwrap();
-    assert_eq!(d.phy.source, Source::MainlineTree);
-    assert_eq!((d.phy.rx_delay, d.phy.tx_delay), (10, 13));
-    assert_eq!(d.phy_address, 3);
+    assert_eq!(d.physical_layer_device.source, Source::MainlineTree);
+    assert_eq!(
+        (
+            d.physical_layer_device.receive_delay,
+            d.physical_layer_device.transmit_delay
+        ),
+        (10, 13)
+    );
+    assert_eq!(d.physical_layer_device_address, 3);
     let mainline = tree(MAINLINE);
-    assert_eq!(discover(&mainline).unwrap().unwrap().phy_address, 0);
+    assert_eq!(
+        discover(&mainline)
+            .unwrap()
+            .unwrap()
+            .physical_layer_device_address,
+        0
+    );
 }
 
 /// A vendor PHY node that states its address in `reg` is believed. radon's does not, and
@@ -94,6 +112,6 @@ fn a_mainline_physical_layer_device_with_one_delay_is_read_not_replaced_by_the_f
 fn a_vendor_physical_layer_device_reg_is_its_mdio_address() {
     let tree = tree(VENDOR_ADDRESSED);
     let d = discover(&tree).unwrap().unwrap();
-    assert_eq!(d.phy.source, Source::VendorTree);
-    assert_eq!(d.phy_address, 3);
+    assert_eq!(d.physical_layer_device.source, Source::VendorTree);
+    assert_eq!(d.physical_layer_device_address, 3);
 }

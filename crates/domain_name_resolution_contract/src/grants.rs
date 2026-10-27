@@ -8,7 +8,7 @@
 
 use domain_name_system::Name;
 
-use crate::{GRANTS_MAX, NAME_TEXT_MAX, OPERATION_FORGET, OPERATION_GRANT, control_fields};
+use crate::{GRANTS_MAXIMUM, NAME_TEXT_MAXIMUM, OPERATION_FORGET, OPERATION_GRANT, control_fields};
 
 /// Why [`Grants::check`] refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,7 +60,7 @@ struct Entry {
     zone: Name,
     complete: bool,
     /// The zone's text so far, while the spawner's messages arrive.
-    text: [u8; NAME_TEXT_MAX + 1],
+    text: [u8; NAME_TEXT_MAXIMUM + 1],
     text_len: u8,
     text_total: u8,
 }
@@ -70,7 +70,7 @@ impl Entry {
         badge: 0,
         zone: Name::root(),
         complete: false,
-        text: [0; NAME_TEXT_MAX + 1],
+        text: [0; NAME_TEXT_MAXIMUM + 1],
         text_len: 0,
         text_total: 0,
     };
@@ -101,7 +101,7 @@ impl Entry {
 /// assert_eq!(grants.check(8, &asked), Err(Denied::NoGrant));
 /// ```
 pub struct Grants {
-    entries: [Entry; GRANTS_MAX],
+    entries: [Entry; GRANTS_MAXIMUM],
 }
 
 impl Default for Grants {
@@ -114,7 +114,7 @@ impl Grants {
     /// No grants: every badge is denied.
     pub const fn new() -> Grants {
         Grants {
-            entries: [Entry::FREE; GRANTS_MAX],
+            entries: [Entry::FREE; GRANTS_MAXIMUM],
         }
     }
 
@@ -131,7 +131,7 @@ impl Grants {
         if badge == 0 {
             return Control::Refused(Refusal::BadgeZero);
         }
-        if total as usize > NAME_TEXT_MAX + 1 {
+        if total as usize > NAME_TEXT_MAXIMUM + 1 {
             return self.refuse(badge, Refusal::TooLong);
         }
         let at = match self.position(badge) {

@@ -62,7 +62,7 @@ entry in one line.
 - Nothing checks the guards after boot except the suite. `mmu::verify` runs once, before the map is
   installed. A later mapping that filled a guard page in would not be noticed until the test build
   ran. Nothing does this today, and the mapper refuses to overwrite.
-- The boot core's slot in the region is mapped and never used. `MAX_CPUS` slots exist, and one is
-  wasted so that slot index can stay CPU id. Any seat the machine does not fill idles the same way;
-  the constant is a ceiling since the 2026-08-14 bump to eight. 68 KiB of address space each, no
-  frames.
+- The boot core's slot in the region is mapped and never used. `MAXIMUM_CPUS` slots exist, and one
+  is wasted so that slot index can stay CPU id. Any seat the machine does not fill idles the same
+  way; the constant is a ceiling since the 2026-08-14 bump to eight. 68 KiB of address space each,
+  no frames.

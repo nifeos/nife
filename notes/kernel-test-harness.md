@@ -97,9 +97,9 @@ hold 137 free frames with no run of 128.
   run and every frame lost lands on exactly one test.
 - `SUITE_PAGE_FRAME_BUDGET` caps what the suite may keep. [frame-budget.md](frame-budget.md) prices
   what is kept on purpose and holds the conventions and history of the number.
-- `SUITE_MIN_FREE_RUN` is the floor on the longest free run at the end, because loading a program
-  takes a contiguous run. `redoxfs_server` and `net_stack` are the largest programs the boot loads,
-  a few hundred pages each with their page tables.
+- `SUITE_MINIMUM_FREE_RUN` is the floor on the longest free run at the end, because loading a
+  program takes a contiguous run. `redoxfs_server` and `net_stack` are the largest programs the boot
+  loads, a few hundred pages each with their page tables.
 - The thread, region and rendezvous peaks and the frame low-water print beside the ledger. They
   report and do not gate: what fills those tables is mostly services kept on purpose, so a rising
   peak is usually a boot doing more. The region and rendezvous peaks and the low-water each name the

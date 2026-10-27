@@ -17,7 +17,7 @@ Measured 2026-08-17, against the block's 2026-08-02 numbers.
 |---|---|
 | 28 host crates with no doc example | **31**, before this pass. Now **0** |
 | 23 doctests in the host workspace | **49**, before this pass. Now **116** (109 of them run by `script/test`'s selection; see BUGS) |
-| Item coverage 36.4% (`socket_contract`) to 100% | **50.0%** (`intrusive_fifo`) to 100%; `socket_contract` is now 57.6% |
+| Item coverage 36.4% (`socket_contract`) to 100% | **50.0%** (`intrusive_queue`) to 100%; `socket_contract` is now 57.6% |
 
 **The deficit grew while work was being done, and both halves of that are worth seeing.** Three of
 the four crates the block named as the hard ones left (`dtb`, `nifefs`, `gpt`) got their examples in
@@ -99,8 +99,8 @@ a hard gate, so those crates cannot regress:
 `abi`, `address_space_identifier`, `bitmap_font`, `block_roster`, `c_seam`, `calendar`, `memory_corruption_canary_gate`, `capability`,
 `clock_contract`, `capability_plan`, `coremark`, `cpu_set`, `cred`, `credential_contract`,
 `dma_validator`, `device_tree_blob`. `elf`, `entropy_contract`, `page_frames`,
-`filesystem_contract`, `graphics_contract`, `glob`, `inter_process_communication`, `intrusive_fifo`,
-`line_editor`,
+`filesystem_contract`, `graphics_contract`, `glob`, `inter_process_communication`,
+`intrusive_queue`, `line_editor`,
 `manual`, `measured_boot`, `nifefs`, `network_time_protocol`, `non_volatile_memory_express`,
 `paging`, `pgrep`. `ps`, `memory_regions`, `byte_sink_contract`, `generational_table`,
 `socket_contract`, `work_steal_slot`, `supervision_protocol`,

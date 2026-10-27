@@ -27,18 +27,18 @@ pub(crate) fn components(path: &str) -> Result<Vec<&str>, String> {
 
 /// Walk `comps` from the image root and return the node it names.
 pub(crate) fn resolve<D: Disk>(
-    tx: &mut Transaction<D>,
+    transaction: &mut Transaction<D>,
     comps: &[&str],
 ) -> Result<TreeData<Node>, String> {
     // Annotated because `read_tree` is generic over the block type it decodes.
-    let mut node: TreeData<Node> = tx
+    let mut node: TreeData<Node> = transaction
         .read_tree(TreePtr::root())
         .map_err(|e| format!("cannot read the image root: {e}"))?;
     for (i, name) in comps.iter().enumerate() {
         if !node.data().is_dir() {
             return Err(format!("/{} is not a directory", comps[..i].join("/")));
         }
-        node = tx
+        node = transaction
             .find_node(node.ptr(), name)
             .map_err(|e| format!("/{}: {e}", comps[..=i].join("/")))?;
     }
@@ -49,14 +49,14 @@ pub(crate) fn resolve<D: Disk>(
 /// record boundary in principle), so a file bigger than one record must not depend on a single call
 /// filling the buffer. The record size is a per-node field and this loop does not care what it is.
 pub(crate) fn read_all<D: Disk>(
-    tx: &mut Transaction<D>,
+    transaction: &mut Transaction<D>,
     node: &TreeData<Node>,
 ) -> Result<Vec<u8>, String> {
     let size = node.data().size() as usize;
     let mut buf = vec![0u8; size];
     let mut got = 0;
     while got < size {
-        let n = tx
+        let n = transaction
             .read_node_inner(node, got as u64, &mut buf[got..])
             .map_err(|e| format!("read failed at offset {got}: {e}"))?;
         if n == 0 {

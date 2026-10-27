@@ -211,12 +211,13 @@ The frame and object records count the whole subtree because a budget's pages ar
 child regions, and the objects live in those.
 
 BUGS: every subtree record walks the whole region table under the region lock, with interrupts
-masked. The table (`kernel/src/memory_region.rs`, `MAX_REGIONS`, 256) is machine-wide, so one call
-costs every region's parent chain. The 2026-10-03 security audit measured it on the host: 8 ns for a
-root with eight children, 42 µs for a root over the deepest chain the table can hold, and 62 µs for
-that chain's leaf. Any holder of `ENUMERATE` on a region can repeat it, so it is a bounded
+masked. The table (`kernel/src/memory_region.rs`, `MAXIMUM_REGIONS`, 256) is machine-wide, so one
+call costs every region's parent chain. The 2026-10-03 security audit measured it on the host: 8 ns
+for a root with eight children, 42 µs for a root over the deepest chain the table can hold, and 62
+µs for that chain's leaf. Any holder of `ENUMERATE` on a region can repeat it, so it is a bounded
 interrupt-latency cost of the same shape as the reclaim scans the 2026-09-29 audit accepted. It is
-accepted: nothing multi-domain splits that deep, and the bound is `MAX_REGIONS`, not the caller's.
+accepted: nothing multi-domain splits that deep, and the bound is `MAXIMUM_REGIONS`, not the
+caller's.
 
 `PageFrame::SLICE` is the method §102 (a Frame names a run of pages) anticipated with two capabilities,
 one for the first 401 pages of a run and one for the 74 after them. A pool's holder slices window `w`,

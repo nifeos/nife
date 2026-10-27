@@ -69,7 +69,7 @@ const EMPTY_RING: Ring = Ring {
     counts: [const { AtomicU64::new(0) }; KINDS],
 };
 
-static RINGS: [Ring; crate::cpu::MAX_CPUS] = [EMPTY_RING; crate::cpu::MAX_CPUS];
+static RINGS: [Ring; crate::cpu::MAXIMUM_CPUS] = [EMPTY_RING; crate::cpu::MAXIMUM_CPUS];
 
 /// Record an event on the calling core's ring.
 ///

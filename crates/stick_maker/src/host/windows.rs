@@ -1,12 +1,13 @@
-//! **Windows: the four `kernel32` calls.** The pure half, which turns what they report into a
+//! **Windows: the five `kernel32` calls.** The pure half, which turns what they report into a
 //! [`Disk`], is `crate::windows`.
 
 use crate::disk::Disk;
 use crate::windows::disk_from;
 
 mod system {
-    // `raw-dylib`: rustc writes the import table itself, so linking needs no `libkernel32.a` from
-    // a MinGW installation, and the program cross-links from any host with `rust-lld`.
+    // `raw-dylib`: rustc writes the import table itself, so these calls need no `libkernel32.a`
+    // from a MinGW installation. Whether the rest of std then links from a non-Windows host is
+    // untested; notes/boot-stick.md's host table says a MinGW runtime or the Windows SDK is needed.
     #[link(name = "kernel32", kind = "raw-dylib")]
     unsafe extern "system" {
         pub fn GetLogicalDrives() -> u32;
@@ -16,7 +17,7 @@ mod system {
             name: *mut u16,
             name_len: u32,
             serial: *mut u32,
-            max_component: *mut u32,
+            maximum_component: *mut u32,
             flags: *mut u32,
             fs_name: *mut u16,
             fs_name_len: u32,
@@ -54,7 +55,7 @@ pub fn discover() -> Result<Vec<Disk>, String> {
         let drive_type = unsafe { system::GetDriveTypeW(root.as_ptr()) };
         let mut label = [0u16; 261];
         let mut fs = [0u16; 261];
-        let (mut serial, mut max, mut flags) = (0u32, 0u32, 0u32);
+        let (mut serial, mut maximum, mut flags) = (0u32, 0u32, 0u32);
         // SAFETY: every out-pointer is to a local sized as passed.
         let have_volume = unsafe {
             system::GetVolumeInformationW(
@@ -62,7 +63,7 @@ pub fn discover() -> Result<Vec<Disk>, String> {
                 label.as_mut_ptr(),
                 label.len() as u32,
                 &mut serial,
-                &mut max,
+                &mut maximum,
                 &mut flags,
                 fs.as_mut_ptr(),
                 fs.len() as u32,

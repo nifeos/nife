@@ -25,7 +25,7 @@ wiring with less headroom finds faults the boot does not have.
 
 `CARETAKER_STACK_PAGES` is four. The caretaker has no allocator and no recursion, and its one
 large frame is a sixteen-entry handle table and, in `fs_nameset_caretaker`, its name set and the
-two `grant::MAX_NAME` name buffers a rename compares.
+two `grant::MAXIMUM_NAME` name buffers a rename compares.
 
 `NET_STACK_STACK_PAGES` and `RESOLVER_STACK_PAGES` are nine: the kernel harness's eight extra pages
 and the one every process gets, since `build_child` counts the whole stack. The resolver's debug

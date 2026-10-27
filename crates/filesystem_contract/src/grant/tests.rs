@@ -40,20 +40,20 @@ fn pack_name_refuses_what_two_words_cannot_hold() {
 /// like `least_authority_demo` is grantable, and only the packer refuses it.
 #[test]
 fn a_granted_name_may_be_longer_than_two_words() {
-    let long = [b'n'; grant::MAX_NAME];
+    let long = [b'n'; grant::MAXIMUM_NAME];
     assert!(grant::fits(b"least_authority_demo"));
     assert!(grant::fits(&long), "the longest grantable name");
     assert!(
-        !grant::fits(&[b'n'; grant::MAX_NAME + 1]),
+        !grant::fits(&[b'n'; grant::MAXIMUM_NAME + 1]),
         "one byte past it"
     );
     assert!(!grant::fits(b""));
     assert!(grant::pack_name(b"least_authority_demo").is_none());
-    const { assert!(grant::WORDS_NAME < grant::MAX_NAME) };
+    const { assert!(grant::WORDS_NAME < grant::MAXIMUM_NAME) };
     // The spec word's length field is one byte, so the longest name must still be sayable in it.
     assert_eq!(
-        grant::spec_len(grant::spec(grant::MAX_NAME, grant::READ)),
-        grant::MAX_NAME
+        grant::spec_len(grant::spec(grant::MAXIMUM_NAME, grant::READ)),
+        grant::MAXIMUM_NAME
     );
 }
 

@@ -173,12 +173,12 @@ the block priced.
 ### The workload question, answered by reading
 
 *The code quoted below changed on 2026-08-19 (milestone 55 (Time Machine)). The section stands because its
-reasoning makes the change legible.* `smb_server`'s two `min`s now read `fs::TRANSFER_MAX` rather than
-`filesystem_contract::PAGE`, so a Mac writing a megabyte arrives as 16 requests rather than 256.
-Measured through a real SMB client: write 4.8x, read 2.4x, against the 8.02x and 5.67x step 3
-measured on the contract itself ([steps 1 and 3](read-path-record-and-request-size.md)). The residual is
-now owned by the socket contract's own 4080-byte chunking. The table and reasoning are in
-[notes/smb.md](../smb.md)'s throughput section. What follows is the finding as it stood, which is
+reasoning makes the change legible.* `smb_server`'s two `min`s now read `fs::TRANSFER_MAXIMUM`
+rather than `filesystem_contract::PAGE`, so a Mac writing a megabyte arrives as 16 requests rather
+than 256. Measured through a real SMB client: write 4.8x, read 2.4x, against the 8.02x and 5.67x
+step 3 measured on the contract itself ([steps 1 and 3](read-path-record-and-request-size.md)). The
+residual is now owned by the socket contract's own 4080-byte chunking. The table and reasoning are
+in [notes/smb.md](../smb.md)'s throughput section. What follows is the finding as it stood, which is
 what made that milestone exist.
 
 Milestone 138 asks whether 4 KiB is the atypical case. A Time Machine backup writes band files, which
