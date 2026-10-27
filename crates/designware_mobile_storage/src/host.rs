@@ -26,7 +26,7 @@ pub trait Registers {
     /// Write the 32-bit register at `offset`.
     fn write(&mut self, offset: u32, value: u32);
     /// Microseconds since some fixed point. Only differences are used.
-    fn now_us(&mut self) -> u64;
+    fn now_microseconds(&mut self) -> u64;
 }
 
 /// What went wrong, with enough to say where.
@@ -79,10 +79,10 @@ pub struct Identity {
 /// How long a reset, a clock update or a command may take before the driver gives up. Generous:
 /// these are fixed costs of a few card clocks at most, and a deadline exists only so a dead
 /// controller is a reported error rather than a hung boot.
-pub(crate) const COMMAND_DEADLINE_US: u64 = 100_000;
+pub(crate) const COMMAND_DEADLINE_MICROSECONDS: u64 = 100_000;
 /// How long a data phase may go without progress before it is abandoned. A card may take 250 ms
 /// to start a write (the SD spec's write timeout for SDHC); half a second is that with slack.
-pub(crate) const DATA_DEADLINE_US: u64 = 500_000;
+pub(crate) const DATA_DEADLINE_MICROSECONDS: u64 = 500_000;
 
 /// **The card clock divider** for a `target` from a `base`: the smallest `divider` with
 /// `base / (2 * divider) <= target`, or 0 (bypass) when `base` itself is low enough. `None` when
@@ -248,13 +248,17 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         self.registers
     }
 
-    pub(crate) fn wait<F: FnMut(&mut R) -> bool>(&mut self, deadline_us: u64, mut done: F) -> bool {
-        let start = self.registers.now_us();
+    pub(crate) fn wait<F: FnMut(&mut R) -> bool>(
+        &mut self,
+        deadline_microseconds: u64,
+        mut done: F,
+    ) -> bool {
+        let start = self.registers.now_microseconds();
         loop {
             if done(&mut self.registers) {
                 return true;
             }
-            if self.registers.now_us().wrapping_sub(start) > deadline_us {
+            if self.registers.now_microseconds().wrapping_sub(start) > deadline_microseconds {
                 return done(&mut self.registers);
             }
         }
@@ -275,7 +279,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 | registers::CTRL_INT_ENABLE);
         self.registers
             .write(registers::CTRL, ctrl | registers::CTRL_ALL_RESET);
-        if !self.wait(COMMAND_DEADLINE_US, |window| {
+        if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CTRL) & registers::CTRL_ALL_RESET == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
@@ -307,7 +311,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
 
     fn update_clock(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CMD, UPDATE_CLOCK);
-        if self.wait(COMMAND_DEADLINE_US, |window| {
+        if self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CMD) & registers::CMD_START_CMD == 0
         }) {
             Ok(())
@@ -352,9 +356,9 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     ///
     /// # Errors
     ///
-    /// [`Error::Busy`] past [`DATA_DEADLINE_US`].
+    /// [`Error::Busy`] past [`DATA_DEADLINE_MICROSECONDS`].
     pub(crate) fn wait_not_busy(&mut self) -> Result<(), Error> {
-        if self.wait(DATA_DEADLINE_US, |window| {
+        if self.wait(DATA_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::STATUS) & registers::STATUS_DATA_BUSY == 0
         }) {
             Ok(())
@@ -377,7 +381,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             let ctrl = self.registers.read(registers::CTRL);
             self.registers
                 .write(registers::CTRL, ctrl | registers::CTRL_FIFO_RESET);
-            if !self.wait(COMMAND_DEADLINE_US, |window| {
+            if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
                 window.read(registers::CTRL) & registers::CTRL_FIFO_RESET == 0
             }) {
                 return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
@@ -390,13 +394,13 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             .write(registers::RINTSTS, registers::RINTSTS_ALL);
         self.registers.write(registers::CMDARG, command.argument);
         self.registers.write(registers::CMD, command.word());
-        if !self.wait(COMMAND_DEADLINE_US, |window| {
+        if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CMD) & registers::CMD_START_CMD == 0
         }) {
             return Err(Error::CommandNotTaken(command.index));
         }
         let mut status = 0;
-        if !self.wait(COMMAND_DEADLINE_US, |window| {
+        if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
             status = window.read(registers::RINTSTS);
             status & registers::RINTSTS_CD != 0
         }) {
@@ -536,7 +540,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let mut status = 0;
         let depth = self.depth;
         let write = want == registers::RINTSTS_TXDR;
-        let ok = self.wait(DATA_DEADLINE_US, |window| {
+        let ok = self.wait(DATA_DEADLINE_MICROSECONDS, |window| {
             rint = window.read(registers::RINTSTS);
             if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
                 return true;
@@ -563,7 +567,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             Some(d) if d.blocks > 1 => registers::RINTSTS_DTO | registers::RINTSTS_ACD,
             _ => registers::RINTSTS_DTO,
         };
-        let ok = self.wait(DATA_DEADLINE_US, |window| {
+        let ok = self.wait(DATA_DEADLINE_MICROSECONDS, |window| {
             rint = window.read(registers::RINTSTS);
             rint & want == want
                 || rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0
@@ -732,7 +736,7 @@ mod tests {
         let mut sim = Sim::new(CardKind::Empty, 1, 32);
         sim.busy_forever = true;
         sim.clock_step = 7;
-        assert_ne!(DATA_DEADLINE_US % 7, 0);
+        assert_ne!(DATA_DEADLINE_MICROSECONDS % 7, 0);
         let mut h = take(sim);
         assert_eq!(
             within_ten_seconds(move || h.wait_not_busy()),
@@ -881,12 +885,12 @@ mod tests {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers().crc_error_at_end = true;
-        let start = h.registers().now_us();
+        let start = h.registers().now_microseconds();
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &[0u8; 512]),
             Err(IoError::Host(Error::Data(24, rint))) if rint & registers::RINTSTS_DCRC != 0
         ));
-        assert!(h.registers().now_us() - start < DATA_DEADLINE_US);
+        assert!(h.registers().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
     }
 
     /// The same for a read whose data phase fails its CRC: the wait for the FIFO ends on the error.
@@ -895,13 +899,13 @@ mod tests {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers().fail_next_read_crc = true;
-        let start = h.registers().now_us();
+        let start = h.registers().now_microseconds();
         let mut block = [0u8; 512];
         assert!(matches!(
             sd::read_blocks(&mut h, &card, 1, &mut block),
             Err(IoError::Host(Error::Data(17, _)))
         ));
-        assert!(h.registers().now_us() - start < DATA_DEADLINE_US);
+        assert!(h.registers().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
     }
 
     /// A multi-block transfer is over when the automatic CMD12 is, which can land after `DTO`.

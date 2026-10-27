@@ -35,7 +35,8 @@ Comments and string literals are stripped first: the ruling covers identifiers.
 **Permanent exclusions, each for a stated reason, not a backlog:**
 
 - `vendor/`, `patches/` and `target/`: somebody else's code.
-- `STD`: Rust standard-library methods (`as_nanos`, `from_secs`), which keep their spelling.
+- `STD`: Rust standard-library methods (`as_nanos`, `from_secs`) and the smoltcp time methods
+  (`total_millis`), which keep their spelling.
 - `KEPT`: an identifier where the component is not a unit, or mirrors an external specification.
   `US` is x86 paging's User/Supervisor bit, `sec` in `kernel/src/pci.rs` is a bridge's secondary
   bus, `sec1` is the SEC 1 curve encoding, `SEC` in a clock-and-reset name is security. `tv_sec`,
@@ -69,7 +70,7 @@ SELF = 'helpers/unit_symbols.py'
 
 # The count on 2026-10-27, lowered by the sweep's `--bank`. Never raise it by hand: a new unit
 # symbol is spelled out, not admitted.
-CEILING = 531
+CEILING = 0
 
 FAMILY = {
     'nanos': 'nanos', 'millis': 'millis',
@@ -84,6 +85,8 @@ STD = {
     'subsec_millis', 'subsec_micros', 'subsec_nanos',
     'from_secs', 'from_millis', 'from_micros', 'from_nanos', 'from_secs_f32', 'from_secs_f64',
     'checked_as_nanos', 'abs_diff_secs',
+    # smoltcp's time types
+    'total_millis', 'total_micros',
 }
 
 _POSIX = 'a field of the POSIX timespec or timeval'
@@ -95,6 +98,8 @@ KEPT = {
     'crates/paging/src/x86_64.rs': ({'US'}, 'the x86 paging User/Supervisor bit'),
     'kernel/src/pci.rs': ({'sec', 'sec_sts'}, _BUS),
     'c_library/src/lib.rs': ({'tv_sec', 'tv_nsec', 'tv_usec'}, _POSIX),
+    'notes/filesystem-crates-2026-10-07/probes/btrfs-transaction.rs':
+        ({'sec'}, 'a field of btrfs_disk::items::Timespec, an external crate'),
     'components/src/clock.rs': ({'offset_nanos'}, _OVERLAY),
     'components/src/date.rs': ({'offset_nanos'}, _OVERLAY),
     'components/src/timetable.rs': ({'offset_nanos'}, _OVERLAY),

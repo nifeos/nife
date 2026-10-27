@@ -64,7 +64,7 @@ fn the_ulp_handshake_changes_only_its_own_bits() {
 fn a_delay_is_in_milliseconds_and_a_flush_reads_status() {
     let mut s = sim::Sim::new(sim::Start::Healthy, true);
     delay_ms(&mut s, 3);
-    assert_eq!(s.elapsed_us, 3000);
+    assert_eq!(s.elapsed_microseconds, 3000);
     flush_writes(&mut s);
     assert_eq!(s.reads, [crate::registers::STATUS]);
 }

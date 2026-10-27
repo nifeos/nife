@@ -342,11 +342,11 @@ fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_cap() 
     );
 }
 
-/// Busy-wait `nanos` on the kernel's own clock: long enough for the ring to call its drainer
+/// Busy-wait `ns` on the kernel's own clock: long enough for the ring to call its drainer
 /// stalled, without a sleep primitive the test harness would have to provide.
-fn spin_for(nanos: u64) {
+fn spin_for(ns: u64) {
     let hz = crate::arch::timer::frequency();
-    let until = crate::arch::timer::now() + nanos * hz / 1_000_000_000;
+    let until = crate::arch::timer::now() + ns * hz / 1_000_000_000;
     while crate::arch::timer::now() < until {
         core::hint::spin_loop();
     }
@@ -367,7 +367,7 @@ fn ring_flags(seq: u64) -> u8 {
 ///
 /// The test plays the drainer by writing the cursor page itself. With a drainer attached and
 /// caught up, a `println!` reaches the ring and not the UART (`console::bytes_written` does not
-/// move). Left unread past `STALL_NANOS`, the next line finds the drainer stalled: it prints the
+/// move). Left unread past `STALL_NS`, the next line finds the drainer stalled: it prints the
 /// held line and itself, flags both `DIRECT`, and counts two fallbacks.
 #[test_case]
 fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() {
@@ -387,7 +387,7 @@ fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() 
     crate::println!("  kernel log probe: held for the drainer");
     let held_written = crate::console::bytes_written();
     let held_flags = ring_flags(next);
-    spin_for(crate::kernel_log::STALL_NANOS + 100_000_000);
+    spin_for(crate::kernel_log::STALL_NS + 100_000_000);
     crate::println!("  kernel log probe: after the stall");
     let after_written = crate::console::bytes_written();
     let (flags_then, flags_now) = (ring_flags(next), ring_flags(next + 1));
@@ -436,7 +436,7 @@ fn a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it() {
     let line = "  kernel log probe: the last line before the drainer stopped\n";
     crate::print!("{line}");
     let held_written = crate::console::bytes_written();
-    // The stall test needs `STALL_NANOS` and the poll runs once a second; three seconds bounds
+    // The stall test needs `STALL_NS` and the poll runs once a second; three seconds bounds
     // both with room for a loaded emulator. The poll may run on another core and writes the text
     // and its newline separately, so the loop waits for the whole line, not the first byte.
     let hz = crate::arch::timer::frequency();

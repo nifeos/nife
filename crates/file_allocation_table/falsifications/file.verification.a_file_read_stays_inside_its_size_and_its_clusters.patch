@@ -1,0 +1,19 @@
+Falsifies `file_allocation_table::file::verification::a_file_read_stays_inside_its_size_and_its_clusters`.
+
+The defect: a span may run one byte past the file's size, so the last read of a file whose size is
+not a multiple of the sector size returns a byte of the cluster's slack to the caller.
+
+Expected to fail: the harness's assertion that the position never passes the size.
+
+diff --git a/crates/file_allocation_table/src/file.rs b/crates/file_allocation_table/src/file.rs
+--- a/crates/file_allocation_table/src/file.rs
++++ b/crates/file_allocation_table/src/file.rs
+@@ -152,7 +152,7 @@ impl FileCursor {
+             .ok_or(wrong_cluster)?;
+         let offset = within % sector_bytes;
+         let len = (sector_bytes - offset)
+-            .min(self.size - self.position)
++            .min((self.size - self.position).saturating_add(1))
+             .min(u32::try_from(want).unwrap_or(u32::MAX));
+         self.position += len;
+         Ok(Some(Span {

@@ -135,15 +135,15 @@ fn wall_now(page: &ClockPage) -> u64 {
 fn monotonic_ns() -> u64 {
     let freq = cntfrq();
     let ticks = now();
-    let secs = ticks / freq;
+    let seconds = ticks / freq;
     let rem = ticks % freq;
-    secs * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
+    seconds * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
 }
 
 /// Read the machine's RTC, whichever one it has. `None` when it has none.
 ///
-/// **Both mapped-register drivers are compiled on every ISA.** Neither `pl031_unix_nanos` nor
-/// `goldfish_unix_nanos` is behind a `cfg(target_arch)`, because the device is a fact about the
+/// **Both mapped-register drivers are compiled on every ISA.** Neither `pl031_unix_ns` nor
+/// `goldfish_unix_ns` is behind a `cfg(target_arch)`, because the device is a fact about the
 /// board and not about the instruction set: the VisionFive 2 is riscv64 and has neither of these.
 /// Keying the layout off the ISA would compile clean and read garbage on the first real board,
 /// which is precisely the failure rule 5 exists to catch. `rtc::CMOS` needs no such driver at all:
@@ -151,8 +151,8 @@ fn monotonic_ns() -> u64 {
 /// already the converted answer the kernel read from CMOS before this program ran.
 fn read_rtc(kind: u64, seed: u64) -> Option<u64> {
     match kind {
-        rtc::PL031 => Some(pl031_unix_nanos(RTC_VA)),
-        rtc::GOLDFISH => Some(goldfish_unix_nanos(RTC_VA)),
+        rtc::PL031 => Some(pl031_unix_ns(RTC_VA)),
+        rtc::GOLDFISH => Some(goldfish_unix_ns(RTC_VA)),
         rtc::CMOS => Some(seed),
         _ => None,
     }
@@ -166,11 +166,11 @@ fn read_rtc(kind: u64, seed: u64) -> Option<u64> {
 /// service reads the clock once at startup and lets the monotonic counter carry the time after
 /// that. `DR` is 32 bits wide, so this device's own epoch runs out in 2106; the wire format here is
 /// nanoseconds in a `u64`, which runs out in 2554, and neither is a horizon worth engineering for.
-fn pl031_unix_nanos(base: u64) -> u64 {
+fn pl031_unix_ns(base: u64) -> u64 {
     const DR: u64 = 0x00;
     // SAFETY: `base` is this process's device mapping of a PL031, placed by whoever built us.
-    let secs = unsafe { core::ptr::read_volatile((base + DR) as *const u32) } as u64;
-    secs * clock_contract::NS_PER_SECOND
+    let seconds = unsafe { core::ptr::read_volatile((base + DR) as *const u32) } as u64;
+    seconds * clock_contract::NS_PER_SECOND
 }
 
 /// **The Goldfish RTC driver** (`google,goldfish-rtc`, QEMU `virt` on riscv64). Same rule 2 shape:
@@ -181,7 +181,7 @@ fn pl031_unix_nanos(base: u64) -> u64 {
 /// `TIME_HIGH`, so `TIME_HIGH` must be read second. Reading them the other way round is correct
 /// except across the low word's wrap, which is once every four seconds and presents as a
 /// four-second jump in a clock that is otherwise fine, i.e. the worst kind of bug to have.
-fn goldfish_unix_nanos(base: u64) -> u64 {
+fn goldfish_unix_ns(base: u64) -> u64 {
     const TIME_LOW: u64 = 0x00;
     const TIME_HIGH: u64 = 0x04;
     // SAFETY: `base` is this process's device mapping of a Goldfish RTC, placed by whoever built

@@ -59,7 +59,7 @@ const SUITE_SEEDS: u64 = 32;
 const CORPUS: &[u64] = &[52, 202_643_000_066];
 /// The sweep's guest-time capability (752's), so a weekly run with a large count stops between seeds
 /// inside the per-test budget.
-const SWEEP_SECS: u64 = 60;
+const SWEEP_SECONDS: u64 = 60;
 /// The fuzzers' badges on the server endpoint. Nonzero, distinct, and never mintable by a call.
 const BADGE_A: u64 = 0x779A;
 const BADGE_B: u64 = 0x779B;
@@ -1416,7 +1416,7 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             crate::println!("    confined fuzzer: seeds 0..{SUITE_SEEDS} and corpus {CORPUS:?}");
         }
         Some((first, count)) => {
-            let capability = start + SWEEP_SECS * hz;
+            let capability = start + SWEEP_SECONDS * hz;
             for seed in first..first.saturating_add(count) {
                 if crate::arch::timer::now() > capability {
                     break;
@@ -1426,7 +1426,7 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             }
             crate::println!(
                 "    confined fuzzer: sweep of seeds {first}..{} ({ran} of {count} asked; a time \
-                 capability of {SWEEP_SECS} s stops it early)",
+                 capability of {SWEEP_SECONDS} s stops it early)",
                 first + ran
             );
         }

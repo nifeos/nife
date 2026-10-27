@@ -46,7 +46,7 @@ lines. That is the gap this slice closes.
 
 `Testable::run` in `kernel/src/testing.rs` stamps `arch::timer::now()` before each test, because the
 per-test ceiling needs a start time. After the test it computes the elapsed seconds and prints
-`[N s]` only when the figure reaches `SLOW_REPORT_SECS`, which is 5. Below that the number is
+`[N s]` only when the figure reaches `SLOW_REPORT_SECONDS`, which is 5. Below that the number is
 discarded. So the instrument exists on all three architectures; it is the record that is missing.
 
 The console is the only channel all three architectures share. aarch64 and riscv64 exit through
@@ -155,7 +155,7 @@ console line depend on a format rustc may change.
 
 ## What was considered and lost
 
-- Lowering `SLOW_REPORT_SECS` to zero, so every `ok` line carries `[N s]`. It changes a line that
+- Lowering `SLOW_REPORT_SECONDS` to zero, so every `ok` line carries `[N s]`. It changes a line that
   `xtask`, `script/falsifications` and the HVF leg already parse. Whole seconds also round most of
   this suite to zero.
 - Writing the record to a host file through semihosting. It works on two architectures and not on

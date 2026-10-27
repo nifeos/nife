@@ -30,7 +30,7 @@ the crates the 2026-09-21 triage never reached come first.
 19 missed: 16 killed, 3 equivalent. A second sweep of each reports only the three equivalents.
 
 - `ps` (8, all killed): `state_name`'s `READY` and `BLOCKED` arms, `refusal`'s `NoSuchSlot` and
-  `WrongObject` arms, and the digit-count subtraction in `write_millis` and `write_thread_id`. The
+  `WrongObject` arms, and the digit-count subtraction in `write_ms` and `write_thread_id`. The
   tests are `every_state_has_its_name`, `each_refusal_is_explained_in_its_own_words` and
   `the_columns_pad_to_their_widths`. The padding mutants only differ from the original for a value
   of two or more digits, so the test uses several widths.

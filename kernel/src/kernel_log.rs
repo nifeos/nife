@@ -4,7 +4,7 @@
 //!
 //! Every line becomes one record in a ring of frames (`system_log_contract::kernel_ring`, shared
 //! with the log service). The kernel also writes it to the UART with no drainer, with a stalled
-//! one ([`STALL_NANOS`]) and on a panic ([`enter_panic`]), flagging it `DIRECT`; a drainer that
+//! one ([`STALL_NS`]) and on a panic ([`enter_panic`]), flagging it `DIRECT`; a drainer that
 //! keeps up forwards it whole. Signalling is deferred to [`signal_if_safe`], since `println!` runs
 //! under arbitrary locks. See notes/kernel-console.md, "The kernel's ring".
 //!
@@ -28,7 +28,7 @@ use system_log_contract::severity;
 /// How long the oldest unread line may wait before the kernel decides its drainer has stopped.
 /// Fifty ticks: long enough that a busy service is not mistaken for a dead one, short enough that
 /// a person waiting on a fault report does not wonder.
-pub const STALL_NANOS: u64 = 500_000_000;
+pub const STALL_NS: u64 = 500_000_000;
 
 static RING: AtomicPtr<AtomicU64> = AtomicPtr::new(core::ptr::null_mut());
 static CURSOR: AtomicPtr<AtomicU64> = AtomicPtr::new(core::ptr::null_mut());
@@ -78,7 +78,7 @@ fn cursor() -> Option<Cursor<'static>> {
 }
 
 /// Nanoseconds since boot, the records' clock.
-fn now_nanos() -> u64 {
+fn now_ns() -> u64 {
     let freq = crate::arch::timer::frequency();
     let t = crate::arch::timer::now();
     (t / freq) * 1_000_000_000 + (t % freq) * 1_000_000_000 / freq
@@ -138,7 +138,7 @@ pub(crate) fn attached_once() -> bool {
 }
 
 /// **Whether the drainer is keeping up**: attached, less than half the ring unread, and the oldest
-/// unread line younger than [`STALL_NANOS`].
+/// unread line younger than [`STALL_NS`].
 fn draining(r: &Ring<'_>) -> bool {
     if cfg!(feature = "kernel_log_detached") || PANICKING.load(Ordering::Relaxed) {
         return false;
@@ -160,7 +160,7 @@ fn draining(r: &Ring<'_>) -> bool {
     }
     let mut scratch = [0u8; TEXT_MAXIMUM];
     match r.read(consumed, &mut scratch) {
-        Read::Record(h, _) => now_nanos().saturating_sub(h.time) < STALL_NANOS,
+        Read::Record(h, _) => now_ns().saturating_sub(h.time) < STALL_NS,
         _ => false,
     }
 }
@@ -260,7 +260,7 @@ fn commit(r: &Ring<'_>, line: &mut Line, cut: bool, out: &mut impl FnMut(&str)) 
     } else {
         SIGNAL_PENDING.store(true, Ordering::Release);
     }
-    r.append(now_nanos(), severity::INFO, f, &line.buf[..line.len]);
+    r.append(now_ns(), severity::INFO, f, &line.buf[..line.len]);
     line.len = 0;
     // A cut line's tail keeps going where its head went.
 }

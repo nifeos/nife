@@ -23,6 +23,10 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 [dev-dependencies]
 lamfat = "=0.4.3"
 
+# Decompresses tests/fixtures/macos/*.zst, the two images a macOS host wrote. Pure Rust, MIT, and
+# a dev-dependency only, like the oracle.
+ruzstd = "=0.9.1"
+
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }

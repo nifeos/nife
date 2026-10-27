@@ -128,7 +128,7 @@ rather than raised by feel (every leg now prints its line count, total and three
 | x86_64 (OVMF) | 60 | 321.1 s | 24.7 s (`xargs caps rm globmany/m-*.txt`), 16.7 s (`caps ps`) |
 
 That CI runner was 1.5x to 1.8x slower than patagonia on this leg, so the x86_64 bound is 90 s
-(`SWISH_CHECK_X86_LINE_SECS`): 3.6x the slowest local line, 2x that line at CI's worst ratio. The
+(`SWISH_CHECK_X86_LINE_SECONDS`): 3.6x the slowest local line, 2x that line at CI's worst ratio. The
 cost is the screen path, milestone 400's console waiting for each write to be painted and copied
 into an uncacheable aperture, as debug builds under TCG. The other two legs run the same shell
 over TCG in under a second a line. A real PC pays that copy in native stores (milliseconds per

@@ -13,9 +13,9 @@ fn a_leg_thirty_times_its_baseline_fails_and_one_at_twice_it_does_not() {
 #[test]
 fn the_median_ignores_the_one_slow_line_the_mean_would_not() {
     // `interrupt_ignorer` costs 7 s on every leg and is no defect: one outlier in 142.
-    let mut secs = vec![0.2; 141];
-    secs.push(7.0);
-    let v = super::leg_cost_verdict("x86_64", "kvm", &secs);
+    let mut seconds = vec![0.2; 141];
+    seconds.push(7.0);
+    let v = super::leg_cost_verdict("x86_64", "kvm", &seconds);
     assert_eq!(v.median, 0.2);
     assert!(!v.over);
 }

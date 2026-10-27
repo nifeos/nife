@@ -125,7 +125,7 @@ is whether the kernel also writes the line to the UART itself:
 - With a drainer that keeps up, it does not. The line waits in the ring, the kernel signals the
   service, and the service forwards it whole, on a line of its own.
 - With a drainer that has stopped (more than half the ring unread, or the oldest unread line older
-  than `STALL_NANOS`), it does, after every unread line before it, each counted in the ring's
+  than `STALL_NS`), it does, after every unread line before it, each counted in the ring's
   fallback count and flagged `DIRECT`. A torn line while the service is down is cheaper than a line
   nobody sees, calef's addition to §242 (a system log).
 - On a panic it always does, as the next section says.

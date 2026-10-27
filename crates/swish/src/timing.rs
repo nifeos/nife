@@ -43,16 +43,16 @@ pub fn write_untimed(r: Untimed, out: &mut dyn FnMut(&[u8])) {
 /// assert_eq!(shown(4_213_000), "4.213 ms");
 /// assert_eq!(shown(90_500_000_000), "90.500 s");
 /// ```
-pub fn write_duration(nanos: u64, out: &mut dyn FnMut(&[u8])) {
+pub fn write_duration(ns: u64, out: &mut dyn FnMut(&[u8])) {
     const MICRO: u64 = 1_000;
     const MILLI: u64 = 1_000_000;
-    const SEC: u64 = 1_000_000_000;
-    let (whole, thousandths, unit) = if nanos >= SEC {
-        (nanos / SEC, (nanos % SEC) / MILLI, b" s".as_slice())
-    } else if nanos >= MILLI {
-        (nanos / MILLI, (nanos % MILLI) / MICRO, b" ms".as_slice())
+    const SECOND: u64 = 1_000_000_000;
+    let (whole, thousandths, unit) = if ns >= SECOND {
+        (ns / SECOND, (ns % SECOND) / MILLI, b" s".as_slice())
+    } else if ns >= MILLI {
+        (ns / MILLI, (ns % MILLI) / MICRO, b" ms".as_slice())
     } else {
-        (nanos / MICRO, nanos % MICRO, b" us".as_slice())
+        (ns / MICRO, ns % MICRO, b" us".as_slice())
     };
     write_num(whole, out);
     out(b".");
@@ -71,9 +71,9 @@ pub fn write_duration(nanos: u64, out: &mut dyn FnMut(&[u8])) {
 /// `real` is wall-clock time from the shell deciding to run the line to the line being over, a
 /// difference of two reads of the monotonic counter (§72), so nothing needs disclaiming. There is
 /// no `user` or `sys` row: nothing in this kernel is asked how much processor a thread consumed.
-pub fn write_timing(nanos: u64, out: &mut dyn FnMut(&[u8])) {
+pub fn write_timing(ns: u64, out: &mut dyn FnMut(&[u8])) {
     out(b"  time: real ");
-    write_duration(nanos, out);
+    write_duration(ns, out);
     out(b"\n");
 }
 

@@ -10,7 +10,7 @@
 
 //! # BUGS
 //!
-//! - `busy` is not split into user and system time, so `vmstat` prints `us` and `sy` as one.
+//! - `busy` is not split into user and system time, so `vmstat` prints `microseconds` and `sy` as one.
 //! - The context-switch count is exact but up to one tick old, because the tick publishes it.
 //! - The run queue is sampled once per tick per core; a parked core keeps its last sample.
 //! - There is no swap, page-cache or block I/O counter: nife does not page out, and the filesystem

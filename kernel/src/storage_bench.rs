@@ -377,7 +377,7 @@ fn write_and_idmac(
     };
     let dma = through_idmac(slot, host, id, r, write);
     say!(slot, "{dma}");
-    let kib = kib_per_s(r.timed_blocks, r.timed_us);
+    let kib = kib_per_second(r.timed_blocks, r.timed_microseconds);
     match verdict {
         Some(v) => Outcome::Written(kib, v, dma),
         None => Outcome::ReadOk(kib, dma),
@@ -629,15 +629,15 @@ fn print_read(slot: &Slot, r: &ReadReport) {
         slot,
         "timed read: {} blocks in {} us, {} KiB/s ({} blocks per command, polled FIFO)",
         r.timed_blocks,
-        r.timed_us,
-        kib_per_s(r.timed_blocks, r.timed_us),
+        r.timed_microseconds,
+        kib_per_second(r.timed_blocks, r.timed_microseconds),
         READ_PAGES * 4096 / BLOCK,
     );
 }
 
-fn kib_per_s(blocks: u64, us: u64) -> u64 {
+fn kib_per_second(blocks: u64, microseconds: u64) -> u64 {
     (blocks * BLOCK as u64 * 1_000_000)
-        .checked_div(us)
+        .checked_div(microseconds)
         .unwrap_or(0)
         / 1024
 }
@@ -696,12 +696,12 @@ fn through_idmac(
             return Dma::Failed(e);
         }
     };
-    let kib = kib_per_s(report.timed_blocks, report.timed_us);
+    let kib = kib_per_second(report.timed_blocks, report.timed_microseconds);
     say!(
         slot,
         "timed read: {} blocks in {} us, {kib} KiB/s ({} blocks per command, IDMAC); the first {} KiB {} the polled read",
         report.timed_blocks,
-        report.timed_us,
+        report.timed_microseconds,
         READ_PAGES * 4096 / BLOCK,
         READ_PAGES * 4,
         if report.matches {
@@ -765,7 +765,7 @@ fn read_matrix(slot: &Slot) {
                 r.asked_hz,
                 r.blocks,
                 r.result,
-                r.us,
+                r.microseconds,
                 r.maximum_fill,
                 r.full_reads,
                 r.after[0],

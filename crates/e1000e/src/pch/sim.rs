@@ -44,7 +44,7 @@ pub struct Sim {
     pub physical_layer_device_resets: u32,
     pub global_resets: u32,
     pub strap_writes: Vec<u32>,
-    pub elapsed_us: u64,
+    pub elapsed_microseconds: u64,
     flash_status: u16,
     flash_ctl: u16,
     /// Reads of the flash status that still show a cycle in progress; `u32::MAX` never clears.
@@ -89,7 +89,7 @@ impl Sim {
             physical_layer_device_resets: 0,
             global_resets: 0,
             strap_writes: Vec::new(),
-            elapsed_us: 0,
+            elapsed_microseconds: 0,
             flash_status: non_volatile_memory::status::DESCRIPTOR_VALID,
             flash_ctl: 0,
             flash_busy_reads: 0,
@@ -311,8 +311,8 @@ impl Hardware for Sim {
     fn read16(&mut self, offset: u64) -> u16 {
         self.read(offset) as u16
     }
-    fn delay_us(&mut self, us: u64) {
-        self.elapsed_us += us;
+    fn delay_microseconds(&mut self, microseconds: u64) {
+        self.elapsed_microseconds += microseconds;
     }
     fn pci_vendor_id(&mut self) -> u16 {
         0x8086
@@ -411,8 +411,8 @@ mod tests {
             fn read16(&mut self, _: u64) -> u16 {
                 0
             }
-            fn delay_us(&mut self, us: u64) {
-                self.0 += us;
+            fn delay_microseconds(&mut self, microseconds: u64) {
+                self.0 += microseconds;
             }
             fn pci_vendor_id(&mut self) -> u16 {
                 0
@@ -424,7 +424,7 @@ mod tests {
             physical_layer_device::read_mdic(&mut m, 1, 2),
             Err(PhysicalLayerDeviceError::NotReady)
         );
-        assert_eq!(m.0, u64::from(mdic::POLLS) * mdic::POLL_US);
+        assert_eq!(m.0, u64::from(mdic::POLLS) * mdic::POLL_MICROSECONDS);
         assert_eq!(m.0, 96_000, "FreeBSD's 96 ms: 1920 polls of 50 us");
     }
 
@@ -486,10 +486,10 @@ mod tests {
     fn a_reset_block_is_polled_for_three_hundred_milliseconds() {
         let mut s = Sim::new(Start::Healthy, true);
         assert!(!physical_layer_device::reset_blocked(&mut s));
-        assert_eq!(s.elapsed_us, 0);
+        assert_eq!(s.elapsed_microseconds, 0);
         s.mac.insert(registers::FWSM, 0);
         assert!(physical_layer_device::reset_blocked(&mut s));
-        assert_eq!(s.elapsed_us, 300_000);
+        assert_eq!(s.elapsed_microseconds, 300_000);
     }
 
     /// A refused semaphore is cleared without disturbing the rest of `EXTCNF_CTRL`, and releasing
@@ -832,7 +832,7 @@ mod tests {
         assert_eq!(ctl & 0x0300, 0x0300, "four bytes");
         assert_eq!(ctl & 0x0006, 0, "a read");
         assert_eq!(
-            s.elapsed_us, 1,
+            s.elapsed_microseconds, 1,
             "one microsecond before the cycle, none in it"
         );
         // The last byte the linear address reaches is still in range.
@@ -853,7 +853,7 @@ mod tests {
             Ok(0x1234)
         );
         assert_eq!(s.flash_cycles.len(), 1);
-        assert_eq!(s.elapsed_us, 1 + 2);
+        assert_eq!(s.elapsed_microseconds, 1 + 2);
     }
 
     /// **Errors left set by an earlier cycle are cleared before the next one starts** (they are

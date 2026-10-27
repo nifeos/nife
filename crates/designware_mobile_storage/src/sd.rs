@@ -25,7 +25,7 @@ pub(crate) const TRANSFER_HZ: u32 = 25_000_000;
 pub const BLOCK: usize = 512;
 /// How long `ACMD41` or `CMD1` may report busy before the card is declared dead: the SD spec gives
 /// a card one second from the first `ACMD41`.
-pub(crate) const POWER_UP_DEADLINE_US: u64 = 1_000_000;
+pub(crate) const POWER_UP_DEADLINE_MICROSECONDS: u64 = 1_000_000;
 /// The relative card address the host assigns an eMMC with `CMD3`. An SD card proposes its own
 /// instead.
 #[doc(alias = "rca")]
@@ -60,7 +60,7 @@ pub enum InitializationError {
     InterfaceCondition(u32),
     /// Neither `ACMD41` nor `CMD1` was answered: no card, or a card that is not memory.
     NoCard(Error),
-    /// The card stayed busy past [`POWER_UP_DEADLINE_US`]: the last OCR.
+    /// The card stayed busy past [`POWER_UP_DEADLINE_MICROSECONDS`]: the last OCR.
     PowerUp(u32),
     /// `CMD2`, `CMD3`, `CMD9` or `CMD7` failed: the command and the error.
     Identify(u8, Error),
@@ -374,7 +374,7 @@ fn sd_power_up<R: Registers, D: DirectMemoryAccessRegion>(
     } else {
         SD_OPERATION_CONDITIONS_ARGUMENT & !OPERATION_CONDITIONS_HIGH_CAPACITY
     };
-    let start = host.registers().now_us();
+    let start = host.registers().now_microseconds();
     loop {
         host.command(&Command::new(c::APP_CMD, 0, Response::R1))
             .map_err(InitializationError::NoCard)?;
@@ -384,7 +384,8 @@ fn sd_power_up<R: Registers, D: DirectMemoryAccessRegion>(
         if operation_conditions & OPERATION_CONDITIONS_BUSY_DONE != 0 {
             return Ok(operation_conditions);
         }
-        if host.registers().now_us().wrapping_sub(start) > POWER_UP_DEADLINE_US {
+        if host.registers().now_microseconds().wrapping_sub(start) > POWER_UP_DEADLINE_MICROSECONDS
+        {
             return Err(InitializationError::PowerUp(operation_conditions));
         }
     }
@@ -393,7 +394,7 @@ fn sd_power_up<R: Registers, D: DirectMemoryAccessRegion>(
 fn multimedia_card_power_up<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,
 ) -> Result<u32, InitializationError> {
-    let start = host.registers().now_us();
+    let start = host.registers().now_microseconds();
     loop {
         let operation_conditions = host
             .command(&Command::new(
@@ -405,7 +406,8 @@ fn multimedia_card_power_up<R: Registers, D: DirectMemoryAccessRegion>(
         if operation_conditions & OPERATION_CONDITIONS_BUSY_DONE != 0 {
             return Ok(operation_conditions);
         }
-        if host.registers().now_us().wrapping_sub(start) > POWER_UP_DEADLINE_US {
+        if host.registers().now_microseconds().wrapping_sub(start) > POWER_UP_DEADLINE_MICROSECONDS
+        {
             return Err(InitializationError::PowerUp(operation_conditions));
         }
     }

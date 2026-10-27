@@ -31,7 +31,7 @@ pub struct Wiring {
 pub fn machine_has_no_rtc() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
-        crate::arch::rtc::read_unix_nanos().is_none()
+        crate::arch::rtc::read_unix_ns().is_none()
     }
     #[cfg(not(target_arch = "x86_64"))]
     {
@@ -86,8 +86,8 @@ fn spawn_with(
     // wall clock over as `seed` (§130 (how the kernel-resident CMOS RTC reaches the userspace clock
     // service), option 3); elsewhere the driver polls its own.
     #[cfg(target_arch = "x86_64")]
-    let (kind, seed) = match crate::arch::rtc::read_unix_nanos() {
-        Some(nanos) => (clock_contract::rtc::CMOS, nanos),
+    let (kind, seed) = match crate::arch::rtc::read_unix_ns() {
+        Some(ns) => (clock_contract::rtc::CMOS, ns),
         None => (clock_contract::rtc::NONE, 0u64),
     };
     #[cfg(not(target_arch = "x86_64"))]
@@ -165,7 +165,7 @@ impl Wiring {
     }
 
     /// Play a proposer: `CALL` the propose endpoint. Returns `(status, wall_nanos_after)`.
-    pub fn propose_nanos(&self, unix_ns: u64) -> (u64, u64) {
+    pub fn propose_ns(&self, unix_ns: u64) -> (u64, u64) {
         let r = crate::sched::ipc_call(
             self.propose,
             [
@@ -183,7 +183,7 @@ impl Wiring {
 pub fn monotonic_ns() -> u64 {
     let freq = crate::arch::timer::frequency();
     let ticks = crate::arch::timer::now();
-    let secs = ticks / freq;
+    let seconds = ticks / freq;
     let rem = ticks % freq;
-    secs * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
+    seconds * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
 }
