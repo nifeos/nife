@@ -6,6 +6,9 @@
 //! 512 bytes and every value, not a bounded family. The markers are written as the
 //! specification's literals rather than through the crate's match, so a wrong marker cannot prove
 //! itself right.
+//!
+//! Name: ratified 2026-10-26 (UTC), on #2760. The Kani proofs, named as `boot_sector` and
+//! `long_name` name theirs.
 
 use super::*;
 

@@ -1,5 +1,7 @@
 //! **The volume**: its layout constants, the arithmetic that sizes the table and places each
 //! cluster, and the sectors a caller writes. The crate root re-exports what is public here.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 use crate::efi_system_partition::{BOOT_CLUSTER, EFI_CLUSTER, FILE_CLUSTER};
 use crate::long_name::{self, LongName};
@@ -8,27 +10,39 @@ use crate::long_name::{self, LongName};
 ///
 /// FAT32 permits 512, 1024, 2048 and 4096; this crate writes 512, which is what every disk this
 /// project has met reports and what `globally_unique_identifier_partition_table` counts in.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `SECTOR` (it reads as a sector and holds a size).
 pub const SECTOR_BYTES: usize = 512;
 
 /// Sectors per cluster, so 4096-byte clusters.
 ///
 /// The same number as `filesystem_contract::blk`'s transfer unit, which is not a coincidence: a
 /// caller moving one blk block per request moves exactly one cluster.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CLUSTER_SECTORS: u32 = 8;
 
 /// Bytes per cluster.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `CLUSTER` (it reads as a cluster and holds a size).
 pub const CLUSTER_BYTES: usize = CLUSTER_SECTORS as usize * SECTOR_BYTES;
 
 /// Reserved sectors ahead of the first FAT: the boot sector, `FSInfo`, and the backup pair the
 /// specification puts at sectors 6 and 7, with room left over as every tool leaves it.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const RESERVED_SECTORS: u32 = 32;
 
 /// How many copies of the table are written: two, because every tool writes two and a firmware that
 /// reads the second finds it.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `FATS` (the acronym in a crate that spells it out).
 pub const TABLE_COUNT: u32 = 2;
 
 /// The first cluster of the root directory. FAT32 fixes nothing here, but 2 is the first data
 /// cluster and every tool uses it.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ROOT_CLUSTER: u32 = 2;
 
 /// **The count of data clusters below which a volume is not FAT32 at all.**
@@ -36,6 +50,9 @@ pub const ROOT_CLUSTER: u32 = 2;
 /// Microsoft's specification defines the FAT type by this number and nothing else, and drivers in
 /// the field follow it. A "FAT32" volume with fewer clusters than this is read as FAT16 by the code
 /// that matters, which is the firmware's, so this crate refuses to build one.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `FAT32_MIN_CLUSTERS` (min spelled out, as the
+/// tree-wide ruling asks). Refused `MIN_CLUSTERS` (it is FAT32's floor alone).
 pub const FAT32_MINIMUM_CLUSTERS: u32 = 65_525;
 
 /// The largest cluster number FAT32 addresses. The top four bits of a 32-bit entry are reserved.
@@ -56,21 +73,32 @@ const DIR_ENTRY: usize = 32;
 
 /// Why a volume could not be laid out. Every one of these is a refusal before any byte is written,
 /// which is the only kind of refusal worth making about a disk.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `Error` (the writer's refusal, beside the reader's
+/// errors).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutError {
     /// **Not FAT32** (the 32-bit file allocation table, "FAT: General Overview of On-Disk Format"
     /// version 1.03, section 3, Boot Sector and BPB, which types a volume by its clusters): the
     /// partition holds fewer than [`FAT32_MINIMUM_CLUSTERS`] data clusters, so it is not a FAT32
     /// volume however its boot sector is filled in. With 4096-byte clusters that is about 256 MiB.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     #[doc(alias = "not a 32-bit file allocation table")]
     NotFat32,
     /// The partition is larger than FAT32 addresses.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     TooLarge,
     /// The file name is neither an 8.3 short name nor a long name a VFAT entry may carry: empty,
     /// over 255 units, outside the Basic Multilingual Plane, holding a control character or one of
     /// `" * / : < > ? \ |`, or ending in a space or a period.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     NameRefused,
     /// The file does not fit in the clusters the volume has left after its directories.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     FileTooBig,
 }
 
@@ -95,6 +123,8 @@ pub enum LayoutError {
 /// // then the file's own bytes, contiguous, at this LBA:
 /// assert_eq!(volume.file_first_sector(), volume.metadata_sectors());
 /// ```
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `Volume` (a volume to be written, not one read).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VolumeLayout {
     total_sectors: u32,
@@ -120,6 +150,8 @@ impl VolumeLayout {
     ///
     /// `volume_id` is the serial number, and a caller with an entropy capability should draw it;
     /// nothing depends on it being unique and this crate will not invent one.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub fn new(
         total_sectors: u64,
         hidden_sectors: u64,
@@ -193,16 +225,23 @@ impl VolumeLayout {
 
     /// How many data clusters the volume has. Below [`FAT32_MINIMUM_CLUSTERS`]
     /// [`VolumeLayout::new`] refuses.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn clusters(&self) -> u32 {
         self.clusters
     }
 
     /// Sectors in one copy of the table.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `fat_sectors` (the reader's spelling for the same
+    /// quantity).
     pub const fn table_sectors(&self) -> u32 {
         self.fat_sectors
     }
 
     /// The partition-relative sector where cluster 2 begins.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `data_first_sector` (the specification's order).
     pub const fn first_data_sector(&self) -> u64 {
         (RESERVED_SECTORS + TABLE_COUNT * self.fat_sectors) as u64
     }
@@ -214,6 +253,9 @@ impl VolumeLayout {
     /// in a debug build, a wrap in release). Every caller in this tree passes a constant from 2
     /// up; noted by the 2026-09-24 security audit rather than made checked, because a `const fn`
     /// returning an `Option` would push a `?` into a writer whose inputs are all its own.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `cluster_sector` (the reader's spelling for the
+    /// same quantity).
     pub const fn cluster_first_sector(&self, cluster: u32) -> u64 {
         self.first_data_sector() + (cluster - ROOT_CLUSTER) as u64 * CLUSTER_SECTORS as u64
     }
@@ -221,18 +263,24 @@ impl VolumeLayout {
     /// **How many leading sectors the caller must write from [`VolumeLayout::fill_sector`]**: everything from
     /// the boot sector through the last directory cluster. The boot file's own bytes go at
     /// [`VolumeLayout::file_first_sector`], which is the next sector after these.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn metadata_sectors(&self) -> u64 {
         self.cluster_first_sector(FILE_CLUSTER)
     }
 
     /// The partition-relative sector the boot file's first byte lands on. Its data is contiguous
     /// from here.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn file_first_sector(&self) -> u64 {
         self.cluster_first_sector(FILE_CLUSTER)
     }
 
     /// How many sectors the boot file occupies, rounded up to whole clusters. The tail of the last
     /// cluster is never read, and this crate does not require the caller to zero it.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn file_sectors(&self) -> u64 {
         self.file_clusters as u64 * CLUSTER_SECTORS as u64
     }
@@ -245,6 +293,9 @@ impl VolumeLayout {
     /// Every sector this answers for is written whole, zeros included, so that a volume laid over a
     /// disk that held something before does not inherit a single stale directory entry or table
     /// word.
+    ///
+    /// Name: ratified 2026-10-25 (#2720). Refused `sector` (it fills a buffer and reads as a
+    /// getter).
     pub fn fill_sector(&self, index: u64, out: &mut [u8]) -> bool {
         if out.len() != SECTOR_BYTES || index >= self.metadata_sectors() {
             return false;

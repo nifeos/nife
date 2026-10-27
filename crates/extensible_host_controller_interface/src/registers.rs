@@ -5,88 +5,173 @@
 //! `CAPLENGTH` (run, reset, ring bases, then one register set per port at 0x400), the **runtime**
 //! registers at `RTSOFF` (one set per interrupter, from 0x20), and the **doorbell array** at
 //! `DBOFF` (one 32-bit doorbell per device slot, slot 0 being the command ring's).
+//!
+//! Name: ratified 2026-10-26 (UTC), on #2760. Refused `regs` (an abbreviation; the constants inside
+//! keep the specification's names).
 
 /// Capability register: `CAPLENGTH` in the low byte, `HCIVERSION` in the high half.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CAPLENGTH: u64 = 0x00;
 /// Capability register: slots, interrupters, ports.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const HCSPARAMS1: u64 = 0x04;
 /// Capability register: scratchpad count, among others.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const HCSPARAMS2: u64 = 0x08;
 /// Capability register: context size, extended capabilities pointer, among others.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const HCCPARAMS1: u64 = 0x10;
 /// Capability register: the doorbell array's offset.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const DBOFF: u64 = 0x14;
 /// Capability register: the runtime registers' offset.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const RTSOFF: u64 = 0x18;
 
 /// Operational register (from `CAPLENGTH`): `USBCMD`.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const USBCMD: u64 = 0x00;
 /// Operational register: `USBSTS`.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const USBSTS: u64 = 0x04;
 /// Operational register: `PAGESIZE`, a bitmap of page sizes; bit 0 is 4 KiB.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const PAGESIZE: u64 = 0x08;
 /// Operational register: the command ring control register, its base and cycle.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CRCR: u64 = 0x18;
 /// Operational register: the device context base address array's pointer.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const DCBAAP: u64 = 0x30;
 /// Operational register: `CONFIG`, whose low byte is how many slots are enabled.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const CONFIG: u64 = 0x38;
 /// Operational register: port 1's `PORTSC`; port `n`'s is `0x10 * (n - 1)` further.
 pub(crate) const PORTSC_BASE: u64 = 0x400;
 
 /// `USBCMD` Run/Stop.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RUN` (spelled out; the register keeps
+/// `USBCMD`).
 pub const COMMAND_RUN: u32 = 1 << 0;
 /// `USBCMD` Host Controller Reset.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RESET` (spelled out; the register keeps
+/// `USBCMD`).
 pub const COMMAND_RESET: u32 = 1 << 1;
 /// `USBCMD` Interrupter Enable.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_INTERRUPTS` (spelled out; the register
+/// keeps `USBCMD`).
 pub const COMMAND_INTERRUPTS: u32 = 1 << 2;
 
 /// `USBSTS` `HCHalted`.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_HALTED` (spelled out; the register keeps
+/// `USBSTS`).
 pub const STATUS_HALTED: u32 = 1 << 0;
 /// `USBSTS` Host System Error.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_HOST_SYSTEM_ERROR` (spelled out; the
+/// register keeps `USBSTS`).
 pub const STATUS_HOST_SYSTEM_ERROR: u32 = 1 << 2;
 /// `USBSTS` Event Interrupt, write one to clear.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_EVENT_INTERRUPT` (spelled out; the
+/// register keeps `USBSTS`).
 pub const STATUS_EVENT_INTERRUPT: u32 = 1 << 3;
 /// `USBSTS` Port Change Detect, write one to clear.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_PORT_CHANGE` (spelled out; the register
+/// keeps `USBSTS`).
 pub const STATUS_PORT_CHANGE: u32 = 1 << 4;
 /// `USBSTS` Controller Not Ready.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_NOT_READY` (spelled out; the register
+/// keeps `USBSTS`).
 pub const STATUS_NOT_READY: u32 = 1 << 11;
 /// `USBSTS` Host Controller Error.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_CONTROLLER_ERROR` (spelled out; the
+/// register keeps `USBSTS`).
 pub const STATUS_CONTROLLER_ERROR: u32 = 1 << 12;
 
 /// Interrupter 0's register set, from `RTSOFF`.
 pub(crate) const INTERRUPTER_0: u64 = 0x20;
 /// Interrupter register: `IMAN` (pending, enable).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const IMAN: u64 = 0x00;
 /// Interrupter register: `IMOD` (moderation interval).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const IMOD: u64 = 0x04;
 /// Interrupter register: `ERSTSZ` (segment table size).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ERSTSZ: u64 = 0x08;
 /// Interrupter register: `ERSTBA` (segment table base).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ERSTBA: u64 = 0x10;
 /// Interrupter register: `ERDP` (dequeue pointer).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ERDP: u64 = 0x18;
 
 /// `IMAN` Interrupt Pending, write one to clear.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const IMAN_PENDING: u32 = 1 << 0;
 /// `IMAN` Interrupt Enable.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const IMAN_ENABLE: u32 = 1 << 1;
 /// `ERDP` Event Handler Busy, write one to clear.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const ERDP_BUSY: u64 = 1 << 3;
 
 /// Extended capability id: USB Legacy Support, the firmware handoff (xHCI 1.2 section 7.1).
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const EXTENDED_LEGACY_SUPPORT: u8 = 1;
 /// `USBLEGSUP` HC BIOS Owned Semaphore.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const LEGACY_BIOS_OWNED: u32 = 1 << 16;
 /// `USBLEGSUP` HC OS Owned Semaphore.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_OS_OWNED` (os spelled out, as the
+/// tree-wide ruling asks).
 pub const LEGACY_OPERATING_SYSTEM_OWNED: u32 = 1 << 24;
 /// `USBLEGCTLSTS`, the dword after `USBLEGSUP`: the SMI enables (bits 0, 4, 13, 14, 15) to clear,
 /// and the write-one-to-clear SMI events (29, 30, 31), so firmware stops being told about USB.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_ENABLES` (`smi` spelled out, as
+/// the acronym test asks).
 pub const LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES: u32 = 1 | 1 << 4 | 0b111 << 13;
 /// The write-one-to-clear event bits of `USBLEGCTLSTS`.
+///
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_EVENTS` (`smi` spelled out, as
+/// the acronym test asks).
 pub const LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_EVENTS: u32 = 0b111 << 29;
 
 /// **The facts the capability registers state**, decoded.
+///
+/// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Capabilities {
     /// `CAPLENGTH`: where the operational registers start.
@@ -115,6 +200,8 @@ impl Capabilities {
     /// Decode the six capability registers, read as dwords at [`CAPLENGTH`], [`HCSPARAMS1`],
     /// [`HCSPARAMS2`], [`HCCPARAMS1`], [`DBOFF`] and [`RTSOFF`]. Total, because every one of them
     /// is the hardware's word and a value this driver cannot use is caught by whoever uses it.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn decode(
         caplength: u32,
         hcsparams1: u32,
@@ -138,16 +225,22 @@ impl Capabilities {
     }
 
     /// Port `n`'s `PORTSC`, `n` from 1, as an offset into the register file.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn portsc(&self, n: u8) -> u64 {
         self.operational + PORTSC_BASE + 0x10 * (n as u64).saturating_sub(1)
     }
 
     /// Interrupter 0's register `reg` ([`IMAN`], [`ERDP`], ...), as an offset into the file.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn interrupter(&self, reg: u64) -> u64 {
         self.runtime + INTERRUPTER_0 + reg
     }
 
     /// Slot `slot`'s doorbell (0 for the command ring), as an offset into the file.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn doorbell(&self, slot: u8) -> u64 {
         self.doorbells + 4 * slot as u64
     }
@@ -160,6 +253,8 @@ impl Capabilities {
 /// Bounded at 64 hops and by `limit`, for `pci::msix_cap`'s reason: the list is a linked list in
 /// a device's register file, so a broken controller must end the walk, not hang the kernel that is
 /// walking it.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub fn find_extended(
     first: u64,
     limit: u64,

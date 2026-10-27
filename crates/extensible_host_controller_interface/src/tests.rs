@@ -1,4 +1,6 @@
 //! The crate's host tests, kept out of `lib.rs` so the crate root stays an index of its modules.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 extern crate std;
 use super::*;

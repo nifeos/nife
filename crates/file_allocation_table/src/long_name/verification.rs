@@ -5,6 +5,8 @@
 //! The tests in `long_name.rs` and `lib.rs` pin worked examples and the host's driver reads one
 //! back; these quantify over the name, which is what catches an off-by-one in the padding or the
 //! ordinals for a length nobody wrote a test for.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 use super::*;
 

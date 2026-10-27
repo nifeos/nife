@@ -1,8 +1,12 @@
 //! **One Transfer Request Block (TRB)** and the builders for the TRBs the driver writes.
+//!
+//! Name: ratified 2026-10-25 (#2720). Refused `trb` (spelled out, as the acronym test asks).
 
 use super::*;
 
 /// **One TRB**: four little-endian dwords, the cycle bit in bit 0 of the last.
+///
+/// Name: ratified 2026-10-25 (#2720). Refused `Trb` (spelled out, as the acronym test asks).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TransferRequestBlock(pub [u32; 4]);
 
@@ -21,11 +25,15 @@ pub(crate) const fn control(kind: u8) -> u32 {
 
 impl TransferRequestBlock {
     /// The TRB's type code.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn kind(&self) -> u8 {
         ((self.0[3] >> 10) & 0x3f) as u8
     }
 
     /// The cycle bit.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn cycle(&self) -> bool {
         self.0[3] & 1 != 0
     }
@@ -43,6 +51,8 @@ impl TransferRequestBlock {
 
     /// A link TRB back to `target` with Toggle Cycle set, which is what flips the consumer's
     /// cycle as it follows the link.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn link(target: u64) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             target,
@@ -51,11 +61,15 @@ impl TransferRequestBlock {
     }
 
     /// Enable Slot: ask the controller for a device slot.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn enable_slot() -> TransferRequestBlock {
         TransferRequestBlock([0, 0, 0, control(transfer_request_block_type::ENABLE_SLOT)])
     }
 
     /// Disable Slot `slot`: give it back.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn disable_slot(slot: u8) -> TransferRequestBlock {
         TransferRequestBlock([
             0,
@@ -67,6 +81,8 @@ impl TransferRequestBlock {
 
     /// Address Device: take the input context at `input` (physical) for `slot`, and send the
     /// device its address.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn address_device(input: u64, slot: u8) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             input,
@@ -78,6 +94,8 @@ impl TransferRequestBlock {
     }
 
     /// Configure Endpoint: add the endpoints the input context's add flags name.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn configure_endpoint(input: u64, slot: u8) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             input,
@@ -90,6 +108,8 @@ impl TransferRequestBlock {
 
     /// Evaluate Context: update the fields the input context names (here, endpoint 0's packet
     /// size once the device has said what it is).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn evaluate_context(input: u64, slot: u8) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             input,
@@ -101,6 +121,8 @@ impl TransferRequestBlock {
     }
 
     /// Reset Endpoint `dci` of `slot`, after a stall halted it.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn reset_endpoint(slot: u8, dci: u8) -> TransferRequestBlock {
         TransferRequestBlock([
             0,
@@ -115,6 +137,8 @@ impl TransferRequestBlock {
     /// Set TR Dequeue Pointer of endpoint `dci` of `slot` to `pointer` (the ring position with the
     /// consumer cycle in bit 0, [`ProducerRing::dequeue_pointer`]), skipping what a stall left on
     /// the ring.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn set_dequeue(pointer: u64, slot: u8, dci: u8) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             pointer,
@@ -130,6 +154,8 @@ impl TransferRequestBlock {
     /// A control transfer's Setup Stage, the eight-byte packet carried immediately. `data_in` is
     /// `Some(true)` for a data stage device to host, `Some(false)` host to device, `None` for none
     /// (the Transfer Type field, xHCI 1.2 section 6.4.1.2.1).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn setup(packet: u64, data_in: Option<bool>) -> TransferRequestBlock {
         let trt = match data_in {
             None => 0,
@@ -145,6 +171,8 @@ impl TransferRequestBlock {
     }
 
     /// A control transfer's Data Stage: `len` bytes at `buffer` (physical).
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn data(buffer: u64, len: u16, inbound: bool) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             buffer,
@@ -157,6 +185,8 @@ impl TransferRequestBlock {
 
     /// A control transfer's Status Stage, which flows opposite to the data stage (device to host
     /// when there was none, or when it flowed host to device). Asks for the completion event.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn status(data_was_inbound: bool) -> TransferRequestBlock {
         TransferRequestBlock([
             0,
@@ -168,6 +198,8 @@ impl TransferRequestBlock {
 
     /// A Normal TRB: `len` bytes at `buffer` (physical), with an event on completion or a short
     /// packet. What an interrupt IN endpoint's ring holds.
+    ///
+    /// Name: ratified 2026-10-25 (#2720).
     pub const fn normal(buffer: u64, len: u16) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             buffer,

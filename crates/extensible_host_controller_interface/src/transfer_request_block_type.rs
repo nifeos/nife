@@ -1,10 +1,18 @@
+//! Name: ratified 2026-10-25 (#2720). Refused `trb_type` (spelled out, as the acronym test asks).
+
 /// Normal: a data buffer on a bulk or interrupt ring.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const NORMAL: u8 = 1;
 /// Setup Stage of a control transfer.
 pub(crate) const SETUP: u8 = 2;
 /// Data Stage of a control transfer.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const DATA: u8 = 3;
 /// Status Stage of a control transfer.
+///
+/// Name: ratified 2026-10-25 (#2720).
 pub const STATUS: u8 = 4;
 /// Link: the producer ring's way back to its start.
 pub(crate) const LINK: u8 = 6;

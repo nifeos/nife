@@ -1,5 +1,7 @@
 //! Chains walked over a small FAT12 volume built byte by byte: a chain across the sector boundary
 //! FAT12 entries straddle, every way a chain can break, a loop, and a device that fails.
+//!
+//! Name: ratified 2026-10-26 (UTC), on #2760.
 
 use super::*;
 use crate::table::TableEntry;

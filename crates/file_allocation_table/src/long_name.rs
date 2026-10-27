@@ -7,6 +7,8 @@
 //! fails silently, as a volume that lists `BOOTRI~1.EFI` and boots nothing; `verification.rs`
 //! proves the checksum and the run's layout for every name. After the name's last unit comes one
 //! `0x0000`, then `0xFFFF` to the end of the entry, unless the name fills its last entry exactly.
+//!
+//! Name: ratified 2026-10-25 (#2720).
 
 /// The most UCS-2 units a long name holds.
 pub(crate) const MAXIMUM_CODE_UNITS: usize = 255;

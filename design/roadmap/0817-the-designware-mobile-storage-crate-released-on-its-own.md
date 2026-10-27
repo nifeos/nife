@@ -159,6 +159,47 @@ blocks, which the ratification pass settles.
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   nothing. `serve`, which spoke nife's block protocol, left with the cut.
 
+## Names a stranger may misread, open before release
+
+design/naming.md's tests and Fork 5 of milestone 857 (names that stand on their own) judge
+each name. The lines below list the names that read as something other than clear or a term, as of
+2026-10-26 (UTC), copied as they stand. Each stays open until a ruling keeps or changes it. The tree
+keeps no record of a release-track crate's names (ruled 2026-10-26 UTC), so this list is the open
+work, and the lane that renames a name drops its line.
+
+### Nife's own plan
+
+- `role` (`src/jh7110.rs`): nife: nife's own process plan
+
+### Belongs to something else
+
+- `bench` (`src/bench.rs`): scope: a bench
+- `jh7110` (`src/jh7110.rs`): scope: one SoC's glue in a host controller crate
+- `partition` (`src/partition.rs`): scope: partitions
+- `MATRIX_BLOCKS` (`src/bench.rs`): scope: a bench
+- `MATRIX_HZ` (`src/bench.rs`): scope: a bench
+- `MatrixRow` (`src/bench.rs`): scope: a bench
+- `ReadFailure` (`src/bench.rs`): scope: a bench
+- `ReadReport` (`src/bench.rs`): scope: a bench
+- `SCRATCH_SECTORS` (`src/bench.rs`): scope: a bench
+- `Watch` (`src/bench.rs`): scope: a bench
+- `WriteVerdict` (`src/bench.rs`): scope: a bench
+- `pattern` (`src/bench.rs`): scope: a bench
+- `read_matrix` (`src/bench.rs`): scope: a bench
+- `read_only` (`src/bench.rs`): scope: a bench
+- `scratch_write` (`src/bench.rs`): scope: a bench
+- `Entry` (`src/partition.rs`): scope: partitions
+- `SIGNATURE` (`src/partition.rs`): scope: partitions
+- `is_used` (`src/partition.rs`): scope: partitions
+- `scratch` (`src/partition.rs`): scope: partitions
+
+### Generic
+
+- `bits` (`src/card.rs`): generic
+- `Data` (`src/command.rs`): generic
+- `word` (`src/command.rs`): generic
+- `Kind` (`src/sd.rs`): generic
+
 ## Exit
 
 A check proves it. In nife, `cargo tree --locked -i designware_mobile_storage` resolves to `v0.1.x`

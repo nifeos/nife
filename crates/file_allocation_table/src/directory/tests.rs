@@ -1,5 +1,7 @@
 //! Slots parsed one by one, and directories read through the FAT12 root region and through
 //! cluster chains on the reader tests' volume.
+//!
+//! Name: ratified 2026-10-26 (UTC), on #2760.
 
 use super::*;
 use crate::reader::tests::{FIRST_DATA, Image};
