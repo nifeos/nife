@@ -40,7 +40,7 @@ a narrowed one, over-asking is a failing test at the moment it is written, which
 AGENTS.md's ladder rather than rung four. Rung four is where `readdir` was caught by somebody
 happening to read the diff.
 
-Milestone 122 recorded that `OPENDIR` has no way to say "attenuate to whatever you have", so a held
+Milestone 122 (a directory handle `std` can hold) recorded that `OPENDIR` has no way to say "attenuate to whatever you have", so a held
 directory asks for `dir::ALL` and probes one right at a time when a narrowed grant refuses. §98
 (`design/decisions/0098-opendir-cannot-attenuate.md`) ruled on 2026-10-27 (UTC) that a sentinel in
 the rights word replaces the probe. Until that lands no test exercises the probing path, for the

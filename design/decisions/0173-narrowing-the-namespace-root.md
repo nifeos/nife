@@ -14,8 +14,7 @@ under *"The two shapes a grant cannot take"* and carried forward by the 2026-09-
 
 ## The ruling
 
-Decided 2026-10-27 (UTC), option A, in the same sitting as §98 (`OPENDIR` cannot be asked to
-attenuate). `filesystem_contract` gains a narrowing verb, verb 23. It takes a held directory handle
+Decided 2026-10-27 (UTC), option A, in the same sitting as the ruling on §98. `filesystem_contract` gains a narrowing verb, verb 23. It takes a held directory handle
 and a rights mask, mints a second handle whose rights are the held rights run through `Rights::attenuate`, and
 resolves no name. The ruling declines options B and C: the shell's root stays where it is, and nobody
 records the top prompt as a limitation. Milestone 328 builds the verb, and the client and the server
