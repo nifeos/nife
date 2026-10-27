@@ -339,7 +339,8 @@ class Opencode:
     No `--dir` argument: opencode 2.x dropped it, and the clone is already the container's
     working directory (`-w` in Box.argv), which is what both calls below rely on. The model
     read-back is `opencode session export <id>` (2.x moved it under `session`), whose assistant
-    messages carry `model` as `{providerID, id}`.
+    messages carry `model` as `{providerID, id}`. A failed or unreadable export reads no model,
+    so the pin check stops the launch with a record rather than a crash.
     """
     name = 'opencode'
     version_arg = 'OPENCODE_VERSION'
@@ -349,9 +350,21 @@ class Opencode:
 
     @staticmethod
     def models(session, box, log):
-        _, out = box.run(['opencode', 'session', 'export', session], log)
+        status, out = box.run(['opencode', 'session', 'export', session], log)
         start = out.find('{')
-        record = json.loads(out[start:]) if start >= 0 else {}
+        record = {}
+        if status != 0:
+            print('launch-pass: session export of %s exited %d; reading no model from it'
+                  % (session, status), file=sys.stderr)
+        elif start < 0:
+            print('launch-pass: session export of %s printed no record; reading no model from it'
+                  % session, file=sys.stderr)
+        else:
+            try:
+                record = json.loads(out[start:])
+            except ValueError:
+                print('launch-pass: session export of %s printed a record json.loads refuses; '
+                      'reading no model from it' % session, file=sys.stderr)
         found = set()
         for m in record.get('messages', []):
             model = m.get('model') if m.get('type') == 'assistant' else None
@@ -503,6 +516,10 @@ model = os.environ['FAKE_SERVED']
 if argv[:1] == ['--version']:
     print('1.0 (fake)')
 elif argv[:2] == ['session', 'export']:
+    if os.environ.get('FAKE_EXPORT_FAILS'):
+        print('Exporting session')
+        print('{"info": {"id": "s"}, "messages": [{"type": "ass')
+        sys.exit(1)
     print('Exporting session'); print(json.dumps({'info': {'id': 's'}, 'messages': [
         {'type': 'user', 'text': 'probe'},
         {'type': 'assistant', 'agent': 'build', 'model': {'providerID': model.split('/')[0],
@@ -701,6 +718,14 @@ def selftest():
         status, record, calls, _ = selftest_launch(tree, tmp, 'glm', 'zai-coding-plan/glm-5.3', commit)
         assert status == 0 and record['status'] == 'reported' and record['model_reported'] == ['zai-coding-plan/glm-5.3']
         assert record['key_variable'] == 'ZHIPU_API_KEY' and SECRET not in json.dumps(record)
+        # A failing `session export` reads no model and stops the launch with a record, never a
+        # traceback (the tenth pass's collection stuck at `attacking` on exactly this).
+        os.environ['FAKE_EXPORT_FAILS'] = '1'
+        status, record, calls, _ = selftest_launch(
+            tree, tmp, 'glm', 'zai-coding-plan/glm-5.3-broken-export', commit)
+        del os.environ['FAKE_EXPORT_FAILS']
+        assert status == 1 and record['status'].startswith('stopped'), record
+        assert not any('### Your job' in ' '.join(c) for c in calls), 'the brief went out'
         status, record, calls, path = selftest_launch(tree, tmp, 'fable', 'claude-fable-5-1', commit)
         assert status == 0 and record['status'] == 'reported' and record['model_reported'] == ['claude-fable-5-1']
         assert record['image_digest'] == 'sha256:fakeimage' and record['harness_version'] == '1.0'
