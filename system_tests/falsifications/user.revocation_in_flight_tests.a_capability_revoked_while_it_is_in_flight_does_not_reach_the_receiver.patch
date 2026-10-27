@@ -5,8 +5,8 @@ Architecture: aarch64, riscv64, x86_64
 The defect is the tree as it stood until 2026-09-21: the patch removes the three lines this lane
 added to `sched::delete_page_frame_caps_where`, which is the whole of the fix for the `PageFrame`
 sweeps. Every revocation sweep then reads `Thread::capability_table` and nothing else, and a
-capability parked in `Thread::outgoing_cap` by a `SEND_CAP` whose receiver has not arrived is in no
-table, so it survives a whole-machine `PageFrame::REVOKE` and the next `RECEIVE_CAP` files it in the
+capability parked in `Thread::outgoing_cap` by a `SEND_CAPABILITY` whose receiver has not arrived is in no
+table, so it survives a whole-machine `PageFrame::REVOKE` and the next `RECEIVE_CAPABILITY` files it in the
 receiver's own table.
 
 This was the live tree, not an invented break. It was found by risk 7's adversarial pass asking the

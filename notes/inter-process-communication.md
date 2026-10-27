@@ -56,7 +56,7 @@ A rendezvous that once carried an interrupt is safer left refusing than reopened
 driver does not expect.
 
 `Refused` is a variant rather than a check at each call site. Every kernel path that deposits into
-a rendezvous must then say what it does with it: `SEND`, `SEND_CAP`, `CALL`, and the death message
+a rendezvous must then say what it does with it: `SEND`, `SEND_CAPABILITY`, `CALL`, and the death message
 of §26 (the fault endpoint). A fifth path cannot forget.
 
 ### Taking a thread back off a queue

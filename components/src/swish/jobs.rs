@@ -107,8 +107,8 @@ fn release(h: Held) {
 
 /// Delete this shell's slots for a job's frame and region, on every path that ends with them.
 fn give_back(job_fr: u64, job_ut: u64) {
-    cap_delete(job_fr);
-    cap_delete(job_ut);
+    capability_delete(job_fr);
+    capability_delete(job_ut);
 }
 
 /// **Mint, direct and start a supervised job**, and hand back what this shell holds for it once the
@@ -123,7 +123,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
         return None;
     };
     let Some(job_ut) = memory_region_split(JOB_UNTYPED_PAGES) else {
-        cap_delete(job_fr);
+        capability_delete(job_fr);
         failed();
         print(b"  this shell's memory budget is exhausted; nothing left to grant\n");
         return None;
@@ -221,7 +221,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
     // `ThreadControlBlock` goes to the shell that asked for it)), received before anything else
     // because the progenitor is blocked sending it. `WRITE` without `GRANT`: this shell can
     // suspend and resume its job and cannot pass that on.
-    let (_, tcb, _) = receive_cap(RESULT);
+    let (_, tcb, _) = receive_capability(RESULT);
     Some(Held {
         jf,
         job_ut,

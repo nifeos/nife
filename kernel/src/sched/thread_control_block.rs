@@ -41,13 +41,13 @@ pub fn create_thread_control_block(region: u64) -> Option<ThreadId> {
 /// `thread_control_block_insert_capability` under the capability ruling of 2026-10-06 (UTC).
 pub fn thread_control_block_insert_capability(
     tid: ThreadId,
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
     target: Option<u64>,
 ) -> Result<u64, abi::Error> {
     thread_control_block_insert_from(tid, target, |_, _| Ok(capability))
 }
 
-/// `ThreadControlBlock::CAP_INSERT`'s body: endow an embryo with a narrowed copy of a capability
+/// `ThreadControlBlock::CAPABILITY_INSERT`'s body: endow an embryo with a narrowed copy of a capability
 /// the running thread holds, the source read under the `IPC_TABLES` hold that files the copy
 /// ([`Delegation`]). Name provisional.
 pub(crate) fn thread_control_block_delegate_capability(
@@ -70,7 +70,10 @@ pub(crate) fn thread_control_block_delegate_capability(
 pub(super) fn thread_control_block_insert_from(
     tid: ThreadId,
     target: Option<u64>,
-    source: impl FnOnce(&IpcTables, ThreadId) -> Result<crate::capability_object::Cap, abi::Error>,
+    source: impl FnOnce(
+        &IpcTables,
+        ThreadId,
+    ) -> Result<crate::capability_object::Capability, abi::Error>,
 ) -> Result<u64, abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
@@ -89,7 +92,7 @@ pub(super) fn thread_control_block_insert_from(
     .map_err(|_| abi::Error::OutOfMemory)?;
     // The one place a port capability enters a thread, so the context switch reads one field, not
     // the table. Only the last of several ranges is kept (no consumer holds two), and one delegated
-    // later by `SEND_CAP` is not cached. A `PortRange` without `WRITE` grants nothing: the TSS
+    // later by `SEND_CAPABILITY` is not cached. A `PortRange` without `WRITE` grants nothing: the TSS
     // bitmap cannot permit `in` without `out` (§121 (what a device capability is when the device
     // has no page)); the capability still lands.
     #[cfg(target_arch = "x86_64")]

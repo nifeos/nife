@@ -157,7 +157,7 @@ pub fn corpse_fault_msg(tid: ThreadId) -> Option<[u64; 5]> {
 ///
 /// Lent rather than copied: a copy is a 2 KiB array in every frame that holds it, which put the
 /// caller over the guard page. A retype sweep reads it before and after each run, since a missed
-/// `cap_delete` shows up only here.
+/// `capability_delete` shows up only here.
 ///
 /// Context: `read` runs under `IPC_TABLES`, so it must not call back into `sched`.
 #[cfg(feature = "system_tests")]
@@ -221,7 +221,7 @@ pub enum ConductorMove {
     None,
     /// A parked receiver took `[word, 0, 0]`.
     Sent,
-    /// A queued sender was collected: its five words, shaped as `RECEIVE_CAP` returns them.
+    /// A queued sender was collected: its five words, shaped as `RECEIVE_CAPABILITY` returns them.
     Took([u64; 5]),
 }
 
@@ -276,7 +276,7 @@ pub fn conductor_move(ep: RendezvousId, word: u64) -> ConductorMove {
                         Some(c) => {
                             deliver_capability(sched.threads.capabilities(current).unwrap(), c)
                         }
-                        None => NO_CAP,
+                        None => NO_CAPABILITY,
                     };
                     if !is_reply {
                         // Collected: the sender's rendezvous is complete (the boot-8 gate).
@@ -291,7 +291,7 @@ pub fn conductor_move(ep: RendezvousId, word: u64) -> ConductorMove {
                 // A pending interrupt signal, as `inter_process_communication_receive_capability` would report it.
                 inter_process_communication::Receive::Signal(token) => {
                     hold_token(token);
-                    ConductorMove::Took([1, NO_CAP, 0, 0, 0])
+                    ConductorMove::Took([1, NO_CAPABILITY, 0, 0, 0])
                 }
                 inter_process_communication::Receive::Blocked => {
                     // This hold queued `current`; this hold takes it back, token and all.

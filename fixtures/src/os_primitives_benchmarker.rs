@@ -25,9 +25,9 @@
 #![no_main]
 
 use user_mode_runtime::{
-    address_space_map_into, cap_delete, cycle_reading, destroy_memory_region, exit, map_page_frame,
-    now, receive, retype_into_kernel_object, retype_into_page_frame, send, split_memory_region,
-    thread_control_block_capability_insert, thread_control_block_configure,
+    address_space_map_into, capability_delete, cycle_reading, destroy_memory_region, exit,
+    map_page_frame, now, receive, retype_into_kernel_object, retype_into_page_frame, send,
+    split_memory_region, thread_control_block_capability_insert, thread_control_block_configure,
     thread_control_block_start, yield_now,
 };
 
@@ -373,7 +373,7 @@ fn spawn_one(code_frame: u64) {
     );
     let stack = retype_into_page_frame(child_ut) as u64;
     address_space_map_into(aspace, CHILD_STACK_VA, stack, abi::address_space::MAP_RW);
-    cap_delete(stack);
+    capability_delete(stack);
 
     // The thread: give it CHILD_DONE (narrowed to WRITE) in its slot 0, configure (which consumes
     // the address space cap), and start. The child drops to EL0, SENDs its done word, and exits.
@@ -391,8 +391,8 @@ fn spawn_one(code_frame: u64) {
     }
     // Free the slots this child used (the address space cap was consumed by CONFIGURE) so the fixed capability table
     // does not fill over the loop.
-    cap_delete(tcb);
-    cap_delete(child_ut);
+    capability_delete(tcb);
+    capability_delete(child_ut);
 }
 
 /// One null syscall: a trap with an unrecognized number. The kernel returns an error, which we

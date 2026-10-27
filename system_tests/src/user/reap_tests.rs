@@ -114,7 +114,7 @@ fn occupied_slots() -> usize {
 /// `Rendezvous`, which cannot build by dispatch: the rendezvous arm of `invoke` offers send,
 /// receive, delegate, call, and reap, and no constructor at all. `MemoryRegion` methods are *not*
 /// invoked on those slots, because method numbers are per-object-type and `RETYPE_OBJ`'s number is
-/// `SEND_CAP`'s on an rendezvous.
+/// `SEND_CAPABILITY`'s on an rendezvous.
 fn assert_can_only_supervise(expected: &[u64]) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     for slot in 0..abi::CAPABILITY_TABLE_SLOTS {

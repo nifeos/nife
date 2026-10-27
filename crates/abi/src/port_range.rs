@@ -1,4 +1,4 @@
-/// `invoke(cap, REVOKE, _, _, _)` -> 0. **Take the ports back from everyone else.** Delete every
+/// `invoke(capability, REVOKE, _, _, _)` -> 0. **Take the ports back from everyone else.** Delete every
 /// `PortRange` capability naming this range from every other thread's table and clear the TSS
 /// bitmap that granted it, so those holders fault on their next `in`/`out`, while the caller
 /// keeps its own. Needs `GRANT` (you were trusted to lend the ports on, so you may take them

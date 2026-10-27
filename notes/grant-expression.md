@@ -64,7 +64,7 @@ falls into the file position. The parser now keeps positional tokens in order an
 The shell holds four capabilities (the progenitor grants them at boot, in this order): the terminal endpoint
 (slot 0), a spawn endpoint to the progenitor (slot 1), a result endpoint (slot 2), and its own untyped
 budget (slot 3). The budget is the piece milestone 31 (capability shell) added: the progenitor splits it off its own untyped
-and `CAP_INSERT`s it into the shell, so the shell has memory that is genuinely its to give.
+and `CAPABILITY_INSERT`s it into the shell, so the shell has memory that is genuinely its to give.
 
 The shell does not build children itself; the progenitor holds the initrd and stays the ELF loader (the
 parser lives in one place, out of the shell). So the shell directs The progenitor and delegates the
@@ -74,7 +74,7 @@ protocol like the terminal contract, DECISIONS §21):
 1. The shell resolves the command into an endowment (program id, argument, page count), checking it
    against the program's manifest first. A mismatch is refused at the prompt; nothing is sent.
 2. The shell `SEND`s the request (program id, argument, page count).
-3. If a memory grant was named, the shell `SPLIT`s N pages off its slot-3 budget and `SEND_CAP`s
+3. If a memory grant was named, the shell `SPLIT`s N pages off its slot-3 budget and `SEND_CAPABILITY`s
    the resulting untyped to the progenitor, narrowed to `WRITE|GRANT`.
 4. The progenitor loads the named ELF, endows the child with the result endpoint (slot 0) and, when one was
    delegated, the untyped (slot 1) narrowed to `WRITE`, and starts it with the argument.
@@ -198,7 +198,7 @@ Since milestone 50 (pipes and redirection) the interactive shell holds the image
 builds a `fs_subtree_caretaker` per directory grant, so `rm` runs; `script/swish-check` proves it on
 both ISAs. `FileGrantDeclaration::Required` still has no consumer: no shipped program declares a file. Of the
 four obstacles this note predicted, three landed as written. Depth is the one still open: every
-caretaker descends exactly one name, so `rm gate.txt` at the top prompt is refused. The fourth, the
+caretaker descends exactly one name, and the root narrows by `NARROW` instead. The fourth, the
 lifetime, cost the most care, because the first reclaim of a caretaker's region is refused by
 construction. Two shipped programs also disagreed with their own declarations until they ran.
 

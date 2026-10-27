@@ -20,6 +20,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Interleavings, model-checked (loom)](../interleaving.md): loom over the hand-rolled concurrency protocols, and its finds.
 - [Mutation testing](../mutation-testing.md): the cargo-mutants triage rule, the current census, and per-crate triage in 17 appendices.
 - [Untested error paths](../untested-error-paths.md): how many error paths no test executes, by crate and kind, and the twenty that release memory or authority.
+- [Kernel coverage under QEMU](../kernel-coverage.md): `script/coverage --kernel`, the instrumented kernel test image, the `minicov` audit and the first count of kernel error paths reached.
 - [The mutation census record](../mutation-census.md): per-crate mutation scores for every census, comparable. Names provisional.
 - [Where an unsafe obligation is written, and where it is only implied](../unsafe-obligations.md).
 - [nife's dependencies, held to nife's own standards](../dependency-standards-census.md): the 99 shipped crate versions against each internal code standard, and which should bind a dependency. Name provisional.

@@ -60,7 +60,7 @@ fn fresh_page(va: u64) -> Option<Argv> {
     match u64::try_from(user_mode_runtime::retype_into_page_frame(staging)) {
         Ok(frame) if map_window_frame(frame, va) => Some(Argv { staging, frame }),
         Ok(frame) => {
-            cap_delete(frame);
+            capability_delete(frame);
             release_region(staging);
             None
         }
@@ -180,7 +180,7 @@ fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
 pub(super) fn send_set(w: &WordsGrant) {
     if let Some(p) = w.set {
         user_mode_runtime::send_capability(SPAWN, p.frame, abi::rights::READ, 0);
-        cap_delete(p.frame);
+        capability_delete(p.frame);
     }
 }
 
@@ -194,14 +194,14 @@ pub(super) fn release_words_grant(w: &WordsGrant, unsent: bool) {
 /// Give back an argv's region, and its frame's slot if it was never sent.
 pub(super) fn release_argv(a: Argv, unsent: bool) {
     if unsent {
-        cap_delete(a.frame);
+        capability_delete(a.frame);
     }
     release_region(a.staging);
 }
 
 fn release_region(region: u64) {
     user_mode_runtime::destroy_memory_region(region);
-    cap_delete(region);
+    capability_delete(region);
 }
 
 /// **Where this shell writes what it sends the progenitor in frames**: the argv pages
@@ -290,7 +290,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     // The argv's frame follows the image's, before every other capability (`spawnproto::PROGRAM_ARGUMENTS_BIT`).
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
-        cap_delete(a.frame);
+        capability_delete(a.frame);
     }
     if let Some(w) = &set_grant {
         send_set(w);
@@ -299,7 +299,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
         // mints no right its budget lacks) what it builds carries the budget's rights.
         delegate(slot, abi::rights::ALL);
-        cap_delete(slot);
+        capability_delete(slot);
     }
     // **The presentation, last** (`spawnproto::RUN_UNVOUCHED_BIT`): one word on the endpoint only a
     // holder can reach. Sent on every image request this session makes, vouched or not, because
@@ -312,7 +312,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     // The frames are spent: the child was built from the progenitor's copy. Destroying the region
     // revokes every mapping of them, ours and the progenitor's, and returns the pages.
     user_mode_runtime::destroy_memory_region(staging);
-    cap_delete(staging);
+    capability_delete(staging);
     if let Some(w) = &set_grant {
         release_words_grant(w, false);
     }
@@ -519,7 +519,7 @@ fn carve_image_grants(
     let Some(staging) = memory_region_split(pages) else {
         nav.close_in(t, handle);
         if let Some(m) = mem_slot {
-            cap_delete(m);
+            capability_delete(m);
         }
         if let Some(w) = &set_grant {
             release_words_grant(w, true);
@@ -707,7 +707,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
             read_ok = false;
         }
         user_mode_runtime::send_capability(SPAWN, frame, abi::rights::READ, i);
-        cap_delete(frame);
+        capability_delete(frame);
     }
     read_ok
 }
@@ -758,7 +758,7 @@ pub(super) fn vouch(nav: &mut Nav, path: Option<&[u8]>) {
     send(SPAWN, lo, hi, name.len() as u64);
     let (r0, r1, _) = receive(RESULT);
     user_mode_runtime::destroy_memory_region(staging);
-    cap_delete(staging);
+    capability_delete(staging);
     if !read_ok {
         print(b"  (this shell could not read the whole file, so those were not its bytes)\n");
     }
@@ -807,7 +807,7 @@ pub(super) struct DirWords {
 /// two words hold (`grant::WORDS_NAME`, milestone 946 (a granted file name can be longer than sixteen bytes)) does: the program is told
 /// `grant::WHOLE_NAMESPACE` and the grant becomes a set of that one name, which
 /// `fs_nameset_caretaker` serves and [`spawn_dir_grant`] writes on a page. Nothing between here and
-/// the process decodes the words. Refused with nothing spawned: a second tree, the namespace root,
+/// the process decodes the words. The namespace root travels as an empty directory name, which the caretaker narrows with `fs::NARROW` (§173 (narrowing the root of the shell's namespace)). Refused with nothing spawned: a second tree,
 /// a directory deeper than one level, a set of more than one name, and a directory whose name does
 /// not fit in a grant's two argument words. See `notes/swish-language/running.md`, "The directory
 /// grant".
@@ -824,13 +824,11 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     }
     // The directory the caretaker descends into. One component, because that is one `OPENDIR`; a
     // deeper path is a *chain* of caretakers (DECISIONS §92 names it as the case supervision was
-    // chosen for) and the progenitor builds one.
-    let dir = match g.directory.depth() {
-        0 => {
-            return Err(
-                b"  that names the root of this shell's namespace, and a caretaker is built by \n  descending into a directory; there is no name here to descend into\n",
-            );
-        }
+    // chosen for) and the progenitor builds one. **The root of this shell's namespace has no name
+    // to descend into, so its grant is an empty name**, which the caretaker reads as "narrow the
+    // directory you hold" (`fs::NARROW`, §173).
+    let dir: &[u8] = match g.directory.depth() {
+        0 => b"",
         1 => g.directory.component(0),
         _ => {
             return Err(
@@ -843,8 +841,13 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
             b"  a set of names is delivered by a nameset caretaker, and the progenitor builds the subtree \n  one; name a single file\n",
         );
     };
-    let Some((dir_lo, dir_hi)) = filesystem_contract::grant::pack_name(dir) else {
-        return Err(b"  that name does not fit in a grant's two argument words\n");
+    let (dir_lo, dir_hi) = if dir.is_empty() {
+        (0, 0)
+    } else {
+        let Some(words) = filesystem_contract::grant::pack_name(dir) else {
+            return Err(b"  that name does not fit in a grant's two argument words\n");
+        };
+        words
     };
     // What `-r` buys, stated as the difference between two capabilities rather than as a branch in
     // the program: REMOVE alone cannot even look at what is under the directory.
@@ -942,7 +945,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
     // pass it on. The slot goes now; the region waits for the child's answer.
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
-        cap_delete(a.frame);
+        capability_delete(a.frame);
     }
     // The name set's frame follows the argv's (`spawnproto::NAMESET_BIT`).
     if let Some(w) = &set_grant {
@@ -954,7 +957,7 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
         // mints no right its budget lacks) what it builds carries the budget's rights.
         delegate(slot, abi::rights::ALL);
-        cap_delete(slot); // our copy is delegated; free the slot
+        capability_delete(slot); // our copy is delegated; free the slot
     }
     delegate_machine_page(machine_wiring(&e));
 

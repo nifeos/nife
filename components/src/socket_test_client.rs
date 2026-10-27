@@ -24,8 +24,8 @@ use domain_name_system::{Query, Reject, TcpReply};
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
-    call, call_receiving, cap_delete, exit, map_page_frame, now, receive, receive_cap,
-    retype_into_page_frame, send, send_capability,
+    call, call_receiving, capability_delete, exit, map_page_frame, now, receive,
+    receive_capability, retype_into_page_frame, send, send_capability,
 };
 
 const REPORT: u64 = 0;
@@ -241,8 +241,8 @@ fn socket_badge_forge() -> ! {
 /// trip through it, with no front door to the stack at all. Then check that after our `CLOSE` the
 /// capability reaches nothing. Reports `OK`, or a stage code.
 fn socket_take() -> ! {
-    let (_, socket, _) = receive_cap(HANDOFF);
-    if socket == abi::rendezvous::NO_CAP {
+    let (_, socket, _) = receive_capability(HANDOFF);
+    if socket == abi::rendezvous::NO_CAPABILITY {
         done(0xE0C0);
     }
     attach_page_frame();
@@ -323,7 +323,7 @@ fn on(which: usize, operation: u64, arg: u64) -> (u64, u64) {
 /// `CLOSE` the socket kept as `which`, and drop our capability to it.
 fn close(which: usize) -> (u64, u64) {
     let answer = on(which, OPERATION_CLOSE, 0);
-    cap_delete(held(which));
+    capability_delete(held(which));
     SOCKETS[which].store(NO_SOCKET, Ordering::Relaxed);
     answer
 }

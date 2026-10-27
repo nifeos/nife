@@ -2,7 +2,7 @@
 //! to the ABI fails to compile on both sides at once.
 //!
 //! The surface is five calls <!--count:syscalls-->. `exit`, `exit_thread`, `yield` and
-//! `cap_delete` act on the caller itself, and `invoke(cap, method, a0, a1, a2)` acts on everything
+//! `capability_delete` act on the caller itself, and `invoke(capability, method, a0, a1, a2)` acts on everything
 //! else, §10 (process model: capability-based). `x8` holds the number, `x0` the slot, `x1` the
 //! method and `x2` to `x4` the arguments; `x0` returns a result, or a negative [`Error`]. See
 //! notes/abi.md for the convention and notes/abi/method-contracts.md for each method's reasoning.
@@ -17,7 +17,7 @@
 pub const SYS_EXIT: u64 = 0;
 /// `yield()`: give up the CPU without blocking. Needs no capability, as `exit` needs none.
 pub const SYS_YIELD: u64 = 1;
-/// `invoke(cap, method, a0, a1, a2)`: the one syscall that acts on anything but the caller.
+/// `invoke(capability, method, a0, a1, a2)`: the one syscall that acts on anything but the caller.
 ///
 /// # Examples
 /// ```
@@ -31,11 +31,14 @@ pub const SYS_YIELD: u64 = 1;
 /// ```
 pub const SYS_INVOKE: u64 = 2;
 
-/// `cap_delete(slot)`: drop a capability from the caller's own capability table, freeing the slot
+/// `capability_delete(slot)`: drop a capability from the caller's own capability table, freeing the slot
 /// (milestone 19d (run a real workload)). Deleting an empty slot is a harmless no-op. A loader that
 /// retypes many frames through a finite table recycles slots with it, and it needs no capability
 /// because the table is the caller's own.
-pub const SYS_CAP_DELETE: u64 = 3;
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `SYS_CAP_DELETE` under the capability ruling of 2026-10-06 (UTC).
+pub const SYS_CAPABILITY_DELETE: u64 = 3;
 
 /// `exit_thread(word)`: **end the calling thread, and only it**; when it is the last running
 /// thread of its process the process ends too, as [`SYS_EXIT`] would end it. Needs no capability.
@@ -49,7 +52,10 @@ pub const SYS_EXIT_THREAD: u64 = 4;
 
 /// An index into the calling thread's capability table. **Not a pointer, not a handle you can
 /// guess.** The kernel looks in *your* table, and if the slot is empty you get `NoSuchSlot`.
-pub type CapSlot = u64;
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `CapSlot` under the capability ruling of 2026-10-06 (UTC).
+pub type CapabilitySlot = u64;
 
 /// The number of slots in a thread's capability table, mirroring the kernel's
 /// `cap::CAPABILITY_TABLE_SLOTS` so userspace can name [`fault::FAULT_EP_SLOT`] without reaching
@@ -92,7 +98,7 @@ pub mod survey;
 /// Methods on a `Reply` capability. **A one-shot answer to a specific caller.**
 ///
 /// The kernel mints one on [`rendezvous::CALL`] and hands it to the server through
-/// [`rendezvous::RECEIVE_CAP`]. It names the exact blocked caller, carries `WRITE` and no `GRANT`
+/// [`rendezvous::RECEIVE_CAPABILITY`]. It names the exact blocked caller, carries `WRITE` and no `GRANT`
 /// (so it cannot be passed on), and is consumed the instant it is used, so a server cannot reply
 /// twice, reply to the wrong caller, or hoard it. Those are kernel guarantees, not server
 /// discipline.
@@ -175,7 +181,7 @@ pub mod futex;
 pub mod process;
 
 /// The rights bits, matching `capability::Rights`, so userspace can name the rights to narrow a
-/// delegated capability to (the `rights` argument to [`rendezvous::SEND_CAP`]) without depending on
+/// delegated capability to (the `rights` argument to [`rendezvous::SEND_CAPABILITY`]) without depending on
 /// the kernel's `capability` crate.
 ///
 /// **Five bits <!--count:rights-bits-->, and rights only ever narrow.** `capability::Rights::ALL`
@@ -278,7 +284,7 @@ pub enum Error {
     /// delegation, so somebody upstream chose this.
     ///
     /// **Or the object refuses the operation whatever the rights.** The one case today: a
-    /// [`rendezvous::SEND`], [`rendezvous::SEND_CAP`] or [`rendezvous::CALL`] naming an endpoint
+    /// [`rendezvous::SEND`], [`rendezvous::SEND_CAPABILITY`] or [`rendezvous::CALL`] naming an endpoint
     /// that carries a hardware interrupt, which takes no message from any program (DECISIONS §101
     /// (notification objects), ruling B, 2026-09-26). Nothing is delivered, queued or delegated,
     /// and the caller does not block.

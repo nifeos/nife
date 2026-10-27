@@ -68,7 +68,7 @@ pub const fn is_canonical_zone(zone: &[u8]) -> bool {
 // The words.
 // =================================================================================================
 
-/// **A client delegates its page.** A `SEND_CAP` of a writable page frame with this request word.
+/// **A client delegates its page.** A `SEND_CAPABILITY` of a writable page frame with this request word.
 /// The resolver maps it in the window its badge's grant names; a page from a badge with no grant
 /// is deleted unmapped.
 pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;

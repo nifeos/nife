@@ -7,7 +7,7 @@ comments link to rather than repeat. [`notes/abi.md`](../abi.md) carries the con
 
 ## The five calls
 
-`exit`, `exit_thread`, `yield` and `cap_delete` are bare syscalls because a capability is authority
+`exit`, `exit_thread`, `yield` and `capability_delete` are bare syscalls because a capability is authority
 over something else. Nobody needs a grant to stop running or to forget one of their own slots. Every
 other operation is a method on a capability reached through `invoke`, so a new operation is a new
 method number and a new syscall is a design fork.
@@ -30,10 +30,10 @@ as an error, which is what lets a wire contract layered on top, such as `entropy
 
 ## Rendezvous
 
-A plain `RECEIVE` puts the badge of the sender's capability in `x3`. That is the amendment milestone 613 (a system log service) made to §230 (badged endpoint capabilities), which first delivered the badge on `RECEIVE_CAP` alone. The system log stamps a byte-sink writer from its badge, and a byte-sink writer sends with `SEND`. A death message is still told apart by its first word, and nothing reads `x3` before
+A plain `RECEIVE` puts the badge of the sender's capability in `x3`. That is the amendment milestone 613 (a system log service) made to §230 (badged endpoint capabilities), which first delivered the badge on `RECEIVE_CAPABILITY` alone. The system log stamps a byte-sink writer from its badge, and a byte-sink writer sends with `SEND`. A death message is still told apart by its first word, and nothing reads `x3` before
 checking that word.
 
-Under §246 (a plain `RECEIVE` never takes a capability) a `SEND_CAP` reaching a plain `RECEIVE`
+Under §246 (a plain `RECEIVE` never takes a capability) a `SEND_CAPABILITY` reaching a plain `RECEIVE`
 delivers its data word in `x0`, with `0` in `x1` and `x2`, and the sender keeps its own copy of the
 capability. A `CALL` delivers its two words in `x0` and `x1`, and the caller gets `Gone`, because
 the one-shot Reply has nowhere to go.
@@ -45,14 +45,14 @@ the one-shot Reply has nowhere to go.
   refusal. The same fact is why the notification tag lives in `x4`. The fix is a register
   convention for `RECEIVE`'s status, and every receiver in the tree is written against the current
   one.
-- A §26 (the fault endpoint) death message read with `RECEIVE_CAP` loses the faulting `pc`. The kernel's five words are
-  `(event, tid, pc, addr, 0)`, and `RECEIVE_CAP` returns `(event, NO_CAP, tid, addr, 0)`. Every
+- A §26 (the fault endpoint) death message read with `RECEIVE_CAPABILITY` loses the faulting `pc`. The kernel's five words are
+  `(event, tid, pc, addr, 0)`, and `RECEIVE_CAPABILITY` returns `(event, NO_CAPABILITY, tid, addr, 0)`. Every
   supervisor in the tree receives deaths with `RECEIVE`, through `user_mode_runtime::receive_fault`.
-- A delegated capability passes the `NO_CAP` guard. Any client with `WRITE` on the endpoint and
-  `GRANT` on a capability can `SEND_CAP` it to a `CALL` server. A server that invoked `REPLY` on it
+- A delegated capability passes the `NO_CAPABILITY` guard. Any client with `WRITE` on the endpoint and
+  `GRANT` on a capability can `SEND_CAPABILITY` it to a `CALL` server. A server that invoked `REPLY` on it
   would run method `0` of whatever object it is. `REPLY_DELIVERED` in `x4` (§245 (a `CALL` server tells a Reply from a delegation)) is the test, and
   `user_mode_runtime::receive_request` reads it and deletes an unasked delegation. A server that
-  reads `x1` raw is still exposed. An endpoint that refuses `SEND_CAP` outright is the recorded follow-on of milestone
+  reads `x1` raw is still exposed. An endpoint that refuses `SEND_CAPABILITY` outright is the recorded follow-on of milestone
   706 (a `CALL` server can tell a Reply from a delegation).
 
 ### `REAP`

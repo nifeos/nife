@@ -16,11 +16,9 @@
 #   script/rule-violations           report: every rule, its open strikes, and its status
 #   script/rule-violations --check   fail (non-zero) if any OPEN rule has reached three strikes
 #
-# NOT wired into script/lint or CI. See the BUGS section of notes/rule-violations.md for why: doing
-# so today would fail the shared gate for every lane over a decision (what replaces the git-clobber
-# rule) that is an architect's or the integrator's, never a lane's. Whether to wire it in is an open
-# question
-# named there rather than answered here.
+# A `local` row of script/ci-build, and a step of the `lint` job in CI (milestone 341 (give the three
+# instruments nothing runs a caller), §174 (a caller for each of the three uncalled instruments),
+# ruled 2026-10-27 UTC). It takes 0.07 seconds. It is not part of script/lint itself.
 #
 # Name: provisional. Minted by milestone 118's lane on 2026-08-22. Named for what it reads, in the
 # family of `script/roadmap`, `script/decisions` and `script/names`, none of which are verbs

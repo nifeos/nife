@@ -41,7 +41,7 @@ wiring.
 
 A pure consumer, no matter which contract answers its `service` need, never needs an entry in
 `depends_on`. This is not a simplification; it is DECISIONS §41 applied a second time. A `CALL` that
-finds nobody receiving parks on the endpoint's own sender queue, and the *next* server to `RECEIVE_CAP`
+finds nobody receiving parks on the endpoint's own sender queue, and the *next* server to `RECEIVE_CAPABILITY`
 drains it, in order, with nothing lost. That is exactly the mechanism that made the roadmap's
 imagined forwarding broker unnecessary in the simple case (notes/live-replacement.md's "three things
 the build settled"). It generalizes for free: any component whose only relationship to a dependency

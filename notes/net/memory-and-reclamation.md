@@ -77,7 +77,7 @@ What a net test now does at the end: `net.release_or_fail("a net test's net_stac
 verb, no syscall change.
 
 The one thing that had to change in the kernel, and it is worth understanding here rather than
-only in `sched.rs`. `net_stack` blocks in `receive_cap(STACK)` forever. DECISIONS §16's armed kill
+only in `sched.rs`. `net_stack` blocks in `receive_capability(STACK)` forever. DECISIONS §16's armed kill
 is spent by `schedule()`, which a `Blocked` thread never reaches. Killing it did nothing. What ends
 it is that reclaiming a region removes the endpoints inside it and aborts whoever is blocked on
 them (§32's endpoint reap). That sweep now runs *before* the live-thread refusal instead of

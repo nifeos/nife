@@ -3,7 +3,7 @@ Falsifies `system_tests::user::x86_port_tests::a_holder_that_deletes_its_port_ca
 Architecture: x86_64
 
 The defect is the one milestone 313's audit found in the tree on 2026-09-17, put back: a thread's
-`SYS_CAP_DELETE` of its own `PortRange` capability clears the capability table and leaves
+`SYS_CAPABILITY_DELETE` of its own `PortRange` capability clears the capability table and leaves
 `Thread::port_range_grant` alone. The context switch installs that cached grant into the TSS I/O
 bitmap on every switch-in, and nothing else consults the table, so the thread keeps `in`/`out`
 access to the ports for the rest of its life. §12 says a consumed capability cannot be used again;

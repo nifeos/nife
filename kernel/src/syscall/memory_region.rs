@@ -16,7 +16,7 @@ use crate::arch::mmu;
 /// Name: provisional (lane maintainer/long-function-paydown-invoke, 2026-10-12 UTC).
 #[inline(always)]
 pub(super) fn memory_region_invoke(
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
     region: u64,
     method: u64,
     [a0, a1, a2]: [u64; 3],
@@ -131,7 +131,7 @@ pub(super) fn memory_region_retype(
 /// region or the caller's table is full, with the parent left as it was.
 #[inline(never)]
 pub(super) fn memory_region_split(
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
     region: u64,
     count: u64,
 ) -> Result<i64, Error> {
@@ -163,7 +163,7 @@ pub(super) fn memory_region_destroy(region: u64) -> Result<i64, Error> {
 /// region that no longer resolves.
 #[inline(never)]
 pub(super) fn memory_region_usage(
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
     region: u64,
     record: u64,
 ) -> Result<i64, Error> {

@@ -238,7 +238,7 @@ fn a_parked_holder_revoked_by_the_sparing_take_back_faults_on_wake() {
 /// (call/reply IPC: a one-shot reply capability)).
 ///
 /// The child deletes its port capability's slot (`PORT_SLOT_NO_WAKE`), then executes `out`. The
-/// port grant is a cached field the context switch installs; if `SYS_CAP_DELETE` cleared the table
+/// port grant is a cached field the context switch installs; if `SYS_CAPABILITY_DELETE` cleared the table
 /// but not the cache, the child would keep the ports for life, claim 29 failing for the one object
 /// enforced outside the table. So the `out` must fault, at the instruction after the delete.
 ///
@@ -248,7 +248,11 @@ fn a_parked_holder_revoked_by_the_sparing_take_back_faults_on_wake() {
 fn a_self_deleting_holder_faults_on_its_next_write() {
     let (report, _wake, fault_ep, region) = endpoints(false);
     let (holder, child_region) = build_port_holder(
-        &super::x86_programs::cap_delete_then_port_out(PORT_SLOT_NO_WAKE as u32, SCRATCH_PORT, VAL),
+        &super::x86_programs::capability_delete_then_port_out(
+            PORT_SLOT_NO_WAKE as u32,
+            SCRATCH_PORT,
+            VAL,
+        ),
         Rights::WRITE,
         report,
         None,
@@ -268,7 +272,7 @@ fn a_self_deleting_holder_faults_on_its_next_write() {
     assert_eq!(msg[1], holder, "the fault named the wrong thread");
     assert_eq!(
         msg[2],
-        CODE_VA + super::x86_programs::CAP_DELETE_THEN_PORT_OUT_PC_OFFSET,
+        CODE_VA + super::x86_programs::CAPABILITY_DELETE_THEN_PORT_OUT_PC_OFFSET,
         "the faulting pc was not the `out` instruction: a red for the wrong reason",
     );
     reap(child_region);

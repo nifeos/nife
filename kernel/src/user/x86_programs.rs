@@ -244,18 +244,21 @@ pub const PORT_OUT_ON_CPU_WRONG_CPU_PC_OFFSET: u64 = 29;
 /// **A child that deletes its own capability in `slot`, then writes a byte to a port, then exits**
 /// (milestone 313 (the security audit that was due since August)'s audit).
 ///
-/// A holder of the `PortRange` capability naming `port` runs `SYS_CAP_DELETE` on its slot, a plain
+/// A holder of the `PortRange` capability naming `port` runs `SYS_CAPABILITY_DELETE` on its slot, a plain
 /// syscall with the slot in `edi`, and the `out` that follows must take a general protection fault
-/// at [`CAP_DELETE_THEN_PORT_OUT_PC_OFFSET`]. It exits rather than reporting, so a grant that
+/// at [`CAPABILITY_DELETE_THEN_PORT_OUT_PC_OFFSET`]. It exits rather than reporting, so a grant that
 /// survived the delete arrives as `EVENT_EXIT` instead of hanging on a SEND nobody receives.
-pub const fn cap_delete_then_port_out(slot: u32, port: u16, val: u8) -> [u32; 7] {
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `cap_delete_then_port_out` under the capability ruling of 2026-10-06 (UTC).
+pub const fn capability_delete_then_port_out(slot: u32, port: u16, val: u8) -> [u32; 7] {
     let s = slot.to_le_bytes();
-    let del = (abi::SYS_CAP_DELETE as u32).to_le_bytes();
+    let del = (abi::SYS_CAPABILITY_DELETE as u32).to_le_bytes();
     let p = port.to_le_bytes();
     let ext = (abi::SYS_EXIT as u32).to_le_bytes();
     pack_7([
         0xBF, s[0], s[1], s[2], s[3], // mov edi, slot
-        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAP_DELETE
+        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAPABILITY_DELETE
         0x0F, 0x05, // syscall (CAP_DELETE)
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val
@@ -266,10 +269,13 @@ pub const fn cap_delete_then_port_out(slot: u32, port: u16, val: u8) -> [u32; 7]
     ])
 }
 
-/// The faulting pc offset for [`cap_delete_then_port_out`]: two five-byte `mov r32, imm32`s and the
+/// The faulting pc offset for [`capability_delete_then_port_out`]: two five-byte `mov r32, imm32`s and the
 /// two-byte `syscall` (12 bytes), then [`port_out`]'s own six bytes before its `out`.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `CAP_DELETE_THEN_PORT_OUT_PC_OFFSET` under the capability ruling of 2026-10-06 (UTC).
 #[cfg(all(any(test, feature = "system_tests"), target_arch = "x86_64"))]
-pub const CAP_DELETE_THEN_PORT_OUT_PC_OFFSET: u64 = 12 + PORT_OUT_PC_OFFSET;
+pub const CAPABILITY_DELETE_THEN_PORT_OUT_PC_OFFSET: u64 = 12 + PORT_OUT_PC_OFFSET;
 
 /// **A child that reads one byte from an I/O port and exits**: [`port_out_then_exit`]'s `in` twin.
 ///
@@ -324,7 +330,7 @@ pub(crate) const PORT_IN_THEN_OUT_OUT_PC_OFFSET: u64 = 7;
 
 /// **A child that deletes two capability slots, then writes one byte to a port, then exits.**
 ///
-/// [`cap_delete_then_port_out`] for a child holding one port range in two slots: deleting one must
+/// [`capability_delete_then_port_out`] for a child holding one port range in two slots: deleting one must
 /// leave the `out` permitted, and deleting both must revoke it. The `out` is at
 /// [`TWO_CAPABILITY_DELETES_THEN_PORT_OUT_PC_OFFSET`].
 ///
@@ -338,15 +344,15 @@ pub const fn two_capability_deletes_then_port_out(
 ) -> [u32; 10] {
     let a = slot1.to_le_bytes();
     let b = slot2.to_le_bytes();
-    let del = (abi::SYS_CAP_DELETE as u32).to_le_bytes();
+    let del = (abi::SYS_CAPABILITY_DELETE as u32).to_le_bytes();
     let p = port.to_le_bytes();
     let ext = (abi::SYS_EXIT as u32).to_le_bytes();
     pack_10([
         0xBF, a[0], a[1], a[2], a[3], // mov edi, slot1
-        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAP_DELETE
+        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAPABILITY_DELETE
         0x0F, 0x05, // syscall (CAP_DELETE)
         0xBF, b[0], b[1], b[2], b[3], // mov edi, slot2
-        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAP_DELETE
+        0xB8, del[0], del[1], del[2], del[3], // mov eax, SYS_CAPABILITY_DELETE
         0x0F, 0x05, // syscall (CAP_DELETE)
         0x66, 0xBA, p[0], p[1], // mov dx, port
         0xB0, val,  // mov al, val

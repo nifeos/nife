@@ -33,11 +33,16 @@ made, so a child holds a capability to one file and cannot re-resolve anything. 
 proven with the real shell binary: two shells rooted in two subtrees, each told nothing about which
 it holds, and neither can name the other's files (notes/shell-navigation.md).
 
-Why it matters. calef's framing, and it is the governing constraint: *"I hate Windows/DOS
-specifically because they went differently than virtually every other OS I've used."* Gratuitous
-divergence taxes every user forever. So the bar is not "is this more capability-pure", it is "does
-the model actually force this." Three divergences clear that bar; the rest of Unix's surface should
-survive unchanged.
+Why it matters. calef's framing, and it is the governing constraint for the shell's commands: *"I
+hate Windows/DOS specifically because they went differently than virtually every other OS I've
+used."* Gratuitous divergence taxes every user forever. So the bar is not "is this more
+capability-pure", it is "does the model actually force this." Three divergences clear that bar; the
+rest of Unix's commands should survive unchanged.
+
+That rule governs commands. The language around them (grouping, scoping, substitution, testing)
+follows [§312 (swish has one way to do each job)](../decisions/0312-swish-has-one-way-to-do-each-job.md)
+instead: `|`, the redirections, `&&`, `||` and `$( )` stay as Unix spells them, and every other job
+has one form. [`notes/swish-language.md`](../../notes/swish-language.md) carries the language.
 
 ## The reframe: `cd` was never the problem
 

@@ -197,9 +197,9 @@ pub fn address_space_map_into(aspace: u64, va: u64, frame_slot: u64, mode: u64) 
     unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, frame_slot, mode) }
 }
 
-/// `CAP_INSERT`: copy the capability in the caller's `capability_slot`, narrowed to `rights`, into the
+/// `CAPABILITY_INSERT`: copy the capability in the caller's `capability_slot`, narrowed to `rights`, into the
 /// child TCB's capability table. `target = 0` places it in the first free slot; `target = n` places
-/// it in slot `n - 1` (see `abi::thread_control_block::CAP_INSERT`'s own doc for the supervision-slot
+/// it in slot `n - 1` (see `abi::thread_control_block::CAPABILITY_INSERT`'s own doc for the supervision-slot
 /// use of an explicit target). Returns the slot it landed in, or a negative `abi::Error`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
@@ -218,7 +218,7 @@ pub fn thread_control_block_capability_insert(
     unsafe {
         invoke(
             tcb_slot,
-            abi::thread_control_block::CAP_INSERT,
+            abi::thread_control_block::CAPABILITY_INSERT,
             capability_slot,
             rights,
             target,
@@ -292,11 +292,14 @@ pub fn thread_control_block_resume(tcb_slot: u64) -> i64 {
     unsafe { invoke(tcb_slot, abi::thread_control_block::RESUME, 0, 0, 0) }
 }
 
-/// Drop the capability in `slot` from this thread's capability table (`SYS_CAP_DELETE`). Deleting an empty
+/// Drop the capability in `slot` from this thread's capability table (`SYS_CAPABILITY_DELETE`). Deleting an empty
 /// slot is a no-op. A program that retypes many objects (a loader, a spawner) frees each slot as
 /// soon as it is done with it, so its fixed capability table does not fill. Through [`trap6`] for
 /// [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
-pub fn cap_delete(slot: u64) {
-    // SAFETY: SYS_CAP_DELETE frees a slot in the caller's own capability table, nothing to clean up.
-    let _ = unsafe { trap6(abi::SYS_CAP_DELETE, [slot, 0, 0, 0, 0, 0]) };
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `cap_delete` under the capability ruling of 2026-10-06 (UTC).
+pub fn capability_delete(slot: u64) {
+    // SAFETY: SYS_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
+    let _ = unsafe { trap6(abi::SYS_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
 }

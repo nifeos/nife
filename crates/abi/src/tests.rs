@@ -111,7 +111,7 @@ fn all_is_every_right_and_spend_only_lacks_grant_alone() {
 
 /// The fault-endpoint slot is a valid slot index. Its value is `CAPABILITY_TABLE_SLOTS - 1` by
 /// definition; what can actually be wrong (and what a mutant made wrong invisibly) is the
-/// arithmetic putting it outside the capability table, where `CAP_INSERT` would refuse it and every
+/// arithmetic putting it outside the capability table, where `CAPABILITY_INSERT` would refuse it and every
 /// supervised spawn would fail.
 #[test]
 // Asserting on constants is this test's entire purpose: the constant is the thing a mutant
