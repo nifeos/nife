@@ -13,7 +13,7 @@ Not started, and ruled by §160 (what a subshell copies) on 2026-10-27. Mileston
 and redirection) is BUILT; it removed most of the requirement and changed what is left, and that
 remainder is the thing to build. §160 chose option 4 below: one scoped-block form for the shell's own
 state, and isolation by running `swish` again explicitly as a child whose endowment is derived from
-the parent's. `( ... )` keeps no Unix meaning (§312, swish has one way to do each job). Spellings
+the parent's. `( ... )` keeps no Unix meaning (§312 (swish has one way to do each job in its language), swish has one way to do each job). Spellings
 ship provisional.
 
 This block lays out the problem and the options §160 chose among.
