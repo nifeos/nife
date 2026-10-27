@@ -1,7 +1,10 @@
 # Contribute our proofs upstream instead of releasing our own?
 
 Appendix to [857. Crates released on their own](../0857-crates-released-on-their-own.md), at review
-items 3 and 4. Both questions are open for calef. Nothing is ruled.
+items 5 and 6. The architect ruled 2026-10-27 (UTC) to defer both offers: publish-first. A contribution to
+another project waits until a published crate has users who ask for it upstream, so nife makes
+neither offer now, and each question below stays as the record of what it weighed. The `elf` ruling of
+2026-10-22 (UTC) to keep ours stands.
 
 ## Item 3: the GPT crate and google/gpt-disk-rs
 

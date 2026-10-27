@@ -15,8 +15,6 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
-// The `capability` module and its `*_cap` constructors still carry their pre-sweep spelling; aliased here
-// so this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
 use crate::capability_object::{Object, Rights, device_frame_capability};
 use crate::sched::{
     self, current_capability, inter_process_communication_receive_capability,
