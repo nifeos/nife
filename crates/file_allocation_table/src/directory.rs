@@ -2,8 +2,8 @@
 //! directory read slot by slot through its region or its cluster chain.
 //!
 //! A slot is the end of the directory, a free slot, a short (8.3) entry, or one piece of a long
-//! name. This module reports each long-name piece as it stands; it does not assemble a long name
-//! or check its checksum against the short entry that follows. The layouts are those of
+//! name. This module reports each long-name piece as it stands; `named_entry.rs` assembles the
+//! pieces and checks their checksum against the short entry that follows. The layouts are those of
 //! Microsoft's "FAT: General Overview of On-Disk Format", version 1.03, sections 6 and 7.
 //!
 //! Name: ratified 2026-10-26 (UTC), on #2760. The specification's word for the structure the module
@@ -200,6 +200,16 @@ impl ShortEntry {
 }
 
 impl LongNameEntry {
+    /// A piece from its parts, for the long-name assembly proofs and tests.
+    #[cfg(any(kani, test))]
+    pub(crate) const fn from_parts(order: u8, checksum: u8, units: [u16; 13]) -> LongNameEntry {
+        LongNameEntry {
+            order,
+            checksum,
+            units,
+        }
+    }
+
     /// The piece's place in its name, counting from 1 at the piece nearest the short entry. The
     /// last-piece bit is cleared; the specification allows 1 to 20, and this value is not checked.
     ///
