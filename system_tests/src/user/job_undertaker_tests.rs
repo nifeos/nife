@@ -27,7 +27,7 @@ const JOBS: u64 = 12;
 /// the *claim* is about which budget the pages land in, and that is asserted exactly.
 const YIELDS: u32 = 4000;
 
-/// `invoke(cap, REAP, tid, _, _)` through the real dispatcher, for the tidy-up in the control.
+/// `invoke(capability, REAP, tid, _, _)` through the real dispatcher, for the tidy-up in the control.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
@@ -110,7 +110,7 @@ fn spawn_job_undertaker_with(
         "job_undertaker reads its supervision endpoint from slot 0",
     );
     if let Some((report, spawn)) = tell {
-        for (want, cap) in [
+        for (want, capability) in [
             (
                 1,
                 crate::capability_object::rendezvous_capability(report, Rights::WRITE),
@@ -124,7 +124,7 @@ fn spawn_job_undertaker_with(
                 ),
             ),
         ] {
-            let slot = sched::thread_control_block_insert_capability(tid, cap, None)
+            let slot = sched::thread_control_block_insert_capability(tid, capability, None)
                 .expect("insert job_undertaker's endpoints");
             assert_eq!(slot, want, "job_undertaker names its endpoints by slot");
         }
@@ -177,17 +177,17 @@ fn without_a_collector_a_bounded_job_pool_runs_out() {
     );
 
     // Tidy: collect the three corpses the way the collector would, then give the pool back.
-    let cap = sched::grant(crate::capability_object::rendezvous_capability(
+    let capability = sched::grant(crate::capability_object::rendezvous_capability(
         deaths,
         Rights::READ,
     ))
     .expect("hold deaths");
     for _ in 0..ROOM {
-        let msg = receive_death(cap);
+        let msg = receive_death(capability);
         assert_eq!(msg[0], EVENT_EXIT, "the report stub exits cleanly");
-        assert_eq!(reap(cap, msg[1]), Ok(0), "the tidy-up reap failed");
+        assert_eq!(reap(capability, msg[1]), Ok(0), "the tidy-up reap failed");
     }
-    let _ = sched::delete_current_capability(cap);
+    let _ = sched::delete_current_capability(capability);
     sched::reclaim_region(pool).expect("the job pool did not come back");
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }

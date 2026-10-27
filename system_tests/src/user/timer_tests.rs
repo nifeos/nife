@@ -242,11 +242,11 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
         0,
     )
     .expect("RETYPE_OBJ(TIMER)") as u64;
-    let cap = sched::current_capability(full).expect("the minted slot");
-    let Object::Timer(t) = cap.object else {
-        panic!("RETYPE_OBJ(TIMER) minted {:?}", cap.object);
+    let capability = sched::current_capability(full).expect("the minted slot");
+    let Object::Timer(t) = capability.object else {
+        panic!("RETYPE_OBJ(TIMER) minted {:?}", capability.object);
     };
-    assert_eq!(cap.rights, Rights::ALL);
+    assert_eq!(capability.rights, Rights::ALL);
     let n_slot = invoke(
         ut,
         abi::memory_region::RETYPE_OBJ,

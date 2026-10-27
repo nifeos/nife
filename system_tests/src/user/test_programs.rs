@@ -134,7 +134,7 @@ pub(super) fn lay_out_program(space: &mut AddressSpace, elf: &Elf, stack_pages: 
 /// for the system tests)): start `name` as the kernel starts the progenitor, so a harness proves
 /// the program's choices rather than a privileged shortcut. Lays out the ELF, a stack and, on
 /// x86_64 and riscv64, the timebase page ([`lay_out_program`]), maps the initial ramdisk read-only
-/// at [`INITIAL_RAMDISK_VA`], puts the budget in slot 0, `report` in slot 1 and `further_caps`
+/// at [`INITIAL_RAMDISK_VA`], puts the budget in slot 0, `report` in slot 1 and `further_capabilities`
 /// after in order (each named for its failure message), binds `bound_notification` between
 /// configure and start (the only order without a race), and starts with the archive's length in
 /// `x1`. Returns once the program is running. The design is milestone 794's roadmap block; the
@@ -148,7 +148,7 @@ pub(super) fn spawn_progenitor_shaped(
     budget_rights: Rights,
     report: sched::RendezvousId,
     report_rights: Rights,
-    further_caps: &[(Cap, &str)],
+    further_capabilities: &[(Cap, &str)],
     bound_notification: Option<sched::NotificationId>,
     x0: u64,
 ) -> Started {
@@ -207,7 +207,7 @@ pub(super) fn spawn_progenitor_shaped(
     )
     .expect("insert the report endpoint");
     assert_eq!(slot, 1, "{name}'s report endpoint must land in slot 1");
-    for (i, (capability, what)) in further_caps.iter().enumerate() {
+    for (i, (capability, what)) in further_capabilities.iter().enumerate() {
         let slot = sched::thread_control_block_insert_capability(tid, *capability, None)
             .unwrap_or_else(|e| panic!("could not insert {name}'s {what}: {e:?}"));
         assert_eq!(

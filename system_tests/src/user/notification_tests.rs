@@ -140,7 +140,7 @@ fn a_bound_receiver_is_woken_out_of_receive_and_the_endpoint_still_works() {
 fn a_signal_counted_while_elsewhere_ends_the_next_receive_at_once() {
     static GO: AtomicU64 = AtomicU64::new(0);
     static PLAIN: [AtomicU64; 5] = [const { AtomicU64::new(u64::MAX) }; 5];
-    static WITH_CAP: [AtomicU64; 5] = [const { AtomicU64::new(u64::MAX) }; 5];
+    static WITH_CAPABILITY: [AtomicU64; 5] = [const { AtomicU64::new(u64::MAX) }; 5];
     // Release after all five stores of each message, for the reason FIRST_DONE gives above.
     static PLAIN_DONE: AtomicU64 = AtomicU64::new(0);
     static WITH_CAPABILITY_DONE: AtomicU64 = AtomicU64::new(0);
@@ -163,7 +163,7 @@ fn a_signal_counted_while_elsewhere_ends_the_next_receive_at_once() {
             sched::yield_now();
         }
         let m = sched::inter_process_communication_receive_capability(ep);
-        for (slot, w) in WITH_CAP.iter().zip(m) {
+        for (slot, w) in WITH_CAPABILITY.iter().zip(m) {
             slot.store(w, Ordering::Relaxed);
         }
         WITH_CAPABILITY_DONE.store(1, Ordering::Release);
@@ -198,9 +198,10 @@ fn a_signal_counted_while_elsewhere_ends_the_next_receive_at_once() {
     assert!(wait_for(
         || WITH_CAPABILITY_DONE.load(Ordering::Acquire) == 1
     ));
-    let with_cap: [u64; 5] = core::array::from_fn(|i| WITH_CAP[i].load(Ordering::Relaxed));
+    let with_capability: [u64; 5] =
+        core::array::from_fn(|i| WITH_CAPABILITY[i].load(Ordering::Relaxed));
     assert_eq!(
-        with_cap,
+        with_capability,
         [
             abi::notification::BOUND,
             0b1000,
@@ -328,11 +329,11 @@ fn the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification() {
         abi::objtype::NOTIFICATION,
     );
     let full = minted.expect("RETYPE_OBJ(NOTIFICATION)") as u64;
-    let cap = sched::current_capability(full).expect("the minted slot");
-    let Object::Notification(id) = cap.object else {
-        panic!("RETYPE_OBJ(NOTIFICATION) minted {:?}", cap.object);
+    let capability = sched::current_capability(full).expect("the minted slot");
+    let Object::Notification(id) = capability.object else {
+        panic!("RETYPE_OBJ(NOTIFICATION) minted {:?}", capability.object);
     };
-    assert_eq!(cap.rights, Rights::ALL);
+    assert_eq!(capability.rights, Rights::ALL);
 
     let read = sched::grant(crate::capability_object::notification_capability(
         id,
@@ -485,11 +486,11 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
         abi::rendezvous::NO_CAP,
         "the binder's checks failed before delegating"
     );
-    let cap = sched::current_capability(slot).expect("delegated slot");
-    let Object::Notification(n) = cap.object else {
-        panic!("the binder delegated {:?}", cap.object);
+    let capability = sched::current_capability(slot).expect("delegated slot");
+    let Object::Notification(n) = capability.object else {
+        panic!("the binder delegated {:?}", capability.object);
     };
-    assert_eq!(cap.rights, Rights::WRITE);
+    assert_eq!(capability.rights, Rights::WRITE);
 
     assert!(
         wait_for(|| sched::rendezvous_waiting_receivers(ep) == 1),
