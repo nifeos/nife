@@ -88,7 +88,7 @@ pub enum Object {
     Process(crate::sched::ProcessId),
 
     /// A virtio device's **transport**, by generational name (into the kernel's virtio device
-    /// table). The name goes stale when the device is released (§16's amendment of 2026-10-27), so
+    /// table). The name goes stale when the device is released (§16 (object revocation), amendment of 2026-10-27), so
     /// it never resolves to the device that takes the slot next.
     ///
     /// The DMA-confinement capability. The device has no IOMMU, so the kernel keeps the two

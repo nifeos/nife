@@ -553,7 +553,7 @@ fn release_borrowed(id: u64, dma: u64) -> bool {
     released
 }
 
-/// Milestone 647's exit criterion, first half: one boot registers and releases more transports
+/// Milestone 647 (a virtio slot should come back when its driver dies), exit criterion, first half: one boot registers and releases more transports
 /// than the table holds at once. Each round takes a slot and gives it back, so the count of live
 /// devices never passes one while the count of registrations passes `MAXIMUM_DEVICES` twice.
 #[test_case]

@@ -495,7 +495,7 @@ struct Device {
 ///
 /// A slot comes back when its driver dies ([`bind_to_current_thread`], [`unregister`]), so this
 /// counts live transports, not every transport a boot has wired. A name that outlives its device
-/// is refused, not resolved to the device that took the slot next (§16, amendment of 2026-10-27).
+/// is refused, not resolved to the device that took the slot next (§16 (object revocation), amendment of 2026-10-27).
 /// See notes/virtio.md, "The kernel's half".
 const MAXIMUM_DEVICES: usize = 34;
 

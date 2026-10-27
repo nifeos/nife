@@ -237,7 +237,7 @@ fn wire_driver(
     let budget =
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the driver");
     crate::sched::spawn(move || {
-        // The driver's death gives the slot back (§16, amendment of 2026-10-27).
+        // The driver's death gives the slot back (§16 (object revocation), amendment of 2026-10-27).
         crate::virtio::bind_to_current_thread(vid);
         crate::sched::grant_at(
             DRIVER_SLOT_REPORT,
