@@ -20,7 +20,7 @@ Decided 2026-10-27 (UTC): option A. Lift the arithmetic only.
   `timetable::next_after(fired, interval, now)`, and arms the result.
 - A kernel tick that arrives late comes back onto its original beat. It does not start a fresh
   interval from where it woke up. The behavior change on the late path is intended, and it restores
-  the property milestone 6 chose the compare register for.
+  the property milestone 6 (threads, the context switch, and preemption) chose the compare register for.
 - Lateness detection and the `MISSED_TICKS` accounting stay in the arch layer, as does the
   `#[cfg(test)] miss_detail::record` hook. The crate returns a deadline, not a verdict.
 - x86_64 is unchanged, because the local APIC reloads in periodic mode and there is no software
