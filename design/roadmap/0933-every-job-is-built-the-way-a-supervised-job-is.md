@@ -43,15 +43,18 @@ What it costs, and why it is an architect's call rather than a lane's:
 
 ## Ruling
 
-2026-10-27 (UTC), about 22:30: yes. Every job is built from a region the shell holds, with its exit
-delivered to an endpoint the shell holds, the shape of [§106 (take the `terminal_sink_caretaker`
+2026-10-27 (UTC), about 22:30: yes. The shell holds the region of every job it starts, and the job's
+exit arrives on an endpoint the shell holds, the shape of [§106 (take the `terminal_sink_caretaker`
 narrowing)](../decisions/0106-tail-output-narrowing.md). The shell reaps these jobs. The progenitor
-learns that a job's file-service window is free another way than the undertaker's "reaped" message
-(milestone 685 (a job is finished when its memory is back)). The shell's endowment grows by what
-the progenitor's pool shrinks. The cooperative tier, a `std` program's `SIGINT`, stays its own
-question. The prior art weighed was a Unix parent shell, Fuchsia process handles and Genode's
-parent-paid quotas. [§142 (what a spawner retains over a child after
-`START`)](../decisions/0142-spawn-retention.md) records the retention this changes.
+learns that a job's file-service window is free some way other than the undertaker's "reaped"
+message (milestone 685 (a job is finished when its memory is back)). The shell's endowment grows by
+what the progenitor's pool shrinks. The cooperative tier, a `std` program's `SIGINT`, stays its own
+question. The architect weighed a Unix parent shell, Fuchsia process handles and Genode's
+parent-paid quotas.
+
+[§142 (what a spawner retains over a child after
+`START`)](../decisions/0142-spawn-retention.md) is amended when the build lands, with the wire
+change and its numbers. Section 142 sits at the 3,000-word cap, so the amendment needs room first.
 
 ## Index row
 

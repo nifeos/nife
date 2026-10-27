@@ -1,5 +1,5 @@
 ---
-status: AMENDED
+status: DECIDED
 raised: 2026-09-04
 decided: 2026-09-04
 ratified_by: calef
@@ -288,13 +288,3 @@ is the whole reason it is not being bought here.
 in R2's entry above. This tree has no state-dependent authority for R2 to remove, and seL4's
 lifetime handle earns its keep only alongside a repair-and-resume recovery model that §26 declined
 in as many words.
-
-## Amendment, 2026-10-27 (UTC): a job may be built from a region its requester holds
-
-Milestone 933 (every job is built the way a supervised job is) is ruled. Retention stays a declared
-field, and a job's builder may now be told to build from a region the requester holds. The requester
-supervises the job on an endpoint it holds, reaps it, and tears it down with `DESTROY` on the
-region. The progenitor retains nothing over such a job, and learns that its file-service window is
-free by a message the requester sends, not by the undertaker's. The requester's memory budget grows
-by what the progenitor's pool shrinks. The wire change and its numbers are milestone 933's to
-record when it is built.
