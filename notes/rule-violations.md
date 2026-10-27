@@ -119,9 +119,9 @@ $ echo $?
 ## BUGS
 
 - **A rule that crosses three strikes turns every pull request red until the ledger answers it.**
-  `--check` is a `local` row of `script/ci-build` and a step of the `lint` job (milestone 341 (give
-  the three instruments nothing runs a caller), §174 (a caller for each of the three uncalled
-  instruments), ruled 2026-10-27 UTC), and takes 0.07 seconds. It passes clean today. When a rule
+  `--check` is a `local` row of `script/ci-build` and a step of the `lint` job. Milestone 341 (give
+  the three instruments nothing runs a caller) wired it, under §174 (a caller for each of the three
+  uncalled instruments), ruled 2026-10-27 UTC. It takes 0.07 seconds. It passes clean today. When a rule
   crosses, the fix is not a lane's. Moving the rule up the ladder or marking it `resolved` belongs
   to an architect or the maintainer. Until one does, the check fails for every lane. The ruling
   accepted that cost against a ledger that nothing reads.
