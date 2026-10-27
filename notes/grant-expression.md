@@ -198,7 +198,7 @@ Since milestone 50 (pipes and redirection) the interactive shell holds the image
 builds a `fs_subtree_caretaker` per directory grant, so `rm` runs; `script/swish-check` proves it on
 both ISAs. `FileGrantDeclaration::Required` still has no consumer: no shipped program declares a file. Of the
 four obstacles this note predicted, three landed as written. Depth is the one still open: every
-caretaker descends exactly one name, so `rm gate.txt` at the top prompt is refused. The fourth, the
+caretaker descends exactly one name, and the root narrows by `NARROW` instead. The fourth, the
 lifetime, cost the most care, because the first reclaim of a caretaker's region is refused by
 construction. Two shipped programs also disagreed with their own declarations until they ran.
 

@@ -57,6 +57,7 @@ fn the_directory_verbs_are_distinct_from_every_other_one() {
         ("GETMTIME", fs::GETMTIME),
         ("SETMTIME", fs::SETMTIME),
         ("SETMTIME_AT", fs::SETMTIME_AT),
+        ("NARROW", fs::NARROW),
     ];
     for (i, (na, a)) in operations.iter().enumerate() {
         assert!(*a <= 0xff, "{na} does not fit the 8-bit opcode field");
