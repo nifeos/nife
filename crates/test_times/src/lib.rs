@@ -142,12 +142,12 @@ pub const SLOW_TESTS: &[(&str, u64)] = &[];
 /// # EXAMPLES
 ///
 /// ```
-/// use test_times::{DEFAULT_BUDGET_SECS, budget_secs_for};
+/// use test_times::{DEFAULT_BUDGET_SECS, budget_seconds_for};
 ///
-/// assert_eq!(budget_secs_for("kernel::memory::tests::frames_are_zeroed"), DEFAULT_BUDGET_SECS);
+/// assert_eq!(budget_seconds_for("kernel::memory::tests::frames_are_zeroed"), DEFAULT_BUDGET_SECS);
 /// ```
 #[must_use]
-pub fn budget_secs_for(path: &str) -> u64 {
+pub fn budget_seconds_for(path: &str) -> u64 {
     let mut secs = DEFAULT_BUDGET_SECS;
     for &(needle, allowed) in SLOW_TESTS {
         if path.contains(needle) {
@@ -240,10 +240,10 @@ mod tests {
 
     #[test]
     fn a_declared_slow_test_gets_its_own_budget_and_every_other_test_the_default() {
-        assert_eq!(budget_secs_for("kernel::a::b"), DEFAULT_BUDGET_SECS);
+        assert_eq!(budget_seconds_for("kernel::a::b"), DEFAULT_BUDGET_SECS);
         for &(needle, secs) in SLOW_TESTS {
             assert_eq!(
-                budget_secs_for(&std::format!("system_tests::x::{needle}")),
+                budget_seconds_for(&std::format!("system_tests::x::{needle}")),
                 secs
             );
         }

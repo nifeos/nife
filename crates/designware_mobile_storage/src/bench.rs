@@ -33,7 +33,7 @@ pub struct ReadReport {
     /// Blocks read in the timed sequential read.
     pub timed_blocks: u64,
     /// Microseconds the timed read took.
-    pub timed_us: u64,
+    pub timed_microseconds: u64,
 }
 
 /// Where the read-only probe stopped.
@@ -72,7 +72,7 @@ pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
         partition_boot_signature = sector[510..512] == [0x55, 0xaa];
         file_system_type.copy_from_slice(&sector[82..90]);
     }
-    let (timed, timed_us) = timed_read(host, &card, first, buffer, timed_blocks)?;
+    let (timed, timed_microseconds) = timed_read(host, &card, first, buffer, timed_blocks)?;
     Ok(ReadReport {
         card,
         master_boot_record,
@@ -80,7 +80,7 @@ pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
         file_system_type,
         timed_from: first,
         timed_blocks: timed,
-        timed_us,
+        timed_microseconds,
     })
 }
 
@@ -95,7 +95,7 @@ fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
 ) -> Result<(u64, u64), ReadFailure> {
     let per = (buffer.len() / BLOCK) as u64;
     let mut timed = 0u64;
-    let start = host.registers().now_us();
+    let start = host.registers().now_microseconds();
     if per > 0 {
         while timed < timed_blocks && first + timed + per <= card.blocks {
             sd::read_blocks(host, card, first + timed, buffer)
@@ -103,7 +103,10 @@ fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
             timed += per;
         }
     }
-    Ok((timed, host.registers().now_us().wrapping_sub(start)))
+    Ok((
+        timed,
+        host.registers().now_microseconds().wrapping_sub(start),
+    ))
 }
 
 /// What the IDMAC's half of the read-only probe found.
@@ -118,7 +121,7 @@ pub struct InternalDirectMemoryAccessReport {
     /// Blocks read in the timed sequential read.
     pub timed_blocks: u64,
     /// Microseconds the timed read took.
-    pub timed_us: u64,
+    pub timed_microseconds: u64,
 }
 
 /// **The IDMAC's half of the read-only probe**, on a host
@@ -148,11 +151,11 @@ pub fn internal_direct_memory_access_read<R: Registers, D: DirectMemoryAccessReg
         .map_err(|e| ReadFailure::Read(first, e))?;
     // An empty reference never gets here: a read of no blocks is refused as `Length`.
     let matches = buffer[..n] == reference[..n];
-    let (timed_blocks, timed_us) = timed_read(host, card, first, buffer, timed_blocks)?;
+    let (timed_blocks, timed_microseconds) = timed_read(host, card, first, buffer, timed_blocks)?;
     Ok(InternalDirectMemoryAccessReport {
         matches,
         timed_blocks,
-        timed_us,
+        timed_microseconds,
     })
 }
 
@@ -297,8 +300,8 @@ impl<R: Registers> Registers for Watch<R> {
     fn write(&mut self, offset: u32, value: u32) {
         self.inner.write(offset, value);
     }
-    fn now_us(&mut self) -> u64 {
-        self.inner.now_us()
+    fn now_microseconds(&mut self) -> u64 {
+        self.inner.now_microseconds()
     }
 }
 
@@ -316,7 +319,7 @@ pub struct MatrixRow {
     /// What the read returned.
     pub result: Result<(), IoError>,
     /// Microseconds the read took.
-    pub us: u64,
+    pub microseconds: u64,
     /// The highest FIFO fill seen during it, in words.
     pub maximum_fill: u32,
     /// `STATUS` reads that found the FIFO full.
@@ -362,9 +365,9 @@ pub fn read_matrix<R: Registers>(
                 continue;
             };
             host.registers().clear();
-            let start = host.registers().now_us();
+            let start = host.registers().now_microseconds();
             let result = sd::read_blocks(host, &card, logical_block_address, dst);
-            let us = host.registers().now_us().wrapping_sub(start);
+            let microseconds = host.registers().now_microseconds().wrapping_sub(start);
             let watch = host.registers();
             let after = [
                 watch.inner.read(crate::registers::STATUS),
@@ -377,7 +380,7 @@ pub fn read_matrix<R: Registers>(
                 card_hz,
                 blocks,
                 result,
-                us,
+                microseconds,
                 maximum_fill: watch.maximum_fill,
                 full_reads: watch.full_reads,
                 after,

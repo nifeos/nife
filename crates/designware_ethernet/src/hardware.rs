@@ -13,6 +13,6 @@ pub trait Hardware {
     fn read(&mut self, offset: u32) -> u32;
     /// Write `v` to the 32-bit register at `offset`.
     fn write(&mut self, offset: u32, v: u32);
-    /// Wait at least `us` microseconds.
-    fn delay_us(&mut self, us: u64);
+    /// Wait at least `microseconds` microseconds.
+    fn delay_microseconds(&mut self, microseconds: u64);
 }

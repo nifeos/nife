@@ -81,7 +81,7 @@ impl Registers for Page {
         }
     }
 
-    fn now_us(&mut self) -> u64 {
+    fn now_microseconds(&mut self) -> u64 {
         user_mode_runtime::monotonic_ns() / 1000
     }
 }

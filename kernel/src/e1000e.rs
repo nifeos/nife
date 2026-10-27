@@ -269,18 +269,18 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
         registers::TDT,
         flush::tail_after(tdt, ::e1000e::TRANSMIT_ENTRIES),
     );
-    spin_us(250);
+    spin_microseconds(250);
     if status() & flush::FLUSH_DESC_REQUIRED == 0 {
         return;
     }
     let rctl = c.r(registers::RCTL);
     c.w(registers::RCTL, rctl & !0x2);
     let _ = c.r(registers::STATUS);
-    spin_us(150);
+    spin_microseconds(150);
     c.w(pch::RXDCTL, flush::rxdctl(c.r(pch::RXDCTL)));
     c.w(registers::RCTL, rctl | 0x2);
     let _ = c.r(registers::STATUS);
-    spin_us(150);
+    spin_microseconds(150);
     c.w(registers::RCTL, rctl & !0x2);
 }
 
@@ -327,8 +327,8 @@ impl ::e1000e::pch::Hardware for Bar<'_> {
     fn read16(&mut self, off: u64) -> u16 {
         self.c.r16(off)
     }
-    fn delay_us(&mut self, us: u64) {
-        spin_us(us);
+    fn delay_microseconds(&mut self, microseconds: u64) {
+        spin_microseconds(microseconds);
     }
     fn pci_vendor_id(&mut self) -> u16 {
         self.dev.config_read32(0) as u16
@@ -347,8 +347,8 @@ impl ::e1000e::pch::Hardware for Bar<'_> {
     }
 }
 
-fn spin_us(us: u64) {
-    crate::arch::timer::spin_for(us * crate::arch::timer::frequency() / 1_000_000);
+fn spin_microseconds(microseconds: u64) {
+    crate::arch::timer::spin_for(microseconds * crate::arch::timer::frequency() / 1_000_000);
 }
 
 fn spin_ms(ms: u64) {

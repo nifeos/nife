@@ -107,13 +107,13 @@ static SHARED_FRAME: Frame = unsafe { Frame::new(PAGE_FRAME_VA) };
 user_mode_runtime::program_entry!(start);
 
 /// `a0` selects an [`srv`] variant, `a1` is the wall-clock time in nanoseconds this server claims.
-fn start(variant: u64, claimed_nanos: u64, _arg2: u64) -> ! {
-    server(variant, claimed_nanos)
+fn start(variant: u64, claimed_ns: u64, _arg2: u64) -> ! {
+    server(variant, claimed_ns)
 }
 
 /// Serve the socket contract on [`STACK`], answering each request with an NTP reply built from
-/// `variant` at `claimed_nanos`. See the module docs for what this does and does not prove.
-fn server(variant: u64, claimed_nanos: u64) -> ! {
+/// `variant` at `claimed_ns`. See the module docs for what this does and does not prove.
+fn server(variant: u64, claimed_ns: u64) -> ! {
     let mut pending = [0u8; network_time_protocol::PACKET_LEN];
     let mut pending_len = 0usize;
     let mut reported = false;
@@ -157,7 +157,7 @@ fn server(variant: u64, claimed_nanos: u64) -> ! {
                     &mut wire,
                 );
                 let request = Packet::parse(&wire[..n]).unwrap_or_default();
-                pending_len = build_reply(&request, variant, claimed_nanos, &mut pending);
+                pending_len = build_reply(&request, variant, claimed_ns, &mut pending);
                 reply(to, REP_OK, 0);
                 if !reported {
                     reported = true;
@@ -186,9 +186,9 @@ fn server(variant: u64, claimed_nanos: u64) -> ! {
 }
 
 /// Build the reply for `variant`. Returns how many bytes of `out` are the reply.
-fn build_reply(request: &Packet, variant: u64, claimed_nanos: u64, out: &mut [u8]) -> usize {
-    let t2 = stamp(claimed_nanos).unwrap_or(Timestamp::ZERO);
-    let t3 = stamp(claimed_nanos + SERVER_TURNAROUND_NANOS).unwrap_or(Timestamp::ZERO);
+fn build_reply(request: &Packet, variant: u64, claimed_ns: u64, out: &mut [u8]) -> usize {
+    let t2 = stamp(claimed_ns).unwrap_or(Timestamp::ZERO);
+    let t3 = stamp(claimed_ns + SERVER_TURNAROUND_NANOS).unwrap_or(Timestamp::ZERO);
 
     let mut p = Packet {
         leap: leap::NONE,

@@ -91,7 +91,7 @@ fn stack_pages() -> [Mapping; STACK_PAGES as usize] {
     maps
 }
 
-/// Spawn `network_time_test_server`: `variant` selects the reply it builds, and `claimed_nanos` is
+/// Spawn `network_time_test_server`: `variant` selects the reply it builds, and `claimed_ns` is
 /// the wall-clock time it claims, supplied by the kernel because the server holds no clock.
 ///
 /// Four slots and no propose or entropy endpoint, so the peer answering the client cannot reach the
@@ -100,7 +100,7 @@ fn stack_pages() -> [Mapping; STACK_PAGES as usize] {
 pub fn start_server(
     image: &'static [u8],
     variant: u64,
-    claimed_nanos: u64,
+    claimed_ns: u64,
     region: u64,
     held: &mut Holding,
 ) -> Server {
@@ -114,7 +114,7 @@ pub fn start_server(
             image,
             Spawn {
                 arg0: variant,
-                arg1: claimed_nanos,
+                arg1: claimed_ns,
                 arg2: 0,
                 grants: &[
                     rendezvous_cap(report, Rights::WRITE), // slot 0: the one report
