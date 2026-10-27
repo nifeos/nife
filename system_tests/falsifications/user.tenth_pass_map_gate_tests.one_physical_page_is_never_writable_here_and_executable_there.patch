@@ -7,9 +7,8 @@ the same space. `MAP_RW` at one `va` and `MAP_CODE` at another leave every page-
 while the physical page is writable and executable through the two aliases. A builder holding
 `WRITE` on a space and a `READ | WRITE` frame reaches it with ordinary capabilities and no defect
 in the grant chain. The per-leaf proofs the row cites survive; the claim as published does not.
-The tenth outsider pass found it (milestone 936, a tenth outsider pass attacks the confinement
-claim); calef ruled on 2026-10-27 (UTC) that the escape sits on a shipped path and that the fix
-is mandatory.
+The pass is milestone 936 (a tenth outsider pass attacks the confinement claim); calef ruled on
+2026-10-27 (UTC) that the escape sits on a shipped path and that the fix is mandatory.
 
 Expected to fail: the witness assert, reporting `one physical page is writable at <writable va>
 and executable at <executable va>: every leaf is honest and the page is both, which is W^X defeated
