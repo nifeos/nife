@@ -30,7 +30,7 @@ mod raw_queue;
 
 pub use line_disc::{Event, HIST, LINE_MAX, LineDisc, PROMPT_MAX};
 pub use output::{Sink, expand_output};
-pub use raw_queue::{RAW_QUEUE_MAX, RawQueue};
+pub use raw_queue::{RAW_QUEUE_MAXIMUM, RawQueue};
 
 /// The IPC framing of the terminal contract (notes/terminal-contract.md): opcodes, flags, and
 /// limits shared by the discipline server, its clients, and the kernel-side tests. This is a

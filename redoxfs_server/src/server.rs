@@ -495,7 +495,7 @@ impl<D: Disk> Server<D> {
     /// `EBADF` without [`dir::READ`], as [`Server::read`] answers. `ENODATA` if the attribute is
     /// not set, the only error that means absence (notes/fs-server.md). `ERANGE` if `out` is
     /// shorter than the value, never a short read (DECISIONS §42); on the wire `out` is the shared
-    /// page, larger than [`xattr::MAX_VALUE`], so it cannot fire there.
+    /// page, larger than [`xattr::MAXIMUM_VALUE`], so it cannot fire there.
     pub fn get_xattr(&mut self, handle: u32, name: &[u8], out: &mut [u8]) -> Result<(u32, usize)> {
         if !xattr::is_valid_name(name) {
             return Err(Error::new(xattr::ERANGE));
@@ -525,7 +525,7 @@ impl<D: Disk> Server<D> {
         if !xattr::is_valid_name(name) {
             return Err(Error::new(xattr::ERANGE));
         }
-        if value.len() > xattr::MAX_VALUE {
+        if value.len() > xattr::MAXIMUM_VALUE {
             return Err(Error::new(xattr::E2BIG));
         }
         let ptr = self.node_at(handle, dir::WRITE, EROFS)?;
@@ -547,8 +547,8 @@ impl<D: Disk> Server<D> {
     /// `EBADF`.
     ///
     /// No cursor, unlike [`Server::read_dir`]: a complete listing fits one page by construction
-    /// ([`xattr::MAX_COUNT`]), so it cannot be observed half-changed the way a cursored directory
-    /// walk can.
+    /// ([`xattr::MAXIMUM_COUNT`]), so it cannot be observed half-changed the way a cursored
+    /// directory walk can.
     pub fn list_xattr(&mut self, handle: u32, out: &mut [u8]) -> Result<usize> {
         let ptr = self.node_at(handle, dir::READ, EBADF)?;
         self.fs

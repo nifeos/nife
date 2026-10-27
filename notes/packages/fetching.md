@@ -109,8 +109,8 @@ The limits it carries, in full:
   design/decisions/0046-dependency-rule.md takes the parser rather than proving one, and the harness
   the hand-written parser had never finished in a CI shard's minutes.
 - `httparse` parses into a caller-supplied array and this crate has no allocator, so a head with
-  more than `MAX_HEADERS` lines is refused even under the byte cap. The array lives on the stack for
-  one parse (4 KiB).
+  more than `MAXIMUM_HEADERS` lines is refused even under the byte cap. The array lives on the stack
+  for one parse (4 KiB).
 - `httparse` does not resume, so the head is parsed again on every read until it ends. That is
   bounded by the head cap, quadratic in it for a peer that sends one byte per read, and not measured.
 - Header values other than the two it reads are skipped, so a malformed `Date` costs nothing; a

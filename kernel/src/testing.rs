@@ -137,8 +137,8 @@ fn refuse_a_repeat_that_runs_dry(iteration: u32, baseline: RepeatReading, now: R
     let frames_needed = frames_lost.div_ceil(since) * left;
     let slots_gained = now.slots.saturating_sub(baseline.slots);
     let slots_needed = slots_gained.div_ceil(since) * left;
-    let frames_short = now.frames < frames_needed + SUITE_MIN_FREE_RUN;
-    let run_short = now.run < SUITE_MIN_FREE_RUN;
+    let frames_short = now.frames < frames_needed + SUITE_MINIMUM_FREE_RUN;
+    let run_short = now.run < SUITE_MINIMUM_FREE_RUN;
     let slots_short = now.slots + slots_needed > now.slot_capacity;
     if !frames_short && !run_short && !slots_short {
         return;
@@ -151,7 +151,7 @@ fn refuse_a_repeat_that_runs_dry(iteration: u32, baseline: RepeatReading, now: R
     );
     println!(
         "  frames: {} free at run 2, {} now ({frames_lost} lost over {since} runs); the {left} runs \
-         left need about {frames_needed}, plus the {SUITE_MIN_FREE_RUN} the ledger keeps. Longest \
+         left need about {frames_needed}, plus the {SUITE_MINIMUM_FREE_RUN} the ledger keeps. Longest \
          free run {}.",
         baseline.frames, now.frames, now.run
     );
@@ -257,7 +257,7 @@ static WORST_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 /// Report a test's frame cost once it reaches this many frames. Below it, silence: a test that
 /// spends two pages on an endpoint is not news, and a number on every line buries the ones that
 /// are. Sixteen frames is 64 KiB, about the smallest thing a service-shaped test takes.
-const PAGE_FRAME_REPORT_MIN: usize = 16;
+const PAGE_FRAME_REPORT_MINIMUM: usize = 16;
 
 /// **What the whole suite may leave unreturned, in frames**, checked once at the end of the run.
 ///
@@ -277,7 +277,7 @@ const SUITE_PAGE_FRAME_BUDGET: usize = 24_371;
 /// fragmented: one boot ended with 216 free and no run longer than 117, and every larger program
 /// failed to load in whichever test came next. 1024 frames (4 MiB) is well above the largest
 /// program this boot loads and well under the 14,080 measured after reclamation.
-const SUITE_MIN_FREE_RUN: usize = 1024;
+const SUITE_MINIMUM_FREE_RUN: usize = 1024;
 
 /// **Charge the test that just finished, and open an account for the one about to start.**
 ///
@@ -289,7 +289,7 @@ fn charge_previous(now: usize, next: &'static str) {
     let prev_ptr = PREV_NAME_PTR.load(Ordering::Relaxed);
     if !prev_ptr.is_null() {
         let spent = FRAMES_AT_PREV.load(Ordering::Relaxed).saturating_sub(now);
-        if spent >= PAGE_FRAME_REPORT_MIN {
+        if spent >= PAGE_FRAME_REPORT_MINIMUM {
             println!("    [that test kept {spent} frames]");
         }
         if spent > WORST_SPEND.load(Ordering::Relaxed) {
@@ -316,7 +316,8 @@ fn worst_spender_name() -> Option<&'static str> {
 }
 
 /// Print the ledger, and fail the run if the boot ends with no usable contiguous run
-/// ([`SUITE_MIN_FREE_RUN`]) or with more kept than is accounted for ([`SUITE_PAGE_FRAME_BUDGET`]).
+/// ([`SUITE_MINIMUM_FREE_RUN`]) or with more kept than is accounted for
+/// ([`SUITE_PAGE_FRAME_BUDGET`]).
 fn report_page_frame_ledger() {
     if !FRAMES_STAMPED.load(Ordering::Relaxed) {
         return; // no test ran; nothing was spent
@@ -337,11 +338,11 @@ fn report_page_frame_ledger() {
             WORST_SPEND.load(Ordering::Relaxed)
         );
     }
-    if run < SUITE_MIN_FREE_RUN {
+    if run < SUITE_MINIMUM_FREE_RUN {
         println!();
         println!(
             "FRAME LEDGER: the boot ends with no free run longer than {run} frames, under the \
-             {SUITE_MIN_FREE_RUN} this gate requires. This is the failure rather than a warning \
+             {SUITE_MINIMUM_FREE_RUN} this gate requires. This is the failure rather than a warning \
              about one: loading a program takes a contiguous run, so the next test to load anything \
              substantial would fail as Unmappable(OutOfPageFrames), and it would do so in whichever \
              test happened to be next rather than in the one that spent the memory. Read the \
@@ -385,16 +386,16 @@ static REGION_PEAK_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 
 /// **How close the boot came to the region table's ceiling**, and the test during which the peak
 /// was set: where to start reading, not who is to blame, since a leak many tests earlier can set
-/// it. Reports and does not gate, for [`report_thread_peak`]'s reason; `memory_region::MAX_REGIONS`
-/// says who holds what.
+/// it. Reports and does not gate, for [`report_thread_peak`]'s reason;
+/// `memory_region::MAXIMUM_REGIONS` says who holds what.
 fn report_region_peak() {
     let peak = crate::memory_region::peak_region_count();
-    let maximum = crate::memory_region::MAX_REGIONS;
+    let maximum = crate::memory_region::MAXIMUM_REGIONS;
     let during = stored_name(&REGION_PEAK_NAME_PTR, &REGION_PEAK_NAME_LEN);
     println!(
         "regions: {peak} live at the peak, of {maximum} the image allows ({} spare), set during \
         {}. \
-         See memory_region::MAX_REGIONS.",
+         See memory_region::MAXIMUM_REGIONS.",
         maximum.saturating_sub(peak),
         during.unwrap_or("the boot, before the first test"),
     );
@@ -411,11 +412,11 @@ static RENDEZVOUS_PEAK_NAME_LEN: AtomicUsize = AtomicUsize::new(0);
 /// is at `sched::PEAK_RENDEZVOUS`.
 fn report_rendezvous_peak() {
     let (peak, kernel) = crate::sched::rendezvous_pressure();
-    let maximum = crate::sched::MAX_RENDEZVOUS;
+    let maximum = crate::sched::MAXIMUM_RENDEZVOUS;
     println!(
         "rendezvous: {peak} live at the peak, of {maximum} the image allows ({} spare), set during \
         {}; \
-         {kernel} were created on kernel chunks, which are never freed. See sched::MAX_RENDEZVOUS.",
+         {kernel} were created on kernel chunks, which are never freed. See sched::MAXIMUM_RENDEZVOUS.",
         maximum.saturating_sub(peak),
         stored_name(&RENDEZVOUS_PEAK_NAME_PTR, &RENDEZVOUS_PEAK_NAME_LEN)
             .unwrap_or("the boot, before the first test"),

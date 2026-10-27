@@ -564,7 +564,7 @@ elif [ -n "$NIFE_SCREEN_MON" ]; then
 fi
 
 # Number of cores. Four by default, the SMP tests' shape (§11); NIFE_SMP moves it, and the
-# ceiling is cpu::MAX_CPUS (the per-CPU statics), not this default: the suite asserts loudly if
+# ceiling is cpu::MAXIMUM_CPUS (the per-CPU statics), not this default: the suite asserts loudly if
 # -smp exceeds what the kernel can seat. QEMU brings up core 0 running; the kernel starts the rest
 # itself via PSCI CPU_ON (see smp.rs).
 SMP="${NIFE_SMP:-4}"

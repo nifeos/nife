@@ -31,7 +31,8 @@ const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 const EXTRA_STACK_PAGES: usize = 3;
 
 /// The most mappings one spawn makes: every work page, every register page, and the stack.
-const MAX_MAPS: usize = WORK_PAGES as usize + MAXIMUM_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
+const MAXIMUM_MAPS: usize =
+    WORK_PAGES as usize + MAXIMUM_REGISTER_PAGES as usize + EXTRA_STACK_PAGES;
 
 /// What [`start`] hands back.
 pub(crate) struct Wiring {
@@ -79,7 +80,7 @@ pub(crate) fn start(
             va: 0,
             phys: 0,
             flags: Flags::user_data(),
-        }; MAX_MAPS];
+        }; MAXIMUM_MAPS];
         // The work pages, contiguous, normal memory: the controller and the driver share ordinary
         // RAM there. The scratchpad pages after them are not mapped.
         super::fs_service::map_channel(

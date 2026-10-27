@@ -536,7 +536,7 @@ mod tests {
     use super::download_name;
 
     #[test]
-    fn downloads_are_named_by_os_and_cpu() {
+    fn downloads_are_named_by_operating_system_and_cpu() {
         assert_eq!(
             download_name("aarch64-apple-darwin"),
             "stick_maker-macos-arm64"

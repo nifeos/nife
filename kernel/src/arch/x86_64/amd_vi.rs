@@ -16,7 +16,7 @@
 //! - Domain ids are never reused; past 65,535 attaches a boot panics.
 //! - Nothing revokes a device's domain in production, and a re-attach leaks the old tables.
 //! - The exclusion clear is half proved under QEMU, which ignores those registers.
-//! - Two devices behind one alias cannot both work, and at most [`MAX_ALIASES`] are tracked.
+//! - Two devices behind one alias cannot both work, and at most [`MAXIMUM_ALIASES`] are tracked.
 //! - The root is checked against the 52-bit field, not the unit's real address width.
 
 use machine_discovery::acpi::ivrs::{IvrsUnits, MAX_IVHDS};
@@ -150,13 +150,13 @@ struct Unit {
     /// that is not blocked is held by the device whose id it is. Kept because the device table
     /// cannot say who wrote an entry, and [`attach`] must refuse to hand one device's alias to
     /// another (provisional milestone 767).
-    aliases: [Option<(u32, u32)>; MAX_ALIASES],
+    aliases: [Option<(u32, u32)>; MAXIMUM_ALIASES],
 }
 
 /// How many alias entries one unit records the holder of. QEMU's machine has none in use; a client
 /// AMD board has a handful of PCIe-to-PCI bridges at most. An attach that would need a slot past
 /// this fails closed, like a conflict. Name: provisional.
-const MAX_ALIASES: usize = 32;
+const MAXIMUM_ALIASES: usize = 32;
 
 // `Up` is several hundred bytes since the alias holder record (provisional milestone 767) and the
 // others are a pointer at most. Boxing it would buy nothing: the slots live in one static array of
@@ -485,7 +485,7 @@ fn set_up(ivrs: &IvrsUnits, i: usize) -> Result<Unit, &'static str> {
         enabled: false,
         reserved_devices: 0,
         exclusion,
-        aliases: [None; MAX_ALIASES],
+        aliases: [None; MAXIMUM_ALIASES],
     })
 }
 
@@ -664,7 +664,8 @@ pub fn attach(rid: u32, root: u64) {
                  BLOCKED (fail closed)"
             ),
             None => crate::println!(
-                "  amd-vi      : NO SLOT TO RECORD {rid:#06x}'s ALIAS ({MAX_ALIASES} in use), so \
+                "  amd-vi      : NO SLOT TO RECORD {rid:#06x}'s ALIAS ({MAXIMUM_ALIASES} in use), \
+                so \
                  every entry of {rid:#06x} is BLOCKED (fail closed)"
             ),
         }

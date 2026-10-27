@@ -32,8 +32,8 @@ use crate::cpu_list::CpuList;
 ///   driver's; see `notes/machine-discovery.md`.
 pub const COMPATIBLES: [&[u8]; 3] = [b"sifive,plic-1.0.0", b"riscv,plic0", b"thead,c900-plic"];
 
-/// The most harts a context map records; matches [`crate::riscv64::MAX_HARTS`].
-pub const MAX_CONTEXT_HARTS: usize = crate::riscv64::MAX_HARTS;
+/// The most harts a context map records; matches [`crate::riscv64::MAXIMUM_HARTS`].
+pub const MAX_CONTEXT_HARTS: usize = crate::riscv64::MAXIMUM_HARTS;
 
 /// The interrupt a PLIC raises into a hart's `riscv,cpu-intc` for **supervisor** external
 /// interrupts: `scause` 9. Its machine twin is 11; those are the only two that appear in a PLIC's

@@ -12,7 +12,7 @@
 //!   package is one archive file)).
 //! - [`Requirements::pages`] is a property of a build, not of the contract.
 //! - A malformed declaration's compile error names the manifest, not the role.
-//! - [`MAX_CAPS`] and [`MAX_MAPS`] are hard bounds, about double any manifest here.
+//! - [`MAX_CAPS`] and [`MAXIMUM_MAPS`] are hard bounds, about double any manifest here.
 //! - Nothing checks that a routed object is the kind the role wants; the kernel refuses it later.
 //! - [`plan`] does not refuse two roles routed to one supervisor slot; no right is widened.
 //! - [`dependents`] finds direct dependents only; nothing warns a dependent's own dependents.
@@ -33,7 +33,10 @@ pub const MAX_CAPS: usize = 8;
 
 /// **How many pages one component may declare.** [`MAX_CAPS`]'s twin, for the mapping half. Four,
 /// against the two that the widest manifest here asks for.
-pub const MAX_MAPS: usize = 4;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_MAPS`.
+pub const MAXIMUM_MAPS: usize = 4;
 
 /// Which way a rendezvous points: the axis this crate adds over a program's manifest. A required
 /// field with no default, so a component cannot declare a rendezvous without saying whether it
@@ -356,7 +359,7 @@ pub enum Refusal {
         /// How many it asked for.
         asked: usize,
     },
-    /// The declaration asks for more pages than [`MAX_MAPS`].
+    /// The declaration asks for more pages than [`MAXIMUM_MAPS`].
     TooManyMaps {
         /// How many it asked for.
         asked: usize,
@@ -401,13 +404,13 @@ impl Refusal {
 
 /// **Exactly what to endow one child with**, in the form `supervision_protocol::ChildEndowment` takes.
 ///
-/// A value with no allocation, bounded by [`MAX_CAPS`] and [`MAX_MAPS`], so a supervisor holds it on
-/// its stack and hands out slices of it.
+/// A value with no allocation, bounded by [`MAX_CAPS`] and [`MAXIMUM_MAPS`], so a supervisor holds
+/// it on its stack and hands out slices of it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Plan {
     caps: [(u64, u64); MAX_CAPS],
     ncaps: usize,
-    maps: [(u64, u64, u64); MAX_MAPS],
+    maps: [(u64, u64, u64); MAXIMUM_MAPS],
     nmaps: usize,
     ndevices: usize,
     pages: u64,
@@ -513,7 +516,7 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
             asked: reqs.caps.len(),
         });
     }
-    if reqs.mapped() > MAX_MAPS {
+    if reqs.mapped() > MAXIMUM_MAPS {
         return Err(Refusal::TooManyMaps {
             asked: reqs.mapped(),
         });
@@ -522,7 +525,7 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
     let mut out = Plan {
         caps: [(0, 0); MAX_CAPS],
         ncaps: reqs.caps.len(),
-        maps: [(0, 0, 0); MAX_MAPS],
+        maps: [(0, 0, 0); MAXIMUM_MAPS],
         nmaps: reqs.mapped(),
         ndevices: 0,
         pages: reqs.pages,
@@ -636,7 +639,10 @@ const fn str_eq(a: &str, b: &str) -> bool {
 /// this is a real bound rather than a hint. Eight, matched to [`MAX_CAPS`] because a supervisor
 /// managing more live components than it could ever endow one of with capabilities is not a shape
 /// this tree has.
-pub const MAX_LIVE: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_LIVE`.
+pub const MAXIMUM_LIVE: usize = 8;
 
 /// **One component a supervisor is currently running**, as far as dependency-aware orchestration
 /// needs to know about it: an id the caller chose (a tid, or any label stable for the query) and the
@@ -657,7 +663,7 @@ pub struct LiveInstance<'a> {
 /// Why a [`dependents`] query was refused.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum OrchestrationRefusal {
-    /// More live instances were named than [`MAX_LIVE`] can hold.
+    /// More live instances were named than [`MAXIMUM_LIVE`] can hold.
     TooManyLive {
         /// How many were asked about.
         asked: usize,
@@ -671,7 +677,7 @@ pub enum OrchestrationRefusal {
 /// supervisor holds the answer as a value rather than re-deriving it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Dependents {
-    ids: [u64; MAX_LIVE],
+    ids: [u64; MAXIMUM_LIVE],
     n: usize,
 }
 
@@ -726,11 +732,11 @@ pub fn dependents(
     target_contract: &str,
     live: &[LiveInstance],
 ) -> Result<Dependents, OrchestrationRefusal> {
-    if live.len() > MAX_LIVE {
+    if live.len() > MAXIMUM_LIVE {
         return Err(OrchestrationRefusal::TooManyLive { asked: live.len() });
     }
     let mut out = Dependents {
-        ids: [0; MAX_LIVE],
+        ids: [0; MAXIMUM_LIVE],
         n: 0,
     };
     for inst in live {
@@ -1293,18 +1299,18 @@ mod tests {
         );
     }
 
-    /// More live instances than `MAX_LIVE` is refused rather than silently truncated: a supervisor
-    /// that got a short answer back would quiesce fewer components than it needed to.
+    /// More live instances than `MAXIMUM_LIVE` is refused rather than silently truncated: a
+    /// supervisor that got a short answer back would quiesce fewer components than it needed to.
     #[test]
     fn too_many_live_instances_is_refused() {
-        let entries: [LiveInstance; MAX_LIVE + 1] = [LiveInstance {
+        let entries: [LiveInstance; MAXIMUM_LIVE + 1] = [LiveInstance {
             id: 0,
             reqs: &BACKEND,
-        }; MAX_LIVE + 1];
+        }; MAXIMUM_LIVE + 1];
         assert_eq!(
             dependents("backend", &entries),
             Err(OrchestrationRefusal::TooManyLive {
-                asked: MAX_LIVE + 1
+                asked: MAXIMUM_LIVE + 1
             })
         );
     }
@@ -1337,8 +1343,8 @@ mod tests {
     }
 
     /// A dependent is found whichever position in its `depends_on` names the target, and a
-    /// registry that fills `MAX_LIVE` exactly is answered, not refused. Two bounds in one fixture:
-    /// the scan's step past a non-matching entry, and the live-count comparison's edge.
+    /// registry that fills `MAXIMUM_LIVE` exactly is answered, not refused. Two bounds in one
+    /// fixture: the scan's step past a non-matching entry, and the live-count comparison's edge.
     #[test]
     fn a_target_named_second_is_found_and_a_full_registry_is_answered() {
         const LATE: Requirements = Requirements {
@@ -1349,13 +1355,13 @@ mod tests {
             depends_on: &["unrelated", "backend"],
             state_handoff: None,
         };
-        let live = [LiveInstance { id: 7, reqs: &LATE }; MAX_LIVE];
+        let live = [LiveInstance { id: 7, reqs: &LATE }; MAXIMUM_LIVE];
         let d = dependents("backend", &live).unwrap();
-        assert_eq!(d.quiesce_order(), &[7; MAX_LIVE]);
+        assert_eq!(d.quiesce_order(), &[7; MAXIMUM_LIVE]);
     }
 
-    /// Exactly `MAX_CAPS` capabilities and exactly `MAX_MAPS` pages is a full plan, and one more of
-    /// either is refused. The refusal tests above sit one past each bound; these sit on it.
+    /// Exactly `MAX_CAPS` capabilities and exactly `MAXIMUM_MAPS` pages is a full plan, and one
+    /// more of either is refused. The refusal tests above sit one past each bound; these sit on it.
     #[test]
     fn a_plan_exactly_at_each_bound_is_built_and_one_over_is_refused() {
         const fn cap(role: &'static str) -> CapNeed {
@@ -1442,7 +1448,10 @@ mod tests {
         let pages = Provisions {
             held: &[("a", 1), ("b", 2), ("c", 3), ("d", 4)],
         };
-        assert_eq!(plan(&FOUR_PAGES, &pages).unwrap().maps().len(), MAX_MAPS);
+        assert_eq!(
+            plan(&FOUR_PAGES, &pages).unwrap().maps().len(),
+            MAXIMUM_MAPS
+        );
     }
 
     /// A capability role that spells the handoff's reserved word is a duplicate of the handoff page,

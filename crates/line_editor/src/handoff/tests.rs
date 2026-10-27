@@ -151,12 +151,17 @@ fn the_raw_queue_crosses_a_swap_in_order_across_the_wrap() {
     let mut q = RawQueue::new();
     let first: Vec<u8> = (0..60).collect();
     q.push(&first);
-    while q.len > 4 {
+    // Bounded, so a `pop8` that never shortens the queue fails the assertion instead of hanging.
+    for _ in 0..RAW_QUEUE_MAXIMUM {
+        if q.len <= 4 {
+            break;
+        }
         q.pop8();
     }
+    assert_eq!(q.len, 4);
     let more: Vec<u8> = (100..110).collect();
     q.push(&more); // the ring wraps: head is near the end
-    assert!(q.head + q.len > RAW_QUEUE_MAX);
+    assert!(q.head + q.len > RAW_QUEUE_MAXIMUM);
 
     let mut page = [0u8; 256];
     let mut w = handoff::Writer::new(&mut page);
@@ -168,7 +173,8 @@ fn the_raw_queue_crosses_a_swap_in_order_across_the_wrap() {
 
     let drain = |q: &mut RawQueue| {
         let mut out = Vec::new();
-        while let Some((n, packed)) = q.pop8() {
+        for _ in 0..=RAW_QUEUE_MAXIMUM {
+            let Some((n, packed)) = q.pop8() else { break };
             out.extend_from_slice(&packed.to_le_bytes()[..n]);
         }
         out

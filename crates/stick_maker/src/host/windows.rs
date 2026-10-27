@@ -17,7 +17,7 @@ mod system {
             name: *mut u16,
             name_len: u32,
             serial: *mut u32,
-            max_component: *mut u32,
+            maximum_component: *mut u32,
             flags: *mut u32,
             fs_name: *mut u16,
             fs_name_len: u32,

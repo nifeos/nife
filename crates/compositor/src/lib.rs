@@ -33,7 +33,10 @@ pub const SCREEN_PIXELS: usize = graphics_contract::PIXELS;
 
 /// The most windows a scene may hold. Fixed because the compositor has no allocator and builds its
 /// window table as an array; four is what [`SCENE`] needs and what the kernel wires.
-pub const MAX_WINDOWS: usize = 4;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_WINDOWS`.
+pub const MAXIMUM_WINDOWS: usize = 4;
 
 // ================================================================================================
 // Rectangles: the arithmetic that compositors get wrong.
@@ -259,7 +262,10 @@ pub const SCENE: &[Window] = &[
 /// client checks its published geometry against this before it paints: a geometry larger than the
 /// grant it was mapped would make it fault on its own surface, and a client should refuse a control
 /// page it cannot believe rather than discover that as a crash.
-pub const MAX_SURFACE_BYTES: u32 = {
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SURFACE_BYTES`.
+pub const MAXIMUM_SURFACE_BYTES: u32 = {
     let mut m = 0;
     let mut i = 0;
     while i < SCENE.len() {

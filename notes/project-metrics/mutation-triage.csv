@@ -350,7 +350,7 @@ uefi_loader,output_len,replace + with *,equivalent,"found on re-run at base 269c
 video_terminal,Colour::resolve,replace | with ^,equivalent,"the three channels are shifted to disjoint bytes (resolve) before the |, so | and ^ agree on every input; re-run with cargo mutants on crates/video_terminal/src/lib.rs and script.rs at base ab0513065 still reports it"
 video_terminal,midpoint,replace | with ^,equivalent,"channel_midpoint returns each channel already shifted into its own byte, disjoint, so | and ^ agree; re-run with cargo mutants on crates/video_terminal/src/lib.rs and script.rs at base ab0513065 still reports it"
 video_terminal,sorted_channels,replace > with >=,equivalent,"a three-element sorting network: swapping two equal channels changes nothing, so > and >= agree; re-run with cargo mutants on crates/video_terminal/src/lib.rs and script.rs at base ab0513065 still reports it"
-video_terminal,Vt::extended_colour,replace < with <=,equivalent,"extended_colour's params.get(i).filter(|_| i < n): at i == n the slot is zero (CSI clears the array, and n == MAX_PARAMS makes get return None), and a zero selector is the same None as the filter; re-run with cargo mutants on crates/video_terminal/src/lib.rs and script.rs at base ab0513065 still reports it"
+video_terminal,Vt::extended_colour,replace < with <=,equivalent,"extended_colour's params.get(i).filter(|_| i < n): at i == n the slot is zero (CSI clears the array, and n == MAXIMUM_PARAMS makes get return None), and a zero selector is the same None as the filter; re-run with cargo mutants on crates/video_terminal/src/lib.rs and script.rs at base ab0513065 still reports it"
 video_terminal,Vt::scroll_damage,replace - with +,equivalent,"the lifted row is damaged three ways: the updated drawn position that take_damage's drawn-versus-now net re-damages, the cursor move's own endpoint damage, and this damage_cell; any one gives the report, so the damage_cell arithmetic cannot change a report; re-run with cargo mutants on crates/video_terminal/src/lib.rs and script.rs at base ab0513065 still reports it"
 video_terminal,Vt::scroll_damage,replace - with /,equivalent,"the lifted row is damaged three ways: the updated drawn position that take_damage's drawn-versus-now net re-damages, the cursor move's own endpoint damage, and this damage_cell; any one gives the report, so the damage_cell arithmetic cannot change a report; re-run with cargo mutants on crates/video_terminal/src/lib.rs and script.rs at base ab0513065 still reports it"
 video_terminal,Vt::scroll_damage,replace > with <,equivalent,"the lifted row is damaged three ways: the updated drawn position that take_damage's drawn-versus-now net re-damages, the cursor move's own endpoint damage, and this damage_cell; any one gives the report, so the damage_cell arithmetic cannot change a report; re-run with cargo mutants on crates/video_terminal/src/lib.rs and script.rs at base ab0513065 still reports it"
@@ -842,7 +842,7 @@ driver_process_contract::extensible_host_controller_interface,failure_report,rep
 filesystem_protocol,Verb::mutates,replace | with ^,equivalent,"dir::WRITE, CREATE and REMOVE are bits 2, 3 and 4, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,encode,replace | with ^,equivalent,"a name is at most grant::MAX_NAME (16) bytes, below IS_DIR (bit 7), so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,rename_dst,replace | with ^,equivalent,"(handle & 0xffff) << 40 and len & ((1 << 40) - 1) occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-filesystem_protocol,reply,replace | with ^,equivalent,"xattr::reply packs (kind & MAX_KIND) << 32 beside value_len & 0xffff_ffff, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+filesystem_protocol,reply,replace | with ^,equivalent,"xattr::reply packs (kind & MAXIMUM_KIND) << 32 beside value_len & 0xffff_ffff, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,req,replace | with ^,equivalent,"every req packs the opcode at bit 56 (OPERATION_SHIFT) beside fields below it: blk's count is at most 15 and fs's handle sits at 40..56 and its length below 40, all disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,spec,replace | with ^,equivalent,"grant::spec packs len & 0xff beside rights << 8, and xattr::spec packs kind << 32 beside value_len & 0xffff_ffff; each pair is disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 grant_plan,,replace - with +,killed,killed by all_is_nine_bits_and_a_union_keeps_shared_bits
@@ -925,14 +925,14 @@ machine_discovery,IvrsUnits::read_ivmd,replace < with >,killed,killed by a_block
 machine_discovery,blocks,replace < with <=,killed,killed by a_block_too_short_for_its_type_marks_the_table_truncated
 machine_discovery,blocks,replace > with >=,killed,killed by a_block_too_short_for_its_type_marks_the_table_truncated
 manifest_note,,replace + with *,killed,killed by a_verb_record_is_twenty_bytes
-manifest_note,Verbs<'a>::is_empty,replace Verbs<'a>::is_empty -> bool with true,killed,killed by a_table_of_exactly_max_verbs_round_trips
+manifest_note,Verbs<'a>::is_empty,replace Verbs<'a>::is_empty -> bool with true,killed,killed by a_table_of_exactly_maximum_verbs_round_trips
 manifest_note,before,replace && with ||,killed,killed by a_shorter_prefix_sorts_first
 manifest_note,before,replace < with <=,equivalent,"three mutants share this key; the two in the while condition (line 727) are killed by a_shorter_prefix_sorts_first, and the third, return a[i] < b[i] (line 729), runs only when a[i] != b[i], where < and <= agree; the 2026-10-12 per-crate re-run still reports it"
 manifest_note,before,replace < with >,killed,killed by a_shorter_prefix_sorts_first
 manifest_note,decode_verbs,replace + with *,killed,"killed by an_unsorted_or_respelled_table_is_refused, which now asserts the offset each refusal names"
 manifest_note,decode_verbs,replace + with -,killed,"killed by an_unsorted_or_respelled_table_is_refused, which now asserts the offset each refusal names"
-manifest_note,decode_verbs,replace > with >=,killed,killed by a_table_of_exactly_max_verbs_round_trips
-manifest_note,encode_verbs,replace + with -,killed,killed by a_table_of_exactly_max_verbs_round_trips
+manifest_note,decode_verbs,replace > with >=,killed,killed by a_table_of_exactly_maximum_verbs_round_trips
+manifest_note,encode_verbs,replace + with -,killed,killed by a_table_of_exactly_maximum_verbs_round_trips
 name_resolution_protocol,Grants::control,replace + with *,killed,killed by the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not
 name_resolution_protocol,Grants::control,replace > with ==,killed,killed by the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not
 name_resolution_protocol,Grants::control,replace > with >=,killed,killed by the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not
@@ -1040,7 +1040,7 @@ usb,find_boot_keyboard,replace match guard len >= ENDPOINT_LEN with true,killed,
 usb,find_boot_keyboard,replace match guard len >= INTERFACE_LEN with true,killed,killed by a_short_descriptor_is_skipped_and_two_bytes_is_enough
 video_terminal,Keyboard::event,replace != with ==,killed,killed by control_and_a_letter_is_a_control_character (releasing right control types letters again)
 video_terminal,Keyboard::event,replace == with !=,equivalent,"the surviving site (keymap.rs, code == KEY_LEFTCTRL inside the control branch) swaps which of two flags each control key sets, and only their OR is ever read, so the swap is unobservable; the key's other sites are killed by the keymap tests; the 2026-10-12 per-crate re-run still reports it"
-video_terminal,Vt::clamp_rows,replace < with <=,equivalent,"the expression is min(fit, MAX_ROWS) and at fit == MAX_ROWS both arms yield the same number; the 2026-10-12 per-crate re-run still reports it"
+video_terminal,Vt::clamp_rows,replace < with <=,equivalent,"the expression is min(fit, MAXIMUM_ROWS) and at fit == MAXIMUM_ROWS both arms yield the same number; the 2026-10-12 per-crate re-run still reports it"
 video_terminal,Vt::scrollback_depth,replace < with <=,equivalent,"the expression is min(fit, SCROLLBACK_ROWS) and at the tie both arms yield the same number; the 2026-10-12 per-crate re-run still reports it"
 uefi_loader,carries_debug_info::scan,replace < with <=,killed,killed by a_section_table_of_the_smallest_entry_size_is_read
 uefi_loader,carries_debug_info::scan,replace < with ==,killed,killed by a_section_table_of_the_smallest_entry_size_is_read

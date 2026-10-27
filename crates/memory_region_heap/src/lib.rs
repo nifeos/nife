@@ -32,7 +32,7 @@ const PAGE: u64 = 4096;
 
 /// The smallest growth step, in pages. Growing one page per allocation would make every early
 /// `Vec` push a syscall; 8 pages (32 KiB) amortizes that without hoarding a small budget.
-const MIN_GROW_PAGES: u64 = 8;
+const MINIMUM_GROW_PAGES: u64 = 8;
 
 struct Inner {
     heap: Talc<Manual, DefaultBinning>,
@@ -92,18 +92,18 @@ impl MemoryRegionHeap {
     }
 
     /// Wire the heap to its budget: pages come from the untyped in `memory_region_slot`, mapped at
-    /// `[base, base + max_bytes)`. Call once, before the first allocation, first thing in
+    /// `[base, base + maximum_bytes)`. Call once, before the first allocation, first thing in
     /// `_start`. `base` must be page-aligned and inside the user half.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
     /// design/naming/spelled-out-rulings.md.
-    pub fn initialize(&self, memory_region_slot: u64, base: u64, max_bytes: u64) {
+    pub fn initialize(&self, memory_region_slot: u64, base: u64, maximum_bytes: u64) {
         let mut g = self.lock();
         let inner = g.inner();
         inner.memory_region_slot = memory_region_slot;
         inner.base = base;
         inner.committed = 0;
-        inner.maximum = max_bytes & !(PAGE - 1);
+        inner.maximum = maximum_bytes & !(PAGE - 1);
     }
 
     /// **Map the whole capped range now**, rather than on the first allocations that need it.
@@ -153,7 +153,7 @@ impl MemoryRegionHeap {
         // never past the cap, so a burst of small allocations costs O(log n) syscall batches.
         let want_pages = need_pages
             .max(inner.committed / PAGE) // doubling: as many again as we have
-            .max(MIN_GROW_PAGES)
+            .max(MINIMUM_GROW_PAGES)
             .min((inner.maximum - inner.committed) / PAGE);
         if want_pages < need_pages {
             return false; // the cap is closer than the request; growing cannot help.
@@ -184,7 +184,7 @@ impl MemoryRegionHeap {
             let bytes = (got * PAGE) as usize;
             // SAFETY: `[start, start + bytes)` was just mapped writable for us alone, and is
             // adjacent to the heap `heap_end` ends, or the first run of all. The first claim
-            // fits: a grow is at least `MIN_GROW_PAGES`, far above talc's first-heap size.
+            // fits: a grow is at least `MINIMUM_GROW_PAGES`, far above talc's first-heap size.
             inner.heap_end = unsafe {
                 match inner.heap_end {
                     Some(end) => Some(inner.heap.extend(end, run.wrapping_add(bytes))),

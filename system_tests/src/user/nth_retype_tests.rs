@@ -31,7 +31,7 @@ use crate::{retype_fault, sched};
 /// A sweep that has not reached the end of a login by this N has found a program that retypes
 /// without bound, which is a finding of its own. A clean login was measured at well under this (the
 /// roadmap block has the count).
-const MAX_N: u64 = 256;
+const MAXIMUM_N: u64 = 256;
 
 /// What a failed retype must leave unchanged: the occupied slots of `login`'s table, and for each
 /// region it holds, how many pages that region has spent.
@@ -141,8 +141,8 @@ fn login_gives_back_everything_when_any_retype_of_a_login_fails() {
     let mut n = 1;
     let steady = loop {
         assert!(
-            n <= MAX_N,
-            "login was still retyping at N = {MAX_N}; a clean login made {}",
+            n <= MAXIMUM_N,
+            "login was still retyping at N = {MAXIMUM_N}; a clean login made {}",
             clean.seen
         );
         retype_fault::arm(w.tid, n);

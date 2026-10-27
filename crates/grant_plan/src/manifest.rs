@@ -97,8 +97,10 @@ pub enum InputDeclaration {
 pub const NO_SHORT_OPTIONS: ShortOptions = ShortOptions::new(b"");
 
 /// **The most short options one program may declare.** Sixteen, which is far above the three `rm`
-/// declares and well inside the 64 bits of [`Endowment::short_options`](crate::Endowment::short_options). Not [`MAX_SHORT_OPTIONS`](crate::MAX_SHORT_OPTIONS), which bounds
-/// what one line may type rather than what a program may accept.
+/// declares and well inside the 64 bits of
+/// [`Endowment::short_options`](crate::Endowment::short_options). Not
+/// [`MAXIMUM_SHORT_OPTIONS`](crate::MAXIMUM_SHORT_OPTIONS), which bounds what one line may type
+/// rather than what a program may accept.
 ///
 /// A bound at all because a manifest is now also bytes a program carries (milestone 597,
 /// provisional: a program carries its manifest in an ELF note), and a decoded manifest has to hold

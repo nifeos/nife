@@ -58,7 +58,8 @@
 //! | offset | size | field | values |
 //! |---|---|---|---|
 //! | 56 | 1 | zone count | 1 to [`MAX_ZONES`] |
-//! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most [`ZONE_MAX`]; 0 is the root zone |
+//! | 57 | 1 + *n* | each zone: its length *n*, then *n* bytes of dotted ASCII | *n* at most
+//! [`ZONE_MAXIMUM`]; 0 is the root zone |
 //!
 //! The descriptor ends with the last zone, so `descsz` need not be a multiple of four; [`ZonedNote`]
 //! pads after it. **One request is still one encoding**: a manifest that asks for no zone is
@@ -118,7 +119,7 @@ pub const MAX_ZONES: usize = domain_name_resolution_contract::GRANTS_MAX;
 /// `domain_name_resolution_contract::NAME_TEXT_MAX`.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const ZONE_MAX: usize = domain_name_resolution_contract::NAME_TEXT_MAX;
+pub const ZONE_MAXIMUM: usize = domain_name_resolution_contract::NAME_TEXT_MAX;
 
 /// `OWNER` with its NUL, padded to the note's 4-byte alignment.
 const NAME_FIELD: usize = 8;
@@ -150,7 +151,7 @@ const ARG: usize = 4;
 const MEM: usize = 5;
 const FILE: usize = 6;
 const DIR: usize = 7;
-const MEM_MIN: usize = 8;
+const MEM_MINIMUM: usize = 8;
 const MEM_MAX: usize = 16;
 const OUTPUT: usize = 24;
 const INPUT: usize = 25;
@@ -252,7 +253,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     };
     if let MemoryGrantDeclaration::Required { minimum, maximum } = m.memory_grant {
         out[MEM] = 1;
-        put8(&mut out, MEM_MIN, minimum);
+        put8(&mut out, MEM_MINIMUM, minimum);
         put8(&mut out, MEM_MAX, maximum);
     }
     out[FILE] = match m.file {
@@ -437,13 +438,13 @@ fn decode_arg(d: &[u8]) -> Result<ProgramArgumentDeclaration, Error> {
 fn decode_mem(d: &[u8]) -> Result<MemoryGrantDeclaration, Error> {
     Ok(match d[MEM] {
         0 => {
-            zero(d, MEM_MIN, 16)?;
+            zero(d, MEM_MINIMUM, 16)?;
             MemoryGrantDeclaration::Forbidden
         }
         1 => {
-            let (minimum, maximum) = (get8(d, MEM_MIN), get8(d, MEM_MAX));
+            let (minimum, maximum) = (get8(d, MEM_MINIMUM), get8(d, MEM_MAX));
             if minimum > maximum {
-                return Err(Error::BadField(MEM_MIN));
+                return Err(Error::BadField(MEM_MINIMUM));
             }
             MemoryGrantDeclaration::Required { minimum, maximum }
         }
@@ -1242,7 +1243,7 @@ mod verb_tests {
     /// count's second byte is nonzero only here, so this is also what proves the count is written
     /// where the decoder reads it.
     #[test]
-    fn a_table_of_exactly_max_verbs_round_trips() {
+    fn a_table_of_exactly_maximum_verbs_round_trips() {
         const N: usize = MAX_VERBS;
         let table: std::vec::Vec<VerbGrant> = (0..N)
             .map(|i| VerbGrant {
@@ -1393,7 +1394,7 @@ mod tests {
         // Uptime declares no memory, no input, no directory and no options, so all of these are
         // absent fields, and the three trailing bytes are always zero.
         for at in [
-            MEM_MIN,
+            MEM_MINIMUM,
             MEM_MAX + 7,
             WRITES_WHILE_READING,
             SUBTREE,
@@ -1437,8 +1438,8 @@ mod tests {
         };
         let mut d = encode(&m);
         assert_eq!(decode(&d), Ok(m));
-        d[MEM_MIN] = 9;
-        assert_eq!(decode(&d), Err(Error::BadField(MEM_MIN)));
+        d[MEM_MINIMUM] = 9;
+        assert_eq!(decode(&d), Err(Error::BadField(MEM_MINIMUM)));
     }
 
     #[test]

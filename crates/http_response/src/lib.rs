@@ -15,7 +15,7 @@
 //! - A close-delimited body is refused, so a server that omits `Content-Length` cannot serve nife.
 //! - Header values other than the two it reads are skipped, not validated.
 //! - The head parse is `httparse`'s, vouched for by upstream fuzzing, not proved here.
-//! - At most [`MAX_HEADERS`] header lines, or [`Error::HeadTooLong`] under the byte cap.
+//! - At most [`MAXIMUM_HEADERS`] header lines, or [`Error::HeadTooLong`] under the byte cap.
 //! - The head is re-parsed on every read until it ends, quadratic in the cap; not measured.
 //! - A minor version other than 0 or 1 is refused.
 //!
@@ -33,7 +33,7 @@ pub const HEAD_MAX: usize = 2048;
 /// The most header lines a head may hold. `httparse` fills a caller-supplied array and this crate
 /// has no allocator, so the array is a bound. 128 is enough for GitHub's redirect head, which had 16
 /// lines on 2026-10-24 (UTC); each slot is 32 bytes of stack.
-const MAX_HEADERS: usize = 128;
+const MAXIMUM_HEADERS: usize = 128;
 
 /// **A head big enough for `github.com`'s redirect**, for a reader made with
 /// [`Response::with_room`]. A GitHub Release download answers `302` with a head of 10,806 bytes
@@ -52,7 +52,7 @@ pub const REDIRECT_HEAD_MAX: usize = 32 * 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// The status line and headers ran past the reader's bound ([`HEAD_MAX`] unless it was made
-    /// with more room) without the blank line that ends them, or held more than [`MAX_HEADERS`]
+    /// with more room) without the blank line that ends them, or held more than [`MAXIMUM_HEADERS`]
     /// header lines.
     HeadTooLong,
     /// The first line is not `HTTP/1.<digit> <three digits> ...`.
@@ -175,7 +175,7 @@ impl<const N: usize> Response<N> {
         if self.state == State::Head {
             return None;
         }
-        let mut headers = [httparse::EMPTY_HEADER; MAX_HEADERS];
+        let mut headers = [httparse::EMPTY_HEADER; MAXIMUM_HEADERS];
         let mut parsed = httparse::Response::new(&mut headers);
         parsed.parse(&self.head[..self.head_len]).ok()?;
         parsed
@@ -262,7 +262,7 @@ fn read_head(buf: &[u8]) -> Result<Option<Head>, Error> {
     if matches!(buf.first(), Some(b'\r' | b'\n')) {
         return Err(Error::BadStatusLine);
     }
-    let mut headers = [httparse::EMPTY_HEADER; MAX_HEADERS];
+    let mut headers = [httparse::EMPTY_HEADER; MAXIMUM_HEADERS];
     let mut parsed = httparse::Response::new(&mut headers);
     let end = match parsed.parse(buf) {
         Ok(httparse::Status::Complete(end)) => end,

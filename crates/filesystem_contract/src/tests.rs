@@ -247,7 +247,7 @@ fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
     assert_ne!(PROBE, PROBE_MOVED);
     assert!(grant::fits(PROBE.as_bytes()) && grant::fits(PROBE_MOVED.as_bytes()));
     assert!(xattr::is_valid_name(NAME));
-    assert!(VALUE.len() <= xattr::MAX_VALUE);
+    assert!(VALUE.len() <= xattr::MAXIMUM_VALUE);
     // Checked at COMPILE time: both sides are constants, so a fixture that fell back to the
     // default kind should fail the build rather than wait for the suite. The same discipline
     // `a_text_frame_and_a_verdict_are_told_apart_by_the_first_word` uses.

@@ -3,23 +3,29 @@
 //! needs. No IO, syscalls or allocation, so it is host-tested and Kani-checked.
 //!
 //! The calendar is proleptic Gregorian (year 0 exists and is a leap year), negative timestamps are
-//! supported, and the range is years 0000 through 9999 ([`MIN_TIMESTAMP`] to [`MAX_TIMESTAMP`]),
-//! RFC 3339's four-digit year; outside it is [`Error::OutOfRange`]. Leap seconds are
-//! [`Error::LeapSecond`]. Zones are a fixed [`UtcOffset`]; the IANA database is out of scope
-//! permanently. No durations, month arithmetic or `strftime`. See notes/calendar.md.
+//! supported, and the range is years 0000 through 9999 ([`MINIMUM_TIMESTAMP`] to
+//! [`MAX_TIMESTAMP`]), RFC 3339's four-digit year; outside it is [`Error::OutOfRange`]. Leap
+//! seconds are [`Error::LeapSecond`]. Zones are a fixed [`UtcOffset`]; the IANA database is out of
+//! scope permanently. No durations, month arithmetic or `strftime`. See notes/calendar.md.
 //!
 //! Name: ratified 2026-08-23 (calef): the plain noun for what the crate does.
 
 #![no_std]
 
 /// The lowest supported year, 0000. See the module docs for why the range is what it is.
-pub const MIN_YEAR: i32 = 0;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MIN_YEAR`.
+pub const MINIMUM_YEAR: i32 = 0;
 
 /// The highest supported year, 9999, which is RFC 3339's four-digit `date-fullyear`.
 pub const MAX_YEAR: i32 = 9999;
 
 /// 0000-01-01T00:00:00Z, the earliest instant this crate will name.
-pub const MIN_TIMESTAMP: i64 = days_from_civil(MIN_YEAR, 1, 1) * SECS_PER_DAY;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MIN_TIMESTAMP`.
+pub const MINIMUM_TIMESTAMP: i64 = days_from_civil(MINIMUM_YEAR, 1, 1) * SECS_PER_DAY;
 
 /// 9999-12-31T23:59:59Z, the latest instant this crate will name.
 pub const MAX_TIMESTAMP: i64 = days_from_civil(MAX_YEAR, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
@@ -32,8 +38,8 @@ pub const SECS_PER_DAY: i64 = 86_400;
 /// two would only make callers convert between them.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Error {
-    /// A timestamp outside [`MIN_TIMESTAMP`]..=[`MAX_TIMESTAMP`], or a year outside
-    /// [`MIN_YEAR`]..=[`MAX_YEAR`].
+    /// A timestamp outside [`MINIMUM_TIMESTAMP`]..=[`MAX_TIMESTAMP`], or a year outside
+    /// [`MINIMUM_YEAR`]..=[`MAX_YEAR`].
     OutOfRange,
     /// Month was not 1..=12.
     BadMonth,
@@ -247,7 +253,7 @@ impl Civil {
         minute: u8,
         second: u8,
     ) -> Result<Civil, Error> {
-        if year < MIN_YEAR || year > MAX_YEAR {
+        if year < MINIMUM_YEAR || year > MAX_YEAR {
             return Err(Error::OutOfRange);
         }
         let Some(len) = days_in_month(year, month) else {
@@ -306,7 +312,7 @@ impl Civil {
     /// assert_eq!((d.hour(), d.minute(), d.second()), (23, 59, 59));
     /// ```
     pub const fn from_unix(secs: i64) -> Result<Civil, Error> {
-        if secs < MIN_TIMESTAMP || secs > MAX_TIMESTAMP {
+        if secs < MINIMUM_TIMESTAMP || secs > MAX_TIMESTAMP {
             return Err(Error::OutOfRange);
         }
         // Euclidean division, not truncating: for a negative timestamp, `-1 / 86400` is 0 in Rust and
@@ -458,9 +464,9 @@ impl DateTime {
 
     /// The instant this names, as a Unix timestamp.
     ///
-    /// Note this is *not* bounded by [`MIN_TIMESTAMP`]/[`MAX_TIMESTAMP`]: a valid local reading at
-    /// the extreme end of the range with a large offset lands up to a day outside it. The value is
-    /// still exact; it just may not survive a trip back through [`Civil::from_unix`].
+    /// Note this is *not* bounded by [`MINIMUM_TIMESTAMP`]/[`MAX_TIMESTAMP`]: a valid local reading
+    /// at the extreme end of the range with a large offset lands up to a day outside it. The value
+    /// is still exact; it just may not survive a trip back through [`Civil::from_unix`].
     pub const fn to_unix(&self) -> i64 {
         self.civil.to_unix() - self.offset.seconds()
     }
@@ -829,7 +835,7 @@ mod verification {
     use super::*;
 
     /// The first and last day numbers in the supported range: 0000-01-01 and 9999-12-31.
-    const FIRST_DAY: i64 = days_from_civil(MIN_YEAR, 1, 1);
+    const FIRST_DAY: i64 = days_from_civil(MINIMUM_YEAR, 1, 1);
     const LAST_DAY: i64 = days_from_civil(MAX_YEAR, 12, 31);
 
     /// Any representable `DateTime`, built from six symbolic fields and a symbolic offset, or
@@ -874,7 +880,7 @@ mod verification {
         let days: i64 = kani::any();
         kani::assume((FIRST_DAY..=LAST_DAY).contains(&days));
         let (y, m, d) = civil_from_days(days);
-        assert!((MIN_YEAR..=MAX_YEAR).contains(&y));
+        assert!((MINIMUM_YEAR..=MAX_YEAR).contains(&y));
         assert!((1..=12).contains(&m));
         assert!(1 <= d && d <= days_in_month(y, m).unwrap());
         assert!(Civil::new(y, m, d, 0, 0, 0).is_ok());
@@ -902,7 +908,7 @@ mod verification {
             (year, month, day)
         );
         let secs = civil.to_unix();
-        assert!((MIN_TIMESTAMP..=MAX_TIMESTAMP).contains(&secs));
+        assert!((MINIMUM_TIMESTAMP..=MAX_TIMESTAMP).contains(&secs));
         // Not vacuous, and specifically not on the case that matters: the constructor does accept a
         // 29th of February, so this is quantifying over leap days rather than over an input set the
         // validation quietly emptied.

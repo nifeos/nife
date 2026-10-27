@@ -29,7 +29,7 @@ pub mod tick_trace {
 
     static COUNT: AtomicU64 = AtomicU64::new(0);
     static ARRIVAL_SUM: AtomicU64 = AtomicU64::new(0);
-    static ARRIVAL_MAX: AtomicU64 = AtomicU64::new(0);
+    static ARRIVAL_MAXIMUM: AtomicU64 = AtomicU64::new(0);
     static ARRIVAL_MIN: AtomicU64 = AtomicU64::new(u64::MAX);
     static HANDLER_SUM: AtomicU64 = AtomicU64::new(0);
     static HANDLER_MAX: AtomicU64 = AtomicU64::new(0);
@@ -55,7 +55,7 @@ pub mod tick_trace {
 
         COUNT.fetch_add(1, Ordering::Relaxed);
         ARRIVAL_SUM.fetch_add(arrival_latency, Ordering::Relaxed);
-        ARRIVAL_MAX.fetch_max(arrival_latency, Ordering::Relaxed);
+        ARRIVAL_MAXIMUM.fetch_max(arrival_latency, Ordering::Relaxed);
         ARRIVAL_MIN.fetch_min(arrival_latency, Ordering::Relaxed);
         HANDLER_SUM.fetch_add(handler, Ordering::Relaxed);
         HANDLER_MAX.fetch_max(handler, Ordering::Relaxed);
@@ -80,7 +80,7 @@ pub mod tick_trace {
             COUNT.load(Ordering::Relaxed),
             ARRIVAL_MIN.load(Ordering::Relaxed),
             ARRIVAL_SUM.load(Ordering::Relaxed) / n,
-            ARRIVAL_MAX.load(Ordering::Relaxed),
+            ARRIVAL_MAXIMUM.load(Ordering::Relaxed),
             HANDLER_SUM.load(Ordering::Relaxed) / n,
             HANDLER_MAX.load(Ordering::Relaxed),
         )
@@ -90,7 +90,7 @@ pub mod tick_trace {
     pub fn reset() {
         COUNT.store(0, Ordering::Relaxed);
         ARRIVAL_SUM.store(0, Ordering::Relaxed);
-        ARRIVAL_MAX.store(0, Ordering::Relaxed);
+        ARRIVAL_MAXIMUM.store(0, Ordering::Relaxed);
         ARRIVAL_MIN.store(u64::MAX, Ordering::Relaxed);
         HANDLER_SUM.store(0, Ordering::Relaxed);
         HANDLER_MAX.store(0, Ordering::Relaxed);

@@ -125,8 +125,8 @@ The kernel asks this question only on aarch64. On RISC-V a node named `interrupt
 is the PLIC, and each `cpu@` node has a `riscv,cpu-intc` child. How the kernel drives each version
 is in [interrupts.md](interrupts.md). The binding allows several redistributor regions
 (`#redistributor-regions`) for machines whose frames are not contiguous; QEMU `virt` needs a second
-only past 123 cores, and the kernel's `cpu::MAX_CPUS` is eight, so the decoder refuses more than one.
-The GICv2 binding list stops at the three strings an aarch64 GICv2 carries (`arm,gic-400`,
+only past 123 cores, and the kernel's `cpu::MAXIMUM_CPUS` is eight, so the decoder refuses more than
+one. The GICv2 binding list stops at the three strings an aarch64 GICv2 carries (`arm,gic-400`,
 `arm,cortex-a15-gic`, `arm,cortex-a7-gic`), checked against Linux's `IRQCHIP_DECLARE` table in
 `drivers/irqchip/irq-gic.c` at v6.16; the version-1 parts it also lists exist only on 32-bit
 machines.

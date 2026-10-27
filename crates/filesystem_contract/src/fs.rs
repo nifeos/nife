@@ -108,7 +108,7 @@ pub const GETXATTR: u64 = 14;
 /// Create and replace are one operation, and `XATTR_CREATE`/`XATTR_REPLACE` are not offered
 /// (DECISIONS §42). Needs [`super::dir::WRITE`], else [`super::dir::EROFS`]. `ERANGE` for a name the
 /// store cannot hold, [`super::xattr::E2BIG`] for an over-long value, [`super::xattr::ENOSPC`] at
-/// [`super::xattr::MAX_COUNT`] attributes. See notes/fs-server/file-protocol.md.
+/// [`super::xattr::MAXIMUM_COUNT`] attributes. See notes/fs-server/file-protocol.md.
 pub const SETXATTR: u64 = 15;
 /// **List the attribute names on the node a handle names** (milestone 57).
 ///
@@ -116,7 +116,7 @@ pub const SETXATTR: u64 = 15;
 /// were filled with [`super::xattr::list`] records; 0 means the node has no attributes.
 ///
 /// There is **no cursor**, unlike [`READDIR`], and that is a property rather than an omission:
-/// [`super::xattr::MAX_COUNT`] names of [`super::xattr::MAX_NAME`] bytes fit one page exactly,
+/// [`super::xattr::MAXIMUM_COUNT`] names of [`super::xattr::MAX_NAME`] bytes fit one page exactly,
 /// so a listing is always complete in one reply and cannot be observed half-changed.
 ///
 /// Needs [`super::dir::READ`], refused with `EBADF`, for [`GETXATTR`]'s reason.

@@ -120,7 +120,7 @@ listed locations to the test authority now, which is R1's shape. If no: R2 or R3
 as clauses 11 to 13, and milestone 801's block has what was built. The boot test's six redirect
 probes were falsified on aarch64 on 2026-10-13 (UTC), twice. With the redirect pinned to the
 location's root instead of the index's, the off-root probe was fetched and the good one refused.
-With `MAX_REDIRECTS` at 2, the second redirect was followed. Both went red, and green again
+With `MAXIMUM_REDIRECTS` at 2, the second redirect was followed. Both went red, and green again
 reverted. The question as it was put follows.
 
 calef ruled on 2026-10-12 (UTC) that basalt's packages are GitHub Release assets and its index is

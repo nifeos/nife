@@ -42,7 +42,7 @@ mod test_support;
 mod tests;
 
 pub use command::{
-    Command, DirectoryGrant, Endowment, FileGrant, Holdings, MAX_SHORT_OPTIONS, MountedTree,
+    Command, DirectoryGrant, Endowment, FileGrant, Holdings, MAXIMUM_SHORT_OPTIONS, MountedTree,
     TouchOperands, rmopt,
 };
 pub use escalation::{Action, COOP_GRACE_TICKS, Escalation};

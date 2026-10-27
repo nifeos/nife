@@ -124,9 +124,9 @@ supervisor never waits for it)).
 Only direct dependents are returned. A dependent with its own decoupling (a queue, a cache) is not
 assumed to pass the warning to its own dependents. Whether it must is a property of that mechanism,
 which two contract names cannot show. `Dependents` makes no ordering claim; it is a filter, held as a
-value so a supervisor does not re-derive it. `MAX_LIVE` is eight, matched to `MAX_CAPS`. A supervisor
-running more live components than it could endow one of with capabilities is not a shape this tree
-has.
+value so a supervisor does not re-derive it. `MAXIMUM_LIVE` is eight, matched to `MAX_CAPS`. A
+supervisor running more live components than it could endow one of with capabilities is not a shape
+this tree has.
 
 ## The proofs
 

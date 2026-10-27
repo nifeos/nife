@@ -21,7 +21,7 @@
 #![no_main]
 
 use domain_name_system::{
-    CLASS_IN, Header, MAX_ADDRESSES, Name, Query, Reader, TcpReply, cname_target, decode_name,
+    CLASS_IN, Header, MAXIMUM_ADDRESSES, Name, Query, Reader, TcpReply, cname_target, decode_name,
     record_type,
 };
 use libfuzzer_sys::fuzz_target;
@@ -86,7 +86,7 @@ fuzz_target!(|reply: &[u8]| {
 
     if let Ok(answer) = asked.accept(reply) {
         // Property 1.
-        assert!(!answer.addresses().is_empty() && answer.addresses().len() <= MAX_ADDRESSES);
+        assert!(!answer.addresses().is_empty() && answer.addresses().len() <= MAXIMUM_ADDRESSES);
         let canonical = *answer.canonical();
         let a_records = answers(reply, record_type::A);
         for address in answer.addresses() {

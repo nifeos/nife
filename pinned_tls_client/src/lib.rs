@@ -300,7 +300,7 @@ pub struct Reply {
 pub mod listed {
     use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 
-    use package_index::{AddressRefusal, Location, MAX_REDIRECTS, Root};
+    use package_index::{AddressRefusal, Location, MAXIMUM_REDIRECTS, Root};
 
     use crate::{ISRG_ROOT_X1, PinnedPeer, SECTIGO_ROOT_E46, Session};
 
@@ -382,9 +382,10 @@ pub mod listed {
                         redirected_from: Some(at.host.to_owned()),
                     });
                 }
-                Hop::Redirect(_) if followed == MAX_REDIRECTS => {
+                Hop::Redirect(_) if followed == MAXIMUM_REDIRECTS => {
                     return Err(format!(
-                        "redirected to {}, which redirected again: {MAX_REDIRECTS} redirect is followed, \
+                        "redirected to {}, which redirected again: {MAXIMUM_REDIRECTS} redirect is \
+                        followed, \
                          no more",
                         next.host
                     ));

@@ -11,7 +11,10 @@
 pub const NAME_TEXT_MAX: usize = 253;
 
 /// How many addresses one answer carries back, the same bound `domain_name_system::Answer` keeps.
-pub const MAX_ADDRESSES: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_ADDRESSES`.
+pub const MAXIMUM_ADDRESSES: usize = 8;
 
 /// Where the client writes the host name in its page.
 pub const OFF_NAME: usize = 0x000;

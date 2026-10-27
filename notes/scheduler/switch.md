@@ -68,7 +68,7 @@ paths are identical from its first line. Its rules, in the order the code meets 
 1. **Not on an interrupt stack.** A switch parks the running `sp` in the outgoing thread's
    `Context` and resumes it there later. A per-core interrupt stack cannot promise those bytes stay
    the thread's. The interrupt path defers its switch to `preempt_if_needed`, one frame outside the
-   trampoline. The runtime check is a `debug_assert!`, since it scans `MAX_CPUS` spans on the
+   trampoline. The runtime check is a `debug_assert!`, since it scans `MAXIMUM_CPUS` spans on the
    hottest path. `script/stack-depth-check` proves the same property statically in CI. The
    assertion covers the edges a call graph cannot see.
 2. **Interrupts masked across the decision and the switch.** Otherwise the timer could choose again

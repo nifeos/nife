@@ -40,7 +40,7 @@ const KNOWN: &[(i64, i32, u8, u8, u8, u8, u8)] = &[
     (-2_203_891_200, 1900, 3, 1, 0, 0, 0),     // the day after the 1900 leap day that isn't
     (1_709_208_000, 2024, 2, 29, 12, 0, 0),    // an ordinary leap day
     (1_785_414_896, 2026, 7, 30, 12, 34, 56),  // the day this was written
-    (MIN_TIMESTAMP, 0, 1, 1, 0, 0, 0),         // 0000-01-01T00:00:00Z
+    (MINIMUM_TIMESTAMP, 0, 1, 1, 0, 0, 0),     // 0000-01-01T00:00:00Z
     (MAX_TIMESTAMP, 9999, 12, 31, 23, 59, 59), // 9999-12-31T23:59:59Z
     (-62_135_596_800, 1, 1, 1, 0, 0, 0),       // 0001-01-01, where Python's calendar starts
 ];
@@ -153,7 +153,10 @@ fn negative_timestamps_are_ordinary() {
 
 #[test]
 fn out_of_range_timestamps_are_refused_not_wrapped() {
-    assert_eq!(Civil::from_unix(MIN_TIMESTAMP - 1), Err(Error::OutOfRange));
+    assert_eq!(
+        Civil::from_unix(MINIMUM_TIMESTAMP - 1),
+        Err(Error::OutOfRange)
+    );
     assert_eq!(Civil::from_unix(MAX_TIMESTAMP + 1), Err(Error::OutOfRange));
     assert_eq!(Civil::from_unix(i64::MIN), Err(Error::OutOfRange));
     assert_eq!(Civil::from_unix(i64::MAX), Err(Error::OutOfRange));
@@ -290,7 +293,7 @@ fn parse_accepts_rfc3339() {
         ("2026-07-30T12:34:56+00:00", 1_785_414_896), // an explicit zero offset
         ("1969-12-31T23:59:59Z", -1),
         ("2038-01-19T03:14:08Z", 2_147_483_648),
-        ("0000-01-01T00:00:00Z", MIN_TIMESTAMP),
+        ("0000-01-01T00:00:00Z", MINIMUM_TIMESTAMP),
         ("9999-12-31T23:59:59Z", MAX_TIMESTAMP),
     ];
     for &(text, secs) in cases {
@@ -345,7 +348,7 @@ fn parse_refuses_what_it_should() {
 /// a large stride, which is the coverage a bounded proof cannot reach.
 #[test]
 fn format_and_parse_round_trip_across_the_range() {
-    let mut secs = MIN_TIMESTAMP;
+    let mut secs = MINIMUM_TIMESTAMP;
     // Prime-ish, so it lands on every hour and weekday over time. Under Miri the walk is
     // sampled three orders of magnitude coarser: the native stride is ~315,000 format+parse
     // round trips, which an interpreter turns from a second into the better part of an hour.

@@ -110,8 +110,8 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         (
             Refusal::FileNotNameable,
             "{} deep",
-            crate::nav::MAX_DEPTH,
-            "nav::MAX_DEPTH",
+            crate::nav::MAXIMUM_DEPTH,
+            "nav::MAXIMUM_DEPTH",
         ),
         (
             Refusal::TooManyNames,

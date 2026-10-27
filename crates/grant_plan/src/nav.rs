@@ -13,7 +13,10 @@
 /// A bound rather than a policy: the shell keeps one directory capability per level so `..` can pop
 /// one, and it has no allocator, so the stack is an array. Eight is far past any tree a demonstrator
 /// walks by hand, and going deeper is [`Refused::TooDeep`] rather than a silently truncated path.
-pub const MAX_DEPTH: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_DEPTH`.
+pub const MAXIMUM_DEPTH: usize = 8;
 
 /// The longest single component a path may have, which is [`crate::MAX_FILE_NAME`]: the last
 /// component of a path can be a file, and a file may be named that long. A component the shell
@@ -31,7 +34,7 @@ pub const MAX_DIRECTORY_NAME: usize = crate::WORDS_NAME;
 
 /// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
-pub const RENDER_MAX: usize = 1 + MAX_DEPTH * (1 + MAX_DIRECTORY_NAME);
+pub const RENDER_MAX: usize = 1 + MAXIMUM_DEPTH * (1 + MAX_DIRECTORY_NAME);
 
 /// Why a token cannot be navigated. Each is a fact about the *name*, never about a permission,
 /// which is the distinction the whole model rests on.
@@ -40,7 +43,7 @@ pub enum Refused {
     /// A component that is not a name: empty, longer than [`MAX_NAME`], or carrying a byte a name
     /// cannot carry.
     NotAName,
-    /// More components than [`MAX_DEPTH`], or a descent that would take the shell past it.
+    /// More components than [`MAXIMUM_DEPTH`], or a descent that would take the shell past it.
     TooDeep,
     /// A directory to stand in, descend through or bind whose name is over
     /// [`MAX_DIRECTORY_NAME`]. A name that long is a file's, not a place this shell can be.
@@ -93,7 +96,7 @@ pub enum Step<'a> {
 /// exactly as it did.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Path<'a> {
-    steps: [Step<'a>; MAX_DEPTH],
+    steps: [Step<'a>; MAXIMUM_DEPTH],
     n: usize,
     from_root: bool,
 }
@@ -138,13 +141,13 @@ pub fn path(token: &[u8]) -> Result<Path<'_>, Refused> {
     if token.is_empty() {
         return Err(Refused::NotAName);
     }
-    let mut steps = [Step::Up; MAX_DEPTH];
+    let mut steps = [Step::Up; MAXIMUM_DEPTH];
     let mut n = 0;
     for part in token.split(|&b| b == b'/') {
         if part.is_empty() || part == b"." {
             continue;
         }
-        if n == MAX_DEPTH {
+        if n == MAXIMUM_DEPTH {
             return Err(Refused::TooDeep);
         }
         steps[n] = if part == b".." {
@@ -203,8 +206,8 @@ pub fn directory_fits(part: &[u8]) -> bool {
 /// change what that grant means.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Cwd {
-    names: [[u8; MAX_DIRECTORY_NAME]; MAX_DEPTH],
-    lens: [u8; MAX_DEPTH],
+    names: [[u8; MAX_DIRECTORY_NAME]; MAXIMUM_DEPTH],
+    lens: [u8; MAXIMUM_DEPTH],
     depth: usize,
 }
 
@@ -238,8 +241,8 @@ impl Cwd {
     /// with no directory capability can be.
     pub const fn root() -> Self {
         Cwd {
-            names: [[0; MAX_DIRECTORY_NAME]; MAX_DEPTH],
-            lens: [0; MAX_DEPTH],
+            names: [[0; MAX_DIRECTORY_NAME]; MAXIMUM_DEPTH],
+            lens: [0; MAXIMUM_DEPTH],
             depth: 0,
         }
     }
@@ -258,7 +261,7 @@ impl Cwd {
     /// ([`MAX_DIRECTORY_NAME`]), or the shell is already as deep as it tracks; the caller must not
     /// have sent the request in that case.
     pub fn descend(&mut self, name: &[u8]) -> bool {
-        if self.depth == MAX_DEPTH || !directory_fits(name) {
+        if self.depth == MAXIMUM_DEPTH || !directory_fits(name) {
             return false;
         }
         self.names[self.depth][..name.len()].copy_from_slice(name);
@@ -725,9 +728,9 @@ mod tests {
     /// never coexists with a level. Slack would hide a truncation bug behind a buffer that always
     /// happened to fit; a byte short would truncate a real prompt.
     #[test]
-    fn render_max_is_the_worst_case_plus_the_roots_lone_slash() {
+    fn render_maximum_is_the_worst_case_plus_the_roots_lone_slash() {
         let mut cwd = Cwd::root();
-        for _ in 0..MAX_DEPTH {
+        for _ in 0..MAXIMUM_DEPTH {
             assert!(cwd.descend(b"sixteen-bytes!!!"));
         }
         let mut buf = [0u8; RENDER_MAX];
@@ -909,11 +912,11 @@ mod tests {
     #[test]
     fn a_path_deeper_than_the_shell_tracks_is_refused_rather_than_truncated() {
         let mut cwd = Cwd::root();
-        for _ in 0..MAX_DEPTH {
+        for _ in 0..MAXIMUM_DEPTH {
             cd(&mut cwd, "d").unwrap();
         }
         assert_eq!(cd(&mut cwd, "d"), Err(Refused::TooDeep));
-        assert_eq!(cwd.depth(), MAX_DEPTH);
+        assert_eq!(cwd.depth(), MAXIMUM_DEPTH);
     }
 
     /// The grant-time split: the directory to narrow, and the one name in it.

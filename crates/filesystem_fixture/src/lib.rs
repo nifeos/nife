@@ -1041,7 +1041,7 @@ pub mod attrs {
     /// on-device half of "deletion is in the same transaction as the file's": a leaked blob is
     /// not wasted space, it is somebody else's metadata on a file that never asked for it.
     pub const GONE_AFTER_UNLINK: u64 = 1 << 4;
-    /// A value past [`filesystem_contract::xattr::MAX_VALUE`] was refused with
+    /// A value past [`filesystem_contract::xattr::MAXIMUM_VALUE`] was refused with
     /// [`filesystem_contract::xattr::E2BIG`], loudly, rather than stored short (DECISIONS §42 (a filesystem declares what it offers and must be truthful)).
     pub const OVERSIZE_REFUSED: u64 = 1 << 5;
     /// The store's directory could not be opened, created, or descended into. A client that

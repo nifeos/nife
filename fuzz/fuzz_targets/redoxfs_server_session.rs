@@ -37,7 +37,7 @@ const BLOCK: usize = BLOCK_SIZE as usize;
 /// The image size. RedoxFS's own minimum is well under this; it matches the proposal's measurement.
 const IMAGE: usize = 4 * 1024 * 1024;
 /// Requests per session after the prologue. Long enough to bind, mint, close and reuse a slot.
-const MAX_REQUESTS: usize = 48;
+const MAXIMUM_REQUESTS: usize = 48;
 
 /// **The largest end a session lets a file reach, below the server's own refusal.** A recorded
 /// limitation, not a rule: shrinking a file costs time linear in its logical size (the `BUGS`
@@ -409,7 +409,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
         s.forbidden[badge as usize] = forbidden;
     }
 
-    for _ in 0..MAX_REQUESTS {
+    for _ in 0..MAXIMUM_REQUESTS {
         if u.is_empty() {
             break;
         }

@@ -8,7 +8,7 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::{
-    Command, MAX_SHORT_OPTIONS, Refusal, TouchOperands, parse_u64, split_first_word, trim, word,
+    Command, MAXIMUM_SHORT_OPTIONS, Refusal, TouchOperands, parse_u64, split_first_word, trim, word,
 };
 
 /// Split a command line into whitespace-separated tokens, writing them into `out` and returning
@@ -313,7 +313,7 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
     let mut positional_tokens = [&b""[..]; MAX_POSITIONALS];
     let mut quoted_positionals = [false; MAX_POSITIONALS];
     let mut positional_count = 0;
-    let mut short_options = [0u8; MAX_SHORT_OPTIONS];
+    let mut short_options = [0u8; MAXIMUM_SHORT_OPTIONS];
     let mut short_option_count = 0;
     let mut unexpected = None;
     let mut misquoted = None;
@@ -353,7 +353,7 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
             // else shaped like a flag is refused, so an unknown flag never designates a file.
             let letters = &t[1..];
             let short = !letters.is_empty() && letters.iter().all(u8::is_ascii_alphabetic);
-            if short && short_option_count + letters.len() <= MAX_SHORT_OPTIONS {
+            if short && short_option_count + letters.len() <= MAXIMUM_SHORT_OPTIONS {
                 for &c in letters {
                     short_options[short_option_count] = c;
                     short_option_count += 1;
@@ -422,7 +422,7 @@ pub struct ParsedInvocation<'a> {
     /// knowing the program, because **an option letter is not authority**: what it may do is widen a
     /// grant, and that is decided in [`plan_against`] against the manifest, at the prompt, before
     /// anything is spawned. A letter no manifest declares is [`Refusal::NoSuchOption`] there.
-    short_options: [u8; MAX_SHORT_OPTIONS],
+    short_options: [u8; MAXIMUM_SHORT_OPTIONS],
     short_option_count: usize,
     /// Which of [`positionals`](ParsedInvocation::positionals) were quoted, in the same order. A quoted word
     /// is **never a pattern**, whatever bytes are in it, which is the one authority-visible thing

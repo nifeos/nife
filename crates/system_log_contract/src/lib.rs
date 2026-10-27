@@ -78,7 +78,10 @@ pub mod record {
     pub const TEXT_MAX: usize = 224;
 
     /// Header and text together, at most.
-    pub const RECORD_MAX: usize = HEADER_LEN + TEXT_MAX;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `RECORD_MAX`.
+    pub const RECORD_MAXIMUM: usize = HEADER_LEN + TEXT_MAX;
 
     /// The `flags` byte's bits.
     pub mod flags {
@@ -336,7 +339,7 @@ pub mod kernel_ring {
     /// The ring's size in words, which is how both sides address it.
     pub const WORDS: usize = BYTES / 8;
     /// One slot: an F3 header and the most text it carries.
-    pub const SLOT_WORDS: usize = super::record::RECORD_MAX / 8;
+    pub const SLOT_WORDS: usize = super::record::RECORD_MAXIMUM / 8;
     /// How many records the ring holds. The first slot's worth of words is the header.
     pub const SLOTS: u64 = (WORDS / SLOT_WORDS - 1) as u64;
     /// The header's first word once the kernel has formatted the ring.
@@ -556,7 +559,10 @@ pub mod console {
     /// How much of the terminal's current partial line is kept for a redraw.
     pub const PARTIAL_MAX: usize = 512;
     /// How many bytes of kernel lines wait for a line end.
-    pub const QUEUE_MAX: usize = 2048;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `QUEUE_MAX`.
+    pub const QUEUE_MAXIMUM: usize = 2048;
 
     /// The console's kernel-line state. See the module doc.
     pub struct Inserter {
@@ -565,7 +571,7 @@ pub mod console {
         partial_lost: bool,
         kline: [u8; LINE_MAX],
         klen: usize,
-        queue: [u8; QUEUE_MAX],
+        queue: [u8; QUEUE_MAXIMUM],
         qlen: usize,
     }
 
@@ -584,7 +590,7 @@ pub mod console {
                 partial_lost: false,
                 kline: [0; LINE_MAX],
                 klen: 0,
-                queue: [0; QUEUE_MAX],
+                queue: [0; QUEUE_MAXIMUM],
                 qlen: 0,
             }
         }
@@ -652,7 +658,7 @@ pub mod console {
             if self.at_line_start() && self.qlen == 0 {
                 out(&self.kline[..self.klen]);
             } else {
-                if self.qlen + self.klen > QUEUE_MAX {
+                if self.qlen + self.klen > QUEUE_MAXIMUM {
                     self.flush(&mut *out);
                 }
                 if self.at_line_start() {
@@ -943,9 +949,9 @@ mod tests {
         assert_eq!(w & 0xff, 16);
     }
 
-    /// **The queue holds exactly [`QUEUE_MAX`](console::QUEUE_MAX) bytes before it flushes**, and
-    /// a client's write that does not end the line never releases it. Eight 256-byte lines fill it
-    /// to the byte and go nowhere; the ninth flushes them first.
+    /// **The queue holds exactly [`QUEUE_MAXIMUM`](console::QUEUE_MAXIMUM) bytes before it
+    /// flushes**, and a client's write that does not end the line never releases it. Eight 256-byte
+    /// lines fill it to the byte and go nowhere; the ninth flushes them first.
     #[test]
     fn the_queue_flushes_only_past_its_size_and_only_at_a_line_end() {
         extern crate std;
@@ -956,13 +962,13 @@ mod tests {
         for _ in 0..8 {
             c.kernel_chunk(&line, |_| panic!("flushed before the queue was full"));
         }
-        assert_eq!(c.queued(), console::QUEUE_MAX);
+        assert_eq!(c.queued(), console::QUEUE_MAXIMUM);
         c.wrote(b"more", |_| panic!("released mid-line"));
         let mut t: Vec<u8> = Vec::new();
         c.kernel_chunk(&line, |b| t.extend_from_slice(b));
         assert_eq!(
             t.len(),
-            console::LINE_END.len() + console::QUEUE_MAX + b"$ more".len()
+            console::LINE_END.len() + console::QUEUE_MAXIMUM + b"$ more".len()
         );
         assert_eq!(c.queued(), console::LINE_MAX);
     }
@@ -1041,7 +1047,7 @@ mod tests {
     /// page less the 16-byte header, and the four flag bits are the four low bits.
     #[test]
     fn the_quoted_sizes_and_flag_bits_are_what_the_notes_say() {
-        assert_eq!(record::RECORD_MAX, 256);
+        assert_eq!(record::RECORD_MAXIMUM, 256);
         assert_eq!(read::DATA_MAX, 4080);
         assert_eq!(record::flags::KERNEL, 1);
         assert_eq!(record::flags::DROPPED_BEFORE, 2);

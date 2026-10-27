@@ -347,7 +347,7 @@ fn attach_page_frame() {
 /// **`TEST_NAME_RESOLUTION`**: the gating exchange against the runners' name server, then the
 /// non-gating one against the host's resolver, reported together as `(gating, real)`. One role and
 /// one `net_stack` for both, because every stack a test starts holds a virtio slot for the rest of
-/// the boot and the table is at its ceiling (`MAX_DEVICES` in kernel/src/virtio.rs).
+/// the boot and the table is at its ceiling (`MAXIMUM_DEVICES` in kernel/src/virtio.rs).
 fn name_resolution() -> ! {
     attach_page_frame();
     let gating = against_the_name_server();

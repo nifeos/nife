@@ -8,7 +8,7 @@
 //! captures a forgery.
 
 use domain_name_system::{
-    CLASS_IN, Error, FLAG_TC, Header, MAX_ADDRESSES, MAX_CHAIN, Name, Query, Reader, Reject,
+    CLASS_IN, Error, FLAG_TC, Header, MAX_CHAIN, MAXIMUM_ADDRESSES, Name, Query, Reader, Reject,
     TcpReply, cname_target, decode_name, record_type,
 };
 
@@ -318,12 +318,15 @@ fn other_record_types_are_ignored() {
 #[test]
 fn addresses_past_the_cap_are_dropped_and_the_rest_kept() {
     let mut r = Reply::to(OURS);
-    for i in 0..(MAX_ADDRESSES as u8 + 2) {
+    for i in 0..(MAXIMUM_ADDRESSES as u8 + 2) {
         r = r.a(OURS, [10, 0, 2, i]);
     }
     let got = r.judged().unwrap();
-    assert_eq!(got.len(), MAX_ADDRESSES);
-    assert_eq!(got[MAX_ADDRESSES - 1], [10, 0, 2, MAX_ADDRESSES as u8 - 1]);
+    assert_eq!(got.len(), MAXIMUM_ADDRESSES);
+    assert_eq!(
+        got[MAXIMUM_ADDRESSES - 1],
+        [10, 0, 2, MAXIMUM_ADDRESSES as u8 - 1]
+    );
 }
 
 #[test]

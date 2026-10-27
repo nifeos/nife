@@ -204,8 +204,8 @@ mutation runs in one transaction, so an attribute and its file reach the platter
 - The modes (0o700, 0o600) are decoration: the contract has no uid to check them against.
 
 `GETXATTR` answers `ERANGE` when the buffer is shorter than the value, never a short read. On the
-wire the buffer is the shared page, larger than `xattr::MAX_VALUE`, so it cannot fire there.
-`LISTXATTR` has no cursor because a complete listing fits one page by `xattr::MAX_COUNT`.
+wire the buffer is the shared page, larger than `xattr::MAXIMUM_VALUE`, so it cannot fire there.
+`LISTXATTR` has no cursor because a complete listing fits one page by `xattr::MAXIMUM_COUNT`.
 
 ## Where the server departs from upstream RedoxFS
 

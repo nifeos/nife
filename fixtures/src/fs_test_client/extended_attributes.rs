@@ -108,11 +108,11 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     //    than any local here, so it is written straight onto the page.
     let big = b"user.toobig";
     put_page(big);
-    fill_page(big.len(), xattr::MAX_VALUE + 1, b'Z');
+    fill_page(big.len(), xattr::MAXIMUM_VALUE + 1, b'Z');
     let r = call(
         FILE,
         fs::req(fs::SETXATTR, scratch, big.len() as u64),
-        xattr::spec(xattr::RAW, (xattr::MAX_VALUE + 1) as u64),
+        xattr::spec(xattr::RAW, (xattr::MAXIMUM_VALUE + 1) as u64),
     )
     .0 as i64;
     if filesystem_contract::reply_errno(r) == Some(xattr::E2BIG) {

@@ -7,7 +7,8 @@
 //! | bytes | field | written by |
 //! |---|---|---|
 //! | [`OFF_NAME`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAX`] bytes | the client |
-//! | [`OFF_ADDRESSES`].. | up to [`MAX_ADDRESSES`] IPv4 addresses, four bytes each | the resolver |
+//! | [`OFF_ADDRESSES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the
+//! resolver |
 
 //! # BUGS
 //!
@@ -28,7 +29,7 @@ pub use wire::*;
 
 /// The resolver's own copy of the bound, checked against the parser's, because `wire` is copied
 /// into std's PAL where `domain_name_system` cannot be named.
-const _: () = assert!(MAX_ADDRESSES == domain_name_system::MAX_ADDRESSES);
+const _: () = assert!(MAXIMUM_ADDRESSES == domain_name_system::MAXIMUM_ADDRESSES);
 
 // =================================================================================================
 // The resolver's endowment.
