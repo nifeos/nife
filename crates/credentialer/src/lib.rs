@@ -145,6 +145,21 @@ impl Cost {
     #[doc(alias = "m")]
     pub const MAXIMUM_MEMORY_KIB: u32 = 1024 * 1024;
 
+    /// The most passes one derivation may be asked for: 10. Time grows linearly with passes, and a
+    /// record carries its own count, so without a maximum a stored or corrupted record can make
+    /// [`Store::verify`] derive for as long as `u32::MAX` passes take, which is the denial of
+    /// service on every login that the lane bound above guards against.
+    ///
+    /// **Why 10.** This tree stores 3 ([`Cost::DEFAULT`]). RFC 9106 recommends 1 or 3. OWASP's five
+    /// equivalent minimum configurations run from 1 pass at 46 MiB to 5 passes at 7 MiB, so 5 is the
+    /// most anyone recommends, and it comes with the least memory. 10 is twice that and over three
+    /// times what is stored: room to raise the policy on real hardware, still a bound that turns a
+    /// garbage count into [`Error::Encoding`] at decode.
+    ///
+    /// Name: provisional, minted for this bound. An architect names things.
+    #[doc(alias = "t")]
+    pub const MAXIMUM_PASSES: u32 = 10;
+
     /// A cost, or `None` if it is one Argon2 (or this crate) will not accept. Checked here rather
     /// than at derivation time so a bad policy fails where it is written.
     ///
@@ -165,9 +180,11 @@ impl Cost {
     /// assert!(Cost::new(0, 3, 1).is_none()); // no memory is not a memory-hard KDF
     /// // Past a gibibyte is a typo, not a policy.
     /// assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIB + 1, 3, 1).is_none());
+    /// // Nor a count of passes that would keep a login busy for hours.
+    /// assert!(Cost::new(4096, Cost::MAXIMUM_PASSES + 1, 1).is_none());
     /// ```
     pub fn new(memory_kib: u32, passes: u32, lanes: u32) -> Option<Self> {
-        if lanes == 0 || lanes > MAXIMUM_P_COST || passes == 0 {
+        if lanes == 0 || lanes > MAXIMUM_P_COST || passes == 0 || passes > Self::MAXIMUM_PASSES {
             return None;
         }
         if !(MINIMUM_MEMORY_KIB..=Self::MAXIMUM_MEMORY_KIB).contains(&memory_kib) {
@@ -958,6 +975,46 @@ mod tests {
             "more memory than the ceiling is a corrupt record, not a policy",
         );
         assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIB, 1, 1).is_some());
+    }
+
+    /// **Passes have a ceiling**, so a record cannot ask `verify` for hours of Argon2. The value is
+    /// pinned because a mutant on the constant would otherwise move the policy unseen, and the
+    /// edges are checked on both sides because the comparison is the whole bound.
+    #[test]
+    fn passes_are_bounded() {
+        assert_eq!(Cost::MAXIMUM_PASSES, 10);
+        assert!(Cost::new(8, Cost::MAXIMUM_PASSES, 1).is_some());
+        assert!(Cost::new(8, Cost::MAXIMUM_PASSES - 1, 1).is_some());
+        assert!(Cost::new(8, Cost::MAXIMUM_PASSES + 1, 1).is_none());
+        assert!(Cost::new(8, u32::MAX, 1).is_none());
+        // What is stored, and what RFC 9106 and OWASP recommend, stays inside the bound.
+        assert!(Cost::DEFAULT.passes() <= Cost::MAXIMUM_PASSES);
+        assert!(Cost::new(4096, 5, 1).is_some());
+    }
+
+    /// A record whose passes field is out of range is refused by `decode`, before any derivation
+    /// can be asked for. This is the mutant `replace + with - in Record::decode` of #2797, which
+    /// reads a salt byte as the passes count: it now fails here in microseconds rather than
+    /// running Argon2 for hours.
+    #[test]
+    fn a_record_asking_for_too_many_passes_does_not_decode() {
+        let cost = cheap();
+        let mut mem = scratch(cost);
+        // Computed rather than written as a literal: the test needs a salt, not a particular one.
+        let salt: [u8; SALT_LEN] = core::array::from_fn(|k| k as u8);
+        let r = Record::derive(b"alice", b"secret", salt, cost, &mut mem).unwrap();
+        let passes_at = 8 + MAXIMUM_IDENTITY + SALT_LEN + 4;
+        for passes in [Cost::MAXIMUM_PASSES + 1, 1 << 24, u32::MAX] {
+            let mut b = r.encode();
+            b[passes_at..passes_at + 4].copy_from_slice(&passes.to_le_bytes());
+            assert_eq!(Record::decode(&b).err(), Some(Error::Encoding), "{passes}");
+        }
+        let mut b = r.encode();
+        b[passes_at..passes_at + 4].copy_from_slice(&Cost::MAXIMUM_PASSES.to_le_bytes());
+        assert_eq!(
+            Record::decode(&b).unwrap().cost().passes(),
+            Cost::MAXIMUM_PASSES
+        );
     }
 
     // ---------------------------------------------------------------------------------------

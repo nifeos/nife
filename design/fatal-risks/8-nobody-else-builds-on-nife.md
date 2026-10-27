@@ -39,7 +39,8 @@ Publishing a crate or a chapter counts as none of the five.
 **The experiment, which has not been run:** honest attempts at releasing or contributing nife's
 mechanisms, each with its own 6-month clock, run in parallel. An attempt is a release or a pull
 request, a post or issue explaining what the proof rules out, and a follow-up. The first three
-mechanisms are an architect's pick. Measured monthly: outside dependents per crate, mechanisms
+attempts were ruled on 2026-10-27 (UTC), and all three are crates nife publishes itself (publish-first,
+below). Measured monthly: outside dependents per crate, mechanisms
 absorbed, crates handed off, and lines nife owns (kernel and crates) against a fixed baseline. Is
 nife shrinking while it keeps booting and passing its gates?
 
@@ -51,6 +52,30 @@ The thresholds, ruled by calef on 2026-10-18 (UTC):
 - red: five honest attempts, each past its 6 months, with no uptake of any of the four; or nothing
   has left nife at 2027-10-18, no mechanism absorbed and no crate handed off. Use alone stops being
   amber after a year.
+
+The first attempts, ruled 2026-10-27 (UTC):
+
+- Publish-first. The first attempts are crates nife publishes itself. A contribution to another
+  project waits until a published crate has users who ask for it upstream. The reason is uptake so
+  far: the Kani pull request (#4913) has been open and unmerged since 2026-09-30, and the QEMU PLIC
+  patch went unanswered. An unanswered contribution would count toward red's five expired attempts
+  and measure the counterpart's attention instead of the value of the mechanism.
+- First: `file_allocation_table`. The incumbent `fatfs` has 422k downloads over 90 days and 58
+  dependents, and no release since 2023-01.
+- Second: `extensible_host_controller_interface`, released with `usb`, after it gains Kani proofs.
+  The incumbent `xhci` has 39k downloads over 90 days and no release since 2023-07.
+- Third: `generational_table`, released on its own. Before release, confirm whether `slotmap`
+  (maintained) already covers allocation-free fixed capacity, and say what was found in the release
+  record. The incumbents are `generational-arena` (1.18M downloads over 90 days, 57 dependents,
+  last release 2023-05-22, archived) and `thunderdome` (222k, 32 dependents, last release
+  2023-06-25). Ours is 302 lines with no dependencies and no allocation, and it is proved that a
+  stale name never resolves. The crate name is free.
+- Dropped from the first attempts: `capability` (32 downloads) and `non_volatile_memory_express`
+  (under 1k). Considered and not chosen for the third: `elf` (the largest demand, but ours reads
+  only static executables, the name is held by the leader, and matching the leader means a new
+  parser) and `device_tree_blob` (ready, but demand is split across maintained crates).
+
+Crates.io figures are as measured on 2026-10-27 (UTC) and age quickly.
 
 The cost is low next to the project, and nothing here waits on milestone 801 (packages over the
 internet) or milestone 802 (the trivial install). Thirty crates can leave today, 23 standalone and
