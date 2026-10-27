@@ -1,13 +1,24 @@
 ---
-status: NOT-STARTED
+status: REFUSED
 raised: 2026-09-03
+refused_by: §172
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
 # 327. A credential endpoint that is the credential for one resource
+
+Refused by §172 (whether a verify endpoint names the identity it asks about), ruled 2026-10-27
+(UTC): the identity stays on the verify request, and the limitation is recorded in the
+`credential_contract` crate documentation. The text below is the block as filed.
+
+## Revisit
+
+- **Condition.** A program that acts for exactly one identity needs a verify endpoint that cannot
+  ask about any other. §172 names the answer for that day: a per-identity endpoint kind beside the
+  general one, not a change to the general wire.
 
 Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
 from milestone 54's block; numbered 2026-09-19 by milestone 433. Premise re-checked 2026-09-19 and

@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-27
+ratified_by: calef
 ---
 
 # 172. Whether a `credential_protocol` verify endpoint names the identity it asks about
@@ -8,8 +10,23 @@ raised: 2026-09-19
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice B, which read milestone 327 (a credential endpoint that is the credential for one resource)'s
 `DECISION` gate and found it naming no section. The question itself is older: milestone 54's block
 posed it, `notes/smb.md` recorded it as a next step rather than as an accepted limitation, and the
-2026-09-03 proposal sweep carried it forward. *(Section number provisional until the merge queue
-lands it.)*
+2026-09-03 proposal sweep carried it forward.
+
+## Ruled 2026-10-27 (UTC)
+
+Option A: the identity stays on the verify request, and no endpoint is minted per identity.
+
+1. The limitation is recorded where a reader meets the endpoint, in the `credential_contract` crate
+   documentation: a verify holder can test a guess against any name and cannot enumerate names.
+   `MISMATCH` answers a wrong secret and an unknown identity alike.
+2. The reason: the one remaining sender, `login`, must check whatever name a person types, so an
+   endpoint per identity would split the same authority across many endpoints without removing it.
+3. A per-identity endpoint kind (option C) can be added beside the general one when a program that
+   acts for one identity needs it. Nothing is built for that case now.
+4. Milestone 327 (a credential endpoint that is the credential for one resource) closes as `REFUSED`
+   by this section, with its revisit condition written in the block.
+
+The options table below is the analysis that preceded the ruling.
 
 ## What is being decided
 
@@ -65,10 +82,9 @@ shape one subsystem over. `crates/block_roster`'s header states the general form
 | **B** | **The endpoint is the credential for one resource.** The identity comes off the request; a verify endpoint is minted per identity and the page carries a secret alone. | Two senders and one server change together (measured above). `LAYOUT_LEN` drops from 320 to 256 and `ID_OFF`/`MAX_IDENTITY` leave the wire. The real cost is on the minting side and is not priced here: something has to hand out one endpoint per identity, and `login` today resolves the identity a person types at a prompt. |
 | **C** | **Both**, a narrowed endpoint kind beside the general one. | The general shape survives, so nothing is unbuilt and nothing is un-shipped; two shapes exist forever and a reader has to learn which one a given endpoint is. This tree refuses that kind of doubling elsewhere. |
 
-No recommendation, deliberately. This is a contract two programs agree on, which AGENTS.md puts
-in the irreversible column beside names and the syscall surface, and its own limit says a
-syscall-surface decision arriving with a recommendation *"is already most of the way made"*. What is
-offered instead is the premise check below, which is the thing that would change the answer.
+The record offered no recommendation. This is a contract two programs agree on, which AGENTS.md
+puts in the irreversible column beside names and the syscall surface, so it offered the premise
+check below instead.
 
 ## Is the premise true?
 
@@ -86,10 +102,10 @@ Nothing in the tree today is visibly harmed by the extra authority.
 
 ## What is blocked until this is answered
 
-Milestone 327, and nothing else. No other block cites it. The argument for answering it anyway
-is the direction of the cost rather than a live defect. Every program written against the current
-shape makes B more expensive, and the next thing that authenticates anything gets written against
-whatever is there.
+Nothing. Milestone 327 was the only block that cited it, and it is closed. The direction of the cost
+is why the question was worth answering without a live defect: every program written against the
+current shape makes B more expensive, and the next thing that authenticates anything gets written
+against whatever is there.
 
 ## What this does not decide
 
