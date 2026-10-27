@@ -1,7 +1,9 @@
 use compositor::SCENE;
 
 use super::*;
-use crate::cap::{Rights, memory_region_cap, page_frame_run_cap, rendezvous_cap};
+use crate::capability_object::{
+    Rights, memory_region_capability, page_frame_run_capability, rendezvous_capability,
+};
 use crate::sched::RendezvousId;
 
 /// The budget the compositor and a capture client draw their screen mapping's page tables from,
@@ -36,7 +38,7 @@ pub const ROLE_FORGE_CTL: u64 = 1 << 9;
 /// The screen's frames, in the scanout's own geometry. The same run of frames rung one's driver
 /// scans out, because the screen *is* rung one's surface.
 const SCREEN_PAGE_FRAMES: core::num::NonZeroU64 =
-    crate::cap::page_frame_run_len(graphics_contract::SURFACE_PAGE_FRAMES as u64);
+    crate::capability_object::page_frame_run_len(graphics_contract::SURFACE_PAGE_FRAMES as u64);
 
 /// What the kernel keeps after wiring a scene: the endpoints it can ring or listen on, and the
 /// physical addresses of the frames it allocated, which it reads through the direct map as a
@@ -119,17 +121,17 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
     let budget =
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the compositor");
 
-    let mut grants = [rendezvous_cap(report, Rights::WRITE); MAXIMUM_COMP_GRANTS];
-    grants[1] = rendezvous_cap(display, Rights::WRITE);
-    grants[2] = rendezvous_cap(doorbell, Rights::READ);
-    grants[3] = page_frame_run_cap(
+    let mut grants = [rendezvous_capability(report, Rights::WRITE); MAXIMUM_COMP_GRANTS];
+    grants[1] = rendezvous_capability(display, Rights::WRITE);
+    grants[2] = rendezvous_capability(doorbell, Rights::READ);
+    grants[3] = page_frame_run_capability(
         screen,
         SCREEN_PAGE_FRAMES,
         Rights::READ.union(Rights::WRITE),
     );
-    grants[4] = memory_region_cap(budget);
+    grants[4] = memory_region_capability(budget);
     for i in 0..focusable {
-        grants[COMP_INPUT_BASE as usize + i] = rendezvous_cap(input[i], Rights::WRITE);
+        grants[COMP_INPUT_BASE as usize + i] = rendezvous_capability(input[i], Rights::WRITE);
     }
     let ngrants = COMP_INPUT_BASE as usize + focusable;
 
@@ -253,10 +255,10 @@ impl Wiring {
             m += 1;
         }
 
-        let mut grants = [rendezvous_cap(self.client_report[i], Rights::WRITE); 3];
-        grants[1] = rendezvous_cap(self.doorbell, Rights::WRITE);
+        let mut grants = [rendezvous_capability(self.client_report[i], Rights::WRITE); 3];
+        grants[1] = rendezvous_capability(self.doorbell, Rights::WRITE);
         let ngrants = if i < self.focusable {
-            grants[2] = rendezvous_cap(self.input[i], Rights::READ);
+            grants[2] = rendezvous_capability(self.input[i], Rights::READ);
             3
         } else {
             // Slot 2 must stay empty: this client's attempt to receive input is `NoSuchSlot`, not
@@ -282,10 +284,10 @@ impl Wiring {
             if let Some(budget) = capture_budget {
                 crate::sched::grant_at(
                     3,
-                    page_frame_run_cap(screen, SCREEN_PAGE_FRAMES, Rights::READ),
+                    page_frame_run_capability(screen, SCREEN_PAGE_FRAMES, Rights::READ),
                 )
                 .expect("client slot 3 was occupied");
-                crate::sched::grant_at(4, memory_region_cap(budget))
+                crate::sched::grant_at(4, memory_region_capability(budget))
                     .expect("client slot 4 was occupied");
             }
             run(
@@ -456,9 +458,9 @@ impl Wiring {
         }
 
         let grants = [
-            rendezvous_cap(self.client_report[i], Rights::WRITE),
-            rendezvous_cap(self.doorbell, Rights::WRITE),
-            rendezvous_cap(self.input[i], Rights::READ),
+            rendezvous_capability(self.client_report[i], Rights::WRITE),
+            rendezvous_capability(self.doorbell, Rights::WRITE),
+            rendezvous_capability(self.input[i], Rights::READ),
         ];
         let image = self.term_image;
         crate::sched::spawn(move || {

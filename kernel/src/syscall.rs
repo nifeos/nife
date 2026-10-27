@@ -1,7 +1,7 @@
 //! The syscall boundary. **Five calls <!--count:syscalls-->.**
 //!
 //! `exit`, `exit_thread`, `yield` and `cap_delete` are authority over the caller itself, and
-//! `invoke(cap, method, a0, a1, a2)` is everything else, on a capability the caller was handed.
+//! `invoke(capability, method, a0, a1, a2)` is everything else, on a capability the caller was handed.
 //! Every argument is a scalar in a register, so the kernel follows no user pointer. The ABI is
 //! `crates/abi`, which the kernel and every user program share.
 //!
@@ -11,7 +11,7 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Capability, Object, Rights};
+use crate::capability_object::{Capability, Object, Rights};
 use crate::sched;
 
 // The methods, one child module per object family, for §282 (when a file is split, the parent
@@ -77,7 +77,7 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
         }
         // An empty slot is not an error: a loader recycling slots need not track emptiness.
         abi::SYS_CAP_DELETE => {
-            let _ = sched::delete_current_cap(frame.arg(0));
+            let _ = sched::delete_current_capability(frame.arg(0));
             Ok(0)
         }
         abi::SYS_INVOKE => invoke(
@@ -124,29 +124,31 @@ pub fn invoke(
     a1: u64,
     a2: u64,
 ) -> Result<i64, Error> {
-    let cap = sched::current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
+    let capability = sched::current_capability(slot).map_err(|_| Error::NoSuchSlot)?;
 
-    match cap.object {
+    match capability.object {
         Object::Rendezvous(ep, badge) => match method {
             // `#[inline(always)]` in `rendezvous`, so the round trip stays inside `invoke`.
-            abi::rendezvous::SEND => rendezvous_send(cap.rights, ep, badge, [a0, a1, a2]),
-            abi::rendezvous::RECEIVE => rendezvous_receive(frame, cap.rights, ep),
+            abi::rendezvous::SEND => rendezvous_send(capability.rights, ep, badge, [a0, a1, a2]),
+            abi::rendezvous::RECEIVE => rendezvous_receive(frame, capability.rights, ep),
             abi::rendezvous::SEND_CAP => {
-                rendezvous_send_capability(cap.rights, ep, badge, [a0, a1, a2])
+                rendezvous_send_capability(capability.rights, ep, badge, [a0, a1, a2])
             }
-            abi::rendezvous::RECEIVE_CAP => rendezvous_receive_capability(frame, cap.rights, ep),
-            abi::rendezvous::CALL => rendezvous_call(frame, cap.rights, ep, badge, [a0, a1]),
+            abi::rendezvous::RECEIVE_CAP => {
+                rendezvous_receive_capability(frame, capability.rights, ep)
+            }
+            abi::rendezvous::CALL => rendezvous_call(frame, capability.rights, ep, badge, [a0, a1]),
 
             // READ, the right to receive deaths here, which a send-only peer lacks (DECISIONS §32
             // (a supervisor may collect a corpse without being able to build one)).
             abi::rendezvous::REAP => {
-                if !cap.rights.allows(Rights::READ) {
+                if !capability.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }
                 rendezvous_reap(ep, a0)
             }
-            abi::rendezvous::SURVEY => rendezvous_survey(frame, cap.rights, ep, a0, a1),
-            abi::rendezvous::BADGE => rendezvous_badge(ep, cap.rights, badge, a0),
+            abi::rendezvous::SURVEY => rendezvous_survey(frame, capability.rights, ep, a0, a1),
+            abi::rendezvous::BADGE => rendezvous_badge(ep, capability.rights, badge, a0),
             _ => Err(Error::BadMethod),
         },
 
@@ -155,41 +157,45 @@ pub fn invoke(
             abi::reply::REPLY => {
                 // Minted WRITE-only, so a narrowed copy cannot answer, and without GRANT, so it
                 // cannot have been delegated here.
-                if !cap.rights.allows(Rights::WRITE) {
+                if !capability.rights.allows(Rights::WRITE) {
                     return Err(Error::NotPermitted);
                 }
                 sched::ipc_reply(tid, [a0, a1]);
                 // Consumed, so the caller cannot be answered twice.
-                let _ = sched::delete_current_cap(slot);
+                let _ = sched::delete_current_capability(slot);
                 Ok(0)
             }
             // Every other method, `REPLY_CAPABILITY` and `BadMethod` alike, is decided out of line.
             _ => reply_other(slot, method, a0, a1, a2),
         },
 
-        Object::AddressSpace(name) => address_space_invoke(frame, cap, name, method, [a0, a1, a2]),
-
-        Object::ThreadControlBlock(tid) => {
-            thread_control_block_invoke(frame, cap.rights, tid, method, [a0, a1, a2])
+        Object::AddressSpace(name) => {
+            address_space_invoke(frame, capability, name, method, [a0, a1, a2])
         }
 
-        Object::Notification(id) => notification_invoke(cap.rights, id, method, a0),
+        Object::ThreadControlBlock(tid) => {
+            thread_control_block_invoke(frame, capability.rights, tid, method, [a0, a1, a2])
+        }
 
-        Object::Timer(id) => timer_invoke(cap.rights, id, method, a0, a1, a2),
+        Object::Notification(id) => notification_invoke(capability.rights, id, method, a0),
 
-        Object::Process(pid) => process_invoke(cap.rights, pid, method),
+        Object::Timer(id) => timer_invoke(capability.rights, id, method, a0, a1, a2),
+
+        Object::Process(pid) => process_invoke(capability.rights, pid, method),
 
         // No rights bit: holding the capability is the whole authority (DECISIONS §251 (restarting
         // the machine is a kernel object the progenitor hands out)).
         Object::Reboot => reboot_invoke(method),
 
-        Object::MemoryRegion(region) => memory_region_invoke(cap, region, method, [a0, a1, a2]),
+        Object::MemoryRegion(region) => {
+            memory_region_invoke(capability, region, method, [a0, a1, a2])
+        }
 
         Object::PageFrame(phys, count) => match method {
             // `MAP` checks its rights inside `page_frame_map`, because they depend on `a1`.
             abi::page_frame::MAP => page_frame_map(slot, a0, a1, a2),
             abi::page_frame::REVOKE => {
-                if !cap.rights.allows(Rights::GRANT) {
+                if !capability.rights.allows(Rights::GRANT) {
                     return Err(Error::NotPermitted);
                 }
                 page_frame_revoke(phys, count.get())
@@ -203,7 +209,7 @@ pub fn invoke(
             // mints a `DeviceFrame` once (DECISIONS §41 (the endpoint is the broker, and a device
             // is revoked by taking it back); `revoke::revoke_device_from_others` has why).
             abi::page_frame::REVOKE => {
-                if !cap.rights.allows(Rights::GRANT) {
+                if !capability.rights.allows(Rights::GRANT) {
                     return Err(Error::NotPermitted);
                 }
                 crate::revoke::revoke_device_from_others(phys);
@@ -213,7 +219,7 @@ pub fn invoke(
         },
 
         Object::Virtio(id) => {
-            if !cap.rights.allows(Rights::WRITE) {
+            if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             virtio_invoke(id, method, a0, a1)
@@ -221,13 +227,13 @@ pub fn invoke(
 
         Object::Interrupt(intid) => match method {
             abi::interrupt::WAIT => {
-                if !cap.rights.allows(Rights::READ) {
+                if !capability.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }
                 interrupt_wait(frame, intid)
             }
             abi::interrupt::ACK => {
-                if !cap.rights.allows(Rights::READ) {
+                if !capability.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }
                 interrupt_acknowledge(intid)
@@ -237,7 +243,7 @@ pub fn invoke(
 
         // `x86_64` only; the other two architectures' match is exhaustive without it.
         #[cfg(target_arch = "x86_64")]
-        Object::PortRange(base, count) => port_range_invoke(cap.rights, base, count, method),
+        Object::PortRange(base, count) => port_range_invoke(capability.rights, base, count, method),
     }
 }
 

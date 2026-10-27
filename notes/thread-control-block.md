@@ -95,7 +95,7 @@ written at the rank in `kernel/src/sync.rs`.
 
 ## A parked capability in a corpse
 
-`Thread::outgoing_cap` holds a capability a `SEND_CAP` parked while no receiver was waiting. The
+`Thread::outgoing_capability` holds a capability a `SEND_CAP` parked while no receiver was waiting. The
 teardown paths `depart`, `finish_blocked_resident` and `reap_region_objects` never clear it. That
 is a latent hazard, not a defect today. `Cap` is `Copy` and lives in the TCB page, so nothing
 leaks. Victims are unlinked before their pages go, so nothing is used after free. Every revocation
@@ -103,7 +103,7 @@ sweep clears a parked capability on `Finished` and `Dead` threads too, so none o
 Every wake of a parked sender goes through `set_ipc_aborted`, which clears the slot. A future wake
 that skipped it would deliver the parked capability to the supervisor's endpoint. The fix is one
 line in each of the three paths; `finish_blocked_resident` already clears a parked `Reply` through
-`delete_reply_caps_naming`. `notes/confinement-claims.md` row 30 lists the sweeps that clear it.
+`delete_reply_capabilities_naming`. `notes/confinement-claims.md` row 30 lists the sweeps that clear it.
 
 ## The thread table (`kernel/src/sched/thread_table.rs`)
 

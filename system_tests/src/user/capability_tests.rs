@@ -78,8 +78,14 @@ fn a_user_client_moves_data_through_shared_memory() {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    crate::cap::rendezvous_cap(request, crate::cap::Rights::WRITE),
-                    crate::cap::rendezvous_cap(reply, crate::cap::Rights::READ),
+                    crate::capability_object::rendezvous_capability(
+                        request,
+                        crate::capability_object::Rights::WRITE,
+                    ),
+                    crate::capability_object::rendezvous_capability(
+                        reply,
+                        crate::capability_object::Rights::READ,
+                    ),
                 ],
                 maps: &[Mapping {
                     va: SHARED_VA,
@@ -164,12 +170,12 @@ fn map_physical_maps_a_shared_frame_and_a_device_page() {
 /// A thread can name nothing until somebody hands it something.
 #[test_case]
 fn a_new_thread_holds_no_capabilities() {
-    use crate::cap::Error;
+    use crate::capability_object::Error;
 
     // The current thread is a kernel thread, spawned by the harness, and was handed nothing.
     for slot in 0..16 {
         assert_eq!(
-            sched::current_cap(slot).err(),
+            sched::current_capability(slot).err(),
             Some(Error::NoSuchSlot),
             "slot {slot} is not empty in a thread nobody granted anything",
         );

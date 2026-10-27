@@ -19,7 +19,7 @@ use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Object, Rights, page_frame_run_cap, page_frame_run_len};
+use crate::capability_object::{Object, Rights, page_frame_run_capability, page_frame_run_len};
 use crate::syscall::invoke;
 use crate::{delegation_pause, sched};
 
@@ -76,7 +76,7 @@ fn holds_frame(tid: crate::thread::ThreadId, phys: u64) -> bool {
     // in this frame is what put the nth-retype tests over the guard page (milestone 754 (the
     // capability table grows to 64 slots)).
     sched::with_capability_table(tid, |table| {
-        (0..crate::cap::CAPABILITY_TABLE_SLOTS as u64).any(|slot| {
+        (0..crate::capability_object::CAPABILITY_TABLE_SLOTS as u64).any(|slot| {
             table.get(slot).is_ok_and(|c| match c.object {
                 Object::PageFrame(p, n) => {
                     p <= phys && phys < p + n.get() * page_frames::FRAME_SIZE
@@ -167,11 +167,15 @@ fn a_sweep_inside_a_page_frame_map_leaves_no_mapping() {
         delegation_pause::disarm();
         let mapper = sched::spawn(move || {
             sched::adopt_address_space(crate::user::AddressSpace::new(2).expect("no space"));
-            let frame_slot =
-                sched::grant(page_frame_run_cap(phys, page_frame_run_len(1), Rights::ALL))
-                    .expect("grant the frame");
+            let frame_slot = sched::grant(page_frame_run_capability(
+                phys,
+                page_frame_run_len(1),
+                Rights::ALL,
+            ))
+            .expect("grant the frame");
             let tables_slot =
-                sched::grant(crate::cap::memory_region_cap(tables)).expect("grant the tables");
+                sched::grant(crate::capability_object::memory_region_capability(tables))
+                    .expect("grant the tables");
             REPORT.tid.store(sched::current(), Ordering::SeqCst);
             delegation_pause::arm(sched::current());
             let answer = call(frame_slot, abi::page_frame::MAP, VA, 1, tables_slot);
@@ -184,8 +188,8 @@ fn a_sweep_inside_a_page_frame_map_leaves_no_mapping() {
             let after = call(frame_slot, abi::page_frame::MAP, VA, 1, tables_slot);
             REPORT.after.store(encode(after), Ordering::SeqCst);
             REPORT.returned.store(true, Ordering::SeqCst);
-            let _ = sched::delete_current_cap(frame_slot);
-            let _ = sched::delete_current_cap(tables_slot);
+            let _ = sched::delete_current_capability(frame_slot);
+            let _ = sched::delete_current_capability(tables_slot);
         })
         .expect("no mapper thread");
 
@@ -239,11 +243,17 @@ fn a_sweep_inside_a_map_into_leaves_no_mapping() {
 
         delegation_pause::disarm();
         sched::spawn(move || {
-            let space_slot = sched::grant(crate::cap::address_space_cap(space, Rights::WRITE))
-                .expect("grant the space");
-            let frame_slot =
-                sched::grant(page_frame_run_cap(phys, page_frame_run_len(1), Rights::ALL))
-                    .expect("grant the frame");
+            let space_slot = sched::grant(crate::capability_object::address_space_capability(
+                space,
+                Rights::WRITE,
+            ))
+            .expect("grant the space");
+            let frame_slot = sched::grant(page_frame_run_capability(
+                phys,
+                page_frame_run_len(1),
+                Rights::ALL,
+            ))
+            .expect("grant the frame");
             REPORT.tid.store(sched::current(), Ordering::SeqCst);
             delegation_pause::arm(sched::current());
             let answer = call(
@@ -268,8 +278,8 @@ fn a_sweep_inside_a_map_into_leaves_no_mapping() {
             );
             REPORT.after.store(encode(after), Ordering::SeqCst);
             REPORT.returned.store(true, Ordering::SeqCst);
-            let _ = sched::delete_current_cap(frame_slot);
-            let _ = sched::delete_current_cap(space_slot);
+            let _ = sched::delete_current_capability(frame_slot);
+            let _ = sched::delete_current_capability(space_slot);
         })
         .expect("no builder thread");
 
@@ -319,10 +329,10 @@ fn a_destroy_inside_a_memory_region_map_leaves_no_mapping() {
     delegation_pause::disarm();
     let mapper = sched::spawn(move || {
         sched::adopt_address_space(crate::user::AddressSpace::new(2).expect("no space"));
-        let tables_slot =
-            sched::grant(crate::cap::memory_region_cap(tables)).expect("grant the tables");
-        let region_slot =
-            sched::grant(crate::cap::memory_region_cap(region)).expect("grant the region");
+        let tables_slot = sched::grant(crate::capability_object::memory_region_capability(tables))
+            .expect("grant the tables");
+        let region_slot = sched::grant(crate::capability_object::memory_region_capability(region))
+            .expect("grant the region");
         NEIGHBOUR.store(
             encode(call(
                 tables_slot,
@@ -344,8 +354,8 @@ fn a_destroy_inside_a_memory_region_map_leaves_no_mapping() {
         let after = call(region_slot, abi::memory_region::MAP, VA, 0, 0);
         REPORT.after.store(encode(after), Ordering::SeqCst);
         REPORT.returned.store(true, Ordering::SeqCst);
-        let _ = sched::delete_current_cap(region_slot);
-        let _ = sched::delete_current_cap(tables_slot);
+        let _ = sched::delete_current_capability(region_slot);
+        let _ = sched::delete_current_capability(tables_slot);
     })
     .expect("no mapper thread");
 

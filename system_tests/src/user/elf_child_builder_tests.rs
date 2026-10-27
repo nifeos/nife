@@ -38,9 +38,9 @@ fn a_spawned_least_authority_demo_computes_and_reports() {
                 arg0: 0, // no role selector; the input is in x1
                 arg1: 9, // the least_authority_demo computes 9*9
                 arg2: 0,
-                grants: &[crate::cap::rendezvous_cap(
+                grants: &[crate::capability_object::rendezvous_capability(
                     result,
-                    crate::cap::Rights::WRITE,
+                    crate::capability_object::Rights::WRITE,
                 )],
                 maps: &[],
             },

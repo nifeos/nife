@@ -83,7 +83,7 @@ occupancy packs toward slot 0 and `top` stays close to `len`. A walk then costs 
 rather than what it could hold.
 
 The bound exists because sweep cost was tracking `N`. The iterators yield only live entries but
-visited every slot to filter them. `sched::delete_page_frame_caps_where` walks every thread's
+visited every slot to filter them. `sched::delete_page_frame_capabilities_where` walks every thread's
 capability table on every `MemoryRegion::DESTROY`, so it got dearer whenever
 `sched::MAXIMUM_THREADS` rose, with no more live threads. On the `spawn_el0` icount benchmark,
 raising that ceiling from 128 to 256 cost 141,359 ticks through this path alone

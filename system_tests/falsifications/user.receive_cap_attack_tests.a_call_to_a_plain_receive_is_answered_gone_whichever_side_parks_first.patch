@@ -44,7 +44,7 @@ diff --git a/kernel/src/sched/rendezvous.rs b/kernel/src/sched/rendezvous.rs
 index c59bccd96..90212c657 100644
 --- a/kernel/src/sched/rendezvous.rs
 +++ b/kernel/src/sched/rendezvous.rs
-@@ -412,9 +412,6 @@ pub(super) fn collected_without_serving(sched: &mut IpcTables, sender: ThreadId)
+@@ -383,9 +383,6 @@
          corpse.handshake.wait_on = None;
          let label = corpse.fault_label;
          hand_over_label(sched.threads.get(current_thread_id()).unwrap(), label);
@@ -54,16 +54,16 @@ index c59bccd96..90212c657 100644
      }
  }
  
-@@ -803,12 +800,6 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3]
+@@ -743,12 +743,6 @@
                  let receiver = hold_token(receiver);
                  // A server is parked in RECEIVE_CAP: hand it the reply cap and the two words now.
-                 let (r, caps) = sched.threads.get_mut_with_capabilities(receiver).unwrap();
--                if !r.receiving_cap {
+                 let (r, capabilities) = sched.threads.get_mut_with_capabilities(receiver).unwrap();
+-                if !r.receiving_capability {
 -                    // A plain RECEIVE cannot hold the Reply, so this CALL is answered `Gone`
 -                    // (§246, PROVISIONAL number). Out of line: no server in the tree does this.
 -                    call_meets_plain_receive(sched, receiver, current, msg, badge);
 -                    return [0, 0, 0];
 -                }
-                 let slot = deliver_capability(caps, reply);
+                 let slot = deliver_capability(capabilities, reply);
                  // Word 3 is the caller's badge (milestone 599): the same store as before with a
                  // value instead of a zero, so the server's RECEIVE_CAP surfaces which client called.

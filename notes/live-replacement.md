@@ -41,7 +41,7 @@ at a cost:
 
 1. The kernel's sender queue is the buffer for the down window. A `CALL` that finds nobody
    receiving parks the caller as a blocked sender, with its message in its mailbox and the one-shot
-   `Reply` capability the kernel minted for it riding in `outgoing_cap`. Whenever the *next* server
+   `Reply` capability the kernel minted for it riding in `outgoing_capability`. Whenever the *next* server
    calls `RECEIVE_CAP`, it takes both, and answers a caller it was never wired to. So while the
    endpoint has no server at all, requests are not lost, not refused, and not reordered; the caller
    is simply blocked, which is what a synchronous IPC caller already is.

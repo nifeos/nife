@@ -20,7 +20,7 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -43,15 +43,21 @@ fn space() -> (u64, u64, u64) {
 /// A capability to the space `name` carrying `rights` alone: `WRITE` the way a builder holds it,
 /// `ENUMERATE` the way `pmap` does.
 fn hold(name: u64, rights: Rights) -> u64 {
-    sched::grant(crate::cap::address_space_cap(name, rights)).expect("grant the address space")
+    sched::grant(crate::capability_object::address_space_capability(
+        name, rights,
+    ))
+    .expect("grant the address space")
 }
 
 /// A fresh one-page frame from its own region. Returns the slot, the page, and the region.
 fn page_frame() -> (u64, u64, u64) {
     let region = crate::memory_region::create(1).expect("no frame region");
     let phys = crate::memory_region::retype_page(region).expect("no frame");
-    let slot =
-        sched::grant(crate::cap::page_frame_cap(phys, Rights::ALL)).expect("grant the frame");
+    let slot = sched::grant(crate::capability_object::page_frame_capability(
+        phys,
+        Rights::ALL,
+    ))
+    .expect("grant the frame");
     (slot, phys, region)
 }
 
@@ -59,7 +65,7 @@ fn page_frame() -> (u64, u64, u64) {
 /// running kernel.
 fn tidy(slots: &[u64], regions: &[u64]) {
     for &s in slots {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     for &r in regions {
         sched::reclaim_region(r).expect("a region this test carved did not come back");
@@ -78,7 +84,7 @@ fn map_into(aspace: u64, va: u64, frame: u64) -> Result<i64, Error> {
     )
 }
 
-/// `invoke(cap, UNMAP, va, _, _)`, through the real dispatcher.
+/// `invoke(capability, UNMAP, va, _, _)`, through the real dispatcher.
 fn unmap(aspace: u64, va: u64) -> Result<i64, Error> {
     let mut fr = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut fr, aspace, abi::address_space::UNMAP, va, 0, 0)
@@ -162,7 +168,7 @@ fn unmap_takes_one_page_and_the_frame_capability_survives_it() {
     );
 
     assert!(
-        sched::current_cap(a).is_ok(),
+        sched::current_capability(a).is_ok(),
         "UNMAP consumed the frame capability, which it names nowhere",
     );
     assert_eq!(

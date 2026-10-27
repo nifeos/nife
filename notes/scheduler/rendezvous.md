@@ -57,7 +57,7 @@ the unlock path. It cost `ipc_receive` 138 bytes on riscv64 and 174 on x86_64.
 
 - A `SEND_CAP` that meets a parked plain `RECEIVE` delivers the data word and drops the copy. The
   sender keeps its own, because `SEND_CAP` narrows a copy and never moves the source.
-- A plain `RECEIVE` that collects a parked `SEND_CAP` sender clears the sender's `outgoing_cap`.
+- A plain `RECEIVE` that collects a parked `SEND_CAP` sender clears the sender's `outgoing_capability`.
   Left in place, the delegation would ride the sender's next plain `SEND` on another rendezvous. It
   would reach whoever `RECEIVE_CAP`s there: a delegation made to one endpoint, delivered to another.
   `set_ipc_aborted` closes the same hazard on the teardown path.
@@ -73,7 +73,7 @@ a word the sender chose. Returned as `x1`, it would hand a sender a slot number 
 server reads a reply slot. `x4` is `REPLY_DELIVERED` only on the two paths a `CALL` reaches a
 receiver (milestone 706 (a `CALL` server can tell a Reply from a delegation), §245 (a kernel tag in
 `x4`)). A `SEND_CAP` delegation reaches the same `x1` and never carries it. A `RECEIVE_CAP` that
-resumes clears `receiving_cap`, and a plain `RECEIVE` that parks does not. That keeps the store off
+resumes clears `receiving_capability`, and a plain `RECEIVE` that parks does not. That keeps the store off
 `ipc_send_receive`'s closure, where it took x86_64 past `script/fastpath-footprint`'s 5% band.
 
 Filing a delivered capability (`deliver_capability`) takes the receiving table's own lock beneath
@@ -100,7 +100,7 @@ sends with arrives in word 3.
 
 At the rendezvous the kernel mints a one-shot `Reply` capability naming the caller. It hands the
 Reply to the server through `RECEIVE_CAP`. The caller then blocks, reachable only through that
-capability. A caller that meets no server parks its words and rides the Reply in `outgoing_cap`. The
+capability. A caller that meets no server parks its words and rides the Reply in `outgoing_capability`. The
 eventual `RECEIVE_CAP` hands it over and, seeing a Reply, leaves the caller blocked. A full server
 table drops the Reply, and the caller then waits until it is torn down. `ipc_call` forwards to
 `ipc_call_badged` with badge 0 and the compiler inlines it, so the unbadged fastpath `script/icount`
@@ -129,7 +129,7 @@ indicating an error". Proposal C of
 [notes/blocked-thread-teardown.md](../blocked-thread-teardown.md) is the design that milestone 254
 (a caller stranded by a server that died) built.
 
-`strand_reply_caller` sweeps capabilities before it wakes. `cap::reply_cap` mints
+`strand_reply_caller` sweeps capabilities before it wakes. `cap::reply_capability` mints
 `Object::Reply(tid)` with a generational thread name and no call identity. `ipc_reply`'s guard
 checks the wait role and ignores the rendezvous. That guard is sound only while no thread can leave
 a reply park and enter a second `CALL` with an unconsumed Reply still naming it. Waking a stranded
@@ -140,7 +140,7 @@ timeouts.
 So the sweep deletes every `Object::Reply(caller)` in the machine first. That is seL4's
 `cteDeleteOne(callerCap)`, reached from `cancelIPC`. seL4's other answer, never waking the victim
 (`ThreadState_Inactive`), is not available, because waking it is the point.
-`delete_reply_caps_naming` also clears `outgoing_cap`, the half a second copy would forget. A caller
+`delete_reply_capabilities_naming` also clears `outgoing_capability`, the half a second copy would forget. A caller
 that met no server rides its Reply there, and a live Reply in a hand-off slot is the same forgery
 one step earlier. `finish_blocked_resident` runs the same sweep on a caller it ends and never wakes.
 

@@ -51,7 +51,7 @@
 #      timing.
 #   3. A scriptless boot with a gpu **and a keyboard**, a key pressed with the monitor's `sendkey`
 #      through the session's `keyboard_driver`. It leaves the NIC off: with every device attached a
-#      launch peaks at 30 of 32 capability slots (`kernel/src/cap.rs`), a boot nothing else makes.
+#      launch peaks at 30 of 32 capability slots (`kernel/src/capability_object.rs`), a boot nothing else makes.
 #   4. **A USB keyboard on an xHCI controller** (milestone 242 (USB host and HID), all three
 #      architectures, x86_64 included): no script, `echo hello` pressed on the keyboard with
 #      `sendkey`, and `hello` required back. Full speed, and on x86_64 MSI with no MSI-X, as
@@ -127,7 +127,7 @@
 # drivers sat in a blocking SEND; notes/framebuffer-contract.md has the evidence). What they check is
 # the launched session's prompt on the screen and one typed key echoed beside it; nothing past that
 # is asserted on the graphical path. Folding them in made the plain legs' gauges read them, which is
-# how the capability-slot record turned out to be two short (`kernel/src/cap.rs`).
+# how the capability-slot record turned out to be two short (`kernel/src/capability_object.rs`).
 #
 # Name: ratified 2026-09-23 (calef, replacing `shell-check`, which was provisional and introduced
 # 2026-08-02). It boots the kernel and types at the prompt, so it

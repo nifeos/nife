@@ -18,8 +18,8 @@ use super::supervision_tests::{REPORT_WORD, build_child_in};
 use crate::arch::exceptions::TrapFrame;
 // Aliased so this file spells `capability` out (calef, 2026-10-06); the kernel names keep their
 // pre-sweep spelling until the capability worklist renames them.
-use crate::cap::{Rights, rendezvous_cap as rendezvous_capability};
-use crate::sched::{self, delete_current_cap as delete_current_capability};
+use crate::capability_object::{Rights, rendezvous_capability};
+use crate::sched::{self, delete_current_capability};
 use crate::syscall::invoke;
 
 /// `invoke` through the real dispatcher. Copied in shape from `confinement_attack_tests::call`.

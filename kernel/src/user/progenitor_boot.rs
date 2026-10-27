@@ -5,7 +5,10 @@
 //! splits into child modules of `user`)).
 
 use super::*;
-use crate::cap::{Rights, page_frame_cap, page_frame_run_cap, page_frame_run_len, rendezvous_cap};
+use crate::capability_object::{
+    Rights, page_frame_capability, page_frame_run_capability, page_frame_run_len,
+    rendezvous_capability,
+};
 
 /// **The archive entry the kernel enters as the first process**, on every architecture: one name,
 /// one binary, one program (milestone 266 (one progenitor, on all three architectures)).
@@ -216,41 +219,47 @@ fn progenitor_address_space(
 /// the clock is a page), §111 (inert configuration is a read-only page)) and sit ahead of the
 /// conditional file-service pair, so their slots never move.
 fn grant_boot_slots(tid: crate::thread::ThreadId, build_region: u64, uart_interrupt_number: u32) {
-    let s0 = crate::sched::thread_control_block_insert_cap(
+    let s0 = crate::sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::memory_region_root_cap(build_region),
+        crate::capability_object::memory_region_root_capability(build_region),
         None,
     )
     .expect("insert budget");
     assert_eq!(s0, 0);
     #[cfg(not(target_arch = "x86_64"))]
-    let uart_slot = crate::cap::device_frame_cap(UART_PHYS, Rights::WRITE.union(Rights::GRANT));
+    let uart_slot = crate::capability_object::device_frame_capability(
+        UART_PHYS,
+        Rights::WRITE.union(Rights::GRANT),
+    );
     #[cfg(target_arch = "x86_64")]
-    let uart_slot = crate::cap::port_range_cap(
+    let uart_slot = crate::capability_object::port_range_capability(
         X86_COM1_PORT_BASE,
         X86_COM1_PORT_COUNT,
         Rights::WRITE.union(Rights::GRANT),
     );
-    let s1 = crate::sched::thread_control_block_insert_cap(tid, uart_slot, Some(1))
+    let s1 = crate::sched::thread_control_block_insert_capability(tid, uart_slot, Some(1))
         .expect("insert uart device");
     assert_eq!(s1, 1);
-    let s2 = crate::sched::thread_control_block_insert_cap(
+    let s2 = crate::sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::interrupt_cap_rights(uart_interrupt_number, Rights::READ.union(Rights::GRANT)),
+        crate::capability_object::interrupt_capability_rights(
+            uart_interrupt_number,
+            Rights::READ.union(Rights::GRANT),
+        ),
         Some(2),
     )
     .expect("insert uart interrupt");
     assert_eq!(s2, 2);
-    let s3 = crate::sched::thread_control_block_insert_cap(
+    let s3 = crate::sched::thread_control_block_insert_capability(
         tid,
-        page_frame_cap(boot_clock_page(), Rights::READ.union(Rights::GRANT)),
+        page_frame_capability(boot_clock_page(), Rights::READ.union(Rights::GRANT)),
         Some(3),
     )
     .expect("insert the clock page");
     assert_eq!(s3, 3);
-    let s4 = crate::sched::thread_control_block_insert_cap(
+    let s4 = crate::sched::thread_control_block_insert_capability(
         tid,
-        page_frame_cap(boot_config_page(), Rights::READ.union(Rights::GRANT)),
+        page_frame_capability(boot_config_page(), Rights::READ.union(Rights::GRANT)),
         Some(4),
     )
     .expect("insert the config page");
@@ -269,16 +278,16 @@ fn grant_file_service(tid: crate::thread::ThreadId) -> (u64, Option<u64>) {
         fs_service::root_directory(fs_service::blk_server_image(), redoxfs_server)
     }) {
         Some((file_ep, file_shared)) => {
-            let s5 = crate::sched::thread_control_block_insert_cap(
+            let s5 = crate::sched::thread_control_block_insert_capability(
                 tid,
-                rendezvous_cap(file_ep, Rights::WRITE.union(Rights::GRANT)),
+                rendezvous_capability(file_ep, Rights::WRITE.union(Rights::GRANT)),
                 Some(5),
             )
             .expect("insert the file service");
             assert_eq!(s5, 5);
-            let s6 = crate::sched::thread_control_block_insert_cap(
+            let s6 = crate::sched::thread_control_block_insert_capability(
                 tid,
-                page_frame_run_cap(
+                page_frame_run_capability(
                     file_shared,
                     page_frame_run_len(fs_service::FILE_POOL_PAGES),
                     Rights::WRITE.union(Rights::GRANT),
@@ -303,23 +312,29 @@ fn grant_file_service(tid: crate::thread::ThreadId) -> (u64, Option<u64>) {
 fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
     let virtio_rng = boot_virtio_rng_device();
     if let Some(g) = &virtio_rng {
-        let s7 = crate::sched::thread_control_block_insert_cap(
+        let s7 = crate::sched::thread_control_block_insert_capability(
             tid,
-            crate::cap::virtio_cap_rights(g.vid, Rights::WRITE.union(Rights::GRANT)),
+            crate::capability_object::virtio_capability_rights(
+                g.vid,
+                Rights::WRITE.union(Rights::GRANT),
+            ),
             Some(7),
         )
         .expect("insert the virtio-rng transport");
         assert_eq!(s7, 7);
-        let s8 = crate::sched::thread_control_block_insert_cap(
+        let s8 = crate::sched::thread_control_block_insert_capability(
             tid,
-            crate::cap::interrupt_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
+            crate::capability_object::interrupt_capability_rights(
+                g.intid,
+                Rights::READ.union(Rights::GRANT),
+            ),
             Some(8),
         )
         .expect("insert the virtio-rng interrupt");
         assert_eq!(s8, 8);
-        let s9 = crate::sched::thread_control_block_insert_cap(
+        let s9 = crate::sched::thread_control_block_insert_capability(
             tid,
-            page_frame_cap(
+            page_frame_capability(
                 g.dma,
                 Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
             ),
@@ -334,9 +349,9 @@ fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant>
     if virtio_rng.is_none()
         && let Some(request) = boot_instruction_entropy()
     {
-        let s16 = crate::sched::thread_control_block_insert_cap(
+        let s16 = crate::sched::thread_control_block_insert_capability(
             tid,
-            rendezvous_cap(request, Rights::WRITE.union(Rights::GRANT)),
+            rendezvous_capability(request, Rights::WRITE.union(Rights::GRANT)),
             Some(16),
         )
         .expect("insert the instruction entropy service");
@@ -389,9 +404,9 @@ fn wire_graphics() -> (
 /// object)): the progenitor never invokes it, but it must hold the `WRITE` it places in the one
 /// child whose manifest declares `reboot`. See notes/progenitor-boot.md.
 fn grant_machine_slots(tid: crate::thread::ThreadId, aspace_name: u64) {
-    let s23 = crate::sched::thread_control_block_insert_cap(
+    let s23 = crate::sched::thread_control_block_insert_capability(
         tid,
-        page_frame_cap(
+        page_frame_capability(
             crate::machine_statistics::page_phys(),
             Rights::READ.union(Rights::GRANT),
         ),
@@ -399,16 +414,16 @@ fn grant_machine_slots(tid: crate::thread::ThreadId, aspace_name: u64) {
     )
     .expect("insert the machine statistics page");
     assert_eq!(s23, 23);
-    let s28 = crate::sched::thread_control_block_insert_cap(
+    let s28 = crate::sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::address_space_cap(aspace_name, Rights::WRITE),
+        crate::capability_object::address_space_capability(aspace_name, Rights::WRITE),
         Some(28),
     )
     .expect("insert the progenitor's own address space");
     assert_eq!(s28, 28);
-    let s31 = crate::sched::thread_control_block_insert_cap(
+    let s31 = crate::sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::reboot_capability(Rights::WRITE.union(Rights::GRANT)),
+        crate::capability_object::reboot_capability(Rights::WRITE.union(Rights::GRANT)),
         Some(31),
     )
     .expect("insert the reboot object");
@@ -423,16 +438,16 @@ fn grant_disk_tree(tid: crate::thread::ThreadId, fs_pool: Option<u64>) {
     let Some(tree) = fs_pool.and_then(super::disk_tree_service::start) else {
         return;
     };
-    let s32 = crate::sched::thread_control_block_insert_cap(
+    let s32 = crate::sched::thread_control_block_insert_capability(
         tid,
-        rendezvous_cap(tree.request, Rights::WRITE.union(Rights::GRANT)),
+        rendezvous_capability(tree.request, Rights::WRITE.union(Rights::GRANT)),
         Some(32),
     )
     .expect("insert the disk tree");
     assert_eq!(s32, 32);
-    let s33 = crate::sched::thread_control_block_insert_cap(
+    let s33 = crate::sched::thread_control_block_insert_capability(
         tid,
-        page_frame_run_cap(
+        page_frame_run_capability(
             tree.pool,
             page_frame_run_len(super::disk_tree_service::POOL_PAGES as u64),
             Rights::WRITE.union(Rights::GRANT),
@@ -455,7 +470,7 @@ fn grant_kernel_log(tid: crate::thread::ThreadId) {
     if let Some((ring, cursor, notification)) = crate::kernel_log::grants() {
         for (capability, slot, what) in [
             (
-                page_frame_run_cap(
+                page_frame_run_capability(
                     ring,
                     core::num::NonZeroU64::new(system_log_contract::kernel_ring::PAGES as u64)
                         .expect("the ring has pages"),
@@ -465,7 +480,7 @@ fn grant_kernel_log(tid: crate::thread::ThreadId) {
                 "the kernel's ring",
             ),
             (
-                page_frame_cap(
+                page_frame_capability(
                     cursor,
                     Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
                 ),
@@ -473,7 +488,7 @@ fn grant_kernel_log(tid: crate::thread::ThreadId) {
                 "the kernel ring's cursor page",
             ),
             (
-                crate::cap::notification_cap(
+                crate::capability_object::notification_capability(
                     notification,
                     Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
                 ),
@@ -481,8 +496,9 @@ fn grant_kernel_log(tid: crate::thread::ThreadId) {
                 "the kernel ring's notification",
             ),
         ] {
-            let s = crate::sched::thread_control_block_insert_cap(tid, capability, Some(slot))
-                .unwrap_or_else(|_| panic!("insert {what}"));
+            let s =
+                crate::sched::thread_control_block_insert_capability(tid, capability, Some(slot))
+                    .unwrap_or_else(|_| panic!("insert {what}"));
             assert_eq!(s, slot, "{what} landed in the wrong slot");
         }
     }
@@ -497,9 +513,9 @@ fn grant_kernel_log(tid: crate::thread::ThreadId) {
 fn grant_usb_keyboard(tid: crate::thread::ThreadId) {
     let usb_keyboard = boot_usb_keyboard();
     if let Some(k) = &usb_keyboard {
-        let s27 = crate::sched::thread_control_block_insert_cap(
+        let s27 = crate::sched::thread_control_block_insert_capability(
             tid,
-            rendezvous_cap(k.attach, Rights::WRITE.union(Rights::GRANT)),
+            rendezvous_capability(k.attach, Rights::WRITE.union(Rights::GRANT)),
             Some(27),
         )
         .expect("insert the USB keyboard's attach endpoint");
@@ -513,16 +529,16 @@ fn grant_usb_keyboard(tid: crate::thread::ThreadId) {
 fn grant_screen_terminal(tid: crate::thread::ThreadId, no_gpu: bool) {
     let screen = if no_gpu { boot_screen_terminal() } else { None };
     if let Some(t) = &screen {
-        let s10 = crate::sched::thread_control_block_insert_cap(
+        let s10 = crate::sched::thread_control_block_insert_capability(
             tid,
-            rendezvous_cap(t.term, Rights::WRITE.union(Rights::GRANT)),
+            rendezvous_capability(t.term, Rights::WRITE.union(Rights::GRANT)),
             Some(10),
         )
         .expect("insert the screen terminal's endpoint");
         assert_eq!(s10, 10);
-        let s11 = crate::sched::thread_control_block_insert_cap(
+        let s11 = crate::sched::thread_control_block_insert_capability(
             tid,
-            page_frame_cap(
+            page_frame_capability(
                 t.out,
                 Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
             ),
@@ -541,13 +557,13 @@ fn grant_graphics(
     keyboard: Option<&keyboard_service::KeyboardDevice>,
 ) {
     let insert = |granted, slot: u64, what: &str| {
-        let s = crate::sched::thread_control_block_insert_cap(tid, granted, Some(slot))
+        let s = crate::sched::thread_control_block_insert_capability(tid, granted, Some(slot))
             .unwrap_or_else(|_| panic!("insert {what}"));
         assert_eq!(s, slot, "{what} landed in the wrong slot");
     };
     if let Some(g) = gpu {
         insert(
-            page_frame_run_cap(
+            page_frame_run_capability(
                 g.surface,
                 display_service::GPU_SURFACE_RUN,
                 Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
@@ -556,17 +572,23 @@ fn grant_graphics(
             "the gpu's surface run",
         );
         insert(
-            crate::cap::virtio_cap_rights(g.vid, Rights::WRITE.union(Rights::GRANT)),
+            crate::capability_object::virtio_capability_rights(
+                g.vid,
+                Rights::WRITE.union(Rights::GRANT),
+            ),
             17,
             "the gpu transport",
         );
         insert(
-            crate::cap::interrupt_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
+            crate::capability_object::interrupt_capability_rights(
+                g.intid,
+                Rights::READ.union(Rights::GRANT),
+            ),
             18,
             "the gpu interrupt",
         );
         insert(
-            page_frame_run_cap(
+            page_frame_run_capability(
                 g.dma,
                 display_service::GPU_DMA_RUN,
                 Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
@@ -577,17 +599,23 @@ fn grant_graphics(
     }
     if let Some(k) = keyboard {
         insert(
-            crate::cap::virtio_cap_rights(k.vid, Rights::WRITE.union(Rights::GRANT)),
+            crate::capability_object::virtio_capability_rights(
+                k.vid,
+                Rights::WRITE.union(Rights::GRANT),
+            ),
             20,
             "the keyboard transport",
         );
         insert(
-            crate::cap::interrupt_cap_rights(k.intid, Rights::READ.union(Rights::GRANT)),
+            crate::capability_object::interrupt_capability_rights(
+                k.intid,
+                Rights::READ.union(Rights::GRANT),
+            ),
             21,
             "the keyboard interrupt",
         );
         insert(
-            page_frame_cap(
+            page_frame_capability(
                 k.dma,
                 Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
             ),
@@ -606,23 +634,29 @@ fn grant_graphics(
 fn grant_virtio_net(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
     let virtio_net = boot_virtio_net_device();
     if let Some(g) = &virtio_net {
-        let s13 = crate::sched::thread_control_block_insert_cap(
+        let s13 = crate::sched::thread_control_block_insert_capability(
             tid,
-            crate::cap::virtio_cap_rights(g.vid, Rights::WRITE.union(Rights::GRANT)),
+            crate::capability_object::virtio_capability_rights(
+                g.vid,
+                Rights::WRITE.union(Rights::GRANT),
+            ),
             Some(13),
         )
         .expect("insert the virtio-net transport");
         assert_eq!(s13, 13);
-        let s14 = crate::sched::thread_control_block_insert_cap(
+        let s14 = crate::sched::thread_control_block_insert_capability(
             tid,
-            crate::cap::interrupt_cap_rights(g.intid, Rights::READ.union(Rights::GRANT)),
+            crate::capability_object::interrupt_capability_rights(
+                g.intid,
+                Rights::READ.union(Rights::GRANT),
+            ),
             Some(14),
         )
         .expect("insert the virtio-net interrupt");
         assert_eq!(s14, 14);
-        let s15 = crate::sched::thread_control_block_insert_cap(
+        let s15 = crate::sched::thread_control_block_insert_capability(
             tid,
-            page_frame_cap(
+            page_frame_capability(
                 g.dma,
                 Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
             ),
@@ -654,16 +688,16 @@ fn grant_kernel_network_stack(tid: crate::thread::ThreadId, no_virtio_net: bool)
         None
     };
     if let Some((stack, report)) = kernel_stack {
-        let s29 = crate::sched::thread_control_block_insert_cap(
+        let s29 = crate::sched::thread_control_block_insert_capability(
             tid,
-            rendezvous_cap(stack, Rights::ALL),
+            rendezvous_capability(stack, Rights::ALL),
             Some(29),
         )
         .expect("insert the kernel-built stack's endpoint");
         assert_eq!(s29, 29);
-        let s30 = crate::sched::thread_control_block_insert_cap(
+        let s30 = crate::sched::thread_control_block_insert_capability(
             tid,
-            rendezvous_cap(report, Rights::READ),
+            rendezvous_capability(report, Rights::READ),
             Some(30),
         )
         .expect("insert the kernel-built stack's lease endpoint");

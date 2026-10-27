@@ -9,7 +9,7 @@ the first section describes a state this tree no longer has, and is kept as the 
 
 Resolved by DECISIONS §102 (a Frame names a run of pages), built by the terminal-size lane of milestone 142 (a text display good enough that people use it
 instead of a GUI). `Object::PageFrame` now carries a page count (`PageFrame(phys, count)`). `page_frame::MAP`
-and `page_frame::REVOKE` operate on the whole run, and `cap::page_frame_run_cap` mints one
+and `page_frame::REVOKE` operate on the whole run, and `cap::page_frame_run_capability` mints one
 capability for a multi-page region instead of one per page.
 
 The display driver's DMA region moved to this. So did the painting client's and display terminal's
@@ -97,12 +97,12 @@ headroom are left.
 
 1. A `PageFrame` that names a run. `Object::PageFrame(u64)` carries a page count,
    `page_frame::MAP` maps the run, `page_frame::REVOKE` unmaps it. Measured surface: 4 sites match
-   on `Object::PageFrame` and 21 construct one through `cap::page_frame_cap`. It is the option this
+   on `Object::PageFrame` and 21 construct one through `cap::page_frame_capability`. It is the option this
    tree's own reasoning points at. The run is already one range in physics, one range in the address
    space and one range in the IOMMU domain. It collapses 469 capabilities, 469 syscalls and 469
    mapping records into one of each. It is a change to the meaning of a syscall method, which is a
    boundary rather than a habit (`AGENTS.md`, DECISIONS §10 (process model) and §16 (object revocation)).
-2. Grow `CAPABILITY_TABLE_SLOTS`. One number in `kernel/src/cap.rs` and its twin in `crates/abi`,
+2. Grow `CAPABILITY_TABLE_SLOTS`. One number in `kernel/src/capability_object.rs` and its twin in `crates/abi`,
    paid in TCB size. `Option<Cap<Object>>` is 24 bytes, so 512 slots is 12 KiB of capability table
    per thread against today's 384 bytes, and `MAXIMUM_THREADS` is 128. It moves
    `abi::fault::FAULT_EP_SLOT`, which is defined as `CAPABILITY_TABLE_SLOTS - 1` and which every

@@ -1,11 +1,11 @@
 //! **A revocation reaches a capability in flight, for the two sweeps no test drove through a parked
 //! hand-off** (a ninth outsider pass at the confinement claim, claim 30).
 //!
-//! A capability parked in `Thread::outgoing_cap` (where `ipc_send_cap` writes a hand-off before a
+//! A capability parked in `Thread::outgoing_capability` (where `inter_process_communication_send_capability` writes a hand-off before a
 //! receiver arrives) is in no table, so a table-only sweep would hand it on. These drive that
 //! window for `DeviceFrame` and `PortRange`, which `revocation_in_flight_tests`' `# BUGS` says were
 //! reasoned from the code, not measured. As there, a sender parks a copy on a rendezvous nobody
-//! receives on, the revoke runs, and the receiver must get nothing; `ipc_receive_cap` returns
+//! receives on, the revoke runs, and the receiver must get nothing; `inter_process_communication_receive_capability` returns
 //! `NO_CAP` or a slot, and both are inspected.
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC), for the module, the file and each
@@ -15,12 +15,12 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
-// The `cap` module and its `*_cap` constructors still carry their pre-sweep spelling; aliased here
+// The `capability` module and its `*_cap` constructors still carry their pre-sweep spelling; aliased here
 // so this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{Object, Rights, device_frame_cap as device_frame_capability};
+use crate::capability_object::{Object, Rights, device_frame_capability};
 use crate::sched::{
-    self, current_cap as current_capability, ipc_receive_cap as ipc_receive_capability,
-    ipc_send_cap as ipc_send_capability,
+    self, current_capability, inter_process_communication_receive_capability,
+    inter_process_communication_send_capability,
 };
 
 /// **A `DeviceFrame` revoked while it sits in the hand-off slot must not reach the receiver**
@@ -49,9 +49,9 @@ fn a_device_frame_revoked_while_in_flight_does_not_reach_the_receiver() {
     sched::spawn(move || {
         let slot = sched::grant(device_frame_capability(phys, Rights::ALL))
             .expect("the sender could not be granted the device frame it is about to delegate");
-        let capability = sched::current_cap(slot).expect("the grant did not land");
+        let capability = sched::current_capability(slot).expect("the grant did not land");
         PARKED.store(true, Ordering::SeqCst);
-        ipc_send_capability(ep, 0, capability, 0);
+        inter_process_communication_send_capability(ep, 0, capability, 0);
         SENDER_STILL_HELD.store(current_capability(slot).is_ok(), Ordering::SeqCst);
         RETURNED.store(true, Ordering::SeqCst);
     })
@@ -66,7 +66,7 @@ fn a_device_frame_revoked_while_in_flight_does_not_reach_the_receiver() {
 
     crate::revoke::revoke_device_from_others(phys);
 
-    let [_word, slot, _second, _badge, ..] = ipc_receive_capability(ep);
+    let [_word, slot, _second, _badge, ..] = inter_process_communication_receive_capability(ep);
     let delivered = if slot == abi::rendezvous::NO_CAP {
         None
     } else {
@@ -97,8 +97,8 @@ fn a_device_frame_revoked_while_in_flight_does_not_reach_the_receiver() {
 /// 30; the x86_64 port-range object, DECISIONS §121 (x86 port I/O)).
 ///
 /// The `DeviceFrame` twin for the x86_64-only object, enforced by the TSS I/O bitmap the context
-/// switch installs from the holder's cached grant. `delete_port_range_caps` must clear the tables,
-/// the parked copy in `outgoing_cap` and the cached grant. The range (`0x1000`, past the legacy
+/// switch installs from the holder's cached grant. `delete_port_range_capabilities` must clear the tables,
+/// the parked copy in `outgoing_capability` and the cached grant. The range (`0x1000`, past the legacy
 /// device ports, never COM1) is harmless: a stray permitted `out` cannot scribble on the console.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
@@ -106,7 +106,7 @@ fn a_device_frame_revoked_while_in_flight_does_not_reach_the_receiver() {
 #[cfg(target_arch = "x86_64")]
 #[test_case]
 fn a_port_range_revoked_while_in_flight_does_not_reach_the_receiver() {
-    use crate::cap::port_range_cap as port_range_capability;
+    use crate::capability_object::port_range_capability;
 
     const BASE: u16 = 0x1000;
     const COUNT: u16 = 8;
@@ -121,9 +121,9 @@ fn a_port_range_revoked_while_in_flight_does_not_reach_the_receiver() {
     sched::spawn(move || {
         let slot = sched::grant(port_range_capability(BASE, COUNT, Rights::WRITE))
             .expect("the sender could not be granted the port range it is about to delegate");
-        let capability = sched::current_cap(slot).expect("the grant did not land");
+        let capability = sched::current_capability(slot).expect("the grant did not land");
         PARKED.store(true, Ordering::SeqCst);
-        ipc_send_capability(ep, 0, capability, 0);
+        inter_process_communication_send_capability(ep, 0, capability, 0);
         SENDER_STILL_HELD.store(current_capability(slot).is_ok(), Ordering::SeqCst);
         RETURNED.store(true, Ordering::SeqCst);
     })
@@ -138,9 +138,9 @@ fn a_port_range_revoked_while_in_flight_does_not_reach_the_receiver() {
 
     // The whole-machine sweep, the invoker included, so no keeper is spared and the parked copy is
     // the only thing the receiver could get.
-    sched::delete_port_range_caps(BASE, COUNT);
+    sched::delete_port_range_capabilities(BASE, COUNT);
 
-    let [_word, slot, _second, _badge, ..] = ipc_receive_capability(ep);
+    let [_word, slot, _second, _badge, ..] = inter_process_communication_receive_capability(ep);
     let delivered = if slot == abi::rendezvous::NO_CAP {
         None
     } else {

@@ -25,7 +25,7 @@ print the same shape (`user thread N killed: ...`, a register line, `the kernel 
 But two more kernel `println!` sites fire in ordinary, non-fault operation, and they are the ones a
 swish-check run actually hits:
 
-- **`kernel/src/cap.rs:394-401`, `announce_peak`**: the kernel prints `capability slots: N of M at
+- **`kernel/src/capability_object.rs:394-401`, `announce_peak`**: the kernel prints `capability slots: N of M at
   peak` every time the process's capability-table high-water mark reaches a new peak and holds for
   a few scheduler passes. Its own doc comment calls this out directly, naming milestone 230
   (`script/shell-check` is red on `main`): *"That is the same two-writers-one-stream confusion

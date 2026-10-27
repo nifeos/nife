@@ -362,22 +362,30 @@ pub struct Thread {
     ///
     /// - Latent: the teardown paths never clear this slot, safe only while every wake of a parked
     ///   sender goes through `set_ipc_aborted` (notes/thread-control-block.md).
-    pub outgoing_cap: Option<crate::cap::Cap>,
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+    /// `outgoing_capability` under the capability ruling of 2026-10-06 (UTC).
+    pub outgoing_capability: Option<crate::capability_object::Cap>,
 
     /// Did the delivery this thread is about to read install a capability? Set by the paths that
-    /// put one in this thread's table while it was parked in `RECEIVE_CAP` (`ipc_send_cap`,
-    /// `ipc_call_badged`), cleared when it parks there. `ipc_receive_cap` reads it to decide `x1`:
+    /// put one in this thread's table while it was parked in `RECEIVE_CAP` (`inter_process_communication_send_capability`,
+    /// `ipc_call_badged`), cleared when it parks there. `inter_process_communication_receive_capability` reads it to decide `x1`:
     /// a delivery that installed nothing returns `NO_CAP`, never the sender's data word, which a
-    /// `CALL` server would read as a reply slot (fatal risk 7). See `sched::ipc_receive_cap`.
-    pub cap_delivered: bool,
+    /// `CALL` server would read as a reply slot (fatal risk 7). See `sched::inter_process_communication_receive_capability`.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+    /// `capability_delivered` under the capability ruling of 2026-10-06 (UTC).
+    pub capability_delivered: bool,
 
-    /// Is the receive this thread is parked in a `RECEIVE_CAP`? Set at `ipc_receive_cap`'s park and
+    /// Is the receive this thread is parked in a `RECEIVE_CAP`? Set at `inter_process_communication_receive_capability`'s park and
     /// cleared at its resume, so a plain `RECEIVE` parks with it `false`. A sender meeting a parked
     /// receiver reads it: a plain `RECEIVE` never takes a capability, whichever side arrived first
     /// (§246 (a plain `RECEIVE` never takes a capability)). Meaningful only while the thread is
-    /// parked as a receiver. See `sched::ipc_send_cap`.
+    /// parked as a receiver. See `sched::inter_process_communication_send_capability`.
     // Name: provisional, this lane's; calef names public items.
-    pub receiving_cap: bool,
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+    /// `receiving_capability` under the capability ruling of 2026-10-06 (UTC).
+    pub receiving_capability: bool,
 
     /// **Why the last aborted send was aborted, when the reason was a refusal** (milestone 603
     /// (provisional), DECISIONS §101 (notification objects) ruling B). Set beside `handshake.abort()` when a `SEND`,
@@ -420,8 +428,8 @@ pub struct Thread {
     pub(crate) cycle_counter_grant: bool,
 
     /// The x86 I/O ports this thread may reach from ring 3, as `(base, count)`, or `None`. Set when
-    /// a `PortRange` capability is inserted (`sched::thread_control_block_insert_cap`), cleared by
-    /// `sched::delete_port_range_caps*` and by `sched::delete_current_cap`. `sched::schedule` hands
+    /// a `PortRange` capability is inserted (`sched::thread_control_block_insert_capability`), cleared by
+    /// `sched::delete_port_range_capabilities*` and by `sched::delete_current_capability`. `sched::schedule` hands
     /// it to `arch::segments::set_port_range_grant`, which rewrites the CPU's TSS I/O bitmap only
     /// when it differs, so a switch between non-holders costs one compare. `x86_64` only. Field
     /// name provisional.
@@ -592,7 +600,8 @@ pub(crate) unsafe fn initialize_fp_state(thread: *mut Thread) {
 /// can name nothing until somebody hands it something (§10 (process model: capability-based,
 /// microkernel)). Userspace sees only a slot index, so unforgeability is a bounds check. The order
 /// between the locks is written at the rank.
-pub(crate) type CapabilityTableLock = crate::sync::InterruptSafeMutex<crate::cap::CapabilityTable>;
+pub(crate) type CapabilityTableLock =
+    crate::sync::InterruptSafeMutex<crate::capability_object::CapabilityTable>;
 
 /// **Where a thread's capability table lives: past its FP register file, in the same TCB page.**
 ///
@@ -630,7 +639,7 @@ const _: () = assert!(
 /// Never locked or borrowed as a lock: a copy of an unheld lock's bytes is a fresh unheld lock.
 static EMPTY_CAPABILITY_TABLE: CapabilityTableLock = crate::sync::InterruptSafeMutex::new(
     crate::sync::rank::CAPABILITY_TABLE,
-    crate::cap::CapabilityTable::new(),
+    crate::capability_object::CapabilityTable::new(),
 );
 
 /// Write an empty, unheld capability table at `table`.
@@ -722,9 +731,9 @@ impl Thread {
             space: None,
             mailbox: [0; 5],
             quota: None,
-            outgoing_cap: None,
-            cap_delivered: false,
-            receiving_cap: false,
+            outgoing_capability: None,
+            capability_delivered: false,
+            receiving_capability: false,
             ipc_refused: false,
             being_reaped: false,
             next: None,
@@ -776,9 +785,9 @@ impl Thread {
                 space: None,
                 mailbox: [0; 5],
                 quota: None,
-                outgoing_cap: None,
-                cap_delivered: false,
-                receiving_cap: false,
+                outgoing_capability: None,
+                capability_delivered: false,
+                receiving_capability: false,
                 ipc_refused: false,
                 being_reaped: false,
                 next: None,
@@ -899,9 +908,9 @@ impl Thread {
                 space: None, // a kernel thread until it calls `user::exec`
                 mailbox: [0; 5],
                 quota: None,
-                outgoing_cap: None,
-                cap_delivered: false,
-                receiving_cap: false,
+                outgoing_capability: None,
+                capability_delivered: false,
+                receiving_capability: false,
                 ipc_refused: false,
                 being_reaped: false,
                 next: None,
@@ -945,9 +954,9 @@ impl Thread {
             space: None,
             mailbox: [0; 5],
             quota: None,
-            outgoing_cap: None,
-            cap_delivered: false,
-            receiving_cap: false,
+            outgoing_capability: None,
+            capability_delivered: false,
+            receiving_capability: false,
             ipc_refused: false,
             being_reaped: false,
             next: None,

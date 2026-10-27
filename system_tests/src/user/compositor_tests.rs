@@ -53,12 +53,12 @@ pub(super) fn kernel_display() -> (sched::RendezvousId, u64, u64) {
     let ep = sched::create_rendezvous_from(region).expect("no display rendezvous");
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_cap(ep);
+            let m = sched::inter_process_communication_receive_capability(ep);
             if sched::take_ipc_aborted() {
                 return; // `retire_kernel_display` reclaimed the endpoint: this display is gone
             }
             let (w0, slot) = (m[0], m[1]);
-            let crate::cap::Object::Reply(caller) = sched::current_cap(slot)
+            let crate::capability_object::Object::Reply(caller) = sched::current_capability(slot)
                 .expect("the display stand-in got no reply capability")
                 .object
             else {
@@ -77,7 +77,7 @@ pub(super) fn kernel_display() -> (sched::RendezvousId, u64, u64) {
                 _ => (graphics_contract::EINVAL as u64, 0),
             };
             sched::ipc_reply(caller, [r0, r1]);
-            sched::delete_current_cap(slot).expect("consume the one-shot reply");
+            sched::delete_current_capability(slot).expect("consume the one-shot reply");
         }
     })
     .expect("could not spawn the display stand-in");
@@ -105,14 +105,14 @@ fn wait_for_compositor(w: &Wiring) {
 
 /// Take a `CALL` a client parked on its report endpoint: `(the caller, the reply slot, its word)`.
 fn take_call(ep: sched::RendezvousId, want: u64) -> (u64, u64, u64) {
-    let m = sched::ipc_receive_cap(ep);
+    let m = sched::inter_process_communication_receive_capability(ep);
     assert_eq!(
         m[0], want,
         "a client reported {:#x} where {want:#x} was expected (a 0xDEAD_.. word's low byte names \
          the step, see fixtures/src/window.rs)",
         m[0],
     );
-    let crate::cap::Object::Reply(caller) = sched::current_cap(m[1])
+    let crate::capability_object::Object::Reply(caller) = sched::current_capability(m[1])
         .expect("a client's report was not a CALL")
         .object
     else {
@@ -123,7 +123,7 @@ fn take_call(ep: sched::RendezvousId, want: u64) -> (u64, u64, u64) {
 
 fn release(caller: u64, slot: u64) {
     sched::ipc_reply(caller, [0, 0]);
-    sched::delete_current_cap(slot).expect("consume the one-shot reply");
+    sched::delete_current_capability(slot).expect("consume the one-shot reply");
 }
 
 /// Take client `i`'s "painted and committed" report and check the digest against the pattern the

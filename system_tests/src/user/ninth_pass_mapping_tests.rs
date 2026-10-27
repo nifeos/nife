@@ -16,8 +16,10 @@ use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::arch::mmu::Format;
-use crate::cap::{Rights, memory_region_cap_rights as region_capability_rights};
-use crate::sched::{self, delete_current_cap as delete_current_capability};
+use crate::capability_object::{
+    Rights, memory_region_capability_rights as region_capability_rights,
+};
+use crate::sched::{self, delete_current_capability};
 use crate::syscall::invoke;
 
 /// `invoke` through the real dispatcher. Copied in shape from `confinement_attack_tests::call`.

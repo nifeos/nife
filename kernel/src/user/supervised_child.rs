@@ -18,8 +18,8 @@
 //! Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 
 use super::*;
-use crate::cap::Cap as Capability;
-use crate::sched::thread_control_block_insert_cap as insert_capability;
+use crate::capability_object::Cap as Capability;
+use crate::sched::thread_control_block_insert_capability as insert_capability;
 
 /// Where a child's code goes: the address-space map's image base, where a loaded program's would
 /// be (milestone 206 (a program image has under 896 KiB)). A child built from parts is still a
@@ -213,5 +213,5 @@ pub fn spawn(
 ///
 /// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 pub fn supervision_endpoint(ep: crate::sched::RendezvousId) -> Capability {
-    crate::cap::rendezvous_cap(ep, crate::cap::Rights::READ)
+    crate::capability_object::rendezvous_capability(ep, crate::capability_object::Rights::READ)
 }

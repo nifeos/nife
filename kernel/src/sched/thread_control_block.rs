@@ -35,10 +35,13 @@ pub fn create_thread_control_block(region: u64) -> Option<ThreadId> {
 /// `target` is `None` for the first free slot, or `Some(slot)` for a specific free one (the
 /// reserved fault slot); an occupied or out-of-range target is `OutOfMemory`, so a reservation is
 /// never overwritten. A copy of a capability the spawner holds goes through
-/// [`thread_control_block_delegate_cap`] instead ([`Delegation`] has why).
-pub fn thread_control_block_insert_cap(
+/// [`thread_control_block_delegate_capability`] instead ([`Delegation`] has why).
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+/// `thread_control_block_insert_capability` under the capability ruling of 2026-10-06 (UTC).
+pub fn thread_control_block_insert_capability(
     tid: ThreadId,
-    capability: crate::cap::Cap,
+    capability: crate::capability_object::Cap,
     target: Option<u64>,
 ) -> Result<u64, abi::Error> {
     thread_control_block_insert_from(tid, target, |_, _| Ok(capability))
@@ -47,17 +50,17 @@ pub fn thread_control_block_insert_cap(
 /// `ThreadControlBlock::CAP_INSERT`'s body: endow an embryo with a narrowed copy of a capability
 /// the running thread holds, the source read under the `IPC_TABLES` hold that files the copy
 /// ([`Delegation`]). Name provisional.
-pub(crate) fn thread_control_block_delegate_cap(
+pub(crate) fn thread_control_block_delegate_capability(
     tid: ThreadId,
     delegation: Delegation,
     target: Option<u64>,
 ) -> Result<u64, abi::Error> {
     thread_control_block_insert_from(tid, target, |sched, current| {
-        let caps = sched
+        let capabilities = sched
             .threads
             .capabilities(current)
             .ok_or(abi::Error::NoSuchSlot)?;
-        delegation.derive(&caps.lock())
+        delegation.derive(&capabilities.lock())
     })
 }
 
@@ -67,12 +70,12 @@ pub(crate) fn thread_control_block_delegate_cap(
 pub(super) fn thread_control_block_insert_from(
     tid: ThreadId,
     target: Option<u64>,
-    source: impl FnOnce(&IpcTables, ThreadId) -> Result<crate::cap::Cap, abi::Error>,
+    source: impl FnOnce(&IpcTables, ThreadId) -> Result<crate::capability_object::Cap, abi::Error>,
 ) -> Result<u64, abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().ok_or(abi::Error::NoSuchSlot)?;
     let capability = source(sched, current_thread_id())?;
-    let (t, caps) = sched
+    let (t, capabilities) = sched
         .threads
         .get_mut_with_capabilities(tid)
         .ok_or(abi::Error::NoSuchSlot)?;
@@ -80,8 +83,8 @@ pub(super) fn thread_control_block_insert_from(
         return Err(abi::Error::WrongObject);
     }
     let landed = match target {
-        None => caps.lock().insert(capability),
-        Some(slot) => caps.lock().insert_at(slot, capability),
+        None => capabilities.lock().insert(capability),
+        Some(slot) => capabilities.lock().insert_at(slot, capability),
     }
     .map_err(|_| abi::Error::OutOfMemory)?;
     // The one place a port capability enters a thread, so the context switch reads one field, not
@@ -90,8 +93,10 @@ pub(super) fn thread_control_block_insert_from(
     // bitmap cannot permit `in` without `out` (§121 (what a device capability is when the device
     // has no page)); the capability still lands.
     #[cfg(target_arch = "x86_64")]
-    if let crate::cap::Object::PortRange(base, count) = capability.object
-        && capability.rights.allows(crate::cap::Rights::WRITE)
+    if let crate::capability_object::Object::PortRange(base, count) = capability.object
+        && capability
+            .rights
+            .allows(crate::capability_object::Rights::WRITE)
     {
         t.port_range_grant = Some((base, count));
     }
@@ -135,8 +140,8 @@ pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), a
     // so the child cannot forge fault messages, and its badge, the child's label (§148 (a
     // supervisor restarts by asking)), reaches only the supervisor.
     let mut table = capabilities.lock();
-    if let Ok(fault_cap) = table.get(abi::fault::FAULT_EP_SLOT)
-        && let crate::cap::Object::Rendezvous(ep, label) = fault_cap.object
+    if let Ok(fault_capability) = table.get(abi::fault::FAULT_EP_SLOT)
+        && let crate::capability_object::Object::Rendezvous(ep, label) = fault_capability.object
     {
         t.fault_ep = Some(ep);
         t.fault_label = label;

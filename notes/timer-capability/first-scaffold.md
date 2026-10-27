@@ -32,7 +32,7 @@ before it was removed. So the numbers are from a working system and not a half-c
 
 ## The object is free in bytes
 
-`kernel/src/cap.rs` asserts `size_of::<Object>() == 24` and `size_of::<Cap>() == 32` at compile
+`kernel/src/capability_object.rs` asserts `size_of::<Object>() == 24` and `size_of::<Cap>() == 32` at compile
 time. Both assertions still hold with the variant added, because `PageFrame(u64, NonZeroU64)` is
 already the widest arm. So a `Timer` capability costs zero additional bytes per capability slot,
 zero per capability table, and zero per TCB. That is the whole of the per-thread and per-process
