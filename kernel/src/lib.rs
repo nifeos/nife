@@ -37,8 +37,10 @@ mod capability_object;
 mod console;
 // The coverage counters, written to the host at exit (milestone 781 (measure kernel and service
 // coverage under QEMU)). aarch64 first; the module refuses the feature on the other targets.
-#[cfg(feature = "coverage")]
+#[cfg(all(feature = "coverage", target_arch = "aarch64"))]
 mod coverage;
+#[cfg(all(feature = "coverage", not(target_arch = "aarch64")))]
+compile_error!("coverage is aarch64 only");
 mod cpu;
 mod drivers;
 #[cfg(feature = "fastpath_pad")]
