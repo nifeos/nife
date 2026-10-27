@@ -37,7 +37,7 @@ index c59bccd96..dfd1371fa 100644
 -            // slot number where a CALL server reads a reply slot. A bound-notification delivery is
 -            // exempt: its x4 == BOUND and its m[1] is the notification word, not a sender's choice.
 -            let m = t.mailbox;
--            if t.cap_delivered || m[4] == abi::notification::BOUND {
+-            if t.capability_delivered || m[4] == abi::notification::BOUND {
 -                m
 -            } else {
 -                [m[0], NO_CAP, m[1], m[3], 0]

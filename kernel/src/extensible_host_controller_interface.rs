@@ -64,7 +64,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         // bounded by `bar_bytes`.
         unsafe { core::ptr::read_volatile((regs_va + off) as *const u32) }
     };
-    let caps = Capabilities::decode(
+    let capabilities = Capabilities::decode(
         read(registers::CAPLENGTH),
         read(registers::HCSPARAMS1),
         read(registers::HCSPARAMS2),
@@ -74,19 +74,19 @@ pub fn bring_up() -> Result<Found, Absent> {
     );
     #[cfg(feature = "xhci_port_probe")]
     crate::xhci_port_probe::before_handoff(regs_va, dev.bar_bytes);
-    take_from_firmware(regs_va, &caps, dev.bar_bytes);
+    take_from_firmware(regs_va, &capabilities, dev.bar_bytes);
 
     let registers = driver_process_contract::extensible_host_controller_interface::register_window(
-        &caps,
+        &capabilities,
         dev.bar_bytes,
         &dev.withheld,
     )
     .map_err(Absent::Window)?;
-    if caps.scratchpads > direct_memory_access::MAXIMUM_SCRATCHPADS {
-        return Err(Absent::TooManyScratchpads(caps.scratchpads));
+    if capabilities.scratchpads > direct_memory_access::MAXIMUM_SCRATCHPADS {
+        return Err(Absent::TooManyScratchpads(capabilities.scratchpads));
     }
     let pages = driver_process_contract::extensible_host_controller_interface::region_pages(
-        caps.scratchpads,
+        capabilities.scratchpads,
     );
 
     // Confinement is checked before anything is allocated for it, because the answer does not
@@ -128,13 +128,13 @@ pub fn bring_up() -> Result<Found, Absent> {
 /// A firmware that never lets go is reported and the boot goes on, which is Linux's choice too: the
 /// controller is reset by the driver next, and the firmware's SMI handler then fights a controller
 /// it no longer understands, which is a degraded machine rather than a dead one.
-fn take_from_firmware(regs_va: u64, caps: &Capabilities, bar_bytes: u64) {
+fn take_from_firmware(regs_va: u64, capabilities: &Capabilities, bar_bytes: u64) {
     let mut read = |off: u64| -> u32 {
         // SAFETY: `find_extended` bounds `off + 4` by `bar_bytes`, inside the mapped BAR.
         unsafe { core::ptr::read_volatile((regs_va + off) as *const u32) }
     };
     let Some(at) = registers::find_extended(
-        caps.extended,
+        capabilities.extended,
         bar_bytes,
         registers::EXTENDED_LEGACY_SUPPORT,
         &mut read,

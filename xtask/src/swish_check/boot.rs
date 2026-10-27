@@ -1356,7 +1356,7 @@ fn kernel_fault_failure(transcript: &str) -> Option<String> {
 /// actually uses)), read from `raw_after_hand_over`, since [`GaugeFilter`] takes it out of the
 /// view the waits read. A failure line when the gauge is missing (a gauge that stopped printing
 /// is one nobody would miss) or says `ABOVE`, past the peak
-/// `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` records. That constant is a measurement, so the
+/// `kernel::capability_object::CAPABILITY_TABLE_PEAK_MEASURED` records. That constant is a measurement, so the
 /// fix is to measure, update it, and re-read the headroom arithmetic beside
 /// `CAPABILITY_TABLE_SLOTS`. See notes/swish-check-boot.md.
 fn slot_gauge_failure(arch: &str, raw_after_hand_over: &str) -> Option<String> {
@@ -1369,7 +1369,7 @@ fn slot_gauge_failure(arch: &str, raw_after_hand_over: &str) -> Option<String> {
             line.contains("ABOVE").then(|| {
                 format!(
                     "this boot used more capability slots than the tree records: {:?}. The \
-                     number beside CAPABILITY_TABLE_SLOTS in kernel/src/cap.rs is now stale; \
+                     number beside CAPABILITY_TABLE_SLOTS in kernel/src/capability_object.rs is now stale; \
                      measure, update CAPABILITY_TABLE_PEAK_MEASURED, and re-read that constant's \
                      headroom arithmetic rather than raising the ceiling reflexively.",
                     line.trim()
@@ -1378,7 +1378,7 @@ fn slot_gauge_failure(arch: &str, raw_after_hand_over: &str) -> Option<String> {
         }
         None => Some(format!(
             "the boot never printed {SLOT_GAUGE:?}. The kernel says this from the scheduler's \
-             idle loop once the mark has settled (kernel::cap::report_peak), so either the boot \
+             idle loop once the mark has settled (kernel::capability_object::report_peak), so either the boot \
              never idled or the gauge stopped being printed; the second is the one that matters, \
              because it is the only thing standing between this tree and a fourth reactive raise \
              of CAPABILITY_TABLE_SLOTS."

@@ -14,15 +14,15 @@ use super::*;
 ///
 /// Matches by object equality: a narrowed copy matches, a different sub-range of the same memory
 /// does not. A `count` of 0 deletes nothing. Reclamation wants
-/// [`delete_page_frame_caps_overlapping`] instead. See notes/capability-lifecycle.md.
+/// [`delete_page_frame_capabilities_overlapping`] instead. See notes/capability-lifecycle.md.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
-pub(crate) fn delete_page_frame_caps(phys: u64, count: u64) {
+pub(crate) fn delete_page_frame_capabilities(phys: u64, count: u64) {
     let Some(count) = core::num::NonZeroU64::new(count) else {
         return;
     };
-    let target = crate::cap::Object::PageFrame(phys, count);
-    delete_page_frame_caps_where(|object| *object == target);
+    let target = crate::capability_object::Object::PageFrame(phys, count);
+    delete_page_frame_capabilities_where(|object| *object == target);
 }
 
 /// Delete every `PageFrame` capability whose run overlaps `[base, base + size)` from every thread's
@@ -34,10 +34,10 @@ pub(crate) fn delete_page_frame_caps(phys: u64, count: u64) {
 /// notes/capability-lifecycle.md.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
-pub(crate) fn delete_page_frame_caps_overlapping(base: u64, size: u64) {
+pub(crate) fn delete_page_frame_capabilities_overlapping(base: u64, size: u64) {
     let end = base.saturating_add(size);
-    delete_page_frame_caps_where(|object| match object {
-        crate::cap::Object::PageFrame(phys, count) => {
+    delete_page_frame_capabilities_where(|object| match object {
+        crate::capability_object::Object::PageFrame(phys, count) => {
             let run_end = phys.saturating_add(count.get().saturating_mul(page_frames::FRAME_SIZE));
             *phys < end && base < run_end
         }
@@ -46,22 +46,24 @@ pub(crate) fn delete_page_frame_caps_overlapping(base: u64, size: u64) {
 }
 
 /// The body both `PageFrame` sweeps share: delete every slot whose object satisfies `matches`, in
-/// every thread's table, and the [`Thread::outgoing_cap`] parked in its hand-off slot.
+/// every thread's table, and the [`Thread::outgoing_capability`] parked in its hand-off slot.
 ///
 /// A capability in flight to a receiver is in no table, so a sweep of tables alone would leave it
 /// alive. The send still delivers its data word and the receiver sees `NO_CAP`. See
 /// notes/capability-lifecycle.md.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
-pub(super) fn delete_page_frame_caps_where(matches: impl Fn(&crate::cap::Object) -> bool) {
+pub(super) fn delete_page_frame_capabilities_where(
+    matches: impl Fn(&crate::capability_object::Object) -> bool,
+) {
     let mut guard = IPC_TABLES.lock();
     let Some(sched) = guard.as_mut() else {
         return;
     };
-    for (t, caps) in sched.threads.iter_mut_with_capabilities() {
-        caps.lock().delete_matching(&matches);
-        if matches!(t.outgoing_cap, Some(c) if matches(&c.object)) {
-            t.outgoing_cap = None;
+    for (t, capabilities) in sched.threads.iter_mut_with_capabilities() {
+        capabilities.lock().delete_matching(&matches);
+        if matches!(t.outgoing_capability, Some(c) if matches(&c.object)) {
+            t.outgoing_capability = None;
         }
     }
 }
@@ -71,13 +73,13 @@ pub(super) fn delete_page_frame_caps_where(matches: impl Fn(&crate::cap::Object)
 /// device back to hand on. [`crate::revoke::revoke_device_from_others`] has the reasoning.
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock.
-pub(crate) fn delete_device_frame_caps_from_others(phys: u64) {
+pub(crate) fn delete_device_frame_capabilities_from_others(phys: u64) {
     let mut guard = IPC_TABLES.lock();
     let Some(sched) = guard.as_mut() else {
         return;
     };
     let keeper = current_thread_id();
-    let target = crate::cap::Object::DeviceFrame(phys);
+    let target = crate::capability_object::Object::DeviceFrame(phys);
     for (t, owned) in sched.threads.iter_mut_with_capabilities() {
         if t.id == keeper {
             continue;
@@ -89,8 +91,8 @@ pub(crate) fn delete_device_frame_caps_from_others(phys: u64) {
             }
         }
         drop(table);
-        if matches!(t.outgoing_cap, Some(c) if c.object == target) {
-            t.outgoing_cap = None;
+        if matches!(t.outgoing_capability, Some(c) if c.object == target) {
+            t.outgoing_capability = None;
         }
     }
 }
@@ -105,20 +107,26 @@ pub(crate) fn delete_device_frame_caps_from_others(phys: u64) {
 ///
 /// Matches by object equality, so a capability over a wider or narrower range of the same ports is
 /// left alone. No syscall can name a sub-range today (notes/capability-lifecycle.md, "BUGS").
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+/// `delete_port_range_capabilities_from_others` under the capability ruling of 2026-10-06 (UTC).
 #[cfg(target_arch = "x86_64")]
-pub fn delete_port_range_caps_from_others(base: u16, count: u16) {
-    delete_port_range_caps_impl(base, count, Some(current_thread_id()));
+pub fn delete_port_range_capabilities_from_others(base: u16, count: u16) {
+    delete_port_range_capabilities_impl(base, count, Some(current_thread_id()));
 }
 
 /// Take a port range back from everyone, the invoker included: the whole-machine revoke the
 /// kernel's tests use. No syscall reaches it. `x86_64` only.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+/// `delete_port_range_capabilities` under the capability ruling of 2026-10-06 (UTC).
 #[cfg(target_arch = "x86_64")]
 #[cfg_attr(
     not(any(test, feature = "system_tests", initial_ramdisk)),
     allow(dead_code)
 )]
-pub fn delete_port_range_caps(base: u16, count: u16) {
-    delete_port_range_caps_impl(base, count, None);
+pub fn delete_port_range_capabilities(base: u16, count: u16) {
+    delete_port_range_capabilities_impl(base, count, None);
 }
 
 /// The body of both port-range sweeps. `keeper` is the thread spared (the take-back's invoker), or
@@ -126,27 +134,27 @@ pub fn delete_port_range_caps(base: u16, count: u16) {
 ///
 /// Context: takes `IPC_TABLES`, then each table's lock, and sends the TSS broadcast under it.
 #[cfg(target_arch = "x86_64")]
-pub(super) fn delete_port_range_caps_impl(base: u16, count: u16, keeper: Option<ThreadId>) {
+pub(super) fn delete_port_range_capabilities_impl(base: u16, count: u16, keeper: Option<ThreadId>) {
     {
         let mut guard = IPC_TABLES.lock();
         let Some(sched) = guard.as_mut() else {
             return;
         };
-        let target = crate::cap::Object::PortRange(base, count);
-        for (t, caps) in sched.threads.iter_mut_with_capabilities() {
+        let target = crate::capability_object::Object::PortRange(base, count);
+        for (t, capabilities) in sched.threads.iter_mut_with_capabilities() {
             if Some(t.id) == keeper {
                 continue;
             }
-            let mut table = caps.lock();
+            let mut table = capabilities.lock();
             for slot in 0..table.len() as u64 {
                 if table.get(slot).is_ok_and(|c| c.object == target) {
                     let _ = table.delete(slot);
                 }
             }
             drop(table);
-            // A `PortRange` in flight is in no table; see `delete_page_frame_caps_where`.
-            if matches!(t.outgoing_cap, Some(c) if c.object == target) {
-                t.outgoing_cap = None;
+            // A `PortRange` in flight is in no table; see `delete_page_frame_capabilities_where`.
+            if matches!(t.outgoing_capability, Some(c) if c.object == target) {
+                t.outgoing_capability = None;
             }
             // Forget the cached grant if it named the revoked range, so switching to this thread
             // installs nothing. x86 only; the field exists nowhere else.
@@ -173,16 +181,19 @@ pub(super) fn delete_port_range_caps_impl(base: u16, count: u16, keeper: Option<
 ///
 /// # BUGS
 /// Deleting one of two copies of one `PortRange` drops the grant both name (fails safe).
-pub fn delete_current_cap(slot: u64) -> Result<(), crate::cap::Error> {
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+/// `delete_current_capability` under the capability ruling of 2026-10-06 (UTC).
+pub fn delete_current_capability(slot: u64) -> Result<(), crate::capability_object::Error> {
     // Read before the delete, under the same hold: a deleted slot names nothing.
     let deleted = {
-        let mut t = current_capabilities().ok_or(crate::cap::Error::NoSuchSlot)?;
+        let mut t = current_capabilities().ok_or(crate::capability_object::Error::NoSuchSlot)?;
         let capability = t.get(slot)?;
         t.delete(slot)?;
         capability
     };
     #[cfg(target_arch = "x86_64")]
-    if let crate::cap::Object::PortRange(base, count) = deleted.object {
+    if let crate::capability_object::Object::PortRange(base, count) = deleted.object {
         let mut guard = IPC_TABLES.lock();
         let current = current_thread_id();
         let held = guard
@@ -212,29 +223,35 @@ pub fn delete_current_cap(slot: u64) -> Result<(), crate::cap::Error> {
 /// inlined, it lands on aarch64's `syscall_entry`.
 #[inline(never)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
+/// `current_capability` under the capability ruling of 2026-10-06 (UTC).
 #[cfg_attr(
     target_os = "none",
-    unsafe(link_section = ".text.hot.sched.current_cap")
+    unsafe(link_section = ".text.hot.sched.current_capability")
 )]
-pub fn current_cap(slot: u64) -> Result<crate::cap::Cap, crate::cap::Error> {
-    // The lock-wait instrument marks this call as `site=current_cap`. The closure takes no other
+pub fn current_capability(
+    slot: u64,
+) -> Result<crate::capability_object::Cap, crate::capability_object::Error> {
+    // The lock-wait instrument marks this call as `site=current_capability`. The closure takes no other
     // lock, so that marks exactly the table lock's acquisition (`crate::lock_wait`).
     #[cfg(feature = "lock_wait")]
-    crate::lock_wait::enter_current_cap();
+    crate::lock_wait::enter_current_capability();
     let table = current_capabilities();
     #[cfg(feature = "lock_wait")]
-    crate::lock_wait::leave_current_cap();
+    crate::lock_wait::leave_current_capability();
     match table {
         Some(table) => table.get(slot),
-        None => Err(crate::cap::Error::NoSuchSlot),
+        None => Err(crate::capability_object::Error::NoSuchSlot),
     }
 }
 
 /// Hand the current thread a capability. **The only way authority ever enters a process.**
 ///
-/// The running thread's own table, under its own lock and not `IPC_TABLES`, as [`current_cap`].
-pub fn grant(capability: crate::cap::Cap) -> Result<u64, crate::cap::Error> {
-    current_capabilities().map_or(Err(crate::cap::Error::NoFreeSlot), |mut t| {
+/// The running thread's own table, under its own lock and not `IPC_TABLES`, as [`current_capability`].
+pub fn grant(
+    capability: crate::capability_object::Cap,
+) -> Result<u64, crate::capability_object::Error> {
+    current_capabilities().map_or(Err(crate::capability_object::Error::NoFreeSlot), |mut t| {
         t.insert(capability)
     })
 }
@@ -253,14 +270,17 @@ pub fn current_capability_slots() -> (usize, usize) {
 /// [`grant`] fills the first free slot. Some conventions (notes/abi.md, section 4) name a fixed
 /// slot whose lower neighbors' emptiness is meaningful: a std program holding slot 4 with 2 and 3
 /// empty has no network. The kernel's counterpart of `ThreadControlBlock::CAP_INSERT`.
-pub fn grant_at(slot: u64, capability: crate::cap::Cap) -> Result<u64, crate::cap::Error> {
-    current_capabilities().map_or(Err(crate::cap::Error::NoFreeSlot), |mut t| {
+pub fn grant_at(
+    slot: u64,
+    capability: crate::capability_object::Cap,
+) -> Result<u64, crate::capability_object::Error> {
+    current_capabilities().map_or(Err(crate::capability_object::Error::NoFreeSlot), |mut t| {
         t.insert_at(slot, capability)
     })
 }
 
 /// How many pages every `PageFrame` run the current thread holds names, summed
-/// ([`crate::cap::Object::mappable_pages`]). Name provisional (the surface map budget lane,
+/// ([`crate::capability_object::Object::mappable_pages`]). Name provisional (the surface map budget lane,
 /// 2026-10-21 UTC).
 ///
 /// `user::entry`'s spawn sizes the new space's mapping log from it. It counts the table itself, so
@@ -278,9 +298,9 @@ pub(crate) fn current_mappable_pages() -> u64 {
 /// word, so a `std` program can make objects without filling a fixed slot it was not given.
 pub(crate) fn grant_from(
     floor: u64,
-    capability: crate::cap::Cap,
-) -> Result<u64, crate::cap::Error> {
-    current_capabilities().map_or(Err(crate::cap::Error::NoFreeSlot), |mut t| {
+    capability: crate::capability_object::Cap,
+) -> Result<u64, crate::capability_object::Error> {
+    current_capabilities().map_or(Err(crate::capability_object::Error::NoFreeSlot), |mut t| {
         t.insert_at_or_above(floor, capability)
     })
 }
@@ -297,7 +317,7 @@ pub(crate) struct Delegation {
     /// The source's slot in the running thread's table.
     pub slot: u64,
     /// The rights the copy keeps: a subset of the source's.
-    pub rights: crate::cap::Rights,
+    pub rights: crate::capability_object::Rights,
 }
 
 impl Delegation {
@@ -306,16 +326,16 @@ impl Delegation {
     /// takes.
     pub(super) fn derive(
         self,
-        table: &crate::cap::CapabilityTable,
-    ) -> Result<crate::cap::Cap, abi::Error> {
+        table: &crate::capability_object::CapabilityTable,
+    ) -> Result<crate::capability_object::Cap, abi::Error> {
         let src = table.get(self.slot).map_err(|_| abi::Error::NoSuchSlot)?;
-        if !src.rights.allows(crate::cap::Rights::GRANT) {
+        if !src.rights.allows(crate::capability_object::Rights::GRANT) {
             return Err(abi::Error::NotPermitted); // holder may not pass this on
         }
         if !self.rights.is_subset_of(src.rights) {
             return Err(abi::Error::NotPermitted); // delegation may only narrow, never widen
         }
-        Ok(crate::cap::Cap {
+        Ok(crate::capability_object::Cap {
             object: src.object,
             rights: self.rights,
         })
@@ -328,7 +348,9 @@ impl Delegation {
 /// provisional.
 pub(crate) fn grant_derived(
     slot: u64,
-    derive: impl FnOnce(crate::cap::Cap) -> Result<crate::cap::Cap, abi::Error>,
+    derive: impl FnOnce(
+        crate::capability_object::Cap,
+    ) -> Result<crate::capability_object::Cap, abi::Error>,
 ) -> Result<u64, abi::Error> {
     let mut table = current_capabilities().ok_or(abi::Error::NoSuchSlot)?;
     let src = table.get(slot).map_err(|_| abi::Error::NoSuchSlot)?;

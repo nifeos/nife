@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::{self, RendezvousId};
 use crate::user::holding::Holding;
 
@@ -140,9 +140,9 @@ fn start_terminal_half() -> TerminalHalf {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(term, Rights::READ),
-                    rendezvous_cap(conreq, Rights::WRITE),
-                    rendezvous_cap(conrep, Rights::READ),
+                    rendezvous_capability(term, Rights::READ),
+                    rendezvous_capability(conreq, Rights::WRITE),
+                    rendezvous_capability(conrep, Rights::READ),
                 ],
                 maps: &[
                     Mapping {
@@ -212,9 +212,9 @@ fn spawn_rmle(
                 arg1: lo,
                 arg2: hi,
                 grants: &[
-                    rendezvous_cap(term, Rights::WRITE),   // slot 0: the terminal
-                    rendezvous_cap(dir_ep, Rights::WRITE), // slot 1: the directory
-                    rendezvous_cap(report, Rights::WRITE), // slot 2: the closing report
+                    rendezvous_capability(term, Rights::WRITE), // slot 0: the terminal
+                    rendezvous_capability(dir_ep, Rights::WRITE), // slot 1: the directory
+                    rendezvous_capability(report, Rights::WRITE), // slot 2: the closing report
                 ],
                 maps: &maps[..n + RMLE_STACK_PAGES],
             },

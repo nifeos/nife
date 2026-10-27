@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, page_frame_cap, rendezvous_cap};
+use crate::capability_object::{Rights, page_frame_capability, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Where `printenv` expects the config page, read-only. Must match `components/src/printenv.rs`'s
@@ -24,8 +24,8 @@ fn spawn_printenv(endpoints: u64, page: Option<u64>) -> RendezvousId {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(out, Rights::WRITE), // slot 0: stdout
-                    page_frame_cap(phys, Rights::READ), // slot 1: a READER, and nothing more
+                    rendezvous_capability(out, Rights::WRITE), // slot 0: stdout
+                    page_frame_capability(phys, Rights::READ), // slot 1: a READER, and nothing more
                 ],
                 maps: &[Mapping {
                     va: CONFIG_VA,
@@ -40,7 +40,7 @@ fn spawn_printenv(endpoints: u64, page: Option<u64>) -> RendezvousId {
                 arg0: 0,
                 arg1: 0,
                 arg2: 0,
-                grants: &[rendezvous_cap(out, Rights::WRITE)],
+                grants: &[rendezvous_capability(out, Rights::WRITE)],
                 maps: &[],
             },
         ),

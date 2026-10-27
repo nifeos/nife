@@ -4,7 +4,7 @@
 //! Module/file rename pending the batched 291 sweep.
 
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Spawn the pair, sharing one request endpoint. Returns `(client reply report, server one-shot
@@ -34,8 +34,8 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(ep, Rights::READ), // slot 0: RECEIVE calls
-                    rendezvous_cap(oneshot_report, Rights::WRITE), // slot 1: report the verdict
+                    rendezvous_capability(ep, Rights::READ), // slot 0: RECEIVE calls
+                    rendezvous_capability(oneshot_report, Rights::WRITE), // slot 1: report the verdict
                 ],
                 maps: &[],
             },
@@ -51,8 +51,8 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(ep, Rights::WRITE),          // slot 0: CALL
-                    rendezvous_cap(call_report, Rights::WRITE), // slot 1: report the reply
+                    rendezvous_capability(ep, Rights::WRITE), // slot 0: CALL
+                    rendezvous_capability(call_report, Rights::WRITE), // slot 1: report the reply
                 ],
                 maps: &[],
             },

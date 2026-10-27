@@ -12,7 +12,9 @@
 //! - Not crash-atomic: a power cut between the partitioner and `mkfs` leaves an unmountable disk.
 
 use super::*;
-use crate::cap::{Rights, memory_region_cap, page_frame_cap, rendezvous_cap};
+use crate::capability_object::{
+    Rights, memory_region_capability, page_frame_capability, rendezvous_capability,
+};
 use crate::sched::RendezvousId;
 
 /// The word a person types to destroy a disk. Upper case and unabbreviated, so that a stray
@@ -282,21 +284,21 @@ fn spawn_system_installer(
 
     crate::sched::spawn(move || {
         let maps = system_installer_maps(boot_file_len);
-        crate::sched::grant_at(SLOT_REPORT, rendezvous_cap(report, Rights::WRITE))
+        crate::sched::grant_at(SLOT_REPORT, rendezvous_capability(report, Rights::WRITE))
             .expect("system_installer slot 0 was occupied");
         crate::sched::grant_at(SLOT_BLK, blk_capability)
             .expect("system_installer slot 1 was occupied");
         // Slot 2 is the only difference between the roles. Without entropy a survey cannot draw a
         // new table's unique ids, which narrows what it would write, not what it can.
         if entropy.is_some() {
-            crate::sched::grant_at(SLOT_ENTROPY, rendezvous_cap(ep, Rights::WRITE))
+            crate::sched::grant_at(SLOT_ENTROPY, rendezvous_capability(ep, Rights::WRITE))
                 .expect("system_installer slot 2 was occupied");
         }
-        crate::sched::grant_at(SLOT_BUDGET, memory_region_cap(budget))
+        crate::sched::grant_at(SLOT_BUDGET, memory_region_capability(budget))
             .expect("system_installer slot 3 was occupied");
         crate::sched::grant_at(
             SLOT_BLK_PAGE,
-            page_frame_cap(blk_shared, Rights::READ.union(Rights::WRITE)),
+            page_frame_capability(blk_shared, Rights::READ.union(Rights::WRITE)),
         )
         .expect("system_installer slot 4 was occupied");
         run(

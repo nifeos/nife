@@ -53,7 +53,7 @@ it is left off. `xtask/src/host.rs` exports `NIFE_NET=1` into xtask's own enviro
 Without a NIC the keyboard boot would read 30.
 
 riscv64 was not traced. Its runner has no `-semihosting`, so the drain has nowhere to write, and
-adding one was not cheap. `kernel/src/cap.rs` records riscv64 reading the same peaks as aarch64 on
+adding one was not cheap. `kernel/src/capability_object.rs` records riscv64 reading the same peaks as aarch64 on
 the same code.
 
 ## The peak is two plateaus, not one

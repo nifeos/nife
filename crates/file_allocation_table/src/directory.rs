@@ -410,7 +410,7 @@ impl<D: SectorDevice> Iterator for Directory<'_, D> {
 }
 
 #[cfg(kani)]
-mod verification;
+pub(crate) mod verification;
 
 #[cfg(test)]
 mod tests;

@@ -1,5 +1,5 @@
 use super::test_programs::spawn_progenitor_shaped;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched::RendezvousId;
 use crate::thread::ThreadId;
 

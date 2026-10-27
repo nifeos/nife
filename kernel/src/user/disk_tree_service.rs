@@ -9,7 +9,7 @@
 //! Name: provisional (lane `lane/ioping-direct-io`, 2026-10-18 UTC), with the program's.
 
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// The block channel's address on every `blk` client. Must match `components/src/disk_tree.rs`.
@@ -79,8 +79,8 @@ pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {
                 arg2: 0,
                 grants: &[
                     blk,
-                    rendezvous_cap(request, Rights::READ),
-                    rendezvous_cap(report, Rights::WRITE),
+                    rendezvous_capability(request, Rights::READ),
+                    rendezvous_capability(report, Rights::WRITE),
                 ],
                 maps: &maps,
             },

@@ -424,7 +424,7 @@ fn two_clients_connecting_together_get_independent_channels_and_neither_observes
 
 /// The login service serves past the old capability-table ceiling of eight successful logins.
 ///
-/// `login`'s table has sixteen slots (`kernel::cap::CAPABILITY_TABLE_SLOTS`), eight spent at rest,
+/// `login`'s table has sixteen slots (`kernel::capability_object::CAPABILITY_TABLE_SLOTS`), eight spent at rest,
 /// and `mint` must drop its copy of the caretaker's construction region, or the ninth correct login
 /// is answered [`login_contract::DENIED`]. Six logins here, alternating `alice` and `bob`, plus the
 /// earlier tests' three make nine, each proved by a real `READDIR` and retype. Six, not nine,

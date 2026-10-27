@@ -11,11 +11,11 @@
 use abi::{Error, usage};
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
-/// `invoke(cap, method, a0, _, _)` through the real dispatcher.
+/// `invoke(capability, method, a0, _, _)` through the real dispatcher.
 fn call(slot: u64, method: u64, a0: u64) -> i64 {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     match invoke(&mut frame, slot, method, a0, 0, 0) {
@@ -25,7 +25,10 @@ fn call(slot: u64, method: u64, a0: u64) -> i64 {
 }
 
 fn hold(region: u64, rights: Rights) -> u64 {
-    sched::grant(crate::cap::memory_region_cap_rights(region, rights)).expect("grant the region")
+    sched::grant(crate::capability_object::memory_region_capability_rights(
+        region, rights,
+    ))
+    .expect("grant the region")
 }
 
 /// **`ENUMERATE` answers, and answers only.** A view of a region learns its size and what it spent,
@@ -56,7 +59,7 @@ fn a_view_of_a_region_learns_what_it_spent_and_can_spend_nothing() {
             "an ENUMERATE view was allowed method {method}",
         );
     }
-    let _ = sched::delete_current_cap(view);
+    let _ = sched::delete_current_capability(view);
     crate::memory_region::unpin(region);
     crate::memory_region::destroy(region);
 }
@@ -85,8 +88,8 @@ fn a_budget_without_enumerate_is_refused_and_an_unknown_record_is_refused_first(
         call(view, abi::memory_region::USAGE, usage::SIZE),
         Error::Gone as i64
     );
-    let _ = sched::delete_current_cap(spend);
-    let _ = sched::delete_current_cap(view);
+    let _ = sched::delete_current_capability(spend);
+    let _ = sched::delete_current_capability(view);
 }
 
 /// **The page exists, is recognized, and moves.** The frame count is checked against the allocator,

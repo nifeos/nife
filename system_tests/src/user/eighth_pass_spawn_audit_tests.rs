@@ -10,9 +10,8 @@
 //! a tenet). See notes/confinement-outsider-pass-8.md.
 
 use super::test_programs::kernel_test_subject_image;
-use crate::cap::{
-    Object, Rights, page_frame_run_cap as page_frame_run_capability, page_frame_run_len,
-    rendezvous_cap as rendezvous_capability,
+use crate::capability_object::{
+    Object, Rights, page_frame_run_capability, page_frame_run_len, rendezvous_capability,
 };
 use crate::sched;
 use crate::user::{KERNEL_TEST_SUBJECT_BUILD_WITH_NOTHING, Spawn, run};
@@ -31,7 +30,7 @@ fn census(tid: u64) -> ([(u64, Object, Rights); 8], usize) {
     let mut out = [(0, Object::Rendezvous(0, 0), Rights::NONE); 8];
     let mut n = 0;
     sched::with_capability_table(tid, |t| {
-        for slot in 0..crate::cap::CAPABILITY_TABLE_SLOTS as u64 {
+        for slot in 0..crate::capability_object::CAPABILITY_TABLE_SLOTS as u64 {
             if let Ok(held) = t.get(slot) {
                 assert!(
                     n < out.len(),
@@ -86,7 +85,7 @@ fn a_child_holds_exactly_what_its_caller_granted_and_no_device() {
     assert!(
         super::wait_for(|| {
             sched::with_capability_table(child, |t| {
-                (0..crate::cap::CAPABILITY_TABLE_SLOTS as u64)
+                (0..crate::capability_object::CAPABILITY_TABLE_SLOTS as u64)
                     .filter(|s| t.get(*s).is_ok())
                     .count()
                     == 3

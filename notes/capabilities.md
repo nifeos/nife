@@ -160,7 +160,7 @@ loop {
     wait(interrupt_notification);          // sleeps until the device interrupts
     let packet = read_device_fifo();
     send(net_stack_endpoint, packet);
-    ack(interrupt_cap);
+    ack(interrupt_capability);
 }
 ```
 

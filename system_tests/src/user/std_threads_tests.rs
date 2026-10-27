@@ -10,8 +10,8 @@
 //! `rayon`'s parallel sum, is `std_rayon`, run the same way.
 
 use super::*;
-use crate::cap::Rights;
-use crate::{cap as capabilities, sched};
+use crate::capability_object::Rights;
+use crate::{capability_object as capabilities, sched};
 
 /// The program's ELF bytes, if this archive carries it (it is built by `cargo xtask std-exerciser`,
 /// which `script/test` runs first).
@@ -175,15 +175,15 @@ fn fill_the_runtime_slots(
     setup: &Setup,
 ) {
     let insert = |slot, capability| {
-        sched::thread_control_block_insert_cap(tid, capability, Some(slot))
+        sched::thread_control_block_insert_capability(tid, capability, Some(slot))
             .expect("could not fill a runtime slot in the process's table");
     };
     // `WRITE` on an endpoint: the program's stdout, and any endpoint `setup` grants.
-    let writer = |ep| capabilities::rendezvous_cap(ep, Rights::WRITE);
+    let writer = |ep| capabilities::rendezvous_capability(ep, Rights::WRITE);
     for (slot, capability) in [
         (
             std_runtime_contract::MEMORY_REGION_SLOT,
-            capabilities::memory_region_cap(budget),
+            capabilities::memory_region_capability(budget),
         ),
         (std_runtime_contract::STDOUT_SLOT, writer(report)),
         (
@@ -192,11 +192,11 @@ fn fill_the_runtime_slots(
         ),
         (
             std_runtime_contract::THREAD_SLOT,
-            capabilities::thread_control_block_cap(tid, Rights::WRITE),
+            capabilities::thread_control_block_capability(tid, Rights::WRITE),
         ),
         (
             std_runtime_contract::SPACE_SLOT,
-            capabilities::address_space_cap(name, Rights::READ),
+            capabilities::address_space_capability(name, Rights::READ),
         ),
     ] {
         insert(slot, capability);
@@ -205,7 +205,10 @@ fn fill_the_runtime_slots(
         insert(slot, writer(ep));
     }
     for &(slot, phys) in setup.read_pages {
-        insert(slot, capabilities::page_frame_cap(phys, Rights::READ));
+        insert(
+            slot,
+            capabilities::page_frame_capability(phys, Rights::READ),
+        );
     }
 }
 

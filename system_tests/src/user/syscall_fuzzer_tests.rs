@@ -19,7 +19,7 @@
 
 //! # BUGS
 //!
-//! - `SYS_CAP_DELETE` is driven through `sched::delete_current_cap`, not `syscall::dispatch`.
+//! - `SYS_CAP_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
 //! - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
 //!   `Timer`, `Interrupt`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages.
 //! - An unexpected wake is caught, but possibly some steps after the operation that caused it.
@@ -34,7 +34,7 @@ use abi::Error;
 
 use super::wait_for;
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Cap, Object, Rights};
+use crate::capability_object::{Cap, Object, Rights};
 use crate::sched::{self, RendezvousId};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
 
@@ -824,13 +824,13 @@ fn actor(i: usize, doorbell: RendezvousId) {
             Cmd::Look => Answer::ok(0),
             Cmd::Clear => {
                 for s in 0..SLOTS as u64 {
-                    let _ = sched::delete_current_cap(s);
+                    let _ = sched::delete_current_capability(s);
                 }
                 Answer::ok(0)
             }
             Cmd::Op(Op::Delete { slot }) => {
                 // `syscall::dispatch`'s SYS_CAP_DELETE arm, which ignores the result.
-                let _ = sched::delete_current_cap(slot);
+                let _ = sched::delete_current_capability(slot);
                 Answer::ok(0)
             }
             Cmd::Op(Op::Invoke { slot, method, a }) => {
@@ -849,7 +849,7 @@ fn actor(i: usize, doorbell: RendezvousId) {
             let mut m = MAIL[i].lock();
             m.answer = answer;
             for (s, t) in m.table.iter_mut().enumerate() {
-                *t = sched::current_cap(s as u64).ok();
+                *t = sched::current_capability(s as u64).ok();
             }
         }
         DONE[i].store(seq, Ordering::SeqCst);
@@ -936,9 +936,11 @@ fn abstract_cap(c: &Cap, w: &World, tids: &[ThreadId; ACTORS]) -> Option<MCap> {
 fn real_cap(m: MCap, w: &World) -> Cap {
     let rights = Rights::from_bits(m.rights);
     match m.obj {
-        Obj::Ep(e) => crate::cap::rendezvous_cap_badged(w.eps[e], rights, m.badge),
-        Obj::Note => crate::cap::notification_cap(w.note, rights),
-        Obj::Frame(f) => crate::cap::page_frame_cap(w.frames[f], rights),
+        Obj::Ep(e) => {
+            crate::capability_object::rendezvous_capability_badged(w.eps[e], rights, m.badge)
+        }
+        Obj::Note => crate::capability_object::notification_capability(w.note, rights),
+        Obj::Frame(f) => crate::capability_object::page_frame_capability(w.frames[f], rights),
         Obj::Reply(_) => unreachable!("a Reply is never endowed"),
     }
 }

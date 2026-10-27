@@ -371,7 +371,7 @@ fn set_port_range_grant_on(id: usize, grant: Option<(u16, u16)>) {
 /// revoked, re-deny its bits and point `iomap_base` past the limit, so a port access faults even
 /// before the next context switch. If a different grant (or none) is installed, this does nothing.
 ///
-/// This is what [`sched::delete_current_cap`](crate::sched::delete_current_cap) needs and the whole
+/// This is what [`sched::delete_current_capability`](crate::sched::delete_current_capability) needs and the whole
 /// of what it needs: the thread dropping its own port capability is the thread whose grant is
 /// installed *here*, and a core's bitmap only ever permits the range for the thread currently
 /// running on it, so there is no second core to tell. A `PortRange::REVOKE` names a holder that may

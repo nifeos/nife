@@ -94,7 +94,7 @@ pub const KIND: &str = "job-mix-kind:";
 /// - `job-mix-lock: tasks=<n> site=reap reaps=<r> stack_free_ticks=<f> remove_ticks=<m>`, the
 ///   reaper: threads reaped, time freeing their kernel stacks (no lock held), and time its last
 ///   critical section held `IPC_TABLES`;
-/// - `job-mix-lock: tasks=<n> site=current_cap calls=<c> contended=<k> wait_ticks=<w>`, the one
+/// - `job-mix-lock: tasks=<n> site=current_capability calls=<c> contended=<k> wait_ticks=<w>`, the one
 ///   lock the cheapest syscall takes: every call, and the ones that found it held.
 ///
 /// Printed only with `--features lock_wait` (notes/job-mix/null-syscall-under-load.md). Name
