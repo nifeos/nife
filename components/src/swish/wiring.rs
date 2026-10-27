@@ -144,7 +144,7 @@ const _: () = {
 
 /// Delegate the capability in `slot` to the progenitor over the spawn rendezvous, narrowed to WRITE|GRANT (the progenitor
 /// builds from an untyped or maps a frame, and narrows further from there). We keep our own copy.
-pub(super) fn send_cap(slot: u64) {
+pub(super) fn send_capability(slot: u64) {
     delegate(slot, abi::rights::WRITE | abi::rights::GRANT);
 }
 

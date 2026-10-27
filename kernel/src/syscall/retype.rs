@@ -9,7 +9,7 @@
 
 use abi::Error;
 
-use crate::cap::{Capability, Object, Rights};
+use crate::capability_object::{Capability, Object, Rights};
 use crate::sched;
 
 /// `MemoryRegion::RETYPE_OBJ`: retype a page of `region` into a kernel object of `kind` and file a
@@ -66,15 +66,15 @@ pub(super) fn memory_region_retype_obj(
         }
         // `space_slot` needs `WRITE` on the space and is consumed, as `CONFIGURE` consumes one.
         abi::objtype::PROCESS => {
-            let space = sched::current_cap(space_slot).map_err(|_| Error::NoSuchSlot)?;
-            let crate::cap::Object::AddressSpace(name) = space.object else {
+            let space = sched::current_capability(space_slot).map_err(|_| Error::NoSuchSlot)?;
+            let crate::capability_object::Object::AddressSpace(name) = space.object else {
                 return Err(Error::WrongObject);
             };
             if !space.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
             let pid = sched::create_process_from(region, name)?;
-            let _ = sched::delete_current_cap(space_slot);
+            let _ = sched::delete_current_capability(space_slot);
             let slot = sched::grant_from(floor, budget.mint_child(Object::Process(pid)))
                 .map_err(|_| Error::OutOfMemory)?;
             Ok(slot as i64)

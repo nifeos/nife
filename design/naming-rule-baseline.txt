@@ -146,11 +146,9 @@ kernel/src/sched/ipc_tables.rs::ipc_tables spelled-out
 kernel/src/sched/rendezvous.rs::ipc_call spelled-out
 kernel/src/sched/rendezvous.rs::ipc_call_badged spelled-out
 kernel/src/sched/rendezvous.rs::ipc_receive spelled-out
-kernel/src/sched/rendezvous.rs::ipc_receive_cap spelled-out
 kernel/src/sched/rendezvous.rs::ipc_reply spelled-out
 kernel/src/sched/rendezvous.rs::ipc_send spelled-out
 kernel/src/sched/rendezvous.rs::ipc_send_badged spelled-out
-kernel/src/sched/rendezvous.rs::ipc_send_cap spelled-out
 kernel/src/sync.rs::IPC_TABLES spelled-out
 kernel/src/sync.rs::STACK_VA spelled-out
 kernel/src/user.rs::USER_STACK_VA spelled-out

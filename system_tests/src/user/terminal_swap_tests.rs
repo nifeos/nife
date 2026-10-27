@@ -21,9 +21,8 @@ use line_editor::component::supervisor as s;
 use line_editor::proto;
 
 use super::*;
-use crate::cap::{
-    Rights, memory_region_root_cap as memory_region_root_capability,
-    page_frame_cap as page_frame_capability, rendezvous_cap as rendezvous_capability,
+use crate::capability_object::{
+    Rights, memory_region_root_capability, page_frame_capability, rendezvous_capability,
 };
 use crate::sched;
 use crate::user::holding::Holding;

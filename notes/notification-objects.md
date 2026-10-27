@@ -16,7 +16,7 @@ calef ruled option B on 2026-09-26, the day this was raised: the kernel writes
 `RECEIVE_CAP`, `Interrupt::WAIT`), keeping §101's `w0 = 2` and the word in `w1`. A maintainer records it as
 an amendment to §101. What follows is the proposal as it reached him, kept because how the decision
 was reached is part of the record. Its measured cost on the call/reply path is in
-`design/roadmap/0151-notification-objects.md`: about 34 bytes of `ipc_receive_cap` on riscv64 and 54 on
+`design/roadmap/0151-notification-objects.md`: about 34 bytes of `inter_process_communication_receive_capability` on riscv64 and 54 on
 `x86_64`.
 
 ### The premise §101 rests on is false
@@ -83,7 +83,7 @@ sender did not choose.
 
 ### What would have happened if calef had said no
 
-If he had picked C, the kernel's `RECEIVE_CAP` arm and `ipc_receive_cap` would have changed, and so would
+If he had picked C, the kernel's `RECEIVE_CAP` arm and `inter_process_communication_receive_capability` would have changed, and so would
 `user_mode_runtime`'s wrapper; nothing else would have, since no program outside this milestone's
 tests was written against either. D would have moved the binding delivery behind a new method and
 left `RECEIVE` exactly as it was.
@@ -134,7 +134,7 @@ today, the soak's loop beside them) is created for that purpose and never handed
 `Rendezvous` capability. Fifteen was written here at birth; the 2026-09-29 documentation audit
 re-derived the count. The driver reaches it
 only through `Interrupt::WAIT`, and an `Interrupt` capability has no send method. A grep for any
-`rendezvous_cap(` naming an interrupt endpoint finds none. Two caveats keep this from being a
+`rendezvous_capability(` naming an interrupt endpoint finds none. Two caveats keep this from being a
 guarantee. First, it holds by wiring discipline, which is rung zero: nothing in the type system or
 in `script/lint` refuses a future service that binds an interrupt to an endpoint it also grants
 with `WRITE`. Second, `kernel/src/soak.rs`'s `bind_tick_routes` binds the timer tick to endpoints

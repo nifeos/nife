@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Where the service expects its two mappings. Must match components/src/clock.rs.
@@ -124,8 +124,8 @@ fn spawn_with(
                 arg1: seed, // x86_64/CMOS only: the wall clock the kernel already read; 0 elsewhere
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(propose, Rights::READ), // slot 0: serve proposals
-                    rendezvous_cap(report, Rights::WRITE), // slot 1: the startup verdict
+                    rendezvous_capability(propose, Rights::READ), // slot 0: serve proposals
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: the startup verdict
                 ],
                 maps: &maps[..n_maps],
             },

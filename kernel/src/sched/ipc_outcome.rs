@@ -35,7 +35,7 @@ pub(super) fn set_ipc_aborted(sched: &mut IpcTables, tid: ThreadId) {
         t.handshake.abort();
         // A staged delegation or minted `Reply` would otherwise ride this thread's next plain
         // `SEND` to a different rendezvous. The sender keeps its own copy.
-        t.outgoing_cap = None;
+        t.outgoing_capability = None;
     }
 }
 

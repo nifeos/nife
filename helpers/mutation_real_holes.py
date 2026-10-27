@@ -42,9 +42,11 @@ this one.
 
 BUGS
 
-- The caller and harness classes come from keywords in the reason (CALLER_WORDS, HARNESS_WORDS). A
-  reason that rests on callers without one of those words reads as `algebraic`. Part 5's crate lanes
-  read each row, and the `kind` column of part 2 replaces the keywords.
+- The caller and harness classes of a row whose `kind` is still `unclassified` come from keywords in
+  the reason (CALLER_WORDS, HARNESS_WORDS). A reason that rests on callers without one of those words
+  reads as `algebraic`. A row with a verified `kind` (`algebraic` or `caller`) never reads the
+  keywords, and a harness-only claim is a `gap` row. The `unclassified` column counts the survivors
+  still on the keywords; the crate lanes of part 5 bring it to zero, and then the keywords go.
 - The shape of a row with no line number is the operator alone, so a `<<` with a nonzero shift reads
   as a noise shape until its row's reason says otherwise.
 - Counts are mutants (the snapshot's `count`), not keys, so a key with four mutants weighs four.
@@ -67,7 +69,7 @@ RENAMES = pathlib.Path("notes/project-metrics/mutation-census-renames.csv")
 CLASSES_CSV = pathlib.Path("notes/project-metrics/mutation-survivor-classes.csv")
 REPORT_MD = pathlib.Path("notes/mutation-testing/survivor-classification.md")
 
-FIELDS = ["crate", "function", "mutation", "count", "shape", "disposition", "class", "copied"]
+FIELDS = ["crate", "function", "mutation", "count", "shape", "disposition", "kind", "class", "copied"]
 REAL = ("gap", "stale_killed", "unrowed", "caller", "harness")
 CLASSES = ("noise", "noise_unargued", "algebraic", "caller", "harness", "gap", "stale_killed",
            "unrowed", "unrowed_noise_candidate")
@@ -112,11 +114,17 @@ def classify_one(shp, row, rows_for_noise=True):
     noise_shape = shp in ("or_xor", "shift")
     if row is None:
         return ("unrowed_noise_candidate" if noise_shape else "unrowed"), ""
-    disposition, reason = row
+    disposition, reason, kind = row[0], row[1], getattr(row, "kind", "")
     if disposition == "gap":
         return "gap", reason
     if disposition == "killed":
         return "stale_killed", reason
+    # A kind someone verified (part 2's `kind` column) decides; the keywords below only read the
+    # rows nobody has classified yet.
+    if kind == "caller":
+        return "caller", reason
+    if kind == "algebraic":
+        return ("noise" if noise_shape and NOISE_ARGUMENT.search(reason) else "algebraic"), reason
     if HARNESS_WORDS.search(reason):
         return "harness", reason
     # A stated disjoint-bits or zero-shift argument is algebra even when it mentions callers.
@@ -165,7 +173,8 @@ def classify(merged, triage, root=None):
     written for another crate."""
     sources = {}
     crates_of = collections.defaultdict(set)
-    for (crate, _f, _m), (_d, reason) in triage.items():
+    for (crate, _f, _m), row in triage.items():
+        reason = row[1]
         crates_of[normal(reason)].add(crate)
     out = []
     for (crate, function, mutation), n in sorted(merged.items()):
@@ -183,17 +192,20 @@ def classify(merged, triage, root=None):
                 src = sources[crate]
                 if src is not None and any(c not in src for c in set(CONSTANT.findall(reason))):
                     copied = "yes"
-        out.append([crate, function, mutation, n, shp, row[0] if row else "none", cls, copied])
+        out.append([crate, function, mutation, n, shp, row[0] if row else "none",
+                    getattr(row, "kind", "") if row else "", cls, copied])
     return out
 
 
 def per_crate(rows):
     t = collections.defaultdict(collections.Counter)
-    for crate, _f, _m, n, _s, _d, cls, copied in rows:
+    for crate, _f, _m, n, _s, _d, kind, cls, copied in rows:
         t[crate]["missed"] += n
         t[crate][cls] += n
         if copied:
             t[crate]["copied"] += n
+        if kind == "unclassified":
+            t[crate]["unclassified"] += n
     return t
 
 
@@ -215,13 +227,13 @@ def render_report(meta, rows):
     for c in t.values():
         total.update(c)
     head = ["crate", "missed", "noise", "algebraic", "caller", "harness", "gap", "stale killed",
-            "unrowed", "unrowed noise?", "real holes", "copied"]
+            "unrowed", "unrowed noise?", "real holes", "unclassified", "copied"]
 
     def line(name, c):
         return "| " + " | ".join(str(x) for x in [
             name, c["missed"], c["noise"] + c["noise_unargued"], c["algebraic"], c["caller"],
             c["harness"], c["gap"], c["stale_killed"], c["unrowed"], c["unrowed_noise_candidate"],
-            real(c), c["copied"]]) + " |"
+            real(c), c["unclassified"], c["copied"]]) + " |"
 
     lines = [
         "# Survivor classification: real holes per crate",
@@ -244,7 +256,9 @@ def render_report(meta, rows):
     lines += [
         "",
         "`noise` is the count of survivors whose operator is an or-versus-xor swap or a shift and whose "
-        "row argues disjoint bits or a zero shift (including the rows that do not state it). `copied` "
+        "row argues disjoint bits or a zero shift (including the rows that do not state it). "
+        "`unclassified` counts survivors whose row has no verified kind yet; their class is the "
+        "keyword reading of the reason, the guess that a verified `kind` replaces row by row. `copied` "
         "counts survivors whose row reason appears under more than one crate or cites another crate's "
         "path, so nobody has read it against this crate. It is a flag on top of the other columns and "
         "does not add to them.",
@@ -289,7 +303,7 @@ def selftest():
     assert shape("replace >> with <<") == "shift"
     assert shape("replace < with <=") == "comparison"
     assert shape("replace Foo::bar -> u64 with 0") == "other"
-    eq = lambda r: ("equivalent", r)  # noqa: E731
+    eq = lambda r: mi.Row("equivalent", r, "unclassified")  # noqa: E731
     assert classify_one("or_xor", eq("the bits are disjoint"))[0] == "noise"
     assert classify_one("or_xor", eq("argued in a note"))[0] == "noise_unargued"
     assert classify_one("comparison", eq("a tie gives the same value"))[0] == "algebraic"
@@ -297,16 +311,21 @@ def selftest():
     assert classify_one("comparison", eq("guarded by a debug_assert"))[0] == "harness"
     assert classify_one("shift", None)[0] == "unrowed_noise_candidate"
     assert classify_one("arithmetic", None)[0] == "unrowed"
-    assert classify_one("arithmetic", ("gap", "x"))[0] == "gap"
-    assert classify_one("arithmetic", ("killed", "x"))[0] == "stale_killed"
+    assert classify_one("arithmetic", mi.Row("gap", "x"))[0] == "gap"
+    assert classify_one("arithmetic", mi.Row("killed", "x"))[0] == "stale_killed"
+    # A verified kind decides over the keywords, in both directions.
+    ver = lambda k, r: mi.Row("equivalent", r, k, "2026-10-27")  # noqa: E731
+    assert classify_one("comparison", ver("algebraic", "no caller passes zero"))[0] == "algebraic"
+    assert classify_one("comparison", ver("caller", "a tie gives the same value"))[0] == "caller"
+    assert classify_one("or_xor", ver("algebraic", "the bits are disjoint"))[0] == "noise"
     merged = collections.Counter({("a", "f", "replace | with ^"): 2, ("b", "g", "replace < with <="): 1,
                                   ("b", "h", "replace + with -"): 1})
-    triage = {("a", "f", "replace | with ^"): ("equivalent", "same reason, disjoint bits"),
-              ("b", "g", "replace < with <="): ("equivalent", "same reason, disjoint bits"),
-              ("b", "z", "replace < with <="): ("gap", "x")}
+    triage = {("a", "f", "replace | with ^"): mi.Row("equivalent", "same reason, disjoint bits", "unclassified"),
+              ("b", "g", "replace < with <="): mi.Row("equivalent", "same reason, disjoint bits", "unclassified"),
+              ("b", "z", "replace < with <="): mi.Row("gap", "x")}
     rows = classify(merged, triage)
-    assert [r[6] for r in rows] == ["noise", "algebraic", "unrowed"], rows
-    assert [r[7] for r in rows] == ["yes", "yes", ""], rows
+    assert [r[7] for r in rows] == ["noise", "algebraic", "unrowed"], rows
+    assert [r[8] for r in rows] == ["yes", "yes", ""], rows
     t = per_crate(rows)
     assert real(t["b"]) == 1 and real(t["a"]) == 0
     assert normal("run 39238962856 on 2026-10-12") == normal("run 1 on 2026-10-13")

@@ -10,7 +10,7 @@
 //! back.
 
 use super::*;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
@@ -40,15 +40,15 @@ const BUDGET_PAGES: u64 = 16;
 const STACK_PAGES: u64 = 6;
 
 /// A capability to the endpoint `ep` with `rights`, and one to the memory region `region`.
-type Granted = crate::cap::Cap;
+type Granted = crate::capability_object::Cap;
 fn endpoint(ep: RendezvousId, rights: Rights) -> Granted {
-    crate::cap::rendezvous_cap(ep, rights)
+    crate::capability_object::rendezvous_capability(ep, rights)
 }
 /// A lending budget: each client retypes its socket page from it and lends the page to the stack,
 /// and the page carries the budget's rights (milestone 824 (a retype mints no right its budget
 /// lacks)).
 fn budget(region: u64) -> Granted {
-    crate::cap::memory_region_lending_capability(region)
+    crate::capability_object::memory_region_lending_capability(region)
 }
 
 /// Bounded by wall clock, `ntp_tests`' discipline: a lost wakeup fails loudly instead of hanging.

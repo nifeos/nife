@@ -68,9 +68,9 @@ fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
                 arg0: 0,
                 arg1: 0,
                 arg2: 0,
-                grants: &[crate::cap::rendezvous_cap(
+                grants: &[crate::capability_object::rendezvous_capability(
                     result,
-                    crate::cap::Rights::WRITE,
+                    crate::capability_object::Rights::WRITE,
                 )],
                 maps: &[],
             },

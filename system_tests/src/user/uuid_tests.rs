@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Spawn `uuid` with **nothing but somewhere to print**, which is what a program that did not
@@ -21,7 +21,7 @@ fn spawn_uuid_holding_no_entropy(endpoints: u64) -> RendezvousId {
                 arg0: 0,
                 arg1: 0,
                 arg2: 0,
-                grants: &[rendezvous_cap(out, Rights::WRITE)],
+                grants: &[rendezvous_capability(out, Rights::WRITE)],
                 maps: &[],
             },
         )

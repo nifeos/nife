@@ -1,5 +1,8 @@
 use super::*;
-use crate::cap::{Rights, interrupt_cap, notification_cap, rendezvous_cap, timer_cap, virtio_cap};
+use crate::capability_object::{
+    Rights, interrupt_capability, notification_capability, rendezvous_capability, timer_capability,
+    virtio_capability,
+};
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
@@ -52,9 +55,9 @@ fn wire(
                 arg1: dma, // the DMA region's PHYSICAL address (still needed to build requests)
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE), // slot 0: SEND the result
-                    interrupt_cap(intid),                  // slot 1: WAIT / ACK the interrupt
-                    virtio_cap(vid),                       // slot 2: drive the device, confined
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: SEND the result
+                    interrupt_capability(intid), // slot 1: WAIT / ACK the interrupt
+                    virtio_capability(vid),      // slot 2: drive the device, confined
                 ],
                 maps: &[Mapping {
                     va: DMA_VA,
@@ -185,7 +188,7 @@ fn wire_net_server(
     rid: Option<u32>,
     listen_grant: u64,
 ) -> (RendezvousId, RendezvousId, Holding) {
-    use crate::cap::memory_region_cap;
+    use crate::capability_object::memory_region_capability;
 
     // Zeroed so stale RAM cannot look like a valid descriptor to the device before the driver
     // writes the real ones.
@@ -248,16 +251,16 @@ fn wire_net_server(
                 arg1: dma,
                 arg2: listen_grant, // which ports this stack's clients may listen on, if any
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE), // slot 0: report the acquired address
-                    interrupt_cap(intid),                  // slot 1: WAIT / ACK the interrupt
-                    virtio_cap(vid),                       // slot 2: the confined transport
-                    memory_region_cap(budget),             // slot 3: the heap's budget
-                    rendezvous_cap(stack, Rights::READ),   // slot 4: serve clients' requests
-                    notification_cap(wake, Rights::ALL),   // slot 5: bound; arm it, poll it
-                    timer_cap(retransmit, Rights::WRITE),  // slot 6: smoltcp's next deadline
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: report the acquired address
+                    interrupt_capability(intid), // slot 1: WAIT / ACK the interrupt
+                    virtio_capability(vid),      // slot 2: the confined transport
+                    memory_region_capability(budget), // slot 3: the heap's budget
+                    rendezvous_capability(stack, Rights::READ), // slot 4: serve clients' requests
+                    notification_capability(wake, Rights::ALL), // slot 5: bound; arm it, poll it
+                    timer_capability(retransmit, Rights::WRITE), // slot 6: smoltcp's next deadline
                     // slot 7: what each socket is minted from (§255 (each socket is its own
                     // capability)); slot 8, its own address space, `run_with_own_space` adds.
-                    rendezvous_cap(stack, Rights::WRITE.union(Rights::GRANT)),
+                    rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
                 ],
                 maps: &maps,
             },
@@ -381,7 +384,7 @@ pub(super) fn spawn_stack_client(
     stack: RendezvousId,
     held: &mut Holding,
 ) -> RendezvousId {
-    use crate::cap::memory_region_lending_capability;
+    use crate::capability_object::memory_region_lending_capability;
 
     // The report endpoint's region may go while the client exists (that is the wake); the stack
     // region may not.
@@ -440,10 +443,10 @@ pub(super) fn spawn_stack_client(
 
     let tid = crate::sched::spawn(move || {
         let grants = [
-            rendezvous_cap(cli_report, Rights::WRITE), // slot 0: report the verdict
+            rendezvous_capability(cli_report, Rights::WRITE), // slot 0: report the verdict
             // slot 1: the stack endpoint, WRITE to send requests and to delegate the
             // shared frame onto it (the frame it mints already carries GRANT).
-            rendezvous_cap(stack, Rights::WRITE),
+            rendezvous_capability(stack, Rights::WRITE),
             memory_region_lending_capability(cli_budget), // slot 2: mint and map the shared frame
         ];
         run(
@@ -485,7 +488,7 @@ pub fn start_net_std(
     std_image: &'static [u8],
     listen_grant: u64,
 ) -> Option<(RendezvousId, crate::thread::ThreadId, Holding)> {
-    use crate::cap::{memory_region_cap, memory_region_lending_capability};
+    use crate::capability_object::{memory_region_capability, memory_region_lending_capability};
 
     let dev = crate::virtio::find_net_device()?;
     let transport = crate::virtio::Transport::Mmio {
@@ -524,9 +527,9 @@ pub fn start_net_std(
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    memory_region_cap(heap),                  // slot 0: the heap's budget
-                    rendezvous_cap(report, Rights::WRITE),    // slot 1: stdout/stderr
-                    rendezvous_cap(stack, Rights::WRITE),     // slot 2: the Stack endpoint
+                    memory_region_capability(heap), // slot 0: the heap's budget
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: stdout/stderr
+                    rendezvous_capability(stack, Rights::WRITE), // slot 2: the Stack endpoint
                     memory_region_lending_capability(frames), // slot 3: mint per-socket shared frames
                 ],
                 maps: &stackmaps,
@@ -600,9 +603,9 @@ pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
                 arg1: dma,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE),
-                    interrupt_cap(dev.intid), // slot 1 (unused by the attacker)
-                    virtio_cap(vid),          // slot 2
+                    rendezvous_capability(report, Rights::WRITE),
+                    interrupt_capability(dev.intid), // slot 1 (unused by the attacker)
+                    virtio_capability(vid),          // slot 2
                 ],
                 maps: &[Mapping {
                     va: DMA_VA,
@@ -647,9 +650,9 @@ pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
                 arg1: dma,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE),
-                    interrupt_cap(dev.intid), // slot 1 (unused; keeps virtio at slot 2)
-                    virtio_cap(vid),          // slot 2
+                    rendezvous_capability(report, Rights::WRITE),
+                    interrupt_capability(dev.intid), // slot 1 (unused; keeps virtio at slot 2)
+                    virtio_capability(vid),          // slot 2
                 ],
                 maps: &[Mapping {
                     va: DMA_VA,

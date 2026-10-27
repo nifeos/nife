@@ -59,7 +59,7 @@ fn build_child(
     stub: &[u32],
     report: sched::RendezvousId,
     wake: Option<sched::RendezvousId>,
-    port: Option<crate::cap::Rights>,
+    port: Option<crate::capability_object::Rights>,
     fault_ep: sched::RendezvousId,
 ) -> (u64, u64) {
     let region = crate::memory_region::create(16).expect("no region for the child");
@@ -88,9 +88,12 @@ fn build_child(
     let tid = sched::create_thread_control_block(region).expect("no tcb");
 
     // Slot 0: the report endpoint the stub SENDs on.
-    let slot = sched::thread_control_block_insert_cap(
+    let slot = sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::rendezvous_cap(report, crate::cap::Rights::WRITE),
+        crate::capability_object::rendezvous_capability(
+            report,
+            crate::capability_object::Rights::WRITE,
+        ),
         None,
     )
     .expect("insert report");
@@ -98,9 +101,12 @@ fn build_child(
 
     // Slot 1: the wake endpoint a `receive_then_port_out` child parks on, when this build has one.
     if let Some(w) = wake {
-        let slot = sched::thread_control_block_insert_cap(
+        let slot = sched::thread_control_block_insert_capability(
             tid,
-            crate::cap::rendezvous_cap(w, crate::cap::Rights::READ),
+            crate::capability_object::rendezvous_capability(
+                w,
+                crate::capability_object::Rights::READ,
+            ),
             None,
         )
         .expect("insert wake");
@@ -113,9 +119,9 @@ fn build_child(
     // child, the one that deletes it: [`PORT_SLOT_WITHOUT_WAKE`] is asserted here so that program
     // cannot delete the wrong thing and pass for the wrong reason.
     if let Some(port_rights) = port {
-        let slot = sched::thread_control_block_insert_cap(
+        let slot = sched::thread_control_block_insert_capability(
             tid,
-            crate::cap::port_range_cap(COM1_BASE, COM1_COUNT, port_rights),
+            crate::capability_object::port_range_capability(COM1_BASE, COM1_COUNT, port_rights),
             None,
         )
         .expect("insert the port range");
@@ -129,9 +135,12 @@ fn build_child(
 
     // The reserved fault slot: born supervised, so a #GP on the `out` arrives as a message rather
     // than panicking the kernel (there would otherwise be no thread to kill).
-    sched::thread_control_block_insert_cap(
+    sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::rendezvous_cap(fault_ep, crate::cap::Rights::READ),
+        crate::capability_object::rendezvous_capability(
+            fault_ep,
+            crate::capability_object::Rights::READ,
+        ),
         Some(FAULT_EP_SLOT),
     )
     .expect("insert fault ep");
@@ -181,7 +190,7 @@ fn port_holder_transmits_then_a_non_holder_faults() {
         &super::x86_programs::port_out_reporting_cpu(SCRATCH_PORT, SCRATCH_VAL, REPORTED as u32),
         report,
         None,
-        Some(crate::cap::Rights::WRITE),
+        Some(crate::capability_object::Rights::WRITE),
         sup,
     );
     let msg = sched::ipc_receive(report);
@@ -276,7 +285,7 @@ fn a_revoked_holder_faults_on_its_next_port_write() {
         &super::x86_programs::receive_then_port_out(SCRATCH_PORT, SCRATCH_VAL),
         report,
         Some(wake),
-        Some(crate::cap::Rights::WRITE),
+        Some(crate::capability_object::Rights::WRITE),
         sup,
     );
 
@@ -323,7 +332,7 @@ fn a_holder_that_deletes_its_port_capability_faults_on_its_next_port_write() {
         ),
         report,
         None,
-        Some(crate::cap::Rights::WRITE),
+        Some(crate::capability_object::Rights::WRITE),
         sup,
     );
 
@@ -359,7 +368,7 @@ fn a_take_back_leaves_the_invokers_own_bitmap_installed() {
 
     let was_enabled = interrupts::disable();
     segments::set_port_range_grant(Some((COM1_BASE, COM1_COUNT)));
-    sched::delete_port_range_caps_from_others(COM1_BASE, COM1_COUNT);
+    sched::delete_port_range_capabilities_from_others(COM1_BASE, COM1_COUNT);
     let after = segments::installed_port_grant();
     segments::set_port_range_grant(None);
     interrupts::restore(was_enabled);
@@ -392,7 +401,7 @@ fn a_read_only_port_capability_must_not_grant_port_output() {
         &super::x86_programs::port_out_then_exit(SCRATCH_PORT, SCRATCH_VAL),
         report,
         None,
-        Some(crate::cap::Rights::READ),
+        Some(crate::capability_object::Rights::READ),
         sup,
     );
 

@@ -40,8 +40,8 @@ index 017d6613c..b1bf4a655 100644
 --- a/kernel/src/sched/capabilities.rs
 +++ b/kernel/src/sched/capabilities.rs
 @@ -147,12 +147,6 @@ pub(super) fn delete_port_range_caps_impl(base: u16, count: u16, keeper: Option<
-             if matches!(t.outgoing_cap, Some(c) if c.object == target) {
-                 t.outgoing_cap = None;
+             if matches!(t.outgoing_capability, Some(c) if c.object == target) {
+                 t.outgoing_capability = None;
              }
 -            // Forget the cached grant if it named the revoked range, so switching to this thread
 -            // installs nothing. x86 only; the field exists nowhere else.
