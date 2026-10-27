@@ -19,7 +19,7 @@ on:
     inputs:
       file:
         description: kernel source file to mutate
-        default: kernel/src/cap.rs
+        default: kernel/src/revoke.rs
       limit:
         description: most mutants to run
         default: "16"
@@ -49,7 +49,7 @@ jobs:
       matrix:
         arch: [aarch64, x86_64]
     env:
-      MUTANT_FILE: ${{ inputs.file || 'kernel/src/cap.rs' }}
+      MUTANT_FILE: ${{ inputs.file || 'kernel/src/revoke.rs' }}
       MUTANT_LIMIT: ${{ inputs.limit || '16' }}
       MUTANT_BUDGET: ${{ inputs.budget || '600' }}
     steps:
