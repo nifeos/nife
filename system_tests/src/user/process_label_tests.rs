@@ -175,16 +175,35 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
         "the first viewer saw a thread outside its domain"
     );
 
-    // Teardown: end both processes, collect the corpses through their supervisors, give back.
-    let supervisor = hold_supervisor(domain_one);
-    for process in [process_a, process_b] {
+    tear_down(
+        domain_one,
+        [(process_a, region_a), (process_b, region_b)],
+        [a[0].0, b.0],
+        &[view_one, view_two],
+        endpoints,
+        a.iter().map(|m| m.1).chain([b.1]),
+    );
+}
+
+/// End both processes, collect one corpse of each through the first domain's supervisor, and give
+/// every slot and region back.
+fn tear_down(
+    domain: sched::RendezvousId,
+    processes: [(u64, u64); 2],
+    reaped: [u64; 2],
+    views: &[u64],
+    endpoints: u64,
+    tcbs: impl Iterator<Item = u64>,
+) {
+    let supervisor = hold_supervisor(domain);
+    for (process, _) in processes {
         assert_eq!(
             call(process, abi::process::DESTROY, 0, 0, 0),
             Ok(0),
             "DESTROY refused"
         );
     }
-    for (tid, _) in [a[0], b] {
+    for tid in reaped {
         assert!(
             wait_for(5, || {
                 let mut frame = crate::arch::exceptions::TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
@@ -194,14 +213,15 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
             "a member could not be collected through the rendezvous that showed it",
         );
     }
-    for slot in [view_one, view_two, supervisor, process_a, process_b]
-        .into_iter()
-        .chain(a.iter().map(|m| m.1))
-        .chain([b.1])
+    for slot in views
+        .iter()
+        .copied()
+        .chain([supervisor, processes[0].0, processes[1].0])
+        .chain(tcbs)
     {
         let _ = sched::delete_current_capability(slot);
     }
-    for region in [region_a, region_b] {
+    for (_, region) in processes {
         let _ = sched::reclaim_region(region);
     }
     sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
