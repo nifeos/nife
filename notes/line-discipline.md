@@ -87,7 +87,7 @@ risk: a client blocked *printing* while the server is blocked *delivering a line
 waiting for the other.
 
 The Reply capability (DECISIONS §12) removes it. Every request is a `CALL`, served through
-`RECEIVE_CAP`. When an `OPERATION_READLINE` arrives and no line is ready, the server does not block waiting
+`RECEIVE_CAPABILITY`. When an `OPERATION_READLINE` arrives and no line is ready, the server does not block waiting
 for input. It **parks the caller's one-shot Reply capability in a slot** and loops back to serve
 everyone else; the caller stays blocked (that is `CALL`'s contract) without holding the server
 hostage. Bytes keep flowing from the input driver, the discipline assembles a line, and only then

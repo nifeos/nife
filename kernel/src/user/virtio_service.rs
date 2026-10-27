@@ -195,7 +195,7 @@ fn wire_net_server(
         .addr();
 
     // The endpoints come out of a region of their own, or the service cannot be ended: `net_stack`
-    // blocks in `receive_cap(STACK)` forever, a `Blocked` thread never reaches the `schedule()` that
+    // blocks in `receive_capability(STACK)` forever, a `Blocked` thread never reaches the `schedule()` that
     // spends an armed kill (§16 (object revocation)), and only reclaiming this region aborts the
     // waiter. Six pages: three endpoints, the timer and its notification, and one spare.
     let ep_region = crate::memory_region::create(6).expect("no endpoint region for net_stack");

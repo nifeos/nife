@@ -1,6 +1,6 @@
 //! A revocation sweep that lands inside a delegation leaves no copy behind.
 //!
-//! `SEND_CAP`, `ThreadControlBlock::CAP_INSERT` and `PageFrame::SLICE` each read a source
+//! `SEND_CAPABILITY`, `ThreadControlBlock::CAPABILITY_INSERT` and `PageFrame::SLICE` each read a source
 //! capability and file a narrowed copy, and a sweep falling between the two would leave the copy
 //! alive. These tests drive a `PageFrame` sweep into that window on each: a frame has no
 //! generation, so the sweep is the only thing that takes it back (fatal risk 7, DECISIONS §13
@@ -62,7 +62,7 @@ fn encode(answer: Result<i64, Error>) -> u64 {
     answer.unwrap_or_else(|e| e as i64) as u64
 }
 
-/// A `PageFrame::REVOKE` that lands inside a `SEND_CAP` must not let the copy reach anyone.
+/// A `PageFrame::REVOKE` that lands inside a `SEND_CAPABILITY` must not let the copy reach anyone.
 ///
 /// The sender holds a frame with `GRANT` and sends a read-only copy to a rendezvous nobody is
 /// receiving on. It is held at the delegation seam; the revoke runs whole-machine; then it goes on.
@@ -71,9 +71,9 @@ fn encode(answer: Result<i64, Error>) -> u64 {
 /// capability naming the revoked frame; above it sit a vacuity guard (the sender really was held
 /// inside the delegation) and a premise check (the revoke reached the sender's own table).
 ///
-/// Falsification: replayable `system_tests/falsifications/user.revocation_window_tests.a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy.patch`
+/// Falsification: replayable `system_tests/falsifications/user.revocation_window_tests.a_revoke_inside_a_send_capability_leaves_the_receiver_no_copy.patch`
 #[test_case]
-fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
+fn a_revoke_inside_a_send_capability_leaves_the_receiver_no_copy() {
     static SENDER: AtomicU64 = AtomicU64::new(0);
     static ANSWER: AtomicU64 = AtomicU64::new(0);
     static RETURNED: AtomicBool = AtomicBool::new(false);
@@ -99,7 +99,7 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
         delegation_pause::arm(sched::current());
         let answer = call(
             ep_slot,
-            abi::rendezvous::SEND_CAP,
+            abi::rendezvous::SEND_CAPABILITY,
             frame_slot,
             u64::from(Rights::READ.bits()),
             7,
@@ -113,7 +113,7 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
 
     assert!(
         wait_for(delegation_pause::is_parked),
-        "the sender never reached the delegation seam, so no revoke landed inside its SEND_CAP",
+        "the sender never reached the delegation seam, so no revoke landed inside its SEND_CAPABILITY",
     );
     crate::revoke::revoke_page_frame(phys);
     let sender = SENDER.load(Ordering::SeqCst);
@@ -129,10 +129,10 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
         None
     } else {
         let [_word, slot, ..] = sched::inter_process_communication_receive_capability(ep);
-        let got = (slot != abi::rendezvous::NO_CAP)
+        let got = (slot != abi::rendezvous::NO_CAPABILITY)
             .then(|| sched::current_capability(slot).ok())
             .flatten();
-        if slot != abi::rendezvous::NO_CAP {
+        if slot != abi::rendezvous::NO_CAPABILITY {
             let _ = sched::delete_current_capability(slot);
         }
         got
@@ -148,7 +148,7 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
     );
     assert!(
         !matches!(delivered, Some(c) if c.object == Object::PageFrame(phys, page_frame_run_len(1))),
-        "a PageFrame revoked while its SEND_CAP was in progress reached the receiver: the send read \
+        "a PageFrame revoked while its SEND_CAPABILITY was in progress reached the receiver: the send read \
          its source before the sweep and filed the copy after it (answer {:#x})",
         ANSWER.load(Ordering::SeqCst),
     );
@@ -156,14 +156,14 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
     crate::memory_region::destroy(region);
 }
 
-/// **A `PageFrame::REVOKE` that lands inside a `CAP_INSERT` must not leave the embryo a copy.**
+/// **A `PageFrame::REVOKE` that lands inside a `CAPABILITY_INSERT` must not leave the embryo a copy.**
 ///
 /// The loader-side twin of the test above: the spawner endows an embryo with a narrowed copy of a
 /// frame it holds, and the revoke lands at the seam. The embryo's table is read directly afterwards.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.revocation_window_tests.a_revoke_inside_a_cap_insert_leaves_the_embryo_no_copy.patch`
+/// Falsification: replayable `system_tests/falsifications/user.revocation_window_tests.a_revoke_inside_a_capability_insert_leaves_the_embryo_no_copy.patch`
 #[test_case]
-fn a_revoke_inside_a_cap_insert_leaves_the_embryo_no_copy() {
+fn a_revoke_inside_a_capability_insert_leaves_the_embryo_no_copy() {
     static SPAWNER: AtomicU64 = AtomicU64::new(0);
     static ANSWER: AtomicU64 = AtomicU64::new(0);
     static RETURNED: AtomicBool = AtomicBool::new(false);
@@ -190,7 +190,7 @@ fn a_revoke_inside_a_cap_insert_leaves_the_embryo_no_copy() {
         delegation_pause::arm(sched::current());
         let answer = call(
             tcb_slot,
-            abi::thread_control_block::CAP_INSERT,
+            abi::thread_control_block::CAPABILITY_INSERT,
             frame_slot,
             u64::from(Rights::READ.bits()),
             0,
@@ -204,7 +204,7 @@ fn a_revoke_inside_a_cap_insert_leaves_the_embryo_no_copy() {
 
     assert!(
         wait_for(delegation_pause::is_parked),
-        "the spawner never reached the delegation seam, so no revoke landed inside its CAP_INSERT",
+        "the spawner never reached the delegation seam, so no revoke landed inside its CAPABILITY_INSERT",
     );
     crate::revoke::revoke_page_frame(phys);
     let premise = holds_frame_in(SPAWNER.load(Ordering::SeqCst), phys, 1);
@@ -220,7 +220,7 @@ fn a_revoke_inside_a_cap_insert_leaves_the_embryo_no_copy() {
     );
     assert!(
         !holds_frame_in(embryo, phys, 1),
-        "a PageFrame revoked while its CAP_INSERT was in progress was filed in the embryo's table: \
+        "a PageFrame revoked while its CAPABILITY_INSERT was in progress was filed in the embryo's table: \
          the insert read its source before the sweep and filed the copy after it (answer {:#x})",
         ANSWER.load(Ordering::SeqCst),
     );

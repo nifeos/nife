@@ -81,7 +81,7 @@ order:
 ```text
   w2 = mem_pages | INTERRUPTIBLE_BIT | SINK_BIT | SOURCE_BIT | DIAG_BIT
 
-  then, over SEND_CAP, in this order:
+  then, over SEND_CAPABILITY, in this order:
     job untyped, job frame   (if INTERRUPTIBLE)
     the sink                 (if SINK)          -> the child's slot 0
     the source               (if SOURCE)        -> the child's slot 1
@@ -95,8 +95,8 @@ What the wire says is only "expect one more capability". It is also the only one
 an operator rather than from the wiring. With no `2>` on the line a declaring child still gets a
 second stream, endowed by the progenitor from the manifest the way the clock is.
 
-Order rather than tags, because both sides read the same word: a `SEND_CAP` nobody expects and a
-`RECEIVE_CAP` nobody answers each deadlock both parties.
+Order rather than tags, because both sides read the same word: a `SEND_CAPABILITY` nobody expects and a
+`RECEIVE_CAPABILITY` nobody answers each deadlock both parties.
 
 The shell and the progenitor narrow the rights per direction, and that is load-bearing. A pipe's
 write end travels as `WRITE|GRANT` and its read end as `READ|GRANT`, and the progenitor inserts them

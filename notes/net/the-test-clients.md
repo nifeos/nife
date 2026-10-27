@@ -90,7 +90,7 @@ way it has of reaching that socket, in five steps:
    `RECEIVE` goes last: on an open socket it waits out the stack's bounded wait, so asking it first
    would turn a refusal the test can name into a report that never came.
 3. It tries to mint a socket's capability with `BADGE`, which its front door has no `GRANT` for.
-4. It opens a socket of its own and tries a kernel `RECEIVE` and `RECEIVE_CAP` on the capability,
+4. It opens a socket of its own and tries a kernel `RECEIVE` and `RECEIVE_CAPABILITY` on the capability,
    re-badges it, closes it, and tries the closed one.
 5. It arms a valid TFTP read request in its page, reports which attempts were refused, and watches
    the page for the victim's traffic, bounded.
@@ -99,7 +99,7 @@ Step 4's kernel probes cover a capture by IPC rather than by a page. The capabil
 for a socket is a copy of its own serve endpoint carrying the socket's badge
 (`socket_contract::stack_slots::MINT`), and the mint is `WRITE | GRANT` with no `READ`. With `READ`, a
 receive on it would dequeue every other client's request to the stack. The kernel refuses a receive
-on a `READ`-less endpoint at once (`RECEIVE` and `RECEIVE_CAP` in `kernel/src/syscall.rs`). A
+on a `READ`-less endpoint at once (`RECEIVE` and `RECEIVE_CAPABILITY` in `kernel/src/syscall.rs`). A
 permissive kernel would block there instead, which the test reads as the squatter never arming.
 [confinement-outsider-pass-5.md](../confinement-outsider-pass-5.md) records the pass that asked.
 

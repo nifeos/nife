@@ -221,7 +221,7 @@ pub mod supervisor {
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
     pub const CHILD_DISPLAY_TERMINAL: u64 = 1;
-    /// Lender → supervisor, a `SEND_CAP` on the swap endpoint carrying a `MemoryRegion` split
+    /// Lender → supervisor, a `SEND_CAPABILITY` on the swap endpoint carrying a `MemoryRegion` split
     /// from the machine's swap reserve ([`SWAP_RESERVE_PAGES`]), lent for the
     /// next `SWAP` of [`CHILD_DISPLAY_TERMINAL`] (calef's ruling "D", 2026-10-19 UTC), with
     /// `GRANT`, because the replacement's map budget is split from it and delegated. The

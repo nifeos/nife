@@ -1,19 +1,21 @@
-Falsifies `system_tests::user::receive_cap_attack_tests::an_interrupt_signal_received_by_receive_cap_delivers_no_cap_whichever_side_parks_first`.
+Falsifies `system_tests::user::receive_capability_attack_tests::a_death_message_received_by_receive_capability_delivers_no_capability_whichever_side_parks_first`.
 
 Architecture: all three (the change is in shared scheduler code, `kernel/src/sched.rs`).
 
-The defect this restores is the receiver-first order of an interrupt signal: `interrupt_notify` drops
-`[1, 0, 0, 0, 0]` into a parked receiver's mailbox, and with the `cap_delivered` default reverted
-`ipc_receive_cap` returns it unchanged, so `x1 = 0`, where the signal-pending order returns `NO_CAP`.
+The defect this restores is the receiver-first order of a death message: `deliver_death` drops
+`[event, tid, pc, addr, 0]` into a parked supervisor's mailbox, and with the `cap_delivered` default
+reverted `ipc_receive_capability` returns it unchanged, so `x1` is the dead thread's id, where the corpse-first
+order returns `NO_CAP`.
 
-Expected to fail: `assert_eq!(RECEIVER_X1, abi::rendezvous::NO_CAP, "an interrupt signal handed the
-receiver x1 = 0 on the receiver-first order ...")`. The `w0 == 1` check before it and the
-signal-first half after it stay green, which is what makes the red about the order.
+Expected to fail: `assert_eq!(SUPERVISOR_MSG[1], abi::rendezvous::NO_CAP, "a death message handed the
+supervisor x1 = <tid> on the receiver-first order ...")`. The event check before it stays green, which
+makes the red about `x1` and not a fixture that never delivered; the `x2 == child` check after it
+would also fail under the patch (the raw mailbox puts the pc in `x2`), and is not the headline.
 
 The patch is the hunk of milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver a
-sender-chosen slot), byte for byte: `ipc_receive_cap`'s receiver-first read is the one place all three deliveries
+sender-chosen slot), byte for byte: `ipc_receive_capability`'s receiver-first read is the one place all three deliveries
 (a plain SEND, an interrupt signal, a death message) meet, so reverting it is the only defect that
-puts back what this test pins. That the same revert turns the interrupt test red is the evidence that this
+puts back what this test pins. That the same revert turns the death test red is the evidence that this
 test, and not only 634's, reaches the default. The hunk's context cites milestone 151 (notification
 objects: async multiplexing without wait-any), whose bound-notification tag the fix exempts, and milestone 706 (a `CALL` server can tell a Reply from a delegation),
 whose `x4` comment sits in the hunk's context.
@@ -29,11 +31,11 @@ diff --git a/kernel/src/sched/rendezvous.rs b/kernel/src/sched/rendezvous.rs
 index c59bccd96..dfd1371fa 100644
 --- a/kernel/src/sched/rendezvous.rs
 +++ b/kernel/src/sched/rendezvous.rs
-@@ -712,17 +712,7 @@ pub fn ipc_receive_cap(ep: RendezvousId) -> [u64; 5] {
+@@ -677,17 +677,7 @@
              // receive, `abi::rendezvous::REPLY_DELIVERED` when a CALL's Reply was installed
              // (milestone 706, written by `ipc_call_badged`), and `0` for every other delivery a
              // sender or the kernel's death path makes (milestone 151).
--            // **x1 is NO_CAP unless a capability was installed for this delivery** (milestone 634,
+-            // **x1 is NO_CAPABILITY unless a capability was installed for this delivery** (milestone 634,
 -            // fatal risk 7). A plain SEND that reached us parked drops its three words straight into
 -            // the mailbox, so m[1] is the sender's chosen word; returning it would hand a sender a
 -            // slot number where a CALL server reads a reply slot. A bound-notification delivery is
@@ -42,7 +44,7 @@ index c59bccd96..dfd1371fa 100644
 -            if t.capability_delivered || m[4] == abi::notification::BOUND {
 -                m
 -            } else {
--                [m[0], NO_CAP, m[1], m[3], 0]
+-                [m[0], NO_CAPABILITY, m[1], m[3], 0]
 -            }
 +            t.mailbox
          }

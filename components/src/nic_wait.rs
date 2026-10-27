@@ -67,7 +67,7 @@ pub(super) fn wait_for_nic(
     if timer_arm(RETRANSMIT, now().saturating_add(ticks), WAKE, 1) == 0 {
         interrupt_wait(INTERRUPT); // 1: a frame; BOUND: the deadline
         // Whichever ended the wait, leave nothing behind: disarm, and clear a fire that raced the
-        // frame, so a stale deadline never ends the next `receive_cap(STACK)` as a bound delivery.
+        // frame, so a stale deadline never ends the next `receive_capability(STACK)` as a bound delivery.
         if timer_cancel(RETRANSMIT) == 0 {
             notification_poll(WAKE);
         }

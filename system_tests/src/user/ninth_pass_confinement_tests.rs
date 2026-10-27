@@ -28,13 +28,13 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
-/// **A capability deleted with `cap_delete` cannot be invoked again** (claim 4, §12 (call/reply
+/// **A capability deleted with `capability_delete` cannot be invoked again** (claim 4, §12 (call/reply
 /// IPC: a one-shot reply capability), the decision "a consumed capability cannot be used again"
 /// lives under).
 ///
 /// A `PageFrame` from a `Rights::ALL` budget carries `GRANT`, so one `SLICE` succeeds (the positive
-/// control). Deleted on the `SYS_CAP_DELETE` path, the same slot answers `NoSuchSlot`. Unlike
-/// `revocation_in_flight_tests`, which attack the hand-off slot, this drives plain `cap_delete`.
+/// control). Deleted on the `SYS_CAPABILITY_DELETE` path, the same slot answers `NoSuchSlot`. Unlike
+/// `revocation_in_flight_tests`, which attack the hand-off slot, this drives plain `capability_delete`.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
 /// green but did not break the code it guards to watch it go red.
@@ -50,7 +50,7 @@ fn a_consumed_capability_cannot_be_reused() {
     let slice = call(frame, abi::page_frame::SLICE, 0, 1, 0).expect("SLICE refused a GRANT frame");
     let _ = delete_current_capability(slice as u64);
 
-    // Consume the frame capability, the plain cap_delete a program issues on a handle it is done
+    // Consume the frame capability, the plain capability_delete a program issues on a handle it is done
     // with.
     delete_current_capability(frame).expect("delete of a held capability failed");
 

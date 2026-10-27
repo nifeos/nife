@@ -47,7 +47,7 @@ use supervision_protocol::{
     retype_obj_from as retype_obj, start_child,
 };
 use timetable::contract as tt;
-use user_mode_runtime::{cap_delete, exit, reap, receive_fault, send, yield_now};
+use user_mode_runtime::{capability_delete, exit, reap, receive_fault, send, yield_now};
 
 /// The readiness endpoint, `WRITE`.
 const READY: u64 = contract::READY_SLOT;
@@ -148,11 +148,11 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     }
     // The timetable holds its own copies now. `jobs` is kept: it is a child of `BUDGET`, and
     // `BUDGET` cannot come down until it does.
-    cap_delete(deaths);
-    cap_delete(PAGE);
-    cap_delete(ACTIVATION);
-    cap_delete(PACKAGES);
-    cap_delete(STORE_PAGE);
+    capability_delete(deaths);
+    capability_delete(PAGE);
+    capability_delete(ACTIVATION);
+    capability_delete(PACKAGES);
+    capability_delete(STORE_PAGE);
 
     send(READY, contract::READY, 0, 0);
 

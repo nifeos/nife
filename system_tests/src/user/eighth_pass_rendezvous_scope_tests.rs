@@ -17,13 +17,13 @@ use super::survey_tests::{
 use crate::arch::exceptions::TrapFrame;
 use crate::sched;
 
-/// `invoke(cap, REAP, tid, _, _)`, through the real dispatcher.
+/// `invoke(capability, REAP, tid, _, _)`, through the real dispatcher.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     crate::syscall::invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
 }
 
-/// `invoke(cap, SURVEY, cursor, STATE, _)`, through the real dispatcher, returning the three words
+/// `invoke(capability, SURVEY, cursor, STATE, _)`, through the real dispatcher, returning the three words
 /// a userspace caller would read out of its registers.
 fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);

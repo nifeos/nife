@@ -209,7 +209,7 @@ that for every input up to a bound, not only for the inputs a test happened to t
   a unit this kernel did not bring up gets the refusal line. This is the design, and it is a cost.
 - A device refused after boot is refused silently: the report endpoint carries one message.
 - The attach handshake is a blocking send. A driver that died between its report and its first
-  receive on the attach endpoint would block the progenitor's `SEND_CAP`, and the boot with it. The
+  receive on the attach endpoint would block the progenitor's `SEND_CAPABILITY`, and the boot with it. The
   driver receives there right after reporting, so the window is one system call wide.
 - The driver is mapped the USB Legacy Support capability (`USBLEGSUP`, `USBLEGCTLSTS`) whenever it
   sits on a page nothing else withholds. A compromised driver can then hand the controller back to

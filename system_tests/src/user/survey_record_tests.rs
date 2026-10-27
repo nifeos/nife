@@ -40,7 +40,7 @@ fn the_unknown_record_is_really_unknown() {
     );
 }
 
-/// `invoke(cap, SURVEY, cursor, record, _)` through the real dispatcher, returning the three words
+/// `invoke(capability, SURVEY, cursor, record, _)` through the real dispatcher, returning the three words
 /// a userspace caller would read out of its registers.
 ///
 /// The selector goes in the argument the method never used, which is what makes

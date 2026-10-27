@@ -15,7 +15,7 @@ The nesting survives the correction for a better reason. It is the only thing th
 a death with a grant. A builder is never told its child's tid: `supervision_protocol::build_child`
 hands back a TCB capability, and `abi::thread_control_block` has no method that reads one out. So
 the only fact this process has about a death is the tid the kernel stamped on it.
-`fire_with_grant` keeps the split untyped's own capability rather than `cap_delete`-ing it the
+`fire_with_grant` keeps the split untyped's own capability rather than `capability_delete`-ing it the
 way it does the region and the TCB. That is what lets `collect_grant` destroy it later, by name.
 
 What decides *how many* `--mem` instances may be outstanding at once is that correlation, and the

@@ -163,7 +163,7 @@ option D, the executable's bytes as frames the caller owns, with gate D2. Both a
 A command word with a `/` in it is a file. The shell binds the line against the manifest the file
 carries as an ELF note, or `uptime`'s if it has none: milestone 597 (a program carries its manifest
 in an ELF note). It opens the file and sends `spawnproto::request(len, ..)` with `IMAGE_BIT` set: word 0 is the byte length, then
-one `SEND_CAP` per page narrowed to `READ`, then the grants as today, holding one frame at a time.
+one `SEND_CAPABILITY` per page narrowed to `READ`, then the grants as today, holding one frame at a time.
 
 The progenitor maps each frame through the loader's scratch window (`supervision_protocol::map_scratch`), copies it into a
 page of its own, and deletes the capability before taking the next. It copies because the caller could change its frames between a hash and a build. It hashes the copy,

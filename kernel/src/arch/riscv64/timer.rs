@@ -213,11 +213,14 @@ pub(crate) fn tick() {
     rearm();
 }
 
-/// Move this hart's deadline forward by exactly one interval, `deadline + interval`.
+/// Move this hart's deadline forward by exactly one interval, or by the whole periods a late tick
+/// skipped.
 ///
-/// If that deadline has already passed, the tick is counted in [`MISSED_TICKS`] and the grid
-/// re-anchors at `now + interval`, so the handler cannot fire back to back forever. See
-/// notes/riscv-port/timer.md.
+/// The arithmetic is `periodic_deadline::next_after(fired, interval, now)`, the proved function (§178
+/// (where the timer re-arm seam goes), milestone 360 (`crates/timetable`'s proved `next_after` is
+/// not what the timer calls)). A tick that arrives late is counted in [`MISSED_TICKS`] and comes
+/// back onto its original beat, firing once rather than in a loop. The arch layer only reads the
+/// state, counts the miss and arms. See notes/riscv-port/timer.md.
 ///
 /// Context: interrupt context.
 fn rearm() {
@@ -225,15 +228,17 @@ fn rearm() {
     let now = now();
     // Named, not folded into the sum: the icount instrument measures arrival against it.
     let fired = DEADLINE[id].load(Ordering::Relaxed);
-    let mut next = fired + interval();
+    let interval = interval();
+    let next = periodic_deadline::next_after(fired, interval, now);
 
-    if next <= now {
+    // Late: the deadline after `fired` had already passed, so `next_after` skipped it.
+    let due = fired.saturating_add(interval);
+    if due <= now {
         MISSED_TICKS[id].fetch_add(1, Ordering::Relaxed);
         // Trap context: record, never print (DECISIONS §9 (locking: IrqSafeMutex, plus a
         // discipline)).
         #[cfg(any(test, feature = "system_tests"))]
-        miss_detail::record(now, next);
-        next = now + interval();
+        miss_detail::record(now, due);
     }
 
     DEADLINE[id].store(next, Ordering::Relaxed);
@@ -500,9 +505,9 @@ mod tests {
             }
         };
 
-        // A window holding a miss proves nothing, since a miss re-anchors the grid: retry it. Out
-        // of attempts is a skip, not a failure, and the budget does not widen (DECISIONS §61 (a
-        // lint is adopted on evidence)).
+        // A window holding a miss proves nothing about the one-interval law, since a miss skips whole
+        // periods: retry it. Out of attempts is a skip, not a failure, and the budget does not widen
+        // (DECISIONS §61 (a lint is adopted on evidence)).
         const ATTEMPTS: u32 = 8;
         let mut attempts = 0;
         let measured = loop {
@@ -525,8 +530,8 @@ mod tests {
             crate::println!(
                 "    (UNMEASURED: no miss-free window in {} tries, so the re-arm law was not \
                  tested this run. {} misses recorded on this hart, the last re-armed {} counter \
-                 ticks late against an interval of {}. A miss re-anchors the grid, so a window \
-                 containing one proves nothing either way, and whether these misses are a \
+                 ticks late against an interval of {}. A miss makes the deadline skip whole \
+                 periods, so a window containing one proves nothing about the one-interval law, and whether these misses are a \
                  contended host or a slow handler is the one question a wall clock cannot answer \
                  from inside the guest. `script/icount` answers it and asserts this same law with \
                  no host term in it. Milestone 62; notes/load-sensitive-assertions.md.)",
@@ -589,6 +594,55 @@ mod tests {
             "holding a lock across two tick periods did NOT lose a tick, which means \
              InterruptSafeMutex is not masking interrupts and the deadlock in notes/locking.md \
              is live"
+        );
+    }
+
+    /// **A late tick returns to the grid** (§178 (where the timer re-arm seam goes), milestone 360
+    /// (`crates/timetable`'s proved `next_after` is not what the timer calls)).
+    ///
+    /// Masks interrupts across two and a half periods, so the handler runs late, then asserts the
+    /// armed deadline is still congruent to its old value modulo the interval. A re-arm from `now`
+    /// leaves the grid at a random offset and fails this; the proved `next_after` keeps the phase.
+    /// Skips when the thread changes hart between the reads, because the deadline is per hart.
+    #[test_case]
+    fn a_late_tick_returns_to_the_grid() {
+        use crate::arch::timer;
+        use crate::sync::{InterruptSafeMutex, rank};
+
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+
+        let interval = timer::interval();
+        // Inside the critical section the thread cannot migrate or be preempted, so the phase and
+        // the miss count belong to the hart named here.
+        let (hart, phase, before) = {
+            let _guard = M.lock();
+            let hart = crate::cpu::id();
+            let phase = timer::deadline() % interval;
+            let before = timer::missed_ticks_on(hart);
+            timer::spin_for(interval * 2 + interval / 2);
+            (hart, phase, before)
+        };
+
+        // Bounded wait: a descheduled host only makes the delivery later.
+        assert!(
+            within_periods(20, || timer::missed_ticks_on(hart) > before),
+            "a lock held across two and a half periods did not make a tick late"
+        );
+
+        // Both reads inside one critical section again, so the deadline is this hart's and no
+        // tick lands between reading it and comparing.
+        let after = {
+            let _guard = M.lock();
+            (crate::cpu::id() == hart).then(|| timer::deadline() % interval)
+        };
+        let Some(after) = after else {
+            crate::testing::skip!("the thread moved harts, so the deadline read is another's");
+        };
+        assert_eq!(
+            after, phase,
+            "a late tick left the grid: the deadline's phase moved from {phase} to {after} \
+             counter ticks of {interval}. Re-arming from now instead of from the deadline that \
+             fired does exactly this."
         );
     }
 

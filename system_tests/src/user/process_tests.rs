@@ -191,7 +191,7 @@ pub(super) fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId)
         "the address-space capability a process was created with was not consumed",
     );
     let _ = sched::delete_current_capability(untyped);
-    let Ok(crate::capability_object::Cap {
+    let Ok(crate::capability_object::Capability {
         object: Object::Process(pid),
         ..
     }) = sched::current_capability(slot)
@@ -271,13 +271,13 @@ fn two_threads_of_one_process_share_its_space_its_table_and_a_futex() {
     assert_eq!(
         call(
             waiter_tcb,
-            abi::thread_control_block::CAP_INSERT,
+            abi::thread_control_block::CAPABILITY_INSERT,
             reader,
             Rights::READ.bits() as u64,
             1, // slot 0
         ),
         Ok(0),
-        "CAP_INSERT into a member refused",
+        "CAPABILITY_INSERT into a member refused",
     );
     let (waker, waker_tcb) = join(region, process, 1, STACK_B_VA);
     assert_eq!(
@@ -716,13 +716,13 @@ fn a_member_stranded_killed_on_a_futex_is_finished_and_reaped() {
     assert_eq!(
         call(
             waiter_tcb,
-            abi::thread_control_block::CAP_INSERT,
+            abi::thread_control_block::CAPABILITY_INSERT,
             reader,
             Rights::READ.bits() as u64,
             1, // slot 0
         ),
         Ok(0),
-        "CAP_INSERT into a member refused",
+        "CAPABILITY_INSERT into a member refused",
     );
     sched::start_thread_control_block(waiter, [0, VA, PRIVATE | SIZE_U32]).expect("start");
     assert!(

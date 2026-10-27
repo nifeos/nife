@@ -44,7 +44,7 @@ once on aarch64:
 | | aarch64 | riscv64 | x86_64 |
 |---|---|---|---|
 | `uptime`, stripped | 89,168 bytes, 22 frames | 49,168 bytes, 13 frames | 28,352 bytes, 7 frames |
-| Messages on the spawn endpoint | 1 `SEND` + 22 `SEND_CAP`s | 1 + 13 | 1 + 7 |
+| Messages on the spawn endpoint | 1 `SEND` + 22 `SEND_CAPABILITY`s | 1 + 13 | 1 + 7 |
 | File-service calls by the progenitor | 8 (3 opens, 2 reads, 3 closes) | 8 | 8 |
 | Pages staged on each side, returned after | 22 | 13 | 7 |
 | Progenitor capability peak | 23 of 24, unchanged | 23 of 24, unchanged | the hand-over mark only |
@@ -70,7 +70,7 @@ tables exist before any staging region does. Either one wrong silently strands e
 | | aarch64 | riscv64 | x86_64 |
 |---|---|---|---|
 | Package file | 90,491 bytes, 23 frames | 50,491 bytes, 13 frames | 29,675 bytes, 8 frames |
-| Messages on the spawn endpoint | 1 `SEND` + 23 `SEND_CAP`s | 1 + 13 | 1 + 8 |
+| Messages on the spawn endpoint | 1 `SEND` + 23 `SEND_CAPABILITY`s | 1 + 13 | 1 + 8 |
 | File-service calls by the progenitor | 51 | 42 | 36 |
 | Progenitor capability peak | 23 of 24, unchanged | 23 of 24, unchanged | the hand-over mark only |
 

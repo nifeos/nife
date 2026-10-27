@@ -15,7 +15,7 @@ fact rather than an assumption, and milestone 229 (build the cycle-counter grant
 
 It is a per-thread grant the context switch enforces. `sched::grant_cycle_counter` sets a bool on
 an embryo and refuses any thread that is not one. So it belongs to the same creation-time set as
-`CONFIGURE` and `CAP_INSERT`, and a running program cannot ask for it. The kernel writes the enable
+`CONFIGURE` and `CAPABILITY_INSERT`, and a running program cannot ask for it. The kernel writes the enable
 at the switch, beside the address-space root, comparing before it writes. So a machine where nothing
 is granted never writes the register at all.
 

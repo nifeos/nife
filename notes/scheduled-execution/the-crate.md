@@ -39,7 +39,7 @@ nothing else in the protocol changes.
 ## The phase, sampled
 
 `proofs.rs` leaves phase preservation to the host tests, for the reason
-[next-after-proofs.md](next-after-proofs.md) gives.
+[periodic-deadline-proofs.md](../periodic-deadline-proofs.md) gives.
 `next_after_is_strictly_in_the_future_and_keeps_its_phase` asserts the congruence at values up to
 `u64::MAX / 4`, across four periods, among them `1` and a large prime. That is sampling, and it says
 so.

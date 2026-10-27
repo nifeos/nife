@@ -62,7 +62,7 @@ Two endpoints. Two phases. The second phase never ends and the first one never c
 
 1. **Provision.** The service blocks on the provision endpoint. Each `PUT` derives a record with a
    salt drawn from the entropy service. `SEAL` ends the phase.
-2. **Delete.** The service `cap_delete`s its receive end. The provisioner drops its send end.
+2. **Delete.** The service `capability_delete`s its receive end. The provisioner drops its send end.
    Between them, nothing in the system can name the object any more.
 3. Serve. The service blocks on the verify endpoint, forever. One opcode, `VERIFY`, and the answer
    is yes or no. (Between milestone 65 and 2026-08-30 there were two, and an NTLM yes carried a

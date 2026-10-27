@@ -43,7 +43,7 @@ pub const MAXIMUM_MAPS: usize = 4;
 /// Which way a rendezvous points: the axis this crate adds over a program's manifest. A required
 /// field with no default, so a component cannot declare a rendezvous without saying whether it
 /// answers on it, and the supervisor never spells `READ` or `WRITE`. A client given `READ` could
-/// park in `RECEIVE_CAP` and take its own server's requests, which is §41 (the endpoint is the
+/// park in `RECEIVE_CAPABILITY` and take its own server's requests, which is §41 (the endpoint is the
 /// broker)'s central refusal. See notes/component-manifest/capability-plan.md.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Direction {

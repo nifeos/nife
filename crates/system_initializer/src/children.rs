@@ -52,7 +52,7 @@ pub(super) fn build_grant(
                 .nameset
                 .as_ref()
                 .and_then(|e| build_caretaker(own_ut, region, e, fs, words, Some(set)));
-            cap_delete(set);
+            capability_delete(set);
             ep
         }
     }
@@ -106,18 +106,18 @@ pub(super) fn build_caretaker(
     let child = built.ok()?;
     let started = start_child(child, care_words.0, care_words.1, care_words.2);
     if !started {
-        cap_delete(ready);
-        cap_delete(narrow_ep);
+        capability_delete(ready);
+        capability_delete(narrow_ep);
         return None;
     }
     // The one bounded wait: the caretaker answers `READY` or `DESCENT_REFUSED`, never nothing.
     let (verdict, _, _) = receive(ready);
-    cap_delete(ready);
+    capability_delete(ready);
     if verdict == filesystem_contract::READY {
         Some(narrow_ep)
     } else {
         // A refused descent; the caretaker has already exited.
-        cap_delete(narrow_ep);
+        capability_delete(narrow_ep);
         None
     }
 }
@@ -208,10 +208,10 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
         direct_memory_access_phys,
         socket_contract::NO_LISTEN_GRANT,
     ));
-    cap_delete(budget);
+    capability_delete(budget);
     // Its only message here, sent blocking: it serves nobody until this receive takes it.
     let (lease, name_server, _) = receive(report);
-    cap_delete(report);
+    capability_delete(report);
     (stack, lease, name_server)
 }
 
@@ -309,7 +309,7 @@ pub(super) fn build_domain_name_resolver(
         endowment::port_and_transport(53, endowment::TRANSPORT_UDP),
         0,
     ));
-    cap_delete(budget);
+    capability_delete(budget);
     service
 }
 
@@ -329,14 +329,14 @@ pub(super) fn graphical_terminal_grants(
     let held = is_granted(g.gpu) && driver.is_some() && terminal.is_some();
     if is_granted(g.gpu) && !held {
         for c in [g.gpu, g.gpu_interrupt, g.gpu_dma, g.gpu_surface] {
-            cap_delete(c);
+            capability_delete(c);
         }
     }
     let kbd_driver = measured(fs, table, "keyboard_driver").elf;
     let keyboard = held && is_granted(g.keyboard) && kbd_driver.is_some();
     if is_granted(g.keyboard) && !keyboard {
         for c in [g.keyboard, g.keyboard_interrupt, g.keyboard_dma] {
-            cap_delete(c);
+            capability_delete(c);
         }
     }
     GraphicalTerminalCapabilities {
@@ -409,7 +409,7 @@ pub(super) const GRAPHICAL_TERMINAL_SESSION_PAGES: u64 = 544;
 /// their own copies or the build failed, so a failed spawn costs no slot for the rest of the boot.
 fn drop_capabilities(capabilities: &[u64]) {
     for c in capabilities {
-        cap_delete(*c);
+        capability_delete(*c);
     }
 }
 
@@ -456,7 +456,7 @@ pub(super) fn build_graphical_terminal_session(
     if built.is_err() {
         reclaim(l.region);
     }
-    cap_delete(l.region);
+    capability_delete(l.region);
     built
 }
 
@@ -543,7 +543,7 @@ fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Resu
         drop_capabilities(&[display, driver_report, budget]);
         return Err(());
     };
-    cap_delete(budget);
+    capability_delete(budget);
     // Role 0, the honest driver. No physical address: the run's first page carries it
     // (`abi::virtio::DMA_PHYS_OFFSET`), and this process could not supply one anyway.
     if !start_child(driver, 0, 0, 0) {
@@ -609,8 +609,8 @@ fn start_display_terminal(
         drop_capabilities(&[display, driver_report, term_report, term, out, budget]);
         return Err(());
     };
-    cap_delete(budget);
-    cap_delete(display);
+    capability_delete(budget);
+    capability_delete(display);
     if !start_child(terminal, video_terminal::status::MODE_DISPLAY, 0, 0) {
         drop_capabilities(&[driver_report, term_report, term, out]);
         return Err(());
@@ -620,13 +620,13 @@ fn start_display_terminal(
         drop_capabilities(&[driver_report, term_report, term, out]);
         return Err(());
     }
-    cap_delete(term_report);
+    capability_delete(term_report);
     let (tag, _, _) = receive(driver_report);
     if tag != graphics_contract::status::FLUSHED {
         drop_capabilities(&[driver_report, term, out]);
         return Err(());
     }
-    cap_delete(driver_report);
+    capability_delete(driver_report);
     Ok((term, out))
 }
 
@@ -704,7 +704,7 @@ fn start_keyboard_arm(
         drop_capabilities(&[term, out, session_term, session_out, session_in, report]);
         return Err(());
     }
-    cap_delete(report);
+    capability_delete(report);
     Ok((0, session_term, session_out, Some(session_in), session_term))
 }
 
@@ -826,7 +826,7 @@ pub(super) fn build_terminal(
         fail()
     };
     must_ok(start_child(sup, mode, lengths, 0));
-    cap_delete(budget_pages);
+    capability_delete(budget_pages);
 }
 
 pub(super) fn memory_region_split(ut: u64, pages: u64) -> Result<u64, ()> {

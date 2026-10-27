@@ -120,7 +120,7 @@ never sent. [`confinement-claims/which-assertion-fires.md`](confinement-claims/w
 This pass assumed each claim false and went looking. Two findings, both fixed:
 
 - A capability revoked while it was in flight was delivered anyway. `Thread::outgoing_capability`, the
-  `SEND_CAP` hand-off slot, was swept by no revocation. Row 30 now tests it, and the three sweeps
+  `SEND_CAPABILITY` hand-off slot, was swept by no revocation. Row 30 now tests it, and the three sweeps
   that lacked it drop the parked capability.
 - A mapping the kernel wired at boot was invisible to revocation, because `map_physical` never
   recorded it. So the progenitor could revoke a page the FS server kept mapped writable. The record
@@ -130,21 +130,21 @@ Eight other attacks held, from recycled TCB slots to FP register leaks.
 [`confinement-claims/adversarial-pass-2026-09-21.md`](confinement-claims/adversarial-pass-2026-09-21.md)
 has every attack, what each fix does not settle, and what the pass could not reach.
 
-## What `RECEIVE_CAP` hands back
+## What `RECEIVE_CAPABILITY` hands back
 
-`RECEIVE_CAP` returns in `x1` the slot a delivered capability landed in, or `NO_CAP` when the message
+`RECEIVE_CAPABILITY` returns in `x1` the slot a delivered capability landed in, or `NO_CAPABILITY` when the message
 carried none. A `CALL` server reads it as the slot of its one-shot `Reply`. No consumer in the tree
 checks the kind of object in that slot, and no ABI call would let one, as the audit by milestone 613
 (a system log service: the in-memory half) on PR #1494 found. So a word in `x1` that names a real
 slot without a delivery is authority. The worst case is `net_stack`, which
-any program that declares network reaches: its `OPERATION_ATTACH_PAGE_FRAME` does `cap_delete(x1)`
+any program that declares network reaches: its `OPERATION_ATTACH_PAGE_FRAME` does `capability_delete(x1)`
 with no guard, so a chosen slot deletes one of the server's own capabilities.
 
-`system_tests/src/user/receive_cap_attack_tests.rs` holds the property on every arrival order.
+`system_tests/src/user/receive_capability_attack_tests.rs` holds the property on every arrival order.
 
-- The receive side writes `NO_CAP` unless a capability was installed for this delivery
+- The receive side writes `NO_CAPABILITY` unless a capability was installed for this delivery
   (`Thread::capability_delivered`, `kernel/src/sched.rs`). That covers a plain `SEND`, an interrupt
-  signal and a death message reaching a parked `RECEIVE_CAP`. An `ipc_send` drops its words
+  signal and a death message reaching a parked `RECEIVE_CAPABILITY`. An `ipc_send` drops its words
   straight into a parked receiver's mailbox, which is why the receiver-first order is the one at
   risk. For the interrupt and the death message the word is the kernel's, not a sender's, so the
   hazard there is order-dependence and a fail-open default rather than a chosen value.

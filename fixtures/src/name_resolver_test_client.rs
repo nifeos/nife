@@ -41,7 +41,7 @@ use domain_name_resolution_contract::{
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{
-    call, call_receiving, cap_delete, exit, map_page_frame, retype_into_page_frame, send,
+    call, call_receiving, capability_delete, exit, map_page_frame, retype_into_page_frame, send,
     send_capability,
 };
 
@@ -118,7 +118,7 @@ fn echo_at(address: [u8; 4]) -> u64 {
     };
     let verdict = echo_on(socket, address);
     let _ = call(socket, socket::OPERATION_CLOSE, 0);
-    cap_delete(socket);
+    capability_delete(socket);
     verdict
 }
 

@@ -25,7 +25,7 @@ the gate exists.
 
 - `ipc_send_receive`: the transitive closure of non-cold calls from the SEND/RECEIVE roots (`ipc_send`,
   `ipc_receive`, `schedule`, `finish_switch`, `current_capability`).
-- `ipc_call_reply`: the same closure from the CALL/RECEIVE_CAP/REPLY roots. This is the shape the
+- `ipc_call_reply`: the same closure from the CALL/RECEIVE_CAPABILITY/REPLY roots. This is the shape the
   system actually runs, and it is 25 to 29% larger; see
   [the wrong-shape correction](#the-gate-measured-the-wrong-shape-and-the-aarch64-entry-figure-counted-a-table-it-never-fetched).
 - `ipc_fastpath`: derived, the worse of those two, which is what one round trip costs. It keeps its
@@ -156,7 +156,7 @@ argument and the phase-4 recommendation.*
 #### Phase 1: the roots were the wrong shape
 
 The roots were `ipc_send` and `ipc_receive`, which is the shape of `ipc_rtt_el0` and of essentially no
-service in this tree. A service is a client `CALL` and a server `RECEIVE_CAP` then `REPLY`.
+service in this tree. A service is a client `CALL` and a server `RECEIVE_CAPABILITY` then `REPLY`.
 `kernel/src/bench.rs`'s own `call_reply` doc already calls that "the one-endpoint shape real services
 use". Measured on the same binaries, the shape userspace runs is larger everywhere. `inter_process_communication_receive_capability`
 and `ipc_call` carry the one-shot Reply mint, the capability-table insert into the server and the
@@ -164,7 +164,7 @@ and `ipc_call` carry the one-shot Reply mint, the capability-table insert into t
 The gate now reports and checks both shapes.
 
 The syscall count is corrected with it, which [the calibration appendix](calibration-against-sel4.md)
-used to get wrong. Our round trip is three syscalls to seL4's two (client `CALL`, server `RECEIVE_CAP`,
+used to get wrong. Our round trip is three syscalls to seL4's two (client `CALL`, server `RECEIVE_CAPABILITY`,
 server `REPLY`), not four to two. Four is `ipc_rtt_el0`'s count and no service issues it. The
 residual one is the `ReplyRecv` fusion this tree does not have, which is a syscall-surface question
 and calef's.

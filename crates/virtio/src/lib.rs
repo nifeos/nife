@@ -904,7 +904,7 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
 // device confinement is unchanged. See notes/virtio.md ("The block server") and notes/fs-server.md.
 // ---------------------------------------------------------------------------------------------
 
-/// The block server's request endpoint (slot 0): the FS server CALLs here; this role `RECEIVE_CAPs` the
+/// The block server's request endpoint (slot 0): the FS server CALLs here; this role `RECEIVE_CAPABILITY`s the
 /// request plus the one-shot Reply that names the caller. Interrupt (1) and VIRTIO (2) are as every
 /// role.
 const BLK_REQ: u64 = 0;
@@ -941,9 +941,9 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
     // client can tell a real round trip from a constant yes: see `filesystem_contract::blk::FLUSH`.
     let mut flushes: i64 = 0;
     loop {
-        // RECEIVE_CAP: (first word, the Reply, second word = the starting block index). The Reply is
+        // RECEIVE_CAPABILITY: (first word, the Reply, second word = the starting block index). The Reply is
         // typed by the kernel's `x4` (milestone 706 (a `CALL` server can tell a Reply from a
-        // delegation)): a SEND_CAP's capability is deleted, and a request with no Reply is served
+        // delegation)): a SEND_CAPABILITY's capability is deleted, and a request with no Reply is served
         // with nobody to answer.
         let req = receive_request(BLK_REQ);
         let (w0, block) = (req.w0, req.w1);
