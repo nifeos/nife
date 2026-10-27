@@ -3,7 +3,7 @@
 *Name: provisional, minted 2026-10-11 (UTC) by lane/fourth-ten-longest-notes. That lane moved the
 main page's two per-file proof sections here under §212 (a prose budget). The SMMUv3 pair is from
 milestone 255 (a quarter of `kernel/src/arch/` has no assembly in it), and the IO APIC pair is from
-milestone 304 (`cargo kani -p kernel` only ever compiled one architecture). Each file is named for
+milestone 304 (`cargo kani -p kernel` only ever compiled one architecture). Each file takes its name from
 the code it proves. calef names files.*
 
 An appendix to [`notes/kernel-proofs.md`](../kernel-proofs.md), which states what is proved. These
