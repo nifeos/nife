@@ -72,14 +72,14 @@ impl smoltcp::phy::Device for Nic {
     }
 
     fn capabilities(&self) -> smoltcp::phy::DeviceCapabilities {
-        let mut caps = smoltcp::phy::DeviceCapabilities::default();
-        caps.medium = smoltcp::phy::Medium::Ethernet;
-        caps.max_transmission_unit = match self {
+        let mut capabilities = smoltcp::phy::DeviceCapabilities::default();
+        capabilities.medium = smoltcp::phy::Medium::Ethernet;
+        capabilities.max_transmission_unit = match self {
             Nic::Virtio(_) => virtio_net_transport::MTU,
             Nic::Gigabit(_) => e1000e::MAXIMUM_FRAME,
             Nic::DesignWare(_) => designware_ethernet::MAXIMUM_FRAME,
         };
-        caps
+        capabilities
     }
 }
 
