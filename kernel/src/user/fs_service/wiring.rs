@@ -180,10 +180,10 @@ pub(in crate::user) fn spawn_block_server(
                 arg1: dma, // the DMA region's physical address
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(blk_ep, Rights::READ), // slot 0: RECEIVE blk requests
-                    interrupt_cap(dev.intid),             // slot 1: the device interrupt
-                    virtio_cap(vid),                      // slot 2: the confined transport
-                    rendezvous_cap(blk_ready, Rights::WRITE), // slot 3: signal readiness once
+                    rendezvous_capability(blk_ep, Rights::READ), // slot 0: RECEIVE blk requests
+                    interrupt_capability(dev.intid),             // slot 1: the device interrupt
+                    virtio_capability(vid),                      // slot 2: the confined transport
+                    rendezvous_capability(blk_ready, Rights::WRITE), // slot 3: signal readiness once
                 ],
                 maps: &maps,
             },
@@ -304,10 +304,10 @@ pub(super) fn spawn_fs_server(fs_server_image: &'static [u8], cfg: FsServer) {
                 arg1: cfg.crash.1,
                 arg2: cfg.crash.2,
                 grants: &[
-                    memory_region_cap(budget), // slot 0: the heap's untyped budget
-                    rendezvous_cap(cfg.blk_ep, Rights::WRITE), // slot 1: CALL the block server
-                    rendezvous_cap(cfg.file_ep, Rights::READ), // slot 2: RECEIVE file requests
-                    rendezvous_cap(cfg.ready, Rights::WRITE), // slot 3: signal readiness once
+                    memory_region_capability(budget), // slot 0: the heap's untyped budget
+                    rendezvous_capability(cfg.blk_ep, Rights::WRITE), // slot 1: CALL the block server
+                    rendezvous_capability(cfg.file_ep, Rights::READ), // slot 2: RECEIVE file requests
+                    rendezvous_capability(cfg.ready, Rights::WRITE), // slot 3: signal readiness once
                 ],
                 maps: &maps[..used],
             },

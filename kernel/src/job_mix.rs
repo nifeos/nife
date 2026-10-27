@@ -22,7 +22,7 @@ use job_mix::{
     SUBRUN, TASK_SWEEP,
 };
 
-use crate::cap::{Rights, memory_region_lending_capability, rendezvous_cap};
+use crate::capability_object::{Rights, memory_region_lending_capability, rendezvous_capability};
 use crate::user::{self, Spawn};
 use crate::{arch, println, sched, smp};
 
@@ -109,7 +109,7 @@ fn spawn_echo_servers(
     placed: &mut [u8; ECHO_SERVERS + MAXIMUM_TASKS],
 ) {
     for (i, &ep) in echo.iter().enumerate() {
-        let grant = rendezvous_cap(ep, Rights::READ);
+        let grant = rendezvous_capability(ep, Rights::READ);
         let started = sched::spawn_reporting_placement(move || {
             user::run(
                 image,
@@ -144,11 +144,11 @@ fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS
     } = pool;
     for i in 0..MAXIMUM_TASKS {
         let grants = [
-            rendezvous_cap(report, Rights::WRITE),
-            rendezvous_cap(go[i], Rights::READ),
-            rendezvous_cap(echo[i % ECHO_SERVERS], Rights::WRITE),
+            rendezvous_capability(report, Rights::WRITE),
+            rendezvous_capability(go[i], Rights::READ),
+            rendezvous_capability(echo[i % ECHO_SERVERS], Rights::WRITE),
             memory_region_lending_capability(budget[i]),
-            rendezvous_cap(
+            rendezvous_capability(
                 child_done[i],
                 Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
             ),
@@ -316,7 +316,7 @@ fn breakdown(
 }
 
 /// The `job-mix-lock:` lines for one point: every lock rank some thread found held during a timed
-/// window, then the `current_cap` site. See `crate::lock_wait` for what each number can and cannot
+/// window, then the `current_capability` site. See `crate::lock_wait` for what each number can and cannot
 /// see, and `job_mix::LOCK` for the line's shape.
 #[cfg(feature = "lock_wait")]
 fn print_lock_wait(tasks: usize) {
@@ -335,7 +335,7 @@ fn print_lock_wait(tasks: usize) {
         "{LOCK} tasks={tasks} site=reap reaps={reaps} stack_free_ticks={stack_free_ticks} \
          remove_ticks={remove_ticks}"
     );
-    let (calls, contended, wait_ticks) = crate::lock_wait::current_cap_totals();
+    let (calls, contended, wait_ticks) = crate::lock_wait::current_capability_totals();
     println!(
         "{LOCK} tasks={tasks} site=current_cap calls={calls} contended={contended} \
          wait_ticks={wait_ticks}"

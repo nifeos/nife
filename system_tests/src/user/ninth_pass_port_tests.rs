@@ -16,7 +16,7 @@
 use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_EP_SLOT};
 
 use super::*;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched::{self, RendezvousId};
 
 /// COM1's port range, the object a holder's capability names. A holder may write any of these eight
@@ -82,9 +82,9 @@ fn build_port_holder(
     let tid = sched::create_thread_control_block(region).expect("no tcb");
 
     // Slot 0: the report endpoint, so slot 0 is the same for every child.
-    let slot = sched::thread_control_block_insert_cap(
+    let slot = sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::rendezvous_cap(report, Rights::WRITE),
+        crate::capability_object::rendezvous_capability(report, Rights::WRITE),
         None,
     )
     .expect("insert report");
@@ -92,9 +92,9 @@ fn build_port_holder(
 
     // Slot 1: the wake endpoint a parked child calls `RECEIVE` on, when this build has one.
     if let Some(w) = wake {
-        let slot = sched::thread_control_block_insert_cap(
+        let slot = sched::thread_control_block_insert_capability(
             tid,
-            crate::cap::rendezvous_cap(w, Rights::READ),
+            crate::capability_object::rendezvous_capability(w, Rights::READ),
             None,
         )
         .expect("insert wake");
@@ -102,9 +102,9 @@ fn build_port_holder(
     }
 
     // The port range, held so the TSS bitmap grants it (when `rights` carries WRITE); never GRANT.
-    let port_slot = sched::thread_control_block_insert_cap(
+    let port_slot = sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::port_range_cap(COM1_BASE, COM1_COUNT, rights),
+        crate::capability_object::port_range_capability(COM1_BASE, COM1_COUNT, rights),
         None,
     )
     .expect("insert the port range");
@@ -116,9 +116,9 @@ fn build_port_holder(
     }
 
     // The reserved fault slot: born supervised, so a #GP arrives as a message.
-    sched::thread_control_block_insert_cap(
+    sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::rendezvous_cap(fault_ep, Rights::READ),
+        crate::capability_object::rendezvous_capability(fault_ep, Rights::READ),
         Some(FAULT_EP_SLOT),
     )
     .expect("insert fault ep");

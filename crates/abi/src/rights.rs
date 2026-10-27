@@ -18,7 +18,7 @@ pub const ENUMERATE: u64 = 1 << 3;
 pub const BIND: u64 = 1 << 4;
 
 /// **Every right defined above.** `capability::Rights::ALL` is the kernel's twin, and
-/// `kernel/src/cap.rs` asserts the two equal at compile time. Since milestone 824 (a retype mints no right its budget
+/// `kernel/src/capability_object.rs` asserts the two equal at compile time. Since milestone 824 (a retype mints no right its budget
 /// lacks) a page or object retyped from a budget carries the budget's rights, so a builder that lends
 /// what it makes is handed a budget carrying all of them. Name: provisional (milestone 824's lane,
 /// 2026-10-12 UTC).

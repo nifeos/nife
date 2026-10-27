@@ -19,7 +19,7 @@ diff --git a/kernel/src/syscall/retype.rs b/kernel/src/syscall/retype.rs
              // The budget's rights, never a hand-written list, which would stop being full the
              // day a right is added.
 -            let slot = sched::grant_from(floor, budget.mint_child(Object::Rendezvous(ep, 0)))
-+            let slot = sched::grant_from(floor, crate::cap::rendezvous_cap(ep, Rights::ALL))
++            let slot = sched::grant_from(floor, crate::capability_object::rendezvous_cap(ep, Rights::ALL))
                  .map_err(|_| Error::OutOfMemory)?;
              Ok(slot as i64)
          }

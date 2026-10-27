@@ -12,7 +12,7 @@
 //! userspace test file is split by topic).
 
 use super::*;
-use crate::cap::{Cap, Rights};
+use crate::capability_object::{Cap, Rights};
 use crate::sched;
 
 /// **The `image_self_checker` program's ELF bytes**: the loader's subject.
@@ -193,22 +193,22 @@ pub(super) fn spawn_progenitor_shaped(
         crate::memory_region::create(2).expect("no region for a thread control block");
     let tid = sched::create_thread_control_block(thread_control_block_region)
         .unwrap_or_else(|| panic!("no thread control block for {name}"));
-    let slot = sched::thread_control_block_insert_cap(
+    let slot = sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::memory_region_cap_rights(budget, budget_rights),
+        crate::capability_object::memory_region_capability_rights(budget, budget_rights),
         None,
     )
     .expect("insert the budget");
     assert_eq!(slot, 0, "{name}'s budget must land in slot 0");
-    let slot = sched::thread_control_block_insert_cap(
+    let slot = sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::rendezvous_cap(report, report_rights),
+        crate::capability_object::rendezvous_capability(report, report_rights),
         None,
     )
     .expect("insert the report endpoint");
     assert_eq!(slot, 1, "{name}'s report endpoint must land in slot 1");
     for (i, (capability, what)) in further_caps.iter().enumerate() {
-        let slot = sched::thread_control_block_insert_cap(tid, *capability, None)
+        let slot = sched::thread_control_block_insert_capability(tid, *capability, None)
             .unwrap_or_else(|e| panic!("could not insert {name}'s {what}: {e:?}"));
         assert_eq!(
             slot,

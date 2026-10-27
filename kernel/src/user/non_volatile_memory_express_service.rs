@@ -18,7 +18,7 @@
 //! in `crates/non_volatile_memory_express`.
 
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Where the server's data-plane run is mapped. Must match
@@ -164,8 +164,8 @@ fn start(image: &'static [u8]) -> Result<Wiring, crate::non_volatile_memory_expr
                 arg1: words[1], // the data plane's PHYSICAL base: PRP fields speak physical
                 arg2: words[2], // the namespace's size in bytes, the `SIZE` answer
                 grants: &[
-                    rendezvous_cap(request, Rights::READ), // slot 0: RECEIVE blk requests
-                    rendezvous_cap(ready, Rights::WRITE),  // slot 1: signal readiness once
+                    rendezvous_capability(request, Rights::READ), // slot 0: RECEIVE blk requests
+                    rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &maps,
             },
@@ -347,8 +347,8 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
                 grants: &[
                     // slot 0 is unused by the attacker (it never serves a client); it keeps the
                     // slot shape the honest server has. slot 1 is where it reports.
-                    rendezvous_cap(report, Rights::READ),
-                    rendezvous_cap(report, Rights::WRITE),
+                    rendezvous_capability(report, Rights::READ),
+                    rendezvous_capability(report, Rights::WRITE),
                 ],
                 maps: &maps,
             },
@@ -387,11 +387,11 @@ impl Wiring {
     /// Window 0 is unbadged, as the filesystem server has always held it.
     ///
     /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
-    pub fn client_capability(&self, window: u64) -> crate::cap::Cap {
+    pub fn client_capability(&self, window: u64) -> crate::capability_object::Cap {
         assert!(
             ::driver_process_contract::non_volatile_memory_express::client_window(window).is_some()
         );
-        crate::cap::rendezvous_cap_badged(self.request, Rights::WRITE, window)
+        crate::capability_object::rendezvous_capability_badged(self.request, Rights::WRITE, window)
     }
 
     /// Take the startup report, or `None` when this caller was not the one that wired the server.

@@ -8,7 +8,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -47,13 +47,13 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
     sched::bind_interrupt(QUIET_INTID, ep);
 
     let driver = sched::spawn(|| {
-        let slot =
-            sched::grant(crate::cap::interrupt_cap(QUIET_INTID)).expect("grant the interrupt");
+        let slot = sched::grant(crate::capability_object::interrupt_capability(QUIET_INTID))
+            .expect("grant the interrupt");
         let (answer, frame) = call(slot, abi::interrupt::WAIT, 0, 0, 0);
         WOKE_WITH[1].store(frame.arg(1), Ordering::SeqCst);
         WOKE_WITH[2].store(frame.arg(4), Ordering::SeqCst);
         WOKE_WITH[0].store(answer.map_or(u64::MAX - 1, |v| v as u64), Ordering::SeqCst);
-        let _ = sched::delete_current_cap(slot);
+        let _ = sched::delete_current_capability(slot);
     })
     .expect("spawn the driver");
     assert!(
@@ -62,7 +62,11 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
     );
 
     // The mis-wiring: every right there is, GRANT included, so SEND_CAP has something to delegate.
-    let forger = sched::grant(crate::cap::rendezvous_cap(ep, Rights::ALL)).expect("grant the ep");
+    let forger = sched::grant(crate::capability_object::rendezvous_capability(
+        ep,
+        Rights::ALL,
+    ))
+    .expect("grant the ep");
 
     assert_eq!(
         call(forger, abi::rendezvous::SEND, 1, 0, 0).0,
@@ -131,7 +135,7 @@ fn a_send_to_an_interrupts_endpoint_is_refused_and_the_driver_never_sees_it() {
         "Interrupt::WAIT's x4"
     );
 
-    let _ = sched::delete_current_cap(forger);
+    let _ = sched::delete_current_capability(forger);
     assert!(super::wait_for(|| !sched::is_thread_present(driver)));
     // The route to QUIET_INTID outlives this: `bind_interrupt` has no unbind. Reclaiming the region
     // makes

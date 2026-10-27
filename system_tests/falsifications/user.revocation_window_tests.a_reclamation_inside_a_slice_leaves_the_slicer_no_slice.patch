@@ -24,22 +24,24 @@ code, so one patch serves every leg.
 diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
 --- a/kernel/src/syscall/page_frame.rs
 +++ b/kernel/src/syscall/page_frame.rs
-@@ -107,9 +107,10 @@
+@@ -110,9 +110,10 @@
  pub(super) fn page_frame_slice(slot: u64, first: u64, len: u64) -> Result<i64, Error> {
      // The source is read under the table lock the slice is filed under, so no reclamation sweep
      // falls between the read and the filing (`sched::Delegation`).
-+    let src = sched::current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
++    let src = sched::current_capability(slot).map_err(|_| Error::NoSuchSlot)?;
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
 -    let slot = sched::grant_derived(slot, |src| {
-+    let copy = (|src: crate::cap::Cap| {
++    let copy = (|src: crate::capability_object::Cap| {
          let Object::PageFrame(phys, count) = src.object else {
              return Err(Error::WrongObject);
          };
-@@ -125,7 +126,8 @@
+@@ -128,9 +128,10 @@
          }
          let base = phys + first * page_frames::FRAME_SIZE;
-         Ok(crate::cap::page_frame_run_cap(base, len, src.rights))
+         Ok(crate::capability_object::page_frame_run_capability(
+             base, len, src.rights,
+         ))
 -    })?;
 +    })(src)?;
 +    let slot = sched::grant(copy).map_err(|_| Error::OutOfMemory)?;

@@ -8,7 +8,7 @@
 pub use capability_witness_contract::USED_WORD;
 
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Spawn the pair and return `(resource endpoint, report endpoint)`. The granter delegates its
@@ -34,8 +34,8 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(channel, Rights::WRITE), // slot 0: SEND_CAP over it
-                    rendezvous_cap(resource, Rights::WRITE.union(Rights::GRANT)), // slot 1: delegate this
+                    rendezvous_capability(channel, Rights::WRITE), // slot 0: SEND_CAP over it
+                    rendezvous_capability(resource, Rights::WRITE.union(Rights::GRANT)), // slot 1: delegate this
                 ],
                 maps: &[],
             },
@@ -51,9 +51,9 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(channel, Rights::READ),   // slot 0: RECEIVE_CAP
-                    rendezvous_cap(report, Rights::WRITE),   // slot 1: report the verdict
-                    rendezvous_cap(loopback, Rights::WRITE), // slot 2: attempt re-delegation here
+                    rendezvous_capability(channel, Rights::READ), // slot 0: RECEIVE_CAP
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: report the verdict
+                    rendezvous_capability(loopback, Rights::WRITE), // slot 2: attempt re-delegation here
                 ],
                 maps: &[],
             },

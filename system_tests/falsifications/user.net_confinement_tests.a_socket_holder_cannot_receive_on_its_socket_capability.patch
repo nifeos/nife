@@ -26,8 +26,8 @@ index 13fa284d3..748ccdd2a 100644
          // server's own address space, `run_with_own_space` adds once the space exists.
          at(
              socket_contract::stack_slots::MINT,
--            rendezvous_cap(stack, Rights::WRITE.union(Rights::GRANT)),
-+            rendezvous_cap(stack, Rights::WRITE.union(Rights::GRANT).union(Rights::READ)),
+-            rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
++            rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT).union(Rights::READ)),
          );
          run_with_own_space(
              image,

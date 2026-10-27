@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, memory_region_cap, rendezvous_cap};
+use crate::capability_object::{Rights, memory_region_capability, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Where the service maps the provisioner's page. Must match components/src/credentialer.rs.
@@ -102,11 +102,11 @@ pub fn start(image: &'static [u8], entropy: RendezvousId) -> Wiring {
                 arg1: 0, // no physical address: this process touches no device
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(provision, Rights::READ), // slot 0: write the store, until SEAL
-                    rendezvous_cap(verify, Rights::READ),    // slot 1: answer questions, forever
-                    rendezvous_cap(entropy, Rights::WRITE),  // slot 2: salts, naming no device
-                    memory_region_cap(budget),               // slot 3: the memory-hard scratch
-                    rendezvous_cap(ready, Rights::WRITE),    // slot 4: one message, after the seal
+                    rendezvous_capability(provision, Rights::READ), // slot 0: write the store, until SEAL
+                    rendezvous_capability(verify, Rights::READ), // slot 1: answer questions, forever
+                    rendezvous_capability(entropy, Rights::WRITE), // slot 2: salts, naming no device
+                    memory_region_capability(budget), // slot 3: the memory-hard scratch
+                    rendezvous_capability(ready, Rights::WRITE), // slot 4: one message, after the seal
                 ],
                 maps: &maps,
             },
@@ -170,8 +170,8 @@ fn spawn_cli(
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(endpoint, Rights::WRITE), // slot 0: the service
-                    rendezvous_cap(report, Rights::WRITE),   // slot 1: say what happened
+                    rendezvous_capability(endpoint, Rights::WRITE), // slot 0: the service
+                    rendezvous_capability(report, Rights::WRITE),   // slot 1: say what happened
                 ],
                 maps: &maps,
             },
