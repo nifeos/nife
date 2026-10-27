@@ -25,8 +25,8 @@ words because x86 instructions are not a fixed width. One `copy_nonoverlapping` 
 `console::uart_put`, `input`'s `uart` module and `hot_swap_contract::probe_device` cannot reach a device
 from ring 3 at all. Their x86 arms `trap()` (or return a sentinel that nothing observes) rather than
 no-op, and that is the whole point. A silent no-op compiles into a console that acknowledges every
-byte and prints none. That is a lie told in the one place an operator is looking. Those programs
-are packed into the archive anyway, because an archive entry costs a directory slot and nothing
+byte and prints none. That is a lie told in the one place an operator is looking. `xtask` packs
+those programs into the archive anyway, because an archive entry costs a directory slot and nothing
 spawns a program by accident. The tests that would spawn them skip with the reason.
 
 ### The archive arrives as a PVH module, which is the device tree's `/chosen` one machine over
@@ -119,15 +119,16 @@ the argument for doing item 4's hand-off rather than deferring it.
    ptrace to justify it. This kernel has no debugger, so that would widen what a process may do and
    buy nothing.
 
-3. `user/link.ld` did not name `.got`, and x86 emits one. An unnamed orphan section is appended
-   after the last section the script mentions, which was `.bss`. `.got` has file contents and `.bss`
-   does not. So the `data` segment's `p_filesz` stretched past `.bss` to cover it, `p_memsz ==
-   p_filesz`, and the segment had no zero-fill tail at all. The loader had nothing to zero and
-   `.bss` was whatever the file happened to hold. Found by `the_initial_ramdisk_holds_a_native_executable`,
-   which asserts `memsz > filesz` precisely so the zero-fill test below it is not vacuous. It shows
-   up here and not on the other two because all three targets use the static relocation model and
-   none of these programs is position-independent. But LLVM's x86-64 backend still routes a few
-   references through a GOT entry where the aarch64 and RISC-V backends produce none.
+3. `user/link.ld` did not name `.got`, and x86 emits one. The linker appends an unnamed orphan
+   section after the last section the script mentions, which was `.bss`. `.got` has file contents
+   and `.bss` does not. So the `data` segment's `p_filesz` stretched past `.bss` to cover it,
+   `p_memsz == p_filesz`, and the segment had no zero-fill tail at all. The loader had nothing to
+   zero and `.bss` was whatever the file happened to hold. Found by
+   `the_initial_ramdisk_holds_a_native_executable`, which asserts `memsz > filesz` precisely so the
+   zero-fill test below it is not vacuous. It shows up here and not on the other two because all
+   three targets use the static relocation model and none of these programs is position-independent.
+   But LLVM's x86-64 backend still routes a few references through a GOT entry where the aarch64 and
+   RISC-V backends produce none.
 
 4. `fs_service::blk_server_image()`'s x86 arm was a `panic!`. It read "x86_64 builds no user
    programs at all yet", which was true when it was written and stopped being true the same day the

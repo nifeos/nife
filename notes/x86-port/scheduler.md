@@ -15,7 +15,7 @@ Milestone 161's roadmap item 4, built 2026-08-24. Item 3 ended with a hand-assem
 from the boot thread; this is the distance between that and a process, and the distance was real.
 
 Almost none of it was new x86 code. `kmem`, `untyped`, `sched` and `user::AddressSpace` are portable
-and came up on this architecture by being compiled for it. What had to be written was the arch layer
+and came up on this architecture once compiled for it. What had to be written was the arch layer
 underneath them, and what had to be *found* was four places where portable code encoded an
 assumption that held on two architectures and not on three.
 
@@ -40,8 +40,8 @@ thread, and the pair has to be re-pointed every time the thread that would come 
 
 The frame's own address is the answer. Every thread's `TrapFrame` lives at `stack_top - 176` for
 the life of the thread (milestone 71, `user::enter_frame`). So at the top of `isr_restore` the top is
-`rsp + 176`, computed from the frame about to be loaded rather than from any record of who is
-running. RISC-V does exactly this, at exactly this point, in `trap_return`. It costs four
+`rsp + 176`, computed from the frame `isr_restore` is about to load rather than from any record of
+who is running. RISC-V does exactly this, at exactly this point, in `trap_return`. It costs four
 instructions on a path that already tests the same `cs` for `swapgs`, and it makes the wrong state
 unrepresentable rather than a duty somebody has to remember at each context switch.
 
@@ -50,9 +50,9 @@ unrepresentable rather than a duty somebody has to remember at each context swit
 `sched`'s two interrupt-delivery tests need a way to raise an interrupt by hand. aarch64 has an SGI
 and needs no device; RISC-V can raise nothing at all and has to assert its console UART's transmit
 line. x86 is aarch64's case: the local APIC's Interrupt Command Register has a "self" destination
-shorthand, so any vector can be delivered to the CPU executing the write, through the real path (the
-ICR, the IRR, the ISR, an EOI). `interrupt_controller::raise_self_interrupt` is the whole of it, and the same ICR code
-is `interrupt_controller::send_reschedule`, which stopped being `unimplemented!()`.
+shorthand, so any vector can reach the CPU executing the write, through the real path (the
+ICR, the IRR, the ISR, an EOI). `interrupt_controller::raise_self_interrupt` is the whole of it, and
+the same ICR code is `interrupt_controller::send_reschedule`, which stopped being `unimplemented!()`.
 
 The intid for such a source is its vector, and that is the naming rule this architecture needs
 because `interrupt_controller::enable` takes a *legacy interrupt number* instead. The two domains
@@ -84,7 +84,7 @@ of two answers and is silently wrong when a third exists.
 - `xtask`'s `ArchLegs`. `fn aarch64(self) { self != Riscv64 }`, which answers `true` for every
   leg the moment there is a third variant. Now explicit `matches!`.
 - `smp::bring_up_secondaries`. It computed the secondary entry with `virt_to_phys` *before*
-  checking whether any core can be started, and on x86 that panics. `secondary_boot` is in `.boot`.
+  checking whether any core can start, and on x86 that panics. `secondary_boot` is in `.boot`.
   The linker places that section at its physical address because the trampoline starts in 32-bit protected
   mode and cannot name a 64-bit one. The conversion moved below the refusal. (It is not the right
   conversion for x86 SMP either, when that lands: that entry is already physical.)
@@ -117,4 +117,4 @@ first-use carves that are not leaks; a system in steady state charges the second
 mistakes in the demo itself would show as frames going missing each round. One is a reporting
 child's corpse left uncollected, so its region still holds a live TCB when `destroy` refuses it
 (silently, because `destroy` has nowhere to report). The other is endpoints drawn from the kernel's
-shared pool rather than from the region being reclaimed.
+shared pool rather than from the region under reclamation.

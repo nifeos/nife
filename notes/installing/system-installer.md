@@ -47,7 +47,7 @@ is a caretaker, which costs one IPC per block. `mkfs`'s `PartitionDisk` is the b
 `slot` is the index among this disk's `NIFE_BOOT` partitions, in table order. That is how
 `uefi_loader`'s chooser counted them before writing the index onto the kernel's command line. The
 installer counts the same way, and that is the whole agreement between the two. The chooser's
-`the_disk_with_slots` collects boot-type partitions in index order, and so does `confirm`'s loop.
+`read_table` collects boot-type partitions in index order, and so does `confirm`'s loop.
 
 A number the installer cannot match is a refusal, never a nearest slot. Confirming the wrong entry
 would mark an image good that never ran. That is worse than not confirming at all, because the

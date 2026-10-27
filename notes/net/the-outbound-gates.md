@@ -125,8 +125,9 @@ hand-written listener test, which starts no prober, hung the same way every time
 `an_accept_nobody_answers_ends_at_the_stacks_bound` holds the bound on riscv and aarch64.
 
 A polled NIC (the `e1000e` server, and radon's Ethernet port) holds no interrupt. Its wait,
-`poll_without_interrupt`, sleeps at most `e1000e_transport::POLL_MS`, so the caller's bound holds
-there too.
+`poll_without_interrupt`, sleeps until smoltcp's deadline or `e1000e_transport::POLL_MS`, whichever
+is sooner, and the timer rounds that up to a tick. So the caller's bound holds there too, to
+within a tick.
 
 ## The UDP gate must not depend on the host's resolver (a testing-hygiene defect, fixed)
 

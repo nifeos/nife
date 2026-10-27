@@ -3,7 +3,7 @@ Falsifies `non_volatile_memory_express::verification::identify_parse_is_total_an
 The defect: `parse_identify_namespace` widens the accepted LBA data size from `9..=12` to `9..=13`.
 An 8 KiB logical block then reaches `blocks_per(4096)`, which cannot serve it.
 
-Expected to fail: the harness's `assert!((9..=12).contains(&id.lba_shift))`.
+Expected to fail: the harness's `assert!((9..=12).contains(&id.logical_block_address_shift))`.
 
 diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
 index 7827ea4e1..abdeafb28 100644

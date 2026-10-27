@@ -6,9 +6,8 @@ RISC-V share a device tree, weak memory ordering, a boot handoff in the width th
 and a page-table shape. x86_64 shares none of those.
 
 This note is what the port learned, in the order a reader needs it. That is how the machine is
-entered and what had to change above `arch/` (very little, and the exceptions are listed). Then the
-three things that
-genuinely do not fit the existing seam, and an honest account of what is built.
+entered and what had to change above `arch/` (very little, with the exceptions listed). Then the
+three things that genuinely do not fit the existing seam, and an honest account of what exists.
 
 ## Status, and it is a partial port
 
@@ -21,8 +20,8 @@ ring-3 processes. The kernel's own test suite and a `script/test` leg, the addre
 arithmetic, interrupt masking, the context switch, and the test exit. A boot under QEMU's `q35`
 prints a tour and takes real hardware interrupts from the CPU's own timer *and* from a device. It
 builds and installs its own page tables, brings up the scheduler, and runs a kernel thread. It
-builds two processes out of untyped memory and runs them at CPL 3 (one invokes a capability and exits, one
-faults and is delivered to its supervisor), and halts.
+builds two processes out of untyped memory and runs them at CPL 3 (one invokes a capability and
+exits, one faults and its supervisor receives the fault), and halts.
 
 And since 2026-08-24, userspace: every program in `user/` compiles for `x86_64-unknown-none`,
 `xtask` packs the same archive RISC-V's leg does, QEMU's PVH loader hands it over as a module, and
@@ -74,7 +73,7 @@ argued where the gate is (see `script/lint`):
 - **No feature loop**: all eight boot-mode features fail on x86_64, measured, because each selects a
   boot path needing an arch layer this port has not written.
 - **`-A dead_code`**: partly stale for the same reason. The tour no longer halts before the
-  scheduler, so much of what was unreferenced now is not; what remains dead here is what needs a
+  scheduler, so much of what had no reference now has one; what remains dead here is what needs a
   userspace (the services, the drivers). Code dead on *all three* architectures is still caught by
   the other two passes; what can hide is code dead on x86_64 alone.
 
@@ -87,8 +86,8 @@ the nifefs, RedoxFS and NVMe images before it boots.
 
 ## What had to change above `arch/`
 
-This is the part that matters for the milestone-20 claim, so it is stated as a list rather than as a
-conclusion. Making the entire kernel compile for a third architecture took 42 compiler errors,
+This is the part that matters for the milestone-20 claim, so it takes the form of a list rather than
+a conclusion. Making the entire kernel compile for a third architecture took 42 compiler errors,
 every one of them "this `arch::` name does not exist yet", and:
 
 - **`crates/paging` did not change at all.** `paging::x86_64::Ia32e` is sixty lines of bit encoding
@@ -144,9 +143,9 @@ milestone 161 (the x86_64 kernel port), one file each. None of them is needed to
 ### Two boot-mode features that do not compile here
 
 These are the scope notes §19 (architectural parity is a tenet) asks for, one for each gap
-`helpers/lint_arch_parity.py` allowlists, written 2026-10-08 (UTC). Neither is planned. Under §71 (a limitation is promoted when it becomes a plan),
-each stays a `BUGS` entry until one of that section's triggers fires, and each names the one that
-would.
+`helpers/lint_arch_parity.py` allowlists, written 2026-10-08 (UTC). Neither has a plan. Under §71 (a
+limitation is promoted when it becomes a plan), each stays a `BUGS` entry until one of that
+section's triggers fires, and each names the one that would.
 
 - `--features fastpath_pad` does not compile, because this port has no padding sled.
   `kernel/src/fastpath_pad.rs` calls `arch::fastpath_pad_body`. aarch64 and riscv64 each define it
@@ -188,11 +187,11 @@ Every item is a device or a toolchain, and none is `user_mode_runtime` any more.
   capability and every role that names it, and there is nothing better to put there until §121 is
   answered. Nothing reaches it: every fixture that would map it asks
   `user::machine_has_no_device_page_for_the_console()` first.
-- The PCI bus is enumerated, and one function is driven (milestones 165 and 215). ACPI's MCFG
-  fills `memory::pci_regions()`, and a `virtio-blk-pci` disk is attached, confined behind VT-d, and
-  read and written by a driver at ring 3. What is still not attached is a NIC, a GPU, a keyboard,
-  an RNG, or a second disk: each is a line in `helpers/qemu-runner-x86_64.sh` and a wiring, not a
-  mechanism.
+- The kernel enumerates the PCI bus, and a driver drives one function (milestones 165 and 215).
+  ACPI's MCFG fills `memory::pci_regions()`, and the runner attaches a `virtio-blk-pci` disk, which
+  VT-d confines and a driver at ring 3 reads and writes. What is still not attached is a NIC, a GPU,
+  a keyboard, an RNG, or a second disk: each is a line in `helpers/qemu-runner-x86_64.sh` and a
+  wiring, not a mechanism.
 - The ACPI walk reads the boot map, and the boot map ends at 4 GiB.
   `arch::x86_64::machine::BOOT_DIRECT_MAP_LIMIT` is that bound. Firmware puts its tables just under
   the top of RAM. A bound below it finds no RSDP, no MADT, no MCFG and no DMAR, and comes up with
@@ -217,10 +216,10 @@ Every item is a device or a toolchain, and none is `user_mode_runtime` any more.
   capability would be absent, and a driver that then failed would fail somewhere else entirely. Milestone
   215 refused the same shape one level down (a machine that wants MSI and meets a function without
   MSI-X fails loudly rather than falling back to a pin).
-- An MCFG whose first bus is not 0 is refused rather than adjusted. `kernel/src/pci.rs`
+- The kernel refuses an MCFG whose first bus is not 0 rather than adjusting it. `kernel/src/pci.rs`
   addresses a function as `base + (bus << 20 | ...)` with an absolute bus number, and the
   subtraction that looks like the fix names a base below the window `mmu::map_everything` maps.
-  Every machine seen reports 0; none is required to.
+  Every machine seen reports 0; none has to.
 - ~~No RedoxFS image is attached~~: closed by milestone 303. The runner attaches the
   `-redoxfs.img` fixture as a second `virtio-blk-pci` function, and `virtio::find_block_device_n`
   spans virtio-mmio and virtio-pci so a wiring on a machine with no mmio bus can find it. What is

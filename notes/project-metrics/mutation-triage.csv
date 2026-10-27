@@ -306,8 +306,8 @@ http_response,Response::content_length,replace Response::content_length -> Optio
 http_response,Response::content_length,replace Response::content_length -> Option<u64> with Some(1),killed,"killed; the_content_length_appears_with_the_head_and_not_before in crates/http_response/src/lib.rs, re-run with cargo mutants"
 http_response,strip_crlf,replace && with ||,killed,"killed; a_bare_carriage_return_inside_a_line_is_refused in crates/http_response/src/lib.rs, re-run with cargo mutants"
 jh7110_clock_and_reset,PmicBus::from_nodes,replace && with ||,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (clocks and no resets: the bus is still read)"
-jh7110_clock_and_reset,collect_sys_steps,replace < with <=,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (five gates into four slots: the fifth would index past the plan)"
-jh7110_clock_and_reset,collect_sys_steps,replace match guard out.len < steps.len() with true,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (five gates into four slots: the fifth would index past the plan)"
+jh7110_clock_and_reset,collect_system_steps,replace < with <=,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (five gates into four slots: the fifth would index past the plan)"
+jh7110_clock_and_reset,collect_system_steps,replace match guard out.len < steps.len() with true,killed,"killed by tests::a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so (five gates into four slots: the fifth would index past the plan)"
 non_volatile_memory_express,lba_format_shift,replace * with /,killed,"killed; the_reported_shift_is_the_one_in_the_flbas_slot_for_every_format in crates/non_volatile_memory_express/src/lib.rs, re-run with cargo mutants"
 non_volatile_memory_express,lba_format_shift,replace < with <=,killed,"killed; the_reported_shift_is_the_one_in_the_flbas_slot_for_every_format in crates/non_volatile_memory_express/src/lib.rs, re-run with cargo mutants"
 uefi_loader,output_len,replace * with +,killed,"killed; the_bound_holds_the_largest_tree_and_not_a_great_deal_more in uefi_loader/src/device_tree_from_acpi.rs (already on main when this lane re-ran the file), re-run with cargo mutants"
@@ -681,8 +681,8 @@ designware_ethernet,DataPlane::can_transmit,replace % with /,killed,killed by te
 designware_ethernet,DataPlane::can_transmit,replace + with -,killed,killed by tests::the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance
 designware_ethernet,DataPlane::can_transmit,replace DataPlane::can_transmit -> bool with true,killed,killed by tests::the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance
 designware_ethernet,DataPlane::receive,replace % with +,equivalent,"line 484's behind is used only through layout::rx_buffer and layout::rx_descriptor, which reduce it mod RX_ENTRIES, and (x + 31) % 16 == (x + 15) % 16; line 491 is killed by tests::the_receive_cursor_names_the_next_slot_and_wraps; the 2026-10-12 per-crate re-run still reports it"
-designware_ethernet,DataPlane::rx_cursor,replace DataPlane::rx_cursor -> u16 with 0,killed,killed by tests::the_receive_cursor_names_the_next_slot_and_wraps
-designware_ethernet,DataPlane::rx_cursor,replace DataPlane::rx_cursor -> u16 with 1,killed,killed by tests::the_receive_cursor_names_the_next_slot_and_wraps
+designware_ethernet,DataPlane::receive_cursor,replace DataPlane::receive_cursor -> u16 with 0,killed,killed by tests::the_receive_cursor_names_the_next_slot_and_wraps
+designware_ethernet,DataPlane::receive_cursor,replace DataPlane::receive_cursor -> u16 with 1,killed,killed by tests::the_receive_cursor_names_the_next_slot_and_wraps
 designware_ethernet,DataPlane::start,replace + with *,killed,killed by tests::start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring
 designware_ethernet,DataPlane::start,replace + with -,killed,killed by tests::start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring
 designware_ethernet,DataPlane::start,replace - with +,killed,killed by tests::start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring
@@ -693,7 +693,7 @@ driver_process_contract::designware_ethernet,Handoff::is_role,replace & with |,k
 driver_process_contract::designware_ethernet,Handoff::is_role,replace Handoff::is_role -> bool with false,killed,killed by the_handoff_round_trips_and_each_refusal_stands_alone
 driver_process_contract::designware_ethernet,Handoff::pack,replace | with ^,equivalent,"ROLE_TAG is below bit 16 and the MAC is shifted above it, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 driver_process_contract::designware_ethernet,Handoff::unpack,replace || with &&,killed,killed by the_handoff_round_trips_and_each_refusal_stands_alone
-designware_ethernet,Identity::dma_bits,delete match arm 2,killed,killed by controller::tests::every_address_width_encoding_and_a_saturating_fifo
+designware_ethernet,Identity::direct_memory_access_address_bits,delete match arm 2,killed,killed by controller::tests::every_address_width_encoding_and_a_saturating_fifo
 designware_ethernet,Settings::from_mainline,replace / with %,killed,killed by motorcomm::tests::a_delay_rounds_to_the_nearest_step
 designware_ethernet,Speed::mbps,replace Speed::mbps -> u32 with 0,killed,killed by motorcomm::tests::each_speed_is_its_megabits
 designware_ethernet,Speed::mbps,replace Speed::mbps -> u32 with 1,killed,killed by motorcomm::tests::each_speed_is_its_megabits
@@ -714,20 +714,20 @@ designware_ethernet,configure,replace | with ^,equivalent,"^ binds tighter than 
 designware_ethernet,delivered,replace & with ^,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
 designware_ethernet,delivered,replace & with |,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
 designware_ethernet,delivered,replace delivered -> bool with false,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
-designware_ethernet,fifo_bytes,replace > with ==,killed,killed by controller::tests::every_address_width_encoding_and_a_saturating_fifo
-designware_ethernet,fifo_bytes,replace > with >=,equivalent,"at field == 11 both forms give 11, the only input on which > and >= differ; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,queue_bytes,replace > with ==,killed,killed by controller::tests::every_address_width_encoding_and_a_saturating_fifo
+designware_ethernet,queue_bytes,replace > with >=,equivalent,"at field == 11 both forms give 11, the only input on which > and >= differ; the 2026-10-12 per-crate re-run still reports it"
 designware_ethernet,interface,replace interface -> u32 with 1,killed,killed by jh7110::tests::the_interface_select_touches_only_gmac0s_three_bits
-designware_ethernet,layout::rx_buffer,replace % with +,killed,killed by coherence::tests::prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0
-designware_ethernet,layout::rx_buffer,replace % with /,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
-designware_ethernet,layout::rx_buffer,replace * with +,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
-designware_ethernet,layout::rx_buffer,replace * with /,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
-designware_ethernet,layout::tx_buffer,replace % with /,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
-designware_ethernet,layout::tx_buffer,replace * with +,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
-designware_ethernet,layout::tx_buffer,replace * with /,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
-designware_ethernet,layout::tx_buffer,replace + with -,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
+designware_ethernet,layout::receive_buffer,replace % with +,killed,killed by coherence::tests::prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0
+designware_ethernet,layout::receive_buffer,replace % with /,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
+designware_ethernet,layout::receive_buffer,replace * with +,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
+designware_ethernet,layout::receive_buffer,replace * with /,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
+designware_ethernet,layout::transmit_buffer,replace % with /,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
+designware_ethernet,layout::transmit_buffer,replace * with +,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
+designware_ethernet,layout::transmit_buffer,replace * with /,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
+designware_ethernet,layout::transmit_buffer,replace + with -,killed,killed by tests::the_region_is_two_ring_pages_then_the_buffers
 designware_ethernet,link_from_status,delete match arm 0,killed,killed by motorcomm::tests::each_speed_is_its_megabits
-designware_ethernet,mac_conf,replace | with &,killed,killed by controller::tests::the_mac_word_from_zero_and_from_all_ones
-designware_ethernet,mac_conf,replace | with ^,equivalent,"the speed, duplex and loopback masks are disjoint bits, and ^ binding tighter than | turns each later swap in the final chain into an XOR of two disjoint constants ORed into conf; the one swap that toggles conf itself (line 320) is killed by controller::tests::the_mac_word_from_zero_and_from_all_ones; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,mac_configuration,replace | with &,killed,killed by controller::tests::the_mac_word_from_zero_and_from_all_ones
+designware_ethernet,mac_configuration,replace | with ^,equivalent,"the speed, duplex and loopback masks are disjoint bits, and ^ binding tighter than | turns each later swap in the final chain into an XOR of two disjoint constants ORed into conf; the one swap that toggles conf itself (line 320) is killed by controller::tests::the_mac_word_from_zero_and_from_all_ones; the 2026-10-12 per-crate re-run still reports it"
 designware_ethernet,mac_hw_feature,replace % with +,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
 designware_ethernet,mac_hw_feature,replace % with /,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
 designware_ethernet,mac_hw_feature,replace * with +,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
@@ -735,15 +735,15 @@ designware_ethernet,mac_hw_feature,replace + with *,killed,killed by regs::tests
 designware_ethernet,mac_hw_feature,replace + with -,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
 designware_ethernet,mac_hw_feature,replace mac_hw_feature -> u32 with 0,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
 designware_ethernet,mac_hw_feature,replace mac_hw_feature -> u32 with 1,killed,killed by regs::tests::the_feature_registers_are_four_words_from_0x11c
-designware_ethernet,mainline_phy,replace & with ^,killed,killed by jh7110::tests::a_mainline_phy_reads_its_delays_drive_and_inversions (reg 0x23 is address 3)
-designware_ethernet,mainline_phy,replace & with |,killed,killed by jh7110::tests::a_mainline_phy_reads_its_delays_drive_and_inversions (reg 0x23 is address 3)
-designware_ethernet,mainline_phy,replace && with ||,killed,killed by jh7110::tests::a_mainline_phy_with_one_delay_takes_the_default_for_the_other
-designware_ethernet,modify_ext,replace | with ^,equivalent,"private, and every caller passes a set that is a subset of clear, so (v & !clear) has none of set's bits and | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,mainline_physical_layer_device,replace & with ^,killed,killed by jh7110::tests::a_mainline_phy_reads_its_delays_drive_and_inversions (reg 0x23 is address 3)
+designware_ethernet,mainline_physical_layer_device,replace & with |,killed,killed by jh7110::tests::a_mainline_phy_reads_its_delays_drive_and_inversions (reg 0x23 is address 3)
+designware_ethernet,mainline_physical_layer_device,replace && with ||,killed,killed by jh7110::tests::a_mainline_phy_with_one_delay_takes_the_default_for_the_other
+designware_ethernet,modify_extended,replace | with ^,equivalent,"private, and every caller passes a set that is a subset of clear, so (v & !clear) has none of set's bits and | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 designware_ethernet,observe,replace + with *,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
 designware_ethernet,observe,replace + with -,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
 designware_ethernet,observe,replace == with !=,killed,killed by coherence::tests::a_buffer_is_judged_poison_only_when_every_byte_is
 designware_ethernet,observe,replace >> with <<,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
-designware_ethernet,phy_id,replace | with ^,equivalent,"the high half is shifted to bits 31:16 and the low half is bits 15:0, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,physical_layer_device_id,replace | with ^,equivalent,"the high half is shifted to bits 31:16 and the low half is bits 15:0, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 designware_ethernet,prepare,replace + with *,killed,"the read-back now copies the poison array, so its length cannot differ and line 80's mutant is gone; line 78 is killed by coherence::tests::prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0, re-run with cargo mutants at base deff22e9f"
 designware_ethernet,prepare,replace + with -,killed,"the read-back now copies the poison array, so its length cannot differ and line 80's mutant is gone; line 78 is killed by coherence::tests::prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0, re-run with cargo mutants at base deff22e9f"
 designware_ethernet,probe_frame,replace & with ^,killed,killed by coherence::tests::the_payload_counts_from_0x40_and_wraps_at_0x7f
@@ -752,15 +752,15 @@ designware_ethernet,probe_frame,replace | with ^,equivalent,"0x40 and (i & 0x3f)
 designware_ethernet,region_in_reach,replace - with +,killed,killed by controller::tests::a_region_ending_at_4_gib_is_in_reach
 designware_ethernet,region_in_reach,replace - with /,killed,killed by controller::tests::a_region_ending_at_4_gib_is_in_reach
 designware_ethernet,restart_autonegotiation,replace | with ^,equivalent,"the survivor is the second |, and ^ binding tighter makes it bmcr | (ANENABLE ^ ANRESTART), two disjoint bits; the first is killed by mdio::tests::restarting_a_negotiation_already_running_keeps_it_running; the 2026-10-12 per-crate re-run still reports it"
-designware_ethernet,rx_descriptor_words,replace | with ^,equivalent,"RDES3_OWN, RDES3_IOC and RDES3_BUF1V are bits 31, 30 and 24, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-designware_ethernet,rx_queue_mode,delete !,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
-designware_ethernet,rx_queue_mode,replace &= with |=,killed,killed by controller::tests::configure_masks_each_bus_field_to_its_width
-designware_ethernet,rx_queue_mode,replace << with >>,killed,killed by controller::tests::configure_masks_each_bus_field_to_its_width
-designware_ethernet,rx_queue_mode,replace | with &,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
-designware_ethernet,rx_queue_mode,replace | with ^,equivalent,"each swap is between disjoint constants (RSF and the RTC mask; the RFD and RFA fields and values at bits 19:14 and 13:8), so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-designware_ethernet,rx_queue_mode,replace |= with &=,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
-designware_ethernet,rx_verdict,replace | with ^,equivalent,"RDES3_FD and RDES3_LD are bits 29 and 28, so FD | LD == FD ^ LD; the 2026-10-12 per-crate re-run still reports it"
-designware_ethernet,select_rgmii,replace | with ^,equivalent,"the field is cleared before the interface value is ORed in, so the operands are disjoint and | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,receive_descriptor_words,replace | with ^,equivalent,"RDES3_OWN, RDES3_IOC and RDES3_BUF1V are bits 31, 30 and 24, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,receive_queue_mode,delete !,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
+designware_ethernet,receive_queue_mode,replace &= with |=,killed,killed by controller::tests::configure_masks_each_bus_field_to_its_width
+designware_ethernet,receive_queue_mode,replace << with >>,killed,killed by controller::tests::configure_masks_each_bus_field_to_its_width
+designware_ethernet,receive_queue_mode,replace | with &,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
+designware_ethernet,receive_queue_mode,replace | with ^,equivalent,"each swap is between disjoint constants (RSF and the RTC mask; the RFD and RFA fields and values at bits 19:14 and 13:8), so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,receive_queue_mode,replace |= with &=,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
+designware_ethernet,receive_verdict,replace | with ^,equivalent,"RDES3_FD and RDES3_LD are bits 29 and 28, so FD | LD == FD ^ LD; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,select_reduced_gigabit_media_independent_interface,replace | with ^,equivalent,"the field is cleared before the interface value is ORed in, so the operands are disjoint and | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 designware_ethernet,soft_reset,replace | with ^,killed,killed by controller::tests::a_reset_writes_the_bit_set_whatever_it_read
 designware_ethernet,start,replace | with ^,killed,killed by controller::tests::start_and_stop_change_only_their_own_bits
 designware_ethernet,stop,delete !,killed,killed by controller::tests::start_and_stop_change_only_their_own_bits
@@ -768,17 +768,17 @@ designware_ethernet,stop,replace & with ^,killed,killed by controller::tests::st
 designware_ethernet,stop,replace & with |,killed,killed by controller::tests::start_and_stop_change_only_their_own_bits
 designware_ethernet,stop,replace | with ^,killed,killed by controller::tests::start_and_stop_change_only_their_own_bits
 designware_ethernet,transmit_completed,replace transmit_completed -> bool with true,killed,killed by coherence::tests::a_completed_loopback_is_seen_on_both_rings
-designware_ethernet,tx_descriptor_words,replace | with ^,equivalent,"the length (at most 0x7fff after the mask) and the IC, OWN, FS and LS bits (31, 31, 29, 28 of their words) never overlap, and word 2 sits below word 3's shift by 32, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-designware_ethernet,tx_queue_mode,delete !,killed,killed by controller::tests::configure_writes_each_field_and_keeps_every_other_bit
-designware_ethernet,tx_queue_mode,replace &= with |=,killed,killed by controller::tests::configure_writes_each_field_and_keeps_every_other_bit
-designware_ethernet,tx_queue_mode,replace | with &,killed,killed by controller::tests::configure_writes_each_field_and_keeps_every_other_bit
-designware_ethernet,tx_queue_mode,replace | with ^,equivalent,"TSF (bit 1) and the TTC mask (bits 6:4) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-designware_ethernet,tx_queue_mode,replace |= with &=,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
-designware_ethernet,vendor_phy,replace & with ^,killed,killed by jh7110::tests::a_vendor_phy_reads_register_values_and_keeps_the_fallback_for_the_rest (reg 0x23 is address 3)
-designware_ethernet,vendor_phy,replace & with |,killed,killed by jh7110::tests::a_vendor_phy_reads_register_values_and_keeps_the_fallback_for_the_rest (reg 0x23 is address 3)
-designware_ethernet,volt_mv,delete match arm CHIP_CONFIG_LDO_2V5,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
-designware_ethernet,volt_mv,delete match arm CHIP_CONFIG_LDO_3V3,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
-designware_ethernet,volt_mv,replace & with |,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
+designware_ethernet,transmit_descriptor_words,replace | with ^,equivalent,"the length (at most 0x7fff after the mask) and the IC, OWN, FS and LS bits (31, 31, 29, 28 of their words) never overlap, and word 2 sits below word 3's shift by 32, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,transmit_queue_mode,delete !,killed,killed by controller::tests::configure_writes_each_field_and_keeps_every_other_bit
+designware_ethernet,transmit_queue_mode,replace &= with |=,killed,killed by controller::tests::configure_writes_each_field_and_keeps_every_other_bit
+designware_ethernet,transmit_queue_mode,replace | with &,killed,killed by controller::tests::configure_writes_each_field_and_keeps_every_other_bit
+designware_ethernet,transmit_queue_mode,replace | with ^,equivalent,"TSF (bit 1) and the TTC mask (bits 6:4) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+designware_ethernet,transmit_queue_mode,replace |= with &=,killed,killed by controller::tests::the_queue_modes_from_zero_and_from_all_ones
+designware_ethernet,vendor_physical_layer_device,replace & with ^,killed,killed by jh7110::tests::a_vendor_phy_reads_register_values_and_keeps_the_fallback_for_the_rest (reg 0x23 is address 3)
+designware_ethernet,vendor_physical_layer_device,replace & with |,killed,killed by jh7110::tests::a_vendor_phy_reads_register_values_and_keeps_the_fallback_for_the_rest (reg 0x23 is address 3)
+designware_ethernet,voltage_mv,delete match arm CHIP_CONFIG_LDO_2V5,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
+designware_ethernet,voltage_mv,delete match arm CHIP_CONFIG_LDO_3V3,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
+designware_ethernet,voltage_mv,replace & with |,killed,killed by motorcomm::tests::the_ldo_field_alone_names_the_voltage
 direct_memory_access_validator,verification::ChainMem::racing,delete field racing from struct ChainMem expression,equivalent,"ChainMem::racing is in the cfg(kani) verification module, which script/verify (Kani) runs: no build but Kani's compiles it, so the mutant changes nothing cargo test or a shipped image runs. The module is now its own file, which .cargo/mutants.toml's **/src/**/verification.rs glob excludes, and a re-run with cargo mutants at base deff22e9f no longer generates it"
 domain_name_system,Name::is_within,replace < with <=,equivalent,"the equal-length case returns on the line above, so at rest.len() == zone.len() the < test is never reached and < and <= agree; the 2026-10-12 per-crate re-run still reports it"
 domain_name_system,Query::id,replace Query::id -> u16 with 1,killed,killed by a_query_keeps_its_transaction_id
@@ -788,7 +788,7 @@ domain_name_system,TcpReply<'a>::feed,replace match guard w > self.buf.len() wit
 domain_name_system,decode_name_into,replace << with >>,killed,killed by a_pointer_past_offset_255_reaches_its_target
 domain_name_system,decode_name_into,replace > with >=,killed,killed by labels_that_fill_the_limit_exactly_are_not_too_long
 domain_name_system,decode_name_into,replace | with ^,equivalent,"b2 is a byte, so ((b & 0x3f) << 8) and b2 occupy disjoint bits and | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-extensible_host_controller_interface,,replace << with >>,killed,"killed by the_register_bits_are_where_the_specification_puts_them and the_portsc_bits_are_where_the_specification_puts_them, which pin every flag; the four 1 << 0 sites (CONNECTED, CMD_RUN, STS_HALTED, IMAN_PENDING) still survive and are equivalent, since 1 >> 0 is 1"
+extensible_host_controller_interface,,replace << with >>,equivalent,"the surviving sites are the four `1 << 0` constants (CONNECTED, COMMAND_RUN, STATUS_HALTED, IMAN_PENDING), where `1 >> 0` is also 1, so no test can tell them apart; every other shift is killed by the_register_bits_are_where_the_specification_puts_them and the_portsc_bits_are_where_the_specification_puts_them, which pin every flag"
 extensible_host_controller_interface,,replace | with &,killed,killed by the_portsc_bits_are_where_the_specification_puts_them (CHANGES) and the_register_bits_are_where_the_specification_puts_them (LEGACY_SMI_ENABLES)
 extensible_host_controller_interface,,replace | with ^,equivalent,"every site ORs bit fields that do not overlap (the CHANGES flags at 17 to 23, PRESERVE's eight disjoint fields, LEGACY_SMI_ENABLES's bits 0, 4 and 13 to 15), so | and ^ agree on every value; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,Capabilities::decode,replace | with ^,equivalent,"the scratchpad high field is shifted to bits 5 to 9 and the low field is HCSPARAMS2 >> 27, bits 0 to 4, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
@@ -819,26 +819,26 @@ extensible_host_controller_interface,interrupt_interval,replace > with ==,equiva
 extensible_host_controller_interface,interrupt_interval,replace > with >=,equivalent,"both sites are clamps whose bound equals the clamped value at the tie (exponent 10 to 10, bInterval 16 to 16), so > and >= give the same result; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,slot,replace | with ^,equivalent,"speed is masked to 4 bits at 20 and entries to 5 bits at 27, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 extensible_host_controller_interface,write_value,replace | with ^,killed,killed by writing_a_preserved_bit_again_keeps_it
-usb_keyboard_report,BringUpStep::sentence,"replace BringUpStep::sentence -> &'static str with ""xyzzy""",killed,"killed by every_step_round_trips_through_its_byte, which now asserts no two steps describe themselves alike"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 1,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 10,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 11,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 12,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 13,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 14,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 15,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 17,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 2,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 3,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 4,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 5,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 6,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 7,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 8,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,BringUpStep::from_code,delete match arm 9,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
-usb_keyboard_report,keyboard_report,replace | with ^,equivalent,"port (bits 0 to 7), speed (8 to 15), vendor (16 to 31) and product (32 to 47) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
-usb_keyboard_report,ports_report,replace | with ^,equivalent,"ports (bits 0 to 7), connected (8 to 15) and settled (16) are disjoint, so | and ^ agree"
-usb_keyboard_report,failure_report,replace | with ^,equivalent,"step (bits 0 to 7), port (8 to 15) and detail (16 to 47) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::sentence,"replace BringUpStep::sentence -> &'static str with ""xyzzy""",killed,"killed by every_step_round_trips_through_its_byte, which now asserts no two steps describe themselves alike"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 1,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 10,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 11,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 12,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 13,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 14,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 15,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 17,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 2,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 3,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 4,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 5,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 6,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 7,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 8,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,BringUpStep::from_code,delete match arm 9,killed,"killed by every_step_round_trips_through_its_byte, which now asserts codes 1 to 17 each name a step"
+driver_process_contract::extensible_host_controller_interface,keyboard_report,replace | with ^,equivalent,"port (bits 0 to 7), speed (8 to 15), vendor (16 to 31) and product (32 to 47) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
+driver_process_contract::extensible_host_controller_interface,ports_report,replace | with ^,equivalent,"ports (bits 0 to 7), connected (8 to 15) and settled (16) are disjoint, so | and ^ agree"
+driver_process_contract::extensible_host_controller_interface,failure_report,replace | with ^,equivalent,"step (bits 0 to 7), port (8 to 15) and detail (16 to 47) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,Verb::mutates,replace | with ^,equivalent,"dir::WRITE, CREATE and REMOVE are bits 2, 3 and 4, disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,encode,replace | with ^,equivalent,"a name is at most grant::MAX_NAME (16) bytes, below IS_DIR (bit 7), so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 filesystem_protocol,rename_dst,replace | with ^,equivalent,"(handle & 0xffff) << 40 and len & ((1 << 40) - 1) occupy disjoint bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
@@ -1051,28 +1051,28 @@ uefi_loader,is_nvme,replace < with ==,killed,"killed by malformed_paths_are_refu
 uefi_loader,length,replace < with <=,killed,"killed by malformed_paths_are_refused_rather_than_walked, which now walks a node of only its header"
 uefi_loader,length,replace < with ==,killed,"killed by malformed_paths_are_refused_rather_than_walked, which now walks a node of only its header"
 e1000e,,replace | with &,killed,"killed by every_frame_error_bit_drops_the_frame, the_transmit_command_is_eop_ifcs_and_rs"
-e1000e,,replace | with ^,equivalent,"every line is a constant of distinct single bits (RX_ERRORS_FRAME and TX_COMMAND in lib.rs, ULP_CONFIG1_CLEARED in pch/sequence.rs), so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,DataPlane::rx_cursor,replace DataPlane::rx_cursor -> u16 with 0,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
-e1000e,DataPlane::rx_cursor,replace DataPlane::rx_cursor -> u16 with 1,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
+e1000e,,replace | with ^,equivalent,"every line is a constant of distinct single bits (RECEIVE_ERRORS_FRAME and TRANSMIT_COMMAND in lib.rs, ULP_CONFIG1_CLEARED in pch/sequence.rs), so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
+e1000e,DataPlane::receive_cursor,replace DataPlane::receive_cursor -> u16 with 0,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
+e1000e,DataPlane::receive_cursor,replace DataPlane::receive_cursor -> u16 with 1,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
 e1000e,DataPlane::start,replace + with *,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
 e1000e,DataPlane::start,replace + with -,killed,killed by start_clears_the_transmit_ring_and_the_cursor_follows_receive
 driver_process_contract::e1000e,Handoff::pack,replace | with ^,equivalent,"ROLE_TAG (0xe1e0) is below bit 16 and the MAC address is shifted left by 16, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 driver_process_contract::e1000e,Handoff::unpack,replace || with &&,killed,killed by the_handoff_refuses_a_wrong_tag_and_a_group_address_each_alone
 e1000e,flush::rxdctl,replace | with ^,equivalent,"^ binds tighter than |, so each mutant xors two operands that share no bit: the masked register (bits 14 and up) with 0x1f, or two of 0x1f, 1 << 8 and 0x0100_0000; the 2026-10-12 per-crate re-run still reports it"
 e1000e,flush::tail_after,replace flush::tail_after -> u32 with 0,killed,killed by the_flush_values_are_freebsds
-e1000e,flush::tx_word,replace << with >>,killed,killed by the_flush_values_are_freebsds
-e1000e,flush::tx_word,replace flush::tx_word -> u64 with 0,killed,killed by the_flush_values_are_freebsds
-e1000e,flush::tx_word,replace flush::tx_word -> u64 with 1,killed,killed by the_flush_values_are_freebsds
-e1000e,flush::tx_word,replace | with &,killed,killed by the_flush_values_are_freebsds
-e1000e,flush::tx_word,replace | with ^,equivalent,"512 is below bit 16 and 0x02 << 24 above it, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,layout::rx_buffer,replace % with +,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
-e1000e,layout::rx_buffer,replace % with /,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
-e1000e,layout::rx_buffer,replace * with +,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
-e1000e,layout::rx_buffer,replace * with /,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
-e1000e,layout::rx_descriptor,replace % with +,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
-e1000e,layout::tx_buffer,replace + with -,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
-e1000e,layout::tx_descriptor,replace % with +,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
-e1000e,layout::tx_descriptor,replace + with -,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
+e1000e,flush::transmit_word,replace << with >>,killed,killed by the_flush_values_are_freebsds
+e1000e,flush::transmit_word,replace flush::transmit_word -> u64 with 0,killed,killed by the_flush_values_are_freebsds
+e1000e,flush::transmit_word,replace flush::transmit_word -> u64 with 1,killed,killed by the_flush_values_are_freebsds
+e1000e,flush::transmit_word,replace | with &,killed,killed by the_flush_values_are_freebsds
+e1000e,flush::transmit_word,replace | with ^,equivalent,"512 is below bit 16 and 0x02 << 24 above it, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
+e1000e,layout::receive_buffer,replace % with +,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
+e1000e,layout::receive_buffer,replace % with /,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
+e1000e,layout::receive_buffer,replace * with +,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
+e1000e,layout::receive_buffer,replace * with /,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
+e1000e,layout::receive_descriptor,replace % with +,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
+e1000e,layout::transmit_buffer,replace + with -,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
+e1000e,layout::transmit_descriptor,replace % with +,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
+e1000e,layout::transmit_descriptor,replace + with -,killed,killed by ring_slots_are_distinct_evenly_spaced_and_wrap
 e1000e,rctl,replace | with ^,equivalent,"EN, BAM and SECRC are distinct single bits, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,tctl,replace << with >>,killed,killed by the_control_words_are_linuxs_values_exactly
 e1000e,tctl,replace | with &,killed,killed by the_control_words_are_linuxs_values_exactly
@@ -1082,25 +1082,25 @@ e1000e,tipg,replace tipg -> u32 with 0,killed,killed by the_control_words_are_li
 e1000e,tipg,replace tipg -> u32 with 1,killed,killed by the_control_words_are_linuxs_values_exactly
 e1000e,tipg,replace | with &,killed,killed by the_control_words_are_linuxs_values_exactly
 e1000e,tipg,replace | with ^,equivalent,"^ binds tighter than |; IPGT (bits 0 to 9), IPGR1 (10 to 19) and IPGR2 (20 to 29) share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,tx_word,replace | with ^,equivalent,"a u16 length is below bit 16 and the command byte is shifted to bit 24, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
+e1000e,transmit_word,replace | with ^,equivalent,"a u16 length is below bit 16 and the command byte is shifted to bit 24, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,ulp::release,replace ulp::release -> u32 with 0,killed,killed by the_ulp_handshake_changes_only_its_own_bits
-e1000e,ulp::release,replace ulp::release -> u32 with 1,killed,"killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp, the_ulp_handshake_changes_only_its_own_bits"
+e1000e,ulp::release,replace ulp::release -> u32 with 1,killed,"killed by the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp, the_ulp_handshake_changes_only_its_own_bits"
 e1000e,ulp::request,replace | with ^,killed,killed by the_ulp_handshake_changes_only_its_own_bits
 e1000e,,replace * with +,killed,killed by mdic_failures_are_told_apart
 e1000e,,replace * with /,killed,killed by mdic_failures_are_told_apart
-e1000e,,replace << with >>,equivalent,"two of the key's eight lines survive and are identities: nvm.rs's status::DONE and control::GO are 1 << 0, and 1 >> 0 is 1. The other six (DIRECT_ACCESS_ERROR, CYCLE_MASK, BYTE_COUNT_MASK, PORT_GEN_CFG_HOST_WU and the two I82577_CFG bits) are killed by the_flash_register_bits_are_the_ich8_unions, the_post_reset_clears_host_wakeup_and_replays_only_when_asked and init_hw_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
-e1000e,Geometry::from_strap,replace * with +,killed,killed by the_nvm_size_comes_from_strap_bits_five_to_one
-e1000e,Geometry::from_strap,replace >> with <<,killed,killed by the_nvm_size_comes_from_strap_bits_five_to_one
+e1000e,,replace << with >>,equivalent,"two of the key's eight lines survive and are identities: non_volatile_memory.rs's status::DONE and control::GO are 1 << 0, and 1 >> 0 is 1. The other six (DIRECT_ACCESS_ERROR, CYCLE_MASK, BYTE_COUNT_MASK, BM_WUC_HOST_WU_BIT and the two I82577_CFG bits) are killed by the_flash_register_bits_are_the_ich8_unions, the_post_reset_clears_host_wakeup_and_replays_only_when_asked and initialize_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
+e1000e,Geometry::from_strap,replace * with +,killed,killed by the_non_volatile_memory_size_comes_from_strap_bits_five_to_one
+e1000e,Geometry::from_strap,replace >> with <<,killed,killed by the_non_volatile_memory_size_comes_from_strap_bits_five_to_one
 e1000e,Swflag::acquire,delete !,killed,killed by the_semaphore_touches_only_its_own_bit
 e1000e,Swflag::acquire,replace & with ^,killed,killed by the_semaphore_touches_only_its_own_bit
 e1000e,Swflag::acquire,replace & with |,killed,killed by the_semaphore_touches_only_its_own_bit
 e1000e,Swflag::release,replace & with |,killed,killed by the_semaphore_touches_only_its_own_bit
-e1000e,accessible,delete !,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,accessible,replace & with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,accessible,replace & with |,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,accessible,replace == with !=,equivalent,"the branch for an already known identifier is unreachable: init_phy_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry. It is FreeBSD's quirk, carried for a caller this port does not have; the 2026-10-12 per-crate re-run still reports it"
+e1000e,accessible,delete !,killed,killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names
+e1000e,accessible,replace & with ^,killed,killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names
+e1000e,accessible,replace & with |,killed,killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names
+e1000e,accessible,replace == with !=,equivalent,"the branch for an already known identifier is unreachable: initialize_physical_layer_device_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry. It is FreeBSD's quirk, carried for a caller this port does not have; the 2026-10-12 per-crate re-run still reports it"
 e1000e,accessible,replace | with ^,equivalent,"hi << 16 and a u16 lo share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,accessible,replace || with &&,equivalent,"the branch for an already known identifier is unreachable: init_phy_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry; the 2026-10-12 per-crate re-run still reports it"
+e1000e,accessible,replace || with &&,equivalent,"the branch for an already known identifier is unreachable: initialize_physical_layer_device_workarounds starts the id at zero and returns at the first call that sets it, so *id is zero on every entry; the 2026-10-12 per-crate re-run still reports it"
 e1000e,config_done,delete !,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
 e1000e,config_done,replace != with ==,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
 e1000e,config_done,replace & with ^,killed,killed by a_configuration_that_never_completes_is_reported_after_its_wait
@@ -1112,12 +1112,12 @@ e1000e,cycle,replace + with *,killed,killed by a_flash_read_is_one_four_byte_cyc
 e1000e,cycle,replace + with -,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
 e1000e,cycle,replace >> with <<,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
 e1000e,cycle,replace | with ^,equivalent,"GO self-clears when a cycle starts, so the control half read back never holds it and | GO and ^ GO agree; the 2026-10-12 per-crate re-run still reports it"
-e1000e,cycle_init,replace & with ^,equivalent,"line 153's mutant sends every call down the polling path, which with no cycle running exits at its first poll writing the status back with FDONE: the same effect, because line 152's write already cleared the write-one-to-clear error bits. Line 159's is killed by a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy; the 2026-10-12 per-crate re-run still reports it"
-e1000e,cycle_init,replace & with |,equivalent,"line 153's mutant sends every call down the polling path, which with no cycle running exits at its first poll writing the status back with FDONE: the same effect, because line 152's write already cleared the write-one-to-clear error bits. Line 159's is killed by a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy; the 2026-10-12 per-crate re-run still reports it"
-e1000e,cycle_init,replace + with *,killed,"killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone, a_running_cycle_is_waited_out_and_its_status_cleared"
-e1000e,cycle_init,replace + with -,killed,"killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone, a_running_cycle_is_waited_out_and_its_status_cleared"
-e1000e,cycle_init,replace | with &,equivalent,"line 151's mutant ORs ERROR & DAE (zero) into s, and line 154's writes s & FDONE: both only stop writing a one to a write-one-to-clear bit that is already clear, since s is the status just read and line 152 has written back every bit it held. Line 160's is killed by a_running_cycle_is_waited_out_and_its_status_cleared; the 2026-10-12 per-crate re-run still reports it"
-e1000e,cycle_init,replace | with ^,equivalent,"line 151's mutant ORs ERROR ^ DAE, the same 6, into s; line 154's writes s ^ FDONE, which differs only when FDONE was set, and then line 152's write (carrying s) has already cleared it. Line 160's is killed by a_running_cycle_is_waited_out_and_its_status_cleared; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_cycle,replace & with ^,equivalent,"line 153's mutant sends every call down the polling path, which with no cycle running exits at its first poll writing the status back with FDONE: the same effect, because line 152's write already cleared the write-one-to-clear error bits. Line 159's is killed by a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_cycle,replace & with |,equivalent,"line 153's mutant sends every call down the polling path, which with no cycle running exits at its first poll writing the status back with FDONE: the same effect, because line 152's write already cleared the write-one-to-clear error bits. Line 159's is killed by a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_cycle,replace + with *,killed,"killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone, a_running_cycle_is_waited_out_and_its_status_cleared"
+e1000e,initialize_cycle,replace + with -,killed,"killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone, a_running_cycle_is_waited_out_and_its_status_cleared"
+e1000e,initialize_cycle,replace | with &,equivalent,"line 151's mutant ORs ERROR & DAE (zero) into s, and line 154's writes s & FDONE: both only stop writing a one to a write-one-to-clear bit that is already clear, since s is the status just read and line 152 has written back every bit it held. Line 160's is killed by a_running_cycle_is_waited_out_and_its_status_cleared; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_cycle,replace | with ^,equivalent,"line 151's mutant ORs ERROR ^ DAE, the same 6, into s; line 154's writes s ^ FDONE, which differs only when FDONE was set, and then line 152's write (carrying s) has already cleared it. Line 160's is killed by a_running_cycle_is_waited_out_and_its_status_cleared; the 2026-10-12 per-crate re-run still reports it"
 e1000e,delay_ms,replace * with +,killed,"killed by a_configuration_that_never_completes_is_reported_after_its_wait, a_delay_is_in_milliseconds_and_a_flush_reads_status, stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead and 2 more"
 e1000e,delay_ms,replace * with /,killed,"killed by a_configuration_that_never_completes_is_reported_after_its_wait, a_delay_is_in_milliseconds_and_a_flush_reads_status, stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead and 2 more"
 e1000e,delay_ms,replace delay_ms with (),killed,"killed by a_configuration_that_never_completes_is_reported_after_its_wait, a_delay_is_in_milliseconds_and_a_flush_reads_status, stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead and 2 more"
@@ -1129,33 +1129,33 @@ e1000e,global_reset,replace / with %,killed,"killed by a_configuration_that_neve
 e1000e,global_reset,replace / with *,killed,killed by stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead
 e1000e,global_reset,replace == with !=,killed,"killed by a_configuration_that_never_completes_is_reported_after_its_wait, stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead"
 e1000e,global_reset,replace | with ^,killed,killed by stuck_master_requests_are_waited_for_and_the_reset_still_goes_ahead
-e1000e,id_at,replace & with ^,killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,replace & with |,killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,replace << with >>,killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(0)",killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(1)",killed,killed by the_phy_id_is_both_words_without_the_revision
-e1000e,id_at,replace | with &,killed,killed by the_phy_id_is_both_words_without_the_revision
+e1000e,id_at,replace & with ^,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,replace & with |,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,replace << with >>,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(0)",killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,"replace id_at -> Result<u32, Error> with Ok(1)",killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
+e1000e,id_at,replace | with &,killed,killed by the_physical_layer_device_id_is_both_words_without_the_revision
 e1000e,id_at,replace | with ^,equivalent,"hi << 16 and a u16 lo share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
-e1000e,init_hw,delete !,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,init_hw,replace != with ==,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,init_hw,replace & with ^,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,init_hw,replace & with |,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,init_hw,replace &= with |=,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,init_hw,replace << with >>,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,init_hw,replace | with &,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,init_hw,replace | with ^,equivalent,"^ binds tighter than |, so each surviving mutant xors two constants that share no bit (bit 22 and PHYPDEN; the TARC0 bits; the TARC1 bits after the first; NFSW_DIS and NFSR_DIS), and line 701's FULL_TX_DESC_WB has bit 16 in the WTHRESH field just cleared and bit 24 ORed back by the next line's MAX_TX_DESC_PREFETCH. Line 687's first | is killed by init_hw_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
-e1000e,init_hw,replace |= with &=,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,lcd_config,replace & with |,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
-e1000e,lcd_config,replace | with ^,equivalent,"a page-select word holds page << 5, whose low five bits are zero, and at & MAX_REG has only those five, so | and ^ agree for a configuration region written as FreeBSD reads it; a malformed page word would differ, and this port ORs as FreeBSD does; the 2026-10-12 per-crate re-run still reports it"
-e1000e,leave_ulp,replace / with %,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
-e1000e,leave_ulp,replace / with *,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
-e1000e,leave_ulp,replace < with <=,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
-e1000e,leave_ulp,replace < with ==,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
-e1000e,leave_ulp,replace < with >,killed,killed by the_me_gets_two_and_a_half_seconds_to_leave_ulp
-e1000e,leave_ulp_by_phy,delete !,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,leave_ulp_by_phy,replace & with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,leave_ulp_by_phy,replace & with |,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
-e1000e,leave_ulp_by_phy,replace | with ^,killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
+e1000e,initialize_hardware,delete !,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace != with ==,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace & with ^,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace & with |,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace &= with |=,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace << with >>,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace | with &,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,initialize_hardware,replace | with ^,equivalent,"^ binds tighter than |, so each surviving mutant xors two constants that share no bit (bit 22 and PHYPDEN; the TARC0 bits; the TARC1 bits after the first; NFSW_DIS and NFSR_DIS), and line 701's FULL_TX_DESC_WB has bit 16 in the WTHRESH field just cleared and bit 24 ORed back by the next line's MAX_TX_DESC_PREFETCH. Line 687's first | is killed by initialize_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
+e1000e,initialize_hardware,replace |= with &=,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,lan_connected_device_configuration,replace & with |,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
+e1000e,lan_connected_device_configuration,replace | with ^,equivalent,"a page-select word holds page << 5, whose low five bits are zero, and at & MAX_PHY_REG_ADDRESS has only those five, so | and ^ agree for a configuration region written as FreeBSD reads it; a malformed page word would differ, and this port ORs as FreeBSD does; the 2026-10-12 per-crate re-run still reports it"
+e1000e,leave_ulp,replace / with %,killed,killed by the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp
+e1000e,leave_ulp,replace / with *,killed,killed by the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp
+e1000e,leave_ulp,replace < with <=,killed,killed by the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp
+e1000e,leave_ulp,replace < with ==,killed,killed by the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp
+e1000e,leave_ulp,replace < with >,killed,killed by the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp
+e1000e,leave_ulp_by_physical_layer_device,delete !,killed,killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names
+e1000e,leave_ulp_by_physical_layer_device,replace & with ^,killed,killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names
+e1000e,leave_ulp_by_physical_layer_device,replace & with |,killed,killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names
+e1000e,leave_ulp_by_physical_layer_device,replace | with ^,killed,killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names
 e1000e,oem_bits,delete !,killed,killed by the_oem_bits_follow_the_mac
 e1000e,oem_bits,replace != with ==,killed,killed by the_oem_bits_follow_the_mac
 e1000e,oem_bits,replace & with ^,killed,killed by the_oem_bits_follow_the_mac
@@ -1165,41 +1165,41 @@ e1000e,oem_bits,"replace oem_bits -> Result<(), Error> with Ok(())",killed,kille
 e1000e,oem_bits,replace | with &,killed,killed by the_oem_bits_follow_the_mac
 e1000e,oem_bits,replace | with ^,equivalent,"GBE_DIS (0x40) and LPLU (0x04) share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,oem_bits,replace |= with &=,killed,killed by the_oem_bits_follow_the_mac
-e1000e,phy_reset_generic,replace | with ^,equivalent,"CTRL.PHY_RST is clear on every entry: each pulse writes CTRL back without it, and a global reset returns CTRL to its defaults, so ctrl | PHY_RST and ctrl ^ PHY_RST agree; the 2026-10-12 per-crate re-run still reports it"
-e1000e,phy_reset_ich8lan,"replace phy_reset_ich8lan -> Result<(), Error> with Ok(())",killed,killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names
+e1000e,physical_layer_device_reset_generic,replace | with ^,equivalent,"CTRL.PHY_RST is clear on every entry: each pulse writes CTRL back without it, and a global reset returns CTRL to its defaults, so ctrl | PHY_RST and ctrl ^ PHY_RST agree; the 2026-10-12 per-crate re-run still reports it"
+e1000e,physical_layer_device_reset_ich8lan,"replace physical_layer_device_reset_ich8lan -> Result<(), Error> with Ok(())",killed,killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names
 e1000e,plan,replace > with ==,killed,killed by the_last_register_and_the_last_page_are_reachable_and_one_past_is_not
 e1000e,plan,replace > with >=,killed,killed by the_last_register_and_the_last_page_are_reachable_and_one_past_is_not
-e1000e,post_phy_reset,delete !,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
-e1000e,post_phy_reset,replace & with ^,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
-e1000e,post_phy_reset,replace & with |,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
-e1000e,read_dword_at_byte,delete !,equivalent,"line 197's mutant keeps only the old byte-count field before setting it to three, dropping the other HSFCTL bits: GO (self-clearing), the cycle type (cleared on the next line) and reserved bits (FreeBSD's ich8_hws_flash_ctrl), so the cycle starts the same. Line 198's is killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone; the 2026-10-12 per-crate re-run still reports it"
-e1000e,read_dword_at_byte,replace != with ==,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
-e1000e,read_dword_at_byte,replace & with ^,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
-e1000e,read_dword_at_byte,replace & with |,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
-e1000e,read_dword_at_byte,replace + with *,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
-e1000e,read_dword_at_byte,replace + with -,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
-e1000e,read_dword_at_byte,replace << with >>,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
-e1000e,read_dword_at_byte,replace == with !=,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
-e1000e,read_dword_at_byte,replace > with >=,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
-e1000e,read_dword_at_byte,replace >> with <<,equivalent,"the mutant reads the control half as zero, which differs from the real one only in GO, the cycle type and reserved bits, all set or cleared before the cycle starts; the 2026-10-12 per-crate re-run still reports it"
-e1000e,read_dword_at_byte,replace | with &,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
-e1000e,read_dword_at_byte,replace | with ^,equivalent,"the byte count (3 << 8) lands in the field just masked out, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
+e1000e,post_physical_layer_device_reset,delete !,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
+e1000e,post_physical_layer_device_reset,replace & with ^,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
+e1000e,post_physical_layer_device_reset,replace & with |,killed,killed by the_post_reset_clears_host_wakeup_and_replays_only_when_asked
+e1000e,read_u32_at_byte,delete !,equivalent,"line 197's mutant keeps only the old byte-count field before setting it to three, dropping the other HSFCTL bits: GO (self-clearing), the cycle type (cleared on the next line) and reserved bits (FreeBSD's ich8_hws_flash_ctrl), so the cycle starts the same. Line 198's is killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone; the 2026-10-12 per-crate re-run still reports it"
+e1000e,read_u32_at_byte,replace != with ==,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
+e1000e,read_u32_at_byte,replace & with ^,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
+e1000e,read_u32_at_byte,replace & with |,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
+e1000e,read_u32_at_byte,replace + with *,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
+e1000e,read_u32_at_byte,replace + with -,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
+e1000e,read_u32_at_byte,replace << with >>,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
+e1000e,read_u32_at_byte,replace == with !=,killed,killed by a_flash_cycle_that_never_ends_fails_once_and_is_not_retried
+e1000e,read_u32_at_byte,replace > with >=,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
+e1000e,read_u32_at_byte,replace >> with <<,equivalent,"the mutant reads the control half as zero, which differs from the real one only in GO, the cycle type and reserved bits, all set or cleared before the cycle starts; the 2026-10-12 per-crate re-run still reports it"
+e1000e,read_u32_at_byte,replace | with &,killed,killed by a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone
+e1000e,read_u32_at_byte,replace | with ^,equivalent,"the byte count (3 << 8) lands in the field just masked out, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,read_mdic,replace > with >=,killed,killed by the_last_register_and_the_last_page_are_reachable_and_one_past_is_not
 e1000e,read_mdic,replace | with ^,equivalent,"the register is at most 31 by the check above (bits 16 to 20), the PHY address is MDIO's five bits at 21 (every caller passes 1 or 2), and OP_READ is bit 27; they share no bit; the 2026-10-12 per-crate re-run still reports it"
-e1000e,reg,replace | with ^,equivalent,"page << 5 and r & 0x1f share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
+e1000e,paged_offset,replace | with ^,equivalent,"page << 5 and register & 0x1f share no bit, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,reset_blocked,replace < with <=,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds
 e1000e,reset_blocked,replace < with ==,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds
 e1000e,reset_blocked,replace < with >,killed,killed by a_reset_block_is_polled_for_three_hundred_milliseconds
-e1000e,set,replace | with ^,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,delete !,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,replace & with ^,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,replace & with |,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,replace | with &,killed,killed by init_hw_writes_freebsds_values_from_any_starting_state
-e1000e,setup_copper_link,replace | with ^,equivalent,"^ binds tighter than |, so a mutant on any | after the first of a chain xors two constants that share no bit (FRCSPD and FRCDPX, CRS_ON_TX and DOWNSHIFT, ASM_DIR and PAUSE, the four 10/100 capability bits, AUTO_NEG_EN and RESTART_AUTO_NEG), and AUTO_MDI_MDIX lands in the MDIX field just masked out. Each first | on the register's own value is killed by init_hw_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
+e1000e,set,replace | with ^,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,delete !,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,replace & with ^,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,replace & with |,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,replace | with &,killed,killed by initialize_hardware_writes_freebsds_values_from_any_starting_state
+e1000e,setup_copper_link,replace | with ^,equivalent,"^ binds tighter than |, so a mutant on any | after the first of a chain xors two constants that share no bit (FRCSPD and FRCDPX, CRS_ON_TX and DOWNSHIFT, ASM_DIR and PAUSE, the four 10/100 capability bits, AUTO_NEG_EN and RESTART_AUTO_NEG), and AUTO_MDI_MDIX lands in the MDIX field just masked out. Each first | on the register's own value is killed by initialize_hardware_writes_freebsds_values_from_any_starting_state; the 2026-10-12 per-crate re-run still reports it"
 e1000e,toggle_lanphypc,delete !,killed,killed by the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd
 e1000e,toggle_lanphypc,replace != with ==,killed,killed by the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd
 e1000e,toggle_lanphypc,replace & with ^,killed,killed by the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd
-e1000e,toggle_lanphypc,replace & with |,killed,"killed by leaving_ulp_without_an_me_changes_only_the_bits_it_names, the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd"
+e1000e,toggle_lanphypc,replace & with |,killed,"killed by leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names, the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd"
 e1000e,toggle_lanphypc,replace | with &,killed,killed by the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd
 e1000e,toggle_lanphypc,replace | with ^,equivalent,"line 407's 50 ms value is bit 27, inside the counter field just masked out, so | and ^ agree on every input; line 409's is killed by the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd; the 2026-10-12 per-crate re-run still reports it"
 e1000e,transmit_errata,delete !,killed,killed by the_transmit_errata_set_freebsds_three_values
@@ -1209,10 +1209,10 @@ e1000e,transmit_errata,replace transmit_errata with (),killed,killed by the_tran
 e1000e,transmit_errata,replace | with &,killed,killed by the_transmit_errata_set_freebsds_three_values
 e1000e,transmit_errata,replace | with ^,equivalent,"MULTIQ_2_REQ (bit 29) is inside the MULTIQ_3_REQ field just masked out, so | and ^ agree on every input; the 2026-10-12 per-crate re-run still reports it"
 e1000e,write_mdic,replace | with ^,equivalent,"the data is a u16, the register at most 31 by the check above (bits 16 to 20), the PHY address MDIO's five bits at 21 (every caller passes 1 or 2), and OP_WRITE bit 26; they share no bit; the 2026-10-12 per-crate re-run still reports it"
-e1000e,write_smbus_addr,delete !,killed,killed by the_smbus_address_comes_from_strap
-e1000e,write_smbus_addr,replace & with |,killed,killed by the_smbus_address_comes_from_strap
-e1000e,write_smbus_addr,replace << with >>,killed,killed by the_smbus_address_comes_from_strap
-e1000e,write_smbus_addr,replace | with ^,equivalent,"^ binds tighter than |: the first mutant xors the masked word (bits 7 and up) with the address (at most 0x7f), the others xor the address with PEC_EN (0x200) or PEC_EN with VALID (0x80); none share a bit; the 2026-10-12 per-crate re-run still reports it"
+e1000e,write_system_management_bus_address,delete !,killed,killed by the_system_management_bus_address_comes_from_strap
+e1000e,write_system_management_bus_address,replace & with |,killed,killed by the_system_management_bus_address_comes_from_strap
+e1000e,write_system_management_bus_address,replace << with >>,killed,killed by the_system_management_bus_address_comes_from_strap
+e1000e,write_system_management_bus_address,replace | with ^,equivalent,"^ binds tighter than |: the first mutant xors the masked word (bits 7 and up) with the address (at most 0x7f), the others xor the address with PEC_EN (0x200) or PEC_EN with VALID (0x80); none share a bit; the 2026-10-12 per-crate re-run still reports it"
 designware_mobile_storage,,replace << with >>,equivalent,"the survivors are the constants written 1 << 0 (CTRL_CONTROLLER_RESET, CLKENA_ENABLE, CTYPE_4BIT, CARDTHRCTL_READ_ENABLE, BMOD_SOFTWARE_RESET, IDSTS_TI), and 1 >> 0 is 1; every other shifted constant in regs.rs and card.rs is killed by the_register_bits_are_the_databooks, the_operating_condition_arguments_are_the_specs or r1_state_and_errors"
 designware_mobile_storage,,replace | with &,killed,killed by the_register_bits_are_the_databooks and an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd and a_clock_update_the_controller_never_takes_is_an_error
 designware_mobile_storage,,replace | with ^,equivalent,"every survivor ORs single-bit constants that share no bit (OCR_VOLTAGE_WINDOW, SD_OP_COND_ARG, UPDATE_CLOCK, CTRL_ALL_RESET, INT_DATA_ERRORS, INT_DATA_TIMEOUTS, IDSTS_ERRORS), so | and ^ agree; their values are pinned by the_register_bits_are_the_databooks, the_operating_condition_arguments_are_the_specs and a_short_response_is_not_asked_for_as_a_long_one; the 2026-10-12 per-crate re-run still reports it"
@@ -1337,10 +1337,10 @@ designware_mobile_storage,sd_power_up,delete !,killed,killed by an_sd_card_is_ad
 designware_mobile_storage,sd_power_up,replace & with ^,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
 designware_mobile_storage,sd_power_up,replace & with |,killed,killed by an_sd_card_is_addressed_by_the_rca_it_chose_and_decoded_as_sd
 designware_mobile_storage,sd_power_up,replace > with >=,equivalent,"as for mmc_power_up: the same PowerUp error with the same last OCR, at most one poll sooner, and no contract fixes the deadline to the microsecond; the 2026-10-12 per-crate re-run still reports it"
-e1000e,ulp::done,replace & with |,killed,"killed by with_an_me_and_a_healthy_phy_the_phy_is_reached_at_once_and_reset and the_me_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
-e1000e,ulp::done,replace ulp::done -> bool with false,killed,"killed by with_an_me_and_a_healthy_phy_the_phy_is_reached_at_once_and_reset and the_me_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
-e1000e,ulp::has_me,replace & with |,killed,"killed by without_an_me_ulp_is_left_by_phy_registers and leaving_ulp_without_an_me_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
-e1000e,ulp::has_me,replace ulp::has_me -> bool with true,killed,"killed by without_an_me_ulp_is_left_by_phy_registers and leaving_ulp_without_an_me_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
+e1000e,ulp::done,replace & with |,killed,"killed by with_a_management_engine_and_a_healthy_physical_layer_device_it_is_reached_at_once_and_reset and the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
+e1000e,ulp::done,replace ulp::done -> bool with false,killed,"killed by with_a_management_engine_and_a_healthy_physical_layer_device_it_is_reached_at_once_and_reset and the_management_engine_gets_two_and_a_half_seconds_to_leave_ulp; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
+e1000e,ulp::has_management_engine,replace & with |,killed,"killed by without_a_management_engine_ulp_is_left_by_physical_layer_device_registers and leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
+e1000e,ulp::has_management_engine,replace ulp::has_management_engine -> bool with true,killed,"killed by without_a_management_engine_ulp_is_left_by_physical_layer_device_registers and leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
 machine_discovery,IvrsUnits::read_ivmd,replace << with >>,killed,"killed by an_ivmd_without_iw_is_not_writable; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
 machine_discovery,IvrsUnits::read_ivmd,replace || with &&,killed,"killed by an_ivmd_without_iw_is_not_writable; a 2026-10-05 inflow survivor that no longer survived on 2026-10-12, so the 2026-10-12 list never named it"
 abi,cycle_counter::CycleMeaning::is_core_cycles,delete !,killed,"the pre-split name of CycleMeaning::is_core_cycles (inflow-2026-10-12-triage.md, Renames); killed by only_the_reference_clock_is_not_core_cycles, re-run with cargo mutants at base deff22e9f"
@@ -1414,6 +1414,10 @@ abi,,replace | with ^,equivalent,"ALL ors five distinct single bits, which right
 documentation,Renderer::write_table_cell,replace += with *=,killed,self.col += width; killed by an_empty_one_column_table_still_ends_each_of_its_lines: a zero-width cell leaves the column at zero and close_line skips the newline; re-run with cargo mutants at base 571da1a2e
 documentation,Renderer::write_table_rule,replace += with *=,equivalent,"the survivor is self.col += 3 before a later column: the column already holds the margin (at least BODY, 2) and close_line reads only col > 0, so *= 3 changes nothing; the self.col += *width copy is killed by an_empty_one_column_table_still_ends_each_of_its_lines; a re-run with cargo mutants at base 571da1a2e still reports it"
 e1000e,rxdctl,replace | with ^,equivalent,"^ binds tighter than |: the masked word (bits 14 and up) never shares a bit with 0x1f, 0x1f none with 1 << 8, and 1 << 8 none with 0x0100_0000, which meets the masked word only through an unmutated |; a re-run with cargo mutants at base 571da1a2e still reports it"
+e1000e,DataPlane::reclaim,replace % with /,gap,"the mutant leaves the clean cursor at 0 whenever it should wrap or advance past the done descriptors, so reclaim's while loop never reaches transmit_next and the run hangs: cargo mutants reports a timeout, a detected hang, and no test can assert on a loop that does not return; the loop is bounded by the ring only through the cursor arithmetic this mutant breaks"
+e1000e,DataPlane::reclaim,replace + with *,gap,"the mutant multiplies the clean cursor by 1 instead of advancing it, so reclaim's while loop never moves past the first done descriptor and the run hangs: cargo mutants reports a timeout, a detected hang, and no test can assert on a loop that does not return"
+e1000e,receive_verdict,replace & with ^,gap,"the mutant makes the not-yet test fail for an empty descriptor, so DataPlane::receive keeps reading and dropping descriptors and never returns None: cargo mutants reports a timeout, a detected hang, and no test can assert on a loop that does not return; bounding that loop would change the driver, not the test"
+e1000e,receive_verdict,replace & with |,gap,"the mutant makes the not-yet test fail for an empty descriptor, so DataPlane::receive keeps reading and dropping descriptors and never returns None: cargo mutants reports a timeout, a detected hang, and no test can assert on a loop that does not return; bounding that loop would change the driver, not the test"
 filesystem_protocol,walk::rg_match_path,replace + with *,killed,"killed by the_rg_match_paths_meet_at_the_region_boundaries, which spells out the chain's, wide's and narrow's first and last paths; re-run with cargo mutants at base 571da1a2e"
 filesystem_protocol,walk::rg_match_path,replace + with -,killed,"killed by the_rg_match_paths_meet_at_the_region_boundaries, which spells out the chain's, wide's and narrow's first and last paths; re-run with cargo mutants at base 571da1a2e"
 filesystem_protocol,walk::rg_match_path,replace += with *=,killed,"killed by the_rg_match_paths_meet_at_the_region_boundaries, which spells out the chain's, wide's and narrow's first and last paths; re-run with cargo mutants at base 571da1a2e"
@@ -1477,7 +1481,7 @@ documentation,Layout::unit_wrapped,replace += with *=,gap,"a timeout in the muta
 abi,RegisterShape::to_word,replace | with ^,equivalent,"reg_shift fills bits 0..8 and reg_io_width << 8 starts at bit 8, so the operands are disjoint and | and ^ give the same word"
 socket_contract,polled_wait::next,replace < with <=,equivalent,"at due == poll_micros both arms return Sleep(poll_micros), so the boundary chooses nothing"
 jh7110_clock_and_reset,sdcard_divider_for,replace < with <=,equivalent,"the branch returns 1, and at div == 1 the value returned below is also 1"
-jh7110_clock_and_reset,sdcard_divider_for,replace > with >=,equivalent,"the branch returns SDCARD_DIVIDER_MAX, and at div == SDCARD_DIVIDER_MAX the value returned below is the same"
+jh7110_clock_and_reset,sdcard_divider_for,replace > with >=,equivalent,"the branch returns SDCARD_DIVIDER_MAXIMUM, and at div == SDCARD_DIVIDER_MAXIMUM the value returned below is the same"
 jh7110_clock_and_reset,with_divider,replace | with ^,equivalent,"the two operands are masked to disjoint bits (& !0x00ff_ffff and & 0x00ff_ffff), and | equals ^ on disjoint bits"
 designware_mobile_storage,,replace <impl DirectMemoryAccessRegion for NoDirectMemoryAccess>::bus_address -> u64 with 0,equivalent,"NoDirectMemoryAccess is an empty enum, so no value exists to call this on and the body is never run; Host<R> holds Option<Idmac<NoDirectMemoryAccess>>, always None (2026-10-22 UTC, milestone/53-radon-idmac)"
 designware_mobile_storage,,replace <impl DirectMemoryAccessRegion for NoDirectMemoryAccess>::bus_address -> u64 with 1,equivalent,"NoDirectMemoryAccess is an empty enum, so no value exists to call this on and the body is never run; Host<R> holds Option<Idmac<NoDirectMemoryAccess>>, always None (2026-10-22 UTC, milestone/53-radon-idmac)"
@@ -1500,3 +1504,15 @@ file_allocation_table,LongName::entry,replace | with ^,equivalent,"an ordinal is
 grant_plan,Expander<'a>::offer,replace > with >=,equivalent,"differs only for a name equal to the set's last, and a name already in the set returned at offer's first check (set.contains), so it never reaches this comparison; re-run with cargo mutants on crates/grant_plan/src/expand.rs still reports it"
 loaded_image_check,stack_aligned,replace stack_aligned -> bool with true,gap,"a host test process always enters with an aligned stack, and every program spawned in QEMU now enters through program_entry!, so nothing reaches the false branch; the check is there for a future _start that skips the macro"
 spin_lock,pause,replace pause with (),equivalent,"off loom the body is core::hint::spin_loop(), a scheduling hint with no semantic effect: the wait loop still spins on the flag and nothing can observe whether the hint was issued (memory_corruption_canary_gate's pause, the same function). Under loom the body is a yield the models need, and script/interleaving-check is its checker. Reported by the mutation gate on #2734 and again by a local cargo mutants -p spin_lock on 2026-10-26"
+designware_ethernet,link_from_registers,replace | with ^,equivalent,"ANLPAR_T4 (0x0200) and ANLPAR_TX (0x0080) are disjoint bits, so | and ^ build the same mask"
+designware_ethernet,"Bus<'_, H>::wait",replace += with *=,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in Bus::wait, whose poll counter stays at zero; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,DataPlane::receive,replace % with /,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::receive, whose cursor sticks at slot 0 and rereads a dropped frame; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,DataPlane::receive,replace + with *,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::receive, whose cursor sticks and rereads a dropped frame; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,DataPlane::receive,replace >> with <<,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::receive, which reads garbage in word 3 as a dropped frame forever; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,DataPlane::reclaim,replace % with /,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::reclaim, whose clean cursor sticks and never reaches the next cursor; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,DataPlane::reclaim,replace + with *,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::reclaim, whose clean cursor sticks and never reaches the next cursor; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,DataPlane::transmit,replace % with +,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::reclaim, once the cursors no longer wrap; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,receive_descriptor_words,replace << with >>,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::receive, which never sees the ownership bit the repost should set; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,receive_descriptor_words,replace receive_descriptor_words -> [u64; 2] with [0; 2],gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::receive, which never sees the ownership bit the repost should set; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,receive_descriptor_words,replace receive_descriptor_words -> [u64; 2] with [1; 2],gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::receive, which never sees the ownership bit the repost should set; bounding the loop would change production logic in a naming-only pull request"
+designware_ethernet,receive_descriptor_words,replace | with &,gap,"the mutated loop never ends, so the test run hits cargo-mutants' 20 s cap; the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::receive, which never sees the ownership bit the repost should set; bounding the loop would change production logic in a naming-only pull request"

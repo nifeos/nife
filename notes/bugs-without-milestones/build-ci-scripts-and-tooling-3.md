@@ -25,5 +25,5 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  script/swish-check | a killed user thread is not a failure; the ratchet that fails on it is the "obvious next" one | swish-check fails on an unexpected killed user thread | S  |
 |  system_tests/src/main.rs | rule that tests use only the test-access facade is prose; the facade re-exports whole modules | Gate system_tests to the test-access surface | M  |
 |  xtask/src/boot_check.rs | emulator once found orphaned after many x86_64 boots, cause unknown | Find why boot-check leaves an orphaned QEMU | S  |
-|  xtask/src/install.rs | gate uses one 1 GiB disk; layout floor/rounding and under-600 MiB refusal never exercised | Vary the install gate's disk size | S  |
+|  xtask/src/install.rs | gate uses one 1 GiB disk; layout floor/rounding and under-700 MiB refusal never exercised | Vary the install gate's disk size | S  |
 |  xtask/src/swish_check/verdict.rs | per-echo 30 s budget flakes under load; real echo time under load never measured | Measure echo time under load and size the budget | S  |

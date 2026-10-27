@@ -39,7 +39,7 @@ use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
 use user_mode_runtime::{receive_request, reply, send};
 
 register_structs! {
-    /// The JH7110 TRNG's register block, offsets from `jh7110_entropy::regs` (itself transcribed
+    /// The JH7110 TRNG's register block, offsets from `jh7110_entropy::registers` (itself transcribed
     /// from the Linux driver), checked at compile time. Unlike the NS16550's, this layout has no
     /// runtime stride or width: [binding] gives one `reg` window (`reg = <0x1600C000 0x4000>`) with
     /// no `reg-shift` or `reg-io-width`. Only the registers this driver touches are named; the rest
@@ -56,7 +56,7 @@ register_structs! {
         (0x08 => MODE: ReadWrite<u32>),
         (0x0c => _reserved_smode),
         (0x10 => IE: ReadWrite<u32>),
-        // Write-1-to-clear, per the TRM's register map (`jh7110_entropy::regs::ISTAT`). `RAND_RDY`
+        // Write-1-to-clear, per the TRM's register map (`jh7110_entropy::registers::ISTAT`). `RAND_RDY`
         // latches, so a driver that never writes this register sees every generation after the
         // first complete instantly.
         (0x14 => ISTAT: ReadWrite<u32>),
@@ -86,7 +86,7 @@ const READY: u64 = 1;
 
 /// Where the spawner maps the TRNG's register page (a device-typed mapping, the same mechanism
 /// `console.rs`'s `UART_VA` uses), placed by the spawner (rule 2). One page: the binding's window is
-/// `0x4000`, but `jh7110_entropy::regs` reaches only `0x68`. **Must match
+/// `0x4000`, but `jh7110_entropy::registers` reaches only `0x68`. **Must match
 /// `kernel/src/user/entropy_service.rs`'s `TRNG_VA`.**
 /// Provisional and distinct from the `0x0090_0000` DMA convention `entropy.rs` and
 /// `keyboard_driver.rs` share, so the two backends cannot collide if a wiring ever needs both
@@ -126,7 +126,7 @@ fn rand_words() -> [u32; 8] {
     ]
 }
 
-/// **Acknowledge `ISTAT` bits.** The register is write-1-to-clear (`jh7110_entropy::regs::ISTAT`),
+/// **Acknowledge `ISTAT` bits.** The register is write-1-to-clear (`jh7110_entropy::registers::ISTAT`),
 /// so writing a mask back clears exactly the bits in it and leaves the rest standing.
 fn ack(bits: u32) {
     regs().ISTAT.set(bits);

@@ -2,11 +2,11 @@
 //!
 //! The I219 is a MAC inside the platform controller hub (PCH) talking to a separate PHY that the
 //! Management Engine shares. FreeBSD's Intel shared code (BSD-3-Clause, notice below) is the only
-//! source read for it: [`ulp`], [`flush`], [`reset`], [`phy`], [`nvm`] and [`sequence`] each name
-//! the FreeBSD functions they follow. Every sequence is generic over [`Hw`], so it runs on the host
-//! against a simulated I219 (`sim`) as well as in the kernel. The constants are facts about the
-//! hardware; the sequences are FreeBSD's, adapted, and carry Intel's license below as its first
-//! condition requires.
+//! source read for it: [`ulp`], [`flush`], [`reset`], [`physical_layer_device`],
+//! [`non_volatile_memory`] and [`sequence`] each name the FreeBSD functions they follow. Every
+//! sequence is generic over [`Hardware`], so it runs on the host against a simulated I219 (`sim`)
+//! as well as in the kernel. The constants are facts about the hardware; the sequences are
+//! FreeBSD's, adapted, and carry Intel's license below as its first condition requires.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -52,24 +52,27 @@
 //! - **A failed `CV_SMB_CTRL` read is not written back**, where FreeBSD writes a stale value.
 //! - **The license's second condition is not met by any binary this tree ships yet**.
 
-pub mod nvm;
-pub mod phy;
+pub mod non_volatile_memory;
+pub mod physical_layer_device;
 pub mod sequence;
 #[cfg(test)]
 mod sim;
 
 /// MAC registers the I219 adds. Offsets from FreeBSD's `e1000_regs.h` and `e1000_ich8lan.h`.
-pub mod regs;
+pub mod registers;
 
-/// Leaving ultra-low-power (ULP) mode through the Management Engine.
+/// Leaving ultra-low-power (ULP) mode through the Management Engine: the ME branch of FreeBSD's
+/// `e1000_disable_ulp_lpt_lp` (`e1000_ich8lan.c`).
 pub mod ulp;
 
 /// The SPT descriptor-ring flush. FreeBSD's comment: "In I219, the descriptor rings must be
 /// emptied before resetting the HW ... Failure to do this will cause the HW to enter a unit hang
-/// state which can only be released by PCI reset on the device."
+/// state which can only be released by PCI reset on the device." FreeBSD's `em_flush_desc_rings`,
+/// `em_flush_tx_ring` and `em_flush_rx_ring` (`if_em.c`).
 pub mod flush;
 
-/// The MAC-register steps around the global reset.
+/// The MAC-register constants around the global reset: FreeBSD's `e1000_reset_hw_ich8lan`
+/// (`e1000_ich8lan.c`) and `e1000_disable_pcie_master_generic` (`e1000_mac.c`).
 pub mod reset;
 
 #[cfg(test)]
@@ -78,4 +81,4 @@ mod tests;
 mod hardware;
 
 use hardware::*;
-pub use hardware::{Hw, is_pch};
+pub use hardware::{Hardware, is_pch};

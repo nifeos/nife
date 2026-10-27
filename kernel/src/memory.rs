@@ -254,8 +254,8 @@ fn record_jh7110_storage(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
 ///
 /// Its own frame, and `inline(never)` so it stays one: [`initialize_from_device_tree`] is already
 /// close to the 4,096-byte guard page in an unoptimised build, and the two `Found`s and the
-/// `PmicBus` here pushed it over (`script/stack-frame-check`, 4,352 bytes on aarch64, 2026-09-25).
-/// A call keeps these locals off its frame instead of raising any ceiling.
+/// `PowerManagementChipBus` here pushed it over (`script/stack-frame-check`, 4,352 bytes on
+/// aarch64, 2026-09-25). A call keeps these locals off its frame instead of raising any ceiling.
 #[inline(never)]
 #[cfg(not(target_arch = "x86_64"))] // the device-tree front end
 fn record_jh7110(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
@@ -655,7 +655,7 @@ pub(crate) fn jh7110_clock_and_reset() -> Option<jh7110_clock_and_reset::WindowL
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_pmic_bus() -> Option<(
     jh7110_clock_and_reset::WindowLocation,
-    jh7110_clock_and_reset::PmicBus,
+    jh7110_clock_and_reset::PowerManagementChipBus,
 )> {
     *JH7110_PMIC_BUS.lock()
 }
@@ -705,7 +705,7 @@ pub(crate) struct Jh7110Ethernet {
     /// The SYS clock-and-reset window: `gmac0`'s transmit and PTP clocks.
     pub sys: jh7110_clock_and_reset::WindowLocation,
     /// The AON syscon: `gmac0`'s interface select.
-    pub syscon: designware_ethernet::jh7110::Syscon,
+    pub syscon: designware_ethernet::jh7110::SystemController,
 }
 
 /// The PCIe host bridge's windows, from the device tree: `(ecam, mem32)`, each `(start, size)`,
@@ -1045,7 +1045,7 @@ static JH7110_CRG: InterruptSafeMutex<Option<jh7110_clock_and_reset::WindowLocat
 static JH7110_PMIC_BUS: InterruptSafeMutex<
     Option<(
         jh7110_clock_and_reset::WindowLocation,
-        jh7110_clock_and_reset::PmicBus,
+        jh7110_clock_and_reset::PowerManagementChipBus,
     )>,
 > = InterruptSafeMutex::new(rank::RAM, None);
 

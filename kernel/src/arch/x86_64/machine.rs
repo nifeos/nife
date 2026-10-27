@@ -131,8 +131,8 @@ pub(crate) fn memory_map_entry(info: &BootInfo, index: usize) -> Option<MemoryEn
 ///
 /// QEMU's PVH loader turns `-initrd FILE` into an entry in the module list `hvm_start_info` points
 /// at, and `uefi_loader` writes the same. Module 0 is the archive and module 1 the boot file
-/// ([`boot_file`]), an order both ends state (`uefi_loader/src/arch/x86_64/mod.rs`'s `hand_over`).
-/// A third module is ignored.
+/// ([`boot_file`]), an order both ends state (`uefi_loader/src/arch/x86_64/mod.rs`'s
+/// `write_start_info`). A third module is ignored.
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `initrd` (the foreign spelling, which stops at the boundary
