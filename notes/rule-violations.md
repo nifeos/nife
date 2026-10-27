@@ -118,14 +118,13 @@ $ echo $?
 
 ## BUGS
 
-- **Not wired into `script/lint` or CI.** `--check` passes clean today (the git-clobber row that
-  once sat past threshold is `resolved`, see "What changed, 2026-08-25" above). The reason not to
-  wire it in stays live for the next rule that crosses three strikes. Doing so automatically would
-  fail every lane's pull request over a decision that belongs to an architect or the integrator.
-  That is the same failure mode DECISIONS §61 (a lint is adopted on evidence from this tree)
-  warns about for an ordinary lint ("adding a lint is a commitment to fix every existing violation
-  first"). Whether and when to wire this in for a *future* crossing is itself an open decision,
-  named here rather than made.
+- **A rule that crosses three strikes turns every pull request red until the ledger answers it.**
+  `--check` is a `local` row of `script/ci-build` and a step of the `lint` job (milestone 341 (give
+  the three instruments nothing runs a caller), §174 (a caller for each of the three uncalled
+  instruments), ruled 2026-10-27 UTC), and takes 0.07 seconds. It passes clean today. When a rule
+  crosses, the fix is not a lane's: moving the rule up the ladder or marking it `resolved` belongs
+  to an architect or the maintainer, and until one does the check fails for every lane. That is the
+  cost the ruling accepted, against a ledger that nothing reads.
 
 - **"The rule" is matched by exact text, not by meaning.** Two rows describing the same rule in
   different words are counted as two different rules. A human curating the table has to normalize
