@@ -686,7 +686,8 @@ impl Model {
         };
         self.park[receiver] = Park::Idle;
         if capability {
-            // Milestone 634: x1 is NO_CAPABILITY unless a capability was installed.
+            // Milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver a sender-chosen
+            // slot): x1 is NO_CAPABILITY unless a capability was installed.
             Answer::msg([m[0], NO_CAPABILITY, m[1], m[3], 0])
         } else {
             Answer::msg(m)
