@@ -984,6 +984,10 @@ mod tests {
         let mut mem = scratch(cost);
         let r = Record::derive(b"alice", b"secret", [5u8; SALT_LEN], cost, &mut mem).unwrap();
         let back = Record::decode(&r.encode()).unwrap();
+        // Checked before the verify below: a decoder that misreads the cost would otherwise send
+        // that verify off to derive at a cost nobody chose, and the test would time out rather
+        // than fail.
+        assert_eq!(back.cost, cost);
         let mut s = Store::<1>::new(cost, [0u8; SALT_LEN], [0u8; TAG_LEN]);
         s.records[0] = back;
         s.used = 1;
