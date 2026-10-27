@@ -161,7 +161,7 @@ honest thing was to ship the document and leave the fork visible rather than set
 
 ## The arithmetic, and the decision inside it
 
-`timetable::next_after(prev, period, now)` answers the next fire, and it has three properties:
+`periodic_deadline::next_after(prev, period, now)`, which `timetable` re-exports, answers the next fire, and it has three properties:
 
 - strictly after `now`, so a polling loop cannot fire one occurrence twice;
 - congruent to `prev` modulo `period`, so an entry that ran late comes back onto its original
@@ -175,7 +175,7 @@ struggling is how a slow morning becomes an outage. The cost is real and stated 
 over: occurrences are genuinely lost, and work that must not be skipped wants a durable queue rather
 than a scheduler.
 
-Five Kani harnesses hold those properties (`crates/timetable/src/proofs.rs`), and the reason it is
+Five Kani harnesses hold those properties (`crates/periodic_deadline/src/proofs.rs`), and the reason it is
 Kani rather than more host tests is that every wrong answer here is quiet. An off-by-one at a
 period boundary fires twice in one polling pass and nothing complains. A lost phase drifts a
 schedule a few nanoseconds an hour and surfaces as a beat nobody can explain a month later. A
@@ -183,7 +183,7 @@ catch-up implementation satisfies every property except the one that bounds it. 
 sampling, because the interesting inputs are the ones nobody thinks to type.
 
 Before editing `next_after`, read
-[next-after-proofs.md](scheduled-execution/next-after-proofs.md). It records why the function snaps
+[periodic-deadline-proofs.md](periodic-deadline-proofs.md). It records why the function snaps
 `now` back onto the beat rather than counting periods (the snapping form proves in about a second,
 the counting form did not finish in ten minutes). It also records the one gap: phase preservation
 is host-tested up to `u64::MAX / 4` rather than machine-checked, because a second 64-bit modulo is
