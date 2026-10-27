@@ -209,7 +209,7 @@ pub const SETMTIME_AT: u64 = 22;
 /// to when no name leads down to it. Decided by §173 (narrowing the root of the shell's
 /// namespace), option A, 2026-10-27 (UTC). See notes/fs-server/file-protocol.md.
 ///
-/// Name: provisional (milestone 328's lane, 2026-10-27 UTC); an architect's to ratify. The number
+/// Name: provisional (milestone 328 (a grant on the root of the shell's namespace)'s lane, 2026-10-27 UTC); an architect's to ratify. The number
 /// is §173's: verb 23.
 pub const NARROW: u64 = 23;
 

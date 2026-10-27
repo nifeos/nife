@@ -72,6 +72,8 @@ impl Verb {
     /// [`fs::NARROW`] today. A name filter must refuse it at the directory it filters, because the
     /// new handle reaches every entry and carries no filter. Derived from the two fields rather
     /// than listed, so a verb added with this shape is refused from the day its row exists.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone 328's lane.
     pub const fn reissues_handle(&self) -> bool {
         self.mints_handle && matches!(self.operand, Operand::None)
     }
@@ -281,7 +283,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         false,
         dir::WRITE | dir::SETTIME,
     ),
-    // NARROW (§173): a held directory handle and a rights mask in the second word, a second
+    // NARROW (§173 (narrowing the root of the shell's namespace)): a held directory handle and a rights mask in the second word, a second
     // handle back, and no name. It demands no right, since attenuation cannot widen, and it is
     // not `Operand::Name`: nothing in it is a name in the namespace a filter narrows.
     row(fs::NARROW, "NARROW", Operand::None, true, true, 0),

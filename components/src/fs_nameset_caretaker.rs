@@ -314,7 +314,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // bound to the directory (milestone 946 (a granted file name can be longer than sixteen bytes)), whose root is the granted directory and whose rights
     // the server holds it to, so there is nothing to descend into. With no name to descend by, the
     // handle is narrowed to the granted rights by `fs::NARROW` (the root of the shell's namespace,
-    // or a bound root; §173), and by `fs::OPENDIR` otherwise.
+    // or a bound root; §173 (narrowing the root of the shell's namespace)), and by `fs::OPENDIR` otherwise.
     let (r0, _) = if n == 0 {
         call(
             FS,

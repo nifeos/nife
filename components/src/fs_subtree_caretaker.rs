@@ -212,7 +212,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // refuses if the intersection is smaller, so a wiring that asked for more fails here, loudly.
     //
     // An empty name is the root of the shell's namespace, which has no name to descend into, so the
-    // grant narrows the handle this process already holds (`fs::NARROW`, §173).
+    // grant narrows the handle this process already holds (`fs::NARROW`, §173 (narrowing the root of the shell's namespace)).
     let (r0, _) = if n == 0 {
         call(
             FS,

@@ -140,6 +140,8 @@ impl<D: Disk> Server<D> {
     /// and [`Server::make_dir`] narrow through, so the new handle carries nothing the held one
     /// lacked. `EPERM` if the intersection is smaller than the request, for `open_dir`'s reason (no
     /// silent degradation). Needs no right: narrowing cannot widen. A file handle is `ENOTDIR`.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone 328's lane.
     pub fn narrow(&mut self, handle: u32, requested: u64) -> Result<u32> {
         let (ptr, rights) = self.dir_at(handle)?;
         let granted = rights.attenuate(requested);

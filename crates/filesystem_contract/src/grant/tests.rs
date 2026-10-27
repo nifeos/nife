@@ -95,7 +95,7 @@ fn grant_words_pack_exactly() {
 }
 
 /// **The root of the shell's namespace is an empty name with the rights beside it** (milestone
-/// 328, §173). `fits` refuses an empty name, so zero cannot be a real directory's length, and a
+/// 328, §173 (narrowing the root of the shell's namespace)). `fits` refuses an empty name, so zero cannot be a real directory's length, and a
 /// caretaker reads it as "narrow the handle you hold" with the rights from the same word.
 #[test]
 fn a_root_grant_is_an_empty_name_carrying_its_rights() {

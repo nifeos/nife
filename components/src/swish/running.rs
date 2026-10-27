@@ -807,7 +807,7 @@ pub(super) struct DirWords {
 /// two words hold (`grant::WORDS_NAME`, milestone 946 (a granted file name can be longer than sixteen bytes)) does: the program is told
 /// `grant::WHOLE_NAMESPACE` and the grant becomes a set of that one name, which
 /// `fs_nameset_caretaker` serves and [`spawn_dir_grant`] writes on a page. Nothing between here and
-/// the process decodes the words. The namespace root travels as an empty directory name, which the caretaker narrows with `fs::NARROW` (§173). Refused with nothing spawned: a second tree,
+/// the process decodes the words. The namespace root travels as an empty directory name, which the caretaker narrows with `fs::NARROW` (§173 (narrowing the root of the shell's namespace)). Refused with nothing spawned: a second tree,
 /// a directory deeper than one level, a set of more than one name, and a directory whose name does
 /// not fit in a grant's two argument words. See `notes/swish-language/running.md`, "The directory
 /// grant".
