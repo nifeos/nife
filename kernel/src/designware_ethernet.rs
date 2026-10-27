@@ -112,7 +112,7 @@ pub(crate) struct Report {
     /// The station address and where it came from.
     pub mac: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds (the probe's and the real one's).
-    pub resets_us: [u64; 2],
+    pub resets_microseconds: [u64; 2],
     /// The coherence probe's verdict and what it saw.
     pub coherence: Option<(coherence::Verdict, coherence::Observation)>,
     /// The negotiated link, if one resolved.
@@ -135,7 +135,7 @@ impl Report {
             physical_layer_device_id: 0,
             physical_layer_device: None,
             mac: None,
-            resets_us: [0; 2],
+            resets_microseconds: [0; 2],
             coherence: None,
             link: None,
             link_wait_ms: 0,
@@ -265,7 +265,7 @@ fn run(
     bring_up_physical_layer_device(&mut w, e, r)?;
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
-    r.resets_us[0] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
+    r.resets_microseconds[0] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
     let region = region()?;
 
     let verdict = probe(&mut w, &id, region, mac, r)?;
@@ -278,7 +278,7 @@ fn run(
 
     // The probe left the controller in loopback with a used ring: reset it and start clean.
     let _ = controller::stop(&mut w);
-    r.resets_us[1] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
+    r.resets_microseconds[1] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
     zero(region);
     controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
 
@@ -383,7 +383,7 @@ fn probe(
     // which `classify` reports as inconclusive.
     let _ = coherence::prepare(&mut dp, &mut plane, &mut tails, mac);
     let deadline = crate::arch::timer::now()
-        + coherence::WAIT_US * crate::arch::timer::frequency() / 1_000_000;
+        + coherence::WAIT_MICROSECONDS * crate::arch::timer::frequency() / 1_000_000;
     while !coherence::delivered(&plane) && crate::arch::timer::now() < deadline {
         core::hint::spin_loop();
     }
@@ -437,8 +437,8 @@ impl Hardware for Window {
         // SAFETY: as `read`.
         unsafe { core::ptr::write_volatile((self.0 + u64::from(off)) as *mut u32, v) }
     }
-    fn delay_us(&mut self, us: u64) {
-        crate::arch::timer::spin_for(us * crate::arch::timer::frequency() / 1_000_000);
+    fn delay_microseconds(&mut self, microseconds: u64) {
+        crate::arch::timer::spin_for(microseconds * crate::arch::timer::frequency() / 1_000_000);
     }
 }
 

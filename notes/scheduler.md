@@ -157,7 +157,7 @@ helpers/qemu-bounded.sh 200 cargo test -p kernel \
 The outermost backstop is on the host. Both guest watchdogs run off the boot core's timer interrupt,
 so a
 kernel that loses it loses both. No kernel leg of `script/test` runs through
-`helpers/qemu-bounded.sh`, so xtask watches the transcript for the running test's name and kills QEMU at that test's budget plus `HOST_GRACE_SECS` (60 s), 150
+`helpers/qemu-bounded.sh`, so xtask watches the transcript for the running test's name and kills QEMU at that test's budget plus `HOST_GRACE_SECONDS` (60 s), 150
 s by default. The failure line names the leg, the image, the test and how long it ran:
 
 ```text

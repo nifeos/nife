@@ -781,7 +781,7 @@ crates/designware_ethernet/src/coherence.rs::Observation
 crates/designware_ethernet/src/coherence.rs::POSTED
 crates/designware_ethernet/src/coherence.rs::Payload
 crates/designware_ethernet/src/coherence.rs::Verdict
-crates/designware_ethernet/src/coherence.rs::WAIT_US
+crates/designware_ethernet/src/coherence.rs::WAIT_MICROSECONDS
 crates/designware_ethernet/src/coherence.rs::classify
 crates/designware_ethernet/src/coherence.rs::delivered
 crates/designware_ethernet/src/coherence.rs::observe
@@ -833,7 +833,7 @@ crates/designware_ethernet/src/layout.rs::BYTES
 crates/designware_ethernet/src/layout.rs::PAGES
 crates/designware_ethernet/src/management_data_input_output.rs::BMCR_RESET
 crates/designware_ethernet/src/management_data_input_output.rs::Bus
-crates/designware_ethernet/src/management_data_input_output.rs::COMMAND_LIMIT_US
+crates/designware_ethernet/src/management_data_input_output.rs::COMMAND_LIMIT_MICROSECONDS
 crates/designware_ethernet/src/management_data_input_output.rs::CR_500_800
 crates/designware_ethernet/src/management_data_input_output.rs::CR_SHIFT
 crates/designware_ethernet/src/management_data_input_output.rs::Error
@@ -1189,7 +1189,7 @@ crates/e1000e/src/pch/non_volatile_memory.rs::WORDS
 crates/e1000e/src/pch/non_volatile_memory.rs::read
 crates/e1000e/src/pch/physical_layer_device.rs::ERROR
 crates/e1000e/src/pch/physical_layer_device.rs::Error
-crates/e1000e/src/pch/physical_layer_device.rs::POLL_US
+crates/e1000e/src/pch/physical_layer_device.rs::POLL_MICROSECONDS
 crates/e1000e/src/pch/physical_layer_device.rs::Plan
 crates/e1000e/src/pch/physical_layer_device.rs::READY
 crates/e1000e/src/pch/physical_layer_device.rs::Swflag
@@ -3697,13 +3697,13 @@ crates/system_log_contract/src/lib.rs::request
 crates/system_log_contract/src/lib.rs::set
 crates/system_log_contract/src/lib.rs::word
 crates/system_log_contract/src/lib.rs::wrote
-crates/test_times/src/lib.rs::DEFAULT_BUDGET_SECS
+crates/test_times/src/lib.rs::DEFAULT_BUDGET_SECONDS
 crates/test_times/src/lib.rs::HEADING
 crates/test_times/src/lib.rs::Line
 crates/test_times/src/lib.rs::Malformed
 crates/test_times/src/lib.rs::PREFIX
 crates/test_times/src/lib.rs::SLOW_TESTS
-crates/test_times/src/lib.rs::budget_secs_for
+crates/test_times/src/lib.rs::budget_seconds_for
 crates/test_times/src/lib.rs::milliseconds
 crates/test_times/src/lib.rs::parse
 crates/thread_wake_handshake/src/lib.rs::Handshake
@@ -4505,7 +4505,7 @@ kernel/src/iommu.rs::is_active
 kernel/src/job_mix.rs
 kernel/src/job_mix.rs::run
 kernel/src/kernel_log.rs::Line
-kernel/src/kernel_log.rs::STALL_NANOS
+kernel/src/kernel_log.rs::STALL_NS
 kernel/src/kernel_log.rs::enter_panic
 kernel/src/kernel_log.rs::fallback_count
 kernel/src/kernel_log.rs::new
@@ -4756,7 +4756,7 @@ kernel/src/user/clock_service.rs::Wiring
 kernel/src/user/clock_service.rs::machine_has_no_rtc
 kernel/src/user/clock_service.rs::monotonic_ns
 kernel/src/user/clock_service.rs::page
-kernel/src/user/clock_service.rs::propose_nanos
+kernel/src/user/clock_service.rs::propose_ns
 kernel/src/user/clock_service.rs::start
 kernel/src/user/clock_service.rs::start_in
 kernel/src/user/clock_service.rs::wall_ns
@@ -4924,7 +4924,7 @@ kernel/src/user/loader.rs::map_timebase_page
 kernel/src/user/loader.rs::program
 kernel/src/user/login_service.rs
 kernel/src/user/login_service.rs::ClientRun
-kernel/src/user/login_service.rs::DESTROY_WAIT_MICROS
+kernel/src/user/login_service.rs::DESTROY_WAIT_MICROSECONDS
 kernel/src/user/login_service.rs::EMPTY_SCHEDULE
 kernel/src/user/login_service.rs::FREE_TERMINAL
 kernel/src/user/login_service.rs::F_BUDGET_DEAD_AFTER_TEARDOWN

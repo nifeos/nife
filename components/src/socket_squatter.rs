@@ -59,7 +59,7 @@ const TFTP_PORT: u16 = 69;
 
 /// How long to watch the page, in seconds. The victim's exchange completes well inside this once
 /// it is told to go; the bound ends this program in the world the test asserts.
-const WATCH_SECS: u64 = 5;
+const WATCH_SECONDS: u64 = 5;
 
 // SAFETY: `run` maps this page writable at PAGE_FRAME_VA before any read or write below.
 static WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_FRAME_VA, PAGE) };
@@ -157,7 +157,7 @@ pub fn run() -> ! {
 
     send(REPORT, RPT_ARMED, refused, recv_refused);
 
-    let deadline = now() + WATCH_SECS * user_mode_runtime::cntfrq();
+    let deadline = now() + WATCH_SECONDS * user_mode_runtime::cntfrq();
     while now() < deadline && WINDOW.r16(OFF_LEN) == 0 {
         yield_now();
     }

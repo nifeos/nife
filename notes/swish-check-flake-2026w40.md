@@ -81,7 +81,7 @@ Run 37112286561 spliced two gauges into each other (`260.164 spare`) as well as 
 Lane `lane/noteless-flake-chase`. Both failing transcripts show the line typed once (the leg's
 summary counts 8 lines) and echoed twice, a gauge between the copies and the program's sentence
 after the second. That is `system_log_contract::console::Inserter::flush`: a line end, the queued
-kernel lines, then the partial line again. The flush timer is `FLUSH_NANOS` (250 ms) in
+kernel lines, then the partial line again. The flush timer is `FLUSH_NS` (250 ms) in
 `components/src/system_log.rs`. Only a flush landing after the last typed character and before
 Enter leaves an exact copy; one mid-typing leaves a prefix, which the gate already read correctly.
 That is why the line was always whole.

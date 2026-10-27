@@ -6,7 +6,7 @@
 //! # BUGS
 //!
 //! - No interval and no count: its manifest grants no memory, so it cannot retype a timer.
-//! - `busy` is `us` and `sy` together.
+//! - `busy` is `microseconds` and `sy` together.
 //! - Each figure is a word read a moment apart from the others, not one snapshot.
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table): upstream `procps`'s.
@@ -19,9 +19,9 @@ use number_writer::write_right;
 /// The two header lines and the one report line, or nothing if `machine` is `None`, since a
 /// `vmstat` that cannot see the machine has nothing to tabulate. The caller says why on its
 /// second stream.
-pub fn write_report(machine: Option<&Snapshot>, uptime_nanos: u64, out: &mut dyn FnMut(&[u8])) {
+pub fn write_report(machine: Option<&Snapshot>, uptime_ns: u64, out: &mut dyn FnMut(&[u8])) {
     let Some(s) = machine else { return };
-    let secs = (uptime_nanos / 1_000_000_000).max(1);
+    let seconds = (uptime_ns / 1_000_000_000).max(1);
     let (busy, idle) = (s.busy_ticks(), s.idle_ticks());
     let ticks = busy + idle;
     let busy_pct = (busy * 100).checked_div(ticks).unwrap_or(0);
@@ -33,8 +33,8 @@ pub fn write_report(machine: Option<&Snapshot>, uptime_nanos: u64, out: &mut dyn
         (s.runnable(), 5),
         (s.free_bytes() / 1024, 11),
         (s.total_bytes() / 1024, 11),
-        (s.interrupts() / secs, 7),
-        (s.context_switches() / secs, 7),
+        (s.interrupts() / seconds, 7),
+        (s.context_switches() / seconds, 7),
         (busy_pct, 5),
         (idle_pct, 4),
     ] {
@@ -78,9 +78,9 @@ mod tests {
         Snapshot::from_words(&w).unwrap()
     }
 
-    fn shown(m: Option<&Snapshot>, nanos: u64) -> String {
+    fn shown(m: Option<&Snapshot>, ns: u64) -> String {
         let mut v = Vec::new();
-        write_report(m, nanos, &mut |b| v.extend_from_slice(b));
+        write_report(m, ns, &mut |b| v.extend_from_slice(b));
         String::from_utf8(v).unwrap()
     }
 

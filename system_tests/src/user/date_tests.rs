@@ -371,7 +371,7 @@ fn date_reports_where_the_time_came_from() {
 
     // Step it through the propose endpoint, which is an authority `date` does not hold, and the
     // provenance follows the page rather than the process.
-    let (status, _) = w.propose_nanos(w.wall_ns() + clock_contract::NS_PER_SECOND / 2);
+    let (status, _) = w.propose_ns(w.wall_ns() + clock_contract::NS_PER_SECOND / 2);
     assert_eq!(status, clock_contract::status::ACCEPTED);
     let (out, region) = spawn_date(Some(w.page_phys), FMT_UNIX, 0, PROVENANCE);
     let _ = line(out, &mut buf);

@@ -64,8 +64,8 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
-fn wait_for(secs: u64, mut cond: impl FnMut() -> bool) -> bool {
-    let deadline = crate::arch::timer::now() + secs * crate::arch::timer::frequency();
+fn wait_for(seconds: u64, mut cond: impl FnMut() -> bool) -> bool {
+    let deadline = crate::arch::timer::now() + seconds * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline {
         if cond() {
             return true;
@@ -270,19 +270,19 @@ fn unmap_on_another_core_faults_a_reader_spinning_on_the_page() {
         0,
         "UNMAP of the running reader's page was refused",
     );
-    let (them, us) = (
+    let (them, microseconds) = (
         READER_CPU_AT_UNMAP.load(Ordering::Relaxed),
         UNMAPPER_CPU.load(Ordering::Relaxed),
     );
     assert_ne!(
-        them, us,
-        "the reader was on the unmapper's own core ({us}) when it unmapped, so this run proves \
+        them, microseconds,
+        "the reader was on the unmapper's own core ({microseconds}) when it unmapped, so this run proves \
          nothing about another core's TLB",
     );
 
     assert!(
         wait_for(2, || !sched::is_thread_present(tid)),
-        "the reader on cpu {them} kept counting ({}) after cpu {us} gave its page up: its core \
+        "the reader on cpu {them} kept counting ({}) after cpu {microseconds} gave its page up: its core \
          still holds the translation, and UNMAP's flush did not reach it",
         count(page),
     );

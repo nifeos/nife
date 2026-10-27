@@ -58,8 +58,8 @@ const SUITE_SEEDS: u64 = 32;
 const CORPUS: &[u64] = &[180, 559];
 /// The sweep's guest-time cap: it stops between seeds once this has passed and says how far it
 /// got, so a weekly run with a large count fits under the per-test budget
-/// (`test_times::DEFAULT_BUDGET_SECS`, 90 s).
-const SWEEP_SECS: u64 = 60;
+/// (`test_times::DEFAULT_BUDGET_SECONDS`, 90 s).
+const SWEEP_SECONDS: u64 = 60;
 const NO_CAPABILITY: u64 = abi::rendezvous::NO_CAPABILITY;
 /// A method number no object answers.
 const NO_METHOD: u64 = 99;
@@ -1446,9 +1446,9 @@ fn seeded_syscalls_agree_with_the_shadow_model() {
             crate::println!("    syscall fuzzer: seeds 0..{SUITE_SEEDS} and corpus {CORPUS:?}");
         }
         Some((first, count)) => {
-            let capability = start + SWEEP_SECS * hz;
+            let cap = start + SWEEP_SECONDS * hz;
             for seed in first..first.saturating_add(count) {
-                if crate::arch::timer::now() > capability {
+                if crate::arch::timer::now() > cap {
                     break;
                 }
                 tally(&mut total, run_seed(&mut stage, seed));
@@ -1456,7 +1456,7 @@ fn seeded_syscalls_agree_with_the_shadow_model() {
             }
             crate::println!(
                 "    syscall fuzzer: sweep of seeds {first}..{} ({ran} of {count} asked; a time cap \
-                 of {SWEEP_SECS} s stops it early)",
+                 of {SWEEP_SECONDS} s stops it early)",
                 first + ran
             );
         }

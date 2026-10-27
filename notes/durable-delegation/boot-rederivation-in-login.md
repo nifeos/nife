@@ -212,7 +212,7 @@ B's re-deriver would need its own 640 pages per session from the progenitor inst
 
 ### Boot latency
 
-`Durable::restore` waits up to `END_WAIT_SECS` (5 seconds) for the timetable's reply. Under A that
+`Durable::restore` waits up to `END_WAIT_SECONDS` (5 seconds) for the timetable's reply. Under A that
 wait sits before `login`'s front door opens, once per re-derived identity. Nobody has measured the usual wait, in the suite or on a board.
 
 ### Code

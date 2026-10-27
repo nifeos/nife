@@ -38,7 +38,7 @@ What each can and cannot see:
 - A ceiling failure reports the ceiling, not the cost. "Ran 900 s" against a 900 s budget says
   nothing about how long the work would take.
 - Both depend on the boot core's timer interrupt. The backstop for losing it is `xtask`'s host
-  watchdog (`time_record::HOST_GRACE_SECS`, notes/scheduler.md), which kills QEMU at the test's
+  watchdog (`time_record::HOST_GRACE_SECONDS`, notes/scheduler.md), which kills QEMU at the test's
   budget plus a grace. The ceiling still fires first, and its dump says more.
 
 The per-test budgets live in `crates/test_times`, because `xtask`'s host watchdog reads the same

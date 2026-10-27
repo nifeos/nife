@@ -201,7 +201,7 @@ three new names ratified and carrying eight refusals between them.
   interrupt or the deadline) was recorded BUILT in commit `27e501401` and the table was replaced.
   So there was nothing there to repoint. The two lines it meant are
   `components/src/network_time_client.rs:61` (the module docs' one-shot section) and `:183`
-  (`RETRY_GAP_NANOS`), and the retry gap now sleeps on a timer.
+  (`RETRY_GAP_NS`), and the retry gap now sleeps on a timer.
 - The report vocabulary is one numbering space across three programs that no longer share a
   binary. The numbers were kept exactly where they were so that a boot log from before this
   milestone still reads, and `ntp_service::rpt` is the one place that holds all eight. The cost is

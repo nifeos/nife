@@ -713,7 +713,7 @@ fn tcp_accept_unheard() -> ! {
 }
 
 /// How many of `net_stack`'s 15 s bounded accept waits a round sits through before it calls the
-/// round lost: 75 s, inside the test's 90 s budget (`test_times::DEFAULT_BUDGET_SECS`). One wait
+/// round lost: 75 s, inside the test's 90 s budget (`test_times::DEFAULT_BUDGET_SECONDS`). One wait
 /// can fall inside a gap in slirp's SYN backoff, 16 and then 32 s by the time this program listens;
 /// notes/net/the-test-clients.md has the measurement.
 ///

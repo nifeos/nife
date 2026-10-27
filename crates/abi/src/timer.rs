@@ -23,12 +23,12 @@ pub const CANCEL: u64 = 1;
 /// Whole seconds and the sub-second part are multiplied apart, so every product fits in 64 bits
 /// for any counter up to 2^34 Hz (`nanos * hz` is under `10^9 * 2^34`, under `2^64`): the width the
 /// solver can check, and the width a 64-bit core divides in.
-pub const fn counter_ticks_for(secs: u64, nanos: u32, hz: u64) -> u64 {
+pub const fn counter_ticks_for(seconds: u64, ns: u32, hz: u64) -> u64 {
     const NS: u64 = 1_000_000_000;
-    let Some(whole) = secs.checked_mul(hz) else {
+    let Some(whole) = seconds.checked_mul(hz) else {
         return u64::MAX;
     };
-    let Some(part) = (nanos as u64).checked_mul(hz) else {
+    let Some(part) = (ns as u64).checked_mul(hz) else {
         return u64::MAX;
     };
     whole.saturating_add(part.div_ceil(NS))
@@ -47,24 +47,24 @@ mod tests {
 
     const RATES: [u64; 5] = [62_500_000, 10_000_000, 4_000_000, 31_250_000, 4_200_000_000];
 
-    fn check(secs: u64, nanos: u32, hz: u64) {
-        let n = counter_ticks_for(secs, nanos, hz) as u128;
-        let exact = (secs as u128 * 1_000_000_000 + nanos as u128) * hz as u128;
+    fn check(seconds: u64, ns: u32, hz: u64) {
+        let n = counter_ticks_for(seconds, ns, hz) as u128;
+        let exact = (seconds as u128 * 1_000_000_000 + ns as u128) * hz as u128;
         assert!(
             n * 1_000_000_000 >= exact,
-            "early: {secs}s {nanos}ns at {hz} Hz"
+            "early: {seconds}s {ns}ns at {hz} Hz"
         );
         assert!(
             n == 0 || (n - 1) * 1_000_000_000 < exact,
-            "late: {secs}s {nanos}ns at {hz} Hz"
+            "late: {seconds}s {ns}ns at {hz} Hz"
         );
     }
 
     #[test]
     fn a_duration_is_never_short_and_at_most_one_tick_long() {
         for hz in RATES {
-            for secs in [0, 1, 59, 86_400, 1 << 30] {
-                for nanos in [
+            for seconds in [0, 1, 59, 86_400, 1 << 30] {
+                for ns in [
                     0,
                     1,
                     15,
@@ -77,13 +77,13 @@ mod tests {
                     500_000_000,
                     238,
                 ] {
-                    check(secs, nanos, hz);
+                    check(seconds, ns, hz);
                 }
             }
             // Every nanosecond count below one tick, and just past it, at this rate.
             let tick_ns = (1_000_000_000 / hz).max(1) as u32;
-            for nanos in 0..(3 * tick_ns + 3) {
-                check(0, nanos, hz);
+            for ns in 0..(3 * tick_ns + 3) {
+                check(0, ns, hz);
             }
         }
     }

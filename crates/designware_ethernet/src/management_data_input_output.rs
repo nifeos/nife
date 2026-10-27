@@ -49,9 +49,9 @@ pub const GOC_WRITE: u32 = 1 << 2;
 pub const GB: u32 = 1 << 0;
 
 /// How long one MDIO command may take before it is a timeout: OpenBSD's 2000 polls 10 µs apart.
-pub const COMMAND_LIMIT_US: u64 = 20_000;
+pub const COMMAND_LIMIT_MICROSECONDS: u64 = 20_000;
 /// The poll interval.
-const POLL_US: u64 = 10;
+const POLL_MICROSECONDS: u64 = 10;
 
 /// **Basic mode control register** (`MII_BMCR`, `mii.h`), clause 22.
 #[doc(alias = "basic mode control register")]
@@ -150,7 +150,7 @@ pub(crate) const PHYSID2: u8 = 0x03;
 /// Why an MDIO command did not complete.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    /// The busy bit stayed set for [`COMMAND_LIMIT_US`]: the MAC's CSR clock is off, or the
+    /// The busy bit stayed set for [`COMMAND_LIMIT_MICROSECONDS`]: the MAC's CSR clock is off, or the
     /// command never started.
     Timeout {
         /// The PHY (physical layer device) addressed, by its bus address.
@@ -203,14 +203,14 @@ impl<H: Hardware> Bus<'_, H> {
             if self.0.read(registers::MAC_MDIO_ADDR) & GB == 0 {
                 return Ok(());
             }
-            if waited >= COMMAND_LIMIT_US {
+            if waited >= COMMAND_LIMIT_MICROSECONDS {
                 return Err(Error::Timeout {
                     physical_layer_device_address,
                     register,
                 });
             }
-            self.0.delay_us(POLL_US);
-            waited += POLL_US;
+            self.0.delay_microseconds(POLL_MICROSECONDS);
+            waited += POLL_MICROSECONDS;
         }
     }
 }
@@ -305,7 +305,7 @@ mod tests {
         busy_reads: u32,
         stuck: bool,
         writes: Vec<(u32, u32)>,
-        waited_us: u64,
+        waited_microseconds: u64,
     }
 
     impl Pair {
@@ -317,7 +317,7 @@ mod tests {
                 busy_reads,
                 stuck: false,
                 writes: Vec::new(),
-                waited_us: 0,
+                waited_microseconds: 0,
             }
         }
     }
@@ -350,8 +350,8 @@ mod tests {
                 _ => panic!("MDIO wrote {offset:#x}, outside its two registers"),
             }
         }
-        fn delay_us(&mut self, us: u64) {
-            self.waited_us += us;
+        fn delay_microseconds(&mut self, microseconds: u64) {
+            self.waited_microseconds += microseconds;
         }
     }
 
@@ -364,8 +364,8 @@ mod tests {
             [(registers::MAC_MDIO_ADDR, command(4, BMSR, false))]
         );
         assert_eq!(
-            hardware.waited_us,
-            3 * POLL_US,
+            hardware.waited_microseconds,
+            3 * POLL_MICROSECONDS,
             "it waited out the busy bit, poll by poll"
         );
     }
@@ -391,7 +391,7 @@ mod tests {
         assert_eq!(Bus(&mut hardware).read(0, PHYSID1), Ok(0x1234));
         // Nothing was written until the firmware's command had cleared its busy bit.
         assert_eq!(hardware.writes.len(), 1);
-        assert!(hardware.waited_us >= 2 * POLL_US);
+        assert!(hardware.waited_microseconds >= 2 * POLL_MICROSECONDS);
     }
 
     #[test]
@@ -406,7 +406,7 @@ mod tests {
                 register: BMSR
             })
         );
-        assert_eq!(hardware.waited_us, COMMAND_LIMIT_US);
+        assert_eq!(hardware.waited_microseconds, COMMAND_LIMIT_MICROSECONDS);
         assert!(
             hardware.writes.is_empty(),
             "a bus held busy was never written"
@@ -420,7 +420,7 @@ mod tests {
                 register: BMCR
             })
         );
-        assert_eq!(hardware.waited_us, COMMAND_LIMIT_US);
+        assert_eq!(hardware.waited_microseconds, COMMAND_LIMIT_MICROSECONDS);
     }
 
     /// A clause 22 register file with a latched-low link bit, for the helpers above the bus.

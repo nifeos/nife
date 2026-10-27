@@ -51,7 +51,7 @@ impl Registers for Window {
         unsafe { core::ptr::write_volatile((self.base + offset as usize) as *mut u32, value) }
     }
 
-    fn now_us(&mut self) -> u64 {
+    fn now_microseconds(&mut self) -> u64 {
         // In 128 bits so a counter that has run for days cannot overflow the multiplication.
         (u128::from(crate::arch::timer::now()) * 1_000_000 / u128::from(self.hz)) as u64
     }

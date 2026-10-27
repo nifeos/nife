@@ -139,26 +139,26 @@ impl PageFormat for Aarch64 {
     }
 
     fn leaf_flags(entry: u64) -> Flags {
-        let mut capabilities = 0;
+        let mut access = 0;
         if entry & AP_RO == 0 {
-            capabilities |= ACCESS_WRITE;
+            access |= ACCESS_WRITE;
         }
         if entry & AP_USER != 0 {
-            capabilities |= ACCESS_USER;
+            access |= ACCESS_USER;
         }
         if entry & UXN == 0 {
-            capabilities |= ACCESS_USER_EXEC;
+            access |= ACCESS_USER_EXEC;
         }
         if entry & PXN == 0 {
-            capabilities |= ACCESS_KERNEL_EXEC;
+            access |= ACCESS_KERNEL_EXEC;
         }
         if entry & NG == 0 {
-            capabilities |= ACCESS_GLOBAL;
+            access |= ACCESS_GLOBAL;
         }
         if (entry >> 2) & 0b111 == mair::DEVICE {
-            capabilities |= ACCESS_DEVICE;
+            access |= ACCESS_DEVICE;
         }
-        Flags::from_access(capabilities)
+        Flags::from_access(access)
     }
 
     /// An L2 (2 MiB) or L1 (1 GiB) **block descriptor**: bits `[1:0]` = `0b01`, valid and *not* a

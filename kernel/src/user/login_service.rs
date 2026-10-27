@@ -110,10 +110,10 @@ pub const F_NO_REPORT: u64 = 1 << 20;
 /// The ceiling, in microseconds, on [`LOGOUT`]'s wait for §16 (object revocation)'s armed kill to
 /// land on the caretaker region's `MemoryRegion::DESTROY`.
 ///
-/// [`LOGOUT`]'s third report word is that wait (`waited_micros`), not an identity hint, so a failure
+/// [`LOGOUT`]'s third report word is that wait (`waited_microseconds`), not an identity hint, so a failure
 /// can say whether the host was slow or the caretaker never died. Must match
-/// `fixtures/src/login_test_client.rs`'s `DESTROY_WAIT_SECS`.
-pub const DESTROY_WAIT_MICROS: u64 = 5 * 1_000_000;
+/// `fixtures/src/login_test_client.rs`'s `DESTROY_WAIT_SECONDS`.
+pub const DESTROY_WAIT_MICROSECONDS: u64 = 5 * 1_000_000;
 
 /// A running login service and the endpoints that reach it.
 pub struct Wiring {

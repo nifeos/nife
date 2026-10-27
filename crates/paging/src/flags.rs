@@ -177,7 +177,7 @@ impl Flags {
 
     /// Build `Flags` from a raw capability word. Crate-internal: the formats' `leaf_flags` decoders
     /// reassemble a `Flags` this way.
-    pub(crate) const fn from_access(capabilities: u64) -> Self {
-        Flags(capabilities)
+    pub(crate) const fn from_access(access: u64) -> Self {
+        Flags(access)
     }
 }

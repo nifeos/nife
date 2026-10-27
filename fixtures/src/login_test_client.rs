@@ -167,7 +167,7 @@ pub const F_NOT_SHARED_SUBTREE: u64 = 1 << 2;
 /// not get to run at all, which the kernel test must treat as its own failure rather than silence.
 pub const F_MARKER_WRITTEN: u64 = 1 << 3;
 /// **Set when the fourth capability's `MemoryRegion::DESTROY` returned success.** Set only by
-/// [`LOGOUT`]; retried on refusal until the region comes down or [`DESTROY_WAIT_SECS`] runs out
+/// [`LOGOUT`]; retried on refusal until the region comes down or [`DESTROY_WAIT_SECONDS`] runs out
 /// ([`login_contract::OK`]'s doc, on the fourth capability, name the transient window this
 /// covers, and `destroy_with_retry` says why the bound is a clock).
 pub const F_TEARDOWN_OK: u64 = 1 << 4;
@@ -457,7 +457,7 @@ fn prove_the_directory(behavior: u64, identity: &[u8], dir_ep: u64, region: u64)
                 // caretaker region's `DESTROY` waited (the budget's own wait is not reported;
                 // nothing lives in that region, so it has never needed one). The kernel test
                 // quotes it in the failure message.
-                hint = waited_micros();
+                hint = waited_microseconds();
             }
             // `HOLD_TERMINAL` shares the teardown but not the wait report: it keeps the identity
             // hint every other behavior puts in the third word.
@@ -603,9 +603,9 @@ fn store_schedule(dir: u64, doc: &[u8]) -> bool {
     w as i64 == doc.len() as i64
 }
 
-/// Poll `done` until it holds or [`DESTROY_WAIT_SECS`] of counter time pass, yielding between.
+/// Poll `done` until it holds or [`DESTROY_WAIT_SECONDS`] of counter time pass, yielding between.
 fn wait(done: impl Fn() -> bool) -> bool {
-    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECS);
+    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECONDS);
     let started = user_mode_runtime::now();
     while user_mode_runtime::now().wrapping_sub(started) < ceiling {
         if done() {
@@ -739,7 +739,7 @@ fn teardown_directory(dir: u64, region: u64) -> u64 {
 /// was 12.8 ms on aarch64 with no induced load (load average 7 to 15), 44.3 ms on aarch64 at 13 to
 /// 29, and 126.4 ms on riscv64 at 27 to 47. Five seconds is 40x the worst
 /// (notes/load-sensitive-assertions/caretaker-teardown-wait.md).
-const DESTROY_WAIT_SECS: u64 = 5;
+const DESTROY_WAIT_SECONDS: u64 = 5;
 
 /// **`MemoryRegion::DESTROY` on `ut`, retried until the region comes down**; `true` if it did.
 ///
@@ -750,9 +750,9 @@ const DESTROY_WAIT_SECS: u64 = 5;
 /// # BUGS
 ///
 /// The bound is wall clock, which milestone 62 (tests that assert on time) argues against, because
-/// a process cannot read delivered ticks; [`DESTROY_WAIT_SECS`]'s 40x margin is what makes it safe.
+/// a process cannot read delivered ticks; [`DESTROY_WAIT_SECONDS`]'s 40x margin is what makes it safe.
 fn destroy_with_retry(ut: u64) -> bool {
-    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECS);
+    let ceiling = user_mode_runtime::cntfrq().saturating_mul(DESTROY_WAIT_SECONDS);
     let started = user_mode_runtime::now();
     loop {
         if destroy_memory_region(ut) == 0 {
@@ -779,7 +779,7 @@ fn record(ticks: u64) {
 }
 
 /// [`WAITED`] in microseconds, for the report.
-fn waited_micros() -> u64 {
+fn waited_microseconds() -> u64 {
     // SAFETY: as `record`.
     let ticks = unsafe { WAITED };
     ticks.saturating_mul(1_000_000) / user_mode_runtime::cntfrq().max(1)

@@ -79,6 +79,11 @@ KEPT = {
         ({'addresses_past_the_cap_are_dropped_and_the_rest_kept'}, _CEILING),
     'crates/video_terminal/src/vt/tests.rs': ({'scrolls_report_movement_and_cap_at_the_screen'}, _CEILING),
     'xtask/src/board.rs': ({'cap_given'}, _CEILING),
+    # `write_field` truncates to a capacity, the grant-argument test fills the page to its
+    # `CAPACITY`, and the syscall fuzzer's sweep stops at a guest-time deadline.
+    'crates/environment_contract/src/lib.rs': ({'cap'}, _CEILING),
+    'crates/grant_plan/src/parsing/tests.rs': ({'cap'}, _CEILING),
+    'system_tests/src/user/syscall_fuzzer_tests.rs': ({'cap'}, _CEILING),
     # `PRINT_CAP` bounds a diagnostic's lines; the test's `caps` is the verb "limits". Two files since
     # milestone 840 (the scheduler file is split along its seams) moved each out of `sched.rs`.
     'kernel/src/sched/canary.rs': ({'PRINT_CAP'}, _CEILING),

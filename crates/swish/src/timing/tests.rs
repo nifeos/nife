@@ -11,7 +11,7 @@ use crate::test_support::shown;
 /// for the same reason: `4.13 ms` looks like a number and is a different one from `4.013 ms`.
 #[test]
 fn a_duration_reads_in_the_largest_unit_that_keeps_it_readable() {
-    let shown_ns = |nanos| shown(|o| write_duration(nanos, o));
+    let shown_ns = |ns| shown(|o| write_duration(ns, o));
 
     assert_eq!(shown_ns(0), "0.000 us");
     assert_eq!(shown_ns(999_999), "999.999 us");

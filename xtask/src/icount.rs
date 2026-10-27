@@ -142,15 +142,15 @@ fn start_icount_deadline(
     // blocks, and a QEMU wedged before printing (or after panicking, since this kernel's panic
     // handler halts) never closes the pipe. Every unattended QEMU run is bounded (AGENTS.md), and a
     // bound that waits for a marker is not one. Generous, as the instrument's work takes seconds.
-    const DEADLINE_SECS: u64 = 300;
-    const PANIC_GRACE_SECS: u64 = 3;
+    const DEADLINE_SECONDS: u64 = 300;
+    const PANIC_GRACE_SECONDS: u64 = 3;
     let finished = std::sync::Arc::clone(finished);
     let panicked = std::sync::Arc::clone(panicked);
     std::thread::spawn(move || {
         // Woken in slices so a normal run's thread goes away promptly rather than sleeping out
         // the whole deadline after everything else is done.
         let mut grace: Option<u64> = None;
-        for _ in 0..DEADLINE_SECS {
+        for _ in 0..DEADLINE_SECONDS {
             std::thread::sleep(std::time::Duration::from_secs(1));
             if finished.load(Ordering::Relaxed) {
                 return;
@@ -160,13 +160,13 @@ fn start_icount_deadline(
             // Counting lines instead hangs when a halted guest prints fewer than expected.
             match grace {
                 _ if !panicked.load(Ordering::Relaxed) => {}
-                None => grace = Some(PANIC_GRACE_SECS),
+                None => grace = Some(PANIC_GRACE_SECONDS),
                 Some(0) => break,
                 Some(n) => grace = Some(n - 1),
             }
         }
         if grace.is_none() {
-            eprintln!("icount: no verdict in {DEADLINE_SECS}s; killing QEMU (pid {pid})");
+            eprintln!("icount: no verdict in {DEADLINE_SECONDS}s; killing QEMU (pid {pid})");
         }
         // `kill(1)` rather than the `Child`, which the reading thread owns.
         let _ = Command::new("kill").arg("-9").arg(pid.to_string()).status();

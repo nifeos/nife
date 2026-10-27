@@ -565,7 +565,7 @@ impl SoakKind {
     /// How long the run lasts when `--for` did not say, where it differs from the plain soak's
     /// minute.
     fn default_total(self) -> Option<std::time::Duration> {
-        let secs = match self {
+        let seconds = match self {
             // One window of `REBOOT_AFTER_SECONDS` (120s), the five-second grace, the reset
             // attempts and two boots fit in six minutes under TCG with room to spare.
             Self::Reboot => 360,
@@ -577,7 +577,7 @@ impl SoakKind {
             Self::Watchdog => 180,
             Self::Plain | Self::Unwatched => return None,
         };
-        Some(std::time::Duration::from_secs(secs))
+        Some(std::time::Duration::from_secs(seconds))
     }
 }
 

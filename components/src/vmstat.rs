@@ -27,7 +27,7 @@
 
 //! # BUGS
 //!
-//! `crates/vmstat`'s: no interval (milestone 106 (a wait that ends on either the interrupt or the deadline)), and `busy` is `us` and `sy` together.
+//! `crates/vmstat`'s: no interval (milestone 106 (a wait that ends on either the interrupt or the deadline)), and `busy` is `microseconds` and `sy` together.
 //!
 //! Name: ratified 2026-09-27 (calef, #1360's table), as milestone 126's `free` lane minted it.
 

@@ -308,7 +308,7 @@ fn a_process_composed_from_two_capabilities_runs_in_the_space_it_built() {
     // Each predicate is asked once per pass and its first `true` is the answer: the reclaim below
     // is a predicate with a side effect, and asking it again after it succeeded would ask about a
     // region that no longer exists.
-    let within_30_s = |done: &mut dyn FnMut() -> bool| {
+    let within_30_seconds = |done: &mut dyn FnMut() -> bool| {
         let deadline = timer::now() + 30 * timer::frequency();
         loop {
             if done() {
@@ -321,7 +321,7 @@ fn a_process_composed_from_two_capabilities_runs_in_the_space_it_built() {
         }
     };
     assert!(
-        within_30_s(&mut || sched::rendezvous_waiting_senders(report) > 0),
+        within_30_seconds(&mut || sched::rendezvous_waiting_senders(report) > 0),
         "the witness sent no verdict in 30 s: it is still waiting for a child it started, so the \
          thread it built never ran or never answered on the capability it was given",
     );
@@ -332,11 +332,11 @@ fn a_process_composed_from_two_capabilities_runs_in_the_space_it_built() {
     // The child exited before the witness sent anything, so the budget it was built from is free
     // once the reaper has it; the retry is for that reap, which may land on another core.
     assert!(
-        within_30_s(&mut || !sched::is_thread_present(witness.tid)),
+        within_30_seconds(&mut || !sched::is_thread_present(witness.tid)),
         "the witness sent its verdict and was never reaped",
     );
     assert!(
-        within_30_s(&mut || sched::reclaim_region(witness.budget).is_ok()),
+        within_30_seconds(&mut || sched::reclaim_region(witness.budget).is_ok()),
         "the witness's budget would not reclaim: something it built is still alive",
     );
     sched::reclaim_region(witness.thread_control_block_region)
