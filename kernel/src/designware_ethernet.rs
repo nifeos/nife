@@ -29,7 +29,10 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use ::designware_ethernet::controller::{self, Identity};
 use ::designware_ethernet::motorcomm::{self, Link, Speed};
-use ::designware_ethernet::{DataPlane, Hw, Region, Tails, coherence, jh7110, layout, mdio, regs};
+use ::designware_ethernet::{
+    DataPlane, Hardware, Region, Tails, coherence, jh7110, layout, management_data_input_output,
+    registers,
+};
 use driver_process_contract::designware_ethernet::Handoff;
 use jh7110_clock_and_reset as crg;
 
@@ -57,7 +60,7 @@ pub enum Error {
     /// The station address is in neither the tree nor the controller's own registers.
     NoStationAddress,
     /// An MDIO command did not complete.
-    Mdio(mdio::Error),
+    Mdio(management_data_input_output::Error),
     /// The PHY is not the YT8531 this driver's board settings are for.
     UnknownPhysicalLayerDevice {
         /// What it answered.
@@ -101,7 +104,7 @@ pub(crate) struct Report {
     /// The controller's version register.
     pub version: u32,
     /// The DMA's address width.
-    pub dma_bits: u8,
+    pub direct_memory_access_address_bits: u8,
     /// The PHY's identifier.
     pub physical_layer_device_id: u32,
     /// The PHY's I/O voltage and which tree spelling its settings came from.
@@ -128,7 +131,7 @@ impl Report {
             aon: crg::BringUpReport::default(),
             syscon: (0, 0),
             version: 0,
-            dma_bits: 0,
+            direct_memory_access_address_bits: 0,
             physical_layer_device_id: 0,
             physical_layer_device: None,
             mac: None,
@@ -184,7 +187,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     let (handoff, link) = outcome.map_err(Absent::Refused)?;
     Ok(Found {
         handoff,
-        dma_page: e.port.base + u64::from(regs::DMA_PAGE),
+        dma_page: e.port.base + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
         link,
     })
 }
@@ -194,7 +197,7 @@ fn run(
     e: &crate::memory::Jh7110Ethernet,
     r: &mut Report,
 ) -> Result<(Handoff, Option<Link>), Error> {
-    if !e.port.rgmii {
+    if !e.port.reduced_gigabit_media_independent_interface {
         return Err(Error::NotRgmii);
     }
 
@@ -222,20 +225,24 @@ fn run(
         return Err(Error::ResetsHeld);
     }
 
-    let syscon = mmu::phys_to_virt(e.syscon.base + jh7110::GMAC0_SYSCON_OFFSET) as *mut u32;
+    let syscon =
+        mmu::phys_to_virt(e.syscon.base + jh7110::GMAC0_SYSTEM_CONTROLLER_OFFSET) as *mut u32;
     // SAFETY: the AON syscon page is mapped device-typed (step 6d) and the offset is inside its
     // 4 KiB. A read-modify-write of `gmac0`'s three bits; nothing else in this kernel writes the
     // word, and this runs on the one thread wiring the port.
     unsafe {
         let before = core::ptr::read_volatile(syscon);
-        core::ptr::write_volatile(syscon, jh7110::select_rgmii(before));
+        core::ptr::write_volatile(
+            syscon,
+            jh7110::select_reduced_gigabit_media_independent_interface(before),
+        );
         r.syscon = (before, core::ptr::read_volatile(syscon));
     }
 
     let mut w = Window(mmu::phys_to_virt(e.port.base));
     let id = Identity::read(&mut w);
     r.version = id.version;
-    r.dma_bits = id.dma_bits();
+    r.direct_memory_access_address_bits = id.direct_memory_access_address_bits();
     if id.version == 0 || id.version == u32::MAX {
         return Err(Error::Silent {
             version: id.version,
@@ -243,26 +250,19 @@ fn run(
     }
 
     // The address before the reset, which returns the registers to all ones.
-    let mac = match e.port.mac {
+    let mac = match e.port.station_address {
         Some(m) => (m, AddressSource::Tree),
-        None => controller::station_address(w.read(regs::MAC_ADDR0_HI), w.read(regs::MAC_ADDR0_LO))
-            .map(|m| (m, AddressSource::Registers))
-            .ok_or(Error::NoStationAddress)?,
+        None => controller::station_address(
+            w.read(registers::MAC_ADDR0_HI),
+            w.read(registers::MAC_ADDR0_LO),
+        )
+        .map(|m| (m, AddressSource::Registers))
+        .ok_or(Error::NoStationAddress)?,
     };
     r.mac = Some(mac);
     let mac = mac.0;
 
-    let mdio_address = e.port.phy_address;
-    r.physical_layer_device_id =
-        mdio::phy_id(&mut mdio::Bus(&mut w), mdio_address).map_err(Error::Mdio)?;
-    if r.physical_layer_device_id != motorcomm::YT8531_ID {
-        return Err(Error::UnknownPhysicalLayerDevice {
-            id: r.physical_layer_device_id,
-        });
-    }
-    let applied = motorcomm::configure(&mut mdio::Bus(&mut w), mdio_address, &e.port.phy)
-        .map_err(Error::Mdio)?;
-    r.physical_layer_device = Some((applied.volt_mv, e.port.phy.source));
+    bring_up_physical_layer_device(&mut w, e, r)?;
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
     r.resets_us[0] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
@@ -282,12 +282,60 @@ fn run(
     zero(region);
     controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
 
-    let mut bus = mdio::Bus(&mut w);
-    mdio::restart_autonegotiation(&mut bus, mdio_address).map_err(Error::Mdio)?;
+    let link = wait_for_link(&mut w, e, r)?;
+    Ok((
+        Handoff {
+            station_address: mac,
+            data_plane_physical_address: region,
+        },
+        link,
+    ))
+}
+
+/// Identify the PHY, refuse any other part, and configure it for the board.
+fn bring_up_physical_layer_device(
+    w: &mut Window,
+    e: &crate::memory::Jh7110Ethernet,
+    r: &mut Report,
+) -> Result<(), Error> {
+    let physical_layer_device_address = e.port.physical_layer_device_address;
+    r.physical_layer_device_id = management_data_input_output::physical_layer_device_id(
+        &mut management_data_input_output::Bus(w),
+        physical_layer_device_address,
+    )
+    .map_err(Error::Mdio)?;
+    if r.physical_layer_device_id != motorcomm::PHY_ID_YT8531 {
+        return Err(Error::UnknownPhysicalLayerDevice {
+            id: r.physical_layer_device_id,
+        });
+    }
+    let applied = motorcomm::configure(
+        &mut management_data_input_output::Bus(w),
+        physical_layer_device_address,
+        &e.port.physical_layer_device,
+    )
+    .map_err(Error::Mdio)?;
+    r.physical_layer_device = Some((applied.voltage_mv, e.port.physical_layer_device.source));
+    Ok(())
+}
+
+/// Restart autonegotiation, wait up to `LINK_WAIT_MS` for a link, and start the controller at its
+/// speed. `None` when no link came up.
+fn wait_for_link(
+    w: &mut Window,
+    e: &crate::memory::Jh7110Ethernet,
+    r: &mut Report,
+) -> Result<Option<Link>, Error> {
+    let physical_layer_device_address = e.port.physical_layer_device_address;
+    let mut bus = management_data_input_output::Bus(&mut *w);
+    management_data_input_output::restart_autonegotiation(&mut bus, physical_layer_device_address)
+        .map_err(Error::Mdio)?;
     let started = crate::arch::timer::now();
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
-        if let Some(l) = motorcomm::link(&mut bus, mdio_address).map_err(Error::Mdio)? {
+        if let Some(l) =
+            motorcomm::link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
+        {
             break Some(l);
         }
         if crate::arch::timer::now() >= deadline {
@@ -299,17 +347,16 @@ fn run(
         (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency().max(1);
     r.link = link;
     if let Some(l) = link {
-        motorcomm::apply_speed(&mut bus, mdio_address, &e.port.phy, l.speed)
-            .map_err(Error::Mdio)?;
-        controller::start(&mut w, l, false);
+        motorcomm::apply_speed(
+            &mut bus,
+            physical_layer_device_address,
+            &e.port.physical_layer_device,
+            l.speed,
+        )
+        .map_err(Error::Mdio)?;
+        controller::start(w, l, false);
     }
-    Ok((
-        Handoff {
-            mac,
-            data_plane_phys: region,
-        },
-        link,
-    ))
+    Ok(link)
 }
 
 /// **The coherence probe** (`designware_ethernet::coherence`'s header): MAC loopback, one frame,
@@ -340,7 +387,7 @@ fn probe(
     while !coherence::delivered(&plane) && crate::arch::timer::now() < deadline {
         core::hint::spin_loop();
     }
-    let status = w.read(regs::CHAN_STATUS);
+    let status = w.read(registers::CHAN_STATUS);
     let o = coherence::observe(&plane, mac, status);
     let v = coherence::classify(&o);
     r.coherence = Some((v, o));
@@ -378,15 +425,15 @@ fn zero(region: u64) {
 /// The controller's register window, through the direct map.
 struct Window(u64);
 
-impl Hw for Window {
+impl Hardware for Window {
     fn read(&mut self, off: u32) -> u32 {
-        assert!(off + 4 <= regs::WINDOW);
+        assert!(off + 4 <= registers::WINDOW);
         // SAFETY: the window is device-mapped (step 6d), and the assertion keeps `off` inside its
         // 64 KiB.
         unsafe { core::ptr::read_volatile((self.0 + u64::from(off)) as *const u32) }
     }
     fn write(&mut self, off: u32, v: u32) {
-        assert!(off + 4 <= regs::WINDOW);
+        assert!(off + 4 <= registers::WINDOW);
         // SAFETY: as `read`.
         unsafe { core::ptr::write_volatile((self.0 + u64::from(off)) as *mut u32, v) }
     }
@@ -399,11 +446,11 @@ impl Hw for Window {
 struct TailRegs(u64);
 
 impl Tails for TailRegs {
-    fn set_rx_tail(&mut self, addr: u32) {
-        Window(self.0).write(regs::CHAN_RX_TAIL, addr);
+    fn set_receive_tail(&mut self, addr: u32) {
+        Window(self.0).write(registers::CHAN_RX_END_ADDR, addr);
     }
-    fn set_tx_tail(&mut self, addr: u32) {
-        Window(self.0).write(regs::CHAN_TX_TAIL, addr);
+    fn set_transmit_tail(&mut self, addr: u32) {
+        Window(self.0).write(registers::CHAN_TX_END_ADDR, addr);
     }
     fn barrier(&mut self) {
         crate::arch::direct_memory_access_write_barrier();

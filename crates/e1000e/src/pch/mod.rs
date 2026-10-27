@@ -61,15 +61,18 @@ mod sim;
 /// MAC registers the I219 adds. Offsets from FreeBSD's `e1000_regs.h` and `e1000_ich8lan.h`.
 pub mod registers;
 
-/// Leaving ultra-low-power (ULP) mode through the Management Engine.
+/// Leaving ultra-low-power (ULP) mode through the Management Engine: the ME branch of FreeBSD's
+/// `e1000_disable_ulp_lpt_lp` (`e1000_ich8lan.c`).
 pub mod ulp;
 
 /// The SPT descriptor-ring flush. FreeBSD's comment: "In I219, the descriptor rings must be
 /// emptied before resetting the HW ... Failure to do this will cause the HW to enter a unit hang
-/// state which can only be released by PCI reset on the device."
+/// state which can only be released by PCI reset on the device." FreeBSD's `em_flush_desc_rings`,
+/// `em_flush_tx_ring` and `em_flush_rx_ring` (`if_em.c`).
 pub mod flush;
 
-/// The MAC-register steps around the global reset.
+/// The MAC-register constants around the global reset: FreeBSD's `e1000_reset_hw_ich8lan`
+/// (`e1000_ich8lan.c`) and `e1000_disable_pcie_master_generic` (`e1000_mac.c`).
 pub mod reset;
 
 #[cfg(test)]

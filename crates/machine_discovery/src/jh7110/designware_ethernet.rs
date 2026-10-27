@@ -8,8 +8,9 @@
 //! serves. calef has not named it.
 
 use designware_ethernet::jh7110::{
-    AON_SYSCON_NODE, COMPATIBLE_AON_SYSCON, COMPATIBLES, Discovered, Syscon, VENDOR_PHY_NODE,
-    first_cell, mainline_phy, vendor_phy,
+    ALWAYS_ON_SYSTEM_CONTROLLER_NODE, COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER, COMPATIBLES,
+    Discovered, SystemController, VENDOR_PHYSICAL_LAYER_DEVICE_NODE, first_cell,
+    mainline_physical_layer_device, vendor_physical_layer_device,
 };
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
@@ -31,8 +32,10 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
         }
         let prop = |name: &[u8]| tree.node_prop_compatible(compatible, name);
         let phy = match prop(b"phy-handle")?.and_then(first_cell) {
-            Some(handle) => mainline_phy(|name| tree.phandle_prop(handle, name))?,
-            None => vendor_phy(|name| tree.node_prop(VENDOR_PHY_NODE, name))?,
+            Some(handle) => mainline_physical_layer_device(|name| tree.phandle_prop(handle, name))?,
+            None => vendor_physical_layer_device(|name| {
+                tree.node_prop(VENDOR_PHYSICAL_LAYER_DEVICE_NODE, name)
+            })?,
         };
         return Discovered::from_node(regions[0].start, regions[0].size, compatible, prop, phy)
             .map(Some);
@@ -50,16 +53,16 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
 ///
 /// Name: recorded (milestone 53), which wrote it as
 /// `designware_ethernet::jh7110::discover_aon_syscon`. calef has not ruled on it.
-pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<Syscon, Error> {
+pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<SystemController, Error> {
     let mut regions = [Region { start: 0, size: 0 }; 1];
-    if tree.node_reg_compatible(COMPATIBLE_AON_SYSCON, &mut regions)? == 1
-        || tree.node_reg(AON_SYSCON_NODE, &mut regions)? == 1
+    if tree.node_reg_compatible(COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER, &mut regions)? == 1
+        || tree.node_reg(ALWAYS_ON_SYSTEM_CONTROLLER_NODE, &mut regions)? == 1
     {
-        return Ok(Syscon {
+        return Ok(SystemController {
             base: regions[0].start,
             size: regions[0].size,
             from_tree: true,
         });
     }
-    Ok(Syscon::fallback())
+    Ok(SystemController::fallback())
 }
