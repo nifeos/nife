@@ -1,0 +1,116 @@
+name: kernel mutants cost
+
+# **What does one kernel mutant cost on a CI runner?** Part 1 of
+# design/roadmap/proposals/the-kernel-and-its-programs-are-mutated-under-qemu.md. The proposal
+# estimated 20 seconds against the kernel suite and 150 against both images, from a local rebuild
+# time and a merge-group run. This runs `script/falsifications --mutants` for one kernel file on the
+# runner the kernel suite uses, and the step summary reports the measured seconds per mutant and per
+# tier.
+#
+# **Small and manual, never scheduled.** The rolling census is held, so this has no cron. It runs
+# when someone dispatches it, and on a pull request from this repository that edits this file (a
+# fork's pull request never reaches it: the condition below, and nothing here is self-hosted). Each
+# leg stops starting new mutants after `budget` seconds, which keeps it inside the job bound.
+#
+# Observed failing: 2026-10-27, by script: a real red needs a kernel whose tiers fail, which only a
+#   hosted run on a broken tree stages. The arm that turns this job red is the driver's non-zero
+#   exit, and `script/falsifications --mutants` was run on a checkout with `xtask/src/suite.rs`
+#   modified, which it refused with exit 2 before booting anything. The first hosted run of this
+#   file is the pull request's own and its link is in that pull request's body.
+
+# Name: provisional. An architect names things.
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: kernel source file to mutate
+        default: kernel/src/revoke.rs
+      limit:
+        description: most mutants to run
+        default: "16"
+      budget:
+        description: seconds after which no new mutant starts
+        default: "840"
+  pull_request:
+    paths:
+      - .github/workflows/kernel-mutants-cost.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kernel-mutants-cost-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cost:
+    name: mutant cost (${{ matrix.arch }})
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # The x86_64 leg boots under TCG on the arm64 pool, as ci.yml's `test-shard` does.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, x86_64]
+    env:
+      MUTANT_FILE: ${{ inputs.file || 'kernel/src/revoke.rs' }}
+      MUTANT_LIMIT: ${{ inputs.limit || '16' }}
+      MUTANT_BUDGET: ${{ inputs.budget || '600' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - name: Read the pinned cargo-mutants version
+        id: mutants
+        run: echo "version=$(cat .cargo-mutants-version)" >> "$GITHUB_OUTPUT"
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: cargo-mutants@${{ steps.mutants.outputs.version }}
+
+      - name: Cache QEMU
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        run: script/ci-qemu
+      - name: Put it on PATH
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+        env:
+          NIFE_SKIP_LINT_TOOLS: "1"
+
+      - name: Run the mutants
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            echo "runner: $(nproc) cpus, $(awk '/MemTotal/ {printf "%.1f GiB", $2/1048576}' /proc/meminfo), $(uname -m)"
+          } | tee "$RUNNER_TEMP/mutants-${{ matrix.arch }}.txt"
+          script/falsifications --mutants --file "$MUTANT_FILE" --arch "${{ matrix.arch }}" \
+            --limit "$MUTANT_LIMIT" --budget "$MUTANT_BUDGET" \
+            --out "$RUNNER_TEMP/mutants-${{ matrix.arch }}.tsv" 2>&1 \
+            | tee -a "$RUNNER_TEMP/mutants-${{ matrix.arch }}.txt"
+
+      - name: Publish the measurement
+        if: always()
+        run: |
+          {
+            echo '### Kernel mutant cost, ${{ matrix.arch }}, '"$MUTANT_FILE"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/mutants-${{ matrix.arch }}.txt" || echo '(no output)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the table
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: kernel-mutants-${{ matrix.arch }}
+          path: ${{ runner.temp }}/mutants-${{ matrix.arch }}.*
+          if-no-files-found: warn

@@ -143,6 +143,9 @@ pub(crate) fn test() -> bool {
         return false;
     }
     let filter = export_test_filter();
+    if !image_flag_is_acceptable(filter.is_some(), hvf) {
+        return false;
+    }
     if !export_test_repeat(filter.as_deref()) {
         return false;
     }
@@ -190,7 +193,7 @@ pub(crate) fn test() -> bool {
     // adds a QEMU console and the suite's machine has a virtio-gpu on console 0. Not under `--cpu`,
     // a cost decision: nothing on the screen path varies with `-cpu`, and the leg still runs on
     // every ordinary `script/test`. See notes/serial-less-output/ramfb.md.
-    if flag_value("--cpu").is_none() {
+    if flag_value("--cpu").is_none() && flag_value("--image").is_none() {
         if legs.aarch64() && !crate::screen::screen_boot("aarch64") {
             return false;
         }
@@ -198,7 +201,33 @@ pub(crate) fn test() -> bool {
             return false;
         }
     }
-    images_after_the_run(legs, filter.is_some())
+    images_after_the_run(legs, filter.is_some() || flag_value("--image").is_some())
+}
+
+/// `--image kernel|system`: run one of a leg's two test images. A kernel mutant is run against the
+/// kernel's unit tests first, and only a survivor pays for the whole-system image
+/// (design/roadmap/proposals/the-kernel-and-its-programs-are-mutated-under-qemu.md). Skips the
+/// screen tour, the post-run image checks and, on x86_64, the extra machines, as `--test` does:
+/// they judge a whole run. False after refusing a value, or the flag beside `--test` or `--hvf`.
+/// Name: provisional.
+fn image_flag_is_acceptable(filtered: bool, hvf: bool) -> bool {
+    let Some(image) = flag_value("--image") else {
+        return true;
+    };
+    if image != "kernel" && image != "system" {
+        eprintln!("test: --image takes kernel or system, not {image:?}");
+        return false;
+    }
+    if filtered || hvf {
+        eprintln!("test: --image does not combine with --test or --hvf");
+        return false;
+    }
+    true
+}
+
+/// Whether this run boots the named image: always without `--image`, otherwise only that one.
+fn image_selected(name: &str) -> bool {
+    flag_value("--image").is_none_or(|image| image == name)
 }
 
 /// `--hvf` and `--arch`, read together because the first constrains the second: which legs this
@@ -618,14 +647,17 @@ fn aarch64_suite(hvf: bool, filtered: bool) -> bool {
     } else {
         // The environment `cargo()` sets, since this child is spawned by the recorder.
         runner_env();
-        time_record::cargo_test(
-            &time_record::leg("aarch64"),
-            "kernel",
-            &["test", "-p", "kernel", "--target", TARGET],
-        ) && cargo_test_with_scanout_check(
-            "aarch64",
-            &["test", "-p", "system_tests", "--target", TARGET],
-        )
+        (!image_selected("kernel")
+            || time_record::cargo_test(
+                &time_record::leg("aarch64"),
+                "kernel",
+                &["test", "-p", "kernel", "--target", TARGET],
+            ))
+            && (!image_selected("system")
+                || cargo_test_with_scanout_check(
+                    "aarch64",
+                    &["test", "-p", "system_tests", "--target", TARGET],
+                ))
     }
 }
 
@@ -671,14 +703,18 @@ fn riscv64_suite(filtered: bool) -> bool {
         if !filtered_leg("riscv64", RISCV_TARGET) {
             return false;
         }
-    } else if !time_record::cargo_test(
-        &time_record::leg("riscv64"),
-        "kernel",
-        &["test", "-p", "kernel", "--target", RISCV_TARGET],
-    ) || !cargo_test_with_scanout_check(
-        "riscv64",
-        &["test", "-p", "system_tests", "--target", RISCV_TARGET],
-    ) {
+    } else if (image_selected("kernel")
+        && !time_record::cargo_test(
+            &time_record::leg("riscv64"),
+            "kernel",
+            &["test", "-p", "kernel", "--target", RISCV_TARGET],
+        ))
+        || (image_selected("system")
+            && !cargo_test_with_scanout_check(
+                "riscv64",
+                &["test", "-p", "system_tests", "--target", RISCV_TARGET],
+            ))
+    {
         return false;
     }
     true
@@ -751,20 +787,27 @@ fn x86_64_suite(filtered: bool) -> bool {
         if !filtered_leg("x86_64", X86_TARGET) {
             return false;
         }
-    } else if !time_record::cargo_test(
-        &time_record::leg("x86_64"),
-        "kernel",
-        &["test", "-p", "kernel", "--target", X86_TARGET],
-    ) || !cargo_test_with_scanout_only(
-        "x86_64",
-        &["test", "-p", "system_tests", "--target", X86_TARGET],
-    ) {
+    } else if (image_selected("kernel")
+        && !time_record::cargo_test(
+            &time_record::leg("x86_64"),
+            "kernel",
+            &["test", "-p", "kernel", "--target", X86_TARGET],
+        ))
+        || (image_selected("system")
+            && !cargo_test_with_scanout_only(
+                "x86_64",
+                &["test", "-p", "system_tests", "--target", X86_TARGET],
+            ))
+    {
         return false;
     }
-    if !filtered && !x86_64_behind_a_root_port() {
+    // `--image` runs one image and none of the other machines below, for the same reason a filter
+    // does not.
+    let narrowed = filtered || flag_value("--image").is_some();
+    if !narrowed && !x86_64_behind_a_root_port() {
         return false;
     }
-    if !filtered && std::env::var_os("NIFE_IOMMU").is_none() && !x86_64_on_amd_vi() {
+    if !narrowed && std::env::var_os("NIFE_IOMMU").is_none() && !x86_64_on_amd_vi() {
         return false;
     }
     // **And the same kernel started by real firmware** (milestone 87). The suite above rides
