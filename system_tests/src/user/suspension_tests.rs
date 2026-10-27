@@ -12,8 +12,6 @@
 use abi::Error;
 
 use super::*;
-// The `capability` module still carries its pre-sweep names (design/naming/capability-spelling-worklist.md);
-// aliased so this file spells `capability` out (calef, 2026-10-06).
 use crate::capability_object::{Cap as Capability, Object, Rights};
 use crate::sched::{self, delete_current_capability};
 use crate::syscall::invoke;

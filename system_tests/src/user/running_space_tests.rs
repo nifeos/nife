@@ -543,14 +543,15 @@ fn start_witness(own_space: bool) -> (u64, sched::RendezvousId, [u64; 4]) {
     let tables = crate::memory_region::create(8).expect("no table budget");
     let tcb_region = crate::memory_region::create(2).expect("no tcb region");
     let tid = sched::create_thread_control_block(tcb_region).expect("no tcb");
-    let caps = [
+    let capabilities = [
         crate::capability_object::memory_region_lending_capability(budget),
         crate::capability_object::rendezvous_capability(report, Rights::WRITE),
         crate::capability_object::memory_region_capability(tables),
     ];
-    for (want, cap) in caps.into_iter().enumerate() {
-        let slot = sched::thread_control_block_insert_capability(tid, cap, Some(want as u64))
-            .expect("insert a witness capability");
+    for (want, capability) in capabilities.into_iter().enumerate() {
+        let slot =
+            sched::thread_control_block_insert_capability(tid, capability, Some(want as u64))
+                .expect("insert a witness capability");
         assert_eq!(slot, want as u64);
     }
     if own_space {
