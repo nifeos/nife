@@ -135,7 +135,7 @@
 #   script/falsifications --affected-since <base>   sweep only what a diff can reach (the per-PR half)
 #   script/falsifications --plan-since <base>       how many shards that needs, as a JSON list last
 #   script/falsifications --affected-since <base> --shard k/n   replay one of those shards
-#   script/falsifications --mutants --file <rs> [--arch A] [--limit N] [--offset K] [--tiers T] [--out F]
+#   script/falsifications --mutants --file <rs> [--arch A] [--limit N] [--offset K] [--tiers T] [--budget S] [--out F]
 #                                           run one kernel file's cargo-mutants diffs under QEMU, two
 #                                           tiers, and report the wall clock per mutant (below)
 #   script/falsifications --record-times <transcript>...      merge a sweep's per-record times into
@@ -2412,7 +2412,11 @@ def record_times(logs):
 # flags; an architect names things.
 #
 #   script/falsifications --mutants --file <path.rs> [--arch aarch64] [--limit N] [--offset K]
-#                         [--tiers kernel|kernel,system] [--in-diff <git diff>] [--out <tsv>]
+#                         [--tiers kernel|kernel,system] [--in-diff <git diff>] [--budget <s>]
+#                         [--out <tsv>]
+#
+# `--budget` stops the run cleanly before the next mutant once that many seconds have passed, so a
+# CI job stays under its time bound and still prints the summary.
 #
 # cargo-mutants generates the mutants (`cargo mutants --list --diff`, one unified diff each) and
 # this driver runs them, the way a falsification record runs: apply, boot, read the verdict, revert.
@@ -2489,7 +2493,7 @@ def mutants_tier(arch, tier, limit):
 def mutants(a):
     opts, i = {"--arch": "aarch64", "--tiers": "kernel,system", "--offset": "0"}, 0
     while i < len(a):
-        if a[i] not in ("--file", "--arch", "--limit", "--offset", "--tiers", "--in-diff", "--out"):
+        if a[i] not in ("--file", "--arch", "--limit", "--offset", "--tiers", "--in-diff", "--out", "--budget"):
             sys.exit("script/falsifications --mutants: unknown option %r" % a[i])
         if i + 1 >= len(a):
             sys.exit("script/falsifications --mutants: %s needs a value" % a[i])
@@ -2497,7 +2501,8 @@ def mutants(a):
         i += 2
     if "--file" not in opts:
         sys.exit("usage: script/falsifications --mutants --file <path.rs> [--arch A] [--limit N] "
-                 "[--offset K] [--tiers kernel|kernel,system] [--in-diff <diff>] [--out <tsv>]")
+                 "[--offset K] [--tiers kernel|kernel,system] [--in-diff <diff>] [--budget S] "
+                 "[--out <tsv>]")
     tiers = opts["--tiers"].split(",")
     if tiers[0] != "kernel" or any(t not in MUTANT_TIERS for t in tiers) or len(tiers) > 2:
         sys.exit("script/falsifications --mutants: --tiers is kernel or kernel,system")
@@ -2533,9 +2538,13 @@ def mutants(a):
             print("the unmutated tree does not pass the %s tier, so no mutant verdict means anything" % t)
             return 2
     rows = []
+    began = time.monotonic()
     tmp = os.path.join(root, "target", "mutant.patch")
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     for name, patch in patches:
+        if "--budget" in opts and time.monotonic() - began > int(opts["--budget"]):
+            print("budget of %s s spent after %d mutant(s); stopping" % (opts["--budget"], len(rows)))
+            break
         with open(tmp, "w") as f:
             f.write(patch)
         applied = subprocess.run(["git", "-C", root, "apply", tmp], capture_output=True, text=True)
