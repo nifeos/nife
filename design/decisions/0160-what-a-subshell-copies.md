@@ -11,7 +11,7 @@ Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decisio
 down)'s lane. That lane found that milestone 52 (subshells without `fork`, and what copying an
 endowment means) had carried a `DECISION` gate since its first draft and named no decision anywhere
 a reader can open. The fork itself is calef's and older: the block asked to design it
-together with him. Ruled 2026-10-27 (UTC). Beside it, §312 (swish has one way to do each job in its
+together with calef. Ruled 2026-10-27 (UTC). Beside it, §312 (swish has one way to do each job in its
 language) rules the language rule that this mechanism falls under.
 
 ## The ruling
