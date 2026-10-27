@@ -8,5 +8,8 @@ name = "timetable"
 kind = "base"
 home = { repo = "timetable", status = "provisional" }
 crates = ["timetable", "timetable_store"]
+# The fire arithmetic, linked by the kernel's timer re-arm as well as by `timetable` itself (milestone
+# 360, §178 (where the timer re-arm seam goes)), so other packages may link it undeclared.
+interfaces = ["periodic_deadline"]
 programs = ["timetable"]
 paths = ["components/timetable.conf"]

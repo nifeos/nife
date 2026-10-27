@@ -3826,7 +3826,6 @@ crates/timetable/src/registry.rs::arm_after
 crates/timetable/src/registry.rs::due
 crates/timetable/src/registry.rs::endowment
 crates/timetable/src/registry.rs::held
-crates/timetable/src/registry.rs::next_after
 crates/timetable/src/registry.rs::next_deadline
 crates/timetable/src/registry.rs::observe
 crates/timetable/src/registry.rs::plan_at_fire
