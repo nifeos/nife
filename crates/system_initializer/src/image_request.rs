@@ -44,7 +44,7 @@ const _: () = assert!(
 /// The shell keeps its own mapping of this frame, so it is read once, by [`copy_args`], before the
 /// child exists; nothing reads it after.
 pub(super) fn receive_args(spawn: &mut SpawnEndpoint, own_ut: u64) -> Option<u64> {
-    let frame = opt_cap(spawn.receive_cap().1)?;
+    let frame = opt_capability(spawn.receive_cap().1)?;
     // Revoked when the shell reclaims its frame; the scratch window reuses the page on a later lap.
     let theirs = supervision_protocol::map_scratch(frame, false, own_ut).ok();
     cap_delete(frame);
@@ -471,7 +471,7 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
         ok: pages > 0 && pages <= spawnproto::IMAGE_MAXIMUM_PAGES,
     };
     for _ in 0..pages {
-        let Some(frame) = opt_cap(spawn.receive_cap().1) else {
+        let Some(frame) = opt_capability(spawn.receive_cap().1) else {
             f.ok = false;
             continue;
         };

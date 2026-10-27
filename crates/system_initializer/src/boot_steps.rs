@@ -42,7 +42,7 @@ fn hex_password(bytes: &[u8], out: &mut [u8]) {
     }
 }
 
-/// A child's capability grants and page mappings, the two slices a `ChildEndowment` takes as `caps`
+/// A child's capability grants and page mappings, the two slices a `ChildEndowment` takes as `capabilities`
 /// and `maps`, so the `x86_64` split of the input endowment is one `let` per branch. `'a` ties the
 /// slices to the `let`'s block.
 type EndowmentSlices<'a> = (&'a [(u64, u64)], &'a [(u64, u64, u64)]);
@@ -99,7 +99,7 @@ pub(super) struct Entropy {
 /// The kernel-granted devices' outcome: the graphical terminal verdict (`screen`, as [`Channels`]
 /// names it), whether the firmware's screen has a terminal, entropy, and the network.
 pub(super) struct DeviceServices {
-    pub(super) screen: GraphicalTerminalCaps,
+    pub(super) screen: GraphicalTerminalCapabilities,
     pub(super) has_screen: bool,
     pub(super) entropy: Entropy,
     /// `(stack, lease, the lease's name server)`.
@@ -401,7 +401,7 @@ fn start_virtio_entropy(
                 ut,
                 ent_program,
                 &ChildEndowment {
-                    caps: &[
+                    capabilities: &[
                         (request, abi::rights::READ),
                         (g.virtio_rng_interrupt, abi::rights::READ),
                         (g.virtio_rng, abi::rights::WRITE),
@@ -557,24 +557,24 @@ fn start_console(
         let timer = must(retype_obj(ut, abi::objtype::TIMER));
         con_batch = (notified, timer);
     }
-    let mut con_caps = [(0, 0); 6];
+    let mut con_capabilities = [(0, 0); 6];
     let mut con_maps = [(0, 0, 0); 3];
-    let (mut ncaps, mut nmaps) = (0, 0);
-    for cap in [(request, abi::rights::READ), (reply, abi::rights::WRITE)] {
-        con_caps[ncaps] = cap;
-        ncaps += 1;
+    let (mut capability_count, mut nmaps) = (0, 0);
+    for capability in [(request, abi::rights::READ), (reply, abi::rights::WRITE)] {
+        con_capabilities[capability_count] = capability;
+        capability_count += 1;
     }
     con_maps[nmaps] = (CON_SHARED_VA, con_shared, abi::address_space::MAP_RO);
     nmaps += 1;
     if has_screen {
-        con_caps[ncaps] = (g.disp_term_ep, abi::rights::WRITE);
-        ncaps += 1;
+        con_capabilities[capability_count] = (g.disp_term_ep, abi::rights::WRITE);
+        capability_count += 1;
         // `READ | WRITE` on the notification: WAIT/POLL and the SIGNAL an armed timer makes of
         // it. `WRITE` on the timer: ARM and CANCEL.
-        con_caps[ncaps] = (con_batch.0, abi::rights::READ | abi::rights::WRITE);
-        ncaps += 1;
-        con_caps[ncaps] = (con_batch.1, abi::rights::WRITE);
-        ncaps += 1;
+        con_capabilities[capability_count] = (con_batch.0, abi::rights::READ | abi::rights::WRITE);
+        capability_count += 1;
+        con_capabilities[capability_count] = (con_batch.1, abi::rights::WRITE);
+        capability_count += 1;
         con_maps[nmaps] = (
             CON_SCREEN_OUT_VA,
             g.disp_term_page,
@@ -590,15 +590,15 @@ fn start_console(
     }
     #[cfg(target_arch = "x86_64")]
     {
-        con_caps[ncaps] = (g.uart_dev, abi::rights::WRITE); // COM1's port range, held not mapped
-        ncaps += 1;
+        con_capabilities[capability_count] = (g.uart_dev, abi::rights::WRITE); // COM1's port range, held not mapped
+        capability_count += 1;
     }
     let con = must(build_child(
         ut,
         ut,
         con_elf,
         &ChildEndowment {
-            caps: &con_caps[..ncaps],
+            capabilities: &con_capabilities[..capability_count],
             maps: &con_maps[..nmaps],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -645,7 +645,7 @@ fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'stati
             ut,
             log_program,
             &ChildEndowment {
-                caps: &[
+                capabilities: &[
                     (intake, abi::rights::READ),
                     (
                         g.kernel_ring_notification,
@@ -731,7 +731,7 @@ pub(super) fn start_keystroke_sources(
     uart_shape: u64,
 ) {
     #[cfg(not(target_arch = "x86_64"))]
-    let (in_caps, in_maps): EndowmentSlices = (
+    let (in_capabilities, in_maps): EndowmentSlices = (
         &[
             (term_ep, abi::rights::WRITE),
             (g.uart_interrupt, abi::rights::READ),
@@ -739,7 +739,7 @@ pub(super) fn start_keystroke_sources(
         &[(IN_UART_VA, g.uart_dev, abi::address_space::MAP_RO)],
     );
     #[cfg(target_arch = "x86_64")]
-    let (in_caps, in_maps): EndowmentSlices = (
+    let (in_capabilities, in_maps): EndowmentSlices = (
         &[
             (term_ep, abi::rights::WRITE),
             (g.uart_interrupt, abi::rights::READ),
@@ -752,7 +752,7 @@ pub(super) fn start_keystroke_sources(
         ut,
         in_elf,
         &ChildEndowment {
-            caps: in_caps,
+            capabilities: in_capabilities,
             maps: in_maps,
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -801,19 +801,19 @@ pub(super) fn build_shell(
     sh_budget: u64,
 ) -> (supervision_protocol::Child, u64) {
     let (g, ut, with_fs) = (w.g, w.ut, w.with_fs);
-    let mut sh_caps = [(0u64, 0u64); 6];
+    let mut sh_capabilities = [(0u64, 0u64); 6];
     let mut sh_maps = [(0u64, 0u64, 0u64); 5];
-    let mut n_caps = 0usize;
+    let mut capability_count = 0usize;
     let mut n_maps = 0usize;
-    sh_caps[n_caps] = (w.term.ep, abi::rights::WRITE);
-    n_caps += 1;
-    sh_caps[n_caps] = (chan.spawn_ep, abi::rights::WRITE);
-    n_caps += 1;
-    sh_caps[n_caps] = (chan.result_ep, abi::rights::READ);
-    n_caps += 1;
+    sh_capabilities[capability_count] = (w.term.ep, abi::rights::WRITE);
+    capability_count += 1;
+    sh_capabilities[capability_count] = (chan.spawn_ep, abi::rights::WRITE);
+    capability_count += 1;
+    sh_capabilities[capability_count] = (chan.result_ep, abi::rights::READ);
+    capability_count += 1;
     // Every right: what the shell retypes carries its budget's rights, and it lends them on.
-    sh_caps[n_caps] = (sh_budget, abi::rights::ALL);
-    n_caps += 1;
+    sh_capabilities[capability_count] = (sh_budget, abi::rights::ALL);
+    capability_count += 1;
     sh_maps[n_maps] = (SH_OUT_VA, w.term.out, abi::address_space::MAP_RW); // text and prompts
     n_maps += 1;
     sh_maps[n_maps] = (LINE_VA, w.term.input, abi::address_space::MAP_RO); // completed lines
@@ -828,16 +828,16 @@ pub(super) fn build_shell(
         None
     };
     if let Some(zero) = sh_window {
-        sh_caps[n_caps] = (zero.ep, abi::rights::WRITE);
-        n_caps += 1;
+        sh_capabilities[capability_count] = (zero.ep, abi::rights::WRITE);
+        capability_count += 1;
         sh_maps[n_maps] = (SH_FS_VA, zero.page, abi::address_space::MAP_RW);
         n_maps += 1;
     }
-    sh_caps[n_caps] = (g.clock_page, abi::rights::READ);
-    n_caps += 1;
+    sh_capabilities[capability_count] = (g.clock_page, abi::rights::READ);
+    capability_count += 1;
     sh_maps[n_maps] = (SH_CLOCK_VA, g.clock_page, abi::address_space::MAP_RO);
     n_maps += 1;
-    // Mapped for `caps` to read; its capability goes at a named slot after the build, because the
+    // Mapped for `capabilities` to read; its capability goes at a named slot after the build, because the
     // list's slots move with what the boot granted.
     sh_maps[n_maps] = (
         grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
@@ -846,14 +846,14 @@ pub(super) fn build_shell(
     );
     n_maps += 1;
     // `build_child` fills the table from zero, so the clock's slot is the count before it.
-    let sh_clock_slot: u64 = n_caps as u64 - 1;
+    let sh_clock_slot: u64 = capability_count as u64 - 1;
     // Not started: the giveaway's negative control is printed through the shell's output page.
     let shell = must(build_child(
         ut,
         ut,
         sh_elf,
         &ChildEndowment {
-            caps: &sh_caps[..n_caps],
+            capabilities: &sh_capabilities[..capability_count],
             maps: &sh_maps[..n_maps],
             stack_pages: SHELL_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -920,7 +920,7 @@ pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&elf::Elf<'static>
             ut,
             elf,
             &ChildEndowment {
-                caps: &[
+                capabilities: &[
                     (term_sink, abi::rights::READ),
                     (term_ep, abi::rights::WRITE),
                 ],
@@ -1008,7 +1008,7 @@ fn start_credential_services(
         ut,
         cred_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (prov, abi::rights::READ),
                 (verify, abi::rights::READ),
                 (request, abi::rights::WRITE),
@@ -1130,7 +1130,7 @@ fn start_identity_provisioner(
         ut,
         idp_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (prov, abi::rights::WRITE),
                 (g.fs_ep, abi::rights::WRITE),
                 (idp_report, abi::rights::WRITE),
@@ -1191,7 +1191,7 @@ fn start_login(
         ut,
         login_program,
         &ChildEndowment {
-            caps: &[
+            capabilities: &[
                 (login_request, abi::rights::READ),
                 (login_result, abi::rights::WRITE | abi::rights::GRANT),
                 (verify, abi::rights::WRITE),
@@ -1241,7 +1241,7 @@ fn start_login_audit(ut: u64, p: &LoginPrograms) -> u64 {
         ut,
         audit_program,
         &ChildEndowment {
-            caps: &[(audit, abi::rights::READ)],
+            capabilities: &[(audit, abi::rights::READ)],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },

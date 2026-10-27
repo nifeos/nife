@@ -359,14 +359,14 @@ fn mem_flag_must_have_a_numeric_value() {
 }
 
 #[test]
-fn caps_previews_the_command_you_would_have_typed() {
+fn capabilities_previews_the_command_you_would_have_typed() {
     // The tail is the line itself, so what you inspect and what you run cannot drift apart.
-    assert_eq!(parse(b"caps"), Command::Caps(b""));
+    assert_eq!(parse(b"caps"), Command::Capabilities(b""));
     assert_eq!(
         parse(b"caps memory_grant_depleter --mem 16"),
-        Command::Caps(b"memory_grant_depleter --mem 16")
+        Command::Capabilities(b"memory_grant_depleter --mem 16")
     );
-    let Command::Caps(tail) = parse(b"caps memory_grant_depleter --mem 16") else {
+    let Command::Capabilities(tail) = parse(b"caps memory_grant_depleter --mem 16") else {
         panic!()
     };
     let (Command::Run(previewed), Command::Run(typed)) =
@@ -481,16 +481,16 @@ fn a_quoted_word_is_known_by_its_position_and_the_last_slot_is_readable() {
 /// prefix, so the line that fills the page exactly is taken and one byte more is not.
 #[test]
 fn a_line_that_exactly_fills_the_argument_page_is_taken() {
-    let cap = program_argument_contract::CAPACITY;
+    let capability = program_argument_contract::CAPACITY;
     let word = |n: usize| {
         let mut line = [b'a'; 8192];
         line[..n].fill(b'a');
         line
     };
-    let exact = word(cap - 4);
-    assert_eq!(check_words(&exact[..cap - 4]), Ok(()));
+    let exact = word(capability - 4);
+    assert_eq!(check_words(&exact[..capability - 4]), Ok(()));
     assert_eq!(
-        check_words(&exact[..cap - 3]),
+        check_words(&exact[..capability - 3]),
         Err(Refusal::ArgumentsTooLong)
     );
     // The cost is bytes plus four, not four times the bytes: two 1,100-byte words fit.

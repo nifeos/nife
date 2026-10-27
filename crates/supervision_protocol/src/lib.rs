@@ -237,12 +237,12 @@ pub fn give_up_own_page(va: u64) -> bool {
 /// // `..ChildEndowment::new(Retention::Nothing)` is the intended shape: what is not listed is not
 /// // granted, and what the spawner keeps is stated rather than inherited.
 /// let endow = ChildEndowment {
-///     caps: &[(4, 0b11)], // our slot 4, read/write, landing in the child's slot 0
+///     capabilities: &[(4, 0b11)], // our slot 4, read/write, landing in the child's slot 0
 ///     fault: Some(7), // our slot 7 holds its supervision endpoint
 ///     ..ChildEndowment::new(Retention::Nothing)
 /// };
 ///
-/// assert_eq!(endow.caps.len(), 1);
+/// assert_eq!(endow.capabilities.len(), 1);
 /// assert!(endow.maps.is_empty() && endow.blobs.is_empty() && endow.placed.is_empty());
 /// assert_eq!(endow.stack_pages, CHILD_STACK_PAGES);
 /// assert_eq!(endow.retention, Retention::Nothing);
@@ -260,9 +260,12 @@ pub fn give_up_own_page(va: u64) -> bool {
 /// ```
 pub struct ChildEndowment<'a> {
     /// Capabilities to insert, `(our_slot, rights)`, landing in the child's slots 0, 1, 2, ...
-    pub caps: &'a [(u64, u64)],
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
+    /// `capabilities` under the capability ruling of 2026-10-06 (UTC).
+    pub capabilities: &'a [(u64, u64)],
     /// Capabilities to insert at a slot the caller **names**, `(child_slot, our_slot, rights)`,
-    /// after [`caps`](ChildEndowment::caps). For a declared diagnostic stream (DECISIONS §67 (a
+    /// after [`capabilities`](ChildEndowment::capabilities). For a declared diagnostic stream (DECISIONS §67 (a
     /// program's second stream is a declaration, not a number)), whose slot must not move with how
     /// many low slots the command line granted. It cannot collide with
     /// [`fault`](ChildEndowment::fault), which lands in the table's last slot.
@@ -320,7 +323,7 @@ impl<'a> ChildEndowment<'a> {
     /// keeping authority over a running child.
     pub const fn new(retention: Retention) -> Self {
         Self {
-            caps: &[],
+            capabilities: &[],
             placed: &[],
             maps: &[],
             blobs: &[],
@@ -591,11 +594,11 @@ fn lay_out_child(
     Ok(tcb)
 }
 
-/// Insert the endowment's capabilities into the embryo `tcb`: [`ChildEndowment::caps`] first-free,
+/// Insert the endowment's capabilities into the embryo `tcb`: [`ChildEndowment::capabilities`] first-free,
 /// then the placed ones (one of which may be the child's own address space, [`CHILDS_OWN_SPACE`]),
 /// then the fault endpoint in its reserved slot.
 fn endow_child(tcb: u64, endow: &ChildEndowment, aspace: u64) -> Result<(), ()> {
-    for &(our_slot, rights) in endow.caps {
+    for &(our_slot, rights) in endow.capabilities {
         if thread_control_block_capability_insert(tcb, our_slot, rights, 0) < 0 {
             return Err(());
         }

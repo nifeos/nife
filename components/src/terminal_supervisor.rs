@@ -306,7 +306,7 @@ impl<'a> Child<'a> {
                 let plan = self.plan_for(self.controls[p]);
                 let region = supervision_protocol::memory_region_split(place, plan.pages()).ok()?;
                 let endow = ChildEndowment {
-                    caps: plan.caps(),
+                    capabilities: plan.capabilities(),
                     maps: plan.maps(),
                     blobs: &[],
                     fault: Some(self.faultep),
@@ -331,7 +331,7 @@ impl<'a> Child<'a> {
                     (self.notify, abi::rights::WRITE),
                 ];
                 let endow = ChildEndowment {
-                    caps: &capabilities,
+                    capabilities: &capabilities,
                     fault: Some(self.faultep),
                     ..ChildEndowment::new(Retention::Nothing)
                 };
@@ -659,7 +659,7 @@ impl Supervisor<'_> {
             region,
             &d.own,
             &ChildEndowment {
-                caps: &granted,
+                capabilities: &granted,
                 fault: Some(faultep),
                 stack_pages: STAND_IN_STACK_PAGES,
                 ..ChildEndowment::new(Retention::Nothing)

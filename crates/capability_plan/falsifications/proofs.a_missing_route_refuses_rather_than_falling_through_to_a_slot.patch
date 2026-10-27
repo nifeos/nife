@@ -12,9 +12,9 @@ index 53c4931a2..ab7436b90 100644
 --- a/crates/capability_plan/src/lib.rs
 +++ b/crates/capability_plan/src/lib.rs
 @@ -707,5 +707,3 @@ pub fn plan(reqs: &Requirements, provisions: &Provisions<'_>) -> Result<Plan, Re
-     for (i, need) in reqs.caps.iter().enumerate() {
+     for (i, need) in reqs.capabilities.iter().enumerate() {
 -        let Some(slot) = provisions.slot_for(need.role) else {
 -            return Err(Refusal::Unprovided { role: need.role });
 -        };
 +        let slot = provisions.slot_for(need.role).unwrap_or(0);
-         out.caps[i] = (slot, need.direction.rights());
+         out.capabilities[i] = (slot, need.direction.rights());

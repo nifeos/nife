@@ -493,7 +493,7 @@ pub const BROKER_LOG_BASE: u64 = 128;
 // ===========================================================================================
 
 use capability_plan::Direction::{Serve, Use};
-use capability_plan::{CapNeed, MapNeed, PageKind, Requirements};
+use capability_plan::{CapabilityNeed, MapNeed, PageKind, Requirements};
 
 /// **The pages one instance is built out of**: its segments (three for a debug build of a program
 /// this small), its four-page stack, its address-space root, its TCB, its page tables and its
@@ -508,24 +508,24 @@ pub const INSTANCE_PAGES: u64 = 32;
 /// **The console component**: the thing that gets replaced. It serves the stable endpoint, owns a
 /// UART, writes the witness page, and holds nothing it could build anything with.
 ///
-/// The declared order of `caps` **is** the component's capability table slot order, which is why [`SVC`] and
+/// The declared order of `capabilities` **is** the component's capability table slot order, which is why [`SVC`] and
 /// its three siblings are derived from this value rather than written down beside it.
 pub const CONSOLE: Requirements = Requirements {
     contract: "console",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "service",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "report",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "operator",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "control",
             direction: Serve,
         },
@@ -556,7 +556,7 @@ pub const CONSOLE: Requirements = Requirements {
 /// which claim. The capability half of the two contracts is identical; the device is the difference.
 pub const BACKEND: Requirements = Requirements {
     contract: "backend",
-    caps: CONSOLE.caps,
+    capabilities: CONSOLE.capabilities,
     maps: &[MapNeed {
         role: "witness",
         va: LOG_VA,
@@ -572,16 +572,16 @@ pub const BACKEND: Requirements = Requirements {
 /// `WRITE`, and there is no longer anywhere for an operator to type `READ` by mistake.
 pub const CLIENT: Requirements = Requirements {
     contract: "client",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "service",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "report",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "operator",
             direction: Use,
         },
@@ -603,20 +603,20 @@ pub const CLIENT: Requirements = Requirements {
 /// same channel.
 pub const BROKER: Requirements = Requirements {
     contract: "broker",
-    caps: &[
-        CapNeed {
+    capabilities: &[
+        CapabilityNeed {
             role: "requests",
             direction: Serve,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "backend",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "report",
             direction: Use,
         },
-        CapNeed {
+        CapabilityNeed {
             role: "operator",
             direction: Use,
         },
@@ -652,7 +652,7 @@ pub const BROKER: Requirements = Requirements {
 /// `stateful_backend`.
 pub const STATEFUL_BACKEND: Requirements = Requirements {
     contract: "stateful_backend",
-    caps: CONSOLE.caps,
+    capabilities: CONSOLE.capabilities,
     maps: BACKEND.maps,
     pages: INSTANCE_PAGES,
     depends_on: &[],
@@ -818,7 +818,7 @@ pub fn log_get(seq: u64) -> u64 {
 /// **The capability layout every instance is built with, derived from [`CONSOLE`].**
 ///
 /// These four used to be written here as `0, 1, 2, 3` with a comment saying that the operator's
-/// `ChildEndowment.caps` listed them in the same order, and that comment was the only thing holding
+/// `ChildEndowment.capabilities` listed them in the same order, and that comment was the only thing holding
 /// the two files together: a reordered array in `swapper` would have produced a component receiving
 /// on its report channel, with nothing to see but a hang. Now the number **is** the position in the
 /// declaration, computed at compile time, and a role this component does not declare does not

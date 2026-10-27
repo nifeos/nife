@@ -91,7 +91,7 @@ fn build_labelled(elf: &elf::Elf, attempt: u64, fault: u64) -> bool {
         region,
         elf,
         &ChildEndowment {
-            caps: &[(REPORT, abi::rights::WRITE)],
+            capabilities: &[(REPORT, abi::rights::WRITE)],
             maps: &[],
             blobs: &[],
             fault: Some(fault),

@@ -207,8 +207,8 @@ supervisor:
    pub const RENDERER: Requirements = Requirements {
        contract: "renderer",
        caps: &[
-           CapNeed { role: "frames", direction: Serve },
-           CapNeed { role: "report", direction: Use },
+           CapabilityNeed { role: "frames", direction: Serve },
+           CapabilityNeed { role: "report", direction: Use },
        ],
        maps: &[MapNeed { role: "canvas", va: 0x0400_0000, kind: PageKind::Shared }],
        pages: 32,
@@ -279,7 +279,7 @@ reports an assertion that failed, so a reader is told which `Requirements` is wr
 the duplicate themselves. `Requirements::problem()` returns the `Refusal` with the role in it and a
 host test prints the good message; the `const` assertion cannot.
 
-`MAXIMUM_CAPS` and `MAXIMUM_MAPS` are fixed at eight and four. A `Plan` is a value in a `no_std`
+`MAXIMUM_CAPABILITIES` and `MAXIMUM_MAPS` are fixed at eight and four. A `Plan` is a value in a `no_std`
 program with no allocator, so the bound is a real limit: a manifest past it is refused rather than
 served. Both are roughly double what the widest declaration in this tree asks for.
 
@@ -291,7 +291,7 @@ type is what the kernel already refuses loudly.
 
 The role names are provisional. A lane may not mint a name, and `service`, `report`, `operator`,
 `control`, `witness`, `uart`, `requests` and `backend` are the words a reader meets first. So are
-`Requirements`, `Provisions`, `Plan`, `CapNeed`, `MapNeed` and `Direction`.
+`Requirements`, `Provisions`, `Plan`, `CapabilityNeed`, `MapNeed` and `Direction`.
 
 Three residuals of milestone 23 (a capability-routed component OS with live replacement) remain,
 untouched here: state handoff (the crux,
