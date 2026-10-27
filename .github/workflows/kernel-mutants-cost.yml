@@ -12,6 +12,12 @@ name: kernel mutants cost
 # fork's pull request never reaches it: the condition below, and nothing here is self-hosted). Each
 # leg stops starting new mutants after `budget` seconds, which keeps it inside the job bound.
 #
+# Observed failing: 2026-10-27, by script: a real red needs a kernel whose tiers fail, which only a
+#   hosted run on a broken tree stages. The arm that turns this job red is the driver's non-zero
+#   exit, and `script/falsifications --mutants` was run on a checkout with `xtask/src/suite.rs`
+#   modified, which it refused with exit 2 before booting anything. The first hosted run of this
+#   file is the pull request's own and its link is in that pull request's body.
+
 # Name: provisional. An architect names things.
 
 on:
