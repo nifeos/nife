@@ -33,12 +33,19 @@ pub(super) const KERNEL_FAULT_TOKENS: [&str; 6] = [
 /// last one it sees and fails if the kernel flagged it as past the recorded peak.
 pub(super) const SLOT_GAUGE: &str = "capability slots:";
 
-/// **The most of the job pool `free`'s `Yours:` line may report in use**, in KiB: two job regions
-/// (`system_initializer`'s `JOB_REGION_PAGES`, 48 pages of 4 KiB). One is `free`'s own, which its
-/// BUGS says it counts. The other is one predecessor the reaper may not have reached when `free`
-/// was carved, a race the gate does not control and so must allow. A reading of 576 is `free` plus
-/// two stranded regions. Name: provisional.
-pub(super) const YOURS_CEILING_KIB: u64 = 2 * 48 * 4;
+/// **What the shell's own budget holds when no job does**, in KiB: its page tables, its exit
+/// endpoint, its sleeper and the other pages it keeps for the session. Measured on aarch64 on
+/// 2026-10-27 (UTC) as the first `free` row less `free`'s own region: 460 less 192. Name:
+/// provisional (milestone 933's lane).
+pub(super) const SHELL_STATIC_KIB: u64 = 280;
+
+/// **The most of the shell's budget `free`'s `Yours:` line may report in use**, in KiB: the shell's
+/// own static pages, and two job regions (`grant_plan::JOB_REGION_PAGES`, 48 pages of 4 KiB). One
+/// is `free`'s own, which its BUGS says it counts. The other is slack for a job the shell has not
+/// yet collected. A reading above is a region the shell split off and did not get back. Since
+/// milestone 933 (every job is built the way a supervised job is) the row describes the shell's
+/// budget and not the progenitor's pool. Name: provisional.
+pub(super) const YOURS_CEILING_KIB: u64 = SHELL_STATIC_KIB + 2 * 48 * 4;
 
 /// The used figure of the first `Yours:` row in `transcript`, in KiB, or `None` when there is none
 /// (the line's own expectation already fails a run that lost it).

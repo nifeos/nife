@@ -159,6 +159,29 @@ const GRAPHICS_BIT: u64 = 1 << 45;
 /// Name: ratified 2026-10-03 (calef, #1493), with bit 46 and its meaning only with bit 45.
 const KEYBOARD_BIT: u64 = 1 << 46;
 
+/// **The shell holds this job's region and its exit** (milestone 933 (every job is built the way a
+/// supervised job is), ruled 2026-10-27 UTC). Two capabilities lead the delegation, after the
+/// interrupt pair and before the sink: a region the progenitor builds the job from, so the shell
+/// can tear it down with `DESTROY`, and an endpoint the shell receives on, which becomes the job's
+/// supervision endpoint (badged with the job's label) and, unless [`SINK_BIT`] or [`SCREEN_BIT`]
+/// says otherwise, the job's output. The progenitor answers once, [`held_answer`], then sends the
+/// job's `ThreadControlBlock` as the one message after a good answer (§309). It retains nothing,
+/// and learns that the job's file-service window is free from a [`release`] message instead of
+/// `job_undertaker`'s [`reaped`] one. With [`SCREEN_BIT`] set, no further endpoint follows and the
+/// job's output defaults to the terminal's sink.
+///
+/// Name: provisional (milestone 933's lane, 2026-10-27 UTC).
+const HELD_BIT: u64 = 1 << 47;
+
+/// **Not a spawn: the shell says a job it held is gone** (milestone 933). Word 0 is the job's label
+/// from [`held_answer`], word 1 is zero, and the rest of word 2 is zero. The progenitor frees the
+/// job's window, resolver grants and installer reply as it does for a [`reaped`] message, and
+/// answers nothing. The shell sends it after its `DESTROY` has returned the region, before its next
+/// request, so the progenitor takes it between requests and never mid-request.
+///
+/// Name: provisional (milestone 933's lane, 2026-10-27 UTC).
+const RELEASE_BIT: u64 = 1 << 48;
+
 /// **Where a session holds the machine statistics page** (milestone 126, DECISIONS §225): `READ |
 /// GRANT`, so it can delegate it with [`MACHINE_BIT`] and not write it. A named slot probed at
 /// `_start`, for [`RUN_UNVOUCHED_SLOT`]'s reasons.
@@ -470,10 +493,12 @@ pub const IMAGE_MAXIMUM_PAGES: u64 = 1024;
 ///
 /// 128 pages for `--mem` grants, pipes and the shell's own windows, plus one image's staging frames
 /// ([`IMAGE_MAXIMUM_PAGES`]), since the shell reads a file run by its path into frames split from
-/// this budget before it sends them.
+/// this budget before it sends them, plus the regions of the jobs it holds
+/// ([`crate::JOB_POOL_PAGES`], milestone 933 (every job is built the way a supervised job is)):
+/// the same mix the progenitor's pool holds, now the shell's to split.
 ///
 /// Name: provisional.
-pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
+pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES + crate::JOB_POOL_PAGES;
 
 /// The page size an image is carried in. A frame is one page on every architecture this tree
 /// builds for.
@@ -541,6 +566,9 @@ pub struct Wiring {
     /// **Unused, and a request that sets it is refused; no capability follows** (milestone 715
     /// (provisional)). See [`KEYBOARD_BIT`]; meaningless unless `graphics` is also set.
     pub keyboard: bool,
+    /// **The shell holds this job's region and its exit** (milestone 933). Two capabilities follow
+    /// the interrupt pair; see `HELD_BIT`.
+    pub held: bool,
 }
 
 /// Build the three request words from a resolved endowment's parts.
@@ -588,6 +616,9 @@ pub fn request(prog_id: u64, arg: u64, mem_pages: u64, w: Wiring) -> (u64, u64, 
     if w.keyboard {
         w2 |= KEYBOARD_BIT;
     }
+    if w.held {
+        w2 |= HELD_BIT;
+    }
     (prog_id, arg, w2)
 }
 
@@ -609,7 +640,46 @@ pub fn wiring(w2: u64) -> Wiring {
         machine: w2 & MACHINE_BIT != 0,
         graphics: w2 & GRAPHICS_BIT != 0,
         keyboard: w2 & KEYBOARD_BIT != 0,
+        held: w2 & HELD_BIT != 0,
     }
+}
+
+/// **Whether a held job is also sent a view of the shell's budget** (milestone 933): when its
+/// program declares [`Manifest::share`](crate::Manifest::share), the third capability of the
+/// held group is the shell's budget narrowed to `ENUMERATE`, which becomes the job's share view
+/// (`free`'s `Yours:`) in place of the progenitor's pool. Both sides ask this one function, so the
+/// shell never sends a capability the progenitor does not read.
+#[must_use]
+pub const fn held_shares(program: crate::Program) -> bool {
+    program.manifest().share
+}
+
+/// **The "release" request for job `label`** ([`RELEASE_BIT`]): the three words the shell sends
+/// when it has torn down a job it held.
+#[must_use]
+pub const fn release(label: u64) -> (u64, u64, u64) {
+    (label, 0, RELEASE_BIT)
+}
+
+/// **The label a release request names, if this first message is one.** The progenitor asks it
+/// before [`activation`] and [`wiring`], because under the bit no other bit of word 2 means
+/// anything.
+#[must_use]
+pub const fn released_label(w0: u64, w2: u64) -> Option<u64> {
+    if w2 & RELEASE_BIT != 0 {
+        Some(w0)
+    } else {
+        None
+    }
+}
+
+/// **The progenitor's one answer to a held job**: `(SPAWN_OK, label, 0)` when the job started, and
+/// `(failure, 0, 0)` with one of the sentinels otherwise (milestone 933). The label is the number
+/// on the job's supervision capability; it comes back on the job's death message in the sixth
+/// word, and the shell names the job to [`release`] by it.
+#[must_use]
+pub const fn held_answer(label: u64) -> (u64, u64, u64) {
+    (SPAWN_OK, label, 0)
 }
 
 /// The image's length in bytes from a received request (word 0), when [`Wiring::image`] is set.
@@ -801,6 +871,21 @@ mod tests {
         assert_eq!(reaped(6, 9), (6, 9, 0));
     }
 
+    /// **A release names the job, and only a release is one** (milestone 933). Every wiring flag
+    /// at once is still a spawn, and a release with a zero label still reads as a release, so the
+    /// progenitor's first test of a request never mistakes one for the other.
+    #[test]
+    fn a_release_is_its_label_and_only_a_release_is_one() {
+        let (w0, w1, w2) = release(41);
+        assert_eq!(released_label(w0, w2), Some(41));
+        assert_eq!(w1, 0);
+        assert_eq!(released_label(0, release(0).2), Some(0));
+        assert_eq!(activation(w1, w2), None, "a release is not an activation");
+        let (_, _, spawn) = request(3, 0, 64, Wiring::default());
+        assert_eq!(released_label(41, spawn), None);
+        assert_eq!(held_answer(7), (SPAWN_OK, 7, 0));
+    }
+
     /// A holder's name survives the two messages whole, at the full width and empty.
     #[test]
     fn a_holder_name_round_trips() {
@@ -862,7 +947,7 @@ mod tests {
     /// progenitor take a capability for a data word (or the reverse) and hang rather than fail.
     #[test]
     fn the_wiring_flags_do_not_collide() {
-        for m in 0u32..1 << 14 {
+        for m in 0u32..1 << 15 {
             let b = |i: u32| m & (1 << i) != 0;
             let w = Wiring {
                 interruptible: b(0),
@@ -879,6 +964,7 @@ mod tests {
                 machine: b(11),
                 graphics: b(12),
                 keyboard: b(13),
+                held: b(14),
             };
             let (_, _, w2) = request(3, 0, 64, w);
             assert_eq!(wiring(w2), w, "{w:?}");
@@ -943,8 +1029,10 @@ mod tests {
             machine: true,
             graphics: true,
             keyboard: true,
+            held: true,
         };
         let (_, w1, w2) = request(3, 2, 64, all);
+        assert_eq!(released_label(3, w2), None, "a spawn is never a release");
         assert_eq!(activation(w1, w2), None);
         for verb in [
             Activation::Install,
@@ -1044,6 +1132,9 @@ mod tests {
     /// The shell's budget is its own 128 pages and one image's staging frames.
     #[test]
     fn the_shell_budget_is_its_windows_and_one_staged_image() {
-        assert_eq!(SHELL_BUDGET_PAGES, 128 + IMAGE_MAXIMUM_PAGES);
+        assert_eq!(
+            SHELL_BUDGET_PAGES,
+            128 + IMAGE_MAXIMUM_PAGES + crate::JOB_POOL_PAGES
+        );
     }
 }

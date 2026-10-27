@@ -77,7 +77,7 @@ const _: () = assert!(PROGENITOR_RESERVED_PAGES >= 2 * supervision_protocol::SCR
 /// spawns, [`CHILD_STACK_PAGES`], a TCB, an address-space root, the tables for the windows a child
 /// touches and the mapping records of §13 (capability revocation and untyped reclamation); see
 /// notes/system-initializer/budgets.md.
-pub(super) const JOB_REGION_PAGES: u64 = 48;
+pub(super) const JOB_REGION_PAGES: u64 = grant_plan::JOB_REGION_PAGES;
 
 /// **One directory-granted job's region**: the program *and* the `fs_subtree_caretaker` that carries
 /// its grant, plus the two endpoints between them, all out of one carve, so the client's one reap
@@ -85,7 +85,7 @@ pub(super) const JOB_REGION_PAGES: u64 = 48;
 /// supervisor's death is its subtree's death)). The endpoints must come from this region: the reap
 /// sweeps them, and that is what wakes a caretaker parked in `RECEIVE`. See
 /// notes/system-initializer/children.md and notes/system-initializer/budgets.md.
-pub(super) const DIR_JOB_REGION_PAGES: u64 = 98;
+pub(super) const DIR_JOB_REGION_PAGES: u64 = grant_plan::DIRECTORY_JOB_REGION_PAGES;
 
 /// The stack a `fs_subtree_caretaker` gets, beyond the one page `build_child` maps for it: it has
 /// no allocator, no recursion, and one sizable frame (a sixteen-entry handle table, and in a
@@ -107,7 +107,7 @@ pub(super) const NAMESET_PAGE_VA: u64 = address_space_map::pair_page(0x0070_0000
 /// ([`grant_plan::STD_REGION_PAGES`]). Small on purpose: `script/swish-check` runs more jobs
 /// through it than it could hold without the regions coming back, so widening it silently retires
 /// that gate. See notes/system-initializer/budgets.md.
-pub const JOBS_BUDGET_PAGES: u64 = JOB_REGION_PAGES * 6 + grant_plan::STD_REGION_PAGES;
+pub const JOBS_BUDGET_PAGES: u64 = grant_plan::JOB_POOL_PAGES;
 
 /// **The image pool** (a provisional name), apart from [`JOBS_BUDGET_PAGES`], where an image run by
 /// path or installed is staged and built: the largest image twice (the child's pages, and the copy

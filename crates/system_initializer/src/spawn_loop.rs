@@ -239,6 +239,12 @@ impl Request {
 struct Delegated {
     job_ut: Option<u64>,
     job_fr: Option<u64>,
+    /// A held job's region and the endpoint its exit arrives on (milestone 933), both the shell's
+    /// own; `None` when the request did not promise them or they did not arrive.
+    held: Option<(u64, u64)>,
+    /// The shell's budget narrowed to `ENUMERATE`, for a held job whose program declares a share
+    /// view (`spawnproto::held_shares`), in place of the progenitor's pool.
+    share: Option<u64>,
     sink: Option<u64>,
     source: Option<u64>,
     diagnostics: Option<u64>,
@@ -253,6 +259,9 @@ impl Delegated {
         [
             self.job_ut,
             self.job_fr,
+            self.held.map(|(region, _)| region),
+            self.held.map(|(_, exit)| exit),
+            self.share,
             self.sink,
             self.source,
             self.diagnostics,
@@ -385,6 +394,9 @@ struct NativeEndowment {
 /// What a normal job holds that the progenitor must give back or delete once it has started (or
 /// failed to): everything [`Service::finish_job`] tidies.
 struct JobLeftovers {
+    /// A held job's `ThreadControlBlock`, kept by [`Retention::Requester`] to hand to the shell
+    /// after a good answer, or to delete after a bad one (milestone 933).
+    tcb: Option<u64>,
     dir: DirWiring,
     installer: Option<(u64, u64)>,
     /// The badged copies of the resolver's endpoint the child was placed, one per zone (milestone
@@ -427,6 +439,13 @@ impl Service<'_> {
                 (own_ut, images_ut, fs, self.c.catalogue),
                 &mut self.fs_mapped,
             );
+            return;
+        }
+        // The shell says a job it held is gone (milestone 933): its window, resolver grants and
+        // installer reply are free from now on, as `job_undertaker`'s message makes them. Nothing
+        // is answered, and nothing else is read.
+        if let Some(label) = spawnproto::released_label(w0, w2) {
+            self.spawn.reaped(label);
             return;
         }
         // An edit to the installed-programs table, not a spawn: asked first, because under this bit
@@ -478,6 +497,22 @@ impl Service<'_> {
 
         if req.interruptible {
             self.spawn_interruptible(req, elf, job.failure);
+        } else if req.wiring.held && req.wiring.image {
+            // A held job is built from a program row. An image's region is carved from the image
+            // pool, so the two never meet (milestone 933's BUGS). The honest shell never sends both;
+            // refuse, and give back what the request cost: the shell's region and the image pool's
+            // carves.
+            for region in [
+                req.delegated.held.map(|(region, _)| region),
+                staging,
+                image_region,
+            ]
+            .into_iter()
+            .flatten()
+            {
+                reclaim(region);
+            }
+            send(self.c.result_ep, spawnproto::SPAWN_FAILED, 0, 0);
         } else {
             self.spawn_job(req, &job, elf, image_region, staging);
         }
@@ -531,7 +566,7 @@ impl Service<'_> {
             None
         };
 
-        let delegated = receive_delegated(spawn, wiring, mem_pages);
+        let delegated = receive_delegated(spawn, wiring, (mem_pages, prog));
         // The run-unvouched proof (§219 gate D2) is the last message of any request that claimed it,
         // taken whether or not this one needs it so the caller's `SEND` never waits.
         let presented = wiring.run_unvouched && {
@@ -823,8 +858,22 @@ impl Service<'_> {
         // region as the program it serves (§92 (a caretaker is supervised by the client it serves)).
         let std_layout = manifest.is_some_and(|m| m.startup == grant_plan::StartupContract::Std);
         let wants_installer = manifest.is_some_and(|m| m.installer);
-        let region =
-            self.split_job_region(req, manifest, image_region, (std_layout, wants_installer));
+        // A held job is built from the shell's region (milestone 933), which the progenitor neither
+        // carves nor reclaims once the job runs. An installer holder's region comes from the image
+        // pool, and a quiet job's output goes to a sink this boot may not have; the honest shell
+        // asks for neither, and either is refused with the shell's region given back.
+        let held_region = req.delegated.held.map(|(region, _)| region);
+        let held_misfit = req.wiring.held
+            && (held_region.is_none()
+                || wants_installer
+                || (req.wiring.screen && self.c.term_sink.is_none()));
+        let region = match (held_region, req.wiring.held) {
+            (Some(held), _) => Some(held),
+            (None, true) => None,
+            (None, false) => {
+                self.split_job_region(req, manifest, image_region, (std_layout, wants_installer))
+            }
+        };
         // The index store (milestone 801 (packages over the internet), ruling I2) takes the `std`
         // layout's one directory slot, so only a line that named none, on the owner's console.
         let store = manifest
@@ -854,13 +903,23 @@ impl Service<'_> {
             (NO_RESOLVERS, false)
         };
         // A screen-narrowed job's keystrokes are its session's, so it gets no console input.
-        let wants_stdin = std_layout && wants.console_input && req.delegated.screen.is_none();
+        let quiet = req.delegated.screen.is_some() || (req.wiring.held && req.wiring.screen);
+        let wants_stdin = std_layout && wants.console_input && !quiet;
         let stdin = wants_stdin
             .then(|| badged(self.c.boot_terminal, line_editor::proto::STDIN_BADGE).ok())
             .flatten();
         let stdin_failed = wants_stdin && stdin.is_none();
 
-        let out = self.output(req);
+        // `deaths` badged with the job's label (§148 (resolves by asking the kernel)). No label, no
+        // build: a job not recognized at its reap would hold its window for the rest of the boot. A
+        // held job is supervised on the shell's endpoint, with the same label (milestone 933).
+        let supervisor = req.delegated.held.map_or(self.c.deaths, |(_, exit)| exit);
+        let labeled = if req.delegated.screen.is_none() {
+            badged(supervisor, dir.label).ok()
+        } else {
+            None
+        };
+        let out = self.output(req, labeled);
         let native = self.native_endowment(req, manifest, &wants, &dir, out);
         // The argv copy is carved from the job's region so its reclaim frees the page; a copy that
         // could not be made fails the spawn rather than running without the line's words.
@@ -886,13 +945,6 @@ impl Service<'_> {
             }
             _ => None,
         };
-        // `deaths` badged with the job's label (§148 (resolves by asking the kernel)). No label, no
-        // build: a job not recognized at its reap would hold its window for the rest of the boot.
-        let labeled = if req.delegated.screen.is_none() {
-            badged(self.c.deaths, dir.label).ok()
-        } else {
-            None
-        };
         let fault = req.delegated.screen.or(labeled);
         let elf = elf.filter(|_| {
             !dir.dir_failed
@@ -903,13 +955,14 @@ impl Service<'_> {
                 && !resolver_failed
                 && !stdin_failed
                 && fault.is_some()
+                && !held_misfit
         });
         let built = build_job(
             own_ut,
             (elf, region),
             (std_layout, std_parts.as_ref()),
             &native,
-            fault,
+            (fault, req.wiring.held),
         );
         // `build_child` copied every segment out of staging, and destroying it now returns its
         // pages, since it is the pool's top carve.
@@ -917,8 +970,13 @@ impl Service<'_> {
             supervision_protocol::memory_region_destroy(st);
             cap_delete(st);
         }
+        let tcb = built
+            .as_ref()
+            .map(|child| child.tcb)
+            .filter(|_| req.wiring.held);
         let ok = start_job(built, req, std_layout);
         let leftovers = JobLeftovers {
+            tcb,
             dir,
             installer,
             resolvers,
@@ -1166,12 +1224,18 @@ impl Service<'_> {
     /// screen-narrowed tail (§106 (an unredirected tail stage's output goes to the screen)), or the
     /// shared result endpoint. The child cannot tell which it holds. See
     /// notes/system-initializer/the-child-layouts.md.
-    fn output(&self, req: &Request) -> (u64, u64) {
-        let default_screen = self.c.term_sink.filter(|_| req.delegated.screen.is_some());
+    fn output(&self, req: &Request, labeled: Option<u64>) -> (u64, u64) {
+        let quiet = req.delegated.screen.is_some() || (req.wiring.held && req.wiring.screen);
+        let default_screen = self.c.term_sink.filter(|_| quiet);
+        // A held job that is not quiet answers on the shell's own endpoint, through the copy that
+        // carries its label, so its output and its death arrive in order on one endpoint
+        // (milestone 933).
+        let held_output = labeled.filter(|_| req.wiring.held && !quiet);
         (
             req.delegated
                 .sink
                 .or(default_screen)
+                .or(held_output)
                 .unwrap_or(self.c.result_ep),
             abi::rights::WRITE,
         )
@@ -1272,8 +1336,11 @@ impl Service<'_> {
             placed_n += 1;
         }
         if wants.domain {
-            // `ENUMERATE` alone: `READ` would also grant `RECEIVE` and `REAP` on `deaths`.
-            placed_buf[placed_n] = (grant_plan::DOMAIN_SLOT, deaths, abi::rights::ENUMERATE);
+            // `ENUMERATE` alone: `READ` would also grant `RECEIVE` and `REAP` on `deaths`. A held
+            // job's domain is its shell's: the threads of the jobs that shell holds, itself among
+            // them, since the progenitor's `deaths` holds none of them (milestone 933).
+            let domain = req.delegated.held.map_or(deaths, |(_, exit)| exit);
+            placed_buf[placed_n] = (grant_plan::DOMAIN_SLOT, domain, abi::rights::ENUMERATE);
             placed_n += 1;
         }
         // `WRITE` alone, the right to `CALL`: `READ` would let it take another client's request,
@@ -1293,7 +1360,10 @@ impl Service<'_> {
             placed_n += 1;
         }
         if wants.share {
-            placed_buf[placed_n] = (grant_plan::SHARE_SLOT, jobs_ut, abi::rights::ENUMERATE);
+            // A held job's share is the shell's budget, which its regions are split from; every
+            // other job's is the progenitor's pool.
+            let share = req.delegated.share.unwrap_or(jobs_ut);
+            placed_buf[placed_n] = (grant_plan::SHARE_SLOT, share, abi::rights::ENUMERATE);
             placed_n += 1;
         }
         // `WRITE` alone: the child can invoke the reboot object and cannot hand it on.
@@ -1443,6 +1513,7 @@ impl Service<'_> {
     fn finish_job(&mut self, req: &Request, ok: bool, failure: u64, left: JobLeftovers) {
         let result_ep = self.c.result_ep;
         let JobLeftovers {
+            tcb,
             dir,
             installer,
             resolvers,
@@ -1484,7 +1555,7 @@ impl Service<'_> {
             (false, Some(w), true) => self.spawn.disk_windows.release(w),
             _ => {}
         }
-        if ok && labeled.is_some() && req.delegated.sink.is_none() {
+        if ok && labeled.is_some() && req.delegated.sink.is_none() && !req.wiring.held {
             self.spawn.due.expect(label);
         }
         for endpoint in [dir.narrowed, dir.sync_ep, stdin]
@@ -1511,11 +1582,28 @@ impl Service<'_> {
             if !ok {
                 reclaim(r);
             }
-            cap_delete(r);
+            // A held region is the shell's, in `Delegated::release`'s list already.
+            if !req.wiring.held {
+                cap_delete(r);
+            }
         }
         // A redirected or screen-narrowed child answers elsewhere, so the shell gets one ack here;
         // an unredirected child's own message is the shell's read, and a failure is the sentinel.
-        if req.wiring.sink || req.wiring.screen {
+        if req.wiring.held {
+            // One answer, the label with it, then the job's `ThreadControlBlock` as the one message
+            // after a good one, which the shell takes first (§309), so this `SEND` cannot strand.
+            let (w0, w1, w2) = if ok {
+                spawnproto::held_answer(label)
+            } else {
+                (failure, 0, 0)
+            };
+            send(result_ep, w0, w1, w2);
+            match tcb {
+                Some(tcb) if ok => hand_to_requester(tcb, result_ep),
+                Some(tcb) => forget_thread_control_block(tcb),
+                None => {}
+            }
+        } else if req.wiring.sink || req.wiring.screen {
             send(
                 result_ep,
                 if ok { spawnproto::SPAWN_OK } else { failure },
@@ -1539,7 +1627,7 @@ impl Service<'_> {
 fn receive_delegated(
     spawn: &mut SpawnEndpoint,
     wiring: spawnproto::Wiring,
-    mem_pages: u64,
+    (mem_pages, prog): (u64, Option<Program>),
 ) -> Delegated {
     let interruptible = wiring.interruptible;
     let (job_ut, job_fr) = if interruptible {
@@ -1549,6 +1637,29 @@ fn receive_delegated(
         )
     } else {
         (None, None)
+    };
+    // A held job's region and exit come right after the interrupt pair (milestone 933), and a share
+    // view after them for a program that declares one.
+    let held = if wiring.held {
+        let region = opt_capability(spawn.receive_cap().1);
+        let exit = opt_capability(spawn.receive_cap().1);
+        match (region, exit) {
+            (Some(r), Some(e)) => Some((r, e)),
+            (r, e) => {
+                // Half a pair is a malformed request: give back what arrived, build nothing.
+                for c in [r, e].into_iter().flatten() {
+                    cap_delete(c);
+                }
+                None
+            }
+        }
+    } else {
+        None
+    };
+    let share = if wiring.held && prog.is_some_and(spawnproto::held_shares) {
+        opt_capability(spawn.receive_cap().1)
+    } else {
+        None
     };
     let sink = if wiring.sink {
         opt_capability(spawn.receive_cap().1)
@@ -1565,7 +1676,8 @@ fn receive_delegated(
     } else {
         None
     };
-    let screen = if wiring.screen {
+    // A held job's `SCREEN_BIT` only picks its output; its exit endpoint is the held one.
+    let screen = if wiring.screen && !wiring.held {
         opt_capability(spawn.receive_cap().1)
     } else {
         None
@@ -1583,6 +1695,8 @@ fn receive_delegated(
     Delegated {
         job_ut,
         job_fr,
+        held,
+        share,
         sink,
         source,
         diagnostics,
@@ -1619,8 +1733,19 @@ fn build_job(
     (elf, region): (Option<&elf::Elf>, Option<u64>),
     (std_layout, std_parts): (bool, Option<&StdLayout>),
     native: &NativeEndowment,
-    fault: Option<u64>,
+    (fault, held): (Option<u64>, bool),
 ) -> Option<supervision_protocol::Child> {
+    // A held job's `ThreadControlBlock` goes to the shell that asked for it (§309), as a supervised
+    // job's does (milestone 933).
+    let retention = || {
+        if held {
+            Retention::Requester {
+                reason: "the shell suspends a job it holds on ^Z (milestone 933)",
+            }
+        } else {
+            Retention::Nothing
+        }
+    };
     let placed: &[(u64, u64, u64)] = &native.placed_buf[..native.placed_n];
     let maps: &[(u64, u64, u64)] = &native.map_buf[..native.map_n];
     match (elf, region) {
@@ -1635,7 +1760,7 @@ fn build_job(
                     maps: l.maps(),
                     fault,
                     stack_pages: std_runtime_contract::STACK_PAGES,
-                    ..ChildEndowment::new(Retention::Nothing)
+                    ..ChildEndowment::new(retention())
                 },
             )
             .ok()
@@ -1652,7 +1777,7 @@ fn build_job(
                     maps,
                     fault,
                     stack_pages: CHILD_STACK_PAGES,
-                    ..ChildEndowment::new(Retention::Nothing)
+                    ..ChildEndowment::new(retention())
                 },
             )
             .ok()

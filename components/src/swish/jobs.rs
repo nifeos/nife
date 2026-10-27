@@ -7,8 +7,14 @@
 
 //! # BUGS
 //!
-//! - Only a supervised job, the one kind this shell holds capabilities for, can run in the
-//!   background; `&` on any other is refused with a sentence (notes/shell/the-program.md).
+//! - `&` runs a supervised job, or an ordinary program this shell holds the region and exit of
+//!   (milestone 933 (every job is built the way a supervised job is)). It refuses a pipeline, a
+//!   redirection, a program that answers in a word, and a program the progenitor builds from the
+//!   image pool (a file run by its path, an installer holder); those stay on the progenitor's pool
+//!   and `job_undertaker` until the milestone's later pieces move them.
+//! - `kill %N` without `-9` has nothing to ask of a held job, which has no frame to raise a request
+//!   in: the cooperative tier for a `std` program (its `SIGINT`) is left unbuilt, and `kill -9 %N`
+//!   or `^C` under `fg` tears it down.
 //! - A finished background job is reported when `jobs`, `wait` or `fg` next looks, not before the
 //!   prompt, since the shell is blocked reading the line.
 //! - Background jobs finishing out of order leave a hole in this shell's budget until the later
@@ -101,7 +107,13 @@ fn watch_to_the_end(jobs: &mut Jobs, mut h: Held) {
 /// Give back the slots this shell held for a job. If the job was reclaimed, every slot is already
 /// stale and deleting it only frees the slot.
 fn release(h: Held) {
-    give_back(h.job_fr, h.job_ut);
+    if let Watch::Frame { job_fr, .. } = h.watch {
+        give_back(job_fr, h.job_ut);
+    }
+    if h.budget != 0 {
+        destroy_memory_region(h.budget);
+        cap_delete(h.budget);
+    }
     supervision_protocol::forget_thread_control_block(h.tcb);
 }
 
@@ -192,6 +204,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
             // session is a plain spawn, never a supervised job.
             graphics: false,
             keyboard: false,
+            held: false,
         },
     );
     // **Out of raw mode before the job exists** (DECISIONS §227 (how Tab reaches the shell)
@@ -223,9 +236,9 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
     // suspend and resume its job and cannot pass that on.
     let (_, tcb, _) = receive_cap(RESULT);
     Some(Held {
-        jf,
+        watch: Watch::Frame { jf, job_fr },
         job_ut,
-        job_fr,
+        budget: 0,
         tcb,
         program: e.program,
         started: 0,
@@ -238,7 +251,10 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
 /// three things with only blocking primitives and no non-blocking receive (DECISIONS §24, wait A).
 /// `true` means a `^Z` suspended the job, which is still held; `false` means it is over.
 pub(super) fn watch(h: &Held) -> bool {
-    let (jf, job_ut) = (h.jf, h.job_ut);
+    let (jf, job_ut) = match h.watch {
+        Watch::Frame { jf, .. } => (jf, h.job_ut),
+        Watch::Exit { label } => return watch_exit(h, label),
+    };
     // The baseline is the session watermark, not a fresh read: a ^C counted during the spawn is
     // already reflected in intr_count but not yet in CONSUMED, so diffing against CONSUMED sees it.
     let base = CONSUMED.load(core::sync::atomic::Ordering::Relaxed);
@@ -285,6 +301,52 @@ pub(super) fn watch(h: &Held) -> bool {
             Action::None => {}
         }
         watch_pause();
+    }
+}
+
+/// **Watch a held job whose exit this shell receives** (milestone 933): the job has no frame to
+/// poll, so the exit endpoint is asked each beat. `^Z` suspends it as it does a framed job. A `^C`
+/// tears it down at once, since there is no cooperative tier to try first: a program that was not
+/// built to look for a request has nothing to notice one with, and that tier is left unbuilt
+/// (this module's `BUGS`). `true` means a `^Z` suspended the job; `false` means it is over.
+fn watch_exit(h: &Held, label: u64) -> bool {
+    let base = CONSUMED.load(core::sync::atomic::Ordering::Relaxed);
+    let suspends = SUSPENDS_SEEN.load(core::sync::atomic::Ordering::Relaxed);
+    loop {
+        if let Some(fault) = held::has_died(label) {
+            collect_exit(h.job_ut, label);
+            report_exit(fault);
+            return false;
+        }
+        if suspend_count() != suspends && thread_control_block_suspend(h.tcb) == 0 {
+            return true;
+        }
+        if intr_count() != base {
+            failed();
+            print(b"  ^C: tearing the job down.\n");
+            if collect_exit(h.job_ut, label) {
+                print(b"  the job's process was torn down and its memory reclaimed.\n");
+            } else {
+                print(b"  teardown refused: the job is still there\n");
+            }
+            return false;
+        }
+        watch_pause();
+    }
+}
+
+/// Tear down a held job and tell the progenitor its window is free ([`held::collect`]).
+fn collect_exit(job_ut: u64, label: u64) -> bool {
+    held::collect(job_ut, label)
+}
+
+/// Report a held job that ended on its own: it has no work units to count.
+fn report_exit(fault: bool) {
+    if fault {
+        failed();
+        print(swish::FAULTED_SENTENCE);
+    } else {
+        print(b"  the job finished.\n");
     }
 }
 
@@ -418,9 +480,12 @@ pub(super) const MAXIMUM_JOBS: usize = 8;
 /// to watch it, ask it to stop, pause it, or tear it down, which is why a job is exactly this.
 #[derive(Clone, Copy)]
 pub(super) struct Held {
-    jf: MappedWindow,
+    watch: Watch,
     job_ut: u64,
-    job_fr: u64,
+    /// The `--mem` budget a held job was given, which this shell destroys after the job's region,
+    /// or `0` for none (slot 0 is the terminal in every wiring). A supervised job's budget is not
+    /// kept: it is delegated and its slot freed, as before.
+    budget: u64,
     /// `WRITE` on the job's thread, for `SUSPEND` and `RESUME` (DECISIONS §309).
     tcb: u64,
     program: grant_plan::Program,
@@ -431,9 +496,64 @@ pub(super) struct Held {
     started: u64,
 }
 
+/// **How a held job says it is over**: a supervised job through the frame it shares with this
+/// shell, and any other through its death on the exit endpoint (milestone 933).
+#[derive(Clone, Copy)]
+pub(super) enum Watch {
+    /// The shared frame's `DONE` flag, and the frame's capability.
+    Frame { jf: MappedWindow, job_fr: u64 },
+    /// The death that arrives on [`held::exit_endpoint`] with this label.
+    Exit { label: u64 },
+}
+
+/// How a job that is over ended.
+enum Ending {
+    /// A supervised job's report: its status and work units.
+    Framed { status: u64, beats: u64 },
+    /// A held job's death: whether it faulted.
+    Exited { fault: bool },
+}
+
 impl Held {
-    fn done(&self) -> bool {
-        self.jf.read::<u64>(job_page_frame::DONE as u64) != 0
+    /// A job this shell holds the exit of (milestone 933): started, not stopped, and not yet
+    /// numbered; [`keep_background`] numbers it.
+    pub(super) fn exit(
+        label: u64,
+        job_ut: u64,
+        budget: Option<u64>,
+        tcb: u64,
+        program: grant_plan::Program,
+    ) -> Held {
+        Held {
+            watch: Watch::Exit { label },
+            job_ut,
+            budget: budget.unwrap_or(0),
+            tcb,
+            program,
+            stopped: false,
+            started: 0,
+        }
+    }
+
+    /// How the job ended, or `None` while it runs.
+    fn ended(&self) -> Option<Ending> {
+        match self.watch {
+            Watch::Frame { jf, .. } => {
+                (jf.read::<u64>(job_page_frame::DONE as u64) != 0).then(|| Ending::Framed {
+                    status: jf.read::<u64>(job_page_frame::STATUS as u64),
+                    beats: jf.read::<u64>(job_page_frame::HEARTBEAT as u64),
+                })
+            }
+            Watch::Exit { label } => held::has_died(label).map(|fault| Ending::Exited { fault }),
+        }
+    }
+}
+
+/// Say how a job ended, as a foreground job's finish would be said.
+fn report_ending(ending: Ending) {
+    match ending {
+        Ending::Framed { status, beats } => report_finished(status, beats),
+        Ending::Exited { fault } => report_exit(fault),
     }
 }
 
@@ -484,7 +604,7 @@ pub(super) fn background(nav: &mut Nav, cmd: &[u8]) {
     }
     let spec = match grant_plan::parse(cmd) {
         Command::Run(spec) if !spec.program.contains(&b'/') => spec,
-        _ => return not_supervised(),
+        _ => return not_held(),
     };
     let expanded = match expansion(nav, &spec) {
         Ok(e) => e,
@@ -494,13 +614,74 @@ pub(super) fn background(nav: &mut Nav, cmd: &[u8]) {
     match grant_plan::plan(&spec, holdings(nav), expanded) {
         Err(r) => refuse(spec, r),
         Ok(endow) if endow.interruptible => spawn_background(&mut nav.jobs, endow),
-        Ok(_) => not_supervised(),
+        Ok(endow) => spawn_background_held(&mut nav.jobs, endow, &spec),
     }
 }
 
-fn not_supervised() {
+fn not_held() {
     refused();
-    print(b"  & runs only a supervised job: for any other program this shell holds nothing to wait on or stop\n");
+    print(b"  & needs a job this shell can hold: this line builds its program elsewhere\n");
+}
+
+/// Start an ordinary program in the background with this shell holding its region and its exit
+/// (milestone 933). Its output goes to the terminal's sink, so a program that answers in a word,
+/// which only this shell can read, is refused.
+fn spawn_background_held(jobs: &mut Jobs, e: Endowment, spec: &ParsedInvocation) {
+    use grant_plan::line::{Sink, Source};
+    if !jobs.held.iter().any(Option::is_none) {
+        refused();
+        print(b"  this shell already holds as many background jobs as it can list\n");
+        return;
+    }
+    let plain = matches!(e.sink, Sink::Report) && matches!(e.source, Source::None);
+    let Some(pages) = hold_pages(&e, spec.line()).filter(|_| plain) else {
+        return not_held();
+    };
+    if !e.program.manifest().output.is_byte_stream()
+        && !matches!(
+            e.program.manifest().output,
+            grant_plan::OutputDeclaration::Silent
+        )
+    {
+        refused();
+        print(b"  & cannot run a program that answers in a word: only this shell can read one\n");
+        return;
+    }
+    let argv = if e.program.manifest().program_argument.hears_words() {
+        match assemble_argv(spec.line(), 0) {
+            Ok(a) => Some(a),
+            Err(Some(r)) => return refuse(*spec, r),
+            Err(None) => return out_of_budget(),
+        }
+    } else {
+        None
+    };
+    spawn(
+        e,
+        argv,
+        Some(Hold {
+            pages,
+            background: Some(jobs),
+        }),
+    );
+}
+
+/// Keep a started held job in the table and say so. The table has a free entry: the caller looked
+/// before it spawned anything.
+pub(super) fn keep_background(jobs: &mut Jobs, mut h: Held) {
+    let Some(i) = jobs.held.iter().position(Option::is_none) else {
+        // Not reachable while nothing else adds a job between the look and here; do not leak one.
+        let _ = collect(h);
+        return;
+    };
+    jobs.started += 1;
+    h.started = jobs.started;
+    jobs.held[i] = Some(h);
+    print(b"  [");
+    print_num(i as u64 + 1);
+    print(b"] ");
+    print(h.program.name().as_bytes());
+    print(b" running in the background\n");
 }
 
 /// Start a supervised job and keep what this shell holds for it, without watching it.
@@ -526,7 +707,10 @@ fn spawn_background(jobs: &mut Jobs, e: Endowment) {
 
 /// Reclaim a finished job's region and give back its slots.
 fn collect(h: Held) -> bool {
-    let ok = reclaim(h.job_ut);
+    let ok = match h.watch {
+        Watch::Frame { .. } => reclaim(h.job_ut),
+        Watch::Exit { label } => collect_exit(h.job_ut, label),
+    };
     release(h);
     ok
 }
@@ -554,11 +738,16 @@ pub(super) fn list_jobs(jobs: &mut Jobs) {
     for n in 1..=MAXIMUM_JOBS {
         let Some(h) = jobs.get(n) else { continue };
         print_job(n, &h);
-        if h.done() {
-            let beats = h.jf.read::<u64>(job_page_frame::HEARTBEAT as u64);
-            print(b" done after ");
-            print_num(beats);
-            print(b" work units\n");
+        if let Some(ending) = h.ended() {
+            match ending {
+                Ending::Framed { beats, .. } => {
+                    print(b" done after ");
+                    print_num(beats);
+                    print(b" work units\n");
+                }
+                Ending::Exited { fault: false } => print(b" done\n"),
+                Ending::Exited { fault: true } => print(b" faulted\n"),
+            }
             jobs.take(n);
             collect(h);
         } else if h.stopped {
@@ -595,17 +784,15 @@ pub(super) fn wait_jobs(jobs: &mut Jobs, tail: &[u8]) {
             if h.stopped {
                 continue;
             }
-            if !h.done() {
+            let Some(ending) = h.ended() else {
                 left += 1;
                 continue;
-            }
-            let status = h.jf.read::<u64>(job_page_frame::STATUS as u64);
-            let beats = h.jf.read::<u64>(job_page_frame::HEARTBEAT as u64);
+            };
             jobs.take(n);
             collect(h);
             print_job(n, &h);
             print(b":\n");
-            report_finished(status, beats);
+            report_ending(ending);
         }
         if left == 0 {
             break;
@@ -631,7 +818,14 @@ pub(super) fn kill_job(jobs: &mut Jobs, tail: &[u8]) {
         return no_such_job(b"kill");
     };
     if !force {
-        h.jf.write(job_page_frame::INTERRUPT as u64, 1u64);
+        // A held job has no frame to raise a request in, and the cooperative tier is not built
+        // for it (this module's `BUGS`).
+        let Watch::Frame { jf, .. } = h.watch else {
+            refused();
+            print(b"  kill: that job has no cooperative stop; kill -9 %N tears it down\n");
+            return;
+        };
+        jf.write(job_page_frame::INTERRUPT as u64, 1u64);
         // A stopped job is resumed so it can see the request, which is bash's `kill` on a stopped
         // job: the signal, then `SIGCONT`. It runs on in the background.
         if h.stopped

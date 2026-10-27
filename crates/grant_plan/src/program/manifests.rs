@@ -69,6 +69,7 @@ impl Program {
             Program::Reboot => reboot_manifest(),
             Program::StdExerciser => std_exerciser_manifest(),
             Program::Jig => jig_manifest(),
+            Program::JobSleeper => job_sleeper_manifest(),
         }
     }
 }
@@ -90,6 +91,40 @@ const fn least_authority_demo_manifest() -> Manifest {
         // A least_authority_demo finishes in one step; there is no long computation to interrupt, so it
         // is granted no interrupt channel. The shell waits for its result and no ^C tier
         // applies (DECISIONS §24).
+        interruptible: false,
+        clock: false,
+        domain: false,
+        configuration: false,
+        entropy: false,
+        network: false,
+        machine: false,
+        share: false,
+        reboot: false,
+        sync: false,
+        installer: false,
+        catalog: false,
+        indexes: IndexStoreDeclaration::Forbidden,
+        activation_directory: false,
+        console_input: false,
+        startup: StartupContract::Native,
+    }
+}
+
+/// The manifest of `job_sleeper`, [`Program::JobSleeper`]: a wait in milliseconds, the budget its
+/// timer is retyped from, and one line of bytes out.
+const fn job_sleeper_manifest() -> Manifest {
+    Manifest {
+        program_argument: ProgramArgumentDeclaration::Required,
+        memory_grant: MemoryGrantDeclaration::Required {
+            minimum: 4,
+            maximum: 16,
+        },
+        file: FileGrantDeclaration::Forbidden,
+        directory: DirectoryGrantDeclaration::Forbidden,
+        short_options: NO_SHORT_OPTIONS,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
+        reports: true,
         interruptible: false,
         clock: false,
         domain: false,

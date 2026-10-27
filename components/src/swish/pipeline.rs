@@ -912,6 +912,7 @@ fn spawn_stage(
         // `graphical_terminal`'s manifest refuses every operator that builds a stage.
         graphics: false,
         keyboard: false,
+        held: false,
     };
     let (w0, w1, w2) = spawnproto::request(
         e.program.id(),
