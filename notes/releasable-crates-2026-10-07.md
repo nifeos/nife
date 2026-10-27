@@ -94,6 +94,26 @@ evidence behind each row.
 | `cryptography_provider` | A | 610 | 0 | internal | Same mission as `rustls-rustcrypto`, which calef refused as a dependency. A second alpha provider helps nobody; offer it fixes when it moves |
 | `redoxfs` (vendored, two patches) | n/a | n/a | n/a | fork 8: internal, patches carried; a bug report is allowed | Redox refuses LLM-generated contributions. §46's 2026-10-04 amendment says nothing is offered; whether a report of the broken `no_std` build goes is its review's question |
 
+## Corrections, 2026-10-27 (UTC)
+
+The survey above is left as taken. Read against the tree on 2026-10-27 (UTC) by lane
+maintainer/risk-8-picks-2026-10-27, these rows are stale:
+
+- `portable_executable` is no longer a crate. It is a module of `xtask` (`xtask/src/portable_executable.rs`),
+  so it is not a release candidate.
+- `universally_unique_identifier` is gone. The GPT crate depends on the external `uuid` crate (default
+  features off) and owns only how a GPT stores an identifier. The GPT row no longer counts a second crate.
+- `intrusive_fifo` is now `intrusive_queue`.
+- `http_response` now depends on `httparse`, so it is no longer free of dependencies.
+- `video_terminal` depends on `address_space_map` and `glyph_atlas`, and `line_editor` on
+  `capability_plan`, so neither is class B (bound to a sibling crate) any more.
+- `coremark` is taken on crates.io (created 2026-10-12, an unrelated port), so that name is not free.
+
+The dispositions of the first three releases are ruled; see milestone 857's release order and
+[risk 8](../design/fatal-risks/8-nobody-else-builds-on-nife.md) (2026-10-27 UTC). The ruling also defers
+every "contribute" row above until a published crate has users who ask for it upstream, and
+drops `non_volatile_memory_express` from the first attempts.
+
 ## Two records this overtakes
 
 - Milestone 39 (repository structure) judged a `no_std`, I/O-free GPT parser a real gap, because

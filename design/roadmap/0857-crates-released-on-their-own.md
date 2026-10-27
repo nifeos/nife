@@ -3,7 +3,7 @@ status: NOT-STARTED
 raised: 2026-10-07
 promoted_from: crates-released-on-their-own
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: yes
@@ -118,24 +118,38 @@ The measures: crates.io downloads over 90 days, reverse dependencies, and issues
 from outside `nifeos`. And for offers: made, accepted and declined, with bug reports filed and
 fixed.
 
-## The per-crate reviews, in order
+## The release order, ruled 2026-10-27 (UTC)
 
-Proposed order, reversible. FAT is first by calef's ruling, and it is the only crate already
-ruled to be written. Then owners who already run Kani, then the rest by harnesses offered, then the
-rows fork 8 changes, then the publications that need a cut or proofs first. The internal crates
-close the list as one sitting, since each needs only a line.
+The first three releases are ruled, publish-first, as risk 8's first attempts
+([the entry](../fatal-risks/8-nobody-else-builds-on-nife.md)). A contribution to another project
+waits until a published crate has users who ask for it upstream. The first three, in order:
 
-1. FAT (the ruled crate; `file_allocation_table` today).
-2. `paging` to `x86_64` and `aarch64-paging`.
-3. `globally_unique_identifier_partition_table`;
-   [open question](0857-crates-released-on-their-own/contribute-proofs-instead-of-releasing.md).
-4. `elf` (open too), then `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`.
-5. `calendar`, revisited under fork 8, since `time` wants a person's words.
-6. `non_volatile_memory_express`, `extensible_host_controller_interface` (no offer to rust-osdev;
-   milestone 820 (`extensible_host_controller_interface`: proven xHCI logic, released on its own)
-   records why).
-7. `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
-8. The internal set, `redoxfs`'s bug report question among them.
+1. `file_allocation_table` (milestone 813 (`file_allocation_table`: a proven FAT crate, released on
+   its own)).
+2. `extensible_host_controller_interface`, released with `usb`, after it gains Kani proofs
+   (milestone 820 (`extensible_host_controller_interface`: proven xHCI logic, released on its own)).
+3. `generational_table`, released on its own, after confirming whether `slotmap` already covers
+   allocation-free fixed capacity and saying so in the release record.
+
+Crates.io demand behind the order, as measured on 2026-10-27 (UTC): `fatfs` 422k downloads over 90
+days, 58 dependents, no release since 2023-01; `xhci` 39k, no release since 2023-07;
+`generational-arena` 1.18M, 57 dependents, archived. `capability` (32 downloads) and
+`non_volatile_memory_express` (under 1k) are dropped from the first attempts.
+
+The rest follow in the proposed order below, which stays reversible: owners who already run Kani,
+then the rest by harnesses offered, then the rows fork 8 changes, then the publications that need
+a cut or proofs first. The internal crates close the list as one sitting, since each needs only a
+line. Every contribution in it is deferred by the publish-first ruling until the crate it concerns
+has published and users ask for it upstream.
+
+4. `paging` to `x86_64` and `aarch64-paging`.
+5. `globally_unique_identifier_partition_table`;
+   [deferred](0857-crates-released-on-their-own/contribute-proofs-instead-of-releasing.md).
+6. `elf` (deferred too), then `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`.
+7. `calendar`, revisited under fork 8, since `time` wants a person's words.
+8. `non_volatile_memory_express`, after the three above.
+9. `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
+10. The internal set, `redoxfs`'s bug report question among them.
 
 ## What is already on the record
 

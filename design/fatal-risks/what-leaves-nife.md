@@ -92,7 +92,8 @@ Composition that counts double needs that glue extracted, or a clear guide to wr
 Two candidate shapes for a first attempt. A contribution to an existing project, where rust-vmm's
 virtio crates already run Kani and `direct_memory_access_validator` proves properties of virtio
 descriptors. And a crate published as nife's own where no maintained counterpart exists. Which three
-go first is an architect's pick.
+go first was ruled on 2026-10-27 (UTC): publish-first, so all three are crates published as
+nife's own (see the entry).
 
 ### Caveats
 
