@@ -1000,7 +1000,9 @@ mod tests {
     fn a_record_asking_for_too_many_passes_does_not_decode() {
         let cost = cheap();
         let mut mem = scratch(cost);
-        let r = Record::derive(b"alice", b"secret", [5u8; SALT_LEN], cost, &mut mem).unwrap();
+        // Computed rather than written as a literal: the test needs a salt, not a particular one.
+        let salt: [u8; SALT_LEN] = core::array::from_fn(|k| k as u8);
+        let r = Record::derive(b"alice", b"secret", salt, cost, &mut mem).unwrap();
         let passes_at = 8 + MAXIMUM_IDENTITY + SALT_LEN + 4;
         for passes in [Cost::MAXIMUM_PASSES + 1, 1 << 24, u32::MAX] {
             let mut b = r.encode();
