@@ -207,7 +207,7 @@ fn start_supervised(e: Endowment, foreground: bool) -> Option<Held> {
     }
     send(SPAWN, w0, w1, w2);
     delegate(job_ut, abi::rights::ALL);
-    send_cap(job_fr);
+    send_capability(job_fr);
 
     // The progenitor acks once the child is running: that is the shell's go-ahead to start watching.
     let answer = receive(RESULT).0;

@@ -75,11 +75,11 @@ pub(super) fn dispatch_line(nav: &mut Nav, cmd: &[u8]) {
 
 /// **Act on one command line**, routed by [`swish::route`] (host-tested there) to the capability each
 /// answer reaches for. A line with no `>`, `<` or `|` takes the path it took before those existed, so
-/// the operators cost an ordinary command nothing. `caps` is answered before the line is split, or
-/// `caps date | wc` would lose the pipe.
+/// the operators cost an ordinary command nothing. `capabilities` is answered before the line is split, or
+/// `capabilities date | wc` would lose the pipe.
 pub(super) fn dispatch(nav: &mut Nav, cmd: &[u8]) {
     match swish::route(cmd) {
-        Route::Capabilities(tail) => caps(nav, tail),
+        Route::Capabilities(tail) => capabilities(nav, tail),
         Route::Time(tail) => time_command(nav, tail),
         Route::Xargs(tail) => xargs(nav, tail),
         Route::One(stage) => dispatch_one(nav, stage),
@@ -205,7 +205,7 @@ pub(super) fn dispatch_one(nav: &mut Nav, cmd: &[u8]) {
         // line so they can see the operators. Kept so this function is complete on its own: it is
         // the whole of "what one command means", and a reader should not have to know about the
         // interception to find every arm.
-        Command::Capabilities(tail) => caps(nav, tail),
+        Command::Capabilities(tail) => capabilities(nav, tail),
         Command::Time(tail) => time_command(nav, tail),
         Command::Xargs(tail) => xargs(nav, tail),
         Command::Pwd => print_pwd(nav),
@@ -254,7 +254,7 @@ pub(super) fn user(nav: &mut Nav, verb: grant_plan::UserVerb<'_>) {
     if nav.dir.is_none() {
         return say(Say::NoDirectory);
     }
-    // The first tree, as `caps` reads the activation table from: the owner's lists are the
+    // The first tree, as `capabilities` reads the activation table from: the owner's lists are the
     // system's, whichever tree this shell stands in.
     let t = nav.first();
     let file = login_contract::SUSPENDED_LIST.as_bytes();
