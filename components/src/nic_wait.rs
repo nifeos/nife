@@ -46,7 +46,8 @@ pub(super) fn wait_for_nic(
         Nic::Virtio(_) => {}
     }
     let at = instant();
-    let left = deadline_ms.map(|end| Duration::from_millis((end - at.total_millis()).max(0) as u64));
+    let left =
+        deadline_ms.map(|end| Duration::from_millis((end - at.total_millis()).max(0) as u64));
     let Some(delay) = (match (iface.poll_delay(at, sockets), left) {
         (Some(timer), Some(left)) => Some(timer.min(left)),
         (timer, left) => timer.or(left),
