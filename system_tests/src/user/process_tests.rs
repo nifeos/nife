@@ -24,7 +24,7 @@ use crate::sched;
 use crate::syscall::invoke;
 
 const CODE_VA: u64 = address_space_map::IMAGE_BASE;
-const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
+pub(super) const STACK_VA: u64 = address_space_map::STACK_TOP_PAGE;
 /// A second stack, two pages below the first so a guard page sits between them.
 const STACK_B_VA: u64 = STACK_VA - 2 * page_frames::FRAME_SIZE;
 /// The shared page: the futex word at `+0`, the waiter's return count at `+8` and results at
@@ -108,19 +108,19 @@ const EXITER: &[u32] = &[0xC031_FF31, 0xFEEB_050F];
 
 /// **The spinner**: a branch to itself. It never syscalls, so only its process's end stops it.
 #[cfg(target_arch = "aarch64")]
-const SPINNER: &[u32] = &[0x1400_0000];
+pub(super) const SPINNER: &[u32] = &[0x1400_0000];
 #[cfg(target_arch = "riscv64")]
-const SPINNER: &[u32] = &[0x0000_006F];
+pub(super) const SPINNER: &[u32] = &[0x0000_006F];
 /// `jmp .`, then `nop`s to a word.
 #[cfg(target_arch = "x86_64")]
-const SPINNER: &[u32] = &[0x9090_FEEB];
+pub(super) const SPINNER: &[u32] = &[0x9090_FEEB];
 
-fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error> {
+pub(super) fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
-fn wait_for(seconds: u64, mut cond: impl FnMut() -> bool) -> bool {
+pub(super) fn wait_for(seconds: u64, mut cond: impl FnMut() -> bool) -> bool {
     let deadline = crate::arch::timer::now() + seconds * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline {
         if cond() {
@@ -138,7 +138,7 @@ fn word(page: u64, offset: u64) -> u64 {
 
 /// A space in `region` with each of `programs` at its own code page from [`CODE_VA`], two stacks
 /// and the zeroed shared page at [`VA`]. Returns `(space name, shared page)`.
-fn lay_out(region: u64, programs: &[&[u32]]) -> (u64, u64) {
+pub(super) fn lay_out(region: u64, programs: &[&[u32]]) -> (u64, u64) {
     let none = crate::revoke::PageMapSource::NoCapability;
     let name = user_address_space_create(region).expect("no address space");
     for (i, program) in programs.iter().enumerate() {
@@ -163,7 +163,7 @@ fn lay_out(region: u64, programs: &[&[u32]]) -> (u64, u64) {
 /// Retyped from the root budget's rights, as the progenitor's are, because the process carries its
 /// budget's rights (milestone 824 (a retype mints no right its budget lacks)) and the joins below
 /// need `BIND`.
-fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId) {
+pub(super) fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId) {
     let untyped = sched::grant(crate::capability_object::memory_region_lending_capability(
         region,
     ))
@@ -203,7 +203,7 @@ fn create_process(region: u64, space: u64) -> (u64, sched::ProcessId) {
 
 /// **An embryo from `region`, joined to the process in `process_slot` through the real
 /// `CONFIGURE`**, at program `index`'s code page and on `stack`. Returns `(tid, its TCB slot)`.
-fn join(region: u64, process_slot: u64, index: u64, stack: u64) -> (u64, u64) {
+pub(super) fn join(region: u64, process_slot: u64, index: u64, stack: u64) -> (u64, u64) {
     let (tid, tcb, page) = try_join(region, process_slot, index, stack);
     let page = page.expect("CONFIGURE refused to join a thread to its process");
     assert!(

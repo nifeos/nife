@@ -132,3 +132,11 @@ if it died, `k` is empty rather than somebody else's thread. So a resumed walk n
 and never resolves a cursor to the wrong thread. It can miss a member born into an already-passed
 slot, and it can list a member that dies before the table prints. That is `readdir`'s bargain, taken
 knowingly.
+
+## The process record (milestone 942, §312)
+
+`record::PROCESS` answers which process of the domain a thread belongs to, as an ordinal for one
+walk: the first process the walk meets is 1. The kernel computes it from the thread table on each
+call (the walk keeps only its cursor), and publishes no process identity and no address. `ps`
+joins it on the tid like `CPU_TIME` and counts rows per label for `THR`, so the count is of the
+domain's threads and never the process's total.

@@ -716,6 +716,14 @@ mod futex_tests;
 #[cfg(test)]
 mod process_tests;
 
+/// **A process's threads share one label in a survey** (milestone 942 (`ps` and `top` show which
+/// process each thread belongs to), §312): five threads of one process and one of another, read
+/// through `ps`'s own walk. Needs the scheduler's thread-to-process link and the per-thread
+/// supervision endpoint, which only the kernel can arrange, so it is a kernel-side test. Cross-ISA
+/// (DECISIONS §19).
+#[cfg(test)]
+mod process_label_tests;
+
 /// **`free`, `vmstat` and `slabtop`'s two sources** (milestone 126 (the `procps` package),
 /// DECISIONS §225 (`free` sees the machine and your share)): `MemoryRegion::USAGE` under
 /// `ENUMERATE` alone, refused to a spender and answering a viewer, and the machine statistics page

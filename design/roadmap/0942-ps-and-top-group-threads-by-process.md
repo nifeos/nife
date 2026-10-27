@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: BUILT
 raised: 2026-10-21
 milestone_dependencies: 126, 282, 812
 decision_dependencies: 312
@@ -134,6 +134,9 @@ the selector `record::PROCESS`, the columns `PROC` and `THR`, and the `top` flag
 
 ## Exit criteria
 
+Built, with two differences: the test in item 4 uses hand-written spinner threads that the test
+supervises one by one (a `std` thread is unsupervised, see `BUGS`), and item 5 waits as it said.
+
 1. A new `SURVEY` selector (or whatever the ruling chooses) answers a process label for every
    thread in a domain, in `abi::survey::record`, `is_known` and `sched::survey_supervised`, on
    aarch64, riscv64 and x86_64.
@@ -156,9 +159,23 @@ the selector `record::PROCESS`, the columns `PROC` and `THR`, and the `top` flag
 
 ## BUGS
 
-- **The process page is `#[cfg(feature = "system_tests")]`-only to userspace today.**
-  `process_threads_started` is a test hook and is not what `ps` would read.
+- **A `std` thread is not supervised, so `ps` shows only a program's first thread.** Supervision
+  is fixed at `START` from the reserved fault slot of the process's shared table, and the first
+  member's `START` consumes it (`notes/processes.md`). `std::thread::spawn` fills no such slot, so
+  the workers of `rg --threads 4` are in no domain and the label and `THR` cannot group them. The
+  grouping is proved on threads whose starter supervises each one
+  (`system_tests/src/user/process_label_tests.rs`). The user-visible `rg` check waits on a design
+  for how a process's later threads are supervised, which is its own milestone and a ruling.
+- **The counts are of the viewer's domain** (§312), so a process with a thread supervised elsewhere
+  reads as smaller than it is. That is the ruling, not a defect.
+- **The shell cannot send `top`'s rank-by-process flag**, so at the prompt `top` ranks by thread
+  (`top::RANK_BY_PROCESS`, as `pgrep`'s selector).
 - **`CMD` is a separate gap.** An opaque label is the most this can show.
+- The label costs the kernel a scan of the domain per row, at most the square of the thread table
+  (256), under `IPC_TABLES`.
+
+Names, all provisional: `abi::survey::record::PROCESS`, the `PROC` and `THR` columns,
+`ps::Survey::join_process`, `ps::Survey::rank_by_process_cpu_time`, `top::RANK_BY_PROCESS`.
 
 Reuse: the tree's own `SURVEY` selector (§204) and `Survey::join_cpu_time` are the mechanism, so
 nothing outside is taken. Prior art, recalled rather than read. Linux `ps` and `top` group by tgid

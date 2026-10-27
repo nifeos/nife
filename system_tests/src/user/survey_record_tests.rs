@@ -47,7 +47,7 @@ fn the_unknown_record_is_really_unknown() {
 /// [`record::STATE`]`== 0` the whole of the backward-compatibility story: a caller written before
 /// the selector existed passed a zero here without meaning to, and gets the record it was already
 /// reading.
-fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
+pub(super) fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     match invoke(&mut frame, slot, abi::rendezvous::SURVEY, cursor, record, 0) {
         Ok(next) => (next, frame.arg(1), frame.arg(2)),
