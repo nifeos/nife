@@ -10,7 +10,7 @@
 use grant_plan::{Endowment, Manifest};
 
 use crate::admission::{admit, admit_installed_row};
-use crate::{Admission, Document, Entry, Held, MAX_ENTRIES, Schedule, Unbacked, recurrence};
+use crate::{Admission, Document, Entry, Held, MAXIMUM_ENTRIES, Schedule, Unbacked, recurrence};
 
 /// One registered entry: what was written, what registration decided, and when it next fires.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -75,7 +75,7 @@ const NEVER: u64 = u64::MAX;
 /// The registered timetable: every entry with its decision, and the firing state.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Registry<'a> {
-    rows: [Row<'a>; MAX_ENTRIES],
+    rows: [Row<'a>; MAXIMUM_ENTRIES],
     n: usize,
     /// What it was registered against, so the plan can say what each job holds.
     pub(super) held: Held,
@@ -132,7 +132,7 @@ impl<'a> Registry<'a> {
             next: NEVER,
             wall_next: UNARMED,
             stamp: UNSTAMPED,
-        }; MAX_ENTRIES];
+        }; MAXIMUM_ENTRIES];
         let mut n = 0usize;
         for &entry in doc.entries() {
             // A calendar line needs the wall clock before its program's manifest is even asked:
@@ -171,7 +171,7 @@ impl<'a> Registry<'a> {
     pub fn register_installed(
         doc: &Document<'a>,
         held: Held,
-        manifests: &[Manifest; MAX_ENTRIES],
+        manifests: &[Manifest; MAXIMUM_ENTRIES],
     ) -> Self {
         let mut reg = Registry::register(doc, held);
         for (i, row) in reg.rows.iter_mut().take(reg.n).enumerate() {

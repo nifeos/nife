@@ -33,7 +33,7 @@ use system_log_contract::{control, read, severity};
 
 /// Steps per session. The ring is 64 KiB, so a long session also exercises eviction and the
 /// dropped-count line.
-const MAX_STEPS: usize = 400;
+const MAXIMUM_STEPS: usize = 400;
 
 /// Writer badges: 1 to 7 can be registered; the last cannot (it does not fit a control word).
 const BADGES: &[u64] = &[1, 2, 3, 4, 5, 6, 7, 1 << 40];
@@ -93,7 +93,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
     let mut window = vec![0u8; read::WINDOW_BYTES];
     let mut now = 0u64;
 
-    for _ in 0..MAX_STEPS {
+    for _ in 0..MAXIMUM_STEPS {
         if u.is_empty() {
             break;
         }
@@ -187,7 +187,7 @@ fn name_badge(
         log.handle(0, m.0, m.1, m.2, now);
     }
     let e = model.entries.entry(badge).or_default();
-    let kept = name[..name.len().min(control::NAME_MAX)].to_vec();
+    let kept = name[..name.len().min(control::NAME_MAXIMUM)].to_vec();
     let ever = if field == control::PROGRAM {
         e.program = kept.clone();
         &mut model.programs
@@ -438,7 +438,7 @@ impl Parser<'_> {
             .then_some(())?;
         self.lit(b",\"msg\":")?;
         let msg = self.string()?;
-        (msg.len() <= 6 * system_log::record::TEXT_MAX).then_some(())?;
+        (msg.len() <= 6 * system_log::record::TEXT_MAXIMUM).then_some(())?;
         let _ = self.lit(b",\"cut\":true");
         let _ = self.lit(b",\"dropped_before\":true");
         self.lit(b"}\n")?;

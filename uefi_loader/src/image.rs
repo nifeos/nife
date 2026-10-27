@@ -107,7 +107,7 @@ pub const fn refusal(error: elf::Error) -> &'static str {
 ///
 /// A debug image cannot be installed (calef's ruling of 2026-10-03 UTC on the install boot slots: a
 /// slot holds a release image), so the stick of a debug build offers no install. A debug kernel is
-/// about 7.5 MB of which 5.8 MB is DWARF, and a slot is a fixed 64 MiB (`BOOT_FILE_MAX`).
+/// about 7.5 MB of which 5.8 MB is DWARF, and a slot is a fixed 64 MiB (`BOOT_FILE_MAXIMUM`).
 /// `crates/elf` reads program headers only, so this reads the section headers itself (ELF64,
 /// little-endian). `cargo xtask`'s release path strips with `--strip-debug`, which removes every
 /// `.debug_*` section and keeps the symbol table.

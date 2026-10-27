@@ -1,7 +1,10 @@
 use crate::{Error, MbrProblem, is_block_size_ok};
 
 /// The OS type byte that makes a record protective. Not a filesystem, a keep-out sign.
-pub const PROTECTIVE_OS_TYPE: u8 = 0xEE;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `PROTECTIVE_OS_TYPE`.
+pub const PROTECTIVE_OPERATING_SYSTEM_TYPE: u8 = 0xEE;
 
 /// Where the four 16-byte partition records start.
 const RECORDS: usize = 446;
@@ -10,7 +13,7 @@ const RECORDS: usize = 446;
 const SIGNATURE: usize = 510;
 
 /// Field offsets inside one 16-byte record.
-const OS_TYPE: usize = 4;
+const OPERATING_SYSTEM_TYPE: usize = 4;
 const START_LBA: usize = 8;
 const SIZE_LBA: usize = 12;
 
@@ -25,7 +28,7 @@ pub fn write(block: &mut [u8], block_count: u64) -> Result<(), Error> {
     }
     block.fill(0);
     let r = &mut block[RECORDS..RECORDS + 16];
-    r[OS_TYPE] = PROTECTIVE_OS_TYPE;
+    r[OPERATING_SYSTEM_TYPE] = PROTECTIVE_OPERATING_SYSTEM_TYPE;
     // The CHS fields stay at the maximum this crate can express: 0x000200 is "cylinder 0,
     // head 0, sector 2", which is LBA 1, and 0xFFFFFF is the standard "beyond CHS" marker.
     r[1..4].copy_from_slice(&[0x00, 0x02, 0x00]);
@@ -56,8 +59,8 @@ pub fn validate(block: &[u8], block_count: u64) -> Result<(), Error> {
     // order because the two failures mean different things and the message has to be the right
     // one: a disk with a real MBR partition table and no 0xEE record is "not a GPT disk", while
     // a 0xEE record with company is a hybrid MBR.
-    let os_type = |i: usize| block[RECORDS + i * 16 + OS_TYPE];
-    let Some(i) = (0..4).find(|&i| os_type(i) == PROTECTIVE_OS_TYPE) else {
+    let os_type = |i: usize| block[RECORDS + i * 16 + OPERATING_SYSTEM_TYPE];
+    let Some(i) = (0..4).find(|&i| os_type(i) == PROTECTIVE_OPERATING_SYSTEM_TYPE) else {
         return Err(Error::Mbr(MbrProblem::NoProtectiveRecord));
     };
     if let Some(extra) = (0..4).find(|&j| j != i && os_type(j) != 0x00) {

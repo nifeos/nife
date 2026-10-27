@@ -53,8 +53,8 @@ impl<D: Disk> Server<D> {
     /// read from and its reply's bytes written into (milestone 599 (a frame per filesystem client
     /// channel)). Returns the two reply words.
     ///
-    /// `window` must be at least [`fs::TRANSFER_MAX`] bytes, which the EL0 binary's mapped window
-    /// is exactly. A shorter slice panics on the first verb that reaches past it.
+    /// `window` must be at least [`fs::TRANSFER_MAXIMUM`] bytes, which the EL0 binary's mapped
+    /// window is exactly. A shorter slice panics on the first verb that reaches past it.
     ///
     /// This is the **only** place a RedoxFS error becomes a wire value ([`reply_err`]); everything
     /// below it speaks `syscall::error::Result`.
@@ -97,7 +97,7 @@ impl<D: Disk> Server<D> {
         // length the client chooses, may use the whole channel. See
         // `filesystem_contract::fs::TRANSFER_PAGES`.
         let len = fs::req_len(w0).min(BLOCK);
-        let bulk_len = fs::req_len(w0).min(fs::TRANSFER_MAX);
+        let bulk_len = fs::req_len(w0).min(fs::TRANSFER_MAXIMUM);
         let offset = w1;
         let request = Request {
             code,

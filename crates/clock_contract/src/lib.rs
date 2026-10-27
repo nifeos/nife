@@ -335,8 +335,9 @@ pub mod status {
     /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_FORWARD_NANOS`] ahead
     /// of what the clock already believes.
     pub const REFUSED_TOO_FAR_FORWARD: u64 = 2;
-    /// Plausible in the absolute, but more than [`super::policy::MAX_STEP_BACKWARD_NANOS`] behind
-    /// what the clock already believes. The asymmetry with forward is deliberate; see [`policy`](super::policy).
+    /// Plausible in the absolute, but more than [`super::policy::MAXIMUM_STEP_BACKWARD_NANOS`]
+    /// behind what the clock already believes. The asymmetry with forward is deliberate; see
+    /// [`policy`](super::policy).
     pub const REFUSED_TOO_FAR_BACKWARD: u64 = 3;
     /// The request was not one this contract defines.
     pub const BAD_REQUEST: u64 = 4;
@@ -388,13 +389,16 @@ pub mod policy {
     /// assumed it would not be reissued. Unix reaches for `adjtime` slewing largely because of
     /// this, and here the same conservatism is one constant instead of a mechanism, because
     /// `Instant` is never affected by any of it.
-    pub const MAX_STEP_BACKWARD_NANOS: u64 = super::NANOS_PER_SEC;
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_STEP_BACKWARD_NANOS`.
+    pub const MAXIMUM_STEP_BACKWARD_NANOS: u64 = super::NANOS_PER_SEC;
 
     // The asymmetry is a decision, not an accident, so it is a build-time fact rather than
     // something a reader has to notice: anyone "tidying" the two constants into one fails to
     // compile rather than quietly making backwards steps as free as forwards ones.
     const _: () = assert!(
-        MAX_STEP_BACKWARD_NANOS < MAXIMUM_STEP_FORWARD_NANOS,
+        MAXIMUM_STEP_BACKWARD_NANOS < MAXIMUM_STEP_FORWARD_NANOS,
         "moving the clock backwards must stay far tighter than moving it forwards",
     );
 
@@ -456,7 +460,7 @@ pub mod policy {
             if proposed_nanos - current_nanos > MAXIMUM_STEP_FORWARD_NANOS {
                 return status::REFUSED_TOO_FAR_FORWARD;
             }
-        } else if current_nanos - proposed_nanos > MAX_STEP_BACKWARD_NANOS {
+        } else if current_nanos - proposed_nanos > MAXIMUM_STEP_BACKWARD_NANOS {
             return status::REFUSED_TOO_FAR_BACKWARD;
         }
         status::ACCEPTED
@@ -562,9 +566,12 @@ mod tests {
                 policy::MAXIMUM_STEP_FORWARD_NANOS as i64 + 1,
                 status::REFUSED_TOO_FAR_FORWARD,
             ),
-            (-(policy::MAX_STEP_BACKWARD_NANOS as i64), status::ACCEPTED),
             (
-                -(policy::MAX_STEP_BACKWARD_NANOS as i64) - 1,
+                -(policy::MAXIMUM_STEP_BACKWARD_NANOS as i64),
+                status::ACCEPTED,
+            ),
+            (
+                -(policy::MAXIMUM_STEP_BACKWARD_NANOS as i64) - 1,
                 status::REFUSED_TOO_FAR_BACKWARD,
             ),
         ] {

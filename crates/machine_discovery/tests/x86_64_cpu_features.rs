@@ -78,7 +78,7 @@ fn the_machine_this_project_boots_on_can_run_this_kernel() {
 
     assert_eq!(&cpu.vendor, b"AuthenticAMD");
     assert_eq!(cpu.brand_str(), Some("QEMU TCG CPU version 2.5+"));
-    assert_eq!(cpu.max_leaf, 0xd);
+    assert_eq!(cpu.maximum_leaf, 0xd);
     assert!(cpu.features.contains(REQUIRED));
     assert!(
         cpu.has_random_seed_instruction(),

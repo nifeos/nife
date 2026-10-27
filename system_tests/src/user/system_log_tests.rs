@@ -352,7 +352,7 @@ fn spin_for(nanos: u64) {
 
 /// The flags record `seq` carries in the kernel's ring.
 fn ring_flags(seq: u64) -> u8 {
-    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
+    let mut text = [0u8; system_log_contract::record::TEXT_MAXIMUM];
     crate::kernel_log::test_read(seq, &mut text)
         .1
         .expect("the record left the ring")
@@ -377,7 +377,7 @@ fn a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted() 
     // End the harness's own `test name ... ` line first: a line already begun goes where it
     // began, and that one began on the UART.
     crate::println!();
-    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
+    let mut text = [0u8; system_log_contract::record::TEXT_MAXIMUM];
     let (next, _) = crate::kernel_log::test_read(0, &mut text);
     let fallbacks = crate::kernel_log::fallback_count();
     crate::kernel_log::test_set_cursor(next);
@@ -428,7 +428,7 @@ fn a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it() {
     // As the test above: publish, end the harness's line, and play a drainer that never reads.
     crate::kernel_log::publish();
     crate::println!();
-    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
+    let mut text = [0u8; system_log_contract::record::TEXT_MAXIMUM];
     let (next, _) = crate::kernel_log::test_read(0, &mut text);
     crate::kernel_log::test_set_cursor(next);
     let line = "  kernel log probe: the last line before the drainer stopped\n";
@@ -468,7 +468,7 @@ fn a_panic_prints_the_held_lines_first_and_holds_nothing_after() {
     // End the harness's own `test name ... ` line first: a line already begun goes where it
     // began, and that one began on the UART.
     crate::println!();
-    let mut text = [0u8; system_log_contract::record::TEXT_MAX];
+    let mut text = [0u8; system_log_contract::record::TEXT_MAXIMUM];
     let (next, _) = crate::kernel_log::test_read(0, &mut text);
     crate::kernel_log::test_set_cursor(next);
     let written = crate::console::bytes_written();

@@ -247,7 +247,7 @@ mod tests {
 
     use super::*;
     use crate::test_support::{REFERENCE, shown, with_clock};
-    use crate::{Error, MAX_ENTRIES, Registry, parse, write_plan};
+    use crate::{Error, MAXIMUM_ENTRIES, Registry, parse, write_plan};
 
     #[test]
     fn the_shipped_document_parses_and_says_what_it_claims() {
@@ -511,7 +511,7 @@ mod tests {
              every 5s clocked\n",
         )
         .unwrap();
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
+        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = Program::LeastAuthorityDemo.manifest();
         manifests[2] = Program::Date.manifest();
         let reg = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
@@ -547,7 +547,7 @@ mod tests {
             memory_grant: Program::MemoryGrantDepleter.manifest().memory_grant,
             ..grant_plan::NO_NOTE_MANIFEST
         };
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
+        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = old;
         let reg = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
         assert_eq!(reg.rows()[0].endowment().unwrap().memory_grant_pages, 2);
@@ -579,7 +579,7 @@ mod tests {
             memory_grant: Program::MemoryGrantDepleter.manifest().memory_grant,
             ..grant_plan::NO_NOTE_MANIFEST
         };
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
+        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = old;
         let reg = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
         assert!(reg.rows()[0].endowment().is_some());
@@ -638,7 +638,7 @@ mod tests {
     #[test]
     fn an_installed_calendar_line_waits_for_the_clock_and_then_for_its_manifest() {
         let doc = parse("every day at 09:00 tick 7\n").unwrap();
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
+        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = Program::LeastAuthorityDemo.manifest();
         let without = Registry::register_installed(&doc, SHIPPED_HELD, &manifests);
         assert_eq!(
@@ -662,7 +662,7 @@ mod tests {
     #[test]
     fn an_installed_file_operand_is_planned_against_a_directory() {
         let doc = parse("every 5s wc report.txt\n").unwrap();
-        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAX_ENTRIES];
+        let mut manifests = [grant_plan::NO_NOTE_MANIFEST; MAXIMUM_ENTRIES];
         manifests[0] = Program::Wc.manifest();
         let held = Held {
             dir: true,

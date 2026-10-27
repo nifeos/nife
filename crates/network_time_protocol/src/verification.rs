@@ -129,7 +129,7 @@ fn accepting_is_total_and_a_sample_is_coherent() {
             s.response.transmit.0 != 0,
             "an accepted sample carries an unset transmit timestamp",
         );
-        assert!(s.response.stratum >= 1 && s.response.stratum <= MAX_STRATUM);
+        assert!(s.response.stratum >= 1 && s.response.stratum <= MAXIMUM_STRATUM);
         assert!(s.response.mode == mode::SERVER);
     }
 }

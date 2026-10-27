@@ -76,7 +76,7 @@ const LISTING: usize = 128;
 /// the widest set a grant carries, a directory entry's header per name and every byte of name the
 /// set may hold. It is one frame at the top of the stack and is never held across the recursion,
 /// which is why it can be larger than [`LISTING`] on a program with four stack pages.
-const SET_LISTING: usize = dirent::record_len(0) * filesystem_contract::nameset::MAX_NAMES
+const SET_LISTING: usize = dirent::record_len(0) * filesystem_contract::nameset::MAXIMUM_NAMES
     + filesystem_contract::nameset::NAME_BYTES;
 
 /// The most rounds one directory takes before the walk gives up on it. A ceiling rather than a limit
@@ -84,7 +84,7 @@ const SET_LISTING: usize = dirent::record_len(0) * filesystem_contract::nameset:
 /// removal shifts every entry after it, so a cursor carried across removals would skip names. The
 /// bound is here so a directory whose entries somehow stop going away costs a diagnostic instead of
 /// a process that never exits.
-const MAX_ROUNDS: usize = 64;
+const MAXIMUM_ROUNDS: usize = 64;
 
 /// Copy `bytes` into the shared page.
 fn put_page(bytes: &[u8]) {
@@ -193,7 +193,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
 /// would only have answered `ENOTEMPTY` anyway.
 fn empty(handle: u64, flags: u64, depth: usize, count: &mut u64) -> Result<(), i32> {
     let mut first_error = None;
-    for _ in 0..MAX_ROUNDS {
+    for _ in 0..MAXIMUM_ROUNDS {
         let n = call(DIR, fs::req(fs::READDIR, handle, 0), 0).0 as i64;
         if n < 0 {
             // `ENUMERATE` withheld is `EPERM` here, and that is the walk stopping where the

@@ -24,7 +24,7 @@ this audit's lens applied correctly, in the tree, before the audit existed.
 
 ## `credential_contract::read`
 
-Both lengths from the register word, checked against `MAX_IDENTITY` and
+Both lengths from the register word, checked against `MAXIMUM_IDENTITY` and
 `MAXIMUM_SECRET`, fixed offsets, one bound against the page. The returned slices alias the page and
 their *contents* can change under the store, but their lengths cannot, and the party that would
 change them is the one that wrote the secret in the first place. The credentialer also wipes the
@@ -84,8 +84,8 @@ audit's lens, stated in the tree, and it is the model the file page should follo
 ## The socket contract's decode
 
 A socket is found by its badge (§255 (each socket is its own
-capability)); every payload length refused above `DATA_MAX`; receives
-staged through a `[0u8; DATA_MAX]` stack buffer and then copied into the page. No slice is ever
+capability)); every payload length refused above `DATA_MAXIMUM`; receives
+staged through a `[0u8; DATA_MAXIMUM]` stack buffer and then copied into the page. No slice is ever
 formed over the shared mapping, in the server, in `std::net`'s PAL, or in `network_time_client`, so a concurrent
 writer can change the bytes that go out and can corrupt nothing. The PAL's half is generated from
 `crates/socket_contract` by `xtask`, so the offsets cannot drift.

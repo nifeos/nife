@@ -722,7 +722,7 @@ pub enum StartupContract {
 pub const STD_REGION_PAGES: u64 = 256 + 128;
 
 /// **The region a named `std` program is built in**, in pages: [`STD_REGION_PAGES`], plus one
-/// package's worth ([`spawnproto::IMAGE_MAX_PAGES`]) for a program that declares
+/// package's worth ([`spawnproto::IMAGE_MAXIMUM_PAGES`]) for a program that declares
 /// [`Manifest::installer`] (milestone 809 (the package client becomes a program)).
 ///
 /// A package manager reads a whole package into one run of its own pages before it sends it a page
@@ -734,7 +734,7 @@ pub const STD_REGION_PAGES: u64 = 256 + 128;
 pub const fn named_std_region_pages(m: &Manifest) -> u64 {
     STD_REGION_PAGES
         + if m.installer {
-            spawnproto::IMAGE_MAX_PAGES
+            spawnproto::IMAGE_MAXIMUM_PAGES
         } else {
             0
         }

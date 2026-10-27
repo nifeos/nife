@@ -62,7 +62,8 @@ const SOCKET_VA: u64 = address_space_map::pair_page(0x0000_0000_00A0_0000);
 /// own window, and a name is copied out of it before it is parsed.
 const CLIENT_VA: u64 = address_space_map::pair_page(0x0000_0000_00B0_0000);
 /// The last window, checked against the map at compile time like the first.
-const _: u64 = address_space_map::pair_page(CLIENT_VA + (protocol::GRANTS_MAX as u64 - 1) * PAGE);
+const _: u64 =
+    address_space_map::pair_page(CLIENT_VA + (protocol::GRANTS_MAXIMUM as u64 - 1) * PAGE);
 
 // SAFETY: `socket_page` maps one page read/write at SOCKET_VA before any accessor runs, and every
 // accessor is reached only after it succeeded (`socket_ready`).
@@ -87,18 +88,18 @@ struct State {
     grants: Grants,
     /// The slot of the page frame mapped in each window, while one is: what a forget unmaps and
     /// deletes.
-    attached: [Option<u64>; protocol::GRANTS_MAX],
+    attached: [Option<u64>; protocol::GRANTS_MAXIMUM],
     request: [u8; 2 + domain_name_system::UDP_MESSAGE_MAX],
     reply: [u8; TCP_REPLY_MAXIMUM],
-    chunk: [u8; socket::DATA_MAX],
+    chunk: [u8; socket::DATA_MAXIMUM],
 }
 
 static mut STATE: State = State {
     grants: Grants::new(),
-    attached: [None; protocol::GRANTS_MAX],
+    attached: [None; protocol::GRANTS_MAXIMUM],
     request: [0; 2 + domain_name_system::UDP_MESSAGE_MAX],
     reply: [0; TCP_REPLY_MAXIMUM],
-    chunk: [0; socket::DATA_MAX],
+    chunk: [0; socket::DATA_MAXIMUM],
 };
 
 /// Where and how to ask, from the start words.
@@ -392,7 +393,7 @@ fn exchange_udp(
         }
         for _ in 0..DATAGRAMS_PER_ATTEMPT {
             let (got, _) = call(socket, socket::OPERATION_RECEIVE, 0);
-            if got == socket::REP_ERR || got == 0 || got > socket::DATA_MAX as u64 {
+            if got == socket::REP_ERR || got == 0 || got > socket::DATA_MAXIMUM as u64 {
                 break; // nothing came: the next attempt
             }
             // A UDP RECEIVE reply carries the datagram's source in the destination fields
@@ -449,7 +450,7 @@ fn exchange_tcp(
     let mut framed = TcpReply::new(&mut state.reply);
     loop {
         let (got, _) = call(socket, socket::OPERATION_RECEIVE, 0);
-        if got == 0 || got > socket::DATA_MAX as u64 {
+        if got == 0 || got > socket::DATA_MAXIMUM as u64 {
             // The server closed, or the stack gave up, before the reply was whole.
             return Err(Fail::Status(Outcome::of(status::NO_ANSWER)));
         }

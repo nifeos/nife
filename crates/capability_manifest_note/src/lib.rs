@@ -109,11 +109,11 @@ pub const DESCRIPTOR_LEN: usize = 56;
 pub const ZONED_VERSION: u32 = 2;
 
 /// The most zones a manifest may ask for: 8, the resolver's
-/// `domain_name_resolution_contract::GRANTS_MAX`, since each granted zone is its own badge and a
-/// program asking for more could never be granted them all at once.
+/// `domain_name_resolution_contract::GRANTS_MAXIMUM`, since each granted zone is its own badge and
+/// a program asking for more could never be granted them all at once.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const MAX_ZONES: usize = domain_name_resolution_contract::GRANTS_MAX;
+pub const MAX_ZONES: usize = domain_name_resolution_contract::GRANTS_MAXIMUM;
 
 /// The longest zone, in bytes of dotted text: 253, a host name's limit and the resolver's
 /// `domain_name_resolution_contract::NAME_TEXT_MAX`.
@@ -152,7 +152,7 @@ const MEM: usize = 5;
 const FILE: usize = 6;
 const DIR: usize = 7;
 const MEM_MINIMUM: usize = 8;
-const MEM_MAX: usize = 16;
+const MEM_MAXIMUM: usize = 16;
 const OUTPUT: usize = 24;
 const INPUT: usize = 25;
 const WRITES_WHILE_READING: usize = 26;
@@ -254,7 +254,7 @@ pub const fn encode(m: &Manifest) -> [u8; DESCRIPTOR_LEN] {
     if let MemoryGrantDeclaration::Required { minimum, maximum } = m.memory_grant {
         out[MEM] = 1;
         put8(&mut out, MEM_MINIMUM, minimum);
-        put8(&mut out, MEM_MAX, maximum);
+        put8(&mut out, MEM_MAXIMUM, maximum);
     }
     out[FILE] = match m.file {
         FileGrantDeclaration::Forbidden => 0,
@@ -442,7 +442,7 @@ fn decode_mem(d: &[u8]) -> Result<MemoryGrantDeclaration, Error> {
             MemoryGrantDeclaration::Forbidden
         }
         1 => {
-            let (minimum, maximum) = (get8(d, MEM_MINIMUM), get8(d, MEM_MAX));
+            let (minimum, maximum) = (get8(d, MEM_MINIMUM), get8(d, MEM_MAXIMUM));
             if minimum > maximum {
                 return Err(Error::BadField(MEM_MINIMUM));
             }
@@ -898,7 +898,10 @@ pub const VERBS_VERSION: u32 = 1;
 /// The most verbs a [`VERBS`] descriptor may hold: 256. Room for a program the size of git
 /// (175 subcommands in git 2.56.0, calef's measure on #1903), and a bound on what a malformed count
 /// can make a reader walk.
-pub const MAX_VERBS: usize = 256;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_VERBS`.
+pub const MAXIMUM_VERBS: usize = 256;
 
 /// One verb's record: the word in `grant_plan::MAX_VERB` bytes, zero-padded; then the grants'
 /// bits, little-endian; then two zero bytes.
@@ -921,12 +924,12 @@ pub const fn verbs_len(count: usize) -> usize {
 /// ```
 ///
 /// It panics, a compile error in a constant, on a `LEN` that is not that length, more than
-/// [`MAX_VERBS`] entries, an empty or too-long word, a word with a zero byte, or a table that is
-/// not sorted ascending by its words' bytes with each word once. Sorted is what makes one table
+/// [`MAXIMUM_VERBS`] entries, an empty or too-long word, a word with a zero byte, or a table that
+/// is not sorted ascending by its words' bytes with each word once. Sorted is what makes one table
 /// one encoding.
 pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_plan::VerbGrant]) -> [u8; LEN] {
     assert!(
-        verbs.len() <= MAX_VERBS,
+        verbs.len() <= MAXIMUM_VERBS,
         "a verb table holds at most 256 verbs"
     );
     assert!(
@@ -1037,9 +1040,9 @@ impl<'a> Verbs<'a> {
 }
 
 /// **A [`VERBS`] descriptor, decoded**, or why not. One table has one encoding, as [`decode`]
-/// enforces for a manifest: an unknown version, a count past [`MAX_VERBS`], a length that is not
-/// [`verbs_len`] of the count, an empty word, a zero inside a word or a nonzero byte after it, a
-/// grant bit that names no authority, a nonzero pad, or records out of order or repeated, all
+/// enforces for a manifest: an unknown version, a count past [`MAXIMUM_VERBS`], a length that is
+/// not [`verbs_len`] of the count, an empty word, a zero inside a word or a nonzero byte after it,
+/// a grant bit that names no authority, a nonzero pad, or records out of order or repeated, all
 /// refuse.
 pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     let version = d.get(..4).ok_or(Error::NoVersion)?;
@@ -1048,7 +1051,7 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     }
     let count = d.get(4..8).ok_or(Error::WrongLength)?;
     let count = u32::from_le_bytes([count[0], count[1], count[2], count[3]]) as usize;
-    if count > MAX_VERBS {
+    if count > MAXIMUM_VERBS {
         return Err(Error::BadField(4));
     }
     if d.len() != verbs_len(count) {
@@ -1244,7 +1247,7 @@ mod verb_tests {
     /// where the decoder reads it.
     #[test]
     fn a_table_of_exactly_maximum_verbs_round_trips() {
-        const N: usize = MAX_VERBS;
+        const N: usize = MAXIMUM_VERBS;
         let table: std::vec::Vec<VerbGrant> = (0..N)
             .map(|i| VerbGrant {
                 verb: std::boxed::Box::leak(std::format!("verb{i:03}").into_boxed_str()),
@@ -1395,7 +1398,7 @@ mod tests {
         // absent fields, and the three trailing bytes are always zero.
         for at in [
             MEM_MINIMUM,
-            MEM_MAX + 7,
+            MEM_MAXIMUM + 7,
             WRITES_WHILE_READING,
             SUBTREE,
             FLAG_LETTERS,

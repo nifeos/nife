@@ -22,7 +22,7 @@
 //! - One Fault Recording Register per unit is read, so one device's faults can hide another's.
 
 use machine_discovery::acpi::{
-    DmarUnits, Drhd, InterruptRemappingClaims, MAX_DRHDS, MAX_RMRR_SCOPES, SCOPE_PCI_ENDPOINT,
+    DmarUnits, Drhd, InterruptRemappingClaims, MAX_DRHDS, MAXIMUM_RMRR_SCOPES, SCOPE_PCI_ENDPOINT,
 };
 use paging::PageFormat;
 use paging::x86_64::Vtd;
@@ -417,7 +417,7 @@ pub fn initialize(dmar: &DmarUnits) {
 
     // Step 2. A device named by two scopes (two RMRRs, say) is confined once, with both regions:
     // `confine` asks `for_each_reserved_region` for all of them.
-    let mut done = [0u32; MAX_RMRR_SCOPES];
+    let mut done = [0u32; MAXIMUM_RMRR_SCOPES];
     let mut done_count = 0;
     for s in &dmar.rmrr_scopes[..dmar.rmrr_scope_count] {
         let region = dmar.rmrrs[s.unit as usize];

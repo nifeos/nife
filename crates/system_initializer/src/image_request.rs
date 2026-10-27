@@ -21,9 +21,9 @@ pub(super) const ACTIVATION_FS_VA: u64 = address_space_map::pair_page(0x0f40_000
 /// below [`IMAGE_STAGING_VA`].
 pub(super) const MOUNTED_TREE_POOL_VA: u64 = address_space_map::pair_page(0x0f50_0000);
 
-/// **Where the progenitor keeps its own copy of an image**, [`spawnproto::IMAGE_MAX_PAGES`] pages
-/// at most. A fixed window, because every page mapped here comes from a staging region this process
-/// destroys once the child is built, and the destroy revokes the mapping (DECISIONS §13
+/// **Where the progenitor keeps its own copy of an image**, [`spawnproto::IMAGE_MAXIMUM_PAGES`]
+/// pages at most. A fixed window, because every page mapped here comes from a staging region this
+/// process destroys once the child is built, and the destroy revokes the mapping (DECISIONS §13
 /// (capability revocation and untyped reclamation)), so the next request finds it empty. The page
 /// tables behind it come from `own_ut` and are reused.
 const IMAGE_STAGING_VA: u64 = address_space_map::pair_page(0x0f80_0000);
@@ -31,7 +31,7 @@ const IMAGE_STAGING_VA: u64 = address_space_map::pair_page(0x0f80_0000);
 // The largest image's copy stays inside the pair band, clear of the loader's scratch window at its
 // top.
 const _: () = assert!(
-    IMAGE_STAGING_VA + spawnproto::IMAGE_MAX_PAGES * spawnproto::IMAGE_PAGE
+    IMAGE_STAGING_VA + spawnproto::IMAGE_MAXIMUM_PAGES * spawnproto::IMAGE_PAGE
         <= address_space_map::PAIR_PAGES.end
 );
 
@@ -135,7 +135,7 @@ pub(super) struct SpawnEndpoint {
     /// The label of the job each resolver badge is granted to: badge `i + 1` for entry `i`, so a
     /// badge names its entry and no two live jobs share one. Forgotten at the job's reap, which is
     /// when nothing holds the badge any more.
-    resolving: [Option<u64>; domain_name_resolution_contract::GRANTS_MAX],
+    resolving: [Option<u64>; domain_name_resolution_contract::GRANTS_MAXIMUM],
 }
 
 /// How many first messages [`SpawnEndpoint`] keeps from senders it is not serving.
@@ -160,7 +160,7 @@ impl SpawnEndpoint {
             replies: [None; INSTALLER_HOLDERS],
             next_label: 1,
             resolver,
-            resolving: [None; domain_name_resolution_contract::GRANTS_MAX],
+            resolving: [None; domain_name_resolution_contract::GRANTS_MAXIMUM],
         }
     }
 
@@ -445,8 +445,8 @@ pub(super) struct Frames {
 /// `supervision_protocol::SCRATCH_WINDOW`, one entry per page of the largest image. The progenitor
 /// has one thread, so `Relaxed` is all the ordering there is. An index, not an address, to keep
 /// this `.bss` at two bytes an entry: the kernel suite's frame ledger counts every progenitor.
-static FRAME_VIEWS: [AtomicU16; spawnproto::IMAGE_MAX_PAGES as usize] =
-    [const { AtomicU16::new(0) }; spawnproto::IMAGE_MAX_PAGES as usize];
+static FRAME_VIEWS: [AtomicU16; spawnproto::IMAGE_MAXIMUM_PAGES as usize] =
+    [const { AtomicU16::new(0) }; spawnproto::IMAGE_MAXIMUM_PAGES as usize];
 
 // Every page of the scratch window has an index that fits.
 const _: () = assert!(supervision_protocol::SCRATCH_WINDOW_PAGES <= u16::MAX as u64 + 1);
@@ -468,7 +468,7 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
     let mut f = Frames {
         pages,
         views: 0,
-        ok: pages > 0 && pages <= spawnproto::IMAGE_MAX_PAGES,
+        ok: pages > 0 && pages <= spawnproto::IMAGE_MAXIMUM_PAGES,
     };
     for _ in 0..pages {
         let Some(frame) = opt_cap(spawn.receive_cap().1) else {

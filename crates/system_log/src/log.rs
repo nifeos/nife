@@ -84,7 +84,7 @@ impl Log {
             store: Store {
                 ring: Ring::new(),
                 next_seq: 0,
-                scratch: [0; json::LINE_MAX],
+                scratch: [0; json::LINE_MAXIMUM],
             },
             refused: 0,
         }

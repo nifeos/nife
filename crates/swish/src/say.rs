@@ -40,9 +40,9 @@ pub enum Say {
     /// unrelated halves.
     CannotBind(nav::BindRefused),
     /// **The shell's heap could not hold what the line needed**, so nothing ran. The heap is capped
-    /// at [`HEAP_MAX_BYTES`] and every allocation in the shell is fallible (calef's ruling, milestone
-    /// 47 (navigation and naming)): the boot shell is the owner's console, and running out of
-    /// memory there is a refusal with a sentence, never a panic.
+    /// at [`HEAP_MAXIMUM_BYTES`] and every allocation in the shell is fallible (calef's ruling,
+    /// milestone 47 (navigation and naming)): the boot shell is the owner's console, and running
+    /// out of memory there is a refusal with a sentence, never a panic.
     HeapFull,
 }
 
@@ -57,7 +57,7 @@ pub enum Say {
 /// children from: eight pages, and a few more for their page tables, of the budget's 128.
 ///
 /// Name: provisional, milestone 47's allocator lane, 2026-09-26.
-pub const HEAP_MAX_BYTES: u64 = 32 * 1024;
+pub const HEAP_MAXIMUM_BYTES: u64 = 32 * 1024;
 
 /// Write what a builtin had to say. Every line is a statement about a name or a capability, never
 /// about a policy: `filesystem_contract::dir::explain` keeps the filesystem's half next to the decision that
@@ -94,7 +94,7 @@ pub fn write_say(s: Say, out: &mut dyn FnMut(&[u8])) {
         }
         Say::HeapFull => {
             out(b"  this shell's heap is full (its cap is ");
-            write_num(HEAP_MAX_BYTES / 1024, out);
+            write_num(HEAP_MAXIMUM_BYTES / 1024, out);
             out(b" KiB), so the line did not run and nothing was spawned\n");
         }
     }

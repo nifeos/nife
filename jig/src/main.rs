@@ -30,8 +30,8 @@ use entropy_backend as _;
 use grant_plan::spawnproto::{self, Activation, ActivationStatus as S};
 use grant_plan::{CATALOG_SLOT, INDEX_SOURCES_SLOT, INSTALLER_REPLY_SLOT, INSTALLER_SLOT};
 use package_index::{
-    Configured, Entry, IMAGE_INDEX_COPY, Index, Miss, PATH_MAX, Root, STAND_IN_INDEX_FILE, Source,
-    Sources,
+    Configured, Entry, IMAGE_INDEX_COPY, Index, Miss, PATH_MAXIMUM, Root, STAND_IN_INDEX_FILE,
+    Source, Sources,
 };
 use pinned_tls_client::listed::{self, root_der};
 use pinned_tls_client::{PinnedPeer, Session};
@@ -56,7 +56,7 @@ capability_manifest_note::carry!(grant_plan::Manifest {
 
 /// **Where the staging run is mapped**: one package, read here and handed on a page at a time. A
 /// window of this program's own, so a pair page (`address_space_map`'s rule 7), clear of everything
-/// a loader maps into a `std` program. Four MiB, `spawnproto::IMAGE_MAX_PAGES` pages.
+/// a loader maps into a `std` program. Four MiB, `spawnproto::IMAGE_MAXIMUM_PAGES` pages.
 const STAGING_VA: u64 = address_space_map::pair_page(0x0400_0000);
 
 /// This machine's architecture, as a package stem spells it.
@@ -256,7 +256,7 @@ impl Staged {
     /// Retype a run for `len` bytes from this program's region and map it at [`STAGING_VA`].
     fn new(len: u64) -> Result<Staged, &'static str> {
         let pages = spawnproto::image_pages(len);
-        if pages == 0 || pages > spawnproto::IMAGE_MAX_PAGES {
+        if pages == 0 || pages > spawnproto::IMAGE_MAXIMUM_PAGES {
             return Err("that package is empty, or larger than a package may be (4 MiB)");
         }
         let run = rt::retype_page_frame_run(std_runtime_contract::MEMORY_REGION_SLOT, pages);
@@ -333,7 +333,7 @@ fn ask(verb: Activation, staged: Option<&Staged>, name: Option<&str>) -> Reply {
             rt::receive(INSTALLER_REPLY_SLOT),
             rt::receive(INSTALLER_REPLY_SLOT),
         ];
-        let mut out = [0u8; spawnproto::HOLDER_MAX];
+        let mut out = [0u8; spawnproto::HOLDER_MAXIMUM];
         holder = spawnproto::holder_from_words(words, &mut out).to_string();
     }
     Reply {
@@ -648,7 +648,7 @@ fn update() -> ExitCode {
     };
     for configured in sources.repositories() {
         let repo = configured.repository;
-        let mut buf = [0u8; PATH_MAX];
+        let mut buf = [0u8; PATH_MAXIMUM];
         let Some(path) = repo.metadata_path(STAND_IN_INDEX_FILE, &mut buf) else {
             continue;
         };
@@ -712,7 +712,7 @@ fn install_indexed(entry: &Entry<'_>) -> ExitCode {
     let Some(first) = sources.repositories().next() else {
         return refuse("this image names no index address");
     };
-    let mut staged = match Staged::new(spawnproto::IMAGE_MAX_PAGES * spawnproto::IMAGE_PAGE) {
+    let mut staged = match Staged::new(spawnproto::IMAGE_MAXIMUM_PAGES * spawnproto::IMAGE_PAGE) {
         Ok(s) => s,
         Err(why) => return refuse(why),
     };
@@ -759,7 +759,7 @@ fn install_indexed(entry: &Entry<'_>) -> ExitCode {
     if whence.is_none() {
         for configured in sources.repositories() {
             let repo = configured.repository;
-            let mut buf = [0u8; PATH_MAX];
+            let mut buf = [0u8; PATH_MAXIMUM];
             let Some(path) = repo.target_path(entry.stem, &mut buf) else {
                 continue;
             };

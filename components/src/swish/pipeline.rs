@@ -175,10 +175,10 @@ pub(super) fn run_pipeline(
     // Every argv is written before any stage spawns (§170 (how a foreign program is told what to
     // do)), so running out of budget partway spawns nothing. The regions are kept until the line
     // is drained: the progenitor copies each frame while serving that stage's request.
-    let mut argvs = [None::<Argv>; line::MAX_STAGES];
+    let mut argvs = [None::<Argv>; line::MAXIMUM_STAGES];
     // **And every stage's words grant, the same way** (milestone 205's designation half): a stage
     // that hears words is granted what they designated, on window `i`.
-    let mut sets = [None::<WordsGrant>; line::MAX_STAGES];
+    let mut sets = [None::<WordsGrant>; line::MAXIMUM_STAGES];
     if let Err((prog, why)) = write_stage_words(l, &plans[..n], head_builtin, &mut argvs, &mut sets)
     {
         give_back_words(&argvs, &sets, true);
@@ -328,7 +328,7 @@ fn open_line_files(
 
 /// Split the pipeline's region and retype its pipe rendezvous out of it, one per joint and one more
 /// when the shell feeds the head. On a failure it says so, gives back what it took, and answers `None`.
-fn mint_pipes(n: usize, feeds_head: bool) -> Option<(u64, [u64; line::MAX_STAGES], usize)> {
+fn mint_pipes(n: usize, feeds_head: bool) -> Option<(u64, [u64; line::MAXIMUM_STAGES], usize)> {
     // One region for the whole pipeline, so a line costs one SPLIT and one DESTROY however many
     // stages it has. Each joint's rendezvous is a page retyped out of it.
     let Some(region) = memory_region_split(PIPE_REGION_PAGES) else {
@@ -337,7 +337,7 @@ fn mint_pipes(n: usize, feeds_head: bool) -> Option<(u64, [u64; line::MAX_STAGES
         print(b"  this shell's memory budget is exhausted; nothing left to grant\n");
         return None;
     };
-    let mut pipes = [0u64; line::MAX_STAGES];
+    let mut pipes = [0u64; line::MAXIMUM_STAGES];
     let mut minted = 0usize;
     // A `<` needs one more: the head reads a pipe like any stage, and the shell writes into it.
     let mut want = n - 1;
@@ -822,7 +822,7 @@ impl FileIn {
 /// Not a parameterised [`drain_text`]: that one prefixes two spaces, and the file gets only what
 /// the program wrote.
 fn drain_into(f: &mut FileOut) {
-    for _ in 0..MAX_OUTPUT_CHUNKS {
+    for _ in 0..MAXIMUM_OUTPUT_CHUNKS {
         let (w0, w1, w2) = receive(RESULT);
         if w0 == spawnproto::SPAWN_FAILED || w0 == spawnproto::SPAWN_NOT_IN_IMAGE {
             failed();

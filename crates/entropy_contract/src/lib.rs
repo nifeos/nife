@@ -2,8 +2,8 @@
 //! reply that carry random bytes out of the entropy service, defined once for the service, its
 //! clients, the std PAL and the kernel-side tests. One process holds the virtio-rng device; a
 //! client holds an endpoint that names no device, `CALL`s with a byte count and gets the bytes in
-//! the reply words, at most [`MAX_BYTES`] per round trip. No shared page, against the usual bulk
-//! rule, because random bytes are worth exactly that nobody else has seen them, and no byte is
+//! the reply words, at most [`MAXIMUM_BYTES`] per round trip. No shared page, against the usual
+//! bulk rule, because random bytes are worth exactly that nobody else has seen them, and no byte is
 //! transformed, so the claim stays "these are the device's bytes". notes/entropy.md, "The shape"
 //! and "The bytes are the device's bytes", has the argument; the `entropy_rtt` benchmark prices it.
 
@@ -24,14 +24,17 @@
 /// A `CALL` replies with two words. The first is the count, so the bytes get exactly one word.
 /// Asking for more than this is not an error, it is answered with this many, and the caller loops;
 /// see [`want`].
-pub const MAX_BYTES: u64 = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
+pub const MAXIMUM_BYTES: u64 = 8;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
 /// `filesystem_contract` and `line_editor::proto` use, so the contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
-/// **Give me `n` random bytes.** The only operation. `n` is clamped to [`MAX_BYTES`] by [`want`],
-/// so a client that asks for more is answered rather than refused.
+/// **Give me `n` random bytes.** The only operation. `n` is clamped to [`MAXIMUM_BYTES`] by
+/// [`want`], so a client that asks for more is answered rather than refused.
 pub const GET: u64 = 1;
 
 /// Build a request word: the opcode and the byte count the client wants.
@@ -49,7 +52,7 @@ pub const fn operation(w0: u64) -> u64 {
 /// a request for 500 bytes is a request for eight, answered, and the client asks again.
 pub const fn want(w0: u64) -> u64 {
     let n = w0 & 0xff;
-    if n > MAX_BYTES { MAX_BYTES } else { n }
+    if n > MAXIMUM_BYTES { MAXIMUM_BYTES } else { n }
 }
 
 /// The word the entropy service SENDs on its readiness endpoint once the device is up and its
@@ -140,10 +143,10 @@ pub const NO_ENTROPY: u64 = 0;
 /// A count and a kernel error cannot be confused, and "none to give" is a third answer:
 ///
 /// ```
-/// use entropy_contract::{MAX_BYTES, NO_ENTROPY, delivered};
+/// use entropy_contract::{MAXIMUM_BYTES, NO_ENTROPY, delivered};
 ///
 /// // Every count the service can send.
-/// for n in 0..=MAX_BYTES {
+/// for n in 0..=MAXIMUM_BYTES {
 ///     assert_eq!(delivered(n), Some(n as usize));
 /// }
 /// // `abi::Error` is -1 to -8; as a u64 each is enormous, so none can be read as a count.
@@ -153,7 +156,7 @@ pub const NO_ENTROPY: u64 = 0;
 /// assert_eq!(delivered(NO_ENTROPY), Some(0));
 /// ```
 pub const fn delivered(r0: u64) -> Option<usize> {
-    if r0 <= MAX_BYTES {
+    if r0 <= MAXIMUM_BYTES {
         Some(r0 as usize)
     } else {
         None
@@ -172,7 +175,7 @@ pub const fn delivered(r0: u64) -> Option<usize> {
 /// trips, the last one short.
 ///
 /// ```
-/// use entropy_contract::{GET, MAX_BYTES, delivered, operation, req, take, want};
+/// use entropy_contract::{GET, MAXIMUM_BYTES, delivered, operation, req, take, want};
 ///
 /// // Stands in for the `CALL`: the real service reads the same two accessors off the request word
 /// // and answers with a count and a word of bytes.
@@ -192,12 +195,12 @@ pub const fn delivered(r0: u64) -> Option<usize> {
 ///     assert_ne!(n, 0, "a zero count is NO_ENTROPY: fail, do not retry");
 ///     filled += take(n, r1, &mut key[filled..]);
 /// }
-/// assert_eq!(round_trips, 3); // 8 + 8 + 4, because MAX_BYTES is 8
-/// assert_eq!(MAX_BYTES, 8);
+/// assert_eq!(round_trips, 3); // 8 + 8 + 4, because MAXIMUM_BYTES is 8
+/// assert_eq!(MAXIMUM_BYTES, 8);
 /// assert_eq!(&key[16..], &[0x01, 0x02, 0x03, 0x04]);
 /// ```
 pub fn take(n: usize, word: u64, out: &mut [u8]) -> usize {
-    let n = n.min(MAX_BYTES as usize).min(out.len());
+    let n = n.min(MAXIMUM_BYTES as usize).min(out.len());
     out[..n].copy_from_slice(&word.to_le_bytes()[..n]);
     n
 }
@@ -207,16 +210,16 @@ pub fn take(n: usize, word: u64, out: &mut [u8]) -> usize {
 ///
 /// `None` if any reply is not a count (no entropy capability; see [`delivered`]) or delivers fewer
 /// bytes than asked (the service is dry); then `out` is unspecified and must not be used. Asks for
-/// [`MAX_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate makes no
-/// syscall; `user_mode_runtime::entropy::fill` passes a real one. The std PAL accepts partial
-/// counts instead, deliberately (notes/entropy/contract.md).
+/// [`MAXIMUM_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate
+/// makes no syscall; `user_mode_runtime::entropy::fill` passes a real one. The std PAL accepts
+/// partial counts instead, deliberately (notes/entropy/contract.md).
 ///
 /// Name: ratified 2026-10-07 (calef, #1795). His word: "Yes". std's `_with` suffix, for a function
 /// that takes a closure.
 pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Option<()> {
     let mut filled = 0;
     while filled < out.len() {
-        let want = (out.len() - filled).min(MAX_BYTES as usize);
+        let want = (out.len() - filled).min(MAXIMUM_BYTES as usize);
         let (r0, r1) = call(req(GET, want as u64));
         if delivered(r0)? != want {
             return None;
@@ -314,8 +317,8 @@ mod tests {
     /// either one enforcing it.
     #[test]
     fn an_oversized_request_is_clamped_rather_than_refused() {
-        assert_eq!(want(req(GET, 200)), MAX_BYTES);
-        assert_eq!(want(req(GET, MAX_BYTES)), MAX_BYTES);
+        assert_eq!(want(req(GET, 200)), MAXIMUM_BYTES);
+        assert_eq!(want(req(GET, MAXIMUM_BYTES)), MAXIMUM_BYTES);
     }
 
     /// **The property the whole error story rests on**: no count the service can send collides with
@@ -324,13 +327,13 @@ mod tests {
     /// slot puts in the first register.
     #[test]
     fn a_kernel_refusal_is_never_mistaken_for_a_byte_count() {
-        for n in 0..=MAX_BYTES {
+        for n in 0..=MAXIMUM_BYTES {
             assert_eq!(delivered(n), Some(n as usize));
         }
         for err in 1i64..=8 {
             assert_eq!(delivered((-err) as u64), None, "kernel error -{err}");
         }
-        assert_eq!(delivered(MAX_BYTES + 1), None);
+        assert_eq!(delivered(MAXIMUM_BYTES + 1), None);
     }
 
     /// The high bytes of the reply word are not entropy and must not reach the caller's buffer.

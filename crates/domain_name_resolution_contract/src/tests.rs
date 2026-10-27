@@ -143,7 +143,7 @@ fn a_zone_that_is_not_a_name_is_refused_and_so_is_an_unknown_operation() {
 #[test]
 fn the_ninth_badge_finds_every_window_taken() {
     let mut g = Grants::new();
-    for badge in 1..=GRANTS_MAX as u32 {
+    for badge in 1..=GRANTS_MAXIMUM as u32 {
         assert_eq!(
             grant(&mut g, badge, "nife.test"),
             Control::Granted(badge as usize - 1)
@@ -161,7 +161,7 @@ fn the_ninth_badge_finds_every_window_taken() {
 #[test]
 fn a_continuation_into_a_full_table_is_out_of_order_not_full() {
     let mut g = Grants::new();
-    for badge in 1..=GRANTS_MAX as u32 {
+    for badge in 1..=GRANTS_MAXIMUM as u32 {
         grant(&mut g, badge, "nife.test");
     }
     let (w0, w1) = grant_messages(99, b"packages.nife.test")
@@ -193,7 +193,7 @@ fn the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not() {
 #[test]
 fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_grant() {
     let mut g = Grants::new();
-    for badge in 1..=GRANTS_MAX as u32 {
+    for badge in 1..=GRANTS_MAXIMUM as u32 {
         grant(&mut g, badge, "nife.test");
     }
     let (w0, w1) = forget_message(3).unwrap();

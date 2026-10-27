@@ -118,7 +118,10 @@ pub const LANG_MAXIMUM: usize = 24;
 
 /// The most bytes a `TERM` value may occupy. Covers every entry in [`domain::KNOWN_TERM`]
 /// (`screen-256color` is the longest at 15) with headroom to grow.
-pub const TERM_MAX: usize = 24;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TERM_MAX`.
+pub const TERM_MAXIMUM: usize = 24;
 
 const OFF_MAGIC: usize = 0;
 const OFF_TZ_LEN: usize = OFF_MAGIC + 8;
@@ -131,7 +134,7 @@ const OFF_TERM: usize = OFF_TERM_LEN + 1;
 /// The whole page's size in bytes: magic, then one length-prefixed field per declared key. Well
 /// under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
-pub const PAGE_BYTES: usize = OFF_TERM + TERM_MAX;
+pub const PAGE_BYTES: usize = OFF_TERM + TERM_MAXIMUM;
 
 /// Why [`PageBuilder`] refused a value: it does not parse as a member of its key's [`domain`].
 ///
@@ -234,7 +237,7 @@ impl<'a> PageBuilder<'a> {
         page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
         write_field(&mut page, OFF_TZ_LEN, OFF_TZ, TZ_MAXIMUM, self.tz);
         write_field(&mut page, OFF_LANG_LEN, OFF_LANG, LANG_MAXIMUM, self.lang);
-        write_field(&mut page, OFF_TERM_LEN, OFF_TERM, TERM_MAX, self.term);
+        write_field(&mut page, OFF_TERM_LEN, OFF_TERM, TERM_MAXIMUM, self.term);
         page
     }
 }
@@ -386,8 +389,8 @@ mod tests {
         }
         for term in domain::KNOWN_TERM {
             assert!(
-                term.len() <= TERM_MAX,
-                "{term:?} is {} bytes, over TERM_MAX",
+                term.len() <= TERM_MAXIMUM,
+                "{term:?} is {} bytes, over TERM_MAXIMUM",
                 term.len()
             );
         }
@@ -528,7 +531,7 @@ mod tests {
         assert_eq!(OFF_LANG, OFF_LANG_LEN + 1);
         assert_eq!(OFF_TERM_LEN, OFF_LANG + LANG_MAXIMUM);
         assert_eq!(OFF_TERM, OFF_TERM_LEN + 1);
-        assert_eq!(PAGE_BYTES, OFF_TERM + TERM_MAX);
+        assert_eq!(PAGE_BYTES, OFF_TERM + TERM_MAXIMUM);
         assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
     }
 }

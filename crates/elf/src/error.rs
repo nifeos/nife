@@ -79,6 +79,6 @@ pub enum Error {
     EntryNotExecutable,
     /// `p_vaddr + p_memsz` overflows, caught so the entry check and page math cannot wrap.
     AddressOverflow,
-    /// More than `MAX_PHNUM` (64) program headers, the bound on the O(n^2) overlap check.
+    /// More than `MAXIMUM_PHNUM` (64) program headers, the bound on the O(n^2) overlap check.
     TooManyProgramHeaders,
 }

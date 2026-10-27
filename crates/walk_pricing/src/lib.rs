@@ -224,7 +224,7 @@ pub struct Price {
     /// The fastest of those runs.
     pub whole_min: u64,
     /// The slowest.
-    pub whole_max: u64,
+    pub whole_maximum: u64,
     /// [`Self::whole`], by the call that spent it.
     pub split: Split,
 }
@@ -288,7 +288,7 @@ pub fn price(root: &Path) -> io::Result<Price> {
     }
     wholes.sort_unstable_by_key(|&(ns, _)| ns);
     let (whole, split) = *middle(&wholes);
-    let (whole_min, whole_max) = (wholes[0].0, wholes[WHOLE_REPS - 1].0);
+    let (whole_min, whole_maximum) = (wholes[0].0, wholes[WHOLE_REPS - 1].0);
 
     Ok(Price {
         totals,
@@ -300,7 +300,7 @@ pub fn price(root: &Path) -> io::Result<Price> {
         read_large,
         whole,
         whole_min,
-        whole_max,
+        whole_maximum,
         split,
     })
 }
@@ -340,7 +340,7 @@ pub fn report(p: &Price) -> Vec<String> {
         ),
         format!(
             "walk whole {} ns (min {} ns, max {} ns, {} runs)",
-            p.whole, p.whole_min, p.whole_max, WHOLE_REPS,
+            p.whole, p.whole_min, p.whole_maximum, WHOLE_REPS,
         ),
         format!(
             "walk split list {} ns, open {} ns, read {} ns, close {} ns",
@@ -558,7 +558,7 @@ mod tests {
             read_large,
             whole: 0,
             whole_min: 0,
-            whole_max: 0,
+            whole_maximum: 0,
             split: Split::default(),
         }
     }

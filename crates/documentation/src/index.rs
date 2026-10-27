@@ -11,7 +11,7 @@
 
 //! # BUGS
 //!
-//! - A term is truncated to [`TERM_MAX`] bytes, so long identifiers can share a posting list.
+//! - A term is truncated to [`TERM_MAXIMUM`] bytes, so long identifiers can share a posting list.
 //! - Terms are ASCII-folded and split on any byte that is not a letter or digit; an
 //!   underscore-joined name is also indexed whole.
 //! - No phrase search, and a result names a page, not a line; a heading mention ranks alike.
@@ -60,12 +60,18 @@ pub const TERM_REC: usize = 32;
 pub const POST_REC: usize = 4;
 
 /// The longest page path an index can name.
-pub const PATH_MAX: usize = 72;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `PATH_MAX`.
+pub const PATH_MAXIMUM: usize = 72;
 /// The longest page title an index can carry.
 pub const TITLE_MAX: usize = 48;
 /// The longest term an index stores; longer ones are truncated to it, so two identifiers that
 /// agree in their first 24 bytes share a posting list.
-pub const TERM_MAX: usize = 24;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TERM_MAX`.
+pub const TERM_MAXIMUM: usize = 24;
 
 /// What went wrong reading an index.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -180,7 +186,7 @@ pub struct Posting {
 /// A page the index names.
 #[derive(Clone, Copy)]
 pub struct Page {
-    path: [u8; PATH_MAX],
+    path: [u8; PATH_MAXIMUM],
     path_len: u8,
     title: [u8; TITLE_MAX],
     title_len: u8,
@@ -209,10 +215,10 @@ impl Page {
 ///
 /// Returns the length written into `out`. A word that folds to nothing (punctuation alone) returns
 /// zero and is not a term.
-pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAX]) -> usize {
+pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAXIMUM]) -> usize {
     let mut n = 0;
     for &b in word {
-        if n == TERM_MAX {
+        if n == TERM_MAXIMUM {
             break;
         }
         if b.is_ascii_alphanumeric() {
@@ -224,7 +230,7 @@ pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAX]) -> usize {
 }
 
 /// Split text into terms the way the builder does: runs of ASCII letters and digits, folded to
-/// lower case, truncated to [`TERM_MAX`], and dropped if shorter than two characters (a posting
+/// lower case, truncated to [`TERM_MAXIMUM`], and dropped if shorter than two characters (a posting
 /// list per letter answers no question anybody asks a manual).
 ///
 /// An underscore-joined name is also one term: `line_editor` yields `line`, `editor` and
@@ -234,20 +240,20 @@ pub fn normalize(word: &[u8], out: &mut [u8; TERM_MAX]) -> usize {
 /// BUGS: folding is ASCII only and every other byte splits, so a search for `filesystem` also
 /// finds every page that says `filesystem_contract`.
 pub fn tokens(text: &[u8], mut f: impl FnMut(&[u8])) {
-    let mut buf = [0u8; TERM_MAX];
+    let mut buf = [0u8; TERM_MAXIMUM];
     let mut n = 0;
     // The compound: this run and every run underscore-joined ahead of it, with the underscores
     // taken out, which is exactly what `normalize` will do to the query.
-    let mut joined = [0u8; TERM_MAX];
+    let mut joined = [0u8; TERM_MAXIMUM];
     let mut jn = 0;
     let mut parts = 0usize;
     for &b in text {
         if b.is_ascii_alphanumeric() {
-            if n < TERM_MAX {
+            if n < TERM_MAXIMUM {
                 buf[n] = b.to_ascii_lowercase();
                 n += 1;
             }
-            if jn < TERM_MAX {
+            if jn < TERM_MAXIMUM {
                 joined[jn] = b.to_ascii_lowercase();
                 jn += 1;
             }
@@ -305,7 +311,7 @@ pub fn bundles(text: &[u8], mut f: impl FnMut(&[u8])) {
 /// starts with, which narrows the range by half for one read. The final page is searched in memory,
 /// where it costs nothing.
 pub fn lookup(h: &Header, term: &[u8], src: &mut impl Pages) -> Option<Hit> {
-    let mut key = [0u8; TERM_MAX];
+    let mut key = [0u8; TERM_MAXIMUM];
     let n = normalize(term, &mut key);
     if n == 0 || h.terms == 0 {
         return None;
@@ -338,8 +344,8 @@ pub fn lookup(h: &Header, term: &[u8], src: &mut impl Pages) -> Option<Hit> {
         let rec = &buf[i * TERM_REC..(i + 1) * TERM_REC];
         if cmp(rec, key) == core::cmp::Ordering::Equal {
             return Some(Hit {
-                first: u32(rec, TERM_MAX),
-                count: u16v(rec, TERM_MAX + 4),
+                first: u32(rec, TERM_MAXIMUM),
+                count: u16v(rec, TERM_MAXIMUM + 4),
             });
         }
     }
@@ -387,15 +393,15 @@ pub fn page_record(h: &Header, i: u16, src: &mut impl Pages) -> Option<Page> {
     }
     let rec = &buf[(i as usize % per) * PAGE_REC..][..PAGE_REC];
     let mut p = Page {
-        path: [0; PATH_MAX],
-        path_len: rec[PATH_MAX + TITLE_MAX].min(PATH_MAX as u8),
+        path: [0; PATH_MAXIMUM],
+        path_len: rec[PATH_MAXIMUM + TITLE_MAX].min(PATH_MAXIMUM as u8),
         title: [0; TITLE_MAX],
-        title_len: rec[PATH_MAX + TITLE_MAX + 1].min(TITLE_MAX as u8),
-        tokens: u32(rec, PATH_MAX + TITLE_MAX + 2),
+        title_len: rec[PATH_MAXIMUM + TITLE_MAX + 1].min(TITLE_MAX as u8),
+        tokens: u32(rec, PATH_MAXIMUM + TITLE_MAX + 2),
     };
-    p.path.copy_from_slice(&rec[..PATH_MAX]);
+    p.path.copy_from_slice(&rec[..PATH_MAXIMUM]);
     p.title
-        .copy_from_slice(&rec[PATH_MAX..PATH_MAX + TITLE_MAX]);
+        .copy_from_slice(&rec[PATH_MAXIMUM..PATH_MAXIMUM + TITLE_MAX]);
     Some(p)
 }
 
@@ -403,10 +409,11 @@ pub fn page_record(h: &Header, i: u16, src: &mut impl Pages) -> Option<Page> {
 
 /// The longest store location a result can name: `<STORE_DIR>/<bundle>/<page>`.
 ///
-/// Ninety-six rather than [`PATH_MAX`] plus slack, because a location is not a path in the index:
-/// it is three short components, and the widest real one today (`doc/swish/line-discipline.md`) is
-/// twenty-eight bytes. A location longer than this is truncated and [`Found::is_truncated`] says
-/// so, for the reason the renderer gives about losing text silently.
+/// Ninety-six rather than [`PATH_MAXIMUM`] plus slack, because a location is not a path in the
+/// index: it is three short components, and the widest real one today
+/// (`doc/swish/line-discipline.md`) is twenty-eight bytes. A location longer than this is truncated
+/// and [`Found::is_truncated`] says so, for the reason the renderer gives about losing text
+/// silently.
 ///
 /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
 /// 2026-10-26 (UTC), renamed from `LOCATION_MAX`.
@@ -459,7 +466,7 @@ pub struct Found {
     title_len: u8,
     /// The page's path as the index records it, which is where the page came from in the source
     /// tree rather than where it is installed. See [`Found::location`] for the difference.
-    origin: [u8; PATH_MAX],
+    origin: [u8; PATH_MAXIMUM],
     origin_len: u8,
     /// How many times the term occurs on this page. Printed as-is: what a reader sees is the raw
     /// occurrence count, never the score below, because the count is the fact and the score is
@@ -528,7 +535,7 @@ impl Ranked {
                 truncated: false,
                 title: [0; TITLE_MAX],
                 title_len: 0,
-                origin: [0; PATH_MAX],
+                origin: [0; PATH_MAXIMUM],
                 origin_len: 0,
                 count: 0,
                 score: 0,
@@ -673,8 +680,8 @@ fn copy_into(dst: &mut [u8], src: &[u8]) -> usize {
 
 /// Compare a term record's term against a key.
 fn cmp(rec: &[u8], key: &[u8]) -> core::cmp::Ordering {
-    let n = rec[TERM_MAX + 6] as usize;
-    rec[..n.min(TERM_MAX)].cmp(key)
+    let n = rec[TERM_MAXIMUM + 6] as usize;
+    rec[..n.min(TERM_MAXIMUM)].cmp(key)
 }
 
 fn u16v(b: &[u8], at: usize) -> u16 {
@@ -703,7 +710,7 @@ mod builder {
 
     /// One page offered to the builder.
     pub struct Source<'a> {
-        /// The path the store will know the page by. Truncated to [`PATH_MAX`].
+        /// The path the store will know the page by. Truncated to [`PATH_MAXIMUM`].
         pub path: &'a str,
         /// The page's title. Truncated to [`TITLE_MAX`].
         pub title: &'a str,
@@ -779,26 +786,27 @@ mod builder {
         for (i, p) in pages.iter().enumerate() {
             let rec = page_off + i * PAGE_REC;
             let path = p.path.as_bytes();
-            let n = path.len().min(PATH_MAX);
+            let n = path.len().min(PATH_MAXIMUM);
             out[rec..rec + n].copy_from_slice(&path[..n]);
             let title = p.title.as_bytes();
             let m = title.len().min(TITLE_MAX);
-            out[rec + PATH_MAX..rec + PATH_MAX + m].copy_from_slice(&title[..m]);
-            out[rec + PATH_MAX + TITLE_MAX] = n as u8;
-            out[rec + PATH_MAX + TITLE_MAX + 1] = m as u8;
-            out[rec + PATH_MAX + TITLE_MAX + 2..rec + PATH_MAX + TITLE_MAX + 6]
+            out[rec + PATH_MAXIMUM..rec + PATH_MAXIMUM + m].copy_from_slice(&title[..m]);
+            out[rec + PATH_MAXIMUM + TITLE_MAX] = n as u8;
+            out[rec + PATH_MAXIMUM + TITLE_MAX + 1] = m as u8;
+            out[rec + PATH_MAXIMUM + TITLE_MAX + 2..rec + PATH_MAXIMUM + TITLE_MAX + 6]
                 .copy_from_slice(&page_tokens[i].to_le_bytes());
         }
 
         let mut post = 0usize;
         for (i, (term, byname)) in terms.iter().enumerate() {
             let rec = term_off + i * TERM_REC;
-            let n = term.len().min(TERM_MAX);
+            let n = term.len().min(TERM_MAXIMUM);
             out[rec..rec + n].copy_from_slice(&term[..n]);
-            out[rec + TERM_MAX..rec + TERM_MAX + 4].copy_from_slice(&(post as u32).to_le_bytes());
-            out[rec + TERM_MAX + 4..rec + TERM_MAX + 6]
+            out[rec + TERM_MAXIMUM..rec + TERM_MAXIMUM + 4]
+                .copy_from_slice(&(post as u32).to_le_bytes());
+            out[rec + TERM_MAXIMUM + 4..rec + TERM_MAXIMUM + 6]
                 .copy_from_slice(&(byname.len() as u16).to_le_bytes());
-            out[rec + TERM_MAX + 6] = n as u8;
+            out[rec + TERM_MAXIMUM + 6] = n as u8;
             for (page, count) in byname {
                 let at = post_off + post * POST_REC;
                 out[at..at + 2].copy_from_slice(&page.to_le_bytes());

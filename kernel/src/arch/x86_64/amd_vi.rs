@@ -19,7 +19,7 @@
 //! - Two devices behind one alias cannot both work, and at most [`MAXIMUM_ALIASES`] are tracked.
 //! - The root is checked against the 52-bit field, not the unit's real address width.
 
-use machine_discovery::acpi::ivrs::{IvrsUnits, MAX_IVHDS};
+use machine_discovery::acpi::ivrs::{IvrsUnits, MAXIMUM_IVHDS};
 
 use crate::arch::mmu::phys_to_virt;
 use crate::sync::{IrqSafeMutex, rank};
@@ -160,7 +160,7 @@ const MAXIMUM_ALIASES: usize = 32;
 
 // `Up` is several hundred bytes since the alias holder record (provisional milestone 767) and the
 // others are a pointer at most. Boxing it would buy nothing: the slots live in one static array of
-// `MAX_IVHDS`, built once at boot and never moved.
+// `MAXIMUM_IVHDS`, built once at boot and never moved.
 #[allow(clippy::large_enum_variant)]
 enum Slot {
     Absent,
@@ -168,8 +168,8 @@ enum Slot {
     Refused(&'static str),
 }
 
-static UNITS: IrqSafeMutex<[Slot; MAX_IVHDS]> =
-    IrqSafeMutex::new(rank::IOMMU, [const { Slot::Absent }; MAX_IVHDS]);
+static UNITS: IrqSafeMutex<[Slot; MAXIMUM_IVHDS]> =
+    IrqSafeMutex::new(rank::IOMMU, [const { Slot::Absent }; MAXIMUM_IVHDS]);
 
 /// The IVRS as [`initialize`] read it, kept so `attach` can route a device to its unit. Never held
 /// at the same time as [`UNITS`].
@@ -725,7 +725,7 @@ pub(crate) fn for_each_reserved_region(rid: u32, each: &mut dyn FnMut(paging::do
 /// from the IVRS's device ids rather than the DMAR's paths.
 pub(crate) fn scope_of(rid: u32) -> crate::iommu::Scope {
     use crate::iommu::Scope;
-    let mut up = [None; MAX_IVHDS];
+    let mut up = [None; MAXIMUM_IVHDS];
     let mut translating = None;
     for (i, s) in UNITS.lock().iter().enumerate() {
         if let Slot::Up(u) = s {

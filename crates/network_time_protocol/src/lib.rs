@@ -66,7 +66,7 @@ pub(crate) const UNIX_LIMIT: u64 = (TICKS_PER_SEC - UNIX_DELTA) + (1 << 31);
 /// The highest stratum a synchronised server may claim (RFC 5905 `MAXSTRAT`). 1 is a reference
 /// clock, 15 is fifteen hops from one, 16 means "unsynchronised" and anything above is reserved.
 /// A reply outside `1..=15` is not a time source ([`Reject::Stratum`]).
-pub(crate) const MAX_STRATUM: u8 = 15;
+pub(crate) const MAXIMUM_STRATUM: u8 = 15;
 
 /// The root distance we refuse outright, in [`Short`] units: 16 seconds, RFC 5905's `MAXDISP`.
 ///
@@ -349,7 +349,7 @@ pub struct Packet {
     /// Association mode, 3 bits. See [`mode`].
     pub mode: u8,
     /// Distance from a reference clock in hops. 1 is a reference clock itself, 0 is either
-    /// "unspecified" or a kiss-o'-death, 16 is unsynchronised. See [`MAX_STRATUM`].
+    /// "unspecified" or a kiss-o'-death, 16 is unsynchronised. See [`MAXIMUM_STRATUM`].
     pub stratum: u8,
     /// Log2 of the maximum interval between messages, in seconds.
     pub poll: i8,
@@ -505,8 +505,8 @@ pub enum Reject {
     /// back). A client that treats this as a mere failure and retries is the abusive client the
     /// packet exists to stop, so it is its own variant.
     KissOfDeath([u8; 4]),
-    /// The stratum is above [`MAX_STRATUM`]: 16 is the server saying it is unsynchronised, above
-    /// that is reserved. Either way it is not a time source.
+    /// The stratum is above [`MAXIMUM_STRATUM`]: 16 is the server saying it is unsynchronised,
+    /// above that is reserved. Either way it is not a time source.
     Stratum(u8),
     /// The leap indicator is [`leap::UNSYNCHRONISED`]. The server is telling us not to trust it.
     Unsynchronised,
@@ -671,10 +671,11 @@ impl Query {
     ///
     /// Refuses, in this order: a length other than 48; a version other than 4 or a mode other than
     /// server; an origin that is not our nonce, checked before anything else is believed; a
-    /// kiss-o'-death, a stratum above [`MAX_STRATUM`] or an unsynchronised leap indicator; a zero
-    /// transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no shorter
-    /// than the turnaround); a root distance past [`MAX_ROOT_DISTANCE`]. Each is its [`Reject`]
-    /// variant. None authenticates: an on-path attacker sees the nonce. See notes/ntp.md.
+    /// kiss-o'-death, a stratum above [`MAXIMUM_STRATUM`] or an unsynchronised leap indicator; a
+    /// zero transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no
+    /// shorter than the turnaround); a root distance past [`MAX_ROOT_DISTANCE`]. Each is its
+    /// [`Reject`] variant. None authenticates: an on-path attacker sees the nonce. See
+    /// notes/ntp.md.
     pub fn accept(&self, wire: &[u8], dest: Timestamp) -> Result<Sample, Reject> {
         let p = Packet::parse(wire)?;
 
@@ -691,7 +692,7 @@ impl Query {
         if p.is_kiss_of_death() {
             return Err(Reject::KissOfDeath(p.reference_id));
         }
-        if p.stratum > MAX_STRATUM {
+        if p.stratum > MAXIMUM_STRATUM {
             return Err(Reject::Stratum(p.stratum));
         }
         if p.leap == leap::UNSYNCHRONISED {
@@ -1158,9 +1159,9 @@ mod tests {
     /// rejection tests only ever probed 16, so > could rot to >= and refuse a legal server.
     #[test]
     fn the_fifteenth_stratum_is_still_a_time_source() {
-        let w = tweak(|w| w[1] = MAX_STRATUM);
+        let w = tweak(|w| w[1] = MAXIMUM_STRATUM);
         assert!(query().accept(&w, T4).is_ok());
-        let w = tweak(|w| w[1] = MAX_STRATUM + 1);
+        let w = tweak(|w| w[1] = MAXIMUM_STRATUM + 1);
         assert_eq!(query().accept(&w, T4), Err(Reject::Stratum(16)));
     }
 }

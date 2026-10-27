@@ -68,7 +68,7 @@ fn an_installer_region_holds_one_more_package() {
     assert!(jig.installer);
     assert_eq!(
         named_std_region_pages(&jig),
-        STD_REGION_PAGES + spawnproto::IMAGE_MAX_PAGES
+        STD_REGION_PAGES + spawnproto::IMAGE_MAXIMUM_PAGES
     );
     let plain = Manifest {
         installer: false,

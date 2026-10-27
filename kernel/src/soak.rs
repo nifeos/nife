@@ -88,7 +88,7 @@ pub fn run() -> ! {
     let shared = frame.addr();
 
     // One tick rendezvous per group: a shared one starves all but one waiter on a loaded host.
-    let mut tick_endpoints = [0u64; MAX_GROUPS];
+    let mut tick_endpoints = [0u64; MAXIMUM_GROUPS];
     for slot in tick_endpoints.iter_mut().take(groups) {
         *slot = sched::create_rendezvous();
     }
@@ -701,7 +701,7 @@ fn wedge(elapsed: u64) -> ! {
 }
 
 /// The most groups the shared page has room for, and so the most tick routes there can be.
-const MAX_GROUPS: usize = MAX_WORKERS / MEMBERS_PER_GROUP;
+const MAXIMUM_GROUPS: usize = MAX_WORKERS / MEMBERS_PER_GROUP;
 
 /// The interrupt number group `g`'s waiter holds. See [`TICK_INTID_TOP`].
 const fn tick_intid(g: usize) -> u32 {
@@ -712,7 +712,7 @@ const fn tick_intid(g: usize) -> u32 {
 ///
 /// Plain atomics, because the reader is an interrupt handler on every core. Written once each, by
 /// the boot thread. See notes/soak/supervisor.md.
-static TICK_ROUTES: [AtomicU64; MAX_GROUPS] = [const { AtomicU64::new(0) }; MAX_GROUPS];
+static TICK_ROUTES: [AtomicU64; MAXIMUM_GROUPS] = [const { AtomicU64::new(0) }; MAXIMUM_GROUPS];
 
 /// How many of [`TICK_ROUTES`] are armed. Zero until [`arm_tick_hook`], which keeps the hook inert
 /// during setup; [`signal_waiters`] loads it first.
@@ -750,7 +750,7 @@ pub fn signal_waiters() {
 /// already routed. Called before the first waiter is spawned, so none meets `WrongObject` at
 /// `Irq::WAIT`; [`arm_tick_hook`] starts the signaling later. See notes/soak/tick-route.md.
 fn bind_tick_routes(endpoints: &[sched::RendezvousId]) -> bool {
-    if endpoints.is_empty() || endpoints.len() > MAX_GROUPS {
+    if endpoints.is_empty() || endpoints.len() > MAXIMUM_GROUPS {
         return false;
     }
     if (0..endpoints.len()).any(|g| sched::irq_route(tick_intid(g)).is_some()) {

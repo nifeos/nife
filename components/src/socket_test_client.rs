@@ -408,10 +408,10 @@ fn exchange_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer,
     }
     let mut buf = [0u8; 2 + domain_name_system::UDP_MESSAGE_MAX];
     let mut reply = TcpReply::new(&mut buf);
-    let mut chunk = [0u8; DATA_MAX];
+    let mut chunk = [0u8; DATA_MAXIMUM];
     loop {
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-        if got == 0 || got > DATA_MAX as u64 {
+        if got == 0 || got > DATA_MAXIMUM as u64 {
             return Err(0x5); // the peer went away (or the stack failed) before the reply was whole
         }
         let got = got as usize;
@@ -479,7 +479,7 @@ fn ask_the_host_resolver() -> u64 {
     let Ok(n) = query.request(&mut request) else {
         return 0xE012;
     };
-    let mut reply = [0u8; DATA_MAX];
+    let mut reply = [0u8; DATA_MAXIMUM];
     for _ in 0..DNS_ATTEMPTS {
         SHARED_FRAME.payload_write(&request[..n]);
         SHARED_FRAME.set_dst(DNS_IP, DNS_PORT);
@@ -487,7 +487,7 @@ fn ask_the_host_resolver() -> u64 {
             return 0xE011;
         }
         let (rlen, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-        if rlen == REP_ERR || rlen == 0 || rlen > DATA_MAX as u64 {
+        if rlen == REP_ERR || rlen == 0 || rlen > DATA_MAXIMUM as u64 {
             continue;
         }
         let rlen = rlen as usize;
@@ -860,10 +860,10 @@ fn exchange(stem: &str, tampered: bool, expected: &measured_boot::Digest) -> u64
 
     let mut response = http_response::Response::new();
     let mut hash = measured_boot::Sha256::new();
-    let mut chunk = [0u8; DATA_MAX];
+    let mut chunk = [0u8; DATA_MAXIMUM];
     while !response.is_complete() {
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-        if got == 0 || got > DATA_MAX as u64 {
+        if got == 0 || got > DATA_MAXIMUM as u64 {
             return 0xE096; // the peer went away (or the stack failed) before the body was whole
         }
         let got = got as usize;
@@ -920,14 +920,14 @@ fn tcp_drain(peer: u64) -> ! {
     loop {
         let asked = now();
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-        if got == 0 || got > DATA_MAX as u64 {
+        if got == 0 || got > DATA_MAXIMUM as u64 {
             break;
         }
         last = now();
         bytes += got;
         calls += 1;
         inside += last.saturating_sub(asked);
-        full += u64::from(got == DATA_MAX as u64);
+        full += u64::from(got == DATA_MAXIMUM as u64);
     }
     let _ = close(SOCKET);
     send(REPORT, OK, bytes, last.saturating_sub(first));

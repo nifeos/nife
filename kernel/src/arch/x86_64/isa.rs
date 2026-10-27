@@ -186,7 +186,7 @@ pub fn draw_random_seed() -> Option<u64> {
 /// today calibrates. The rate is a constant only because [`initialize`] refuses bare metal without
 /// the invariant TSC. See notes/x86-port/cpu-state.md.
 pub(crate) fn tsc_crystal_hz() -> Option<u64> {
-    if get().max_leaf < 0x15 {
+    if get().maximum_leaf < 0x15 {
         return None;
     }
     // Leaf 0x15 carries no precondition beyond the max-leaf check just above.
@@ -215,7 +215,7 @@ pub(crate) fn print_summary() {
     };
     println!(
         "  cpu         : x86_64, vendor {vendor}, cpuid leaves 0..{:#x} and {:#x}..{:#x}, {host}",
-        cpu.max_leaf, 0x8000_0000u32, cpu.extended_maximum_leaf
+        cpu.maximum_leaf, 0x8000_0000u32, cpu.extended_maximum_leaf
     );
     if let Some(brand) = cpu.brand_str() {
         println!("              : {brand}");
@@ -248,7 +248,7 @@ mod tests {
     fn the_part_described_itself() {
         let cpu = get();
 
-        assert!(cpu.max_leaf >= 1, "leaf 0 reported no leaves at all");
+        assert!(cpu.maximum_leaf >= 1, "leaf 0 reported no leaves at all");
         assert!(
             cpu.extended_maximum_leaf >= 0x8000_0007,
             "every gate this kernel checks lives at or below extended leaf 7"

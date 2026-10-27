@@ -42,7 +42,7 @@ use r_efi::protocols::loaded_image;
 use uefi_loader::device_path;
 use uuid::Uuid;
 
-use crate::{BOOT_FILE_MAX, PAGE, SUCCESS, allocate_below, boot_services, say, say_decimal};
+use crate::{BOOT_FILE_MAXIMUM, PAGE, SUCCESS, allocate_below, boot_services, say, say_decimal};
 
 /// **The marker the chooser puts in a chain-loaded image's `LoadOptions`**, followed by one ASCII
 /// digit naming the slot.
@@ -494,7 +494,7 @@ impl Disk {
             say(table, " holds no image\r\n");
             return Started::Unreadable;
         };
-        if header.image_len == 0 || header.image_len > BOOT_FILE_MAX {
+        if header.image_len == 0 || header.image_len > BOOT_FILE_MAXIMUM {
             say(table, "uefi_loader: boot slot ");
             say_decimal(table, slot as u32);
             say(table, " claims an impossible size\r\n");

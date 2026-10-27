@@ -16,16 +16,20 @@ pub const MAX_NAME: usize = crate::MAX_FILE_NAME;
 /// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set
 /// travels by value in a frame the caretaker keeps whole and through four frames of the shell's
 /// stack, and sixteen ran the shell off its stack. It matches
-/// `filesystem_contract::nameset::MAX_NAMES`, pinned by a host test. Exceeding it is
+/// `filesystem_contract::nameset::MAXIMUM_NAMES`, pinned by a host test. Exceeding it is
 /// [`Refusal::TooManyNames`] at the prompt, never a truncation. See notes/glob-grant/xargs.md
 /// ("Why the bound is eight").
-pub const MAX_NAMES: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NAMES`.
+pub const MAXIMUM_NAMES: usize = 8;
 
 /// **The most bytes of name one expansion may grant, all its names together**, for
-/// [`MAX_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it holds
-/// its names packed in this many bytes rather than [`MAX_NAMES`] slots of [`MAX_NAME`] each. It
-/// matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host test, and exceeding it is
-/// the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md ("The bytes a set carries").
+/// [`MAXIMUM_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it
+/// holds its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of [`MAX_NAME`]
+/// each. It matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host test, and
+/// exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md ("The bytes a
+/// set carries").
 ///
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
 pub const NAME_BYTES: usize = 512;
@@ -82,16 +86,16 @@ impl Name {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NameSet {
     /// The names, packed end to end in order: name `i` is `bytes[start(i)..ends[i]]`. Packed rather
-    /// than [`MAX_NAMES`] slots of [`MAX_NAME`], because this is copied by value through the
+    /// than [`MAXIMUM_NAMES`] slots of [`MAX_NAME`], because this is copied by value through the
     /// shell's deepest frames ([`NAME_BYTES`]).
     bytes: [u8; NAME_BYTES],
     /// Where each name ends in `bytes`, in step with `is_directory`.
-    ends: [u16; MAX_NAMES],
+    ends: [u16; MAXIMUM_NAMES],
     /// Whether each name is a directory, in step with `ends`.
     ///
     /// Name: ratified 2026-10-18 (calef), for this field and for the `is_directory` parameters
     /// that feed it.
-    is_directory: [bool; MAX_NAMES],
+    is_directory: [bool; MAXIMUM_NAMES],
     n: usize,
 }
 
@@ -113,8 +117,8 @@ impl NameSet {
     pub const fn empty() -> Self {
         NameSet {
             bytes: [0; NAME_BYTES],
-            ends: [0; MAX_NAMES],
-            is_directory: [false; MAX_NAMES],
+            ends: [0; MAXIMUM_NAMES],
+            is_directory: [false; MAXIMUM_NAMES],
             n: 0,
         }
     }
@@ -145,7 +149,7 @@ impl NameSet {
 
     /// Whether `len` more bytes of name fit beside what is held.
     fn has_room_for(&self, len: usize) -> bool {
-        self.n < MAX_NAMES && self.name_bytes() + len <= NAME_BYTES
+        self.n < MAXIMUM_NAMES && self.name_bytes() + len <= NAME_BYTES
     }
 
     /// Add a name. `false` if the set is full, by count or by bytes, or the name cannot travel in a
@@ -193,8 +197,8 @@ impl NameSet {
     ///
     /// Returns whether nothing was left out: `false` when `name` itself, or names it displaced, did
     /// not fit. The name goes in when it sorts below a name held, displacing the largest ones until
-    /// the set fits [`MAX_NAMES`] and [`NAME_BYTES`] again, so what is left out always sorts after
-    /// what is kept. The caller then refuses every later name after the set's last
+    /// the set fits [`MAXIMUM_NAMES`] and [`NAME_BYTES`] again, so what is left out always sorts
+    /// after what is kept. The caller then refuses every later name after the set's last
     /// ([`Expander::offer`]), or a short name could slip in behind a long one that was left out and
     /// the next batch would skip it. It takes a name the caller has established can travel in a
     /// grant.
@@ -312,8 +316,9 @@ impl<'a> Expander<'a> {
     ///
     /// The same membership decision as [`Expander::new`] and a different collection policy: instead
     /// of refusing the ninth match, this takes the smallest matches strictly after `resume` that fit
-    /// [`MAX_NAMES`] and [`NAME_BYTES`], and reports that the rest exist. Membership is decided once, in [`Expander::offer`],
-    /// so a batched line and an unbatched one cannot disagree about what a pattern designates.
+    /// [`MAXIMUM_NAMES`] and [`NAME_BYTES`], and reports that the rest exist. Membership is decided
+    /// once, in [`Expander::offer`], so a batched line and an unbatched one cannot disagree about
+    /// what a pattern designates.
     ///
     /// The policies differ on purpose: an unbatched line refuses a ninth match, and a batched line
     /// exists for it.
@@ -640,18 +645,18 @@ mod tests {
     /// names quietly handed over.
     #[test]
     fn more_matches_than_the_bound_is_a_refusal_and_not_a_truncation() {
-        let mut names = [[b'a'; 3]; MAX_NAMES + 1];
+        let mut names = [[b'a'; 3]; MAXIMUM_NAMES + 1];
         for (i, n) in names.iter_mut().enumerate() {
             n[1] = b'a' + (i / 10) as u8;
             n[2] = b'0' + (i % 10) as u8;
         }
-        let listing: [(&[u8], bool); MAX_NAMES + 1] =
+        let listing: [(&[u8], bool); MAXIMUM_NAMES + 1] =
             core::array::from_fn(|i| (&names[i][..], false));
         assert_eq!(expand(b"a*", &listing), Err(Refusal::TooManyNames));
         // Exactly the bound is fine: this is a ceiling that is met, not one with slack in it.
         assert_eq!(
-            expand(b"a*", &listing[..MAX_NAMES]).unwrap().len(),
-            MAX_NAMES
+            expand(b"a*", &listing[..MAXIMUM_NAMES]).unwrap().len(),
+            MAXIMUM_NAMES
         );
     }
 
@@ -814,7 +819,7 @@ mod tests {
             }
         }
         assert_eq!(batches, 3, "twenty names is eight, eight and four");
-        assert_eq!(sizes[..3], [MAX_NAMES, MAX_NAMES, 4]);
+        assert_eq!(sizes[..3], [MAXIMUM_NAMES, MAXIMUM_NAMES, 4]);
         assert_eq!(seen, (1 << 20) - 1, "the batches are not the match");
     }
 
@@ -864,13 +869,13 @@ mod tests {
     fn more_says_whether_a_batch_follows() {
         let listing = twenty();
         assert!(
-            !batch(b"b*.txt", Resume::Start, &listing[..MAX_NAMES])
+            !batch(b"b*.txt", Resume::Start, &listing[..MAXIMUM_NAMES])
                 .unwrap()
                 .more
         );
-        let over = batch(b"b*.txt", Resume::Start, &listing[..MAX_NAMES + 1]).unwrap();
+        let over = batch(b"b*.txt", Resume::Start, &listing[..MAXIMUM_NAMES + 1]).unwrap();
         assert!(over.more);
-        assert_eq!(over.names.len(), MAX_NAMES);
+        assert_eq!(over.names.len(), MAXIMUM_NAMES);
         assert_eq!(
             over.next(),
             Name::new(over.names.last().unwrap()).map(Resume::After),

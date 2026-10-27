@@ -4,11 +4,11 @@ use super::*;
 /// reader's query normaliser must agree, byte for byte, on what a term is.
 #[test]
 fn a_query_folds_the_way_the_text_did() {
-    let mut buf = [0u8; TERM_MAX];
+    let mut buf = [0u8; TERM_MAXIMUM];
     let n = normalize(b"Capability!", &mut buf);
     assert_eq!(&buf[..n], b"capability");
 
-    let mut seen: [[u8; TERM_MAX]; 4] = [[0; TERM_MAX]; 4];
+    let mut seen: [[u8; TERM_MAXIMUM]; 4] = [[0; TERM_MAXIMUM]; 4];
     let mut lens = [0usize; 4];
     let mut i = 0;
     tokens(b"Capability, a `Frame`. x", |t| {
@@ -30,11 +30,11 @@ fn a_query_folds_the_way_the_text_did() {
 /// term. See notes/documentation/underscore-terms.md.
 #[test]
 fn an_underscore_name_is_searchable_as_itself() {
-    let mut key = [0u8; TERM_MAX];
+    let mut key = [0u8; TERM_MAXIMUM];
     let n = normalize(b"line_editor", &mut key);
     assert_eq!(&key[..n], b"lineeditor");
 
-    let mut seen: [[u8; TERM_MAX]; 8] = [[0; TERM_MAX]; 8];
+    let mut seen: [[u8; TERM_MAXIMUM]; 8] = [[0; TERM_MAXIMUM]; 8];
     let mut lens = [0usize; 8];
     let mut i = 0;
     tokens(b"the line_editor crate", |t| {
@@ -60,8 +60,8 @@ fn an_underscore_name_is_searchable_as_itself() {
 #[test]
 fn a_term_longer_than_the_record_folds_to_its_prefix() {
     let long = b"averyveryverylongidentifiername";
-    let mut buf = [0u8; TERM_MAX];
-    assert_eq!(normalize(long, &mut buf), TERM_MAX);
+    let mut buf = [0u8; TERM_MAXIMUM];
+    assert_eq!(normalize(long, &mut buf), TERM_MAXIMUM);
 }
 
 #[test]
@@ -302,20 +302,20 @@ fn ranking_divides_by_page_length() {
 //
 // Each of these kills a mutant that survived the rest of the suite. See notes/mutation-testing.md.
 
-/// Both of the tokeniser's buffers are exactly `TERM_MAX` and both are written by index, so
+/// Both of the tokeniser's buffers are exactly `TERM_MAXIMUM` and both are written by index, so
 /// the bound is the difference between a truncated term and a panic in a `no_std` reader.
 /// `normalize` had this test and `tokens` did not, and the two write different buffers: the
 /// second is the underscore-joined compound, which overflows on a shorter source word.
 #[test]
 fn a_run_longer_than_a_term_record_holds_is_truncated_rather_than_written_past() {
-    let mut seen = [[0u8; TERM_MAX]; 8];
+    let mut seen = [[0u8; TERM_MAXIMUM]; 8];
     let mut lens = [0usize; 8];
     let mut i = 0;
     tokens(
         b"averyveryverylongidentifiername and_a_compound_far_past_the_limit",
         |t| {
             assert!(
-                t.len() <= TERM_MAX,
+                t.len() <= TERM_MAXIMUM,
                 "a term longer than its record: {}",
                 t.len()
             );
@@ -338,7 +338,7 @@ fn a_run_longer_than_a_term_record_holds_is_truncated_rather_than_written_past()
 /// page whose last word is an identifier is ordinary, and nothing exercised that path.
 #[test]
 fn an_underscore_name_at_the_end_of_the_text_is_still_joined() {
-    let mut seen = [[0u8; TERM_MAX]; 8];
+    let mut seen = [[0u8; TERM_MAXIMUM]; 8];
     let mut lens = [0usize; 8];
     let mut i = 0;
     tokens(b"defined in grant_plan", |t| {

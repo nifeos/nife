@@ -20,7 +20,7 @@ use super::mmu::phys_to_virt;
 /// a real machine with an assortment of firmware reservations produces a couple of dozen. The cap
 /// exists because this walks a structure a loader wrote, and a corrupt entry count must bound the
 /// loop rather than hang the boot before the console has said anything useful.
-const MAX_ENTRIES: usize = 64;
+const MAXIMUM_ENTRIES: usize = 64;
 
 /// Read the `hvm_start_info` at physical address `at`.
 ///
@@ -180,7 +180,7 @@ pub(crate) fn print_memory_map(info: &BootInfo) {
         );
         return;
     }
-    let shown = (info.memmap_entries as usize).min(MAX_ENTRIES);
+    let shown = (info.memmap_entries as usize).min(MAXIMUM_ENTRIES);
     let mut usable = 0u64;
     crate::println!(
         "  memory      : {} regions from the PVH handoff, rsdp {:#x}",
@@ -235,7 +235,7 @@ const EBDA_SEGMENT_PTR: u64 = 0x0000_040e;
 
 /// The most root-table entries the walk will follow. A machine has a dozen or two tables; the cap
 /// exists because the count comes from a length field firmware wrote.
-const MAX_TABLES: usize = 64;
+const MAXIMUM_TABLES: usize = 64;
 
 /// The most MADT entries the walk will report, for the same reason.
 const MAX_MADT_ENTRIES: usize = 256;
@@ -443,7 +443,7 @@ pub(crate) fn read_acpi(hint: u64) -> Acpi {
         crate::println!("                root table unreadable or failed its checksum");
         return found;
     };
-    let count = root_entry_count(root_header.length, wide).min(MAX_TABLES);
+    let count = root_entry_count(root_header.length, wide).min(MAXIMUM_TABLES);
 
     for i in 0..count {
         let Some(pa) = root_entry(root_body, i, wide) else {
@@ -760,7 +760,7 @@ fn print_isa_overrides(found: &Acpi) {
 
 /// The most RAM regions handed to the allocator. `memory::bring_up_page_frames` indexes a fixed map of
 /// this size, so more than this cannot be described; q35 produces three.
-const MAX_RAM_REGIONS: usize = 16;
+const MAXIMUM_RAM_REGIONS: usize = 16;
 
 /// **The whole first megabyte is never allocatable**, and this is the one x86 reservation with no
 /// counterpart on the other two architectures.
@@ -778,14 +778,14 @@ const LOW_MEGABYTE: u64 = 0x0010_0000;
 /// into the two slices `memory::bring_up_page_frames` takes, and nothing else.
 ///
 /// Returns how many RAM regions were used, which the boot print reports; a machine describing more
-/// than [`MAX_RAM_REGIONS`] gets the first that many, and saying how many were taken is what makes
-/// that visible rather than silent.
+/// than [`MAXIMUM_RAM_REGIONS`] gets the first that many, and saying how many were taken is what
+/// makes that visible rather than silent.
 pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
-    let mut ram = [device_tree_blob::Region { start: 0, size: 0 }; MAX_RAM_REGIONS];
+    let mut ram = [device_tree_blob::Region { start: 0, size: 0 }; MAXIMUM_RAM_REGIONS];
     let mut count = 0;
 
     for i in 0..info.memmap_entries as usize {
-        if count == MAX_RAM_REGIONS {
+        if count == MAXIMUM_RAM_REGIONS {
             break;
         }
         let Some(e) = memory_map_entry(info, i) else {

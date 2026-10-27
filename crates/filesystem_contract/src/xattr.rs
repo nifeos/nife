@@ -149,7 +149,10 @@ pub mod list {
     /// The most bytes a complete listing can occupy: every attribute a node may hold, at the
     /// longest name each. Equal to [`super::super::PAGE`], which is what lets
     /// [`super::super::fs::LISTXATTR`] answer without a cursor.
-    pub const MAX_BYTES: usize = super::MAXIMUM_COUNT * record_len(super::MAX_NAME);
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
+    pub const MAXIMUM_BYTES: usize = super::MAXIMUM_COUNT * record_len(super::MAX_NAME);
 
     /// Write one record at the start of `out`, returning its length, or `None` if it does not
     /// fit or the name is not one this store holds.
@@ -215,7 +218,10 @@ pub mod store {
     /// The largest a node's whole blob can be: [`MAXIMUM_COUNT`] records at the widest each. This
     /// is the ceiling on what one node costs the store, and the reason the count limit exists at
     /// all rather than being left to the disk.
-    pub const MAX_BYTES: usize = MAXIMUM_COUNT * record_len(super::MAX_NAME, MAXIMUM_VALUE);
+    ///
+    /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+    /// 2026-10-26 (UTC), renamed from `MAX_BYTES`.
+    pub const MAXIMUM_BYTES: usize = MAXIMUM_COUNT * record_len(super::MAX_NAME, MAXIMUM_VALUE);
 
     /// The name of the file that holds a node's blob: its `TreePtr` id in lowercase hex, always
     /// eight characters, so the store directory's entries sort and read predictably in a
@@ -258,7 +264,7 @@ pub mod store {
     }
 
     /// Write the [`super::list`] records for every attribute in `blob` into `out`, returning the
-    /// bytes used. A complete listing always fits [`super::list::MAX_BYTES`]; a shorter `out`
+    /// bytes used. A complete listing always fits [`super::list::MAXIMUM_BYTES`]; a shorter `out`
     /// stops before the record that will not fit rather than splitting one.
     pub fn list(blob: &[u8], out: &mut [u8]) -> usize {
         let mut used = 0;
@@ -388,7 +394,7 @@ use super::{dir, fs};
 /// that broke it should fail the build rather than wait for a request that happens to be wide.
 const _: () = assert!(MAX_NAME + MAXIMUM_VALUE <= super::PAGE);
 /// And a complete listing must fit one page, which is what lets [`fs::LISTXATTR`] have no cursor.
-const _: () = assert!(list::MAX_BYTES <= super::PAGE);
+const _: () = assert!(list::MAXIMUM_BYTES <= super::PAGE);
 /// The four verbs must not collide with the thirteen that were already on the wire.
 const _: () = assert!(fs::GETXATTR > fs::RMDIR && fs::REMOVEXATTR <= 0xff);
 /// The rights these verbs consult are the ones [`fs::READ`] and [`fs::WRITE`] consult; nothing

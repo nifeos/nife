@@ -191,8 +191,8 @@ mutation runs in one transaction, so an attribute and its file reach the platter
 - `ENOENT` is the only lookup error read as absence. A dropped write to the root's tree block makes a
   lookup answer `EIO`, and reading that as "no attributes" would hand a client an empty set for a
   file that has some. The crash harness met the same false negative.
-- A blob longer than `xattr::store::MAX_BYTES` is `EIO`, never a partial read of a file the layer did
-  not write.
+- A blob longer than `xattr::store::MAXIMUM_BYTES` is `EIO`, never a partial read of a file the
+  layer did not write.
 - The store follows a write with a truncate to the new length. A write does not truncate, and a
   shorter blob would otherwise leave the old tail for the reader to walk (the failure DECISIONS §27
   (the filesystem service: a capability-shaped contract) records).
@@ -215,10 +215,11 @@ The engine is pinned in `vendor/redoxfs.pin`, and every change to it is a number
 - `NodeLevel::new` admitted `12 * 256^4` level-4 records where `NodeLevelData::level4` holds 8
   pointers. A record offset in that band indexed past the array and panicked the engine, which here
   is a dead server. The `redoxfs_server_session` fuzz target found it on 2026-10-04 (UTC). The root
-  fix, `12` to `8` in `vendor/redoxfs/src/node.rs`, is a divergence taken by #1606. `MAX_FILE_END`
-  stays beside it so the boundary answers `EFBIG` rather than an engine `ERANGE` deep in a
-  transaction. It is conservative: every file this build creates has 8 KiB records, which could
-  address twice it, and no image this system serves comes within a factor of a million of either.
+  fix, `12` to `8` in `vendor/redoxfs/src/node.rs`, is a divergence taken by #1606.
+  `MAXIMUM_FILE_END` stays beside it so the boundary answers `EFBIG` rather than an engine `ERANGE`
+  deep in a transaction. It is conservative: every file this build creates has 8 KiB records, which
+  could address twice it, and no image this system serves comes within a factor of a million of
+  either.
 - The record level is lowered and split in two (`vendor/README.md` divergence 5): `RECORD_LEVEL`,
   the level a new file is created at, is 1 (8 KiB records), and `RECORD_LEVEL_MAX`, which the two
   `BlockTrait::empty` guards compare against, stays 5. `block.rs` asserts `RECORD_LEVEL <=
@@ -233,7 +234,7 @@ of this contract and not a bug in an engine whose other callers may want otherwi
 - `check_component`, where RedoxFS's `check_name` passes `/`, `.` and `..`.
 - `RENAME`'s kind check, which `rename_node` does not make.
 - The write end: RedoxFS adds `offset + len` unchecked, and a wrapped end made its inline-data path
-  slice backwards and panic. `write` refuses an end that overflows or passes `MAX_FILE_END`.
+  slice backwards and panic. `write` refuses an end that overflows or passes `MAXIMUM_FILE_END`.
 - Durability: `Disk` has no flush, so `SYNC` is a block-protocol call in the binary.
 - The usage table on the hot paths: `open_file_path` registers a use directly rather than through
   `on_open_node`, and `close` drops one directly unless the engine's `on_close_node` has a release
@@ -241,8 +242,9 @@ of this contract and not a bug in an engine whose other callers may want otherwi
 
 One defect is left in the engine. Shrinking a file walks every record pointer in its logical size,
 sparse or not, and the server answers one request at a time. A client with a writable handle can grow
-a file to near `MAX_FILE_END` cheaply and then shrink it, stalling every other client. The same walk
-runs when such a file's last name and handle go. The fuzz target found it as a ten-second timeout on
-2026-10-04 (UTC). The two fixes are a divergence (skip a null subtree in `truncate_node_inner`) or a
-semantics choice (refuse a sparse size past the image), and both are an architect's. It is proposed as
+a file to near `MAXIMUM_FILE_END` cheaply and then shrink it, stalling every other client. The same
+walk runs when such a file's last name and handle go. The fuzz target found it as a ten-second
+timeout on 2026-10-04 (UTC). The two fixes are a divergence (skip a null subtree in
+`truncate_node_inner`) or a semantics choice (refuse a sparse size past the image), and both are an
+architect's. It is proposed as
 `design/roadmap/0772-a-client-cannot-stall-the-file-server-with-a-sparse-file.md`.

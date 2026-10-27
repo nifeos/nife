@@ -113,7 +113,7 @@ pub fn initialize() {
     // the part answers that far: `CPUID` for a leaf above the maximum returns some *other* leaf's
     // data rather than refusing, so an unchecked read would decode an unrelated register as a
     // version number.
-    if isa::get().max_leaf < CPUID_PERFMON_LEAF {
+    if isa::get().maximum_leaf < CPUID_PERFMON_LEAF {
         OUTCOME.store(CycleCounter::NoPerfmonLeaf as u8, Ordering::Release);
         return;
     }
@@ -367,7 +367,7 @@ mod tests {
         );
         if reached_the_msrs {
             assert!(
-                isa::get().max_leaf >= CPUID_PERFMON_LEAF,
+                isa::get().maximum_leaf >= CPUID_PERFMON_LEAF,
                 "initialize read an MSR on a part whose CPUID does not reach leaf 0x0a"
             );
             assert!(
