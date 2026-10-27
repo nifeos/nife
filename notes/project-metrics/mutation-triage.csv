@@ -98,8 +98,8 @@ ps,refusal,delete match arm Some(abi::Error::NoSuchSlot),killed,"killed; the led
 ps,refusal,delete match arm Some(abi::Error::WrongObject),killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 ps,state_name,delete match arm abi::survey::BLOCKED,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 ps,state_name,delete match arm abi::survey::READY,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
-ps,write_millis,replace - with +,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
-ps,write_millis,replace - with /,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
+ps,write_ms,replace - with +,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
+ps,write_ms,replace - with /,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 ps,write_thread_id,replace - with +,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 ps,write_thread_id,replace - with /,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 sealed_pair,,replace <impl std::fmt::Display for Unreadable>::fmt -> std::fmt::Result with Ok(Default::default()),killed,killed; the ledger's firmware_configuration and sealed_pair section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps

@@ -70,7 +70,7 @@ pub(crate) struct Stamped {
 /// # BUGS
 /// - **`build` is not bounded**: a cold build is minutes, so only CI's `timeout-minutes` covers it.
 /// - **The `--hvf` leg is not watched.** It trusts the guest's watchdogs, by hand on a laptop.
-pub(crate) const HOST_GRACE_SECS: u64 = 60;
+pub(crate) const HOST_GRACE_SECONDS: u64 = 60;
 
 /// **Where a booted image's transcript has got to**, as the host watchdog reads it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -97,16 +97,16 @@ fn stage_after(line: &str) -> Option<Stage> {
 }
 
 /// **The host's bound on one stage**, or `None` for [`Stage::Build`]. A test gets its own guest
-/// budget (`test_times`, the same table the kernel's ceiling reads) plus [`HOST_GRACE_SECS`];
+/// budget (`test_times`, the same table the kernel's ceiling reads) plus [`HOST_GRACE_SECONDS`];
 /// `Boot` and `Exit` get the default budget plus the grace, and the slowest of either measured in
 /// CI on 2026-10-11 was 1.8 s.
 pub(crate) fn bound_for(stage: &Stage) -> Option<Duration> {
-    let secs = match stage {
+    let seconds = match stage {
         Stage::Build => return None,
-        Stage::Boot | Stage::Exit => test_times::DEFAULT_BUDGET_SECS,
+        Stage::Boot | Stage::Exit => test_times::DEFAULT_BUDGET_SECONDS,
         Stage::Test(path) => test_times::budget_seconds_for(path),
     };
-    Some(Duration::from_secs(secs + HOST_GRACE_SECS))
+    Some(Duration::from_secs(seconds + HOST_GRACE_SECONDS))
 }
 
 /// What the reader thread shares with the waiter: the stage and when it began.
@@ -166,9 +166,9 @@ impl Overrun {
         };
         format!(
             "HOST WATCHDOG: {who}: {what} ran {} s, past its {} s bound (its guest budget plus \
-             {HOST_GRACE_SECS} s). The guest's own watchdogs did not end it, which they do from the \
+             {HOST_GRACE_SECONDS} s). The guest's own watchdogs did not end it, which they do from the \
              boot core's timer interrupt, so suspect that interrupt first. QEMU and its harness are \
-             killed. See HOST_GRACE_SECS in xtask/src/time_record.rs.",
+             killed. See HOST_GRACE_SECONDS in xtask/src/time_record.rs.",
             self.ran.as_secs(),
             self.bound.as_secs(),
         )
@@ -1048,7 +1048,7 @@ mod tests {
 
     #[test]
     fn the_host_bound_is_the_guest_budget_plus_the_grace() {
-        let default = Duration::from_secs(test_times::DEFAULT_BUDGET_SECS + HOST_GRACE_SECS);
+        let default = Duration::from_secs(test_times::DEFAULT_BUDGET_SECONDS + HOST_GRACE_SECONDS);
         assert_eq!(bound_for(&Stage::Build), None);
         assert_eq!(bound_for(&Stage::Boot), Some(default));
         assert_eq!(bound_for(&Stage::Exit), Some(default));
@@ -1060,10 +1060,10 @@ mod tests {
         );
         // A declared slow test's longer budget reaches the host too, or the host would kill it
         // before the guest's ceiling could.
-        for &(needle, secs) in test_times::SLOW_TESTS {
+        for &(needle, seconds) in test_times::SLOW_TESTS {
             assert_eq!(
                 bound_for(&Stage::Test(format!("system_tests::user::x::{needle}"))),
-                Some(Duration::from_secs(secs + HOST_GRACE_SECS))
+                Some(Duration::from_secs(seconds + HOST_GRACE_SECONDS))
             );
         }
     }
