@@ -56,7 +56,7 @@ IPC costs nothing in cache.
 |---|---|
 | `exception_dispatch` | 124 |
 | `syscall::dispatch` | **2,024** |
-| `sched::current_cap` | 376 |
+| `sched::current_capability` | 376 |
 | `sched::ipc_send` | 952 |
 | `sched::schedule` | 1,240 |
 | `sched::finish_switch` | 816 |

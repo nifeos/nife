@@ -14,7 +14,7 @@ use driver_process_contract::designware_mobile_storage::{
 use filesystem_contract::blk;
 
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Whether the booted system may start this server. True: a `storage_bench` boot on radon
@@ -113,8 +113,8 @@ pub(crate) fn start(
                 arg1: words[1], // the window's first sector
                 arg2: words[2], // the window's length in sectors
                 grants: &[
-                    rendezvous_cap(request, Rights::READ), // slot 0: RECEIVE blk requests
-                    rendezvous_cap(ready, Rights::WRITE),  // slot 1: signal readiness once
+                    rendezvous_capability(request, Rights::READ), // slot 0: RECEIVE blk requests
+                    rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &maps,
             },

@@ -98,9 +98,9 @@ pub fn start_granted_two_dirs(
                 arg1: arg,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(narrow_a, Rights::WRITE), // slot 0: CALL grant A's caretaker
-                    rendezvous_cap(narrow_b, Rights::WRITE), // slot 1: CALL grant B's caretaker
-                    rendezvous_cap(report, Rights::WRITE),   // slot 2: report to the kernel
+                    rendezvous_capability(narrow_a, Rights::WRITE), // slot 0: CALL grant A's caretaker
+                    rendezvous_capability(narrow_b, Rights::WRITE), // slot 1: CALL grant B's caretaker
+                    rendezvous_capability(report, Rights::WRITE),   // slot 2: report to the kernel
                 ],
                 maps: &maps[..n + stack_pages],
             },

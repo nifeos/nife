@@ -48,7 +48,7 @@ fn spawn_os_primitives_benchmarker(role: u64, report: sched::RendezvousId) -> bo
                 arg0: role,
                 arg1: 0,
                 arg2: 0,
-                grants: &[rendezvous_cap(report, Rights::WRITE)],
+                grants: &[rendezvous_capability(report, Rights::WRITE)],
                 maps: &[],
             },
         )
@@ -129,8 +129,8 @@ pub(super) fn ipc_rtt_el0() {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(request, Rights::READ), // slot 0: RECEIVE requests
-                    rendezvous_cap(reply, Rights::WRITE),  // slot 1: SEND replies
+                    rendezvous_capability(request, Rights::READ), // slot 0: RECEIVE requests
+                    rendezvous_capability(reply, Rights::WRITE),  // slot 1: SEND replies
                 ],
                 maps: &[],
             },
@@ -154,9 +154,9 @@ pub(super) fn ipc_rtt_el0() {
                 },
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE), // slot 0: report the result
-                    rendezvous_cap(request, Rights::WRITE), // slot 1: SEND requests
-                    rendezvous_cap(reply, Rights::READ),   // slot 2: RECEIVE replies
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: report the result
+                    rendezvous_capability(request, Rights::WRITE), // slot 1: SEND requests
+                    rendezvous_capability(reply, Rights::READ),   // slot 2: RECEIVE replies
                 ],
                 maps: &[],
             },
@@ -267,7 +267,7 @@ pub(super) fn sink_throughput() {
                 arg0: EL_SINK_PRODUCER,
                 arg1: 0,
                 arg2: 0,
-                grants: &[rendezvous_cap(pipe, Rights::WRITE)],
+                grants: &[rendezvous_capability(pipe, Rights::WRITE)],
                 maps: &[],
             },
         )
@@ -282,8 +282,8 @@ pub(super) fn sink_throughput() {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE), // slot 0: report the result
-                    rendezvous_cap(pipe, Rights::READ),    // slot 1: the pipe's read end
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: report the result
+                    rendezvous_capability(pipe, Rights::READ),    // slot 1: the pipe's read end
                 ],
                 maps: &[],
             },
@@ -338,9 +338,9 @@ pub(super) fn map_el0() {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE), // slot 0: report the result
-                    address_space_cap(name, Rights::WRITE), // slot 1: the space we map into
-                    page_frame_cap(phys, Rights::READ),    // slot 2: the frame we alias-map
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: report the result
+                    address_space_capability(name, Rights::WRITE), // slot 1: the space we map into
+                    page_frame_capability(phys, Rights::READ),    // slot 2: the frame we alias-map
                 ],
                 maps: &[],
             },
@@ -379,9 +379,9 @@ pub(super) fn spawn_el0() {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE), // slot 0: report the result home
-                    crate::cap::memory_region_lending_capability(region), // slot 1: the spawner's whole budget
-                    rendezvous_cap(
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: report the result home
+                    crate::capability_object::memory_region_lending_capability(region), // slot 1: the spawner's whole budget
+                    rendezvous_capability(
                         child_done,
                         Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
                     ), // slot 2: children signal done; spawner receives and delegates WRITE

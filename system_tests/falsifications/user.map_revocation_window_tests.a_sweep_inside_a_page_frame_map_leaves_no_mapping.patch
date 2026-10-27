@@ -24,15 +24,17 @@ code, so one patch serves every leg.
 diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
 --- a/kernel/src/syscall/page_frame.rs
 +++ b/kernel/src/syscall/page_frame.rs
-@@ -42,10 +42,10 @@
+@@ -24,12 +24,10 @@
      writable: u64,
      ut_slot: u64,
  ) -> Result<i64, Error> {
-+    let frame = sched::current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
++    let frame = sched::current_capability(slot).map_err(|_| Error::NoSuchSlot)?;
      #[cfg(feature = "system_tests")]
      crate::delegation_pause::here(); // no lock held
      let mut hold = crate::revoke::hold();
--    let frame = hold.current_cap(slot).map_err(|_| Error::NoSuchSlot)?;
+-    let frame = hold
+-        .current_capability(slot)
+-        .map_err(|_| Error::NoSuchSlot)?;
      let Object::PageFrame(phys, count) = frame.object else {
          return Err(Error::NoSuchSlot);
      };

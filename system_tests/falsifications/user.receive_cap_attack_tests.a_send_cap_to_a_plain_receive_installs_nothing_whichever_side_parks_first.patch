@@ -45,24 +45,24 @@ index c59bccd96..e25735c9b 100644
 @@ -485,20 +485,9 @@ pub(super) fn ipc_send_cap_from(
                  hold_token(me);
                  let receiver = hold_token(receiver);
-                 let (r, caps) = sched.threads.get_mut_with_capabilities(receiver).unwrap();
--                if r.receiving_cap {
--                    let slot = deliver_capability(caps, capability);
+                 let (r, capabilities) = sched.threads.get_mut_with_capabilities(receiver).unwrap();
+-                if r.receiving_capability {
+-                    let slot = deliver_capability(capabilities, capability);
 -                    // Word 3 carries the sender's badge (milestone 599 (a frame per filesystem client channel)): the same store that used to
 -                    // write a zero here, so RECEIVE_CAP surfaces it at no extra instruction on this path.
 -                    r.mailbox = [data, slot, 0, badge, 0];
 -                    // A capability was installed, so RECEIVE_CAP's x1 is a real slot (milestone 634 (a plain SEND
 -                    // received by RECEIVE_CAP never hands the receiver a sender-chosen slot)).
--                    r.cap_delivered = true;
+-                    r.capability_delivered = true;
 -                } else {
 -                    // A plain RECEIVE takes no capability (§246 (a plain `RECEIVE` never takes a
 -                    // capability), PROVISIONAL number): the data word arrives, the copy is dropped,
 -                    // and the sender keeps its own.
 -                    r.mailbox = [data, 0, 0, badge, 0];
 -                }
-+                let slot = deliver_capability(caps, capability);
++                let slot = deliver_capability(capabilities, capability);
 +                r.mailbox = [data, slot, 0, badge, 0];
-+                r.cap_delivered = true;
++                r.capability_delivered = true;
                  r.handshake.serve(); // delivered: this wake passes the boot-8 gate
                  trace::record(trace::Event::Served, receiver, 3);
                  wake(sched, receiver);

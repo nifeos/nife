@@ -40,7 +40,7 @@ const GRANTS: BootEndowment = BootEndowment {
     fs_ep: 5,
     fs_page: 6,
     // Always these three (`kernel::user::boot_progenitor` grants them at explicit slots, not
-    // `thread_control_block_insert_cap`'s first-free `None`, for exactly this reason): a boot with
+    // `thread_control_block_insert_capability`'s first-free `None`, for exactly this reason): a boot with
     // no virtio-rng device leaves them empty, and `system_initializer::boot`'s own probe is what
     // tells it apart from a granted one. Fixed past the filesystem pair's own max reach (slot 6),
     // not slot 5, because the inert-configuration page (slot 4) shifted that pair down by one.

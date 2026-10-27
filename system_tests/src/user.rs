@@ -941,11 +941,11 @@ mod thread_leak_police;
 /// **Revocation against a capability that is in flight** (risk 7's adversarial pass, 2026-09-21).
 ///
 /// Every revocation sweep in this kernel walks capability tables. A capability handed to a
-/// rendezvous nobody is receiving on yet sits in `Thread::outgoing_cap` instead, which no sweep but
-/// `sched::delete_reply_caps_naming` reads. The module's own header has the reasoning and the
+/// rendezvous nobody is receiving on yet sits in `Thread::outgoing_capability` instead, which no sweep but
+/// `sched::delete_reply_capabilities_naming` reads. The module's own header has the reasoning and the
 /// `BUGS`; it is not in `tests.rs` because that file was this tree's worst merge hotspot.
 ///
-/// Cross-ISA: `outgoing_cap`, the sweeps and the rendezvous are portable scheduler code, so the
+/// Cross-ISA: `outgoing_capability`, the sweeps and the rendezvous are portable scheduler code, so the
 /// parity gate (DECISIONS §19, architectural parity is a tenet) is met by the same test running on
 /// each architecture.
 #[cfg(test)]
@@ -1208,7 +1208,7 @@ mod ninth_pass_mapping_tests;
 /// **A revocation reaches a `DeviceFrame` or `PortRange` parked in the hand-off slot** (a ninth
 /// outsider pass at the confinement claim, claim 30). `revocation_in_flight_tests` drives the
 /// `PageFrame` sweep, and its `BUGS` names these two sweeps as reasoned from the code rather than
-/// driven. This parks each in `outgoing_cap` through the whole-machine revoke and confirms the
+/// driven. This parks each in `outgoing_capability` through the whole-machine revoke and confirms the
 /// receiver is handed nothing.
 ///
 /// Cross-ISA for the `DeviceFrame` arm (DECISIONS §19); the `PortRange` arm is x86_64 only.

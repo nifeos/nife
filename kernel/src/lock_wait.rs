@@ -1,7 +1,7 @@
 //! How often the job mix's threads found a kernel lock held, and how long they waited.
 //!
 //! Built only with `--features lock_wait`. Counts contended acquisitions and their wait per rank,
-//! the reaper's stack-free and removal times, and `sched::current_cap`'s calls and waits, per core
+//! the reaper's stack-free and removal times, and `sched::current_capability`'s calls and waits, per core
 //! and only while [`ARMED`]. An uncontended acquisition costs what it always did. What it cannot
 //! see is in notes/job-mix/lock-wait-instrument.md.
 //!
@@ -23,11 +23,11 @@ static ARMED: AtomicBool = AtomicBool::new(false);
 /// Written only by the owning core; read and reset by the supervisor between subruns.
 #[repr(align(64))]
 struct Core {
-    /// Set by `current_cap` around its one lock acquisition.
-    in_current_cap: AtomicBool,
-    cap_calls: AtomicU64,
-    cap_contended: AtomicU64,
-    cap_wait_ticks: AtomicU64,
+    /// Set by `current_capability` around its one lock acquisition.
+    in_current_capability: AtomicBool,
+    current_capability_calls: AtomicU64,
+    current_capability_contended: AtomicU64,
+    current_capability_wait_ticks: AtomicU64,
     reaps: AtomicU64,
     stack_free_ticks: AtomicU64,
     remove_ticks: AtomicU64,
@@ -38,10 +38,10 @@ struct Core {
 impl Core {
     const fn new() -> Self {
         Self {
-            in_current_cap: AtomicBool::new(false),
-            cap_calls: AtomicU64::new(0),
-            cap_contended: AtomicU64::new(0),
-            cap_wait_ticks: AtomicU64::new(0),
+            in_current_capability: AtomicBool::new(false),
+            current_capability_calls: AtomicU64::new(0),
+            current_capability_contended: AtomicU64::new(0),
+            current_capability_wait_ticks: AtomicU64::new(0),
             reaps: AtomicU64::new(0),
             stack_free_ticks: AtomicU64::new(0),
             remove_ticks: AtomicU64::new(0),
@@ -78,28 +78,28 @@ pub(crate) fn contended(rank: u32, ticks: u64) {
         bump(c, 1);
         bump(w, ticks);
     }
-    if core.in_current_cap.load(Ordering::Relaxed) {
-        bump(&core.cap_contended, 1);
-        bump(&core.cap_wait_ticks, ticks);
+    if core.in_current_capability.load(Ordering::Relaxed) {
+        bump(&core.current_capability_contended, 1);
+        bump(&core.current_capability_wait_ticks, ticks);
     }
 }
 
-/// Count a `sched::current_cap` call and mark its one acquisition, so a contended wait on this core
-/// until [`leave_current_cap`] is charged to it.
-pub(crate) fn enter_current_cap() {
+/// Count a `sched::current_capability` call and mark its one acquisition, so a contended wait on this core
+/// until [`leave_current_capability`] is charged to it.
+pub(crate) fn enter_current_capability() {
     if !ARMED.load(Ordering::Relaxed) {
         return;
     }
     let core = here();
-    bump(&core.cap_calls, 1);
-    core.in_current_cap.store(true, Ordering::Relaxed);
+    bump(&core.current_capability_calls, 1);
+    core.in_current_capability.store(true, Ordering::Relaxed);
 }
 
-/// End `current_cap`'s mark: it holds its lock now.
+/// End `current_capability`'s mark: it holds its lock now.
 ///
 /// Context: holding the running thread's capability-table lock, when it has a table.
-pub(crate) fn leave_current_cap() {
-    here().in_current_cap.store(false, Ordering::Relaxed);
+pub(crate) fn leave_current_capability() {
+    here().in_current_capability.store(false, Ordering::Relaxed);
 }
 
 /// Count one reap whose kernel-stack free took `ticks`.
@@ -140,9 +140,11 @@ pub fn reset() {
         for c in core.contended.iter().chain(core.wait_ticks.iter()) {
             c.store(0, Ordering::Relaxed);
         }
-        core.cap_calls.store(0, Ordering::Relaxed);
-        core.cap_contended.store(0, Ordering::Relaxed);
-        core.cap_wait_ticks.store(0, Ordering::Relaxed);
+        core.current_capability_calls.store(0, Ordering::Relaxed);
+        core.current_capability_contended
+            .store(0, Ordering::Relaxed);
+        core.current_capability_wait_ticks
+            .store(0, Ordering::Relaxed);
         core.reaps.store(0, Ordering::Relaxed);
         core.stack_free_ticks.store(0, Ordering::Relaxed);
         core.remove_ticks.store(0, Ordering::Relaxed);
@@ -176,13 +178,13 @@ pub(crate) fn rank_totals(rank: usize) -> (u64, u64) {
     })
 }
 
-/// Summed over every core: `(calls, contended, wait_ticks)` for `current_cap`.
-pub(crate) fn current_cap_totals() -> (u64, u64, u64) {
+/// Summed over every core: `(calls, contended, wait_ticks)` for `current_capability`.
+pub(crate) fn current_capability_totals() -> (u64, u64, u64) {
     CORES.iter().fold((0, 0, 0), |(n, c, w), core| {
         (
-            n + core.cap_calls.load(Ordering::Relaxed),
-            c + core.cap_contended.load(Ordering::Relaxed),
-            w + core.cap_wait_ticks.load(Ordering::Relaxed),
+            n + core.current_capability_calls.load(Ordering::Relaxed),
+            c + core.current_capability_contended.load(Ordering::Relaxed),
+            w + core.current_capability_wait_ticks.load(Ordering::Relaxed),
         )
     })
 }

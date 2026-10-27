@@ -11,13 +11,11 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-// The `cap` module and these names still carry their pre-sweep spelling
+// The `capability` module and these names still carry their pre-sweep spelling
 // (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
 // this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{Rights, rendezvous_cap as rendezvous_capability};
-use crate::sched::{
-    self, current_cap as current_capability, delete_current_cap as delete_current_capability,
-};
+use crate::capability_object::{Rights, rendezvous_capability};
+use crate::sched::{self, current_capability, delete_current_capability};
 use crate::syscall::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it.

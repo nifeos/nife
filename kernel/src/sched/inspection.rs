@@ -7,7 +7,7 @@
 
 use super::*;
 #[cfg(feature = "system_tests")]
-use crate::cap::Object;
+use crate::capability_object::Object;
 
 /// How many wakes the undelivered-wake gate refused: a waker made a parked receiver `Ready` without
 /// delivering anything. Sums the per-core counters `trace::record` keeps ([`trace::counted`] says
@@ -163,7 +163,7 @@ pub fn corpse_fault_msg(tid: ThreadId) -> Option<[u64; 5]> {
 #[cfg(feature = "system_tests")]
 pub fn with_capability_table<R>(
     tid: ThreadId,
-    read: impl FnOnce(&crate::cap::CapabilityTable) -> R,
+    read: impl FnOnce(&crate::capability_object::CapabilityTable) -> R,
 ) -> Option<R> {
     let guard = IPC_TABLES.lock();
     let t = guard.as_ref()?.threads.capabilities(tid)?.lock();
@@ -210,10 +210,10 @@ pub fn object_page(object: &Object) -> Option<u64> {
 
 /// One service move on a rendezvous that never parks the caller (test support, milestone 779,
 /// provisional name). The confined fuzzer's conductor judges every fuzzer and must never block;
-/// a check-then-act around `ipc_send` or `ipc_receive_cap` races on a multicore machine.
+/// a check-then-act around `ipc_send` or `inter_process_communication_receive_capability` races on a multicore machine.
 ///
 /// Under one hold of `IPC_TABLES`: deliver `word` to a parked receiver; else collect one queued
-/// sender as `ipc_receive_cap` would (a carried capability is filed in the caller's table); else
+/// sender as `inter_process_communication_receive_capability` would (a carried capability is filed in the caller's table); else
 /// nothing. A speculative queue position is taken straight back under the same hold.
 #[cfg(feature = "system_tests")]
 pub enum ConductorMove {
@@ -265,8 +265,13 @@ pub fn conductor_move(ep: RendezvousId, word: u64) -> ConductorMove {
                     hold_token(token);
                     let sender = hold_token(sender);
                     let msg = sched.threads.get(sender).unwrap().mailbox;
-                    let capability = sched.threads.get_mut(sender).unwrap().outgoing_cap.take();
-                    let is_reply = matches!(capability, Some(c) if matches!(c.object, crate::cap::Object::Reply(_)));
+                    let capability = sched
+                        .threads
+                        .get_mut(sender)
+                        .unwrap()
+                        .outgoing_capability
+                        .take();
+                    let is_reply = matches!(capability, Some(c) if matches!(c.object, crate::capability_object::Object::Reply(_)));
                     let slot = match capability {
                         Some(c) => {
                             deliver_capability(sched.threads.capabilities(current).unwrap(), c)
@@ -283,7 +288,7 @@ pub fn conductor_move(ep: RendezvousId, word: u64) -> ConductorMove {
                     let tag = if is_reply { reply_tag(slot) } else { 0 };
                     ConductorMove::Took([msg[0], slot, msg[1], msg[3], tag])
                 }
-                // A pending interrupt signal, as `ipc_receive_cap` would report it.
+                // A pending interrupt signal, as `inter_process_communication_receive_capability` would report it.
                 inter_process_communication::Receive::Signal(token) => {
                     hold_token(token);
                     ConductorMove::Took([1, NO_CAP, 0, 0, 0])
@@ -425,7 +430,7 @@ pub fn dump_threads() {
             t.handshake.state,
             t.handshake.on_cpu,
             t.handshake.wake_pending,
-            t.outgoing_cap.is_some(),
+            t.outgoing_capability.is_some(),
             pc,
             if t.handshake.on_cpu { "*" } else { "" },
             root,

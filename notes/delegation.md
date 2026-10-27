@@ -50,7 +50,7 @@ processes' capability tables are reachable at once:
 - Receiver waiting when the sender arrives. The sender inserts the capability into the receiver's
   capability table right then, records the slot in the receiver's mailbox, and wakes it.
 - Sender waiting when the receiver arrives. The sender parked the capability in a new
-  `Thread.outgoing_cap` field (the capability analogue of the mailbox that parks the data words). The
+  `Thread.outgoing_capability` field (the capability analogue of the mailbox that parks the data words). The
   receiver `take()`s it and files it in its own capability table.
 
 If the receiver's capability table is full the capability is dropped and the receiver sees `NO_CAP`; the data
