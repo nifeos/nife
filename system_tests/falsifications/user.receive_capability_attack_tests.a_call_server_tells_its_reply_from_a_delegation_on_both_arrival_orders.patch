@@ -1,13 +1,13 @@
-Falsifies `system_tests::user::receive_cap_attack_tests::a_call_server_tells_its_reply_from_a_delegation_on_both_arrival_orders`.
+Falsifies `system_tests::user::receive_capability_attack_tests::a_call_server_tells_its_reply_from_a_delegation_on_both_arrival_orders`.
 
 Architecture: aarch64
 
 The defect is the tree as it stood until milestone 706 (a `CALL` server can tell a Reply from a
 delegation), DECISIONS §245 (a `CALL` server tells a Reply from a delegation). The patch zeroes the
 two stores of `abi::rendezvous::REPLY_DELIVERED` into the receiver's `x4`: `ipc_call_badged`'s
-rendezvous arm (the server parked first) and `ipc_receive_cap`'s collect of a parked caller (the caller
+rendezvous arm (the server parked first) and `ipc_receive_capability`'s collect of a parked caller (the caller
 parked first). With both at `0`, which is what every receive returned before 706, a `CALL`'s Reply
-and a client's `SEND_CAP` delegation reach the server identically, a real slot in `x1` and `0` in
+and a client's `SEND_CAPABILITY` delegation reach the server identically, a real slot in `x1` and `0` in
 `x4`, and the server cannot tell them apart. The constant and `reply_tag` stay, so the patch
 compiles; `#[allow(dead_code)]` keeps the kernel's lint quiet about the now unused helper.
 
@@ -19,7 +19,7 @@ answered. Replayed on 2026-10-03 (UTC) by the milestone 706 lane: red at exactly
 the server-first order.
 
 **The vacuity guards above the headline stay green under this patch**, which is what makes the red
-mean the claim rather than the fixture: the server parks in `RECEIVE_CAP`, takes the delegation and
+mean the claim rather than the fixture: the server parks in `RECEIVE_CAPABILITY`, takes the delegation and
 parks again, and `SERVER_DONE` says it took both messages without hanging.
 
 Replayed on aarch64; nothing here is architecture-specific. The tag is written in portable
@@ -27,7 +27,7 @@ scheduler code that all three ISAs share. The record is aarch64's because that i
 `script/falsifications` replays it, not because the defect is.
 
 The diff's context cites milestone 599 (a frame per filesystem client channel) and milestone 634
-(a plain SEND received by RECEIVE_CAP never hands the receiver a sender-chosen slot).
+(a plain SEND received by RECEIVE_CAPABILITY never hands the receiver a sender-chosen slot).
 
 Regenerated 2026-10-11 (UTC) for milestone 840 (the scheduler file is split along its seams):
 the same lines, moved out of `kernel/src/sched.rs` into `kernel/src/sched/rendezvous.rs` unchanged, so the defect is
@@ -40,13 +40,13 @@ index c59bccd96..777aae99f 100644
 @@ -459,6 +459,7 @@ pub(super) fn hand_over_label(receiver: &crate::thread::Thread, label: u64) {
  /// the receiver's table was full and there is no Reply to name. Written only on the two paths a
  /// `CALL` reaches a receiver (`ipc_call_badged`'s rendezvous and `inter_process_communication_receive_capability`'s collect of a
- /// parked caller), so a `SEND_CAP` delegation, which reaches the same `x1`, never carries it.
+ /// parked caller), so a `SEND_CAPABILITY` delegation, which reaches the same `x1`, never carries it.
 +#[allow(dead_code)]
  #[inline(always)]
  pub(super) fn reply_tag(slot: u64) -> u64 {
-     if slot == NO_CAP {
-@@ -672,7 +673,7 @@ pub fn ipc_receive_cap(ep: RendezvousId) -> [u64; 5] {
-                     // SEND_CAP, whose sender parked mailbox[1] = 0), x3 = the sender's badge (msg[3],
+     if slot == NO_CAPABILITY {
+@@ -672,7 +673,7 @@ pub fn ipc_receive_capability(ep: RendezvousId) -> [u64; 5] {
+                     // SEND_CAPABILITY, whose sender parked mailbox[1] = 0), x3 = the sender's badge (msg[3],
                      // milestone 599), x4 = REPLY_DELIVERED iff x1 is this caller's Reply (milestone
                      // 706), else 0. Never BOUND: that is the arm above.
 -                    let tag = if is_reply { reply_tag(slot) } else { 0 };
@@ -55,11 +55,11 @@ index c59bccd96..777aae99f 100644
                  }
                  inter_process_communication::Receive::Blocked => {
 @@ -814,7 +815,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3]
-                 // value instead of a zero, so the server's RECEIVE_CAP surfaces which client called.
+                 // value instead of a zero, so the server's RECEIVE_CAPABILITY surfaces which client called.
                  // Word 4 says x1 is a Reply (milestone 706), which only this path and the collect
-                 // in `inter_process_communication_receive_capability` may say; a SEND_CAP's delivery leaves it 0.
+                 // in `inter_process_communication_receive_capability` may say; a SEND_CAPABILITY's delivery leaves it 0.
 -                r.mailbox = [msg[0], slot, msg[1], badge, reply_tag(slot)];
 +                r.mailbox = [msg[0], slot, msg[1], badge, 0];
-                 // A Reply capability was installed, so RECEIVE_CAP's x1 is a real slot (milestone 634).
+                 // A Reply capability was installed, so RECEIVE_CAPABILITY's x1 is a real slot (milestone 634).
                  r.capability_delivered = true;
                  r.handshake.serve(); // delivered: this wake passes the boot-8 gate

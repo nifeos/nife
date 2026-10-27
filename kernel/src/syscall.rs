@@ -1,6 +1,6 @@
 //! The syscall boundary. **Five calls <!--count:syscalls-->.**
 //!
-//! `exit`, `exit_thread`, `yield` and `cap_delete` are authority over the caller itself, and
+//! `exit`, `exit_thread`, `yield` and `capability_delete` are authority over the caller itself, and
 //! `invoke(capability, method, a0, a1, a2)` is everything else, on a capability the caller was handed.
 //! Every argument is a scalar in a register, so the kernel follows no user pointer. The ABI is
 //! `crates/abi`, which the kernel and every user program share.
@@ -76,7 +76,7 @@ pub(crate) fn dispatch(frame: &mut TrapFrame) {
             Ok(0)
         }
         // An empty slot is not an error: a loader recycling slots need not track emptiness.
-        abi::SYS_CAP_DELETE => {
+        abi::SYS_CAPABILITY_DELETE => {
             let _ = sched::delete_current_capability(frame.arg(0));
             Ok(0)
         }
@@ -131,10 +131,10 @@ pub fn invoke(
             // `#[inline(always)]` in `rendezvous`, so the round trip stays inside `invoke`.
             abi::rendezvous::SEND => rendezvous_send(capability.rights, ep, badge, [a0, a1, a2]),
             abi::rendezvous::RECEIVE => rendezvous_receive(frame, capability.rights, ep),
-            abi::rendezvous::SEND_CAP => {
+            abi::rendezvous::SEND_CAPABILITY => {
                 rendezvous_send_capability(capability.rights, ep, badge, [a0, a1, a2])
             }
-            abi::rendezvous::RECEIVE_CAP => {
+            abi::rendezvous::RECEIVE_CAPABILITY => {
                 rendezvous_receive_capability(frame, capability.rights, ep)
             }
             abi::rendezvous::CALL => rendezvous_call(frame, capability.rights, ep, badge, [a0, a1]),

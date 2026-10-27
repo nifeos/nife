@@ -3,7 +3,7 @@
 //!
 //! Past the rights gate (`confinement_attack_tests`) and the live-swap usurper (`live_swap_tests`),
 //! a client tries two roads through the real dispatcher. Holding `WRITE | GRANT`, it asks
-//! `SEND_CAP` for a copy of its own capability that adds `READ`, which the delegation rule refuses.
+//! `SEND_CAPABILITY` for a copy of its own capability that adds `READ`, which the delegation rule refuses.
 //! A `BADGE`d copy is refused all four server methods, since a badge labels a sender and carries
 //! exactly the source's rights. Nothing blocks. Cross-ISA (DECISIONS §19 (architectural parity is
 //! a tenet)). See notes/confinement-claims/the-eighth-pass-tests.md.
@@ -54,11 +54,17 @@ fn a_client_cannot_upgrade_or_badge_its_way_to_the_receiving_side() {
     ))
     .expect("grant the client cap");
 
-    // 1. Self-upgrade: SEND_CAP with a mask carrying READ. READ is not a subset of WRITE|GRANT, so
+    // 1. Self-upgrade: SEND_CAPABILITY with a mask carrying READ. READ is not a subset of WRITE|GRANT, so
     //    the derivation must refuse, GRANT or no GRANT: no right comes out of the a1 register.
     let upgrade_mask = Rights::ALL.bits() as u64;
     assert_eq!(
-        call(client, abi::rendezvous::SEND_CAP, client, upgrade_mask, 0),
+        call(
+            client,
+            abi::rendezvous::SEND_CAPABILITY,
+            client,
+            upgrade_mask,
+            0
+        ),
         Err(Error::NotPermitted),
         "a client minted itself a copy of the endpoint carrying every right: the receiving side \
          was one delegation away",
@@ -91,9 +97,9 @@ fn a_client_cannot_upgrade_or_badge_its_way_to_the_receiving_side() {
         "a badged client copy was let RECEIVE: a client became its server by wearing a badge",
     );
     assert_eq!(
-        call(badged, abi::rendezvous::RECEIVE_CAP, 0, 0, 0),
+        call(badged, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0),
         Err(Error::NotPermitted),
-        "a badged client copy was let RECEIVE_CAP",
+        "a badged client copy was let RECEIVE_CAPABILITY",
     );
     assert_eq!(
         call(badged, abi::rendezvous::REAP, 0, 0, 0),

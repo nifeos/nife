@@ -1,4 +1,4 @@
-//! **The `ThreadControlBlock` methods**: `CONFIGURE`, `CAP_INSERT`, `START` and
+//! **The `ThreadControlBlock` methods**: `CONFIGURE`, `CAPABILITY_INSERT`, `START` and
 //! `SET_THREAD_POINTER`, the spawn machinery a loader runs once per child, and §300 (the paused
 //! state, a TCB verb, silent)'s `SUSPEND` and `RESUME`. See notes/syscall-boundary.md.
 //!
@@ -35,7 +35,7 @@ pub(super) fn thread_control_block_invoke(
             }
             thread_control_block_set_thread_pointer(tid, a0, frame)
         }
-        abi::thread_control_block::CAP_INSERT => {
+        abi::thread_control_block::CAPABILITY_INSERT => {
             if !rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
@@ -126,9 +126,9 @@ fn thread_control_block_set_thread_pointer(
     Ok(0)
 }
 
-/// `ThreadControlBlock::CAP_INSERT`: endow the embryo with the capability in `src_slot`, narrowed
+/// `ThreadControlBlock::CAPABILITY_INSERT`: endow the embryo with the capability in `src_slot`, narrowed
 /// to `rights`, at `target` (0 the first free slot, n slot n - 1, so a supervisor can place a fault
-/// endpoint in the reserved slot). Needs `GRANT` and only narrows, as `SEND_CAP`. Returns the slot.
+/// endpoint in the reserved slot). Needs `GRANT` and only narrows, as `SEND_CAPABILITY`. Returns the slot.
 #[inline(never)]
 fn thread_control_block_capability_insert(
     tid: crate::thread::ThreadId,

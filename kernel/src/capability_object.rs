@@ -17,7 +17,7 @@ use core::num::NonZeroU64;
 pub enum Object {
     /// An IPC endpoint, by generational name in the scheduler's registry, and the capability's
     /// badge. `WRITE` lets the holder `SEND` and `READ` lets it `RECEIVE`. The badge is a `u64` the
-    /// kernel delivers to a server's `RECEIVE_CAP` so it can tell apart clients sharing one
+    /// kernel delivers to a server's `RECEIVE_CAPABILITY` so it can tell apart clients sharing one
     /// endpoint; `0` is unbadged, and `abi::rendezvous::BADGE` sets one once (milestone 599 (a
     /// frame per filesystem client channel)). See notes/capability-objects.md.
     Rendezvous(crate::sched::RendezvousId, u64),
@@ -119,17 +119,16 @@ pub enum Object {
     Reboot,
 }
 
-pub type Cap = capability::Cap<Object>;
-
-/// [`Cap`] spelled out, for new code under calef's 2026-10-06 ruling that `capability` is not
-/// abbreviated. Name: provisional (milestone 824's lane, 2026-10-12 UTC).
-pub type Capability = Cap;
+/// A capability: an object and the rights its holder has over it. Name: provisional, minted
+/// 2026-10-27 (UTC) by lane capability-sweep-6, spelled out from `Cap` under the capability ruling
+/// of 2026-10-06 (UTC).
+pub type Capability = capability::Capability<Object>;
 
 // A slot is 32 bytes: `Object` is as wide as `PageFrame`, its widest variant, plus the rights.
 // §102's slot-count arithmetic assumed 24; these pin the real figure. When they fire, update them
 // and re-read §102. notes/capability-objects.md has the arithmetic.
 const _: () = assert!(core::mem::size_of::<Object>() == 24);
-const _: () = assert!(core::mem::size_of::<Cap>() == 32);
+const _: () = assert!(core::mem::size_of::<Capability>() == 32);
 
 /// A thread's capability table: [`CAPABILITY_TABLE_SLOTS`] slots fixed at the type, so creating one
 /// cannot allocate. A full table fails silently (the progenitor dies before a console exists), so
@@ -258,7 +257,7 @@ const _: () = assert!(
 );
 
 // `abi::rights` is `u64` and `Rights` is `u32`, and the syscall path narrows with `a1 as u32`
-// (`SEND_CAP` and `CAP_INSERT` in kernel/src/syscall.rs). A right defined at bit 32 or above would
+// (`SEND_CAPABILITY` and `CAPABILITY_INSERT` in kernel/src/syscall.rs). A right defined at bit 32 or above would
 // therefore be truncated to nothing on the way in, silently, and the delegation would appear to
 // succeed. Nothing about the ABI's type stops somebody writing `1 << 32`; this does.
 const _: () = assert!(
@@ -291,18 +290,18 @@ impl Object {
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `rendezvous_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn rendezvous_capability(ep: crate::sched::RendezvousId, rights: Rights) -> Cap {
-    Cap {
+pub fn rendezvous_capability(ep: crate::sched::RendezvousId, rights: Rights) -> Capability {
+    Capability {
         object: Object::Rendezvous(ep, 0),
         rights,
     }
 }
 
 /// An endpoint capability carrying a **badge** (milestone 599, provisional). The kernel delivers
-/// `badge` to a server's `RECEIVE_CAP` when this capability's holder `CALL`s or `SEND_CAP`s here, so a
+/// `badge` to a server's `RECEIVE_CAPABILITY` when this capability's holder `CALL`s or `SEND_CAPABILITY`s here, so a
 /// server serving many clients on one endpoint can tell them apart. `badge` `0` is unbadged and
 /// equivalent to [`rendezvous_capability`]; a non-zero badge is minted once by `abi::rendezvous::BADGE` and
-/// then rides through delegation unchanged, because `SEND_CAP` and `CAP_INSERT` copy the object.
+/// then rides through delegation unchanged, because `SEND_CAPABILITY` and `CAPABILITY_INSERT` copy the object.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `rendezvous_capability_badged` under the capability ruling of 2026-10-06 (UTC).
@@ -310,8 +309,8 @@ pub fn rendezvous_capability_badged(
     ep: crate::sched::RendezvousId,
     rights: Rights,
     badge: u64,
-) -> Cap {
-    Cap {
+) -> Capability {
+    Capability {
         object: Object::Rendezvous(ep, badge),
         rights,
     }
@@ -321,8 +320,8 @@ pub fn rendezvous_capability_badged(
 ///
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]
-pub fn interrupt_capability(intid: u32) -> Cap {
-    Cap {
+pub fn interrupt_capability(intid: u32) -> Capability {
+    Capability {
         object: Object::Interrupt(intid),
         rights: Rights::READ,
     }
@@ -334,8 +333,8 @@ pub fn interrupt_capability(intid: u32) -> Cap {
 /// Name: ratified 2026-10-27 (#2797).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[doc(alias = "irq")]
-pub fn interrupt_capability_rights(intid: u32, rights: Rights) -> Cap {
-    Cap {
+pub fn interrupt_capability_rights(intid: u32, rights: Rights) -> Capability {
+    Capability {
         object: Object::Interrupt(intid),
         rights,
     }
@@ -343,14 +342,14 @@ pub fn interrupt_capability_rights(intid: u32, rights: Rights) -> Cap {
 
 /// A capability to an untyped region with every right but `GRANT`: the spend-only budget a leaf
 /// child is handed. The holder may retype, `SPLIT`, `MAP` and `DESTROY` but not delegate, since
-/// `SEND_CAP` and `CAP_INSERT` gate on `GRANT`. A retype mints its budget's rights (milestone 824
+/// `SEND_CAPABILITY` and `CAPABILITY_INSERT` gate on `GRANT`. A retype mints its budget's rights (milestone 824
 /// (a retype mints no right its budget lacks)), so a leaf can use what it carves and lend none of
 /// it. See notes/capability-objects.md.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `memory_region_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn memory_region_capability(region: u64) -> Cap {
-    Cap {
+pub fn memory_region_capability(region: u64) -> Capability {
+    Capability {
         object: Object::MemoryRegion(region),
         rights: SPEND_ONLY,
     }
@@ -358,7 +357,7 @@ pub fn memory_region_capability(region: u64) -> Cap {
 
 /// **A budget whose holder lends what it carves from it**: every right, `GRANT` included. Since
 /// milestone 824 (a retype mints no right its budget lacks) a frame or object carries its budget's
-/// rights, so a program that retypes a page and `SEND_CAP`s it, or builds a child and endows it,
+/// rights, so a program that retypes a page and `SEND_CAPABILITY`s it, or builds a child and endows it,
 /// needs `GRANT` on the budget itself; [`memory_region_capability`] withholds it. The kernel-side harnesses
 /// hand this to exactly those programs. It is [`memory_region_root_capability`]'s rights under a name that
 /// says why, since none of these holders is the root.
@@ -383,14 +382,14 @@ pub const SPEND_ONLY: Rights = Rights::from_bits(abi::rights::SPEND_ONLY as u32)
 const _: () = assert!(Rights::ALL.bits() as u64 == abi::rights::ALL);
 
 /// A capability to an untyped region with explicit rights. Its one caller is
-/// [`memory_region_root_capability`]; `MemoryRegion::SPLIT` mints through `Cap::mint_child`, whose
+/// [`memory_region_root_capability`]; `MemoryRegion::SPLIT` mints through `Capability::mint_child`, whose
 /// `split_never_widens_rights` proof pins a child's rights to its parent's. Rights are set once at
 /// the root and only narrow below it.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `memory_region_capability_rights` under the capability ruling of 2026-10-06 (UTC).
-pub fn memory_region_capability_rights(region: u64, rights: Rights) -> Cap {
-    Cap {
+pub fn memory_region_capability_rights(region: u64, rights: Rights) -> Capability {
+    Capability {
         object: Object::MemoryRegion(region),
         rights,
     }
@@ -398,18 +397,18 @@ pub fn memory_region_capability_rights(region: u64, rights: Rights) -> Cap {
 
 /// The delegable root untyped the kernel hands the progenitor at boot, with [`Rights::ALL`]. Every
 /// right on every object comes from here, since a retype mints its budget's rights, and rights only
-/// narrow below it (a `SPLIT` child inherits, `CAP_INSERT` narrows). `ENUMERATE` lets
+/// narrow below it (a `SPLIT` child inherits, `CAPABILITY_INSERT` narrows). `ENUMERATE` lets
 /// `MemoryRegion::USAGE` answer what the region was spent on. See notes/capability-objects.md.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `memory_region_root_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn memory_region_root_capability(region: u64) -> Cap {
+pub fn memory_region_root_capability(region: u64) -> Capability {
     memory_region_capability_rights(region, Rights::ALL)
 }
 
 /// A capability to a virtio device's transport. `WRITE` lets the holder operate it.
-pub(crate) fn virtio_capability(id: usize) -> Cap {
-    Cap {
+pub(crate) fn virtio_capability(id: usize) -> Capability {
+    Capability {
         object: Object::Virtio(id),
         rights: Rights::WRITE,
     }
@@ -419,8 +418,8 @@ pub(crate) fn virtio_capability(id: usize) -> Cap {
 /// The progenitor holds one with `GRANT` so it can delegate the device to an entropy service it builds,
 /// [`interrupt_capability_rights`]'s own reason one object type over.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub(crate) fn virtio_capability_rights(id: usize, rights: Rights) -> Cap {
-    Cap {
+pub(crate) fn virtio_capability_rights(id: usize, rights: Rights) -> Capability {
+    Capability {
         object: Object::Virtio(id),
         rights,
     }
@@ -436,8 +435,8 @@ pub(crate) fn virtio_capability_rights(id: usize, rights: Rights) -> Cap {
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `port_range_capability` under the capability ruling of 2026-10-06 (UTC).
 #[cfg(target_arch = "x86_64")]
-pub fn port_range_capability(base: u16, count: u16, rights: Rights) -> Cap {
-    Cap {
+pub fn port_range_capability(base: u16, count: u16, rights: Rights) -> Capability {
+    Capability {
         object: Object::PortRange(base, count),
         rights,
     }
@@ -449,8 +448,8 @@ pub fn port_range_capability(base: u16, count: u16, rights: Rights) -> Cap {
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `thread_control_block_capability` under the capability ruling of 2026-10-06 (UTC).
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn thread_control_block_capability(tid: crate::thread::ThreadId, rights: Rights) -> Cap {
-    Cap {
+pub fn thread_control_block_capability(tid: crate::thread::ThreadId, rights: Rights) -> Capability {
+    Capability {
         object: Object::ThreadControlBlock(tid),
         rights,
     }
@@ -461,8 +460,8 @@ pub fn thread_control_block_capability(tid: crate::thread::ThreadId, rights: Rig
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `notification_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn notification_capability(id: crate::sched::NotificationId, rights: Rights) -> Cap {
-    Cap {
+pub fn notification_capability(id: crate::sched::NotificationId, rights: Rights) -> Capability {
+    Capability {
         object: Object::Notification(id),
         rights,
     }
@@ -472,8 +471,8 @@ pub fn notification_capability(id: crate::sched::NotificationId, rights: Rights)
 ///
 /// Name: ratified 2026-10-06 (calef, #1783: "I don't think we should abbreviate capability as
 /// cap."), from `reboot_cap`.
-pub fn reboot_capability(rights: Rights) -> Cap {
-    Cap {
+pub fn reboot_capability(rights: Rights) -> Capability {
+    Capability {
         object: Object::Reboot,
         rights,
     }
@@ -484,8 +483,8 @@ pub fn reboot_capability(rights: Rights) -> Cap {
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `timer_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn timer_capability(id: crate::sched::TimerId, rights: Rights) -> Cap {
-    Cap {
+pub fn timer_capability(id: crate::sched::TimerId, rights: Rights) -> Capability {
+    Capability {
         object: Object::Timer(id),
         rights,
     }
@@ -494,8 +493,8 @@ pub fn timer_capability(id: crate::sched::TimerId, rights: Rights) -> Cap {
 /// A capability naming a process (milestone 812), for tests that build one by hand. `RETYPE_OBJ`
 /// mints its own with its budget's rights, `BIND` among them when the budget has it (milestone 824).
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn process_capability(id: crate::sched::ProcessId, rights: Rights) -> Cap {
-    Cap {
+pub fn process_capability(id: crate::sched::ProcessId, rights: Rights) -> Capability {
+    Capability {
         object: Object::Process(id),
         rights,
     }
@@ -506,8 +505,8 @@ pub fn process_capability(id: crate::sched::ProcessId, rights: Rights) -> Cap {
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `address_space_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn address_space_capability(name: u64, rights: Rights) -> Cap {
-    Cap {
+pub fn address_space_capability(name: u64, rights: Rights) -> Capability {
+    Capability {
         object: Object::AddressSpace(name),
         rights,
     }
@@ -516,8 +515,8 @@ pub fn address_space_capability(name: u64, rights: Rights) -> Cap {
 /// A one-shot reply capability naming the caller `tid` (milestone 12). Minted with `WRITE` (may
 /// answer) and **no `GRANT`** (cannot be delegated onward), so it is non-transferable as well as
 /// single-use. The kernel is the only minter, at a `CALL` rendezvous.
-pub(crate) fn reply_capability(tid: crate::thread::ThreadId) -> Cap {
-    Cap {
+pub(crate) fn reply_capability(tid: crate::thread::ThreadId) -> Capability {
+    Capability {
         object: Object::Reply(tid),
         rights: Rights::WRITE,
     }
@@ -529,8 +528,8 @@ pub(crate) fn reply_capability(tid: crate::thread::ThreadId) -> Cap {
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `device_frame_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn device_frame_capability(phys: u64, rights: Rights) -> Cap {
-    Cap {
+pub fn device_frame_capability(phys: u64, rights: Rights) -> Capability {
+    Capability {
         object: Object::DeviceFrame(phys),
         rights,
     }
@@ -543,8 +542,8 @@ pub fn device_frame_capability(phys: u64, rights: Rights) -> Cap {
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `page_frame_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn page_frame_capability(phys: u64, rights: Rights) -> Cap {
-    Cap {
+pub fn page_frame_capability(phys: u64, rights: Rights) -> Capability {
+    Capability {
         object: Object::PageFrame(phys, NonZeroU64::MIN),
         rights,
     }
@@ -557,8 +556,8 @@ pub fn page_frame_capability(phys: u64, rights: Rights) -> Cap {
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `page_frame_run_capability` under the capability ruling of 2026-10-06 (UTC).
-pub fn page_frame_run_capability(phys: u64, count: NonZeroU64, rights: Rights) -> Cap {
-    Cap {
+pub fn page_frame_run_capability(phys: u64, count: NonZeroU64, rights: Rights) -> Capability {
+    Capability {
         object: Object::PageFrame(phys, count),
         rights,
     }

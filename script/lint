@@ -4087,7 +4087,7 @@ PY
 
 # **Every test module `system_tests/src/user.rs` declares carries its own `cfg`.** The suite's
 # modules are declared one per line under `#[cfg(test)]` or `#[cfg(all(test, initial_ramdisk))]`,
-# and an attribute binds to the next item only. Milestone 634 (a plain SEND received by RECEIVE_CAP
+# and an attribute binds to the next item only. Milestone 634 (a plain SEND received by RECEIVE_CAPABILITY
 # never hands the receiver a sender-chosen slot) inserted `mod recv_cap_attack_tests;`
 # between an existing attribute and `mod revocation_in_flight_tests;`, so the attribute moved onto
 # the new module and the old one was declared bare: compiled into every build of the crate, which

@@ -347,7 +347,7 @@ fn paint_screen(b: &mut ScreenBatch) {
     b.pending = 0;
     // The bytes must be visible to the terminal before the request that names them.
     //
-    // PAIR: no acquire fence, and none is needed. `display_terminal` is blocked in `receive_cap` and
+    // PAIR: no acquire fence, and none is needed. `display_terminal` is blocked in `receive_capability` and
     // the `call` below is what wakes it, so the kernel's IPC lock (released here, acquired on its
     // side) is the pair. Redundant, kept, for the reason `kernel::user::term_print` keeps the same
     // fence for the same contract. See notes/memory-ordering.md.

@@ -8,7 +8,7 @@
 //! # What every behaviour shares
 //!
 //! - After any refusal ([`login_contract::DENIED`], [`login_contract::NO_TERMINAL`]) nothing
-//!   follows, so a run never blocks in `RECEIVE_CAP`. An identity with no subtree is refused as a
+//!   follows, so a run never blocks in `RECEIVE_CAPABILITY`. An identity with no subtree is refused as a
 //!   wrong secret is (§117 (a principal's subtree is named by its identity string)).
 //! - A run that succeeds uses what it received (a caretaker directory read, the file service's
 //!   frame, a page retyped from the budget), so a capability that arrived broken fails.
@@ -46,7 +46,7 @@
 
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
-    call, destroy_memory_region, exit, map_page_frame, receive, receive_cap,
+    call, destroy_memory_region, exit, map_page_frame, receive, receive_capability,
     retype_into_page_frame, send, send_capability, split_memory_region, yield_now,
 };
 
@@ -185,11 +185,11 @@ pub const F_BUDGET_TEARDOWN_OK: u64 = 1 << 6;
 /// of [`F_DEAD_AFTER_TEARDOWN`].
 pub const F_BUDGET_DEAD_AFTER_TEARDOWN: u64 = 1 << 7;
 /// **Set when the fifth delegated capability (the terminal) delivered [`TERM_MAGIC`] to a real
-/// receiver.** Set only by [`HOLD_TERMINAL`]. A capability that merely arrived (`RECEIVE_CAP`
+/// receiver.** Set only by [`HOLD_TERMINAL`]. A capability that merely arrived (`RECEIVE_CAPABILITY`
 /// succeeded) would pass every earlier check and never set this one: `send` only returns once a
 /// receiver is actually matched.
 pub const F_TERM_WORKS: u64 = 1 << 8;
-/// **Set when a sixth capability arrived and could not be passed on**: `SEND_CAP` of it was refused
+/// **Set when a sixth capability arrived and could not be passed on**: `SEND_CAPABILITY` of it was refused
 /// `NotPermitted`, which the kernel answers before it matches any receiver, for a capability that
 /// lacks `GRANT`. That refusal is DECISIONS §219 limitation 2 holding: a session holds the right to
 /// run unvouched bytes and cannot lend it by delegation. Set on every successful login that was
@@ -270,9 +270,9 @@ fn start(behaviour: u64, identity: u64, secret: u64) -> ! {
         // follows, the same promise the private channel's own OK/DENIED gives.
         done(connect_verdict, 0, 0);
     }
-    let (_, priv_request, _) = receive_cap(RESULT);
-    let (_, priv_result, _) = receive_cap(RESULT);
-    let (_, priv_page, _) = receive_cap(RESULT);
+    let (_, priv_request, _) = receive_capability(RESULT);
+    let (_, priv_result, _) = receive_capability(RESULT);
+    let (_, priv_page, _) = receive_capability(RESULT);
 
     // Map the delegated staging page using this program's own small scratch region: unlike the
     // post-auth `budget` the rest of this function uses, nothing else has been received yet at this
@@ -301,25 +301,25 @@ fn start(behaviour: u64, identity: u64, secret: u64) -> ! {
 
     if verdict != login_contract::OK {
         // Nothing follows a refusal (`login_contract`). Reporting rather than attempting
-        // `RECEIVE_CAP` is the check: a stray fourth message would desync the next login's first
-        // `RECEIVE_CAP`, and a client that tried to receive here would hide that.
+        // `RECEIVE_CAPABILITY` is the check: a stray fourth message would desync the next login's first
+        // `RECEIVE_CAPABILITY`, and a client that tried to receive here would hide that.
         done(verdict, 0, 0);
     }
 
     // Five capabilities, in login_contract's fixed order, on the private channel `priv_result` names.
-    let (_, dir_ep, _) = receive_cap(priv_result);
-    let (_, fs_page_frame, _) = receive_cap(priv_result);
-    let (_, budget, _) = receive_cap(priv_result);
-    let (_, region, _) = receive_cap(priv_result);
-    let (_, term_ep, _) = receive_cap(priv_result);
+    let (_, dir_ep, _) = receive_capability(priv_result);
+    let (_, fs_page_frame, _) = receive_capability(priv_result);
+    let (_, budget, _) = receive_capability(priv_result);
+    let (_, region, _) = receive_capability(priv_result);
+    let (_, term_ep, _) = receive_capability(priv_result);
     // The sixth, only as announced, and taken here with the other five: `login` is blocked sending
     // it, and anything this process sends first (the terminal's proof below) waits on a kernel test
     // that is itself waiting on `login`.
-    let run_unvouched =
-        (extra & login_contract::RUN_UNVOUCHED_FOLLOWS != 0).then(|| receive_cap(priv_result).1);
+    let run_unvouched = (extra & login_contract::RUN_UNVOUCHED_FOLLOWS != 0)
+        .then(|| receive_capability(priv_result).1);
     // The registration page, last, and only as announced (milestone 152).
     let registration =
-        (extra & login_contract::SCHEDULE_FOLLOWS != 0).then(|| receive_cap(priv_result).1);
+        (extra & login_contract::SCHEDULE_FOLLOWS != 0).then(|| receive_capability(priv_result).1);
 
     let mut flags = 0u64;
     if run_unvouched.is_some() {

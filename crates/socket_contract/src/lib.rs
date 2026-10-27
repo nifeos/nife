@@ -18,7 +18,7 @@
 
 // Operations. The opcode is the whole request word.
 
-/// `SEND_CAP` on a socket's capability: delegate that socket's shared frame.
+/// `SEND_CAPABILITY` on a socket's capability: delegate that socket's shared frame.
 pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
 /// `CALL` on the front door: create a UDP socket and bind an ephemeral local port. Answered
 /// [`REP_OK`] with the socket's capability.

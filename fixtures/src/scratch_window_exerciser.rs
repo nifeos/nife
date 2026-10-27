@@ -43,7 +43,7 @@ use supervision_protocol::{
     ChildEndowment, Retention, SCRATCH_WINDOW_PAGES, build_child_space, memory_region_destroy,
     memory_region_split,
 };
-use user_mode_runtime::{cap_delete, exit, send};
+use user_mode_runtime::{capability_delete, exit, send};
 
 const MEMORY_REGION: u64 = 0;
 const REPORT: u64 = 1;
@@ -139,7 +139,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         {
             user_mode_runtime::trap()
         }
-        cap_delete(frame as u64);
+        capability_delete(frame as u64);
     }
     build_until_done()
 }
@@ -164,8 +164,8 @@ fn build_until_done() -> ! {
             &ChildEndowment::new(Retention::Nothing),
         ) {
             Ok((child, aspace)) => {
-                cap_delete(child.tcb);
-                cap_delete(aspace);
+                capability_delete(child.tcb);
+                capability_delete(aspace);
                 true
             }
             Err(()) => false,
@@ -173,7 +173,7 @@ fn build_until_done() -> ! {
         // The destroy is what gives the scratch pages back: it revokes every mapping of the
         // region's frames, ours included.
         let destroyed = memory_region_destroy(region);
-        cap_delete(region);
+        capability_delete(region);
         if !ok || !destroyed {
             break;
         }

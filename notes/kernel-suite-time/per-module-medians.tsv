@@ -49,7 +49,7 @@ supervision_tests	172	282	249
 job_undertaker_tests	174	244	258
 date_tests	173	243	222
 reap_tests	155	239	230
-receive_cap_attack_tests	133	226	188
+receive_capability_attack_tests	133	226	188
 child_thread_tests	195	223	267
 cryptography_tests	194	207	314
 process_tests	135	197	193

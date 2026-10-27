@@ -112,7 +112,7 @@ in milestone 82 (`unsafe_op_in_unsafe_fn`), deliberately. Turning these four int
 SAFETY comment) at every call site, including the context switch. That is a change to the kernel's
 soundness surface, and deserves its own review rather than a ride on a lint milestone.
 
-Not every "caller" in a SAFETY comment is this. `sched.rs`'s `ipc_call` and `user_mode_runtime`'s `cap_delete`
+Not every "caller" in a SAFETY comment is this. `sched.rs`'s `ipc_call` and `user_mode_runtime`'s `capability_delete`
 mean the calling *thread* and the calling *process*; `interrupts::enable` says outright that the
 operation is sound and only the timing is the caller's problem. The pattern to look for is a safe
 fn that would be unsound if the sentence were false.

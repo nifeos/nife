@@ -95,7 +95,7 @@ written at the rank in `kernel/src/sync.rs`.
 
 ## A parked capability in a corpse
 
-`Thread::outgoing_capability` holds a capability a `SEND_CAP` parked while no receiver was waiting. The
+`Thread::outgoing_capability` holds a capability a `SEND_CAPABILITY` parked while no receiver was waiting. The
 teardown paths `depart`, `finish_blocked_resident` and `reap_region_objects` never clear it. That
 is a latent hazard, not a defect today. `Cap` is `Copy` and lives in the TCB page, so nothing
 leaks. Victims are unlinked before their pages go, so nothing is used after free. Every revocation

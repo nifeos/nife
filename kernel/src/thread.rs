@@ -226,10 +226,10 @@ pub use thread_wake_handshake::RunState as State;
 /// a dump could previously not distinguish from a lost wakeup.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WaitRole {
-    /// Parked on an endpoint's sender queue (a `SEND`/`SEND_CAP` with no receiver, or a corpse
+    /// Parked on an endpoint's sender queue (a `SEND`/`SEND_CAPABILITY` with no receiver, or a corpse
     /// holding its death message).
     Sender,
-    /// Parked on an endpoint's receiver queue (a `RECEIVE`/`RECEIVE_CAP` with nothing to take).
+    /// Parked on an endpoint's receiver queue (a `RECEIVE`/`RECEIVE_CAPABILITY` with nothing to take).
     Receiver,
     /// A `CALL` caller blocked until `REPLY`; queued as a sender only if no server was waiting.
     Reply,
@@ -355,7 +355,7 @@ pub struct Thread {
     #[allow(dead_code)]
     pub quota: Option<QuotaToken>,
 
-    /// A capability parked here mid-delegation: a `SEND_CAP` with no receiver waiting blocks with
+    /// A capability parked here mid-delegation: a `SEND_CAPABILITY` with no receiver waiting blocks with
     /// it here, and the receiver `take()`s it into its own table. `None` for every ordinary send.
     ///
     /// # BUGS
@@ -365,19 +365,19 @@ pub struct Thread {
     ///
     /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
     /// `outgoing_capability` under the capability ruling of 2026-10-06 (UTC).
-    pub outgoing_capability: Option<crate::capability_object::Cap>,
+    pub outgoing_capability: Option<crate::capability_object::Capability>,
 
     /// Did the delivery this thread is about to read install a capability? Set by the paths that
-    /// put one in this thread's table while it was parked in `RECEIVE_CAP` (`inter_process_communication_send_capability`,
+    /// put one in this thread's table while it was parked in `RECEIVE_CAPABILITY` (`inter_process_communication_send_capability`,
     /// `ipc_call_badged`), cleared when it parks there. `inter_process_communication_receive_capability` reads it to decide `x1`:
-    /// a delivery that installed nothing returns `NO_CAP`, never the sender's data word, which a
+    /// a delivery that installed nothing returns `NO_CAPABILITY`, never the sender's data word, which a
     /// `CALL` server would read as a reply slot (fatal risk 7). See `sched::inter_process_communication_receive_capability`.
     ///
     /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
     /// `capability_delivered` under the capability ruling of 2026-10-06 (UTC).
     pub capability_delivered: bool,
 
-    /// Is the receive this thread is parked in a `RECEIVE_CAP`? Set at `inter_process_communication_receive_capability`'s park and
+    /// Is the receive this thread is parked in a `RECEIVE_CAPABILITY`? Set at `inter_process_communication_receive_capability`'s park and
     /// cleared at its resume, so a plain `RECEIVE` parks with it `false`. A sender meeting a parked
     /// receiver reads it: a plain `RECEIVE` never takes a capability, whichever side arrived first
     /// (§246 (a plain `RECEIVE` never takes a capability)). Meaningful only while the thread is
@@ -389,7 +389,7 @@ pub struct Thread {
 
     /// **Why the last aborted send was aborted, when the reason was a refusal** (milestone 603
     /// (provisional), DECISIONS §101 (notification objects) ruling B). Set beside `handshake.abort()` when a `SEND`,
-    /// `SEND_CAP` or `CALL` named a rendezvous that carries an interrupt, and read-and-cleared by
+    /// `SEND_CAPABILITY` or `CALL` named a rendezvous that carries an interrupt, and read-and-cleared by
     /// the syscall layer only after `take_ipc_aborted` has already said `true`. So an IPC that was
     /// not aborted never reads it, which is what keeps the refusal off the fastpath: the syscall
     /// layer's common case is the one branch it already had.

@@ -111,7 +111,7 @@ measured by reading rather than by doing it:
   `service_until` at 8 sites, which sleep on the NIC interrupt and a timer) become an edge trait,
   `ServeEdges`'s shape;
 - the per-socket windows (`MappedWindow`, 5 sites) become slices, and the delegation path
-  (`attach_page_frame`, `cap_delete`) stays in the binary;
+  (`attach_page_frame`, `capability_delete`) stays in the binary;
 - the fuzz workspace then links smoltcp, already in the tree's graph, so no crate new to the tree.
 
 Estimate: a lane of its own, about a day; the oracle worth checking is the listen grant

@@ -1,11 +1,11 @@
-Falsifies `system_tests::user::receive_cap_attack_tests::a_send_cap_to_a_plain_receive_installs_nothing_whichever_side_parks_first`.
+Falsifies `system_tests::user::receive_capability_attack_tests::a_send_capability_to_a_plain_receive_installs_nothing_whichever_side_parks_first`.
 
 Architecture: aarch64
 
 The defect is the tree as it stood until §246 (a plain `RECEIVE` never takes a capability),
 PROVISIONAL number, calef's ruling A of 2026-10-04 UTC. The patch restores `ipc_send_cap`'s
 receiver-first arm as it was: it installs the delegation in whatever receiver is parked, without
-asking whether that receiver is in `RECEIVE_CAP`. A plain `RECEIVE` parked first then ends holding
+asking whether that receiver is in `RECEIVE_CAPABILITY`. A plain `RECEIVE` parked first then ends holding
 one more slot than it held, and `x1` is that slot, where the sender-first order returns `0`.
 
 Expected to fail: `assert_eq!(got.held_after, got.held_before, "a plain RECEIVE ended holding 1
@@ -49,10 +49,10 @@ index c59bccd96..e25735c9b 100644
 -                if r.receiving_capability {
 -                    let slot = deliver_capability(capabilities, capability);
 -                    // Word 3 carries the sender's badge (milestone 599 (a frame per filesystem client channel)): the same store that used to
--                    // write a zero here, so RECEIVE_CAP surfaces it at no extra instruction on this path.
+-                    // write a zero here, so RECEIVE_CAPABILITY surfaces it at no extra instruction on this path.
 -                    r.mailbox = [data, slot, 0, badge, 0];
--                    // A capability was installed, so RECEIVE_CAP's x1 is a real slot (milestone 634 (a plain SEND
--                    // received by RECEIVE_CAP never hands the receiver a sender-chosen slot)).
+-                    // A capability was installed, so RECEIVE_CAPABILITY's x1 is a real slot (milestone 634 (a plain SEND
+-                    // received by RECEIVE_CAPABILITY never hands the receiver a sender-chosen slot)).
 -                    r.capability_delivered = true;
 -                } else {
 -                    // A plain RECEIVE takes no capability (§246 (a plain `RECEIVE` never takes a

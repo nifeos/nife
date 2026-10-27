@@ -207,7 +207,7 @@ which makes the kernel refuse one thread's Nth retype as though the region were 
 1 until a run makes fewer than N retypes, which is a login that ran to the end. That covers the
 `CONNECT` on the front door, the credential relay, `mint`'s caretaker build and the client's budget.
 After every run the test compares `login`'s capability table, and the usage of every region it
-holds, with their values before the sweep. A cleanup path that forgets a `cap_delete` or leaves a
+holds, with their values before the sweep. A cleanup path that forgets a `capability_delete` or leaves a
 split child behind crashes nothing, so the kept slot or pages are the only evidence. This note's
 count found 17 such paths in `login` that no test reached.
 

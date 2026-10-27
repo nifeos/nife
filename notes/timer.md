@@ -89,7 +89,7 @@ Nothing in milestone 106 waits on the answer. Each of those has a spawner that h
 
 ### What the tree already does
 
-`SYS_EXIT` and `SYS_YIELD` are authority over yourself with no capability. `abi::rendezvous::NO_CAP`
+`SYS_EXIT` and `SYS_YIELD` are authority over yourself with no capability. `abi::rendezvous::NO_CAPABILITY`
 is a sentinel in a slot argument. Every capability a process holds arrived from its spawner, and
 `kernel/src/user/virtio_service.rs` now binds `net_stack`'s notification that way.
 
@@ -114,7 +114,7 @@ What each costs:
   cannot get a binding later.
 - B is under twenty lines in `syscall.rs` and one wrapper. Consent is not in question, since binding
   changes only what your own receives return.
-- C is a line in each spawner and one of 24 slots per process. It also hands out `CAP_INSERT` on
+- C is a line in each spawner and one of 24 slots per process. It also hands out `CAPABILITY_INSERT` on
   yourself, which nothing uses and nobody has reviewed.
 - D costs what B does, plus a number on the surface forever.
 

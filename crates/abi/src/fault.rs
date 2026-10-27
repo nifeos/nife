@@ -1,5 +1,5 @@
 /// **The spawn-slot convention** (§26 (the fault endpoint)): a supervised child is spawned with its
-/// supervision endpoint in this reserved slot, by [`crate::thread_control_block::CAP_INSERT`] with
+/// supervision endpoint in this reserved slot, by [`crate::thread_control_block::CAPABILITY_INSERT`] with
 /// an explicit target or a [`Spawn`](../user/struct.Spawn.html) grant. At `START` the kernel reads
 /// it: a `Rendezvous` capability makes the thread supervised, is recorded as its fault target and
 /// is cleared, so the child cannot forge fault messages on it. An empty slot means unsupervised:

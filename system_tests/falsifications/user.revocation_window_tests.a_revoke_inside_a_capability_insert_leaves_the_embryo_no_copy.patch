@@ -1,16 +1,16 @@
-Falsifies `system_tests::user::revocation_window_tests::a_revoke_inside_a_cap_insert_leaves_the_embryo_no_copy`.
+Falsifies `system_tests::user::revocation_window_tests::a_revoke_inside_a_capability_insert_leaves_the_embryo_no_copy`.
 
 Architecture: aarch64, riscv64, x86_64
 
 The defect is the tree as it stood until 2026-10-04 (UTC): the patch puts
-`ThreadControlBlock::CAP_INSERT` back to reading its source with `sched::current_cap` and filing the
+`ThreadControlBlock::CAPABILITY_INSERT` back to reading its source with `sched::current_cap` and filing the
 copy with `sched::thread_control_block_insert_cap`, two critical sections. A `PageFrame::REVOKE`
 between them deletes the source, and the copy lands in the embryo's table after the sweep passed.
 
 This was the live tree, not an invented break. Milestone 761 (capability lookup off the global
 lock) recorded the gap unverified in its `BUGS`; this test is what verified it.
 
-Expected to fail: `assert!(!holds_frame_in(embryo, phys, 1), "a PageFrame revoked while its CAP_INSERT was in progress was filed in the embryo's table ...")`. Confirmed red on riscv64 on 2026-10-04 (UTC), before the fix existed, and replayed red the same
+Expected to fail: `assert!(!holds_frame_in(embryo, phys, 1), "a PageFrame revoked while its CAPABILITY_INSERT was in progress was filed in the embryo's table ...")`. Confirmed red on riscv64 on 2026-10-04 (UTC), before the fix existed, and replayed red the same
 day against the fixed tree at `revocation_window_tests.rs:230`, the assertion predicted.
 
 **The assertions above the headline stay green under this patch**, which is what makes the red mean

@@ -12,7 +12,7 @@
 use abi::Error;
 
 use super::*;
-use crate::capability_object::{Cap as Capability, Object, Rights};
+use crate::capability_object::{Capability, Object, Rights};
 use crate::sched::{self, delete_current_capability};
 use crate::syscall::invoke;
 

@@ -32,7 +32,7 @@ written to the seven questions in `CLAUDE.md`. Counts are from the code at `c457
 - a new rendezvous, `session_reviver` holding `WRITE | GRANT` and `login` holding `READ`;
 - per identity, one word carrying an opcode and the name's length, and two words carrying the name
   packed as `filesystem_contract::grant::pack_name` packs it (16 bytes at most);
-- four `SEND_CAP`s in a fixed order: the user's budget (`WRITE | GRANT`), the session process's
+- four `SEND_CAPABILITY`s in a fixed order: the user's budget (`WRITE | GRANT`), the session process's
   region (`WRITE`), the registration page (`WRITE`) and the session's readiness endpoint (`READ`);
 - a closing word with the count, so `login` knows the pass is over before it opens its front door.
 

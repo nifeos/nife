@@ -124,7 +124,7 @@ fn serve(dir: u64) -> ! {
     table.0[0] = Some(dir);
 
     loop {
-        // A CALL-only contract: a plain SEND or a client's SEND_CAP has nobody waiting, so it does
+        // A CALL-only contract: a plain SEND or a client's SEND_CAPABILITY has nobody waiting, so it does
         // no work here, and a delegated capability is deleted rather than answered into (milestone
         // 706 (a CALL server can tell a Reply from a delegation)).
         let req = receive_request(CLIENT);

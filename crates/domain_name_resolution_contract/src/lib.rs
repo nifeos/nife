@@ -16,7 +16,7 @@
 //! - A grant lasts until the spawner sends [`OPERATION_FORGET`]; at most [`GRANTS_MAXIMUM`] at
 //!   once.
 //! - One zone per badge: two unrelated domains need two badges, or their common parent.
-//! - Grant messages carry eight bytes each (`RECEIVE_CAP` returns two words, one the control word),
+//! - Grant messages carry eight bytes each (`RECEIVE_CAPABILITY` returns two words, one the control word),
 //!   so a 253-byte zone is 32 messages, once per client.
 //!
 //! Name: ratified 2026-10-18 (calef): `domain_name_resolution_contract`, to pair with the program

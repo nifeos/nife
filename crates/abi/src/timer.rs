@@ -1,4 +1,4 @@
-/// `invoke(cap, ARM, deadline, notification_slot, bits)` -> 0. Arm this timer: when the counter
+/// `invoke(capability, ARM, deadline, notification_slot, bits)` -> 0. Arm this timer: when the counter
 /// reaches `deadline`, OR `bits` into the notification named by `notification_slot`, exactly as
 /// a [`SIGNAL`](super::notification::SIGNAL) would. **Replaces any pending deadline**, which then
 /// never fires. A deadline already reached signals at once and leaves nothing armed. `bits` of
@@ -9,7 +9,7 @@
 /// there is nobody left to tell.
 pub const ARM: u64 = 0;
 
-/// `invoke(cap, CANCEL, _, _, _)` -> 1 or 0. Disarm. `1` if a deadline was pending and now never
+/// `invoke(capability, CANCEL, _, _, _)` -> 1 or 0. Disarm. `1` if a deadline was pending and now never
 /// fires; `0` if nothing was armed (never armed, already fired, or already cancelled), which
 /// tells the caller any signal has already been sent. Bits a timer already signalled stay in
 /// the notification's word: a notification never loses a bit, and a cancel does not reach into

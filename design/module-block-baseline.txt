@@ -129,9 +129,7 @@ crates/abi/src/futex.rs::admitted
 crates/abi/src/interrupt.rs::ACK
 crates/abi/src/interrupt.rs::WAIT
 crates/abi/src/lib.rs::CAPABILITY_TABLE_SLOTS
-crates/abi/src/lib.rs::CapSlot
 crates/abi/src/lib.rs::Error
-crates/abi/src/lib.rs::SYS_CAP_DELETE
 crates/abi/src/lib.rs::SYS_EXIT
 crates/abi/src/lib.rs::SYS_EXIT_THREAD
 crates/abi/src/lib.rs::SYS_INVOKE
@@ -172,12 +170,9 @@ crates/abi/src/reboot.rs::from_sbi
 crates/abi/src/rendezvous.rs
 crates/abi/src/rendezvous.rs::BADGE
 crates/abi/src/rendezvous.rs::CALL
-crates/abi/src/rendezvous.rs::NO_CAP
 crates/abi/src/rendezvous.rs::REAP
 crates/abi/src/rendezvous.rs::RECEIVE
-crates/abi/src/rendezvous.rs::RECEIVE_CAP
 crates/abi/src/rendezvous.rs::SEND
-crates/abi/src/rendezvous.rs::SEND_CAP
 crates/abi/src/rendezvous.rs::SURVEY
 crates/abi/src/reply.rs
 crates/abi/src/reply.rs::REPLY
@@ -203,7 +198,6 @@ crates/abi/src/survey.rs::is_known
 crates/abi/src/survey/tests.rs
 crates/abi/src/tests.rs
 crates/abi/src/thread_control_block.rs
-crates/abi/src/thread_control_block.rs::CAP_INSERT
 crates/abi/src/thread_control_block.rs::CONFIGURE
 crates/abi/src/thread_control_block.rs::SET_THREAD_POINTER
 crates/abi/src/thread_control_block.rs::START
@@ -476,7 +470,6 @@ crates/calendar/src/lib.rs::year
 crates/calendar/src/tests.rs
 crates/capability/src/lib.rs::ALL
 crates/capability/src/lib.rs::BIND
-crates/capability/src/lib.rs::Cap
 crates/capability/src/lib.rs::CapabilityTable
 crates/capability/src/lib.rs::ENUMERATE
 crates/capability/src/lib.rs::Error
@@ -2223,7 +2216,6 @@ crates/hot_swap_contract/src/lib.rs::survey_running
 crates/hot_swap_contract/src/lib.rs::tag
 crates/hot_swap_contract/src/lib.rs::tag_seq
 crates/hot_swap_contract/src/lib.rs::tag_version
-crates/hot_swap_contract/src/lib.rs::try_receive_cap
 crates/http_response/src/lib.rs::Error
 crates/http_response/src/lib.rs::Response
 crates/http_response/src/lib.rs::content_length
@@ -3931,8 +3923,6 @@ crates/user_mode_runtime/src/inter_process_communication.rs::receive
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_badged_bound
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_bound
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_cap
-crates/user_mode_runtime/src/inter_process_communication.rs::receive_cap_badged
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_fault
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_request
 crates/user_mode_runtime/src/inter_process_communication.rs::receive_request_bound
@@ -3959,7 +3949,6 @@ crates/user_mode_runtime/src/mapped_window.rs::w32
 crates/user_mode_runtime/src/mapped_window.rs::w64
 crates/user_mode_runtime/src/mapped_window.rs::w8
 crates/user_mode_runtime/src/mapped_window.rs::write
-crates/user_mode_runtime/src/objects.rs::cap_delete
 crates/user_mode_runtime/src/objects.rs::map_page_frame
 crates/user_mode_runtime/src/objects.rs::slice_page_frame
 crates/user_mode_runtime/src/process.rs::exit
@@ -4452,7 +4441,6 @@ kernel/src/boot.rs::DTB
 kernel/src/boot.rs::device_tree
 kernel/src/boot.rs::kernel_main
 kernel/src/capability_object.rs::CAPABILITY_TABLE_SLOTS
-kernel/src/capability_object.rs::Cap
 kernel/src/capability_object.rs::Capability
 kernel/src/capability_object.rs::Object
 kernel/src/capability_object.rs::SPEND_ONLY
@@ -5034,7 +5022,6 @@ kernel/src/user/virtio_service.rs::start_write_abandoner
 kernel/src/user/virtio_service.rs::start_writer
 kernel/src/user/virtio_service.rs::start_writer_pci
 kernel/src/user/x86_programs.rs
-kernel/src/user/x86_programs.rs::CAP_DELETE_THEN_PORT_OUT_PC_OFFSET
 kernel/src/user/x86_programs.rs::FAULT_PC_OFFSET
 kernel/src/user/x86_programs.rs::PORT_IN_ONLY_PC_OFFSET
 kernel/src/user/x86_programs.rs::PORT_OUT_ON_CPU_PC_OFFSET
@@ -5044,7 +5031,6 @@ kernel/src/user/x86_programs.rs::RECEIVE_THEN_PORT_OUT_PC_OFFSET
 kernel/src/user/x86_programs.rs::SPIN
 kernel/src/user/x86_programs.rs::TWO_CAPABILITY_DELETES_THEN_PORT_OUT_PC_OFFSET
 kernel/src/user/x86_programs.rs::call
-kernel/src/user/x86_programs.rs::cap_delete_then_port_out
 kernel/src/user/x86_programs.rs::fault
 kernel/src/user/x86_programs.rs::receive
 kernel/src/user/x86_programs.rs::receive_then_port_out
@@ -5533,7 +5519,7 @@ system_tests/src/user/process_composition_service.rs::wire
 system_tests/src/user/process_tests.rs
 system_tests/src/user/raw_mode_tests.rs
 system_tests/src/user/reap_tests.rs
-system_tests/src/user/receive_cap_attack_tests.rs
+system_tests/src/user/receive_capability_attack_tests.rs
 system_tests/src/user/redirection_tests.rs
 system_tests/src/user/retype_ep_service.rs
 system_tests/src/user/retype_ep_service.rs::wire

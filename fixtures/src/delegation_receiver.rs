@@ -18,7 +18,7 @@
 #![no_main]
 
 use abi::rendezvous;
-use user_mode_runtime::{exit, receive_cap, send, send_capability};
+use user_mode_runtime::{exit, receive_capability, send, send_capability};
 
 const CHANNEL: u64 = 0;
 const REPORT: u64 = 1;
@@ -28,10 +28,10 @@ user_mode_runtime::program_entry!(start);
 
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // Receive the delegated capability. It lands in a fresh slot of our own capability table;
-    // RECEIVE_CAP tells us which one. We were never told the slot in advance: the kernel chose it and
+    // RECEIVE_CAPABILITY tells us which one. We were never told the slot in advance: the kernel chose it and
     // named it to us.
-    let (_data, got, _) = receive_cap(CHANNEL);
-    let received = got != rendezvous::NO_CAP;
+    let (_data, got, _) = receive_capability(CHANNEL);
+    let received = got != rendezvous::NO_CAPABILITY;
 
     // Use it. A SEND on the received capability rendezvous with whoever holds the other end, which
     // proves a capability minted for us by another process carries real authority.

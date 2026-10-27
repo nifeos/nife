@@ -55,5 +55,5 @@ apart by opcode, as `line_editor` does for the serial terminal.
 `type_bytes` writes the ring and then the tail that advertises the bytes, with a fence between.
 `drain_input` in `components/src/compositor.rs` is the single reader for every writer of the ring,
 the kernel stand-in included, so its fence covers them all. The doorbell `ipc_call` also orders this
-producer on its own, since the compositor is blocked in `receive_cap` on the doorbell.
+producer on its own, since the compositor is blocked in `receive_capability` on the doorbell.
 [`notes/memory-ordering.md`](../memory-ordering.md) has which producer relies on what.

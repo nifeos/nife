@@ -60,7 +60,7 @@ relation the rest of the model is stated in.
 
 Equality is the precise claim because of §16's amendment, which has `SPLIT` pass `GRANT` down only
 when the parent holds it, so delegability comes from the root's mint. `memory_region_root_capability` mints
-once with `Rights::ALL`, `SPLIT` inherits, and `CAP_INSERT` narrows on the way into a child. Rights
+once with `Rights::ALL`, `SPLIT` inherits, and `CAPABILITY_INSERT` narrows on the way into a child. Rights
 down a budget tree never increase, and a spend-only (`GRANT`-less) budget cannot split itself a
 `GRANT`-bearing child.
 

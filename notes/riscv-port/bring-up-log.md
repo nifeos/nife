@@ -107,7 +107,7 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
    child a WRITE view of the report endpoint, and starts it with an input. The child squares it and
    SENDs `81` straight home; the kernel never parsed or mapped the worker. This exercised the *full*
    userspace capability syscall surface on RISC-V for the first time (untyped RETYPE/RETYPE_OBJ,
-   aspace MAP_INTO, frame MAP, tcb CAP_INSERT/CONFIGURE/START), all across the `ecall` ABI. `builder`
+   aspace MAP_INTO, frame MAP, tcb CAPABILITY_INSERT/CONFIGURE/START), all across the `ecall` ABI. `builder`
    is fully portable; it builds for aarch64, though aarch64's init is the PL011-wired role of
    `hello`. Build the archive with `cargo xtask initrd-riscv`.
 

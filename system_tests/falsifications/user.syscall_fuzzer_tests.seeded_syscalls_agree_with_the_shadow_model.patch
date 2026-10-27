@@ -3,12 +3,12 @@ Falsifies `system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_
 Architecture: aarch64, riscv64, x86_64 (the hunk is portable scheduler code).
 
 The defect is the one `revocation_in_flight_tests` records, applied unchanged: the revocation sweep
-for `PageFrame` stops reading `Thread::outgoing_cap`, so a frame staged in a parked `SEND_CAP`
-survives `PageFrame::REVOKE` and the next `RECEIVE_CAP` files it in the receiver's table. It is one
+for `PageFrame` stops reading `Thread::outgoing_cap`, so a frame staged in a parked `SEND_CAPABILITY`
+survives `PageFrame::REVOKE` and the next `RECEIVE_CAPABILITY` files it in the receiver's table. It is one
 of the six defects milestone 752 (a seeded syscall driver with a shadow model) was measured
 against; the other five are in that block's table, with the seed and call each turned red.
 
-Expected to fail: seed 559 (corpus), step 14, `RECEIVE_CAP` returns `x1 = 5` (the revoked frame's
+Expected to fail: seed 559 (corpus), step 14, `RECEIVE_CAPABILITY` returns `x1 = 5` (the revoked frame's
 new slot) where the shadow model says `NO_CAP`, reported as `syscall fuzzer: seed 0x22f step 14:
 actor 0 Invoke { slot: 1, method: 3, a: [0, 0, 0] } answered ... regs: [5, 0, 9, 0] ... (replay:
 NIFE_SYSCALL_FUZZ_SEEDS=559:1)`. History: red on aarch64 2026-10-04 (UTC) by the lane for milestone

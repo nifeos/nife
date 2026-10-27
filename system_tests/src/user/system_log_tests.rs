@@ -264,7 +264,7 @@ fn run_the_writers(writer: &'static [u8], intake: RendezvousId, report: Rendezvo
     }
 }
 
-/// Drain one `sink_transcript_writer` run on `ep`, alternating `RECEIVE_CAP` and `RECEIVE` so both of
+/// Drain one `sink_transcript_writer` run on `ep`, alternating `RECEIVE_CAPABILITY` and `RECEIVE` so both of
 /// the receives a server might use are asked, and return the badge every message arrived with
 /// (asserting it is the same on each). Ends at the writer's end of stream.
 fn badge_of_every_message(ep: RendezvousId) -> u64 {
@@ -274,7 +274,7 @@ fn badge_of_every_message(ep: RendezvousId) -> u64 {
         let m = if i % 2 == 0 {
             let m = crate::sched::inter_process_communication_receive_capability(ep);
             // Only x0 and x3 are read here. Which word lands in x1 for a plain SEND depends on
-            // who reached the rendezvous first (`abi::rendezvous::RECEIVE_CAP`'s BUGS), so a test
+            // who reached the rendezvous first (`abi::rendezvous::RECEIVE_CAPABILITY`'s BUGS), so a test
             // that asserted it would be asserting the scheduler's order.
             [m[0], 0, 0, m[3]]
         } else {
@@ -296,15 +296,15 @@ fn badge_of_every_message(ep: RendezvousId) -> u64 {
 }
 
 /// **A plain `SEND` arrives with the badge of the capability it went through, on `RECEIVE` and on
-/// `RECEIVE_CAP`, and an unbadged one still arrives with 0** (calef's ruling on #1494, 2026-10-03
+/// `RECEIVE_CAPABILITY`, and an unbadged one still arrives with 0** (calef's ruling on #1494, 2026-10-03
 /// UTC, amending §230 (badged endpoint capabilities)).
 ///
-/// The consumer whose behaviour this changes is `redoxfs_server`, which reads `RECEIVE_CAP`'s badge to
+/// The consumer whose behaviour this changes is `redoxfs_server`, which reads `RECEIVE_CAPABILITY`'s badge to
 /// pick a client's window and scope. Before the change, a client that `SEND`s rather than `CALL`s
 /// through its badged capability arrived as badge 0, the unscoped value; now it arrives as itself.
 /// The second half pins the value every unbadged sender in the tree still relies on.
 #[test_case]
-fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_cap() {
+fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_capability() {
     let writer = program("sink_transcript_writer")
         .expect("no sink_transcript_writer in the initial ramdisk");
     let region = crate::memory_region::create(2).expect("no region for the test's endpoints");

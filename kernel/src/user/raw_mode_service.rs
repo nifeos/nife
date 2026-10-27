@@ -82,7 +82,7 @@ fn start_with(replaceable: bool) -> (Wiring, Holding) {
 
     let line_editor_tid = sched::spawn(move || {
         let all = [
-            rendezvous_capability(term, Rights::READ), // slot 0: TERM, RECEIVE_CAP
+            rendezvous_capability(term, Rights::READ), // slot 0: TERM, RECEIVE_CAPABILITY
             rendezvous_capability(conreq, Rights::WRITE), // slot 1: CONREQ, SEND
             rendezvous_capability(conrep, Rights::READ), // slot 2: CONREP, RECEIVE
             rendezvous_capability(control, Rights::READ), // slot 3: control, RECEIVE (replaceable only)

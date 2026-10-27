@@ -42,7 +42,7 @@ Milestone 23 (a capability-routed component OS with live replacement), DECISIONS
 "opt-in per channel, never the default" a rule rather than a preference.
 
 The default rung has no benchmark of its own, because it has no cost of its own. A client holds a
-capability to a stable *endpoint*, and whoever waits in `RECEIVE_CAP` on it answers; a swap changes
+capability to a stable *endpoint*, and whoever waits in `RECEIVE_CAPABILITY` on it answers; a swap changes
 who that is. No process stands in the data path, so the steady state is `call_reply` exactly, and the
 swap adds nothing to it. The kernel's own sender queue buffers the down window: requests that arrive
 while nobody is receiving park there, and the replacement drains them.

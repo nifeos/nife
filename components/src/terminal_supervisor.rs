@@ -29,9 +29,9 @@ use line_editor::component::{self, supervisor as s};
 use line_editor::proto;
 use supervision_protocol::{Child as Built, ChildEndowment, Retention};
 use user_mode_runtime::{
-    Delivered, cap_delete as delete_capability, cntfrq, notification_poll, notification_signal,
-    notification_wait, now, receive, receive_fault, receive_request, reply, send, send_capability,
-    timer_arm,
+    Delivered, capability_delete as delete_capability, cntfrq, notification_poll,
+    notification_signal, notification_wait, now, receive, receive_fault, receive_request, reply,
+    send, send_capability, timer_arm,
 };
 use video_terminal::component as display;
 

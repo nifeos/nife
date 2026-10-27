@@ -1,4 +1,4 @@
-/// `invoke(cap, CONFIGURE, entry, user_sp, address_space_slot)` -> the thread's current-CPU page
+/// `invoke(capability, CONFIGURE, entry, user_sp, address_space_slot)` -> the thread's current-CPU page
 /// address, never negative (zero if none could be given). Bind the space in `address_space_slot`
 /// and set the EL0 entry and user stack of an embryo TCB. Needs `WRITE` on both capabilities.
 /// Semantics: §276 (the thread syscalls as built); see notes/abi/method-contracts.md.
@@ -10,7 +10,7 @@
 /// - Argument register 6 is the first thread pointer: zero or a user address, else `BadPointer`.
 pub const CONFIGURE: u64 = 0;
 
-/// `invoke(cap, CAP_INSERT, capability_slot, rights, target)` -> `child_slot`. Copy the capability in
+/// `invoke(capability, CAPABILITY_INSERT, capability_slot, rights, target)` -> `child_slot`. Copy the capability in
 /// the caller's `capability_slot`, narrowed to `rights`, into the child's capability table, returning the slot
 /// it landed in. The child's whole initial authority is built this way, one grant at a time,
 /// before it runs. Needs `WRITE` on the TCB cap and `GRANT` on the inserted capability.
@@ -20,9 +20,12 @@ pub const CONFIGURE: u64 = 0;
 /// `n - 1`. The explicit target exists for the supervision endpoint, which a supervisor puts
 /// in the reserved [`fault::FAULT_EP_SLOT`](super::fault::FAULT_EP_SLOT) rather than wherever
 /// first-free happened to fall. `OutOfMemory` if the chosen slot is occupied or out of range.
-pub const CAP_INSERT: u64 = 1;
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// `CAP_INSERT` under the capability ruling of 2026-10-06 (UTC).
+pub const CAPABILITY_INSERT: u64 = 1;
 
-/// `invoke(cap, START, x0, x1, x2)` -> 0. Make the thread runnable: it gets a kernel stack and
+/// `invoke(capability, START, x0, x1, x2)` -> 0. Make the thread runnable: it gets a kernel stack and
 /// an entry context and joins the run queue. **The three arguments are the child's first
 /// `x0`, `x1` and `x2`** (`a0` to `a2` on RISC-V, `rdi`, `rsi` and `rdx` on `x86_64`), passed
 /// through unconditionally, which is how a builder hands a worker its input
@@ -31,7 +34,7 @@ pub const CAP_INSERT: u64 = 1;
 /// whole before it runs. Needs `WRITE`.
 pub const START: u64 = 2;
 
-/// `invoke(cap, SET_THREAD_POINTER, value, _, _)` -> 0 (milestone 812, §269 (how threads share
+/// `invoke(capability, SET_THREAD_POINTER, value, _, _)` -> 0 (milestone 812, §269 (how threads share
 /// a process) fork 4; seL4's `SetTLSBase`). **Change the thread pointer of the thread this TCB
 /// names**: `TPIDR_EL0` on aarch64, `tp` on riscv64, the `FS` base on `x86_64`. Needs `WRITE`.
 ///
@@ -43,7 +46,7 @@ pub const START: u64 = 2;
 /// *(Name and number provisional, milestone 812's lane, 2026-10-10 UTC.)*
 pub const SET_THREAD_POINTER: u64 = 3;
 
-/// `invoke(cap, SUSPEND, _, _, _)` -> 0 (DECISIONS §300 (the paused state, a TCB verb, silent);
+/// `invoke(capability, SUSPEND, _, _, _)` -> 0 (DECISIONS §300 (the paused state, a TCB verb, silent);
 /// seL4's `TCB_Suspend`). **Stop the thread this TCB names until a [`RESUME`]**, keeping its
 /// registers. Needs `WRITE`: the TCB capability is the whole authority.
 ///
@@ -56,7 +59,7 @@ pub const SET_THREAD_POINTER: u64 = 3;
 /// Name: ratified 2026-10-18 (calef: "Yes"), as §300 rules.
 pub const SUSPEND: u64 = 4;
 
-/// `invoke(cap, RESUME, _, _, _)` -> 0 (DECISIONS §300; seL4's `TCB_Resume`). **Let a suspended
+/// `invoke(capability, RESUME, _, _, _)` -> 0 (DECISIONS §300; seL4's `TCB_Resume`). **Let a suspended
 /// thread run on from where it stopped**: the saved PC, every register as it was. Not a re-run.
 /// Needs `WRITE`.
 ///

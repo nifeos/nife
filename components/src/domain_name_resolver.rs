@@ -39,7 +39,7 @@ use domain_name_system::{Answer, Name, Query, Reject, TcpReply};
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{
-    Delivered, call, call_receiving, cap_delete, map_page_frame, receive_request, reply,
+    Delivered, call, call_receiving, capability_delete, map_page_frame, receive_request, reply,
     retype_into_page_frame, send_capability,
 };
 
@@ -200,7 +200,7 @@ fn attach_client(state: &mut State, badge: u32, frame: u64) {
         _ => false,
     };
     if !kept {
-        cap_delete(frame);
+        capability_delete(frame);
     }
 }
 
@@ -220,7 +220,7 @@ fn give_up_window(state: &mut State, window: usize) {
                 0,
             )
         };
-        cap_delete(frame);
+        capability_delete(frame);
     }
 }
 
@@ -371,7 +371,7 @@ fn open(server: &Server, operation: u64) -> Result<u64, Fail> {
 /// End `socket` and drop our capability to it.
 fn close(socket: u64) {
     let _ = call(socket, socket::OPERATION_CLOSE, 0);
-    cap_delete(socket);
+    capability_delete(socket);
 }
 
 fn exchange_udp(

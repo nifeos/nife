@@ -48,11 +48,11 @@ mapped read-only at `INITIAL_RAMDISK_VA` so the builder can read the ELF. Its le
 2. For each ELF segment, page by page: `RETYPE` a frame, and `page_frame::MAP` it read/write into
    init's *own* scratch window to fill it (zero it, free `.bss`, then copy the segment's bytes).
    Then `MAP_INTO` the child at the segment's own virtual address with the segment's permissions
-   (executable code via the `MAP_CODE` mode 19d added). Then `cap_delete` the frame cap so the
+   (executable code via the `MAP_CODE` mode 19d added). Then `capability_delete` the frame cap so the
    16-slot capability table recycles the slot. A loader retypes hundreds of frames, so slot
-   recycling is why `SYS_CAP_DELETE` exists.
+   recycling is why `SYS_CAPABILITY_DELETE` exists.
 3. A stack frame, mapped read/write.
-4. `RETYPE_OBJ(THREAD_CONTROL_BLOCK)`, `CAP_INSERT` the report endpoint as the child's slot 0, `CONFIGURE` (entry
+4. `RETYPE_OBJ(THREAD_CONTROL_BLOCK)`, `CAPABILITY_INSERT` the report endpoint as the child's slot 0, `CONFIGURE` (entry
    from the ELF, the child's stack top, the address space), `START`. `START` carries the child's first
    three registers: `x0` is the role (which of the multi-role binary this instance is), and `x1`,
    `x2` are data the child needs before it can run. See "The argument to START" below.

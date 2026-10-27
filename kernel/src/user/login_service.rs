@@ -82,7 +82,7 @@ pub const F_BUDGET_DEAD_AFTER_TEARDOWN: u64 = 1 << 7;
 /// The fifth delegated capability delivered [`TERM_MAGIC`] to a
 /// real receiver. Set only by [`HOLD_TERMINAL`].
 pub const F_TERM_WORKS: u64 = 1 << 8;
-/// §219 limitation 2: the sixth capability arrived and `SEND_CAP` of it was refused.
+/// §219 limitation 2: the sixth capability arrived and `SEND_CAPABILITY` of it was refused.
 pub const F_RUN_UNVOUCHED_NOT_GRANTABLE: u64 = 1 << 9;
 /// The sixth capability delivered [`RUN_UNVOUCHED_MAGIC`]. Set only by [`PRESENT_RUN_UNVOUCHED`].
 pub const F_RUN_UNVOUCHED_WORKS: u64 = 1 << 10;
@@ -364,7 +364,7 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
     // 8]` whole, and that took `start`'s frame past the 4096-byte guard page
     // `script/stack-frame-check` gates against. See notes/login.md, "The kernel's test harness".
     let mut next_slot = 0u64;
-    let mut grant_in_order = |name: &str, capability: crate::capability_object::Cap| {
+    let mut grant_in_order = |name: &str, capability: crate::capability_object::Capability| {
         let slot = sched::thread_control_block_insert_capability(tid, capability, None)
             .unwrap_or_else(|_| panic!("insert {name}"));
         assert_eq!(
@@ -385,7 +385,7 @@ fn grant_in_slot_order(tid: crate::thread::ThreadId, slots: &LoginSlots) {
     );
     grant_in_order(
         "fs_page_frame",
-        // GRANT too: `login` delegates this frame to every authenticated client (`SEND_CAP`).
+        // GRANT too: `login` delegates this frame to every authenticated client (`SEND_CAPABILITY`).
         page_frame_capability(
             fs_page_frame,
             Rights::READ.union(Rights::WRITE).union(Rights::GRANT),

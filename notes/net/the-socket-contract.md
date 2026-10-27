@@ -9,7 +9,7 @@ socket is its own capability), [here](../../design/decisions/0255-each-socket-is
 A process holds a front door, a `Stack` endpoint that can only make sockets, and one capability per
 open socket. `OPEN_UDP`, `OPEN_TCP`, `BIND_UDP` and `LISTEN` are `CALL`s on the front door. Each is
 answered by `REPLY_CAPABILITY` with the socket's capability, which the client takes with
-`user_mode_runtime::call_receiving`. `ATTACH_PAGE_FRAME` is a `SEND_CAP` on a socket. Every other
+`user_mode_runtime::call_receiving`. `ATTACH_PAGE_FRAME` is a `SEND_CAPABILITY` on a socket. Every other
 operation is a `CALL` on a socket: an opcode, one argument and one reply word. `ACCEPT` answers with
 the connection's capability.
 

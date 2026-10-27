@@ -40,7 +40,7 @@ use supervision_protocol::{
 };
 use timetable::registration;
 use user_mode_runtime::{
-    call, cap_delete, map_page_frame, receive, send, send_capability, yield_now,
+    call, capability_delete, map_page_frame, receive, send, send_capability, yield_now,
 };
 
 /// The front door: a bare [`login_contract::CONNECT`], `RECEIVE` (milestone 49).
@@ -449,7 +449,7 @@ impl FrontDoor<'_> {
         // leaves our `MemoryRegion` and `Rendezvous` capabilities in the table, so `result` is
         // deleted and the region discarded (notes/login/budgets-and-reclamation.md).
         // `channel.request` and `channel.page` are gone already ([`authenticate`]).
-        cap_delete(channel.result);
+        capability_delete(channel.result);
         discard(channel.region);
     }
 }
@@ -516,11 +516,11 @@ fn serve_login(
 
     hand_over(channel, identity, dir_ep, region, budget, page);
     *terminal_held = true;
-    cap_delete(dir_ep);
-    cap_delete(region);
+    capability_delete(dir_ep);
+    capability_delete(region);
     // A durable session's budget stays named here, which is the whole of reattachment.
     if !keep_budget {
-        cap_delete(budget);
+        capability_delete(budget);
     }
     send(AUDIT, login_contract::ATTRIBUTED, *seq, hint);
     *seq += 1;
@@ -542,7 +542,7 @@ struct Authenticated {
 /// secret); either way `channel.request` and `channel.page` are dropped and the page wiped.
 fn authenticate(channel: &Channel, terminal_held: bool) -> Option<Authenticated> {
     let (w0, _w1, _w2) = receive(channel.request);
-    cap_delete(channel.request);
+    capability_delete(channel.request);
     // `LOGIN`, or `SCHEDULE`: log in and open this identity's schedule (milestone 152).
     let wants_schedule = login_contract::operation(w0) == login_contract::SCHEDULE;
     // SAFETY: `connect` mapped one page read/write at `channel.va` before delegating `channel.page`
@@ -551,7 +551,7 @@ fn authenticate(channel: &Channel, terminal_held: bool) -> Option<Authenticated>
         unsafe { core::slice::from_raw_parts(channel.va as *const u8, login_contract::PAGE) };
     let Some((identity, secret)) = login_contract::read(page, w0) else {
         wipe_page(channel.va);
-        cap_delete(channel.page);
+        capability_delete(channel.page);
         send(channel.result, login_contract::MALFORMED, 0, 0);
         return None;
     };
@@ -560,7 +560,7 @@ fn authenticate(channel: &Channel, terminal_held: bool) -> Option<Authenticated>
     // outcome oracle, and it saves a credential round trip while the terminal is spoken for.
     if terminal_held {
         wipe_page(channel.va);
-        cap_delete(channel.page);
+        capability_delete(channel.page);
         send(channel.result, login_contract::NO_TERMINAL, 0, 0);
         return None;
     }
@@ -586,7 +586,7 @@ fn authenticate(channel: &Channel, terminal_held: bool) -> Option<Authenticated>
     // The presented secret has now been copied to CRED_VA (or the placement failed and never will
     // be); either way `channel.va`'s copy is done being read.
     wipe_page(channel.va);
-    cap_delete(channel.page);
+    capability_delete(channel.page);
     let Some(cw0) = placed else {
         send(channel.result, login_contract::MALFORMED, 0, 0);
         return None;
@@ -708,7 +708,7 @@ fn hand_over(
     delegate(channel.result, dir_ep, abi::rights::WRITE);
     // `WRITE` alone: the kernel's `page_frame_map` grants a read+write mapping on `WRITE`, and
     // `crates/system_initializer::boot` holds only `WRITE | GRANT` on this page, so a real boot
-    // could never delegate `READ` here (`script/swish-check` refused exactly that `SEND_CAP`).
+    // could never delegate `READ` here (`script/swish-check` refused exactly that `SEND_CAPABILITY`).
     delegate(channel.result, FS_PAGE_FRAME, abi::rights::WRITE);
     // Every right (milestone 824 (a retype mints no right its budget lacks)): the session builds
     // from it, and what it builds carries the budget's rights.
@@ -1006,9 +1006,9 @@ impl Durable {
         // it between its two destroys and strand a region under the user's budget for good. It is
         // already blocked sending this word by the time anything calls `retire` after a clean stop.
         receive(self.ready);
-        cap_delete(self.ready);
+        capability_delete(self.ready);
         discard(self.keeper);
-        cap_delete(self.page);
+        capability_delete(self.page);
         discard(self.budget);
         if unrecord {
             record_in_manifest(self.name(), false);
@@ -1070,7 +1070,7 @@ fn open_schedule(
     };
     let fail = |held: &[u64]| {
         for &c in held {
-            cap_delete(c);
+            capability_delete(c);
         }
         discard(keeper);
     };
@@ -1094,7 +1094,7 @@ fn open_schedule(
             capabilities: &[
                 (ready, abi::rights::WRITE),
                 // `GRANT` too: a region split off this one inherits its rights, and the session
-                // process hands its timetable a split of it, which `CAP_INSERT` refuses without
+                // process hands its timetable a split of it, which `CAPABILITY_INSERT` refuses without
                 // `GRANT`.
                 (its_budget, abi::rights::ALL),
                 (page, abi::rights::WRITE),
@@ -1112,22 +1112,22 @@ fn open_schedule(
             ..ChildEndowment::new(Retention::Nothing)
         },
     );
-    cap_delete(activation);
-    cap_delete(packages);
+    capability_delete(activation);
+    capability_delete(packages);
     let started = match built {
         Ok(child) => start_child(child, timetable.len() as u64, 0, 0),
         Err(()) => false,
     };
     let answer = if started { receive(ready).0 } else { 0 };
-    cap_delete(its_budget);
+    capability_delete(its_budget);
     if answer != login_contract::user_timetable_keeper::READY
         || !map_page_frame(page, va, true, own_ut)
     {
-        cap_delete(ready);
+        capability_delete(ready);
         // `user_timetable_keeper` has stopped (it reports a failure and exits) or never ran. What it
         // split off its budget before failing, if anything, stays until the user's budget is
         // reclaimed: see this program's BUGS. Discarding `keeper` also takes the two caretakers.
-        cap_delete(page);
+        capability_delete(page);
         discard(keeper);
         return None;
     }
@@ -1150,11 +1150,11 @@ fn store_caretakers(own_ut: u64, region: u64, care: &elf::Elf) -> Option<(u64, u
     let activation = store_caretaker(own_ut, region, care, badged, installed_programs::DIRECTORY);
     let packages = activation
         .and_then(|_| store_caretaker(own_ut, region, care, badged, installed_programs::PACKAGES));
-    cap_delete(badged);
+    capability_delete(badged);
     match (activation, packages) {
         (Some(a), Some(p)) => Some((a, p)),
         (Some(a), None) => {
-            cap_delete(a);
+            capability_delete(a);
             None
         }
         _ => None,
@@ -1173,7 +1173,7 @@ fn store_caretaker(
     let (lo, hi) = filesystem_contract::grant::pack_name(name)?;
     let narrow_ep = retype_obj(region, abi::objtype::RENDEZVOUS).ok()?;
     let Ok(ready) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
-        cap_delete(narrow_ep);
+        capability_delete(narrow_ep);
         return None;
     };
     let spec = filesystem_contract::grant::spec(
@@ -1197,9 +1197,9 @@ fn store_caretaker(
     )
     .is_ok_and(|child| start_child(child, lo, hi, spec));
     let verdict = if started { receive(ready).0 } else { 0 };
-    cap_delete(ready);
+    capability_delete(ready);
     if verdict != filesystem_contract::READY {
-        cap_delete(narrow_ep);
+        capability_delete(narrow_ep);
         return None;
     }
     Some(narrow_ep)
@@ -1234,19 +1234,19 @@ struct Channel {
 fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
     let region = memory_region_split(channel_ut, CHANNEL_REGION_PAGES).ok()?;
     // Every abandoned step below gives back its capability slots as well as its memory
-    // ([`discard`], and `cap_delete` for what was retyped before the step that failed).
+    // ([`discard`], and `capability_delete` for what was retyped before the step that failed).
     let Ok(request) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
         discard(region);
         return None;
     };
     let Ok(result) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
-        cap_delete(request);
+        capability_delete(request);
         discard(region);
         return None;
     };
     let Ok(page) = retype_page_frame_from(region) else {
-        cap_delete(result);
-        cap_delete(request);
+        capability_delete(result);
+        capability_delete(request);
         discard(region);
         return None;
     };
@@ -1255,9 +1255,9 @@ fn connect(channel_ut: u64, connect_seq: u64) -> Option<Channel> {
     // and page tables alike, lives in one place and comes home in one `DESTROY`.
     if !map_page_frame(page, va, true, region) {
         // Nothing in the region has a live thread, so `discard` is expected to succeed first time.
-        cap_delete(page);
-        cap_delete(result);
-        cap_delete(request);
+        capability_delete(page);
+        capability_delete(result);
+        capability_delete(request);
         discard(region);
         return None;
     }
@@ -1300,7 +1300,7 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
         return None;
     };
     let Ok(ready) = retype_obj(region, abi::objtype::RENDEZVOUS) else {
-        cap_delete(narrow_ep);
+        capability_delete(narrow_ep);
         discard(region);
         return None;
     };
@@ -1327,8 +1327,8 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
         },
     );
     let Ok(child) = built else {
-        cap_delete(ready);
-        cap_delete(narrow_ep);
+        capability_delete(ready);
+        capability_delete(narrow_ep);
         // `build_child` gives back its own capability slots on failure (milestone 757 (a test
         // kernel fails a process on its Nth retype), provisional, whose sweep found that it did
         // not); what it built lives in `region`, which goes next.
@@ -1337,8 +1337,8 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
     };
     let started = start_child(child, lo, hi, spec);
     if !started {
-        cap_delete(ready);
-        cap_delete(narrow_ep);
+        capability_delete(ready);
+        capability_delete(narrow_ep);
         // A caretaker that failed to start left nothing running in the region, so `DESTROY` has
         // nothing to wait on.
         discard(region);
@@ -1350,9 +1350,9 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
     // back `ENOENT`, it reports [`filesystem_contract::DESCENT_REFUSED`], and the caller folds that
     // into `DENIED`, like a wrong password (notes/login.md says why that fold is meant).
     let (verdict, _, _) = receive(ready);
-    cap_delete(ready);
+    capability_delete(ready);
     if verdict != filesystem_contract::READY {
-        cap_delete(narrow_ep);
+        capability_delete(narrow_ep);
         // The caretaker's `OPENDIR` was refused, so it has already exited and nothing runs in
         // `region`: case (a) or a plain corpse in notes/hung-component.md's taxonomy, never (c), so
         // `DESTROY` cannot be refused for good. [`discard`], so the region's slot goes too.
@@ -1389,7 +1389,7 @@ const RECLAIM_ATTEMPTS: usize = 1024;
 /// of slots while its budget looks healthy. Every site here that stops wanting a region calls this.
 fn discard(region: u64) {
     reclaim(region);
-    cap_delete(region);
+    capability_delete(region);
 }
 
 /// **Is `identity` on the owner's run-unvouched list?** (DECISIONS §221 (the boot prompt is the
@@ -1528,7 +1528,7 @@ fn file_page() -> Option<&'static mut [u8]> {
 }
 
 /// Delegate our own copy of `slot`, narrowed to `rights`, over `ep`. `GRANT` must already be on our
-/// own copy for the kernel to allow this at all (`abi::rendezvous::SEND_CAP`'s contract); every
+/// own copy for the kernel to allow this at all (`abi::rendezvous::SEND_CAPABILITY`'s contract); every
 /// capability this process delegates was retyped or split by this process, so it always is. `ep` is
 /// [`RESULT`] for a [`login_contract::CONNECTED`] answer and a channel's own private `result` for a
 /// [`login_contract::OK`] one; both are this process's own copy, always held with `GRANT`.
