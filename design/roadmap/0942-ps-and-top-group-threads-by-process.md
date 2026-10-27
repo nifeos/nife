@@ -1,6 +1,7 @@
 ---
 status: BUILT
 raised: 2026-10-21
+built: 2026-10-27
 milestone_dependencies: 126, 282, 812
 decision_dependencies: 312
 machine_requirements: none
@@ -125,17 +126,17 @@ Section 312 holds the authority decision; this answers the five questions the bl
    total. A confined viewer is never told a sibling exists elsewhere.
 3. Form. One label column and one `THR` column on every row. `top` ranks per thread by default and
    gains a flag to rank by process, summing `CPU_TIME`.
-4. The label. An opaque ordinal for one walk. No process identity is handed out and none is stable
-   across runs.
-5. Order against `CMD`. This is built first, with the opaque label.
+4. The label. An opaque ordinal for one walk. The kernel hands out no process identity, and no label
+   stays stable across runs.
+5. Order against `CMD`. This milestone ships first, with the opaque label.
 
-Questions 3 to 5 were accepted as defaults and can be reversed cheaply. Names ship provisional:
+Questions 3 to 5 took defaults that a later ruling can reverse cheaply. Names ship provisional:
 the selector `record::PROCESS`, the columns `PROC` and `THR`, and the `top` flag.
 
 ## Exit criteria
 
 Built, with two differences: the test in item 4 uses hand-written spinner threads that the test
-supervises one by one (a `std` thread is unsupervised, see `BUGS`), and item 5 waits as it said.
+supervises one by one (a `std` thread has no supervisor, see `BUGS`), and item 5 waits as it said.
 
 1. A new `SURVEY` selector (or whatever the ruling chooses) answers a process label for every
    thread in a domain, in `abi::survey::record`, `is_known` and `sched::survey_supervised`, on
@@ -160,12 +161,12 @@ supervises one by one (a `std` thread is unsupervised, see `BUGS`), and item 5 w
 ## BUGS
 
 - **A `std` thread is not supervised, so `ps` shows only a program's first thread.** Supervision
-  is fixed at `START` from the reserved fault slot of the process's shared table, and the first
-  member's `START` consumes it (`notes/processes.md`). `std::thread::spawn` fills no such slot, so
+  comes from the reserved fault slot of the process's shared table at `START`, and the first
+  member's `START` consumes that slot (`notes/processes.md`). `std::thread::spawn` fills no such slot, so
   the workers of `rg --threads 4` are in no domain and the label and `THR` cannot group them. The
-  grouping is proved on threads whose starter supervises each one
-  (`system_tests/src/user/process_label_tests.rs`). The user-visible `rg` check waits on a design
-  for how a process's later threads are supervised, which is its own milestone and a ruling.
+  test in `system_tests/src/user/process_label_tests.rs` proves the grouping on threads whose
+  starter supervises each one. The user-visible `rg` check waits on a design
+  for how a process's later threads get supervisors, which is its own milestone and a ruling.
 - **The counts are of the viewer's domain** (§312), so a process with a thread supervised elsewhere
   reads as smaller than it is. That is the ruling, not a defect.
 - **The shell cannot send `top`'s rank-by-process flag**, so at the prompt `top` ranks by thread
@@ -182,6 +183,13 @@ nothing outside is taken. Prior art, recalled rather than read. Linux `ps` and `
 and show `NLWP` (threads in the process), with `-L` or `H` for the per-thread view. Zircon's
 `zx_object_get_info` lists a process's threads from a process handle, so grouping is the handle the
 caller holds; seL4 has no enumeration at all.
+
+## Follow-on
+
+- **Recorded.** A `std` thread has no supervisor, so `ps` cannot group a `std` program's workers
+  yet; the limitation lives in `BUGS` above, beside the feature.
+- **Recorded.** The shell cannot send `top`'s rank-by-process flag; also in `BUGS` above.
+- **Decision.** The authority ruling is `design/decisions/0312-enumerate-covers-which-threads-share-a-process.md`.
 
 ## Index row
 

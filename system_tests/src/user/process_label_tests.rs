@@ -10,6 +10,8 @@
 //! dispatcher. A `rg --threads 4` run is the model for the claim; it is not the harness, because a
 //! `std` thread is not supervised unless its starter supervises it (the block's `BUGS`).
 
+//! Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
+
 use abi::fault::FAULT_EP_SLOT;
 use abi::survey::record;
 
@@ -21,7 +23,7 @@ use crate::sched;
 
 /// Walk `slot`'s domain with `ps`'s own loop, then join the process labels, and hand back the
 /// tid and label of every row in the order the kernel reported them.
-fn labelled(slot: u64) -> ([(u64, Option<u64>); TEST_ROWS], usize, usize) {
+fn labeled(slot: u64) -> ([(u64, Option<u64>); TEST_ROWS], usize, usize) {
     let mut rows = [ps::Row::default(); TEST_ROWS];
     let mut s = ps::collect(&mut rows, &mut |cursor| {
         survey_record(slot, cursor, record::STATE)
@@ -55,6 +57,8 @@ fn count(rows: &[(u64, Option<u64>)], label: Option<u64>) -> usize {
 /// earlier tests goes through what a program can see. Here the first viewer holds a domain with
 /// four threads of process A and the only thread of process B; the second holds a domain with
 /// A's fifth thread alone, so A is a partial process for it.
+/// Falsification: unfalsified. Written with the record it tests (milestone 942), and run green on
+/// all three architectures; no replayable patch yet.
 #[test_case]
 fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
     let region_a = crate::memory_region::create(32).expect("no region");
@@ -92,9 +96,9 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
 
     // The first viewer: A's four threads and B's one.
     let view_one = hold_view(domain_one);
-    let (rows, n, labelled_rows) = labelled(view_one);
+    let (rows, n, labeled_rows) = labeled(view_one);
     assert_eq!(n, 5, "the first domain holds four threads of A and one of B");
-    assert_eq!(labelled_rows, 5, "every row has a label");
+    assert_eq!(labeled_rows, 5, "every row has a label");
     let rows = &rows[..n];
     let label_of = |tid| rows.iter().find(|r| r.0 == tid).and_then(|r| r.1);
     let a_label = label_of(a[0].0).expect("A's first thread has a label");
@@ -125,7 +129,7 @@ fn threads_of_one_process_share_a_label_and_the_count_is_the_rows() {
 
     // The second viewer holds only A's fifth thread: a partial process, counted as one.
     let view_two = hold_view(domain_two);
-    let (rows_two, n_two, _) = labelled(view_two);
+    let (rows_two, n_two, _) = labeled(view_two);
     assert_eq!(n_two, 1, "the second domain holds one thread of A");
     assert_eq!(rows_two[0].0, a[4].0);
     assert_eq!(rows_two[0].1, Some(1), "the lone thread is the first process the walk meets");

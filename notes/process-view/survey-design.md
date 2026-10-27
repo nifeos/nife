@@ -133,7 +133,7 @@ and never resolves a cursor to the wrong thread. It can miss a member born into 
 slot, and it can list a member that dies before the table prints. That is `readdir`'s bargain, taken
 knowingly.
 
-## The process record (milestone 942, §312)
+## The process record (milestone 942 (`ps` and `top` show which process each thread belongs to), §312 (`ENUMERATE` on a domain covers which of its threads share a process))
 
 `record::PROCESS` answers which process of the domain a thread belongs to, as an ordinal for one
 walk: the first process the walk meets is 1. The kernel computes it from the thread table on each

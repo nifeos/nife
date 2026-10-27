@@ -11,7 +11,7 @@
 //! # BUGS
 //!
 //! - No `CMD` column: there is no display name, and no design for who may see one.
-//! - **`THR` counts the threads of the viewer's domain, never the process's true total** (§312): a
+//! - **`THR` counts the threads of the viewer's domain, never the process's true total** (§312 (`ENUMERATE` on a domain covers which of its threads share a process)): a
 //!   sibling supervised elsewhere is invisible, and so is a sibling nobody supervises (only a
 //!   process's first thread is supervised unless its starter supervises each one).
 //! - `PROC` is an ordinal for one walk, not a process identity: it can renumber if a process ends
@@ -54,7 +54,7 @@ pub struct Row {
     /// that died between the two walks.
     pub cpu_ms: Option<u64>,
     /// **Which process of the domain the thread belongs to**, as `abi::survey::record::PROCESS`
-    /// labelled it in one walk (§312), or `None` when nobody asked or the thread died between
+    /// labeled it in one walk (§312), or `None` when nobody asked or the thread died between
     /// walks.
     ///
     /// Two rows with the same label share an address space and a capability table. The label means
@@ -193,6 +193,8 @@ impl Survey<'_> {
     /// [`join_cpu_time`](Self::join_cpu_time) does, and a thread that died between the walks keeps
     /// `None`. A label of 0 is "no label" and is kept as `None`. The count per process is then
     /// computed here from the rows, so the kernel exposes no count.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
     pub fn join_process(&mut self, read: &mut dyn FnMut(u64) -> (i64, u64, u64)) {
         self.join(read, |row, label| {
             row.process = (label != 0).then_some(label);
@@ -232,6 +234,8 @@ impl Survey<'_> {
 
     /// **How many rows carry `label`**: the threads of that process that the viewer's domain
     /// holds (§312). Never the process's true member count, which this program cannot learn.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
     pub fn threads_with_label(&self, label: u64) -> usize {
         self.rows
             .iter()
@@ -245,9 +249,11 @@ impl Survey<'_> {
     ///
     /// A process's total is the sum of its rows' [`Row::cpu_ms`], the unknown ones counting as
     /// zero. The threads of one process end up adjacent. A row with no label is its own group and
-    /// sorts after every labelled process, for the reason an unknown figure sorts last in the
+    /// sorts after every labeled process, for the reason an unknown figure sorts last in the
     /// per-thread ranking. The order is total (ties break on label, then tid), so a redraw of an
     /// idle machine does not shuffle.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
     pub fn rank_by_process_cpu_time(&mut self) {
         let n = self.rows.len().min(MAXIMUM_ROWS);
         // The rows cannot be read while they are being sorted, so sort a permutation of them and
@@ -1007,9 +1013,9 @@ mod tests {
         assert_eq!(s.rows()[0].tid, 4);
     }
 
-    /// An unlabelled row is its own group and sorts after every process; an empty table is fine.
+    /// An unlabeled row is its own group and sorts after every process; an empty table is fine.
     #[test]
-    fn ranking_by_process_sorts_the_unlabelled_last_and_survives_nothing() {
+    fn ranking_by_process_sorts_the_unlabeled_last_and_survives_nothing() {
         let mut rows = [Row::default(); MAXIMUM_ROWS];
         let mut s = four_threads(&mut rows);
         s.join_process(&mut labels(&[(4, 2), (5, 1)]));
