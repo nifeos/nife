@@ -78,7 +78,7 @@ pub(super) fn hold_write(ep: sched::RendezvousId) -> u64 {
     .expect("grant the rendezvous")
 }
 
-/// `invoke(cap, SURVEY, cursor, _, _)`, through the real dispatcher, returning the three words a
+/// `invoke(capability, SURVEY, cursor, _, _)`, through the real dispatcher, returning the three words a
 /// userspace caller would read out of its registers.
 fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
@@ -109,7 +109,7 @@ fn walk(slot: u64, rows: &mut [ps::Row; TEST_ROWS]) -> ps::Survey<'_> {
     s
 }
 
-/// `invoke(cap, REAP, tid, _, _)`, through the real dispatcher.
+/// `invoke(capability, REAP, tid, _, _)`, through the real dispatcher.
 fn reap(slot: u64, tid: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     invoke(&mut frame, slot, abi::rendezvous::REAP, tid, 0, 0)
@@ -136,10 +136,10 @@ pub(super) fn drain(parking: sched::RendezvousId, n: usize) {
 /// through the same rendezvous, `capability::survey_includes`'s scope property from the control
 /// side. The wait is the clock's, not a yield count: a released child's time to exit is the host's
 /// (notes/hvf-leg.md).
-pub(super) fn collect_all(cap: u64, tids: &[u64]) {
+pub(super) fn collect_all(capability: u64, tids: &[u64]) {
     for &tid in tids {
         assert!(
-            super::wait_for(|| reap(cap, tid) == Ok(0)),
+            super::wait_for(|| reap(capability, tid) == Ok(0)),
             "a member the survey reported could not be collected through the rendezvous that \
              showed it",
         );
@@ -199,9 +199,9 @@ fn a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted() {
         "the three children never reached their sends",
     );
 
-    let cap = hold_view(mine);
+    let capability = hold_view(mine);
     let mut buf = [ps::Row::default(); TEST_ROWS];
-    let seen = walk(cap, &mut buf);
+    let seen = walk(capability, &mut buf);
     assert!(
         !seen.is_refused(),
         "a supervisor could not read its own domain"
@@ -250,7 +250,7 @@ fn a_domain_is_exactly_the_children_of_the_rendezvous_that_was_granted() {
     tidy(
         budget,
         rendezvous_region,
-        &[cap, other, sup_mine, sup_theirs],
+        &[capability, other, sup_mine, sup_theirs],
     );
 }
 
@@ -369,7 +369,7 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     let ep = rendezvous(rendezvous_region);
     let child = child_in(budget, FAULT_STUB, None, ep);
 
-    let cap = hold_supervisor(ep);
+    let capability = hold_supervisor(ep);
     // The corpse parks on its supervision rendezvous's sender queue with its death message when
     // nobody is in RECEIVE, which is how a survey can see it before anyone has collected the news.
     // The failure message carries the evidence, because a failure may come from a bench that is
@@ -384,7 +384,7 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     );
 
     let mut buf = [ps::Row::default(); TEST_ROWS];
-    let seen = walk(cap, &mut buf);
+    let seen = walk(capability, &mut buf);
     assert_eq!(seen.rows().len(), 1, "the corpse fell out of its domain");
     assert_eq!(seen.rows()[0].tid, child);
     assert_eq!(
@@ -396,12 +396,12 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     // Collect it through the rendezvous the survey named it on, then the domain is empty and says so
     // rather than refusing.
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    invoke(&mut frame, cap, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
+    invoke(&mut frame, capability, abi::rendezvous::RECEIVE, 0, 0, 0).expect("RECEIVE refused");
     // A refusal reaches userspace as one `NotPermitted` whatever stopped it, so the message names
     // the check that refused and the state it saw (milestone 321 (a corpse that did not park, on
     // four real cores)): a rare failure here has to be diagnosable from the log of a run nobody can
     // repeat on demand.
-    let reaped = invoke(&mut frame, cap, abi::rendezvous::REAP, child, 0, 0);
+    let reaped = invoke(&mut frame, capability, abi::rendezvous::REAP, child, 0, 0);
     assert_eq!(
         reaped,
         Ok(0),
@@ -410,7 +410,7 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
         sched::last_reclaim_refusal(),
     );
     let mut buf = [ps::Row::default(); TEST_ROWS];
-    let seen = walk(cap, &mut buf);
+    let seen = walk(capability, &mut buf);
     assert!(!seen.is_refused());
     assert_eq!(
         seen.rows().len(),
@@ -418,7 +418,7 @@ fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
         "a reaped corpse is still being listed"
     );
 
-    tidy(budget, rendezvous_region, &[cap]);
+    tidy(budget, rendezvous_region, &[capability]);
 }
 
 /// A corpse still leaving its core is collected, not refused (milestone 321).
@@ -504,9 +504,9 @@ fn a_resumed_walk_reports_every_member_exactly_once() {
         "the three children never reached their sends",
     );
 
-    let cap = hold_view(ep);
+    let capability = hold_view(ep);
     let mut buf = [ps::Row::default(); TEST_ROWS];
-    let seen = walk(cap, &mut buf);
+    let seen = walk(capability, &mut buf);
     assert_eq!(seen.rows().len(), 3, "the walk did not reach every member");
 
     let mut found = [0u64; 3];
@@ -525,12 +525,15 @@ fn a_resumed_walk_reports_every_member_exactly_once() {
     // A cursor past the whole table is "nothing more", not a refusal: a caller that keeps feeding
     // back what it was given must never fall off the end into an answer that reads as "you may not
     // look".
-    assert_eq!(survey(cap, u64::MAX), (abi::survey::DONE as i64, 0, 0));
+    assert_eq!(
+        survey(capability, u64::MAX),
+        (abi::survey::DONE as i64, 0, 0)
+    );
 
     drain(parking, 3);
     let sup = hold_supervisor(ep);
     collect_all(sup, &[a, b, c]);
-    tidy(budget, rendezvous_region, &[cap, sup]);
+    tidy(budget, rendezvous_region, &[capability, sup]);
 }
 
 /// The cursor and the tid are machine-wide slot indices, so a viewer can count threads it cannot
@@ -561,17 +564,17 @@ fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     );
 
     // Held the way `ps` holds it: `ENUMERATE` alone, the narrowest thing that can look at all.
-    let cap = hold_view(mine);
+    let capability = hold_view(mine);
 
-    let (c1, t1, _) = survey(cap, 0);
+    let (c1, t1, _) = survey(capability, 0);
     assert!(c1 > 0, "the viewer's own domain was refused or empty");
-    let (c2, t2, _) = survey(cap, c1 as u64);
+    let (c2, t2, _) = survey(capability, c1 as u64);
     assert!(
         c2 > 0,
         "the domain reported one member where two were built"
     );
     assert_eq!(
-        survey(cap, c2 as u64),
+        survey(capability, c2 as u64),
         (abi::survey::DONE as i64, 0, 0),
         "a third entry appeared in a domain of two",
     );
@@ -610,7 +613,7 @@ fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     // a thread is there and knows nothing else about it: not its tid, not its state, and REAP
     // through this capability is not even expressible (`hold_view` withholds `READ`).
     let mut buf = [ps::Row::default(); TEST_ROWS];
-    let seen = walk(cap, &mut buf);
+    let seen = walk(capability, &mut buf);
     let found = ThreadIdSet::of(&seen);
     assert!(
         !found.has(stranger),
@@ -622,7 +625,11 @@ fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     let sup_theirs = hold_supervisor(theirs);
     collect_all(sup_mine, &[a, b]);
     collect_all(sup_theirs, &[stranger]);
-    tidy(budget, rendezvous_region, &[cap, sup_mine, sup_theirs]);
+    tidy(
+        budget,
+        rendezvous_region,
+        &[capability, sup_mine, sup_theirs],
+    );
 }
 
 /// `pgrep`: the filter over the same domain, and the fourth answer it adds (milestone 126).

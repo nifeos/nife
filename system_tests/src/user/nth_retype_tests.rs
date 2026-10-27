@@ -56,9 +56,9 @@ fn census(tid: crate::thread::ThreadId) -> Census {
         // One slot per lock acquisition: `memory_region::usage` takes a lock of higher rank than the
         // capability table's, so it must run after the table is released (the lock-order check
         // panicked on exactly this at the first push).
-        let cap = slot_of(tid, slot);
-        if let Some(cap) = cap
-            && let Object::MemoryRegion(region) = cap.object
+        let capability = slot_of(tid, slot);
+        if let Some(capability) = capability
+            && let Object::MemoryRegion(region) = capability.object
         {
             let spent = crate::memory_region::usage(region).map_or(u64::MAX, |(spent, _)| spent);
             assert!(
@@ -152,8 +152,8 @@ fn login_gives_back_everything_when_any_retype_of_a_login_fails() {
         if after != before {
             crate::println!("    login's table after failing retype {n}:");
             for slot in 0..crate::capability_object::CAPABILITY_TABLE_SLOTS {
-                if let Some(cap) = slot_of(w.tid, slot) {
-                    crate::println!("      slot {slot}: {:?}", cap.object);
+                if let Some(capability) = slot_of(w.tid, slot) {
+                    crate::println!("      slot {slot}: {:?}", capability.object);
                 }
             }
             panic!(
@@ -216,8 +216,8 @@ fn run_script() -> ([Result<i64, abi::Error>; 3], u64) {
         .0;
     for &answer in answers.iter().flatten() {
         // The split child goes first: a parent with a live child is not reclaimable.
-        if let Ok(cap) = sched::current_capability(answer as u64)
-            && let Object::MemoryRegion(child) = cap.object
+        if let Ok(capability) = sched::current_capability(answer as u64)
+            && let Object::MemoryRegion(child) = capability.object
         {
             crate::memory_region::destroy(child);
         }
