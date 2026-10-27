@@ -21,6 +21,7 @@
 pub mod bare;
 pub mod complete;
 pub mod jig_versions;
+pub mod scope;
 pub mod sequence;
 
 mod apropos;

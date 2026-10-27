@@ -23,6 +23,12 @@ pub enum Route<'a> {
     /// [`Capabilities`](Route::Capabilities)'s reason, and the shell re-dispatches it **once per batch** of what its
     /// pattern matched. The name is provisional.
     Xargs(&'a [u8]),
+    /// `scope`, with everything after it: the `{ ... }` block (milestone 52, DECISIONS §160). The
+    /// tail is a whole command line for [`Capabilities`](Route::Capabilities)'s reason, and
+    /// [`scope::check`](crate::scope::check) reads it before anything in it runs.
+    ///
+    /// Name: provisional.
+    Scope(&'a [u8]),
     /// One command, with no operators on it.
     One(&'a [u8]),
     /// A line with `>`, `<` or `|` on it, already split into stages.
@@ -53,7 +59,13 @@ pub enum Route<'a> {
 /// }
 /// ```
 pub fn route(cmd: &[u8]) -> Route<'_> {
+    // `( ... )` groups nothing here (§160, §312). Said before the line is split, since a stage
+    // starting with `(` would otherwise be a program named `(`.
+    if scope::group_open(cmd) {
+        return Route::Cannot(Refusal::GroupingParentheses);
+    }
     match grant_plan::parse(cmd) {
+        Command::Scope(tail) => return Route::Scope(tail),
         Command::Capabilities(tail) => return Route::Capabilities(tail),
         Command::Time(tail) => return Route::Time(tail),
         Command::Xargs(tail) => return Route::Xargs(tail),

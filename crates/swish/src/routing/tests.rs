@@ -57,3 +57,29 @@ fn time_and_xargs_keep_the_operators_of_the_line_they_take() {
         other => panic!("expected xargs, got {other:?}"),
     }
 }
+
+#[test]
+fn a_scoped_block_keeps_its_whole_tail_and_is_answered_before_the_split() {
+    // The block's own `|` and `;` belong to the block, so the line must not be split on them.
+    match route(b"scope { cd logs ; ls | wc }") {
+        Route::Scope(tail) => assert_eq!(tail, b"{ cd logs ; ls | wc }"),
+        other => panic!("expected a scoped block, got {other:?}"),
+    }
+}
+
+#[test]
+fn parentheses_are_refused_pointing_at_both_forms() {
+    for line in [&b"(cd /tmp && ls)"[..], b"ls | (wc)", b" (ls)"] {
+        match route(line) {
+            Route::Cannot(r) => {
+                assert_eq!(r, Refusal::GroupingParentheses);
+                let m = r.message();
+                assert!(m.contains("scope {"), "{m}");
+                assert!(m.contains("swish -c"), "{m}");
+            }
+            other => panic!("expected a refusal for {line:?}, got {other:?}"),
+        }
+    }
+    // A parenthesis in the middle of a word list is just text.
+    assert!(matches!(route(b"echo (hi)"), Route::One(_)));
+}

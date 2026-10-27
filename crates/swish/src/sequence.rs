@@ -14,7 +14,7 @@
 use grant_plan::word::Cursor;
 use grant_plan::{Refusal, trim};
 
-use crate::Status;
+use crate::{Status, scope};
 
 /// The most commands one line will sequence. A ceiling in the same spirit as
 /// [`grant_plan::line::MAXIMUM_STAGES`]: past it the line is refused rather than silently
@@ -125,8 +125,23 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
     let mut start = 0usize;
     let mut joint = Joint::First;
     let mut i = 0usize;
+    // How deep inside `scope { ... }` the scan is. A connector inside a block belongs to the
+    // block, which cuts its own commands when it runs.
+    let mut depth = 0usize;
 
     while i < line.len() {
+        if !c.is_open() {
+            match scope::brace_step(line, i, depth) {
+                1 => depth += 1,
+                -1 => depth -= 1,
+                _ => {}
+            }
+        }
+        if depth > 0 {
+            c.step(line[i]);
+            i += 1;
+            continue;
+        }
         // A single `|` is the pipe operator and belongs to `line::split`; only the doubled form is
         // a connector. A single `&` is left alone: [`background`] reads it, at the line's end only.
         let (found, width) = match (c.is_open(), line[i]) {
@@ -143,6 +158,9 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
         if seg.is_empty() {
             return Err(Refusal::EmptySegment);
         }
+        if scope::group_open(seg) {
+            return Err(Refusal::GroupingParentheses);
+        }
         if n == MAXIMUM_SEGMENTS {
             return Err(Refusal::TooManySegments);
         }
@@ -155,8 +173,14 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
     if c.is_open() {
         return Err(Refusal::UnclosedQuote);
     }
+    if depth > 0 {
+        return Err(Refusal::ScopeMalformed);
+    }
 
     let tail = trim(&line[start..]);
+    if scope::group_open(tail) {
+        return Err(Refusal::GroupingParentheses);
+    }
     if tail.is_empty() {
         // An empty line is one empty segment, which is a prompt press rather than a mistake. A
         // trailing `;` is the other legal emptiness: it separates rather than joins, so there is
@@ -371,6 +395,39 @@ mod tests {
             assert!(Joint::Always.runs_after(prev));
             assert_eq!(Joint::OnSuccess.runs_after(prev), prev == Status::Ran);
             assert_eq!(Joint::OnFailure.runs_after(prev), prev != Status::Ran);
+        }
+    }
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::*;
+
+    /// A connector inside a block belongs to the block: the block is one segment.
+    #[test]
+    fn a_block_is_one_segment_whatever_connectors_it_holds() {
+        let s = split(b"scope { cd a ; ls && pwd } && echo done").unwrap();
+        assert_eq!(s.len(), 2);
+        assert_eq!(s.segments()[0].1, b"scope { cd a ; ls && pwd }");
+        assert_eq!(s.segments()[1], (Joint::OnSuccess, &b"echo done"[..]));
+        // Nested blocks too.
+        let s = split(b"scope { scope { a ; b } ; c } ; d").unwrap();
+        assert_eq!(s.len(), 2);
+        // A brace that is not a block's is text, and the connector after it still cuts.
+        assert_eq!(split(b"echo { ; echo }").unwrap().len(), 2);
+    }
+
+    #[test]
+    fn a_block_that_never_closes_is_refused() {
+        assert_eq!(split(b"scope { ls ; pwd"), Err(Refusal::ScopeMalformed));
+    }
+
+    /// `( ... )` is refused whole, before any segment is handed on: cutting `(a; b)` at its
+    /// connector would run `b)` as a command by itself.
+    #[test]
+    fn parentheses_refuse_the_whole_line() {
+        for line in [&b"(cd /tmp && ls)"[..], b"echo a ; (rm x)", b"a && (b)", b"a | (b) ; c"] {
+            assert_eq!(split(line), Err(Refusal::GroupingParentheses), "{line:?}");
         }
     }
 }

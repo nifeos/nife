@@ -46,6 +46,10 @@ const ALL: &[Refusal] = &[
     Refusal::TooManySegments,
     Refusal::PatternInArguments,
     Refusal::ArgumentsTooLong,
+    Refusal::ScopeMalformed,
+    Refusal::ScopeTooDeep,
+    Refusal::ScopeCannotRestore,
+    Refusal::GroupingParentheses,
 ];
 
 /// **No two refusals read alike, and none reads like a permission check.** The comments in

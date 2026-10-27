@@ -40,6 +40,15 @@ pub enum Command<'a> {
     /// hold the whole directory, since nothing carries the union of the batches, and a name in a
     /// pipe is text that grants a program nothing. See notes/glob-grant.md.
     Xargs(&'a [u8]),
+    /// `scope { commands }`: **run a group of commands, then put back what they changed in this
+    /// shell's own state** (milestone 52, DECISIONS §160): the working directory and the names
+    /// `bind` filed, and the variables and options when this shell has them. The tail is the whole
+    /// `{ ... }`, carried unsplit for [`Capabilities`](Command::Capabilities)'s reason, and
+    /// `swish::scope` reads it. It touches no capability, so what a command did to the world
+    /// (a file made, a program run) stays done.
+    ///
+    /// Name: provisional (milestone 52, 2026-10-27 UTC), for calef's naming pass.
+    Scope(&'a [u8]),
     /// `cd [path]`: rebind the shell's position inside the directory capability it already holds.
     /// **A builtin, in the same category as `caps`**: it spawns nothing, grants nothing, and confers
     /// no new authority, because a working directory *is* a capability the shell holds used as the

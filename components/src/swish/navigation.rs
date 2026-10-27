@@ -324,6 +324,41 @@ impl Nav {
         Say::Nothing
     }
 
+    /// **Go back to a position this shell stood in**, which a scoped block restores on its way out
+    /// (milestone 52, DECISIONS §160). The position is a value, so this opens it again from the
+    /// root of its tree, one `OPENDIR` per level, and adopts the walk as [`Nav::cd`] does. It
+    /// resolves against an empty set of bound names for the walk, so a name `bind` filed cannot
+    /// redirect a component that is a plain directory name.
+    ///
+    /// All or nothing, like `cd`: when a level cannot be opened (the block removed it) the shell
+    /// stays where it is and the refusal comes back for the caller to say.
+    pub(super) fn return_to(&mut self, target: Cwd) -> Say {
+        if self.dir.is_none() {
+            return Say::Nothing;
+        }
+        if target.is_root() {
+            return self.go_home();
+        }
+        let mut steps = [Step::Up; nav::MAXIMUM_DEPTH];
+        for (level, step) in steps.iter_mut().enumerate().take(target.depth()) {
+            *step = Step::Down(target.component(level));
+        }
+        let binds = core::mem::take(&mut self.holds.binds);
+        let walked = self.walk_steps(true, &steps[..target.depth()]);
+        self.holds.binds = binds;
+        let w = match walked {
+            Ok(w) => w,
+            Err(s) => return s,
+        };
+        let depth = self.holds.locate(&self.holds.cwd).1.depth();
+        for level in 0..depth {
+            self.close(self.handles[level]);
+        }
+        self.handles[..w.n].copy_from_slice(&w.tmp[..w.n]);
+        self.holds.cwd = target;
+        Say::Nothing
+    }
+
     /// Back to the root: close everything we descended through and forget it.
     fn go_home(&mut self) -> Say {
         let depth = self.holds.locate(&self.holds.cwd).1.depth();

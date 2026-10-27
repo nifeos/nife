@@ -66,6 +66,7 @@ mod navigation;
 mod pipeline;
 mod prompt;
 mod running;
+mod scope;
 mod witness;
 
 use capabilities::*;
@@ -73,6 +74,7 @@ use jobs::*;
 use navigation::*;
 use pipeline::*;
 use prompt::*;
+use scope::*;
 use witness::*;
 
 mod commands;

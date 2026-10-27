@@ -10,6 +10,8 @@ budget has no room for.
   the three scanners share it and not a tokenizer.
 - [`running.md`](running.md): how the shell turns a planned line into spawn messages, the grants
   it can and cannot deliver, and the drains.
+- [`scoped-block.md`](scoped-block.md): `scope { ... }`, what it puts back, what it refuses before it
+  runs, and what became of `( ... )`.
 - [`witness.md`](witness.md): the shell's witness scripts, and why each line is there.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`
