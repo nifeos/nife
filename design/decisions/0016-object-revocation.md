@@ -202,13 +202,14 @@ Ruled by the architect on 2026-10-27 (UTC), on the options in
 `design/roadmap/0647-a-virtio-slot-comes-back-when-its-driver-dies.md`. Recorded by the maintainer.
 
 The kernel's virtio device table never gave a slot back, so every confined-device test cost one slot
-for the rest of the boot, and `MAX_DEVICES` was raised ten times to keep up. Reusing a slot changes
+for the rest of the boot, and `MAXIMUM_DEVICES` was raised ten times to keep up. Reusing a slot changes
 what an `Object::Virtio` capability means, which is why it is recorded here.
 
-Now, once milestone 647 builds it, when the driver that holds a transport dies, the kernel unregisters it in three steps. It
-resets the device by writing zero to the virtio status register, so the next holder finds a device
-that has forgotten the first driver's queues and features. It bumps the slot's generation. It frees
-the slot for the next registration. An `Object::Virtio` capability names its slot together with the
+Now, once milestone 647 (a virtio slot should come back when its driver dies) builds it, a driver's
+death releases the transport it held, in three steps. The kernel resets the device by writing zero
+to the virtio status register, so the next holder finds a device that has forgotten the first
+driver's queues and features. It bumps the slot's generation. It frees the slot for the next
+registration. An `Object::Virtio` capability names its slot together with the
 generation it was minted at, so a capability that outlives its device is refused with the same stale
 answer a destroyed region or a reaped thread gives, and never resolves to the device that took the
 slot next.
@@ -221,7 +222,7 @@ The generation is 32 bits and wraps, as it does in `generational_table`. A stale
 resolve to a later occupant only after about four billion releases of one slot, and that is accepted
 as it is for regions and thread ids.
 
-Refused: leaving the table append-only and raising `MAX_DEVICES` again, because it is a counter of
+Refused: leaving the table append-only and raising `MAXIMUM_DEVICES` again, because it is a counter of
 every transport a boot has ever registered rather than of devices that exist, and it binds every lane
 that adds a confined-device test. Refused: a derivation tree over transports, for the reason the
 model above gives for objects. Prior art weighed: Mach port-name generations (the same shape, a
