@@ -34,7 +34,7 @@ both get `REMOVE` alone, whatever the depth of the file.
 
 ## Why this matters
 
-Milestone 31's claim is that typing a name is the grant. The top of a namespace is where anyone
+Milestone 31 (a capability shell: designation is authorization) claims that typing a name is the grant. The top of a namespace is where anyone
 starts, so a grant that worked one level down and failed at the top would have been the first hole
 a newcomer met. `NARROW` closes it with the proved `Rights::attenuate`, a new row in
 `filesystem_contract::verb::TABLE`, and no change to what any relative path means.
