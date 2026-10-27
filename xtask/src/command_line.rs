@@ -114,6 +114,10 @@ pub(crate) fn main() -> ExitCode {
         // and fail if its self-test verdict is not green. See script/boot-check.
         "boot-check" => boot_check(),
         "test" => test(),
+        // Milestone 781 (measure kernel and service coverage under QEMU): the kernel's unit-test
+        // image built with `-C instrument-coverage`, its counters dumped through semihosting, and
+        // the report. Name provisional. See xtask/src/coverage.rs.
+        "coverage" => coverage::coverage(),
         // Milestone 807 (the kernel suite reports what each test cost): the time record as markdown,
         // for a CI step summary. Name provisional. See xtask/src/time_record.rs.
         "time-summary" => time_record::summary(),

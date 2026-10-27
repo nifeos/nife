@@ -80,13 +80,43 @@ SECTIONS
     .rodata : AT(ADDR(.rodata) - KERNEL_VA_BASE) ALIGN(4096) {
         __rodata_start = .;
         *(.rodata .rodata.*)
-        . = ALIGN(4096);
-        __rodata_end = .;
+        /* The profiling runtime is C compiled position-independent, so it reaches its linker
+         * symbols through a global offset table. The linker fills the table at link time; left as
+         * an orphan it lands between `.rodata` and `.data` on a page nothing maps. Absent from
+         * every build without the coverage runtime. */
+        *(.got .got.*)
     }
+
+    /* The names of the instrumented functions, which the coverage profile carries. An output
+     * section of its own because `llvm-cov` finds the names by the section's name in the ELF. It
+     * is read-only memory inside the `.rodata` range the MMU maps. Empty, and so absent, in every
+     * build without `-C instrument-coverage`. See kernel/src/coverage.rs. */
+    __llvm_prf_names : AT(ADDR(__llvm_prf_names) - KERNEL_VA_BASE) {
+        __start___llvm_prf_names = .;
+        KEEP(*(__llvm_prf_names))
+        __stop___llvm_prf_names = .;
+    }
+    . = ALIGN(4096);
+    __rodata_end = .;
 
     .data : AT(ADDR(.data) - KERNEL_VA_BASE) ALIGN(4096) {
         __data_start = .;
         *(.data .data.*)
+        /* The coverage instrument's per-function records and counters, mapped writable with the
+         * rest of `.data` because the counters are bumped in place. The profiling runtime finds
+         * them by these `__start_` and `__stop_` names, which the linker would define itself for
+         * orphan sections but not for sections placed inside another output section. Empty in
+         * every build without `-C instrument-coverage`. See kernel/src/coverage.rs. */
+        . = ALIGN(8);
+        __start___llvm_prf_data = .;
+        KEEP(*(__llvm_prf_data))
+        __stop___llvm_prf_data = .;
+        __start___llvm_prf_cnts = .;
+        KEEP(*(__llvm_prf_cnts))
+        __stop___llvm_prf_cnts = .;
+        __start___llvm_prf_bits = .;
+        KEEP(*(__llvm_prf_bits))
+        __stop___llvm_prf_bits = .;
         . = ALIGN(4096);
         __data_end = .;
     }

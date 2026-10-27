@@ -6,7 +6,8 @@
 
 Run from the repository root. Prints a per-crate table for the host crates in the llvm-cov report,
 with each error path marked reached or not, then a count of the error paths in code no coverage run
-reaches (the kernel, the services, the boot-time crates). Writes one JSON record per path to
+reaches (the kernel, the services, the boot-time crates; a report from `script/coverage --kernel`
+moves the kernel into the first table). Writes one JSON record per path to
 target/error-paths/. Milestone 745 (count the error paths no test reaches), provisional number;
 notes/untested-error-paths.md is what the numbers mean.
 
@@ -606,7 +607,10 @@ def main():
     out = "target/error-paths"
     os.makedirs(out, exist_ok=True)
     m = list(measured(sys.argv[1]))
-    u = list(unmeasured())
+    # A report from an instrumented kernel image (`script/coverage --kernel`, milestone 781 (measure kernel and service coverage under QEMU))
+    # measures files this list also names. A file in the report is measured, and counts once.
+    seen = {r["file"] for r in m}
+    u = [r for r in unmeasured() if r["file"] not in seen]
     for name, rows in (("measured", m), ("unmeasured", u)):
         with open(os.path.join(out, name + ".jsonl"), "w") as f:
             for r in rows:
