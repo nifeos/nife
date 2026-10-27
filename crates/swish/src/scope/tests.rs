@@ -1,4 +1,6 @@
 //! Tests of the scoped block's reading and its refusals.
+//!
+//! Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
 
 use super::*;
 
@@ -73,11 +75,11 @@ fn the_limit_the_message_quotes_is_the_constant() {
 
 #[test]
 fn parentheses_open_a_group_only_at_the_start_of_a_command() {
-    assert!(group_open(b"(cd /tmp"));
-    assert!(group_open(b"  ( ls )"));
-    assert!(group_open(b"ls | (wc)"));
-    assert!(!group_open(b"echo (hi)"));
-    assert!(!group_open(b"echo '(hi'"));
-    assert!(!group_open(b"a || b"));
-    assert!(!group_open(b"ls"));
+    assert!(has_parenthesised_command(b"(cd /tmp"));
+    assert!(has_parenthesised_command(b"  ( ls )"));
+    assert!(has_parenthesised_command(b"ls | (wc)"));
+    assert!(!has_parenthesised_command(b"echo (hi)"));
+    assert!(!has_parenthesised_command(b"echo '(hi'"));
+    assert!(!has_parenthesised_command(b"a || b"));
+    assert!(!has_parenthesised_command(b"ls"));
 }

@@ -61,7 +61,7 @@ pub enum Route<'a> {
 pub fn route(cmd: &[u8]) -> Route<'_> {
     // `( ... )` groups nothing here (§160, §312). Said before the line is split, since a stage
     // starting with `(` would otherwise be a program named `(`.
-    if scope::group_open(cmd) {
+    if scope::has_parenthesised_command(cmd) {
         return Route::Cannot(Refusal::GroupingParentheses);
     }
     match grant_plan::parse(cmd) {

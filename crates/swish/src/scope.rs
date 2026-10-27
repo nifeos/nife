@@ -3,7 +3,7 @@
 //! anything in it runs, whether it may run: the tail has to be one well-formed block, blocks nest
 //! only [`MAXIMUM_DEPTH`] deep, and nothing inside may change what leaving the block cannot put
 //! back. The restoring itself is the shell's, in `components/src/swish/scope.rs`, since the state
-//! is the shell's. See notes/swish-language.md, "The scoped block".
+//! is the shell's. See notes/swish-language/scoped-block.md.
 
 //! # BUGS
 //!
@@ -23,6 +23,8 @@ use crate::sequence;
 /// How many scoped blocks may nest. Each level is a frame on a stack of a few pages (the stack
 /// that has run out four times already, notes/pipes/the-boot.md), so the ceiling is small and a
 /// deeper line is refused. Must match [`Refusal::ScopeTooDeep`]'s message.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
 pub const MAXIMUM_DEPTH: usize = 3;
 
 /// Whether `line[i]` is a brace standing as a word of its own.
@@ -75,6 +77,8 @@ pub(crate) fn brace_step(line: &[u8], i: usize, depth: usize) -> i8 {
 /// assert!(body(b"{ ls").is_err());
 /// assert!(body(b"ls").is_err());
 /// ```
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
 pub fn body(tail: &[u8]) -> Result<&[u8], Refusal> {
     let t = trim(tail);
     if t.first() != Some(&b'{') || !is_word_brace(t, 0) {
@@ -118,6 +122,8 @@ pub fn body(tail: &[u8]) -> Result<&[u8], Refusal> {
 /// assert_eq!(check(b"{ interrupt_heeder & }"), Err(Refusal::ScopeCannotRestore));
 /// assert_eq!(check(b"{ scope { scope { scope { scope { ls } } } } }"), Err(Refusal::ScopeTooDeep));
 /// ```
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
 pub fn check(tail: &[u8]) -> Result<&[u8], Refusal> {
     let inner = body(tail)?;
     walk(inner, 1)?;
@@ -158,7 +164,9 @@ fn walk(commands: &[u8], level: usize) -> Result<(), Refusal> {
 /// **Whether a command, or a pipeline stage in it, opens with `(`.** `( ... )` has no meaning
 /// here (§160, §312), and a line holding one is refused whole before any of it runs, since cutting
 /// it at its connectors would run half of a group somebody meant to run together.
-pub fn group_open(segment: &[u8]) -> bool {
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
+pub fn has_parenthesised_command(segment: &[u8]) -> bool {
     let mut c = Cursor::new();
     let mut stage_start = true;
     for (i, &b) in segment.iter().enumerate() {

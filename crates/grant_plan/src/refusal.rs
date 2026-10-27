@@ -328,8 +328,23 @@ impl Refusal {
             Refusal::ArgumentsTooLong => {
                 "those words do not fit on its argument page (4,080 bytes, four more for each word)"
             }
-            // Milestone 52's. Each says which form to reach for, because the refusal is the whole
-            // documentation of a spelling that ships provisional.
+            // Milestone 52's, in `scope_message`.
+            Refusal::ScopeMalformed
+            | Refusal::ScopeTooDeep
+            | Refusal::ScopeCannotRestore
+            | Refusal::IsolationNotBuilt
+            | Refusal::GroupingParentheses => self.scope_message(),
+        }
+    }
+}
+
+impl Refusal {
+    /// The lines of milestone 52's refusals (DECISIONS §160). Each says which form to reach for,
+    /// because the refusal is the whole documentation of a spelling that ships provisional.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
+    fn scope_message(self) -> &'static str {
+        match self {
             Refusal::ScopeMalformed => {
                 "a scoped block is 'scope { commands }' with nothing after the closing brace on \
                  its command: join what follows with ;, && or ||"
@@ -348,6 +363,7 @@ impl Refusal {
                 "( ) groups nothing in this shell: use 'scope { commands }' to keep the directory \
                  and names it changes, or 'swish -c' (reserved, not built yet) for an isolated child"
             }
+            _ => unreachable!("not a scoped-block refusal"),
         }
     }
 }

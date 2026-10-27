@@ -50,7 +50,9 @@ pub struct Streams {
 /// **The word that will start an isolated child** (`swish -c <commands>`, milestone 52, DECISIONS
 /// §160): this shell, run again explicitly, as a child whose endowment is derived from the
 /// parent's. Reserved so the refusals that name the form and the line that types it agree, and so
-/// that when the child is built nothing about the spelling moves. Name: provisional.
+/// that when the child is built nothing about the spelling moves.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
 pub const ISOLATION_WORD: &[u8] = b"swish";
 
 /// [`plan`], with the operators' answer folded in.
