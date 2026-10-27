@@ -104,6 +104,21 @@ The ABI capability takes `Interrupt` or `InterruptLine` by what it names, and it
 (`bind_interrupt`, `interrupt_wait`, or the `_line` form). Refused `interrupt_request`: `ipi` and
 `nmi` expanded to "... interrupt" on 2026-10-18 (UTC), and `irq` matches them.
 
+Ruled 2026-10-27 (UTC), the names the irq sweep left open:
+
+- The ABI capability is `Interrupt` (`Object::Interrupt`), not `InterruptLine`.
+- `arch::<arch>::irq` is `arch::<arch>::interrupt_controller` on aarch64, riscv64 and x86_64.
+- The self-test `deviceirq` prints `device_interrupt`. It is a clean break: no table maps the old
+  name to the new one.
+- Boot transcript labels are spelled out: `uart interrupt`, `device interrupt`, `isa interrupt` and
+  `interrupt<id>`.
+- RISC-V cause 9 is `SUPERVISOR_EXTERNAL_INTERRUPT`, with `#[doc(alias = "IRQ_S_EXT")]` for the name
+  Linux gives it.
+- The Arm exception vector constants are `VECTOR_INTERRUPT_CURRENT` and `VECTOR_INTERRUPT_LOWER`.
+  Arm's own `IRQ` and `FIQ` vector kinds keep their spelling in the table strings.
+- Doc comments on register accessors name the manual that defines the register and give no section
+  numbers.
+
 ## The tree spells `queue`, never `fifo`
 
 Ruled 2026-10-26 (UTC), tree-wide: where a name this tree authors says `fifo`, it says `queue`
@@ -112,6 +127,28 @@ TQS), and the renamed item carries `#[doc(alias = "fifo")]`. Register names copi
 datasheet (`FIFOTH`) keep their spelling. The ruling reaches the crate ratified on 2026-08-23
 (Decision 41, ruled 2026-10-26 (UTC)): `intrusive_fifo` becomes `intrusive_queue` and its `Fifo`
 becomes `Queue`, with `#[doc(alias = "fifo")]`.
+
+
+## The tree spells `minimum`, `maximum` and `operating_system`, with three limits kept
+
+The expansion itself was ruled 2026-10-26 (UTC) and is recorded in
+[precedents-set-by-example.md](precedents-set-by-example.md): `min` expands to `minimum`, `max` to
+`maximum` and `os` to `operating_system`. Ruled 2026-10-27 (UTC), on the sweep that applied it:
+
+- A limit this tree defines under the Unix names `PATH_MAX`, `LINE_MAX` and `NAME_MAX` expands to
+  `PATH_MAXIMUM`, `LINE_MAXIMUM` and `NAME_MAXIMUM`. Prose that cites Unix itself keeps the original
+  spelling, since it names the Unix limit and not ours.
+- The GPT crate's constants are `OPERATING_SYSTEM_TYPE` and `PROTECTIVE_OPERATING_SYSTEM_TYPE`. Their
+  documentation cites UEFI's `OSType` field, and each carries `#[doc(alias = "OSType")]`.
+- `os_primitives_benchmarker` keeps its name until the variable-width step of Decision 307 lands.
+  That step renames it; the sweep does not.
+
+## The `intrusive_queue` order property says `first_in_first_out`
+
+Ruled 2026-10-27 (UTC): the `intrusive_queue` property test that checks arrival order is
+`any_push_pop_interleaving_is_first_in_first_out_and_lossless`. It replaces
+`any_push_pop_interleaving_is_queue_ordered_and_lossless`, whose name did not say which order it
+checks. `senders_queue_in_arrival_order` keeps its name.
 
 ## Abbreviation sweeps owed under §154
 

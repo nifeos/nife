@@ -281,9 +281,9 @@ mod verification {
     /// model records the order tags went in; the queue must hand them back in exactly that
     /// order, agree about emptiness and length at every step, and never dereference a stale
     /// link (which Kani would report as an invalid pointer access).
-    /// Falsification: replayable `crates/intrusive_queue/falsifications/verification.any_push_pop_interleaving_is_queue_ordered_and_lossless.patch`
+    /// Falsification: replayable `crates/intrusive_queue/falsifications/verification.any_push_pop_interleaving_is_first_in_first_out_and_lossless.patch`
     #[kani::proof]
-    fn any_push_pop_interleaving_is_queue_ordered_and_lossless() {
+    fn any_push_pop_interleaving_is_first_in_first_out_and_lossless() {
         let mut nodes = [
             N { next: None, tag: 0 },
             N { next: None, tag: 1 },
