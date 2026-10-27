@@ -777,6 +777,7 @@ dependencies = [
  "system_log_contract",
  "test_times",
  "thread_wake_handshake",
+ "timetable",
  "video_terminal",
  "work_steal_slot",
 ]

@@ -1,13 +1,20 @@
 ---
-status: NOT-STARTED
+status: BUILT
 raised: 2026-09-03
+built: 2026-10-27
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: 178
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
 # 360. `crates/timetable`'s proved `next_after` is not what the timer calls, so nothing runs the proof
+
+Built 2026-10-27 under §178 (where the timer re-arm seam goes), option A. The aarch64 and riscv64
+`rearm` read their registers, call `timetable::next_after(fired, interval, now)` and arm the result, so
+the Kani-proved function is the one the timer runs and a late tick returns to its original beat.
+Lateness detection and `MISSED_TICKS` stay in the arch layer; x86_64 is unchanged. The suite's
+`a_late_tick_returns_to_the_grid` binds the behavior on both ISAs.
 
 Filed as a proposal on 2026-09-03 by the milestone 247 sweep, from
 milestone 197's block; promoted by milestone 433 on 2026-09-19. Checked against the tree that day

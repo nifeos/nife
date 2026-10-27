@@ -121,8 +121,10 @@ If we fall so far behind that the next deadline is *already in the past*, `previ
 would fire immediately, and again, and we'd spin in the handler forever paying down a debt we
 cannot pay.
 
-So: give up on the missed ticks and re-anchor the grid to now. Every kernel does this (dropping
-ticks), and it is worth counting: a nonzero count means the handler is taking longer than a
+So: give up on the missed ticks and skip to the next grid point after now, which
+`timetable::next_after` computes (§178 (where the timer re-arm seam goes)). The grid keeps its
+phase, so a late tick does not delay the ones after it. Every kernel drops ticks, and it is worth
+counting: a nonzero count means the handler is taking longer than a
 whole tick period.
 
 ## Uptime comes from the counter, not the tick count
