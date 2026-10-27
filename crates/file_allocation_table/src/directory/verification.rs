@@ -55,7 +55,7 @@ fn every_slot_parses_as_its_bytes_say() {
 
 /// A FAT12 boot sector: one reserved sector, two one-sector tables, a one-sector root of 16
 /// entries, then `clusters` clusters of `per_cluster` sectors.
-fn fat12(clusters: u32, per_cluster: u8) -> BootSector {
+pub(crate) fn fat12(clusters: u32, per_cluster: u8) -> BootSector {
     let total = 4 + clusters as u16 * u16::from(per_cluster);
     let mut boot = [0u8; 512];
     boot[0..3].copy_from_slice(&[0xEB, 0x3C, 0x90]);

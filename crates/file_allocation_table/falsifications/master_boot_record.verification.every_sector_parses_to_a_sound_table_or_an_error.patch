@@ -1,0 +1,20 @@
+Falsifies `file_allocation_table::master_boot_record::verification::every_sector_parses_to_a_sound_table_or_an_error`.
+
+The defect: the end check allows a partition to end up to sector 2^33, so an entry whose first sector
+and length add past the 32-bit sector numbers is accepted, and the device would add its first sector
+to an index it then cannot name.
+
+Expected to fail: the harness's assertion that a partition ends within 2^32.
+
+diff --git a/crates/file_allocation_table/src/master_boot_record.rs b/crates/file_allocation_table/src/master_boot_record.rs
+--- a/crates/file_allocation_table/src/master_boot_record.rs
++++ b/crates/file_allocation_table/src/master_boot_record.rs
+@@ -171,7 +171,7 @@ impl MasterBootRecord {
+             if sectors == 0 {
+                 return Err(MasterBootRecordError::EmptyPartition { index });
+             }
+-            if u64::from(first_sector) + u64::from(sectors) > 1 << 32 {
++            if u64::from(first_sector) + u64::from(sectors) > 1 << 33 {
+                 return Err(MasterBootRecordError::PartitionOverflows { index });
+             }
+             *slot = Some(Partition {
