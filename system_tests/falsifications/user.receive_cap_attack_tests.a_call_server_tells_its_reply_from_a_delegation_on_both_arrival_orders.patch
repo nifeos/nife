@@ -39,7 +39,7 @@ index c59bccd96..777aae99f 100644
 +++ b/kernel/src/sched/rendezvous.rs
 @@ -459,6 +459,7 @@ pub(super) fn hand_over_label(receiver: &crate::thread::Thread, label: u64) {
  /// the receiver's table was full and there is no Reply to name. Written only on the two paths a
- /// `CALL` reaches a receiver (`ipc_call_badged`'s rendezvous and `ipc_receive_cap`'s collect of a
+ /// `CALL` reaches a receiver (`ipc_call_badged`'s rendezvous and `ipc_receive_capability`'s collect of a
  /// parked caller), so a `SEND_CAP` delegation, which reaches the same `x1`, never carries it.
 +#[allow(dead_code)]
  #[inline(always)]
@@ -57,9 +57,9 @@ index c59bccd96..777aae99f 100644
 @@ -814,7 +815,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3]
                  // value instead of a zero, so the server's RECEIVE_CAP surfaces which client called.
                  // Word 4 says x1 is a Reply (milestone 706), which only this path and the collect
-                 // in `ipc_receive_cap` may say; a SEND_CAP's delivery leaves it 0.
+                 // in `ipc_receive_capability` may say; a SEND_CAP's delivery leaves it 0.
 -                r.mailbox = [msg[0], slot, msg[1], badge, reply_tag(slot)];
 +                r.mailbox = [msg[0], slot, msg[1], badge, 0];
                  // A Reply capability was installed, so RECEIVE_CAP's x1 is a real slot (milestone 634).
-                 r.cap_delivered = true;
+                 r.capability_delivered = true;
                  r.handshake.serve(); // delivered: this wake passes the boot-8 gate

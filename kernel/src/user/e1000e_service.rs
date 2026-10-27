@@ -19,7 +19,10 @@ use ::driver_process_contract::e1000e::{
 };
 
 use super::*;
-use crate::cap::{Rights, memory_region_cap, notification_cap, rendezvous_cap, timer_cap};
+use crate::capability_object::{
+    Rights, memory_region_capability, notification_capability, rendezvous_capability,
+    timer_capability,
+};
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 use crate::user::virtio_service::{NET_SERVER_BUDGET_PAGES, NET_SERVER_STACK_PAGES};
@@ -192,18 +195,19 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     let tid = crate::sched::spawn(move || {
         // Slots 3 to 6 at their names before `run` grants in order, so the report lands in 0 and
         // slots 1 and 2 stay empty: no interrupt, no virtio transport.
-        let at = |slot, cap| {
-            crate::sched::grant_at(slot, cap).expect("a net_stack slot was already occupied");
+        let at = |slot, capability| {
+            crate::sched::grant_at(slot, capability)
+                .expect("a net_stack slot was already occupied");
         };
-        at(3, memory_region_cap(budget));
-        at(4, rendezvous_cap(stack, Rights::READ));
-        at(5, notification_cap(wake, Rights::ALL));
-        at(6, timer_cap(poll, Rights::WRITE));
+        at(3, memory_region_capability(budget));
+        at(4, rendezvous_capability(stack, Rights::READ));
+        at(5, notification_capability(wake, Rights::ALL));
+        at(6, timer_capability(poll, Rights::WRITE));
         // What each socket is minted from (§255 (each socket is its own capability)); slot 8, the
         // server's own address space, `run_with_own_space` adds once the space exists.
         at(
             socket_contract::stack_slots::MINT,
-            rendezvous_cap(stack, Rights::WRITE.union(Rights::GRANT)),
+            rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
         );
         run_with_own_space(
             image,
@@ -211,7 +215,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
                 arg0, // `driver_process_contract::e1000e::Handoff`: the role tag and the MAC address
                 arg1, // the DMA region's physical base
                 arg2: listen_grant,
-                grants: &[rendezvous_cap(report, Rights::WRITE)], // slot 0
+                grants: &[rendezvous_capability(report, Rights::WRITE)], // slot 0
                 maps: &maps,
             },
             socket_contract::stack_slots::OWN_SPACE,

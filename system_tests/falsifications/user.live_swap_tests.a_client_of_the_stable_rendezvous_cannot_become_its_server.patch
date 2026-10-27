@@ -31,6 +31,6 @@ diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
 -    if !rights.allows(Rights::READ) {
 -        return Err(Error::NotPermitted);
 -    }
-     let msg = sched::ipc_receive_cap(ep);
+     let msg = sched::ipc_receive_capability(ep);
      if sched::take_ipc_aborted() {
          return Err(Error::Gone); // endpoint revoked; the message is a placeholder

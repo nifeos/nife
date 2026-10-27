@@ -27,19 +27,15 @@ use confined_syscall_fuzzer_contract as proto;
 use confined_syscall_fuzzer_contract::report;
 
 use super::*;
-// The `cap` module and these constructors still carry their pre-sweep names
+// The `capability` module and these constructors still carry their pre-sweep names
 // (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
 // this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{
-    Cap as Capability, Object, Rights, address_space_cap as address_space_capability,
-    memory_region_cap_rights as memory_region_capability_rights,
-    notification_cap as notification_capability, page_frame_cap as page_frame_capability,
-    rendezvous_cap as rendezvous_capability, rendezvous_cap_badged as rendezvous_capability_badged,
+use crate::capability_object::{
+    Cap as Capability, Object, Rights, address_space_capability, memory_region_capability_rights,
+    notification_capability, page_frame_capability, rendezvous_capability,
+    rendezvous_capability_badged,
 };
-use crate::sched::{
-    self, RendezvousId, current_cap as current_capability,
-    delete_current_cap as delete_current_capability,
-};
+use crate::sched::{self, RendezvousId, current_capability, delete_current_capability};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
 
 const SLOTS: usize = abi::CAPABILITY_TABLE_SLOTS as usize;

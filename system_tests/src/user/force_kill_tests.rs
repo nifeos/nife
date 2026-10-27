@@ -159,7 +159,7 @@ const CALL_STUB: &[u32] = &super::x86_programs::call();
 /// wakes the resident: here it belongs to somebody else, so nothing ever wakes the resident.
 fn child_blocked_on(
     ep: crate::sched::RendezvousId,
-    rights: crate::cap::Rights,
+    rights: crate::capability_object::Rights,
     code: &[u32],
 ) -> (u64, crate::thread::ThreadId) {
     let region = crate::memory_region::create(16).expect("no region for the blocked child");
@@ -186,9 +186,12 @@ fn child_blocked_on(
     .expect("map stack");
 
     let tid = sched::create_thread_control_block(region).expect("no tcb");
-    let slot =
-        sched::thread_control_block_insert_cap(tid, crate::cap::rendezvous_cap(ep, rights), None)
-            .expect("insert the rendezvous");
+    let slot = sched::thread_control_block_insert_capability(
+        tid,
+        crate::capability_object::rendezvous_capability(ep, rights),
+        None,
+    )
+    .expect("insert the rendezvous");
     assert_eq!(
         slot, 0,
         "the rendezvous must land in slot 0 (every stub here assumes it)"
@@ -253,9 +256,9 @@ fn destroy_reclaims_a_region_whose_resident_is_blocked_in_receive() {
 
     let tid = sched::create_thread_control_block(region).expect("no tcb");
     // READ, because the child receives; `supervision_tests::build_child_in` inserts WRITE.
-    let slot = sched::thread_control_block_insert_cap(
+    let slot = sched::thread_control_block_insert_capability(
         tid,
-        crate::cap::rendezvous_cap(ep, crate::cap::Rights::READ),
+        crate::capability_object::rendezvous_capability(ep, crate::capability_object::Rights::READ),
         None,
     )
     .expect("insert the rendezvous");
@@ -315,7 +318,7 @@ fn destroy_reclaims_a_region_whose_resident_blocks_on_a_rendezvous_it_does_not_o
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let ep = sched::create_rendezvous_from(endpoints).expect("no rendezvous");
 
-    let (region, tid) = child_blocked_on(ep, crate::cap::Rights::READ, RECEIVE_STUB);
+    let (region, tid) = child_blocked_on(ep, crate::capability_object::Rights::READ, RECEIVE_STUB);
     let run = crate::testing::RegionRun::of(region);
 
     // Wait until it is queued: a child still `Ready` proves only the force-kill path.
@@ -363,12 +366,12 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
     let ep = sched::create_rendezvous_from(endpoints).expect("no rendezvous");
 
     // WRITE, because the child calls on it. This test is the server.
-    let (region, tid) = child_blocked_on(ep, crate::cap::Rights::WRITE, CALL_STUB);
+    let (region, tid) = child_blocked_on(ep, crate::capability_object::Rights::WRITE, CALL_STUB);
     let run = crate::testing::RegionRun::of(region); // this region's frames, not the machine's
 
-    // Collecting the request leaves the caller reply-parked on nothing. `ipc_receive_cap` does not
+    // Collecting the request leaves the caller reply-parked on nothing. `ipc_receive_capability` does not
     // wake a caller: only the reply may, and this server never sends one.
-    let [_word, slot, _w1, _badge, ..] = sched::ipc_receive_cap(ep);
+    let [_word, slot, _w1, _badge, ..] = sched::ipc_receive_capability(ep);
     assert_ne!(
         slot,
         abi::rendezvous::NO_CAP,
@@ -376,8 +379,8 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
     );
     assert!(
         matches!(
-            sched::current_cap(slot).expect("the reply capability was not in its slot").object,
-            crate::cap::Object::Reply(named) if named == tid,
+            sched::current_capability(slot).expect("the reply capability was not in its slot").object,
+            crate::capability_object::Object::Reply(named) if named == tid,
         ),
         "the collected capability was not a Reply naming this caller",
     );
@@ -394,7 +397,7 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
 
     // The sweep: this thread's `Reply` named a thread that no longer exists, and is gone.
     assert!(
-        sched::current_cap(slot).is_err(),
+        sched::current_capability(slot).is_err(),
         "a stale Reply capability outlived the caller it names: a hung or compromised server can \
          invoke it against whatever thread later inherits that name",
     );

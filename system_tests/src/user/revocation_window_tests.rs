@@ -20,7 +20,7 @@ use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::{Object, Rights, page_frame_run_cap, page_frame_run_len};
+use crate::capability_object::{Object, Rights, page_frame_run_capability, page_frame_run_len};
 use crate::syscall::invoke;
 use crate::{delegation_pause, sched};
 
@@ -47,7 +47,7 @@ fn holds_frame_in(tid: crate::thread::ThreadId, base: u64, pages: u64) -> bool {
     // Lent rather than copied out: a 64-slot copy in this frame is what put the nth-retype tests
     // over the guard page (milestone 754 (the capability table grows to 64 slots)).
     sched::with_capability_table(tid, |table| {
-        (0..crate::cap::CAPABILITY_TABLE_SLOTS as u64).any(|slot| {
+        (0..crate::capability_object::CAPABILITY_TABLE_SLOTS as u64).any(|slot| {
             table.get(slot).is_ok_and(|c| match c.object {
                 Object::PageFrame(p, n) => p < end && base < p + n.get() * page_frames::FRAME_SIZE,
                 _ => false,
@@ -84,10 +84,17 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
 
     delegation_pause::disarm();
     sched::spawn(move || {
-        let ep_slot =
-            sched::grant(crate::cap::rendezvous_cap(ep, Rights::WRITE)).expect("grant ep");
-        let frame_slot = sched::grant(page_frame_run_cap(phys, page_frame_run_len(1), Rights::ALL))
-            .expect("grant the frame");
+        let ep_slot = sched::grant(crate::capability_object::rendezvous_capability(
+            ep,
+            Rights::WRITE,
+        ))
+        .expect("grant ep");
+        let frame_slot = sched::grant(page_frame_run_capability(
+            phys,
+            page_frame_run_len(1),
+            Rights::ALL,
+        ))
+        .expect("grant the frame");
         SENDER.store(sched::current(), Ordering::SeqCst);
         delegation_pause::arm(sched::current());
         let answer = call(
@@ -99,8 +106,8 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
         );
         ANSWER.store(encode(answer), Ordering::SeqCst);
         RETURNED.store(true, Ordering::SeqCst);
-        let _ = sched::delete_current_cap(frame_slot);
-        let _ = sched::delete_current_cap(ep_slot);
+        let _ = sched::delete_current_capability(frame_slot);
+        let _ = sched::delete_current_capability(ep_slot);
     })
     .expect("no sender thread");
 
@@ -121,12 +128,12 @@ fn a_revoke_inside_a_send_cap_leaves_the_receiver_no_copy() {
     let delivered = if RETURNED.load(Ordering::SeqCst) {
         None
     } else {
-        let [_word, slot, ..] = sched::ipc_receive_cap(ep);
+        let [_word, slot, ..] = sched::ipc_receive_capability(ep);
         let got = (slot != abi::rendezvous::NO_CAP)
-            .then(|| sched::current_cap(slot).ok())
+            .then(|| sched::current_capability(slot).ok())
             .flatten();
         if slot != abi::rendezvous::NO_CAP {
-            let _ = sched::delete_current_cap(slot);
+            let _ = sched::delete_current_capability(slot);
         }
         got
     };
@@ -168,10 +175,17 @@ fn a_revoke_inside_a_cap_insert_leaves_the_embryo_no_copy() {
 
     delegation_pause::disarm();
     sched::spawn(move || {
-        let tcb_slot = sched::grant(crate::cap::thread_control_block_cap(embryo, Rights::ALL))
-            .expect("grant the tcb");
-        let frame_slot = sched::grant(page_frame_run_cap(phys, page_frame_run_len(1), Rights::ALL))
-            .expect("grant the frame");
+        let tcb_slot = sched::grant(crate::capability_object::thread_control_block_capability(
+            embryo,
+            Rights::ALL,
+        ))
+        .expect("grant the tcb");
+        let frame_slot = sched::grant(page_frame_run_capability(
+            phys,
+            page_frame_run_len(1),
+            Rights::ALL,
+        ))
+        .expect("grant the frame");
         SPAWNER.store(sched::current(), Ordering::SeqCst);
         delegation_pause::arm(sched::current());
         let answer = call(
@@ -183,8 +197,8 @@ fn a_revoke_inside_a_cap_insert_leaves_the_embryo_no_copy() {
         );
         ANSWER.store(encode(answer), Ordering::SeqCst);
         RETURNED.store(true, Ordering::SeqCst);
-        let _ = sched::delete_current_cap(frame_slot);
-        let _ = sched::delete_current_cap(tcb_slot);
+        let _ = sched::delete_current_capability(frame_slot);
+        let _ = sched::delete_current_capability(tcb_slot);
     })
     .expect("no spawner thread");
 
@@ -238,17 +252,21 @@ fn a_reclamation_inside_a_slice_leaves_the_slicer_no_slice() {
 
     delegation_pause::disarm();
     sched::spawn(move || {
-        let run_slot = sched::grant(page_frame_run_cap(base, page_frame_run_len(2), Rights::ALL))
-            .expect("grant the run");
+        let run_slot = sched::grant(page_frame_run_capability(
+            base,
+            page_frame_run_len(2),
+            Rights::ALL,
+        ))
+        .expect("grant the run");
         SLICER.store(sched::current(), Ordering::SeqCst);
         delegation_pause::arm(sched::current());
         let answer = call(run_slot, abi::page_frame::SLICE, 1, 1, 0);
         ANSWER.store(encode(answer), Ordering::SeqCst);
         RETURNED.store(true, Ordering::SeqCst);
         if let Ok(slot) = answer {
-            let _ = sched::delete_current_cap(slot as u64);
+            let _ = sched::delete_current_capability(slot as u64);
         }
-        let _ = sched::delete_current_cap(run_slot);
+        let _ = sched::delete_current_capability(run_slot);
     })
     .expect("no slicer thread");
 

@@ -1,6 +1,8 @@
 use super::test_programs::{lay_out_program, segment_pages};
 use super::*;
-use crate::cap::{Rights, memory_region_root_cap, page_frame_cap, rendezvous_cap};
+use crate::capability_object::{
+    Rights, memory_region_root_capability, page_frame_capability, rendezvous_capability,
+};
 use crate::sched::RendezvousId;
 
 /// The timetable's budget. Every scheduled instance is 48 pages of it (`INSTANCE_PAGES` in
@@ -247,9 +249,9 @@ fn spawn_timetable_with(
 
     if let Some(phys) = clock_phys {
         // `READ` to read it and `GRANT` to hand it to a job whose manifest declares a clock.
-        crate::sched::thread_control_block_insert_cap(
+        crate::sched::thread_control_block_insert_capability(
             tid,
-            page_frame_cap(phys, Rights::READ.union(Rights::GRANT)),
+            page_frame_capability(phys, Rights::READ.union(Rights::GRANT)),
             Some(timetable::contract::CLOCK_SLOT),
         )
         .expect("insert the clock page");
@@ -258,9 +260,9 @@ fn spawn_timetable_with(
         // Any endpoint will do: what the timetable checks is whether the slot is occupied, exactly
         // as `swish` probes it, because the capability's meaning is the slot it is placed in.
         let stand_in = crate::sched::create_rendezvous_from(endpoints).expect("no stand-in");
-        crate::sched::thread_control_block_insert_cap(
+        crate::sched::thread_control_block_insert_capability(
             tid,
-            rendezvous_cap(stand_in, Rights::WRITE),
+            rendezvous_capability(stand_in, Rights::WRITE),
             Some(grant_plan::spawnproto::RUN_UNVOUCHED_SLOT),
         )
         .expect("insert the run-unvouched stand-in");
@@ -331,32 +333,35 @@ fn install_the_fixed_slots(
     deaths: RendezvousId,
 ) {
     // Slot 0: where its own text goes. WRITE, so it can say things and cannot listen.
-    let s = crate::sched::thread_control_block_insert_cap(
+    let s = crate::sched::thread_control_block_insert_capability(
         tid,
-        rendezvous_cap(out, Rights::WRITE),
+        rendezvous_capability(out, Rights::WRITE),
         None,
     )
     .expect("insert out");
     assert_eq!(s, 0, "the timetable's output endpoint must land in slot 0");
     // Slot 1: what every instance is made of.
-    let s =
-        crate::sched::thread_control_block_insert_cap(tid, memory_region_root_cap(budget), None)
-            .expect("insert budget");
+    let s = crate::sched::thread_control_block_insert_capability(
+        tid,
+        memory_region_root_capability(budget),
+        None,
+    )
+    .expect("insert budget");
     assert_eq!(s, 1, "the timetable's budget must land in slot 1");
     // Slot 2: what each instance is handed as its own slot 0. `GRANT` because handing it on is the
     // entire purpose; `WRITE` because a scheduled child reports and never listens.
-    let s = crate::sched::thread_control_block_insert_cap(
+    let s = crate::sched::thread_control_block_insert_capability(
         tid,
-        rendezvous_cap(child_report, Rights::WRITE.union(Rights::GRANT)),
+        rendezvous_capability(child_report, Rights::WRITE.union(Rights::GRANT)),
         None,
     )
     .expect("insert child report");
     assert_eq!(s, 2, "the child report endpoint must land in slot 2");
     // Slot 3: the supervision endpoint. `READ` is what `RECEIVE` and `Rendezvous::REAP` take (§32 (a supervisor may collect a corpse without being able to build one));
     // `GRANT` is what lets it be placed in each child's reserved fault slot.
-    let s = crate::sched::thread_control_block_insert_cap(
+    let s = crate::sched::thread_control_block_insert_capability(
         tid,
-        rendezvous_cap(deaths, Rights::READ.union(Rights::GRANT)),
+        rendezvous_capability(deaths, Rights::READ.union(Rights::GRANT)),
         None,
     )
     .expect("insert deaths");

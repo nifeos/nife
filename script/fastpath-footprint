@@ -29,7 +29,7 @@
 # essentially no service in this tree: a client issues `CALL` and a server issues `RECEIVE_CAP` then
 # `REPLY`, and `kernel/src/bench/ipc.rs`'s own `call_reply` doc calls that "the one-endpoint shape
 # real services use". Measured on the same binary, the CALL/reply closure is **29% larger** on
-# aarch64 (7,576 against 5,888), because `ipc_receive_cap` and `ipc_call` carry the one-shot Reply
+# aarch64 (7,576 against 5,888), because `ipc_receive_capability` and `ipc_call` carry the one-shot Reply
 # mint, the capability-table insert and the `WaitRole::Reply` parking that DECISIONS §12 (Call/Reply
 # IPC: a one-shot reply capability) requires. Averaging them would hide both, and reporting only the
 # smaller one understated the number this gate exists to bound. `ipc_fastpath` is the max rather
@@ -164,7 +164,7 @@
 #     closure, so it inherits the closure's blind spots: a callee reached only through a conditional
 #     branch or a function pointer is on the path, outside the section, and not reported.
 #   - **`ipc_call_reply` is still an upper bound and a loose one**, for the reason the whole gate is:
-#     whole symbol sizes, so a cold tail inside `ipc_call` or `ipc_receive_cap` counts. Milestone 188
+#     whole symbol sizes, so a cold tail inside `ipc_call` or `ipc_receive_capability` counts. Milestone 188
 #     phase 3 outlined the cold tails it could find; the rest are inside branches this script cannot
 #     see, because its `CALL` regex deliberately does not follow conditional branches.
 
@@ -293,7 +293,7 @@ CALL = re.compile(r"\b(bl|blr|jal|jalr|b|j|callq?|jmpq?)\s+[^<]*<([^>+]+)")
 # **A linker-script boundary is not a function, but objdump may print it as one.** Milestone 796
 # (pin the hot trap path's placement) put `__text_hot_start`, a global symbol, at the same address
 # as the first hot function, and when that function is local llvm-objdump heads the block with the
-# global marker instead. On x86_64 that hid `sched::current_cap` and took 5% off `ipc_send_receive`
+# global marker instead. On x86_64 that hid `sched::current_capability` and took 5% off `ipc_send_receive`
 # before this mapping existed. So a header named like a linker-script bound (`__<x>_start`,
 # `__<x>_end`) is renamed to the function `llvm-nm` says starts there, and the bounds themselves are
 # kept for the pin check below.
@@ -363,13 +363,13 @@ size = {s: last.get(s, start[s]) - start[s] + 4 for s in start}
 # are the question notes/benchmarks.md named as the thing blocking this gate from existing. Matched
 # by regex because mangled names carry a per-target crate disambiguator that is not stable.
 #
-# `schedule`, `finish_switch` and `current_cap` are in both, because both shapes reach them: the
+# `schedule`, `finish_switch` and `current_capability` are in both, because both shapes reach them: the
 # capability lookup that IS the security check, and the general scheduler re-selection that a
 # hand-written fastpath would be trying to skip.
 #
 # **Each root names its own module**, because a mangled name follows the defining module, not the
 # `pub use` that keeps the Rust path: `ipc_*` are `kernel5sched10rendezvous...`
-# (kernel/src/sched/rendezvous.rs), `current_cap` is `kernel5sched12capabilities...`
+# (kernel/src/sched/rendezvous.rs), `current_capability` is `kernel5sched12capabilities...`
 # (capabilities.rs), and `schedule` and `finish_switch` are `kernel5sched6switch...` (switch.rs).
 # Each entry below is `<len><module><len><function>` as v0 mangling writes it, and the shape's
 # regex and the guard below are both built from that one list.

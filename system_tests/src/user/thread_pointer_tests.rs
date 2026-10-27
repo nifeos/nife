@@ -20,7 +20,7 @@
 use abi::Error;
 
 use super::*;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -147,11 +147,17 @@ fn each_thread_reads_through_its_own_thread_pointer() {
     for (i, s) in spinners.iter_mut().enumerate() {
         let name = user_address_space_create(region).expect("no address space");
         let page = lay_out(region, name);
-        let given =
-            sched::grant(crate::cap::address_space_cap(name, Rights::WRITE)).expect("grant");
+        let given = sched::grant(crate::capability_object::address_space_capability(
+            name,
+            Rights::WRITE,
+        ))
+        .expect("grant");
         let tid = sched::create_thread_control_block(region).expect("no tcb");
-        let tcb =
-            sched::grant(crate::cap::thread_control_block_cap(tid, Rights::ALL)).expect("grant");
+        let tcb = sched::grant(crate::capability_object::thread_control_block_capability(
+            tid,
+            Rights::ALL,
+        ))
+        .expect("grant");
         let mine = VA + 8 * i as u64;
         let self_setter = i % 2 == 1;
         let first = if self_setter {
@@ -171,9 +177,9 @@ fn each_thread_reads_through_its_own_thread_pointer() {
         );
         let (slot_arg, value_arg) = if self_setter {
             // The spinner's own TCB, in its own slot 0, so it can name itself.
-            sched::thread_control_block_insert_cap(
+            sched::thread_control_block_insert_capability(
                 tid,
-                crate::cap::thread_control_block_cap(tid, Rights::WRITE),
+                crate::capability_object::thread_control_block_capability(tid, Rights::WRITE),
                 Some(0),
             )
             .expect("give the spinner its own TCB");
@@ -213,7 +219,7 @@ fn each_thread_reads_through_its_own_thread_pointer() {
     let read: [u64; SPINNERS] = core::array::from_fn(|i| result(spinners[i].2));
     for &(tid, tcb, _) in &spinners {
         sched::kill_thread(tid);
-        let _ = sched::delete_current_cap(tcb);
+        let _ = sched::delete_current_capability(tcb);
     }
     assert!(
         wait_for(5, || spinners
@@ -251,9 +257,17 @@ fn each_thread_reads_through_its_own_thread_pointer() {
 fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
     let region = crate::memory_region::create(16).expect("no region");
     let name = user_address_space_create(region).expect("no address space");
-    let given = sched::grant(crate::cap::address_space_cap(name, Rights::WRITE)).expect("grant");
+    let given = sched::grant(crate::capability_object::address_space_capability(
+        name,
+        Rights::WRITE,
+    ))
+    .expect("grant");
     let tid = sched::create_thread_control_block(region).expect("no tcb");
-    let tcb = sched::grant(crate::cap::thread_control_block_cap(tid, Rights::ALL)).expect("grant");
+    let tcb = sched::grant(crate::capability_object::thread_control_block_capability(
+        tid,
+        Rights::ALL,
+    ))
+    .expect("grant");
     let kernel_half = crate::arch::mmu::phys_to_virt(0);
     let configure = |tp| {
         call6(
@@ -270,7 +284,7 @@ fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
         "CONFIGURE took a kernel-half thread pointer",
     );
     assert!(
-        sched::current_cap(given).is_ok(),
+        sched::current_capability(given).is_ok(),
         "a refused CONFIGURE still consumed the address-space capability",
     );
     assert_eq!(
@@ -299,6 +313,6 @@ fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
         "an embryo's thread pointer could not be changed before it ran",
     );
 
-    let _ = sched::delete_current_cap(tcb);
+    let _ = sched::delete_current_capability(tcb);
     sched::reclaim_region(region).expect("the region did not come back");
 }

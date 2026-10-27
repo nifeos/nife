@@ -199,7 +199,7 @@ fn call_reply_kernel() {
         let span = own_span();
         loop {
             let m = measured(&K_CR_SERVER_RECEIVE_CAP, span, || {
-                sched::ipc_receive_cap(ep)
+                sched::ipc_receive_capability(ep)
             });
             if m[0] == u64::MAX {
                 break;
@@ -208,16 +208,17 @@ fn call_reply_kernel() {
             // does to answer: find the reply capability, reply through it, drop the slot.
             measured(&K_CR_SERVER_REPLY, span, || {
                 let slot = m[1];
-                let crate::cap::Object::Reply(caller) = sched::current_cap(slot)
-                    .expect("ipc_stack_depth: no reply capability")
-                    .object
+                let crate::capability_object::Object::Reply(caller) =
+                    sched::current_capability(slot)
+                        .expect("ipc_stack_depth: no reply capability")
+                        .object
                 else {
                     panic!(
                         "ipc_stack_depth: RECEIVE_CAP of a CALL did not deliver a Reply capability"
                     );
                 };
                 sched::ipc_reply(caller, [m[0], 0]);
-                let _ = sched::delete_current_cap(slot);
+                let _ = sched::delete_current_capability(slot);
             });
         }
     })
@@ -445,7 +446,7 @@ const SOAK_CALLER: u64 = 1;
 /// forever, so the endpoints come from a region a `Holding` reclaims, which wakes it to die.
 #[cfg(initial_ramdisk)]
 fn send_receive_el0() -> Option<()> {
-    use crate::cap::{Rights, rendezvous_cap};
+    use crate::capability_object::{Rights, rendezvous_capability};
     use crate::user::Spawn;
     use crate::user::holding::Holding;
 
@@ -473,8 +474,8 @@ fn send_receive_el0() -> Option<()> {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(request, Rights::READ),
-                    rendezvous_cap(reply, Rights::WRITE),
+                    rendezvous_capability(request, Rights::READ),
+                    rendezvous_capability(reply, Rights::WRITE),
                 ],
                 maps: &[],
             },
@@ -490,9 +491,9 @@ fn send_receive_el0() -> Option<()> {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE),
-                    rendezvous_cap(request, Rights::WRITE),
-                    rendezvous_cap(reply, Rights::READ),
+                    rendezvous_capability(report, Rights::WRITE),
+                    rendezvous_capability(request, Rights::WRITE),
+                    rendezvous_capability(reply, Rights::READ),
                 ],
                 maps: &[],
             },
@@ -517,7 +518,7 @@ fn send_receive_el0() -> Option<()> {
 /// to 30 seconds for their series to fill and then reclaims them.
 #[cfg(initial_ramdisk)]
 fn call_reply_el0() -> Option<()> {
-    use crate::cap::{Rights, rendezvous_cap};
+    use crate::capability_object::{Rights, rendezvous_capability};
     use crate::user::holding::Holding;
     use crate::user::{Mapping, Spawn};
 
@@ -544,7 +545,7 @@ fn call_reply_el0() -> Option<()> {
                     arg0: role,
                     arg1: slot as u64,
                     arg2: 2 * slot as u64 + 1,
-                    grants: &[rendezvous_cap(ep, rights)],
+                    grants: &[rendezvous_capability(ep, rights)],
                     maps: &[Mapping {
                         va: soak_page::VA,
                         phys,

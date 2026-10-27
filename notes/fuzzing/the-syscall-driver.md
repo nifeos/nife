@@ -51,7 +51,7 @@ at seed 19, step 63, inside the suite's range. Revocation in flight went red onl
 
 ## The BUGS, in full
 
-- `SYS_CAP_DELETE` is driven through `sched::delete_current_cap`, not `syscall::dispatch`.
+- `SYS_CAP_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
   `TrapFrame` has no setter for the syscall number, so a kernel thread cannot build a frame
   `dispatch` would read as `SYS_CAP_DELETE`. `dispatch`'s arm is that one call and `Ok(0)`.
 - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,

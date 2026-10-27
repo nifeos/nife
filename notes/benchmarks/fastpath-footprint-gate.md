@@ -24,7 +24,7 @@ the gate exists.
 `script/stack-depth-check` already does for stack chains. It reports these per ISA:
 
 - `ipc_send_receive`: the transitive closure of non-cold calls from the SEND/RECEIVE roots (`ipc_send`,
-  `ipc_receive`, `schedule`, `finish_switch`, `current_cap`).
+  `ipc_receive`, `schedule`, `finish_switch`, `current_capability`).
 - `ipc_call_reply`: the same closure from the CALL/RECEIVE_CAP/REPLY roots. This is the shape the
   system actually runs, and it is 25 to 29% larger; see
   [the wrong-shape correction](#the-gate-measured-the-wrong-shape-and-the-aarch64-entry-figure-counted-a-table-it-never-fetched).
@@ -107,7 +107,7 @@ that day; x86_64 is below. The current stored baselines are the milestone 188 "a
 down, which are what `bench/fastpath-*.txt` holds.*
 
 The closure's aarch64 members: `ipc_receive`, `schedule`, `ipc_send`, `finish_switch`, `wake`,
-`current_cap`, `kmem::recycle`, `memcpy`, `switch_to`. Every one is defensible as something an IPC
+`current_capability`, `kmem::recycle`, `memcpy`, `switch_to`. Every one is defensible as something an IPC
 round trip actually runs, which is the test the root list has to pass.
 
 Closing naively from `finish_switch` returned 11.2 KiB. That function's reap branch drags in
@@ -158,7 +158,7 @@ argument and the phase-4 recommendation.*
 The roots were `ipc_send` and `ipc_receive`, which is the shape of `ipc_rtt_el0` and of essentially no
 service in this tree. A service is a client `CALL` and a server `RECEIVE_CAP` then `REPLY`.
 `kernel/src/bench.rs`'s own `call_reply` doc already calls that "the one-endpoint shape real services
-use". Measured on the same binaries, the shape userspace runs is larger everywhere. `ipc_receive_cap`
+use". Measured on the same binaries, the shape userspace runs is larger everywhere. `ipc_receive_capability`
 and `ipc_call` carry the one-shot Reply mint, the capability-table insert into the server and the
 `WaitRole::Reply` parking DECISIONS §12 (call/Reply IPC) requires, and none of that is on a bare `SEND` or `RECEIVE`.
 The gate now reports and checks both shapes.

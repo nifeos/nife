@@ -16,7 +16,7 @@ Per sweep point, summed over cores:
 - Per lock rank: acquisitions that found the lock held, and the ticks spent spinning for it.
 - For the reaper: threads reaped, the ticks spent freeing their kernel stacks with no lock held,
   and the ticks its final `IPC_TABLES` section held the lock to remove them.
-- For `sched::current_cap`: every call, and the calls whose one acquisition found its lock held,
+- For `sched::current_capability`: every call, and the calls whose one acquisition found its lock held,
   with their wait. Every `invoke` makes exactly one such call, so `contended / calls` is the chance
   the cheapest syscall waits, and `wait_ticks / calls` is what that costs it on average. That is
   directly comparable with the `null_syscall` job's per-trap growth. The lock is the running
@@ -35,7 +35,7 @@ make.
 
 An acquisition that finds the lock free costs what it always did. `InterruptSafeMutex::lock` opens
 with
-`try_lock`, the same compare-and-swap `spin_lock`'s `lock` opens with. `current_cap` pays a flag store, a
+`try_lock`, the same compare-and-swap `spin_lock`'s `lock` opens with. `current_capability` pays a flag store, a
 counter increment and a flag clear, all on its own core's line. The clock is read only on the
 contended path, twice per wait. On radon a `rdtime` may be emulated by firmware (a recollection about
 the SiFive U74, not checked against radon's OpenSBI), and reading it on every call would add to the
@@ -51,6 +51,6 @@ which is cold: one call per thread exit.
 - An acquisition that finds the lock free but must pull its cache line from another core is not
   counted. That cost is real and rises with busy cores. The residual between the job's growth and
   the counted wait is where it would show.
-- The `current_cap` attribution is a per-core flag set around the acquisition. An interrupt that
+- The `current_capability` attribution is a per-core flag set around the acquisition. An interrupt that
   arrived after the flag and before the lock masked interrupts, and took a contended lock of its own,
-  would be charged to `current_cap`. On the syscall path interrupts are already masked there.
+  would be charged to `current_capability`. On the syscall path interrupts are already masked there.

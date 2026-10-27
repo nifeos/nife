@@ -1,8 +1,9 @@
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use super::*;
-use crate::cap::{
-    Capability, Rights, memory_region_lending_capability, page_frame_cap, rendezvous_cap,
+use crate::capability_object::{
+    Capability, Rights, memory_region_lending_capability, page_frame_capability,
+    rendezvous_capability,
 };
 use crate::sched::RendezvousId;
 
@@ -283,13 +284,13 @@ fn shell_grants(
     // Filled in the order the shell's own constants name, because a `Spawn` fills a capability
     // table from zero: slot 0 the terminal, 1 the spawn channel, 2 the result channel, 3 the
     // budget, then whichever of the directory and the clock this wiring has.
-    let mut grants = [rendezvous_cap(term, Rights::WRITE); 6];
-    grants[1] = rendezvous_cap(spawn_ep, Rights::WRITE);
-    grants[2] = rendezvous_cap(result, Rights::READ);
+    let mut grants = [rendezvous_capability(term, Rights::WRITE); 6];
+    grants[1] = rendezvous_capability(spawn_ep, Rights::WRITE);
+    grants[2] = rendezvous_capability(result, Rights::READ);
     grants[3] = memory_region_lending_capability(budget);
     let mut g = 4;
     if let Some((dir_ep, _)) = dir {
-        grants[g] = rendezvous_cap(dir_ep, Rights::WRITE);
+        grants[g] = rendezvous_capability(dir_ep, Rights::WRITE);
         g += 1;
     }
     // **The slot the clock landed in, handed over in `arg2`**, which is the same thing both
@@ -298,7 +299,7 @@ fn shell_grants(
     // Zero means none, and zero can never be a clock because slot 0 is the terminal everywhere.
     let mut clock_slot = 0u64;
     if let Some(phys) = clock {
-        grants[g] = page_frame_cap(phys, Rights::READ);
+        grants[g] = page_frame_capability(phys, Rights::READ);
         clock_slot = g as u64;
         g += 1;
     }
@@ -312,11 +313,12 @@ fn shell_grants(
 /// testing a terminal nobody has.
 pub fn transcript(w: &Wiring, sentinel: &[u8], out: &mut [u8]) -> usize {
     loop {
-        let m = crate::sched::ipc_receive_cap(w.term);
+        let m = crate::sched::ipc_receive_capability(w.term);
         let (w0, slot) = (m[0], m[1]);
-        let crate::cap::Object::Reply(caller) = crate::sched::current_cap(slot)
-            .expect("the shell's terminal write carried no reply capability")
-            .object
+        let crate::capability_object::Object::Reply(caller) =
+            crate::sched::current_capability(slot)
+                .expect("the shell's terminal write carried no reply capability")
+                .object
         else {
             panic!("the shell sent the terminal something that was not a CALL");
         };
@@ -337,7 +339,7 @@ pub fn transcript(w: &Wiring, sentinel: &[u8], out: &mut [u8]) -> usize {
             WRITTEN.store(at + n, Ordering::SeqCst);
         }
         crate::sched::ipc_reply(caller, [n as u64, 0]);
-        crate::sched::delete_current_cap(slot).expect("consume the one-shot reply");
+        crate::sched::delete_current_capability(slot).expect("consume the one-shot reply");
 
         let done = {
             let buf = TRANSCRIPT.lock();
@@ -456,8 +458,8 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         // one, and receiving it anyway is what keeps the two sides in lockstep if one ever
         // does. `user/src/system_initializer.rs` is where a budget actually reaches a child.
         if grant_plan::spawnproto::memory_grant_pages(w2) > 0 {
-            let m = crate::sched::ipc_receive_cap(spawn_ep);
-            let _ = crate::sched::delete_current_cap(m[1]);
+            let m = crate::sched::ipc_receive_capability(spawn_ep);
+            let _ = crate::sched::delete_current_capability(m[1]);
         }
 
         let image = prog.and_then(|p| program(p.name()));
@@ -477,8 +479,8 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
                             arg1: arg,
                             arg2: 0,
                             grants: &[
-                                rendezvous_cap(out, Rights::WRITE),
-                                rendezvous_cap(src, Rights::READ),
+                                rendezvous_capability(out, Rights::WRITE),
+                                rendezvous_capability(src, Rights::READ),
                             ],
                             maps: &[],
                         },
@@ -489,7 +491,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
                             arg0: 0,
                             arg1: arg,
                             arg2: 0,
-                            grants: &[rendezvous_cap(out, Rights::WRITE)],
+                            grants: &[rendezvous_capability(out, Rights::WRITE)],
                             maps: &[],
                         },
                     ),
@@ -525,12 +527,12 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
 /// away: what the progenitor needs is the *name* of the rendezvous, and holding the capability
 /// afterwards would fill a capability table over a long session for nothing.
 fn take_rendezvous(ep: RendezvousId) -> Option<RendezvousId> {
-    let m = crate::sched::ipc_receive_cap(ep);
+    let m = crate::sched::ipc_receive_capability(ep);
     let slot = m[1];
-    let cap = crate::sched::current_cap(slot).ok()?;
-    let _ = crate::sched::delete_current_cap(slot);
+    let cap = crate::sched::current_capability(slot).ok()?;
+    let _ = crate::sched::delete_current_capability(slot);
     match cap.object {
-        crate::cap::Object::Rendezvous(id, _) => Some(id),
+        crate::capability_object::Object::Rendezvous(id, _) => Some(id),
         _ => None,
     }
 }

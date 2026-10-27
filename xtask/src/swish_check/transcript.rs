@@ -28,7 +28,7 @@ pub(super) const KERNEL_FAULT_TOKENS: [&str; 6] = [
     " sp 0x",
 ];
 
-/// What `kernel::cap::report_peak` prints, verbatim (milestone 231). The line carries the boot's
+/// What `kernel::capability_object::report_peak` prints, verbatim (milestone 231). The line carries the boot's
 /// capability-slot high-water mark against the table's capacity, and `swish-check` both echoes the
 /// last one it sees and fails if the kernel flagged it as past the recorded peak.
 pub(super) const SLOT_GAUGE: &str = "capability slots:";

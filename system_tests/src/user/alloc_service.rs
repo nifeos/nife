@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, memory_region_cap, rendezvous_cap};
+use crate::capability_object::{Rights, memory_region_capability, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// The demo caps its own heap at 64 pages; the budget must also cover the program's page
@@ -42,8 +42,8 @@ pub fn start(image: &'static [u8], endpoints: u64) -> RendezvousId {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    memory_region_cap(budget),             // slot 0: the heap's budget
-                    rendezvous_cap(report, Rights::WRITE), // slot 1: report the verdict
+                    memory_region_capability(budget), // slot 0: the heap's budget
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: report the verdict
                 ],
                 maps: &stack,
             },

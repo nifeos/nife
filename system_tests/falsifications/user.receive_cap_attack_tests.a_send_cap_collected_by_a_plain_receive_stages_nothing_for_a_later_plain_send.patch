@@ -49,7 +49,7 @@ index c59bccd96..18d699a17 100644
                          // A plain RECEIVE delivers no capability: drop the delegation a `SEND_CAP`
                          // sender parked, or it rides that sender's next plain `SEND` to another
                          // rendezvous. The sender keeps its own copy.
--                        sched.threads.get_mut(sender).unwrap().outgoing_cap = None;
+-                        sched.threads.get_mut(sender).unwrap().outgoing_capability = None;
                          // Collected: the sender's rendezvous is complete, which is what lets its
                          // wake through the boot-8 gate.
                          sched.threads.get_mut(sender).unwrap().handshake.serve();

@@ -6,7 +6,9 @@
 //! a second list of grants here. See notes/ntp.md.
 
 use super::*;
-use crate::cap::{Rights, memory_region_cap, memory_region_lending_capability, rendezvous_cap};
+use crate::capability_object::{
+    Rights, memory_region_capability, memory_region_lending_capability, rendezvous_capability,
+};
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
@@ -117,12 +119,12 @@ pub fn start_server(
                 arg1: claimed_nanos,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE), // slot 0: the one report
-                    rendezvous_cap(stack, Rights::READ),   // slot 1: serve the socket contract
-                    memory_region_cap(budget),             // slot 2: map the client's frame
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: the one report
+                    rendezvous_capability(stack, Rights::READ), // slot 1: serve the socket contract
+                    memory_region_capability(budget),           // slot 2: map the client's frame
                     // slot 3: what an opened socket is minted from (§255 (each socket is its own
                     // capability))
-                    rendezvous_cap(stack, Rights::WRITE.union(Rights::GRANT)),
+                    rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
                 ],
                 maps: &maps,
             },
@@ -169,11 +171,11 @@ fn spawn_with_client_endowment(
                 arg1: a1,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE),    // slot 0: the verdict
-                    rendezvous_cap(stack, Rights::WRITE),     // slot 1: the network
-                    memory_region_lending_capability(budget), // slot 2: the shared frame
-                    rendezvous_cap(propose, Rights::WRITE),   // slot 3: ask, never tell
-                    rendezvous_cap(entropy, Rights::WRITE),   // slot 4: the nonce
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: the verdict
+                    rendezvous_capability(stack, Rights::WRITE),  // slot 1: the network
+                    memory_region_lending_capability(budget),     // slot 2: the shared frame
+                    rendezvous_capability(propose, Rights::WRITE), // slot 3: ask, never tell
+                    rendezvous_capability(entropy, Rights::WRITE), // slot 4: the nonce
                 ][..n_grants],
                 maps: &maps,
             },

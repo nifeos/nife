@@ -12,7 +12,9 @@ use byte_sink_contract::fixture;
 use system_log_contract::{control, read};
 
 use super::*;
-use crate::cap::{Rights, notification_cap, rendezvous_cap, rendezvous_cap_badged};
+use crate::capability_object::{
+    Rights, notification_capability, rendezvous_capability, rendezvous_capability_badged,
+};
 use crate::sched::RendezvousId;
 
 /// The two writers' badges and users. Distinct users, so a reader that confused the two would put
@@ -53,8 +55,8 @@ fn spawn_writer(image: &'static [u8], intake: RendezvousId, badge: u32, report: 
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap_badged(intake, Rights::WRITE, badge as u64), // slot 0
-                    rendezvous_cap(report, Rights::WRITE),                      // slot 1
+                    rendezvous_capability_badged(intake, Rights::WRITE, badge as u64), // slot 0
+                    rendezvous_capability(report, Rights::WRITE),                      // slot 1
                 ],
                 maps: &[],
             },
@@ -138,9 +140,9 @@ fn two_badged_writers_are_attributed_by_the_badge_and_a_per_user_read_filters() 
                 arg1: 2, // two readers' notifications, slots 1 and 2
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(intake, Rights::READ), // slot 0: the intake
-                    notification_cap(system_done, Rights::WRITE), // slot 1: window 0's reader
-                    notification_cap(alice_done, Rights::WRITE), // slot 2: window 1's reader
+                    rendezvous_capability(intake, Rights::READ), // slot 0: the intake
+                    notification_capability(system_done, Rights::WRITE), // slot 1: window 0's reader
+                    notification_capability(alice_done, Rights::WRITE), // slot 2: window 1's reader
                 ],
                 maps: &[
                     Mapping {
@@ -270,7 +272,7 @@ fn badge_of_every_message(ep: RendezvousId) -> u64 {
     let mut bytes = 0;
     for i in 0.. {
         let m = if i % 2 == 0 {
-            let m = crate::sched::ipc_receive_cap(ep);
+            let m = crate::sched::ipc_receive_capability(ep);
             // Only x0 and x3 are read here. Which word lands in x1 for a plain SEND depends on
             // who reached the rendezvous first (`abi::rendezvous::RECEIVE_CAP`'s BUGS), so a test
             // that asserted it would be asserting the scheduler's order.
@@ -322,8 +324,8 @@ fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_cap() 
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(ep, Rights::WRITE),     // slot 0: unbadged
-                    rendezvous_cap(report, Rights::WRITE), // slot 1
+                    rendezvous_capability(ep, Rights::WRITE), // slot 0: unbadged
+                    rendezvous_capability(report, Rights::WRITE), // slot 1
                 ],
                 maps: &[],
             },

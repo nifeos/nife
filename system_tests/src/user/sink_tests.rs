@@ -1,7 +1,7 @@
 use byte_sink_contract::fixture;
 
 use super::*;
-use crate::cap::{Rights, rendezvous_cap};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Spawn `fixtures/src/sink_transcript_writer.rs` against `sink`, and return the endpoint it
@@ -28,14 +28,14 @@ fn spawn_writer(
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(ep, Rights::WRITE),     // slot 0: the byte sink
-                    rendezvous_cap(report, Rights::WRITE), // slot 1: the classification
+                    rendezvous_capability(ep, Rights::WRITE), // slot 0: the byte sink
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: the classification
                 ],
                 maps: &[],
             },
         ),
         None => {
-            crate::sched::grant_at(1, rendezvous_cap(report, Rights::WRITE))
+            crate::sched::grant_at(1, rendezvous_capability(report, Rights::WRITE))
                 .expect("the writer's report slot was already occupied");
             run(
                 image,
@@ -71,8 +71,8 @@ fn spawn_wc(source: RendezvousId, endpoints: u64) -> RendezvousId {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(out, Rights::WRITE), // slot 0: where its answer goes
-                    rendezvous_cap(source, Rights::READ), // slot 1: where its bytes come from
+                    rendezvous_capability(out, Rights::WRITE), // slot 0: where its answer goes
+                    rendezvous_capability(source, Rights::READ), // slot 1: where its bytes come from
                 ],
                 maps: &[],
             },
@@ -427,8 +427,8 @@ fn the_terminal_is_a_sink_like_any_other_and_the_writer_cannot_tell() {
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(sink_ep, Rights::READ), // slot 0: the sink it serves
-                    rendezvous_cap(term_ep, Rights::WRITE), // slot 1: the terminal it prints to
+                    rendezvous_capability(sink_ep, Rights::READ), // slot 0: the sink it serves
+                    rendezvous_capability(term_ep, Rights::WRITE), // slot 1: the terminal it prints to
                 ],
                 maps: &[],
             },
@@ -447,11 +447,12 @@ fn the_terminal_is_a_sink_like_any_other_and_the_writer_cannot_tell() {
     let mut got = [0u8; fixture::TRANSCRIPT.len()];
     let mut n = 0usize;
     while n < fixture::TRANSCRIPT.len() {
-        let m = crate::sched::ipc_receive_cap(term_ep);
+        let m = crate::sched::ipc_receive_capability(term_ep);
         let (w0, slot, w1) = (m[0], m[1], m[2]);
-        let crate::cap::Object::Reply(caller) = crate::sched::current_cap(slot)
-            .expect("the adapter's print carried no reply capability")
-            .object
+        let crate::capability_object::Object::Reply(caller) =
+            crate::sched::current_capability(slot)
+                .expect("the adapter's print carried no reply capability")
+                .object
         else {
             panic!("the adapter sent the terminal something that was not a CALL");
         };
@@ -471,7 +472,7 @@ fn the_terminal_is_a_sink_like_any_other_and_the_writer_cannot_tell() {
             n += 1;
         }
         crate::sched::ipc_reply(caller, [len as u64, 0]);
-        crate::sched::delete_current_cap(slot).expect("consume the one-shot reply");
+        crate::sched::delete_current_capability(slot).expect("consume the one-shot reply");
     }
 
     assert_eq!(

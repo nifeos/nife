@@ -71,7 +71,7 @@ seqlock reader. The kernel already wakes userspace without a new method by signa
 notification: an armed timer's expiry does it from the tick (`signal_locked` in
 `sched::expire_timers`). `sched::signal_notification_from_interrupt` is the any-context form,
 written for exactly this kind of caller and so far called only from tests. A frame run capability
-(`cap::page_frame_run_cap`) exists for a multi-page ring. F needs no new object type and no new
+(`cap::page_frame_run_capability`) exists for a multi-page ring. F needs no new object type and no new
 method. It needs three new boot grants and one shared-memory layout. R needs a new object type and
 at least one new method.
 

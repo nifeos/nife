@@ -4,7 +4,7 @@ use abi::Error;
 
 use super::supervision_tests::{FAULT_STUB, REPORT_STUB, build_child_in};
 use crate::arch::exceptions::TrapFrame;
-use crate::cap::Rights;
+use crate::capability_object::Rights;
 use crate::sched;
 use crate::syscall::invoke;
 
@@ -50,14 +50,18 @@ pub(super) fn rendezvous(region: u64) -> sched::RendezvousId {
 /// what `ps` is granted. It is not that a viewer is refused `RECEIVE` and `REAP`; it cannot name them,
 /// because those take `READ` and this capability does not carry it.
 pub(super) fn hold_view(ep: sched::RendezvousId) -> u64 {
-    sched::grant(crate::cap::rendezvous_cap(ep, Rights::ENUMERATE)).expect("grant the rendezvous")
+    sched::grant(crate::capability_object::rendezvous_capability(
+        ep,
+        Rights::ENUMERATE,
+    ))
+    .expect("grant the rendezvous")
 }
 
 /// Hold a domain **the way its supervisor holds it**: `READ` to receive and reap, `ENUMERATE` to
 /// look. The two rights are separable and this is the holder that has both, which is what makes
 /// [`hold_view`]'s narrowness a choice rather than the only thing available.
 pub(super) fn hold_supervisor(ep: sched::RendezvousId) -> u64 {
-    sched::grant(crate::cap::rendezvous_cap(
+    sched::grant(crate::capability_object::rendezvous_capability(
         ep,
         Rights::READ.union(Rights::ENUMERATE),
     ))
@@ -67,7 +71,11 @@ pub(super) fn hold_supervisor(ep: sched::RendezvousId) -> u64 {
 /// Hold the same rendezvous **send-only**: a peer that may report to this supervisor and is not the
 /// supervisor. The negative control's whole setup is this one line.
 pub(super) fn hold_write(ep: sched::RendezvousId) -> u64 {
-    sched::grant(crate::cap::rendezvous_cap(ep, Rights::WRITE)).expect("grant the rendezvous")
+    sched::grant(crate::capability_object::rendezvous_capability(
+        ep,
+        Rights::WRITE,
+    ))
+    .expect("grant the rendezvous")
 }
 
 /// `invoke(cap, SURVEY, cursor, _, _)`, through the real dispatcher, returning the three words a
@@ -148,7 +156,7 @@ fn tids<'a>(s: &'a ps::Survey<'_>) -> impl Iterator<Item = u64> + 'a {
 /// the channels the corpses are still attached to.
 pub(super) fn tidy(budget: u64, rendezvous_region: u64, slots: &[u64]) {
     for &s in slots {
-        let _ = sched::delete_current_cap(s);
+        let _ = sched::delete_current_capability(s);
     }
     sched::reclaim_region(budget).expect("the builder's own budget did not come back");
     sched::reclaim_region(rendezvous_region)
@@ -280,7 +288,7 @@ fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {
     // Nothing at all in the slot: a different refusal, and a louder one.
     let empty_slot = abi::CAPABILITY_TABLE_SLOTS - 1;
     assert!(
-        sched::current_cap(empty_slot).is_err(),
+        sched::current_capability(empty_slot).is_err(),
         "pick an empty slot"
     );
     assert_eq!(
@@ -325,7 +333,11 @@ fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {
         Err(Error::NotPermitted),
         "a viewer reaped a member of the domain it was only supposed to be able to name",
     );
-    let receiver = sched::grant(crate::cap::rendezvous_cap(ep, Rights::READ)).expect("grant");
+    let receiver = sched::grant(crate::capability_object::rendezvous_capability(
+        ep,
+        Rights::READ,
+    ))
+    .expect("grant");
     assert_eq!(
         survey(receiver, 0),
         (Error::NotPermitted as i64, 0, 0),

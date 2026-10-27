@@ -83,9 +83,9 @@ pub(super) fn spawn_std(
         // The directory goes in at its named slot before `run` grants in order, so `run`'s two
         // grants land at 0 and 1 and slots 2 and 3 stay empty. A bound grant carries its badge.
         let dir = if badge == 0 {
-            rendezvous_cap(file_ep, Rights::WRITE)
+            rendezvous_capability(file_ep, Rights::WRITE)
         } else {
-            rendezvous_cap_badged(file_ep, Rights::WRITE, badge)
+            rendezvous_capability_badged(file_ep, Rights::WRITE, badge)
         };
         crate::sched::grant_at(FS_DIR_SLOT, dir).expect("the std fs slot was already occupied");
         let pages = [
@@ -94,7 +94,7 @@ pub(super) fn spawn_std(
         ];
         for (slot, phys) in pages {
             if let Some(phys) = phys {
-                crate::sched::grant_at(slot, page_frame_cap(phys, Rights::READ))
+                crate::sched::grant_at(slot, page_frame_capability(phys, Rights::READ))
                     .expect("a std page slot was already occupied");
             }
         }
@@ -105,8 +105,8 @@ pub(super) fn spawn_std(
                 arg1: 0,
                 arg2: 0,
                 grants: &[
-                    memory_region_cap(heap),               // slot 0: the heap's budget
-                    rendezvous_cap(report, Rights::WRITE), // slot 1: stdout/stderr
+                    memory_region_capability(heap), // slot 0: the heap's budget
+                    rendezvous_capability(report, Rights::WRITE), // slot 1: stdout/stderr
                 ],
                 maps: &maps[..maps_used],
             },

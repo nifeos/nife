@@ -20,7 +20,7 @@ pub(super) fn current_thread_id() -> ThreadId {
 }
 
 /// The running thread's capability table, per core (provisional name, 2026-10-04 UTC): what
-/// [`current_cap`] reads instead of taking `IPC_TABLES` to find the thread.
+/// [`current_capability`] reads instead of taking `IPC_TABLES` to find the thread.
 ///
 /// Null before this core runs a thread. Written only by [`set_current`] and read only by the owning
 /// core with interrupts masked. Its own array, one cache line an entry, because `PerCpu` is held to
@@ -62,7 +62,7 @@ pub(super) unsafe fn set_current(tid: ThreadId, tcb: *mut Thread) {
 /// [`crate::sync::lock_found`] for why the entry is read with interrupts masked.
 #[inline]
 pub(super) fn current_capabilities()
--> Option<crate::sync::InterruptSafeGuard<'static, crate::cap::CapabilityTable>> {
+-> Option<crate::sync::InterruptSafeGuard<'static, crate::capability_object::CapabilityTable>> {
     crate::sync::lock_found(|| {
         let table = CURRENT_CAPABILITIES
             .get(cpu::id())?

@@ -1,4 +1,4 @@
-/// `invoke(reply_cap, REPLY, r0, r1, _)` -> 0. Deliver `{r0, r1}` to the caller, wake it, and
+/// `invoke(reply_capability, REPLY, r0, r1, _)` -> 0. Deliver `{r0, r1}` to the caller, wake it, and
 /// consume this capability (a second use is [`crate::Error::NoSuchSlot`]).
 pub const REPLY: u64 = 0;
 

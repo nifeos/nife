@@ -4,7 +4,7 @@
 //!
 //! The host crate proves both claims (`capability::derive_never_widens_rights`,
 //! `from_bits_cannot_forge_a_right`), and `confinement_attack_tests` drives neither case; this
-//! drives `SEND_CAP`'s `a1` rights register through `syscall::invoke`. `ipc_send_cap_from` refuses
+//! drives `SEND_CAP`'s `a1` rights register through `syscall::invoke`. `ipc_send_capability_from` refuses
 //! before touching the rendezvous, so a refusal parks nothing, and a regression parks the test
 //! thread and fails by the watchdog's dump. See notes/confinement-outsider-pass-7.md.
 
@@ -14,11 +14,11 @@
 use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
-// The `cap` module and these names still carry their pre-sweep spelling
+// The `capability` module and these names still carry their pre-sweep spelling
 // (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
 // this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{Rights, rendezvous_cap as rendezvous_capability};
-use crate::sched::{self, delete_current_cap as delete_current_capability};
+use crate::capability_object::{Rights, rendezvous_capability};
+use crate::sched::{self, delete_current_capability};
 
 const SEND_CAPABILITY: u64 = abi::rendezvous::SEND_CAP;
 use crate::syscall::invoke;

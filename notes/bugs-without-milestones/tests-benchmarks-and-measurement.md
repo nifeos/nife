@@ -69,7 +69,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  system_tests/src/user/futex_tests.rs | wake is called from the kernel test because threads could not share a space; milestone 812 (BUILT) now allows two threads | Drive futex wake from a second thread in the same space | S  |
 |  system_tests/src/user/login_user_schedule_tests.rs | one unexplained DENIED on the HVF leg (1 of 10 runs); not investigated | Run down the login DENIED seen once on HVF | S  |
 |  system_tests/src/user/map_revocation_window_tests.rs | `DeviceFrame` arm of MAP_INTO reasoned, not driven | Drive the DeviceFrame arm of MAP_INTO under revocation | S  |
-|  system_tests/src/user/revocation_in_flight_tests.rs | `DeviceFrame` and `PortRange` sweeps untested through a parked hand-off; `ipc_receive_cap` skips `port_range_grant` | Drive DeviceFrame and PortRange revocation through a parked hand-off | M  |
+|  system_tests/src/user/revocation_in_flight_tests.rs | `DeviceFrame` and `PortRange` sweeps untested through a parked hand-off; `ipc_receive_capability` skips `port_range_grant` | Drive DeviceFrame and PortRange revocation through a parked hand-off | M  |
 |  system_tests/src/user/revocation_window_tests.rs | `DeviceFrame` and `PortRange` take-backs reasoned, not driven | (same milestone as the two rows above and below) | S  |
 |  system_tests/src/user/running_space_tests.rs (guard) | placement guard fails a correct kernel when both threads land on one core; should retry or skip | Make the cross-core TLB test retry placement | S  |
 |  system_tests/src/user/spawn_mapping_revocation_tests.rs | `DeviceFrame::REVOKE` and `revoke_region` sweeps with a wired mapping not driven | (same milestone: one test for every revoking sweep) | S  |

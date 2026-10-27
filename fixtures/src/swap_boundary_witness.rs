@@ -244,7 +244,7 @@ fn usurp() -> ! {
 /// empty queue, so the break would surface as a watchdog hang: the wrong-reason red milestone 202
 /// (every confinement test is a ritual until somebody breaks the confinement) recorded, and why
 /// claim 26's test could never fail. So it parks one plain `SEND` first: a let-open `RECEIVE_CAP`
-/// returns it (`sched::ipc_receive_cap` takes any parked sender's word) and the usurper reports
+/// returns it (`sched::ipc_receive_capability` takes any parked sender's word) and the usurper reports
 /// [`hot_swap_contract::PLANT_MARKER`], which nothing honest produces. It exits when anyone takes
 /// it, the usurper or the operator's bounded receive, so no interleaving needs a handshake.
 fn plant() -> ! {

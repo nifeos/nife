@@ -27,9 +27,9 @@ fn a_userspace_thread_reads_a_cpu_that_is_really_online() {
                 arg0: 0,
                 arg1: 0,
                 arg2: 0,
-                grants: &[crate::cap::rendezvous_cap(
+                grants: &[crate::capability_object::rendezvous_capability(
                     result,
-                    crate::cap::Rights::WRITE,
+                    crate::capability_object::Rights::WRITE,
                 )],
                 maps: &[],
             },

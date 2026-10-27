@@ -104,19 +104,19 @@ pub(super) fn call_reply() {
 
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_cap(ep); // [word, reply_slot, word2]
+            let m = sched::ipc_receive_capability(ep); // [word, reply_slot, word2]
             if m[0] == u64::MAX {
                 break;
             }
             let slot = m[1];
-            let crate::cap::Object::Reply(caller) = sched::current_cap(slot)
+            let crate::capability_object::Object::Reply(caller) = sched::current_capability(slot)
                 .expect("bench: no reply cap")
                 .object
             else {
                 panic!("bench: RECEIVE_CAP of a CALL did not deliver a Reply capability");
             };
             sched::ipc_reply(caller, [m[0], 0]);
-            let _ = sched::delete_current_cap(slot);
+            let _ = sched::delete_current_capability(slot);
         }
     })
     .expect("bench: no call server");
@@ -148,7 +148,7 @@ pub(super) fn broker_rtt() {
     // server in `call_reply` does.
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_cap(back);
+            let m = sched::ipc_receive_capability(back);
             if m[0] == u64::MAX {
                 break;
             }
@@ -160,7 +160,7 @@ pub(super) fn broker_rtt() {
     // The broker: both ends are up, so it buffers nothing.
     sched::spawn(move || {
         loop {
-            let m = sched::ipc_receive_cap(front);
+            let m = sched::ipc_receive_capability(front);
             if m[0] == u64::MAX {
                 sched::ipc_send(back, [u64::MAX, 0, 0]);
                 break;
@@ -184,12 +184,12 @@ pub(super) fn broker_rtt() {
 
 /// Answer through the one-shot Reply capability `RECEIVE_CAP` delivered, and consume it.
 fn reply_to(slot: u64, word: u64) {
-    let crate::cap::Object::Reply(caller) = sched::current_cap(slot)
+    let crate::capability_object::Object::Reply(caller) = sched::current_capability(slot)
         .expect("bench: no reply cap")
         .object
     else {
         panic!("bench: RECEIVE_CAP of a CALL did not deliver a Reply capability");
     };
     sched::ipc_reply(caller, [word, 0]);
-    let _ = sched::delete_current_cap(slot);
+    let _ = sched::delete_current_capability(slot);
 }

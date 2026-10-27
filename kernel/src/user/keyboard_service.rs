@@ -1,5 +1,7 @@
 use super::*;
-use crate::cap::{Rights, interrupt_cap, rendezvous_cap, virtio_cap};
+use crate::capability_object::{
+    Rights, interrupt_capability, rendezvous_capability, virtio_capability,
+};
 use crate::sched::RendezvousId;
 
 /// Where the driver maps its DMA page and the input ring. Must match `components/src/keyboard_driver.rs`.
@@ -106,10 +108,10 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
                 arg1: 0, // no physical address: the DMA page carries its own
                 arg2: 0,
                 grants: &[
-                    rendezvous_cap(report, Rights::WRITE),   // slot 0: status
-                    interrupt_cap(intid),                    // slot 1: the event interrupt
-                    virtio_cap(vid),                         // slot 2: the confined transport
-                    rendezvous_cap(doorbell, Rights::WRITE), // slot 3: ring the compositor
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: status
+                    interrupt_capability(intid),                  // slot 1: the event interrupt
+                    virtio_capability(vid),                       // slot 2: the confined transport
+                    rendezvous_capability(doorbell, Rights::WRITE), // slot 3: ring the compositor
                 ],
                 maps: &maps,
             },
@@ -154,11 +156,12 @@ impl Wiring {
     /// Answer the driver's `COMMIT`, the way a compositor would after compositing. Returns the
     /// counter reading taken as the `COMMIT` arrived, before the reply, for `bench::keyboard`.
     pub fn answer_doorbell(&self) -> u64 {
-        let m = crate::sched::ipc_receive_cap(self.doorbell);
+        let m = crate::sched::ipc_receive_capability(self.doorbell);
         let arrived = crate::arch::timer::now();
-        let crate::cap::Object::Reply(caller) = crate::sched::current_cap(m[1])
-            .expect("the keyboard driver's ring was not a CALL")
-            .object
+        let crate::capability_object::Object::Reply(caller) =
+            crate::sched::current_capability(m[1])
+                .expect("the keyboard driver's ring was not a CALL")
+                .object
         else {
             panic!("the keyboard driver rang without a reply capability");
         };
@@ -168,7 +171,7 @@ impl Wiring {
             "the keyboard driver rang with something other than COMMIT",
         );
         crate::sched::ipc_reply(caller, [0, 0]);
-        crate::sched::delete_current_cap(m[1]).expect("consume the one-shot reply");
+        crate::sched::delete_current_capability(m[1]).expect("consume the one-shot reply");
         arrived
     }
 }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::cap::{Rights, page_frame_cap, rendezvous_cap};
+use crate::capability_object::{Rights, page_frame_capability, rendezvous_capability};
 use crate::sched::RendezvousId;
 
 /// Where `date` expects the clock page, read-only. Must match components/src/date.rs's `CLOCK_VA`.
@@ -38,8 +38,8 @@ fn spawn_date(
                 arg1: offset_minutes as u64,
                 arg2: provenance,
                 grants: &[
-                    rendezvous_cap(out, Rights::WRITE), // slot 0: stdout
-                    page_frame_cap(phys, Rights::READ), // slot 1: a READER, and nothing more
+                    rendezvous_capability(out, Rights::WRITE), // slot 0: stdout
+                    page_frame_capability(phys, Rights::READ), // slot 1: a READER, and nothing more
                 ],
                 maps: &[Mapping {
                     va: CLOCK_VA,
@@ -54,7 +54,7 @@ fn spawn_date(
                 arg0: fmt,
                 arg1: offset_minutes as u64,
                 arg2: provenance,
-                grants: &[rendezvous_cap(out, Rights::WRITE)],
+                grants: &[rendezvous_capability(out, Rights::WRITE)],
                 maps: &[],
             },
         ),
@@ -81,7 +81,7 @@ fn spawn_date_with_diagnostics() -> (RendezvousId, RendezvousId, u64) {
     crate::sched::spawn(move || {
         crate::sched::grant_at(
             grant_plan::DIAGNOSTICS_SLOT,
-            rendezvous_cap(diag, Rights::WRITE),
+            rendezvous_capability(diag, Rights::WRITE),
         )
         .expect("date's declared diagnostic slot was already occupied");
         run(
@@ -90,7 +90,7 @@ fn spawn_date_with_diagnostics() -> (RendezvousId, RendezvousId, u64) {
                 arg0: FMT_HUMAN,
                 arg1: 0,
                 arg2: 0,
-                grants: &[rendezvous_cap(out, Rights::WRITE)],
+                grants: &[rendezvous_capability(out, Rights::WRITE)],
                 maps: &[],
             },
         )

@@ -1,9 +1,9 @@
 //! Revocation against a capability that is in flight, parked in a rendezvous hand-off slot.
 //!
 //! Every revocation sweep walks capability tables, and a capability handed to a rendezvous whose
-//! receiver has not arrived is in none: it waits in `Thread::outgoing_cap`, which
-//! `sched::ipc_send_cap` writes and `sched::ipc_receive_cap` takes. The `PageFrame`, `DeviceFrame`
-//! and `PortRange` sweeps clear that slot, as `sched::delete_reply_caps_naming` does. A slot left
+//! receiver has not arrived is in none: it waits in `Thread::outgoing_capability`, which
+//! `sched::ipc_send_capability` writes and `sched::ipc_receive_capability` takes. The `PageFrame`, `DeviceFrame`
+//! and `PortRange` sweeps clear that slot, as `sched::delete_reply_capabilities_naming` does. A slot left
 //! unswept reopens the use-after-free DECISIONS §13 (capability revocation and untyped reclamation)
 //! exists to prevent. See notes/confinement-claims/adversarial-pass-2026-09-21.md.
 
@@ -17,14 +17,14 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use crate::cap::{Object, Rights, page_frame_run_cap, page_frame_run_len};
+use crate::capability_object::{Object, Rights, page_frame_run_capability, page_frame_run_len};
 use crate::sched;
 
 /// A capability revoked while it sits in the hand-off slot must not reach the receiver.
 ///
-/// A sender's copy of `PageFrame(phys, 1)` parks in `outgoing_cap` on a rendezvous nobody receives
+/// A sender's copy of `PageFrame(phys, 1)` parks in `outgoing_capability` on a rendezvous nobody receives
 /// on; a whole-machine `PageFrame::REVOKE` runs, and the receiver must be handed nothing. The
-/// headline is the last assertion and every path reaches it (`ipc_receive_cap` returns `NO_CAP` or
+/// headline is the last assertion and every path reaches it (`ipc_receive_capability` returns `NO_CAP` or
 /// a slot, both inspected), for milestone 307 (which assertion actually fires when a confinement
 /// claim is broken). A vacuity guard (the sender parked) and a premise check (the revoke reached
 /// the sender's table) above it each mean, failing, that the test proved nothing.
@@ -43,15 +43,19 @@ fn a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver() {
     let phys = crate::memory_region::retype_page(region).expect("no page to revoke");
 
     // The sender holds the capability in its table, the way a real delegator does, and hands a copy
-    // to the rendezvous. Nobody is receiving, so `ipc_send_cap` parks the copy in `outgoing_cap`
+    // to the rendezvous. Nobody is receiving, so `ipc_send_capability` parks the copy in `outgoing_capability`
     // and blocks. Holding it in the table too is what the premise check reads.
     sched::spawn(move || {
-        let slot = sched::grant(page_frame_run_cap(phys, page_frame_run_len(1), Rights::ALL))
-            .expect("the sender could not be granted the frame it is about to delegate");
-        let cap = sched::current_cap(slot).expect("the grant did not land");
+        let slot = sched::grant(page_frame_run_capability(
+            phys,
+            page_frame_run_len(1),
+            Rights::ALL,
+        ))
+        .expect("the sender could not be granted the frame it is about to delegate");
+        let cap = sched::current_capability(slot).expect("the grant did not land");
         PARKED.store(true, Ordering::SeqCst);
-        sched::ipc_send_cap(ep, 0, cap, 0);
-        SENDER_STILL_HELD.store(sched::current_cap(slot).is_ok(), Ordering::SeqCst);
+        sched::ipc_send_capability(ep, 0, cap, 0);
+        SENDER_STILL_HELD.store(sched::current_capability(slot).is_ok(), Ordering::SeqCst);
         RETURNED.store(true, Ordering::SeqCst);
     })
     .expect("no sender thread");
@@ -67,11 +71,11 @@ fn a_capability_revoked_while_it_is_in_flight_does_not_reach_the_receiver() {
 
     crate::revoke::revoke_page_frame(phys);
 
-    let [_word, slot, _second, _badge, ..] = sched::ipc_receive_cap(ep);
+    let [_word, slot, _second, _badge, ..] = sched::ipc_receive_capability(ep);
     let delivered = if slot == abi::rendezvous::NO_CAP {
         None
     } else {
-        sched::current_cap(slot).ok()
+        sched::current_capability(slot).ok()
     };
 
     assert!(
