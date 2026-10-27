@@ -9,9 +9,7 @@ Built. Phase 3's last item is init building a `fs_subtree_caretaker` per grant. 
 `script/swish-check` on both ISAs. It types `caps rm rmtree/rm-solo`, `rm -v rmtree/rm-solo` and `ls
 rmtree | wc` at the real prompt. So the authority is previewed, the name the command line
 designated is removed, and the two names beside it inside the same capability are still there.
-`rm gate.txt` beside them is the one grant shape that is still a refusal. It is a refusal about what
-a name *is* rather than about a missing feature; see "The two shapes a grant cannot take"
-below, which names the design fork it waits on.
+`rm gate.txt` at the top prompt is granted too, narrowed by `fs::NARROW` (milestone 328, §173).
 
 (The Gate paragraph that stood here said `NONE`, and then named the one remaining item. A BUILT
 milestone gates nothing, so it is gone rather than stale.)
@@ -31,9 +29,9 @@ attacker. Phase 3 built, both ISAs: init builds a `fs_subtree_caretaker` per dir
 used to refuse a named file because its boot wired no FS service, which milestone 50 (pipes and
 redirection) fixed. It then
 refused a directory grant because init had nothing to build a caretaker from, which this milestone's
-last lane fixed. One remains, and it is a fork rather than a gap. A grant on the
-**root** of the shell's namespace cannot be narrowed at all, because a caretaker descends into a
-name and the root has none. The grammar shown here is milestone 47's, which deleted the `run` verb
+last lane fixed. A grant on the **root** of the shell's
+namespace has no name to descend into, so a caretaker narrows the handle it holds with `fs::NARROW`
+(milestone 328). The grammar shown here is milestone 47's, which deleted the `run` verb
 and the `file:` designator this milestone shipped with. The mechanism did not change, only the
 spelling. Notes: grant-expression.md, program-manifest.md, fs-server.md
 
@@ -98,18 +96,8 @@ loud. A refused reclaim is exactly what the *first* reclaim of a two-process reg
 construction. The endpoint sweep wakes the caretaker so it can be collected, and a thread that can
 be scheduled is refused with §16's kill armed.
 
-The two shapes a grant cannot take, both refused at the prompt with nothing spawned, and neither
-is a permission:
+The shapes a grant cannot take, refused at the prompt with nothing spawned, and none is a permission:
 
-- A grant on the root of the shell's namespace. A caretaker's whole attenuation is one `OPENDIR`
-  *into* the granted directory, and the root has no name to descend into; `fs_proto` has no verb
-  meaning "the directory I already hold, with fewer rights". So `rm gate.txt` at the top prompt is a
-  refusal and `rm rmtree/rm-solo` works, and the difference is one level of path. This is a design
-  fork and belongs to calef, because both answers are permanent. One is a narrowing verb on the
-  contract (small in the server, `Rights::attenuate` with no name resolution, and an addition to
-  something two programs agree on). The other is an interactive boot whose shell is rooted one
-  component below the image root
-  (nothing on the wire, and it changes what every other command at that prompt means).
 - A directory more than one level down, or a set of more than one name. The first is a *chain* of
   caretakers, which §92 chose supervision partly to make free; the second is
   `fs_nameset_caretaker`, which takes its set in a frame rather than in argument words. Init builds

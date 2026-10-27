@@ -197,6 +197,21 @@ pub const SETMTIME: u64 = 21;
 ///
 /// Name: provisional (milestone 47's mtime lane, 2026-08-24); an architect's to ratify.
 pub const SETMTIME_AT: u64 = 22;
+/// **Narrow a directory handle you already hold**: [`req_handle`] is the directory and `w1` the
+/// requested [`super::dir`] mask. No name is resolved and [`req_len`] is 0. Reply `r0` = a second
+/// directory handle, or an error. The handle in [`req_handle`] stays open and unchanged.
+///
+/// The new handle's rights are [`super::dir::Rights::attenuate`] of the held handle's, the same
+/// function [`OPENDIR`] and [`MKDIR`] narrow through, so it carries no right the held handle
+/// lacks. A short intersection is [`super::dir::EPERM`], as for [`OPENDIR`]: no silent
+/// degradation. A file handle is [`super::dir::ENOTDIR`]. It needs no right, because narrowing
+/// cannot widen, and that is what lets the holder of [`ROOT`] attenuate the directory it is bound
+/// to when no name leads down to it. Decided by §173 (narrowing the root of the shell's
+/// namespace), option A, 2026-10-27 (UTC). See notes/fs-server/file-protocol.md.
+///
+/// Name: provisional (milestone 328's lane, 2026-10-27 UTC); an architect's to ratify. The number
+/// is §173's: verb 23.
+pub const NARROW: u64 = 23;
 
 /// **Bind a badge to a directory: a subtree grant the server enforces itself** (milestone 606 (a
 /// directory walk costs what it does on Linux), ruling D). [`req_handle`] is a directory handle the

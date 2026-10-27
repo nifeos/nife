@@ -40,17 +40,11 @@ full. Known limitations, next to the feature rather than only in a tracker.
   (`components/src/fs_nameset_caretaker.rs`) serves only the names that matched (see
   [glob-grant.md](../glob-grant.md)). It is still open for a literal one, because a set of exactly
   one has no wiring behind it today.
-- A grant on the root of a shell's namespace cannot be narrowed at all (milestone 31 phase 3,
-  2026-08-17). A caretaker's whole attenuation is one `OPENDIR` *into* the granted directory, and the
-  root has no name to descend into. The contract resolves a single component under a handle, and it
-  has no verb meaning "the directory I already hold, with fewer rights". So `rm gate.txt` typed at
-  the top prompt is a refusal with nothing spawned, while `rm rmtree/rm-solo` works. The difference
-  is one level of path. Two answers exist, and both are somebody's call rather than a lane's. One is
-  a narrowing verb on the contract: small in the server, `Rights::attenuate` with no name resolution,
-  and a permanent addition to something two programs agree on. The other is a boot whose interactive
-  shell is rooted one component below the image root. That costs nothing on the wire and changes
-  what every other command means. Recorded in `design/roadmap/0031-capability-shell.md` rather than
-  guessed at.
+- A grant on the root of a shell's namespace narrows with `NARROW` (milestone 328, §173). The root
+  has no name to descend into, so the caretaker holds an empty directory name and narrows the
+  handle it already has. `rm gate.txt` at the top prompt is granted `REMOVE` alone, as `rm
+  rmtree/rm-solo` is. A word-hearing program's grant at the root is still refused
+  (`words_grant`).
 - A grant whose directory is not there reads as "the progenitor is out of memory" at the prompt.
   The caretaker answers `DESCENT_REFUSED`, and the progenitor does the right thing with it: nothing
   is spawned, and the region goes back. But the only word the progenitor can put on the result
