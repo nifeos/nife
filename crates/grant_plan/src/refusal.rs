@@ -205,6 +205,10 @@ pub enum Refusal {
     /// has one way to do each job in its language)): its two jobs have a form each, and the
     /// message points at both. Name: provisional.
     GroupingParentheses,
+    /// **`swish -c`, the isolated child, whose spelling is reserved and whose child is not built.**
+    /// It needs a result endpoint of its own for each shell (the spawn service answers every
+    /// request on one) and a way to grant the directory a shell stands in. Name: provisional.
+    IsolationNotBuilt,
 }
 
 /// The kind of capability a command designated but the shell cannot back. Phase 1 has one; the
@@ -333,11 +337,16 @@ impl Refusal {
             Refusal::ScopeTooDeep => "scoped blocks nest at most 3 deep",
             Refusal::ScopeCannotRestore => {
                 "a scoped block cannot put back a background job it would start, stop, wait for \
-                 or resume: run the commands in an isolated child with 'swish -c' instead"
+                 or resume: the commands need an isolated child, 'swish -c', which is \
+                 reserved and not built yet"
+            }
+            Refusal::IsolationNotBuilt => {
+                "'swish -c' is reserved for an isolated child shell and that child is not built \
+                 yet: it needs a result endpoint of its own and a grant of the directory it stands in"
             }
             Refusal::GroupingParentheses => {
                 "( ) groups nothing in this shell: use 'scope { commands }' to keep the directory \
-                 and names it changes, or 'swish -c' to run commands in an isolated child"
+                 and names it changes, or 'swish -c' (reserved, not built yet) for an isolated child"
             }
         }
     }

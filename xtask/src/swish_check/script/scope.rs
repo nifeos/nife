@@ -47,4 +47,7 @@ pub(super) const LINES: &[Line] = &[
         &["( ) groups nothing in this shell", "scope {", "swish -c"],
     ),
     line(0, "ls", &["scopes"]),
+    // **The isolation form's spelling is reserved**, and the shell says the child is not built
+    // rather than that the program does not exist.
+    line(0, "swish -c ls", &["reserved for an isolated child", "not built yet"]),
 ];

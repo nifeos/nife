@@ -47,6 +47,12 @@ pub struct Streams {
     pub diagnostics: Option<(FileGrant, line::Mode)>,
 }
 
+/// **The word that will start an isolated child** (`swish -c <commands>`, milestone 52, DECISIONS
+/// §160): this shell, run again explicitly, as a child whose endowment is derived from the
+/// parent's. Reserved so the refusals that name the form and the line that types it agree, and so
+/// that when the child is built nothing about the spelling moves. Name: provisional.
+pub const ISOLATION_WORD: &[u8] = b"swish";
+
 /// [`plan`], with the operators' answer folded in.
 ///
 /// The stream check comes **after** the grant check and not before, deliberately. A line can be
@@ -63,6 +69,11 @@ pub fn plan_stage(
     // words cannot be read has no reliable first word either.
     if let Some(r) = run.misquoted {
         return Err(r);
+    }
+    // The isolation form (milestone 52, DECISIONS §160) has its spelling reserved and no child
+    // behind it yet, so the shell says that instead of calling `swish` a program that is not there.
+    if run.program == ISOLATION_WORD {
+        return Err(Refusal::IsolationNotBuilt);
     }
     let prog = Program::from_name(run.program).ok_or(Refusal::NoSuchProgram)?;
     plan_against_with(run, prog, prog.manifest(), holds, expanded, streams)

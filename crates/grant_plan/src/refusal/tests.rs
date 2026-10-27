@@ -50,6 +50,7 @@ const ALL: &[Refusal] = &[
     Refusal::ScopeTooDeep,
     Refusal::ScopeCannotRestore,
     Refusal::GroupingParentheses,
+    Refusal::IsolationNotBuilt,
 ];
 
 /// **No two refusals read alike, and none reads like a permission check.** The comments in

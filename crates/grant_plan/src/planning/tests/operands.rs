@@ -541,3 +541,20 @@ fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
         Err(Refusal::PatternInArguments)
     );
 }
+
+// ---- the isolation form's reserved spelling (milestone 52, DECISIONS §160) ----
+
+/// `swish -c ls` is not "no such program": the spelling is reserved for the isolated child and the
+/// refusal says so, until the child exists.
+#[test]
+fn the_isolation_form_is_reserved_and_says_it_is_not_built() {
+    let Command::Run(r) = parse(b"swish -c ls") else {
+        panic!()
+    };
+    assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::IsolationNotBuilt));
+    // And nothing else is reserved: an unknown word is still just unknown.
+    let Command::Run(r) = parse(b"swishy -c ls") else {
+        panic!()
+    };
+    assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::NoSuchProgram));
+}
