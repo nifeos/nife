@@ -2,7 +2,7 @@
 status: PROPOSED
 raised: 2026-10-27
 milestone_dependencies: 663, 924
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
@@ -64,8 +64,9 @@ mutants a Kani proof kills where the tests only hang.
 
 So the ledger and every instrument carry `hang` as its own outcome. An `equivalent` row never clears
 a hang. A hang clears in one of two ways only. A change makes the mutant fail a named test, or a
-`hang` row says why nothing can bound it and names its home. How the published rate reads this
-class is calef's question on the pull request that carries this proposal.
+`hang` row says why nothing can bound it and names its home. calef ruled the published rate on
+2026-10-27 (UTC): it is caught over viable, and the census reports hangs beside caught and missed,
+never inside either. On the 2026-10-26 census that reads 95.0%, with 258 hangs shown apart.
 
 ## What a test that hangs has to do
 
@@ -92,6 +93,8 @@ Measured on the first census after the last part lands:
 - Every census timeout key has a row, and the weekly job fails on one that does not.
 - The census's timeout count is at most its `hang` row count, and each `hang` row names a home.
 - The nine crates above carry no timeout a rung-one, two or three change can turn into a failure.
+- `script/mutation --report` and the census record print the rate as caught over viable, with
+  hangs in their own column.
 - `Cost::new` refuses passes above a stated maximum, and the #2797 mutant fails a named test in
   well under a second.
 

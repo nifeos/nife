@@ -2,7 +2,7 @@
 status: PROPOSED
 raised: 2026-10-27
 milestone_dependencies: 517, 742, 924
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
@@ -78,8 +78,10 @@ the proofs, not the tests, and covers under 1% of the kernel. Milestone 776 (a w
 every proof can still fail) owns its weekly form.
 
 **The recommendation is B**, with C continuing as ordinary practice and D left to 776. B is the
-only option that reaches the glue, `arch/` and the programs, and it would win at equal cost. Its
-cost is runner time on shared runners, which is the question for calef.
+only option that reaches the glue, `arch/` and the programs, and it would win at equal cost.
+calef ruled B on 2026-10-27 (UTC): the diff-scoped check on every kernel and `components` pull
+request, and a rolling census of 60 runner-hours a week, on hosted runners only, at capped
+concurrency and outside merge-queue hours.
 
 ## How a kernel mutant runs
 
@@ -100,7 +102,7 @@ already keys on, and execution stays with the driver that already knows how to b
   "outside the corpus". It is a required check once it has run green for four weeks; adding it to
   the required set is calef's settings change.
 - Every kernel module and every `components` program appears in the census record no more than one
-  rotation old. A rotation is the time one pass takes at the agreed budget.
+  rotation old. A rotation is the time one pass takes at 60 runner-hours a week.
 - Every survivor the rolling census finds has a row under the ledger's rule, the same as a host
   survivor.
 - Fatal risk 3's caveat that the verdict does not speak for the kernel narrows to whatever B still
@@ -133,10 +135,18 @@ already keys on, and execution stays with the driver that already knows how to b
 ## Cost, estimated until part 1 measures it
 
 At 20 seconds per mutant, the kernel's first tier is 58 runner-hours a pass. If half its mutants
-survive that tier, the second adds about 190. `components` is about 236 at 150 seconds each. At a
-budget equal to today's host census, about 14 runner-hours a week, the kernel's first tier passes
-in about four weeks. The full rotation, kernel and programs, takes several months. A larger budget
-shortens it in proportion.
+survive that tier, the second adds about 190. `components` is about 236 at 150 seconds each, and the
+other crates that need a kernel about 100. At the ruled 60 runner-hours a week:
+
+| pass | runner-hours | weeks at 60 |
+|---|---|---|
+| kernel, first tier | 58 | 1 |
+| kernel, second tier | 190 | 3 |
+| `components` | 236 | 4 |
+| the other crates that need a kernel | 100 | 2 |
+| one full rotation | 584 | about 10 |
+
+The kernel alone, both tiers, passes in about four weeks.
 
 GitHub-hosted runners cost this public repository no money. The limit is the organization's shared
 concurrency. Milestone 741's first scaled run queued 40 jobs on those runners, and the maintainer
