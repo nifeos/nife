@@ -1,5 +1,5 @@
 //! **`caps`**: the shell's whole endowment, the preview of what a line would grant,
-//! `caps_image`, the live generation table, and what a bare word names (`bare`).
+//! `capabilities_image`, the live generation table, and what a bare word names (`bare`).
 //!
 //! Name: provisional 2026-10-11 (UTC), milestone 844's lane. calef deferred every module name
 //! in §273 to a name-ratification pass.
@@ -13,10 +13,10 @@ use super::*;
 /// capability**: it renders what a line *would* grant, so it is the one command in this shell whose
 /// entire meaning is checkable without a machine to run it on. What is left here is the directory
 /// read a pattern needs and the terminal to print to.
-pub(super) fn caps(nav: &mut Nav, tail: &[u8]) {
+pub(super) fn capabilities(nav: &mut Nav, tail: &[u8]) {
     if let Some(spec) = plain_line(tail) {
         if spec.program.contains(&b'/') {
-            return caps_image(nav, spec);
+            return capabilities_image(nav, spec);
         }
         // A bare word previews what running it would do (§229 (how a bare name at the prompt
         // reaches an installed program), B2), through the same resolution [`run`] uses.
@@ -24,7 +24,7 @@ pub(super) fn caps(nav: &mut Nav, tail: &[u8]) {
             swish::bare::Bare::Installed { path, .. } => {
                 let mut by_path = spec;
                 by_path.program = path.as_bytes();
-                return caps_image(nav, by_path);
+                return capabilities_image(nav, by_path);
             }
             swish::bare::Bare::Both(path) => {
                 return swish::bare::write_both(spec.program, &path, &mut print);
@@ -90,7 +90,7 @@ fn plain_line(tail: &[u8]) -> Option<ParsedInvocation<'_>> {
 /// read the file's manifest note and bind the line against it as [`run_image`] would, hash the
 /// file's bytes as the progenitor will, look the digest up in the live generation, and say what
 /// would be granted, what the note asked for, and on whose word. Nothing is sent to the progenitor.
-fn caps_image(nav: &mut Nav, spec: ParsedInvocation) {
+fn capabilities_image(nav: &mut Nav, spec: ParsedInvocation) {
     if nav.dir.is_none() {
         return say(Say::NoDirectory);
     }
