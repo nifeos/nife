@@ -23,15 +23,17 @@
 //!
 //! ```text
 //! $ ps
-//!          TID  STATE     TIME(ms)
-//!            5  running        310
-//!            9  blocked         20
+//! PROC  THR         TID  STATE     TIME(ms)
+//!    1    2           5  running        310
+//!    1    2           6  blocked          0
+//!    2    1           9  blocked         20
 //! $ ps        ps: this process holds no process-domain capability
 //! ```
 
 //! # BUGS
 //!
-//! - No `CMD` column: a process here has no name (`crates/ps`).
+//! - No `CMD` column: a process here has no name (`crates/ps`). `PROC` is an ordinal for one run,
+//!   not an identity, and `THR` counts the threads of this domain, never the process's true total.
 //! - `pgrep` is this program filtered, with the same three capabilities.
 //! - `ps` lists itself, `running`, as Unix's does.
 //!
@@ -83,6 +85,11 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // on the tid, over the same endpoint and right as the listing above.
     found.join_cpu_time(&mut |cursor| {
         survey_record(DOMAIN_SLOT, cursor, abi::survey::record::CPU_TIME)
+    });
+    // **And `PROC` and `THR` are a third** (milestone 942, §312): the process label, over the same
+    // endpoint and right. The count is computed here from the rows, so the kernel exposes none.
+    found.join_process(&mut |cursor| {
+        survey_record(DOMAIN_SLOT, cursor, abi::survey::record::PROCESS)
     });
 
     found.write_diagnostics(&mut |bytes| write_on(diag_slot(), bytes));

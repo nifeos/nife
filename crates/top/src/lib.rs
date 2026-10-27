@@ -10,12 +10,30 @@
 //! - No `%CPU`, which needs two samples; `TIME(ms)` is cumulative, as Unix's `TIME+` is.
 //! - No top *N*: `ProgramArgumentDeclaration` cannot declare an optional integer.
 //! - The summary counts this domain, not the machine, because nothing here is ambient.
+//! - **Ranking by process is a bit in the integer argument** ([`RANK_BY_PROCESS`]), and the shell
+//!   cannot set it (as `pgrep`'s selector): at the prompt `top` always ranks by thread. It sums
+//!   the CPU time of the threads in the domain (§312), so a process with a thread supervised
+//!   elsewhere is ranked on the share this viewer sees.
 //! - Ties break by tid, so a quiet machine ranks in slot order.
 //!
 //! Name: provisional here; calef ratified the program's name on 2026-10-06 and kept it a program
 //! of its own rather than a flag on `ps`.
 
 #![cfg_attr(not(test), no_std)]
+
+/// **The bit of `top`'s integer argument that ranks by process** (milestone 942 (`ps` and `top`
+/// show which process each thread belongs to)): set, the table is ordered by each process's summed
+/// `CPU_TIME` ([`ps::Survey::rank_by_process_cpu_time`]) with its threads together; clear, which is
+/// what a spawner that passes nothing sends, it is ordered by thread as before.
+///
+/// Name: provisional. calef names public items.
+pub const RANK_BY_PROCESS: u64 = 1;
+
+/// Whether `argument`, the second register `top` is started with, asks to rank by process.
+#[must_use]
+pub const fn ranks_by_process(argument: u64) -> bool {
+    argument & RANK_BY_PROCESS != 0
+}
 
 /// **The line above the table**: how long the machine has been counting, how many threads the
 /// domain holds, and what they are doing, ending in a newline, for the output stream.
@@ -30,8 +48,8 @@
 /// use ps::Row;
 ///
 /// let rows = [
-///     Row { tid: 5, state: abi::survey::RUNNING, cpu_ms: Some(310) },
-///     Row { tid: 9, state: abi::survey::DEAD, cpu_ms: Some(10) },
+///     Row { tid: 5, state: abi::survey::RUNNING, cpu_ms: Some(310), process: None },
+///     Row { tid: 9, state: abi::survey::DEAD, cpu_ms: Some(10), process: None },
 /// ];
 /// let mut text = Vec::new();
 /// top::write_summary(&rows, 72_000_000_000, &mut |b| text.extend_from_slice(b));
@@ -117,6 +135,7 @@ mod tests {
             tid,
             state,
             cpu_ms: Some(ms),
+            process: None,
         }
     }
 
@@ -198,5 +217,14 @@ mod tests {
             line.contains("0 running, 0 ready, 0 blocked, 0 dead"),
             "{line}"
         );
+    }
+
+    /// The flag is one bit, and an argument that does not carry it keeps the per-thread ranking.
+    #[test]
+    fn only_the_rank_by_process_bit_selects_the_process_ranking() {
+        assert!(!super::ranks_by_process(0));
+        assert!(super::ranks_by_process(super::RANK_BY_PROCESS));
+        assert!(super::ranks_by_process(0b11));
+        assert!(!super::ranks_by_process(0b10));
     }
 }

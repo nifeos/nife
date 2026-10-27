@@ -418,6 +418,7 @@ pub fn survey_supervised(
                 abi::survey::record::STATE => survey_state(t.handshake.state),
                 abi::survey::record::PLACEMENT => survey_placement(t.placement),
                 abi::survey::record::CPU_TIME => survey_cpu_time(slot),
+                abi::survey::record::PROCESS => survey_process(&sched.threads, ep, t),
                 // Refused by `is_known` above. Kept so a record added there without an arm
                 // here fails loudly instead of reporting zero.
                 _ => return Err(abi::Error::BadMethod),
@@ -439,6 +440,51 @@ pub(super) fn survey_cpu_time(slot: usize) -> u64 {
     let ticks = CPU_TICKS.get(slot).map_or(0, |c| c.load(Ordering::Relaxed));
     // Multiplied first; overflows only past 1.8e16 ticks, 5.8 million years of CPU at 100 Hz.
     ticks * 1000 / crate::arch::timer::TICK_HZ
+}
+
+/// What makes two threads one process: the process they joined, or themselves when they joined none.
+///
+/// The `bool` keeps a thread's own id from comparing equal to a process's name, since the two are
+/// separate generational spaces.
+fn process_key(t: &Thread) -> (bool, u64) {
+    match t.process {
+        Some(pid) => (true, pid),
+        None => (false, t.id),
+    }
+}
+
+/// The process label a survey reports for `of`, as an `abi::survey::record::PROCESS` word: the
+/// ordinal, from 1, of its process among the processes the domain `ep` holds, counted in the order
+/// the walk meets each one's first thread.
+///
+/// Stateless, because the walk's only state is its cursor: the label is recomputed from the table
+/// on each call. A process is counted at its first domain thread (no earlier domain thread shares
+/// its key). That costs at most the square of the domain, bounded by `MAXIMUM_THREADS`, and
+/// leaks neither a `ProcessId` nor an address (§312).
+///
+/// Context: called under `IPC_TABLES` with `of` in the domain.
+fn survey_process(threads: &Threads, ep: RendezvousId, of: &Thread) -> u64 {
+    let target = process_key(of);
+    let mut ordinal = 0u64;
+    for (slot, t) in threads.iter_from(0) {
+        if !capability::survey_includes(t.fault_ep, ep) {
+            continue;
+        }
+        let key = process_key(t);
+        let seen_before = threads
+            .iter_from(0)
+            .take_while(|&(earlier, _)| earlier < slot)
+            .any(|(_, e)| capability::survey_includes(e.fault_ep, ep) && process_key(e) == key);
+        if seen_before {
+            continue;
+        }
+        ordinal += 1;
+        if key == target {
+            return ordinal;
+        }
+    }
+    // Unreachable: `of` is in the domain, so its own key is met. 0 is "no label".
+    0
 }
 
 /// The placement a survey reports, as an `abi::survey::record::PLACEMENT` word.

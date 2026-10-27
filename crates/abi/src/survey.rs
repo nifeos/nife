@@ -66,6 +66,23 @@ pub mod record {
     /// Name: provisional. calef names public items.
     pub const CPU_TIME: u64 = 2;
 
+    /// **Which process of the domain the thread belongs to**, as a label for this walk (§312
+    /// (`ENUMERATE` on a domain covers which of its threads share a process)).
+    ///
+    /// - Two threads of one domain carry the same label if and only if they share an address
+    ///   space and a capability table.
+    /// - **An ordinal, not an identity**: the first process the walk meets is 1, the next 2. It
+    ///   names no kernel object and no address, and it means nothing outside the walk that
+    ///   returned it. A process that ends between two walks can renumber the rest, so a reader
+    ///   joins on the tid and compares labels only within one walk.
+    /// - **Only the domain's share of a process**: a sibling supervised elsewhere is not in the
+    ///   walk, so a reader that counts threads per label counts the domain's threads.
+    /// - A thread that is a process of its own (no shared table) gets a label to itself.
+    /// - 0 is never answered for a thread, so a reader may use it for "no label".
+    ///
+    /// Name: provisional. calef names public items.
+    pub const PROCESS: u64 = 3;
+
     /// **Whether this kernel answers a record.** The one enumeration of the selector space, so
     /// adding a record is an edit here and an arm in the kernel's walk rather than a hunt.
     ///
@@ -75,7 +92,7 @@ pub mod record {
     /// thread to extract anything from.
     #[must_use]
     pub const fn is_known(record: u64) -> bool {
-        matches!(record, STATE | PLACEMENT | CPU_TIME)
+        matches!(record, STATE | PLACEMENT | CPU_TIME | PROCESS)
     }
 }
 

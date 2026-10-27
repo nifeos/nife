@@ -25,7 +25,8 @@ fn only_the_records_this_kernel_answers_are_known() {
     assert!(record::is_known(record::STATE));
     assert!(record::is_known(record::PLACEMENT));
     assert!(record::is_known(record::CPU_TIME));
-    assert!(!record::is_known(record::CPU_TIME + 1));
+    assert!(record::is_known(record::PROCESS));
+    assert!(!record::is_known(record::PROCESS + 1));
     assert!(!record::is_known(u64::MAX));
 }
 

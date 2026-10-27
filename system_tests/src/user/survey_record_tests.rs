@@ -27,7 +27,7 @@ use crate::syscall::invoke;
 /// as a literal so that adding a record moves it, and
 /// [`the_unknown_record_is_really_unknown`](self::the_unknown_record_is_really_unknown) fails
 /// loudly if somebody adds one and this does not move.
-const UNKNOWN_RECORD: u64 = record::CPU_TIME + 1;
+const UNKNOWN_RECORD: u64 = record::PROCESS + 1;
 
 /// **The refusal tests below are testing what they think they are.** If a later record takes
 /// [`UNKNOWN_RECORD`]'s value, every one of them starts asserting that a *known* record is refused,
