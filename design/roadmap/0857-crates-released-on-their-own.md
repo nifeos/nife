@@ -120,36 +120,26 @@ fixed.
 
 ## The release order, ruled 2026-10-27 (UTC)
 
-The first three releases are ruled, publish-first, as risk 8's first attempts
-([the entry](../fatal-risks/8-nobody-else-builds-on-nife.md)). A contribution to another project
-waits until a published crate has users who ask for it upstream. The first three, in order:
+Publish-first, as risk 8's first attempts ([the entry](../fatal-risks/8-nobody-else-builds-on-nife.md),
+which holds the crates.io figures). Contributions to other projects wait until a published crate
+has users who ask for them upstream.
 
 1. `file_allocation_table` (milestone 813 (`file_allocation_table`: a proven FAT crate, released on
    its own)).
-2. `extensible_host_controller_interface`, released with `usb`, after it gains Kani proofs
+2. `extensible_host_controller_interface`, released with `usb`, once it gains Kani proofs
    (milestone 820 (`extensible_host_controller_interface`: proven xHCI logic, released on its own)).
-3. `generational_table`, released on its own, after confirming whether `slotmap` already covers
-   allocation-free fixed capacity and saying so in the release record.
+3. `generational_table`, on its own, once the release record says whether `slotmap` already covers
+   allocation-free fixed capacity.
 
-Crates.io demand behind the order, as measured on 2026-10-27 (UTC): `fatfs` 422k downloads over 90
-days, 58 dependents, no release since 2023-01; `xhci` 39k, no release since 2023-07;
-`generational-arena` 1.18M, 57 dependents, archived. `capability` (32 downloads) and
-`non_volatile_memory_express` (under 1k) are dropped from the first attempts.
+`capability` and `non_volatile_memory_express` are not first attempts. The rest follow in a
+reversible order, and each contribution waits on the ruling above.
 
-The rest follow in the proposed order below, which stays reversible: owners who already run Kani,
-then the rest by harnesses offered, then the rows fork 8 changes, then the publications that need
-a cut or proofs first. The internal crates close the list as one sitting, since each needs only a
-line. Every contribution in it is deferred by the publish-first ruling until the crate it concerns
-has published and users ask for it upstream.
-
-4. `paging` to `x86_64` and `aarch64-paging`.
-5. `globally_unique_identifier_partition_table`;
-   [deferred](0857-crates-released-on-their-own/contribute-proofs-instead-of-releasing.md).
-6. `elf` (deferred too), then `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`.
-7. `calendar`, revisited under fork 8, since `time` wants a person's words.
-8. `non_volatile_memory_express`, after the three above.
-9. `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
-10. The internal set, `redoxfs`'s bug report question among them.
+4. `paging`, `globally_unique_identifier_partition_table`, `elf`
+   ([deferred](0857-crates-released-on-their-own/contribute-proofs-instead-of-releasing.md)),
+   `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`.
+5. `calendar`, revisited under fork 8, since `time` wants a person's words.
+6. `non_volatile_memory_express`, `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
+7. The internal set, closing as one sitting.
 
 ## What is already on the record
 

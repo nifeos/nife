@@ -96,8 +96,8 @@ evidence behind each row.
 
 ## Corrections, 2026-10-27 (UTC)
 
-The survey above is left as taken. Read against the tree on 2026-10-27 (UTC) by lane
-maintainer/risk-8-picks-2026-10-27, these rows are stale:
+The survey above stays as taken. Lane maintainer/risk-8-picks-2026-10-27 checked it against the
+tree on 2026-10-27 (UTC) and found these rows stale:
 
 - `portable_executable` is no longer a crate. It is a module of `xtask` (`xtask/src/portable_executable.rs`),
   so it is not a release candidate.
@@ -107,9 +107,9 @@ maintainer/risk-8-picks-2026-10-27, these rows are stale:
 - `http_response` now depends on `httparse`, so it is no longer free of dependencies.
 - `video_terminal` depends on `address_space_map` and `glyph_atlas`, and `line_editor` on
   `capability_plan`, so neither is class B (bound to a sibling crate) any more.
-- `coremark` is taken on crates.io (created 2026-10-12, an unrelated port), so that name is not free.
+- Someone else holds `coremark` on crates.io (created 2026-10-12, an unrelated port), so that name is not free.
 
-The dispositions of the first three releases are ruled; see milestone 857's release order and
+The architect ruled the first three releases; see milestone 857's release order and
 [risk 8](../design/fatal-risks/8-nobody-else-builds-on-nife.md) (2026-10-27 UTC). The ruling also defers
 every "contribute" row above until a published crate has users who ask for it upstream, and
 drops `non_volatile_memory_express` from the first attempts.
