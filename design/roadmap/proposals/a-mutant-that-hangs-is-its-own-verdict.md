@@ -130,8 +130,8 @@ needs a bound before it merges, because the gate already refuses the timeout.
 
 Reuse: the deadline-worker pattern five crates already carry, milestone 663's process-group
 bound for the host pass, and `helpers/mutation_inflow.py` and `helpers/mutation_diff_gate.py` for
-every rule. cargo-nextest's terminating slow-test timeout was considered and lost, for 663's
-reasons: it is a dependency, and it does not run doctests, the case that hangs.
+every rule. This proposal weighed cargo-nextest's terminating slow-test timeout and refused it,
+for 663's reasons: it is a dependency, and it does not run doctests, the case that hangs.
 
 ## Names
 
