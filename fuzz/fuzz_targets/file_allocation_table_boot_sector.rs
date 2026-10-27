@@ -13,7 +13,7 @@
 #![no_main]
 
 use file_allocation_table::{
-    BootSector, ChainError, DirectoryEntry, RootDirectory, SectorDevice, SectorSize, Volume,
+    BootSector, ChainError, RootDirectory, SectorDevice, SectorSize, Volume,
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -132,21 +132,22 @@ fn walk(bytes: &[u8], size: SectorSize) {
 /// Read the directory starting at `first` (0 for the root) and what it names.
 fn directory(volume: &mut Volume<Image<'_>>, first: u32, depth: u32, budget: &mut u32) {
     let mut entries = Vec::new();
-    let mut read = volume.directory(first);
+    let mut read = volume.entries(first);
     loop {
         if *budget == 0 {
             return;
         }
         *budget -= 1;
         match read.next() {
-            Some(Ok(DirectoryEntry::Short(entry))) => entries.push(entry),
-            Some(Ok(DirectoryEntry::LongName(piece))) => {
-                let _ = (
-                    piece.ordinal(),
-                    piece.is_last(),
-                    piece.checksum(),
-                    piece.code_units(),
-                );
+            Some(Ok(entry)) => {
+                if let Some(name) = entry.long_name() {
+                    // An accepted name is at most 255 units and never holds the terminator.
+                    let units = name.code_units();
+                    assert!(!units.is_empty() && units.len() <= 255 && !units.contains(&0));
+                    let _ = name.characters().count();
+                    assert_eq!(entry.long_name_refusal(), None);
+                }
+                entries.push(entry);
             }
             Some(Err(_)) => {
                 assert!(
@@ -165,7 +166,7 @@ fn directory(volume: &mut Volume<Image<'_>>, first: u32, depth: u32, budget: &mu
         }
     }
     for entry in entries {
-        let name = entry.name();
+        let name = entry.short_name();
         if entry.is_volume_label() || name[0] == b'.' || entry.first_cluster() == 0 {
             continue;
         }

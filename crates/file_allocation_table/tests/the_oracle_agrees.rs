@@ -16,7 +16,7 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    DirectoryEntry, SECTOR_BYTES, SectorDevice, SectorSize, ShortEntry, TableEntry, Volume,
+    NamedEntry, SECTOR_BYTES, SectorDevice, SectorSize, ShortEntry, TableEntry, Volume,
     VolumeLayout,
 };
 use lamfat::{Read, Write};
@@ -209,28 +209,20 @@ fn read_file(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32, size: u6
 fn our_records(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32) -> Vec<Record> {
     // The specification caps a directory at 65,536 slots; a reader that stops advancing then fails
     // the comparison rather than hanging the suite.
-    let entries: Vec<DirectoryEntry> = volume
-        .directory(first)
+    let entries: Vec<NamedEntry> = volume
+        .entries(first)
         .take(65_536)
         .map(|e| e.expect("the directory reads"))
         .collect();
     let mut out = Vec::new();
-    let mut pieces: Vec<[u16; 13]> = Vec::new();
     for entry in entries {
-        let short = match entry {
-            DirectoryEntry::LongName(piece) => {
-                pieces.push(piece.code_units());
-                continue;
-            }
-            DirectoryEntry::Short(short) => short,
-        };
-        // The pieces sit last-first on disk.
-        let long = (!pieces.is_empty()).then(|| {
-            let units: Vec<u16> = pieces.iter().rev().flatten().copied().collect();
-            let end = units.iter().position(|&u| u == 0).unwrap_or(units.len());
-            units[..end].to_vec()
-        });
-        pieces.clear();
+        assert_eq!(
+            entry.long_name_refusal(),
+            None,
+            "a run rust-fatfs wrote is refused"
+        );
+        let short = *entry.short_entry();
+        let long = entry.long_name().map(|name| name.code_units().to_vec());
         let name = printed(&short);
         if short.is_volume_label() || name == "." || name == ".." {
             continue;
