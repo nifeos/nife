@@ -463,14 +463,17 @@ fn a_pattern_is_resolved_where_the_shell_was_standing() {
     assert_eq!(g.directory.depth(), 2, "the grant followed the shell");
 }
 
-/// The set bound is one number spelled in two crates, for [`MAX_FILE_NAME`]'s reason: `grant_plan`
-/// must be able to check a command line without linking the filesystem contract, so the pair is
-/// pinned here rather than shared.
+/// The set bound is one number spelled in two crates, for [`MAXIMUM_FILE_NAME`]'s reason:
+/// `grant_plan` must be able to check a command line without linking the filesystem contract, so
+/// the pair is pinned here rather than shared.
 #[test]
 fn the_set_bound_matches_the_contract_that_carries_the_set() {
     assert_eq!(MAXIMUM_NAMES, filesystem_contract::nameset::MAXIMUM_NAMES);
     assert_eq!(expand::NAME_BYTES, filesystem_contract::nameset::NAME_BYTES);
-    assert_eq!(expand::MAX_NAME, filesystem_contract::grant::MAX_NAME);
+    assert_eq!(
+        expand::MAXIMUM_NAME,
+        filesystem_contract::grant::MAXIMUM_NAME
+    );
     // And the widest set this crate can plan must fit the buffer that contract sizes for it: every
     // name it may hold, sharing every byte it may hold.
     let wide = [b'w'; expand::NAME_BYTES / MAXIMUM_NAMES];

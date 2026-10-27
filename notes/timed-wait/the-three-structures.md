@@ -6,7 +6,7 @@ Section 2 of [`notes/timed-wait.md`](../timed-wait.md) in full: three deadline s
 cannot tell them apart.
 
 The block offers "a timer wheel or an ordered deadline list" as if those were the options. At
-`MAX_THREADS = 128` and `TICK_HZ = 100` there is a third that beats both, and the reason is not
+`MAXIMUM_THREADS = 128` and `TICK_HZ = 100` there is a third that beats both, and the reason is not
 asymptotic.
 
 Three candidates, modeled on the host over 200,000 ticks (2,000 seconds of kernel time) with a

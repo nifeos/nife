@@ -41,7 +41,7 @@ const MAGIC: u64 = 0xA110_C0DE;
 
 /// Cap the heap well under the granted budget, so the test can tell "grew as needed" from "ate
 /// everything it was handed".
-const HEAP_MAX: u64 = 64 * 4096;
+const HEAP_MAXIMUM: u64 = 64 * 4096;
 
 #[global_allocator]
 static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
@@ -49,7 +49,11 @@ static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRe
 user_mode_runtime::program_entry!(start);
 
 fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
-    HEAP.initialize(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.initialize(
+        MEMORY_REGION,
+        memory_region_heap::DEFAULT_BASE,
+        HEAP_MAXIMUM,
+    );
 
     // 1. A Vec big enough to force several growth reallocations (and each grow frees the old
     //    buffer, so this also churns the free list).

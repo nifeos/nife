@@ -8,7 +8,10 @@
 
 /// The longest host name a client may write, in dotted text without a trailing dot. RFC 1035's
 /// 255-byte wire limit is 253 characters of dotted text.
-pub const NAME_TEXT_MAX: usize = 253;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `NAME_TEXT_MAX`.
+pub const NAME_TEXT_MAXIMUM: usize = 253;
 
 /// How many addresses one answer carries back, the same bound `domain_name_system::Answer` keeps.
 ///
@@ -31,14 +34,14 @@ pub const GRANTS_MAXIMUM: usize = 8;
 /// **Whether `zone` is spelled the one way a zone may be asked for or granted** (milestone 892 (a
 /// std program at the prompt holds the network and a resolver)): empty (the root zone, any name),
 /// or labels of one to 63 bytes of `a`-`z`, `0`-`9` and `-`, joined by single dots, with no dot at
-/// either end, at most [`NAME_TEXT_MAX`] bytes in all. Lowercase only, so `Example.net` and
+/// either end, at most [`NAME_TEXT_MAXIMUM`] bytes in all. Lowercase only, so `Example.net` and
 /// `example.net` cannot be two spellings of one ask. A manifest note's zones
 /// (`capability_manifest_note::zones`) and the installed-programs table's `grant` lines both hold
 /// to it.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const fn is_canonical_zone(zone: &[u8]) -> bool {
-    if zone.len() > NAME_TEXT_MAX {
+    if zone.len() > NAME_TEXT_MAXIMUM {
         return false;
     }
     let mut label = 0;

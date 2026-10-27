@@ -36,7 +36,7 @@ const PAGE: usize = 4096;
 const MINIMUM_GROW_PAGES: usize = 8;
 
 /// The heap cap in bytes, from `NIFE_HEAP_MIB`, defaulting to the FS server's 8 MiB
-/// (`redoxfs_server.rs::HEAP_MAX`, which `FS_BUDGET_PAGES` in kernel/src/user.rs matches).
+/// (`redoxfs_server.rs::HEAP_MAXIMUM`, which `FS_BUDGET_PAGES` in kernel/src/user.rs matches).
 fn heap_cap() -> usize {
     std::env::var("NIFE_HEAP_MIB")
         .ok()

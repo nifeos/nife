@@ -1126,7 +1126,7 @@ pub(super) fn drain_text() {
             print(swish::FAULTED_SENTENCE);
             return;
         }
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Msg::Bytes(n) => print(&buf[..n]),
             byte_sink_contract::Msg::Eof => return,
@@ -1233,7 +1233,7 @@ pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
             break;
         }
         let (w0, w1, w2) = receive(ep);
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Msg::Bytes(n) => dest.push(&buf[..n]),
             byte_sink_contract::Msg::Eof => done += 1,
@@ -1339,7 +1339,7 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
                 // program at the prompt holds the network and a resolver)): the terminal answers its
                 // stdin read only in cooked mode, so the shell leaves raw mode first, as it does for a
                 // supervised job, and the next prompt's editor takes it back.
-                let mut verb = [0u8; grant_plan::MAX_VERB];
+                let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
                 let verb = grant_plan::verb_of(spec.line(), &mut verb);
                 let program = endow.program;
                 if grant_plan::narrow_by_verb(&program.manifest(), program.verbs(), verb)

@@ -416,7 +416,7 @@ pub(crate) fn report_high_water() {
     );
 
     let boot_cpu = crate::arch::boot_cpu_id();
-    let mut max_secondary = 0u64;
+    let mut maximum_secondary = 0u64;
     for id in 0..crate::cpu::MAXIMUM_CPUS {
         if id == boot_cpu || crate::smp::online_harts_mask() & (1 << id) == 0 {
             continue; // the boot core runs on the linker-script stack; its slot was never painted
@@ -425,7 +425,7 @@ pub(crate) fn report_high_water() {
         // SAFETY: the span of an online core's `.bss` stack slot, which `bring_up_secondaries`
         // painted whole before any `CPU_ON`. The `continue` above skipped every slot that was not.
         let cpu_used = unsafe { high_water(b, t) };
-        max_secondary = max_secondary.max(cpu_used);
+        maximum_secondary = maximum_secondary.max(cpu_used);
         crate::println!(
             "stack high-water: core{id}  {cpu_used}/{} bytes ({}%)",
             t - b,
@@ -468,8 +468,8 @@ pub(crate) fn report_high_water() {
          past its measured depth and is within a page of the guard (notes/stack-high-water.md)",
     );
     assert!(
-        max_secondary <= 16384,
-        "a secondary stack's high-water {max_secondary} exceeded 16384, ~2x anything measured; \
+        maximum_secondary <= 16384,
+        "a secondary stack's high-water {maximum_secondary} exceeded 16384, ~2x anything measured; \
          the guard page below it (smp.rs) would still catch a real overflow, but something is \
          running much deeper on an idle-and-traps stack than the suite has ever measured",
     );

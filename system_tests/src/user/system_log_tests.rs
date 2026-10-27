@@ -64,7 +64,7 @@ fn spawn_writer(image: &'static [u8], intake: RendezvousId, badge: u32, report: 
 }
 
 /// The most lines a test reads back from one window.
-const MAX_LINES: usize = 8;
+const MAXIMUM_LINES: usize = 8;
 
 /// Play a reader: ask for everything from `cursor` through `badge`, wait for the service to say the
 /// window is filled, and return the next cursor and the window's lines.
@@ -74,7 +74,7 @@ fn read_window(
     done: crate::sched::NotificationId,
     window_phys: u64,
     cursor: u64,
-) -> (u64, [&'static str; MAX_LINES], usize) {
+) -> (u64, [&'static str; MAXIMUM_LINES], usize) {
     crate::sched::ipc_send_badged(intake, [read::request(), cursor, 0], badge as u64);
     crate::sched::notification_wait(done).expect("the reader's notification died");
     // SAFETY: a frame this test allocated and owns until the end of the test, named through the
@@ -93,10 +93,10 @@ fn read_window(
     );
     let text = core::str::from_utf8(&window[read::DATA..read::DATA + len])
         .expect("the service wrote a line that is not UTF-8");
-    let mut lines = [""; MAX_LINES];
+    let mut lines = [""; MAXIMUM_LINES];
     let mut n = 0;
     for line in text.lines() {
-        assert!(n < MAX_LINES, "more lines than this test wrote: {text}");
+        assert!(n < MAXIMUM_LINES, "more lines than this test wrote: {text}");
         lines[n] = line;
         n += 1;
     }

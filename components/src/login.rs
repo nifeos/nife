@@ -956,7 +956,7 @@ impl Durable {
     /// when the timetable answered and took the document ([`registration::STATUS_REPLACED`]).
     fn restore(&self, doc: &[u8]) -> bool {
         use core::sync::atomic::{AtomicU64, Ordering};
-        let n = doc.len().min(registration::BODY_MAX);
+        let n = doc.len().min(registration::BODY_MAXIMUM);
         // SAFETY: as in `end`: the page is mapped read/write at `self.va`, and nothing else
         // writes it until it is handed out after this returns.
         let page = unsafe {

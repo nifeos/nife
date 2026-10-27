@@ -46,12 +46,12 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
     );
     // And the longest name travels in a set (milestone 946 (a granted file name can be longer than sixteen bytes)), twice over, with room for nothing
     // that would take the set past its bytes.
-    let longest = [b'l'; grant::MAX_NAME];
+    let longest = [b'l'; grant::MAXIMUM_NAME];
     let two: [(&[u8], bool); 2] = [(&longest[..], false), (&longest[..], true)];
     let n = nameset::encode(&two, &mut buf).expect("two of the longest names fit");
     assert_eq!(nameset::iter(&buf[..n]).count(), 2);
     assert!(nameset::contains(&buf[..n], &longest));
-    let spill = [b's'; nameset::NAME_BYTES - 2 * grant::MAX_NAME + 1];
+    let spill = [b's'; nameset::NAME_BYTES - 2 * grant::MAXIMUM_NAME + 1];
     let three: [(&[u8], bool); 3] = [
         (&longest[..], false),
         (&longest[..], true),
@@ -66,7 +66,7 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
         [(b"a", false); nameset::MAXIMUM_NAMES + 1];
     assert_eq!(nameset::encode(&over, &mut buf), None, "one name too many");
     assert_eq!(
-        nameset::encode(&[(&[b'n'; grant::MAX_NAME + 1][..], false)], &mut buf),
+        nameset::encode(&[(&[b'n'; grant::MAXIMUM_NAME + 1][..], false)], &mut buf),
         None,
         "a name that cannot travel in a grant cannot travel in a set either",
     );
@@ -129,7 +129,7 @@ fn a_truncated_set_stops_at_the_last_whole_record() {
 /// planned by anyone. The bound also ends every walk over a hostile page: a set of one-byte names
 /// could otherwise hold hundreds of records.
 #[test]
-fn a_set_past_max_names_reads_as_its_first_max_names() {
+fn a_set_past_maximum_names_reads_as_its_first_maximum_names() {
     let mut buf = [0u8; nameset::BYTES];
     for i in 0..=nameset::MAXIMUM_NAMES {
         buf[3 * i..3 * i + 3].copy_from_slice(&[1, 0, b'a' + i as u8]);

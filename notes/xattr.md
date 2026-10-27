@@ -43,8 +43,8 @@ it under, and a client that wants one opens the file first exactly as `fgetxattr
 
 | Limit | Value | Why that number |
 |---|---|---|
-| `xattr::MAX_NAME` | 255 bytes | Linux's `XATTR_NAME_MAX`. Nothing Samba writes is refused for its name; `user.com.apple.metadata:_kMDItemUserTags` is 40 |
-| `xattr::MAXIMUM_VALUE` | 3072 bytes | A `SETXATTR` carries a name and a value in **one page**, so `MAX_NAME + MAXIMUM_VALUE` must leave 4096 visible room |
+| `xattr::MAXIMUM_NAME` | 255 bytes | Linux's `XATTR_NAME_MAX`. Nothing Samba writes is refused for its name; `user.com.apple.metadata:_kMDItemUserTags` is 40 |
+| `xattr::MAXIMUM_VALUE` | 3072 bytes | A `SETXATTR` carries a name and a value in **one page**, so `MAXIMUM_NAME + MAXIMUM_VALUE` must leave 4096 visible room |
 | `xattr::MAXIMUM_COUNT` | 16 per node | 16 names of 255 bytes plus their length prefixes is **4096 exactly**, which is what lets `LISTXATTR` have no cursor |
 
 Each ceiling answers its own errno: `ERANGE` for a name

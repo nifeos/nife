@@ -10,8 +10,11 @@
 use crate::Refusal;
 use crate::nav::{self, Step};
 
-/// The longest name a grant can carry, which is [`crate::MAX_FILE_NAME`].
-pub const MAX_NAME: usize = crate::MAX_FILE_NAME;
+/// The longest name a grant can carry, which is [`crate::MAXIMUM_FILE_NAME`].
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_NAME`.
+pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
 
 /// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set
 /// travels by value in a frame the caretaker keeps whole and through four frames of the shell's
@@ -26,10 +29,10 @@ pub const MAXIMUM_NAMES: usize = 8;
 
 /// **The most bytes of name one expansion may grant, all its names together**, for
 /// [`MAXIMUM_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it
-/// holds its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of [`MAX_NAME`]
-/// each. It matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host test, and
-/// exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md ("The bytes a
-/// set carries").
+/// holds its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of
+/// [`MAXIMUM_NAME`] each. It matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host
+/// test, and exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md
+/// ("The bytes a set carries").
 ///
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
 pub const NAME_BYTES: usize = 512;
@@ -37,7 +40,7 @@ pub const NAME_BYTES: usize = 512;
 /// One name, owned. See the module note: a name a pattern produced is not a slice of the line.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Name {
-    bytes: [u8; MAX_NAME],
+    bytes: [u8; MAXIMUM_NAME],
     len: u8,
 }
 
@@ -60,7 +63,7 @@ impl Name {
         if !crate::file_name_fits(name) {
             return None;
         }
-        let mut bytes = [0u8; MAX_NAME];
+        let mut bytes = [0u8; MAXIMUM_NAME];
         bytes[..name.len()].copy_from_slice(name);
         Some(Name {
             bytes,
@@ -86,8 +89,8 @@ impl Name {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct NameSet {
     /// The names, packed end to end in order: name `i` is `bytes[start(i)..ends[i]]`. Packed rather
-    /// than [`MAXIMUM_NAMES`] slots of [`MAX_NAME`], because this is copied by value through the
-    /// shell's deepest frames ([`NAME_BYTES`]).
+    /// than [`MAXIMUM_NAMES`] slots of [`MAXIMUM_NAME`], because this is copied by value through
+    /// the shell's deepest frames ([`NAME_BYTES`]).
     bytes: [u8; NAME_BYTES],
     /// Where each name ends in `bytes`, in step with `is_directory`.
     ends: [u16; MAXIMUM_NAMES],
@@ -590,7 +593,7 @@ mod tests {
     use super::*;
 
     /// A name one byte longer than a grant carries.
-    const TOO_LONG: [u8; MAX_NAME + 1] = [b'x'; MAX_NAME + 1];
+    const TOO_LONG: [u8; MAXIMUM_NAME + 1] = [b'x'; MAXIMUM_NAME + 1];
 
     /// Drive the expander over a listing, the way both `echo` and the planner do.
     fn expand(pattern: &[u8], listing: &[(&[u8], bool)]) -> Result<NameSet, Refusal> {
@@ -936,13 +939,13 @@ mod tests {
     /// names fit, and a third name of any length is the same refusal as a ninth.
     #[test]
     fn a_set_refuses_past_its_bytes_as_it_does_past_its_count() {
-        let a = [b'a'; MAX_NAME];
-        let b = [b'b'; MAX_NAME];
+        let a = [b'a'; MAXIMUM_NAME];
+        let b = [b'b'; MAXIMUM_NAME];
         let mut set = NameSet::empty();
         assert!(set.push(&a, false));
         assert!(set.push(&b, true));
-        assert_eq!(set.name_bytes(), 2 * MAX_NAME);
-        const ROOM: usize = NAME_BYTES - 2 * MAX_NAME;
+        assert_eq!(set.name_bytes(), 2 * MAXIMUM_NAME);
+        const ROOM: usize = NAME_BYTES - 2 * MAXIMUM_NAME;
         let fits = [b'c'; ROOM];
         let over = [b'c'; ROOM + 1];
         assert!(!set.push(&over, false), "one byte past NAME_BYTES");
@@ -960,9 +963,9 @@ mod tests {
     /// batch. The listing is in an order that tempts exactly that.
     #[test]
     fn a_batch_cut_by_bytes_is_still_a_prefix_of_the_ordering() {
-        let a = [b'a'; MAX_NAME];
-        let b = [b'b'; MAX_NAME];
-        let c = [b'c'; MAX_NAME];
+        let a = [b'a'; MAXIMUM_NAME];
+        let b = [b'b'; MAXIMUM_NAME];
+        let c = [b'c'; MAXIMUM_NAME];
         let listing: [(&[u8], bool); 4] = [(&c, false), (&a, false), (&b, false), (b"d", false)];
         let first = batch(b"*", Resume::Start, &listing).unwrap();
         let want: [(&[u8], bool); 2] = [(&a, false), (&b, false)];
@@ -983,7 +986,7 @@ mod tests {
         // And a long name that displaces held ones for room still leaves out only names after
         // what is kept.
         // Each short name is long enough that the four together are over NAME_BYTES.
-        const SHORT: usize = (NAME_BYTES - 2 * MAX_NAME) / 2 + 1;
+        const SHORT: usize = (NAME_BYTES - 2 * MAXIMUM_NAME) / 2 + 1;
         let mut b1 = [b'1'; SHORT];
         b1[0] = b'b';
         let mut b2 = [b'2'; SHORT];

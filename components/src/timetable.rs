@@ -15,8 +15,8 @@
 //! - The archive holds every image the plan builds: code, not authority (see the note).
 //! - `--mem` entries run alone, and others due meanwhile run late, once (see the note).
 //! - A calendar line fires up to one pass late; `Registry::next_deadline` covers only counter rows.
-//! - A replacement's plan is cut at `registration::BODY_MAX`; the verdict word survives. Only the
-//!   compiled-in document is audited.
+//! - A replacement's plan is cut at `registration::BODY_MAXIMUM`; the verdict word survives. Only
+//!   the compiled-in document is audited.
 //! - In store mode a skipped beat is recorded nowhere, and a job has nowhere to write output.
 //! - In store mode an oversized program's refusal is unnamed, and a fire failure is only `E_BUDGET`.
 //!
@@ -607,7 +607,7 @@ mod store {
 /// A [`Registry`] borrows its document, and the page cannot be it: the reply overwrites the page.
 /// The replacement is registered in one buffer while the registry in force borrows the other
 /// (§222's all-or-nothing sub-ruling). See `notes/scheduled-execution/the-program.md`.
-static mut DOCUMENTS: [[u8; registration::BODY_MAX]; 2] = [[0; registration::BODY_MAX]; 2];
+static mut DOCUMENTS: [[u8; registration::BODY_MAXIMUM]; 2] = [[0; registration::BODY_MAXIMUM]; 2];
 
 /// **Answer a replacement, if the registrar has asked for one since the last answer.**
 ///
@@ -667,7 +667,7 @@ fn replace_if_asked(
             .try_into()
             .unwrap(),
     );
-    if len as usize > registration::BODY_MAX {
+    if len as usize > registration::BODY_MAXIMUM {
         answer(body, registration::STATUS_MALFORMED, 0, 0, 0);
         say(b"timetable: a replacement longer than the page, refused whole\n");
         return false;
@@ -733,7 +733,7 @@ fn replace_if_asked(
     // must find the reply there by the time it sees the line.
     let mut plan = 0usize;
     timetable::write_plan(reg, &mut |bytes: &[u8]| {
-        let room = registration::BODY_MAX - plan;
+        let room = registration::BODY_MAXIMUM - plan;
         let n = bytes.len().min(room);
         body[registration::BODY + plan..registration::BODY + plan + n].copy_from_slice(&bytes[..n]);
         plan += n;

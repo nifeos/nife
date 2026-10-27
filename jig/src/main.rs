@@ -681,7 +681,7 @@ fn update() -> ExitCode {
         let Ok(index) = Index::parse(&ours) else {
             return refuse("the index has a line this jig cannot read; the copy was not changed");
         };
-        if ours.len() > package_index::COPY_MAX {
+        if ours.len() > package_index::COPY_MAXIMUM {
             return refuse("this architecture's index is larger than a copy may be (4095 bytes)");
         }
         if let Err(e) = std::fs::write(IMAGE_INDEX_COPY, ours.as_bytes()) {

@@ -11,7 +11,11 @@ use super::*;
 
 /// Set up this process's heap, then the smoltcp interface over `dev`, seeded from the clock.
 pub(super) fn heap_and_interface(dev: &mut Nic) -> Interface {
-    HEAP.initialize(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.initialize(
+        MEMORY_REGION,
+        memory_region_heap::DEFAULT_BASE,
+        HEAP_MAXIMUM,
+    );
 
     let mut config = Config::new(HardwareAddress::Ethernet(EthernetAddress(dev.mac())));
     config.random_seed = now();

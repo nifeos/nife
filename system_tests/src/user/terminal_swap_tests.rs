@@ -30,7 +30,7 @@ use crate::user::holding::Holding;
 
 const APP_OUT_LEN: u64 = 0;
 
-const MAX_ELF_PAGES: usize = 64;
+const MAXIMUM_ELF_PAGES: usize = 64;
 
 /// Stack pages below the one `run` maps. `run` gives a program one page, which a debug build of the
 /// ELF loader and the supervision builder overflows; `swapper` meets the same need in its own
@@ -39,7 +39,7 @@ const EXTRA_STACK_PAGES: usize = 7;
 
 /// Every window the supervisor is spawned with: the `line_editor` image, its own image (which it
 /// builds its stand-ins from) and the extra stack.
-const MAXIMUM_WINDOWS: usize = 2 * MAX_ELF_PAGES + EXTRA_STACK_PAGES;
+const MAXIMUM_WINDOWS: usize = 2 * MAXIMUM_ELF_PAGES + EXTRA_STACK_PAGES;
 
 /// The supervisor's view of both images, one mapping per page. A static for `spawn`'s 1 KiB
 /// capture limit; see its one use.
@@ -371,7 +371,7 @@ fn copy_the_images_into_frames(
         (own_image, s::OWN_IMAGE_ADDRESS, "terminal_supervisor"),
     ] {
         assert!(
-            image.len().div_ceil(FRAME_SIZE as usize) <= MAX_ELF_PAGES,
+            image.len().div_ceil(FRAME_SIZE as usize) <= MAXIMUM_ELF_PAGES,
             "{what}'s stripped image outgrew the test's mapping"
         );
         for (i, chunk) in image.chunks(FRAME_SIZE as usize).enumerate() {

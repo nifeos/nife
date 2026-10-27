@@ -107,31 +107,31 @@ pub const NO_SHORT_OPTIONS: ShortOptions = ShortOptions::new(b"");
 /// its letters by value rather than point at a `'static` string the program's bytes are not.
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
-pub const MAX_DECLARED_SHORT_OPTIONS: usize = 16;
+pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
 
 /// **The short options a program declares, as their letters in bit order** ([`Manifest::short_options`]).
 ///
 /// A value rather than a `&'static [u8]` since milestone 597 (provisional): a manifest read out
 /// of a program's own bytes has no `'static` string to point at, so the letters are held inline.
 /// Every constructor checks the same three things, so a manifest compiled in and a manifest decoded
-/// from a note cannot disagree about what a well-formed option set is: at most [`MAX_DECLARED_SHORT_OPTIONS`]
-/// letters, each an ASCII letter or digit, and no letter twice (a repeated letter would give one
-/// option two bits, and [`plan`](crate::plan) reads the first).
+/// from a note cannot disagree about what a well-formed option set is: at most
+/// [`MAXIMUM_DECLARED_SHORT_OPTIONS`] letters, each an ASCII letter or digit, and no letter twice
+/// (a repeated letter would give one option two bits, and [`plan`](crate::plan) reads the first).
 ///
 /// Name: ratified 2026-10-18 (calef: "Yes").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShortOptions {
-    letters: [u8; MAX_DECLARED_SHORT_OPTIONS],
+    letters: [u8; MAXIMUM_DECLARED_SHORT_OPTIONS],
     len: u8,
 }
 
 impl ShortOptions {
     /// The option set `letters` spells, or `None` if it breaks one of the three rules above.
     pub const fn try_new(letters: &[u8]) -> Option<Self> {
-        if letters.len() > MAX_DECLARED_SHORT_OPTIONS {
+        if letters.len() > MAXIMUM_DECLARED_SHORT_OPTIONS {
             return None;
         }
-        let mut out = [0u8; MAX_DECLARED_SHORT_OPTIONS];
+        let mut out = [0u8; MAXIMUM_DECLARED_SHORT_OPTIONS];
         let mut i = 0;
         while i < letters.len() {
             let l = letters[i];

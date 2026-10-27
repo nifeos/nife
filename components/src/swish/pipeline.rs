@@ -521,7 +521,7 @@ fn feed(nav: &mut Nav, stage: &[u8], w: &mut dyn ByteOut) {
             if nav.dir.is_none() {
                 Say::NoDirectory
             } else {
-                let mut buf = [0u8; nav::RENDER_MAX];
+                let mut buf = [0u8; nav::RENDER_MAXIMUM];
                 let k = nav.holds.cwd.render(&mut buf);
                 w.push(&buf[..k]);
                 w.push(b"\n");
@@ -543,7 +543,7 @@ fn feed(nav: &mut Nav, stage: &[u8], w: &mut dyn ByteOut) {
 /// two words at a time; `fixtures/src/file_source.rs` is the same loop from the other side.
 struct SinkWriter {
     slot: u64,
-    buf: [u8; byte_sink_contract::INLINE_MAX],
+    buf: [u8; byte_sink_contract::INLINE_MAXIMUM],
     n: usize,
     /// Set once a send has failed. Everything after is dropped rather than retried: `Gone` means the
     /// reader stopped caring, and there is nothing to report it to.
@@ -554,7 +554,7 @@ impl SinkWriter {
     fn new(slot: u64) -> Self {
         SinkWriter {
             slot,
-            buf: [0; byte_sink_contract::INLINE_MAX],
+            buf: [0; byte_sink_contract::INLINE_MAXIMUM],
             n: 0,
             stopped: false,
         }
@@ -837,7 +837,7 @@ fn drain_into(f: &mut FileOut) {
             print(swish::FAULTED_SENTENCE);
             return;
         }
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Msg::Bytes(n) => f.push(&buf[..n]),
             byte_sink_contract::Msg::Eof => {

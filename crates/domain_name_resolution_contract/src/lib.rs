@@ -6,7 +6,8 @@
 //!
 //! | bytes | field | written by |
 //! |---|---|---|
-//! | [`OFF_NAME`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAX`] bytes | the client |
+//! | [`OFF_NAME`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client
+//! |
 //! | [`OFF_ADDRESSES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the
 //! resolver |
 

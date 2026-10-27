@@ -234,27 +234,27 @@ mod chain {
 }
 
 /// The most concurrently-live address spaces the registry can track: every user thread has one
-/// (bounded by [`crate::sched::MAX_THREADS`]), plus 32 for the tests' bare `AddressSpace`s.
+/// (bounded by [`crate::sched::MAXIMUM_THREADS`]), plus 32 for the tests' bare `AddressSpace`s.
 /// `user::MAXIMUM_USER_SPACES` is sized to it.
-pub(crate) const MAX_SPACES: usize = crate::sched::MAX_THREADS + 32;
+pub(crate) const MAXIMUM_SPACES: usize = crate::sched::MAXIMUM_THREADS + 32;
 
 /// The registry of live address spaces: the fixed index that finds each space's log, whose records
 /// live in the spaces' own regions.
 static SPACES: IrqSafeMutex<Registry> = IrqSafeMutex::new(rank::MAPPINGS, Registry::new());
 
 /// The registry array plus one past its highest live slot, so a walk costs the occupied prefix
-/// rather than [`MAX_SPACES`], which grows with `sched::MAX_THREADS` (notes/mapping-log.md has the
-/// measurement). `claim` is first-fit, so `top` stays near the live count, and every slot at or
-/// above `top` is `None`, which makes a bounded walk identical to a full one.
+/// rather than [`MAXIMUM_SPACES`], which grows with `sched::MAXIMUM_THREADS` (notes/mapping-log.md
+/// has the measurement). `claim` is first-fit, so `top` stays near the live count, and every slot
+/// at or above `top` is `None`, which makes a bounded walk identical to a full one.
 struct Registry {
-    spaces: [Option<SpaceLog>; MAX_SPACES],
+    spaces: [Option<SpaceLog>; MAXIMUM_SPACES],
     top: usize,
 }
 
 impl Registry {
     const fn new() -> Self {
         Self {
-            spaces: [const { None }; MAX_SPACES],
+            spaces: [const { None }; MAXIMUM_SPACES],
             top: 0,
         }
     }
@@ -292,7 +292,7 @@ impl Registry {
         // Bounded by the array's length so a prover sees the bound; the `break` keeps it amortized
         // O(1).
         let mut top = self.top;
-        for _ in 0..MAX_SPACES {
+        for _ in 0..MAXIMUM_SPACES {
             if top == 0 || self.spaces[top - 1].is_some() {
                 break;
             }

@@ -368,7 +368,7 @@ fn line(ep: RendezvousId, buf: &mut [u8; 256]) -> Option<usize> {
     let mut len = 0usize;
     loop {
         let m = crate::sched::ipc_receive(ep);
-        let mut chunk = [0u8; byte_sink_contract::INLINE_MAX];
+        let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
         match byte_sink_contract::unpack(m[0], m[1], m[2], &mut chunk) {
             byte_sink_contract::Msg::Eof => return None,
             byte_sink_contract::Msg::Malformed => {

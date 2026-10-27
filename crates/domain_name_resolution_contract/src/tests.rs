@@ -76,10 +76,10 @@ fn a_longest_zone_crosses_in_thirty_two_messages_and_still_parses() {
     assert!(grant_messages(3, too_long.as_bytes()).is_none());
     // 61 + 63 * 3 + 3 dots = 253, the longest dotted name there is.
     let longest = std::format!("{}.{label}.{label}.{label}", "b".repeat(61));
-    assert_eq!(longest.len(), NAME_TEXT_MAX);
+    assert_eq!(longest.len(), NAME_TEXT_MAXIMUM);
     assert_eq!(
         grant_messages(3, longest.as_bytes()).unwrap().count(),
-        NAME_TEXT_MAX.div_ceil(8)
+        NAME_TEXT_MAXIMUM.div_ceil(8)
     );
     let mut g = Grants::new();
     assert_eq!(grant(&mut g, 3, &longest), Control::Granted(0));
@@ -177,10 +177,10 @@ fn a_continuation_into_a_full_table_is_out_of_order_not_full() {
 fn the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not() {
     let label = "a".repeat(63);
     let dotted = std::format!("{}.{label}.{label}.{label}.", "b".repeat(61));
-    assert_eq!(dotted.len(), NAME_TEXT_MAX + 1);
+    assert_eq!(dotted.len(), NAME_TEXT_MAXIMUM + 1);
     let mut g = Grants::new();
     assert_eq!(grant(&mut g, 3, &dotted), Control::Granted(0));
-    let total = (NAME_TEXT_MAX + 2) as u8;
+    let total = (NAME_TEXT_MAXIMUM + 2) as u8;
     assert_eq!(
         g.control(control_word(OPERATION_GRANT, 0, total, 4), 0),
         Control::Refused(Refusal::TooLong)
@@ -302,7 +302,7 @@ fn a_zone_is_spelled_one_way() {
     for zone in &accepted {
         assert!(is_canonical_zone(zone.as_bytes()), "{zone:?} is canonical");
     }
-    assert_eq!(accepted[6].len(), NAME_TEXT_MAX);
+    assert_eq!(accepted[6].len(), NAME_TEXT_MAXIMUM);
     let refused: Vec<std::string::String> = std::vec![
         label(64),
         std::format!("{}.a", label(64)),

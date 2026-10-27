@@ -115,7 +115,10 @@ impl Windows {
 
 /// How many finished jobs [`ReapsDue`] tracks. A full table only stops the progenitor waiting for
 /// the reaps it could not record, so this bounds a liveness improvement, not a safety rule.
-pub const MAX_DUE: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_DUE`.
+pub const MAXIMUM_DUE: usize = 8;
 
 /// **The finished jobs whose reap is on its way** (milestone 685): jobs whose whole answer went to
 /// the shell's result endpoint, supervised by `job_undertaker`, not yet reaped.
@@ -126,7 +129,7 @@ pub const MAX_DUE: usize = 8;
 ///
 /// Name: provisional.
 pub struct ReapsDue {
-    labels: [Label; MAX_DUE],
+    labels: [Label; MAXIMUM_DUE],
 }
 
 impl ReapsDue {
@@ -134,7 +137,7 @@ impl ReapsDue {
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            labels: [0; MAX_DUE],
+            labels: [0; MAXIMUM_DUE],
         }
     }
 
@@ -321,7 +324,7 @@ mod tests {
         assert!(d.any(), "another job's reap cleared job 4's");
         d.reaped(4);
         assert!(!d.any());
-        for job in 1..=MAX_DUE as u64 {
+        for job in 1..=MAXIMUM_DUE as u64 {
             assert!(d.expect(job));
         }
         assert!(!d.expect(99), "a full table said it recorded a ninth");

@@ -20,7 +20,7 @@ fn scratch() -> Vec<u8> {
 #[test]
 fn an_attribute_round_trips_at_the_edges_of_both_limits() {
     use xattr::store;
-    let widest_name = vec![b'n'; xattr::MAX_NAME];
+    let widest_name = vec![b'n'; xattr::MAXIMUM_NAME];
     let widest_value = vec![0xABu8; xattr::MAXIMUM_VALUE];
     for (name, value) in [
         (&b"user.DOSATTRIB"[..], &b"0x20"[..]),
@@ -85,7 +85,7 @@ fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
     assert_eq!(
         store::set(
             &[],
-            &vec![b'x'; xattr::MAX_NAME + 1],
+            &vec![b'x'; xattr::MAXIMUM_NAME + 1],
             xattr::RAW,
             b"v",
             &mut out
@@ -253,7 +253,7 @@ fn the_widest_listing_fits_one_page_and_round_trips() {
     let mut out = scratch();
     let names: Vec<Vec<u8>> = (0..xattr::MAXIMUM_COUNT)
         .map(|i| {
-            let mut n = vec![b'a' + i as u8; xattr::MAX_NAME];
+            let mut n = vec![b'a' + i as u8; xattr::MAXIMUM_NAME];
             n[0] = b'0' + i as u8;
             n
         })

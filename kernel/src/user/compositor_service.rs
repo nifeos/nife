@@ -504,25 +504,25 @@ impl TermClient {
 
 /// The most mappings a compositor can need: the list, the ring, and every client's control page
 /// and surface. The screen is a `PageFrame` grant instead.
-const MAXIMUM_COMP_MAPS: usize = 2 + compositor::MAXIMUM_WINDOWS * (1 + MAX_SURFACE_PAGES);
+const MAXIMUM_COMP_MAPS: usize = 2 + compositor::MAXIMUM_WINDOWS * (1 + MAXIMUM_SURFACE_PAGES);
 /// The most page frames a client's surface may take: one `Mapping` each, beside its control page.
 /// The tables are sized from it, and they must fit the 1 KiB a spawn closure may capture
 /// (`kernel/src/thread.rs` asserts that), so a window too big for it is refused below, at build
 /// time, rather than as an index out of bounds when the compositor is wired.
-const MAX_SURFACE_PAGES: usize = 4;
+const MAXIMUM_SURFACE_PAGES: usize = 4;
 const _: () = {
     let mut i = 0;
     while i < compositor::SCENE.len() {
         assert!(
-            compositor::SCENE[i].page_frames() as usize <= MAX_SURFACE_PAGES,
-            "a SCENE window's surface needs more page frames than MAX_SURFACE_PAGES",
+            compositor::SCENE[i].page_frames() as usize <= MAXIMUM_SURFACE_PAGES,
+            "a SCENE window's surface needs more page frames than MAXIMUM_SURFACE_PAGES",
         );
         i += 1;
     }
 };
 /// The most a client can need: its control page, its surface, and (capture only) the window list.
 /// A capture client maps the screen itself, out of its `SCREEN_FRAME` and `BUDGET` grants.
-const MAXIMUM_CLIENT_MAPS: usize = 1 + MAX_SURFACE_PAGES + 1;
+const MAXIMUM_CLIENT_MAPS: usize = 1 + MAXIMUM_SURFACE_PAGES + 1;
 /// Report, display, doorbell, the screen `PageFrame`, its map budget, then one input endpoint per
 /// focusable client starting at [`COMP_INPUT_BASE`].
 const MAXIMUM_COMP_GRANTS: usize = COMP_INPUT_BASE as usize + compositor::MAXIMUM_WINDOWS;

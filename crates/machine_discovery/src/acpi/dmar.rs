@@ -185,7 +185,10 @@ pub fn first_drhd(body: &[u8]) -> Option<Drhd> {
 /// How many DRHDs [`DmarUnits`] records. A client Intel part has two (one for the integrated
 /// graphics, one catch-all); a two-socket server has one per root complex, a handful. A table with
 /// more than this sets [`DmarUnits::truncated`] rather than dropping the rest silently.
-pub const MAX_DRHDS: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_DRHDS`.
+pub const MAXIMUM_DRHDS: usize = 8;
 /// How many PCI device-scope entries [`DmarUnits`] records across every DRHD. Only the two PCI
 /// types are kept (endpoint and sub-hierarchy); IOAPIC, HPET and ACPI-namespace entries name no
 /// requester id this kernel confines and are skipped.
@@ -201,7 +204,10 @@ pub const MAXIMUM_SCOPES: usize = 32;
 pub const MAXIMUM_SCOPE_PATH: usize = 4;
 /// How many RMRRs [`DmarUnits`] records. The `OptiPlex` 7040 publishes two (USB, graphics). A
 /// ninth sets [`DmarUnits::truncated`]. Name: provisional (milestone 594).
-pub const MAX_RMRRS: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_RMRRS`.
+pub const MAXIMUM_RMRRS: usize = 8;
 /// How many PCI device-scope entries [`DmarUnits`] records across every RMRR. Name: provisional
 /// (milestone 594).
 ///
@@ -353,11 +359,11 @@ impl ReservedRegion {
 /// Name: provisional (milestone 261's bench rehearsal).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DmarUnits {
-    pub drhds: [Drhd; MAX_DRHDS],
+    pub drhds: [Drhd; MAXIMUM_DRHDS],
     pub drhd_count: usize,
     pub scopes: [DeviceScope; MAXIMUM_SCOPES],
     pub scope_count: usize,
-    pub rmrrs: [ReservedRegion; MAX_RMRRS],
+    pub rmrrs: [ReservedRegion; MAXIMUM_RMRRS],
     pub rmrr_count: usize,
     pub rmrr_scopes: [DeviceScope; MAXIMUM_RMRR_SCOPES],
     pub rmrr_scope_count: usize,
@@ -384,11 +390,11 @@ impl Default for DmarUnits {
                 segment: 0,
                 register_base: 0,
                 register_size: 0,
-            }; MAX_DRHDS],
+            }; MAXIMUM_DRHDS],
             drhd_count: 0,
             scopes: [DeviceScope::default(); MAXIMUM_SCOPES],
             scope_count: 0,
-            rmrrs: [ReservedRegion::default(); MAX_RMRRS],
+            rmrrs: [ReservedRegion::default(); MAXIMUM_RMRRS],
             rmrr_count: 0,
             rmrr_scopes: [DeviceScope::default(); MAXIMUM_RMRR_SCOPES],
             rmrr_scope_count: 0,
@@ -464,7 +470,7 @@ impl DmarUnits {
             at += len;
             match kind {
                 0 if len >= DRHD_FIXED_LEN => {
-                    if u.drhd_count == MAX_DRHDS {
+                    if u.drhd_count == MAXIMUM_DRHDS {
                         u.truncated = true;
                         continue;
                     }
@@ -494,7 +500,7 @@ impl DmarUnits {
                         u.rmrrs_refused += 1;
                         continue;
                     }
-                    if u.rmrr_count == MAX_RMRRS {
+                    if u.rmrr_count == MAXIMUM_RMRRS {
                         u.truncated = true;
                         continue;
                     }
@@ -1093,7 +1099,7 @@ mod tests {
     fn a_ninth_rmrr_marks_the_table_truncated() {
         let s = scope(SCOPE_PCI_ENDPOINT, 0, &[(2, 0)]);
         let mut parts = std::vec![drhd(1, 0xfed9_1000, &[])];
-        for i in 0..=MAX_RMRRS as u64 {
+        for i in 0..=MAXIMUM_RMRRS as u64 {
             parts.push(rmrr(
                 0x1000_0000 + i * 0x1000,
                 0x1000_0fff + i * 0x1000,
@@ -1101,7 +1107,7 @@ mod tests {
             ));
         }
         let u = DmarUnits::parse(&dmar(&parts));
-        assert_eq!(u.reserved_regions().len(), MAX_RMRRS);
+        assert_eq!(u.reserved_regions().len(), MAXIMUM_RMRRS);
         assert!(u.truncated);
     }
 

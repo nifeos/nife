@@ -114,7 +114,7 @@ pub(crate) fn scope_of(rid: u32) -> Scope {
 
 /// How many regions one domain carries: a caller's grant (two today, virtio's) plus every RMRR
 /// the DMAR decoder can record. Name: provisional (milestone 594 (every VT-d unit translates its own devices)).
-const MAXIMUM_CONFINED_REGIONS: usize = 4 + machine_discovery::acpi::MAX_RMRRS;
+const MAXIMUM_CONFINED_REGIONS: usize = 4 + machine_discovery::acpi::MAXIMUM_RMRRS;
 
 /// Allocate one zeroed frame and return its physical address. The domain's root table and every
 /// intermediate table come from here. These frames are owned by the IOMMU from now on; a re-attach

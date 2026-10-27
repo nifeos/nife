@@ -71,7 +71,7 @@ const BLOCK: usize = blk::BLOCK_SIZE;
 /// rewrite), block buffers, and small
 /// tree structures; a few MiB is comfortable for the small images phase 2 serves. The untyped the
 /// kernel grants is the real ceiling.
-const HEAP_MAX: u64 = 8 * 1024 * 1024;
+const HEAP_MAXIMUM: u64 = 8 * 1024 * 1024;
 
 /// How many single blocks [`redoxfs_server::CachedDisk`] holds (milestone 138 (close the read
 /// gap) step 2, resized by milestone 606 (a directory walk costs what it does on Linux)). The number
@@ -402,7 +402,11 @@ fn start(crash_at_write: u64, crash_after_blocks: u64, crash_tear_bytes: u64) ->
         inject::AFTER_BLOCKS.store(crash_after_blocks, Ordering::Relaxed);
         inject::TEAR_BYTES.store(crash_tear_bytes, Ordering::Relaxed);
     }
-    HEAP.initialize(MEMORY_REGION, memory_region_heap::DEFAULT_BASE, HEAP_MAX);
+    HEAP.initialize(
+        MEMORY_REGION,
+        memory_region_heap::DEFAULT_BASE,
+        HEAP_MAXIMUM,
+    );
 
     // A bad image, or a block server that never answers correctly, faults here; the server never
     // creates. CachedDisk holds the tree spine's single-block reads (milestone 138 step 2).

@@ -52,15 +52,18 @@ const NANOS_PER_SEC: u64 = 1_000_000_000;
 /// The pivot's own lower edge is 20 January 1968, but this crate's Unix seconds are unsigned (the
 /// clock service has no use for a pre-1970 wall clock and a signed second only invites a sign bug),
 /// so the reachable floor is the Unix epoch itself.
-pub const UNIX_MIN: u64 = 0;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `UNIX_MIN`.
+pub const UNIX_MINIMUM: u64 = 0;
 
 /// **The first Unix second [`Timestamp`] cannot represent**: 4233462144, which is 26 February 2104
 /// at 09:42:24 UTC.
 ///
 /// Past this the era pivot on [`Timestamp::to_unix`] would alias the value onto a date 136 years
 /// earlier, so [`Timestamp::from_unix`] refuses it rather than returning a wrong answer.
-/// `UNIX_MIN..UNIX_LIMIT` is exactly the range over which Unix → NTP → Unix is the identity, and
-/// that is the property Kani proves.
+/// `UNIX_MINIMUM..UNIX_LIMIT` is exactly the range over which Unix → NTP → Unix is the identity,
+/// and that is the property Kani proves.
 pub(crate) const UNIX_LIMIT: u64 = (TICKS_PER_SEC - UNIX_DELTA) + (1 << 31);
 
 /// The highest stratum a synchronised server may claim (RFC 5905 `MAXSTRAT`). 1 is a reference
@@ -76,7 +79,7 @@ pub(crate) const MAXIMUM_STRATUM: u8 = 15;
 /// describing something the protocol cannot mean; a server 200 ms away over a bad path is merely a
 /// poor sample, and deciding what to do with a poor sample is the service's call, made with the
 /// other samples in front of it.
-pub(crate) const MAX_ROOT_DISTANCE: Short = Short(16 << 16);
+pub(crate) const MAXIMUM_ROOT_DISTANCE: Short = Short(16 << 16);
 
 /// The poll interval a request advertises, as log2 seconds: 6, which is 64 seconds. The server does
 /// not act on it for a unicast client; it exists so the packet is well-formed and so a server that
@@ -159,8 +162,8 @@ impl Timestamp {
     }
 
     /// **Unix seconds and nanoseconds to an NTP timestamp.** `None` if `nanos` is not a valid
-    /// sub-second (`>= 1_000_000_000`) or if `secs` is outside `UNIX_MIN..`[`UNIX_LIMIT`], where the
-    /// era pivot could not read the result back.
+    /// sub-second (`>= 1_000_000_000`) or if `secs` is outside `UNIX_MINIMUM..`[`UNIX_LIMIT`],
+    /// where the era pivot could not read the result back.
     ///
     /// Refusing out of range rather than wrapping is the deliberate half of the 2036 handling: the
     /// conversion is only ever the identity's inverse inside the window, so outside it we return
@@ -185,8 +188,8 @@ impl Timestamp {
     /// fixed pivot, not a guess against the current time: high bit set (seconds ≥ 2<sup>31</sup>)
     /// is era 0, counted from 1900 (20 January 1968 to 7 February 2036 at 06:28:16 UTC); clear is
     /// era 1, counted from the rollover (to 26 February 2104). The window is
-    /// [`UNIX_MIN`]`..`[`UNIX_LIMIT`], clipped at the Unix epoch because the seconds returned are
-    /// unsigned, and the crate expires in 2104. See notes/ntp/the-era-pivot.md for why a
+    /// [`UNIX_MINIMUM`]`..`[`UNIX_LIMIT`], clipped at the Unix epoch because the seconds returned
+    /// are unsigned, and the crate expires in 2104. See notes/ntp/the-era-pivot.md for why a
     /// nearest-era rule is worse.
     pub const fn to_unix(self) -> (u64, u32) {
         let s = self.seconds() as u64;
@@ -422,8 +425,8 @@ impl Packet {
 
     /// **The synchronisation distance to the root**, RFC 5905's λ: half the root delay plus the root
     /// dispersion. The server's own claim about how far from a real clock it is. Compared against
-    /// [`MAX_ROOT_DISTANCE`] by [`Query::accept`]; saturating, so a server claiming the maximum of
-    /// both fields gets a large answer rather than a wrapped small one.
+    /// [`MAXIMUM_ROOT_DISTANCE`] by [`Query::accept`]; saturating, so a server claiming the maximum
+    /// of both fields gets a large answer rather than a wrapped small one.
     pub(crate) const fn root_distance(&self) -> Short {
         Short((self.root_delay.0 / 2).saturating_add(self.root_dispersion.0))
     }
@@ -525,7 +528,7 @@ pub enum Reject {
     /// The round trip took less time than the server spent thinking, so the delay is negative and
     /// the offset computed from it is meaningless.
     NegativeDelay,
-    /// The server's own claimed distance from a reference clock exceeds [`MAX_ROOT_DISTANCE`].
+    /// The server's own claimed distance from a reference clock exceeds [`MAXIMUM_ROOT_DISTANCE`].
     RootDistance,
 }
 
@@ -673,7 +676,7 @@ impl Query {
     /// server; an origin that is not our nonce, checked before anything else is believed; a
     /// kiss-o'-death, a stratum above [`MAXIMUM_STRATUM`] or an unsynchronised leap indicator; a
     /// zero transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no
-    /// shorter than the turnaround); a root distance past [`MAX_ROOT_DISTANCE`]. Each is its
+    /// shorter than the turnaround); a root distance past [`MAXIMUM_ROOT_DISTANCE`]. Each is its
     /// [`Reject`] variant. None authenticates: an on-path attacker sees the nonce. See
     /// notes/ntp.md.
     pub fn accept(&self, wire: &[u8], dest: Timestamp) -> Result<Sample, Reject> {
@@ -701,7 +704,7 @@ impl Query {
         if p.transmit.is_zero() {
             return Err(Reject::TransmitZero);
         }
-        if p.root_distance() > MAX_ROOT_DISTANCE {
+        if p.root_distance() > MAXIMUM_ROOT_DISTANCE {
             return Err(Reject::RootDistance);
         }
 
@@ -1068,9 +1071,9 @@ mod tests {
         // 16 seconds exactly is inside; a tick past it is not.
         let mut p = Packet::parse(&REPLY).unwrap();
         p.root_delay = Short(0);
-        p.root_dispersion = MAX_ROOT_DISTANCE;
+        p.root_dispersion = MAXIMUM_ROOT_DISTANCE;
         assert!(query().accept(&p.to_bytes(), T4).is_ok());
-        p.root_dispersion = Short(MAX_ROOT_DISTANCE.0 + 1);
+        p.root_dispersion = Short(MAXIMUM_ROOT_DISTANCE.0 + 1);
         assert_eq!(query().accept(&p.to_bytes(), T4), Err(Reject::RootDistance));
     }
 
@@ -1105,7 +1108,7 @@ mod tests {
         assert_eq!(Short(1 << 16).secs(), 1);
         assert_eq!(Short(1 << 16).nanos(), 1_000_000_000);
         assert_eq!(Short(1 << 15).nanos(), 500_000_000);
-        assert_eq!(MAX_ROOT_DISTANCE.secs(), 16);
+        assert_eq!(MAXIMUM_ROOT_DISTANCE.secs(), 16);
     }
 
     // Milestone 85 survivors. The exhaustive sweeps quantify over the CONVERSIONS; these are the

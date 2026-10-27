@@ -65,7 +65,10 @@ pub const POST_REC: usize = 4;
 /// 2026-10-26 (UTC), renamed from `PATH_MAX`.
 pub const PATH_MAXIMUM: usize = 72;
 /// The longest page title an index can carry.
-pub const TITLE_MAX: usize = 48;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TITLE_MAX`.
+pub const TITLE_MAXIMUM: usize = 48;
 /// The longest term an index stores; longer ones are truncated to it, so two identifiers that
 /// agree in their first 24 bytes share a posting list.
 ///
@@ -188,7 +191,7 @@ pub struct Posting {
 pub struct Page {
     path: [u8; PATH_MAXIMUM],
     path_len: u8,
-    title: [u8; TITLE_MAX],
+    title: [u8; TITLE_MAXIMUM],
     title_len: u8,
     tokens: u32,
 }
@@ -394,14 +397,14 @@ pub fn page_record(h: &Header, i: u16, src: &mut impl Pages) -> Option<Page> {
     let rec = &buf[(i as usize % per) * PAGE_REC..][..PAGE_REC];
     let mut p = Page {
         path: [0; PATH_MAXIMUM],
-        path_len: rec[PATH_MAXIMUM + TITLE_MAX].min(PATH_MAXIMUM as u8),
-        title: [0; TITLE_MAX],
-        title_len: rec[PATH_MAXIMUM + TITLE_MAX + 1].min(TITLE_MAX as u8),
-        tokens: u32(rec, PATH_MAXIMUM + TITLE_MAX + 2),
+        path_len: rec[PATH_MAXIMUM + TITLE_MAXIMUM].min(PATH_MAXIMUM as u8),
+        title: [0; TITLE_MAXIMUM],
+        title_len: rec[PATH_MAXIMUM + TITLE_MAXIMUM + 1].min(TITLE_MAXIMUM as u8),
+        tokens: u32(rec, PATH_MAXIMUM + TITLE_MAXIMUM + 2),
     };
     p.path.copy_from_slice(&rec[..PATH_MAXIMUM]);
     p.title
-        .copy_from_slice(&rec[PATH_MAXIMUM..PATH_MAXIMUM + TITLE_MAX]);
+        .copy_from_slice(&rec[PATH_MAXIMUM..PATH_MAXIMUM + TITLE_MAXIMUM]);
     Some(p)
 }
 
@@ -462,7 +465,7 @@ pub struct Found {
     location: [u8; LOCATION_MAXIMUM],
     location_len: u8,
     truncated: bool,
-    title: [u8; TITLE_MAX],
+    title: [u8; TITLE_MAXIMUM],
     title_len: u8,
     /// The page's path as the index records it, which is where the page came from in the source
     /// tree rather than where it is installed. See [`Found::location`] for the difference.
@@ -533,7 +536,7 @@ impl Ranked {
                 location: [0; LOCATION_MAXIMUM],
                 location_len: 0,
                 truncated: false,
-                title: [0; TITLE_MAX],
+                title: [0; TITLE_MAXIMUM],
                 title_len: 0,
                 origin: [0; PATH_MAXIMUM],
                 origin_len: 0,
@@ -712,7 +715,7 @@ mod builder {
     pub struct Source<'a> {
         /// The path the store will know the page by. Truncated to [`PATH_MAXIMUM`].
         pub path: &'a str,
-        /// The page's title. Truncated to [`TITLE_MAX`].
+        /// The page's title. Truncated to [`TITLE_MAXIMUM`].
         pub title: &'a str,
         /// The page's markdown source, which is what gets tokenised.
         pub text: &'a [u8],
@@ -789,11 +792,11 @@ mod builder {
             let n = path.len().min(PATH_MAXIMUM);
             out[rec..rec + n].copy_from_slice(&path[..n]);
             let title = p.title.as_bytes();
-            let m = title.len().min(TITLE_MAX);
+            let m = title.len().min(TITLE_MAXIMUM);
             out[rec + PATH_MAXIMUM..rec + PATH_MAXIMUM + m].copy_from_slice(&title[..m]);
-            out[rec + PATH_MAXIMUM + TITLE_MAX] = n as u8;
-            out[rec + PATH_MAXIMUM + TITLE_MAX + 1] = m as u8;
-            out[rec + PATH_MAXIMUM + TITLE_MAX + 2..rec + PATH_MAXIMUM + TITLE_MAX + 6]
+            out[rec + PATH_MAXIMUM + TITLE_MAXIMUM] = n as u8;
+            out[rec + PATH_MAXIMUM + TITLE_MAXIMUM + 1] = m as u8;
+            out[rec + PATH_MAXIMUM + TITLE_MAXIMUM + 2..rec + PATH_MAXIMUM + TITLE_MAXIMUM + 6]
                 .copy_from_slice(&page_tokens[i].to_le_bytes());
         }
 

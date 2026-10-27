@@ -34,10 +34,10 @@ use crate::user::holding::Holding;
 
 /// `display_terminal`'s image is the largest, about 220 pages: its `Vt` is initialized to
 /// blank cells, which are not zero bytes, so the grid is in `.data` rather than `.bss`.
-const MAX_ELF_PAGES: usize = 256;
+const MAXIMUM_ELF_PAGES: usize = 256;
 /// Stack pages below the one `run` maps; `terminal_swap_tests`' constant, for its reason.
 const EXTRA_STACK_PAGES: usize = 7;
-const MAXIMUM_WINDOWS: usize = 3 * MAX_ELF_PAGES + EXTRA_STACK_PAGES;
+const MAXIMUM_WINDOWS: usize = 3 * MAXIMUM_ELF_PAGES + EXTRA_STACK_PAGES;
 /// The swap endpoint's slot in the supervisor, after the eight terminal objects.
 const SWAP_SLOT: u64 = 8;
 
@@ -433,7 +433,7 @@ fn copy_the_images_into_frames(images: [(&[u8], u64); 3], alloc: impl Fn() -> u6
     let mut windows = 0;
     for (image, va) in images {
         assert!(
-            image.len().div_ceil(FRAME_SIZE as usize) <= MAX_ELF_PAGES,
+            image.len().div_ceil(FRAME_SIZE as usize) <= MAXIMUM_ELF_PAGES,
             "an image of {} bytes outgrew the test's mapping",
             image.len()
         );

@@ -154,10 +154,10 @@ pub fn initialize(base: u64) {
     }
 
     let idr1 = r32(base, IDR1);
-    let cmdqs_max = (idr1 >> 21) & 0x1f;
+    let cmdqs_maximum = (idr1 >> 21) & 0x1f;
     let evtqs_maximum = (idr1 >> 16) & 0x1f;
     assert!(
-        cmdqs_max >= CMDQ_LOG2 && evtqs_maximum >= EVTQ_LOG2,
+        cmdqs_maximum >= CMDQ_LOG2 && evtqs_maximum >= EVTQ_LOG2,
         "SMMU queues smaller than expected (IDR1 {idr1:#x})"
     );
 

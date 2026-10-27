@@ -745,7 +745,7 @@ pub(crate) fn smmu_region() -> Option<(u64, u64)> {
 /// each window, the same role [`smmu_region`] plays for the SMMU. Every unit and not only one
 /// since milestone 594 (every VT-d unit translates its own devices), which brings every unit up. Name: provisional.
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn vtd_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::MAX_DRHDS] {
+pub(crate) fn vtd_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_DRHDS] {
     *VTD_REGIONS.lock()
 }
 
@@ -1073,8 +1073,8 @@ static SMMU_REGION: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::R
 /// file is a mapped device window before `arch::iommu::initialize` ever reads it
 /// (`arch::x86_64::iommu`'s own accessors go through `phys_to_virt`, which is arithmetic, not a
 /// promise the address is mapped).
-static VTD_REGIONS: IrqSafeMutex<[Option<(u64, u64)>; machine_discovery::acpi::MAX_DRHDS]> =
-    IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::MAX_DRHDS]);
+static VTD_REGIONS: IrqSafeMutex<[Option<(u64, u64)>; machine_discovery::acpi::MAXIMUM_DRHDS]> =
+    IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::MAXIMUM_DRHDS]);
 
 /// AMD-Vi's register blocks (base, size), one per IVHD the IVRS names (lane `amd-vi`). The same
 /// role as [`VTD_REGIONS`] on an AMD machine, kept apart rather than shared because the two are

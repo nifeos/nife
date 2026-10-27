@@ -244,8 +244,8 @@ pub(crate) const DOWNLOADED_NOTELESS: &str = "downloads/noteless.nifepkg";
 /// the path's).
 ///
 /// The version is a directory because the shell types a component of at most sixteen bytes
-/// (`grant_plan`'s `MAX_NAME`, the grant wire's width), and `greeting-0.2.0.nifepkg` is twenty-two.
-/// The name stays inside the wire rather than the wire growing, as the install path
+/// (`grant_plan`'s `MAXIMUM_NAME`, the grant wire's width), and `greeting-0.2.0.nifepkg` is
+/// twenty-two. The name stays inside the wire rather than the wire growing, as the install path
 /// (`packages/greeting/0.2.0/greeting`) and the 614 block's BUGS already do.
 pub(crate) const DOWNLOADED_GREETING_0_2_0: &str = "downloads/0.2.0/greeting.nifepkg";
 

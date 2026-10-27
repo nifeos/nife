@@ -38,8 +38,8 @@ pub enum Refusal {
     /// whose printed preview and actual transfer could disagree.
     NoSuchOption,
     /// The named file is not something this shell can express: empty, a component longer than the
-    /// two argument words a grant's name rides in (`filesystem_contract::grant::MAX_NAME`), deeper than the
-    /// shell tracks, or a path that designates a directory rather than a file.
+    /// two argument words a grant's name rides in (`filesystem_contract::grant::MAXIMUM_NAME`),
+    /// deeper than the shell tracks, or a path that designates a directory rather than a file.
     FileNotNameable,
     /// The program takes no memory grant, but `--mem` was given.
     ///
@@ -72,8 +72,8 @@ pub enum Refusal {
     /// of what it matched is the worst outcome this mechanism has.
     TooManyNames,
     /// A name a pattern matched cannot travel in a grant (longer than
-    /// [`expand::MAX_NAME`](crate::expand::MAX_NAME)). Refused whole rather than dropped from the set, for
-    /// [`Refusal::TooManyNames`]'s reason.
+    /// [`expand::MAXIMUM_NAME`](crate::expand::MAXIMUM_NAME)). Refused whole rather than dropped
+    /// from the set, for [`Refusal::TooManyNames`]'s reason.
     MatchNotNameable,
     /// A pattern somewhere other than a token's **last** component (`*/report.txt`). Selecting
     /// directories to walk is an authority question, not a matching one, so it is not something a

@@ -540,7 +540,7 @@ fn a_name_that_cannot_travel_as_a_grant_is_refused_at_the_prompt() {
         .file
         .unwrap();
     assert_eq!(g.name.as_bytes(), b"passwd");
-    let mut buf = [0u8; nav::RENDER_MAX];
+    let mut buf = [0u8; nav::RENDER_MAXIMUM];
     let n = g.directory.render(&mut buf);
     assert_eq!(&buf[..n], b"/etc");
 

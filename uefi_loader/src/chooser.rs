@@ -56,11 +56,11 @@ pub(crate) const STARTED_BY_CHOOSER: &[u8] = b"nife-slot=";
 
 /// How many boot slots the chooser will consider on one disk. Two are laid out; the policy does not
 /// care and this is only the size of the arrays below.
-const MAX_SLOTS: usize = 4;
+const MAXIMUM_SLOTS: usize = 4;
 
 /// How many partition entries the chooser will decode and write back. A table with more used
 /// entries than this is read but never rewritten, so a try is never silently unspent.
-const MAX_PARTITIONS: usize = 16;
+const MAXIMUM_PARTITIONS: usize = 16;
 
 /// The logical block size this chooser reads and writes. See `BUGS`.
 const LBA: usize = 512;
@@ -222,11 +222,11 @@ struct Disk {
     disk_guid: Uuid,
     block_count: u64,
     /// Every used entry, in index order, so a rewrite puts them back where they were.
-    parts: [Entry; MAX_PARTITIONS],
+    parts: [Entry; MAXIMUM_PARTITIONS],
     used: usize,
     /// For each slot, its index in [`Self::parts`].
-    at: [usize; MAX_SLOTS],
-    states: [State; MAX_SLOTS],
+    at: [usize; MAXIMUM_SLOTS],
+    states: [State; MAXIMUM_SLOTS],
     slots: usize,
 }
 
@@ -316,7 +316,7 @@ fn path_of(handle: Handle, services: &BootServices) -> Option<&'static [u8]> {
     let len = device_path::length(|at| {
         // SAFETY: `length` asks only for the header at the start of a node it has reached by
         // adding the lengths of the nodes before it, none of them past the end node, and stops
-        // within `MAX_LEN`; the firmware's path is at least that long up to its end node.
+        // within `MAXIMUM_LEN`; the firmware's path is at least that long up to its end node.
         Some(unsafe { ptr::read_unaligned(base.add(at).cast::<[u8; 4]>()) })
     })?;
     // SAFETY: `length` walked these `len` bytes node by node; the firmware owns them until boot
@@ -359,21 +359,21 @@ fn read_table(handle: Handle, services: &BootServices, scratch: &mut Scratch) ->
         media_id,
         disk_guid: table.disk_guid(),
         block_count: table.block_count(),
-        parts: [Entry::UNUSED; MAX_PARTITIONS],
+        parts: [Entry::UNUSED; MAXIMUM_PARTITIONS],
         used: 0,
-        at: [0; MAX_SLOTS],
-        states: [State::EMPTY; MAX_SLOTS],
+        at: [0; MAXIMUM_SLOTS],
+        states: [State::EMPTY; MAXIMUM_SLOTS],
         slots: 0,
     };
     for (index, part) in table.partitions() {
         // `create` writes the partitions it is given at indices 0, 1, 2..., so a table whose used
         // entries are not contiguous from zero would be renumbered by a rewrite. Ours never are;
         // refusing is what keeps that an assumption this code states rather than one it holds.
-        if index != disk.used || disk.used == MAX_PARTITIONS {
+        if index != disk.used || disk.used == MAXIMUM_PARTITIONS {
             return None;
         }
         disk.parts[disk.used] = part;
-        if part.type_guid == types::NIFE_BOOT && disk.slots < MAX_SLOTS {
+        if part.type_guid == types::NIFE_BOOT && disk.slots < MAXIMUM_SLOTS {
             disk.at[disk.slots] = disk.used;
             disk.states[disk.slots] = State::from_attributes(part.attributes);
             disk.slots += 1;

@@ -1,5 +1,5 @@
 //! The tables behind `IPC_TABLES`: [`IpcTables`] itself, the one lock it sits behind, the limits
-//! that size it ([`MAX_THREADS`], [`MAXIMUM_RENDEZVOUS`], the futex buckets and the kernel's
+//! that size it ([`MAXIMUM_THREADS`], [`MAXIMUM_RENDEZVOUS`], the futex buckets and the kernel's
 //! endpoint chunks), and the rendezvous-pressure instrument. See
 //! notes/ipc-tables-lock-inventory.md.
 //!
@@ -32,7 +32,10 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 /// - Revocation still scans every live thread; milestone 183 (a physical-range index for
 ///   capability holders) is the structural fix.
 /// - The peak is a whole-boot high-water and cannot name the test that pushed it.
-pub const MAX_THREADS: usize = 256;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_THREADS`.
+pub const MAXIMUM_THREADS: usize = 256;
 
 pub(super) struct IpcTables {
     /// The thread table: generational names over page-resident TCBs. See [`Threads`] and
@@ -49,7 +52,7 @@ pub(super) struct IpcTables {
     pub(super) kernel_ep_chunks: usize,
     /// The notification registry (§101 (notification objects)): name to the page a
     /// [`NotificationPage`] lives at, retyped from its creator's region.
-    pub(super) notification_table: generational_table::Table<u64, MAX_NOTIFICATIONS>,
+    pub(super) notification_table: generational_table::Table<u64, MAXIMUM_NOTIFICATIONS>,
     /// The timer registry (§147 (a timer a userspace service cannot hold)): name to the page a
     /// [`TimerPage`] lives at. The expiry walk iterates it.
     pub(super) timer_table: generational_table::Table<u64, MAXIMUM_TIMERS>,
@@ -99,7 +102,7 @@ pub(super) const KERNEL_EP_CHUNK_PAGES: u64 = 32;
 
 /// How many chunks the kernel will carve before refusing, derived so the chunks can host
 /// [`MAXIMUM_RENDEZVOUS`] one-page endpoints: exhaustion always reports the registry full.
-pub(super) const MAX_KERNEL_EP_CHUNKS: usize =
+pub(super) const MAXIMUM_KERNEL_EP_CHUNKS: usize =
     MAXIMUM_RENDEZVOUS.div_ceil(KERNEL_EP_CHUNK_PAGES as usize);
 
 /// The lock over every table in [`IpcTables`].
@@ -112,7 +115,7 @@ pub(super) static IPC_TABLES: IrqSafeMutex<Option<IpcTables>> =
 
 /// The scheduler before anything is in it, a `.rodata` aggregate [`initialize`] copies from instead
 /// of a value built on the boot stack, which keeps the boot frame under its gate at
-/// [`MAX_THREADS`].
+/// [`MAXIMUM_THREADS`].
 pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
     threads: Threads::new(),
     rendezvous_table: generational_table::Table::new(),

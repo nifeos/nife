@@ -400,13 +400,13 @@ fn exchange_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer,
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         return Err(0x2);
     }
-    let mut request = [0u8; 2 + domain_name_system::UDP_MESSAGE_MAX];
+    let mut request = [0u8; 2 + domain_name_system::UDP_MESSAGE_MAXIMUM];
     let n = query.request_tcp(&mut request).map_err(|_| 0x3u64)?;
     SHARED_FRAME.payload_write(&request[..n]);
     if on(SOCKET, OPERATION_SEND, n as u64).0 != n as u64 {
         return Err(0x4);
     }
-    let mut buf = [0u8; 2 + domain_name_system::UDP_MESSAGE_MAX];
+    let mut buf = [0u8; 2 + domain_name_system::UDP_MESSAGE_MAXIMUM];
     let mut reply = TcpReply::new(&mut buf);
     let mut chunk = [0u8; DATA_MAXIMUM];
     loop {
@@ -475,7 +475,7 @@ fn ask_the_host_resolver() -> u64 {
     let Ok(query) = Query::new(DNS_TXID, "example.com") else {
         return 0xE012;
     };
-    let mut request = [0u8; domain_name_system::UDP_MESSAGE_MAX];
+    let mut request = [0u8; domain_name_system::UDP_MESSAGE_MAXIMUM];
     let Ok(n) = query.request(&mut request) else {
         return 0xE012;
     };

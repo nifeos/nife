@@ -12,7 +12,7 @@ use super::*;
 /// one tree the shell presents, so standing inside it prints the mount path (calef, 2026-09-26,
 /// for milestone 154 (a process that holds two directory capabilities)).
 pub fn write_pwd(holdings: &Holdings, out: &mut dyn FnMut(&[u8])) {
-    let mut buf = [0u8; nav::RENDER_MAX];
+    let mut buf = [0u8; nav::RENDER_MAXIMUM];
     let n = holdings.cwd.render(&mut buf);
     out(b"  ");
     out(&buf[..n]);

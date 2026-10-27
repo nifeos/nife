@@ -139,9 +139,9 @@ line instead of a new handoff field is in [serial-less-output.md](serial-less-ou
 
 The token is `screen=` followed by the base in `0x` hex and the width, height and stride in
 decimal, then the pixel order. It is written by hand rather than through `core::fmt`, because the
-only writer is a `no_std` UEFI application with no allocator. `MAX_LEN` is 72 against a worst case
-of 63. One byte of headroom would be a trap for whoever adds a field. A malformed token reads as
-no screen, because a kernel that refused to boot over a display description it could do without
+only writer is a `no_std` UEFI application with no allocator. `MAXIMUM_LEN` is 72 against a worst
+case of 63. One byte of headroom would be a trap for whoever adds a field. A malformed token reads
+as no screen, because a kernel that refused to boot over a display description it could do without
 would be the wrong trade for a diagnostic path.
 
 `PixelOrder` is named for the order of the bytes in memory, not for the `u32` value. The memory

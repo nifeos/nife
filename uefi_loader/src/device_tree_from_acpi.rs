@@ -23,7 +23,8 @@
 //!   ITS is printed, but the kernel drives no ITS (milestone 317 (the interrupt-remapping flags)).
 //! - **The memory map is the UEFI one, merged**, with runtime-services and ACPI regions excluded.
 //! - **Register block sizes are architectural, not stated** (the GIC's 64 KiB frames, the PL011's).
-//! - **One `/memory` node per merged run, capped at [`MAX_RAM`]**; more runs are described short.
+//! - **One `/memory` node per merged run, capped at [`MAXIMUM_RAM`]**; more runs are described
+//!   short.
 
 //! # Names
 //!
@@ -37,7 +38,7 @@ use machine_discovery::gic::Gic;
 use crate::device_tree_patch::{BEGIN_NODE, END, END_NODE, Error, HEADER_LEN, MAGIC, Out, PROP};
 
 /// The most cores this writes a `cpu@` node for. Sixteen, matching
-/// `machine_discovery::cpu_list::MAX_CPU_NODES`, which is what would read them back.
+/// `machine_discovery::cpu_list::MAXIMUM_CPU_NODES`, which is what would read them back.
 ///
 /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
 /// 2026-10-26 (UTC), renamed from `MAX_CPUS`.
@@ -45,7 +46,10 @@ pub const MAXIMUM_CPUS: usize = 16;
 
 /// The most `/memory` nodes this writes. Sixteen, matching `kernel::memory`'s own
 /// `MAXIMUM_REGIONS`.
-pub const MAX_RAM: usize = 16;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_RAM`.
+pub const MAXIMUM_RAM: usize = 16;
 
 /// The GIC distributor's register frame, which the architecture fixes at 64 KiB and the MADT never
 /// states. See this module's BUGS.
@@ -126,7 +130,7 @@ pub struct Machine {
     /// The console UART, when there is an SPCR naming one.
     pub uart: Option<Uart>,
     /// RAM, merged into runs.
-    pub ram: [Ram; MAX_RAM],
+    pub ram: [Ram; MAXIMUM_RAM],
     /// How many of [`Machine::ram`] are real.
     pub ram_count: usize,
 }
@@ -270,7 +274,7 @@ const fn interrupt_flags(flags: u32) -> u32 {
 pub const fn output_len() -> usize {
     // Header, reservation block, a fixed part (root, psci, cpus, intc, timer, uart), the per-core
     // and per-region nodes, and the strings block.
-    HEADER_LEN + 16 + 1024 + (MAXIMUM_CPUS + MAX_RAM) * 128 + STRINGS.len() + 64
+    HEADER_LEN + 16 + 1024 + (MAXIMUM_CPUS + MAXIMUM_RAM) * 128 + STRINGS.len() + 64
 }
 
 /// **Write `machine` as a flattened device tree into `out`**, returning its length.
@@ -456,7 +460,7 @@ fn write_uart(o: &mut Out<'_>, machine: &Machine) -> Result<(), Error> {
 
 /// One `/memory` node per merged run of RAM.
 fn write_memory(o: &mut Out<'_>, machine: &Machine) -> Result<(), Error> {
-    for run in &machine.ram[..machine.ram_count.min(MAX_RAM)] {
+    for run in &machine.ram[..machine.ram_count.min(MAXIMUM_RAM)] {
         let mut buf = [0u8; 40];
         o.begin(unit_name(b"memory", run.start, &mut buf))?;
         o.prop(b"device_type", b"memory\0")?;
@@ -488,7 +492,7 @@ mod tests {
                 enabled: true,
             };
         }
-        let mut ram = [Ram::default(); MAX_RAM];
+        let mut ram = [Ram::default(); MAXIMUM_RAM];
         ram[0] = Ram {
             start: 0x4000_0000,
             len: 0x1000_0000,
@@ -550,7 +554,7 @@ mod tests {
         );
 
         // `memory::initialize`, second call: RAM.
-        let mut regions = [Region { start: 0, size: 0 }; MAX_RAM];
+        let mut regions = [Region { start: 0, size: 0 }; MAXIMUM_RAM];
         let n = dt
             .memory_regions(&mut regions)
             .expect("the memory nodes parse");
@@ -837,7 +841,7 @@ mod tests {
                 len: 0xffff_ffff,
             };
         }
-        machine.ram_count = MAX_RAM;
+        machine.ram_count = MAXIMUM_RAM;
         let mut out = vec![0u8; output_len()];
         let len = build(&machine, &mut out).expect("the bound holds the largest tree");
         assert!(len <= output_len());

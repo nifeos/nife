@@ -30,8 +30,9 @@ not a proof about the silicon.
 ## The survey: where the hand-rolled protocols actually are
 
 The roadmap named three candidates (the per-CPU run-queue handoff, the reaper handoff, the IPC
-sender queue) and the brief added two more (`crates/intrusive_queue`, `crates/generational_table`). Four of those five
-have no atomic protocol at all, and finding that out is most of what the survey was for.
+sender queue) and the brief added two more (`crates/intrusive_queue`, `crates/generational_table`).
+Four of those five have no atomic protocol at all, and finding that out is most of what the survey
+was for.
 
 | Candidate | What it actually is | Reachable by loom |
 |---|---|---|

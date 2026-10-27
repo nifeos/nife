@@ -503,7 +503,7 @@ impl FsCalls {
         let n = self.read(t as u64, &mut out[..]);
         self.close(t);
         match n {
-            Some(n) if n <= package_index::COPY_MAX => Ok(n),
+            Some(n) if n <= package_index::COPY_MAXIMUM => Ok(n),
             _ => Err(()),
         }
     }
