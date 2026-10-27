@@ -1707,6 +1707,43 @@ jobs:
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
+  crate-probes:
+    name: crate probes (fifty crates.io crates build against nife std)
+    runs-on: ubuntu-24.04
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
+    # UTC). Any derivation above that argues for a longer bound predates it and describes a job
+    # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
+    timeout-minutes: 25
+    steps:
+      - name: Start the job wall-time clock
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install the pinned toolchain
+        run: helpers/rustup-retry.sh toolchain install
+      # Its own job rather than a step in an existing one: it rebuilds the patched `std` and then
+      # builds fifty crates, and no other job shares that target directory. It runs on a hosted
+      # runner like every other `ci` row, so a fork's pull request never reaches owned hardware. It
+      # needs the network to resolve the crates, which a hosted runner has. **Why it is a `ci` row
+      # and not `local`** is beside its row in `script/ci-build`'s table (milestone 341 (give the
+      # three instruments nothing runs a caller), §174 (a caller for each of the three uncalled
+      # instruments)).
+      #
+      # BUGS: this is a required check only once the repository ruleset lists it, and that is a
+      # repository setting rather than a file in this tree.
+      - run: helpers/hang_evidence.py run -- script/ci-build crate-probes
+      # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
+      - name: Upload the hang evidence
+        if: always() && hashFiles('target/hang-evidence/**') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hang-evidence-${{ github.job }}-${{ strategy.job-index }}
+          path: target/hang-evidence/
+      - name: Check the job's wall time against its budget
+        if: always()
+        run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
+
   bench:
     name: bench (icount regression tripwire)
     runs-on: ubuntu-24.04

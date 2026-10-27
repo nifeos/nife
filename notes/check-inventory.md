@@ -126,7 +126,7 @@ checks that gate a pull request)); the measurements are 2026-09-03's.*
 | `vendor-watch` | `vendor-watch.yml` | no | green |
 | `toolchain-bump` | **nothing** | no | unknown; `toolchain-bump.yml` reimplements a subset |
 | `interleaving-check` | the `interleavings` job in `ci.yml` (milestone 746, provisional) | yes | green, 24 seconds cold (2026-10-03) |
-| `crate-probes` | **nothing** | no | **green, measured today, 43 of 50, about 3 minutes** |
+| `crate-probes` | the `crate-probes` job in `ci.yml`, a `ci` row of `script/ci-build` (milestone 341 (give the three instruments nothing runs a caller)) | not yet; the ruleset lists the job's name | green with 43 of 50 built and seven known failures listed in the script, about seven minutes cold (2026-10-27) |
 | `repeat-under-load` | `script/runner-container`, which nothing calls | no | unknown |
 | `soak-test` | **nothing** | no | unknown |
 | `rule-violations --check` | the `rule-violations` `local` row of `script/ci-build`, run as a step of the `lint` job (milestone 341 (give the three instruments nothing runs a caller)) | yes | green (2 open strikes, threshold 3), 0.07 seconds (2026-10-27) |

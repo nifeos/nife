@@ -165,6 +165,7 @@ fuzz|ci|script/fuzz --time 60
 bench|ci|script/bench --check && script/bench --riscv --check && script/bench --x86 --check
 cpu-matrix|ci|script/cpu-matrix
 watchdog-check|ci|script/soak-test --wedge --arch x86_64 && script/soak-test --watchdog --arch x86_64
+crate-probes|ci|script/crate-probes
 TABLE
 }
 
@@ -229,6 +230,12 @@ TABLE
 #   watchdog-check      two x86_64 soaks against the wall clock, about six minutes, and most of it
 #                       waiting: a watchdog is proven by letting time pass (milestone 593 (a wedged
 #                       kernel resets itself)).
+#   crate-probes        builds fifty crates.io crates against the patched `std`, about seven minutes
+#                       cold (2026-10-27 UTC), and needs the network to resolve them. It runs on every
+#                       pull request (milestone 341 (give the three instruments nothing runs a
+#                       caller), §174 (a caller for each of the three uncalled instruments)), and
+#                       seven crates are listed as known failures inside the script, each with its
+#                       reason; any other crate that stops building fails the job.
 #
 # `script/verify` (Kani, ~47 minutes) and the re-falsification sweep are deliberately absent: they
 # are `verify.yml`, a different workflow with its own sharding, and this table's claim is about the
