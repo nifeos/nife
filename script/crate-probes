@@ -39,7 +39,9 @@
 #   * Versions re-resolve on every run. The requirements below are the note's majors, so a probe can
 #     change its answer because crates.io moved rather than because this tree did; the run stamps
 #     the resolved version beside each result so a diff is readable.
-#   * It needs the network, so it is not a CI gate and is not wired into `script/test`. It builds
+#   * It needs the network, so it is not wired into `script/test`. It is a `ci` row of
+#     `script/ci-build` (§174), so a crate that stops building, or whose version moves out from under
+#     this tree, turns the pull request red. It builds
 #     against this checkout's own farm by path (`RUSTUP_TOOLCHAIN=$ROOT/target/nife-farm`), not
 #     through a toolchain name: until 2026-10-10 it named the account-wide `nife-dev` link, and a
 #     lane relinking that mid-run broke every probe after it.
@@ -121,6 +123,33 @@ tar
 diesel
 rocket
 EOF
+}
+
+# Probes that are expected not to build, each with the reason, which is the whole of why a red row
+# here does not fail the script (milestone 341, §174 (a caller for each of the three uncalled
+# instruments)). Every other probe is a gate: one that stops building, or whose own `main` stops
+# building on the host, fails the run. The crates stay in `probe_names`, so the table above and
+# notes/crates-io-on-nife.md keep measuring them; they are not deleted from the list because their
+# dependencies are real and nife is the party that lacks the feature, not the crate that is wrong.
+#
+# The classes are notes/crates-io-on-nife.md's. A fix is not a probe change: class B waits on
+# `std::os::unix`, which is absent and declined; class C waits on the C seam (notes/c-seam.md);
+# class D waits on a socket and fd model. Each is an architect's call, not this table's.
+#
+# A listed crate that starts to build prints `NOW BUILDS` beside its row. Delete its entry here when
+# that happens, so it becomes a gate; that does not fail the run, because versions re-resolve every
+# run and a crate gaining support upstream is news and not a regression.
+known_failure() {
+    case "$1" in
+    zip) echo 'class C: zstd-sys compiles C sources and the nife link has no C seam' ;;
+    ring) echo 'class C: C and assembly sources, and a build-time assertion of a Neon baseline the target does not declare' ;;
+    diesel) echo 'class C: needs libsqlite3, a C library (its host build fails here too, so the probe body cannot be checked)' ;;
+    gix-config) echo 'class B: its platform ladder ends in "else it is unix", and std::os::unix is absent by design' ;;
+    tar) echo 'class B: its platform ladder ends in "else it is unix", and std::os::unix is absent by design' ;;
+    gix) echo 'class B: the errno crate does not know the target OS, and falls through toward unix' ;;
+    rocket) echo 'class D: needs the socket and fd model (socket2, mio) that nife does not have' ;;
+    *) return 1 ;;
+    esac
 }
 
 # The dependency line each probe's Cargo.toml gets. Where a crate has a pure-Rust option the probe
@@ -538,6 +567,7 @@ mkdir -p "$WORK" "$SHARED"
 pass=0
 fail=0
 body=0
+known=0
 results="$WORK/.results"
 : >"$results"
 
@@ -553,14 +583,25 @@ for name in $targets; do
         -Zbuild-std-features=compiler-builtins-mem \
         --target "$SPEC") >"$log" 2>&1; then
         v=$(resolved_version "$dir" "$name")
-        printf 'PASS  %s\n' "$v"
+        if known_failure "$name" >/dev/null; then
+            printf 'PASS  %s  NOW BUILDS: remove its known_failure entry\n' "$v"
+        else
+            printf 'PASS  %s\n' "$v"
+        fi
         echo "PASS	$name	$v" >>"$results"
         pass=$((pass + 1))
     else
         # A failing probe is built again for the host. If the host build fails too, the probe's own
         # `main` is wrong and the row says nothing about nife: that distinction is the reason this
         # harness can be trusted where fifty hand-written call sites could not.
-        if (cd "$dir" && cargo build --release --target-dir "$dir/host-target") >"$dir/host.log" 2>&1; then
+        if reason=$(known_failure "$name"); then
+            # Listed with its reason: reported, never a failure, whichever half broke.
+            why=$(grep -m1 -E '^error(\[|:)' "$log" || true)
+            v=$(resolved_version "$dir" "$name")
+            printf 'KNOWN %s  %s\n' "$v" "$reason"
+            echo "KNOWN	$name	$v	$why" >>"$results"
+            known=$((known + 1))
+        elif (cd "$dir" && cargo build --release --target-dir "$dir/host-target") >"$dir/host.log" 2>&1; then
             why=$(grep -m1 -E '^error(\[|:)' "$log" || true)
             v=$(resolved_version "$dir" "$name")
             printf 'FAIL  %s  %s\n' "$v" "$why"
@@ -576,6 +617,6 @@ for name in $targets; do
 done
 
 echo
-echo "$pass built, $fail failed$([ "$body" -gt 0 ] && echo ", $body probe bodies broken (not a nife result)")"
+echo "$pass built, $fail failed, $known known failures$([ "$body" -gt 0 ] && echo ", $body probe bodies broken (not a nife result)")"
 [ "$KEEP" -eq 1 ] || find "$WORK" -mindepth 1 -maxdepth 1 -type d ! -name '.cargo-target' -exec rm -rf {} +
-[ "$body" -eq 0 ]
+[ "$body" -eq 0 ] && [ "$fail" -eq 0 ]
