@@ -17,7 +17,7 @@ builder builds its job from, and tell the builder to use it. Then:
   for a program that declares a share view, the requester's budget narrowed to `ENUMERATE`.
 - The builder badges the endpoint with a label it mints, places it as the job's supervision
   capability, and answers once with `(SPAWN_OK, label, 0)`. Retention is `Requester`, so the
-  job's `ThreadControlBlock` follows as the one message after a good answer (§309).
+  job's `ThreadControlBlock` follows as the one message after a good answer (§309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it)).
 - A foreground job's output goes through a second copy of the labeled endpoint. A background job's
   goes to the terminal's sink (`SCREEN_BIT` with `HELD_BIT`).
 - The kernel stamps the label on the sixth word of the job's death message. The requester tells a
