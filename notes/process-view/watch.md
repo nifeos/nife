@@ -23,7 +23,7 @@ when they hold different authority. Identical cspaces mean there is no boundary 
 split is arbitrary.
 
 The refresh needed no capability of its own either. The interval was a yield-spin over
-`monotonic_nanos`, granted to every process unconditionally, rather than a clock grant. So even the
+`monotonic_ns`, granted to every process unconditionally, rather than a clock grant. So even the
 least-authority argument for a separate program was absent. Had the interval needed a clock, the
 answer would have gone the other way.
 

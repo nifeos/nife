@@ -43,11 +43,6 @@ pub use document::{Document, Entry, Error, Schedule, parse};
 pub use plan_text::{Audit, write_plan};
 pub use registry::{Registry, Row, SPENT, UNARMED, UNSTAMPED, WallReading, next_after};
 
-/// Nanoseconds in a second. Spelled here rather than taken from `clock_contract`, because this crate
-/// decides *when* rather than *what time it is*: it never touches the wall clock, and depending on
-/// the wall-clock contract to name a unit would claim otherwise.
-pub const NANOS_PER_SEC: u64 = 1_000_000_000;
-
 /// The most entries one document may carry.
 ///
 /// A ceiling rather than a limit anybody meets, and past it the document is

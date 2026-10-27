@@ -64,12 +64,12 @@ fn start(rtc_kind: u64, rtc_seed: u64, _a2: u64) -> ! {
     // drift and its coarse resolution into a clock that already has better. `rtc_seed` is only
     // meaningful for `rtc::CMOS`, where it is the kernel's own reading rather than a register to
     // poll; every other kind ignores it.
-    if let Some(unix_nanos) = read_rtc(rtc_kind, rtc_seed)
-        && policy::is_plausible(unix_nanos)
+    if let Some(unix_ns) = read_rtc(rtc_kind, rtc_seed)
+        && policy::is_plausible(unix_ns)
     {
         page.publish(
             state::RTC,
-            clock_contract::offset_for(unix_nanos, monotonic_nanos()),
+            clock_contract::offset_for(unix_ns, monotonic_ns()),
         );
     }
 
@@ -101,7 +101,7 @@ fn serve(page: ClockPage) -> ! {
                     // provenance is what a caller weighing a certificate expiry actually wants.
                     page.publish(
                         state::SYNCED,
-                        clock_contract::offset_for(w1, monotonic_nanos()),
+                        clock_contract::offset_for(w1, monotonic_ns()),
                     );
                 }
                 reply(cap, verdict, wall_now(&page));
@@ -121,7 +121,7 @@ fn serve(page: ClockPage) -> ! {
 fn wall_now(page: &ClockPage) -> u64 {
     let r = page.read();
     if state::is_known(r.state) {
-        clock_contract::wall_nanos(r.offset_nanos, monotonic_nanos())
+        clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
     } else {
         0
     }
@@ -132,12 +132,12 @@ fn wall_now(page: &ClockPage) -> u64 {
 /// Split into whole seconds and a remainder rather than multiplying the raw tick count by a
 /// billion: at 62.5 MHz the naive product overflows a `u64` after about five minutes of uptime, and
 /// the resulting wall clock would jump backwards by six centuries at the wrap.
-fn monotonic_nanos() -> u64 {
+fn monotonic_ns() -> u64 {
     let freq = cntfrq();
     let ticks = now();
     let secs = ticks / freq;
     let rem = ticks % freq;
-    secs * clock_contract::NANOS_PER_SEC + rem * clock_contract::NANOS_PER_SEC / freq
+    secs * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
 }
 
 /// Read the machine's RTC, whichever one it has. `None` when it has none.
@@ -170,7 +170,7 @@ fn pl031_unix_nanos(base: u64) -> u64 {
     const DR: u64 = 0x00;
     // SAFETY: `base` is this process's device mapping of a PL031, placed by whoever built us.
     let secs = unsafe { core::ptr::read_volatile((base + DR) as *const u32) } as u64;
-    secs * clock_contract::NANOS_PER_SEC
+    secs * clock_contract::NS_PER_SECOND
 }
 
 /// **The Goldfish RTC driver** (`google,goldfish-rtc`, QEMU `virt` on riscv64). Same rule 2 shape:

@@ -2,7 +2,7 @@ use clock_contract::{policy, propose, state, status};
 
 use super::*;
 
-/// Start the service and take its startup report. `[RPT_READY, state, wall_nanos]`.
+/// Start the service and take its startup report. `[RPT_READY, state, wall_ns]`.
 fn start() -> (clock_service::Wiring, [u64; 5]) {
     let image = program("clock").expect("no clock program in the initial ramdisk");
     let w = clock_service::start(image);
@@ -49,9 +49,9 @@ fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
     let r = w.page().read();
     assert_eq!(r.state, state::RTC);
     assert_eq!(r.generation, 1, "one publish: the RTC reading");
-    let by_hand = clock_contract::wall_nanos(r.offset_nanos, clock_service::monotonic_nanos());
+    let by_hand = clock_contract::wall_ns(r.offset_nanos, clock_service::monotonic_ns());
     assert!(
-        by_hand >= report[2] && by_hand - report[2] < 10 * clock_contract::NANOS_PER_SEC,
+        by_hand >= report[2] && by_hand - report[2] < 10 * clock_contract::NS_PER_SECOND,
         "a reader's own arithmetic ({by_hand}) should agree with the service's ({})",
         report[2],
     );
@@ -78,21 +78,21 @@ fn a_proposer_can_ask_and_cannot_tell() {
         "needs a running clock to step"
     );
 
-    let now = w.wall_nanos();
+    let now = w.wall_ns();
     for (proposed, want, what) in [
         (0, status::REFUSED_IMPLAUSIBLE, "1970, the old lie itself"),
         (
-            policy::NOT_AFTER_NANOS,
+            policy::NOT_AFTER_NS,
             status::REFUSED_IMPLAUSIBLE,
             "the far future, past every certificate expiry",
         ),
         (
-            now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOS,
+            now + 2 * policy::MAXIMUM_STEP_FORWARD_NS,
             status::REFUSED_TOO_FAR_FORWARD,
             "plausible in the absolute, too big a step",
         ),
         (
-            now - 2 * policy::MAXIMUM_STEP_BACKWARD_NANOS,
+            now - 2 * policy::MAXIMUM_STEP_BACKWARD_NS,
             status::REFUSED_TOO_FAR_BACKWARD,
             "backwards, where instants would happen twice",
         ),
@@ -108,7 +108,7 @@ fn a_proposer_can_ask_and_cannot_tell() {
 
     // And the bounded case it exists to allow: a small correction is accepted, and the
     // provenance says it came from a proposal rather than from a human.
-    let (got, after) = w.propose_nanos(now + clock_contract::NANOS_PER_SEC / 2);
+    let (got, after) = w.propose_nanos(now + clock_contract::NS_PER_SECOND / 2);
     assert_eq!(got, status::ACCEPTED);
     assert!(after >= now);
     let r = w.page().read();
@@ -130,13 +130,13 @@ fn adjusting_the_wall_clock_leaves_the_monotonic_counter_alone() {
         crate::testing::skip!(clock_service::NO_RTC);
     }
     let (w, _) = start();
-    let step = clock_contract::NANOS_PER_SEC / 2;
+    let step = clock_contract::NS_PER_SECOND / 2;
 
-    let mono_before = clock_service::monotonic_nanos();
-    let wall_before = w.wall_nanos();
+    let mono_before = clock_service::monotonic_ns();
+    let wall_before = w.wall_ns();
     let (got, wall_after) = w.propose_nanos(wall_before + step);
     assert_eq!(got, status::ACCEPTED);
-    let mono_after = clock_service::monotonic_nanos();
+    let mono_after = clock_service::monotonic_ns();
 
     assert!(
         wall_after >= wall_before + step / 2,

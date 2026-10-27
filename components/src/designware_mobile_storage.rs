@@ -82,7 +82,7 @@ impl Registers for Page {
     }
 
     fn now_us(&mut self) -> u64 {
-        user_mode_runtime::monotonic_nanos() / 1000
+        user_mode_runtime::monotonic_ns() / 1000
     }
 }
 

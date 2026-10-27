@@ -169,7 +169,7 @@ fn report_until(t: &Spawned, deadline: u64) -> Option<u64> {
         if crate::sched::rendezvous_waiting_senders(t.reports) > 0 {
             return Some(crate::sched::ipc_receive(t.reports)[0]);
         }
-        if super::clock_service::monotonic_nanos() > deadline {
+        if super::clock_service::monotonic_ns() > deadline {
             return None;
         }
         if let Some(code) = exited(t) {
@@ -823,12 +823,12 @@ fn publish(t: &Spawned, set: bool, hh: u64, mm: u64, ss: u64) {
     publish_at(
         t,
         set,
-        ((TUESDAY * 86_400) + hh * 3600 + mm * 60 + ss) * clock_contract::NANOS_PER_SEC,
+        ((TUESDAY * 86_400) + hh * 3600 + mm * 60 + ss) * clock_contract::NS_PER_SECOND,
     );
 }
 
 /// 02:00:00 on [`TUESDAY`], in wall nanoseconds: the occurrence the calendar test waits on.
-const TWO_AM: u64 = (TUESDAY * 86_400 + 2 * 3600) * clock_contract::NANOS_PER_SEC;
+const TWO_AM: u64 = (TUESDAY * 86_400 + 2 * 3600) * clock_contract::NS_PER_SECOND;
 
 /// **How far before 02:00 the calendar test publishes**, and so how long it waits for real time.
 ///
@@ -837,12 +837,12 @@ const TWO_AM: u64 = (TUESDAY * 86_400 + 2 * 3600) * clock_contract::NANOS_PER_SE
 /// next day's occurrence instead. A pass is one yield of a loop that never blocks here, so a second
 /// covers it with room, and when it does not, [`fires_at_two`] publishes again instead of going
 /// red.
-const LEAD: u64 = clock_contract::NANOS_PER_SEC;
+const LEAD: u64 = clock_contract::NS_PER_SECOND;
 
 /// **How long after 02:00 to wait for the report before publishing again.** Four seconds, so a
 /// lead plus this is the five-second window the test always had for the timetable to read a
 /// publication; see [`fires_at_two`] for why step 4 depends on that window and step 2 does not.
-const MISSED: u64 = 4 * clock_contract::NANOS_PER_SEC;
+const MISSED: u64 = 4 * clock_contract::NS_PER_SECOND;
 
 /// **Publish `wall` (nanoseconds) to the clock page, and return the offset it published**, so a
 /// caller can turn any later wall time on that page into a reading of the same counter.
@@ -855,7 +855,7 @@ fn publish_at(t: &Spawned, set: bool, wall: u64) -> u64 {
     };
     // SAFETY: the frame `spawn_timetable_with` allocated for this test, through the direct map.
     let page = unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(phys)) };
-    let offset = clock_contract::offset_for(wall, super::clock_service::monotonic_nanos());
+    let offset = clock_contract::offset_for(wall, super::clock_service::monotonic_ns());
     page.publish(state, offset);
     offset
 }
@@ -875,7 +875,7 @@ fn fires_at_two(t: &Spawned, set: bool) -> u64 {
     let mut retry_at = due + MISSED;
     for _ in 0..ATTEMPTS {
         if let Some(r) = report_until(t, retry_at) {
-            let now = super::clock_service::monotonic_nanos();
+            let now = super::clock_service::monotonic_ns();
             assert!(
                 now >= due,
                 "the 02:00 line reported {} ms before 02:00 on the page's clock",

@@ -1,18 +1,18 @@
 Falsifies `network_time_protocol::verification::decoding_any_wire_value_is_total`.
 
-The defect: `ticks_to_nanos` loses its clamp. A fraction of `0xFFFF_FFFF` rounds up to exactly 1e9 ns, a
+The defect: `ticks_to_ns` loses its clamp. A fraction of `0xFFFF_FFFF` rounds up to exactly 1e9 ns, a
 sub-second field a `Duration` constructor would later refuse.
 
-Expected to fail: the harness's `assert!((nanos as u64) < NANOS_PER_SEC)`.
+Expected to fail: the harness's `assert!((nanos as u64) < NS_PER_SECOND)`.
 
 diff --git a/crates/network_time_protocol/src/lib.rs b/crates/network_time_protocol/src/lib.rs
 index 209f6bae5..a4497cd30 100644
 --- a/crates/network_time_protocol/src/lib.rs
 +++ b/crates/network_time_protocol/src/lib.rs
-@@ -417,7 +417,3 @@ const fn ticks_to_nanos(ticks: u32) -> u32 {
-     let n = ((ticks as u64 * NANOS_PER_SEC) + (TICKS_PER_SEC / 2)) / TICKS_PER_SEC;
--    if n >= NANOS_PER_SEC {
--        (NANOS_PER_SEC - 1) as u32
+@@ -417,7 +417,3 @@ const fn ticks_to_ns(ticks: u32) -> u32 {
+     let n = ((ticks as u64 * NS_PER_SECOND) + (TICKS_PER_SECOND / 2)) / TICKS_PER_SECOND;
+-    if n >= NS_PER_SECOND {
+-        (NS_PER_SECOND - 1) as u32
 -    } else {
 -        n as u32
 -    }

@@ -136,7 +136,7 @@ both ways by `kernel::user::pmap_tests`. The delegation audit §114 required fou
 an address-space capability to a second program. Building it also found that `CONFIGURE` removes a
 space from the registry `LIST` reads, so no live space anywhere can be viewed by anyone; see BUGS.
 
-`uptime` needed no capability, because `monotonic_nanos` is granted to every process by each
+`uptime` needed no capability, because `monotonic_ns` is granted to every process by each
 architecture's timer `init`. That grant is a documented, deliberate exception to §10 (process model:
 capability-based, microkernel): a monotonic counter lets a program observe time and affect nothing;
 the argument is in `crates/uptime`.

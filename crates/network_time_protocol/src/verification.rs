@@ -8,16 +8,16 @@ use super::*;
 /// ([`super::tests::every_nanosecond_survives_the_round_trip`]); this harness guards the low
 /// corner, where 1 ns is 4.29 ticks and truncating instead of rounding turns it into 0. See
 /// notes/ntp/what-is-proved.md.
-const PROVED_NANOS: u64 = 1 << 16;
+const PROVED_NS: u64 = 1 << 16;
 
-/// **Nanoseconds survive the fixed-point conversion**, for every value under [`PROVED_NANOS`].
+/// **Nanoseconds survive the fixed-point conversion**, for every value under [`PROVED_NS`].
 /// See that constant for what is and is not covered and why.
 /// Falsification: replayable `crates/network_time_protocol/falsifications/verification.nanoseconds_survive_the_fixed_point.patch`
 #[kani::proof]
 fn nanoseconds_survive_the_fixed_point() {
-    let nanos: u32 = kani::any();
-    kani::assume((nanos as u64) < PROVED_NANOS);
-    assert_eq!(ticks_to_nanos(nanos_to_ticks(nanos)), nanos);
+    let ns: u32 = kani::any();
+    kani::assume((ns as u64) < PROVED_NS);
+    assert_eq!(ticks_to_ns(ns_to_ticks(ns)), ns);
 }
 
 /// **The era pivot is exact over the whole representable window**: for every Unix second in
@@ -26,45 +26,45 @@ fn nanoseconds_survive_the_fixed_point() {
 /// covers the era-0 branch, the era-1 branch, and the boundary between them in one proof. All
 /// 4.2 billion of them, in a third of a second, because this half is addition.
 ///
-/// It asserts the seconds; the nanoseconds are the sweep named on [`PROVED_NANOS`]. The halves
+/// It asserts the seconds; the nanoseconds are the sweep named on [`PROVED_NS`]. The halves
 /// compose because `from_unix` builds `(seconds << 32) | ticks` with `ticks < 2^32`, disjoint
 /// bits that `to_unix` reads back through separate accessors.
 /// Falsification: replayable `crates/network_time_protocol/falsifications/verification.the_era_pivot_is_exact_over_the_window.patch`
 #[kani::proof]
 fn the_era_pivot_is_exact_over_the_window() {
-    let secs: u64 = kani::any();
-    kani::assume(secs < UNIX_LIMIT);
+    let seconds: u64 = kani::any();
+    kani::assume(seconds < UNIX_LIMIT);
 
-    let t = Timestamp::from_unix(secs, 0).expect("in range must encode");
-    assert_eq!(t.to_unix().0, secs);
+    let t = Timestamp::from_unix(seconds, 0).expect("in range must encode");
+    assert_eq!(t.to_unix().0, seconds);
     assert_eq!(t.fraction(), 0);
 }
 
 /// **Decoding is total, and it never produces an invalid sub-second.** For every one of the
 /// 2^64 bit patterns a packet can carry: `to_unix` does not panic, and the nanosecond it returns
-/// is under 1e9. The second half is the clamp in [`ticks_to_nanos`], and it matters because a
+/// is under 1e9. The second half is the clamp in [`ticks_to_ns`], and it matters because a
 /// nanosecond field of exactly 1e9 is the kind of thing that panics inside a `Duration`
 /// constructor three layers away from the packet that caused it.
 /// Falsification: replayable `crates/network_time_protocol/falsifications/verification.decoding_any_wire_value_is_total.patch`
 #[kani::proof]
 fn decoding_any_wire_value_is_total() {
     let bits: u64 = kani::any();
-    let (_secs, nanos) = Timestamp::from_bits(bits).to_unix();
-    assert!((nanos as u64) < NANOS_PER_SEC);
+    let (_seconds, ns) = Timestamp::from_bits(bits).to_unix();
+    assert!((ns as u64) < NS_PER_SECOND);
 }
 
-/// **Out of range is refused, never aliased.** For every `secs`, `from_unix` returns `Some` if
+/// **Out of range is refused, never aliased.** For every `seconds`, `from_unix` returns `Some` if
 /// and only if the value is inside the window. This is the other half of the era decision: the
 /// encoder does not quietly wrap a 2105 timestamp onto 1969.
 /// Falsification: replayable `crates/network_time_protocol/falsifications/verification.out_of_range_is_refused.patch`
 #[kani::proof]
 fn out_of_range_is_refused() {
-    let secs: u64 = kani::any();
-    let nanos: u32 = kani::any();
-    let encoded = Timestamp::from_unix(secs, nanos);
+    let seconds: u64 = kani::any();
+    let ns: u32 = kani::any();
+    let encoded = Timestamp::from_unix(seconds, ns);
     assert_eq!(
         encoded.is_some(),
-        secs < UNIX_LIMIT && (nanos as u64) < NANOS_PER_SEC
+        seconds < UNIX_LIMIT && (ns as u64) < NS_PER_SECOND
     );
 }
 

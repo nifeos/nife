@@ -155,22 +155,22 @@ impl Wiring {
 
     /// Wall-clock nanoseconds as a reader would compute them: the page's offset plus the
     /// monotonic counter. 0 when the machine does not know.
-    pub fn wall_nanos(&self) -> u64 {
+    pub fn wall_ns(&self) -> u64 {
         let r = self.page().read();
         if clock_contract::state::is_known(r.state) {
-            clock_contract::wall_nanos(r.offset_nanos, monotonic_nanos())
+            clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
         } else {
             0
         }
     }
 
     /// Play a proposer: `CALL` the propose endpoint. Returns `(status, wall_nanos_after)`.
-    pub fn propose_nanos(&self, unix_nanos: u64) -> (u64, u64) {
+    pub fn propose_nanos(&self, unix_ns: u64) -> (u64, u64) {
         let r = crate::sched::ipc_call(
             self.propose,
             [
                 clock_contract::propose::req(clock_contract::propose::PROPOSE),
-                unix_nanos,
+                unix_ns,
             ],
         );
         (r[0], r[1])
@@ -180,10 +180,10 @@ impl Wiring {
 /// Monotonic nanoseconds since boot, the kernel's copy of the reader's arithmetic. Split into
 /// seconds and a remainder for the same reason the service's version is: the naive
 /// `ticks * 1_000_000_000` overflows a `u64` a few minutes into a boot.
-pub fn monotonic_nanos() -> u64 {
+pub fn monotonic_ns() -> u64 {
     let freq = crate::arch::timer::frequency();
     let ticks = crate::arch::timer::now();
     let secs = ticks / freq;
     let rem = ticks % freq;
-    secs * clock_contract::NANOS_PER_SEC + rem * clock_contract::NANOS_PER_SEC / freq
+    secs * clock_contract::NS_PER_SECOND + rem * clock_contract::NS_PER_SECOND / freq
 }

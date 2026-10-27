@@ -11,6 +11,6 @@ index 209f6bae5..f6a7a7876 100644
 +++ b/crates/network_time_protocol/src/lib.rs
 @@ -343,3 +343,3 @@ impl Timestamp {
          let s = self.seconds() as u64;
--        let secs = if s >= (1 << 31) {
-+        let secs = if s >= (1 << 30) {
+-        let seconds = if s >= (1 << 31) {
++        let seconds = if s >= (1 << 30) {
              // Era 0. UNIX_DELTA > 2^31, so this subtraction stays non-negative only for s at or

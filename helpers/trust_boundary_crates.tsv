@@ -31,7 +31,7 @@ capability_plan	shared	components,fixtures,kernel
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
-clock_contract	shared	components,fixtures,kernel,std
+clock_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
 clock_proto	shared	retired
 clock_protocol	shared	retired
 component_plan	shared	retired

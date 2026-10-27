@@ -564,7 +564,7 @@ test = false
 bench = false
 
 # `uptime` (milestone 126): how long the ambient monotonic counter has been running. Needed no
-# new capability at all: `monotonic_nanos` is granted to every process unconditionally
+# new capability at all: `monotonic_ns` is granted to every process unconditionally
 # (kernel/src/arch/*/timer.rs's documented exception to DECISIONS §10), so this program's manifest
 # is `least_authority_demo`'s, not `date`'s. The formatting is crates/uptime, host-tested. Portable, so both
 # ISAs' archives carry it. **Provisional name**: the same word upstream `procps` uses; see the

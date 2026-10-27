@@ -40,7 +40,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use user_mode_runtime::{exit, monotonic_nanos, send};
+use user_mode_runtime::{exit, monotonic_ns, send};
 
 /// Slot 0: where the line goes. An endpoint with `WRITE`, the sink contract's framing.
 const REPORT: u64 = 0;
@@ -48,7 +48,7 @@ const REPORT: u64 = 0;
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
-    let line = uptime::format(monotonic_nanos());
+    let line = uptime::format(monotonic_ns());
     write_bytes(line.as_bytes());
     send(REPORT, byte_sink_contract::eof(), 0, 0);
     exit();

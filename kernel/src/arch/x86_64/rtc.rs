@@ -143,5 +143,5 @@ pub(crate) fn read_unix_nanos() -> Option<u64> {
 
     let civil = calendar::Civil::new(year, month, day, hour, minute, second).ok()?;
     let secs = u64::try_from(civil.to_unix()).ok()?;
-    Some(secs * clock_contract::NANOS_PER_SEC)
+    Some(secs * clock_contract::NS_PER_SECOND)
 }

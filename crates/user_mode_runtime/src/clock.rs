@@ -297,14 +297,11 @@ pub fn tick_hz() -> Option<core::num::NonZeroU64> {
 /// overflows a `u64` about five minutes into a boot at 62.5 MHz. No capability is needed: the
 /// counter is ambient, so any process can measure a duration. The wall clock is what needs one
 /// (notes/clock.md).
-pub fn monotonic_nanos() -> u64 {
-    /// Nanoseconds in a second. Spelled here rather than taken from `clock_contract`, because this
-    /// crate is the syscall runtime and depends on `abi` alone; a runtime that pulled in a wire
-    /// contract to name a unit would be the wrong direction for the dependency.
-    const NANOS_PER_SEC: u64 = 1_000_000_000;
+pub fn monotonic_ns() -> u64 {
+    use clock_contract::NS_PER_SECOND;
     let freq = cntfrq();
     let ticks = now();
-    let secs = ticks / freq;
+    let seconds = ticks / freq;
     let rem = ticks % freq;
-    secs * NANOS_PER_SEC + rem * NANOS_PER_SEC / freq
+    seconds * NS_PER_SECOND + rem * NS_PER_SECOND / freq
 }
