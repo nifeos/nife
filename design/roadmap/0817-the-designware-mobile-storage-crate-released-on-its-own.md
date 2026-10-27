@@ -170,14 +170,12 @@ work, and the lane that renames a name drops its line.
 ### Nife's own plan
 
 - `role` (`src/jh7110.rs`): nife: nife's own process plan
-- `WINDOW_USED` (`src/regs.rs`): nife: nife's own process plan
 
 ### Belongs to something else
 
 - `bench` (`src/bench.rs`): scope: a bench
 - `jh7110` (`src/jh7110.rs`): scope: one SoC's glue in a host controller crate
 - `partition` (`src/partition.rs`): scope: partitions
-- `IdmacReport` (`src/bench.rs`): scope: a bench
 - `MATRIX_BLOCKS` (`src/bench.rs`): scope: a bench
 - `MATRIX_HZ` (`src/bench.rs`): scope: a bench
 - `MatrixRow` (`src/bench.rs`): scope: a bench
@@ -186,7 +184,6 @@ work, and the lane that renames a name drops its line.
 - `SCRATCH_SECTORS` (`src/bench.rs`): scope: a bench
 - `Watch` (`src/bench.rs`): scope: a bench
 - `WriteVerdict` (`src/bench.rs`): scope: a bench
-- `idmac_read` (`src/bench.rs`): scope: a bench
 - `pattern` (`src/bench.rs`): scope: a bench
 - `read_matrix` (`src/bench.rs`): scope: a bench
 - `read_only` (`src/bench.rs`): scope: a bench
@@ -201,18 +198,7 @@ work, and the lane that renames a name drops its line.
 - `bits` (`src/card.rs`): generic
 - `Data` (`src/command.rs`): generic
 - `word` (`src/command.rs`): generic
-- `Refusal` (`src/idmac.rs`): generic
 - `Kind` (`src/sd.rs`): generic
-
-### Unclear
-
-- `Mbr` (`src/partition.rs`): unclear: master boot record is a phrase people say (the acronym test); scope as above
-- `dma_64bit` (`src/regs.rs`): unclear: `dma` and a bare width
-
-### Clear, with a caveat
-
-- `DirectMemoryAccessRegion` (`src/idmac.rs`): clear, though `idmac` and `dma_64bit` beside it keep the acronym
-- `NoDirectMemoryAccess` (`src/idmac.rs`): clear, though `idmac` and `dma_64bit` beside it keep the acronym
 
 ## Exit
 
