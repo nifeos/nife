@@ -114,7 +114,7 @@ caretaker's and then the program's, forwarded by the progenitor without being de
 The depth. As predicted, and it is the one thing still open. Every caretaker wiring in this tree
 descends exactly one name, so `rm rmtree/rm-solo` descends with `OPENDIR`. The root has no name to
 descend into, so `rm gate.txt` at the top prompt narrows the directory the caretaker holds with
-`NARROW`, the verb §173 ruled. Chaining answers depth two and beyond.
+`NARROW`, the verb §173 (narrowing the root of the shell's namespace) ruled. Chaining answers depth two and beyond.
 
 The lifetime. Predicted as "a supervision question rather than a filesystem one", which is what
 DECISIONS §92 (caretaker supervised) then decided: the caretaker is built out of the client's own region, so §40 (supervisor's death)'s

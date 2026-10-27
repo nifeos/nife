@@ -147,7 +147,7 @@ pub(super) fn bound_channel(
     );
     let rights = filesystem_contract::grant::spec_rights(spec);
     // An empty name is the root of the shell's namespace, which has no name to descend into: the
-    // grant narrows the root handle instead (`fs::NARROW`, §173).
+    // grant narrows the root handle instead (`fs::NARROW`, §173 (narrowing the root of the shell's namespace)).
     let handle = if n == 0 {
         files.narrow(fs_operation::ROOT, rights)
     } else {

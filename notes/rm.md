@@ -115,11 +115,11 @@ above its grant.
 
 ## BUGS
 
-- **`rm a/b/c.txt` is refused at the interactive prompt** (milestone 31 phase 3). The progenitor
+- **`rm a/b/c.txt` is refused at the interactive prompt** (phase 3 of the capability shell). The progenitor
   builds one `fs_subtree_caretaker` per grant, so a deeper grant, a chain of caretakers, is not
   built. `rm rmtree/rm-solo` and `rm gate.txt` both work and `script/swish-check` gates both on
   every architecture: the first descends one name with `OPENDIR`, the second narrows the root with
-  `NARROW` (milestone 328, §173). See notes/dir-capability.md's BUGS.
+  `NARROW`, the verb §173 (narrowing the root of the shell's namespace) ruled. See notes/dir-capability.md's BUGS.
 - **The end of the stream is the verdict**, and it must not look like a byte count. The report channel
   carries text frames (first word = a byte count, at most 16) and then `byte_sink_contract::eof()`, whose
   first word is `OPERATION_EOF << 56`; the status and the removal count ride in the two words that message

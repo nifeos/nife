@@ -40,7 +40,7 @@ full. Known limitations, next to the feature rather than only in a tracker.
   (`components/src/fs_nameset_caretaker.rs`) serves only the names that matched (see
   [glob-grant.md](../glob-grant.md)). It is still open for a literal one, because a set of exactly
   one has no wiring behind it today.
-- A grant on the root of a shell's namespace narrows with `NARROW` (milestone 328, §173). The root
+- A grant on the root of a shell's namespace narrows with `NARROW` (milestone 328 (a grant on the root of the shell's namespace), §173 (narrowing the root of the shell's namespace)). The root
   has no name to descend into, so the caretaker holds an empty directory name and narrows the
   handle it already has. `rm gate.txt` at the top prompt is granted `REMOVE` alone, as `rm
   rmtree/rm-solo` is. A word-hearing program's grant at the root is still refused

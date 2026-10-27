@@ -175,7 +175,7 @@ fn opendir_takes_a_path_and_narrows_to_the_request() {
     );
 }
 
-/// **`NARROW` attenuates a held handle and resolves no name** (§173, milestone 328): the top
+/// **`NARROW` attenuates a held handle and resolves no name** (§173 (narrowing the root of the shell's namespace), milestone 328 (a grant on the root of the shell's namespace)): the top
 /// prompt's `rm gate.txt` is a handle on the bound directory carrying `REMOVE` and nothing else.
 ///
 /// The expected rights come from `Rights::attenuate`, the proved function the server calls, so

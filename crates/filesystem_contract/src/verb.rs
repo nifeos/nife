@@ -73,7 +73,7 @@ impl Verb {
     /// new handle reaches every entry and carries no filter. Derived from the two fields rather
     /// than listed, so a verb added with this shape is refused from the day its row exists.
     ///
-    /// Name: provisional, minted 2026-10-27 (UTC) by milestone 328's lane.
+    /// Name: provisional, minted 2026-10-27 (UTC) by the lane of milestone 328 (a grant on the root of the shell's namespace).
     pub const fn reissues_handle(&self) -> bool {
         self.mints_handle && matches!(self.operand, Operand::None)
     }

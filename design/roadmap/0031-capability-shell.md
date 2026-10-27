@@ -9,7 +9,7 @@ Built. Phase 3's last item is init building a `fs_subtree_caretaker` per grant. 
 `script/swish-check` on both ISAs. It types `caps rm rmtree/rm-solo`, `rm -v rmtree/rm-solo` and `ls
 rmtree | wc` at the real prompt. So the authority is previewed, the name the command line
 designated is removed, and the two names beside it inside the same capability are still there.
-`rm gate.txt` at the top prompt is granted too, narrowed by `fs::NARROW` (milestone 328, §173).
+`rm gate.txt` at the top prompt is granted too, narrowed by `fs::NARROW` (milestone 328 (a grant on the root of the shell's namespace), §173 (narrowing the root of the shell's namespace)).
 
 (The Gate paragraph that stood here said `NONE`, and then named the one remaining item. A BUILT
 milestone gates nothing, so it is gone rather than stale.)

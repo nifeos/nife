@@ -77,7 +77,7 @@ fn bind_and_unbind_are_not_directory_verbs() {
     }
 }
 
-/// **`NARROW` names a handle and a mask, resolves no name and demands no right** (§173). A name
+/// **`NARROW` names a handle and a mask, resolves no name and demands no right** (§173 (narrowing the root of the shell's namespace)). A name
 /// filter must not see it (nothing in it is a directory entry), a read-only grant must not refuse
 /// it (it cannot widen), and a renumbering proxy must install the handle it mints.
 #[test]
