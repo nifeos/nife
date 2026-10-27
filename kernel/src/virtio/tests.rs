@@ -653,11 +653,11 @@ fn a_device_nobody_bound_outlives_other_threads() {
     if borrow_block_transport().is_none() {
         return;
     }
-    let id = register_borrowed().expect("a block device vanished");
+    let (id, dma) = register_borrowed().expect("a block device vanished");
     let tid = crate::sched::spawn(|| {}).expect("spawn failed");
     assert!(crate::user::wait_for(|| !crate::sched::is_thread_present(
         tid
     )));
     assert!(read_register(id, REG_STATUS).is_some());
-    assert!(unregister(id));
+    assert!(release_borrowed(id, dma));
 }
