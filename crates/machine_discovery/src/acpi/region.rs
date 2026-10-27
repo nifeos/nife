@@ -1,5 +1,5 @@
 //! **The one region the ACPI walk may read**, and the one checked read every firmware-supplied
-//! address and length goes through (milestone 423, ruled in §192 (does the ACPI walk's direct-map
+//! address and length goes through (milestone 423 (a checked direct-map reader for the x86 ACPI walk), ruled in §192 (does the ACPI walk's direct-map
 //! read take a bound, and is the bound per-read or a region it holds?)).
 //!
 //! The walk is handed a [`DirectMapRegion`] once, at boot, and holds it. [`DirectMapRegion::read`]
@@ -17,22 +17,27 @@
 //!   than a device register block; the kernel chooses an extent that is memory.
 //! - Nothing here reads the boot handoff or the command line; those walks are not ACPI's.
 //!
-//! Names: provisional (milestone 423's lane, 2026-10-27 UTC): `DirectMapRegion`, `RegionError`,
-//! `TableRefusal`, `Table`, `read`, `table`, `find_rsdp`, `from_bytes`, `from_ptr`, `BIOS_AREA`,
-//! `EBDA_SEGMENT_PTR`. An architect names things (§192 leaves the accessor's name to `script/names`).
+//! Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane (a checked direct-map reader
+//! for the x86 ACPI walk). §192 leaves the accessor's name to `script/names`; an architect names things.
 
 use super::root::RSDP_V2_LEN;
 use super::*;
 
 /// The BIOS area the RSDP is required to be in when it is not in the EBDA: `0xe0000..0x100000`,
 /// scanned on 16-byte boundaries.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
 pub const BIOS_AREA: core::ops::Range<u64> = 0x000e_0000..0x0010_0000;
 
 /// Where the BIOS Data Area records the Extended BIOS Data Area's segment. The EBDA's first
 /// kilobyte is the other place an RSDP is allowed to be.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
 pub const EBDA_SEGMENT_PTR: u64 = 0x0000_040e;
 
 /// Why a read was refused.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RegionError {
     /// The address was zero, which firmware uses for "no pointer".
@@ -42,6 +47,8 @@ pub enum RegionError {
 }
 
 /// Why a table was not returned.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TableRefusal {
     /// The header's own bytes lie outside the region. The boot map needs widening, which is not
@@ -57,6 +64,8 @@ pub enum TableRefusal {
 
 /// A table whose header decoded, whose stated length lies inside the region, and whose checksum
 /// holds.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Table<'a> {
     pub header: SdtHeader,
@@ -68,6 +77,8 @@ pub struct Table<'a> {
 ///
 /// Holds `bytes`, which are the memory at physical `first..first + bytes.len()`. Nothing outside
 /// that range is reachable through it, whatever a table says.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
 #[derive(Debug, Clone, Copy)]
 pub struct DirectMapRegion<'a> {
     first: u64,
@@ -77,6 +88,8 @@ pub struct DirectMapRegion<'a> {
 impl<'a> DirectMapRegion<'a> {
     /// A region over bytes already in hand, standing for physical `first..first + bytes.len()`.
     /// This is what every host test and proof uses.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
     pub const fn from_bytes(first: u64, bytes: &'a [u8]) -> Self {
         Self { first, bytes }
     }
@@ -88,6 +101,8 @@ impl<'a> DirectMapRegion<'a> {
     /// `ptr..ptr + len` must be readable for `'a` and hold the memory at physical `first`. The
     /// kernel passes the direct map's own address for physical `first` and the extent the boot
     /// page tables map, once, before the walk starts.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
     pub const unsafe fn from_ptr(first: u64, ptr: *const u8, len: usize) -> Self {
         Self {
             first,
@@ -96,24 +111,11 @@ impl<'a> DirectMapRegion<'a> {
         }
     }
 
-    /// The first physical address in the region.
-    pub const fn first(&self) -> u64 {
-        self.first
-    }
-
-    /// How many bytes the region holds.
-    pub const fn len(&self) -> usize {
-        self.bytes.len()
-    }
-
-    /// Does the region hold no bytes?
-    pub const fn is_empty(&self) -> bool {
-        self.bytes.is_empty()
-    }
-
     /// **The checked read.** The `len` bytes at physical `at`, or a refusal when any of them lies
     /// outside the region. `at` and `len` are firmware's numbers and are never trusted: the sum is
     /// checked for wrap, and the offset into the region is computed before any slice is taken.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
     pub fn read(&self, at: u64, len: u64) -> Result<&'a [u8], RegionError> {
         if at == 0 {
             return Err(RegionError::Null);
@@ -135,6 +137,8 @@ impl<'a> DirectMapRegion<'a> {
     /// The header is read first, and the length it states is a claim checked against the region
     /// before a byte past the header is touched. A corrupt MADT would hand out an APIC address and
     /// nothing downstream could notice, so a table that fails any check is refused rather than used.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
     pub fn table(&self, at: u64) -> Result<Table<'a>, TableRefusal> {
         let header_bytes = self
             .read(at, SDT_HEADER_LEN as u64)
@@ -156,6 +160,8 @@ impl<'a> DirectMapRegion<'a> {
     /// zero), then the first kilobyte of the EBDA, then the BIOS area. The last two scan for an
     /// eight-byte string, so [`parse_rsdp`]'s checksum is all that separates a hit from chance.
     /// Returns the RSDP's physical address and its decoding.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone 423's lane.
     pub fn find_rsdp(&self, hint: u64) -> Option<(u64, Rsdp)> {
         if let Some(rsdp) = self.rsdp_at(hint) {
             return Some((hint, rsdp));

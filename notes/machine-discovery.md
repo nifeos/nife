@@ -280,9 +280,8 @@ RHSA, ANDD, SATC or SIDP structures. A truncated decode answers an ownership que
 ### The region the walk reads through
 
 The walk holds one `DirectMapRegion`, an extent the boot path hands it once, and every address and
-length a table supplies goes through `DirectMapRegion::read`. A table whose stated length runs past
-the region is refused and never read (`DirectMapRegion::table`), and so is an entry that points
-outside it. The type, the checked read, the table reader and the root-pointer scan live in the crate
+length a table supplies goes through `DirectMapRegion::read`. `DirectMapRegion::table` refuses a table whose stated length runs past
+the region without reading it, and refuses an entry that points outside it. The type, the checked read, the table reader and the root-pointer scan live in the crate
 (`acpi::region`), where two Kani harnesses prove no read leaves the region and no table length
 reaches past it. The kernel builds the region from the boot map's low 4 GiB
 (`machine::boot_direct_map`). The boot handoff and the command line are not ACPI and read the
