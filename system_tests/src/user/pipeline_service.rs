@@ -529,9 +529,9 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
 fn take_rendezvous(ep: RendezvousId) -> Option<RendezvousId> {
     let m = crate::sched::inter_process_communication_receive_capability(ep);
     let slot = m[1];
-    let cap = crate::sched::current_capability(slot).ok()?;
+    let capability = crate::sched::current_capability(slot).ok()?;
     let _ = crate::sched::delete_current_capability(slot);
-    match cap.object {
+    match capability.object {
         crate::capability_object::Object::Rendezvous(id, _) => Some(id),
         _ => None,
     }
