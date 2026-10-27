@@ -197,66 +197,8 @@ impl<'a> DirectMapRegion<'a> {
     }
 }
 
-/// Machine-checked proofs over the checked read (milestone 423). The parsers beside it are proved
-/// in their own modules; this proves the one place firmware's numbers become bytes.
-///
-/// Names: provisional (milestone 423's lane, 2026-10-27 UTC). An architect names things.
 #[cfg(kani)]
-mod verification {
-    use super::*;
-
-    /// A region small enough to prove over.
-    const N: usize = 48;
-
-    /// A header and four bytes of body: the checksum loop unwinds once per byte, so this is the
-    /// cost knob of the table proof.
-    const TABLE_N: usize = SDT_HEADER_LEN + 4;
-
-    /// **No read leaves the region.** For every region base, address and length, including the
-    /// values that wrap, a read that succeeds returns exactly `len` bytes lying inside the bytes the
-    /// region holds, at the offset `at - first`. This is the property every firmware number in the
-    /// walk relies on, and it holds for the full `u64` range of each input.
-    /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.region.verification.no_read_leaves_the_region.patch`
-    #[kani::proof]
-    fn no_read_leaves_the_region() {
-        let buffer: [u8; N] = kani::any();
-        let first: u64 = kani::any();
-        let at: u64 = kani::any();
-        let len: u64 = kani::any();
-        let region = DirectMapRegion::from_bytes(first, &buffer);
-        if let Ok(read) = region.read(at, len) {
-            assert!(at != 0);
-            assert!(at >= first);
-            assert_eq!(read.len() as u64, len);
-            let offset = at - first;
-            assert!(offset + len <= N as u64);
-            assert_eq!(read.as_ptr(), buffer[offset as usize..].as_ptr());
-            kani::cover!(len > 0, "a non-empty read is accepted");
-        }
-    }
-
-    /// **No table length reaches past the region.** A table's `length` is a number the table wrote,
-    /// and the whole-table read and the checksum run over it. For every table bytes and every base,
-    /// a table that is returned has a body exactly as long as the length its header states less the
-    /// header, and that length fits inside the region from the table's address.
-    /// Falsification: replayable `crates/machine_discovery/falsifications/acpi.region.verification.no_table_length_reaches_past_the_region.patch`
-    #[kani::proof]
-    #[kani::unwind(42)]
-    fn no_table_length_reaches_past_the_region() {
-        let buffer: [u8; TABLE_N] = kani::any();
-        let first: u64 = kani::any();
-        let at: u64 = kani::any();
-        let region = DirectMapRegion::from_bytes(first, &buffer);
-        if let Ok(table) = region.table(at) {
-            let length = table.header.length as u64;
-            assert!(length >= SDT_HEADER_LEN as u64);
-            assert_eq!(table.body.len() as u64 + SDT_HEADER_LEN as u64, length);
-            assert!(at >= first);
-            assert!(at - first + length <= TABLE_N as u64);
-            kani::cover!(!table.body.is_empty(), "a table with a body is accepted");
-        }
-    }
-}
+mod verification;
 
 #[cfg(test)]
 mod tests {
@@ -398,5 +340,72 @@ mod tests {
         bytes[0xe0..0x100].copy_from_slice(&rsdp[..0x20]);
         let region = DirectMapRegion::from_bytes(0xe_0000, &bytes);
         assert_eq!(region.find_rsdp(0xe_00e0), None);
+    }
+
+    /// Memory from physical 0, with the BDA's EBDA segment set to `segment`.
+    fn low_memory(segment: u16) -> [u8; 0x1000] {
+        let mut bytes = [0u8; 0x1000];
+        bytes[0x40e..0x410].copy_from_slice(&segment.to_le_bytes());
+        bytes
+    }
+
+    /// The EBDA's first kilobyte is searched, at the address the BDA's segment names: the segment is
+    /// shifted left four, and the search covers `ebda..ebda + 0x400` and no more.
+    #[test]
+    fn the_extended_bios_data_area_is_searched_where_the_segment_says() {
+        let rsdp = rsdp_v2();
+        let mut bytes = low_memory(0x0080);
+        bytes[0x840..0x840 + 36].copy_from_slice(&rsdp);
+        let region = DirectMapRegion::from_bytes(0, &bytes);
+        let found = region.find_rsdp(0).expect("inside the EBDA's kilobyte");
+        assert_eq!(found.0, 0x840);
+
+        // The last 16-byte slot that still fits 36 bytes before the kilobyte ends.
+        let mut bytes = low_memory(0x0080);
+        bytes[0xbd0..0xbd0 + 36].copy_from_slice(&rsdp);
+        let region = DirectMapRegion::from_bytes(0, &bytes);
+        assert_eq!(region.find_rsdp(0).map(|f| f.0), Some(0xbd0));
+
+        // Just past the kilobyte, and below it, nothing is searched (the BIOS area is outside this
+        // region, so a hit there would be a read the region refuses).
+        for at in [0xbf0usize, 0xc00, 0x7f0] {
+            let mut bytes = low_memory(0x0080);
+            bytes[at..at + 36].copy_from_slice(&rsdp);
+            let region = DirectMapRegion::from_bytes(0, &bytes);
+            assert_eq!(region.find_rsdp(0), None, "at {at:#x}");
+        }
+    }
+
+    /// A segment below 0x40 would put the EBDA inside the interrupt vector table and the BDA, so it
+    /// is not searched.
+    #[test]
+    fn a_segment_that_names_the_vector_table_is_not_searched() {
+        let rsdp = rsdp_v2();
+        let mut bytes = low_memory(0x0030);
+        bytes[0x300..0x300 + 36].copy_from_slice(&rsdp);
+        let region = DirectMapRegion::from_bytes(0, &bytes);
+        assert_eq!(region.find_rsdp(0), None);
+        // And the segment is not read as an address: 0x0080 as an address finds nothing here.
+        let mut bytes = low_memory(0x0040);
+        bytes[0x80..0x80 + 36].copy_from_slice(&rsdp);
+        let region = DirectMapRegion::from_bytes(0, &bytes);
+        assert_eq!(region.find_rsdp(0), None);
+    }
+
+    /// The scan starts on a 16-byte boundary at or below its start and stops before a structure
+    /// that would run past the end of the range, even when the region goes on.
+    #[test]
+    fn the_scan_aligns_its_start_and_respects_the_end_of_its_range() {
+        let rsdp = rsdp_v2();
+        let mut bytes = [0u8; 0x1000];
+        bytes[0x800..0x800 + 36].copy_from_slice(&rsdp);
+        let region = DirectMapRegion::from_bytes(0, &bytes);
+        assert_eq!(region.scan_for_rsdp(0x801..0xc00).map(|f| f.0), Some(0x800));
+
+        let mut bytes = [0u8; 0x1000];
+        bytes[0xbf0..0xbf0 + 36].copy_from_slice(&rsdp);
+        let region = DirectMapRegion::from_bytes(0, &bytes);
+        assert_eq!(region.scan_for_rsdp(0x800..0xc00), None);
+        assert_eq!(region.scan_for_rsdp(0x800..0xc14).map(|f| f.0), Some(0xbf0));
     }
 }
