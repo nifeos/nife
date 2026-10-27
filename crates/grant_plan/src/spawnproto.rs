@@ -165,7 +165,7 @@ const KEYBOARD_BIT: u64 = 1 << 46;
 /// can tear it down with `DESTROY`, and an endpoint the shell receives on, which becomes the job's
 /// supervision endpoint (badged with the job's label) and, unless [`SINK_BIT`] or [`SCREEN_BIT`]
 /// says otherwise, the job's output. The progenitor answers once, [`held_answer`], then sends the
-/// job's `ThreadControlBlock` as the one message after a good answer (§309). It retains nothing,
+/// job's `ThreadControlBlock` as the one message after a good answer (§309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it)). It retains nothing,
 /// and learns that the job's file-service window is free from a [`release`] message instead of
 /// `job_undertaker`'s [`reaped`] one. With [`SCREEN_BIT`] set, no further endpoint follows and the
 /// job's output defaults to the terminal's sink.
@@ -649,6 +649,8 @@ pub fn wiring(w2: u64) -> Wiring {
 /// held group is the shell's budget narrowed to `ENUMERATE`, which becomes the job's share view
 /// (`free`'s `Yours:`) in place of the progenitor's pool. Both sides ask this one function, so the
 /// shell never sends a capability the progenitor does not read.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/933-every-job-built-like-a-supervised-job.
 #[must_use]
 pub const fn held_shares(program: crate::Program) -> bool {
     program.manifest().share
@@ -656,6 +658,8 @@ pub const fn held_shares(program: crate::Program) -> bool {
 
 /// **The "release" request for job `label`** ([`RELEASE_BIT`]): the three words the shell sends
 /// when it has torn down a job it held.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/933-every-job-built-like-a-supervised-job.
 #[must_use]
 pub const fn release(label: u64) -> (u64, u64, u64) {
     (label, 0, RELEASE_BIT)
@@ -664,6 +668,8 @@ pub const fn release(label: u64) -> (u64, u64, u64) {
 /// **The label a release request names, if this first message is one.** The progenitor asks it
 /// before [`activation`] and [`wiring`], because under the bit no other bit of word 2 means
 /// anything.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/933-every-job-built-like-a-supervised-job.
 #[must_use]
 pub const fn released_label(w0: u64, w2: u64) -> Option<u64> {
     if w2 & RELEASE_BIT != 0 {
@@ -677,6 +683,8 @@ pub const fn released_label(w0: u64, w2: u64) -> Option<u64> {
 /// `(failure, 0, 0)` with one of the sentinels otherwise (milestone 933). The label is the number
 /// on the job's supervision capability; it comes back on the job's death message in the sixth
 /// word, and the shell names the job to [`release`] by it.
+///
+/// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/933-every-job-built-like-a-supervised-job.
 #[must_use]
 pub const fn held_answer(label: u64) -> (u64, u64, u64) {
     (SPAWN_OK, label, 0)

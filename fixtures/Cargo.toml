@@ -74,7 +74,7 @@ path = "src/coremark_builder.rs"
 test = false
 bench = false
 
-# The job sleeper (milestone 933, provisional): an ordinary program that waits a given number of
+# The job sleeper (milestone 933 (every job is built the way a supervised job is), provisional): an ordinary program that waits a given number of
 # milliseconds, or for ever, so the prompt's job control has something to hold.
 [[bin]]
 name = "job_sleeper"

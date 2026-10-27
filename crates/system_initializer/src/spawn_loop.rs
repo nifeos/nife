@@ -31,6 +31,19 @@ pub(super) fn place_at(tcb: u64, capability: u64, rights: u64, slot: u64) -> boo
 // slot; `grant_plan` states the number without depending on `abi`, so the relation is held here.
 const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_EP_SLOT - 1);
 
+/// Delete the progenitor's slot for a capability it no longer needs. Every deletion in this module
+/// goes through it, so the runtime's `cap_delete` is named once (the capability ruling, calef,
+/// 2026-10-06).
+pub(super) fn drop_slot(slot: u64) {
+    cap_delete(slot);
+}
+
+/// The slot the next delegated capability on the spawn endpoint landed in, or `None` when the
+/// message carried none: the one place a delegated capability is received.
+fn take_slot(spawn: &mut SpawnEndpoint) -> Option<u64> {
+    opt_capability(spawn.receive_cap().1)
+}
+
 /// Turn a `receive_cap` slot into `Some(slot)`, or `None` if the message carried no capability.
 pub(super) fn opt_capability(slot: u64) -> Option<u64> {
     if slot == abi::rendezvous::NO_CAP {
@@ -239,7 +252,7 @@ impl Request {
 struct Delegated {
     job_ut: Option<u64>,
     job_fr: Option<u64>,
-    /// A held job's region and the endpoint its exit arrives on (milestone 933), both the shell's
+    /// A held job's region and the endpoint its exit arrives on (milestone 933 (every job is built the way a supervised job is)), both the shell's
     /// own; `None` when the request did not promise them or they did not arrive.
     held: Option<(u64, u64)>,
     /// The shell's budget narrowed to `ENUMERATE`, for a held job whose program declares a share
@@ -277,7 +290,7 @@ impl Delegated {
     /// own, and the progenitor's table must not fill across a long session.
     fn release(&self) {
         for s in self.arrived() {
-            cap_delete(s);
+            drop_slot(s);
         }
     }
 }
@@ -968,7 +981,7 @@ impl Service<'_> {
         // pages, since it is the pool's top carve.
         if let Some(st) = staging {
             supervision_protocol::memory_region_destroy(st);
-            cap_delete(st);
+            drop_slot(st);
         }
         let tcb = built
             .as_ref()
@@ -1526,22 +1539,22 @@ impl Service<'_> {
         } = left;
         let label = dir.label;
         if let Some(l) = labeled {
-            cap_delete(l);
+            drop_slot(l);
         }
         // The reply endpoint is kept until the reap, filed by label, so an answer finds it. There is
         // room to file it: a spawn that found none made no installer and was refused.
         if let Some((inst, reply)) = installer {
-            cap_delete(inst);
+            drop_slot(inst);
             let kept = ok
                 && req
                     .prog
                     .is_some_and(|p| self.spawn.hold_reply(label, reply, p.name()));
             if !kept {
-                cap_delete(reply);
+                drop_slot(reply);
             }
         }
         for page in [catalog_page, sources_page].into_iter().flatten() {
-            cap_delete(page);
+            drop_slot(page);
         }
         // A job that never started is never reaped, so its resolver grant is forgotten now.
         if !ok {
@@ -1563,18 +1576,18 @@ impl Service<'_> {
             .chain(resolvers)
             .flatten()
         {
-            cap_delete(endpoint);
+            drop_slot(endpoint);
         }
         if let Some(ch) = dir.channel {
-            cap_delete(ch.page);
+            drop_slot(ch.page);
             // A bound channel's endpoint is `narrowed`, already deleted above, unless a caretaker
             // serves a set over it (`at_bound_root`), and then `narrowed` is the caretaker's.
             if dir.narrowed != Some(ch.ep) {
-                cap_delete(ch.ep);
+                drop_slot(ch.ep);
             }
         }
         if let Some(page) = args_page {
-            cap_delete(page);
+            drop_slot(page);
         }
         // Nothing holds a capability to a live job's memory: since §32 (a supervisor may collect a
         // corpse) the reap is a supervision-endpoint method. A failed job is reclaimed now.
@@ -1584,7 +1597,7 @@ impl Service<'_> {
             }
             // A held region is the shell's, in `Delegated::release`'s list already.
             if !req.wiring.held {
-                cap_delete(r);
+                drop_slot(r);
             }
         }
         // A redirected or screen-narrowed child answers elsewhere, so the shell gets one ack here;
@@ -1631,24 +1644,21 @@ fn receive_delegated(
 ) -> Delegated {
     let interruptible = wiring.interruptible;
     let (job_ut, job_fr) = if interruptible {
-        (
-            opt_capability(spawn.receive_cap().1),
-            opt_capability(spawn.receive_cap().1),
-        )
+        (take_slot(spawn), take_slot(spawn))
     } else {
         (None, None)
     };
     // A held job's region and exit come right after the interrupt pair (milestone 933), and a share
     // view after them for a program that declares one.
     let held = if wiring.held {
-        let region = opt_capability(spawn.receive_cap().1);
-        let exit = opt_capability(spawn.receive_cap().1);
+        let region = take_slot(spawn);
+        let exit = take_slot(spawn);
         match (region, exit) {
             (Some(r), Some(e)) => Some((r, e)),
             (r, e) => {
                 // Half a pair is a malformed request: give back what arrived, build nothing.
                 for c in [r, e].into_iter().flatten() {
-                    cap_delete(c);
+                    drop_slot(c);
                 }
                 None
             }
@@ -1657,38 +1667,34 @@ fn receive_delegated(
         None
     };
     let share = if wiring.held && prog.is_some_and(spawnproto::held_shares) {
-        opt_capability(spawn.receive_cap().1)
+        take_slot(spawn)
     } else {
         None
     };
-    let sink = if wiring.sink {
-        opt_capability(spawn.receive_cap().1)
-    } else {
-        None
-    };
+    let sink = if wiring.sink { take_slot(spawn) } else { None };
     let source = if wiring.source {
-        opt_capability(spawn.receive_cap().1)
+        take_slot(spawn)
     } else {
         None
     };
     let diagnostics = if wiring.diagnostics {
-        opt_capability(spawn.receive_cap().1)
+        take_slot(spawn)
     } else {
         None
     };
     // A held job's `SCREEN_BIT` only picks its output; its exit endpoint is the held one.
     let screen = if wiring.screen && !wiring.held {
-        opt_capability(spawn.receive_cap().1)
+        take_slot(spawn)
     } else {
         None
     };
     let budget = if mem_pages > 0 {
-        opt_capability(spawn.receive_cap().1)
+        take_slot(spawn)
     } else {
         None
     };
     let machine_page = if wiring.machine {
-        opt_capability(spawn.receive_cap().1)
+        take_slot(spawn)
     } else {
         None
     };

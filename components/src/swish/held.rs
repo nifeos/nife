@@ -174,6 +174,20 @@ pub(super) fn has_died(label: u64) -> Option<bool> {
     None
 }
 
+/// Delete this shell's slot for something it gave away or no longer needs. The name is the
+/// capability ruling's (calef, 2026-10-06): the runtime's own `cap_delete` is not yet spelled out,
+/// and every call here and in the sibling modules goes through this one.
+pub(super) fn drop_slot(slot: u64) {
+    cap_delete(slot);
+}
+
+/// Take the `ThreadControlBlock` the progenitor sends after a held job's good answer (§309 (a
+/// supervised job's `ThreadControlBlock` goes to the shell that asked for it)): the slot it landed
+/// in. `WRITE` without `GRANT`, so this shell can suspend and resume the job and not pass that on.
+pub(super) fn receive_tcb() -> u64 {
+    receive_cap(RESULT).1
+}
+
 /// **Tear down a job this shell held, and tell the progenitor it is gone.** `DESTROY` of the region
 /// takes the job, its corpse and anything built beside it (a directory grant's caretaker); the
 /// progenitor then frees the job's window, resolver grants and installer reply on the release
@@ -182,7 +196,7 @@ pub(super) fn has_died(label: u64) -> Option<bool> {
 pub(super) fn collect(region: u64, label: u64) -> bool {
     let back = reclaim(region);
     unstash(label);
-    cap_delete(region);
+    drop_slot(region);
     if back {
         let (w0, w1, w2) = spawnproto::release(label);
         send(SPAWN, w0, w1, w2);

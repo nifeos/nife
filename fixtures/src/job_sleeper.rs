@@ -30,8 +30,9 @@
 //! want, and `blocker` because the timed case is the common one.
 
 #![no_std]
-// Program entry points, not the crates/ library surface milestone 68's ratchet tracks
-// (DECISIONS §107): each `[[bin]]` is its own crate root with one `_start`, and 58 of them
+// Program entry points, not the crates/ library surface milestone 68 (code-quality gates: one
+// lint policy)'s ratchet tracks (DECISIONS §107 (`missing_docs` moves to
+// `workspace.lints.rust`)): each `[[bin]]` is its own crate root with one `_start`, and 58 of them
 // documenting an OS-facing ABI entry point is not what the lint is for.
 #![allow(missing_docs)]
 #![no_main]

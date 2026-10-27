@@ -70,6 +70,7 @@ mod running;
 mod witness;
 
 use capabilities::*;
+use held::{drop_slot, receive_tcb};
 use jobs::*;
 use navigation::*;
 use pipeline::*;

@@ -279,7 +279,7 @@ impl SpawnEndpoint {
     /// Job `label` is reaped: its memory is back in its pool, and its window's grant is taken back
     /// and the window is free. An installer holder's reply endpoint goes with it, and a request it
     /// was in the middle of is abandoned. `job_undertaker` says so for a job it collected; the
-    /// shell says so, with a release request, for a job it held (milestone 933).
+    /// shell says so, with a release request, for a job it held (milestone 933 (every job is built the way a supervised job is)).
     pub(super) fn reaped(&mut self, label: u64) {
         if let Some(w) = self.windows.reaped(label) {
             unbind(self.files, &mut self.windows, w);
