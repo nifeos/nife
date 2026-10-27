@@ -16,8 +16,9 @@ and QEMU tests cover them, and nothing asks whether those would notice a wrong l
 This builds what milestone 517 (what fraction of survivor growth arrives on lines a pull request
 touched) priced and called the affordable half: a diff-scoped kernel check. Its appendix
 `kernel-pricing.md` refused a kernel census at about 500 runner-hours. This proposal keeps that
-refusal and replaces it with a rolling census. Milestone 924's gate passes a kernel pull request
-with "no mutants: outside the corpus", and this is what retires that summary.
+refusal and replaces it with a rolling census. The gate of milestone 924 (a survivor on a pull
+request's own lines cannot merge untriaged) passes a kernel pull request with "no mutants: outside
+the corpus", and this is what retires that summary.
 
 ## What sits outside the corpus
 
@@ -61,7 +62,8 @@ pull request changed. A rolling census mutates one slice of the kernel a week un
 so the whole kernel passes through it every few weeks. Both run in two tiers. The kernel suite runs
 first, and only its survivors pay for the system tests. An `arch/` file runs on its own
 architecture. Arch-independent code runs on one, the cheapest, which part 1 picks by measuring.
-Survivors go into the same ledger under milestone 85's rule and 924's key.
+Survivors go into the same ledger under the rule of milestone 85 (mutation testing over the host
+crates) and under 924's key.
 
 **C. Move decisions out to host crates.** This is the tree's existing practice: `capability`,
 `paging`, `timetable`, `memory_regions`, `inter_process_communication` and `generational_table`
@@ -87,10 +89,10 @@ and the `NIFE_*` device variables. Milestone 517 found that a bare `cargo test` 
 build directory fails its unmutated baseline for that reason.
 
 `script/falsifications` already replays a kernel test's record the way a mutant needs. It applies a
-patch, boots, and reads the named failure (milestone 742, every test is falsified as routine). So
-cargo-mutants generates the mutants as patches, `cargo mutants --list --diff`, and the falsification
-driver runs them. Generation stays with the tool that names mutants the ledger already keys on,
-and execution stays with the driver that already knows how to boot this tree.
+patch, boots, and reads the named failure, the replay that milestone 742 (every test is falsified as
+routine) built. So cargo-mutants generates the mutants as patches, `cargo mutants --list --diff`,
+and the falsification driver runs them. Generation stays with the tool that names mutants the ledger
+already keys on, and execution stays with the driver that already knows how to boot this tree.
 
 ## What done means
 

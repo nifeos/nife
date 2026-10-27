@@ -13,7 +13,8 @@ Raised 2026-10-27 (UTC) by `lane/mutation-gaps-plan`, the third of the three mut
 calef ruled closed that day. A timeout counts as neither caught nor missed, and three instruments
 read it three ways. The same day a timeout stopped #2797 at the gate.
 
-This replaces the rule milestone 326's follow-on and `notes/mutation-testing.md`'s caveats call
+This replaces a rule that `notes/mutation-testing.md`'s caveats and a follow-on of milestone 326
+(nobody has been assigned to turn a mutation score upward) call
 for, a `--report` rule that compares a timeout with the package's baseline test time. Telling a
 deadlock from a slow test stops mattering once every hang has to become a failure. Milestone 663
 (bound the host pass) stays separate and is the outer bound this proposal relies on. The companion
@@ -54,12 +55,12 @@ below is that fix.
 
 ## The decision: a timeout is its own class
 
-A timeout is neither caught nor missed, and the reason is not caution. An equivalent mutant
-behaves the same as the original. A mutant that does not terminate where the original does
-behaves differently, observably, so no hang is equivalent. Counting it as caught claims that a test
-noticed, and #2797 shows a hang can sit beside a real catch or hide a real limit. Counting it as
-missed claims nothing noticed, yet milestone 741 found 29 mutants a Kani proof kills where the tests
-only hang.
+A timeout is neither caught nor missed, and the reason is not caution. An equivalent mutant behaves
+the same as the original. A mutant that does not terminate where the original does behaves
+differently, observably, so no hang is equivalent. Counting it as caught claims that a test noticed,
+and #2797 shows a hang can sit beside a real catch or hide a real limit. Counting it as missed
+claims nothing noticed, yet milestone 741 (does a standing proof notice a regression) found 29
+mutants a Kani proof kills where the tests only hang.
 
 So the ledger and every instrument carry `hang` as its own outcome. An `equivalent` row never clears
 a hang. A hang clears in one of two ways only. A change makes the mutant fail a named test, or a

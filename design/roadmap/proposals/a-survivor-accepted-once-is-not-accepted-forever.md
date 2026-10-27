@@ -85,16 +85,16 @@ proof, and part 1 checks each one against its code.
 
 A census that counts this noise as missed hides the real holes inside it. Three ways to remove it:
 
-- A row per mutant, as today. It keeps every mutant visible and costs a reader per row, forever,
-  and the copied reasons show what that reading becomes at volume.
+- A row per mutant, as today. It keeps every mutant visible and costs a reader per row, forever, and
+  the copied reasons show what that reading becomes at volume.
 - Rewrite the code so the mutant cannot arise: a typed flags builder, or one shared helper that
   composes every field. It moves the noise into one function, but the helper's own `|` stays
   equivalent under its contract, and code shaped for the tool is not better code.
-- A scoped exclusion in `.cargo/mutants.toml`, one `exclude_re` per function and shape, with
-  its reason, as milestone 85 allows. For a disjoint-bits swap, the reason names a `const`
-  assertion beside the code that the operands share no bit, so the compiler checks the argument.
-  For a shift, the reason is the identity. `script/lint` fails an entry whose function no longer
-  exists or whose named assertion is gone.
+- A scoped exclusion in `.cargo/mutants.toml`, one `exclude_re` per function and shape, with its
+  reason, as milestone 85 (mutation testing over the host crates) allows. For a disjoint-bits swap,
+  the reason names a `const` assertion beside the code that the operands share no bit, so the
+  compiler checks the argument. For a shift, the reason is the identity. `script/lint` fails an
+  entry whose function no longer exists or whose named assertion is gone.
 
 The recommendation is the scoped exclusion, and it holds at equal cost: the product code stays as
 written, and the proof of equivalence compiles. Its limit belongs in the exclusion's `BUGS`. An
@@ -124,11 +124,12 @@ reason.
 
 ## How the work splits
 
-Each part is one lane. Each crate lane re-derives its survivors with `script/mutation -p <crate>`
-on its own worktree. The largest crate here, `grant_plan`, has 1,312 mutants, about 50 minutes at
-the census's measured 2.35 seconds per mutant. A crate lane changes one crate per pull request,
-so the gate runs only that diff's mutants. Milestone 924's gate ran 217 of them in three minutes on
-#2797, well under its 20-minute cap.
+Each part is one lane. Each crate lane re-derives its survivors with `script/mutation -p <crate>` on
+its own worktree. The largest crate here, `grant_plan`, has 1,312 mutants, about 50 minutes at the
+census's measured 2.35 seconds per mutant. A crate lane changes one crate per pull request, so the
+gate runs only that diff's mutants. The gate of milestone 924 (a survivor on a pull request's own
+lines cannot merge untriaged) ran 217 of them in three minutes on #2797, well under its 20-minute
+cap.
 
 1. The measurement. Classify every live survivor by shape and by the reason its row gives, flag
    copied reasons, and publish the real-hole count per crate as a census report column. No code
@@ -149,7 +150,8 @@ so the gate runs only that diff's mutants. Milestone 924's gate ran 217 of them 
    reading.
 5. The eight crates' remaining survivors, one lane each, in the order above. Each classifies its
    `equivalent` rows, writes the test that kills any a test can, and moves harness-only claims to
-   `gap` with a home. Milestone 741's Kani results come first, since its table names 17 mutants a
+   `gap` with a home. The Kani results of milestone 741 (does a standing proof notice a regression)
+   come first, since its table names 17 mutants a
    proof kills and every test misses. A row for one of those is wrong.
 6. The remaining crates, in batches ordered by real holes. One lane takes as many crates as fit
    one day of per-crate runs, so a census does not wait on a lane that never ends.
