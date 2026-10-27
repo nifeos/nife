@@ -90,7 +90,7 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
 
     // Nanoseconds to seconds, truncating towards zero, which is exact here: the wall clock is a
     // `u64` count of nanoseconds since 1970 and this calendar's second is the smallest unit it has.
-    let unix_secs = (clock_contract::wall_ns(r.offset_ns, monotonic_ns())
+    let unix_secs = (clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
         / clock_contract::NS_PER_SECOND) as i64;
 
     // Out of range is not reachable from a clock the service believed (its sanity window is 2026 to

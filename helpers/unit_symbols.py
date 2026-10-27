@@ -40,6 +40,8 @@ Comments and string literals are stripped first: the ruling covers identifiers.
   `US` is x86 paging's User/Supervisor bit, `sec` in `kernel/src/pci.rs` is a bridge's secondary
   bus, `sec1` is the SEC 1 curve encoding, `SEC` in a clock-and-reset name is security. `tv_sec`,
   `tv_nsec` and `tv_usec` are the POSIX `timespec` and `timeval` fields.
+  `NANOS_PER_SEC`, `wall_nanos` and `offset_nanos` in `clock_contract` are the names the std overlay
+  under `patches/` reads, and no sweep rewrites `patches/`.
 
 **Not counted, listed by `--unclear`:** `nsec`, `msec`, `kb`, `mb`, `gb`, `tb`, `bps`, `ppm`. The
 ruling does not settle them, so the sweep left them and reported them.
@@ -88,10 +90,21 @@ _POSIX = 'a field of the POSIX timespec or timeval'
 _SEC1 = 'SEC 1, the elliptic-curve point encoding'
 _SECURITY = 'a security-domain clock or reset a vendor named'
 _BUS = 'the secondary bus of a PCI bridge'
+_OVERLAY = 'the field of clock_contract::Reading the std overlay reads under this name'
 KEPT = {
     'crates/paging/src/x86_64.rs': ({'US'}, 'the x86 paging User/Supervisor bit'),
     'kernel/src/pci.rs': ({'sec', 'sec_sts'}, _BUS),
     'c_library/src/lib.rs': ({'tv_sec', 'tv_nsec', 'tv_usec'}, _POSIX),
+    'components/src/clock.rs': ({'offset_nanos'}, _OVERLAY),
+    'components/src/date.rs': ({'offset_nanos'}, _OVERLAY),
+    'components/src/timetable.rs': ({'offset_nanos'}, _OVERLAY),
+    'kernel/src/user/clock_service.rs': ({'offset_nanos'}, _OVERLAY),
+    'system_tests/src/user/clock_tests.rs': ({'offset_nanos'}, _OVERLAY),
+    # The std overlay under patches/std-nife reads a generated copy of this file by these names, and
+    # no sweep rewrites patches/. `offset_nanos` is the field of `Reading` it reads.
+    'crates/clock_contract/src/lib.rs':
+        ({'NANOS_PER_SEC', 'wall_nanos', 'offset_nanos', 'monotonic_nanos'},
+         'the names the std overlay reads'),
     'crates/e1000e/src/pch/sequence.rs':
         ({'FEXTNVM3_PHY_CFG_COUNTER_50MSEC'}, 'a register field, spelled as Linux spells it'),
     'cryptography_provider/src/lib.rs': ({'Sec1Point', 'ToSec1Point', 'from_sec1_bytes', 'to_sec1_point', 'sec1'}, _SEC1),

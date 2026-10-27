@@ -121,7 +121,7 @@ fn serve(page: ClockPage) -> ! {
 fn wall_now(page: &ClockPage) -> u64 {
     let r = page.read();
     if state::is_known(r.state) {
-        clock_contract::wall_ns(r.offset_ns, monotonic_ns())
+        clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
     } else {
         0
     }

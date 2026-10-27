@@ -49,7 +49,7 @@ fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
     let r = w.page().read();
     assert_eq!(r.state, state::RTC);
     assert_eq!(r.generation, 1, "one publish: the RTC reading");
-    let by_hand = clock_contract::wall_ns(r.offset_ns, clock_service::monotonic_ns());
+    let by_hand = clock_contract::wall_ns(r.offset_nanos, clock_service::monotonic_ns());
     assert!(
         by_hand >= report[2] && by_hand - report[2] < 10 * clock_contract::NS_PER_SECOND,
         "a reader's own arithmetic ({by_hand}) should agree with the service's ({})",
