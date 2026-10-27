@@ -146,7 +146,7 @@ names the space through the same registry revocation uses.
       UART (in the log) and acks, init reports the length. `build_child` was generalized to
       caps-to-insert + pages-to-map, the shape every init-built service uses.
       (`userspace_init_brings_up_the_console_server`.)
-    - Interrupt capabilities (the last authority kind). init holds an Irq cap for a routed
+    - Interrupt capabilities (the last authority kind). init holds an Interrupt cap for a routed
       test interrupt, builds a child, delegates it the cap, starts it; the child blocks in `WAIT`,
       the interrupt fires, and it is delivered as a message through the delegated capability.
       (`userspace_init_delegates_an_interrupt_to_a_child`.) Bug found and fixed: the route must be
@@ -157,7 +157,7 @@ names the space through the same registry revocation uses.
 
     **The two full drivers that remain, and their honest blockers (not 2b work):**
     - Input is driven by host keystrokes the automated harness cannot inject, so it is built
-      and validated in the interactive boot (19d.2c), not an isolated test. Its mechanism (IRQ +
+      and validated in the interactive boot (19d.2c), not an isolated test. Its mechanism (interrupt +
       device MMIO delegation) is exactly the two proved above.
     - Virtio needs the driver to know its DMA region's *physical* address, but a process only
       knows virtual addresses. Disclosing a frame's physical address for DMA is milestone-16
