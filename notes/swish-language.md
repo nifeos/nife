@@ -15,6 +15,13 @@ milestone adds the three things that were missing and settles the one design for
 - Exit status. `$?`, and the decision about what a status means when the thing that failed was
   a refusal rather than an error.
 
+**What governs a new form in this language.** [§312 (swish has one way to do each
+job)](../design/decisions/0312-swish-has-one-way-to-do-each-job.md): `|`, the redirections, `&&`,
+`||` and `$( )` stay as Unix spells them, every other job a line can do has one form, and a form
+that would be a second way to do a covered job is not added. Grouping and scoping are the scoped
+block and isolation of [§160 (what a subshell
+copies)](../design/decisions/0160-what-a-subshell-copies.md), milestone 52's.
+
 Two rows of the roadmap's table were already done when this was written: `>>` and `2>` landed with
 milestone 50's later work on 2026-08-03. See notes/pipes.md.
 

@@ -2,20 +2,21 @@
 status: NOT-STARTED
 raised: 2026-07-31
 milestone_dependencies: none
-decision_dependencies: 160
+decision_dependencies: 160, 312
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
 # 52. Subshells without `fork`, and what copying an endowment means
 
-Not started, and gated on §160 (what a subshell copies). Milestone 50 (pipes and redirection) is
-BUILT; it removed most of the requirement and changed what is left, and that remainder is the thing
-to design from. calef asked to design this one together, so §160 is answered in that conversation
-and not by writing it down.
+Not started, and ruled by §160 (what a subshell copies) on 2026-10-27. Milestone 50 (pipes
+and redirection) is BUILT; it removed most of the requirement and changed what is left, and that
+remainder is the thing to build. §160 chose option 4 below: one scoped-block form for the shell's own
+state, and isolation by running `swish` again explicitly as a child whose endowment is derived from
+the parent's. `( ... )` keeps no Unix meaning (§312, swish has one way to do each job). Spellings
+ship provisional.
 
-**Design with calef first.** This block lays out the problem, the options and the constraints; **it
-deliberately does not choose.** Do not build from it without that conversation.
+This block lays out the problem and the options §160 chose among.
 
 In brief. `( commands )` is `fork(2)`: Unix runs the group in a copy-on-write duplicate of the
 whole process, so changes to variables, the working directory, options and descriptors evaporate on

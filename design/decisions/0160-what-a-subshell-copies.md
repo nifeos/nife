@@ -1,21 +1,48 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-27
+ratified_by: calef
 ---
 
 # 160. What a subshell copies, given that a capability set cannot always be copied
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote
 down)'s lane. That lane found that milestone 52 (subshells without `fork`, and what copying an
-endowment means) has carried a `DECISION` gate since it was recorded and names no decision anywhere
-a reader can open. The fork itself is calef's and older: the block's own status line says *"calef
-asked for this to be captured as a milestone and explicitly asked to design it together."* This file
-is that ask moved from a paragraph inside a roadmap block into the place AGENTS.md says an open
-decision lives. *(Section number provisional until the merge queue lands it.)*
+endowment means) had carried a `DECISION` gate since it was recorded and named no decision anywhere
+a reader can open. The fork itself is calef's and older: the block asked for it to be designed
+together with him. Ruled 2026-10-27 (UTC). Beside it, §312 (swish has one way to do each job in its
+language) rules the language rule that this mechanism falls under.
+
+## The ruling
+
+Option D below, with derivation rather than duplication inside it. Scoping and isolation are two
+mechanisms, and each does one job.
+
+- Scoping. One scoped-block form runs a group of commands, saves the shell's own mutable state on
+  entry (working directory, variables, options) and restores it on exit, including when the group
+  fails. It never touches a capability, so the non-duplicable case does not arise inside it.
+- Refusing what cannot be restored. A scoped block refuses, out loud and before it runs, any change
+  it cannot restore: a capability the shell holds that the group would consume or hand off (today,
+  a background job started or torn down). The refusal names the isolation form. That refusal is
+  the answer to the silent downgrade that §42 (no silent degradation) forbids.
+- Isolation. Running `swish` again explicitly (as `fish -c` does) starts a real child. The child's
+  endowment derives from the parent's and never duplicates it, so §16 (reclaim the objects a
+  process built)'s revocation and the derivation tree give "destroying the child revokes exactly
+  its copies", and §40 (a supervisor's death is its subtree's death) cleans up. The parent does not
+  pass a capability that cannot derive (a device frame, a one-shot reply), and the child learns
+  which the parent left out.
+- `( ... )` keeps no Unix meaning. It becomes a refusal that points at both forms.
+- Both spellings ship provisional and go to the naming list. Spelling is the expensive half of this
+  decision (see "How reversible it is"), so this ruling ratifies neither.
+- Address-space duplication stays a separate kernel question with its own trigger.
+
+On 2026-10-27 the ruling weighed ksh93's virtual subshells, PowerShell's scopes (where the working
+directory leaks out), rc's `@{ }`, fish, Nushell's `do { }` and Elvish's `tmp`.
 
 ## What is being decided
 
-What `( commands )` means in a shell with no `fork`. Three sub-questions, in the order they
+What `( commands )` meant in a shell with no `fork`. Three sub-questions, in the order they
 decide each other:
 
 1. Is the mechanism scoping or isolation, given that Unix conflates them because `fork` was the
@@ -54,7 +81,7 @@ and this is measured rather than feared.
 | **C** | **Scoped bindings**, `with cwd = /tmp { ... }`, and no subshell at all. | Says what it means rather than reaching for duplication. Covers the scoping use completely and the isolation use not at all. Diverges from Unix spelling, which milestone 47's rule allows only when the divergence earns it. |
 | **D** | **Hybrid**: scoping by binding, isolation by an explicit verb. | Two mechanisms, each doing one thing, which is the shape §42 and milestone 47 both converged on. Two syntaxes to learn instead of one. |
 
-Recommendation: D, and derivation rather than duplication inside it. The argument is not that it is
+The ruling is D, and derivation rather than duplication inside it. The argument is not that it is
 less work; it is more. It is that this tree has twice found a Unix verb doing two jobs and has twice
 been right to split them. It is also that the split is what makes question 3 answerable at all. A
 scoping construct never touches a capability, so the non-duplicable case simply does not arise
@@ -88,7 +115,7 @@ a name, which AGENTS.md puts in the irreversible column: it lands in a reader's 
 script anyone writes. So the spelling deserves the deliberation and the mechanism behind it does
 not.
 
-## What is blocked until this is answered
+## What this unblocks
 
 Milestone 52, and nothing else. Its sequencing dependency on milestone 50 is satisfied: 50 is
 BUILT, which is what removed most of the requirement and changed what is left.
