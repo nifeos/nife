@@ -971,8 +971,8 @@ paging,AmdVi::blocked_device_table_entry,replace | with ^,equivalent,"DTE_V (bit
 paging,AmdVi::device_table_entry,replace | with ^,equivalent,"DTE_V (bit 0), DTE_TV (1), the 4-level mode (4 << 9), the root (checked inside AMD_VI_ADDR_MASK, bits 12 to 51), DTE_IR (61) and DTE_IW (62) are disjoint, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 paging,Sv39Mae::memory_type,replace | with ^,equivalent,"MAE_SO (63), MAE_C (62), MAE_B (61) and MAE_SH (60) are distinct bits, so | and ^ agree; the 2026-10-12 per-crate re-run still reports it"
 paging,Sv39Mae::memory_type_of,replace Sv39Mae::memory_type_of -> u64 with 0,killed,"killed by memory_and_devices_carry_linuxs_memory_types, which now reads the type back through memory_type_of"
-pci,msi_cap,replace & with ^,killed,"killed by an_msi_only_function_decodes_and_places_its_data_by_address_width (a 32-bit MSI capability, and one behind no capability list)"
-pci,msi_cap,replace & with |,killed,"killed by an_msi_only_function_decodes_and_places_its_data_by_address_width (a 32-bit MSI capability, and one behind no capability list)"
+pci,msi_capability,replace & with ^,killed,"killed by an_msi_only_function_decodes_and_places_its_data_by_address_width (a 32-bit MSI capability, and one behind no capability list)"
+pci,msi_capability,replace & with |,killed,"killed by an_msi_only_function_decodes_and_places_its_data_by_address_width (a 32-bit MSI capability, and one behind no capability list)"
 screen_console,,replace * with +,killed,killed by the_grid_holds_150_rows_at_the_widest_scale_one_screen
 screen_console,Aperture::checked,replace * with +,killed,"killed by an_aperture_survives_the_trip_through_two_words, whose stride refusal now sets a scale so the stride check is what refuses"
 screen_console,Aperture::checked,replace * with /,killed,"killed by an_aperture_survives_the_trip_through_two_words, whose stride refusal now sets a scale so the stride check is what refuses"

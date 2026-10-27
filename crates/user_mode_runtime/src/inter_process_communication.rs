@@ -144,11 +144,11 @@ pub fn receive_fault(slot: u64) -> (u64, u64, u64, u64, u64, u64) {
 }
 
 /// `RECEIVE_CAP` on the endpoint capability in `slot`: receive a message that may carry a
-/// capability. Blocks until one arrives; returns `(w0, cap_slot, w1)`, where `cap_slot` is where
+/// capability. Blocks until one arrives; returns `(w0, capability_slot, w1)`, where `capability_slot` is where
 /// the incoming capability landed in this thread's capability table, or [`abi::rendezvous::NO_CAP`] if the
-/// message carried none. **For a program receiving a delegation**, whose `cap_slot` it then uses
+/// message carried none. **For a program receiving a delegation**, whose `capability_slot` it then uses
 /// as the capability it expects. A server that answers a [`call`] receives with [`receive_request`]
-/// instead: `cap_slot` here is whatever the sender chose, a Reply only if the sender `CALL`ed, and
+/// instead: `capability_slot` here is whatever the sender chose, a Reply only if the sender `CALL`ed, and
 /// [`reply`] takes the typed [`Reply`] only `receive_request` returns (milestone 706).
 pub fn receive_cap(slot: u64) -> (u64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; RECEIVE_CAP reads no more than the three words used.
@@ -501,14 +501,14 @@ pub fn receive_request_bound(slot: u64) -> Result<Request, u64> {
 }
 
 /// `SEND_CAP` on the endpoint capability in `slot`: delegate a (possibly narrowed) copy of the
-/// capability in `cap_slot`, narrowed to `rights`, alongside the data word `w1`, and block until a
+/// capability in `capability_slot`, narrowed to `rights`, alongside the data word `w1`, and block until a
 /// receiver takes them. `0` or a positive ack on success; a negative `abi::Error`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify ... `send_capability`, ..." Refused `send_cap` (round 7's
 /// provisional name; capability is spelled out, calef, 2026-10-06).
-pub fn send_capability(slot: u64, cap_slot: u64, rights: u64, w1: u64) -> i64 {
+pub fn send_capability(slot: u64, capability_slot: u64, rights: u64, w1: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the endpoint, `GRANT` on the delegated capability,
     // and narrows it to `rights` before it delegates anything.
-    unsafe { invoke(slot, abi::rendezvous::SEND_CAP, cap_slot, rights, w1) }
+    unsafe { invoke(slot, abi::rendezvous::SEND_CAP, capability_slot, rights, w1) }
 }

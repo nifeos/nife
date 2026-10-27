@@ -26,7 +26,7 @@ The port is worth doing precisely because it finds where the abstraction leaked.
    once and generic over `F: PageFormat`, and `Aarch64` (4-level) and `Sv39` (3-level) each implement
    it. The walk is proved once; each format carries its own Kani proofs of index-in-bounds,
    address/permission separation, and the half split, so RISC-V paging inherits the same formal
-   verification aarch64 has. Base Sv39 has no device-memory PTE bit, so `CAP_DEVICE` rides in an RSW
+   verification aarch64 has. Base Sv39 has no device-memory PTE bit, so `ACCESS_DEVICE` rides in an RSW
    software bit to keep the round-trip exact. Portable code names the running format as
    `arch::mmu::Format`. aarch64 stayed green throughout (116 kernel tests, 37 paging host tests, both
    `cargo clippy` passes clean). The Sv39 format is defined and proved; wiring the RISC-V `mmu.rs` to
