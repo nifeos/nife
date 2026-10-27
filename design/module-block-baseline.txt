@@ -769,12 +769,9 @@ crates/credentialer/src/lib.rs::encode
 crates/credentialer/src/lib.rs::identity
 crates/credentialer/src/lib.rs::is_empty
 crates/credentialer/src/lib.rs::len
-crates/credentialer/src/lib.rs::m_kib
 crates/credentialer/src/lib.rs::new
 crates/credentialer/src/lib.rs::new
-crates/credentialer/src/lib.rs::p
 crates/credentialer/src/lib.rs::put
-crates/credentialer/src/lib.rs::t
 crates/credentialer/src/lib.rs::verify
 crates/current_cpu_contract/src/lib.rs::CPU_ID_BOUND
 crates/current_cpu_contract/src/lib.rs::CurrentCpuPage
@@ -1300,9 +1297,6 @@ crates/entropy_contract/src/lib.rs::req
 crates/entropy_contract/src/lib.rs::take
 crates/entropy_contract/src/lib.rs::want
 crates/environment_contract/src/lib.rs::ConfigPage
-crates/environment_contract/src/lib.rs::KNOWN_LANG
-crates/environment_contract/src/lib.rs::KNOWN_TERM
-crates/environment_contract/src/lib.rs::KNOWN_TZ
 crates/environment_contract/src/lib.rs::MAGIC
 crates/environment_contract/src/lib.rs::PAGE_BYTES
 crates/environment_contract/src/lib.rs::PageBuilder

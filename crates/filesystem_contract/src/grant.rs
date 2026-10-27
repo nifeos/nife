@@ -18,8 +18,7 @@ pub const WRITE: u64 = 1 << 1;
 /// shell opens itself. [`pack_name`] refuses rather than truncates, so nothing can put a long name in
 /// two words by mistake.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_NAME`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAME: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, eight per word. A

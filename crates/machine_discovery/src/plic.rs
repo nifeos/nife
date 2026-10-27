@@ -34,16 +34,14 @@ pub const COMPATIBLES: [&[u8]; 3] = [b"sifive,plic-1.0.0", b"riscv,plic0", b"the
 
 /// The most harts a context map records; matches [`crate::riscv64::MAXIMUM_HARTS`].
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CONTEXT_HARTS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CONTEXT_HARTS: usize = crate::riscv64::MAXIMUM_HARTS;
 
 /// The interrupt a PLIC raises into a hart's `riscv,cpu-intc` for **supervisor** external
 /// interrupts: `scause` 9. Its machine twin is 11; those are the only two that appear in a PLIC's
 /// `interrupts-extended`.
 ///
-/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq, awaiting a ruling. Linux
-/// calls this `IRQ_S_EXT`; the RISC-V specification calls cause 9 a supervisor external interrupt.
+/// Name: ratified 2026-10-27 (#2797). Linux calls this `IRQ_S_EXT`; the RISC-V specification calls cause 9 a supervisor external interrupt.
 #[doc(alias = "irq")]
 #[doc(alias = "IRQ_S_EXT")]
 pub const SUPERVISOR_EXTERNAL_INTERRUPT: u32 = 9;

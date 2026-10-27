@@ -443,8 +443,7 @@ pub const OFF_PAYLOAD: u64 = 0x008;
 
 /// The largest payload the frame carries (a 4 KiB frame minus the header).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `DATA_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const DATA_MAXIMUM: usize = 4096 - OFF_PAYLOAD as usize;
 
 /// The inbound gate's shared facts, for the four programs that must agree on them (rule 7). The

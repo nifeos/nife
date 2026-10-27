@@ -33,8 +33,7 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 ///   capability holders) is the structural fix.
 /// - The peak is a whole-boot high-water and cannot name the test that pushed it.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_THREADS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_THREADS: usize = 256;
 
 pub(super) struct IpcTables {

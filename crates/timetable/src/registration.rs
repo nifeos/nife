@@ -58,8 +58,7 @@ pub const EXITED: u64 = 1 << 63;
 pub const BODY: usize = 64;
 /// The most bytes a document, or a plan, can occupy.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `BODY_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const BODY_MAXIMUM: usize = PAGE_BYTES - BODY;
 
 /// **Replace the whole document.** The one operation §222 ruled on. Removing an entry is a replace

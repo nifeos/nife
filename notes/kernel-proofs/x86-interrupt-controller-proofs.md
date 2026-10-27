@@ -1,5 +1,7 @@
 # Two proofs in `kernel/src/arch/x86_64/interrupt_controller.rs` (milestone 304)
 
+*Name: ratified 2026-10-27 (#2797).*
+
 An appendix to [`notes/kernel-proofs.md`](../kernel-proofs.md), which states what is proved. These
 two came from milestone 304 (`cargo kani -p kernel` only ever compiled one architecture).
 

@@ -302,8 +302,7 @@ pub const RING_END: u64 = USED_OFF + 6 + 8 * LAYOUT_QSIZE as u64;
 pub const RING_BLOCK: u64 = 0x200;
 /// The most virtqueues the confinement drives per device (RX = queue 0, TX = queue 1 on a NIC).
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_QUEUES`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_QUEUES: u64 = 2;
 
 /// Queue `q`'s ring block base, relative to a region (driver DMA or shadow) base. Queue `q`'s

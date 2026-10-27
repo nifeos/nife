@@ -36,8 +36,7 @@ use machine_discovery::framebuffer::{Framebuffer, PixelOrder};
 /// NVMe driver leaves the kernel), when the 1:1 font on a 1920-wide monitor could not be read or
 /// photographed.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MIN_COLUMNS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MINIMUM_COLUMNS: u32 = 120;
 
 /// **Where a surface lands on a firmware screen**: the arithmetic a driver needs to copy a

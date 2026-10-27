@@ -24,8 +24,7 @@ pub(crate) const KEY_RIGHTCTRL: u16 = 97;
 
 /// The highest evdev code this table knows. Above it, [`byte`] answers `None`.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CODE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CODE: u16 = 57;
 
 /// What each key sends with no modifier, indexed by evdev code. `0` means "this key produces no

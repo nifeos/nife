@@ -35,8 +35,7 @@ use crate::jig_versions;
 /// `package_archive::NAME_LEN` (32) bytes each, with their slashes. A path is walked a component at
 /// a time, and a component longer than the shell can name fails there, loudly.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `PATH_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const PATH_MAXIMUM: usize = 10 + 3 * 32 + 2;
 
 /// An installed program's path, from the shell's root.

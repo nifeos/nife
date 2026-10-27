@@ -33,8 +33,7 @@ pub const MAGIC: [u8; 8] = *b"TIMEBAS1";
 /// kHz watch crystal on purpose. Anything under it is a failed measurement, not a slow part. See
 /// notes/benchmarks/counter-frequency-and-calibration.md, "The page and its bounds".
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MIN_PLAUSIBLE_HZ`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MINIMUM_PLAUSIBLE_HZ: u64 = 100_000;
 
 /// **The fastest counter this tree will believe**, 100 GHz, and the same reasoning as
@@ -43,8 +42,7 @@ pub const MINIMUM_PLAUSIBLE_HZ: u64 = 100_000;
 /// division that went the wrong way or a register that was never written. Generous by two orders of
 /// magnitude on purpose: this band exists to catch nonsense, not to police hardware.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_PLAUSIBLE_HZ`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_PLAUSIBLE_HZ: u64 = 100_000_000_000;
 
 /// Is `hz` a rate a real machine could plausibly have? See [`MINIMUM_PLAUSIBLE_HZ`] and

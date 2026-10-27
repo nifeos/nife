@@ -241,8 +241,7 @@ pub const TASK_BUDGET_PAGES: u64 = 1
 /// because every task in this pool is a **process**, with an address space and a loaded image
 /// behind it, where E1's were kernel threads; the memory, not the thread table, is what binds.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_TASKS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_TASKS: usize = 32;
 
 /// The subruns, in AIM7's sense: how many tasks are released for each measurement.

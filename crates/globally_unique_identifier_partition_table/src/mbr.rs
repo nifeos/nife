@@ -1,9 +1,11 @@
 use crate::{Error, MbrProblem, is_block_size_ok};
 
-/// The OS type byte that makes a record protective. Not a filesystem, a keep-out sign.
+/// The operating system type byte that makes a record protective. Not a filesystem, a keep-out
+/// sign. UEFI calls the field `OSType` in its legacy MBR partition record, and `0xEE` is the value
+/// it reserves for a protective MBR.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `PROTECTIVE_OS_TYPE`.
+/// Name: ratified 2026-10-27 (#2797).
+#[doc(alias = "OSType")]
 pub const PROTECTIVE_OPERATING_SYSTEM_TYPE: u8 = 0xEE;
 
 /// Where the four 16-byte partition records start.
@@ -12,7 +14,8 @@ const RECORDS: usize = 446;
 /// Where the `0x55AA` signature sits, in every MBR since 1983.
 const SIGNATURE: usize = 510;
 
-/// Field offsets inside one 16-byte record.
+/// Field offsets inside one 16-byte record. `OPERATING_SYSTEM_TYPE` is UEFI's `OSType` field.
+#[doc(alias = "OSType")]
 const OPERATING_SYSTEM_TYPE: usize = 4;
 const START_LBA: usize = 8;
 const SIZE_LBA: usize = 12;

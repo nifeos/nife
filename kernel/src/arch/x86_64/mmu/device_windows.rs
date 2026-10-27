@@ -35,7 +35,7 @@ pub const fn virtio_slots() -> u64 {
 }
 /// The interrupt the first virtio-mmio slot would raise. Unreachable with no slots.
 ///
-/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+/// Name: ratified 2026-10-27 (#2797).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[doc(alias = "irq")]
 pub const VIRTIO_INTERRUPT_NUMBER_BASE: u32 = 0;
@@ -57,7 +57,7 @@ pub const PCI_BAR_MAPPED: u64 = 0x20_0000;
 /// which this tree cannot interpret. The constant survives because portable code names it; `pci.rs`
 /// reaches it only when `alloc_msi_vector` answers `None`, which it never does here.
 ///
-/// Name: provisional, minted 2026-10-26 (UTC) by lane naming-sweep-irq.
+/// Name: ratified 2026-10-27 (#2797).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[doc(alias = "irq")]
 pub const PCI_INTERRUPT_NUMBER_BASE: u32 = 0;

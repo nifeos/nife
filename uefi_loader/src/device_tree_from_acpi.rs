@@ -40,15 +40,13 @@ use crate::device_tree_patch::{BEGIN_NODE, END, END_NODE, Error, HEADER_LEN, MAG
 /// The most cores this writes a `cpu@` node for. Sixteen, matching
 /// `machine_discovery::cpu_list::MAXIMUM_CPU_NODES`, which is what would read them back.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_CPUS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_CPUS: usize = 16;
 
 /// The most `/memory` nodes this writes. Sixteen, matching `kernel::memory`'s own
 /// `MAXIMUM_REGIONS`.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_RAM`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_RAM: usize = 16;
 
 /// The GIC distributor's register frame, which the architecture fixes at 64 KiB and the MADT never

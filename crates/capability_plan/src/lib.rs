@@ -37,8 +37,7 @@ pub const MAXIMUM_CAPS: usize = 8;
 /// **How many pages one component may declare.** [`MAXIMUM_CAPS`]'s twin, for the mapping half.
 /// Four, against the two that the widest manifest here asks for.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_MAPS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_MAPS: usize = 4;
 
 /// Which way a rendezvous points: the axis this crate adds over a program's manifest. A required
@@ -643,8 +642,7 @@ const fn str_eq(a: &str, b: &str) -> bool {
 /// because a supervisor managing more live components than it could ever endow one of with
 /// capabilities is not a shape this tree has.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_LIVE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_LIVE: usize = 8;
 
 /// **One component a supervisor is currently running**, as far as dependency-aware orchestration

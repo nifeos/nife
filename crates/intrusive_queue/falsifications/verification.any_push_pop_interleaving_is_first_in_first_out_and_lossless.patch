@@ -1,4 +1,4 @@
-Falsifies `intrusive_queue::verification::any_push_pop_interleaving_is_queue_ordered_and_lossless`.
+Falsifies `intrusive_queue::verification::any_push_pop_interleaving_is_first_in_first_out_and_lossless`.
 
 The defect: popping the last node leaves `tail` pointing at it. The line that clears it reads as
 tidying, because `head` is what `is_empty` and `pop_front` consult and it is already correct;

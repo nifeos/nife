@@ -953,7 +953,7 @@ fn a_1920x1080_screen_is_covered_entirely_at_scale_two() {
     let terminal = Aperture::new(
         &found,
         video_terminal::CELL_W,
-        (video_terminal::MAXIMUM_COLS as u32) * video_terminal::CELL_W,
+        (video_terminal::MAXIMUM_COLUMNS as u32) * video_terminal::CELL_W,
         u32::MAX,
     )
     .expect("xenon's screen");

@@ -121,14 +121,14 @@ same code the kernel and the host run. The component asserts its own geometry at
 a screen too wide is a build error. A requested geometry is clamped rather than refused: the
 alternative in a `no_std` component is a panic in a process that cannot report one.
 
-`MAXIMUM_COLS` is 240. The terminal on a firmware screen fills it at
+`MAXIMUM_COLUMNS` is 240. The terminal on a firmware screen fills it at
 `screen_console::ScreenConsole::scale_for_cell`'s scale, and that rule never gives a screen
 `2 * screen_console::MINIMUM_COLUMNS` (240) columns or more. QEMU's 1280x800 OVMF screen is 91
 columns and xenon's 1920x1080 is 137. The virtio-gpu scanout lays out 80 by 24, the floor milestone
 142 (a text display good enough that people use it instead of a GUI) sets; at the 14x26 cell its
 1120x624 scanout is exactly the grid.
 
-`MAXIMUM_CELLS` is a budget rather than `MAXIMUM_COLS * MAXIMUM_ROWS`, because the grid is stored at
+`MAXIMUM_CELLS` is a budget rather than `MAXIMUM_COLUMNS * MAXIMUM_ROWS`, because the grid is stored at
 its own width. 9,600 holds every screen this tree drives with room; xenon's 137x41 is 5,617. So 240
 columns get 40 rows, and 150 rows need 64 columns or fewer. The cost is paid once per terminal
 instance from that program's own region: the kernel's `user::load` sizes a process's region from

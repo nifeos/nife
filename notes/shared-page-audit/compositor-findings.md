@@ -33,7 +33,7 @@ party in this direction, and it publishes correct geometry and always sends a co
 latent, in a test witness program, and they are recorded because a bounds check that its own
 arithmetic can defeat is worth naming wherever it appears.
 
-`display_terminal.rs` validates the same geometry by division (`w / GLYPH_W <= MAXIMUM_COLS`), which
+`display_terminal.rs` validates the same geometry by division (`w / GLYPH_W <= MAXIMUM_COLUMNS`), which
 cannot overflow. That is the shape to copy.
 
 Disposition: fixed in this lane, both, because each is one line and neither can change behavior

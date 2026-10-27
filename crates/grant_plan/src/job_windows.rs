@@ -19,8 +19,7 @@
 /// The most windows a pool can track. The file service's pool has seven
 /// (`login_contract::DURABLE_WINDOW` is the last), so this is room, not a target.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_WINDOWS`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_WINDOWS: usize = 16;
 
 /// **A job's label**: the badge the progenitor puts on the job's supervision capability, which the
@@ -116,8 +115,7 @@ impl Windows {
 /// How many finished jobs [`ReapsDue`] tracks. A full table only stops the progenitor waiting for
 /// the reaps it could not record, so this bounds a liveness improvement, not a safety rule.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `MAX_DUE`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_DUE: usize = 8;
 
 /// **The finished jobs whose reap is on its way** (milestone 685): jobs whose whole answer went to

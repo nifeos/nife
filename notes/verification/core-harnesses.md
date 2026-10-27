@@ -197,7 +197,7 @@ queue structure (milestone 14 phase A.2; see notes/intrusive-queues.md):
 
 | Harness | Property |
 |---|---|
-| `any_push_pop_interleaving_is_queue_ordered_and_lossless` | the real `Queue`, driven by a six-step *symbolic* operation sequence over three nodes, agrees with a trivially-correct model at every step: FIFO order, no node lost or invented, lengths agree, and no stale link is dereferenced |
+| `any_push_pop_interleaving_is_first_in_first_out_and_lossless` | the real `Queue`, driven by a six-step *symbolic* operation sequence over three nodes, agrees with a trivially-correct model at every step: FIFO order, no node lost or invented, lengths agree, and no stale link is dereferenced |
 
 One harness rather than several, because the operation-sequence shape subsumes the single-step
 properties: a push-preserves-X proof is the sequence of length one.

@@ -11,15 +11,13 @@ use crate::output::Sink;
 
 /// The longest line the discipline will assemble. Longer input is refused with a bell.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `LINE_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const LINE_MAXIMUM: usize = 256;
 /// How many history entries the ring holds.
 pub const HIST: usize = 8;
 /// The longest prompt the discipline will repaint. Longer prompts are truncated.
 ///
-/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
-/// 2026-10-26 (UTC), renamed from `PROMPT_MAX`.
+/// Name: ratified 2026-10-27 (#2797).
 pub const PROMPT_MAXIMUM: usize = 64;
 
 const BS: u8 = 0x08;
