@@ -223,7 +223,10 @@ impl<'v, D: SectorDevice> FileReader<'v, D> {
         let boot = *self.volume.boot_sector();
         let sector_bytes = boot.sector_size().bytes();
         let mut filled = 0;
-        while filled < buffer.len() {
+        // Every span holds at least one byte, so `buffer.len()` passes are enough, and a request
+        // for zero bytes (the buffer is full) ends the loop. The bound keeps a cursor that
+        // returned an empty span from spinning here.
+        for _ in 0..buffer.len() {
             let Some(span) = self
                 .cursor
                 .next_span(self.volume, &boot, buffer.len() - filled)?

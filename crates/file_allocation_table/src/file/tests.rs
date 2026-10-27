@@ -150,7 +150,10 @@ fn a_looping_chain_ends_with_the_walks_bound() {
     let mut reads = 0;
     let error = loop {
         match file.read(&mut buffer) {
-            Ok(512) => reads += 1,
+            Ok(512) => {
+                reads += 1;
+                assert!(reads <= 350, "a walk of 350 clusters read more");
+            }
             Ok(other) => panic!("a short read of {other}"),
             Err(error) => break error,
         }
