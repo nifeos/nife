@@ -10,7 +10,7 @@
 use crate::host::{Host, Registers};
 use crate::idmac::DirectMemoryAccessRegion;
 use crate::partition::Mbr;
-use crate::sd::{self, BLOCK, Card, InitError, IoError};
+use crate::sd::{self, BLOCK, Card, InitializationError, IoError};
 
 /// How many sectors the write test uses at most: 4 KiB, one multi-block command each way.
 pub const SCRATCH_SECTORS: u32 = 8;
@@ -39,7 +39,7 @@ pub struct ReadReport {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReadFailure {
     /// Identification failed.
-    Init(InitError),
+    Initialization(InitializationError),
     /// A read failed: the block and the error.
     Read(u64, IoError),
 }
@@ -56,7 +56,7 @@ pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
     buf: &mut [u8],
     timed_blocks: u64,
 ) -> Result<ReadReport, ReadFailure> {
-    let card = sd::identify(host, bus_width).map_err(ReadFailure::Init)?;
+    let card = sd::identify(host, bus_width).map_err(ReadFailure::Initialization)?;
     let mut sector = [0u8; BLOCK];
     sd::read_blocks(host, &card, 0, &mut sector).map_err(|e| ReadFailure::Read(0, e))?;
     let mbr = Mbr::parse(&sector);
@@ -274,9 +274,9 @@ impl<R: Registers> Watch<R> {
 impl<R: Registers> Registers for Watch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
-        if offset == crate::regs::STATUS {
-            self.max_fill = self.max_fill.max(crate::regs::fifo_count(v));
-            if v & crate::regs::STATUS_FIFO_FULL != 0 {
+        if offset == crate::registers::STATUS {
+            self.max_fill = self.max_fill.max(crate::registers::fifo_count(v));
+            if v & crate::registers::STATUS_FIFO_FULL != 0 {
                 self.full_reads += 1;
             }
         }
@@ -337,11 +337,13 @@ pub fn read_matrix<R: Registers>(
     lba: u64,
     buf: &mut [u8],
     mut row: impl FnMut(MatrixRow),
-) -> Result<(), InitError> {
+) -> Result<(), InitializationError> {
     for &hz in &MATRIX_HZ {
         for &blocks in &MATRIX_BLOCKS {
             let card = sd::identify(host, bus_width)?;
-            let card_hz = host.set_clock(hz).map_err(InitError::Controller)?;
+            let card_hz = host
+                .set_clock(hz)
+                .map_err(InitializationError::Controller)?;
             let len = blocks as usize * BLOCK;
             let Some(dst) = buf.get_mut(..len) else {
                 continue;
@@ -350,12 +352,12 @@ pub fn read_matrix<R: Registers>(
             let start = host.registers().now_us();
             let result = sd::read_blocks(host, &card, lba, dst);
             let us = host.registers().now_us().wrapping_sub(start);
-            let r = host.registers();
+            let watch = host.registers();
             let after = [
-                r.inner.read(crate::regs::STATUS),
-                r.inner.read(crate::regs::RINTSTS),
-                r.inner.read(crate::regs::TCBCNT),
-                r.inner.read(crate::regs::TBBCNT),
+                watch.inner.read(crate::registers::STATUS),
+                watch.inner.read(crate::registers::RINTSTS),
+                watch.inner.read(crate::registers::TCBCNT),
+                watch.inner.read(crate::registers::TBBCNT),
             ];
             row(MatrixRow {
                 asked_hz: hz,
@@ -363,8 +365,8 @@ pub fn read_matrix<R: Registers>(
                 blocks,
                 result,
                 us,
-                max_fill: r.max_fill,
-                full_reads: r.full_reads,
+                max_fill: watch.max_fill,
+                full_reads: watch.full_reads,
                 after,
             });
         }

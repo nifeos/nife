@@ -14,7 +14,7 @@ use std::vec::Vec;
 
 use crate::host::Registers;
 use crate::idmac::{DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DirectMemoryAccessRegion};
-use crate::regs;
+use crate::registers;
 
 /// What the bus holds and what has been ordered: the driver's writes since its last barrier, and
 /// the device's.
@@ -156,7 +156,7 @@ struct Transfer {
 
 /// The simulation. Public fields are what a test sets up or checks.
 pub struct Sim {
-    regs: [u32; 0x220 / 4],
+    registers: [u32; 0x220 / 4],
     reset_pending: bool,
     now: u64,
     fifo: VecDeque<u32>,
@@ -246,11 +246,11 @@ pub struct Sim {
     walked: u32,
     /// The IDMAC moves at most this many words each time the sim advances: a slow bus, which lets
     /// a read's `DTO` land well before its last words reach memory.
-    pub dma_words_per_step: Option<usize>,
+    pub direct_memory_access_words_per_step: Option<usize>,
     /// The IDMAC flips bit 0 of every word it writes to memory: a bus that corrupts.
-    pub dma_corrupts: bool,
+    pub direct_memory_access_corrupts: bool,
     /// The direction of the last data command: the way the IDMAC moves words.
-    dma_write: bool,
+    direct_memory_access_write: bool,
 }
 
 /// The `VERID` the simulation reports: release 2.90a, which puts the FIFO at `0x200`.
@@ -263,7 +263,7 @@ impl Sim {
     #[must_use]
     pub fn new(kind: CardKind, blocks: usize, depth: usize) -> Sim {
         let mut s = Sim {
-            regs: [0; 0x220 / 4],
+            registers: [0; 0x220 / 4],
             reset_pending: false,
             now: 0,
             fifo: VecDeque::new(),
@@ -312,16 +312,16 @@ impl Sim {
             ctrl_resets_cleared: None,
             bmod_resets_cleared: None,
             walked: 0,
-            dma_words_per_step: None,
-            dma_corrupts: false,
-            dma_write: false,
+            direct_memory_access_words_per_step: None,
+            direct_memory_access_corrupts: false,
+            direct_memory_access_write: false,
         };
-        s.regs[(regs::VERID / 4) as usize] = VERID;
-        s.regs[(regs::HCON / 4) as usize] = HCON;
+        s.registers[(registers::VERID / 4) as usize] = VERID;
+        s.registers[(registers::HCON / 4) as usize] = HCON;
         // FIFOTH's reset value carries depth - 1 as the receive watermark.
-        s.regs[(regs::FIFOTH / 4) as usize] = ((depth as u32 - 1) & 0xfff) << 16;
+        s.registers[(registers::FIFOTH / 4) as usize] = ((depth as u32 - 1) & 0xfff) << 16;
         // A card is present (active low).
-        s.regs[(regs::CDETECT / 4) as usize] = u32::from(kind == CardKind::Empty);
+        s.registers[(registers::CDETECT / 4) as usize] = u32::from(kind == CardKind::Empty);
         s
     }
 
@@ -330,7 +330,7 @@ impl Sim {
     #[must_use]
     pub(crate) fn with_verid(mut self, verid: u32) -> Sim {
         self.verid = verid;
-        self.regs[(regs::VERID / 4) as usize] = verid;
+        self.registers[(registers::VERID / 4) as usize] = verid;
         self
     }
 
@@ -343,11 +343,11 @@ impl Sim {
     /// A register's value as the driver last left it, without the side effects of a read.
     #[must_use]
     pub fn peek(&self, offset: u32) -> u32 {
-        self.regs[(offset / 4) as usize]
+        self.registers[(offset / 4) as usize]
     }
 
-    fn reg(&mut self, offset: u32) -> &mut u32 {
-        &mut self.regs[(offset / 4) as usize]
+    fn register(&mut self, offset: u32) -> &mut u32 {
+        &mut self.registers[(offset / 4) as usize]
     }
 
     fn high_capacity(&self) -> bool {
@@ -484,9 +484,9 @@ impl Sim {
 
     fn command(&mut self, word: u32) {
         let index = (word & 0x3f) as u8;
-        let arg = *self.reg(regs::CMDARG);
+        let arg = *self.register(registers::CMDARG);
         self.commands.push((index, arg));
-        if *self.reg(regs::CLKENA) & regs::CLKENA_ENABLE == 0 {
+        if *self.register(registers::CLKENA) & registers::CLKENA_ENABLE == 0 {
             self.clockless_command = true;
         }
         let nth = self.seen[usize::from(index)];
@@ -508,11 +508,11 @@ impl Sim {
                 _ => {}
             }
         }
-        let mut rint = regs::INT_CD;
+        let mut rint = registers::INT_CD;
         match answer {
-            None if word & regs::CMD_RESPONSE_EXPECT != 0 => rint |= regs::INT_RTO,
+            None if word & registers::CMD_RESPONSE_EXPECT != 0 => rint |= registers::INT_RTO,
             None => {}
-            Some(_) if fault == Some(Fault::BadCrc) => rint |= regs::INT_RCRC,
+            Some(_) if fault == Some(Fault::BadCrc) => rint |= registers::INT_RCRC,
             Some(_) => {}
         }
         if self.late_answer > 0 {
@@ -520,10 +520,10 @@ impl Sim {
         } else {
             self.land(rint, answer);
         }
-        if answer.is_some() && word & regs::CMD_DATA_EXPECTED != 0 {
-            let bytes = *self.reg(regs::BYTCNT) as usize;
-            let write = word & regs::CMD_WRITE != 0;
-            self.dma_write = write;
+        if answer.is_some() && word & registers::CMD_DATA_EXPECTED != 0 {
+            let bytes = *self.register(registers::BYTCNT) as usize;
+            let write = word & registers::CMD_WRITE != 0;
+            self.direct_memory_access_write = write;
             if self.idmac_active()
                 && let Some(m) = &self.memory
                 && m.bus().cpu_unfenced
@@ -536,7 +536,7 @@ impl Sim {
                 first_lba: if ext_csd { 0 } else { self.lba(arg) },
                 bytes,
                 moved: 0,
-                auto_stop: word & regs::CMD_SEND_AUTO_STOP != 0,
+                auto_stop: word & registers::CMD_SEND_AUTO_STOP != 0,
                 buffer: Vec::new(),
                 ext_csd,
             };
@@ -561,12 +561,12 @@ impl Sim {
 
     fn land(&mut self, rint: u32, answer: Option<[u32; 4]>) {
         if let Some(r) = answer {
-            *self.reg(regs::RESP0) = r[0];
-            *self.reg(regs::RESP1) = r[1];
-            *self.reg(regs::RESP2) = r[2];
-            *self.reg(regs::RESP3) = r[3];
+            *self.register(registers::RESP0) = r[0];
+            *self.register(registers::RESP1) = r[1];
+            *self.register(registers::RESP2) = r[2];
+            *self.register(registers::RESP3) = r[3];
         }
-        *self.reg(regs::RINTSTS) |= rint;
+        *self.register(registers::RINTSTS) |= rint;
     }
 
     /// Advance the data phase: fill or drain the FIFO, and end it when every byte has moved.
@@ -609,16 +609,16 @@ impl Sim {
                 self.end(&t);
                 return;
             }
-            *self.reg(regs::RINTSTS) |= regs::INT_TXDR;
+            *self.register(registers::RINTSTS) |= registers::INT_TXDR;
         } else {
             if self.threshold_beyond_fifo() {
                 // What radon answered (`RINTSTS 0x080c` with `CD`): the block ends, overrun.
-                *self.reg(regs::RINTSTS) |= regs::INT_FRUN | regs::INT_DTO;
+                *self.register(registers::RINTSTS) |= registers::INT_FRUN | registers::INT_DTO;
                 return;
             }
             if self.fail_next_read_crc && !t.ext_csd {
                 self.fail_next_read_crc = false;
-                *self.reg(regs::RINTSTS) |= regs::INT_DCRC | regs::INT_DTO;
+                *self.register(registers::RINTSTS) |= registers::INT_DCRC | registers::INT_DTO;
                 return;
             }
             let limit = self.stall_after.unwrap_or(usize::MAX);
@@ -629,12 +629,12 @@ impl Sim {
                 t.moved += 4;
             }
             let watermark = if self.strict_watermark {
-                regs::fifoth_rx_watermark(*self.reg(regs::FIFOTH)) as usize
+                registers::fifoth_rx_watermark(*self.register(registers::FIFOTH)) as usize
             } else {
                 0
             };
             if self.fifo.len() > watermark {
-                *self.reg(regs::RINTSTS) |= regs::INT_RXDR;
+                *self.register(registers::RINTSTS) |= registers::INT_RXDR;
             }
             if t.moved >= t.bytes || (self.end_early && t.moved >= limit) {
                 self.end(&t);
@@ -645,9 +645,9 @@ impl Sim {
     }
 
     fn idmac_active(&self) -> bool {
-        let both = regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE;
-        self.peek(regs::CTRL) & both == both
-            && self.peek(regs::BMOD) & regs::BMOD_DMA_ENABLE != 0
+        let both = registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
+        self.peek(registers::CTRL) & both == both
+            && self.peek(registers::BMOD) & registers::BMOD_DMA_ENABLE != 0
             && self.memory.is_some()
     }
 
@@ -661,13 +661,15 @@ impl Sim {
             return;
         };
         let mut bus = memory.bus();
-        let mut budget = self.dma_words_per_step.unwrap_or(usize::MAX);
+        let mut budget = self
+            .direct_memory_access_words_per_step
+            .unwrap_or(usize::MAX);
         loop {
             if budget == 0 {
                 return;
             }
             budget -= 1;
-            let more = if self.dma_write {
+            let more = if self.direct_memory_access_write {
                 self.fifo.len() < self.depth
             } else {
                 !self.fifo.is_empty()
@@ -676,7 +678,7 @@ impl Sim {
                 return;
             }
             let (desc, done) = match self.walk {
-                Walk::Idle => (self.peek(regs::DBADDR), 0),
+                Walk::Idle => (self.peek(registers::DBADDR), 0),
                 Walk::At(d, n) => (d, n),
                 Walk::Suspended(_) | Walk::Halted | Walk::Finished => return,
             };
@@ -691,7 +693,7 @@ impl Sim {
             let (des0, size, buffer, next) = (word(0), word(1) & DES1_BS1_MASK, word(2), word(3));
             if des0 & DES0_OWN == 0 || done == 0 && self.unowned_at == Some(self.walked) {
                 self.walk = Walk::Suspended(desc);
-                *self.reg(regs::IDSTS) |= regs::IDSTS_DU | regs::IDSTS_AIS;
+                *self.register(registers::IDSTS) |= registers::IDSTS_DU | registers::IDSTS_AIS;
                 return;
             }
             if done == 0 && self.bus_error_at == Some(self.walked) {
@@ -702,12 +704,12 @@ impl Sim {
                 self.halt();
                 return;
             };
-            if self.dma_write {
+            if self.direct_memory_access_write {
                 let b = &bus.bytes[buf..buf + 4];
                 self.fifo
                     .push_back(u32::from_le_bytes([b[0], b[1], b[2], b[3]]));
             } else if let Some(w) = self.fifo.pop_front() {
-                let w = w ^ u32::from(self.dma_corrupts);
+                let w = w ^ u32::from(self.direct_memory_access_corrupts);
                 bus.bytes[buf..buf + 4].copy_from_slice(&w.to_le_bytes());
                 bus.device_unfenced = true;
                 bus.device_written += 4;
@@ -721,12 +723,12 @@ impl Sim {
             bus.device_unfenced = true;
             self.walked += 1;
             if des0 & DES0_DIC == 0 {
-                let finished = if self.dma_write {
-                    regs::IDSTS_TI
+                let finished = if self.direct_memory_access_write {
+                    registers::IDSTS_TI
                 } else {
-                    regs::IDSTS_RI
+                    registers::IDSTS_RI
                 };
-                *self.reg(regs::IDSTS) |= finished | regs::IDSTS_NIS;
+                *self.register(registers::IDSTS) |= finished | registers::IDSTS_NIS;
             }
             self.walk = if des0 & DES0_LD != 0 {
                 Walk::Finished
@@ -758,61 +760,61 @@ impl Sim {
 
     fn halt(&mut self) {
         self.walk = Walk::Halted;
-        *self.reg(regs::IDSTS) |= regs::IDSTS_FBE | regs::IDSTS_AIS;
+        *self.register(registers::IDSTS) |= registers::IDSTS_FBE | registers::IDSTS_AIS;
     }
 
     /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
     /// allow and Linux's `dw_mci_ctrl_thld` refuses to program.
     fn threshold_beyond_fifo(&self) -> bool {
-        if regs::fifo_offset(self.verid) == regs::CARDTHRCTL {
+        if registers::fifo_offset(self.verid) == registers::CARDTHRCTL {
             return false;
         }
-        let t = self.peek(regs::CARDTHRCTL);
-        t & regs::CARDTHRCTL_READ_ENABLE != 0 && (t >> 16) & 0xfff > self.depth as u32 * 4
+        let t = self.peek(registers::CARDTHRCTL);
+        t & registers::CARDTHRCTL_READ_ENABLE != 0 && (t >> 16) & 0xfff > self.depth as u32 * 4
     }
 
     fn end(&mut self, t: &Transfer) {
         if t.write && self.crc_error_at_end {
-            *self.reg(regs::RINTSTS) |= regs::INT_DCRC;
+            *self.register(registers::RINTSTS) |= registers::INT_DCRC;
             return;
         }
-        let mut rint = regs::INT_DTO;
+        let mut rint = registers::INT_DTO;
         if t.auto_stop {
             self.commands.push((12, 0));
             if self.late_acd > 0 {
                 self.acd_pending = self.late_acd;
             } else {
-                rint |= regs::INT_ACD;
+                rint |= registers::INT_ACD;
             }
         }
-        *self.reg(regs::RINTSTS) |= rint;
+        *self.register(registers::RINTSTS) |= rint;
     }
 }
 
 impl Registers for Sim {
     fn read(&mut self, offset: u32) -> u32 {
-        let fifo = regs::fifo_offset(self.verid);
+        let fifo = registers::fifo_offset(self.verid);
         if offset == fifo {
             let w = self.fifo.pop_front().unwrap_or(0xdead_dead);
             self.pump();
             return w;
         }
         match offset {
-            regs::CTRL if self.reset_pending => {
+            registers::CTRL if self.reset_pending => {
                 // The bits read as set once, then clear: the driver must poll, not assume.
                 self.reset_pending = false;
-                let v = *self.reg(regs::CTRL);
-                *self.reg(regs::CTRL) &= !regs::CTRL_ALL_RESET;
+                let v = *self.register(registers::CTRL);
+                *self.register(registers::CTRL) &= !registers::CTRL_ALL_RESET;
                 v
             }
-            regs::BMOD if self.peek(regs::BMOD) & regs::BMOD_SOFTWARE_RESET != 0 => {
-                let v = self.peek(regs::BMOD);
+            registers::BMOD if self.peek(registers::BMOD) & registers::BMOD_SOFTWARE_RESET != 0 => {
+                let v = self.peek(registers::BMOD);
                 if !self.reset_stuck && !Self::holds(&mut self.bmod_resets_cleared) {
-                    *self.reg(regs::BMOD) &= !regs::BMOD_SOFTWARE_RESET;
+                    *self.register(registers::BMOD) &= !registers::BMOD_SOFTWARE_RESET;
                 }
                 v
             }
-            regs::STATUS => {
+            registers::STATUS => {
                 self.pump();
                 let filled = if self.overreport_fill {
                     self.depth
@@ -821,14 +823,14 @@ impl Registers for Sim {
                 };
                 let mut s = (filled as u32) << 17;
                 if self.busy_forever {
-                    s |= regs::STATUS_DATA_BUSY;
+                    s |= registers::STATUS_DATA_BUSY;
                 } else if self.busy_reads > 0 {
                     self.busy_reads -= 1;
-                    s |= regs::STATUS_DATA_BUSY;
+                    s |= registers::STATUS_DATA_BUSY;
                 }
                 s
             }
-            regs::RINTSTS => {
+            registers::RINTSTS => {
                 if let Some((rint, answer, polls)) = self.answer_pending {
                     if polls <= 1 {
                         self.answer_pending = None;
@@ -840,18 +842,18 @@ impl Registers for Sim {
                 if self.acd_pending > 0 {
                     self.acd_pending -= 1;
                     if self.acd_pending == 0 {
-                        *self.reg(regs::RINTSTS) |= regs::INT_ACD;
+                        *self.register(registers::RINTSTS) |= registers::INT_ACD;
                     }
                 }
                 self.pump();
-                *self.reg(regs::RINTSTS)
+                *self.register(registers::RINTSTS)
             }
-            _ => *self.reg(offset),
+            _ => *self.register(offset),
         }
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        let fifo = regs::fifo_offset(self.verid);
+        let fifo = registers::fifo_offset(self.verid);
         if offset == fifo {
             if !self.transfer.as_ref().is_some_and(|t| t.write) {
                 self.stray_fifo_write = true;
@@ -865,56 +867,58 @@ impl Registers for Sim {
         }
         self.writes.push((offset, value));
         match offset {
-            regs::RINTSTS => *self.reg(regs::RINTSTS) &= !value,
-            regs::IDSTS => *self.reg(regs::IDSTS) &= !value,
-            regs::BMOD => {
-                if value & regs::BMOD_SOFTWARE_RESET != 0
-                    || value & regs::BMOD_DMA_ENABLE & !self.peek(regs::BMOD) != 0
+            registers::RINTSTS => *self.register(registers::RINTSTS) &= !value,
+            registers::IDSTS => *self.register(registers::IDSTS) &= !value,
+            registers::BMOD => {
+                if value & registers::BMOD_SOFTWARE_RESET != 0
+                    || value & registers::BMOD_DMA_ENABLE & !self.peek(registers::BMOD) != 0
                 {
                     self.walk = Walk::Idle;
                     self.walked = 0;
                 }
-                *self.reg(regs::BMOD) = value;
+                *self.register(registers::BMOD) = value;
             }
-            regs::DBADDR => {
+            registers::DBADDR => {
                 self.walk = Walk::Idle;
                 self.walked = 0;
-                *self.reg(regs::DBADDR) = value;
+                *self.register(registers::DBADDR) = value;
             }
-            regs::PLDMND => {
+            registers::PLDMND => {
                 if let Walk::Suspended(d) = self.walk {
                     self.walk = Walk::At(d, 0);
                 }
             }
-            regs::CTRL => {
-                if value & regs::CTRL_DMA_RESET != 0 {
+            registers::CTRL => {
+                if value & registers::CTRL_DMA_RESET != 0 {
                     self.walk = Walk::Idle;
                 }
-                if value & regs::CTRL_ALL_RESET != 0 {
+                if value & registers::CTRL_ALL_RESET != 0 {
                     self.reset_pending =
                         !self.reset_stuck && !Self::holds(&mut self.ctrl_resets_cleared);
-                    if value & regs::CTRL_FIFO_RESET != 0 {
+                    if value & registers::CTRL_FIFO_RESET != 0 {
                         self.fifo.clear();
                     }
-                    if value & regs::CTRL_CONTROLLER_RESET != 0 {
+                    if value & registers::CTRL_CONTROLLER_RESET != 0 {
                         self.transfer = None;
                     }
                 }
-                *self.reg(regs::CTRL) = value;
+                *self.register(registers::CTRL) = value;
             }
-            regs::CMD => {
-                if value & regs::CMD_START != 0 && value & regs::CMD_UPDATE_CLOCK_ONLY == 0 {
+            registers::CMD => {
+                if value & registers::CMD_START != 0
+                    && value & registers::CMD_UPDATE_CLOCK_ONLY == 0
+                {
                     self.command(value);
                 }
-                let stuck = self.clock_stuck && value & regs::CMD_UPDATE_CLOCK_ONLY != 0;
-                *self.reg(regs::CMD) = if stuck {
+                let stuck = self.clock_stuck && value & registers::CMD_UPDATE_CLOCK_ONLY != 0;
+                *self.register(registers::CMD) = if stuck {
                     value
                 } else {
-                    value & !regs::CMD_START
+                    value & !registers::CMD_START
                 };
             }
-            regs::VERID | regs::HCON | regs::STATUS => {}
-            _ => *self.reg(offset) = value,
+            registers::VERID | registers::HCON | registers::STATUS => {}
+            _ => *self.register(offset) = value,
         }
     }
 

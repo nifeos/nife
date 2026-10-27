@@ -33,8 +33,8 @@ device tree, then identify the card and move whole 512-byte blocks:
 use designware_mobile_storage::host::{Host, Registers};
 use designware_mobile_storage::sd;
 
-fn first_sector<R: Registers>(regs: R) -> Option<[u8; 512]> {
-    let (mut host, _id) = Host::new(regs, 50_000_000, Some(32)).ok()?;
+fn first_sector<R: Registers>(registers: R) -> Option<[u8; 512]> {
+    let (mut host, _id) = Host::new(registers, 50_000_000, Some(32)).ok()?;
     let card = sd::identify(&mut host, 4).ok()?; // at most a 4-bit bus
     let mut buf = [0u8; 512];
     sd::read_blocks(&mut host, &card, 0, &mut buf).ok()?;

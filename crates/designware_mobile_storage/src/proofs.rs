@@ -44,7 +44,7 @@ fn a_fifo_step_never_overruns_the_fifo_or_the_buffer() {
     let n = fifo_step(status, depth, write, remaining);
     assert!(n <= remaining);
     assert!(n <= depth * 4);
-    let filled = crate::regs::fifo_count(status);
+    let filled = crate::registers::fifo_count(status);
     if write && filled <= depth {
         assert!(n <= (depth - filled) * 4);
     }

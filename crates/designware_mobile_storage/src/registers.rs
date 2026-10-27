@@ -4,6 +4,9 @@
 //!
 //! Only the first page matters to this driver: every register it touches, and the data FIFO, sit
 //! below `0x1000`. The JH7110's window is `0x1_0000`, the rest of it unused by anything here.
+//!
+//! Name: provisional. Ruled 2026-10-26 (UTC): every `regs` module this tree names becomes
+//! `registers`, and the constants inside keep the databook's names; was `regs`.
 
 /// Control: the three self-clearing resets, the interrupt and DMA enables.
 pub const CTRL: u32 = 0x000;
@@ -159,7 +162,7 @@ pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
 /// of a block or overruns the FIFO. The receive watermark is one burst less one word, so a burst
 /// is ready whenever the IDMAC is asked for one. Depth 32 gives bursts of 16.
 #[must_use]
-pub(crate) fn fifoth_for_dma(depth: u32) -> u32 {
+pub(crate) fn fifoth_for_direct_memory_access(depth: u32) -> u32 {
     const BURSTS: [u32; 8] = [1, 4, 8, 16, 32, 64, 128, 256];
     let tx = depth / 2;
     let free = depth - tx;
@@ -284,8 +287,11 @@ pub const fn fifo_width(hcon: u32) -> Option<u32> {
 
 /// **Does the IDMAC use 64-bit addresses?** `HCON` bit 27. Changes the layout of every register
 /// from `0x88` up and doubles the descriptor, so the IDMAC path refuses it; radon's is clear.
+///
+/// Name: provisional. Ruled 2026-10-26 (UTC): `dma` is spelled out wherever this tree authors it;
+/// was `dma_64bit`, which also did not read as the question it answers.
 #[must_use]
-pub const fn dma_64bit(hcon: u32) -> bool {
+pub const fn uses_64_bit_direct_memory_access(hcon: u32) -> bool {
     hcon & (1 << 27) != 0
 }
 
@@ -294,7 +300,7 @@ pub const fn dma_64bit(hcon: u32) -> bool {
 /// controller that reads 0 here, which is how Linux's `dw_mci_probe` decides to use it. radon
 /// reads 0, and its firmware reads the card through the IDMAC (`CTRL` bit 25 as it hands over).
 #[must_use]
-pub(crate) const fn dma_interface(hcon: u32) -> u32 {
+pub(crate) const fn direct_memory_access_interface(hcon: u32) -> u32 {
     (hcon >> 16) & 0x3
 }
 
@@ -315,13 +321,13 @@ mod tests {
         }
         // Bits outside 9:7 do not leak into the width.
         assert_eq!(fifo_width(!(7 << 7) | (1 << 7)), Some(4));
-        assert!(dma_64bit(1 << 27));
-        assert!(!dma_64bit(!(1 << 27)));
+        assert!(uses_64_bit_direct_memory_access(1 << 27));
+        assert!(!uses_64_bit_direct_memory_access(!(1 << 27)));
         // radon's word, read on both slots: no external DMA interface, so an IDMAC, and 32-bit
         // descriptor addresses.
-        assert_eq!(dma_interface(0x00c4_3cc1), 0);
-        assert!(!dma_64bit(0x00c4_3cc1));
-        assert_eq!(dma_interface(3 << 16), 3);
+        assert_eq!(direct_memory_access_interface(0x00c4_3cc1), 0);
+        assert!(!uses_64_bit_direct_memory_access(0x00c4_3cc1));
+        assert_eq!(direct_memory_access_interface(3 << 16), 3);
     }
 
     /// The burst field is an encoding, not a count, and the IDMAC moves a burst at a time: a burst
@@ -329,12 +335,24 @@ mod tests {
     /// leaves a free half of 24, which 16 does not divide.
     #[test]
     fn the_dma_burst_divides_a_block_and_the_free_half_of_the_fifo() {
-        assert_eq!(fifoth_for_dma(32), (3 << 28) | (15 << 16) | 16);
-        assert_eq!(fifoth_for_dma(48), (2 << 28) | (7 << 16) | 24);
-        assert_eq!(fifoth_for_dma(128), (5 << 28) | (63 << 16) | 64);
-        assert_eq!(fifoth_for_dma(1), 0);
+        assert_eq!(
+            fifoth_for_direct_memory_access(32),
+            (3 << 28) | (15 << 16) | 16
+        );
+        assert_eq!(
+            fifoth_for_direct_memory_access(48),
+            (2 << 28) | (7 << 16) | 24
+        );
+        assert_eq!(
+            fifoth_for_direct_memory_access(128),
+            (5 << 28) | (63 << 16) | 64
+        );
+        assert_eq!(fifoth_for_direct_memory_access(1), 0);
         // An odd depth leaves a free half one word larger than the transmit watermark: 4 of 7.
-        assert_eq!(fifoth_for_dma(7), (1 << 28) | (3 << 16) | 3);
+        assert_eq!(
+            fifoth_for_direct_memory_access(7),
+            (1 << 28) | (3 << 16) | 3
+        );
     }
 
     #[test]

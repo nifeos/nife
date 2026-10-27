@@ -9,11 +9,11 @@
 //! last descriptor's `OWN` for memory, since a read's `DTO` can beat its last words to memory.
 //!
 //! Name: provisional (milestone 53 (the board's own peripherals)'s IDMAC lane, 2026-10-22 UTC).
-//! The databook's own name for the engine, as `regs` names its registers.
+//! The databook's own name for the engine, as `registers` names its registers.
 
 use crate::command::Command;
 use crate::host::{COMMAND_DEADLINE_US, DATA_DEADLINE_US, Error, Host, Identity, Registers};
-use crate::regs;
+use crate::registers;
 
 /// **The DMA region**, as the driver reads and writes it. Offsets are bytes from the region's
 /// first byte; an implementation bounds them. The kernel's is pages in the direct map, the tests'
@@ -128,11 +128,11 @@ impl<D: DirectMemoryAccessRegion> Idmac<D> {
     ///
     /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
     pub fn new(region: D, id: &Identity) -> Result<Idmac<D>, Refusal> {
-        let interface = regs::dma_interface(id.hcon);
+        let interface = registers::direct_memory_access_interface(id.hcon);
         if interface != 0 {
             return Err(Refusal::NoIdmac(interface));
         }
-        if regs::dma_64bit(id.hcon) {
+        if registers::uses_64_bit_direct_memory_access(id.hcon) {
             return Err(Refusal::Addressing64);
         }
         let base = region.bus_address();
@@ -226,9 +226,9 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// Stops and resets the IDMAC before returning, whatever happened.
     pub(crate) fn idmac_transfer(&mut self, cmd: &Command, bytes: u32) -> Result<[u32; 4], Error> {
         let count = descriptors_for(bytes);
-        if let Some(dma) = self.dma.as_mut() {
-            dma.write_chain(bytes);
-            dma.region.barrier();
+        if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
+            direct_memory_access.write_chain(bytes);
+            direct_memory_access.region.barrier();
         }
         let result = self
             .issue(cmd, true)
@@ -236,8 +236,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let stopped = self.idmac_stop();
         let resp = result?;
         stopped?;
-        if let Some(dma) = self.dma.as_mut() {
-            dma.region.barrier();
+        if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
+            direct_memory_access.region.barrier();
         }
         Ok(resp)
     }
@@ -246,28 +246,33 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// reset has cleared and before the command is written, so the engine is ready for the first
     /// word. `IDINTEN` stays zero and `CTRL`'s interrupt enable clear; `IDSTS` is raw.
     pub(crate) fn idmac_start(&mut self) -> Result<(), Error> {
-        let Some(bus) = self.dma.as_ref().map(|d| d.bus) else {
+        let Some(bus) = self.direct_memory_access.as_ref().map(|d| d.bus) else {
             return Ok(());
         };
-        self.regs.write(regs::BMOD, regs::BMOD_SOFTWARE_RESET);
-        if !self.wait(COMMAND_DEADLINE_US, |r| {
-            r.read(regs::BMOD) & regs::BMOD_SOFTWARE_RESET == 0
+        self.registers
+            .write(registers::BMOD, registers::BMOD_SOFTWARE_RESET);
+        if !self.wait(COMMAND_DEADLINE_US, |registers| {
+            registers.read(registers::BMOD) & registers::BMOD_SOFTWARE_RESET == 0
         }) {
-            return Err(Error::ResetStuck(self.regs.read(regs::BMOD)));
+            return Err(Error::ResetStuck(self.registers.read(registers::BMOD)));
         }
-        self.regs
-            .write(regs::FIFOTH, regs::fifoth_for_dma(self.depth));
-        self.regs.write(regs::IDINTEN, 0);
-        self.regs.write(regs::IDSTS, regs::IDSTS_ALL);
-        self.regs.write(regs::DBADDR, bus);
-        let ctrl = self.regs.read(regs::CTRL);
-        self.regs.write(
-            regs::CTRL,
-            ctrl | regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE,
+        self.registers.write(
+            registers::FIFOTH,
+            registers::fifoth_for_direct_memory_access(self.depth),
         );
-        self.regs
-            .write(regs::BMOD, regs::BMOD_DMA_ENABLE | regs::BMOD_FIXED_BURST);
-        self.regs.write(regs::PLDMND, 1);
+        self.registers.write(registers::IDINTEN, 0);
+        self.registers.write(registers::IDSTS, registers::IDSTS_ALL);
+        self.registers.write(registers::DBADDR, bus);
+        let ctrl = self.registers.read(registers::CTRL);
+        self.registers.write(
+            registers::CTRL,
+            ctrl | registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE,
+        );
+        self.registers.write(
+            registers::BMOD,
+            registers::BMOD_DMA_ENABLE | registers::BMOD_FIXED_BURST,
+        );
+        self.registers.write(registers::PLDMND, 1);
         Ok(())
     }
 
@@ -276,31 +281,31 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// transfer is judged on progress, not on its length.
     fn idmac_wait(&mut self, cmd: &Command, count: u32) -> Result<(), Error> {
         let want = match cmd.data {
-            Some(d) if d.blocks > 1 => regs::INT_DTO | regs::INT_ACD,
-            _ => regs::INT_DTO,
+            Some(d) if d.blocks > 1 => registers::INT_DTO | registers::INT_ACD,
+            _ => registers::INT_DTO,
         };
-        let Some(dma) = self.dma.as_ref() else {
+        let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
             return Err(Error::BufferSize);
         };
-        let mut owed = dma.owed(count);
-        let mut start = self.regs.now_us();
+        let mut owed = direct_memory_access.owed(count);
+        let mut start = self.registers.now_us();
         loop {
-            let rint = self.regs.read(regs::RINTSTS);
-            if rint & (regs::INT_DATA_ERRORS | regs::INT_DATA_TIMEOUTS) != 0 {
+            let rint = self.registers.read(registers::RINTSTS);
+            if rint & (registers::INT_DATA_ERRORS | registers::INT_DATA_TIMEOUTS) != 0 {
                 return Err(Error::Data(cmd.index, rint));
             }
-            let idsts = self.regs.read(regs::IDSTS);
-            if idsts & regs::IDSTS_ERRORS != 0 {
-                return Err(Error::Dma(cmd.index, idsts));
+            let idsts = self.registers.read(registers::IDSTS);
+            if idsts & registers::IDSTS_ERRORS != 0 {
+                return Err(Error::DirectMemoryAccess(cmd.index, idsts));
             }
-            let Some(dma) = self.dma.as_ref() else {
+            let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
                 return Err(Error::BufferSize);
             };
-            let now_owed = dma.owed(count);
+            let now_owed = direct_memory_access.owed(count);
             if rint & want == want && now_owed == 0 {
                 return Ok(());
             }
-            let now = self.regs.now_us();
+            let now = self.registers.now_us();
             if now_owed != owed {
                 owed = now_owed;
                 start = now;
@@ -316,27 +321,30 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// writes it: none of its other bits is the firmware's to keep. A reset that does not clear is
     /// reported with the `CTRL` word if that is the one held, else the `BMOD` word.
     fn idmac_stop(&mut self) -> Result<(), Error> {
-        self.regs.write(regs::BMOD, regs::BMOD_SOFTWARE_RESET);
-        let ctrl =
-            self.regs.read(regs::CTRL) & !(regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE);
-        self.regs.write(
-            regs::CTRL,
-            ctrl | regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET,
+        self.registers
+            .write(registers::BMOD, registers::BMOD_SOFTWARE_RESET);
+        let ctrl = self.registers.read(registers::CTRL)
+            & !(registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE);
+        self.registers.write(
+            registers::CTRL,
+            ctrl | registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET,
         );
-        let quiet = self.wait(COMMAND_DEADLINE_US, |r| {
-            r.read(regs::CTRL) & (regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET) == 0
-                && r.read(regs::BMOD) & regs::BMOD_SOFTWARE_RESET == 0
+        let quiet = self.wait(COMMAND_DEADLINE_US, |registers| {
+            registers.read(registers::CTRL)
+                & (registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET)
+                == 0
+                && registers.read(registers::BMOD) & registers::BMOD_SOFTWARE_RESET == 0
         });
-        self.regs.write(regs::IDSTS, regs::IDSTS_ALL);
-        self.regs
-            .write(regs::FIFOTH, regs::fifoth_for_pio(self.depth));
-        let ctrl = self.regs.read(regs::CTRL);
+        self.registers.write(registers::IDSTS, registers::IDSTS_ALL);
+        self.registers
+            .write(registers::FIFOTH, registers::fifoth_for_pio(self.depth));
+        let ctrl = self.registers.read(registers::CTRL);
         if quiet {
             Ok(())
-        } else if ctrl & (regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET) != 0 {
+        } else if ctrl & (registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET) != 0 {
             Err(Error::ResetStuck(ctrl))
         } else {
-            Err(Error::ResetStuck(self.regs.read(regs::BMOD)))
+            Err(Error::ResetStuck(self.registers.read(registers::BMOD)))
         }
     }
 }
@@ -365,7 +373,7 @@ mod tests {
 
     fn with_idmac(h: Host<Sim>, memory: &Memory) -> Host<Sim, Memory> {
         let mut h = h;
-        let hcon = h.registers().peek(regs::HCON);
+        let hcon = h.registers().peek(registers::HCON);
         let id = Identity {
             verid: 0,
             hcon,
@@ -479,7 +487,7 @@ mod tests {
         let data = pattern(0x33, 16 * 512);
         sd::write_blocks(&mut h, &card, 40, &data).unwrap();
         let mut h = with_idmac(h, &memory);
-        h.registers().dma_words_per_step = Some(1);
+        h.registers().direct_memory_access_words_per_step = Some(1);
         let mut back = vec![0u8; 16 * 512];
         sd::read_blocks(&mut h, &card, 40, &mut back).unwrap();
         assert_eq!(back, data);
@@ -520,15 +528,15 @@ mod tests {
         let cases: [(Inject, Expect); 3] = [
             (
                 |s| s.bus_error_at = Some(1),
-                |e| matches!(e, Error::Dma(18, s) if s & regs::IDSTS_FBE != 0),
+                |e| matches!(e, Error::DirectMemoryAccess(18, s) if s & registers::IDSTS_FBE != 0),
             ),
             (
                 |s| s.unowned_at = Some(1),
-                |e| matches!(e, Error::Dma(18, s) if s & regs::IDSTS_DU != 0),
+                |e| matches!(e, Error::DirectMemoryAccess(18, s) if s & registers::IDSTS_DU != 0),
             ),
             (
                 |s| s.fail_next_read_crc = true,
-                |e| matches!(e, Error::Data(18, r) if r & regs::INT_DCRC != 0),
+                |e| matches!(e, Error::Data(18, r) if r & registers::INT_DCRC != 0),
             ),
         ];
         for (inject, expected) in cases {
@@ -543,16 +551,17 @@ mod tests {
                 other => panic!("{other:?}"),
             }
             let sim = h.registers();
-            let dma = regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE;
-            assert_eq!(sim.peek(regs::CTRL) & dma, 0);
-            assert_eq!(sim.peek(regs::BMOD) & regs::BMOD_DMA_ENABLE, 0);
-            assert_eq!(sim.peek(regs::FIFOTH), regs::fifoth_for_pio(32));
+            let direct_memory_access =
+                registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
+            assert_eq!(sim.peek(registers::CTRL) & direct_memory_access, 0);
+            assert_eq!(sim.peek(registers::BMOD) & registers::BMOD_DMA_ENABLE, 0);
+            assert_eq!(sim.peek(registers::FIFOTH), registers::fifoth_for_pio(32));
             sim.stall_after = None;
             sim.bus_error_at = None;
             sim.unowned_at = None;
             let written = memory.bus().device_written;
             for _ in 0..64 {
-                sim.read(regs::STATUS);
+                sim.read(registers::STATUS);
             }
             assert_eq!(memory.bus().device_written, written);
             sd::read_blocks(&mut h, &card, 60, &mut back).unwrap();
@@ -576,7 +585,7 @@ mod tests {
         std::thread::spawn(move || {
             let mut back = vec![0u8; 9 * 512];
             let r = sd::read_blocks(&mut h, &card, 60, &mut back);
-            let _ = tx.send((r, h.registers().peek(regs::BMOD)));
+            let _ = tx.send((r, h.registers().peek(registers::BMOD)));
         });
         let (r, bmod) = rx
             .recv_timeout(std::time::Duration::from_secs(10))
@@ -585,7 +594,7 @@ mod tests {
             r,
             Err(IoError::Host(Error::DataTimeout(18, _, 4608)))
         ));
-        assert_eq!(bmod & regs::BMOD_DMA_ENABLE, 0);
+        assert_eq!(bmod & registers::BMOD_DMA_ENABLE, 0);
     }
 
     /// **The register contract of one transfer**, write by write, on a controller whose firmware
@@ -596,44 +605,50 @@ mod tests {
     #[test]
     fn one_transfer_arms_and_stops_the_idmac_register_by_register() {
         let (mut h, card, memory) = polled(2);
-        let firmware = 1 << 8 | regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE;
-        h.registers().write(regs::CTRL, firmware);
+        let firmware = 1 << 8 | registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
+        h.registers().write(registers::CTRL, firmware);
         let mut h = with_idmac(h, &memory);
         h.registers().writes.clear();
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 7, &mut block).unwrap();
         let writes = &h.registers().writes;
         let from = |w: (u32, u32)| writes.iter().position(|&x| x == w).unwrap();
-        let armed = from((regs::BMOD, regs::BMOD_SOFTWARE_RESET));
+        let armed = from((registers::BMOD, registers::BMOD_SOFTWARE_RESET));
         assert_eq!(
             writes[armed..armed + 8],
             [
-                (regs::BMOD, regs::BMOD_SOFTWARE_RESET),
-                (regs::FIFOTH, regs::fifoth_for_dma(32)),
-                (regs::IDINTEN, 0),
-                (regs::IDSTS, regs::IDSTS_ALL),
-                (regs::DBADDR, BASE as u32),
-                (regs::CTRL, firmware),
-                (regs::BMOD, regs::BMOD_DMA_ENABLE | regs::BMOD_FIXED_BURST),
-                (regs::PLDMND, 1),
+                (registers::BMOD, registers::BMOD_SOFTWARE_RESET),
+                (
+                    registers::FIFOTH,
+                    registers::fifoth_for_direct_memory_access(32)
+                ),
+                (registers::IDINTEN, 0),
+                (registers::IDSTS, registers::IDSTS_ALL),
+                (registers::DBADDR, BASE as u32),
+                (registers::CTRL, firmware),
+                (
+                    registers::BMOD,
+                    registers::BMOD_DMA_ENABLE | registers::BMOD_FIXED_BURST
+                ),
+                (registers::PLDMND, 1),
             ]
         );
         let stopped = armed
             + 1
             + writes[armed + 1..]
                 .iter()
-                .position(|&x| x == (regs::BMOD, regs::BMOD_SOFTWARE_RESET))
+                .position(|&x| x == (registers::BMOD, registers::BMOD_SOFTWARE_RESET))
                 .unwrap();
         assert_eq!(
             writes[stopped..stopped + 4],
             [
-                (regs::BMOD, regs::BMOD_SOFTWARE_RESET),
+                (registers::BMOD, registers::BMOD_SOFTWARE_RESET),
                 (
-                    regs::CTRL,
-                    1 << 8 | regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET
+                    registers::CTRL,
+                    1 << 8 | registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET
                 ),
-                (regs::IDSTS, regs::IDSTS_ALL),
-                (regs::FIFOTH, regs::fifoth_for_pio(32)),
+                (registers::IDSTS, registers::IDSTS_ALL),
+                (registers::FIFOTH, registers::fifoth_for_pio(32)),
             ]
         );
     }
@@ -647,7 +662,10 @@ mod tests {
         h.registers().late_acd = 5;
         let mut blocks = [0u8; 2 * 512];
         sd::read_blocks(&mut h, &card, 7, &mut blocks).unwrap();
-        assert_ne!(h.registers().peek(regs::RINTSTS) & regs::INT_ACD, 0);
+        assert_ne!(
+            h.registers().peek(registers::RINTSTS) & registers::INT_ACD,
+            0
+        );
     }
 
     /// A reset that never clears is reported, not assumed done, with the word that holds it:
@@ -661,15 +679,15 @@ mod tests {
         let cases: [(Hold, Word); 3] = [
             (
                 |s| s.bmod_resets_cleared = Some(0),
-                |w| w == regs::BMOD_SOFTWARE_RESET,
+                |w| w == registers::BMOD_SOFTWARE_RESET,
             ),
             (
                 |s| s.bmod_resets_cleared = Some(1),
-                |w| w == regs::BMOD_SOFTWARE_RESET,
+                |w| w == registers::BMOD_SOFTWARE_RESET,
             ),
             (
                 |s| s.ctrl_resets_cleared = Some(1),
-                |w| w & (regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET) != 0,
+                |w| w & (registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET) != 0,
             ),
         ];
         for ((hold, word), sent) in cases.into_iter().zip(sent) {
@@ -710,7 +728,7 @@ mod tests {
         let r = crate::bench::idmac_read(&mut h, &report, &reference, &mut buf, 1024).unwrap();
         assert!(r.matches);
         assert_eq!(r.timed_blocks, 1024);
-        h.registers().dma_corrupts = true;
+        h.registers().direct_memory_access_corrupts = true;
         let r = crate::bench::idmac_read(&mut h, &report, &reference, &mut buf, 256).unwrap();
         assert!(!r.matches);
         assert_eq!(r.timed_blocks, 256);

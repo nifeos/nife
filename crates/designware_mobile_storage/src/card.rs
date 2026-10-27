@@ -47,16 +47,16 @@ pub const STATE_TRANSFER: u32 = 4;
 /// **Bits `[start, start + len)` of a 128-bit register** held as four words, low word first.
 /// `len` above 32 is clamped to 32; positions past bit 127 read as zero.
 #[must_use]
-pub const fn bits(r: &[u32; 4], start: u32, len: u32) -> u32 {
+pub const fn bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
     let len = if len > 32 { 32 } else { len };
     if len == 0 || start >= 128 {
         return 0;
     }
     let word = (start / 32) as usize;
     let shift = start % 32;
-    let mut v = (r[word] as u64) >> shift;
+    let mut v = (register[word] as u64) >> shift;
     if shift + len > 32 && word + 1 < 4 {
-        v |= (r[word + 1] as u64) << (32 - shift);
+        v |= (register[word + 1] as u64) << (32 - shift);
     }
     let mask = if len == 32 {
         0xffff_ffff
@@ -88,16 +88,16 @@ impl Csd {
     /// assert_eq!(Csd::sd(&csd).blocks, 60_948 * 1024);
     /// ```
     #[must_use]
-    pub const fn sd(r: &[u32; 4]) -> Csd {
-        let structure = bits(r, 126, 2);
+    pub const fn sd(register: &[u32; 4]) -> Csd {
+        let structure = bits(register, 126, 2);
         let blocks = match structure {
             // (C_SIZE + 1) * 2^(C_SIZE_MULT + 2) blocks of 2^READ_BL_LEN bytes. READ_BL_LEN is 9,
             // 10 or 11 on every card made; anything from 9 to 15 is decoded and a smaller one
             // refused rather than divided.
             0 => {
-                let c_size = bits(r, 62, 12) as u64;
-                let mult = bits(r, 47, 3);
-                let read_bl_len = bits(r, 80, 4);
+                let c_size = bits(register, 62, 12) as u64;
+                let mult = bits(register, 47, 3);
+                let read_bl_len = bits(register, 80, 4);
                 if read_bl_len < 9 {
                     0
                 } else {
@@ -105,9 +105,9 @@ impl Csd {
                 }
             }
             // (C_SIZE + 1) * 512 KiB, C_SIZE 22 bits.
-            1 => (bits(r, 48, 22) as u64 + 1) * 1024,
+            1 => (bits(register, 48, 22) as u64 + 1) * 1024,
             // SDUC: the same, C_SIZE 28 bits.
-            2 => (bits(r, 48, 28) as u64 + 1) * 1024,
+            2 => (bits(register, 48, 28) as u64 + 1) * 1024,
             _ => 0,
         };
         Csd { structure, blocks }
@@ -117,11 +117,11 @@ impl Csd {
     /// `0xfff` and the true count is `EXT_CSD`'s [`ext_csd_sectors`]. The layout of the size fields
     /// is the same as SD's version 1.
     #[must_use]
-    pub(crate) const fn mmc(r: &[u32; 4]) -> Csd {
-        let mut csd = Csd::sd(r);
-        let c_size = bits(r, 62, 12) as u64;
-        let mult = bits(r, 47, 3);
-        let read_bl_len = bits(r, 80, 4);
+    pub(crate) const fn mmc(register: &[u32; 4]) -> Csd {
+        let mut csd = Csd::sd(register);
+        let c_size = bits(register, 62, 12) as u64;
+        let mult = bits(register, 47, 3);
+        let read_bl_len = bits(register, 80, 4);
         csd.blocks = if read_bl_len < 9 {
             0
         } else {
@@ -146,33 +146,33 @@ pub struct Cid {
 impl Cid {
     /// Decode an SD card's CID.
     #[must_use]
-    pub const fn sd(r: &[u32; 4]) -> Cid {
+    pub const fn sd(register: &[u32; 4]) -> Cid {
         let mut name = [0u8; 6];
         let mut i = 0;
         while i < 5 {
-            name[i] = bits(r, 96 - 8 * i as u32, 8) as u8;
+            name[i] = bits(register, 96 - 8 * i as u32, 8) as u8;
             i += 1;
         }
         Cid {
-            manufacturer: bits(r, 120, 8) as u8,
+            manufacturer: bits(register, 120, 8) as u8,
             name,
-            serial: bits(r, 24, 32),
+            serial: bits(register, 24, 32),
         }
     }
 
     /// Decode an eMMC's CID.
     #[must_use]
-    pub(crate) const fn mmc(r: &[u32; 4]) -> Cid {
+    pub(crate) const fn mmc(register: &[u32; 4]) -> Cid {
         let mut name = [0u8; 6];
         let mut i = 0;
         while i < 6 {
-            name[i] = bits(r, 96 - 8 * i as u32, 8) as u8;
+            name[i] = bits(register, 96 - 8 * i as u32, 8) as u8;
             i += 1;
         }
         Cid {
-            manufacturer: bits(r, 120, 8) as u8,
+            manufacturer: bits(register, 120, 8) as u8,
             name,
-            serial: bits(r, 16, 32),
+            serial: bits(register, 16, 32),
         }
     }
 }
