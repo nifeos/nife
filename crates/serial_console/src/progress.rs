@@ -263,7 +263,7 @@ pub struct SweepPoint {
     pub ticks_median: u64,
     /// The slowest repeat's ticks. With [`ticks_minimum`](Self::ticks_minimum) it is the spread,
     /// and the spread is what says whether the median means anything on this machine.
-    pub ticks_max: u64,
+    pub ticks_maximum: u64,
     /// Jobs per minute at the median, as the kernel computed it.
     pub jpm_median: u64,
 }
@@ -706,7 +706,7 @@ impl BootProgress {
             ("repeats=", &mut point.repeats),
             ("ticks_min=", &mut point.ticks_minimum),
             ("ticks_median=", &mut point.ticks_median),
-            ("ticks_max=", &mut point.ticks_max),
+            ("ticks_max=", &mut point.ticks_maximum),
             ("jpm_median=", &mut point.jpm_median),
         ] {
             if let Some(v) = field(tail, name) {

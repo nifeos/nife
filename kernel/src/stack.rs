@@ -381,9 +381,9 @@ pub(crate) fn paint_boot_stack() {
 /// (scanned in its `Drop`) and, at report time, every live one. One number, because every kernel
 /// thread stack is the same size.
 #[cfg(any(test, feature = "system_tests"))]
-static THREAD_STACK_MAX: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+static THREAD_STACK_MAXIMUM: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
 
-/// How many thread stacks fed [`THREAD_STACK_MAX`], so the report says how much evidence the
+/// How many thread stacks fed [`THREAD_STACK_MAXIMUM`], so the report says how much evidence the
 /// number rests on.
 #[cfg(any(test, feature = "system_tests"))]
 static THREAD_STACK_SCANS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
@@ -393,7 +393,7 @@ static THREAD_STACK_SCANS: core::sync::atomic::AtomicU64 = core::sync::atomic::A
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn note_thread_stack_use(used: u64) {
     use core::sync::atomic::Ordering;
-    THREAD_STACK_MAX.fetch_max(used, Ordering::Relaxed);
+    THREAD_STACK_MAXIMUM.fetch_max(used, Ordering::Relaxed);
     THREAD_STACK_SCANS.fetch_add(1, Ordering::Relaxed);
 }
 
@@ -452,7 +452,7 @@ pub(crate) fn report_high_water() {
 
     // Live thread stacks too, so threads nothing ever reaps are counted.
     crate::sched::scan_live_thread_stacks();
-    let tmax = THREAD_STACK_MAX.load(Ordering::Relaxed);
+    let tmax = THREAD_STACK_MAXIMUM.load(Ordering::Relaxed);
     let tsize = (crate::thread::STACK_PAGES * 4096) as u64;
     crate::println!(
         "stack high-water: thread {tmax}/{tsize} bytes ({}%, deepest of {} stacks)",

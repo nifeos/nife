@@ -471,7 +471,7 @@ pub struct Isa {
     /// no extended leaf 4. Trailing and leading spaces are the vendor's; see [`Isa::brand_str`].
     pub brand: [u8; 48],
     /// The maximum standard `CPUID` leaf this part answers.
-    pub max_leaf: u32,
+    pub maximum_leaf: u32,
     /// The maximum extended (`0x8000_0000`-based) leaf. A separate space; see [`CpuidWords`].
     pub extended_maximum_leaf: u32,
     /// Which of [`TABLE`]'s features the part reports.
@@ -489,7 +489,7 @@ impl Default for Isa {
         Isa {
             vendor: [0; 12],
             brand: [0; 48],
-            max_leaf: 0,
+            maximum_leaf: 0,
             extended_maximum_leaf: 0,
             features: Features::NONE,
             under_hypervisor: false,
@@ -550,7 +550,7 @@ impl Isa {
         Isa {
             vendor,
             brand,
-            max_leaf: w.leaf0[0],
+            maximum_leaf: w.leaf0[0],
             extended_maximum_leaf: w.extended_maximum_leaf,
             features,
             under_hypervisor: w.leaf0[0] >= 1 && w.leaf1_ecx & (1 << 31) != 0,

@@ -118,16 +118,16 @@ pub const JOBS_BUDGET_PAGES: u64 = JOB_REGION_PAGES * 6 + grant_plan::STD_REGION
 /// - The image is held three times while a child is built (notes/system-initializer/budgets.md).
 /// - Reserved at boot, not borrowed, whether or not an image ever runs.
 pub const IMAGE_POOL_PAGES: u64 = grant_plan::image_region_pages(
-    spawnproto::IMAGE_MAX_PAGES,
+    spawnproto::IMAGE_MAXIMUM_PAGES,
     grant_plan::StartupContract::Std,
     JOB_REGION_PAGES,
-) + spawnproto::IMAGE_MAX_PAGES;
+) + spawnproto::IMAGE_MAXIMUM_PAGES;
 
 /// **Everything both pools can have built at once, and an image request's views, fit in half the
 /// loader's scratch window**: a job's pages stay mapped there until its region is destroyed. The
 /// other half is the boot servers', unmeasured; see notes/system-initializer/budgets.md.
 const _: () = assert!(
-    JOBS_BUDGET_PAGES + IMAGE_POOL_PAGES + spawnproto::IMAGE_MAX_PAGES
+    JOBS_BUDGET_PAGES + IMAGE_POOL_PAGES + spawnproto::IMAGE_MAXIMUM_PAGES
         <= supervision_protocol::SCRATCH_WINDOW_PAGES / 2
 );
 
@@ -180,7 +180,7 @@ pub(super) const NET_STACK_STACK_PAGES: u64 = 9;
 
 /// **`domain_name_resolver`'s untyped budget** (milestone 892 (a std program at the prompt holds the
 /// network and a resolver)): its socket page and the page tables for up to
-/// `domain_name_resolution_contract::GRANTS_MAX` client pages. The kernel harness's
+/// `domain_name_resolution_contract::GRANTS_MAXIMUM` client pages. The kernel harness's
 /// `name_resolver_tests::BUDGET_PAGES`, which every resolver test runs under.
 ///
 /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).

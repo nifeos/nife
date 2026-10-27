@@ -96,7 +96,7 @@ pub(super) fn mounted_job_channel(tree: Fs, w: u64, own_ut: u64, mapped: &mut bo
     // first page lies inside it; no client is using window `w` between two jobs.
     unsafe {
         core::ptr::write_bytes(
-            (MOUNTED_TREE_POOL_VA + w * fs_operation::TRANSFER_MAX as u64) as *mut u8,
+            (MOUNTED_TREE_POOL_VA + w * fs_operation::TRANSFER_MAXIMUM as u64) as *mut u8,
             0,
             PAGE_BYTES,
         );
@@ -191,7 +191,7 @@ fn bind_window(
     // SAFETY: as [`job_channel`]'s zeroing: window `w`'s first page, inside the mapped pool.
     unsafe {
         core::ptr::write_bytes(
-            (ACTIVATION_FS_VA + w * fs_operation::TRANSFER_MAX as u64) as *mut u8,
+            (ACTIVATION_FS_VA + w * fs_operation::TRANSFER_MAXIMUM as u64) as *mut u8,
             0,
             PAGE_BYTES,
         );
@@ -299,7 +299,7 @@ pub(super) fn job_channel(fs: Fs, w: u64, own_ut: u64, mapped: &mut bool) -> Opt
     // window `w`'s first page lies inside it; no client is using window `w` between two jobs.
     unsafe {
         core::ptr::write_bytes(
-            (ACTIVATION_FS_VA + w * fs_operation::TRANSFER_MAX as u64) as *mut u8,
+            (ACTIVATION_FS_VA + w * fs_operation::TRANSFER_MAXIMUM as u64) as *mut u8,
             0,
             PAGE_BYTES,
         );

@@ -159,7 +159,7 @@ maps as many as it intends to use. A client that only moves 4096 bytes maps one 
 the region behind the server grew, which is why `swish` and the caretakers need no change.
 
 The foot gun is that nothing checks a client asked for no more than it mapped. A client that sends
-`len = TRANSFER_MAX` with one page mapped takes a data abort on its own second page, after the
+`len = TRANSFER_MAXIMUM` with one page mapped takes a data abort on its own second page, after the
 server has done the work. It is the agreement every client already has with its wiring about where
 the region lives (each hardcodes its own `FILE_VA`), one number wider. Making it unrepresentable
 needs the channel size on the wire, which is a new concept for the contract.

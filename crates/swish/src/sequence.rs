@@ -17,9 +17,9 @@ use grant_plan::{Refusal, trim};
 use crate::Status;
 
 /// The most commands one line will sequence. A ceiling in the same spirit as
-/// [`grant_plan::line::MAX_STAGES`]: past it the line is refused rather than silently truncated,
-/// and a line that wants more is better written as several lines. Must match the count in
-/// [`Refusal::TooManySegments`]'s message.
+/// [`grant_plan::line::MAXIMUM_STAGES`]: past it the line is refused rather than silently
+/// truncated, and a line that wants more is better written as several lines. Must match the count
+/// in [`Refusal::TooManySegments`]'s message.
 pub const MAX_SEGMENTS: usize = 8;
 
 /// **How a segment is joined to the one before it**, which is the whole of what a connector says.

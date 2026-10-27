@@ -31,7 +31,7 @@ pub fn write_holdings(
     // The heap is mapped from that budget first, so this row counts it (milestone 47 (navigation
     // and naming), calef's ruling).
     out(b"           the first ");
-    write_num(HEAP_MAX_BYTES / 1024, out);
+    write_num(HEAP_MAXIMUM_BYTES / 1024, out);
     out(b" KiB of them, and their page tables, are the shell's own heap\n");
     match (&holdings.mounted, holdings.directory) {
         (Some(sd), _) => {

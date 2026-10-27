@@ -4,7 +4,7 @@
 //!
 //! The calendar is proleptic Gregorian (year 0 exists and is a leap year), negative timestamps are
 //! supported, and the range is years 0000 through 9999 ([`MINIMUM_TIMESTAMP`] to
-//! [`MAX_TIMESTAMP`]), RFC 3339's four-digit year; outside it is [`Error::OutOfRange`]. Leap
+//! [`MAXIMUM_TIMESTAMP`]), RFC 3339's four-digit year; outside it is [`Error::OutOfRange`]. Leap
 //! seconds are [`Error::LeapSecond`]. Zones are a fixed [`UtcOffset`]; the IANA database is out of
 //! scope permanently. No durations, month arithmetic or `strftime`. See notes/calendar.md.
 //!
@@ -28,7 +28,11 @@ pub const MAX_YEAR: i32 = 9999;
 pub const MINIMUM_TIMESTAMP: i64 = days_from_civil(MINIMUM_YEAR, 1, 1) * SECS_PER_DAY;
 
 /// 9999-12-31T23:59:59Z, the latest instant this crate will name.
-pub const MAX_TIMESTAMP: i64 = days_from_civil(MAX_YEAR, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_TIMESTAMP`.
+pub const MAXIMUM_TIMESTAMP: i64 =
+    days_from_civil(MAX_YEAR, 12, 31) * SECS_PER_DAY + SECS_PER_DAY - 1;
 
 /// Seconds in a day. Exactly 86,400, always, by the definition of Unix time (see the module docs on
 /// leap seconds).
@@ -38,7 +42,7 @@ pub const SECS_PER_DAY: i64 = 86_400;
 /// two would only make callers convert between them.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Error {
-    /// A timestamp outside [`MINIMUM_TIMESTAMP`]..=[`MAX_TIMESTAMP`], or a year outside
+    /// A timestamp outside [`MINIMUM_TIMESTAMP`]..=[`MAXIMUM_TIMESTAMP`], or a year outside
     /// [`MINIMUM_YEAR`]..=[`MAX_YEAR`].
     OutOfRange,
     /// Month was not 1..=12.
@@ -312,7 +316,7 @@ impl Civil {
     /// assert_eq!((d.hour(), d.minute(), d.second()), (23, 59, 59));
     /// ```
     pub const fn from_unix(secs: i64) -> Result<Civil, Error> {
-        if secs < MINIMUM_TIMESTAMP || secs > MAX_TIMESTAMP {
+        if secs < MINIMUM_TIMESTAMP || secs > MAXIMUM_TIMESTAMP {
             return Err(Error::OutOfRange);
         }
         // Euclidean division, not truncating: for a negative timestamp, `-1 / 86400` is 0 in Rust and
@@ -464,9 +468,9 @@ impl DateTime {
 
     /// The instant this names, as a Unix timestamp.
     ///
-    /// Note this is *not* bounded by [`MINIMUM_TIMESTAMP`]/[`MAX_TIMESTAMP`]: a valid local reading
-    /// at the extreme end of the range with a large offset lands up to a day outside it. The value
-    /// is still exact; it just may not survive a trip back through [`Civil::from_unix`].
+    /// Note this is *not* bounded by [`MINIMUM_TIMESTAMP`]/[`MAXIMUM_TIMESTAMP`]: a valid local
+    /// reading at the extreme end of the range with a large offset lands up to a day outside it.
+    /// The value is still exact; it just may not survive a trip back through [`Civil::from_unix`].
     pub const fn to_unix(&self) -> i64 {
         self.civil.to_unix() - self.offset.seconds()
     }
@@ -908,7 +912,7 @@ mod verification {
             (year, month, day)
         );
         let secs = civil.to_unix();
-        assert!((MINIMUM_TIMESTAMP..=MAX_TIMESTAMP).contains(&secs));
+        assert!((MINIMUM_TIMESTAMP..=MAXIMUM_TIMESTAMP).contains(&secs));
         // Not vacuous, and specifically not on the case that matters: the constructor does accept a
         // 29th of February, so this is quantifying over leap days rather than over an input set the
         // validation quietly emptied.

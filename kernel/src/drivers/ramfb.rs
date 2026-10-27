@@ -38,7 +38,7 @@ const DATA_AT: usize = 64;
 /// The most directory entries this will walk before giving up. QEMU publishes a couple of dozen on
 /// either `virt` board; the cap is here because the count is a number the device stated and a
 /// corrupt one must bound the loop rather than read its way across memory.
-const MAX_ENTRIES: u32 = 256;
+const MAXIMUM_ENTRIES: u32 = 256;
 
 /// How many times the control word is read before a transfer is called hung. See BUGS.
 const MAXIMUM_POLLS: u32 = 1_000_000;
@@ -57,7 +57,7 @@ pub enum Error {
     Refused,
     /// The control word never cleared within [`MAXIMUM_POLLS`].
     Hung,
-    /// The file directory did not decode, or claimed more entries than [`MAX_ENTRIES`].
+    /// The file directory did not decode, or claimed more entries than [`MAXIMUM_ENTRIES`].
     Undecodable,
 }
 
@@ -177,7 +177,7 @@ impl FirmwareConfiguration {
         self.run(DmaCommand::read(DIRECTORY_KEY, 4, self.data_physical()))?;
         let header = self.data(4);
         let count = u32::from_be_bytes([header[0], header[1], header[2], header[3]]);
-        if count > MAX_ENTRIES {
+        if count > MAXIMUM_ENTRIES {
             return Err(Error::Undecodable);
         }
         for _ in 0..count {

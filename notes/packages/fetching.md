@@ -82,9 +82,9 @@ HTTPS for the internet rung, and under §195 (a reviewed recipe vouches for a pa
 digest, not its transport, decides whether its bytes may run.
 
 The reader is incremental and holds only the head. A response arrives one socket read at a time,
-at most `socket_contract::DATA_MAX` bytes each, and the body is a package that may be a megabyte.
-That is the borrowing shape `package_archive` uses, for the same reason: the first consumer has no
-allocator.
+at most `socket_contract::DATA_MAXIMUM` bytes each, and the body is a package that may be a
+megabyte. That is the borrowing shape `package_archive` uses, for the same reason: the first
+consumer has no allocator.
 
 `httparse`, the parser under `hyper`, parses the head. It is `no_std`, has no dependencies and
 no allocator, and is fuzzed upstream (OSS-Fuzz). Its `Partial` status tells the reader the head has

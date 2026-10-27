@@ -44,7 +44,10 @@ pub const TARGET_SUFFIX: &str = ".nifepkg";
 
 /// The longest path a request may carry. `http_response::get_request` writes the request line
 /// into a 512-byte buffer beside the host header, so a path near that would not fit a request.
-pub const PATH_MAX: usize = 256;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `PATH_MAX`.
+pub const PATH_MAXIMUM: usize = 256;
 
 /// The longest channel name.
 pub const CHANNEL_MAX: usize = 32;
@@ -81,17 +84,21 @@ impl<'a> Repository<'a> {
     }
 
     /// `/<channel>/metadata/<file>`, written into `out`.
-    pub fn metadata_path<'b>(&self, file: &str, out: &'b mut [u8; PATH_MAX]) -> Option<&'b str> {
+    pub fn metadata_path<'b>(
+        &self,
+        file: &str,
+        out: &'b mut [u8; PATH_MAXIMUM],
+    ) -> Option<&'b str> {
         join(out, &["/", self.channel, "/metadata/", file])
     }
 
     /// `/<channel>/targets/<stem>.nifepkg`, written into `out`.
-    pub fn target_path<'b>(&self, stem: &str, out: &'b mut [u8; PATH_MAX]) -> Option<&'b str> {
+    pub fn target_path<'b>(&self, stem: &str, out: &'b mut [u8; PATH_MAXIMUM]) -> Option<&'b str> {
         join(out, &["/", self.channel, "/targets/", stem, TARGET_SUFFIX])
     }
 }
 
-fn join<'b>(out: &'b mut [u8; PATH_MAX], parts: &[&str]) -> Option<&'b str> {
+fn join<'b>(out: &'b mut [u8; PATH_MAXIMUM], parts: &[&str]) -> Option<&'b str> {
     let mut at = 0;
     for part in parts {
         let end = at + part.len();
@@ -114,10 +121,13 @@ pub fn public_address(ip: [u8; 4]) -> bool {
 }
 
 /// **The longest path a redirect may send a client to**: a GitHub Release asset's signed URL has
-/// a 931-byte path (measured 2026-10-13 UTC), far past [`PATH_MAX`], which bounds only what an
+/// a 931-byte path (measured 2026-10-13 UTC), far past [`PATH_MAXIMUM`], which bounds only what an
 /// index may list. Name: provisional, minted 2026-10-13 (UTC) by lane
 /// `lane/basalt-on-pages-and-releases`.
-pub const REDIRECT_PATH_MAX: usize = 2048;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `REDIRECT_PATH_MAX`.
+pub const REDIRECT_PATH_MAXIMUM: usize = 2048;
 
 /// **How many redirects a fetch from a listed location follows: one** (calef, 2026-10-12 UTC, on
 /// #2048, option C2). A Release download is one hop from `github.com` to the host that serves the
@@ -146,7 +156,7 @@ pub struct Location<'a> {
     pub host: &'a str,
     /// The port written, or 443.
     pub port: u16,
-    /// Starts with `/`, at most [`PATH_MAX`] bytes, printable ASCII.
+    /// Starts with `/`, at most [`PATH_MAXIMUM`] bytes, printable ASCII.
     pub path: &'a str,
 }
 
@@ -163,21 +173,21 @@ impl<'a> Location<'a> {
                 _ => return Err(LocationRefusal::Malformed),
             }
         };
-        let at = Location::url(url, PATH_MAX)?;
+        let at = Location::url(url, PATH_MAXIMUM)?;
         Ok(Location { root, ..at })
     }
 
     /// **A redirect's `Location`, read as a place to fetch from**: an absolute `https://` URL with
-    /// no root of its own and a path of up to [`REDIRECT_PATH_MAX`] bytes, refused on the same
+    /// no root of its own and a path of up to [`REDIRECT_PATH_MAXIMUM`] bytes, refused on the same
     /// terms as [`Location::parse`] otherwise. A relative `Location` is refused: the one redirect
     /// this follows (GitHub's) is absolute, and refusing is cheaper than resolving one right.
     ///
     /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
     pub fn redirect(text: &'a str) -> Result<Location<'a>, LocationRefusal<'a>> {
-        Location::url(text, REDIRECT_PATH_MAX)
+        Location::url(text, REDIRECT_PATH_MAXIMUM)
     }
 
-    fn url(text: &'a str, path_max: usize) -> Result<Location<'a>, LocationRefusal<'a>> {
+    fn url(text: &'a str, path_maximum: usize) -> Result<Location<'a>, LocationRefusal<'a>> {
         use LocationRefusal::Malformed;
         let rest = text.strip_prefix("https://").ok_or(Malformed)?;
         let slash = rest.find('/').ok_or(Malformed)?;
@@ -186,7 +196,10 @@ impl<'a> Location<'a> {
             Some((host, port)) => (host, parse_port(port).ok_or(Malformed)?),
             None => (authority, 443),
         };
-        if !is_host(host) || path.len() > path_max || !path.bytes().all(|b| b.is_ascii_graphic()) {
+        if !is_host(host)
+            || path.len() > path_maximum
+            || !path.bytes().all(|b| b.is_ascii_graphic())
+        {
             return Err(Malformed);
         }
         // A fragment is the browser's and never reaches a server.
@@ -905,13 +918,16 @@ pub struct Sources<'a> {
     /// The index's root: every repository here chains to it, and so does a listed location that
     /// names no root, and so does a redirect's target.
     pub root: Root<'a>,
-    location_roots: [Option<(&'a str, Root<'a>)>; MAX_LOCATION_ROOTS],
+    location_roots: [Option<(&'a str, Root<'a>)>; MAXIMUM_LOCATION_ROOTS],
 }
 
 /// **The most further roots an image may carry for listed locations**: Sectigo E46 for GitHub
 /// Releases (calef's C2 on #2048, 2026-10-12 UTC), and room for one more. Name: provisional,
 /// minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
-pub const MAX_LOCATION_ROOTS: usize = 2;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_LOCATION_ROOTS`.
+pub const MAXIMUM_LOCATION_ROOTS: usize = 2;
 
 /// Why [`Sources::parse`] refused the text, with the line's number from 1 where one line is why.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -924,7 +940,7 @@ pub enum SourcesRefusal {
     NoRepository,
     /// No root, or a second one.
     OneRoot,
-    /// More than [`MAX_LOCATION_ROOTS`] `location-root` lines, or one name twice.
+    /// More than [`MAXIMUM_LOCATION_ROOTS`] `location-root` lines, or one name twice.
     TooManyLocationRoots,
 }
 
@@ -934,7 +950,7 @@ impl<'a> Sources<'a> {
         let mut repositories = [None; MAXIMUM_REPOSITORIES];
         let mut count = 0;
         let mut root = None;
-        let mut location_roots = [None; MAX_LOCATION_ROOTS];
+        let mut location_roots = [None; MAXIMUM_LOCATION_ROOTS];
         let mut further = 0;
         for (i, line) in text.split('\n').enumerate() {
             let number = i + 1;
@@ -1316,7 +1332,7 @@ mod tests {
         let long = std::format!("https://release-assets.example/{}", "a".repeat(930));
         assert_eq!(Location::redirect(&long).unwrap().path.len(), 931);
         assert_eq!(Location::parse(&long), Err(LocationRefusal::Malformed));
-        let too_long = std::format!("https://h/{}", "a".repeat(REDIRECT_PATH_MAX));
+        let too_long = std::format!("https://h/{}", "a".repeat(REDIRECT_PATH_MAXIMUM));
         assert_eq!(
             Location::redirect(&too_long),
             Err(LocationRefusal::Malformed)
@@ -1370,12 +1386,12 @@ mod tests {
                 "{bad}"
             );
         }
-        let long = format!("https://h/{}", "a".repeat(PATH_MAX));
+        let long = format!("https://h/{}", "a".repeat(PATH_MAXIMUM));
         assert_eq!(Location::parse(&long), Err(LocationRefusal::Malformed));
     }
 
     /// **Each limit is inclusive.** A port is at most five digits and nothing but digits, so a
-    /// sign or zero padding past five is refused, and a path of exactly [`PATH_MAX`] fits.
+    /// sign or zero padding past five is refused, and a path of exactly [`PATH_MAXIMUM`] fits.
     #[test]
     fn a_location_at_each_limit_is_read_and_one_past_it_is_not() {
         assert_eq!(Location::parse("https://h:65535/p").unwrap().port, 65535);
@@ -1387,7 +1403,7 @@ mod tests {
             Location::parse("https://h:000080/p"),
             Err(LocationRefusal::Malformed)
         );
-        let path = format!("/{}", "a".repeat(PATH_MAX - 1));
+        let path = format!("/{}", "a".repeat(PATH_MAXIMUM - 1));
         let at_limit = format!("https://h{path}");
         assert_eq!(Location::parse(&at_limit).unwrap().path, path);
     }
@@ -1509,12 +1525,12 @@ mod tests {
     #[test]
     fn a_repository_is_a_channel_with_metadata_and_targets_under_it() {
         let r = Repository::new("basalt.nifeos.org", 443, PROVISIONAL_CHANNEL).unwrap();
-        let mut buf = [0u8; PATH_MAX];
+        let mut buf = [0u8; PATH_MAXIMUM];
         assert_eq!(
             r.metadata_path("timestamp.json", &mut buf),
             Some("/rolling/metadata/timestamp.json")
         );
-        let mut buf = [0u8; PATH_MAX];
+        let mut buf = [0u8; PATH_MAXIMUM];
         assert_eq!(
             r.target_path("greeting-0.1.0-aarch64", &mut buf),
             Some("/rolling/targets/greeting-0.1.0-aarch64.nifepkg")
@@ -1532,8 +1548,8 @@ mod tests {
                 "{host} {port} {channel}"
             );
         }
-        let mut buf = [0u8; PATH_MAX];
-        assert_eq!(r.target_path(&"x".repeat(PATH_MAX), &mut buf), None);
+        let mut buf = [0u8; PATH_MAXIMUM];
+        assert_eq!(r.target_path(&"x".repeat(PATH_MAXIMUM), &mut buf), None);
     }
 
     #[test]

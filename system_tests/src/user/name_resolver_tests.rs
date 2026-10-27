@@ -17,7 +17,7 @@
 
 use domain_name_resolution_contract::fixture::{self, CASES};
 use domain_name_resolution_contract::{
-    GRANTS_MAX, Outcome, endowment, forget_message, grant_messages, status,
+    GRANTS_MAXIMUM, Outcome, endowment, forget_message, grant_messages, status,
 };
 
 use super::*;
@@ -31,7 +31,7 @@ const GRANTED: u32 = 0x384;
 const UNGRANTED: u32 = 0x385;
 
 /// Budget pages: each program mints at most two pages and pays for their page tables, and the
-/// resolver maps up to `GRANTS_MAX` client pages besides.
+/// resolver maps up to `GRANTS_MAXIMUM` client pages besides.
 const BUDGET_PAGES: u64 = 16;
 /// Extra stack pages for the client, the margin `network_time_client` gets.
 const CLIENT_STACK_PAGES: u64 = 3;
@@ -313,10 +313,10 @@ fn a_granted_client_resolves_inside_its_zone_and_nothing_outside_it() {
 /// (milestone 892 (a std program at the prompt holds the network and a resolver)).
 ///
 /// The progenitor at the prompt outlives its clients: each `jig` gets a fresh badge, and the
-/// resolver has [`GRANTS_MAX`] windows for life. Every window but the first holds an unused grant,
-/// so the second client lands where the first one's page was mapped, and resolves only if the
-/// forget freed the grant (else `Full`, every name `DENIED`) and the page (else `NOT_ATTACHED`).
-/// The first badge, given to a new client, is denied every name.
+/// resolver has [`GRANTS_MAXIMUM`] windows for life. Every window but the first holds an unused
+/// grant, so the second client lands where the first one's page was mapped, and resolves only if
+/// the forget freed the grant (else `Full`, every name `DENIED`) and the page (else
+/// `NOT_ATTACHED`). The first badge, given to a new client, is denied every name.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.name_resolver_tests.a_forgotten_badge_is_denied_and_its_window_serves_the_next_client.patch`
 #[test_case]
@@ -336,7 +336,7 @@ fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_client() {
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);
     grant(service, FIRST, fixture::ZONE);
-    for k in 1..GRANTS_MAX as u32 {
+    for k in 1..GRANTS_MAXIMUM as u32 {
         grant(service, UNUSED + k, fixture::ZONE);
     }
 

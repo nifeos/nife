@@ -43,8 +43,8 @@ const MAXIMUM_REQUESTS: usize = 48;
 /// limitation, not a rule: shrinking a file costs time linear in its logical size (the `BUGS`
 /// section of `Server::truncate`), so a session that grew a file to terabytes would time out on
 /// every run and hide everything after it. A `WRITE` end or `TRUNCATE` size between this and
-/// `MAX_FILE_END` is folded below it; past `MAX_FILE_END` it is sent as drawn, so the `EFBIG`
-/// refusals stay exercised. Drop this when the proposal that `BUGS` entry names is built.
+/// `MAXIMUM_FILE_END` is folded below it; past `MAXIMUM_FILE_END` it is sent as drawn, so the
+/// `EFBIG` refusals stay exercised. Drop this when the proposal that `BUGS` entry names is built.
 const SPARSE_LIMIT: u64 = 64 << 20;
 
 fn sparse(code: u64, len: usize, w1: u64) -> u64 {
@@ -53,7 +53,7 @@ fn sparse(code: u64, len: usize, w1: u64) -> u64 {
         fs::TRUNCATE => w1,
         _ => return w1,
     };
-    if end > SPARSE_LIMIT && end <= redoxfs_server::MAX_FILE_END {
+    if end > SPARSE_LIMIT && end <= redoxfs_server::MAXIMUM_FILE_END {
         w1 % SPARSE_LIMIT
     } else {
         w1
@@ -381,7 +381,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
     };
     let mut s = Session {
         server: Server::open(disk).expect("the template opens"),
-        window: vec![0; fs::TRANSFER_MAX],
+        window: vec![0; fs::TRANSFER_MAXIMUM],
         badges: [Model::Open; fs::CLIENT_WINDOWS],
         owners: HashMap::new(),
         forbidden: [&[]; fs::CLIENT_WINDOWS],

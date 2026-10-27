@@ -70,7 +70,7 @@ pub enum Error {
     BadToken(u32),
     /// The caller's output slice was too small to hold every region found.
     TooManyRegions,
-    /// The header's `totalsize` is larger than [`MAX_TOTALSIZE`], so
+    /// The header's `totalsize` is larger than [`MAXIMUM_TOTALSIZE`], so
     /// [`from_ptr`](DeviceTreeBlob::from_ptr) refused to build a slice of that length over
     /// memory nobody has checked. Carries the size claimed.
     TooLarge(usize),
@@ -101,7 +101,10 @@ const HEADER_LEN: usize = 40;
 /// why (2026-09-24 security audit). 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in
 /// `arch/arm64/include/asm/boot.h`); the largest blob this tree has met is QEMU `virt`'s, under
 /// 64 KiB. See notes/device-tree.md ("The parser's bounds").
-pub const MAX_TOTALSIZE: usize = 2 * 1024 * 1024;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_TOTALSIZE`.
+pub const MAXIMUM_TOTALSIZE: usize = 2 * 1024 * 1024;
 
 fn be32(bytes: &[u8], at: usize) -> Result<u32, Error> {
     // `at + 4` is a checked add, not a bare one: `at` comes straight out of the (untrusted) blob,
@@ -143,12 +146,12 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::BadMagic(magic));
         }
         let total = be32(header, 4)? as usize;
-        if total > MAX_TOTALSIZE {
+        if total > MAXIMUM_TOTALSIZE {
             return Err(Error::TooLarge(total));
         }
 
         // SAFETY: the magic checked out, so `ptr` really is a blob, and `total` is the length it
-        // declares for itself, now bounded by `MAX_TOTALSIZE`; the caller's contract covers the
+        // declares for itself, now bounded by `MAXIMUM_TOTALSIZE`; the caller's contract covers the
         // whole of it for `'a`.
         let bytes = unsafe { core::slice::from_raw_parts(ptr, total) };
         Self::from_bytes(bytes)

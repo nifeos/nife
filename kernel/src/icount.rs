@@ -30,7 +30,7 @@ pub mod tick_trace {
     static COUNT: AtomicU64 = AtomicU64::new(0);
     static ARRIVAL_SUM: AtomicU64 = AtomicU64::new(0);
     static ARRIVAL_MAXIMUM: AtomicU64 = AtomicU64::new(0);
-    static ARRIVAL_MIN: AtomicU64 = AtomicU64::new(u64::MAX);
+    static ARRIVAL_MINIMUM: AtomicU64 = AtomicU64::new(u64::MAX);
     static HANDLER_SUM: AtomicU64 = AtomicU64::new(0);
     static HANDLER_MAX: AtomicU64 = AtomicU64::new(0);
     static EARLY: AtomicU64 = AtomicU64::new(0);
@@ -56,7 +56,7 @@ pub mod tick_trace {
         COUNT.fetch_add(1, Ordering::Relaxed);
         ARRIVAL_SUM.fetch_add(arrival_latency, Ordering::Relaxed);
         ARRIVAL_MAXIMUM.fetch_max(arrival_latency, Ordering::Relaxed);
-        ARRIVAL_MIN.fetch_min(arrival_latency, Ordering::Relaxed);
+        ARRIVAL_MINIMUM.fetch_min(arrival_latency, Ordering::Relaxed);
         HANDLER_SUM.fetch_add(handler, Ordering::Relaxed);
         HANDLER_MAX.fetch_max(handler, Ordering::Relaxed);
     }
@@ -72,13 +72,13 @@ pub mod tick_trace {
         EARLY.load(Ordering::Relaxed)
     }
 
-    /// `(count, arrival_min, arrival_mean, arrival_max, handler_mean, handler_max)`, in counter
-    /// ticks. Means are integer divisions; the caller converts to instructions.
+    /// `(count, arrival_minimum, arrival_mean, arrival_maximum, handler_mean, handler_max)`, in
+    /// counter ticks. Means are integer divisions; the caller converts to instructions.
     pub(crate) fn snapshot() -> (u64, u64, u64, u64, u64, u64) {
         let n = COUNT.load(Ordering::Relaxed).max(1);
         (
             COUNT.load(Ordering::Relaxed),
-            ARRIVAL_MIN.load(Ordering::Relaxed),
+            ARRIVAL_MINIMUM.load(Ordering::Relaxed),
             ARRIVAL_SUM.load(Ordering::Relaxed) / n,
             ARRIVAL_MAXIMUM.load(Ordering::Relaxed),
             HANDLER_SUM.load(Ordering::Relaxed) / n,
@@ -91,7 +91,7 @@ pub mod tick_trace {
         COUNT.store(0, Ordering::Relaxed);
         ARRIVAL_SUM.store(0, Ordering::Relaxed);
         ARRIVAL_MAXIMUM.store(0, Ordering::Relaxed);
-        ARRIVAL_MIN.store(u64::MAX, Ordering::Relaxed);
+        ARRIVAL_MINIMUM.store(u64::MAX, Ordering::Relaxed);
         HANDLER_SUM.store(0, Ordering::Relaxed);
         HANDLER_MAX.store(0, Ordering::Relaxed);
         EARLY.store(0, Ordering::Relaxed);
@@ -169,16 +169,16 @@ pub fn run() -> ! {
     let ticks_measured = ticks_after - ticks_before;
     let deadline_delta = deadline_after - deadline_before;
 
-    let (count, arrival_min, arrival_mean, arrival_max, handler_mean, handler_max) =
+    let (count, arrival_minimum, arrival_mean, arrival_maximum, handler_mean, handler_max) =
         tick_trace::snapshot();
     let early = tick_trace::early();
 
     println!("icount: ticks {count}");
     println!(
         "icount: arrival_instructions min {} mean {} max {}",
-        arrival_min * per_tick,
+        arrival_minimum * per_tick,
         arrival_mean * per_tick,
-        arrival_max * per_tick
+        arrival_maximum * per_tick
     );
     println!(
         "icount: handler_instructions mean {} max {}",
@@ -201,12 +201,12 @@ pub fn run() -> ! {
          the emulator rather than this kernel"
     );
     assert!(
-        arrival_max * per_tick <= crate::arch::timer::ARRIVAL_BOUND,
+        arrival_maximum * per_tick <= crate::arch::timer::ARRIVAL_BOUND,
         "icount: an interrupt arrived {} instructions after the deadline it was armed against, over \
          a bound of {}. On this instrument that is the kernel's own path length, not the host: \
          either the trap path grew, or the timer was armed with something other than the deadline \
          the kernel recorded.",
-        arrival_max * per_tick,
+        arrival_maximum * per_tick,
         crate::arch::timer::ARRIVAL_BOUND
     );
 

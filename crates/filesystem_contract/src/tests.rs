@@ -192,7 +192,7 @@ fn the_batching_fixture_is_over_the_bound_and_splits_where_the_gate_says() {
         "the control matches, so 'the batches are the match' proves nothing",
     );
     assert!(
-        tree::MANY_NAMES.len() > nameset::MAX_NAMES,
+        tree::MANY_NAMES.len() > nameset::MAXIMUM_NAMES,
         "the fixture fits in one grant, so nothing here is batched",
     );
     // The names are staged in sorted order, which is what lets the two batches below be read off
@@ -200,11 +200,11 @@ fn the_batching_fixture_is_over_the_bound_and_splits_where_the_gate_says() {
     assert!(tree::MANY_NAMES.windows(2).all(|w| w[0] < w[1]));
     assert_eq!(
         tree::MANY_FIRST_BATCH,
-        tree::MANY_NAMES[..nameset::MAX_NAMES].join(" "),
+        tree::MANY_NAMES[..nameset::MAXIMUM_NAMES].join(" "),
     );
     assert_eq!(
         tree::MANY_SECOND_BATCH,
-        tree::MANY_NAMES[nameset::MAX_NAMES..].join(" "),
+        tree::MANY_NAMES[nameset::MAXIMUM_NAMES..].join(" "),
     );
 }
 

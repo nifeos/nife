@@ -20,7 +20,7 @@ pub const MAXIMUM_DEPTH: usize = 8;
 
 /// The longest single component a path may have, which is [`crate::MAX_FILE_NAME`]: the last
 /// component of a path can be a file, and a file may be named that long. A component the shell
-/// descends through or stands in is held to [`MAX_DIRECTORY_NAME`] as well ([`Cwd::descend`]).
+/// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME`] as well ([`Cwd::descend`]).
 pub const MAX_NAME: usize = crate::MAX_FILE_NAME;
 
 /// **The longest directory name a [`Cwd`] or a bound name holds**, which is [`crate::WORDS_NAME`]:
@@ -30,11 +30,11 @@ pub const MAX_NAME: usize = crate::MAX_FILE_NAME;
 /// [`crate::Holdings`] and several in an [`crate::Endowment`].
 ///
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
-pub const MAX_DIRECTORY_NAME: usize = crate::WORDS_NAME;
+pub const MAXIMUM_DIRECTORY_NAME: usize = crate::WORDS_NAME;
 
 /// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
-pub const RENDER_MAX: usize = 1 + MAXIMUM_DEPTH * (1 + MAX_DIRECTORY_NAME);
+pub const RENDER_MAX: usize = 1 + MAXIMUM_DEPTH * (1 + MAXIMUM_DIRECTORY_NAME);
 
 /// Why a token cannot be navigated. Each is a fact about the *name*, never about a permission,
 /// which is the distinction the whole model rests on.
@@ -46,7 +46,7 @@ pub enum Refused {
     /// More components than [`MAXIMUM_DEPTH`], or a descent that would take the shell past it.
     TooDeep,
     /// A directory to stand in, descend through or bind whose name is over
-    /// [`MAX_DIRECTORY_NAME`]. A name that long is a file's, not a place this shell can be.
+    /// [`MAXIMUM_DIRECTORY_NAME`]. A name that long is a file's, not a place this shell can be.
     ///
     /// Name: provisional (milestone 946).
     DirectoryNameTooLong,
@@ -191,11 +191,11 @@ pub fn component_fits(part: &[u8]) -> bool {
 }
 
 /// Whether one component can be a directory this shell stands in: [`component_fits`], and at most
-/// [`MAX_DIRECTORY_NAME`] bytes.
+/// [`MAXIMUM_DIRECTORY_NAME`] bytes.
 ///
 /// Name: provisional (milestone 946).
 pub fn directory_fits(part: &[u8]) -> bool {
-    component_fits(part) && part.len() <= MAX_DIRECTORY_NAME
+    component_fits(part) && part.len() <= MAXIMUM_DIRECTORY_NAME
 }
 
 /// **Where a shell is, relative to its own root**: the components it descended through, and nothing
@@ -206,7 +206,7 @@ pub fn directory_fits(part: &[u8]) -> bool {
 /// change what that grant means.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Cwd {
-    names: [[u8; MAX_DIRECTORY_NAME]; MAXIMUM_DEPTH],
+    names: [[u8; MAXIMUM_DIRECTORY_NAME]; MAXIMUM_DEPTH],
     lens: [u8; MAXIMUM_DEPTH],
     depth: usize,
 }
@@ -241,7 +241,7 @@ impl Cwd {
     /// with no directory capability can be.
     pub const fn root() -> Self {
         Cwd {
-            names: [[0; MAX_DIRECTORY_NAME]; MAXIMUM_DEPTH],
+            names: [[0; MAXIMUM_DIRECTORY_NAME]; MAXIMUM_DEPTH],
             lens: [0; MAXIMUM_DEPTH],
             depth: 0,
         }
@@ -258,8 +258,8 @@ impl Cwd {
     }
 
     /// Record a descent. `false` if the name does not fit, is longer than a directory's may be
-    /// ([`MAX_DIRECTORY_NAME`]), or the shell is already as deep as it tracks; the caller must not
-    /// have sent the request in that case.
+    /// ([`MAXIMUM_DIRECTORY_NAME`]), or the shell is already as deep as it tracks; the caller must
+    /// not have sent the request in that case.
     pub fn descend(&mut self, name: &[u8]) -> bool {
         if self.depth == MAXIMUM_DEPTH || !directory_fits(name) {
             return false;
@@ -283,7 +283,7 @@ impl Cwd {
             return false;
         }
         self.depth -= 1;
-        self.names[self.depth] = [0; MAX_DIRECTORY_NAME];
+        self.names[self.depth] = [0; MAXIMUM_DIRECTORY_NAME];
         self.lens[self.depth] = 0;
         true
     }
@@ -482,12 +482,15 @@ impl<'a> TwoRoots<'a> {
 }
 
 /// How many names one [`Bindings`] can hold.
-pub const MAX_BINDS: usize = 4;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_BINDS`.
+pub const MAXIMUM_BINDS: usize = 4;
 
 /// One name a shell has bound to a position it already reached some other way.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BindEntry {
-    name: [u8; MAX_DIRECTORY_NAME],
+    name: [u8; MAXIMUM_DIRECTORY_NAME],
     name_len: u8,
     pos: Cwd,
 }
@@ -514,7 +517,7 @@ pub enum BindRefused {
     /// user did not intend is exactly the kind of quiet authority change §42 refuses elsewhere;
     /// unbinding first is one more word and never an ambiguity.
     AlreadyBound,
-    /// [`MAX_BINDS`] entries are already in use.
+    /// [`MAXIMUM_BINDS`] entries are already in use.
     TooMany,
     /// This name is the first component of the path to a mounted tree ([`crate::MountedTree`]).
     /// A bound name wins over the literal first component of an absolute path, so binding it
@@ -535,14 +538,14 @@ impl BindRefused {
     }
 }
 
-/// A shell's bound names, `bind`'s namespace: [`MAX_BINDS`] slots, no allocator, exactly [`Cwd`]'s
-/// own shape. A [`BindEntry`] is a value, a [`Cwd`] under a name, with no capability slot and no
-/// lifetime, and it resolves through [`Cwd::apply`], so a bound name reaches nothing a direct walk
-/// could not. One entry per name: a second bind of a name is refused, never shadowing. See
-/// notes/grant-expression/grant-plan-crate.md ("Navigation").
+/// A shell's bound names, `bind`'s namespace: [`MAXIMUM_BINDS`] slots, no allocator, exactly
+/// [`Cwd`]'s own shape. A [`BindEntry`] is a value, a [`Cwd`] under a name, with no capability slot
+/// and no lifetime, and it resolves through [`Cwd::apply`], so a bound name reaches nothing a
+/// direct walk could not. One entry per name: a second bind of a name is refused, never shadowing.
+/// See notes/grant-expression/grant-plan-crate.md ("Navigation").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Bindings {
-    entries: [Option<BindEntry>; MAX_BINDS],
+    entries: [Option<BindEntry>; MAXIMUM_BINDS],
 }
 
 impl Default for Bindings {
@@ -556,7 +559,7 @@ impl Bindings {
     /// fixtures) can name one without reaching for a non-`const` `Default`.
     pub const fn none() -> Self {
         Bindings {
-            entries: [None; MAX_BINDS],
+            entries: [None; MAXIMUM_BINDS],
         }
     }
 
@@ -574,7 +577,7 @@ impl Bindings {
             .iter_mut()
             .find(|e| e.is_none())
             .ok_or(BindRefused::TooMany)?;
-        let mut packed = [0u8; MAX_DIRECTORY_NAME];
+        let mut packed = [0u8; MAXIMUM_DIRECTORY_NAME];
         packed[..name.len()].copy_from_slice(name);
         *slot = Some(BindEntry {
             name: packed,
@@ -1179,11 +1182,11 @@ mod tests {
         assert_eq!(binds.resolve_absolute(&p).unwrap().unwrap(), first);
     }
 
-    /// The table holds at most [`MAX_BINDS`], loud rather than silently dropping one.
+    /// The table holds at most [`MAXIMUM_BINDS`], loud rather than silently dropping one.
     #[test]
     fn the_table_refuses_a_bind_past_its_capacity() {
         let mut binds = Bindings::default();
-        for i in 0..MAX_BINDS {
+        for i in 0..MAXIMUM_BINDS {
             let name = [b'a' + i as u8];
             binds.add(&name, Cwd::root()).unwrap();
         }

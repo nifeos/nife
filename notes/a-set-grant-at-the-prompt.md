@@ -81,8 +81,8 @@ slot, one transient.
 
 ## What this does not decide
 
-The eight-name bound (`MAX_NAMES`), which stays a stack decision in the shell; `mv *.txt dir/`, which
-a set capability cannot express by design (`notes/glob-grant.md`); and the provisional name
+The eight-name bound (`MAXIMUM_NAMES`), which stays a stack decision in the shell; `mv *.txt dir/`,
+which a set capability cannot express by design (`notes/glob-grant.md`); and the provisional name
 `SET_BIT`.
 
 ## The limits 2b asks for, proposed

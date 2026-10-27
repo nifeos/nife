@@ -119,7 +119,7 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
     let budget =
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the compositor");
 
-    let mut grants = [rendezvous_cap(report, Rights::WRITE); MAX_COMP_GRANTS];
+    let mut grants = [rendezvous_cap(report, Rights::WRITE); MAXIMUM_COMP_GRANTS];
     grants[1] = rendezvous_cap(display, Rights::WRITE);
     grants[2] = rendezvous_cap(doorbell, Rights::READ);
     grants[3] = page_frame_run_cap(
@@ -228,7 +228,7 @@ impl Wiring {
             va: 0,
             phys: 0,
             flags: Flags::user_data(),
-        }; MAX_CLIENT_MAPS];
+        }; MAXIMUM_CLIENT_MAPS];
         let mut m = 0;
         maps[m] = Mapping {
             va: CTL_VA,
@@ -432,7 +432,7 @@ impl Wiring {
             va: 0,
             phys: 0,
             flags: Flags::user_data(),
-        }; MAX_CLIENT_MAPS];
+        }; MAXIMUM_CLIENT_MAPS];
         let mut m = 0;
         maps[m] = Mapping {
             va: T_CTL_VA,
@@ -522,10 +522,10 @@ const _: () = {
 };
 /// The most a client can need: its control page, its surface, and (capture only) the window list.
 /// A capture client maps the screen itself, out of its `SCREEN_FRAME` and `BUDGET` grants.
-const MAX_CLIENT_MAPS: usize = 1 + MAX_SURFACE_PAGES + 1;
+const MAXIMUM_CLIENT_MAPS: usize = 1 + MAX_SURFACE_PAGES + 1;
 /// Report, display, doorbell, the screen `PageFrame`, its map budget, then one input endpoint per
 /// focusable client starting at [`COMP_INPUT_BASE`].
-const MAX_COMP_GRANTS: usize = COMP_INPUT_BASE as usize + compositor::MAXIMUM_WINDOWS;
+const MAXIMUM_COMP_GRANTS: usize = COMP_INPUT_BASE as usize + compositor::MAXIMUM_WINDOWS;
 /// The first of the compositor's per-client input-endpoint grant slots. Must match
 /// `components/src/compositor.rs`'s own `INPUT` constant.
 const COMP_INPUT_BASE: u64 = 5;

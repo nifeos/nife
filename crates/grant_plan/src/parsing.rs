@@ -310,8 +310,8 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
 
     let mut memory_grant = None;
     let mut program: &[u8] = b"";
-    let mut positional_tokens = [&b""[..]; MAX_POSITIONALS];
-    let mut quoted_positionals = [false; MAX_POSITIONALS];
+    let mut positional_tokens = [&b""[..]; MAXIMUM_POSITIONALS];
+    let mut quoted_positionals = [false; MAXIMUM_POSITIONALS];
     let mut positional_count = 0;
     let mut short_options = [0u8; MAXIMUM_SHORT_OPTIONS];
     let mut short_option_count = 0;
@@ -364,7 +364,7 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
         } else if !have_prog {
             program = t;
             have_prog = true;
-        } else if positional_count < MAX_POSITIONALS {
+        } else if positional_count < MAXIMUM_POSITIONALS {
             positional_tokens[positional_count] = t;
             quoted_positionals[positional_count] = quoted;
             positional_count += 1;
@@ -391,7 +391,10 @@ pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
 /// The most positional tokens a [`ParsedInvocation`] keeps. Two would cover every manifest shape today (an
 /// argument and a file); the headroom exists so a third token is *refused* rather than dropped
 /// before anything looks at it.
-pub const MAX_POSITIONALS: usize = 4;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_POSITIONALS`.
+pub const MAXIMUM_POSITIONALS: usize = 4;
 
 /// The parsed form of a program invocation, before the manifest check. [`plan`](crate::plan) turns it into an
 /// [`Endowment`](crate::Endowment) or a [`Refusal`].
@@ -416,7 +419,7 @@ pub struct ParsedInvocation<'a> {
     /// verb gone the line reads `memory_grant_depleter --mem 16` the way every other command line does.
     pub memory_grant: Option<u64>,
     /// The positional tokens after the program name, in order, filled prefix in `positional_tokens[..positional_count]`.
-    positional_tokens: [&'a [u8]; MAX_POSITIONALS],
+    positional_tokens: [&'a [u8]; MAXIMUM_POSITIONALS],
     positional_count: usize,
     /// The short-option letters typed, in order, filled prefix in `short_options[..short_option_count]`. Collected without
     /// knowing the program, because **an option letter is not authority**: what it may do is widen a
@@ -427,11 +430,12 @@ pub struct ParsedInvocation<'a> {
     /// Which of [`positionals`](ParsedInvocation::positionals) were quoted, in the same order. A quoted word
     /// is **never a pattern**, whatever bytes are in it, which is the one authority-visible thing
     /// quoting does: `rm "*.txt"` designates one name and `rm *.txt` designates a set.
-    quoted_positionals: [bool; MAX_POSITIONALS],
+    quoted_positionals: [bool; MAXIMUM_POSITIONALS],
     /// A token nothing can place: a flag-shaped token that is not `--mem`, or one past
-    /// [`MAX_POSITIONALS`]. Kept so the shell refuses it rather than silently ignoring authority the
-    /// user thought they were granting. A **flag** that fell through to the file position would be
-    /// the one way a typo could turn into a capability transfer, so it never reaches that position.
+    /// [`MAXIMUM_POSITIONALS`]. Kept so the shell refuses it rather than silently ignoring
+    /// authority the user thought they were granting. A **flag** that fell through to the file
+    /// position would be the one way a typo could turn into a capability transfer, so it never
+    /// reaches that position.
     pub unexpected: Option<&'a [u8]>,
     /// **The line's quotes do not make sense** ([`Refusal::UnclosedQuote`] or
     /// [`Refusal::PartlyQuoted`]), carried rather than returned because [`parse_run`] has no error

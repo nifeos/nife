@@ -83,7 +83,7 @@ const E_SCRATCH: u64 = 0x02;
 /// both are in scope to be compared (AGENTS.md codebase rule 7: anything two binaries must agree on
 /// is a crate). A page offset that disagreed here would put a client's blob where the service
 /// reads a proof.
-const _: () = assert!(proto::MAX_IDENTITY == credentialer::MAX_IDENTITY);
+const _: () = assert!(proto::MAXIMUM_IDENTITY == credentialer::MAXIMUM_IDENTITY);
 const _: () = assert!(proto::MAXIMUM_SECRET == credentialer::MAXIMUM_SECRET);
 
 #[global_allocator]
@@ -231,15 +231,16 @@ fn wipe(window: MappedWindow) {
     proto::wipe(page);
 }
 
-/// Fill `out` with bytes from the entropy service, `entropy_contract::MAX_BYTES` at a time. `false`
-/// when the service could not supply them, which every caller treats as fatal to the request.
+/// Fill `out` with bytes from the entropy service, `entropy_contract::MAXIMUM_BYTES` at a time.
+/// `false` when the service could not supply them, which every caller treats as fatal to the
+/// request.
 ///
 /// A short reply is a refusal here, not something to pad out. The entropy contract is explicit
 /// that a count below what was asked means the device went dry, and half a salt is not a salt.
 fn fill(out: &mut [u8]) -> bool {
     let mut done = 0;
     while done < out.len() {
-        let want = (out.len() - done).min(entropy_contract::MAX_BYTES as usize);
+        let want = (out.len() - done).min(entropy_contract::MAXIMUM_BYTES as usize);
         let (r0, r1) = call(
             ENTROPY,
             entropy_contract::req(entropy_contract::GET, want as u64),

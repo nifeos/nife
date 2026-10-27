@@ -144,9 +144,9 @@ fn the_flag_and_positional_ceilings_refuse_rather_than_overflow() {
     assert_eq!(r.options(), b"");
     assert_eq!(r.unexpected, Some(&b"-abcdefghi"[..]));
 
-    // Five operands, and MAX_POSITIONALS is four.
+    // Five operands, and MAXIMUM_POSITIONALS is four.
     let r = parse_run(b"prog a b c d e");
-    assert_eq!(r.positionals().len(), MAX_POSITIONALS);
+    assert_eq!(r.positionals().len(), MAXIMUM_POSITIONALS);
     assert_eq!(r.unexpected, Some(&b"e"[..]));
 }
 
@@ -472,7 +472,7 @@ fn a_quoted_word_is_known_by_its_position_and_the_last_slot_is_readable() {
     assert!(spec.is_quoted(0));
     assert!(!spec.is_quoted(1));
     assert!(
-        !spec.is_quoted(MAX_POSITIONALS),
+        !spec.is_quoted(MAXIMUM_POSITIONALS),
         "past the end was not quoted"
     );
 }

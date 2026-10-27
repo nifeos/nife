@@ -1075,8 +1075,8 @@ mod tests {
             .collect();
         let all: std::vec::Vec<(&str, &[u8])> =
             names.iter().map(|n| (n.as_str(), &b"x"[..])).collect();
-        let at_max = written(&all[..MAXIMUM_MEMBERS]);
-        assert_eq!(Package::parse(&at_max).unwrap().len(), MAXIMUM_MEMBERS);
+        let at_maximum = written(&all[..MAXIMUM_MEMBERS]);
+        assert_eq!(Package::parse(&at_maximum).unwrap().len(), MAXIMUM_MEMBERS);
 
         let attributes = Attributes {
             name: "uptime",
@@ -1090,7 +1090,7 @@ mod tests {
         );
 
         // The reader's side: the same file with its count word raised by one.
-        let mut over = at_max.clone();
+        let mut over = at_maximum.clone();
         over[104..108].copy_from_slice(&(MAXIMUM_MEMBERS as u32 + 1).to_le_bytes());
         over.resize(over.len() + MEMBER_LEN, 0);
         assert_eq!(Package::parse(&over), Err(Error::TooManyMembers));

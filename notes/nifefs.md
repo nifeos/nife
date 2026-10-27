@@ -64,7 +64,7 @@ the trade ("it costs kernel stack, because `Fs` holds `entries` as a fixed array
 stale when it was written**, and the raise was much cheaper than the plan expected. The only
 per-entry stack left is one decoded `Entry`, which went from 32 bytes to 40.
 
-`crates/nifefs`'s test `fs_does_not_grow_with_max_files` pins that: it asserts `size_of::<Fs>()`
+`crates/nifefs`'s test `fs_does_not_grow_with_maximum_files` pins that: it asserts `size_of::<Fs>()`
 is a borrowed slice plus a count, so reintroducing the array fails a host test in milliseconds
 instead of faulting a guard page during boot.
 

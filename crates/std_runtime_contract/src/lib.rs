@@ -86,7 +86,7 @@ pub const RESOLVER_SLOT: u64 = 9;
 /// granted zone (§252 (a resolver grant is one zone per client badge)), filled from the front, so
 /// the first empty slot ends the list. `lookup_host` moves to the next badge only when the
 /// resolver answers that the name is outside this one's zone. Eight, the resolver's
-/// `GRANTS_MAX`.
+/// `GRANTS_MAXIMUM`.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub const RESOLVER_SLOTS: [u64; 8] = [RESOLVER_SLOT, 22, 23, 24, 25, 26, 27, 28];

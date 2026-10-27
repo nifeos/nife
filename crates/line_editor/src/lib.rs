@@ -16,7 +16,7 @@
 //! # BUGS
 //!
 //! - The redraw math assumes one row, so a line that wraps past the margin redraws wrongly;
-//!   [`LINE_MAX`] keeps that rare (notes/line-discipline.md).
+//!   [`LINE_MAXIMUM`] keeps that rare (notes/line-discipline.md).
 
 #![no_std]
 
@@ -28,7 +28,7 @@ mod line_disc;
 mod output;
 mod raw_queue;
 
-pub use line_disc::{Event, HIST, LINE_MAX, LineDisc, PROMPT_MAX};
+pub use line_disc::{Event, HIST, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM};
 pub use output::{Sink, expand_output};
 pub use raw_queue::{RAW_QUEUE_MAXIMUM, RawQueue};
 

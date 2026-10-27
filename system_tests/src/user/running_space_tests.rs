@@ -343,7 +343,7 @@ fn a_second_bind_of_a_bound_space_is_refused() {
 ///
 /// There is no final-capability rule. The reaper takes the space out by the name the thread kept,
 /// or a dead process's memory, root, ASID and revocation records stay spoken for forever. It also
-/// prints what the registry costs at `MAX_USER_SPACES`, measured from the type.
+/// prints what the registry costs at `MAXIMUM_USER_SPACES`, measured from the type.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.running_space_tests.a_bound_space_dies_with_its_thread_not_with_its_capabilities.patch`
 #[test_case]

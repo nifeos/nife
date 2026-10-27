@@ -13,7 +13,7 @@ fn a_handed_off_discipline_carries_on_where_the_old_one_stopped() {
     // A full ring of long lines, so the blob is the size a real terminal's is.
     // Distinct lines, because the ring skips an exact repeat of its newest entry.
     for i in 0..HIST - 1 {
-        let long = [b'a' + i as u8; LINE_MAX - 8];
+        let long = [b'a' + i as u8; LINE_MAXIMUM - 8];
         old.start_line(b"$ ", &mut s);
         feed_all(&mut old, &mut s, &long);
         feed_all(&mut old, &mut s, b"\r");

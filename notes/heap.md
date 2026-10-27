@@ -294,7 +294,7 @@ of the shell cannot reach `Vec` at all. `mod heap` hands out `Room`, a slice onc
 with `try_reserve_exact` and `push_within_capacity`, and it has no method that grows. `script/lint`
 holds that the declaration stays in `mod heap`.
 
-The heap is capped at 32 KiB (`swish::HEAP_MAX_BYTES`). All of it is mapped from the shell's
+The heap is capped at 32 KiB (`swish::HEAP_MAXIMUM_BYTES`). All of it is mapped from the shell's
 128-page budget first thing at `_start` (`MemoryRegionHeap::commit_all`), so its pages and their
 page tables sit under every later carve and cannot break their last-in first-out return. The cap is
 several times what a line needs. A leak therefore exhausts the heap and refuses lines long before

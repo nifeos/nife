@@ -72,9 +72,9 @@ about 17% to it.
 ### A. Badged endpoint capabilities (seL4's answer)
 
 A derived endpoint capability carries a badge word the kernel delivers to the receiver on
-`RECEIVE_CAP`. The server maps K windows and reads request `b` from `FILE_PAGE + b * TRANSFER_MAX`. The
-progenitor holds a pool of K (badged endpoint, frame) pairs and hands one to each caretaker chain,
-taking it back at reap.
+`RECEIVE_CAP`. The server maps K windows and reads request `b` from `FILE_PAGE + b *
+TRANSFER_MAXIMUM`. The progenitor holds a pool of K (badged endpoint, frame) pairs and hands one to
+each caretaker chain, taking it back at reap.
 
 - `filesystem_contract`'s message layout and opcodes do not change.
 - The syscall surface does. A method to mint a badged endpoint, and a fourth return value from

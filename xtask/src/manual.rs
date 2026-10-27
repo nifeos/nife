@@ -272,7 +272,7 @@ pub(crate) fn tree_apropos(term: Option<String>) -> bool {
         // A path the record cannot hold is reported rather than silently shortened, because the
         // path is the whole answer here: a result a reader cannot open is worse than no result.
         for d in &shelf.docs {
-            if d.path.len() > documentation::index::PATH_MAX {
+            if d.path.len() > documentation::index::PATH_MAXIMUM {
                 long.push(d.path.clone());
             }
         }
@@ -326,7 +326,7 @@ pub(crate) fn tree_apropos(term: Option<String>) -> bool {
     // worse than no result, so it exits 1 and is named; an over-long path that never reached the
     // output is a fact about the corpus and gets one line, so the tool does not fail on its own
     // README example.
-    let maximum = documentation::index::PATH_MAX;
+    let maximum = documentation::index::PATH_MAXIMUM;
     let shown: Vec<&String> = long
         .iter()
         .filter(|p| {

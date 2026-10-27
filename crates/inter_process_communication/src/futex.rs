@@ -198,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    fn a_wake_takes_only_its_own_key_in_order_and_at_most_max() {
+    fn a_wake_takes_only_its_own_key_in_order_and_at_most_maximum() {
         let a = key(1, 0x1000);
         let b = key(1, 0x1004);
         let c = key(2, 0x1000); // the same address in another space is another futex

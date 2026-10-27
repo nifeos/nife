@@ -6,10 +6,10 @@
 //! splits into module files)), for the module and the file.
 
 /// How many raw bytes [`RawQueue`] holds for a parked `OPERATION_READRAW`, when bytes arrive faster than
-/// the raw reader drains them. Sized like [`LINE_MAX`](crate::LINE_MAX)'s bell-on-overflow precedent: a burst past
-/// this is dropped, audibly, rather than grown without bound. 64 is generous for a keystroke-at-a
-/// time reader (`kilo`'s own event loop reads one key, redraws, reads the next) and still covers a
-/// terminal-paste dumped in one go.
+/// the raw reader drains them. Sized like [`LINE_MAXIMUM`](crate::LINE_MAXIMUM)'s bell-on-overflow
+/// precedent: a burst past this is dropped, audibly, rather than grown without bound. 64 is
+/// generous for a keystroke-at-a time reader (`kilo`'s own event loop reads one key, redraws, reads
+/// the next) and still covers a terminal-paste dumped in one go.
 ///
 /// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
 /// 2026-10-26 (UTC), renamed from `RAW_QUEUE_MAX`.

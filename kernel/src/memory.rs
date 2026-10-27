@@ -769,7 +769,8 @@ pub(crate) fn record_vtd_region(base: u64, size: u64) {
 /// named, in table order; `None` past the last. [`vtd_regions`]' counterpart on an AMD machine,
 /// and read by `mmu::map_everything` for the same reason. Name: provisional (lane `amd-vi`).
 #[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
-pub(crate) fn amd_vi_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAX_IVHDS] {
+pub(crate) fn amd_vi_regions() -> [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS]
+{
     *AMD_VI_REGIONS.lock()
 }
 
@@ -1079,8 +1080,11 @@ static VTD_REGIONS: IrqSafeMutex<[Option<(u64, u64)>; machine_discovery::acpi::M
 /// role as [`VTD_REGIONS`] on an AMD machine, kept apart rather than shared because the two are
 /// named for the hardware they hold and a machine has one kind or the other.
 static AMD_VI_REGIONS: IrqSafeMutex<
-    [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAX_IVHDS],
-> = IrqSafeMutex::new(rank::RAM, [None; machine_discovery::acpi::ivrs::MAX_IVHDS]);
+    [Option<(u64, u64)>; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS],
+> = IrqSafeMutex::new(
+    rank::RAM,
+    [None; machine_discovery::acpi::ivrs::MAXIMUM_IVHDS],
+);
 
 /// The screen the boot handoff described (milestone 243). See [`framebuffer`].
 static FRAMEBUFFER: IrqSafeMutex<Option<(u64, u64)>> = IrqSafeMutex::new(rank::RAM, None);

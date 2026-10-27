@@ -31,26 +31,29 @@ pub const MANIFEST_FILE_NAME: &str = "durable-sessions";
 
 /// The most identities one manifest may list.
 ///
-/// A ceiling rather than a limit anybody meets, matching `timetable::MAX_ENTRIES`'s own reasoning:
-/// this crate allocates nothing, so a parsed manifest borrows the document's own bytes and the
-/// table backing it is a fixed array. Eight matches `timetable::MAX_ENTRIES` because there is no
-/// reason for the two ceilings to differ in this demonstration; a real deployment sizes both against
-/// how many principals it actually has.
-pub const MAX_IDENTITIES: usize = 8;
+/// A ceiling rather than a limit anybody meets, matching `timetable::MAXIMUM_ENTRIES`'s own
+/// reasoning: this crate allocates nothing, so a parsed manifest borrows the document's own bytes
+/// and the table backing it is a fixed array. Eight matches `timetable::MAXIMUM_ENTRIES` because
+/// there is no reason for the two ceilings to differ in this demonstration; a real deployment sizes
+/// both against how many principals it actually has.
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IDENTITIES`.
+pub const MAXIMUM_IDENTITIES: usize = 8;
 
 /// The longest one identity name this crate will carry.
 ///
-/// Matches `login_contract::MAX_IDENTITY` (64 bytes) by convention rather than by a shared type: the
-/// manifest names the same identities a login authenticates, so a name too long to ever log in with
-/// is not a name this store needs to carry either. Not enforced by a shared dependency (this crate
-/// takes none), only by this constant and the comment naming why it was chosen.
+/// Matches `login_contract::MAXIMUM_IDENTITY` (64 bytes) by convention rather than by a shared
+/// type: the manifest names the same identities a login authenticates, so a name too long to ever
+/// log in with is not a name this store needs to carry either. Not enforced by a shared dependency
+/// (this crate takes none), only by this constant and the comment naming why it was chosen.
 pub const MAX_IDENTITY_LEN: usize = 64;
 
 /// A parsed manifest: the identity names it lists, in document order, each borrowing the document's
 /// own bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Manifest<'a> {
-    names: [&'a [u8]; MAX_IDENTITIES],
+    names: [&'a [u8]; MAXIMUM_IDENTITIES],
     n: usize,
 }
 
@@ -68,8 +71,8 @@ impl<'a> Manifest<'a> {
 pub enum Error {
     /// A name longer than [`MAX_IDENTITY_LEN`].
     NameTooLong(usize),
-    /// More identities than [`MAX_IDENTITIES`], reported at the line that overflowed rather than
-    /// dropped, matching `timetable::Error::TooManyEntries`'s own posture.
+    /// More identities than [`MAXIMUM_IDENTITIES`], reported at the line that overflowed rather
+    /// than dropped, matching `timetable::Error::TooManyEntries`'s own posture.
     TooManyIdentities(usize),
 }
 
@@ -109,7 +112,7 @@ impl Error {
 /// assert_eq!(empty.entries().len(), 0);
 /// ```
 pub fn parse_manifest(doc: &str) -> Result<Manifest<'_>, Error> {
-    let mut names = [b"".as_slice(); MAX_IDENTITIES];
+    let mut names = [b"".as_slice(); MAXIMUM_IDENTITIES];
     let mut n = 0usize;
 
     for (i, raw) in doc.lines().enumerate() {
@@ -122,7 +125,7 @@ pub fn parse_manifest(doc: &str) -> Result<Manifest<'_>, Error> {
         if bytes.len() > MAX_IDENTITY_LEN {
             return Err(Error::NameTooLong(no));
         }
-        if n == MAX_IDENTITIES {
+        if n == MAXIMUM_IDENTITIES {
             return Err(Error::TooManyIdentities(no));
         }
         names[n] = bytes;
@@ -145,7 +148,7 @@ fn strip_comment(line: &str) -> &str {
 /// (`login_contract::with_listed`, the same format).
 ///
 /// A fixed buffer, because this crate is `no_std` with no `alloc`, as `timetable::write_plan` is.
-/// `None` if `names` will not fit [`MAX_IDENTITIES`], any one name is longer than
+/// `None` if `names` will not fit [`MAXIMUM_IDENTITIES`], any one name is longer than
 /// [`MAX_IDENTITY_LEN`], or the rendered document is wider than `buf`; otherwise
 /// `Some(bytes written)`.
 ///
@@ -164,7 +167,7 @@ fn strip_comment(line: &str) -> &str {
 /// assert_eq!(parsed.entries(), &[b"alice".as_slice(), b"bob".as_slice()]);
 /// ```
 pub fn render_manifest(names: &[&[u8]], buf: &mut [u8]) -> Option<usize> {
-    if names.len() > MAX_IDENTITIES {
+    if names.len() > MAXIMUM_IDENTITIES {
         return None;
     }
     let mut n = 0usize;
@@ -222,10 +225,10 @@ mod tests {
 
     #[test]
     fn more_identities_than_the_table_holds_is_refused_rather_than_dropped() {
-        let doc = heapless_repeat("alice\n", MAX_IDENTITIES + 1);
+        let doc = heapless_repeat("alice\n", MAXIMUM_IDENTITIES + 1);
         assert_eq!(
             parse_manifest(&doc),
-            Err(Error::TooManyIdentities(MAX_IDENTITIES + 1))
+            Err(Error::TooManyIdentities(MAXIMUM_IDENTITIES + 1))
         );
     }
 
@@ -249,7 +252,7 @@ mod tests {
     fn rendering_refuses_what_it_cannot_carry() {
         let mut buf = [0u8; 256];
         // Too many names.
-        let many: [&[u8]; MAX_IDENTITIES + 1] = [b"x".as_slice(); MAX_IDENTITIES + 1];
+        let many: [&[u8]; MAXIMUM_IDENTITIES + 1] = [b"x".as_slice(); MAXIMUM_IDENTITIES + 1];
         assert_eq!(render_manifest(&many, &mut buf), None);
 
         // A name past the bound.
@@ -286,13 +289,13 @@ mod tests {
             "a name exactly at the bound is renderable"
         );
 
-        // Exactly MAX_IDENTITIES of them, through both halves.
-        let full = heapless_repeat("alice\n", MAX_IDENTITIES);
+        // Exactly MAXIMUM_IDENTITIES of them, through both halves.
+        let full = heapless_repeat("alice\n", MAXIMUM_IDENTITIES);
         assert_eq!(
             parse_manifest(&full).unwrap().entries().len(),
-            MAX_IDENTITIES
+            MAXIMUM_IDENTITIES
         );
-        let names: [&[u8]; MAX_IDENTITIES] = [b"alice".as_slice(); MAX_IDENTITIES];
+        let names: [&[u8]; MAXIMUM_IDENTITIES] = [b"alice".as_slice(); MAXIMUM_IDENTITIES];
         assert!(
             render_manifest(&names, &mut buf).is_some(),
             "a manifest holding exactly its capacity is renderable"
@@ -337,10 +340,10 @@ mod tests {
         doc.push('\n');
         assert_eq!(parse_manifest(&doc).unwrap_err().line(), 3);
 
-        let crowded = heapless_repeat("alice\n", MAX_IDENTITIES + 1);
+        let crowded = heapless_repeat("alice\n", MAXIMUM_IDENTITIES + 1);
         assert_eq!(
             parse_manifest(&crowded).unwrap_err().line(),
-            MAX_IDENTITIES + 1
+            MAXIMUM_IDENTITIES + 1
         );
     }
 

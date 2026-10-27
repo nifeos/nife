@@ -33,16 +33,16 @@ fn fields(c: &Civil) -> Fields {
 /// Every timestamp here was cross-checked against Python's `datetime` rather than derived from
 /// this crate, so the table is an independent witness rather than a snapshot of our own output.
 const KNOWN: &[(i64, i32, u8, u8, u8, u8, u8)] = &[
-    (0, 1970, 1, 1, 0, 0, 0),                  // the epoch itself
-    (-1, 1969, 12, 31, 23, 59, 59),            // one second before it
-    (1_000_000_000, 2001, 9, 9, 1, 46, 40),    // the billennium
-    (951_782_400, 2000, 2, 29, 0, 0, 0),       // the leap day the 400 rule creates
-    (-2_203_891_200, 1900, 3, 1, 0, 0, 0),     // the day after the 1900 leap day that isn't
-    (1_709_208_000, 2024, 2, 29, 12, 0, 0),    // an ordinary leap day
-    (1_785_414_896, 2026, 7, 30, 12, 34, 56),  // the day this was written
-    (MINIMUM_TIMESTAMP, 0, 1, 1, 0, 0, 0),     // 0000-01-01T00:00:00Z
-    (MAX_TIMESTAMP, 9999, 12, 31, 23, 59, 59), // 9999-12-31T23:59:59Z
-    (-62_135_596_800, 1, 1, 1, 0, 0, 0),       // 0001-01-01, where Python's calendar starts
+    (0, 1970, 1, 1, 0, 0, 0),                      // the epoch itself
+    (-1, 1969, 12, 31, 23, 59, 59),                // one second before it
+    (1_000_000_000, 2001, 9, 9, 1, 46, 40),        // the billennium
+    (951_782_400, 2000, 2, 29, 0, 0, 0),           // the leap day the 400 rule creates
+    (-2_203_891_200, 1900, 3, 1, 0, 0, 0),         // the day after the 1900 leap day that isn't
+    (1_709_208_000, 2024, 2, 29, 12, 0, 0),        // an ordinary leap day
+    (1_785_414_896, 2026, 7, 30, 12, 34, 56),      // the day this was written
+    (MINIMUM_TIMESTAMP, 0, 1, 1, 0, 0, 0),         // 0000-01-01T00:00:00Z
+    (MAXIMUM_TIMESTAMP, 9999, 12, 31, 23, 59, 59), // 9999-12-31T23:59:59Z
+    (-62_135_596_800, 1, 1, 1, 0, 0, 0),           // 0001-01-01, where Python's calendar starts
 ];
 
 #[test]
@@ -157,7 +157,10 @@ fn out_of_range_timestamps_are_refused_not_wrapped() {
         Civil::from_unix(MINIMUM_TIMESTAMP - 1),
         Err(Error::OutOfRange)
     );
-    assert_eq!(Civil::from_unix(MAX_TIMESTAMP + 1), Err(Error::OutOfRange));
+    assert_eq!(
+        Civil::from_unix(MAXIMUM_TIMESTAMP + 1),
+        Err(Error::OutOfRange)
+    );
     assert_eq!(Civil::from_unix(i64::MIN), Err(Error::OutOfRange));
     assert_eq!(Civil::from_unix(i64::MAX), Err(Error::OutOfRange));
     assert_eq!(Civil::new(10_000, 1, 1, 0, 0, 0), Err(Error::OutOfRange));
@@ -294,7 +297,7 @@ fn parse_accepts_rfc3339() {
         ("1969-12-31T23:59:59Z", -1),
         ("2038-01-19T03:14:08Z", 2_147_483_648),
         ("0000-01-01T00:00:00Z", MINIMUM_TIMESTAMP),
-        ("9999-12-31T23:59:59Z", MAX_TIMESTAMP),
+        ("9999-12-31T23:59:59Z", MAXIMUM_TIMESTAMP),
     ];
     for &(text, secs) in cases {
         let dt = DateTime::parse_rfc3339(text).unwrap_or_else(|e| panic!("{text}: {e:?}"));
@@ -355,7 +358,7 @@ fn format_and_parse_round_trip_across_the_range() {
     // ~300 samples keep the round trip on Miri's paths; the native run keeps the density.
     // "Miri-clean" means the sampled walk (notes/undefined-behavior.md).
     let stride = if cfg!(miri) { 1_000_036_991 } else { 1_000_037 };
-    while secs <= MAX_TIMESTAMP {
+    while secs <= MAXIMUM_TIMESTAMP {
         let dt = DateTime::from_unix(secs, UtcOffset::UTC).unwrap();
         let text = dt.format(Format::Rfc3339);
         let back = DateTime::parse_rfc3339(text.as_str()).unwrap();
@@ -383,7 +386,7 @@ fn utc_offsets() {
     // A local reading can fall outside the range even when the instant is inside it. That edge
     // is documented on from_unix rather than hidden.
     assert_eq!(
-        DateTime::from_unix(MAX_TIMESTAMP, UtcOffset::from_hm(1, 0).unwrap()),
+        DateTime::from_unix(MAXIMUM_TIMESTAMP, UtcOffset::from_hm(1, 0).unwrap()),
         Err(Error::OutOfRange)
     );
 }

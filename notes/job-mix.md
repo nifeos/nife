@@ -182,7 +182,7 @@ grep -ah '^job-mix-kind: tasks=1 ' jobmix-boot1.log     # and what they cost alo
    bar this change was built to clear is **under 10% boot-to-boot at every point**, `tasks=4`
    included (the resampling predicts about 4%). If `tasks=4` is still wide, the median did not fix
    it and the reason is new: record the spread and do not quote the point.
-2. Is `ticks_max` far from `ticks_median` on one boot only? One outlier boot is the placement
+2. Is `ticks_maximum` far from `ticks_median` on one boot only? One outlier boot is the placement
    lottery (`notes/soak.md`, milestone 240); compare its census with the others'.
 3. The shape. Throughput against task count, from the medians. Record where it stops rising,
    and whether anything past that point declines. On 2026-09-16, with the old mix, it rose to

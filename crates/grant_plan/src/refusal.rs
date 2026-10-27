@@ -112,7 +112,8 @@ pub enum Refusal {
     /// direct call, which is why the sequence splitter has to run first rather than merely usually
     /// running first.
     EmptyStage,
-    /// **More stages than one line may carry** ([`line::MAX_STAGES`](crate::line::MAX_STAGES)). A ceiling on processes and
+    /// **More stages than one line may carry**
+    /// ([`line::MAXIMUM_STAGES`](crate::line::MAXIMUM_STAGES)). A ceiling on processes and
     /// endpoints, not on a buffer.
     TooManyStages,
     /// **A pattern where a redirection's name goes.** A redirection designates one destination and

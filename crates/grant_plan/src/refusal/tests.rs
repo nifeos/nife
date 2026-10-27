@@ -104,8 +104,8 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         (
             Refusal::FileNotNameable,
             "{} a directory",
-            crate::nav::MAX_DIRECTORY_NAME,
-            "nav::MAX_DIRECTORY_NAME",
+            crate::nav::MAXIMUM_DIRECTORY_NAME,
+            "nav::MAXIMUM_DIRECTORY_NAME",
         ),
         (
             Refusal::FileNotNameable,
@@ -116,8 +116,8 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         (
             Refusal::TooManyNames,
             "at most {},",
-            crate::expand::MAX_NAMES,
-            "expand::MAX_NAMES",
+            crate::expand::MAXIMUM_NAMES,
+            "expand::MAXIMUM_NAMES",
         ),
         (
             Refusal::TooManyNames,
@@ -134,8 +134,8 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         (
             Refusal::TooManyStages,
             "at most {}",
-            crate::line::MAX_STAGES,
-            "line::MAX_STAGES",
+            crate::line::MAXIMUM_STAGES,
+            "line::MAXIMUM_STAGES",
         ),
         (
             Refusal::ArgumentsTooLong,

@@ -97,15 +97,15 @@ enum Image {
 
 /// The name an installed row was registered with. See [`Image::Installed`].
 struct Installed {
-    name: [u8; NAME_MAX],
+    name: [u8; NAME_MAXIMUM],
     len: usize,
 }
 
 /// The longest program name store mode resolves; a prompt name is at most sixteen bytes.
-const NAME_MAX: usize = 32;
+const NAME_MAXIMUM: usize = 32;
 
 /// The images an admitted row will be built from, one slot per entry.
-type Images = [Option<Image>; timetable::MAX_ENTRIES];
+type Images = [Option<Image>; timetable::MAXIMUM_ENTRIES];
 
 /// **Where this timetable's programs come from**: an archive its spawn site narrowed, or the store.
 enum Programs {
@@ -411,7 +411,7 @@ impl Tally {
 /// store-mode registry was resolved before it was planned ([`resolve_installed`]), so this answers
 /// it with no images, which is right only for the empty document a store-mode timetable starts with.
 fn resolve(reg: &Registry<'_>, programs: &Programs) -> Result<Images, usize> {
-    let mut images: Images = [const { None }; timetable::MAX_ENTRIES];
+    let mut images: Images = [const { None }; timetable::MAXIMUM_ENTRIES];
     let Programs::Archive(fs) = programs else {
         return Ok(images);
     };
@@ -434,15 +434,15 @@ fn resolve(reg: &Registry<'_>, programs: &Programs) -> Result<Images, usize> {
 /// installed, cannot be read, or needs what no timetable endows (`timetable::schedulable`).
 fn resolve_installed(
     doc: &timetable::Document<'_>,
-) -> Result<([grant_plan::Manifest; timetable::MAX_ENTRIES], Images), usize> {
-    let mut manifests = [grant_plan::NO_NOTE_MANIFEST; timetable::MAX_ENTRIES];
-    let mut images: Images = [const { None }; timetable::MAX_ENTRIES];
+) -> Result<([grant_plan::Manifest; timetable::MAXIMUM_ENTRIES], Images), usize> {
+    let mut manifests = [grant_plan::NO_NOTE_MANIFEST; timetable::MAXIMUM_ENTRIES];
+    let mut images: Images = [const { None }; timetable::MAXIMUM_ENTRIES];
     for (i, entry) in doc.entries().iter().enumerate() {
         let word = grant_plan::parse_run(entry.command).program;
-        let (Ok(_), true) = (core::str::from_utf8(word), word.len() <= NAME_MAX) else {
+        let (Ok(_), true) = (core::str::from_utf8(word), word.len() <= NAME_MAXIMUM) else {
             return Err(i);
         };
-        let mut n = [0u8; NAME_MAX];
+        let mut n = [0u8; NAME_MAXIMUM];
         n[..word.len()].copy_from_slice(word);
         let p = Installed {
             name: n,

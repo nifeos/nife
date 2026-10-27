@@ -58,7 +58,7 @@ pub(super) struct IpcTables {
     /// the park, and a waker's take are one order. See [`futex_wait`].
     pub(super) futexes: inter_process_communication::futex::Futexes<Thread, FUTEX_BUCKETS>,
     /// The process registry: name to the physical address of a process's page.
-    pub(super) processes: generational_table::Table<u64, { process::MAX_PROCESSES }>,
+    pub(super) processes: generational_table::Table<u64, { process::MAXIMUM_PROCESSES }>,
 }
 
 /// How many buckets the futex table hashes into: a wake walks one, four waiters each on average

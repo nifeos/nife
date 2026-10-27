@@ -231,11 +231,12 @@ pub const UNBIND: u64 = 65;
 pub const BIND_SYNC: u64 = 66;
 
 /// **How many contiguous pages the file channel spans**, so one [`READ`] or [`WRITE`] carries up
-/// to [`TRANSFER_MAX`] bytes. Sixteen, so 64 KiB: a tuning number, and this is where it changes.
+/// to [`TRANSFER_MAXIMUM`] bytes. Sixteen, so 64 KiB: a tuning number, and this is where it
+/// changes.
 ///
 /// The FS server maps all of them. A client maps as many as it intends to use and asks for no
 /// more, so one that moves 4096 bytes maps one page and needs no change. Nothing checks that a
-/// client asked for no more than it mapped: one that sends `len = TRANSFER_MAX` with one page
+/// client asked for no more than it mapped: one that sends `len = TRANSFER_MAXIMUM` with one page
 /// mapped faults on its own second page, after the server has done the work. See
 /// notes/fs-server/file-protocol.md.
 pub const TRANSFER_PAGES: usize = 16;
@@ -255,28 +256,31 @@ pub const TRANSFER_PAGES: usize = 16;
 /// use filesystem_contract::{PAGE, fs};
 ///
 /// // The largest read this contract permits, in one request.
-/// let w0 = fs::req(fs::READ, 3, fs::TRANSFER_MAX as u64);
-/// assert_eq!(fs::req_len(w0), fs::TRANSFER_MAX);
-/// assert_eq!(fs::TRANSFER_MAX, fs::TRANSFER_PAGES * PAGE);
+/// let w0 = fs::req(fs::READ, 3, fs::TRANSFER_MAXIMUM as u64);
+/// assert_eq!(fs::req_len(w0), fs::TRANSFER_MAXIMUM);
+/// assert_eq!(fs::TRANSFER_MAXIMUM, fs::TRANSFER_PAGES * PAGE);
 ///
 /// // A client that shares only the first page keeps working untouched: it asks for one page,
 /// // and one page is what the region behind its request has always been.
 /// let w0 = fs::req(fs::READ, 3, PAGE as u64);
 /// assert_eq!(fs::req_len(w0), PAGE);
 /// ```
-pub const TRANSFER_MAX: usize = TRANSFER_PAGES * super::PAGE;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `TRANSFER_MAX`.
+pub const TRANSFER_MAXIMUM: usize = TRANSFER_PAGES * super::PAGE;
 
 /// **How many client channels one file service keeps side by side** (milestone 599 (a frame per
-/// filesystem client channel)). Each is its own [`TRANSFER_MAX`]-byte window backed by its own
+/// filesystem client channel)). Each is its own [`TRANSFER_MAXIMUM`]-byte window backed by its own
 /// frame, and the server picks window `badge` for each request (`abi::rendezvous::BADGE`); window 0
 /// is the unbadged default. It bounds how many file clients a boot runs at once, and costs the
-/// server `CLIENT_WINDOWS * TRANSFER_MAX` = 512 KiB of mapped frames. Eight is provisional, a
+/// server `CLIENT_WINDOWS * TRANSFER_MAXIMUM` = 512 KiB of mapped frames. Eight is provisional, a
 /// capacity decision not yet made. See notes/fs-server/file-protocol.md.
 pub const CLIENT_WINDOWS: usize = 8;
 
 /// The largest length or offset that fits the packing below (40 bits). Far above
-/// [`TRANSFER_MAX`], so the bit-packing has never been what bounds a transfer; the bound only
-/// guards the packing itself, and [`TRANSFER_MAX`] is what bounds a payload.
+/// [`TRANSFER_MAXIMUM`], so the bit-packing has never been what bounds a transfer; the bound only
+/// guards the packing itself, and [`TRANSFER_MAXIMUM`] is what bounds a payload.
 pub const MAX_LEN: u64 = (1 << 40) - 1;
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, because a test does
@@ -288,11 +292,14 @@ pub const MAX_LEN: u64 = (1 << 40) - 1;
 /// DECISIONS §27's half-working write wearing a different hat.
 const _: () = {
     assert!(TRANSFER_PAGES >= 1);
-    assert!(TRANSFER_MAX == TRANSFER_PAGES * super::PAGE);
-    assert!(TRANSFER_MAX as u64 <= MAX_LEN);
+    assert!(TRANSFER_MAXIMUM == TRANSFER_PAGES * super::PAGE);
+    assert!(TRANSFER_MAXIMUM as u64 <= MAX_LEN);
 };
 /// The largest handle the packing can carry (16 bits). The server's table is far smaller.
-pub const MAX_HANDLE: u64 = 0xffff;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_HANDLE`.
+pub const MAXIMUM_HANDLE: u64 = 0xffff;
 
 /// Pack a file request's first word: opcode (bits 63:56), handle (bits 55:40), length (bits
 /// 39:0). [`OPEN`] and [`CREATE`] pass handle 0 and length = the name length;
@@ -318,11 +325,11 @@ pub const MAX_HANDLE: u64 = 0xffff;
 /// assert_eq!(fs::req_len(w0), 10);
 /// ```
 pub const fn req(operation: u64, handle: u64, len: u64) -> u64 {
-    (operation << super::OPERATION_SHIFT) | ((handle & MAX_HANDLE) << 40) | (len & MAX_LEN)
+    (operation << super::OPERATION_SHIFT) | ((handle & MAXIMUM_HANDLE) << 40) | (len & MAX_LEN)
 }
 /// The handle of a file request word.
 pub const fn req_handle(w0: u64) -> u64 {
-    (w0 >> 40) & MAX_HANDLE
+    (w0 >> 40) & MAXIMUM_HANDLE
 }
 /// The length/count of a file request word.
 pub const fn req_len(w0: u64) -> usize {
@@ -333,11 +340,11 @@ pub const fn req_len(w0: u64) -> usize {
 /// fields [`req`] uses, minus the opcode, because a rename names two directories and one word
 /// cannot carry both. Read back with [`dst_handle`] and [`dst_len`].
 pub const fn rename_dst(handle: u64, len: u64) -> u64 {
-    ((handle & MAX_HANDLE) << 40) | (len & MAX_LEN)
+    ((handle & MAXIMUM_HANDLE) << 40) | (len & MAX_LEN)
 }
 /// The destination directory handle of a [`RENAME`]'s second word.
 pub const fn dst_handle(w1: u64) -> u64 {
-    (w1 >> 40) & MAX_HANDLE
+    (w1 >> 40) & MAXIMUM_HANDLE
 }
 /// The destination name's length, in bytes, of a [`RENAME`]'s second word.
 pub const fn dst_len(w1: u64) -> usize {

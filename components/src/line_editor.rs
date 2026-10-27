@@ -21,7 +21,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use line_editor::{Event, LINE_MAX, LineDisc, PROMPT_MAX, RawQueue, Sink, proto};
+use line_editor::{Event, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM, RawQueue, Sink, proto};
 use user_mode_runtime::{Reply, call, receive, receive_request, reply, send};
 
 /// The terminal endpoint (slot 0): clients CALL requests here; we serve it with `RECEIVE_CAP`. Its
@@ -389,8 +389,8 @@ impl Terminal {
             reply(slot, proto::BAD_REQUEST, 0);
             return;
         }
-        let plen = proto::len(w0).min(PROMPT_MAX);
-        let mut prompt = [0u8; PROMPT_MAX];
+        let plen = proto::len(w0).min(PROMPT_MAXIMUM);
+        let mut prompt = [0u8; PROMPT_MAXIMUM];
         copy_in(APP_OUT_VA, 0, &mut prompt[..plen]);
         if core::mem::replace(&mut self.resuming_line, false) {
             self.disc.resume_line(&prompt[..plen]);
@@ -479,7 +479,7 @@ impl Terminal {
 
 /// **The line a stdin reader is draining**, with its `\n`, and how far it has read.
 struct StdinLine {
-    bytes: [u8; LINE_MAX + 1],
+    bytes: [u8; LINE_MAXIMUM + 1],
     len: usize,
     at: usize,
 }
@@ -487,7 +487,7 @@ struct StdinLine {
 impl StdinLine {
     const fn new() -> Self {
         StdinLine {
-            bytes: [0; LINE_MAX + 1],
+            bytes: [0; LINE_MAXIMUM + 1],
             len: 0,
             at: 0,
         }
@@ -498,7 +498,7 @@ impl StdinLine {
     }
 
     fn fill(&mut self, line: &[u8]) {
-        let n = line.len().min(LINE_MAX);
+        let n = line.len().min(LINE_MAXIMUM);
         self.bytes[..n].copy_from_slice(&line[..n]);
         self.bytes[n] = b'\n';
         self.len = n + 1;
@@ -610,7 +610,7 @@ fn copy_in(base: u64, offset: usize, dst: &mut [u8]) {
 
 /// The type-ahead queue: completed lines waiting for a reader, FIFO, fixed storage.
 struct LineQueue {
-    lines: [([u8; LINE_MAX], usize, u64); QUEUE],
+    lines: [([u8; LINE_MAXIMUM], usize, u64); QUEUE],
     head: usize,
     count: usize,
     /// The line a [`proto::STDIN_BADGE`] reader is draining, `\n` included: taken from the front of
@@ -621,7 +621,7 @@ struct LineQueue {
 impl LineQueue {
     const fn new() -> Self {
         LineQueue {
-            lines: [([0; LINE_MAX], 0, 0); QUEUE],
+            lines: [([0; LINE_MAXIMUM], 0, 0); QUEUE],
             head: 0,
             count: 0,
             stdin: StdinLine::new(),
@@ -634,7 +634,7 @@ impl LineQueue {
             return;
         }
         let slot = (self.head + self.count) % QUEUE;
-        let n = line.len().min(LINE_MAX);
+        let n = line.len().min(LINE_MAXIMUM);
         self.lines[slot].0[..n].copy_from_slice(&line[..n]);
         self.lines[slot].1 = n;
         self.lines[slot].2 = flags;

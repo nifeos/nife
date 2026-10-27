@@ -28,7 +28,7 @@ pub(crate) const PHDR_SIZE: usize = 56;
 /// The most program headers a file may have. Bounds the header count before the O(n^2) overlap
 /// check: a legitimate static executable has a few `PT_LOAD` segments, and 65535 headers exist only
 /// to make validation stall. The note reader walks the same bound.
-pub(crate) const MAX_PHNUM: usize = 64;
+pub(crate) const MAXIMUM_PHNUM: usize = 64;
 
 /// A parsed, **fully validated** ELF64 executable.
 ///
@@ -120,7 +120,7 @@ impl<'a> Elf<'a> {
         if phentsize < PHDR_SIZE {
             return Err(Error::BadProgramHeaders);
         }
-        if phnum > MAX_PHNUM {
+        if phnum > MAXIMUM_PHNUM {
             return Err(Error::TooManyProgramHeaders);
         }
 

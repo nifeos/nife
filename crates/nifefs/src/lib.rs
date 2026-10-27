@@ -137,7 +137,7 @@ impl Entry {
 ///
 /// Holds no entry array: entries decode from the borrowed image on demand, so [`MAXIMUM_FILES`]
 /// costs no kernel stack, where `Fs` is a local on the boot and spawn paths.
-/// `fs_does_not_grow_with_max_files` keeps it that way. See notes/nifefs.md.
+/// `fs_does_not_grow_with_maximum_files` keeps it that way. See notes/nifefs.md.
 pub struct Fs<'a> {
     image: &'a [u8],
     count: usize,
@@ -510,7 +510,7 @@ mod tests {
     /// raising the limit overflowed a 4-page kernel stack the same day. Reintroducing the array
     /// would make this fail rather than making a boot fault on a guard page.
     #[test]
-    fn fs_does_not_grow_with_max_files() {
+    fn fs_does_not_grow_with_maximum_files() {
         assert_eq!(
             core::mem::size_of::<Fs>(),
             core::mem::size_of::<&[u8]>() + core::mem::size_of::<usize>(),

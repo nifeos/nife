@@ -610,7 +610,7 @@ fn the_captured_sweep_runs_to_its_done_line() {
             repeats: 21,
             ticks_minimum: 228_108_401,
             ticks_median: 233_958_411,
-            ticks_max: 249_234_771,
+            ticks_maximum: 249_234_771,
             jpm_median: 65_652,
         },
         "the last point is the top of job_mix::TASK_SWEEP"
@@ -631,7 +631,7 @@ fn the_captured_sweep_runs_to_its_done_line() {
         "the kernel prints job_mix::REPEATS and this build reads the same constant"
     );
     assert!(
-        point.ticks_minimum <= point.ticks_median && point.ticks_median <= point.ticks_max,
+        point.ticks_minimum <= point.ticks_median && point.ticks_median <= point.ticks_maximum,
         "the three ticks fields are a sorted spread, and reading them out of order is how a \
          near-miss parse would look"
     );

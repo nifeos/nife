@@ -40,9 +40,13 @@ pub const SALT_LEN: usize = 16;
 /// Tag length, in bytes. 32 is RFC 9106's recommendation and Argon2's default.
 pub const TAG_LEN: usize = 32;
 
-/// The longest identity a record can hold. Matches `credential_contract::MAX_IDENTITY`; the two constants
-/// are checked against each other by a test in `credential_contract`'s consumer, the service.
-pub const MAX_IDENTITY: usize = 64;
+/// The longest identity a record can hold. Matches `credential_contract::MAXIMUM_IDENTITY`; the two
+/// constants are checked against each other by a test in `credential_contract`'s consumer, the
+/// service.
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_IDENTITY`.
+pub const MAXIMUM_IDENTITY: usize = 64;
 
 /// The longest secret [`Record::derive`] will accept. Matches
 /// `credential_contract::MAXIMUM_SECRET`.
@@ -53,7 +57,7 @@ pub const MAXIMUM_SECRET: usize = 256;
 
 /// Argon2's own lower bound on `m_cost`, restated so [`Cost::new`] can check it before handing a
 /// value to a function that would overflow on the way to checking it itself.
-const MIN_M_COST: u32 = 8;
+const MINIMUM_M_COST: u32 = 8;
 
 /// Argon2's own upper bound on `p_cost`, `2^24 - 1`. Same reason.
 const MAXIMUM_P_COST: u32 = (1 << 24) - 1;
@@ -64,7 +68,7 @@ const MAXIMUM_P_COST: u32 = (1 << 24) - 1;
 /// `credential_contract::MALFORMED` rather than to a verdict.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    /// The identity is empty or longer than [`MAX_IDENTITY`].
+    /// The identity is empty or longer than [`MAXIMUM_IDENTITY`].
     Identity,
     /// The secret is empty or longer than [`MAXIMUM_SECRET`].
     Secret,
@@ -148,7 +152,7 @@ impl Cost {
         if p == 0 || p > MAXIMUM_P_COST || t == 0 {
             return None;
         }
-        if !(MIN_M_COST..=Self::MAX_M_KIB).contains(&m_kib) {
+        if !(MINIMUM_M_COST..=Self::MAX_M_KIB).contains(&m_kib) {
             return None;
         }
         // Safe now: `p <= 2^24 - 1`, so `p * 8` cannot overflow a u32.
@@ -213,7 +217,7 @@ impl Cost {
 #[derive(Clone, Copy)]
 pub struct Record {
     id_len: u8,
-    id: [u8; MAX_IDENTITY],
+    id: [u8; MAXIMUM_IDENTITY],
     salt: [u8; SALT_LEN],
     cost: Cost,
     tag: [u8; TAG_LEN],
@@ -222,7 +226,7 @@ pub struct Record {
 impl Record {
     /// The encoded length, in bytes. Fixed, because a variable-length encoding would make the
     /// store's footprint depend on the identities in it, which is a small leak for no gain.
-    pub const ENCODED_LEN: usize = 4 + 1 + 1 + 2 + MAX_IDENTITY + SALT_LEN + 12 + TAG_LEN;
+    pub const ENCODED_LEN: usize = 4 + 1 + 1 + 2 + MAXIMUM_IDENTITY + SALT_LEN + 12 + TAG_LEN;
 
     const MAGIC: [u8; 4] = *b"CRED";
 
@@ -247,13 +251,13 @@ impl Record {
         cost: Cost,
         scratch: &mut [Block],
     ) -> Result<Self, Error> {
-        if identity.is_empty() || identity.len() > MAX_IDENTITY {
+        if identity.is_empty() || identity.len() > MAXIMUM_IDENTITY {
             return Err(Error::Identity);
         }
         if secret.is_empty() || secret.len() > MAXIMUM_SECRET {
             return Err(Error::Secret);
         }
-        let mut id = [0u8; MAX_IDENTITY];
+        let mut id = [0u8; MAXIMUM_IDENTITY];
         id[..identity.len()].copy_from_slice(identity);
         let tag = kdf(cost, secret, &salt, scratch)?;
         Ok(Record {
@@ -293,8 +297,8 @@ impl Record {
         // reader. out[6] held `has_ntlm` in version 2 (removed 2026-08-30 with the SMB
         // implementation; notes/smb.md), which is why the version byte moved to 3.
         let mut o = 8;
-        out[o..o + MAX_IDENTITY].copy_from_slice(&self.id);
-        o += MAX_IDENTITY;
+        out[o..o + MAXIMUM_IDENTITY].copy_from_slice(&self.id);
+        o += MAXIMUM_IDENTITY;
         out[o..o + SALT_LEN].copy_from_slice(&self.salt);
         o += SALT_LEN;
         out[o..o + 4].copy_from_slice(&self.cost.m_kib.to_le_bytes());
@@ -319,16 +323,16 @@ impl Record {
             return Err(Error::Encoding);
         }
         let id_len = b[5];
-        if id_len == 0 || id_len as usize > MAX_IDENTITY {
+        if id_len == 0 || id_len as usize > MAXIMUM_IDENTITY {
             return Err(Error::Encoding);
         }
         let mut o = 8;
-        let mut id = [0u8; MAX_IDENTITY];
-        id.copy_from_slice(&b[o..o + MAX_IDENTITY]);
+        let mut id = [0u8; MAXIMUM_IDENTITY];
+        id.copy_from_slice(&b[o..o + MAXIMUM_IDENTITY]);
         if id[id_len as usize..].iter().any(|&x| x != 0) {
             return Err(Error::Encoding);
         }
-        o += MAX_IDENTITY;
+        o += MAXIMUM_IDENTITY;
         let mut salt = [0u8; SALT_LEN];
         salt.copy_from_slice(&b[o..o + SALT_LEN]);
         o += SALT_LEN;
@@ -353,7 +357,7 @@ impl Record {
     const fn empty() -> Self {
         Record {
             id_len: 0,
-            id: [0; MAX_IDENTITY],
+            id: [0; MAXIMUM_IDENTITY],
             salt: [0; SALT_LEN],
             cost: Cost::DEFAULT,
             tag: [0; TAG_LEN],
@@ -362,7 +366,7 @@ impl Record {
 
     /// Constant-time "is this record for this identity", over the padded fixed-size name. No early
     /// exit, so the time does not depend on how many leading bytes matched.
-    fn is(&self, padded: &[u8; MAX_IDENTITY], len: usize) -> Choice {
+    fn is(&self, padded: &[u8; MAXIMUM_IDENTITY], len: usize) -> Choice {
         self.id.ct_eq(padded) & self.id_len.ct_eq(&(len as u8))
     }
 }
@@ -522,7 +526,7 @@ impl<const N: usize> Store<N> {
         presented: &[u8],
         scratch: &mut [Block],
     ) -> Result<Verdict, Error> {
-        if identity.is_empty() || identity.len() > MAX_IDENTITY {
+        if identity.is_empty() || identity.len() > MAXIMUM_IDENTITY {
             return Err(Error::Identity);
         }
         if presented.is_empty() || presented.len() > MAXIMUM_SECRET {
@@ -545,7 +549,7 @@ impl<const N: usize> Store<N> {
     /// Scanning all `N` rather than the `used` prefix costs a few comparisons and removes the
     /// question of whether an unused slot's timing differs from a used one's.
     fn select(&self, identity: &[u8]) -> Selection {
-        let mut padded = [0u8; MAX_IDENTITY];
+        let mut padded = [0u8; MAXIMUM_IDENTITY];
         padded[..identity.len()].copy_from_slice(identity);
 
         let mut sel = Selection {
@@ -858,7 +862,7 @@ mod tests {
         let (s, mut mem) = store3();
         assert_eq!(s.verify(b"", b"x", &mut mem), Err(Error::Identity));
         assert_eq!(
-            s.verify(&[b'x'; MAX_IDENTITY + 1], b"x", &mut mem),
+            s.verify(&[b'x'; MAXIMUM_IDENTITY + 1], b"x", &mut mem),
             Err(Error::Identity),
         );
         assert_eq!(s.verify(b"alice", b"", &mut mem), Err(Error::Secret));
@@ -901,7 +905,7 @@ mod tests {
     #[test]
     fn the_restated_bounds_are_argon2s_own() {
         assert_eq!(MAXIMUM_P_COST, argon2::Params::MAX_P_COST);
-        assert_eq!(MIN_M_COST, argon2::Params::MIN_M_COST);
+        assert_eq!(MINIMUM_M_COST, argon2::Params::MIN_M_COST);
     }
 
     #[test]
@@ -1065,7 +1069,7 @@ mod tests {
     fn the_longest_identity_and_secret_are_legal() {
         let cost = cheap();
         let mut mem = scratch(cost);
-        let id = [b'i'; MAX_IDENTITY];
+        let id = [b'i'; MAXIMUM_IDENTITY];
         let secret = [b's'; MAXIMUM_SECRET];
         let r = Record::derive(&id, &secret, [7u8; SALT_LEN], cost, &mut mem).unwrap();
         assert_eq!(r.identity(), &id);
@@ -1090,7 +1094,7 @@ mod tests {
         );
         assert_eq!(
             Record::derive(
-                &[b'i'; MAX_IDENTITY + 1],
+                &[b'i'; MAXIMUM_IDENTITY + 1],
                 &secret,
                 [7u8; SALT_LEN],
                 cost,
@@ -1111,7 +1115,7 @@ mod tests {
         assert_eq!((c.m_kib(), c.t(), c.p()), (256, 3, 2));
         // 1 GiB in KiB, hand-computed. The two assertions below name the ceiling by its own symbol,
         // so both sides move together when the constant does: `1024 + 1024` is 2048, still above
-        // MIN_M_COST, and every symbolic check still passes while every real policy is refused.
+        // MINIMUM_M_COST, and every symbolic check still passes while every real policy is refused.
         assert_eq!(Cost::MAX_M_KIB, 1_048_576);
         // The ceiling itself is a legal cost (validation only; nothing allocates a gibibyte here).
         assert!(Cost::new(Cost::MAX_M_KIB, 1, 1).is_some());

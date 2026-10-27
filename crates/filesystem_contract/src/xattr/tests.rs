@@ -10,7 +10,7 @@ use std::{format, vec};
 
 /// Scratch big enough for any blob this store can hold, so a test never fails on its own buffer.
 fn scratch() -> Vec<u8> {
-    vec![0u8; xattr::store::MAX_BYTES]
+    vec![0u8; xattr::store::MAXIMUM_BYTES]
 }
 
 /// **A name and a value survive the store round trip, at every length the limits allow**,
@@ -244,7 +244,7 @@ fn a_torn_blob_reads_back_short_rather_than_wrong() {
 fn the_widest_listing_fits_one_page_and_round_trips() {
     use xattr::store;
     assert_eq!(
-        xattr::list::MAX_BYTES,
+        xattr::list::MAXIMUM_BYTES,
         PAGE,
         "the no-cursor property is this equality"
     );

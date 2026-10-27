@@ -61,7 +61,7 @@ pub use manifest::{
     named_std_region_pages,
 };
 pub use parsing::{
-    BUILTINS, MAX_POSITIONALS, ParsedInvocation, UserVerb, argv, check_words, each_word,
+    BUILTINS, MAXIMUM_POSITIONALS, ParsedInvocation, UserVerb, argv, check_words, each_word,
     job_operand, kill_operands, parse, parse_run, tokenize, user_verb, vouch_verb, vouched_name,
 };
 pub(crate) use planning::nav_refusal;

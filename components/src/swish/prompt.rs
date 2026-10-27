@@ -318,7 +318,7 @@ pub(super) fn edit_line(nav: &mut Nav, prompt: &[u8], out: &mut [u8]) -> (usize,
 fn complete_word(nav: &mut Nav, disc: &mut line_editor::LineDisc, echo: &mut Echo) {
     use line_editor::Sink;
     use swish::complete::{Answer, Completing, Lister, Matches};
-    let mut buf = [0u8; line_editor::LINE_MAX];
+    let mut buf = [0u8; line_editor::LINE_MAXIMUM];
     let (line, cur) = disc.pending();
     let len = line.len();
     buf[..len].copy_from_slice(line);

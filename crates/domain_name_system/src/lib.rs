@@ -71,7 +71,10 @@ pub const CLASS_IN: u16 = 1;
 /// How many CNAME links [`Query::accept`] follows before giving up. Real chains are one or two
 /// links (a CDN alias, sometimes a second); eight leaves room for that and stops a reply that chains
 /// a name through itself from costing more than eight scans of its own answer section.
-pub const MAX_CHAIN: usize = 8;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_CHAIN`.
+pub const MAXIMUM_CHAIN: usize = 8;
 
 /// How many addresses an [`Answer`] keeps (see the crate's BUGS).
 ///
@@ -550,7 +553,8 @@ pub enum Reject {
     NoSuchName,
     /// Any other nonzero response code, carried so a caller can report it.
     ServerError(u8),
-    /// The CNAME chain, followed only from our name, is longer than [`MAX_CHAIN`] links, or loops.
+    /// The CNAME chain, followed only from our name, is longer than [`MAXIMUM_CHAIN`] links, or
+    /// loops.
     ChainTooLong,
     /// The name exists and has no A record, or the answer holds addresses only for other names.
     NoAddress,
@@ -734,7 +738,7 @@ impl Query {
                     && record.rtype == record_type::CNAME
                     && record.name == owner
                 {
-                    if links == MAX_CHAIN {
+                    if links == MAXIMUM_CHAIN {
                         return Err(Reject::ChainTooLong);
                     }
                     links += 1;

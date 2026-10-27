@@ -1,9 +1,9 @@
 Falsifies `calendar::verification::every_real_date_survives_its_own_day_number`.
 
 The defect: `Civil::to_unix` weights a minute at 61 seconds. The date still round-trips through its day number,
-but the timestamp of the last minute of 9999-12-31 lands past `MAX_TIMESTAMP`.
+but the timestamp of the last minute of 9999-12-31 lands past `MAXIMUM_TIMESTAMP`.
 
-Expected to fail: the harness's `assert!((MINIMUM_TIMESTAMP..=MAX_TIMESTAMP).contains(&secs))`.
+Expected to fail: the harness's `assert!((MINIMUM_TIMESTAMP..=MAXIMUM_TIMESTAMP).contains(&secs))`.
 
 diff --git a/crates/calendar/src/lib.rs b/crates/calendar/src/lib.rs
 index 332ce0020..e0e680ced 100644

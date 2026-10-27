@@ -5,7 +5,7 @@ fn file_request_packs_and_unpacks() {
     // Every field survives the pack, at its extremes, without bleeding into another.
     for &(o, h, l) in &[
         (fs::OPEN, 0u64, 7u64),
-        (fs::READ, fs::MAX_HANDLE, fs::MAX_LEN),
+        (fs::READ, fs::MAXIMUM_HANDLE, fs::MAX_LEN),
         (fs::WRITE, 1, 4096),
         (fs::CLOSE, 65535, 0),
         (fs::FSTAT, 3, 0),
@@ -23,9 +23,9 @@ fn file_request_packs_and_unpacks() {
 fn a_handle_never_collides_with_the_opcode_or_length() {
     // A big handle must not spill into the opcode field, and a max length must not spill into
     // the handle: the READ path packs all three and reads them back independently.
-    let w = fs::req(fs::READ, fs::MAX_HANDLE, fs::MAX_LEN);
+    let w = fs::req(fs::READ, fs::MAXIMUM_HANDLE, fs::MAX_LEN);
     assert_eq!(operation(w), fs::READ);
-    assert_eq!(fs::req_handle(w), fs::MAX_HANDLE);
+    assert_eq!(fs::req_handle(w), fs::MAXIMUM_HANDLE);
     assert_eq!(fs::req_len(w) as u64, fs::MAX_LEN);
 }
 
@@ -77,8 +77,13 @@ fn a_rename_carries_two_directories_and_two_lengths_without_them_bleeding() {
     for &(sh, sl, dh, dl) in &[
         (fs::ROOT, 3u64, fs::ROOT, 4u64),
         (1, 16, 2, 1),
-        (fs::MAX_HANDLE, fs::MAX_LEN, fs::MAX_HANDLE, fs::MAX_LEN),
-        (fs::MAX_HANDLE, 1, 0, fs::MAX_LEN),
+        (
+            fs::MAXIMUM_HANDLE,
+            fs::MAX_LEN,
+            fs::MAXIMUM_HANDLE,
+            fs::MAX_LEN,
+        ),
+        (fs::MAXIMUM_HANDLE, 1, 0, fs::MAX_LEN),
     ] {
         let w0 = fs::req(fs::RENAME, sh, sl);
         let w1 = fs::rename_dst(dh, dl);
@@ -112,7 +117,7 @@ fn a_single_page_request_still_means_one_page() {
     assert_eq!(operation(w0), fs::READ);
 
     // And the largest the channel permits survives the same 40-bit field.
-    let w0 = fs::req(fs::WRITE, 1, fs::TRANSFER_MAX as u64);
-    assert_eq!(fs::req_len(w0), fs::TRANSFER_MAX);
+    let w0 = fs::req(fs::WRITE, 1, fs::TRANSFER_MAXIMUM as u64);
+    assert_eq!(fs::req_len(w0), fs::TRANSFER_MAXIMUM);
     assert_eq!(operation(w0), fs::WRITE);
 }

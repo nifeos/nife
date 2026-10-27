@@ -224,12 +224,12 @@ impl<D: Disk> Server<D> {
     /// the node's mtime moves forward.
     ///
     /// [`dir::EROFS`] without [`dir::WRITE`]. `EFBIG` when `offset + data.len()` overflows or passes
-    /// [`MAX_FILE_END`], checked before the engine, which adds the two unchecked (found by the
+    /// [`MAXIMUM_FILE_END`], checked before the engine, which adds the two unchecked (found by the
     /// `redoxfs_server_session` fuzz target; notes/fs-server/the-core.md).
     pub fn write(&mut self, handle: u32, offset: u64, data: &[u8]) -> Result<usize> {
         let ptr = self.file_at(handle, dir::WRITE, EROFS)?;
         match offset.checked_add(data.len() as u64) {
-            Some(end) if end <= MAX_FILE_END => {}
+            Some(end) if end <= MAXIMUM_FILE_END => {}
             _ => return Err(Error::new(EFBIG)),
         }
         self.clock += 1;
@@ -288,7 +288,7 @@ impl<D: Disk> Server<D> {
     /// Set the size of the file a handle names to exactly `size` bytes (milestone 31 phase 2).
     /// Shrinking discards the tail and growing extends with zeroes, POSIX `ftruncate`, so a shorter
     /// write can replace a file's contents (§27). [`dir::EROFS`] without [`dir::WRITE`], `EFBIG`
-    /// past [`MAX_FILE_END`].
+    /// past [`MAXIMUM_FILE_END`].
     ///
     /// # BUGS
     ///
@@ -298,8 +298,8 @@ impl<D: Disk> Server<D> {
     pub fn truncate(&mut self, handle: u32, size: u64) -> Result<()> {
         // A truncate destroys a file as thoroughly as a write, so it takes the same right and word.
         let ptr = self.file_at(handle, dir::WRITE, EROFS)?;
-        // A file grown past the tree reads past it later; [`MAX_FILE_END`] has the defect.
-        if size > MAX_FILE_END {
+        // A file grown past the tree reads past it later; [`MAXIMUM_FILE_END`] has the defect.
+        if size > MAXIMUM_FILE_END {
             return Err(Error::new(EFBIG));
         }
         self.clock += 1;

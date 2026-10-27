@@ -189,16 +189,25 @@ pub const MAX_DRHDS: usize = 8;
 /// How many PCI device-scope entries [`DmarUnits`] records across every DRHD. Only the two PCI
 /// types are kept (endpoint and sub-hierarchy); IOAPIC, HPET and ACPI-namespace entries name no
 /// requester id this kernel confines and are skipped.
-pub const MAX_SCOPES: usize = 32;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SCOPES`.
+pub const MAXIMUM_SCOPES: usize = 32;
 /// The longest path a recorded scope can carry: the device itself plus three bridges above it.
 /// Deeper than any machine this tree has met, and a deeper one sets [`DmarUnits::truncated`].
-pub const MAX_SCOPE_PATH: usize = 4;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_SCOPE_PATH`.
+pub const MAXIMUM_SCOPE_PATH: usize = 4;
 /// How many RMRRs [`DmarUnits`] records. The `OptiPlex` 7040 publishes two (USB, graphics). A
 /// ninth sets [`DmarUnits::truncated`]. Name: provisional (milestone 594).
 pub const MAX_RMRRS: usize = 8;
 /// How many PCI device-scope entries [`DmarUnits`] records across every RMRR. Name: provisional
 /// (milestone 594).
-pub const MAX_RMRR_SCOPES: usize = 16;
+///
+/// Name: provisional. Spelled out under the minimum, maximum and operating-system ruling of
+/// 2026-10-26 (UTC), renamed from `MAX_RMRR_SCOPES`.
+pub const MAXIMUM_RMRR_SCOPES: usize = 16;
 
 /// Device-scope type 1: a PCI endpoint, named by its path from the start bus.
 pub const SCOPE_PCI_ENDPOINT: u8 = 1;
@@ -228,7 +237,7 @@ pub struct DeviceScope {
     pub kind: u8,
     pub start_bus: u8,
     /// `(device, function)` per hop, the first on `start_bus`. Only `path[..path_len]` is real.
-    pub path: [(u8, u8); MAX_SCOPE_PATH],
+    pub path: [(u8, u8); MAXIMUM_SCOPE_PATH],
     pub path_len: u8,
 }
 
@@ -244,7 +253,7 @@ impl DeviceScope {
         let n = self.path_len as usize;
         // `parse` never records an empty or over-long path; the fields are public, so say so
         // here rather than let a hand-built scope underflow `n - 1`.
-        if n == 0 || n > MAX_SCOPE_PATH {
+        if n == 0 || n > MAXIMUM_SCOPE_PATH {
             return None;
         }
         let mut at_bus = self.start_bus;
@@ -346,18 +355,18 @@ impl ReservedRegion {
 pub struct DmarUnits {
     pub drhds: [Drhd; MAX_DRHDS],
     pub drhd_count: usize,
-    pub scopes: [DeviceScope; MAX_SCOPES],
+    pub scopes: [DeviceScope; MAXIMUM_SCOPES],
     pub scope_count: usize,
     pub rmrrs: [ReservedRegion; MAX_RMRRS],
     pub rmrr_count: usize,
-    pub rmrr_scopes: [DeviceScope; MAX_RMRR_SCOPES],
+    pub rmrr_scopes: [DeviceScope; MAXIMUM_RMRR_SCOPES],
     pub rmrr_scope_count: usize,
     /// RMRRs the table held and this decoder refused because they break section 8.4's
     /// well-formedness rule. Linux skips such a region with a firmware-bug warning; so does this,
     /// and the count is what lets the boot print say so. Name: provisional (milestone 594).
     pub rmrrs_refused: usize,
     /// Something in the table did not fit the arrays above: a ninth DRHD or RMRR, a scope past its
-    /// array, a path deeper than [`MAX_SCOPE_PATH`], or a scope whose length disagrees with its
+    /// array, a path deeper than [`MAXIMUM_SCOPE_PATH`], or a scope whose length disagrees with its
     /// path. **When set, a device no recorded scope names is answered "unknown" rather than handed
     /// to the catch-all**, because the entry that names it may be the one that was dropped.
     pub truncated: bool,
@@ -377,11 +386,11 @@ impl Default for DmarUnits {
                 register_size: 0,
             }; MAX_DRHDS],
             drhd_count: 0,
-            scopes: [DeviceScope::default(); MAX_SCOPES],
+            scopes: [DeviceScope::default(); MAXIMUM_SCOPES],
             scope_count: 0,
             rmrrs: [ReservedRegion::default(); MAX_RMRRS],
             rmrr_count: 0,
-            rmrr_scopes: [DeviceScope::default(); MAX_RMRR_SCOPES],
+            rmrr_scopes: [DeviceScope::default(); MAXIMUM_RMRR_SCOPES],
             rmrr_scope_count: 0,
             rmrrs_refused: 0,
             truncated: false,
@@ -412,7 +421,7 @@ fn read_scope_list(
             continue;
         }
         let hops = (len - SCOPE_FIXED_LEN) / 2;
-        if hops == 0 || hops > MAX_SCOPE_PATH || *count == out.len() {
+        if hops == 0 || hops > MAXIMUM_SCOPE_PATH || *count == out.len() {
             *truncated = true;
             continue;
         }
@@ -915,7 +924,7 @@ mod tests {
     /// entry could have been the one naming the device.
     #[test]
     fn a_truncated_table_refuses_to_guess() {
-        let many: std::vec::Vec<std::vec::Vec<u8>> = (0..MAX_SCOPES as u8 + 1)
+        let many: std::vec::Vec<std::vec::Vec<u8>> = (0..MAXIMUM_SCOPES as u8 + 1)
             .map(|i| scope(SCOPE_PCI_ENDPOINT, 0, &[(i, 0)]))
             .collect();
         let refs: std::vec::Vec<&[u8]> = many.iter().map(|s| s.as_slice()).collect();
@@ -1151,13 +1160,16 @@ mod tests {
         };
         let direct = &mut |bus: u8, _: u8, _: u8| Some((bus + 1, 0));
         assert_eq!(s.resolve(direct), None, "an empty path names nothing");
-        s.path_len = MAX_SCOPE_PATH as u8;
+        s.path_len = MAXIMUM_SCOPE_PATH as u8;
         for (i, hop) in s.path.iter_mut().enumerate() {
             *hop = (i as u8, 0);
         }
         // Three bridges are crossed (3 -> 4 -> 5 -> 6) and the last hop is the device on bus 6.
-        assert_eq!(s.resolve(direct), Some((6, MAX_SCOPE_PATH as u8 - 1, 0)));
-        s.path_len = MAX_SCOPE_PATH as u8 + 1;
+        assert_eq!(
+            s.resolve(direct),
+            Some((6, MAXIMUM_SCOPE_PATH as u8 - 1, 0))
+        );
+        s.path_len = MAXIMUM_SCOPE_PATH as u8 + 1;
         assert_eq!(s.resolve(direct), None);
     }
 
@@ -1174,7 +1186,7 @@ mod tests {
         assert!(!u.truncated);
         assert_eq!(u.scope_count, 1);
         assert_eq!(u.scopes[0].start_bus, 0x09);
-        assert_eq!(u.scopes[0].path_len as usize, MAX_SCOPE_PATH);
+        assert_eq!(u.scopes[0].path_len as usize, MAXIMUM_SCOPE_PATH);
         assert_eq!(u.scopes[0].path, path);
     }
 
