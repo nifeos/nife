@@ -3,7 +3,7 @@ status: NOT-STARTED
 raised: 2026-09-24
 promoted_from: a-virtio-slot-comes-back-when-its-driver-dies
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: 16
 machine_requirements: none
 specific_machine: none
 needs_person: no
