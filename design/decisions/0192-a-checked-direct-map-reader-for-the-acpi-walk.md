@@ -1,14 +1,24 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-27
+ratified_by: calef
 ---
 
 # 192. Does the ACPI walk's direct-map read take a bound, and is the bound per-read or a region it holds?
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c lane, which found milestone 423 (a checked direct-map reader for the x86 ACPI walk)'s
 `DECISION` gate naming no section. Filed 2026-09-17 by milestone 319, which proved the parsing half
-and so narrowed what the volatile half is actually for. *(Section number provisional until the merge
-queue lands it.)*
+and so narrowed what the volatile half is actually for.
+
+## Ruled 2026-10-27 (UTC)
+
+Shape 2. The ACPI walk holds one region, an extent the boot path gives it once, and checks every
+read against that extent. No read takes a bound of its own. The accessor's name ships provisional and
+goes through `script/names` like any other, and milestone 423 (a checked direct-map reader for the x86
+ACPI walk) builds it.
+
+The sections below are the analysis behind the ruling.
 
 ## What is being decided
 
@@ -103,8 +113,7 @@ this section argues against, on where the invariant lives rather than on effort.
 The parsers. They are proved (milestone 319, with three defects found in the doing), and nothing
 here should re-litigate what a table means.
 
-## What is blocked until this is answered
+## What the ruling unblocks
 
-Nothing is blocked. This is the last unproved reach of the x86 discovery path, and the one place
-left where a firmware number reaches a dereference with no proved step between. Milestone 423 is
-what waits.
+Milestone 423. This was the last unproved reach of the x86 discovery path, and the one place left
+where a firmware number reaches a dereference with no proved step between.
