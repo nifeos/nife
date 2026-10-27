@@ -262,6 +262,7 @@ fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
         errno(srv.open_dir(narrow, &named("deeper"), dir::PARENT_RIGHTS | dir::ALL)),
         Some(EPERM)
     );
+}
 
 /// **`NARROW` attenuates a held handle and resolves no name** (§173 (narrowing the root of the shell's namespace), milestone 328 (a grant on the root of the shell's namespace)): the top
 /// prompt's `rm gate.txt` is a handle on the bound directory carrying `REMOVE` and nothing else.
