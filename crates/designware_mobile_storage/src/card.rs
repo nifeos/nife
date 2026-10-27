@@ -10,30 +10,39 @@
 
 /// The operation conditions register's (OCR) power-up-complete bit: clear while the card is still
 /// busy initializing.
+#[doc(alias = "ocr")]
 pub(crate) const OPERATION_CONDITIONS_BUSY_DONE: u32 = 1 << 31;
 /// The OCR's card capacity status (SD) or access mode (eMMC, as bits 30:29 = `0b10`): set on a
 /// high-capacity card, which is addressed in 512-byte blocks rather than bytes.
+#[doc(alias = "ocr")]
 pub(crate) const OPERATION_CONDITIONS_HIGH_CAPACITY: u32 = 1 << 30;
 /// The voltage window this host offers, 3.2 to 3.4 V: OpenBSD's `dwmmc_host_ocr`. The JH7110's
 /// card slot is wired for 3.3 V and nothing here switches it.
+#[doc(alias = "ocr")]
 pub(crate) const OPERATION_CONDITIONS_VOLTAGE_WINDOW: u32 = (1 << 20) | (1 << 21);
 /// `ACMD41`'s argument: high capacity supported, and the window.
+#[doc(alias = "ocr")]
 pub(crate) const SD_OPERATION_CONDITIONS_ARGUMENT: u32 =
     OPERATION_CONDITIONS_HIGH_CAPACITY | OPERATION_CONDITIONS_VOLTAGE_WINDOW;
 /// eMMC `CMD1`'s argument: sector access mode (bits 30:29 = `0b10`) and 2.7 to 3.6 V plus the
 /// 1.70 to 1.95 V bit, the value Linux and U-Boot both send.
+#[doc(alias = "ocr")]
 pub(crate) const MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT: u32 = 0x40ff_8080;
 /// `CMD8` (`SEND_IF_COND`)'s interface condition argument: 2.7 to 3.6 V (`0x1`) and the check
 /// pattern `0xaa`. A card that understands it echoes both.
+#[doc(alias = "if_cond")]
 pub(crate) const INTERFACE_CONDITION_ARGUMENT: u32 = 0x1aa;
 
-/// The R1 bits that report a failure, Linux's error mask: out of range, address, block length,
-/// erase sequence and parameter, write-protect violation, lock failure, CRC, illegal command, ECC,
-/// controller error, unknown error, CSD overwrite, write-protect erase skip, and the
-/// authentication sequence error. `CARD_IS_LOCKED` (bit 25) is a state, not an error, and is not
-/// in the mask.
+/// **Card status errors** (SD section 4.10.1): the R1 bits that report a failure, Linux's error
+/// mask: out of range, address, block length, erase sequence and parameter, write-protect
+/// violation, lock failure, CRC, illegal command, ECC, controller error, unknown error, CSD
+/// overwrite, write-protect erase skip, and the authentication sequence error. `CARD_IS_LOCKED`
+/// (bit 25) is a state, not an error, and is not in the mask.
+#[doc(alias = "card status errors")]
 pub const R1_ERRORS: u32 = 0xfdf9_8008;
-/// The R1 bit saying the card is ready for data.
+/// **Ready for data, card status bit 8** (Linux's `R1_READY_FOR_DATA`, SD section 4.10.1): the R1
+/// bit saying the card is ready for data.
+#[doc(alias = "ready for data")]
 pub const R1_READY_FOR_DATA: u32 = 1 << 8;
 
 /// The R1 word's current state, bits 12:9: 4 is transfer, 5 sending data, 6 receive data, 7
@@ -259,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn a_cid_names_its_maker_and_product() {
+    fn a_card_identification_names_its_maker_and_product() {
         let mut r = [0u32; 4];
         put(&mut r, 120, 8, 0x03);
         for (i, b) in b"SN32G".iter().enumerate() {
@@ -273,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn ext_csd_sector_count_is_little_endian_and_short_buffers_read_zero() {
+    fn extended_card_specific_data_sector_count_is_little_endian_and_short_buffers_read_zero() {
         let mut e = [0u8; 512];
         e[212..216].copy_from_slice(&0x01d2_0000u32.to_le_bytes());
         assert_eq!(extended_card_specific_data_sectors(&e), 0x01d2_0000);
@@ -314,7 +323,7 @@ mod tests {
     /// `READ_BL_LEN` 9 (512-byte blocks) is the case where the shift's `- 9` is zero, and
     /// `C_SIZE_MULT` 3 the one where the multiplier's `+ 2` matters: (100 + 1) * 2^(3 + 2) blocks.
     #[test]
-    fn a_csd_with_512_byte_blocks_is_sized_from_its_multiplier_alone() {
+    fn a_card_specific_data_with_512_byte_blocks_is_sized_from_its_multiplier_alone() {
         let mut r = [0u32; 4];
         put(&mut r, 62, 12, 100);
         put(&mut r, 47, 3, 3);

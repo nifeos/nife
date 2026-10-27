@@ -56,6 +56,7 @@ pub struct Slot {
     /// The tree's `bus-width`, 1 when absent.
     pub bus_width: u8,
     /// The tree's `fifo-depth`, if it has one.
+    #[doc(alias = "fifo")]
     pub queue_depth: Option<u32>,
     /// The tree's first `assigned-clock-rates` cell, or [`CARD_INTERFACE_UNIT_HZ`] when absent.
     pub card_interface_unit_hz: u32,

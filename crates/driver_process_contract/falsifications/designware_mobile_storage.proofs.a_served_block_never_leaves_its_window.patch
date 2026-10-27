@@ -4,8 +4,8 @@ The defect: the window's bound is off by one block, so a request for the block j
 window is translated. On radon that block is the first sectors after nife's window: another
 partition's, or the boot partition's.
 
-Expected to fail: `assert!(logical_block_address + span <= w.first + w.sectors)`, on any request ending one block past
-the window.
+Expected to fail: `assert!(logical_block_address + span <= w.first + w.sectors)`, on any request
+ending one block past the window.
 
 diff --git a/crates/driver_process_contract/src/designware_mobile_storage.rs b/crates/driver_process_contract/src/designware_mobile_storage.rs
 --- a/crates/driver_process_contract/src/designware_mobile_storage.rs

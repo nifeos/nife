@@ -105,6 +105,7 @@ pub struct Handoff {
     /// The slot's bus width: 1, 4 or 8.
     pub bus_width: u8,
     /// The FIFO's depth in words, 1 to 255.
+    #[doc(alias = "fifo")]
     pub queue_depth: u8,
 }
 
