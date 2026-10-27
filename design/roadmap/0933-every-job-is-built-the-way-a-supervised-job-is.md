@@ -52,9 +52,9 @@ what the progenitor's pool shrinks. The cooperative tier, a `std` program's `SIG
 question. The architect weighed a Unix parent shell, Fuchsia process handles and Genode's
 parent-paid quotas.
 
-The build amends [§142 (what a spawner retains over a child after
-`START`)](../decisions/0142-spawn-retention.md) with the wire change and its numbers. Section 142
-sits at the 3,000-word cap, so the amendment needs room first.
+[§142 (what a spawner retains over a child after
+`START`)](../decisions/0142-spawn-retention.md) carries the amendment; the build adds the wire
+change and its numbers.
 
 ## Index row
 
