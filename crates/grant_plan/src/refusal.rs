@@ -188,7 +188,7 @@ pub enum Refusal {
     /// with a four-byte length per word). Refused whole rather than truncated, for
     /// [`Refusal::TooManyNames`]'s reason. Name: provisional.
     ArgumentsTooLong,
-    // ---- milestone 52's scoped block and isolation (DECISIONS §160). Spellings provisional.
+    // ---- milestone 52 (subshells without `fork`)'s scoped block and isolation (DECISIONS §160 (what a subshell copies)). Spellings provisional.
     /// **A scoped block that is not `scope { commands }`**: no braces, a brace that never closes,
     /// or text after the closing brace. A block is one command, so what follows it on the line has
     /// to be a connector, and a `|` after one is refused rather than guessed at. Name: provisional.

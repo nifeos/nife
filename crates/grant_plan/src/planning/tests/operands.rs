@@ -542,7 +542,7 @@ fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
     );
 }
 
-// ---- the isolation form's reserved spelling (milestone 52, DECISIONS §160) ----
+// ---- the isolation form's reserved spelling (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)) ----
 
 /// `swish -c ls` is not "no such program": the spelling is reserved for the isolated child and the
 /// refusal says so, until the child exists.

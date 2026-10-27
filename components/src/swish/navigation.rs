@@ -325,7 +325,7 @@ impl Nav {
     }
 
     /// **Go back to a position this shell stood in**, which a scoped block restores on its way out
-    /// (milestone 52, DECISIONS §160). The position is a value, so this opens it again from the
+    /// (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)). The position is a value, so this opens it again from the
     /// root of its tree, one `OPENDIR` per level, and adopts the walk as [`Nav::cd`] does. It
     /// resolves against an empty set of bound names for the walk, so a name `bind` filed cannot
     /// redirect a component that is a plain directory name.

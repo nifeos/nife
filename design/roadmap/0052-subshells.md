@@ -167,6 +167,19 @@ Sequencing. After milestone 50 (pipes and redirection), because 50 removes most 
 requirement and changes what is left. **Effort: not estimated**, because the design is not chosen and
 the options differ by more than an order of magnitude.
 
+## Follow-on
+
+- **Outstanding.** The isolated child, `swish -c`: this shell run again as a child whose endowment
+  derives from the parent's. Checked 2026-10-27 against `crates/system_initializer/src/spawn_loop.rs`,
+  where every request is answered on the one `result_ep`, and against `Service::native_endowment`,
+  where a native child gets its line only as an integer. It needs a result endpoint per shell made
+  by the spawn service, a directory grant of the directory a shell stands in, and a native argument
+  page. The child passes no capability that cannot derive (a device frame, a one-shot reply).
+- **Recorded.** `notes/swish-language/scoped-block.md` carries the scoped block's limits beside it:
+  no variables or options to save yet, and no pipeline stage.
+- **Decision.** `design/decisions/0160-what-a-subshell-copies.md` rules the mechanism, and
+  `design/decisions/0312-swish-has-one-way-to-do-each-job.md` rules the language rule it falls under.
+
 ## Index row
 
 `( ... )` is fork, we deliberately have no fork, and **capability duplication is not a total

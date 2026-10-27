@@ -158,7 +158,7 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
         if seg.is_empty() {
             return Err(Refusal::EmptySegment);
         }
-        if scope::has_parenthesised_command(seg) {
+        if scope::has_parenthesized_command(seg) {
             return Err(Refusal::GroupingParentheses);
         }
         if n == MAXIMUM_SEGMENTS {
@@ -178,7 +178,7 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
     }
 
     let tail = trim(&line[start..]);
-    if scope::has_parenthesised_command(tail) {
+    if scope::has_parenthesized_command(tail) {
         return Err(Refusal::GroupingParentheses);
     }
     if tail.is_empty() {

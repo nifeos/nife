@@ -55,5 +55,5 @@ connector would run `b)` alone.
 - Tab completion offers `scope` but not the first word after its brace.
 - `swish -c`, the isolation form, has its spelling reserved and no child behind it: the line answers
   that the child is not built. The child needs a result endpoint of its own for each shell, since
-  the spawn service answers every request on one, and a grant of the directory a shell stands in,
-  since a directory grant needs a name to descend into and the root has none.
+  the spawn service answers every request on one. It also needs a grant of the directory a shell
+  stands in. A directory grant needs a name to descend into, and the root has none.

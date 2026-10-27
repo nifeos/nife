@@ -75,11 +75,11 @@ fn the_limit_the_message_quotes_is_the_constant() {
 
 #[test]
 fn parentheses_open_a_group_only_at_the_start_of_a_command() {
-    assert!(has_parenthesised_command(b"(cd /tmp"));
-    assert!(has_parenthesised_command(b"  ( ls )"));
-    assert!(has_parenthesised_command(b"ls | (wc)"));
-    assert!(!has_parenthesised_command(b"echo (hi)"));
-    assert!(!has_parenthesised_command(b"echo '(hi'"));
-    assert!(!has_parenthesised_command(b"a || b"));
-    assert!(!has_parenthesised_command(b"ls"));
+    assert!(has_parenthesized_command(b"(cd /tmp"));
+    assert!(has_parenthesized_command(b"  ( ls )"));
+    assert!(has_parenthesized_command(b"ls | (wc)"));
+    assert!(!has_parenthesized_command(b"echo (hi)"));
+    assert!(!has_parenthesized_command(b"echo '(hi'"));
+    assert!(!has_parenthesized_command(b"a || b"));
+    assert!(!has_parenthesized_command(b"ls"));
 }

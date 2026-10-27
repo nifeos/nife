@@ -1,4 +1,4 @@
-//! **The scoped block** (milestone 52, DECISIONS §160): `scope { commands }` runs its commands, then
+//! **The scoped block** (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)): `scope { commands }` runs its commands, then
 //! puts back the part of this shell's own state that they changed. The reading and the refusals
 //! are `swish::scope`'s, host-tested; this is the running, since the state is the shell's.
 //!

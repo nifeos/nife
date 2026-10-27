@@ -1,4 +1,4 @@
-//! **The scoped block: `scope { commands }`** (milestone 52, DECISIONS §160), the one form that
+//! **The scoped block: `scope { commands }`** (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)), the one form that
 //! scopes this shell's own state and groups commands. This module reads the block and decides, before
 //! anything in it runs, whether it may run: the tail has to be one well-formed block, blocks nest
 //! only [`MAXIMUM_DEPTH`] deep, and nothing inside may change what leaving the block cannot put
@@ -162,11 +162,11 @@ fn walk(commands: &[u8], level: usize) -> Result<(), Refusal> {
 }
 
 /// **Whether a command, or a pipeline stage in it, opens with `(`.** `( ... )` has no meaning
-/// here (§160, §312), and a line holding one is refused whole before any of it runs, since cutting
+/// here (§160, §312 (swish has one way to do each job)), and a line holding one is refused whole before any of it runs, since cutting
 /// it at its connectors would run half of a group somebody meant to run together.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
-pub fn has_parenthesised_command(segment: &[u8]) -> bool {
+pub fn has_parenthesized_command(segment: &[u8]) -> bool {
     let mut c = Cursor::new();
     let mut stage_start = true;
     for (i, &b) in segment.iter().enumerate() {

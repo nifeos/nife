@@ -41,7 +41,7 @@ pub enum Command<'a> {
     /// pipe is text that grants a program nothing. See notes/glob-grant.md.
     Xargs(&'a [u8]),
     /// `scope { commands }`: **run a group of commands, then put back what they changed in this
-    /// shell's own state** (milestone 52, DECISIONS §160): the working directory and the names
+    /// shell's own state** (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)): the working directory and the names
     /// `bind` filed, and the variables and options when this shell has them. The tail is the whole
     /// `{ ... }`, carried unsplit for [`Capabilities`](Command::Capabilities)'s reason, and
     /// `swish::scope` reads it. It touches no capability, so what a command did to the world

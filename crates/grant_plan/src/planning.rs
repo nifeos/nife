@@ -47,8 +47,8 @@ pub struct Streams {
     pub diagnostics: Option<(FileGrant, line::Mode)>,
 }
 
-/// **The word that will start an isolated child** (`swish -c <commands>`, milestone 52, DECISIONS
-/// §160): this shell, run again explicitly, as a child whose endowment is derived from the
+/// **The word that will start an isolated child** (`swish -c <commands>`, milestone 52 (subshells without `fork`), DECISIONS
+/// §160 (what a subshell copies)): this shell, run again explicitly, as a child whose endowment is derived from the
 /// parent's. Reserved so the refusals that name the form and the line that types it agree, and so
 /// that when the child is built nothing about the spelling moves.
 ///

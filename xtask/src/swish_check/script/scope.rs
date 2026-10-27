@@ -1,4 +1,4 @@
-//! **The scoped block** (milestone 52, DECISIONS §160): `scope { commands }` puts back the
+//! **The scoped block** (milestone 52 (subshells without `fork`), DECISIONS §160 (what a subshell copies)): `scope { commands }` puts back the
 //! directory and the bound names its commands changed, on the way out, whether they worked or not.
 //! It refuses before it runs what it could not put back, and `( ... )` is a refusal that names the
 //! two forms that replaced it.
