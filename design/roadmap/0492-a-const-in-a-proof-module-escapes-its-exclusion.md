@@ -38,7 +38,7 @@ Line 314 is `const N: usize = V1_LEN + 1;`, four lines inside `#[cfg(kani)] mod 
 How big it is: three mutants, today. Cross-referencing the 9,656 mutants
 `cargo mutants --list --workspace` generates against the line spans of every `#[cfg(kani)]` and
 `#[cfg(all(test, loom))]` module in `crates/` and `components/` finds exactly three: the two above
-and `crates/network_time_protocol/src/lib.rs:1323`, which is `const PROVED_NANOS: u64 = 1 << 16;`.
+and `crates/network_time_protocol/src/lib.rs:1323`, which is `const PROVED_NS: u64 = 1 << 16;`.
 Most such items are plain literals or struct values with no operator to mutate, which is why the
 number is small; it grows the next time a harness needs a computed bound.
 

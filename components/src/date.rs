@@ -27,7 +27,7 @@ use core::sync::atomic::{AtomicBool, Ordering};
 
 use calendar::{DateTime, Format, UtcOffset};
 use clock_contract::{ClockPage, state};
-use user_mode_runtime::{exit, is_granted, monotonic_nanos, send};
+use user_mode_runtime::{exit, is_granted, monotonic_ns, send};
 
 /// Slot 0: where the output goes. An endpoint with `WRITE`, and the same 16-bytes-per-message
 /// framing the std PAL's stdout uses (`w0` = the byte count, `w1`|`w2` = the bytes, little-endian),
@@ -90,8 +90,8 @@ fn start(fmt: u64, offset_minutes: u64, provenance: u64) -> ! {
 
     // Nanoseconds to seconds, truncating towards zero, which is exact here: the wall clock is a
     // `u64` count of nanoseconds since 1970 and this calendar's second is the smallest unit it has.
-    let unix_secs = (clock_contract::wall_nanos(r.offset_nanos, monotonic_nanos())
-        / clock_contract::NANOS_PER_SEC) as i64;
+    let unix_secs = (clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
+        / clock_contract::NS_PER_SECOND) as i64;
 
     // Out of range is not reachable from a clock the service believed (its sanity window is 2026 to
     // 2100 and the calendar's is 0000 to 9999), and it is still an answer rather than a panic,

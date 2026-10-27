@@ -33,7 +33,7 @@ complaint about it. A caller that was refused prints neither the summary nor the
 (`ps::Survey::write_report` already declines), so `top > out.txt` is empty on a refusal exactly as
 `ps > out.txt` is.
 
-Its uptime is `user_mode_runtime::monotonic_nanos()`, the ambient counter every process holds
+Its uptime is `user_mode_runtime::monotonic_ns()`, the ambient counter every process holds
 unconditionally. That counter is `kernel/src/arch/*/timer.rs`'s documented exception to DECISIONS
 §10 (process model: capability-based, microkernel)'s no-ambient-authority rule. `write_summary`
 takes it as a parameter rather than calling it, so its output is a value a host test can assert on.

@@ -43,7 +43,7 @@ before the first tick, because the wall clock is a capability under §43 (readin
 The cross-ISA test asserts the refusal and that the entry never runs.
 
 The block's first sketch said the service would hold one clock capability. It holds none and needs
-none: monotonic time is ambient (`user_rt::monotonic_nanos`), and the wall clock is the thing §43
+none: monotonic time is ambient (`user_rt::monotonic_ns`), and the wall clock is the thing §43
 made a capability. That is why a scheduled entry can be refused a clock at all.
 
 ## Built: the archive narrowed to the plan, 2026-08-18

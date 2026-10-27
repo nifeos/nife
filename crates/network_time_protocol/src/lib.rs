@@ -43,9 +43,9 @@ pub const UNIX_DELTA: u64 = 2_208_988_800;
 /// The number of NTP fraction ticks in one second: 2<sup>32</sup>. One tick is about 233 ps, which
 /// is finer than a nanosecond, which is why nanoseconds survive a round trip through a
 /// [`Timestamp`] and arbitrary tick values do not.
-pub(crate) const TICKS_PER_SEC: u64 = 1 << 32;
+pub(crate) const TICKS_PER_SECOND: u64 = 1 << 32;
 
-const NANOS_PER_SEC: u64 = 1_000_000_000;
+use clock_contract::NS_PER_SECOND;
 
 /// **The oldest Unix second [`Timestamp`] can represent**, under the era pivot: 0, the Unix epoch.
 ///
@@ -63,7 +63,7 @@ pub const UNIX_MINIMUM: u64 = 0;
 /// earlier, so [`Timestamp::from_unix`] refuses it rather than returning a wrong answer.
 /// `UNIX_MINIMUM..UNIX_LIMIT` is exactly the range over which Unix → NTP → Unix is the identity,
 /// and that is the property Kani proves.
-pub(crate) const UNIX_LIMIT: u64 = (TICKS_PER_SEC - UNIX_DELTA) + (1 << 31);
+pub(crate) const UNIX_LIMIT: u64 = (TICKS_PER_SECOND - UNIX_DELTA) + (1 << 31);
 
 /// The highest stratum a synchronised server may claim (RFC 5905 `MAXSTRAT`). 1 is a reference
 /// clock, 15 is fifteen hops from one, 16 means "unsynchronised" and anything above is reserved.
@@ -160,23 +160,23 @@ impl Timestamp {
         self.0 == 0
     }
 
-    /// **Unix seconds and nanoseconds to an NTP timestamp.** `None` if `nanos` is not a valid
-    /// sub-second (`>= 1_000_000_000`) or if `secs` is outside `UNIX_MINIMUM..`[`UNIX_LIMIT`],
+    /// **Unix seconds and nanoseconds to an NTP timestamp.** `None` if `ns` is not a valid
+    /// sub-second (`>= 1_000_000_000`) or if `seconds` is outside `UNIX_MINIMUM..`[`UNIX_LIMIT`],
     /// where the era pivot could not read the result back.
     ///
     /// Refusing out of range rather than wrapping is the deliberate half of the 2036 handling: the
     /// conversion is only ever the identity's inverse inside the window, so outside it we return
     /// nothing instead of a value that would decode to a date 136 years off.
-    pub const fn from_unix(secs: u64, nanos: u32) -> Option<Timestamp> {
-        if nanos as u64 >= NANOS_PER_SEC || secs >= UNIX_LIMIT {
+    pub const fn from_unix(seconds: u64, ns: u32) -> Option<Timestamp> {
+        if ns as u64 >= NS_PER_SECOND || seconds >= UNIX_LIMIT {
             return None;
         }
         // Wrapping is correct and intended here: for secs in range, the sum exceeds 2^32 exactly
         // when the instant is in era 0 (before 2036), and truncating to 32 bits is what the wire
         // format is. The era is recovered by the pivot on the way back.
-        let ntp_secs = ((secs + UNIX_DELTA) % TICKS_PER_SEC) as u32;
+        let ntp_seconds = ((seconds + UNIX_DELTA) % TICKS_PER_SECOND) as u32;
         Some(Timestamp(
-            ((ntp_secs as u64) << 32) | nanos_to_ticks(nanos) as u64,
+            ((ntp_seconds as u64) << 32) | ns_to_ticks(ns) as u64,
         ))
     }
 
@@ -192,7 +192,7 @@ impl Timestamp {
     /// nearest-era rule is worse.
     pub const fn to_unix(self) -> (u64, u32) {
         let s = self.seconds() as u64;
-        let secs = if s >= (1 << 31) {
+        let seconds = if s >= (1 << 31) {
             // Era 0. UNIX_DELTA > 2^31, so this subtraction stays non-negative only for s at or
             // above the delta; below it (1968 to 1970) the instant predates the Unix epoch and we
             // saturate at 0 rather than return a negative second. That range is unreachable from
@@ -200,9 +200,9 @@ impl Timestamp {
             s.saturating_sub(UNIX_DELTA)
         } else {
             // Era 1: add a full rollover before subtracting the epoch delta.
-            s + TICKS_PER_SEC - UNIX_DELTA
+            s + TICKS_PER_SECOND - UNIX_DELTA
         };
-        (secs, ticks_to_nanos(self.fraction()))
+        (seconds, ticks_to_ns(self.fraction()))
     }
 
     /// **Replace the low `bits` of the fraction with random bits**, for use as the transmit
@@ -237,7 +237,7 @@ impl Timestamp {
     }
 }
 
-/// Nanoseconds to fraction ticks, **rounded to nearest**. `nanos` must be under 1e9; the caller
+/// Nanoseconds to fraction ticks, **rounded to nearest**. `ns` must be under 1e9; the caller
 /// checks.
 ///
 /// Rounding, not truncating, and that is load-bearing rather than fussy. A tick is finer than a
@@ -246,22 +246,22 @@ impl Timestamp {
 /// Rounding to nearest in both directions keeps the error under half a tick each way, which is under
 /// an eighth of a nanosecond in total, so the value always lands back on the nanosecond it started
 /// on. Kani proves it for all 1e9 of them.
-const fn nanos_to_ticks(nanos: u32) -> u32 {
-    let n = nanos as u64;
-    (((n * TICKS_PER_SEC) + NANOS_PER_SEC / 2) / NANOS_PER_SEC) as u32
+const fn ns_to_ticks(ns: u32) -> u32 {
+    let n = ns as u64;
+    (((n * TICKS_PER_SECOND) + NS_PER_SECOND / 2) / NS_PER_SECOND) as u32
 }
 
 /// Fraction ticks to nanoseconds, rounded to nearest, clamped to a valid sub-second.
 ///
 /// The clamp catches the two tick values (2<sup>32</sup>-2 and 2<sup>32</sup>-1) whose rounded
-/// nanosecond is a whole second. Neither is producible by [`nanos_to_ticks`], so clamping cannot
+/// nanosecond is a whole second. Neither is producible by [`ns_to_ticks`], so clamping cannot
 /// disturb the nanosecond round trip; it exists so that **every** 64-bit pattern off the wire
 /// decodes to a sub-second a `Duration` will accept, rather than one in 2<sup>31</sup> hostile
 /// packets producing a nanosecond field of 1e9 for something downstream to trip over.
-const fn ticks_to_nanos(ticks: u32) -> u32 {
-    let n = ((ticks as u64 * NANOS_PER_SEC) + (TICKS_PER_SEC / 2)) / TICKS_PER_SEC;
-    if n >= NANOS_PER_SEC {
-        (NANOS_PER_SEC - 1) as u32
+const fn ticks_to_ns(ticks: u32) -> u32 {
+    let n = ((ticks as u64 * NS_PER_SECOND) + (TICKS_PER_SECOND / 2)) / TICKS_PER_SECOND;
+    if n >= NS_PER_SECOND {
+        (NS_PER_SECOND - 1) as u32
     } else {
         n as u32
     }
@@ -275,12 +275,12 @@ pub struct Short(pub u32);
 impl Short {
     /// The value in nanoseconds. Exact enough: a 16.16 tick is about 15.3 µs, so nothing is lost
     /// that was ever there.
-    pub const fn nanos(self) -> u64 {
-        (self.0 as u64 * NANOS_PER_SEC) >> 16
+    pub const fn ns(self) -> u64 {
+        (self.0 as u64 * NS_PER_SECOND) >> 16
     }
 
     /// The whole-seconds part.
-    pub const fn secs(self) -> u16 {
+    pub const fn seconds(self) -> u16 {
         (self.0 >> 16) as u16
     }
 }
@@ -315,13 +315,13 @@ impl Interval {
 
     /// The interval in nanoseconds, truncated toward zero. This is the form the clock service wants:
     /// it holds an offset it can add to a monotonic reading.
-    pub const fn nanos(self) -> i128 {
-        (self.0 * NANOS_PER_SEC as i128) / TICKS_PER_SEC as i128
+    pub const fn ns(self) -> i128 {
+        (self.0 * NS_PER_SECOND as i128) / TICKS_PER_SECOND as i128
     }
 
     /// The interval in microseconds, truncated toward zero. For logging, where nanoseconds are noise.
-    pub const fn micros(self) -> i128 {
-        (self.0 * 1_000_000) / TICKS_PER_SEC as i128
+    pub const fn microseconds(self) -> i128 {
+        (self.0 * 1_000_000) / TICKS_PER_SECOND as i128
     }
 
     /// Is this interval negative?
@@ -589,8 +589,8 @@ pub struct Sample {
 /// let dest = Timestamp::from_unix(1_800_000_000, 41_000_000).unwrap();
 /// let sample = query.accept(&reply.to_bytes(), dest).unwrap();
 ///
-/// assert_eq!(sample.offset.nanos() / 1_000_000, 2_000);
-/// assert_eq!(sample.delay.nanos() / 1_000_000, 40);
+/// assert_eq!(sample.offset.ns() / 1_000_000, 2_000);
+/// assert_eq!(sample.delay.ns() / 1_000_000, 40);
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Query {
@@ -827,11 +827,7 @@ mod tests {
         #[cfg(not(miri))]
         let domain = 0..1_000_000_000u32;
         for n in domain {
-            assert_eq!(
-                ticks_to_nanos(nanos_to_ticks(n)),
-                n,
-                "{n} ns did not survive"
-            );
+            assert_eq!(ticks_to_ns(ns_to_ticks(n)), n, "{n} ns did not survive");
         }
         // The same thing through the public conversion, on the cases that break a truncating
         // implementation. 1 ns is 4.29 ticks: truncate both ways and it comes back 0.
@@ -839,8 +835,8 @@ mod tests {
             let t = Timestamp::from_unix(1_785_412_800, n).unwrap();
             assert_eq!(t.to_unix(), (1_785_412_800, n));
         }
-        assert_eq!(nanos_to_ticks(1), 4);
-        assert_eq!(ticks_to_nanos(4), 1);
+        assert_eq!(ns_to_ticks(1), 4);
+        assert_eq!(ticks_to_ns(4), 1);
     }
 
     #[test]
@@ -848,8 +844,8 @@ mod tests {
         // The two tick values whose rounded nanosecond is a whole second. Nothing this crate emits
         // produces them; a packet off the wire can carry them, and a nanos field of 1e9 would blow
         // up a Duration downstream.
-        assert_eq!(ticks_to_nanos(u32::MAX), 999_999_999);
-        assert_eq!(ticks_to_nanos(u32::MAX - 1), 999_999_999);
+        assert_eq!(ticks_to_ns(u32::MAX), 999_999_999);
+        assert_eq!(ticks_to_ns(u32::MAX - 1), 999_999_999);
     }
 
     #[test]
@@ -866,7 +862,7 @@ mod tests {
         assert_eq!(p.reference_id, [17, 253, 14, 251]);
         assert_eq!(p.origin, T1);
         // 0x0D01 in 16.16 is 3329/65536 s = 50.796 ms.
-        assert_eq!(p.root_delay.nanos(), 50_796_508);
+        assert_eq!(p.root_delay.ns(), 50_796_508);
         // The reference timestamp is 137 s before T1: the server last corrected itself at 11:57:43.
         assert_eq!(p.reference.to_unix().0, 1_785_412_663);
         assert_eq!(p.receive.to_unix(), (1_785_412_800, 867_937_359));
@@ -916,9 +912,9 @@ mod tests {
     fn the_offset_and_delay_are_the_numbers_the_rfc_formula_gives() {
         let s = query().accept(&REPLY, T4).unwrap();
         // 1 ns under 500_150_000: the fixed-point representation of 0.5115 s is not exact.
-        assert_eq!(s.offset.nanos(), 500_149_999);
-        assert_eq!(s.delay.nanos(), 22_700_000);
-        assert_eq!(s.offset.micros(), 500_149);
+        assert_eq!(s.offset.ns(), 500_149_999);
+        assert_eq!(s.delay.ns(), 22_700_000);
+        assert_eq!(s.offset.microseconds(), 500_149);
         assert!(!s.delay.is_negative());
         assert_eq!(s.response.stratum, 2);
     }
@@ -930,7 +926,7 @@ mod tests {
     fn the_offset_is_within_half_the_delay_of_the_truth() {
         let s = query().accept(&REPLY, T4).unwrap();
         let truth = 500_000_000i128;
-        assert!((s.offset.nanos() - truth).abs() <= s.delay.nanos() / 2);
+        assert!((s.offset.ns() - truth).abs() <= s.delay.ns() / 2);
     }
 
     /// The reason the arithmetic is modular. T1 is two seconds before the rollover (seconds field
@@ -950,8 +946,8 @@ mod tests {
         p.receive = t2;
         p.transmit = t3;
         let s = Query::new(t1).accept(&p.to_bytes(), t4).unwrap();
-        assert_eq!(s.delay.nanos(), 1_500_000_000);
-        assert_eq!(s.offset.nanos(), 250_000_000);
+        assert_eq!(s.delay.ns(), 1_500_000_000);
+        assert_eq!(s.offset.ns(), 250_000_000);
         assert_eq!(t2.to_unix().0 + 1, t3.to_unix().0);
     }
 
@@ -971,7 +967,7 @@ mod tests {
         assert_eq!(q.accept(&REPLY, T4), Err(Reject::OriginMismatch));
         // while one echoing the nonce is accepted, and the arithmetic still uses the true T1.
         let w = tweak(|w| w[24..32].copy_from_slice(&nonce.bits().to_be_bytes()));
-        assert_eq!(q.accept(&w, T4).unwrap().offset.nanos(), 500_149_999);
+        assert_eq!(q.accept(&w, T4).unwrap().offset.ns(), 500_149_999);
     }
 
     /// A broadcast packet is unsolicited, so nobody should believe it, even carrying our origin
@@ -1104,10 +1100,10 @@ mod tests {
 
     #[test]
     fn the_short_format_reads_as_16_dot_16() {
-        assert_eq!(Short(1 << 16).secs(), 1);
-        assert_eq!(Short(1 << 16).nanos(), 1_000_000_000);
-        assert_eq!(Short(1 << 15).nanos(), 500_000_000);
-        assert_eq!(MAXIMUM_ROOT_DISTANCE.secs(), 16);
+        assert_eq!(Short(1 << 16).seconds(), 1);
+        assert_eq!(Short(1 << 16).ns(), 1_000_000_000);
+        assert_eq!(Short(1 << 15).ns(), 500_000_000);
+        assert_eq!(MAXIMUM_ROOT_DISTANCE.seconds(), 16);
     }
 
     // Milestone 85 survivors. The exhaustive sweeps quantify over the CONVERSIONS; these are the
@@ -1154,7 +1150,7 @@ mod tests {
         let mut p = Packet::parse(&REPLY).unwrap();
         p.root_delay = Short(6 << 16);
         p.root_dispersion = Short(1 << 16);
-        assert_eq!(p.root_distance().secs(), 4);
+        assert_eq!(p.root_distance().seconds(), 4);
     }
 
     /// Stratum 15 is the last hop that still counts as synchronised (RFC 5905 MAXSTRAT); the

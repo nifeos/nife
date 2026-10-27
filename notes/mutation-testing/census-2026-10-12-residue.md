@@ -88,7 +88,7 @@ Most of the residue was already argued in prose and had no row. The equivalents 
 
 ### The Kani modules
 
-`network_time_protocol`'s `PROVED_NANOS`, `direct_memory_access_validator`'s `ChainMem::racing` and
+`network_time_protocol`'s `PROVED_NS`, `direct_memory_access_validator`'s `ChainMem::racing` and
 `machine_discovery`'s `x86_64` `N` sat in inline `#[cfg(kani)] mod verification` blocks. The
 `verification::` exclusion cannot reach a constant or a struct-field deletion there. No test can kill
 them either: only Kani compiles that code, so a mutant there changes nothing `cargo test` or a

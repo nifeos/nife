@@ -160,7 +160,7 @@ fn date_prints_the_wall_clock_it_was_granted() {
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or_else(|| panic!("date printed {:?}, which is not a number", &buf[..n]));
-    let ours = (w.wall_nanos() / clock_contract::NANOS_PER_SEC) as i64;
+    let ours = (w.wall_ns() / clock_contract::NS_PER_SECOND) as i64;
     assert!(
         (printed - ours).abs() < 10,
         "date printed {printed} seconds; the kernel reads {ours} from the same page",
@@ -371,7 +371,7 @@ fn date_reports_where_the_time_came_from() {
 
     // Step it through the propose endpoint, which is an authority `date` does not hold, and the
     // provenance follows the page rather than the process.
-    let (status, _) = w.propose_nanos(w.wall_nanos() + clock_contract::NANOS_PER_SEC / 2);
+    let (status, _) = w.propose_nanos(w.wall_ns() + clock_contract::NS_PER_SECOND / 2);
     assert_eq!(status, clock_contract::status::ACCEPTED);
     let (out, region) = spawn_date(Some(w.page_phys), FMT_UNIX, 0, PROVENANCE);
     let _ = line(out, &mut buf);

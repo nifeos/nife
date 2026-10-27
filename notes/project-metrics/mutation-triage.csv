@@ -62,29 +62,29 @@ grant_plan,same_bytes,replace < with <=,killed,killed; the ledger's grant_plan s
 grant_plan,same_bytes,replace same_bytes -> bool with false,killed,killed; the ledger's grant_plan section (census-2026-10-03-triage-part-3.md) says the sweep afterwards reports only that section's equivalents and gaps
 loaded_image_check,stack_works,replace stack_works -> bool with true,equivalent,"every path returns true; its job is to touch stack, which only a run in the guest shows"
 loaded_image_check,verify,replace verify with (),killed,killed; the ledger's loaded_image_check and uptime section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps
-paging,,replace << with >>,equivalent,a shift of zero is the same number
-paging,<impl PageFormat for Aarch64>::block_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Aarch64>::leaf_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Aarch64>::table_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Ia32e>::block_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Ia32e>::leaf_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
+paging,,replace << with >>,equivalent,"every survivor shifts either the value 1 by 0 (1 << 0) or the value 0 by 6 (0b00 << 6), and >> gives the same number in both; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Aarch64>::block_entry,replace | with ^,equivalent,"the masked address (ADDR_MASK, bits 12 to 47), VALID (0), TABLE_OR_PAGE (1) and every attrs bit (AF 10, SH_INNER 8 to 9, the attribute index 2 to 4, AP 6 to 7, NG 11, PXN 53, UXN 54) are disjoint, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Aarch64>::leaf_entry,replace | with ^,equivalent,"the masked address (ADDR_MASK, bits 12 to 47), VALID (0), TABLE_OR_PAGE (1) and every attrs bit (AF 10, SH_INNER 8 to 9, the attribute index 2 to 4, AP 6 to 7, NG 11, PXN 53, UXN 54) are disjoint, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Aarch64>::table_entry,replace | with ^,equivalent,"the masked address (ADDR_MASK, bits 12 to 47), VALID (0), TABLE_OR_PAGE (1) and every attrs bit (AF 10, SH_INNER 8 to 9, the attribute index 2 to 4, AP 6 to 7, NG 11, PXN 53, UXN 54) are disjoint, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Ia32e>::block_entry,replace | with ^,equivalent,"the masked address (ADDR_MASK, bits 12 to 51), P (0), RW (1), US (2), PS (7) and the attrs bits (PWT 3, PCD 4, A 5, D 6, G 8, SW_KERNEL_EXEC 9, SW_DEVICE 10, XD 63) are all distinct bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Ia32e>::leaf_entry,replace | with ^,equivalent,"the masked address (ADDR_MASK, bits 12 to 51), P (0), RW (1), US (2), PS (7) and the attrs bits (PWT 3, PCD 4, A 5, D 6, G 8, SW_KERNEL_EXEC 9, SW_DEVICE 10, XD 63) are all distinct bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
 paging,<impl PageFormat for Ia32e>::leaf_flags,replace & with ^,killed,killed; the ledger's paging section (census-2026-10-03-triage-part-3.md) says the sweep afterwards reports only that section's equivalents and gaps
 paging,<impl PageFormat for Ia32e>::leaf_flags,replace & with |,killed,killed; the ledger's paging section (census-2026-10-03-triage-part-3.md) says the sweep afterwards reports only that section's equivalents and gaps
-paging,<impl PageFormat for Ia32e>::table_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Sv39>::is_block,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Sv39>::leaf_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Sv39>::table_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Vtd>::is_present,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Vtd>::leaf_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,<impl PageFormat for Vtd>::table_entry,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,Flags::device,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,Flags::kernel_code,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,Flags::kernel_data,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,Flags::user_code,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,Flags::user_data,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,Flags::user_device,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,Ia32e::attrs,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
-paging,Sv39::attrs,replace | with ^,equivalent,OR of a masked address with flag bits that each sit in their own position
+paging,<impl PageFormat for Ia32e>::table_entry,replace | with ^,equivalent,"the masked address (ADDR_MASK, bits 12 to 51), P (0), RW (1), US (2), PS (7) and the attrs bits (PWT 3, PCD 4, A 5, D 6, G 8, SW_KERNEL_EXEC 9, SW_DEVICE 10, XD 63) are all distinct bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Sv39>::is_block,replace | with ^,equivalent,"R (1), W (2) and X (3) are distinct single bits, so | and ^ build the same mask; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Sv39>::leaf_entry,replace | with ^,equivalent,"the PPN field (bits 10 to 53), V (0) and the attrs bits (R 1, W 2, X 3, U 4, G 5, A 6, D 7, SW_DEVICE 8) are disjoint, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Sv39>::table_entry,replace | with ^,equivalent,"the PPN field (bits 10 to 53) and V (0) are disjoint, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Vtd>::is_present,replace | with ^,equivalent,"VTD_R (0) and VTD_W (1) are distinct single bits, so | and ^ build the same mask; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Vtd>::leaf_entry,replace | with ^,equivalent,"the masked address (VTD_ADDR_MASK, bits 12 to 51), VTD_R (0) and VTD_W (1) are disjoint, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,<impl PageFormat for Vtd>::table_entry,replace | with ^,equivalent,"the masked address (VTD_ADDR_MASK, bits 12 to 51), VTD_R (0) and VTD_W (1) are disjoint, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,Flags::device,replace | with ^,equivalent,"the capability constants it ORs (CAP_*) are distinct single bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,Flags::kernel_code,replace | with ^,equivalent,"the capability constants it ORs (CAP_*) are distinct single bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,Flags::kernel_data,replace | with ^,equivalent,"the capability constants it ORs (CAP_*) are distinct single bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,Flags::user_code,replace | with ^,equivalent,"the capability constants it ORs (CAP_*) are distinct single bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,Flags::user_data,replace | with ^,equivalent,"the capability constants it ORs (CAP_*) are distinct single bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,Flags::user_device,replace | with ^,equivalent,"the capability constants it ORs (CAP_*) are distinct single bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,Ia32e::attrs,replace | with ^,equivalent,"A (5), RW (1), D (6), US (2), G (8), PWT (3), PCD (4), SW_DEVICE (10), SW_KERNEL_EXEC (9) and XD (63) are distinct single bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
+paging,Sv39::attrs,replace | with ^,equivalent,"R (1), A (6), W (2) and D (7) are distinct single bits, so | and ^ agree; the 2026-10-27 per-crate re-run still reports it"
 pgrep,,replace | with ^,equivalent,"the four state bits in state::EVERY are disjoint, so OR and XOR agree"
 pgrep,Selector::mask,replace Selector::mask -> u64 with 0,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
 pgrep,Selector::mask,replace Selector::mask -> u64 with 1,killed,"killed; the ledger's ps, pgrep, pmap section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps"
@@ -618,7 +618,7 @@ measured_boot,Sha256::update,replace < with <=,equivalent,argued in notes/mutati
 measured_boot,Sha256::compress,replace ^ with |,equivalent,argued in notes/mutation-testing/measured-boot.md; the 2026-10-07 per-crate re-run still reports it
 measured_boot,parse_hex,replace | with ^,equivalent,argued in notes/mutation-testing/measured-boot.md; the 2026-10-07 per-crate re-run still reports it
 memory_corruption_canary_gate,pause,replace pause with (),equivalent,argued in notes/mutation-testing/new-crate-backlog.md; the 2026-10-07 per-crate re-run still reports it
-network_time_protocol,,replace << with >>,equivalent,"two mutants share this key. UNIX_LIMIT is killed by the_range_limit_is_exactly_where_the_docs_say. PROVED_NANOS is a const in the cfg(kani) verification module: no build but Kani's compiles it, so the mutant changes nothing cargo test or a shipped image runs. The module is now its own file, which .cargo/mutants.toml's **/src/**/verification.rs glob excludes, and a re-run with cargo mutants at base deff22e9f no longer generates it"
+network_time_protocol,,replace << with >>,equivalent,"two mutants share this key. UNIX_LIMIT is killed by the_range_limit_is_exactly_where_the_docs_say. PROVED_NS is a const in the cfg(kani) verification module: no build but Kani's compiles it, so the mutant changes nothing cargo test or a shipped image runs. The module is now its own file, which .cargo/mutants.toml's **/src/**/verification.rs glob excludes, and a re-run with cargo mutants at base deff22e9f no longer generates it"
 network_time_protocol,,replace - with /,killed,killed; the_range_limit_is_exactly_where_the_docs_say now pins UNIX_LIMIT to 2104-02-26T09:42:24Z
 network_time_protocol,Timestamp::from_unix,replace % with +,equivalent,(secs + UNIX_DELTA) + 2^32 truncated by as u32 is the same as % 2^32
 network_time_protocol,Timestamp::from_unix,replace | with ^,equivalent,"| over operands on disjoint bits (each field masked or shifted into its own range), so | and ^ agree (seconds in the high half, ticks in the low)"

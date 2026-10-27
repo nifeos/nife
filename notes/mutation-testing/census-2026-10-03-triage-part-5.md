@@ -85,7 +85,7 @@ Argued in earlier appendices, and still reported by this re-run (39):
 - `board_console::port` (3): `candidates` twice and `confirm_speed`, already gaps in
   [serial-console](serial-console.md). They need the host's `/dev` or a real tty.
 - `job_mix::order`'s `seed | 1` (1), the recorded `BUGS` entry on `order`.
-- `network_time_protocol::PROVED_NANOS` (1). A `const` inside the `cfg(kani)` module gets no module
+- `network_time_protocol::PROVED_NS` (1). A `const` inside the `cfg(kani)` module gets no module
   path in its mutant name, so the `verification::` exclusion misses it. This is the
   `machine_discovery` `x86_64.rs:314` shape.
 

@@ -232,10 +232,10 @@ fn build_reply(request: &Packet, variant: u64, claimed_nanos: u64, out: &mut [u8
 /// client carries the same four lines against its own clock; this one is over a number the kernel
 /// handed it, so a claimed time far outside the era becomes `Timestamp::ZERO` and the client's
 /// `Query::accept` refuses it, which is the behaviour a test wiring an absurd time wants.
-fn stamp(unix_nanos: u64) -> Option<Timestamp> {
+fn stamp(unix_ns: u64) -> Option<Timestamp> {
     Timestamp::from_unix(
-        unix_nanos / clock_contract::NANOS_PER_SEC,
-        (unix_nanos % clock_contract::NANOS_PER_SEC) as u32,
+        unix_ns / clock_contract::NS_PER_SECOND,
+        (unix_ns % clock_contract::NS_PER_SECOND) as u32,
     )
 }
 
