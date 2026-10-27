@@ -3,17 +3,17 @@ name = "file_allocation_table"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
-description = "FAT32 volume layout as pure computation: lays out an EFI system partition, with Kani-proven long file name entries"
+description = "FAT12, FAT16 and FAT32 as pure computation: a Kani-proven reader for hostile volumes, and a writer that lays out an EFI system partition"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["no-std", "fat32", "filesystem", "kani"]
 categories = ["no-std", "filesystem"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 
-# Enough of FAT32 (Microsoft's "FAT: General Overview of On-Disk Format", version 1.03) to create
-# an EFI system partition holding one boot file, as pure computation. No I/O of any kind: this
-# crate says what every sector of the volume must contain and the caller writes them. So it
-# compiles for the host and its tests run in milliseconds.
+# FAT12, FAT16 and FAT32 (Microsoft's "FAT: General Overview of On-Disk Format", version 1.03), as
+# pure computation. No I/O of any kind: the reader takes sectors from a caller's `SectorDevice`,
+# and the writer says what every sector of its one volume must contain and the caller writes them.
+# So it compiles for the host and its tests run in milliseconds.
 
 [dependencies]
 

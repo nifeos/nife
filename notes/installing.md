@@ -72,10 +72,9 @@ the authority to wipe the disk does not exist until the answer does.
 too, so an offer that did not look at the disk first would ask every installed machine, once per
 boot, whether to wipe itself. Looking means reading a partition table, and the kernel does not parse
 partition tables (notes/block-devices.md). So the looking is done by a process holding the disk and
-no entropy endpoint: the `disk_partitioner` verify role of milestone 57 (partitioning and formatting
-a real drive), one milestone along. It is the same demonstration: a program that cannot draw a
-unique id cannot write a table anything reads
-back.
+no entropy endpoint: `system_installer`'s `ROLE_SURVEY`, the shape of the `disk_partitioner` verify
+role of milestone 57 (partitioning and formatting a real drive). It is the same demonstration: a
+program that cannot draw a unique id cannot write a table anything reads back.
 
 ## The three things the building changed
 
@@ -120,7 +119,7 @@ With the data partition at LBA 2048 it begins at block 256.
 What that deletes from this rung: a partition-aware mount in `redoxfs_server`, and a base-block
 field on the `blk` wire (a wire value two programs agree on, and therefore calef's). Also a
 caretaker
-process in the middle of every filesystem block. `kernel/src/user/fs_service.rs` grew an NVMe arm and
+process in the middle of every filesystem block. `kernel/src/user/fs_service` grew an NVMe arm (`wiring.rs`) and
 nothing else.
 
 What it costs is real and is recorded in `system_installer`'s `BUGS`: the filesystem server on an
@@ -134,10 +133,11 @@ reader of this page should consider taking.
 ### 3. FAT32 had to be written, and the alignment is the part that bites
 
 Nothing in this tree could write a FAT volume. Every path around it (QEMU's `vvfat`, macOS's
-`diskutil`, Linux's `mkfs.vfat`) is a host tool the target cannot reach. The FAT32 stratum of
-milestone 140 (mount a drive this system did not create) is read-first and unbuilt. `crates/file_allocation_table` is the smallest thing that closes
-it: it creates one volume holding one file at one path, as pure computation with no I/O, and is then
-finished.
+`diskutil`, Linux's `mkfs.vfat`) is a host tool the target cannot reach.
+`crates/file_allocation_table`'s writer closes it: it creates one volume holding one file at one
+path, as pure computation with no I/O. The rest of that crate, a reader and a general writer for
+FAT12, FAT16 and FAT32, is milestone 813, and milestone 140 (mount a drive this system did not
+create) builds its FAT32 stratum on it.
 
 Two numbers in it are load-bearing and neither is obvious.
 
@@ -188,16 +188,15 @@ system did not create) and a different order of risk to somebody's data.
 
 Everything else this rung found that it did not do is written where the next person meets it. That
 is the `BUGS` section beside the feature and, for the five that want work rather than only a record,
-as a
-proposal in `design/roadmap/proposals/`. The five, and what each is actually about:
+a milestone. The five, and what each is actually about:
 
-| proposal | the thing it is about |
+| milestone | the thing it is about |
 |---|---|
-| `the-disk-an-installer-names-has-no-model.md` | the offer says "the NVMe disk attached to this machine", which is a guess on the first machine with two. The single most load-bearing sentence a stranger reads |
-| `the-install-offer-should-say-what-is-already-on-the-disk.md` | the survey asks only whether nife is there, so a disk holding Windows is described as an unqualified target |
-| `there-is-no-way-back-from-the-stick.md` | an installed disk is never offered an install again, which is right, and turns a power cut between the installer and `mkfs` into an unrecoverable state |
-| `a-long-file-name-or-riscv64-cannot-be-installed.md` | `BOOTRISCV64.EFI` is not 8.3; built as milestone 560 (a long file name, or riscv64 cannot be installed), so the FAT writer gives it long-name entries |
-| `the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md` | `/chosen` has one initrd slot and no second one, which is why this rung is an `x86_64` claim |
+| [569](../design/roadmap/0569-the-disk-an-installer-names-has-no-model.md) | the offer says "the NVMe disk attached to this machine", which is a guess on the first machine with two. The single most load-bearing sentence a stranger reads |
+| [570](../design/roadmap/0570-the-install-offer-should-say-what-is-already-on-the-disk.md) | the survey asks only whether nife is there, so a disk holding Windows is described as an unqualified target |
+| [572](../design/roadmap/0572-there-is-no-way-back-from-the-stick.md) | an installed disk is never offered an install again, which is right, and turns a power cut between the installer and `mkfs` into an unrecoverable state |
+| [560](../design/roadmap/0560-a-long-file-name-or-riscv64-cannot-be-installed.md), built | `BOOTRISCV64.EFI` is not 8.3, so the FAT writer gives it long-name entries |
+| [568](../design/roadmap/0568-the-boot-file-has-nowhere-to-go-on-a-device-tree-machine.md) | `/chosen` has one initrd slot and no second one, which is why this rung is an `x86_64` claim |
 
 A stick boot used to write the installed disk (the live stick proposal's G2, measured 2026-10-04).
 With no virtio disk the kernel mounted the NVMe filesystem whatever the boot medium was, and RedoxFS
@@ -217,9 +216,9 @@ rather than a lane's to propose.
 The `BUGS` in `xtask/src/install.rs` are one line each. Here is what stands behind them.
 
 - The disk is one 1 GiB image. The installer's layout arithmetic has a floor and a rounding step
-  that nothing varies, and a disk under about 600 MiB is refused by code no test exercises.
-- The gate takes about 42 seconds warm. It is still not in `script/test`'s default legs, and
-  nothing schedules it.
+  that nothing varies, and a disk under about 700 MiB is refused by code no test exercises.
+- The gate takes about 42 seconds warm. It is not in `script/test`'s default legs, and nothing
+  schedules it (milestone 712).
 - Boot 3 proves the stick left the disk alone under OVMF, and only there. What keeps it so is the
   `boot_slot::medium` token above. The loader writes it only when its file is on an NVMe namespace.
   A real firmware that built that device path differently would leave an installed machine without

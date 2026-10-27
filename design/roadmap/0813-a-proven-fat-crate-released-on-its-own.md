@@ -131,8 +131,9 @@ Non-goals for the first release:
 
 ## What is proven
 
-The writer's half of the fourth property is proved; the reader's half and the other three are
-this milestone's scope, not a step before it. Each row is a property this crate must prove before it publishes. The harness
+The table says which parts are proved: the boot sector, table entry and directory slot parses of
+the first property, the second on volumes of one to eight clusters, and the writer's half of the
+fourth. The rest is this milestone's scope, not a step before it. Each row is a property this crate must prove before it publishes. The harness
 cell names the Kani harness that proves it, or says `none yet`; every named harness carries a
 falsification patch that makes it fail at its own assertion. Each patch sits at
 `crates/file_allocation_table/falsifications/<module.path>.<harness>.patch`, as §134 (a harness
@@ -227,7 +228,7 @@ ratification pass. With Kani, every harness proves and every falsification patch
 `cargo test -p file_allocation_table` fails if any piece is missing. It reads both #1803 images to
 their recorded hashes, writes the tree above on FAT12, FAT16 and FAT32, and has rust-fatfs and
 `fsck_msdos` (or `fsck.fat`) accept each. It formats a FAT32 EFI system partition holding
-`\EFI\BOOT\BOOTRISCV64.EFI`, a name the `mkfs` refuses today. `script/verify` proves the four
+`\EFI\BOOT\BOOTRISCV64.EFI`, a name that needs long-name entries. `script/verify` proves the four
 properties, `script/falsifications` reports every harness `replayable`, and the crate builds for all
 three targets. Publication is the last step and not the exit, since it waits on calef. The five soak
 criteria of release step 5 hold before it publishes.
@@ -272,7 +273,7 @@ names until the ratification pass, so this section keeps the links it carried.
   `notes/file-allocation-table.md`, "Long names". The padding now sits in the doc itself.
 - `src/long_name/verification.rs`, module doc: `script/verify` (now `cargo kani`) and
   `notes/verification.md`.
-- `src/volume.rs`, `Volume::new`: the cluster-alignment rounding cited `notes/installing.md`,
+- `src/volume.rs`, `VolumeLayout::new`: the cluster-alignment rounding cited `notes/installing.md`,
   section 3 ("FAT32 had to be written, and the alignment is the part that bites"), which tells how
   ten megabytes landed six sectors early.
 - `tests/a_third_party_driver_reads_it.rs`, module doc: why the host's driver is the check that
