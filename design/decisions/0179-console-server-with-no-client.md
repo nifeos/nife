@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-20
+ratified_by: calef
 ---
 
 # 179. Whether the tour boot keeps starting a console server that has no client
@@ -10,6 +12,13 @@ Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decisio
 `kernel/src/user/console_service.rs`'s `#[expect(dead_code)]` reason names *milestone 267's block*,
 which forwards to 394, which addresses a paragraph to one person. *(Section number provisional until
 the merge queue lands it.)*
+
+## Overtaken 2026-10-20 (UTC)
+
+The question no longer exists. The ruling on #2447 turned the boot tours into self-test checks, and
+commit `bcf864dc7` (milestone 890) deleted the tour boots, `kernel/src/user/console_service.rs` and
+the `#[expect(dead_code)]` this section was raised for. Nothing starts a console server with no
+client. This is the outcome of option B, reached by removing the tour rather than the one line.
 
 ## What is being decided
 
