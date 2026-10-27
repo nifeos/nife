@@ -14,7 +14,10 @@ const ALL: &[Refusal] = &[
     Refusal::FileNotNameable,
     Refusal::MemoryGrantForbidden,
     Refusal::MemoryGrantRequired,
-    Refusal::MemoryGrantOutOfRange { min: 1, max: 2 },
+    Refusal::MemoryGrantOutOfRange {
+        minimum: 1,
+        maximum: 2,
+    },
     Refusal::ProgramArgumentRequired,
     Refusal::ProgramArgumentForbidden,
     Refusal::NoMatch,

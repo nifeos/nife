@@ -46,7 +46,7 @@ struct Inner {
     /// mapped and donated to the allocator so far.
     base: u64,
     committed: u64,
-    max: u64,
+    maximum: u64,
 }
 
 /// The untyped-backed global allocator. One static per program, named in its
@@ -86,7 +86,7 @@ impl MemoryRegionHeap {
                 memory_region_slot: u64::MAX,
                 base: 0,
                 committed: 0,
-                max: 0,
+                maximum: 0,
             }),
         }
     }
@@ -103,7 +103,7 @@ impl MemoryRegionHeap {
         inner.memory_region_slot = memory_region_slot;
         inner.base = base;
         inner.committed = 0;
-        inner.max = max_bytes & !(PAGE - 1);
+        inner.maximum = max_bytes & !(PAGE - 1);
     }
 
     /// **Map the whole capped range now**, rather than on the first allocations that need it.
@@ -119,7 +119,7 @@ impl MemoryRegionHeap {
     pub fn commit_all(&self) -> bool {
         let mut g = self.lock();
         let inner = g.inner();
-        let rest = inner.max.saturating_sub(inner.committed);
+        let rest = inner.maximum.saturating_sub(inner.committed);
         rest == 0 || Self::grow(inner, rest)
     }
 
@@ -154,7 +154,7 @@ impl MemoryRegionHeap {
         let want_pages = need_pages
             .max(inner.committed / PAGE) // doubling: as many again as we have
             .max(MIN_GROW_PAGES)
-            .min((inner.max - inner.committed) / PAGE);
+            .min((inner.maximum - inner.committed) / PAGE);
         if want_pages < need_pages {
             return false; // the cap is closer than the request; growing cannot help.
         }

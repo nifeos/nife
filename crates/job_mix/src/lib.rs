@@ -237,7 +237,7 @@ pub const TASK_BUDGET_PAGES: u64 = 1
 /// The largest task pool the supervisor builds, and therefore the length of its go-endpoint array.
 ///
 /// 32, against `sched::MAX_THREADS`'s 256 and against the 64 user threads the soak already builds
-/// on this machine. The sweep tops out here rather than at milestone 134's E1 ceiling of 96 because
+/// on this machine. The sweep tops out here rather than at milestone 134 (the register of measures)'s E1 ceiling of 96 because
 /// every task in this pool is a **process**, with an address space and a loaded image behind it,
 /// where E1's were kernel threads; the memory, not the thread table, is what binds.
 pub const MAX_TASKS: usize = 32;
@@ -270,11 +270,11 @@ const _: () = assert!(TASK_BUDGET_PAGES < 1 + 8 + MAP_REGION_PAGES + CHILD_PAGES
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Spread {
     /// The fastest repeat, in ticks. It is printed so the spread stays visible; it is not the result.
-    pub min: u64,
+    pub minimum: u64,
     /// The middle repeat, in ticks. **This is the result**, and it is what `jpm_median` is made from.
     pub median: u64,
     /// The slowest repeat, in ticks.
-    pub max: u64,
+    pub maximum: u64,
 }
 
 // An odd count, so the median is one of the samples rather than a mean of the middle two. A mean
@@ -294,9 +294,9 @@ pub fn spread(samples: &mut [u64]) -> Option<Spread> {
     }
     samples.sort_unstable();
     Some(Spread {
-        min: samples[0],
+        minimum: samples[0],
         median: samples[(samples.len() - 1) / 2],
-        max: samples[samples.len() - 1],
+        maximum: samples[samples.len() - 1],
     })
 }
 
@@ -577,9 +577,9 @@ mod tests {
         assert_eq!(
             spread(&mut v),
             Some(Spread {
-                min: 132_148,
+                minimum: 132_148,
                 median: 149_654,
-                max: 181_408
+                maximum: 181_408
             })
         );
     }
@@ -595,7 +595,7 @@ mod tests {
         ];
         let s = spread(&mut v).expect("fifteen samples");
         assert_eq!(s.median, 111_256);
-        assert_eq!(s.min, 97_672);
+        assert_eq!(s.minimum, 97_672);
     }
 
     /// An even count takes the lower middle, a sample and never a mean of two.

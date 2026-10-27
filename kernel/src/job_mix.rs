@@ -234,9 +234,9 @@ fn measure_point(
     println!(
         "{POINT}{tasks} jobs={jobs} repeats={REPEATS} ticks_min={} ticks_median={} \
          ticks_max={} jpm_median={}",
-        spread.min,
+        spread.minimum,
         spread.median,
-        spread.max,
+        spread.maximum,
         job_mix::jobs_per_minute(jobs, spread.median, hz)
     );
     // Totals over every task and repeat at this point, so the per-job division can be re-derived.
