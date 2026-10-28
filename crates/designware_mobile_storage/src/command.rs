@@ -247,6 +247,16 @@ pub(crate) const UPDATE_CLOCK: u32 = registers::CMD_START_CMD
     | registers::CMD_WAIT_PRVDATA_COMPLETE
     | registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY;
 
+/// The three fields a `CMD` word composes share no bit (start at bit 31, the hold register at bit
+/// 29, the command index in bits 5:0), which the compiler checks here; the mutation exclusion for
+/// `Command::word` names this constant. The constant-assertion lint is off on purpose: the
+/// assertion is constant by construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT: () =
+    assert!(registers::CMD_START_CMD + registers::CMD_USE_HOLD_REG + 0x3f == 0xa000_003f);
+
 #[cfg(test)]
 mod tests {
     use super::*;

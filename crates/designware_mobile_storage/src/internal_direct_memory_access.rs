@@ -105,6 +105,15 @@ pub(crate) const DES0_LD: u32 = 1 << 2;
 pub(crate) const DES0_DIC: u32 = 1 << 1;
 /// Word 1: the first buffer's size in bytes, bits 12:0.
 pub(crate) const DES1_BS1_MASK: u32 = 0x1fff;
+/// The two word-0 bits every descriptor is written with share no bit (31 and 4), which the compiler
+/// checks here; the mutation exclusion for `descriptor` names this constant. The constant-assertion
+/// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
+/// is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_DESCRIPTOR_OWN_AND_CHAIN_BITS_SHARE_NO_BIT: () =
+    assert!(DES0_OWN + DES0_CH == 0x8000_0010);
 
 /// Why a region was refused before anything was written.
 ///
