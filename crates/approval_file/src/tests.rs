@@ -3,8 +3,8 @@
 //!
 //! Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 
-use alloc::format;
-use alloc::vec;
+use alloc::{format, vec};
+
 use installed_programs::{Digest, Granted};
 
 use super::*;

@@ -557,6 +557,48 @@ mod tests {
         assert_eq!(doc.entry("no-such").unwrap(), None);
     }
 
+    /// **The installer's, the network's and the root zone's allow lines read back** as the grants
+    /// they spell: `allow installer` is the endpoint, `allow network` the stack, and
+    /// `allow zone .` the root zone, spelled.
+    #[test]
+    fn the_installers_and_the_root_zones_allow_lines_read_back() {
+        let digest = "1".repeat(64);
+        let text = format!(
+            "approval r sha256:{digest}\npackage m\nallow installer\nallow network\nallow zone .\nupdate true\nremove false\n"
+        );
+        let doc = Document::parse(&text).unwrap();
+        let m = doc.entry("m").unwrap().unwrap();
+        assert_eq!(
+            m.allows().map(|a| a.unwrap()).collect::<Vec<_>>(),
+            [Granted::Installer, Granted::Network, Granted::Zone("")]
+        );
+    }
+
+    /// **One ask at a time is what a section covers**, the delegated check's per-request test: a
+    /// directory ask within the section's rights is covered and one wider is not, and an ask the
+    /// section does not name at all is not.
+    #[test]
+    fn a_section_covers_one_ask_at_a_time() {
+        let (out, n) = example();
+        let text = core::str::from_utf8(&out[..n]).unwrap();
+        let doc = Document::parse(text).unwrap();
+        let monit = doc.entry("monit").unwrap().unwrap();
+        assert_eq!(
+            monit.covers(Granted::Directory("monit/state", DirectoryRights::R)),
+            Ok(true)
+        );
+        assert_eq!(monit.covers(Granted::Service), Ok(true));
+        assert_eq!(
+            monit.covers(Granted::Directory("monit/state", DirectoryRights::RW)),
+            Ok(true)
+        );
+        assert_eq!(monit.covers(Granted::Network), Ok(false));
+        assert_eq!(
+            monit.covers(Granted::Directory("monit/elsewhere", DirectoryRights::R)),
+            Ok(false)
+        );
+    }
+
     /// **The document is read strictly, the way a table is**: a line this grammar does not know,
     /// a second `update`, a missing `remove`, a duplicate package or allow, an unsorted allow,
     /// or a missing header refuses the document whole.
@@ -593,6 +635,21 @@ mod tests {
             ),
             format!(
                 "approval lab-runner {digest}\npackage m\nallow zones a\nupdate true\nremove false\n"
+            ),
+            // A directory line with a word after the rights, a name the row's column cannot hold
+            // (a leading `#`), a zone the resolver would not spell, and an unknown policy word
+            // with a flag.
+            format!(
+                "approval lab-runner {digest}\npackage m\nallow dir monit/state r extra\nupdate true\nremove false\n"
+            ),
+            format!(
+                "approval lab-runner {digest}\npackage m\nallow dir #a r\nupdate true\nremove false\n"
+            ),
+            format!(
+                "approval lab-runner {digest}\npackage m\nallow zone Nife.test\nupdate true\nremove false\n"
+            ),
+            format!(
+                "approval lab-runner {digest}\npackage m\nbogus true\nupdate true\nremove false\n"
             ),
         ] {
             let why = Document::parse(&bad).unwrap_err();

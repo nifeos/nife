@@ -565,4 +565,27 @@ mod tests {
             ..jig
         }));
     }
+
+    /// **The approval a line acts within is a store name**: the word after `--within`, at most the
+    /// store's thirty-two byte component, so thirty-two is a name and thirty-three is refused
+    /// whole; a line that says no `--within` names none.
+    #[test]
+    fn a_delegated_line_names_an_approval_of_at_most_thirty_two_bytes() {
+        let named = |line: &[u8], out: &mut [u8; 32]| {
+            let mut page = [0u8; program_argument_contract::PAGE_BYTES];
+            argv(line, &mut page).unwrap();
+            delegated_within(&page, out)
+        };
+        let mut out = [0u8; 32];
+        assert_eq!(
+            named(b"jig install --within lab-runner greeting", &mut out),
+            Some(10)
+        );
+        assert_eq!(&out[..10], b"lab-runner");
+        let at_the_bound = [b"jig install --within ".as_slice(), &[b'n'; 32]].concat();
+        assert_eq!(named(&at_the_bound, &mut out), Some(32));
+        let past_it = [b"jig install --within ".as_slice(), &[b'n'; 33]].concat();
+        assert_eq!(named(&past_it, &mut out), None);
+        assert_eq!(named(b"jig install greeting", &mut out), None);
+    }
 }

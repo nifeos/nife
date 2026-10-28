@@ -499,4 +499,53 @@ fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
             .iter()
             .all(|&b| b == 0)
     );
+    // A note carrying zones places its descriptor where the owner's name ends, zones and all.
+    const TWO: &[&str] = &["a.test", "b.c.test"];
+    const ZONED: ServicedNote<{ serviced_note_len(TWO) }> =
+        ServicedNote::of::<{ serviced_len(TWO) }>(&grant_plan::NO_NOTE_MANIFEST, TWO, true);
+    let n = &ZONED.0;
+    let descsz = u32::from_le_bytes([n[4], n[5], n[6], n[7]]) as usize;
+    assert_eq!(descsz, serviced_len(TWO));
+    let d = &n[HEADER_LEN + NAME_FIELD..HEADER_LEN + NAME_FIELD + descsz];
+    assert_eq!(decode(d), Ok(grant_plan::NO_NOTE_MANIFEST));
+    assert_eq!(zones(d).unwrap().iter().count(), 2);
+    assert_eq!(service(d), Ok(true));
+}
+
+/// **A version 3 descriptor walks its zones by their lengths to its last byte**: two zones of
+/// different lengths read back in order with the service ask, the bound is [`MAXIMUM_ZONES`] (the
+/// most grants a line may hold), and an out-of-order pair or a ninth zone is refused at the byte
+/// it breaks.
+#[test]
+fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
+    const TWO: &[&str] = &["a.test", "b.c.test"];
+    const D: [u8; serviced_len(TWO)] = encode_serviced(&grant_plan::NO_NOTE_MANIFEST, TWO, true);
+    assert_eq!(decode(&D), Ok(grant_plan::NO_NOTE_MANIFEST));
+    let mut got = zones(&D).unwrap().iter();
+    assert_eq!(got.next(), Some(&b"a.test"[..]));
+    assert_eq!(got.next(), Some(&b"b.c.test"[..]));
+    assert_eq!(got.next(), None);
+    assert_eq!(service(&D), Ok(true));
+
+    const EIGHT: &[&str] = &[
+        "a.test", "b.test", "c.test", "d.test", "e.test", "f.test", "g.test", "h.test",
+    ];
+    const E: [u8; serviced_len(EIGHT)] =
+        encode_serviced(&grant_plan::NO_NOTE_MANIFEST, EIGHT, false);
+    assert_eq!(decode(&E), Ok(grant_plan::NO_NOTE_MANIFEST));
+    assert_eq!(zones(&E).unwrap().iter().count(), MAXIMUM_ZONES);
+
+    // The same two zones, longest first: both canonical, and out of order at the second.
+    let at = DESCRIPTOR_LEN + 1;
+    let mut unsorted = D;
+    let mut swap = [0u8; 16];
+    swap[..9].copy_from_slice(&unsorted[at + 7..at + 16]);
+    swap[9..16].copy_from_slice(&unsorted[at..at + 7]);
+    unsorted[at..at + 16].copy_from_slice(&swap);
+    assert_eq!(decode(&unsorted), Err(Error::BadField(at + 9)));
+
+    // A ninth zone is past the most a line may hold.
+    let mut nine = D;
+    nine[DESCRIPTOR_LEN] = (MAXIMUM_ZONES + 1) as u8;
+    assert_eq!(decode(&nine), Err(Error::BadField(DESCRIPTOR_LEN)));
 }

@@ -1013,6 +1013,42 @@ fn an_install_writes_its_grants_in_order() {
     )
     .unwrap();
     assert_eq!(core::str::from_utf8(&out[..n]).unwrap(), second);
+}
+
+/// **A grant the table has no row for is refused, and so is a zone name the policy's spelling
+/// refuses**: the table keeps only what a live program's row bounds, under the name the policy
+/// compares lowercased.
+#[test]
+fn a_grant_for_no_new_row_or_a_misspelled_zone_is_refused() {
+    let (a, b) = ([0xaau8; 32], [0x11u8; 32]);
+    let entry = |program, digest| Entry {
+        program,
+        version: "0.1.0",
+        package: program,
+        digest,
+        manager: "jig",
+    };
+    let reach = [
+        Grant {
+            digest: a,
+            what: Granted::Zone("nife.test"),
+        },
+        Grant {
+            digest: a,
+            what: Granted::Network,
+        },
+    ];
+    let mut out = vec![0u8; 4096];
+    let n = with_entries_granting(
+        "",
+        || core::iter::once(entry("reach", a)),
+        |_| false,
+        || reach.into_iter(),
+        None,
+        &mut out,
+    )
+    .unwrap();
+    let first = core::str::from_utf8(&out[..n]).unwrap().to_string();
 
     let stray = [Grant {
         digest: b,
@@ -1127,6 +1163,17 @@ fn two_paths_write_one_record_and_their_answers_differ() {
         Some(Answered::Approval("lab-runner", [0x77u8; 32])),
         "the approval's line, name and file digest"
     );
+    // The `answered` object hands back the approval and its file digest, and the console's
+    // answer hands back nothing.
+    assert_eq!(Answered::Console.approval(), None);
+    match answered(&scripted).unwrap() {
+        Some(answer) => assert_eq!(answer.approval(), Some(("lab-runner", [0x77u8; 32]))),
+        other => panic!("{other:?}"),
+    }
+    assert!(
+        !records_agree(&scripted, ""),
+        "a table with no grant lines is not the same record"
+    );
     // The record itself, as text: the grant lines, sorted, once.
     let lines: vec::Vec<_> = record(&scripted).collect();
     assert_eq!(
@@ -1158,6 +1205,9 @@ fn an_answered_line_is_read_strictly() {
     assert_eq!(answered(&with_line).unwrap(), Some(Answered::Console));
     let twice = format!("{with_line}answered approval runner {}\n", "1".repeat(71));
     assert_eq!(answered(&twice), Err(Error::Malformed));
+    // A blank line and a comment are not rows: the table still reads, answer and all.
+    let spaced = format!("# a note\n\n{with_line}\n");
+    assert_eq!(answered(&spaced).unwrap(), Some(Answered::Console));
     for bad in [
         "answered\n",
         "answered maybe\n",
@@ -1263,10 +1313,19 @@ fn service_dir_and_installer_grants_round_trip() {
         record(table).eq(core::iter::once(format!("grant {ta} dir monit/state r"))),
         "the rights spell as the file does: {table}"
     );
+    // And `r` is a rights word, not merely a spelling this reader passes over.
+    assert_eq!(
+        grants(table).flatten().collect::<vec::Vec<_>>(),
+        [Grant {
+            digest: a,
+            what: Granted::Directory("monit/state", DirectoryRights::R),
+        }]
+    );
     for bad in [
         format!("grant {ta} dir monit/state rwx\n"),
         format!("grant {ta} dir monit/state\n"),
         format!("grant {ta} dir\n"),
+        format!("grant {ta} dir a.b r\n"),
         format!("grant {ta} service now\n"),
     ] {
         assert_eq!(

@@ -1281,6 +1281,20 @@ mod tests {
             other => panic!("{other:?}"),
         }
         assert_eq!(answered_from_trailer((9, 0, 0), &[], &mut out), None);
+        // The console's kind word carries no name: a follow word under it is no console answer,
+        // and an approval's kind word with fewer than two followers spells nothing.
+        assert_eq!(
+            answered_from_trailer((ANSWERED_CONSOLE, 0, 1), &[], &mut out),
+            None
+        );
+        assert_eq!(
+            answered_from_trailer((ANSWERED_CONSOLE, 1, 0), &[], &mut out),
+            None
+        );
+        assert_eq!(
+            answered_from_trailer(answered_approval("lab-runner", &digest)[0], &[], &mut out),
+            None
+        );
     }
 
     /// A holder's name survives the two messages whole, at the full width and empty.
