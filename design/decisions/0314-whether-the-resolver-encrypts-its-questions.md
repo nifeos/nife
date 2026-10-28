@@ -13,9 +13,9 @@ number, title and slug provisional until the merge queue lands it.)*
 
 The name resolver is `domain_name_resolver`, §248 (the name resolver is its own confined program).
 This decides whether it keeps asking in the clear or asks inside an encrypted channel. If it
-encrypts, four smaller choices follow: what happens when encryption is not available, how the
-resolver learns that a server speaks it, whether nife ever picks a resolver on the owner's behalf,
-and which code nife takes rather than writes.
+encrypts, four smaller choices follow. What happens when encryption is not available? How does the
+resolver learn that a server speaks it? Does nife ever pick a resolver on the owner's behalf? And
+which code does nife take rather than write?
 
 ## What the resolver does today
 
@@ -35,8 +35,8 @@ I read each claim below from the tree at `790878c03`.
   `tcp_reassembly_is_total_and_honest`). DoT carries exactly that framing.
 - The resolver is a `no_std` program in `components`. The TLS client is `pinned_tls_client`
   (milestone 501, a TLS client that speaks to one pinned peer). It is a `std` package outside the
-  main workspace, over `rustls` 0.23 and this tree's `cryptography_provider` (§196, nife carries
-  TLS; §198, the glue is ours and the primitives are not). TLS 1.3 only, one pinned root for one
+  main workspace, over `rustls` 0.23 and this tree's `cryptography_provider`: §196 (nife carries
+  TLS) and §198 (the glue is ours, the primitives are not). TLS 1.3 only, one pinned root for one
   host name.
 
 ## What encryption buys, and what it does not
