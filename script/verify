@@ -18,6 +18,9 @@ set -e
 # A heavy job: wait for one of the machine's heavy-job slots first (helpers/heavy_slot.py).
 . "$(dirname "$0")/../helpers/heavy-slot.sh"
 cd "$(dirname "$0")/.."
+# This file's own path, resolved before anything forks: --parallel starts its children by name, and
+# the parent has changed directory by then (helpers/heavy-slot.sh says the same about "$0").
+self="$(pwd)/script/verify"
 
 # --affected-since <base>: decide whether a change can reach the proofs at all, without proving.
 #
@@ -253,6 +256,66 @@ if [ "$1" = "--only" ]; then
 	shift 2
 fi
 
+# --parallel [N]: prove the whole table on this machine, N shards at a time. Off unless asked for.
+#
+# Why it exists. CI already splits the proofs across four runners, and one machine could not do the
+# same: `--shard k/n` typed N times is N heavy scripts, each waiting for its own heavy-job slot and
+# each racing the others through the same target directory, with nothing joining their verdicts.
+# Measured on an 80-vCPU, 128 GiB host on 2026-10-28 (UTC): four shards concurrently took 967 s
+# (16.1 min) for the whole suite, all green, against about 39.7 min serially, a factor of 2.5. Host
+# utilization was 9.4% and the 1-minute load peaked at 12.0 on 80 vCPUs, so the win is the shard
+# balance CI already computes, not spare capacity, and the ceiling is `glob` (10 to 12 min) rather
+# than cores: a fifth shard proves a smaller slice of the same table and buys nothing.
+# design/roadmap/0957-local-parallel-prove.md records the measurement and the two alternatives
+# refused.
+#
+# The shape, in five pieces:
+#
+#  - **N defaults to the smaller of CI's shard count and this machine's heavy-job slots**, then to
+#    what memory carries. The first is read from verify.yml by helpers/verify_times.py shards, the
+#    second from helpers/heavy_slot.py, and the arithmetic is helpers/verify_parallel.py's, which
+#    prints every reason it lowered the number and never lowers one silently. VERIFY_JOBS is each
+#    child's own width, so N x VERIFY_JOBS x 3.5 GiB per harness is what the guard measures.
+#  - **The parent takes one heavy slot and the children run inside it.** A child re-sources
+#    helpers/heavy-slot.sh, whose --held ancestor walk finds this process, so the child takes no
+#    slot and waits for none: a machine with one slot carries a four-child run without deadlocking,
+#    and helpers/verify-parallel-selftest.sh proves that against a one-slot fixture.
+#  - **The parent runs script/kani-install once, before forking**, so one process orders the
+#    install. Each child calls it too and finds the pinned version, because it reads the version
+#    Kani actually reports (nifeos/nife#2882). A tree without that fix reinstalls in every child:
+#    the run still proves, and it pays for N installs.
+#  - **The children are this file with --shard k/N**, in this worktree, so they share one target
+#    directory and one packer. Each writes its own log under target/verify-parallel/<stamp>/ and the
+#    parent writes summary.txt beside them.
+#  - **The parent refuses a suite verdict unless every child exits 0, and names the child that did
+#    not.** Before forking it runs the packer N times and checks that the N shards partition the
+#    table, so a plan that would leave a crate unproved stops here rather than reporting a subset
+#    as the suite.
+#
+# CI does not take this path: verify.yml still runs `--shard k/4` on four runners and the required
+# check keeps its name. It is refused beside --shard, --only or any other argument, because each of
+# those makes the run something other than the suite.
+#
+# `NIFE_VERIFY_MEMORY_BYTES` (provisional, with the plan's name) replaces this machine's physical
+# memory in the sizing rule, so a selftest can prove the guard against a machine size it chooses.
+parallel=""
+if [ "$1" = "--parallel" ]; then
+	parallel="auto"
+	shift
+	case "${1:-}" in
+	'' | *[!0-9]*) ;;
+	*) parallel="$1"; shift ;;
+	esac
+	if [ -n "$shard" ] || [ -n "$only" ]; then
+		echo "script/verify: --parallel proves the whole table; it refuses --shard and --only" >&2
+		exit 2
+	fi
+	if [ "$#" -gt 0 ]; then
+		echo "script/verify: --parallel proves the whole table; it takes no further arguments (found: $*)" >&2
+		exit 2
+	fi
+fi
+
 # **`VERIFY_CARGO_KANI` names a different `cargo kani`** (milestone 589; name provisional), and it
 # exists for exactly one caller: script/verify-riscv64, whose patched Kani cannot be reached as
 # `cargo kani` on a machine that also has the stock one, because cargo searches `$CARGO_HOME/bin`
@@ -279,8 +342,10 @@ fi
 # formula handed to one single-threaded SAT solver, so wall time never drops below the longest
 # harness (glob's, minutes on its own).
 #
-# Four jobs, not "all cores", because the bound is memory: notes/verification.md records a harness
-# that reached 3.5 GB, and concurrent harnesses multiply the peak. Four fits the dev Mac and
+# Four jobs, not "all cores", because the bound is memory: notes/verification/glob-proofs.md
+# records one harness that reached 3.5 GB before it was killed, DECISIONS §203 budgets "about 3.5 GB
+# a harness", and concurrent harnesses multiply the peak. That figure is the largest harness seen,
+# not a typical, so budgeting on it errs high. Four fits the dev Mac and
 # cordoba's 23 GB; **CI's 16 GB runner fits two**, measured the hard way: four runs were
 # memory-killed mid-glob before verify.yml pinned VERIFY_JOBS=2 (the kill reports as a bare
 # "operation was canceled", which cost an evening to attribute). Override with VERIFY_JOBS=N;
@@ -409,6 +474,117 @@ components	7	the EL0 components: a bounded append that a configuration page this
 machine_discovery	493	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
 TABLE
 )"
+
+# --parallel [N]: fork the shards and join their verdicts (see the flag's comment above).
+#
+# This sits after the table because the plan has to be checked against it, and before every other
+# selection because the children do the selecting.
+if [ -n "$parallel" ]; then
+	jobs="${VERIFY_JOBS:-4}"
+	slots="$(python3 helpers/heavy_slot.py --status 2>/dev/null | awk 'NR == 1 { print $1 }')"
+	case "$slots" in
+	'' | *[!0-9]*)
+		echo "script/verify: --parallel could not read the heavy-job slot count from helpers/heavy_slot.py --status; refusing rather than guessing how many children this machine can carry" >&2
+		exit 1
+		;;
+	esac
+	shards="$(python3 helpers/verify_times.py shards)" || exit 1
+	rows="$(printf '%s\n' "$CRATES" | grep -c .)"
+	mem="${NIFE_VERIFY_MEMORY_BYTES:-auto}"
+	if [ "$parallel" = auto ]; then
+		children="$(python3 helpers/verify_parallel.py plan --shards "$shards" --slots "$slots" --jobs "$jobs" --memory "$mem")" || exit 2
+	else
+		children="$(python3 helpers/verify_parallel.py plan --shards "$shards" --slots "$slots" --jobs "$jobs" --wanted "$parallel" --memory "$mem")" || exit 2
+	fi
+	if [ "$children" -gt "$rows" ]; then
+		echo "script/verify: --parallel $children is more children than the $rows crates in the table, and the packer refuses a shard with no crates" >&2
+		exit 2
+	fi
+	# The packer asserts that ITS n shards partition the table, per child. This asserts that the n
+	# this run is about to fork are that partition, so a crate cannot fall between two children and
+	# leave the run reporting a subset as the suite.
+	placed=""
+	k=1
+	while [ "$k" -le "$children" ]; do
+		part="$(printf '%s\n' "$CRATES" | python3 helpers/verify_times.py shard "$k/$children")" || exit 1
+		placed="$placed $part"
+		k=$((k + 1))
+	done
+	# shellcheck disable=SC2086
+	if [ "$(printf '%s\n' $placed | sort)" != "$(printf '%s\n' "$CRATES" | cut -f1 | sort)" ]; then
+		echo "script/verify: the $children shards this run would fork do not cover the crate table; refusing to prove a subset and report it as the suite" >&2
+		exit 1
+	fi
+	# shellcheck disable=SC2086
+	if [ -n "$(printf '%s\n' $placed | sort | uniq -d)" ]; then
+		echo "script/verify: the $children shards this run would fork prove these crates twice: $(printf '%s\n' $placed | sort | uniq -d | tr '\n' ' ')" >&2
+		exit 1
+	fi
+	echo "parallel: $children shards partition the table ($rows crates)"
+	stamp="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+	logdir="target/verify-parallel/$stamp"
+	i=1
+	while [ -e "$logdir" ]; do
+		i=$((i + 1))
+		logdir="target/verify-parallel/$stamp.$i"
+	done
+	mkdir -p "$logdir"
+	echo "parallel: logs in $logdir"
+	started="$(date +%s)"
+	pids=""
+	k=1
+	while [ "$k" -le "$children" ]; do
+		echo "parallel: started shard $k/$children"
+		{
+			s0="$(date +%s)"
+			rc=0
+			"$self" --shard "$k/$children" >"$logdir/shard-$k-of-$children.log" 2>&1 || rc=$?
+			# The status file, not the wait, is what the verdict reads: a child has to record its own
+			# exit for the summary to name it, and a child killed outright records nothing.
+			echo "$rc $(( $(date +%s) - s0 ))" >"$logdir/shard-$k-of-$children.status"
+		} &
+		pids="$pids $!"
+		k=$((k + 1))
+	done
+	for p in $pids; do
+		wait "$p" || true
+	done
+	total=$(( $(date +%s) - started ))
+	summary="$logdir/summary.txt"
+	: >"$summary"
+	failed=""
+	k=1
+	while [ "$k" -le "$children" ]; do
+		log="$logdir/shard-$k-of-$children.log"
+		status="$(cat "$logdir/shard-$k-of-$children.status" 2>/dev/null || true)"
+		if [ -z "$status" ]; then
+			line="shard $k/$children: FAILED (the child left no status file; something killed it)"
+			failed="$failed $k/$children"
+		elif [ "${status%% *}" = 0 ]; then
+			line="shard $k/$children: passed in ${status##* } s  ($log)"
+		else
+			line="shard $k/$children: FAILED (exit ${status%% *})  ($log)"
+			failed="$failed $k/$children"
+		fi
+		printf '%s\n' "$line" >>"$summary"
+		printf '%s\n' "$line"
+		k=$((k + 1))
+	done
+	# A shard that ran far from its plan warns inside its own log. Surfacing it here puts the table's
+	# drift in front of the person who ran the suite, rather than only whoever opens a log.
+	warnings="$(grep -h '^warning:' "$logdir"/shard-*-of-"$children".log 2>/dev/null || true)"
+	if [ -n "$warnings" ]; then
+		printf '%s\n' "$warnings" | sed 's/^/parallel: /' | tee -a "$summary"
+	fi
+	if [ -n "$failed" ]; then
+		echo "parallel: NO SUITE VERDICT: shard(s)$failed failed. Each shard's own result stands, and one of them alone reruns with its counterexample trace: script/verify --shard <k>/$children <args>" >&2
+		echo "parallel: summary in $summary" >&2
+		exit 1
+	fi
+	echo "==> verify --parallel: all $children shards passed, $rows crates, ${total} s wall"
+	echo "parallel: summary in $summary"
+	exit 0
+fi
 
 # --shard k/n: prove this shard's crates only.
 #
