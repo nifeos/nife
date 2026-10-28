@@ -36,13 +36,27 @@ name: kernel mutants (diff-scoped)
 # day, and the check runs when the pull request is marked ready. Like every skip here it fails
 # toward running.
 #
-# **Dispatch names both ends.** A `workflow_dispatch` carries `base` and `tip`, and the jobs then
-# check the tip out, because `--in-diff` requires the diff to match the tree it is read against
-# and the patches to match the tree they apply to. On a `pull_request` event the checkout is the
-# platform's merge commit and its first parent is the base, as in mutation-gate.yml. This is the
-# deliberately small proof path: a dispatch whose diff is one or two mutants, one architecture.
+# **Dispatch names both ends of the diff, and checks the branch head out.** A `workflow_dispatch`
+# carries `base` and `tip`; the diff is `base..tip` and nothing else, while the checkout is the
+# dispatched ref's own commit for both events (`github.sha`), because the jobs run this tree's
+# helper and driver and those must exist where the steps invoke them. Found the other way, run
+# 40637164783: a dispatch that checked the tip out died at the shards step, `No such file or
+# directory`, because the tip predates the helper. The input range then has to match the head's
+# tree, and two already-standing checks hold that line honestly: cargo-mutants' `--in-diff` refuses
+# a diff whose content no longer matches the source (the plan job fails, never passes), and a patch
+# that drifts gets the driver's `stale` verdict. On a `pull_request` event the checkout is the
+# platform's merge commit, which carries whatever helper the merged tree would run, and its first
+# parent is the base, as in mutation-gate.yml. This is the deliberately
+# small proof path: a dispatch whose diff is one or two mutants, one architecture.
 #
 # Name: provisional. An architect names things.
+#
+# Observed failing: 2026-10-28, run 40637164783: the first dispatch (base 79dd02aaf^, tip
+#   79dd02aaf, one mutant) died in the plan job's shards step, `mutation_kernel_diff.py: No such
+#   file or directory`: the checkout step read `inputs.tip` and so checked the 2026-10-25 main
+#   commit out, a tree without the helper the step invokes. The draft gate and the skip path
+#   behaved as designed in the same run. The fix checks the dispatched ref's own commit out for
+#   both events and keeps the input range as the diff only.
 
 on:
   pull_request:
@@ -116,12 +130,12 @@ jobs:
     outputs:
       matrix: ${{ steps.shards.outputs.matrix }}
     steps:
-      # Full history: the first-parent read below wants the parents, `git diff` wants blobs, and
-      # in dispatch mode the checkout IS the tip, so the listing and the patches match its tree.
+      # Full history: the first-parent read below wants the parents and `git diff` wants blobs.
+      # The checkout is the dispatched ref's own commit for both events, never the diff tip: the
+      # steps invoke this tree's helper, and the run above is what checking the tip out costs.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tip || github.sha }}
 
       - name: Resolve the diff's two ends
         id: ends
@@ -203,10 +217,12 @@ jobs:
       # default limit is the check for slow-but-alive.
       FALSIFICATIONS_RECORD_LIMIT: "600"
     steps:
+      # The dispatched ref's own commit, for both events: the driver this step runs and the
+      # helper that reads its table live in this tree, and the patches were generated against a
+      # tree this commit holds.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tip || github.sha }}
 
       - name: Install the pinned toolchain
         run: rustup show active-toolchain || helpers/rustup-retry.sh toolchain install
