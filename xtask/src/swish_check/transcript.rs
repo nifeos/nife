@@ -133,6 +133,26 @@ fn kernel_wrote_during_boot(transcript: &str) -> bool {
     KERNEL_FAULT_TOKENS.iter().any(|t| boot.contains(t))
 }
 
+/// Whether the intruding bytes of an interleaved answer read as **the kernel's own output**.
+///
+/// The kernel writes two things once the userspace console has started: the two gauges from the
+/// scheduler's idle loop and a user-fault report. Their words are the evidence
+/// `one_answer_failures` asks for before it believes a splice rather than a missing answer, in
+/// the shape [`boot_claim`] gives the boot lines. The gauges are spelled without the indent
+/// [`GaugeFilter`] carries (`crate::swish_check::gauge`), because an intruded byte stream begins
+/// mid-line and the words must survive that.
+///
+/// This is evidence, not safety: a program that printed this vocabulary could excuse a phrase it
+/// never wrote. That is the same accepted trade [`boot_claim`] makes, and
+/// `script/swish-check`'s BUGS records it. A userspace splice (a background job's line over an
+/// answer) carries none of these words and still fails.
+pub(super) fn kernel_wrote_the_intruder(intruder: &str) -> bool {
+    ["capability slots:", "progenitor stack:"]
+        .iter()
+        .any(|t| intruder.contains(t))
+        || KERNEL_FAULT_TOKENS.iter().any(|t| intruder.contains(t))
+}
+
 /// What a transcript says about one thing the progenitor reports on itself.
 enum BootClaim {
     /// The progenitor said the thing that is true. Carries the intruding text when it had to be un-shuffled.

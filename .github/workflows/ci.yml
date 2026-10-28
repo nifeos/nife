@@ -4,6 +4,13 @@ name: CI
 #   `roadmap status` for lane/split-order-proposal (a `promoted_from` proposal the branch never
 #   held). That is one job of many, and the others carry no record of their own
 #   (notes/observed-failing.md, BUGS). See notes/observed-failing.md.
+#
+# Observed failing: 2026-10-28, run 40640221952: the `swish-check` job's aarch64 leg failed
+#   because the kernel's capability-slot gauge wrote the UART over `std_exerciser beside six`'s
+#   answer (the counted fallback, kernel/src/kernel_log.rs's BUGS), and the gate demanded a
+#   greeting the splice had destroyed: it read "h  capellability so from stld oots: 36 of 64 at
+#   peak" where "hello from std on nife" was wanted. The job died 5.5 minutes into its 20, and
+#   was green on rerun.
 
 on:
   push:
