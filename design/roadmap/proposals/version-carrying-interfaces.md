@@ -71,7 +71,7 @@ The first cut's four interfaces do not share one kind:
   constant, provisionally `VERSION`; the scope is the bands and the pair-page arithmetic.
 - `glob` is a library with no peer and no wire. One constant, so the declaration of question 3
   can name it. Nothing checks it at run time.
-- `machine_statistics_contract` is a shared-page format whose first word is the magic `MACHSTA1`.
+- `machine_statistics_contract` is a shared-page format; its first word is the magic `MACHSTA1`.
   The page gains a version word beside the magic (a new index in the `word` module, provisionally
   `VERSION`), because a shared page has no CALL to carry one.
 
@@ -134,7 +134,7 @@ What the field must hold: which interface versions the binary built against, at 
 granularity. The gate's words are plural ("what it links"), and one number cannot say which
 interface moved.
 
-Options: (i) one coarse number, with byte 55 as the ABI revision, amending versions 1 and 2 in
+Options: (i) one coarse number, byte 55 as the ABI revision, amending versions 1 and 2 in
 place; (ii) a version 3 descriptor: version 1's 56 bytes unchanged, then a counted list of
 (interface, version) pairs.
 
@@ -227,7 +227,7 @@ duplicates the surface to check it and rots with every addition.
 4. Build the note encoding the ruling picks (question 3): encode, decode, the one-encoding Kani
    property, and the progenitor's refusal naming both versions.
 5. Add the bind-time checks where a peer exists (question 2), as code in the contract crates,
-   with the reserved version operation where the protocol leaves opcode 0 free.
+   with the reserved version operation where opcode 0 is free.
 6. Stamp the declaration at package build (question 3).
 7. Add the enforcement of question 5, option (b).
 8. Aim 756's condition 4 at what now exists: each linked interface carries its constant, the note
