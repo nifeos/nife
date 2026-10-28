@@ -10,7 +10,7 @@ needs_person: no
 # An OS update is a set of packages that lands through a slot
 
 Raised 2026-10-28 (UTC) by the lane `proposal/607-item-5-an-os-update-through-a-slot`. This is
-item 5 of milestone 607 (nife is built and updated from packages): "An OS update is a set of
+item 5 of milestone 607 (the repository divides along what releases together): "An OS update is a set of
 packages that lands through a slot (U4 ruled; waits on item 1)." Item 1 is milestone 909 (basalt
 composes the bootable image from its packages), which landed 2026-10-28 (UTC). This proposal names
 what the update writes, what it leaves alone, and the order the pieces land.
@@ -19,14 +19,14 @@ Reuse: the build side is milestone 909's own composer and `helpers/packages.py`,
 read the image's membership and write each package's digest; basalt publishes what they produce.
 The boot side is milestone 525 (a bad upgrade cannot brick the machine: two boot slots, tries and
 priority)'s `crates/boot_slot` and `uefi_loader`'s chooser, unchanged. The device side reuses
-`jig`'s fetch-and-verify path (§220 (signed builds: a vendor signs, a developer self-signs,
-and trusting a key is a decision) and §208's activation table) No new
+`jig`'s fetch-and-verify path (§220 (`design/decisions/0220-signed-builds-and-scoped-key-trust.md`)
+and §208 (`design/decisions/0208-installing-is-granting.md`, its activation table)). No new
 dependency; the system manifest is a file, not a crate.
 
 ## What is already ruled
 
-§235 (the OS is built and updated from packages, and the tree divides by what releases together) ruled the shape on 2026-09-27 (UTC),
-and this proposal executes it rather than reopening it.
+§235 (`design/decisions/0235-packages-build-the-os-and-the-tree-divides-by-release.md`) ruled the
+shape on 2026-09-27 (UTC), and this proposal executes it rather than reopening it.
 
 - U4, the slot layout. Packages are the download unit, and each slot holds its own full copy of
   the base set. The updater wipes the inactive slot whole before reuse, then fills it from the new
