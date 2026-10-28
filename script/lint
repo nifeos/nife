@@ -141,6 +141,10 @@ done
 # (the tree's gates stop depending on the fleet tooling), provisional): a throwaway repository, the
 # real hook, stubbed gates and a `gh` that fails if called. helpers/pre-push-selftest.sh says more.
 helpers/pre-push-selftest.sh >/dev/null
+# The hook's lint skip, proved at the hook: a marker skips a run it saw pass, every changed input
+# runs again, and every failure to key or record lands on a run (no cargo; the stubs are shells).
+# helpers/pre-push-lint-cache-selftest.sh says more.
+helpers/pre-push-lint-cache-selftest.sh >/dev/null
 
 echo "==> the commit-msg hook (an agent's commit carries a Co-Authored-By trailer)"
 # Milestone 725 (machine effort and commit attribution count every vendor): `.githooks/commit-msg` refuses a commit made under an agent harness
