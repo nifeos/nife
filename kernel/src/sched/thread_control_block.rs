@@ -106,6 +106,25 @@ pub(super) fn thread_control_block_insert_from(
     Ok(landed)
 }
 
+/// **Make the calling thread supervised on `ep`, labeled `label`**, as `START` makes a thread whose
+/// builder placed a rendezvous in the reserved fault slot (§26 (the fault endpoint)). For the test
+/// progenitor, which runs a user program in a kernel thread (`user::run`) that `START` never
+/// reached, so that its exit reaches a shell as a death message with the label in its sixth word,
+/// as a held job's does at the real prompt (milestone 933).
+///
+/// Name: provisional (milestone 933's lane, 2026-10-27 UTC).
+#[cfg(feature = "system_tests")]
+pub fn supervise_current_thread(ep: RendezvousId, label: u64) {
+    let mut guard = IPC_TABLES.lock();
+    let Some(sched) = guard.as_mut() else {
+        return;
+    };
+    if let Some(t) = sched.threads.get_mut(current_thread_id()) {
+        t.fault_ep = Some(ep);
+        t.fault_label = label;
+    }
+}
+
 /// Start the embryo `tid` with `args` in its first registers: refuses with `WrongObject` a TCB that
 /// is not an embryo, and with `NotPermitted` one with no bound address space or no entry, since a
 /// half-built thread must never run; `Gone` for a member of an ended process. On success the

@@ -14,9 +14,12 @@ const ROLE_PIPELINE: u64 = 3;
 const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
 const LINE_VA: u64 = address_space_map::pair_page(0x0000_0000_00b0_0000);
 
-/// The budget the shell mints its pipes out of. Each pipeline splits a region off this and gives it
-/// back, so one number covers a script of several lines; it matches `system_initializer`'s grant.
-const SH_BUDGET_PAGES: u64 = 128;
+/// The budget the shell mints its pipes out of, and the regions of the jobs it holds (milestone 933).
+/// Each pipeline splits a region off this and gives it back, so one number covers a script of
+/// several lines; a held job is one native region of `grant_plan::JOB_REGION_PAGES`. The boot
+/// grants `spawnproto::SHELL_BUDGET_PAGES`, which is far more than a script needs, so this is the
+/// original 128 and room for two held jobs.
+const SH_BUDGET_PAGES: u64 = 128 + 2 * grant_plan::JOB_REGION_PAGES;
 
 /// Pages of stack below the one `run` maps: a shell needs more than a hand-sized program for
 /// `spawn_fs_client`'s measured reason, and milestone 50 (pipes and redirection) added an array of
@@ -423,12 +426,34 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
     loop {
         let m = crate::sched::ipc_receive(spawn_ep);
         let (w0, w1, w2) = (m[0], m[1], m[2]);
+        // The shell says a job it held is gone (milestone 933). The stub kept no window for it and
+        // answers nothing, as the real progenitor does.
+        if grant_plan::spawnproto::released_label(w0, w2).is_some() {
+            continue;
+        }
         let prog = grant_plan::Program::from_id(grant_plan::spawnproto::prog_id(w0));
         let arg = grant_plan::spawnproto::program_argument(w1);
         let wiring = grant_plan::spawnproto::wiring(w2);
 
         // In the protocol's order. A capability received but never expected, or expected and
         // never sent, deadlocks both sides, which is why the order is the contract.
+        //
+        // A held job's region and exit lead (milestone 933). The region is dropped, since the stub
+        // builds nothing from it and the shell destroys an empty one; the exit endpoint is what the
+        // job answers on and dies on, so the shell reads it as it does at the prompt.
+        let held_exit = if wiring.held {
+            let region = crate::sched::inter_process_communication_receive_capability(spawn_ep);
+            let _ = crate::sched::delete_current_capability(region[1]);
+            let exit = take_rendezvous(spawn_ep);
+            if prog.is_some_and(grant_plan::spawnproto::held_shares) {
+                let share = crate::sched::inter_process_communication_receive_capability(spawn_ep);
+                let _ = crate::sched::delete_current_capability(share[1]);
+            }
+            exit
+        } else {
+            None
+        };
+        let label = NEXT_LABEL.fetch_add(1, Ordering::Relaxed);
         let sink = if wiring.sink {
             take_rendezvous(spawn_ep)
         } else {
@@ -467,34 +492,41 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
             Some(image) => {
                 // Slot 0 is the output: the result rendezvous, or the sink the shell delegated.
                 // Slot 1 is the input source when there is one. That is the whole difference.
-                let out = sink.unwrap_or(result);
+                let out = sink.or(held_exit).unwrap_or(result);
                 // The argument goes in `arg1`, not `arg0`, where both real inits put it
                 // (`thread_control_block_start(tcb, 0, arg, 0)`) and where
                 // `components/src/least_authority_demo.rs` reads it.
-                crate::sched::spawn(move || match source {
-                    Some(src) => run(
-                        image,
-                        Spawn {
-                            arg0: 0,
-                            arg1: arg,
-                            arg2: 0,
-                            grants: &[
-                                rendezvous_capability(out, Rights::WRITE),
-                                rendezvous_capability(src, Rights::READ),
-                            ],
-                            maps: &[],
-                        },
-                    ),
-                    None => run(
-                        image,
-                        Spawn {
-                            arg0: 0,
-                            arg1: arg,
-                            arg2: 0,
-                            grants: &[rendezvous_capability(out, Rights::WRITE)],
-                            maps: &[],
-                        },
-                    ),
+                crate::sched::spawn(move || {
+                    // Supervised on the shell's exit endpoint with this job's label, so its exit
+                    // reaches the shell as a death message, as a held job's does at the prompt.
+                    if let Some(exit) = held_exit {
+                        crate::sched::supervise_current_thread(exit, label);
+                    }
+                    match source {
+                        Some(src) => run(
+                            image,
+                            Spawn {
+                                arg0: 0,
+                                arg1: arg,
+                                arg2: 0,
+                                grants: &[
+                                    rendezvous_capability(out, Rights::WRITE),
+                                    rendezvous_capability(src, Rights::READ),
+                                ],
+                                maps: &[],
+                            },
+                        ),
+                        None => run(
+                            image,
+                            Spawn {
+                                arg0: 0,
+                                arg1: arg,
+                                arg2: 0,
+                                grants: &[rendezvous_capability(out, Rights::WRITE)],
+                                maps: &[],
+                            },
+                        ),
+                    }
                 })
                 .is_some()
             }
@@ -504,7 +536,21 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         // A redirected child's answer goes somewhere else, so the shell has nothing to read and the
         // progenitor owes it an ack. Unredirected, the child's own message is the shell's single
         // read.
-        if wiring.sink {
+        if wiring.held {
+            // One answer with the label, then a capability standing in for the thread control
+            // block, which a foreground shell deletes unread.
+            if started {
+                crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_OK, label, 0]);
+                crate::sched::inter_process_communication_send_capability(
+                    result,
+                    0,
+                    rendezvous_capability(result, Rights::WRITE),
+                    0,
+                );
+            } else {
+                crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_FAILED, 0, 0]);
+            }
+        } else if wiring.sink {
             crate::sched::ipc_send(
                 result,
                 [
@@ -522,6 +568,9 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         }
     }
 }
+
+/// The label the next held job's death carries. Never `0`, which is "not a death".
+static NEXT_LABEL: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(1);
 
 /// Take one delegated capability and read the rendezvous out of it. The slot is dropped straight
 /// away: what the progenitor needs is the *name* of the rendezvous, and holding the capability

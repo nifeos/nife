@@ -169,4 +169,84 @@ pub(super) const LINES: &[Line] = &[
             "the job caught the interrupt and stopped cleanly after",
         ],
     ),
+    // **The shell's budget holds what the progenitor's pool held** (milestone 933): seven native
+    // jobs in the background, each a region of 48 pages and 4 of `--mem`, and a `std` job of 384
+    // pages in the foreground beside them. That is the pool's old mix (six native regions and one
+    // `std` region, `grant_plan::JOB_POOL_PAGES`) with one more native job. The seven are torn
+    // down after, so the budget they took comes back for the hundred cycles below.
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[1] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[2] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[3] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[4] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[5] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[6] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[7] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "std_exerciser beside seven",
+        &["hello from std on nife", "exiting through process::exit"],
+    ),
+    line(
+        0,
+        "kill -9 %1",
+        &["[1] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %2",
+        &["[2] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %3",
+        &["[3] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %4",
+        &["[4] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %5",
+        &["[5] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %6",
+        &["[6] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %7",
+        &["[7] job_sleeper: its process was torn down"],
+    ),
 ];

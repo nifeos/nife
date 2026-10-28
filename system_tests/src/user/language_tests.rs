@@ -122,7 +122,8 @@ fn a_connector_runs_the_second_command_only_when_it_should() {
     );
     assert!(
         !said(t, b"least_authority_demo 3 || echo no").contains("no"),
-        "|| ran the second command after one that succeeded",
+        "|| ran the second command after one that succeeded: {:?}",
+        said(t, b"least_authority_demo 3 || echo no"),
     );
     assert!(
         said(t, b"least_authority_demo || echo no").contains("no"),
