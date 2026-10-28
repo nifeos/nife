@@ -21,10 +21,10 @@ each interface the first cut links carries a checkable version, and the moved pa
 what it links.
 
 Reuse: the plan reuses machinery that exists, per AGENTS.md rule 6. It takes the `abi` crate's
-pinned-values test, and milestone 597's (a program carries its manifest in an ELF note)
-manifest-note encode and decode with its one-encoding Kani property. It takes the `log_checks`
-assertions in `hot_swap_contract`, and 610's (the interface's stability is measured weekly)
-`FORMAT_CONST` pattern in `helpers/interface_stability.py`. No new dependency; `cargo-semver-checks`
+pinned-values test, and milestone 597 (a program carries its manifest in an ELF note), the manifest-note encode
+and decode with its one-encoding Kani property. It takes the `log_checks` assertions in
+`hot_swap_contract`, and milestone 610 (the interface's stability is measured weekly), whose
+`FORMAT_CONST` pattern sits in `helpers/interface_stability.py`. No new dependency; `cargo-semver-checks`
 and `cargo-public-api` stay refused as milestone 610 records.
 
 ## The plan, eight steps
@@ -49,8 +49,8 @@ provisional.
    versions.
 
 3. The syscall ABI check runs at spawn. The progenitor compares the manifest note's declared ABI
-   version against the kernel's `ABI_VERSION` (§235, the OS is built and updated from packages,
-   and the tree divides by what releases together), and refuses a mismatch naming both. The ABI
+   version against the kernel's `ABI_VERSION` (§235 (the OS is built and updated from packages,
+   and the tree divides by what releases together)), and refuses a mismatch naming both. The ABI
    never dual-serves; the refusal is the hard edge. Proves: the progenitor refuses a program whose
    note declares a version the kernel does not serve, and accepts one it does.
 
