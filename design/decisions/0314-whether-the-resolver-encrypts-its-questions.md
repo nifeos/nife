@@ -1,9 +1,18 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-10-28
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 314. Whether the name resolver encrypts its questions, and over what
+
+Ruled 2026-10-28 (UTC): B, DoT — the name resolver encrypts its questions over DNS-over-TLS,
+opportunistic by default with lease-based discovery (DNR then DDR), never a third-party default
+chosen by nife, strict when the owner names a resolver by host name and pinned root, not before
+concurrency, EDNS(0) padding as part of it, DNSSEC as its own later proposal; DoH may be added
+later. Blocks nothing — milestone 801 works over plain DNS because §195 and the pin make a forged
+address harmless to it.
 
 calef asked on 2026-10-28 (UTC) whether nife should encrypt its DNS, and if so whether over TLS
 (DoT), over HTTPS (DoH), or neither for now. This file is the proposal; he rules on it. *(Section

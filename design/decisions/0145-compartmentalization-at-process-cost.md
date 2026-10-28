@@ -1,9 +1,17 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-05
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 145. Compartmentalization at process cost: is Qubes' mission the reason the world needs this OS?
+
+Ruled 2026-10-28 (UTC): A, Qubes as a benchmark, not a product target: a claim-for-claim comparison
+beside Qubes' published architecture and security-critical list, plus real disposable-domain cost
+measured properly rather than stood in for by a spawn benchmark. D, becoming a Qubes competitor, is
+refused in writing; C, the bounded customer, is held for its own section once this comparison has
+produced numbers.
 
 Raised by calef, 2026-09-05, in one sentence: *"Qubes seems useful as an OS.
 It seems like we could do their mission well."* *(Section number provisional until the merge queue

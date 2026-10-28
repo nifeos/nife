@@ -1,9 +1,15 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 167. What a profiling session's grant names
+
+Ruled 2026-10-28 (UTC): C, a profiling session's grant names a supervision subtree (the SURVEY
+relation) with a named counter set attached; the counter set is held from day one; cross-thread
+counter reads are accepted as a deliberate widening over §139. Unblocks milestone 147.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote
 down)'s lane. That lane found milestone 147 (a profiler that holds exactly the counters it was

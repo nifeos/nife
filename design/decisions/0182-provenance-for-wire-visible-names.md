@@ -1,9 +1,15 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 182. Is a string two binaries agree on a name for `script/names`' purposes, or is it data?
+
+Ruled 2026-10-28 (UTC): A, wire-visible names — strings two binaries agree on — are in scope for
+`script/names`, tracked via `Name:` markers on wire-name constants, enumerated by marker like items.
+Unblocks milestone 398.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c lane, which found milestone 398 (provenance for the names two programs agree on)'s
 `DECISION` gate naming no section. The finding itself is milestone 283 (one provenance block per file, in the spelling the parse

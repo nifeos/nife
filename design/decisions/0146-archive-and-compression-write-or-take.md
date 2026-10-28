@@ -1,9 +1,15 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-05
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 146. Archive and compression: which pieces we write, which we take, and which we refuse
+
+Ruled 2026-10-28 (UTC): A, the seven verdicts as written: write tar; write inflate and stored-block
+deflate, revisit real deflate on measurement; defer zstd and zip; refuse bzip2, xz/LZMA and 7z.
+Unblocks milestone 258; milestone 99's block is corrected.
 
 Raised by calef, 2026-09-05, on being told no milestone covered archive
 utilities: *"Mint it. However we should debate write it and vendor it for each piece."*

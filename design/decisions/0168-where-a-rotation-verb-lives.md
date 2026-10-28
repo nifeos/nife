@@ -1,9 +1,15 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 168. Where a proof-gated credential rotation verb lives
+
+Ruled 2026-10-28 (UTC): B, the rotation verb gets its own dedicated endpoint; verify stays read-only;
+the three endpoints are provision (capability-held), verify (read-only), rotate (identity-proven,
+current secret and new secret together). Unblocks milestone 178.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote
 down)'s lane. That lane found milestone 178 (a credential a user can change, without reopening the

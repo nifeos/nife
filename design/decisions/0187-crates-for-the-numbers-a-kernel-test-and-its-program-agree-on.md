@@ -1,9 +1,15 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 187. One crate per kernel-test pair, or one crate for all of them?
+
+Ruled 2026-10-28 (UTC): Option 1, one crate per kernel-test pair (e.g. login_test_contract),
+following swap_protocol's precedent, keeping each contract readable in one file; nineteen names
+handed to script/names as a worklist rather than decided in one sitting. Unblocks milestone 407.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c lane, which found milestone 407 (one definition of the numbers a kernel test and its program agree on)'s
 `DECISION` gate naming no section. Measured by milestone 293's lane, which reduced one instance of
