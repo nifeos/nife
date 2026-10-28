@@ -86,7 +86,7 @@ milestone 53 (the board's own peripherals: network and storage on real silicon),
 3. A real backup and a real power cut, which needs 53's storage half. A narrower mount, small write
    and clean unmount needed only step 1.
 
-Milestone 131 (a share is configured, not compiled, and its secret arrives from somewhere) was
+Milestone 131 (configure a service instead of compiling it, and type its secret at a console) was
 adjacent and not blocking. It closes the guest share, which matters only once this becomes the
 family's real backup target.
 
