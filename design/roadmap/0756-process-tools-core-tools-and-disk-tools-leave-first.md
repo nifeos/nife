@@ -27,9 +27,17 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   `nifeos/basalt`. That is milestone 755 (basalt v0 pins nife and runs its gate).
 - **Yes, the first code cut is `procps` + `coreutils` + `util-linux`, and only once all six
   conditions below hold.** This block is that cut.
-- Still open, and not blocking until this block starts: the repository name and home, the citation
-  identity across repositories (§201 (one roadmap until a citation has to cross)), and the SDK's
-  place in milestone 691's order.
+- Ruled 2026-10-28 (UTC): the cut moves to three repositories named after the packages,
+  `nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools`. One repository holding all
+  three packages came up; the ruling refuses it. The packages' `home` lines in
+  `packages/*.package.toml` keep `status = "provisional"` until each repository exists; this rules
+  the destination and does not flip that status. §201 (one roadmap until a citation has to cross),
+  amended the same day, rules the citation identity across repositories. Still open, and not
+  blocking until this block starts: the SDK's place in milestone 691 (packages move out of this
+  repository, one per pull request)'s order.
+- Sequenced 2026-10-28 (UTC): the update path goes first, milestones 911 (scripted installs grant
+  only what the owner's approval file allows), 909 (basalt composes the bootable image from its
+  packages), then milestone 607 item 5. This cut waits for its conditions.
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a
 horrible package name for a nife package"), `coreutils` becomes `core-tools` and `procps` becomes
@@ -37,8 +45,9 @@ horrible package name for a nife package"), `coreutils` becomes `core-tools` and
 programs, so the six conditions and the measurements stand. The title and slug changed with it.
 The title was `procps`, `coreutils` and `util-linux` are the first code to leave this repository,
 and older records cite it by that or as procps, coreutils and util-linux leave first. The ruling
-above and the analysis below keep the names they were written with. The planned homes
-are now `process-tools`, `core-tools` and `disk-tools`, still provisional.
+above and the analysis below keep the names they were written with. The homes are
+`nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools` (ruled 2026-10-28); the
+packages' `home` lines keep `status = "provisional"` until each repository exists.
 
 What is below is the proposal's analysis, unedited apart from this heading block: the argument is
 its author's and promotion is not the moment to improve it.
@@ -83,11 +92,13 @@ a two-repo change.
    - The moving repository builds without a clone of this one: §235's S2 archive (milestone 607 (nife is built and updated from packages)
      item 4), or a dated, recorded exception for a git dependency on `nife` at a commit.
    - Every interface the cut links (`abi`, `address_space_map`, `glob`,
-     `machine_statistics_contract`) has a row in 610's per-crate view and is settled by its rule
-     for four weeks. Three of the four have no row today.
+     `machine_statistics_contract`) carries a checkable version, and the moved package declares
+     what it links. The cut re-derives the linked set at its start rather than trusting this
+     2026-10-04 list.
    - basalt can take a component's output as a package by digest: §235's P1, milestone 607 item 1.
    - The home and its repository name are ratified, and §201's citation identity is ruled, since
-     this cut is its revisit event.
+     this cut is its revisit event. Ruled 2026-10-28 (UTC): the three repositories above, and
+     §201 (one roadmap until a citation has to cross) as amended.
 3. Milestone 691's order is amended: leaves of the release graph first, the SDK last of the
    leaves, not first. Its rule is right for a settled tree and moves the most volatile piece first
    on this one.
@@ -129,5 +140,6 @@ a two-repo change.
 ## Index row
 
 The first code to leave the monorepo: the `process-tools`, `core-tools` and `disk-tools` packages
-move to a repository of their own and reach the image through basalt, once six measured
-preconditions hold (ruled by calef 2026-10-04).
+move to three repositories named after the packages and reach the image through basalt, once six
+measured preconditions hold (ruled by calef 2026-10-04). The homes and the sequencing carry the
+2026-10-28 ruling.

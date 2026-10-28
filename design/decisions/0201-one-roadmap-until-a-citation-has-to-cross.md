@@ -1,5 +1,5 @@
 ---
-status: DECIDED
+status: AMENDED
 raised: 2026-09-20
 decided: 2026-09-20
 ratified_by: calef
@@ -10,6 +10,10 @@ ratified_by: calef
 calef, 2026-09-20, on the three asks of the proposal
 `the-roadmap-after-the-split`. *(Section number provisional until the merge queue lands it; §200 is
 in flight on another branch.)*
+
+*Amended 2026-10-28 (UTC) on #2851: section 4 states the citation identity across repositories,
+answering the deferral in section 1. The moved-things registry lives at `packages/moved.toml`, not
+at `design/roadmap/MOVED`, and the numbering namespace stays with nife.*
 
 The ruling, in one line. Keep option E, one roadmap in `basalt`, until the split makes a
 citation cross a repository boundary. Record the deferral rather than letting it happen by default.
@@ -31,7 +35,8 @@ citation across two live repositories is like to write and to read.
 
 Two conditions make the deferral honest rather than passive.
 
-- **`design/roadmap/MOVED` is written at the split, not after.** FreeBSD's ports form,
+- **`design/roadmap/MOVED` is written at the split, not after.** (The 2026-10-28 amendment puts
+  this registry at `packages/moved.toml` instead, keeping the form; section 4 states it.) FreeBSD's ports form,
   `old|new|date|reason`. It is the one thing that turns every option in the proposal from lossy into
   merely indirect, and it is only writable while somebody still knows where each record went. Under E
   it stays nearly empty, which is exactly why establishing it costs nothing now.
@@ -91,7 +96,31 @@ stays readable offline.
 The proposal's own prior art is the evidence: all eight projects it checked keep the durable record in
 a versioned tree.
 
+## 4. The citation identity across repositories
+
+Ruled 2026-10-28 (UTC), on the question section 1 deferred, ahead of the first code cut (milestone
+756 (process-tools, core-tools and disk-tools are the first code to leave this repository)), the
+revisit event section 1 defines. The rule, in force now:
+
+- One-way links. A record points at code as `nifeos/<repo>@<sha>` for a commit and as
+  `nifeos/<repo>` for a repository. Code does not cite roadmap records or decisions. When code
+  moves out, the moves/stays/gone sort (ruled 2026-10-26,
+  [§315 (a crate's documentation leaves with it)](0315-a-crates-documentation-leaves-with-it.md),
+  its number provisional until the merge queue mints it) converts citations to rulings into
+  reasoning carried in the crate's own documentation.
+- Ratify a name before anything moves, and leave ratification history behind: a component
+  repository receives names, not their history.
+- The moved-things registry is `packages/moved.toml` (provisional until the first move writes
+  it), a sibling of `packages/homes.toml`: one `[[moved]]` table per departure, holding the old
+  path, the new home, the date and the reason. The move writes it; nothing creates it earlier. The
+  location `design/roadmap/MOVED` (milestone 533 (whether the roadmap should become issues, and
+  what a citation means after the repository split)'s mechanism) gives way to it; the substance
+  holds: the FreeBSD four-field form, append-only, written at the split.
+- The numbering namespace stays with nife. The revisit condition stays armed: when a component
+  repository first needs numbered records of its own, milestone 533's options A and C re-open on
+  evidence.
+
 ## What is not decided here
 
-Which of A through E wins after the split. That is the question this section defers, and the two
-conditions above exist so that it is answered on evidence rather than inherited by default.
+Whether a component repository ever needs numbered records of its own. Section 4 arms that
+trigger; until it fires, one numbering namespace, nife's, covers every record.

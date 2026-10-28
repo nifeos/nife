@@ -320,3 +320,8 @@ rest.
 ## BUGS
 
 The series' known limitations are in [project-metrics/limitations.md](project-metrics/limitations.md).
+
+- The paragraph under "Interface stability" predates the 2026-10-28 policy (accommodate change
+  rather than wait for a lull; the four-week-zero reading is a reported interpretation that gates
+  nothing). Its prose still frames stability as a state the tree reaches. Folding the wording waits
+  for the next weekly metrics run or a small lane.
