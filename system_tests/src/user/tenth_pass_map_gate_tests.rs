@@ -20,12 +20,8 @@ use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::arch::mmu;
-// The `cap` module and these names still carry their pre-sweep spelling
-// (design/naming/capability-spelling-worklist.md renames them when the tree is quiet); aliased here so
-// this file spells `capability` out everywhere a reader looks (calef, 2026-10-06).
-use crate::cap::{
-    Rights, address_space_cap as address_space_capability,
-    memory_region_cap_rights as region_capability_rights,
+use crate::capability_object::{
+    Rights, address_space_capability, memory_region_capability_rights as region_capability_rights,
 };
 use crate::sched;
 use crate::syscall::invoke;
@@ -159,10 +155,10 @@ fn map_into_refuses_the_kernel_half_straddling_and_wrapping_runs() {
             "UNMAP refused a page this test mapped",
         );
     }
-    let _ = sched::delete_current_cap(two_pages);
-    let _ = sched::delete_current_cap(one_page);
-    let _ = sched::delete_current_cap(budget);
-    let _ = sched::delete_current_cap(space);
+    let _ = sched::delete_current_capability(two_pages);
+    let _ = sched::delete_current_capability(one_page);
+    let _ = sched::delete_current_capability(budget);
+    let _ = sched::delete_current_capability(space);
     assert!(
         sched::reclaim_region(frame_region).is_ok(),
         "the frame region did not come back",
@@ -233,9 +229,9 @@ fn a_refused_overlay_leaves_the_code_page_exactly_executable() {
         Ok(0),
         "UNMAP refused a page this test mapped",
     );
-    let _ = sched::delete_current_cap(frame);
-    let _ = sched::delete_current_cap(budget);
-    let _ = sched::delete_current_cap(space);
+    let _ = sched::delete_current_capability(frame);
+    let _ = sched::delete_current_capability(budget);
+    let _ = sched::delete_current_capability(space);
     assert!(
         sched::reclaim_region(frame_region).is_ok(),
         "the frame region did not come back",

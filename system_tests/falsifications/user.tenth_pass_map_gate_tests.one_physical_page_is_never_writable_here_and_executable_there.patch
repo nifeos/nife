@@ -28,7 +28,7 @@ three, with the two boundary tests in the module green beside it. aarch64 report
 diff --git a/system_tests/src/user/tenth_pass_map_gate_tests.rs b/system_tests/src/user/tenth_pass_map_gate_tests.rs
 --- a/system_tests/src/user/tenth_pass_map_gate_tests.rs
 +++ b/system_tests/src/user/tenth_pass_map_gate_tests.rs
-@@ -251,7 +251,7 @@
+@@ -247,7 +247,7 @@
  /// stays bootable. Export `NIFE_ESCAPE_WITNESS=1` before `script/test` to run it.
  const ESCAPE_WITNESS: bool = match option_env!("NIFE_ESCAPE_WITNESS") {
      Some(v) => !v.is_empty(),
