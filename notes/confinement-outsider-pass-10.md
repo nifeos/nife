@@ -80,11 +80,11 @@ The reviewer's turn ended before it wrote `results.md`, before its own count, an
 completion round. It produced 17 boot logs, the attack stream and two commits on its branch: the
 escape with the boundary tests, and five dispatcher attack modules. Neither commit reached a
 remote, and no copy of either survives. The escape module survives whole because the
-falsification patch carried it, and it is committed here. The five dispatcher modules, and three
-further modules (`tenth_pass_authority_return_tests`, `tenth_pass_session_usurper_tests` and
-`tenth_pass_revocation_coverage_tests`) of which only a one-paragraph doc comment survives, are
-not in the tree. Recreating them from that little would put the lane's attacks in the reviewer's
-name, so the lane did not.
+falsification patch carried it, and this tree holds it. The tree holds none of the five dispatcher
+modules. Of three more (`tenth_pass_authority_return_tests`, `tenth_pass_session_usurper_tests`
+and `tenth_pass_revocation_coverage_tests`) only a one-paragraph doc comment survives each.
+Recreating them from that little would put the lane's attacks in the reviewer's name, so the lane
+did not.
 
 ## The refusal log
 
@@ -94,9 +94,10 @@ turn.
 
 ## The lane's reproduction
 
-The lane replayed the committed module itself on 2026-10-27 (UTC), one ISA's QEMU at a time
-under QEMU 11.1.2, with the falsification patch applied: the witness red at its assertion and the
-two boundary tests green, on aarch64, riscv64 and x86_64. Those three logs are the count's input.
+The lane replayed the committed module itself on 2026-10-27 (UTC), one ISA's QEMU at a time under
+QEMU 11.1.2, with the falsification patch applied. On aarch64, riscv64 and x86_64 the witness went
+red at its assertion and the two boundary tests stayed green. Those three logs are the count's
+input.
 
 ## The count
 
@@ -143,15 +144,14 @@ booted 2 of 29, floor short by 27
 ```
 
 Rows 10 and 11 booted, each on all three ISAs. Rows 12 to 18 are host-exempt. The lane's earlier
-reproduction also booted rows 4 to 9, 23, 26 and 30, from the reviewer's other modules; those
-modules and their logs are not in the tree, so the nine rows are unverified and stay out of the
-count.
+reproduction also booted rows 4 to 9, 23, 26 and 30, from the reviewer's other modules. The tree
+holds neither those modules nor their logs, so the nine rows stay unverified and out of the count.
 
-The lane did not run the completion round. That was the lane's own judgement, and no ruling waives
-the round. The reason: the round exists to lift a below-floor clean pass over the floor, and this
-pass cannot be clean after an escape, so a round would spend the reviewer's tokens and a fresh key
-on a count that cannot change the pass's standing. Whether that waiver stands is calef's call, and
-the pull request asks it.
+The lane did not run the completion round. That was the lane's own judgment, and no ruling waives
+the round. The round exists to lift a below-floor clean pass over the floor, and this pass cannot be
+clean after an escape. A round would spend the reviewer's tokens and a fresh key on a count that
+cannot change the pass's standing. Whether that waiver stands is calef's call, and the pull request
+asks it.
 
 ## What the pass leaves
 
