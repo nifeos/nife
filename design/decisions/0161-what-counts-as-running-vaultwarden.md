@@ -7,7 +7,7 @@ ratified_by: calef
 
 # 161. Which subset counts as running Vaultwarden
 
-Ruled 2026-10-28 (UTC): Definition of done — Vaultwarden running on a board or host at a Tailscale
+Ruled 2026-10-28 (UTC): Definition of done: Vaultwarden running on a board or host at a Tailscale
 address. A phone on the same tailnet, running the Bitwarden client, connects over Tailscale to a real
 certificate (Let's Encrypt, DNS-01 challenge, no open port), logs in, syncs its vault, writes an
 entry back, downloads an attachment, and receives a live update when another client changes an item.

@@ -10,7 +10,7 @@ ratified_by: calef
 Ruled 2026-10-28 (UTC): C, continuous SP 800-90B health tests in the driver with a hard action on
 failure: fall back to another source if one is present, otherwise refuse and fail loudly; min-entropy
 assumed at one bit per byte, recorded as a named constant with its reason. Bytes still arrive
-untransformed under §44's contract; the claim is weaker and truer.
+untransformed under §44 (entropy is a capability)'s contract; the claim is weaker and truer.
 
 Raised 2026-09-01 by the maintainer, from milestone 159 (a real hardware entropy source: the
 JH7110's TRNG)'s (a real hardware entropy source: the JH7110's TRNG) lane. That lane found the

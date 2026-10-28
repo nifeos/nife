@@ -8,7 +8,7 @@ ratified_by: calef
 # 169. Whether a clipboard exists here, and what it is scoped to
 
 Ruled 2026-10-28 (UTC): B, a clipboard is scoped to a login session, per authenticated principal;
-reading it costs the same proof anything under that subtree costs. Milestone 49's login-boot-wiring
+reading it costs the same proof anything under that subtree costs. Milestone 49 (users, login, and attribution)'s login-boot-wiring
 must exist first; milestone 180 waits on both.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote

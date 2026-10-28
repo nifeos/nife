@@ -8,7 +8,7 @@ ratified_by: calef
 # 180. Whether `components/` splits again, for the tools a person invokes
 
 Ruled 2026-10-28 (UTC): No third directory. `components/` stays the broad word; no third directory
-for interactive tools. First-party programs move to package-specific repos under §297, so a directory
+for interactive tools. First-party programs move to package-specific repos under §297 (software reaches nife as a package jig installs from basalt's index), so a directory
 split in `components/` is busy work rather than an answered question.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c lane, which found milestone 395 (a third program directory, for the tools a person invokes)'s

@@ -7,7 +7,7 @@ ratified_by: calef
 
 # 188. What the lifted `fn check(ok: bool)` is called, now that nine programs write it out by hand
 
-Ruled 2026-10-28 (UTC): `require` — `user_mode_runtime::require` is the public name for the lifted
+Ruled 2026-10-28 (UTC): `require`: `user_mode_runtime::require` is the public name for the lifted
 `fn check(ok: bool)`, matching the kernel's `trust::require` semantics ("not recoverable and must
 not be recovered from") at one privilege level up. Milestone 408's provisional `Name:` line is
 ratified.

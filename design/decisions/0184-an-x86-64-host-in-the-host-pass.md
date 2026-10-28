@@ -7,7 +7,7 @@ ratified_by: calef
 
 # 184. Does the host test pass run on a second architecture, and at what cadence?
 
-Ruled 2026-10-28 (UTC): Option 2, matrix leg — the host test pass runs on both architectures
+Ruled 2026-10-28 (UTC): Option 2, matrix leg: the host test pass runs on both architectures
 (arm64 and x86_64) on every pull request. Option 1 dominated (same runner cost, less honest shape);
 option 3 rejected because cost alone should not drive a day of latency. Unblocks milestone 403.
 

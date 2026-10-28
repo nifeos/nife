@@ -7,7 +7,7 @@ ratified_by: calef
 
 # 206. Filing a lane's findings is a step, not a duty somebody remembers
 
-Ruled 2026-10-28 (UTC): Option 3 — a capture step after every lane reads the report and pull
+Ruled 2026-10-28 (UTC): Option 3: a capture step after every lane reads the report and pull
 request body and emits either nothing or N stub files in `design/roadmap/proposals/`; extraction
 rather than judgment, firing without anyone remembering; a stub it gets wrong is deleted, a finding
 it catches is one the architect does not have to prompt.
