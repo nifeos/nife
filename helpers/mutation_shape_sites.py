@@ -47,8 +47,11 @@ lists; each census's run regenerates it from its own artifacts.
 
 BUGS
 
-- One line of context is exactly one line: an operand written across lines, a macro invocation, or
-  a const whose right-hand side ends on a later line reads as `site`.
+- One line of context is exactly one line. A line whose first or last token is the swapped
+  operator is a continuation line: the operand on that side lives on the line above or below, so a
+  chain on this line alone proves nothing, and the verdict is `site`. An operand written across
+  lines, a macro invocation, or a const whose right-hand side ends on a later line reads as `site`
+  the same way.
 - A name that resolves through `use`, a `static`, an enum variant or another type's associated
   const reads as `site`. Only same-file `const NAME` definitions fold, and a name two same-file
   consts define refuses to fold rather than guessing which one.
@@ -249,6 +252,11 @@ def chain(line, toks, col, family):
     if left is None or right is None or not left and not right:
         return None
     merged = sorted((*left, toks[idx], *right), key=lambda t: t.start)
+    # An edge token that is itself the operator means the expression walks off the line: the
+    # swapped operator's operand on that side is a continuation of the line above or below, and a
+    # chain that cannot see it proves nothing. A line that begins `| C` or ends `A |` is that case.
+    if merged[0].kind == "op" or merged[-1].kind == "op":
+        return None
     return merged, merged.index(toks[idx])
 
 
@@ -428,6 +436,12 @@ def selftest():
     assert verdict("fn j() -> u64 { 0x_FFF0 | 1 }", "p", 1, 25,
                    "replace | with ^") == ("literal", "65520 | 1 are pairwise disjoint")
 
+    # a continuation line: the operator opens or closes the line, so an operand lives on the line
+    # above or below, and no one-line chain can see it. `READ` folds, which is the trap.
+    cont = "pub const READ: u64 = 1;\nconst OR: u64 = READ\n    | READ;\n"
+    assert verdict(cont, "p", 3, 5, "replace | with ^") == ("site", "| READ;")
+    cont2 = "pub const READ: u64 = 1;\nconst OR: u64 = READ |\n    READ;\n"
+    assert verdict(cont2, "p", 2, 25, "replace | with ^") == ("site", "const OR: u64 = READ |")
     # end to end over a fixture shard: the verdicts, and the CSV's provenance line
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:

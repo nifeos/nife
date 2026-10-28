@@ -485,14 +485,20 @@ def total_holes(crates):
 def by_current_name(crates, chain):
     """Fold a census's raw crate names onto today's names, so two censuses join across renames.
     Returns (crate -> counts, crate -> real holes or None); a crate recorded before the column, or
-    a rename group any of whose members lacks a count, carries None."""
+    a rename group any of whose members lacks a count, carries None. A group with one blank member
+    is not measured, never a partial sum: a sum over some members reads as the whole crate."""
     out = collections.defaultdict(collections.Counter)
     holes = collections.defaultdict(lambda: None)
+    blank = set()
     for name, row in crates.items():
-        out[resolve(name, chain)].update(row.counts)
-        if row.real_holes != "":
-            got = int(row.real_holes)
-            holes[resolve(name, chain)] = (holes[resolve(name, chain)] or 0) + got
+        resolved = resolve(name, chain)
+        out[resolved].update(row.counts)
+        if row.real_holes == "":
+            blank.add(resolved)
+        else:
+            holes[resolved] = (holes[resolved] or 0) + int(row.real_holes)
+    for name in blank:
+        holes[name] = None
     return out, holes
 
 
@@ -607,18 +613,27 @@ def main(argv):
 
 def selftest():
     """Fixtures for the record's own column: the round-trip, a pre-column file, the report and the
-    comparison. No git, no network, no census."""
-    global RECORD
+    comparison, and a rename group whose blank member poisons the group's count. No git, no
+    network, no census."""
+    global RECORD, load_renames
     import contextlib
     saved = RECORD
+    saved_renames = load_renames
     try:
         with tempfile.TemporaryDirectory() as tmp:
             RECORD = pathlib.Path(tmp) / "record.csv"
+            load_renames = lambda: {"od": "d"}
             record = {
                 "2026-10-26": {"c": Row("1", collections.Counter(caught=8, missed=2, timeout=0,
-                                                                 unviable=1), "2")},
+                                                                 unviable=1), "2"),
+                               "d": Row("1", collections.Counter(caught=5, missed=1, timeout=0,
+                                                                 unviable=0), "3"),
+                               "od": Row("1", collections.Counter(caught=4, missed=0, timeout=0,
+                                                                  unviable=0), "")},
                 "2026-10-19": {"c": Row("0", collections.Counter(caught=9, missed=1, timeout=0,
-                                                                 unviable=1), "")},
+                                                                 unviable=1), ""),
+                               "d": Row("0", collections.Counter(caught=5, missed=1, timeout=0,
+                                                                 unviable=0), "1")},
             }
             write_record(record)
             got = load_record()
@@ -636,7 +651,7 @@ def selftest():
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 show("2026-10-26")
-                show("2026-10-19")
+                show("2026-11-09")
                 compare("2026-10-19", "2026-10-26")
                 compare("2026-11-02", "2026-10-26")
             text = out.getvalue()
@@ -646,6 +661,9 @@ def selftest():
             assert "real holes - (a census recorded before the column)" in text, text
             assert "- ->    2" in text, text
             assert "real holes 0 -> 2" in text, text
+            # a rename group with a blank member carries None for the whole group, never a sum over
+            # the members that have counts: `d` measured 1 then, and 3 plus an unmeasured `od` now
+            assert "1 ->    -" in text, text
             # a record written before the column reads with blank cells everywhere
             RECORD.write_text("census,run,crate,tested,caught,missed,timeout,unviable\n"
                               "2026-10-12,9,x,10,9,1,0,0\n")
@@ -657,6 +675,7 @@ def selftest():
             assert "recorded before real holes were measured" in out.getvalue()
     finally:
         RECORD = saved
+        load_renames = saved_renames
     print("mutation-census: selftest ok")
     return 0
 
