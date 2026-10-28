@@ -9,9 +9,10 @@ name: kernel mutants (rolling census)
 # and `script/falsifications --mutants --patches` runs each window in two tiers (the kernel suite
 # first, the whole-system image only for what survives it).
 #
-# **Advisory, always, and therefore never on a merge.** The census has no `pull_request` trigger at
-# all: it never sits on a merge, never joins the merge queue, and a fork can never trigger it,
-# because only `schedule` and `workflow_dispatch` raise it. Survivors exit 0 with the table that
+# **Advisory, always, and therefore never on a merge.** Only `schedule` and `workflow_dispatch`
+# run the census's jobs; the one `pull_request` trigger is registration, not a run (its comment
+# above `on:` says why), so the census never sits on a merge, never joins the merge queue, and a
+# fork can never run it. Survivors exit 0 with the table that
 # says what clears each (milestone 85 (mutation testing over the host crates)'s key, 924 (a
 # survivor on a pull request's own lines cannot merge untriaged)'s rules); a broken run exits 2
 # and fails the job.
@@ -67,6 +68,17 @@ on:
     # cron says 05:00 UTC but which GitHub has started as late as 10:55 UTC; a kernel night beside
     # it would put ten jobs in the pool at once (the block's "When the rolling census runs").
     - cron: "0 8 * * 0,2-6"
+  pull_request:
+    # Registration, not a run. GitHub registers a workflow that carries no `pull_request` trigger
+    # only from the default branch, so before this file's first merge a `workflow_dispatch`
+    # against a lane's branch copy is refused with a 404, and the lane cannot watch its own edit
+    # fail, which is the whole point of the proof. This trigger registers the workflow when a pull
+    # request edits it, and no job runs on the event: a pull request never runs the census. Its
+    # only firing moment is a pull request that changed this file closing, which produces one
+    # all-skipped run.
+    types: [closed]
+    paths:
+      - .github/workflows/kernel-mutants-census.yml
   workflow_dispatch:
     inputs:
       slice:
@@ -96,6 +108,9 @@ concurrency:
 jobs:
   plan:
     name: plan (the rotation, tonight's two windows)
+    # The registration trigger above never reaches a job: schedule and dispatch are the only
+    # events that run one.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     outputs:
@@ -322,7 +337,7 @@ jobs:
     needs: [plan, slice]
     # Only a fully green night writes state: a broken run is re-run from the previous state, which
     # is the honest recovery (the night's work is redone, never lost).
-    if: ${{ success() }}
+    if: ${{ success() && github.event_name != 'pull_request' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -363,7 +378,7 @@ jobs:
   record:
     name: record the night in the census record
     needs: [plan, slice, state]
-    if: ${{ success() && github.ref == 'refs/heads/main' }}
+    if: ${{ success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
     environment: automation
     runs-on: ubuntu-24.04
     timeout-minutes: 15
