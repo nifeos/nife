@@ -40,8 +40,8 @@ install` shows everything the install grants, and one confirmation covers it. Mi
 package declares a service: install starts it, boot starts it, update restarts it) adds "runs as a
 service, now and at every boot" to that list. Milestone 892 (a std program at the prompt holds the
 network and a name resolver)'s item 3 (ruled "c" on #2011) adds the manifest's resolver zones,
-asked for and granted at install. Each granted zone is one badge, under §252. A root-zone ask is
-flagged apart.
+asked for and granted at install. Each granted zone is one badge, under §252 (a resolver grant is
+one zone per client badge). A root-zone ask is flagged apart.
 
 A `--yes` answers that confirmation without reading it. It would approve a root-zone ask blindly.
 On the next update it would approve whatever the new version asks, so a package that gained a
