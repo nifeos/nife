@@ -61,6 +61,18 @@ pub const BUS: Bus = Bus {
     write_outstanding: 0xf,
 };
 
+// The four burst-length bits are distinct single bits, so the constant's `|`s are its `^`s.
+const _: () = assert!(
+    registers::SYS_BUS_MODE_BLEN_256
+        | registers::SYS_BUS_MODE_BLEN_128
+        | registers::SYS_BUS_MODE_BLEN_64
+        | registers::SYS_BUS_MODE_BLEN_32
+        == registers::SYS_BUS_MODE_BLEN_256
+            ^ registers::SYS_BUS_MODE_BLEN_128
+            ^ registers::SYS_BUS_MODE_BLEN_64
+            ^ registers::SYS_BUS_MODE_BLEN_32
+);
+
 /// The always-on (AON) system controller's window: mainline's `aon_syscon: syscon@17010000` and the
 /// vendor's `aon_syscon@17010000`, both `0x1000` long.
 pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_BASE: u64 = 0x1701_0000;
@@ -105,6 +117,10 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
     (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
         | PHY_INTF_RGMII << GMAC0_SYSTEM_CONTROLLER_SHIFT
 }
+
+// The interface value fits the field the line above cleared, so the `|` holds for every word the
+// function is given and is its `^`.
+const _: () = assert!(PHY_INTF_RGMII & SYSTEM_CONTROLLER_FIELD == PHY_INTF_RGMII);
 
 /// The interface select a syscon word holds for `gmac0`.
 pub const fn interface(word: u32) -> u32 {
