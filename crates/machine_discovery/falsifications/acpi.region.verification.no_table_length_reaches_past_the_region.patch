@@ -1,0 +1,22 @@
+Falsifies `machine_discovery::acpi::region::verification::no_table_length_reaches_past_the_region`.
+
+The defect: the whole-table read is asked for less than the length the header states (here a
+sixteenth short, the shape of an off-by-some length conversion). The table is then checksummed
+and returned over fewer bytes than it claims, so the body is shorter than `length - 36` and a
+corrupt tail is never summed. The hostile-table host tests use lengths that are far past the
+region, which this defect still refuses, so they stay green while the property is false.
+
+Expected to fail: `assert_eq!(table.body.len() as u64 + SDT_HEADER_LEN as u64, length)`.
+
+diff --git a/crates/machine_discovery/src/acpi/region.rs b/crates/machine_discovery/src/acpi/region.rs
+--- a/crates/machine_discovery/src/acpi/region.rs
++++ b/crates/machine_discovery/src/acpi/region.rs
+@@ -141,7 +141,7 @@
+             .map_err(|_| TableRefusal::HeaderOutsideRegion)?;
+         let header = parse_sdt_header(header_bytes).map_err(TableRefusal::BadHeader)?;
+         let whole = self
+-            .read(at, header.length as u64)
++            .read(at, header.length as u64 - (header.length as u64 >> 4))
+             .map_err(|_| TableRefusal::LengthOutsideRegion(header.length))?;
+         if !is_checksum_ok(whole) {
+             return Err(TableRefusal::BadChecksum);

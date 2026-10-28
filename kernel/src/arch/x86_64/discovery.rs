@@ -64,7 +64,7 @@ pub(crate) fn initialize() {
     // ACPI: what x86 has instead of a device tree. The RSDP is scanned for rather than taken from
     // the handoff, because QEMU's PVH loader leaves that field zero (measured); the checksum inside
     // the parser is what separates a real hit from a coincidence.
-    let acpi = machine::read_acpi(info.rsdp);
+    let acpi = machine::read_acpi(&machine::boot_direct_map(), info.rsdp);
     machine::print_acpi_summary(&acpi);
 
     // COM1's interrupt line, as the legacy number 4 and not its GSI:
