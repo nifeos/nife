@@ -1,13 +1,17 @@
 # system-tests: the whole-system suite, booted as its own image on the kernel as a library. No
 # Debian analogue; the closest is a distribution's autopkgtest tree, which is never installed.
 #
-# Milestone 609 (the system tests leave the kernel crate) made it a crate of its own. The package's
-# name, kind, home and membership are provisional, the lane's proposal for calef to ratify; the
-# format is helpers/packages.py's header.
+# Milestone 609 (the system tests leave the kernel crate) made it a crate of its own. The kind,
+# home status and membership are provisional, the lane's proposal for calef to ratify; the format
+# is helpers/packages.py's header.
+#
+# Name: ratified 2026-10-28 (calef, relayed by the maintainer, pull request #2872). The `home`
+# line carried the crate's spelling, `system_tests`, until 2026-10-28; it is the package's own
+# name, as every other package's is. The crate stays `system_tests`.
 
 name = "system-tests"
 kind = "test"
-home = { repo = "system_tests", status = "provisional" }
+home = { repo = "system-tests", status = "provisional" }
 crates = ["system_tests"]
 # The suite is the kernel, booted to run it; everything else it names is a dev-dependency.
 depends = ["kernel"]
