@@ -77,15 +77,16 @@ In a checkout of the commit under test (a fresh worktree builds nothing it was n
 ```sh
 pgrep -l qemu                                    # nothing of yours should be running
 git log -1 --format=%h                           # goes in every Results row
-cargo xtask std-exerciser                        # builds jig; without it the image has no jig
 P=$(ipconfig getifaddr en0)                      # the build Mac on the house LAN
 cargo xtask network-bench --stage-only --peer "$P:9494"
 shasum -a 256 target/esp-network-bench/EFI/BOOT/BOOTX64.EFI
 curl -LO https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Everything/x86_64/os/Packages/i/ioping-1.3-10.fc44.x86_64.rpm
 ```
 
-`cargo xtask std-exerciser` matters: `jig` is packed only when it has been built, and an image
-without it answers `jig update` with `could not spawn (the progenitor is out of memory)`.
+`cargo xtask std-exerciser` is not part of this evening. Every image build packs `jig` for its own
+target, and an archive without it is refused at pack time, naming the command that builds it. A
+spawn of a program the image does not carry answers `could not spawn (this image was built without
+that program)`, not a memory failure.
 
 ## Step 1: the I219 boot
 

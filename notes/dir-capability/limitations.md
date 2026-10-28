@@ -48,7 +48,9 @@ full. Known limitations, next to the feature rather than only in a tracker.
 - A grant whose directory is not there reads as "the progenitor is out of memory" at the prompt.
   The caretaker answers `DESCENT_REFUSED`, and the progenitor does the right thing with it: nothing
   is spawned, and the region goes back. But the only word the progenitor can put on the result
-  endpoint is `spawnproto::SPAWN_FAILED`, and the shell renders that with the one sentence it has.
+  endpoint is `spawnproto::SPAWN_FAILED`, and the shell renders that word as the job pool's
+  sentence (`swish::spawn_failure_sentence`). A program the image does not carry answers with a
+  word of its own, `spawnproto::SPAWN_NOT_IN_IMAGE`, and gets its own sentence.
   So `rm nosuchdir/x` says something true about the outcome and false about the cause. Fixing it is
   a second sentinel on that endpoint, which is two programs agreeing on a format for one diagnostic.
   It was left rather than taken. The honest sentence is worth having, and it is not worth widening
