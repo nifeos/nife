@@ -57,6 +57,12 @@ name: kernel mutants (diff-scoped)
 #   commit out, a tree without the helper the step invokes. The draft gate and the skip path
 #   behaved as designed in the same run. The fix checks the dispatched ref's own commit out for
 #   both events and keeps the input range as the diff only.
+# Observed failing: 2026-10-28, run 40638299916: the corrected dispatch's shard job died in two
+#   seconds at the driver's dirty-tree guard: the artifact download had left an untracked
+#   `shards/` directory in the checkout, and the driver refuses `git status --porcelain` noise
+#   because it applies and reverts patches there. The plan job had done its work; the shard's
+#   verdict step then said so honestly (no verdict table, exit 2). The fix downloads the artifact
+#   to the runner's temp directory, outside the tree.
 
 on:
   pull_request:
@@ -257,12 +263,15 @@ jobs:
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: mutant-shards
-          path: shards
+          path: ${{ runner.temp }}/shards
 
+      # The tree must stay clean: the driver refuses `git status --porcelain` noise, because it
+      # applies and reverts patches here (run 40638299916 died on exactly that, an untracked
+      # shards/ directory the artifact download had left in the checkout).
       - name: Run the shard's mutants
         run: |
           script/falsifications --mutants \
-            --patches "shards/${{ matrix.file }}" --arch "${{ matrix.arch }}" \
+            --patches "${{ runner.temp }}/shards/${{ matrix.file }}" --arch "${{ matrix.arch }}" \
             --tiers kernel,system --budget "${{ matrix.budget }}" --limit "${{ matrix.limit }}" \
             --out "$RUNNER_TEMP/shard-${{ matrix.index }}.tsv"
 
