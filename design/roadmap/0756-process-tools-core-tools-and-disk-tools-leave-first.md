@@ -96,7 +96,8 @@ a two-repo change.
      item 4), or a dated, recorded exception for a git dependency on `nife` at a commit.
    - Every interface the cut links (`abi`, `address_space_map`, `glob`,
      `machine_statistics_contract`) carries a checkable version, and the moved package declares
-     what it links. The cut re-derives the linked set at its start rather than trusting this
+     what it links (milestone 956 (the linked interfaces carry checkable versions), minted
+     2026-10-28 UTC). The cut re-derives the linked set at its start rather than trusting this
      2026-10-04 list.
    - basalt can take a component's output as a package by digest: §235's P1, milestone 607 item 1.
    - The home and its repository name are ratified, and §201's citation identity is ruled, since

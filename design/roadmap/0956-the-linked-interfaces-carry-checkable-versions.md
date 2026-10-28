@@ -1,19 +1,21 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
 raised: 2026-10-29
+promoted_from: the-linked-interfaces-carry-checkable-versions
 milestone_dependencies: 597, 610
 decision_dependencies: 235, 311
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The linked interfaces carry checkable versions
+# 956. The linked interfaces carry checkable versions
 
 Raised 2026-10-29 (UTC) by the lane `proposal/version-carrying-interfaces`, as the implementing
-proposal behind [the shape proposal](version-carrying-interfaces.md). calef ruled the shape that
-day in PR #2852's comment; this proposal re-aims the eight-step plan at the ruled shape and
-proposes it for the merge queue, milestone number provisional until an integrator mints one. The
-shape proposal holds the questions, the options and the ruling; this one holds only the plan.
+proposal behind [the shape proposal](proposals/version-carrying-interfaces.md). calef ruled the
+shape that day in PR #2852's comment; this block re-aims the eight-step plan at the ruled shape.
+The shape proposal holds the questions, the options and the ruling; this one holds the plan, and
+an integrator minted its number on 2026-10-28 (UTC) so condition 4 of milestone 756 has a block to
+point at.
 
 The gate the plan serves is condition 4 of milestone 756 (`process-tools`, `core-tools` and
 `disk-tools` are the first code to leave this repository), re-aimed on 2026-10-28. The gate reads:
@@ -96,8 +98,14 @@ stamp reads, and on 597's note machinery, which exists. Steps 5 and 6 depend on 
 Step 7 depends on step 1. Step 8 depends on steps 2, 5 and 6. The milestone follows 610's series,
 so the first week of constants reads as additions, a shape the series already records.
 
-## What this proposal does not do
+## What this block does not do
 
-This proposal writes no code. §311 (a contract is code, not prose) reserves the checks for an
+This block writes no code. §311 (a contract is code, not prose) reserves the checks for an
 implementing lane; the sketches above are the shape proposal's, restated as the plan's content.
 The implementing lane writes and proves them.
+
+## Index row
+
+Every interface the first cut links carries a checkable version, so a peer can refuse a mismatch
+naming both sides and the moved package declares what it links. That is condition 4 of milestone
+756's first cut, and the check the weekly series in milestone 610 counts.
