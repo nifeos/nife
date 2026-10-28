@@ -34,60 +34,72 @@ pub enum Granted<'a> {
     /// owner's approval file allows)). Nothing starts a recorded service until 910 builds the
     /// start; the record and the subset test are this milestone's.
     ///
+    ///
     /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     Service,
     /// **A directory the package may hold, with its rights** (milestone 911). The name is one
-    /// word a row can spell; the rights are [`DirRights`]. No manifest asks for one yet (the ask
+    /// word a row can spell; the rights are [`DirectoryRights`]. No manifest asks for one yet (the ask
     /// rides milestone 910's declaration), so the host tests are the only readers.
     ///
+    ///
     /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
-    Dir(&'a str, DirRights),
+    Directory(&'a str, DirectoryRights),
     /// **The installer endpoint, within the approval that allows it** (milestone 911's delegation).
     /// A manifest asks for it by the approval's name; the record carries the ask without the name,
     /// because a package may hold the endpoint within one approval only and the approval that
     /// answered is the row generation's `answered` line.
     ///
+    ///
     /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     Installer,
 }
 
-/// **The rights a [`Granted::Dir`] grant carries**, as the approval file and the `grant` line
+/// **The rights a [`Granted::Directory`] grant carries**, as the approval file and the `grant` line
 /// spell them: `r` reads and walks, `rw` writes too. A `r` ask lies within a `rw` allowance, and
 /// not the other way.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DirRights {
+pub enum DirectoryRights {
     /// Read, list and walk (`filesystem_contract::dir`'s `ENUMERATE | READ | DESCEND`).
     R,
     /// And write.
     RW,
 }
 
-impl DirRights {
+impl DirectoryRights {
     /// The rights the spelling names, or `None` for anything else.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn parse(spelling: &str) -> Option<Self> {
         match spelling {
-            "r" => Some(DirRights::R),
-            "rw" => Some(DirRights::RW),
+            "r" => Some(DirectoryRights::R),
+            "rw" => Some(DirectoryRights::RW),
             _ => None,
         }
     }
 
     /// The spelling, as the approval file and the `grant` line write it.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn spell(self) -> &'static str {
         match self {
-            DirRights::R => "r",
-            DirRights::RW => "rw",
+            DirectoryRights::R => "r",
+            DirectoryRights::RW => "rw",
         }
     }
 
     /// Whether this set's every right is in `allowance`'s.
-    pub fn within(self, allowance: DirRights) -> bool {
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+    pub fn is_within(self, allowance: DirectoryRights) -> bool {
         match (self, allowance) {
-            (DirRights::R, _) => true,
-            (DirRights::RW, DirRights::RW) => true,
-            (DirRights::RW, DirRights::R) => false,
+            (DirectoryRights::R, _) => true,
+            (DirectoryRights::RW, DirectoryRights::RW) => true,
+            (DirectoryRights::RW, DirectoryRights::R) => false,
         }
     }
 }
@@ -114,10 +126,10 @@ pub(super) fn classify_grant<'a>(mut words: impl Iterator<Item = &'a str>) -> Li
             Granted::Zone(zone)
         }
         (Some("dir"), Some(name), Some(rights)) if good_dir_name(name) => {
-            let Some(rights) = DirRights::parse(rights) else {
+            let Some(rights) = DirectoryRights::parse(rights) else {
                 return Line::Malformed;
             };
-            Granted::Dir(name, rights)
+            Granted::Directory(name, rights)
         }
         _ => return Line::Malformed,
     };
@@ -178,7 +190,7 @@ pub(super) fn grant_before(a: &Grant<'_>, b: &Grant<'_>) -> bool {
             Granted::Installer => ("installer", "", ""),
             Granted::Zone("") => ("zone", ROOT_ZONE, ""),
             Granted::Zone(z) => ("zone", z, ""),
-            Granted::Dir(name, rights) => ("dir", name, rights.spell()),
+            Granted::Directory(name, rights) => ("dir", name, rights.spell()),
         };
         (measured_boot::digest_text(&g.digest), kind, first, second)
     }
@@ -188,7 +200,7 @@ pub(super) fn grant_before(a: &Grant<'_>, b: &Grant<'_>) -> bool {
 /// **Whether one grant set covers another ask** (milestone 911 (scripted installs grant only
 /// what the owner's approval file allows)): the ask is one of the allowed grants. A zone is
 /// covered by the same zone and no other (the root zone is spelled, never implied); a directory
-/// by the same name and rights that hold its own ([`DirRights::within`]); the network, the
+/// by the same name and rights that hold its own ([`DirectoryRights::within`]); the network, the
 /// service and the installer each by themselves. The digest is not compared: an approval file's
 /// entry bounds a package, and the asks of every program it carries are checked against the one
 /// entry.
@@ -198,13 +210,15 @@ pub(super) fn covered(allowed: &[Granted<'_>], ask: &Granted<'_>) -> bool {
 
 /// Whether one [`Granted`] covers another, digests apart: the comparison the subset test and the
 /// approval file's check share.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub fn covers(allowed: Granted<'_>, ask: Granted<'_>) -> bool {
     match (allowed, ask) {
         (Granted::Network, Granted::Network)
         | (Granted::Service, Granted::Service)
         | (Granted::Installer, Granted::Installer) => true,
         (Granted::Zone(a), Granted::Zone(b)) => a == b,
-        (Granted::Dir(an, ar), Granted::Dir(bn, br)) => an == bn && br.within(ar),
+        (Granted::Directory(an, ar), Granted::Directory(bn, br)) => an == bn && br.is_within(ar),
         _ => false,
     }
 }
@@ -218,6 +232,8 @@ pub fn covers(allowed: Granted<'_>, ask: Granted<'_>) -> bool {
 /// assert!(covers(Granted::Network, Granted::Network));
 /// assert!(!covers(Granted::Zone("nife.test"), Granted::Zone("example.net")));
 /// ```
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub fn extras<'g>(
     allowed: &[Granted<'g>],
     asks: &'g [Granted<'g>],

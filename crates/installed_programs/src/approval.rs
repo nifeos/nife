@@ -27,7 +27,7 @@
 //!
 //! Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 
-use super::grants::{DirRights, Granted, ROOT_ZONE};
+use super::grants::{DirectoryRights, Granted, ROOT_ZONE};
 use super::{Digest, Error};
 
 /// **The directory the approval store lives in**, under [`super::DIRECTORY`], beside the
@@ -40,10 +40,14 @@ pub const STORE: &str = "approvals";
 /// **The longest name an approval or a package section carries**: the file system's component
 /// limit (`nifefs::NAME_LEN`, 32), which the store file's own name is held to. A longer name is
 /// refused at compile time rather than truncated into another approval.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub const NAME_MAXIMUM: usize = 32;
 
 /// **Why a document was refused.** Provisional names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub enum Refusal {
     /// A line is none this grammar knows, or a field is out of range. The whole document is
     /// refused, as a table's one bad line refuses the table.
@@ -62,6 +66,8 @@ pub enum Refusal {
 /// the two policy answers. The allows are sorted, each once, and the packages are sorted by name;
 /// the writer refuses anything else.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub struct Package<'a> {
     /// The package the section bounds, by name.
     pub name: &'a str,
@@ -77,6 +83,8 @@ pub struct Package<'a> {
 /// re-reads them, so a caller that holds the section holds the whole of its grant set without a
 /// buffer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub struct Section<'a> {
     /// The package the section bounds, by name.
     pub name: &'a str,
@@ -92,6 +100,9 @@ impl Section<'_> {
     /// **The section's allow lines**, in their sorted order, or [`Refusal::Malformed`] at the
     /// first line that is not one. The section was checked at [`Document::parse`], so the error
     /// is unreachable short of a caller that kept a section past its document.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn allows(&self) -> impl Iterator<Item = Result<Granted<'_>, Refusal>> {
         self.lines.lines().map(allow_word)
     }
@@ -101,6 +112,8 @@ impl Section<'_> {
 /// so a caller that holds one holds the whole of it, and a malformed line anywhere makes every
 /// lookup refuse.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub struct Document<'a> {
     text: &'a str,
 }
@@ -109,6 +122,9 @@ impl<'a> Document<'a> {
     /// The document `text` spells, checked whole: the header once, then zero or more package
     /// sections, each with its allow lines sorted and once and its two policy answers exactly
     /// once, and the packages sorted by name, each once.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn parse(text: &'a str) -> Result<Self, Refusal> {
         header(text).ok_or(Refusal::NoHeader)?;
         let mut previous: Option<&str> = None;
@@ -127,16 +143,25 @@ impl<'a> Document<'a> {
     }
 
     /// The approval's name, from the header.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn name(&self) -> &'a str {
         header(self.text).map_or("", |(name, _)| name)
     }
 
     /// The file's digest the header binds the records to.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn digest(&self) -> Digest {
         header(self.text).map_or([0; 32], |(_, digest)| digest)
     }
 
     /// **Every package section, in the document's order.**
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn sections(&self) -> impl Iterator<Item = Result<Section<'a>, Refusal>> {
         Sections::new(self.text).map(|read| {
             let (name, lines) = read?;
@@ -152,6 +177,9 @@ impl<'a> Document<'a> {
     /// **The section for `package`**, or `None` when the approval does not bound it: every
     /// delegated request is checked against its package's section, and a package no section
     /// bounds receives nothing.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn entry(&self, package: &str) -> Result<Option<Section<'a>>, Refusal> {
         for section in Sections::new(self.text) {
             let (name, lines) = section?;
@@ -337,9 +365,9 @@ fn allow_word(line: &str) -> Result<Granted<'_>, Refusal> {
                 && super::generation::good_name(name)
                 && name.len() <= NAME_MAXIMUM =>
         {
-            Ok(Granted::Dir(
+            Ok(Granted::Directory(
                 name,
-                DirRights::parse(rights).ok_or(Refusal::Malformed)?,
+                DirectoryRights::parse(rights).ok_or(Refusal::Malformed)?,
             ))
         }
         _ => Err(Refusal::Malformed),
@@ -435,7 +463,7 @@ fn allow_line(what: &Granted<'_>, out: &mut [u8]) -> Result<usize, Error> {
             push(b"zone ")?;
             push(if zone.is_empty() { ROOT_ZONE } else { zone }.as_bytes())?;
         }
-        Granted::Dir(dir_name, rights) => {
+        Granted::Directory(dir_name, rights) => {
             push(b"dir ")?;
             push(dir_name.as_bytes())?;
             push(b" ")?;
@@ -461,7 +489,10 @@ mod tests {
     fn example() -> (Vec<u8>, usize) {
         let monit = Package {
             name: "monit",
-            allows: &[Granted::Dir("monit/state", DirRights::RW), Granted::Service],
+            allows: &[
+                Granted::Directory("monit/state", DirectoryRights::RW),
+                Granted::Service,
+            ],
             update: true,
             remove: false,
         };
@@ -489,7 +520,10 @@ mod tests {
         assert_eq!(sections.len(), 2);
         assert_eq!(
             sections[0].allows().map(|a| a.unwrap()).collect::<Vec<_>>(),
-            [Granted::Dir("monit/state", DirRights::RW), Granted::Service]
+            [
+                Granted::Directory("monit/state", DirectoryRights::RW),
+                Granted::Service
+            ]
         );
         assert!(sections[0].update && !sections[0].remove);
         assert_eq!(sections[1].name, "vaultwarden");

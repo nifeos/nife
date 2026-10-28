@@ -4,6 +4,8 @@
 //! console, or an approval file by name and digest. It is one line per generation, after the
 //! grant lines, and it is the audit answer to "who allowed this?" that still lets two equal
 //! grants look the same to anything that compares them.
+//!
+//! Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 
 use super::{Digest, Error};
 
@@ -17,7 +19,7 @@ use super::{Digest, Error};
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Answered<'a> {
-    /// The owner said yes at the console (milestone 892's confirmation), or the console ran
+    /// The owner said yes at the console (milestone 892 (a std program at the prompt holds the network and a resolver)'s confirmation), or the console ran
     /// `jig install --approved` and the owner's own file replaced the prompt. The console holds
     /// the authority either way; the grants were answered, not delegated.
     Console,
@@ -31,6 +33,9 @@ impl Answered<'_> {
     /// The line's bytes, written to `out`; [`Error::TooSmall`] when it does not fit. Absent for
     /// a generation that records no answer is the caller's choice: a vouch writes none, and
     /// neither does a table written before the line.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn write(&self, out: &mut [u8]) -> Result<usize, Error> {
         let mut at = 0;
         let mut push = |bytes: &[u8]| -> Result<(), Error> {
@@ -57,6 +62,9 @@ impl Answered<'_> {
     }
 
     /// The name the answer came from, or `None` for the console.
+    ///
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn approval(&self) -> Option<(&str, Digest)> {
         match *self {
             Answered::Console => None,
@@ -102,13 +110,17 @@ pub fn record(table: &str) -> impl Iterator<Item = &str> {
 
 /// **Whether two tables' records are byte-identical**: the property milestone 911 holds between
 /// an interactive yes and a scripted install for the same grants.
-pub fn same_record(a: &str, b: &str) -> bool {
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub fn records_agree(a: &str, b: &str) -> bool {
     record(a).eq(record(b))
 }
 
 /// **The table's `answered` line**, or `None` for a generation that records no answer: what the
 /// audit question ("who allowed this?") reads. Two of them are no single answer, as two default
 /// pointers for one program are none, and either table is refused.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub fn answered(table: &str) -> Result<Option<Answered<'_>>, Error> {
     use super::generation::{Line, classify};
     let mut found: Option<Answered<'_>> = None;

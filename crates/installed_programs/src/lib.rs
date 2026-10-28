@@ -33,6 +33,8 @@ mod answered;
 pub mod approval;
 mod generation;
 mod grants;
-pub use answered::{Answered, answered, record, same_record};
+pub use answered::{Answered, answered, record, records_agree};
 pub use generation::*;
-pub use grants::{DirRights, Grant, Granted, ROOT_ZONE, covers, extras, grants, network_granted};
+pub use grants::{
+    DirectoryRights, Grant, Granted, ROOT_ZONE, covers, extras, grants, network_granted,
+};
