@@ -1,6 +1,8 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-10-12
+decided: 2026-10-12
+ratified_by: calef
 ---
 
 # 290. The shell logic crate root splits into private modules by feature
@@ -8,8 +10,12 @@ raised: 2026-10-12
 Raised 2026-10-12 (UTC) as the cut that
 [milestone 884 (the shell logic crate is split along its seams)](../roadmap/0884-the-shell-logic-crate-is-split-along-its-seams.md)
 says is calef's call before a line moves. Written by lane
-`milestone/884-the-shell-logic-crate-is-split-along-its-seams`. *(Section number provisional
-until the merge queue lands it.)*
+`milestone/884-the-shell-logic-crate-is-split-along-its-seams`.
+
+## Ruled 2026-10-12 (UTC)
+
+Settled by precedent, with nothing asked of the architect: §272, §279, §282 and the rulings on
+milestones 842 and 845 answer each of the block's questions. Milestone 884 built the cut.
 
 ## What is asked
 

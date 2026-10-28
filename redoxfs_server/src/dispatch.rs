@@ -110,7 +110,9 @@ impl<D: Disk> Server<D> {
         let result = self.dispatch_file_verbs(&request, window, edges);
 
         // A handle a bound badge minted is that badge's, and no other badge can name it.
-        if let (fs::OPEN | fs::OPENDIR | fs::CREATE | fs::MKDIR, Ok(h)) = (code, &result) {
+        if let (fs::OPEN | fs::OPENDIR | fs::CREATE | fs::MKDIR | fs::NARROW, Ok(h)) =
+            (code, &result)
+        {
             self.claim(*h as u32, badge);
         }
         // `OPEN`'s second reply word is the file's size (milestone 606, ruling B); every other
@@ -256,6 +258,9 @@ impl<D: Disk> Server<D> {
                 Err(e) => Err(e),
             },
             // Ruling D's two control verbs; `fs::BIND` has the rules, `subtree_scope` enforces them.
+            // Narrow the directory the handle field names, in OPENDIR's reply shape with no name;
+            // the rights asked for ride in the second word.
+            fs::NARROW => self.narrow(handle, offset).map(|h| h as i64),
             fs::BIND => self.bind(badge, handle, offset).map(|()| 0),
             fs::UNBIND => self.unbind(badge, offset).map(|()| 0),
             fs::BIND_SYNC => self.bind_sync_only(badge, offset).map(|()| 0),

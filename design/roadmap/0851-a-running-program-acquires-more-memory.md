@@ -3,7 +3,7 @@ status: NOT-STARTED
 raised: 2026-10-06
 promoted_from: a-running-program-acquires-more-memory
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: 253
 machine_requirements: none
 specific_machine: none
 needs_person: no

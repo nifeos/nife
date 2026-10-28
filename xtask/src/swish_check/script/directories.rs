@@ -50,15 +50,20 @@ pub(super) const LINES: &[Line] = &[
         &["a-name-longer-than-two-words"],
     ),
     line(1, "ls rmtree | wc", &["2 2 19"]),
-    // **The one shape this still cannot deliver, and the refusal now says what is true.** It used to
-    // read "needs the progenitor to build the caretaker", which stopped being true on the line above. A
-    // caretaker's whole attenuation is one `OPENDIR` *into* the granted directory, and a name typed
-    // at the top prompt designates the root of this shell's namespace, which has no name to descend
-    // into; the contract has no verb for "the directory I already hold, with fewer rights". So this
-    // is a refusal at the prompt with **nothing spawned**, which is the one outcome this model must
-    // never trade away, and it is a design fork rather than a missing line of code. See
-    // design/roadmap/0031-capability-shell.md and notes/dir-capability.md's BUGS.
-    line(0, "rm gate.txt", &["there is no name here to descend into"]),
+    // **The top prompt, which used to be the one refusal and is now a grant** (milestone 328 (a grant on the root of the shell's namespace), §173 (narrowing the root of the shell's namespace)).
+    // A caretaker's attenuation was one `OPENDIR` *into* the granted directory, and a name typed at
+    // the top prompt designates the root of this shell's namespace, which has no name to descend
+    // into. `fs::NARROW` is the verb for "the directory I already hold, with fewer rights": the
+    // caretaker narrows the root it holds to `REMOVE`, exactly as `rm rmtree/rm-solo` narrows
+    // `rmtree`. The preview first, to show the narrower capability being chosen, then the removal.
+    line(
+        0,
+        "caps rm gate.txt",
+        &["and nothing under it: no -r, so it cannot even look"],
+    ),
+    line(1, "rm -v gate.txt", &["gate.txt"]),
+    // **And the name went**, from the directory the narrowed handle and the root both name.
+    line(0, "wc gate.txt", &["no such name in this directory"]),
     // **`xargs`, at the one interface a human touches** (milestone 109). `globmany` holds eleven
     // names one pattern matches, which is more than the eight a single grant can carry.
     //

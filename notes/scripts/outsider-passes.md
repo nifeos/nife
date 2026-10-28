@@ -7,7 +7,7 @@ manuals. Name: provisional, for this stem and both script names; calef names fil
 
 | script | what it does |
 |---|---|
-| `script/launch-pass --reviewer glm\|fable --commit <sha> [--dry-run]` | Starts one reviewer on a Mac, in a container inside podman's Linux VM (calef, 2026-10-14 UTC): GLM 5.3 through opencode, Claude Fable through Claude Code. The container is described below the table. It makes a standalone clone with no remote and one branch, `pass`, at the pinned commit, and builds the one prompt: the Mac's runner text from [the launch brief](../../briefs/confinement-outsider-pass-launch.md), word for word with its values filled, then the reviewer's brief. It refuses a prompt that names a milestone or a roadmap block. The volume is provisioned (`script/ci-qemu`, `script/bootstrap`) with no model, then a setup turn with the model pinned and no tools reads back the model the session reports, and the brief is never sent if that differs from the pin. `launch.json`, on the host beside the clone, records the harness and version, the image digest and volume, the model pinned and reported, the session id, the commit, the prompt's SHA-256 and the times; the pass note copies it. `--complete <launch.json> --short-rows <file>` resumes that session once with `script/booted-rows --short-only` output as the whole message, and refuses a second round. Built by milestone 920 (an outsider pass is launched pinned and floor-checked). Selftest in `script/lint`, against a fake podman and a fake harness, checking every container command's mounts, variables and flags. **Name provisional.** |
+| `script/launch-pass --reviewer glm\|fable --commit <sha> [--dry-run]` | Starts one reviewer on a Mac, in a container inside podman's Linux VM (calef, 2026-10-14 UTC): GLM 5.3 through opencode, Claude Fable through Claude Code. The container is described below the table. It makes a standalone clone with no remote and one branch, `pass`, at the pinned commit, and builds the one prompt: the Mac's runner text from [the launch brief](../../briefs/confinement-outsider-pass-launch.md), word for word with its values filled, then the reviewer's brief. It refuses a prompt that names a milestone or a roadmap block. The volume is provisioned (`script/ci-qemu`, `script/bootstrap`) with no model, then a setup turn with the model pinned and no tools reads back the model the session reports, and the brief is never sent if that differs from the pin. `launch.json`, on the host beside the clone, records the harness and version, the image digest and volume, the model pinned and reported, the session id, the commit, the prompt's SHA-256 and the times, and `model_readback` naming the failure when opencode's `session export` exits nonzero or prints no readable record (in the setup turn the brief is not sent; after the brief, `--complete` refuses the record as unverified); the pass note copies it. `--complete <launch.json> --short-rows <file>` resumes that session once with `script/booted-rows --short-only` output as the whole message, and refuses a second round. Built by milestone 920 (an outsider pass is launched pinned and floor-checked). Selftest in `script/lint`, against a fake podman and a fake harness, checking every container command's mounts, variables and flags. **Name provisional.** |
 | `script/booted-rows --checkout <dir> --pinned <sha> --log <file>... [--results <file>]` | Grades every claims-table row for one pass and ends `booted N of 27, floor met` or `floor short by K`, with the exit status to match. A row counts when a test the pass wrote (present at the pass's head, absent at the pinned commit) names it in an `Attacks rows:` line and ran to `ok` or a `[PANIC]` under QEMU on an ISA the row applies to. The exempt, carried and x86_64-only rows are read from the floor block in the brief, and the total from `notes/confinement-claims.md`. `--short-only` prints only the rows that do not count, the completion round's message. `--from-table <note>` replays a recorded pass from its per-row table. Built by milestone 920. Selftest in `script/lint`, with pass 8's and pass 9's replays. **Name provisional.** |
 
 **The launcher's container.** The image is `script/runner-container`'s with both harnesses added at
@@ -72,6 +72,15 @@ podman volume rm "nife-pass-$(basename "$scratch")"
   untried in this container until the first real launch.
 - GLM's key is read from `ZHIPU_API_KEY`, the variable opencode reads for the `zai-coding-plan`
   provider. Confirm it at the first launch; a wrong name shows as a setup turn that reports no model.
+- The heavy-slot wait livelocks when `script/test` runs as a container's pid 1: the slot lock
+  records the holder's pid, and the liveness check then always finds the holder (itself) alive, so
+  the waiter waits on its own lock forever. Run the script under a shell
+  (`sh -c 'script/test ...'`) so it holds a pid other than 1. Found collecting the tenth pass
+  (2026-10-27 (UTC)).
+- `models()` parses `opencode session export` output with no check of its exit status, so a
+  truncated export dies on a `JSONDecodeError` and `launch.json` sticks at `attacking` after the
+  session has finished. Found collecting the tenth pass (2026-10-27 (UTC)); the fix checks the
+  status and fails soft.
 - The first container run of a pass builds QEMU from source into the pass's volume (about 15
   minutes), and the clone is reached through the VM's file sharing, so its builds are slower than a
   native checkout's.
@@ -80,3 +89,5 @@ podman volume rm "nife-pass-$(basename "$scratch")"
 - The setup turn is one short model call per launch, spent before the attack.
 - `--complete` marks the record before it sends, so a crash during the send uses up the round.
   That is deliberate: a round that may have reached the reviewer is not sent twice.
+- A hung `session export` (or any harness command) is never timed out: `run_command` waits on it
+  forever, and the pass stays at `attacking` with no record of why.

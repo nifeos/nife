@@ -77,16 +77,11 @@ enumerate it, read it or walk into it. With it the capability is `REMOVE_TREE`, 
 walk. `caps rm -r logs` prints the difference before anything happens.
 
 The shell holds no `GRANT` on its file-service rendezvous, so it cannot hand a caretaker anything.
-It says what the grant is, and the progenitor, which holds the service, builds the caretaker. Five
+It says what the grant is, and the progenitor, which holds the service, builds the caretaker. Four
 shapes cannot be delivered, and each is refused with nothing spawned rather than half-granted.
 
 - A directory in a two-grant shell's second tree. The progenitor descends from the root of the first
   tree, so the same words would name a directory of the same name there.
-- The root of the shell's namespace. A caretaker's whole attenuation is one `OPENDIR` into the
-  granted directory, and the root has no name to descend into. The contract has no verb for "the
-  directory I already hold, with fewer rights". So `rm gate.txt` at the top prompt cannot be narrowed,
-  and the unnarrowed service would be the whole disk. The answer is a design fork recorded in the
-  roadmap: a `NARROW` verb on the contract, or a shell rooted one level down.
 - A directory more than one level down. That is a chain of caretakers (§92 (a caretaker is
   supervised by the client it serves)), and the progenitor builds one.
 - A set of more than one name. That grant is a `fs_nameset_caretaker`, and the progenitor builds the

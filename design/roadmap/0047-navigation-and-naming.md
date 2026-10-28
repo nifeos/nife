@@ -117,7 +117,7 @@ exceed the parent's, and who may call it?
   is host-tested only, since no gate can make the pair (`swish::bare`'s BUGS).
 - **Milestone 65.** Environment's secrets third. A secret here is an endpoint (§41 (the endpoint
   is the broker)), the service that holds one is milestone 65's (BUILT), and where a stored secret
-  comes from is §165 (PROPOSED). §220 (signed builds) recommends building no signer on nife until a
+  comes from is §165 (where a stored secret comes from). §220 (signed builds) recommends building no signer on nife until a
   build made on nife must run elsewhere. There is nothing for a navigation milestone to build here.
 - **Done.** `caps printenv` prints the inert-config values. The progenitor places the frame it
   endows children with in the boot shell, `READ` only, at `grant_plan::SHELL_CONFIG_SLOT` and maps

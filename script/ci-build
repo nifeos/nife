@@ -136,6 +136,7 @@ cd "$(dirname "$0")/.."
 # here is the defect this table exists to prevent.
 checks() {
     cat <<'TABLE'
+rule-violations|local|script/rule-violations --check
 fmt|local|script/fmt --check
 lint|local|script/lint
 image-permissions|local|script/image-permissions
@@ -164,9 +165,18 @@ fuzz|ci|script/fuzz --time 60
 bench|ci|script/bench --check && script/bench --riscv --check && script/bench --x86 --check
 cpu-matrix|ci|script/cpu-matrix
 watchdog-check|ci|script/soak-test --wedge --arch x86_64 && script/soak-test --watchdog --arch x86_64
+crate-probes|ci|script/crate-probes
 TABLE
 }
 
+# Why `rule-violations` is `local` (milestone 341 (give the three instruments nothing runs a caller),
+# §174 (a caller for each of the three uncalled instruments), ruled 2026-10-27 UTC): it reads
+# `notes/rule-violations.md` and totals strikes, which takes 0.07 seconds (three runs, 2026-10-27
+# UTC), so nothing about it is a build a developer would wait for. It is first because it is the
+# cheapest row. It fails when an open rule reaches three strikes, so the fix is the ledger's own: move
+# the rule up the ladder or mark it resolved, an architect's or the maintainer's call and never a
+# lane's. CI runs it as a step of the `lint` job, whose verdict is already required.
+#
 # Why each `ci` row is not `local`. Kept beside the tier it explains, because the three comments
 # this milestone deleted from `ci.yml` were each correct when written and each drifted.
 #
@@ -220,6 +230,12 @@ TABLE
 #   watchdog-check      two x86_64 soaks against the wall clock, about six minutes, and most of it
 #                       waiting: a watchdog is proven by letting time pass (milestone 593 (a wedged
 #                       kernel resets itself)).
+#   crate-probes        builds fifty crates.io crates against the patched `std`, about seven minutes
+#                       cold (2026-10-27 UTC), and needs the network to resolve them. It runs on every
+#                       pull request (milestone 341 (give the three instruments nothing runs a
+#                       caller), §174 (a caller for each of the three uncalled instruments)), and
+#                       seven crates are listed as known failures inside the script, each with its
+#                       reason; any other crate that stops building fails the job.
 #
 # `script/verify` (Kani, ~47 minutes) and the re-falsification sweep are deliberately absent: they
 # are `verify.yml`, a different workflow with its own sharding, and this table's claim is about the

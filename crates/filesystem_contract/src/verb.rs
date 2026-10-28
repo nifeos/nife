@@ -67,6 +67,17 @@ impl Verb {
         matches!(self.operand, Operand::Name | Operand::Rename)
     }
 
+    /// Whether the verb **hands back a handle on a directory the request names no entry of**: a
+    /// minted handle ([`Verb::mints_handle`]) with no operand ([`Operand::None`]). That is
+    /// [`fs::NARROW`] today. A name filter must refuse it at the directory it filters, because the
+    /// new handle reaches every entry and carries no filter. Derived from the two fields rather
+    /// than listed, so a verb added with this shape is refused from the day its row exists.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by the lane of milestone 328 (a grant on the root of the shell's namespace).
+    pub const fn reissues_handle(&self) -> bool {
+        self.mints_handle && matches!(self.operand, Operand::None)
+    }
+
     /// Whether the verb **mutates**, which is the one question a direction-carrying grant asks.
     /// A read-only per-file grant refuses exactly these with [`super::grant::EROFS`], so a
     /// mutating verb added to the contract is refused by a read-only grant from its first day
@@ -100,7 +111,7 @@ const fn row(
 pub const FIRST: u64 = fs::OPEN;
 /// The highest opcode in the contract, and the last row's. Raising it without adding a row is a
 /// compile error.
-pub const LAST: u64 = fs::SETMTIME_AT;
+pub const LAST: u64 = fs::NARROW;
 
 /// **Every verb the file-service contract carries, in opcode order.**
 ///
@@ -272,6 +283,10 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         false,
         dir::WRITE | dir::SETTIME,
     ),
+    // NARROW (§173 (narrowing the root of the shell's namespace)): a held directory handle and a rights mask in the second word, a second
+    // handle back, and no name. It demands no right, since attenuation cannot widen, and it is
+    // not `Operand::Name`: nothing in it is a name in the namespace a filter narrows.
+    row(fs::NARROW, "NARROW", Operand::None, true, true, 0),
 ];
 
 /// **The row for an opcode, or `None` if the contract does not carry it.**
@@ -395,6 +410,8 @@ pub mod file_grant {
         Policy::Refused(grant::ENOTDIR), // GETMTIME
         Policy::Refused(grant::ENOTDIR), // SETMTIME
         Policy::Refused(grant::ENOTDIR), // SETMTIME_AT
+        // A file capability has no directory to narrow.
+        Policy::Refused(grant::ENOTDIR), // NARROW
     ];
 
     /// `EBADF`: no such handle, and only that since 2026-08-01 (see [`POLICY`]'s BUGS).

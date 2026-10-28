@@ -67,6 +67,8 @@ const EINVAL: i32 = 22;
 const EBADF: i32 = 9;
 /// `ENOENT`: **in this scope there is no such name.** The only refusal the set itself ever produces.
 const ENOENT: i32 = 2;
+/// `EPERM`: the set capability does not carry that.
+const EPERM: i32 = 1;
 
 /// Copy `bytes` into the shared page at `off`.
 fn put_at(off: usize, bytes: &[u8]) {
@@ -172,6 +174,13 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         // The filter is at the granted directory and nowhere else: what is under a directory the
         // pattern matched was never a question the pattern asked.
         let filtered = asked == fs::ROOT;
+
+        // A verb that reissues a handle without a name would hand back the whole directory with
+        // the set filter left behind, so the granted directory refuses it (`Verb::reissues_handle`).
+        if filtered && v.reissues_handle() {
+            reply(reply_slot, reply_err(EPERM), 0);
+            continue;
+        }
 
         // A name outside the set is refused before anything is forwarded, so the refusal cannot
         // be told apart from a name not on the disk. `RENAME` needs both halves, below.
@@ -303,21 +312,27 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // rights, and die rather than come up serving a hole. Everything the client reaches, it reaches
     // through the handle this one request minted. An empty name is a channel the progenitor already
     // bound to the directory (milestone 946 (a granted file name can be longer than sixteen bytes)), whose root is the granted directory and whose rights
-    // the server holds it to, so there is nothing to descend into.
-    let dir = if n == 0 {
-        fs::ROOT
+    // the server holds it to, so there is nothing to descend into. With no name to descend by, the
+    // handle is narrowed to the granted rights by `fs::NARROW` (the root of the shell's namespace,
+    // or a bound root; §173 (narrowing the root of the shell's namespace)), and by `fs::OPENDIR` otherwise.
+    let (r0, _) = if n == 0 {
+        call(
+            FS,
+            fs::req(fs::NARROW, fs::ROOT, 0),
+            grant::spec_rights(spec),
+        )
     } else {
         put_at(0, &buf[..n]);
-        let (r0, _) = call(
+        call(
             FS,
             fs::req(fs::OPENDIR, fs::ROOT, n as u64),
             grant::spec_rights(spec),
-        );
-        if reply_errno(r0 as i64).is_some() {
-            panic!();
-        }
-        r0
+        )
     };
+    if reply_errno(r0 as i64).is_some() {
+        panic!();
+    }
+    let dir = r0;
     // A set with nothing in it is not a capability anybody meant to hand out, and the shell refuses
     // to plan one (`grant_plan::Refusal::NoMatch`). If one arrives anyway the wiring is wrong, and dying
     // here is better than serving a namespace with no names in it.

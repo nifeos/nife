@@ -98,7 +98,7 @@ The leg fails if the kernel reports killing a user thread anywhere in the transc
 script included (milestone 233 (`login` dies on every boot, and the boot says it is ready)).
 Nothing in `SWISH_CHECK_SCRIPT` traps on purpose. Its three failing lines (`wc` and `doc` with
 nothing named, `least_authority_demo` with no argument) are refusals: two at the prompt before
-anything is spawned, and one an ordinary non-zero exit. `rm gate.txt`'s refusal is an answer, not a
+anything is spawned, and one an ordinary non-zero exit. A refusal is an answer, not a
 fault. `echo $?` reading `2` right after `least_authority_demo` proves the distinction, since a
 thread the kernel killed does not set a status.
 

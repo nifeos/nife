@@ -1,12 +1,13 @@
 ---
-status: NOT-STARTED
+status: BUILT
 promoted_from: a-tenth-outsider-pass-attacks-the-confinement-claim
 raised: 2026-10-19
+built: 2026-10-27
 milestone_dependencies: 871, 920
 decision_dependencies: none
 machine_requirements: a podman machine at 6 CPUs and 8 GiB or more (script/launch-pass)
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 936. A tenth outsider pass attacks the confinement claim
 
@@ -28,14 +29,14 @@ outsider pass attacks the confinement claim), was by GLM 5.3 and did not count.
 
 ## What it needs
 
-- A commit: `main` with row 35 and its test, so the table has 35 rows.
+- A commit: `main` with row 35 and its test. The table has 36 rows.
 - From calef: GLM 5.3 tokens (the pass waits for his weekly allowance to reset), an API key made
   for the pass and revoked after, in the launcher's environment, and patagonia's podman machine at
   6 CPUs and 8 GiB or more.
 - A lane: it mints this block, claims it, runs `script/launch-pass --reviewer glm --commit <sha>`,
   reproduces each booted row one ISA at a time, and counts with `script/booted-rows`. Below the
   floor it runs the one completion round.
-- The floor: 28 of 35 rows. Rows 12 to 18 are exempt, 1 to 3 may carry from pass 7, and 27 to 29
+- The floor: 29 of 36 rows. Rows 12 to 18 are exempt, 1 to 3 may carry from pass 7, and 27 to 29
   and 33 boot on x86_64 only. Rows 34 and 35 are milestone 871's variant ground. They are rows, so
   the floor covers them and the prompt names neither.
 
@@ -46,6 +47,13 @@ outsider pass attacks the confinement claim), was by GLM 5.3 and did not count.
 - Risk 7's appendix cites the pass through the maintainer under §216 (fatal-risk facts are
   correctable, and verdicts are the architect's). Moving the color stays calef's.
 
+## Follow-on
+
+- **Proposed.** `design/roadmap/proposals/a-map-into-refuses-a-frame-mapped-twice-with-different-flags.md`:
+  the mandatory fix for the claim 11 alias escape. It waits for the refusal rule and a number.
+- **Recorded.** `notes/scripts/outsider-passes.md`: the launcher's `models()` dies on truncated
+  `session export` output; a maintainer lane teaches it the exit status and fail soft.
+
 ## Index row
 
-Risk 7 needs two consecutive clean outsider passes, at least one by a non-Anthropic model or a human, and its count is 0. This is a fresh GLM 5.3 pass over all 35 rows of `notes/confinement-claims.md`, including the package fetch path no pass has attacked.
+Risk 7 needs two consecutive clean outsider passes, at least one by a non-Anthropic model or a human, and its count is 0. This is a fresh GLM 5.3 pass over all 36 rows of `notes/confinement-claims.md`, including the package fetch path no pass has attacked.

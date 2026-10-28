@@ -807,7 +807,7 @@ pub(super) struct DirWords {
 /// two words hold (`grant::WORDS_NAME`, milestone 946 (a granted file name can be longer than sixteen bytes)) does: the program is told
 /// `grant::WHOLE_NAMESPACE` and the grant becomes a set of that one name, which
 /// `fs_nameset_caretaker` serves and [`spawn_dir_grant`] writes on a page. Nothing between here and
-/// the process decodes the words. Refused with nothing spawned: a second tree, the namespace root,
+/// the process decodes the words. The namespace root travels as an empty directory name, which the caretaker narrows with `fs::NARROW` (§173 (narrowing the root of the shell's namespace)). Refused with nothing spawned: a second tree,
 /// a directory deeper than one level, a set of more than one name, and a directory whose name does
 /// not fit in a grant's two argument words. See `notes/swish-language/running.md`, "The directory
 /// grant".
@@ -824,13 +824,11 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     }
     // The directory the caretaker descends into. One component, because that is one `OPENDIR`; a
     // deeper path is a *chain* of caretakers (DECISIONS §92 names it as the case supervision was
-    // chosen for) and the progenitor builds one.
-    let dir = match g.directory.depth() {
-        0 => {
-            return Err(
-                b"  that names the root of this shell's namespace, and a caretaker is built by \n  descending into a directory; there is no name here to descend into\n",
-            );
-        }
+    // chosen for) and the progenitor builds one. **The root of this shell's namespace has no name
+    // to descend into, so its grant is an empty name**, which the caretaker reads as "narrow the
+    // directory you hold" (`fs::NARROW`, §173).
+    let dir: &[u8] = match g.directory.depth() {
+        0 => b"",
         1 => g.directory.component(0),
         _ => {
             return Err(
@@ -843,8 +841,13 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
             b"  a set of names is delivered by a nameset caretaker, and the progenitor builds the subtree \n  one; name a single file\n",
         );
     };
-    let Some((dir_lo, dir_hi)) = filesystem_contract::grant::pack_name(dir) else {
-        return Err(b"  that name does not fit in a grant's two argument words\n");
+    let (dir_lo, dir_hi) = if dir.is_empty() {
+        (0, 0)
+    } else {
+        let Some(words) = filesystem_contract::grant::pack_name(dir) else {
+            return Err(b"  that name does not fit in a grant's two argument words\n");
+        };
+        words
     };
     // What `-r` buys, stated as the difference between two capabilities rather than as a branch in
     // the program: REMOVE alone cannot even look at what is under the directory.

@@ -220,6 +220,7 @@ const VERBS: &[u64] = &[
     fs::GETMTIME,
     fs::SETMTIME,
     fs::SETMTIME_AT,
+    fs::NARROW,
     fs::BIND,
     fs::UNBIND,
 ];
@@ -277,6 +278,7 @@ impl Session {
                 (self.name(u, 0)?, 0)
             }
             fs::SETMTIME_AT => (self.name(u, 0)?, small),
+            fs::NARROW => (0, Self::rights(u)?),
             fs::READ => (small as usize, u.int_in_range(0..=600)?),
             fs::WRITE => {
                 let fill = u.arbitrary::<u8>()?;
@@ -350,7 +352,7 @@ impl Session {
             return r0;
         }
         match code {
-            fs::OPEN | fs::OPENDIR | fs::CREATE | fs::MKDIR => {
+            fs::OPEN | fs::OPENDIR | fs::CREATE | fs::MKDIR | fs::NARROW => {
                 assert_ne!(r0 as u64, fs::ROOT, "a minted handle shadowed ROOT");
                 let owner = if model == Model::Bound { badge } else { 0 };
                 self.owners.insert(r0 as u64, owner);
