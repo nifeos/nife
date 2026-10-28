@@ -82,6 +82,7 @@ pub(super) fn dispatch(nav: &mut Nav, cmd: &[u8]) {
         Route::Capabilities(tail) => capabilities(nav, tail),
         Route::Time(tail) => time_command(nav, tail),
         Route::Xargs(tail) => xargs(nav, tail),
+        Route::Scope(tail) => scope_block(nav, tail),
         Route::One(stage) => dispatch_one(nav, stage),
         Route::Pipeline(l) => pipeline(nav, l),
         Route::Cannot(r) => say(Say::Cannot(r)),
@@ -208,6 +209,7 @@ pub(super) fn dispatch_one(nav: &mut Nav, cmd: &[u8]) {
         Command::Capabilities(tail) => capabilities(nav, tail),
         Command::Time(tail) => time_command(nav, tail),
         Command::Xargs(tail) => xargs(nav, tail),
+        Command::Scope(tail) => scope_block(nav, tail),
         Command::Pwd => print_pwd(nav),
         // **Search, which grants nothing** (milestone 40 phase 2). It is here rather than in
         // [`builtin`] because its answer is columns of text rather than a listing, so the witness's

@@ -17,7 +17,8 @@ milestone adds the three things that were missing and settles the one design for
 
 New forms follow [§312 (swish has one way to do each
 job)](../design/decisions/0312-swish-has-one-way-to-do-each-job.md). Grouping is the scoped block of
-[§160 (what a subshell copies)](../design/decisions/0160-what-a-subshell-copies.md).
+[§160 (what a subshell copies)](../design/decisions/0160-what-a-subshell-copies.md), in
+[`swish-language/scoped-block.md`](swish-language/scoped-block.md).
 
 Two rows of the roadmap's table were already done when this was written: `>>` and `2>` landed with
 milestone 50's later work on 2026-08-03. See notes/pipes.md.
