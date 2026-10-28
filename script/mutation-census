@@ -22,13 +22,21 @@
 #
 # The record is `notes/project-metrics/mutation-census.csv`, one row per crate per census:
 #
-#     census,run,crate,tested,caught,missed,timeout,unviable
+#     census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 #
 # `tested` is the other four added up, so a truncated or double-counted row fails its own
 # arithmetic rather than looking plausible. `crate` is **the name the run recorded**, never
 # rewritten, for the reason the blind-`sed` scar in AGENTS.md gives: a sweep that renames history to
 # match the present destroys the evidence that the present is different. Resolution happens at
 # comparison time, out of the rename table below.
+#
+# **`real_holes` is the count the mutation measurement exists for**: the survivors no algebraic
+# argument answers, per helpers/mutation_real_holes.py's classes (a `gap` row, a `killed` row the
+# census contradicts, no row, an `equivalent` row that rests on today's callers or on this harness).
+# `--add` computes it from the census's own shard output against the triage file of the recording
+# day, so the column is a point-in-time reading that never moves; the live reading, regenerated per
+# census, is notes/mutation-testing/survivor-classification.md. A blank cell means the census was
+# recorded before the column existed; the classification page is the only source for those.
 #
 # **`killed` counts a timeout as a kill and excludes unviable mutants from the denominator**, which
 # is notes/mutation-testing.md's definition ("`killed%` counts a timeout as a kill, because every
@@ -132,6 +140,7 @@ cd "$(dirname "$0")/.."
 exec python3 - "$@" <<'PYEOF'
 import collections
 import csv
+import io
 import json
 import os
 import pathlib
@@ -140,11 +149,27 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import typing
+
+# helpers/mutation_real_holes.py classes the survivors and counts the real holes; the import keeps
+# to helpers like script/metrics's, and `dont_write_bytecode` (script/lint's python) keeps a
+# __pycache__ out of a dirty worktree.
+sys.path.insert(0, "helpers")
+import mutation_real_holes
 
 RECORD = pathlib.Path("notes/project-metrics/mutation-census.csv")
 RENAMES = pathlib.Path("notes/project-metrics/mutation-census-renames.csv")
-FIELDS = ["census", "run", "crate", "tested", "caught", "missed", "timeout", "unviable"]
+FIELDS = ["census", "run", "crate", "tested", "caught", "missed", "timeout", "unviable", "real_holes"]
 KINDS = ["caught", "missed", "timeout", "unviable"]
+
+
+class Row(typing.NamedTuple):
+    """One recorded crate: the run that measured it, its four counts, and its real holes (a blank
+    string for a census recorded before the column existed)."""
+
+    run: str
+    counts: collections.Counter
+    real_holes: str
 
 
 def usage():
@@ -177,7 +202,8 @@ def resolve(name, chain):
 
 
 def load_record():
-    """census -> crate -> Counter. Raw crate names, as recorded."""
+    """census -> crate -> Row. Raw crate names, as recorded. A record written before the
+    `real_holes` column reads with blank cells, and the next write brings it to the new shape."""
     out = collections.defaultdict(dict)
     if not RECORD.exists():
         return out
@@ -190,7 +216,8 @@ def load_record():
                 file=sys.stderr,
             )
             sys.exit(1)
-        out[row["census"]][row["crate"]] = (row["run"], collections.Counter(counts))
+        out[row["census"]][row["crate"]] = Row(row["run"], collections.Counter(counts),
+                                               row.get("real_holes") or "")
     return out
 
 
@@ -201,9 +228,10 @@ def write_record(record):
         writer.writerow(FIELDS)
         for census in sorted(record):
             for crate in sorted(record[census]):
-                run, c = record[census][crate]
+                row = record[census][crate]
                 writer.writerow(
-                    [census, run, crate, sum(c[k] for k in KINDS)] + [c[k] for k in KINDS]
+                    [census, row.run, crate, sum(row.counts[k] for k in KINDS)]
+                    + [row.counts[k] for k in KINDS] + [row.real_holes]
                 )
 
 
@@ -248,13 +276,19 @@ def counts_from_dirs(dirs):
     return crates
 
 
-def add(census, run, crates):
+def add(census, run, crates, holes=None):
+    """Record one census. `holes` is crate -> real-hole count from the census's own shard output;
+    None for a census recorded without one (the baseline), which leaves the cell blank."""
     record = load_record()
-    record[census] = {name: (run, c) for name, c in crates.items()}
+    record[census] = {
+        name: Row(run, c, "" if holes is None else str(holes.get(name, 0)))
+        for name, c in crates.items()
+    }
     t = total(crates.values())
     print(
         f"==> {len(crates)} crates, {sum(t[k] for k in KINDS):,} mutants, "
-        f"{viable(t):,} viable, {killed(t):.1f}% killed"
+        f"{viable(t):,} viable, {killed(t):.1f}% killed, "
+        f"{sum(int(h) for h in (holes or {}).values()):,} real holes"
     )
     write_record(record)
     print(f"==> wrote {len(crates)} rows to {RECORD}")
@@ -299,7 +333,8 @@ def add_run(run_id):
             print(f"mutation-census: run {run_id} has no surviving outcome artifacts", file=sys.stderr)
             return 2
         print(f"==> {len(dirs)} shard artifacts")
-        return add(census, run_id, counts_from_dirs(dirs))
+        return add(census, run_id, counts_from_dirs(dirs),
+                   mutation_real_holes.real_holes_from_shards(dirs))
 
 
 BASELINE = pathlib.Path(".cargo/mutants-baseline.txt")
@@ -337,7 +372,7 @@ def add_baseline(check=False):
         print(f"mutation-census: {BASELINE} names the {census} census, which {RECORD} lacks", file=sys.stderr)
         return 1
     if census in record:
-        held = {name: c for name, (_, c) in record[census].items()}
+        held = {name: row.counts for name, row in record[census].items()}
         if held != crates:
             print(f"mutation-census: {BASELINE} disagrees with the record's {census} rows", file=sys.stderr)
             return 1
@@ -370,7 +405,7 @@ def save_baseline(census):
             print(f"mutation-census: the {census} census lacks {', '.join(lost)}, which the current "
                   "baseline holds and the tree still has; a partial census is not a baseline", file=sys.stderr)
             return 1
-    runs = {run for run, _ in rows.values()}
+    runs = {row.run for row in rows.values()}
     if len(runs) != 1:
         print(f"mutation-census: the {census} census has rows from {len(runs)} runs", file=sys.stderr)
         return 1
@@ -379,7 +414,7 @@ def save_baseline(census):
         fh.write(f"# census={census} run={runs.pop()}\n")
         fh.write("# The prose baseline, and what each survivor means, is notes/mutation-testing.md.\n")
         for name in sorted(rows):
-            c = rows[name][1]
+            c = rows[name].counts
             fh.write(f"{name} {c['caught']} {c['missed']} {c['timeout']} {c['unviable']}\n")
     print(f"==> wrote {len(rows)} crates from the {census} census to {BASELINE}")
     return 0
@@ -422,25 +457,43 @@ def show(census):
         print(f"mutation-census: no census {census} on record", file=sys.stderr)
         return 2
     crates = record[census]
-    run = next(iter(crates.values()))[0]
-    print(f"census {census} (run {run}), {len(crates)} crates")
-    print(f"{'crate':<44}{'caught':>7}{'missed':>8}{'timeout':>9}{'unviable':>10}{'viable':>8}{'killed':>9}")
+    run = next(iter(crates.values())).run
+    known = sum(1 for row in crates.values() if row.real_holes != "")
+    print(f"census {census} (run {run}), {len(crates)} crates"
+          + ("" if known else ", recorded before real holes were measured"))
+    print(f"{'crate':<44}{'caught':>7}{'missed':>8}{'timeout':>9}{'unviable':>10}{'viable':>8}"
+          f"{'killed':>9}{'real holes':>12}")
     for name in sorted(crates):
-        c = crates[name][1]
-        print(f"{name:<44}{c['caught']:>7}{c['missed']:>8}{c['timeout']:>9}{c['unviable']:>10}"
-              f"{viable(c):>8}{killed(c):>8.1f}%")
-    t = total(c for _, c in crates.values())
+        row = crates[name]
+        holes = row.real_holes or "-"
+        print(f"{name:<44}{row.counts['caught']:>7}{row.counts['missed']:>8}{row.counts['timeout']:>9}"
+              f"{row.counts['unviable']:>10}{viable(row.counts):>8}{killed(row.counts):>8.1f}%"
+              f"{holes:>12}")
+    t = total(row.counts for row in crates.values())
+    holes = total_holes(crates)
     print(f"{'TOTAL':<44}{t['caught']:>7}{t['missed']:>8}{t['timeout']:>9}{t['unviable']:>10}"
-          f"{viable(t):>8}{killed(t):>8.1f}%")
+          f"{viable(t):>8}{killed(t):>8.1f}%{holes:>12}")
     return 0
 
 
+def total_holes(crates):
+    """The census's real holes summed over the rows that carry a count, or `-` when none do."""
+    known = [int(row.real_holes) for row in crates.values() if row.real_holes != ""]
+    return str(sum(known)) if known else "-"
+
+
 def by_current_name(crates, chain):
-    """Fold a census's raw crate names onto today's names, so two censuses join across renames."""
+    """Fold a census's raw crate names onto today's names, so two censuses join across renames.
+    Returns (crate -> counts, crate -> real holes or None); a crate recorded before the column, or
+    a rename group any of whose members lacks a count, carries None."""
     out = collections.defaultdict(collections.Counter)
-    for name, (_, c) in crates.items():
-        out[resolve(name, chain)].update(c)
-    return out
+    holes = collections.defaultdict(lambda: None)
+    for name, row in crates.items():
+        out[resolve(name, chain)].update(row.counts)
+        if row.real_holes != "":
+            got = int(row.real_holes)
+            holes[resolve(name, chain)] = (holes[resolve(name, chain)] or 0) + got
+    return out, holes
 
 
 def compare(a, b):
@@ -450,17 +503,24 @@ def compare(a, b):
             print(f"mutation-census: no census {census} on record", file=sys.stderr)
             return 2
     chain = load_renames()
-    ca = by_current_name(record[a], chain)
-    cb = by_current_name(record[b], chain)
+    ca, ha = by_current_name(record[a], chain)
+    cb, hb = by_current_name(record[b], chain)
     both = sorted(set(ca) & set(cb))
     only_a = sorted(set(ca) - set(cb))
     only_b = sorted(set(cb) - set(ca))
 
     ta, tb = total(ca[k] for k in both), total(cb[k] for k in both)
     rate_a, rate_b = killed(ta), killed(tb)
+    holes_a = sum(ha[k] for k in both if ha[k] is not None and hb[k] is not None) \
+        if all(ha[k] is not None and hb[k] is not None for k in both) else None
+    holes_b = sum(hb[k] for k in both if ha[k] is not None and hb[k] is not None) \
+        if holes_a is not None else None
     print(f"{len(both)} crates in both, {len(only_a)} only in {a}, {len(only_b)} only in {b}")
     print(f"killed {rate_a:.1f}% -> {rate_b:.1f}% over the crates in both ({rate_b - rate_a:+.2f} points)")
-    print(f"survivors {ta['missed']:,} -> {tb['missed']:,}, viable {viable(ta):,} -> {viable(tb):,}")
+    print(f"survivors {ta['missed']:,} -> {tb['missed']:,}, viable {viable(ta):,} -> {viable(tb):,}"
+          + (f", real holes {holes_a:,} -> {holes_b:,}" if holes_a is not None else
+             ", real holes - (a census recorded before the column)" if any(
+                 ha[k] is None or hb[k] is None for k in both) else ""))
     print()
 
     # The exact additive decomposition of the corpus move. Summed over crates this telescopes to
@@ -472,16 +532,19 @@ def compare(a, b):
         ka = ca[name]["caught"] + ca[name]["timeout"]
         kb = cb[name]["caught"] + cb[name]["timeout"]
         pts = 100.0 * ((kb - ka) - (rate_a / 100.0) * (viable(cb[name]) - viable(ca[name]))) / vb
-        rows.append((name, ca[name], cb[name], pts))
+        rows.append((name, ca[name], cb[name], pts, ha[name], hb[name]))
     rows.sort(key=lambda r: -abs(r[3]))
 
-    print(f"{'crate':<44}{'viable':>16}{'killed':>18}{'survivors':>16}{'points':>9}")
-    for name, x, y, pts in rows:
-        if abs(pts) < 0.005 and x["missed"] == y["missed"]:
+    print(f"{'crate':<44}{'viable':>16}{'killed':>18}{'survivors':>16}{'points':>9}{'real holes':>17}")
+    for name, x, y, pts, xa, xb in rows:
+        if abs(pts) < 0.005 and x["missed"] == y["missed"] and xa == xb:
             continue
+        holes = f"{xa:>7} ->{xb:>5}" if xa is not None and xb is not None else \
+            f"{'-':>7} ->{'-':>5}" if xa is None and xb is None else \
+            f"{xa if xa is not None else '-':>7} ->{xb if xb is not None else '-':>5}"
         print(f"{name:<44}{viable(x):>7} ->{viable(y):>6}"
               f"{killed(x):>11.1f}% ->{killed(y):>6.1f}%"
-              f"{x['missed']:>9} ->{y['missed']:>5}{pts:>9.2f}")
+              f"{x['missed']:>9} ->{y['missed']:>5}{pts:>9.2f}{holes:>17}")
     for name in only_a:
         c = ca[name]
         print(f"{name:<44}{viable(c):>7} ->{'-':>6}{killed(c):>11.1f}% ->{'-':>7}"
@@ -492,7 +555,8 @@ def compare(a, b):
               f"{'-':>10} ->{c['missed']:>5}{'(new)':>9}")
     print()
     print("`points` sums to the corpus move above; a crate moves it by changing its own rate or by "
-          "growing against the corpus average.")
+          "growing against the corpus average. `real holes` reads from the census record's own "
+          "column, so a census recorded before the column shows `-`.")
     return 0
 
 
@@ -504,14 +568,16 @@ def listing():
     print(f"{'census':<12}{'run':<14}{'crates':>7}{'mutants':>9}{'viable':>8}{'survivors':>10}{'killed':>9}")
     for census in sorted(record):
         crates = record[census]
-        run = next(iter(crates.values()))[0]
-        t = total(c for _, c in crates.values())
+        run = next(iter(crates.values())).run
+        t = total(row.counts for row in crates.values())
         print(f"{census:<12}{run:<14}{len(crates):>7}{sum(t[k] for k in KINDS):>9}"
               f"{viable(t):>8}{t['missed']:>10}{killed(t):>8.1f}%")
     return 0
 
 
 def main(argv):
+    if argv[:1] == ["--selftest"]:
+        return selftest()
     if not argv:
         return listing()
     mode, rest = argv[0], argv[1:]
@@ -534,8 +600,65 @@ def main(argv):
     if mode == "--add-run" and len(rest) == 1:
         return add_run(rest[0])
     if mode == "--add" and len(rest) >= 3:
-        return add(rest[0], rest[1], counts_from_dirs(rest[2:]))
+        return add(rest[0], rest[1], counts_from_dirs(rest[2:]),
+                   mutation_real_holes.real_holes_from_shards(rest[2:]))
     return usage()
+
+
+def selftest():
+    """Fixtures for the record's own column: the round-trip, a pre-column file, the report and the
+    comparison. No git, no network, no census."""
+    global RECORD
+    import contextlib
+    saved = RECORD
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            RECORD = pathlib.Path(tmp) / "record.csv"
+            record = {
+                "2026-10-26": {"c": Row("1", collections.Counter(caught=8, missed=2, timeout=0,
+                                                                 unviable=1), "2")},
+                "2026-10-19": {"c": Row("0", collections.Counter(caught=9, missed=1, timeout=0,
+                                                                 unviable=1), "")},
+            }
+            write_record(record)
+            got = load_record()
+            assert got["2026-10-26"]["c"].real_holes == "2", got
+            assert got["2026-10-19"]["c"].real_holes == "", got
+            assert got["2026-10-26"]["c"].counts["missed"] == 2, got
+            # --add records the holes it is given, and a census without one records blank cells
+            add("2026-11-02", "5", {"c": collections.Counter(caught=9, missed=1, timeout=0,
+                                                             unviable=0)}, holes={"c": 0})
+            add("2026-11-09", "6", {"c": collections.Counter(caught=10, missed=0, timeout=0,
+                                                             unviable=0)})
+            got = load_record()
+            assert got["2026-11-02"]["c"].real_holes == "0", got
+            assert got["2026-11-09"]["c"].real_holes == "", got
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                show("2026-10-26")
+                show("2026-10-19")
+                compare("2026-10-19", "2026-10-26")
+                compare("2026-11-02", "2026-10-26")
+            text = out.getvalue()
+            assert text.count("real holes") >= 4, text
+            assert "80.0%           2" in text, text
+            assert "recorded before real holes were measured" in text, text
+            assert "real holes - (a census recorded before the column)" in text, text
+            assert "- ->    2" in text, text
+            assert "real holes 0 -> 2" in text, text
+            # a record written before the column reads with blank cells everywhere
+            RECORD.write_text("census,run,crate,tested,caught,missed,timeout,unviable\n"
+                              "2026-10-12,9,x,10,9,1,0,0\n")
+            got = load_record()
+            assert got["2026-10-12"]["x"].real_holes == "", got
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                show("2026-10-12")
+            assert "recorded before real holes were measured" in out.getvalue()
+    finally:
+        RECORD = saved
+    print("mutation-census: selftest ok")
+    return 0
 
 
 sys.exit(main(sys.argv[1:]))

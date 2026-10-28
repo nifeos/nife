@@ -108,9 +108,11 @@ a crate or a shape tree-wide.
 
 ## What done means
 
-The headline is real holes: census survivors that no algebraic argument answers. After this work
-that means `caller` rows, `gap` rows and anything unrowed. Today the number is unknown and at most
-196, the 712 less the two noise shapes. Measured on the first census after the last part lands:
+The headline is real holes: census survivors that no algebraic argument answers. Part 1 measured
+it: the 2026-10-26 census holds 32 real holes, at most 103 if every unrowed noise-shape candidate
+is one, and the count lives in
+`notes/mutation-testing/survivor-classification.md` and the census record's `real_holes` column.
+Measured on the first census after the last part lands:
 
 - No census survivor has a `killed` row or no row at all. Today there are 94.
 - The census holds no disjoint-bits or zero-shift survivor. Each one either leaves through a

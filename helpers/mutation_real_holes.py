@@ -62,7 +62,6 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import mutation_inflow as mi  # noqa: E402
-
 SURVIVORS = pathlib.Path("notes/project-metrics/mutation-survivors")
 TRIAGE = pathlib.Path("notes/project-metrics/mutation-triage.csv")
 RENAMES = pathlib.Path("notes/project-metrics/mutation-census-renames.csv")
@@ -213,6 +212,21 @@ def real(counter):
     return sum(counter[c] for c in REAL)
 
 
+def real_holes_from_shards(dirs, root="."):
+    """crate (resolved) -> real-hole count, from one census's own shard directories.
+
+    script/mutation-census --add calls this as it records a census, so the record carries each
+    census's real holes beside its counts, read against the triage file of the recording day. The
+    outcome files hold the census's own missed mutants; a timeout is the companion proposal's
+    survivor and is not read here.
+    """
+    root = pathlib.Path(root)
+    chain = mi.load_renames(root / RENAMES)
+    triage = mi.read_triage(root / TRIAGE, chain)
+    counts = mi.counts(mi.read_shards(dirs), chain)
+    return {crate: real(c) for crate, c in per_crate(classify(counts, triage)).items()}
+
+
 def render_csv(rows):
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
@@ -329,6 +343,25 @@ def selftest():
     t = per_crate(rows)
     assert real(t["b"]) == 1 and real(t["a"]) == 0
     assert normal("run 39238962856 on 2026-10-12") == normal("run 1 on 2026-10-13")
+    # the count a census records, from its own shard output: a gap row is a hole, a disjoint-bits
+    # row is not, and a renamed crate's mutant meets the row written under the new name
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        (root / "notes/project-metrics").mkdir(parents=True)
+        (root / TRIAGE).write_text(
+            "crate,function,mutation,disposition,reason,kind,verified,home\n"
+            "c,f,replace < with <=,gap,unowned,,,\n"
+            "d,g,replace | with ^,equivalent,disjoint bits,algebraic,2026-10-27,\n")
+        shard = root / "shard"
+        shard.mkdir()
+        (shard / "missed.txt").write_text(
+            "crates/c/src/lib.rs:1:1: replace < with <= in f\n"
+            "crates/c/src/lib.rs:2:1: replace < with <= in f\n"
+            "crates/old_name/src/lib.rs:3:1: replace | with ^\n")
+        (root / RENAMES).write_text("old,new,commit,date\nold_name,d,,\n")
+        got = real_holes_from_shards([shard], root)
+        assert got == {"c": 2, "d": 0}, got
     print("mutation_real_holes: selftest ok")
     return 0
 

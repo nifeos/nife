@@ -18,7 +18,7 @@ The input is the census's own shard output (missed.txt), the same files `script/
 THE ARGUMENT. cargo-mutants swaps one operator token, so the question is whether that one swap
 changes the line's value. Around the swap the line holds a chain of the same operator family
 (`RCS | DPSLP | WOL`, `1 << 6`), because that is how register words and bit tests are written. The
-chain, not the pair of neighbours, is the operand structure Rust parses, and the chain is what one
+chain, not the pair of adjacent operands, is the operand structure Rust parses, and the chain is what one
 line plus the consts beside it can decide:
 
 - an or-family chain (`|`, `^`) is swap-insensitive exactly when no two of its operands share a
