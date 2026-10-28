@@ -130,11 +130,12 @@ All four are fields of `Transport::Pci`, set in one place, `Transport::pci`, fro
 checkable. One gap: `notify_addr[q]` is zero until `setup_queue` resolves it, so `notify` refuses a
 queue whose doorbell is not ready rather than write through `phys_to_virt(0)`.
 
-`MAXIMUM_DEVICES` is an exception and a foot gun. Nothing unregisters, so it counts the devices a
-boot has ever wired, and the test suite spawns a driver per gate (tests share a transport where they
-can). The fix is reuse on driver death, which needs a generational name so a stale `Object::Virtio`
-capability cannot resolve to a different device. That is a design fork under §16 (object
-revocation). Milestone 647 (a virtio slot should come back when its driver dies) proposes it.
+A transport's slot comes back when its driver dies (§16 (object revocation)). The table is a `generational_table::Table`, so a released device's capability fails and never
+names its successor. A starter binds the driver thread with
+`bind_to_current_thread`; its removal from the thread table runs `unregister`, which resets the
+device and frees the slot. An unbound device lives for the boot, which keeps
+`entropy_service::ensure`'s one service per device. BUGS: release leaves a PCIe IOMMU
+domain in place, so re-registering one leaks its page-table frames.
 
 Two test hooks go around the shadow ring to reach the hardware. `provoke_iommu_escape` points queue
 0's available ring at a frame the IOMMU domain does not include and kicks; the device's first read

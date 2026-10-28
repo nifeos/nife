@@ -228,7 +228,7 @@ pub(super) fn interrupt_acknowledge(intid: u32) -> Result<i64, Error> {
 /// `Virtio`'s four register-level methods (`READ_REGISTER`, `WRITE_REGISTER`, `SETUP_QUEUE`,
 /// `NOTIFY`). `DeviceRefused` for a DMA address outside the device's confinement.
 #[inline(never)]
-pub(super) fn virtio_invoke(id: usize, method: u64, a0: u64, a1: u64) -> Result<i64, Error> {
+pub(super) fn virtio_invoke(id: u64, method: u64, a0: u64, a1: u64) -> Result<i64, Error> {
     use crate::virtio::TransportError;
     let map = |e: TransportError| match e {
         TransportError::DmaEscape => Error::DeviceRefused,

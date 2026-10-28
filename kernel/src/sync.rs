@@ -44,7 +44,8 @@ pub mod rank {
     /// which it retypes from while held; below `IPC_TABLES`, under which spawn and the reaper run.
     pub const KMEM: u32 = 59;
 
-    /// The virtio transport table, taken from a syscall with no other lock held.
+    /// The virtio transport table, taken from a syscall with no other lock held, and from the thread
+    /// table's removal (under `IPC_TABLES`) to release a dead driver's device.
     pub(crate) const VIRTIO: u32 = 56;
 
     /// The IOMMU driver's device: the SMMUv3's or RISC-V IOMMU's tables and queues. A leaf; the DMA

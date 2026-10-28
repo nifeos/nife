@@ -37,6 +37,22 @@ ceiling, and it binds on every lane that adds a confined-device test.
 A test that registers and releases more transports than `MAX_DEVICES` in one boot passes, and a
 capability to a released device is refused rather than resolving to its successor.
 
+## How it meets `entropy_service::ensure`
+
+`ensure` wires one service per device because a second would reset the device under the first.
+The entropy service's transport has no owner, so it keeps its slot for the boot and nothing
+releases it: a second driver cannot obtain the device while the first lives. A transport reaches a
+second driver only after the first driver's thread has left the thread table, and the reset on
+release makes that handover safe. `ensure`'s once-per-boot cache stays as it was.
+
+## What the build does
+
+The device table is a `generational_table::Table`, and `Object::Virtio` carries the generational
+name. A starter binds the driver thread with `virtio::bind_to_current_thread`, and `Threads::remove`
+runs `virtio::release_owned_by`, which resets the device, bumps the generation and frees the slot
+and the shadow frame. `MAXIMUM_DEVICES` falls from 34 to 12. The tests live in
+`kernel/src/virtio/tests.rs`.
+
 ## Index row
 
 The virtio device table never reuses a slot, so every confined-device test costs one for the rest
