@@ -1,0 +1,518 @@
+# census=2026-10-26 run=40311212712 sha=bb08c6eff380572021a8d421c52c0de6e5d83885
+crate,function,mutation,path,line,verdict,detail
+abi,admitted,replace | with ^,crates/abi/src/futex.rs,17,const,128 | 2 are pairwise disjoint
+abi,,replace << with >>,crates/abi/src/rights.rs,2,literal,a zero feed or amount: 1 and 0
+abi,,replace | with ^,crates/abi/src/rights.rs,25,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
+abi,,replace | with ^,crates/abi/src/rights.rs,25,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
+abi,,replace | with ^,crates/abi/src/rights.rs,25,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
+abi,,replace | with ^,crates/abi/src/rights.rs,25,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
+abi,RegisterShape::to_word,replace | with ^,crates/abi/src/uart.rs,54,site,self.reg_shift as u64 | (self.reg_io_width as u64) << 8
+boot_slot,,replace | with ^,crates/boot_slot/src/lib.rs,49,site,const OWNED: u64 = (0xF << PRIORITY_SHIFT) | (0xF << TRIES_SHIFT) | (1 << SUCCESSFUL_BIT);
+boot_slot,,replace | with ^,crates/boot_slot/src/lib.rs,49,site,const OWNED: u64 = (0xF << PRIORITY_SHIFT) | (0xF << TRIES_SHIFT) | (1 << SUCCESSFUL_BIT);
+boot_slot,State::into_attributes,replace | with ^,crates/boot_slot/src/lib.rs,201,site,| (priority << PRIORITY_SHIFT)
+boot_slot,State::into_attributes,replace | with ^,crates/boot_slot/src/lib.rs,202,site,| (tries << TRIES_SHIFT)
+boot_slot,State::into_attributes,replace | with ^,crates/boot_slot/src/lib.rs,203,site,| (successful << SUCCESSFUL_BIT)
+byte_sink_contract,req,replace | with ^,crates/byte_sink_contract/src/lib.rs,52,site,(operation << OPERATION_SHIFT) | (len & 0xffff_ffff)
+byte_sink_contract,with_severity,replace | with ^,crates/byte_sink_contract/src/lib.rs,165,site,(w0 & !(0xff << SEVERITY_SHIFT)) | (((level as u64) + 1) << SEVERITY_SHIFT)
+c_seam,,replace << with >>,crates/c_seam/src/lib.rs,183,literal,a zero feed or amount: 1 and 0
+capability,,replace << with >>,crates/capability/src/lib.rs,58,literal,a zero feed or amount: 1 and 0
+capability,note_peak,replace | with ^,crates/capability/src/lib.rs,503,site,let packed = ((peak as u32) << 16) | ceiling;
+capability_witness_contract,,replace << with >>,crates/capability_witness_contract/src/lib.rs,100,literal,a zero feed or amount: 1 and 0
+capability_witness_contract,,replace | with ^,crates/capability_witness_contract/src/lib.rs,115,const,1 | 2 | 4 | 8 | 16 | 32 are pairwise disjoint
+capability_witness_contract,,replace | with ^,crates/capability_witness_contract/src/lib.rs,115,const,1 | 2 | 4 | 8 | 16 | 32 are pairwise disjoint
+capability_witness_contract,,replace | with ^,crates/capability_witness_contract/src/lib.rs,115,const,1 | 2 | 4 | 8 | 16 | 32 are pairwise disjoint
+capability_witness_contract,,replace | with ^,crates/capability_witness_contract/src/lib.rs,115,const,1 | 2 | 4 | 8 | 16 | 32 are pairwise disjoint
+capability_witness_contract,,replace | with ^,crates/capability_witness_contract/src/lib.rs,115,const,1 | 2 | 4 | 8 | 16 | 32 are pairwise disjoint
+compositor,window_pixel,replace | with ^,crates/compositor/src/lib.rs,304,site,(r << 16) | (g << 8) | b
+compositor,window_pixel,replace | with ^,crates/compositor/src/lib.rs,304,site,(r << 16) | (g << 8) | b
+compositor,background_pixel,replace | with ^,crates/compositor/src/lib.rs,315,site,(r << 16) | (g << 8) | b
+compositor,background_pixel,replace | with ^,crates/compositor/src/lib.rs,315,site,(r << 16) | (g << 8) | b
+coremark,fsm_work,replace >> with <<,crates/coremark/src/lib.rs,203,site,"c = crc16(c, (n >> 16) as u16);"
+credential_contract,req,replace | with ^,crates/credential_contract/src/lib.rs,102,site,(operation << OPERATION_SHIFT) | ((id_len as u64 & 0xffff) << 16) | (secret_len as u64 & 0xffff)
+credential_contract,req,replace | with ^,crates/credential_contract/src/lib.rs,102,site,(operation << OPERATION_SHIFT) | ((id_len as u64 & 0xffff) << 16) | (secret_len as u64 & 0xffff)
+designware_ethernet,probe_frame,replace | with ^,crates/designware_ethernet/src/coherence.rs,39,site,*b = 0x40 | (i as u8 & 0x3f);
+designware_ethernet,rx_queue_mode,replace | with ^,crates/designware_ethernet/src/controller.rs,153,site,mode &= !(regs::MTL_RXQ_OP_MODE_RSF | regs::MTL_RXQ_OP_MODE_RTC_MASK);
+designware_ethernet,rx_queue_mode,replace | with ^,crates/designware_ethernet/src/controller.rs,164,site,mode &= !((0x3f << 14) | (0x3f << 8));
+designware_ethernet,rx_queue_mode,replace | with ^,crates/designware_ethernet/src/controller.rs,165,site,mode |= (0x3 << 14) | (0x1 << 8);
+designware_ethernet,tx_queue_mode,replace | with ^,crates/designware_ethernet/src/controller.rs,174,site,mode &= !(regs::MTL_TXQ_OP_MODE_TSF | regs::MTL_TXQ_OP_MODE_TTC_MASK);
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,228,site,| osr << regs::DMA_SYSBUS_MODE_WR_OSR_LMT_SHIFT);
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,230,site,| (bus.write_outstanding & osr) << regs::DMA_SYSBUS_MODE_WR_OSR_LMT_SHIFT
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,231,site,| bus.burst_lengths;
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,247,site,"tx | (bus.tx_pbl & pbl) << regs::CHAN_TX_CONTROL_PBL_SHIFT | regs::CHAN_TX_CONTROL_OSP,"
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,247,site,"tx | (bus.tx_pbl & pbl) << regs::CHAN_TX_CONTROL_PBL_SHIFT | regs::CHAN_TX_CONTROL_OSP,"
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,252,site,let rx = hw.read(regs::CHAN_RX_CONTROL) & !(pbl << regs::CHAN_RX_CONTROL_PBL_SHIFT | rbsz);
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,255,site,rx | (bus.rx_pbl & pbl) << regs::CHAN_RX_CONTROL_PBL_SHIFT
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,256,site,"| (BUFFER_SIZE as u32) << regs::CHAN_RX_CONTROL_RBSZ_SHIFT,"
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/controller.rs,278,site,"flow | 0xffff << regs::MAC_Q0_TX_FLOW_CTRL_PT_SHIFT | regs::MAC_Q0_TX_FLOW_CTRL_TFE,"
+designware_ethernet,mac_conf,replace | with ^,crates/designware_ethernet/src/controller.rs,308,site,current & !(regs::MAC_CONF_PS | regs::MAC_CONF_FES | regs::MAC_CONF_DM | regs::MAC_CONF_LM);
+designware_ethernet,mac_conf,replace | with ^,crates/designware_ethernet/src/controller.rs,308,site,current & !(regs::MAC_CONF_PS | regs::MAC_CONF_FES | regs::MAC_CONF_DM | regs::MAC_CONF_LM);
+designware_ethernet,mac_conf,replace | with ^,crates/designware_ethernet/src/controller.rs,308,site,current & !(regs::MAC_CONF_PS | regs::MAC_CONF_FES | regs::MAC_CONF_DM | regs::MAC_CONF_LM);
+designware_ethernet,mac_conf,replace | with ^,crates/designware_ethernet/src/controller.rs,311,site,"Speed::Hundred => regs::MAC_CONF_PS | regs::MAC_CONF_FES,"
+designware_ethernet,mac_conf,replace | with ^,crates/designware_ethernet/src/controller.rs,321,site,| regs::MAC_CONF_JD
+designware_ethernet,mac_conf,replace | with ^,crates/designware_ethernet/src/controller.rs,322,site,| regs::MAC_CONF_DCRS
+designware_ethernet,mac_conf,replace | with ^,crates/designware_ethernet/src/controller.rs,323,site,| regs::MAC_CONF_TE
+designware_ethernet,mac_conf,replace | with ^,crates/designware_ethernet/src/controller.rs,324,site,| regs::MAC_CONF_RE
+designware_ethernet,rx_descriptor_words,replace | with ^,crates/designware_ethernet/src/descriptor.rs,85,const,2147483648 | 1073741824 | 16777216 are pairwise disjoint
+designware_ethernet,rx_descriptor_words,replace | with ^,crates/designware_ethernet/src/descriptor.rs,85,const,2147483648 | 1073741824 | 16777216 are pairwise disjoint
+designware_ethernet,tx_descriptor_words,replace | with ^,crates/designware_ethernet/src/descriptor.rs,94,site,let des2 = (len & TDES2_BUF1_LEN) | TDES2_IC;
+designware_ethernet,tx_descriptor_words,replace | with ^,crates/designware_ethernet/src/descriptor.rs,95,site,let des3 = TDES3_OWN | TDES3_FS | TDES3_LS | len;
+designware_ethernet,tx_descriptor_words,replace | with ^,crates/designware_ethernet/src/descriptor.rs,95,site,let des3 = TDES3_OWN | TDES3_FS | TDES3_LS | len;
+designware_ethernet,tx_descriptor_words,replace | with ^,crates/designware_ethernet/src/descriptor.rs,95,site,let des3 = TDES3_OWN | TDES3_FS | TDES3_LS | len;
+designware_ethernet,tx_descriptor_words,replace | with ^,crates/designware_ethernet/src/descriptor.rs,96,site,"[buffer_phys, des2 as u64 | (des3 as u64) << 32]"
+designware_ethernet,rx_verdict,replace | with ^,crates/designware_ethernet/src/descriptor.rs,132,const,536870912 | 268435456 are pairwise disjoint
+designware_ethernet,rx_verdict,replace | with ^,crates/designware_ethernet/src/descriptor.rs,132,const,536870912 | 268435456 are pairwise disjoint
+designware_ethernet,Handoff::pack,replace | with ^,crates/designware_ethernet/src/handoff.rs,29,site,"ROLE_TAG | u64::from_le_bytes(mac) << 16,"
+designware_ethernet,,replace | with ^,crates/designware_ethernet/src/jh7110.rs,54,site,| regs::DMA_SYSBUS_MODE_BLEN_128
+designware_ethernet,,replace | with ^,crates/designware_ethernet/src/jh7110.rs,55,site,| regs::DMA_SYSBUS_MODE_BLEN_64
+designware_ethernet,,replace | with ^,crates/designware_ethernet/src/jh7110.rs,56,site,"| regs::DMA_SYSBUS_MODE_BLEN_32,"
+designware_ethernet,select_rgmii,replace | with ^,crates/designware_ethernet/src/jh7110.rs,89,site,(word & !(SYSCON_FIELD << GMAC0_SYSCON_SHIFT)) | PHY_INTERFACE_RGMII << GMAC0_SYSCON_SHIFT
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/mdio.rs,32,literal,a zero feed or amount: 1 and 0
+designware_ethernet,command,replace | with ^,crates/designware_ethernet/src/mdio.rs,77,site,| (((phy & 0x1f) as u32) << PA_SHIFT)
+designware_ethernet,command,replace | with ^,crates/designware_ethernet/src/mdio.rs,78,site,| (((reg & 0x1f) as u32) << RDA_SHIFT)
+designware_ethernet,command,replace | with ^,crates/designware_ethernet/src/mdio.rs,79,site,| if write { GOC_WRITE } else { GOC_READ }
+designware_ethernet,command,replace | with ^,crates/designware_ethernet/src/mdio.rs,80,const,1 | 1 are pairwise disjoint
+designware_ethernet,phy_id,replace | with ^,crates/designware_ethernet/src/mdio.rs,132,site,Ok(u32::from(hi) << 16 | u32::from(lo))
+designware_ethernet,restart_autonegotiation,replace | with ^,crates/designware_ethernet/src/mdio.rs,146,site,"bus.write(phy, BMCR, bmcr | BMCR_ANENABLE | BMCR_ANRESTART)"
+designware_ethernet,,replace | with ^,crates/designware_ethernet/src/motorcomm.rs,59,site,pub(crate) const PAD_DRIVE_RXD_MASK: u16 = (1 << 12) | (0x3 << 4);
+designware_ethernet,modify_ext,replace | with ^,crates/designware_ethernet/src/motorcomm.rs,278,site,"let v = (read_ext(bus, phy, ext)? & !clear) | set;"
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/motorcomm.rs,309,site,| u16::from(s.tx_delay & 0xf) << RGMII_CONFIG1_TX_DELAY_SHIFT;
+designware_ethernet,configure,replace << with >>,crates/designware_ethernet/src/motorcomm.rs,309,site,| u16::from(s.tx_delay & 0xf) << RGMII_CONFIG1_TX_DELAY_SHIFT;
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/motorcomm.rs,314,site,"0xf << RGMII_CONFIG1_RX_DELAY_SHIFT | 0xf << RGMII_CONFIG1_TX_DELAY_SHIFT,"
+designware_ethernet,configure,replace << with >>,crates/designware_ethernet/src/motorcomm.rs,314,site,"0xf << RGMII_CONFIG1_RX_DELAY_SHIFT | 0xf << RGMII_CONFIG1_TX_DELAY_SHIFT,"
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/motorcomm.rs,323,site,"0x7 << PAD_DRIVE_RXC_SHIFT | PAD_DRIVE_RXD_MASK,"
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/motorcomm.rs,324,site,"rxc << PAD_DRIVE_RXC_SHIFT | (rxd & 0x3) << 4 | (rxd >> 2) << 12,"
+designware_ethernet,configure,replace | with ^,crates/designware_ethernet/src/motorcomm.rs,324,site,"rxc << PAD_DRIVE_RXC_SHIFT | (rxd & 0x3) << 4 | (rxd >> 2) << 12,"
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,14,literal,a zero feed or amount: 1 and 0
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,42,literal,a zero feed or amount: 1 and 0
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,46,literal,a zero feed or amount: 1 and 0
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,76,literal,a zero feed or amount: 1 and 0
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,108,literal,a zero feed or amount: 1 and 0
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,112,literal,a zero feed or amount: 1 and 0
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,137,literal,a zero feed or amount: 1 and 0
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,147,literal,a zero feed or amount: 1 and 0
+designware_ethernet,,replace << with >>,crates/designware_ethernet/src/regs.rs,181,literal,a zero feed or amount: 1 and 0
+designware_mobile_storage,pattern,replace ^ with |,crates/designware_mobile_storage/src/bench.rs,155,site,(i as u8).wrapping_mul(31) ^ (lba as u8).wrapping_mul(7) ^ 0x5a ^ (i >> 8) as u8
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/card.rs,18,site,pub(crate) const OCR_VOLTAGE_WINDOW: u32 = (1 << 20) | (1 << 21);
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/card.rs,20,const,1073741824 | 3145728 are pairwise disjoint
+designware_mobile_storage,Command::word,replace | with ^,crates/designware_mobile_storage/src/command.rs,154,site,let mut w = regs::CMD_START | regs::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
+designware_mobile_storage,Command::word,replace | with ^,crates/designware_mobile_storage/src/command.rs,154,site,let mut w = regs::CMD_START | regs::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/command.rs,187,site,regs::CMD_START | regs::CMD_WAIT_PREVIOUS_DATA | regs::CMD_UPDATE_CLOCK_ONLY;
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/command.rs,187,site,regs::CMD_START | regs::CMD_WAIT_PREVIOUS_DATA | regs::CMD_UPDATE_CLOCK_ONLY;
+designware_mobile_storage,"Host<R, D>::reset",replace | with ^,crates/designware_mobile_storage/src/host.rs,250,site,& !(regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE | regs::CTRL_INT_ENABLE);
+designware_mobile_storage,"Host<R, D>::reset",replace | with ^,crates/designware_mobile_storage/src/host.rs,250,site,& !(regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE | regs::CTRL_INT_ENABLE);
+designware_mobile_storage,"Host<R, D>::set_clock",replace | with ^,crates/designware_mobile_storage/src/host.rs,308,site,".write(regs::CLKENA, regs::CLKENA_ENABLE | regs::CLKENA_LOW_POWER);"
+designware_mobile_storage,"Host<R, D>::issue",replace | with ^,crates/designware_mobile_storage/src/host.rs,346,site,"self.regs.write(regs::CTRL, ctrl | regs::CTRL_FIFO_RESET);"
+designware_mobile_storage,"Host<R, D>::issue",replace | with ^,crates/designware_mobile_storage/src/host.rs,374,site,if status & (regs::INT_RCRC | regs::INT_RE) != 0 {
+designware_mobile_storage,"Host<R, D>::wait_fifo",replace | with ^,crates/designware_mobile_storage/src/host.rs,489,site,if rint & (regs::INT_DATA_ERRORS | regs::INT_DATA_TIMEOUTS) != 0 {
+designware_mobile_storage,"Host<R, D>::wait_fifo",replace | with ^,crates/designware_mobile_storage/src/host.rs,498,site,if rint & (regs::INT_DATA_ERRORS | regs::INT_DATA_TIMEOUTS) != 0 {
+designware_mobile_storage,"Host<R, D>::finish",replace | with ^,crates/designware_mobile_storage/src/host.rs,511,site,"Some(d) if d.blocks > 1 => regs::INT_DTO | regs::INT_ACD,"
+designware_mobile_storage,"Host<R, D>::finish",replace | with ^,crates/designware_mobile_storage/src/host.rs,516,site,rint & want == want || rint & (regs::INT_DATA_ERRORS | regs::INT_DATA_TIMEOUTS) != 0
+designware_mobile_storage,"Host<R, D>::finish",replace | with ^,crates/designware_mobile_storage/src/host.rs,518,site,if rint & (regs::INT_DATA_ERRORS | regs::INT_DATA_TIMEOUTS) != 0 {
+designware_mobile_storage,descriptor,replace | with ^,crates/designware_mobile_storage/src/idmac.rs,205,const,2147483648 | 16 are pairwise disjoint
+designware_mobile_storage,"Host<R, D>::idmac_start",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,266,site,"ctrl | regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE,"
+designware_mobile_storage,"Host<R, D>::idmac_start",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,269,site,".write(regs::BMOD, regs::BMOD_DMA_ENABLE | regs::BMOD_FIXED_BURST);"
+designware_mobile_storage,"Host<R, D>::idmac_wait",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,279,site,"Some(d) if d.blocks > 1 => regs::INT_DTO | regs::INT_ACD,"
+designware_mobile_storage,"Host<R, D>::idmac_wait",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,289,site,if rint & (regs::INT_DATA_ERRORS | regs::INT_DATA_TIMEOUTS) != 0 {
+designware_mobile_storage,"Host<R, D>::idmac_stop",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,321,site,self.regs.read(regs::CTRL) & !(regs::CTRL_USE_INTERNAL_DMAC | regs::CTRL_DMA_ENABLE);
+designware_mobile_storage,"Host<R, D>::idmac_stop",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,324,site,"ctrl | regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET,"
+designware_mobile_storage,"Host<R, D>::idmac_stop",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,324,site,"ctrl | regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET,"
+designware_mobile_storage,"Host<R, D>::idmac_stop",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,327,site,r.read(regs::CTRL) & (regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET) == 0
+designware_mobile_storage,"Host<R, D>::idmac_stop",replace | with ^,crates/designware_mobile_storage/src/idmac.rs,336,site,} else if ctrl & (regs::CTRL_DMA_RESET | regs::CTRL_FIFO_RESET) != 0 {
+designware_mobile_storage,,replace << with >>,crates/designware_mobile_storage/src/regs.rs,11,literal,a zero feed or amount: 1 and 0
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,17,const,1 | 2 | 4 are pairwise disjoint
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,17,const,1 | 2 | 4 are pairwise disjoint
+designware_mobile_storage,,replace << with >>,crates/designware_mobile_storage/src/regs.rs,35,literal,a zero feed or amount: 1 and 0
+designware_mobile_storage,,replace << with >>,crates/designware_mobile_storage/src/regs.rs,44,literal,a zero feed or amount: 1 and 0
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,124,const,32768 | 8192 | 4096 | 2048 | 128 are pairwise disjoint
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,124,const,32768 | 8192 | 4096 | 2048 | 128 are pairwise disjoint
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,124,const,32768 | 8192 | 4096 | 2048 | 128 are pairwise disjoint
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,124,const,32768 | 8192 | 4096 | 2048 | 128 are pairwise disjoint
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,126,const,1024 | 512 are pairwise disjoint
+designware_mobile_storage,fifoth_for_pio,replace | with ^,crates/designware_mobile_storage/src/regs.rs,153,site,(2 << 28) | ((rx & 0xfff) << 16) | (half & 0xfff)
+designware_mobile_storage,fifoth_for_pio,replace | with ^,crates/designware_mobile_storage/src/regs.rs,153,site,(2 << 28) | ((rx & 0xfff) << 16) | (half & 0xfff)
+designware_mobile_storage,fifoth_for_dma,replace | with ^,crates/designware_mobile_storage/src/regs.rs,171,site,((code as u32) << 28) | ((rx & 0xfff) << 16) | (tx & 0xfff)
+designware_mobile_storage,fifoth_for_dma,replace | with ^,crates/designware_mobile_storage/src/regs.rs,171,site,((code as u32) << 28) | ((rx & 0xfff) << 16) | (tx & 0xfff)
+designware_mobile_storage,,replace << with >>,crates/designware_mobile_storage/src/regs.rs,202,literal,a zero feed or amount: 1 and 0
+designware_mobile_storage,,replace << with >>,crates/designware_mobile_storage/src/regs.rs,218,literal,a zero feed or amount: 1 and 0
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,235,const,4 | 16 | 32 are pairwise disjoint
+designware_mobile_storage,,replace | with ^,crates/designware_mobile_storage/src/regs.rs,235,const,4 | 16 | 32 are pairwise disjoint
+designware_mobile_storage,,replace << with >>,crates/designware_mobile_storage/src/regs.rs,252,literal,a zero feed or amount: 1 and 0
+device_tree_blob,DeviceTreeBlob<'a>::cells,replace | with ^,crates/device_tree_blob/src/lib.rs,1141,site,"value = (value << 32) | be32(self.bytes, at + i * 4)? as u64;"
+disk_tree,,replace | with ^,crates/disk_tree/src/lib.rs,37,site,pub const ROOT_RIGHTS: u64 = dir::ENUMERATE | dir::READ | dir::DESCEND;
+disk_tree,,replace | with ^,crates/disk_tree/src/lib.rs,37,site,pub const ROOT_RIGHTS: u64 = dir::ENUMERATE | dir::READ | dir::DESCEND;
+domain_name_resolution_contract,port_and_transport,replace | with ^,crates/domain_name_resolution_contract/src/endowment.rs,21,site,port as u64 | transport << 16
+domain_name_resolution_contract,control_word,replace | with ^,crates/domain_name_resolution_contract/src/wire.rs,103,site,(operation << 56) | ((offset as u64) << 48) | ((total as u64) << 40) | badge as u64
+domain_name_resolution_contract,control_word,replace | with ^,crates/domain_name_resolution_contract/src/wire.rs,103,site,(operation << 56) | ((offset as u64) << 48) | ((total as u64) << 40) | badge as u64
+domain_name_resolution_contract,control_word,replace | with ^,crates/domain_name_resolution_contract/src/wire.rs,103,site,(operation << 56) | ((offset as u64) << 48) | ((total as u64) << 40) | badge as u64
+domain_name_resolution_contract,Outcome::word,replace | with ^,crates/domain_name_resolution_contract/src/wire.rs,189,site,self.status as u64 | (self.detail as u64) << 8 | (self.count as u64) << 16
+domain_name_resolution_contract,Outcome::word,replace | with ^,crates/domain_name_resolution_contract/src/wire.rs,189,site,self.status as u64 | (self.detail as u64) << 8 | (self.count as u64) << 16
+domain_name_system,decode_name_into,replace | with ^,crates/domain_name_system/src/lib.rs,372,site,let target = ((b as usize & 0x3f) << 8) | b2 as usize;
+domain_name_system,Reader<'a>::record,replace | with ^,crates/domain_name_system/src/lib.rs,498,site,"ttl: (ttl_hi << 16) | ttl_lo,"
+driver_process_contract::designware_mobile_storage,Handoff::pack,replace | with ^,crates/driver_process_contract/src/designware_mobile_storage.rs,121,site,| (self.fifo_depth as u64) << 40
+driver_process_contract::designware_mobile_storage,Handoff::pack,replace | with ^,crates/driver_process_contract/src/designware_mobile_storage.rs,122,site,| (self.window.writable as u64) << 39
+driver_process_contract::designware_mobile_storage,Handoff::pack,replace | with ^,crates/driver_process_contract/src/designware_mobile_storage.rs,123,site,| ((self.bus_width & 0xf) as u64) << 32
+driver_process_contract::designware_mobile_storage,Handoff::pack,replace | with ^,crates/driver_process_contract/src/designware_mobile_storage.rs,124,site,"| self.ciu_hz as u64,"
+driver_process_contract::extensible_host_controller_interface,Handoff::pack,replace | with ^,crates/driver_process_contract/src/extensible_host_controller_interface.rs,78,site,"self.dma_pages as u64 | (self.registers as u64) << 32,"
+e1000e,rctl,replace | with ^,crates/e1000e/src/control.rs,34,site,EN | BAM | SECRC
+e1000e,rctl,replace | with ^,crates/e1000e/src/control.rs,34,site,EN | BAM | SECRC
+e1000e,tctl,replace | with ^,crates/e1000e/src/control.rs,42,site,EN | PSP | 15 << 4 | 63 << 12
+e1000e,tctl,replace | with ^,crates/e1000e/src/control.rs,42,site,EN | PSP | 15 << 4 | 63 << 12
+e1000e,tctl,replace | with ^,crates/e1000e/src/control.rs,42,site,EN | PSP | 15 << 4 | 63 << 12
+e1000e,tipg,replace | with ^,crates/e1000e/src/control.rs,47,site,8 | 8 << 10 | 6 << 20
+e1000e,tipg,replace | with ^,crates/e1000e/src/control.rs,47,site,8 | 8 << 10 | 6 << 20
+e1000e,,replace | with ^,crates/e1000e/src/descriptor.rs,43,literal,1 | 2 | 4 | 16 | 128 are pairwise disjoint
+e1000e,,replace | with ^,crates/e1000e/src/descriptor.rs,43,literal,1 | 2 | 4 | 16 | 128 are pairwise disjoint
+e1000e,,replace | with ^,crates/e1000e/src/descriptor.rs,43,literal,1 | 2 | 4 | 16 | 128 are pairwise disjoint
+e1000e,,replace | with ^,crates/e1000e/src/descriptor.rs,43,literal,1 | 2 | 4 | 16 | 128 are pairwise disjoint
+e1000e,,replace | with ^,crates/e1000e/src/descriptor.rs,46,literal,1 | 2 | 8 are pairwise disjoint
+e1000e,,replace | with ^,crates/e1000e/src/descriptor.rs,46,literal,1 | 2 | 8 are pairwise disjoint
+e1000e,tx_word,replace | with ^,crates/e1000e/src/descriptor.rs,94,site,len as u64 | (TX_COMMAND as u64) << 24
+e1000e,Handoff::pack,replace | with ^,crates/e1000e/src/handoff.rs,46,site,"ROLE_TAG | u64::from_le_bytes(mac) << 16,"
+e1000e,tx_word,replace | with ^,crates/e1000e/src/pch/flush.rs,18,site,TX_DUMMY_LEN as u64 | (0x02u64 << 24)
+e1000e,rxdctl,replace | with ^,crates/e1000e/src/pch/flush.rs,31,site,(rxdctl & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
+e1000e,rxdctl,replace | with ^,crates/e1000e/src/pch/flush.rs,31,site,(rxdctl & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
+e1000e,rxdctl,replace | with ^,crates/e1000e/src/pch/flush.rs,31,site,(rxdctl & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
+e1000e,,replace << with >>,crates/e1000e/src/pch/nvm.rs,70,literal,a zero feed or amount: 1 and 0
+e1000e,,replace << with >>,crates/e1000e/src/pch/nvm.rs,84,literal,a zero feed or amount: 1 and 0
+e1000e,cycle_init,replace | with ^,crates/e1000e/src/pch/nvm.rs,143,site,let s = s | status::ERROR | status::DIRECT_ACCESS_ERROR;
+e1000e,cycle_init,replace | with ^,crates/e1000e/src/pch/nvm.rs,146,site,"hw.write(FLASH_BASE + HSFSTS, u32::from(s | status::DONE));"
+e1000e,cycle,replace | with ^,crates/e1000e/src/pch/nvm.rs,162,site,let ctl = (hw.read(FLASH_BASE + HSFSTS) >> 16) as u16 | control::GO;
+e1000e,read_dword_at_byte,replace >> with <<,crates/e1000e/src/pch/nvm.rs,188,site,let mut ctl = (hw.read(FLASH_BASE + HSFSTS) >> 16) as u16;
+e1000e,read_dword_at_byte,replace | with ^,crates/e1000e/src/pch/nvm.rs,189,site,ctl = (ctl & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);
+e1000e,reg,replace | with ^,crates/e1000e/src/pch/phy.rs,110,site,page << PAGE_SHIFT | (r & MAX_REG)
+e1000e,read_mdic,replace | with ^,crates/e1000e/src/pch/phy.rs,168,site,"r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_READ,"
+e1000e,read_mdic,replace | with ^,crates/e1000e/src/pch/phy.rs,168,site,"r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_READ,"
+e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/phy.rs,180,site,"u32::from(data) | r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_WRITE,"
+e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/phy.rs,180,site,"u32::from(data) | r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_WRITE,"
+e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/phy.rs,180,site,"u32::from(data) | r << mdic::REG_SHIFT | phy << mdic::PHY_SHIFT | mdic::OP_WRITE,"
+e1000e,id_at,replace | with ^,crates/e1000e/src/pch/phy.rs,344,site,Ok((u32::from(hi) << 16 | u32::from(lo)) & ID_MASK)
+e1000e,,replace | with ^,crates/e1000e/src/pch/sequence.rs,175,site,| 0x0010 // STICKY_ULP
+e1000e,,replace | with ^,crates/e1000e/src/pch/sequence.rs,176,site,| 0x0100 // RESET_TO_SMBUS
+e1000e,,replace | with ^,crates/e1000e/src/pch/sequence.rs,177,site,| 0x0040 // WOL_HOST
+e1000e,,replace | with ^,crates/e1000e/src/pch/sequence.rs,178,site,| 0x0020 // INBAND_EXIT
+e1000e,,replace | with ^,crates/e1000e/src/pch/sequence.rs,179,site,| 0x0400 // EN_ULP_LANPHYPC
+e1000e,,replace | with ^,crates/e1000e/src/pch/sequence.rs,180,site,| 0x0800 // DIS_CLR_STICKY_ON_PERST
+e1000e,,replace | with ^,crates/e1000e/src/pch/sequence.rs,181,literal,4096 | 4096 are pairwise disjoint
+e1000e,accessible,replace | with ^,crates/e1000e/src/pch/sequence.rs,363,site,seen = (u32::from(hi) << 16 | u32::from(lo)) & phy::ID_MASK;
+e1000e,toggle_lanphypc,replace | with ^,crates/e1000e/src/pch/sequence.rs,390,site,"(n3 & !FEXTNVM3_PHY_CFG_COUNTER_MASK) | FEXTNVM3_PHY_CFG_COUNTER_50MSEC,"
+e1000e,phy_reset_generic,replace | with ^,crates/e1000e/src/pch/sequence.rs,416,site,"hw.write(mac::CTRL, ctrl | CTRL_PHY_RST);"
+e1000e,lcd_config,replace | with ^,crates/e1000e/src/pch/sequence.rs,592,site,"phy::write(hw, &f, (at & phy::MAX_REG) | page, value)?;"
+e1000e,write_smbus_addr,replace | with ^,crates/e1000e/src/pch/sequence.rs,611,site,v = (v & !SMB_ADDR_MASK) | addr | SMB_ADDR_PEC_EN | SMB_ADDR_VALID;
+e1000e,write_smbus_addr,replace | with ^,crates/e1000e/src/pch/sequence.rs,611,site,v = (v & !SMB_ADDR_MASK) | addr | SMB_ADDR_PEC_EN | SMB_ADDR_VALID;
+e1000e,write_smbus_addr,replace | with ^,crates/e1000e/src/pch/sequence.rs,611,site,v = (v & !SMB_ADDR_MASK) | addr | SMB_ADDR_PEC_EN | SMB_ADDR_VALID;
+e1000e,oem_bits,replace | with ^,crates/e1000e/src/pch/sequence.rs,633,const,64 | 4 are pairwise disjoint
+e1000e,init_hw,replace | with ^,crates/e1000e/src/pch/sequence.rs,660,site,"set(hw, mac::CTRL_EXT, 1 << 22 | CTRL_EXT_PHYPDEN);"
+e1000e,init_hw,replace | with ^,crates/e1000e/src/pch/sequence.rs,663,site,"set(hw, regs::TARC0, 1 << 23 | 1 << 24 | 1 << 26 | 1 << 27);"
+e1000e,init_hw,replace | with ^,crates/e1000e/src/pch/sequence.rs,663,site,"set(hw, regs::TARC0, 1 << 23 | 1 << 24 | 1 << 26 | 1 << 27);"
+e1000e,init_hw,replace | with ^,crates/e1000e/src/pch/sequence.rs,663,site,"set(hw, regs::TARC0, 1 << 23 | 1 << 24 | 1 << 26 | 1 << 27);"
+e1000e,init_hw,replace | with ^,crates/e1000e/src/pch/sequence.rs,670,site,"hw.write(regs::TARC1, t1 | 1 << 24 | 1 << 26 | 1 << 30);"
+e1000e,init_hw,replace | with ^,crates/e1000e/src/pch/sequence.rs,670,site,"hw.write(regs::TARC1, t1 | 1 << 24 | 1 << 26 | 1 << 30);"
+e1000e,init_hw,replace | with ^,crates/e1000e/src/pch/sequence.rs,672,const,64 | 128 are pairwise disjoint
+e1000e,init_hw,replace | with ^,crates/e1000e/src/pch/sequence.rs,684,site,let t = (t & !TXDCTL_WTHRESH) | TXDCTL_FULL_TX_DESC_WB;
+e1000e,setup_copper_link,replace | with ^,crates/e1000e/src/pch/sequence.rs,702,const,2048 | 4096 are pairwise disjoint
+e1000e,setup_copper_link,replace | with ^,crates/e1000e/src/pch/sequence.rs,707,site,v | I82577_CFG_ASSERT_CRS_ON_TX | I82577_CFG_ENABLE_DOWNSHIFT
+e1000e,setup_copper_link,replace | with ^,crates/e1000e/src/pch/sequence.rs,710,site,(v & !I82577_PHY_CTRL2_MDIX_CFG_MASK) | I82577_PHY_CTRL2_AUTO_MDI_MDIX
+e1000e,setup_copper_link,replace | with ^,crates/e1000e/src/pch/sequence.rs,713,const,2048 | 1024 are pairwise disjoint
+e1000e,setup_copper_link,replace | with ^,crates/e1000e/src/pch/sequence.rs,715,const,64 | 64 are pairwise disjoint
+e1000e,setup_copper_link,replace | with ^,crates/e1000e/src/pch/sequence.rs,716,const,128 | 128 are pairwise disjoint
+e1000e,setup_copper_link,replace | with ^,crates/e1000e/src/pch/sequence.rs,717,const,256 | 256 are pairwise disjoint
+e1000e,setup_copper_link,replace | with ^,crates/e1000e/src/pch/sequence.rs,723,site,v | MII_CR_AUTO_NEG_EN | MII_CR_RESTART_AUTO_NEG
+e1000e,transmit_errata,replace | with ^,crates/e1000e/src/pch/sequence.rs,739,site,"(t & !TARC0_CB_MULTIQ_3_REQ) | TARC0_CB_MULTIQ_2_REQ,"
+entropy_contract,req,replace | with ^,crates/entropy_contract/src/lib.rs,39,site,(operation << OPERATION_SHIFT) | (n & 0xff)
+entropy_contract,bringup_failure,replace | with ^,crates/entropy_contract/src/lib.rs,84,site,DEAD | step
+extensible_host_controller_interface,slot,replace | with ^,crates/extensible_host_controller_interface/src/context.rs,51,site,"(speed as u32 & 0xf) << 20 | (entries as u32 & 0x1f) << 27,"
+extensible_host_controller_interface,endpoint,replace | with ^,crates/extensible_host_controller_interface/src/context.rs,88,site,"3 << 1 | (kind as u32) << 3 | (max_packet as u32) << 16,"
+extensible_host_controller_interface,endpoint,replace | with ^,crates/extensible_host_controller_interface/src/context.rs,88,site,"3 << 1 | (kind as u32) << 3 | (max_packet as u32) << 16,"
+extensible_host_controller_interface,endpoint,replace | with ^,crates/extensible_host_controller_interface/src/context.rs,91,site,"average_trb as u32 | esit << 16,"
+extensible_host_controller_interface,Event::decode,replace | with ^,crates/extensible_host_controller_interface/src/event.rs,46,site,let pointer = d[0] as u64 | (d[1] as u64) << 32;
+extensible_host_controller_interface,,replace << with >>,crates/extensible_host_controller_interface/src/port.rs,9,literal,a zero feed or amount: 1 and 0
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,33,const,262144 | 262144 are pairwise disjoint
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,34,const,524288 | 524288 are pairwise disjoint
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,35,const,1048576 | 1048576 are pairwise disjoint
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,36,const,2097152 | 2097152 are pairwise disjoint
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,37,const,4194304 | 4194304 are pairwise disjoint
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,38,const,8388608 | 8388608 are pairwise disjoint
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,44,site,1 | 1 << 3 | 0xf << 10 | 1 << 30 | 0xf << 5 | 1 << 9 | 0x3 << 14 | 0x7 << 25;
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,44,site,1 | 1 << 3 | 0xf << 10 | 1 << 30 | 0xf << 5 | 1 << 9 | 0x3 << 14 | 0x7 << 25;
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,44,site,1 | 1 << 3 | 0xf << 10 | 1 << 30 | 0xf << 5 | 1 << 9 | 0x3 << 14 | 0x7 << 25;
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,44,site,1 | 1 << 3 | 0xf << 10 | 1 << 30 | 0xf << 5 | 1 << 9 | 0x3 << 14 | 0x7 << 25;
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,44,site,1 | 1 << 3 | 0xf << 10 | 1 << 30 | 0xf << 5 | 1 << 9 | 0x3 << 14 | 0x7 << 25;
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,44,site,1 | 1 << 3 | 0xf << 10 | 1 << 30 | 0xf << 5 | 1 << 9 | 0x3 << 14 | 0x7 << 25;
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/port.rs,44,site,1 | 1 << 3 | 0xf << 10 | 1 << 30 | 0xf << 5 | 1 << 9 | 0x3 << 14 | 0x7 << 25;
+extensible_host_controller_interface,,replace << with >>,crates/extensible_host_controller_interface/src/regs.rs,38,literal,a zero feed or amount: 1 and 0
+extensible_host_controller_interface,,replace << with >>,crates/extensible_host_controller_interface/src/regs.rs,45,literal,a zero feed or amount: 1 and 0
+extensible_host_controller_interface,,replace << with >>,crates/extensible_host_controller_interface/src/regs.rs,71,literal,a zero feed or amount: 1 and 0
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/regs.rs,85,site,pub const LEGACY_SMI_ENABLES: u32 = 1 | 1 << 4 | 0b111 << 13;
+extensible_host_controller_interface,,replace | with ^,crates/extensible_host_controller_interface/src/regs.rs,85,site,pub const LEGACY_SMI_ENABLES: u32 = 1 | 1 << 4 | 0b111 << 13;
+extensible_host_controller_interface,Capabilities::decode,replace | with ^,crates/extensible_host_controller_interface/src/regs.rs,132,site,"scratchpads: (((hcsparams2 >> 21) & 0x1f) << 5 | (hcsparams2 >> 27)) as u16,"
+extensible_host_controller_interface,ProducerRing::dequeue_pointer,replace | with ^,crates/extensible_host_controller_interface/src/ring.rs,81,site,self.address_of(self.enqueue) | self.cycle as u64
+extensible_host_controller_interface,TransferRequestBlock::with_cycle,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,36,site,d[3] = (d[3] & !1) | cycle as u32;
+extensible_host_controller_interface,TransferRequestBlock::link,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,49,site,"[0, control(transfer_request_block_type::LINK) | 1 << 1],"
+extensible_host_controller_interface,TransferRequestBlock::disable_slot,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,64,site,"control(transfer_request_block_type::DISABLE_SLOT) | (slot as u32) << 24,"
+extensible_host_controller_interface,TransferRequestBlock::address_device,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,75,site,"control(transfer_request_block_type::ADDRESS_DEVICE) | (slot as u32) << 24,"
+extensible_host_controller_interface,TransferRequestBlock::configure_endpoint,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,86,site,"control(transfer_request_block_type::CONFIGURE_ENDPOINT) | (slot as u32) << 24,"
+extensible_host_controller_interface,TransferRequestBlock::evaluate_context,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,98,site,"control(transfer_request_block_type::EVALUATE_CONTEXT) | (slot as u32) << 24,"
+extensible_host_controller_interface,TransferRequestBlock::reset_endpoint,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,110,site,| (dci as u32) << 16
+extensible_host_controller_interface,TransferRequestBlock::reset_endpoint,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,111,site,"| (slot as u32) << 24,"
+extensible_host_controller_interface,TransferRequestBlock::set_dequeue,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,124,site,| (dci as u32) << 16
+extensible_host_controller_interface,TransferRequestBlock::set_dequeue,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,125,site,"| (slot as u32) << 24,"
+extensible_host_controller_interface,TransferRequestBlock::setup,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,143,site,"control(transfer_request_block_type::SETUP) | IDT | trt << 16,"
+extensible_host_controller_interface,TransferRequestBlock::setup,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,143,site,"control(transfer_request_block_type::SETUP) | IDT | trt << 16,"
+extensible_host_controller_interface,TransferRequestBlock::data,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,153,site,"control(transfer_request_block_type::DATA) | (inbound as u32) << 16 | ISP,"
+extensible_host_controller_interface,TransferRequestBlock::data,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,153,site,"control(transfer_request_block_type::DATA) | (inbound as u32) << 16 | ISP,"
+extensible_host_controller_interface,TransferRequestBlock::status,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,165,site,"control(transfer_request_block_type::STATUS) | (!data_was_inbound as u32) << 16 | IOC,"
+extensible_host_controller_interface,TransferRequestBlock::status,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,165,site,"control(transfer_request_block_type::STATUS) | (!data_was_inbound as u32) << 16 | IOC,"
+extensible_host_controller_interface,TransferRequestBlock::normal,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,176,site,"control(transfer_request_block_type::NORMAL) | IOC | ISP,"
+extensible_host_controller_interface,TransferRequestBlock::normal,replace | with ^,crates/extensible_host_controller_interface/src/transfer_request_block.rs,176,site,"control(transfer_request_block_type::NORMAL) | IOC | ISP,"
+file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,27,const,1 | 2 | 4 | 8 are pairwise disjoint
+file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,27,const,1 | 2 | 4 | 8 are pairwise disjoint
+file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,27,const,1 | 2 | 4 | 8 are pairwise disjoint
+file_allocation_table,Slot::parse,replace | with ^,crates/file_allocation_table/src/directory.rs,115,site,"first_cluster: (high << 16) | low,"
+file_allocation_table,LongName::entry,replace | with ^,crates/file_allocation_table/src/long_name.rs,142,site,out[0] = ordinal as u8 | if index == 0 { LAST_LONG_ENTRY } else { 0 };
+filesystem_contract,req,replace | with ^,crates/filesystem_contract/src/blk.rs,58,site,(operation << super::OPERATION_SHIFT) | (blocks as u64 - 1)
+filesystem_contract,,replace << with >>,crates/filesystem_contract/src/dir.rs,4,literal,a zero feed or amount: 1 and 0
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,46,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,46,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,46,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,46,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,46,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,46,const,1 | 2 | 4 | 8 | 16 | 32 | 64 are pairwise disjoint
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,57,const,1 | 32 | 16 are pairwise disjoint
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/dir.rs,57,const,1 | 32 | 16 are pairwise disjoint
+filesystem_contract,,replace << with >>,crates/filesystem_contract/src/dirent.rs,4,literal,a zero feed or amount: 1 and 0
+filesystem_contract,req,replace | with ^,crates/filesystem_contract/src/fs.rs,321,site,(operation << super::OPERATION_SHIFT) | ((handle & MAX_HANDLE) << 40) | (len & MAX_LEN)
+filesystem_contract,req,replace | with ^,crates/filesystem_contract/src/fs.rs,321,site,(operation << super::OPERATION_SHIFT) | ((handle & MAX_HANDLE) << 40) | (len & MAX_LEN)
+filesystem_contract,rename_dst,replace | with ^,crates/filesystem_contract/src/fs.rs,336,site,((handle & MAX_HANDLE) << 40) | (len & MAX_LEN)
+filesystem_contract,,replace << with >>,crates/filesystem_contract/src/grant.rs,4,literal,a zero feed or amount: 1 and 0
+filesystem_contract,spec,replace | with ^,crates/filesystem_contract/src/grant.rs,116,site,((len as u64) & 0xff) | (rights << 8)
+filesystem_contract,,replace << with >>,crates/filesystem_contract/src/nameset.rs,31,literal,a zero feed or amount: 1 and 0
+filesystem_contract,Verb::mutates,replace | with ^,crates/filesystem_contract/src/verb.rs,75,site,self.needs_all & (dir::WRITE | dir::CREATE | dir::REMOVE) != 0
+filesystem_contract,Verb::mutates,replace | with ^,crates/filesystem_contract/src/verb.rs,75,site,self.needs_all & (dir::WRITE | dir::CREATE | dir::REMOVE) != 0
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,122,site,"needs_any: dir::READ | dir::WRITE,"
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,177,site,"dir::CREATE | dir::DESCEND,"
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,187,site,"dir::REMOVE | dir::CREATE,"
+filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,273,site,"dir::WRITE | dir::SETTIME,"
+filesystem_contract,spec,replace | with ^,crates/filesystem_contract/src/xattr.rs,75,site,((kind as u64) << 32) | (value_len & 0xffff_ffff)
+filesystem_contract,reply,replace | with ^,crates/filesystem_contract/src/xattr.rs,93,site,(((kind & MAX_KIND) as i64) << 32) | (value_len as i64 & 0xffff_ffff)
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,214,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,691,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,771,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,806,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,862,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,996,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,1029,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1060,site,| LISTED
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1061,const,4 | 4 are pairwise disjoint
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1062,const,8 | 8 are pairwise disjoint
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1063,const,16 | 16 are pairwise disjoint
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1064,const,32 | 32 are pairwise disjoint
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1065,const,64 | 64 are pairwise disjoint
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1066,const,128 | 128 are pairwise disjoint
+firmware_configuration,DmaCommand::read,replace | with ^,crates/firmware_configuration/src/lib.rs,82,site,"control: ((key as u32) << 16) | control::SELECT | control::READ,"
+firmware_configuration,DmaCommand::read,replace | with ^,crates/firmware_configuration/src/lib.rs,82,site,"control: ((key as u32) << 16) | control::SELECT | control::READ,"
+firmware_configuration,DmaCommand::write,replace | with ^,crates/firmware_configuration/src/lib.rs,106,site,"control: ((key as u32) << 16) | control::SELECT | control::WRITE,"
+firmware_configuration,DmaCommand::write,replace | with ^,crates/firmware_configuration/src/lib.rs,106,site,"control: ((key as u32) << 16) | control::SELECT | control::WRITE,"
+generational_table,"Table<T, N>::name",replace | with ^,crates/generational_table/src/lib.rs,72,site,((generation as u64) << 32) | slot as u64
+globally_unique_identifier_partition_table,,replace << with >>,crates/globally_unique_identifier_partition_table/src/entry.rs,25,literal,a zero feed or amount: 1 and 0
+glyph_atlas,blend,replace | with ^,crates/glyph_atlas/src/blend.rs,33,site,"channel(fg, bg, a, 16) | channel(fg, bg, a, 8) | channel(fg, bg, a, 0)"
+glyph_atlas,blend,replace | with ^,crates/glyph_atlas/src/blend.rs,33,site,"channel(fg, bg, a, 16) | channel(fg, bg, a, 8) | channel(fg, bg, a, 0)"
+grant_plan,,replace << with >>,crates/grant_plan/src/command.rs,277,literal,a zero feed or amount: 1 and 0
+grant_plan,WordGrant::rights,replace << with >>,crates/grant_plan/src/manifest.rs,395,literal,a zero feed or amount: 1 and 0
+grant_plan,WordGrant::rights,replace | with ^,crates/grant_plan/src/manifest.rs,400,const,1 | 2 | 32 are pairwise disjoint
+grant_plan,WordGrant::rights,replace | with ^,crates/grant_plan/src/manifest.rs,400,const,1 | 2 | 32 are pairwise disjoint
+grant_plan,WordGrant::rights,replace | with ^,crates/grant_plan/src/manifest.rs,403,site,"WordGrant::ReadWrite => read | WRITE,"
+grant_plan,WordGrant::rights,replace | with ^,crates/grant_plan/src/manifest.rs,404,site,"WordGrant::Create => read | WRITE | CREATE,"
+grant_plan,WordGrant::rights,replace | with ^,crates/grant_plan/src/manifest.rs,404,site,"WordGrant::Create => read | WRITE | CREATE,"
+grant_plan,installer_badge,replace | with ^,crates/grant_plan/src/spawnproto.rs,707,site,INSTALLER_BADGE | label
+grant_plan,,replace << with >>,crates/grant_plan/src/verbs.rs,27,literal,a zero feed or amount: 1 and 0
+graphics_contract,pixel,replace | with ^,crates/graphics_contract/src/lib.rs,86,site,(r << 16) | (g << 8) | b
+graphics_contract,pixel,replace | with ^,crates/graphics_contract/src/lib.rs,86,site,(r << 16) | (g << 8) | b
+graphics_contract,req,replace | with ^,crates/graphics_contract/src/lib.rs,163,site,(operation << OPERATION_SHIFT) | (operand & ((1 << OPERATION_SHIFT) - 1))
+graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,199,site,| (((y as u64) & 0x3fff) << 14)
+graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,200,site,| (((w as u64) & 0x3fff) << 28)
+graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,201,site,| (((h as u64) & 0x3fff) << 42)
+jh7110_clock_and_reset,with_parent,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,83,site,(word & !CLOCK_MUX_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_MUX_MASK)
+jh7110_clock_and_reset,parse_reg,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,459,site,"Some(((u32be(0) << 32) | u32be(4), (u32be(8) << 32) | u32be(12)))"
+jh7110_clock_and_reset,parse_reg,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,459,site,"Some(((u32be(0) << 32) | u32be(4), (u32be(8) << 32) | u32be(12)))"
+jh7110_clock_and_reset,with_divider,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,787,site,(word & !0x00ff_ffff) | (divider & 0x00ff_ffff)
+jh7110_clock_and_reset,standard_mode_100k,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,865,const,1 | 32 | 64 | 2 are pairwise disjoint
+jh7110_clock_and_reset,standard_mode_100k,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,865,const,1 | 32 | 64 | 2 are pairwise disjoint
+jh7110_clock_and_reset,standard_mode_100k,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,865,const,1 | 32 | 64 | 2 are pairwise disjoint
+jh7110_entropy,,replace << with >>,crates/jh7110_entropy/src/lib.rs,182,literal,a zero feed or amount: 1 and 0
+jh7110_entropy,,replace << with >>,crates/jh7110_entropy/src/lib.rs,202,literal,a zero feed or amount: 1 and 0
+jh7110_entropy,,replace | with ^,crates/jh7110_entropy/src/lib.rs,232,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
+jh7110_entropy,,replace | with ^,crates/jh7110_entropy/src/lib.rs,232,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
+jh7110_entropy,,replace | with ^,crates/jh7110_entropy/src/lib.rs,232,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
+jh7110_entropy,,replace | with ^,crates/jh7110_entropy/src/lib.rs,232,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
+line_editor,supervisor::image_lengths,replace | with ^,crates/line_editor/src/component.rs,192,site,if (editor | own | display) >> LENGTH_BITS != 0 {
+line_editor,supervisor::image_lengths,replace | with ^,crates/line_editor/src/component.rs,192,site,if (editor | own | display) >> LENGTH_BITS != 0 {
+line_editor,supervisor::image_lengths,replace | with ^,crates/line_editor/src/component.rs,195,site,Some(editor | (own << LENGTH_BITS) | (display << (2 * LENGTH_BITS)))
+line_editor,supervisor::image_lengths,replace | with ^,crates/line_editor/src/component.rs,195,site,Some(editor | (own << LENGTH_BITS) | (display << (2 * LENGTH_BITS)))
+line_editor,,replace << with >>,crates/line_editor/src/proto.rs,194,literal,a zero feed or amount: 1 and 0
+line_editor,req,replace | with ^,crates/line_editor/src/proto.rs,219,site,(operation << OPERATION_SHIFT) | (len & 0xffff_ffff)
+line_editor,,replace << with >>,crates/line_editor/src/proto.rs,231,literal,a zero feed or amount: 1 and 0
+login_contract,schedule_lengths,replace | with ^,crates/login_contract/src/lib.rs,370,site,(keeper & 0xffff_ffff) | (timetable << 32)
+machine_discovery,,replace << with >>,crates/machine_discovery/src/acpi/dmar.rs,30,literal,a zero feed or amount: 1 and 0
+machine_discovery,,replace << with >>,crates/machine_discovery/src/acpi/gtdt.rs,26,literal,a zero feed or amount: 1 and 0
+machine_discovery,,replace << with >>,crates/machine_discovery/src/acpi/madt.rs,20,literal,a zero feed or amount: 1 and 0
+machine_discovery,,replace << with >>,crates/machine_discovery/src/acpi/madt.rs,155,literal,a zero feed or amount: 1 and 0
+machine_discovery,PixelOrder::store,replace | with ^,crates/machine_discovery/src/framebuffer.rs,53,site,(rrggbb & 0x0000_ff00) | ((rrggbb & 0xff) << 16) | ((rrggbb >> 16) & 0xff)
+machine_discovery,PixelOrder::store,replace | with ^,crates/machine_discovery/src/framebuffer.rs,53,site,(rrggbb & 0x0000_ff00) | ((rrggbb & 0xff) << 16) | ((rrggbb >> 16) & 0xff)
+machine_discovery,parse_hex,replace | with ^,crates/machine_discovery/src/framebuffer.rs,261,site,value = (value << 4) | u64::from(digit);
+machine_discovery,,replace << with >>,crates/machine_discovery/src/riscv64.rs,355,literal,a zero feed or amount: 1 and 0
+machine_discovery,eid,replace | with ^,crates/machine_discovery/src/riscv64.rs,374,site,acc = (acc << 8) | b[i] as usize;
+machine_discovery,pmu_event,replace | with ^,crates/machine_discovery/src/riscv64.rs,928,site,(event_type << 16) | code
+machine_discovery,,replace << with >>,crates/machine_discovery/src/x86_64.rs,347,literal,a zero feed or amount: 1 and 0
+measured_boot,Sha256::compress,replace ^ with |,crates/measured_boot/src/lib.rs,147,site,let ch = (e & f) ^ ((!e) & g);
+measured_boot,Sha256::compress,replace ^ with |,crates/measured_boot/src/lib.rs,154,site,let maj = (a & b) ^ (a & c) ^ (b & c);
+measured_boot,Sha256::compress,replace ^ with |,crates/measured_boot/src/lib.rs,154,site,let maj = (a & b) ^ (a & c) ^ (b & c);
+measured_boot,parse_hex,replace | with ^,crates/measured_boot/src/lib.rs,518,site,*slot = (nibble(bytes[i * 2])? << 4) | nibble(bytes[i * 2 + 1])?;
+network_time_protocol,Timestamp::from_unix,replace | with ^,crates/network_time_protocol/src/lib.rs,177,site,"((ntp_secs as u64) << 32) | nanos_to_ticks(nanos) as u64,"
+network_time_protocol,Timestamp::randomise_low,replace | with ^,crates/network_time_protocol/src/lib.rs,223,site,Timestamp((self.0 & !(mask as u64)) | (random & mask) as u64)
+network_time_protocol,Packet::to_bytes,replace | with ^,crates/network_time_protocol/src/lib.rs,409,site,w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
+network_time_protocol,Packet::to_bytes,replace | with ^,crates/network_time_protocol/src/lib.rs,409,site,w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
+non_volatile_memory_express,cc_enabled,replace | with ^,crates/non_volatile_memory_express/src/lib.rs,69,site,1 | (6 << 16) | (4 << 20)
+non_volatile_memory_express,cc_enabled,replace | with ^,crates/non_volatile_memory_express/src/lib.rs,69,site,1 | (6 << 16) | (4 << 20)
+non_volatile_memory_express,Command::create_io_cq,replace | with ^,crates/non_volatile_memory_express/src/lib.rs,165,site,c.0[10] = qid as u32 | ((entries as u32 - 1) << 16);
+non_volatile_memory_express,Command::create_io_sq,replace | with ^,crates/non_volatile_memory_express/src/lib.rs,175,site,c.0[10] = qid as u32 | ((entries as u32 - 1) << 16);
+non_volatile_memory_express,Command::create_io_sq,replace | with ^,crates/non_volatile_memory_express/src/lib.rs,176,site,"c.0[11] = 1 | (cqid as u32) << 16; // PC, and the paired CQ"
+non_volatile_memory_express,Handoff::pack,replace | with ^,crates/non_volatile_memory_express/src/lib.rs,601,site,"(self.dstrd as u64) << 32 | (self.blocks_per as u64) << 16 | self.entries as u64,"
+non_volatile_memory_express,Handoff::pack,replace | with ^,crates/non_volatile_memory_express/src/lib.rs,601,site,"(self.dstrd as u64) << 32 | (self.blocks_per as u64) << 16 | self.entries as u64,"
+paging,,replace << with >>,crates/paging/src/aarch64.rs,20,literal,a zero feed or amount: 1 and 0
+paging,,replace << with >>,crates/paging/src/aarch64.rs,46,literal,a zero feed or amount: 0 and 6
+paging,<impl PageFormat for Aarch64>::table_entry,replace | with ^,crates/paging/src/aarch64.rs,133,site,(pa & ADDR_MASK) | TABLE_OR_PAGE | VALID
+paging,<impl PageFormat for Aarch64>::table_entry,replace | with ^,crates/paging/src/aarch64.rs,133,site,(pa & ADDR_MASK) | TABLE_OR_PAGE | VALID
+paging,<impl PageFormat for Aarch64>::leaf_entry,replace | with ^,crates/paging/src/aarch64.rs,138,site,(pa & ADDR_MASK) | Self::attrs(flags) | TABLE_OR_PAGE | VALID
+paging,<impl PageFormat for Aarch64>::leaf_entry,replace | with ^,crates/paging/src/aarch64.rs,138,site,(pa & ADDR_MASK) | Self::attrs(flags) | TABLE_OR_PAGE | VALID
+paging,<impl PageFormat for Aarch64>::leaf_entry,replace | with ^,crates/paging/src/aarch64.rs,138,site,(pa & ADDR_MASK) | Self::attrs(flags) | TABLE_OR_PAGE | VALID
+paging,<impl PageFormat for Aarch64>::block_entry,replace | with ^,crates/paging/src/aarch64.rs,173,site,Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | VALID)
+paging,<impl PageFormat for Aarch64>::block_entry,replace | with ^,crates/paging/src/aarch64.rs,173,site,Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | VALID)
+paging,,replace << with >>,crates/paging/src/flags.rs,5,literal,a zero feed or amount: 1 and 0
+paging,Flags::kernel_code,replace | with ^,crates/paging/src/flags.rs,62,const,8 | 16 are pairwise disjoint
+paging,Flags::kernel_data,replace | with ^,crates/paging/src/flags.rs,72,const,1 | 16 are pairwise disjoint
+paging,Flags::device,replace | with ^,crates/paging/src/flags.rs,77,const,1 | 16 | 32 are pairwise disjoint
+paging,Flags::device,replace | with ^,crates/paging/src/flags.rs,77,const,1 | 16 | 32 are pairwise disjoint
+paging,Flags::write_combining,replace | with ^,crates/paging/src/flags.rs,90,const,1 | 16 | 32 | 64 are pairwise disjoint
+paging,Flags::write_combining,replace | with ^,crates/paging/src/flags.rs,90,const,1 | 16 | 32 | 64 are pairwise disjoint
+paging,Flags::write_combining,replace | with ^,crates/paging/src/flags.rs,90,const,1 | 16 | 32 | 64 are pairwise disjoint
+paging,Flags::user_code,replace | with ^,crates/paging/src/flags.rs,99,const,2 | 4 are pairwise disjoint
+paging,Flags::user_data,replace | with ^,crates/paging/src/flags.rs,113,const,2 | 1 are pairwise disjoint
+paging,Flags::user_device,replace | with ^,crates/paging/src/flags.rs,123,const,2 | 1 | 32 are pairwise disjoint
+paging,Flags::user_device,replace | with ^,crates/paging/src/flags.rs,123,const,2 | 1 | 32 are pairwise disjoint
+paging,Flags::user_write_combining,replace | with ^,crates/paging/src/flags.rs,131,const,2 | 1 | 32 | 64 are pairwise disjoint
+paging,Flags::user_write_combining,replace | with ^,crates/paging/src/flags.rs,131,const,2 | 1 | 32 | 64 are pairwise disjoint
+paging,Flags::user_write_combining,replace | with ^,crates/paging/src/flags.rs,131,const,2 | 1 | 32 | 64 are pairwise disjoint
+paging,,replace << with >>,crates/paging/src/sv39.rs,17,literal,a zero feed or amount: 1 and 0
+paging,Sv39::attrs,replace | with ^,crates/paging/src/sv39.rs,44,const,2 | 64 are pairwise disjoint
+paging,Sv39::attrs,replace | with ^,crates/paging/src/sv39.rs,46,const,4 | 128 are pairwise disjoint
+paging,<impl PageFormat for Sv39>::table_entry,replace | with ^,crates/paging/src/sv39.rs,81,site,(((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V
+paging,<impl PageFormat for Sv39>::leaf_entry,replace | with ^,crates/paging/src/sv39.rs,85,site,(((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V | Self::attrs(flags)
+paging,<impl PageFormat for Sv39>::leaf_entry,replace | with ^,crates/paging/src/sv39.rs,85,site,(((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V | Self::attrs(flags)
+paging,<impl PageFormat for Sv39>::is_block,replace | with ^,crates/paging/src/sv39.rs,123,const,2 | 4 | 8 are pairwise disjoint
+paging,<impl PageFormat for Sv39>::is_block,replace | with ^,crates/paging/src/sv39.rs,123,const,2 | 4 | 8 are pairwise disjoint
+paging,Sv39Mae::memory_type,replace | with ^,crates/paging/src/sv39.rs,156,const,9223372036854775808 | 1152921504606846976 are pairwise disjoint
+paging,Sv39Mae::memory_type,replace | with ^,crates/paging/src/sv39.rs,158,const,4611686018427387904 | 2305843009213693952 | 1152921504606846976 are pairwise disjoint
+paging,Sv39Mae::memory_type,replace | with ^,crates/paging/src/sv39.rs,158,const,4611686018427387904 | 2305843009213693952 | 1152921504606846976 are pairwise disjoint
+paging,<impl PageFormat for Sv39Mae>::leaf_entry,replace | with ^,crates/paging/src/sv39.rs,186,site,"Sv39::leaf_entry(pa, flags) | Self::memory_type(flags)"
+paging,<impl PageFormat for Sv39Mae>::block_entry,replace | with ^,crates/paging/src/sv39.rs,194,site,"Some(Sv39::block_entry(pa, flags, size)? | Self::memory_type(flags))"
+paging,,replace | with ^,crates/paging/src/x86_64.rs,34,site,pub const VALUE: u64 = (RESET & !0xff00) | 0x01 << 8;
+paging,,replace << with >>,crates/paging/src/x86_64.rs,37,literal,a zero feed or amount: 1 and 0
+paging,Ia32e::attrs,replace | with ^,crates/paging/src/x86_64.rs,86,const,2 | 64 are pairwise disjoint
+paging,Ia32e::attrs,replace | with ^,crates/paging/src/x86_64.rs,99,const,8 | 1024 are pairwise disjoint
+paging,Ia32e::attrs,replace | with ^,crates/paging/src/x86_64.rs,104,const,16 | 8 | 1024 are pairwise disjoint
+paging,Ia32e::attrs,replace | with ^,crates/paging/src/x86_64.rs,104,const,16 | 8 | 1024 are pairwise disjoint
+paging,<impl PageFormat for Ia32e>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,136,site,(pa & ADDR_MASK) | P | RW | US
+paging,<impl PageFormat for Ia32e>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,136,site,(pa & ADDR_MASK) | P | RW | US
+paging,<impl PageFormat for Ia32e>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,136,site,(pa & ADDR_MASK) | P | RW | US
+paging,<impl PageFormat for Ia32e>::leaf_entry,replace | with ^,crates/paging/src/x86_64.rs,140,site,(pa & ADDR_MASK) | P | Self::attrs(flags)
+paging,<impl PageFormat for Ia32e>::leaf_entry,replace | with ^,crates/paging/src/x86_64.rs,140,site,(pa & ADDR_MASK) | P | Self::attrs(flags)
+paging,<impl PageFormat for Ia32e>::block_entry,replace | with ^,crates/paging/src/x86_64.rs,184,site,Some((pa & ADDR_MASK & !(size.bytes() - 1)) | P | PS | Self::attrs(flags))
+paging,<impl PageFormat for Ia32e>::block_entry,replace | with ^,crates/paging/src/x86_64.rs,184,site,Some((pa & ADDR_MASK & !(size.bytes() - 1)) | P | PS | Self::attrs(flags))
+paging,<impl PageFormat for Ia32e>::block_entry,replace | with ^,crates/paging/src/x86_64.rs,184,site,Some((pa & ADDR_MASK & !(size.bytes() - 1)) | P | PS | Self::attrs(flags))
+paging,,replace << with >>,crates/paging/src/x86_64.rs,205,literal,a zero feed or amount: 1 and 0
+paging,<impl PageFormat for Vtd>::is_present,replace | with ^,crates/paging/src/x86_64.rs,234,const,1 | 2 are pairwise disjoint
+paging,<impl PageFormat for Vtd>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,245,site,(pa & VTD_ADDR_MASK) | VTD_R | VTD_W
+paging,<impl PageFormat for Vtd>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,245,site,(pa & VTD_ADDR_MASK) | VTD_R | VTD_W
+paging,<impl PageFormat for Vtd>::leaf_entry,replace | with ^,crates/paging/src/x86_64.rs,257,site,(pa & VTD_ADDR_MASK) | bits
+paging,,replace << with >>,crates/paging/src/x86_64.rs,298,literal,a zero feed or amount: 1 and 0
+paging,<impl PageFormat for AmdVi>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,341,const,1 | 1 are pairwise disjoint
+paging,<impl PageFormat for AmdVi>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,342,site,| (next << AMD_VI_NEXT_LEVEL_SHIFT)
+paging,<impl PageFormat for AmdVi>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,343,const,2305843009213693952 | 2305843009213693952 are pairwise disjoint
+paging,<impl PageFormat for AmdVi>::table_entry,replace | with ^,crates/paging/src/x86_64.rs,344,const,4611686018427387904 | 4611686018427387904 are pairwise disjoint
+paging,<impl PageFormat for AmdVi>::leaf_entry,replace | with ^,crates/paging/src/x86_64.rs,351,const,1 | 1152921504606846976 | 2305843009213693952 are pairwise disjoint
+paging,<impl PageFormat for AmdVi>::leaf_entry,replace | with ^,crates/paging/src/x86_64.rs,351,const,1 | 1152921504606846976 | 2305843009213693952 are pairwise disjoint
+paging,<impl PageFormat for AmdVi>::leaf_entry,replace | with ^,crates/paging/src/x86_64.rs,355,site,(pa & AMD_VI_ADDR_MASK) | bits
+paging,,replace << with >>,crates/paging/src/x86_64.rs,390,literal,a zero feed or amount: 1 and 0
+paging,AmdVi::device_table_entry,replace | with ^,crates/paging/src/x86_64.rs,419,site,"DTE_V | DTE_TV | DTE_MODE_4_LEVEL | root | DTE_IR | DTE_IW,"
+paging,AmdVi::device_table_entry,replace | with ^,crates/paging/src/x86_64.rs,419,site,"DTE_V | DTE_TV | DTE_MODE_4_LEVEL | root | DTE_IR | DTE_IW,"
+paging,AmdVi::device_table_entry,replace | with ^,crates/paging/src/x86_64.rs,419,site,"DTE_V | DTE_TV | DTE_MODE_4_LEVEL | root | DTE_IR | DTE_IW,"
+paging,AmdVi::device_table_entry,replace | with ^,crates/paging/src/x86_64.rs,419,site,"DTE_V | DTE_TV | DTE_MODE_4_LEVEL | root | DTE_IR | DTE_IW,"
+paging,AmdVi::device_table_entry,replace | with ^,crates/paging/src/x86_64.rs,419,site,"DTE_V | DTE_TV | DTE_MODE_4_LEVEL | root | DTE_IR | DTE_IW,"
+paging,AmdVi::blocked_device_table_entry,replace | with ^,crates/paging/src/x86_64.rs,434,site,"Some([DTE_V | DTE_TV | DTE_MODE_4_LEVEL | empty_root, 0, 0, 0])"
+paging,AmdVi::blocked_device_table_entry,replace | with ^,crates/paging/src/x86_64.rs,434,site,"Some([DTE_V | DTE_TV | DTE_MODE_4_LEVEL | empty_root, 0, 0, 0])"
+paging,AmdVi::blocked_device_table_entry,replace | with ^,crates/paging/src/x86_64.rs,434,site,"Some([DTE_V | DTE_TV | DTE_MODE_4_LEVEL | empty_root, 0, 0, 0])"
+pci,Bdf::ecam_offset,replace | with ^,crates/pci/src/lib.rs,32,site,((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
+pci,Bdf::ecam_offset,replace | with ^,crates/pci/src/lib.rs,32,site,((self.bus as u64) << 20) | ((self.dev as u64) << 15) | ((self.func as u64) << 12)
+pci,Bdf::requester_id,replace | with ^,crates/pci/src/lib.rs,40,site,((self.bus as u32) << 8) | ((self.dev as u32) << 3) | (self.func as u32)
+pci,Bdf::requester_id,replace | with ^,crates/pci/src/lib.rs,40,site,((self.bus as u32) << 8) | ((self.dev as u32) << 3) | (self.func as u32)
+pci,read_bars,replace | with ^,crates/pci/src/lib.rs,399,site,let mask = ((mask_hi as u64) << 32) | (mask_lo as u64 & 0xffff_fff0);
+pci,read_bars,replace | with ^,crates/pci/src/lib.rs,402,site,"base: ((orig_hi as u64) << 32) | (orig as u64 & 0xffff_fff0),"
+pci,read_bars,replace | with ^,crates/pci/src/lib.rs,415,site,"size: !(mask | 0xffff_ffff_0000_0000) + 1,"
+pci,,replace << with >>,crates/pci/src/lib.rs,525,literal,a zero feed or amount: 1 and 0
+pci,mem32_window,replace | with ^,crates/pci/src/lib.rs,721,site,let pci_addr = (cell(1) << 32) | cell(2);
+pci,mem32_window,replace | with ^,crates/pci/src/lib.rs,722,site,let cpu_addr = (cell(3) << 32) | cell(4);
+pci,mem32_window,replace | with ^,crates/pci/src/lib.rs,723,site,let size = (cell(5) << 32) | cell(6);
+pgrep,,replace | with ^,crates/pgrep/src/lib.rs,40,site,pub const EVERY: u64 = READY | RUNNING | BLOCKED | DEAD;
+pgrep,,replace | with ^,crates/pgrep/src/lib.rs,40,site,pub const EVERY: u64 = READY | RUNNING | BLOCKED | DEAD;
+pgrep,,replace | with ^,crates/pgrep/src/lib.rs,40,site,pub const EVERY: u64 = READY | RUNNING | BLOCKED | DEAD;
+screen_console,Aperture::to_words,replace | with ^,crates/screen_console/src/lib.rs,173,site,"self.width as u64 | (self.height as u64) << 32,"
+screen_console,Aperture::to_words,replace | with ^,crates/screen_console/src/lib.rs,174,site,"self.stride as u64 | order << 32 | (self.scale as u64) << 40,"
+screen_console,Aperture::to_words,replace | with ^,crates/screen_console/src/lib.rs,174,site,"self.stride as u64 | order << 32 | (self.scale as u64) << 40,"
+screen_console,Aperture::copy_wide_screen,replace | with ^,crates/screen_console/src/lib.rs,337,site,"write64(at, lo | hi << 32);"
+serial_console,decode_exact,replace | with ^,crates/serial_console/src/screen.rs,274,site,(pixels[i] as u32) << 16 | (pixels[i + 1] as u32) << 8 | pixels[i + 2] as u32
+serial_console,decode_exact,replace | with ^,crates/serial_console/src/screen.rs,274,site,(pixels[i] as u32) << 16 | (pixels[i + 1] as u32) << 8 | pixels[i + 2] as u32
+socket_contract,listen_grant,replace | with ^,crates/socket_contract/src/lib.rs,123,site,(lo as u64) | ((hi as u64) << 16)
+socket_contract,udp_bind_grant,replace | with ^,crates/socket_contract/src/lib.rs,172,site,((lo as u64) << 32) | ((hi as u64) << 48)
+system_log_contract,,replace << with >>,crates/system_log_contract/src/lib.rs,87,literal,a zero feed or amount: 1 and 0
+system_log_contract,control::word,replace | with ^,crates/system_log_contract/src/lib.rs,197,site,(operation << 56) | ((field & 0xff) << 40) | ((arg & 0xff) << 32) | badge as u64
+system_log_contract,control::word,replace | with ^,crates/system_log_contract/src/lib.rs,197,site,(operation << 56) | ((field & 0xff) << 40) | ((arg & 0xff) << 32) | badge as u64
+system_log_contract,control::word,replace | with ^,crates/system_log_contract/src/lib.rs,197,site,(operation << 56) | ((field & 0xff) << 40) | ((arg & 0xff) << 32) | badge as u64
+system_log_contract,kernel_ring::Ring<'a>::read,replace >> with <<,crates/system_log_contract/src/lib.rs,497,site,"kind: ((m >> 32) & 0xff) as u8,"
+system_log_contract,kernel_ring::meta,replace | with ^,crates/system_log_contract/src/lib.rs,506,site,severity as u64 | (flags as u64) << 8 | (len as u64) << 16
+system_log_contract,kernel_ring::meta,replace | with ^,crates/system_log_contract/src/lib.rs,506,site,severity as u64 | (flags as u64) << 8 | (len as u64) << 16
+system_log_contract,console::chunk,replace | with ^,crates/system_log_contract/src/lib.rs,549,site,(OPERATION_KERNEL_LINE << 56) | n as u64
+timetable,request,replace | with ^,crates/timetable/src/registration.rs,87,site,(seq << 8) | (operation & 0xff)
+timetable,verdict,replace | with ^,crates/timetable/src/registration.rs,121,site,"Admission::Unbacked(u) => KIND_UNBACKED | (unbacked_code(*u) << 2),"
+timetable,verdict,replace | with ^,crates/timetable/src/registration.rs,123,site,if kept { base | KEPT_PHASE } else { base }
+usb,SetupPacket::get_descriptor,replace | with ^,crates/usb/src/request.rs,48,site,"value: (kind as u16) << 8 | index as u16,"
+usb,SetupPacket::set_boot_protocol,replace | with ^,crates/usb/src/request.rs,70,const,32 | 1 are pairwise disjoint
+usb,SetupPacket::set_idle_forever,replace | with ^,crates/usb/src/request.rs,83,const,32 | 1 are pairwise disjoint
+usb,SetupPacket::to_u64,replace | with ^,crates/usb/src/request.rs,100,site,| (self.request as u64) << 8
+usb,SetupPacket::to_u64,replace | with ^,crates/usb/src/request.rs,101,site,| (self.value as u64) << 16
+usb,SetupPacket::to_u64,replace | with ^,crates/usb/src/request.rs,102,site,| (self.index as u64) << 32
+usb,SetupPacket::to_u64,replace | with ^,crates/usb/src/request.rs,103,site,| (self.length as u64) << 48
+driver_process_contract::extensible_host_controller_interface,keyboard_report,replace | with ^,crates/usb_keyboard_report/src/lib.rs,140,site,port as u64 | (speed as u64) << 8 | (vendor as u64) << 16 | (product as u64) << 32
+driver_process_contract::extensible_host_controller_interface,keyboard_report,replace | with ^,crates/usb_keyboard_report/src/lib.rs,140,site,port as u64 | (speed as u64) << 8 | (vendor as u64) << 16 | (product as u64) << 32
+driver_process_contract::extensible_host_controller_interface,keyboard_report,replace | with ^,crates/usb_keyboard_report/src/lib.rs,140,site,port as u64 | (speed as u64) << 8 | (vendor as u64) << 16 | (product as u64) << 32
+driver_process_contract::extensible_host_controller_interface,ports_report,replace | with ^,crates/usb_keyboard_report/src/lib.rs,157,site,ports as u64 | (connected as u64) << 8 | (settled as u64) << 16
+driver_process_contract::extensible_host_controller_interface,ports_report,replace | with ^,crates/usb_keyboard_report/src/lib.rs,157,site,ports as u64 | (connected as u64) << 8 | (settled as u64) << 16
+driver_process_contract::extensible_host_controller_interface,failure_report,replace | with ^,crates/usb_keyboard_report/src/lib.rs,174,site,step as u64 | (port as u64) << 8 | (detail as u64) << 16
+driver_process_contract::extensible_host_controller_interface,failure_report,replace | with ^,crates/usb_keyboard_report/src/lib.rs,174,site,step as u64 | (port as u64) << 8 | (detail as u64) << 16
+video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,44,site,"Colour::Rgb(r, g, b) => (r as u32) << 16 | (g as u32) << 8 | b as u32,"
+video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,44,site,"Colour::Rgb(r, g, b) => (r as u32) << 16 | (g as u32) << 8 | b as u32,"
+video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,48,site,cube_level(n / 36) << 16 | cube_level(n / 6 % 6) << 8 | cube_level(n % 6)
+video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,48,site,cube_level(n / 36) << 16 | cube_level(n / 6 % 6) << 8 | cube_level(n % 6)
+video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,52,site,v << 16 | v << 8 | v
+video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,52,site,v << 16 | v << 8 | v
+video_terminal,,replace << with >>,crates/video_terminal/src/cell.rs,80,literal,a zero feed or amount: 1 and 0
+video_terminal,midpoint,replace | with ^,crates/video_terminal/src/cell.rs,240,site,"channel_midpoint(a, b, 16) | channel_midpoint(a, b, 8) | channel_midpoint(a, b, 0)"
+video_terminal,midpoint,replace | with ^,crates/video_terminal/src/cell.rs,240,site,"channel_midpoint(a, b, 16) | channel_midpoint(a, b, 8) | channel_midpoint(a, b, 0)"
+video_terminal,,replace << with >>,crates/video_terminal/src/handoff.rs,69,literal,a zero feed or amount: 1 and 0
+video_terminal,color_word,replace | with ^,crates/video_terminal/src/handoff.rs,82,site,"Colour::Rgb(r, g, b) => 1 << 24 | (r as u32) << 16 | (g as u32) << 8 | b as u32,"
+video_terminal,color_word,replace | with ^,crates/video_terminal/src/handoff.rs,82,site,"Colour::Rgb(r, g, b) => 1 << 24 | (r as u32) << 16 | (g as u32) << 8 | b as u32,"
+video_terminal,color_word,replace | with ^,crates/video_terminal/src/handoff.rs,82,site,"Colour::Rgb(r, g, b) => 1 << 24 | (r as u32) << 16 | (g as u32) << 8 | b as u32,"
+video_terminal,cell_words,replace | with ^,crates/video_terminal/src/handoff.rs,139,site,"c.ch as u32 | (c.attr.flags as u32) << 21 | (c.attr.underline as u32) << 28,"
+video_terminal,cell_words,replace | with ^,crates/video_terminal/src/handoff.rs,139,site,"c.ch as u32 | (c.attr.flags as u32) << 21 | (c.attr.underline as u32) << 28,"
+video_terminal,Vt::ground,replace | with ^,crates/video_terminal/src/vt.rs,538,site,self.utf8_code = (self.utf8_code << 6) | (b & 0x3f) as u32;
+video_terminal,Vt::absorb_handoff,replace | with ^,crates/video_terminal/src/vt.rs,1156,site,|| flags & !(FLAG_WRAP_PENDING | FLAG_CURSOR_VISIBLE | FLAG_IGNORE) != 0
+video_terminal,Vt::absorb_handoff,replace | with ^,crates/video_terminal/src/vt.rs,1156,site,|| flags & !(FLAG_WRAP_PENDING | FLAG_CURSOR_VISIBLE | FLAG_IGNORE) != 0
