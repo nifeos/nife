@@ -14,6 +14,13 @@ name = "redoxfs"
 kind = "optional"
 home = { repo = "redoxfs", status = "provisional" }
 crates = ["redoxfs_server", "redoxfs_host", "redoxfs"]
+# The two programs the server's workspace builds, named because a builder that packs this package
+# from its definition (rather than from a recipe) takes the `programs` line as the members
+# (milestone 909 (basalt composes the bootable image from its packages)). The format leaves the
+# line out when a crate's binaries all land in its own crate's package (notes/package-boundaries.md),
+# so it changes no placement: these two are already here. `second_mount` is the `hosttest` binary
+# and stays out.
+programs = ["redoxfs_server", "mkfs"]
 # The server enforces subtree grants itself (milestone 606 (a directory walk costs what it does on
 # Linux), rulings D and T1 of 2026-09-27): `redoxfs_server` carries
 # `capability_manifest_note::carry_subtree_grants!`, and the progenitor gives its clients a bound badge instead

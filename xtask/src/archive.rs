@@ -175,6 +175,31 @@ fn packaged_only(manifest: &str) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
+/// **The programs the `fixtures` package carries**: every `[[bin]]` block in
+/// `fixtures/Cargo.toml` less its [`packaged_only`] list, which is the same pair of reads every
+/// archive build makes.
+///
+/// Milestone 909 (basalt composes the bootable image from its packages) needs it because the image
+/// a test boots carries these: the kernel's boot self-test runs two of them, and the shell's check
+/// types at the others. The release image carries none of them, so they are not in
+/// `packages/base-image.toml`; `cargo xtask base-image --test` adds this list to it.
+pub(crate) fn fixture_programs() -> Result<Vec<String>, String> {
+    let path = workspace_root().join("fixtures").join("Cargo.toml");
+    let text = std::fs::read_to_string(&path)
+        .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    let mut names = bin_names(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+    let absent = packaged_only(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+    for name in &absent {
+        if !names.contains(name) {
+            return Err(format!(
+                "`{name}` is packaged_only and no [[bin]] builds it"
+            ));
+        }
+    }
+    names.retain(|name| !absent.contains(name));
+    Ok(names)
+}
+
 /// The `name` of every `[[bin]]` table in a `Cargo.toml`, in order.
 ///
 /// **A reader for the subset of TOML this tree writes, and strict about it**, because DECISIONS
@@ -604,26 +629,28 @@ fn shipped_std_programs_present(arch: &str, files: &[(&str, &[u8])]) -> Result<(
 /// `path`, and write the measurement manifest the kernel build reads. `Some((bytes, entries))` on
 /// success; `None` after saying why, prefixed with `label`. `what` names the archive in the one
 /// message that has always spelled it per architecture.
+///
+/// The image's package source is built from this tree's recipes
+/// ([`crate::package::image_catalog`]); [`write_archive_with`] is the same packer for an image
+/// composed elsewhere, whose catalog and index sources come from its packages.
 fn write_archive(
     label: &str,
     arch: &str,
     path: &str,
     what: &str,
-    blobs: &[(&'static str, Vec<u8>)],
+    blobs: &[(&str, Vec<u8>)],
 ) -> Option<(usize, usize)> {
-    let mut files: Vec<(&str, &[u8])> = blobs.iter().map(|(n, b)| (*n, b.as_slice())).collect();
     // **The image's package source** (milestone 198 (a package manager) rung 3a): every recipe
     // under `packages/` for this architecture is built, written where the package tests' HTTP peer
-    // serves it, and its catalogue line packed here, *above* the measurement table so the kernel's
+    // serves it, and its catalog line packed here, *above* the measurement table so the kernel's
     // trust root vouches for it. `package_archive::CATALOG`'s doc has why.
-    let catalogue = match crate::package::image_catalogue(arch) {
-        Ok(catalogue) => catalogue,
+    let catalog = match crate::package::image_catalog(arch) {
+        Ok(catalog) => catalog,
         Err(complaint) => {
             eprintln!("{label}: the image's package source: {complaint}");
             return None;
         }
     };
-    files.push((package_archive::CATALOG, catalogue.as_bytes()));
     // And where the image says its index is (milestone 801), measured the same way.
     let sources = match crate::package::image_index_sources() {
         Ok(sources) => sources,
@@ -632,6 +659,27 @@ fn write_archive(
             return None;
         }
     };
+    write_archive_with(label, arch, path, what, blobs, &catalog, &sources)
+}
+
+/// **Pack an image whose catalog and index sources are given** (milestone 909 (basalt composes
+/// the bootable image from its packages)): the one packer both builders reach, so an image composed
+/// from packages carries the same catalog entry, index sources, measurement table and boot-program
+/// checks as one built in this tree.
+pub(crate) fn write_archive_with<N: AsRef<str>>(
+    label: &str,
+    arch: &str,
+    path: &str,
+    what: &str,
+    blobs: &[(N, Vec<u8>)],
+    catalog: &str,
+    sources: &str,
+) -> Option<(usize, usize)> {
+    let mut files: Vec<(&str, &[u8])> = blobs
+        .iter()
+        .map(|(name, bytes)| (name.as_ref(), bytes.as_slice()))
+        .collect();
+    files.push((package_archive::CATALOG, catalog.as_bytes()));
     files.push((package_index::SOURCES_ENTRY, sources.as_bytes()));
     if let Err(complaint) = shipped_std_programs_present(arch, &files) {
         eprintln!("{label}: {complaint}");
@@ -674,7 +722,7 @@ fn write_archive(
 ///
 /// The program headers are read by hand rather than with `crates/elf`, which refuses a foreign
 /// `e_machine`; this packs riscv64 and `x86_64` archives on an aarch64 host. Entries that are not
-/// ELF (the catalogue, the measurement table) are skipped.
+/// ELF (the catalog, the measurement table) are skipped.
 fn programs_fit_the_address_space_map(archive: &str, files: &[(&str, &[u8])]) -> bool {
     let mut fits = true;
     for (name, bytes) in files {
@@ -778,7 +826,7 @@ mod tests {
         );
         assert!(programs_fit_the_address_space_map(
             "t",
-            &[("good", &good), ("catalogue", b"text")]
+            &[("good", &good), ("catalog", b"text")]
         ));
         assert!(!programs_fit_the_address_space_map(
             "t",

@@ -54,7 +54,15 @@ pub(crate) fn main() -> ExitCode {
         "uefi-boot" => uefi_boot_command(),
         // Milestone 198's rung 3a, the producer half: a reviewed recipe in, one package file and
         // its digest out. Name provisional (2026-09-23).
-        "package" => package::package(std::env::args().nth(2)),
+        "package" => package::command(std::env::args().skip(2).collect()),
+        // **The bootable image composed from packages** (milestone 909 (basalt composes the
+        // bootable image from its packages)): the initial ramdisk's every program comes out of a
+        // `.nifepkg`, and the kernel is built against that archive's measurement table. Name
+        // provisional.
+        "base-image" => base_image::base_image(),
+        // Its other half: build every package the image needs, into `target/packages`, and stop
+        // there. A builder that composes elsewhere (basalt) runs this first. Name provisional.
+        "base-packages" => base_image::base_packages(),
         "install-boot" => install::install_boot(),
         "rollback-boot" => rollback::rollback_boot(),
         // Rung 2b's other half: a GOOD upgrade is tried, confirmed by the running system, and

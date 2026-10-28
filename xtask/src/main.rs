@@ -24,6 +24,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 mod archive;
 mod basalt;
+mod base_image;
 mod bench;
 mod board;
 mod boot_check;

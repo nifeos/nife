@@ -139,11 +139,17 @@ fn boot_check_leg(
         return false;
     }
 
-    let Some((mut child, stdout)) = start_boot_check_leg(arch, target, runner, archive) else {
+    let archive = archive();
+    let Some(mut child) = start_boot_check_leg(
+        arch,
+        runner,
+        &kernel_path(target),
+        std::path::Path::new(&archive),
+    ) else {
         return false;
     };
 
-    // The same recogniser `cargo xtask board-console` points at a real board, which is the point:
+    // The same recognizer `cargo xtask board-console` points at a real board, which is the point:
     // a gate that used a second reader would be gating something the bench does not measure.
     let policy = boot_check_policy();
 
@@ -151,28 +157,8 @@ fn boot_check_leg(
         "target/boot-check-{arch}{}.log",
         if inject { "-injected" } else { "" }
     );
-    let mut sink: Box<dyn std::io::Write> = match std::fs::File::create(&log_path) {
-        Ok(f) => Box::new(std::io::BufWriter::new(f)),
-        Err(e) => {
-            eprintln!("boot-check ({arch}): cannot write {log_path}: {e}");
-            let _ = child.kill();
-            let _ = child.wait();
-            return false;
-        }
-    };
-    // `stream_never_ends: false`: this is a pipe, so a zero-byte read means the emulator is gone.
-    let session = serial_console::watch::watch(stdout, &mut *sink, &policy, false);
-    let _ = sink.flush();
-
-    stop_boot_check_leg(&mut child);
-
-    let session = match session {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("boot-check ({arch}): reading the console failed: {e}");
-            eprintln!("boot-check ({arch}): log at {log_path}");
-            return false;
-        }
+    let Some(session) = watch_boot(arch, &mut child, &policy, &log_path) else {
+        return false;
     };
 
     eprintln!("boot-check ({arch}): {}", session.summary());
@@ -186,41 +172,105 @@ fn boot_check_leg(
     boot_check_verdict(&session, arch, inject, &log_path)
 }
 
-/// **Start the leg's emulator** on the kernel just built and the archive `archive` names, its
-/// console piped. `None` after saying why it did not start.
+/// **Boot a kernel and its archive, watch the console to the prompt, and say whether it got
+/// there**: milestone 909 (basalt composes the bootable image from its packages) gates an image
+/// composed from packages, on `boot_check`'s own recognizer and policy so the composed boot is
+/// judged exactly as a tree-built one is.
+///
+/// The paths are explicit because the composed kernel and archive are not the tree's: they are
+/// `<out-dir>/kernel` and `<out-dir>/initrd.img`.
+pub(crate) fn boot_image(
+    arch: &str,
+    runner: &str,
+    kernel: &std::path::Path,
+    archive: &std::path::Path,
+) -> bool {
+    eprintln!();
+    eprintln!(
+        "--- base-image ({arch}): boot the composed image and climb the ladder to the prompt ---"
+    );
+    let Some(mut child) = start_boot_check_leg(arch, runner, kernel, archive) else {
+        return false;
+    };
+    let policy = boot_check_policy();
+    let log_path = format!("target/base-image-{arch}.log");
+    let Some(session) = watch_boot(arch, &mut child, &policy, &log_path) else {
+        return false;
+    };
+    eprintln!("base-image ({arch}): {}", session.summary());
+    boot_check_verdict(&session, arch, false, &log_path)
+}
+
+/// Read a boot's console to the policy's rung, then end the emulator. `None` after saying which
+/// half failed; the log path is in the message, because the log is the diagnosis either way.
+fn watch_boot(
+    arch: &str,
+    child: &mut std::process::Child,
+    policy: &serial_console::watch::Policy,
+    log_path: &str,
+) -> Option<serial_console::watch::Session> {
+    let stdout = child.stdout.take().expect("piped stdout");
+    let mut sink: Box<dyn std::io::Write> = match std::fs::File::create(log_path) {
+        Ok(f) => Box::new(std::io::BufWriter::new(f)),
+        Err(e) => {
+            eprintln!("boot-check ({arch}): cannot write {log_path}: {e}");
+            stop_boot_check_leg(child);
+            return None;
+        }
+    };
+    // `stream_never_ends: false`: this is a pipe, so a zero-byte read means the emulator is gone.
+    let session = serial_console::watch::watch(stdout, &mut *sink, policy, false);
+    let _ = sink.flush();
+
+    stop_boot_check_leg(child);
+
+    match session {
+        Ok(session) => Some(session),
+        Err(e) => {
+            eprintln!("boot-check ({arch}): reading the console failed: {e}");
+            eprintln!("boot-check ({arch}): log at {log_path}");
+            None
+        }
+    }
+}
+
+/// **Start an emulator** on `kernel` and `archive`, its console piped. `None` after saying why it
+/// did not start.
 fn start_boot_check_leg(
     arch: &str,
-    target: &str,
     runner: &str,
-    archive: fn() -> String,
-) -> Option<(std::process::Child, std::process::ChildStdout)> {
+    kernel: &std::path::Path,
+    archive: &std::path::Path,
+) -> Option<std::process::Child> {
     // The runner directly rather than through `cargo run`, so the process this owns is the
     // emulator (or, on x86, its wrapper; see the kill below). A `cargo run` in between would leave
     // the emulator alive when the kill lands on cargo, which is the leak AGENTS.md's QEMU rule
     // exists about.
     let mut cmd = Command::new(runner);
-    cmd.arg(format!("target/{target}/{}/kernel", profile_dir()));
+    cmd.arg(kernel);
     // Only the archive: this gate types nothing, so no disk. `host::cargo` exports `NIFE_DISK` and
     // `NIFE_NET` into this process for every cargo call, and the aarch64 and `x86_64` runners treat
     // a `NIFE_DISK` naming a missing file as fatal, so the child's environment is set here rather
     // than inherited; an exported `NIFE_DISK` in a shell cannot change what this boots either.
-    cmd.env("NIFE_INITIAL_RAMDISK", archive());
+    cmd.env("NIFE_INITIAL_RAMDISK", archive);
     cmd.env_remove("NIFE_DISK");
     cmd.env_remove("NIFE_NET");
     cmd.stdout(std::process::Stdio::piped());
     // The guest's own stderr is not interesting and QEMU's is, so it is left attached: a runner
     // that cannot find its emulator should say so on this terminal rather than into a pipe nobody
     // reads.
-    let mut child = match cmd.spawn() {
-        Ok(c) => c,
+    match cmd.spawn() {
+        Ok(child) => Some(child),
         Err(e) => {
             eprintln!("boot-check ({arch}): failed to start {runner}: {e}");
-            return None;
+            None
         }
-    };
-    let stdout = child.stdout.take().expect("piped stdout");
+    }
+}
 
-    Some((child, stdout))
+/// The kernel a `cargo build` just put in the tree, for [`start_boot_check_leg`].
+fn kernel_path(target: &str) -> std::path::PathBuf {
+    crate::host::workspace_root().join(format!("target/{target}/{}/kernel", profile_dir()))
 }
 
 /// **What the leg waits for and how long**, in `serial_console`'s terms.
