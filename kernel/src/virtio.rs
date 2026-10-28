@@ -497,7 +497,10 @@ struct Device {
 /// counts live transports, not every transport a boot has wired. A name that outlives its device
 /// is refused, not resolved to the device that took the slot next (§16 (object revocation), amendment of 2026-10-27).
 /// See notes/virtio.md, "The kernel's half".
-const MAXIMUM_DEVICES: usize = 34;
+///
+/// Twelve: the full kernel and system suites pass on all three architectures at twelve, where
+/// thirty-four were needed while no slot came back. Ten bumps of this number are not coming back.
+const MAXIMUM_DEVICES: usize = 12;
 
 /// The device table: `generational_table::Table`, the machinery regions and thread ids use, so a
 /// removal bumps the slot's generation and every outstanding name goes stale.
