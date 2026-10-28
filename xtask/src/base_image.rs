@@ -198,12 +198,9 @@ pub(crate) fn base_image() -> bool {
 /// `target/packages` with its catalog. The half of `base-image` a builder that composes elsewhere
 /// runs first (milestone 909); it builds no image and no kernel.
 pub(crate) fn base_packages() -> bool {
-    let arch = match std::env::args().nth(2) {
-        Some(arch) => arch,
-        None => {
-            eprintln!("usage: cargo xtask base-packages <aarch64|riscv64|x86_64>");
-            return false;
-        }
+    let Some(arch) = std::env::args().nth(2) else {
+        eprintln!("usage: cargo xtask base-packages <aarch64|riscv64|x86_64>");
+        return false;
     };
     let root = workspace_root();
     let definition = match read_definition(&root) {
@@ -243,7 +240,7 @@ fn parse_arguments(args: Vec<String>) -> Result<Arguments, String> {
                 }
             }
             other if parsed.arch.is_none() && !other.starts_with('-') => {
-                parsed.arch = Some(other.to_string())
+                parsed.arch = Some(other.to_string());
             }
             other => return Err(format!("unknown argument {other}")),
         }
