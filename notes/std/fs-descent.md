@@ -77,14 +77,11 @@ knowable when it is minted. So it asks for the projection of the authority the p
 onto one directory inside it, which cannot widen anything (`parent & requested`) and is exactly what
 `openat(dirfd, name, O_DIRECTORY)` hands back on Unix.
 
-Knowing what the parent carries is the awkward part, because the contract has no way to say
-"attenuate to whatever you have" and no verb reporting a handle's rights. The common case is one
-message: ask for `dir::ALL`, and a full-rights grant answers with the handle. A narrowed grant
-answers `EPERM`, and the PAL then finds out what is there by asking for one right at a time, one
-message per bit of `dir::ALL` (seven today). It does so at most once per `Dir::open`, because every
-hop after the first descends from a parent whose rights are now known. That probe is a workaround, not a design. The fix is a sentinel
-in `OPENDIR`'s rights word meaning "the parent's, whatever they are", which is a wire-format change
-and therefore not a lane's to make.
+The contract has no verb reporting a handle's rights, so a `Dir` cannot ask for the right amount by
+name. It asks for `dir::PARENT_RIGHTS` (§98 (opendir cannot attenuate)), a sentinel in `OPENDIR`'s rights word meaning "the
+parent's, whatever they are". That is one message under a full grant and under a narrowed one, and
+the server answers `parent & parent`, so nothing widens. The sentinel is `1 << 63`, which no mask
+can equal because a mask is a subset of the seven low bits of `dir::ALL`.
 
 ### The `dirfd` surface grew: `open_for_traversal`, `create_dir`, `open_dir`, `remove_dir`
 

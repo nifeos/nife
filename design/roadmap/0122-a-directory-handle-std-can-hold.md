@@ -118,13 +118,11 @@ milestone:
   at any position, a path through a file, `..` through a held `Dir`). A std program spawned on an
   `fs_subtree_caretaker` endpoint is the test that would close it and is proposed as its own
   milestone.
-- It turned up one contract question, and it is an architect's. `OPENDIR` has no way to say
-  "attenuate to whatever you have": the request is refused with `EPERM` when the intersection comes
-  up short, which is right for a verb asking for a minimum and wrong for an object that has no
-  single verb. A held `Dir` therefore asks for `dir::ALL` and, when a narrowed grant refuses, finds
-  out what is there by asking for one right at a time (six messages, at most once per `Dir::open`).
-  That works and is recorded as a workaround where a reader meets it. The fix is a sentinel in the
-  rights word, which is a wire-format change and not a lane's to make.
+- It turned up one contract question, and it was an architect's. `OPENDIR` refuses with `EPERM`
+  when the intersection comes up short, which is right for a verb asking for a minimum and wrong for
+  an object that has no single verb. A held `Dir` asks for `dir::PARENT_RIGHTS`, a sentinel in the
+  rights word meaning "the parent's, whatever they are" (§98), so one message reaches the child under
+  every grant.
 
 ## Prior art
 
@@ -163,8 +161,6 @@ is §82's stated failure mode.
   endpoint is milestone 108's open question. The clean fix is the contract's: a tag or an offset in
   the reply word.
 
-- A held `Dir` asks for `dir::ALL` and probes on refusal, six extra messages under a narrowed
-  grant, because `OPENDIR` cannot be asked to attenuate rather than refuse. See "What it did not do".
 - **This does not make `cap-std` run.** It builds the object `cap-std` would bind to. The backend work
   is separate and §84 records that it is unmeasured, including whether `cap-primitives` has a seam a
   third backend can use at all.
