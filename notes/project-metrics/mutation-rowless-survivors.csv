@@ -15,20 +15,6 @@ documentation,Layout::flush_table,replace += with *=
 documentation,Layout::rule,replace += with *=
 documentation,Layout::write_table_rule,replace += with *=
 driver_process_contract,Handoff::pack,replace | with ^
-e1000e,Handoff::pack,replace | with ^
-e1000e,cycle_init,replace & with ^
-e1000e,cycle_init,replace & with |
-e1000e,cycle_init,replace | with &
-e1000e,cycle_init,replace | with ^
-e1000e,init_hw,replace | with ^
-e1000e,lcd_config,replace | with ^
-e1000e,phy_reset_generic,replace | with ^
-e1000e,read_dword_at_byte,delete !
-e1000e,read_dword_at_byte,replace >> with <<
-e1000e,read_dword_at_byte,replace | with ^
-e1000e,reg,replace | with ^
-e1000e,tx_word,replace | with ^
-e1000e,write_smbus_addr,replace | with ^
 extensible_host_controller_interface,Capabilities::doorbell,replace * with /
 grant_plan,Windows::take,replace + with *
 non_volatile_memory_express,Command::create_io_cq,replace | with ^

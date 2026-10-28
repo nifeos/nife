@@ -95,6 +95,20 @@ pub mod control {
     pub(crate) const BYTE_COUNT_MASK: u16 = 0b11 << 8;
 }
 
+// `initialize_cycle` ORs the two write-one-to-clear error bits into the status it just read, and
+// they share no bit, so | and ^ compose them identically; the compiler checks that here, and
+// .cargo/mutants.toml excludes the function's OR-to-XOR swaps on this assertion (the DONE write's
+// swap is excluded on the write-back beside it, which has already carried the bit).
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(
+    status::ERROR ^ status::DIRECT_ACCESS_ERROR == status::ERROR | status::DIRECT_ACCESS_ERROR
+);
+// The byte count `read_u32_at_byte` ORs in sits inside the field it just masked out, so | and ^
+// compose them identically; the compiler checks that here, and .cargo/mutants.toml excludes the
+// function's OR-to-XOR swap on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!((3u16 << control::BYTE_COUNT_SHIFT) & !control::BYTE_COUNT_MASK == 0);
+
 /// `ICH_FLASH_LINEAR_ADDR_MASK`.
 pub(crate) const LINEAR_ADDRESS_MASK: u32 = 0x00ff_ffff;
 /// `ICH_FLASH_READ_COMMAND_TIMEOUT`, in 1 µs polls: ten seconds, FreeBSD's bound.
