@@ -27,7 +27,7 @@ use crate::syscall::invoke;
 /// as a literal so that adding a record moves it, and
 /// [`the_unknown_record_is_really_unknown`](self::the_unknown_record_is_really_unknown) fails
 /// loudly if somebody adds one and this does not move.
-const UNKNOWN_RECORD: u64 = record::CPU_TIME + 1;
+const UNKNOWN_RECORD: u64 = record::PROCESS + 1;
 
 /// **The refusal tests below are testing what they think they are.** If a later record takes
 /// [`UNKNOWN_RECORD`]'s value, every one of them starts asserting that a *known* record is refused,
@@ -47,7 +47,7 @@ fn the_unknown_record_is_really_unknown() {
 /// [`record::STATE`]`== 0` the whole of the backward-compatibility story: a caller written before
 /// the selector existed passed a zero here without meaning to, and gets the record it was already
 /// reading.
-fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
+pub(super) fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     match invoke(&mut frame, slot, abi::rendezvous::SURVEY, cursor, record, 0) {
         Ok(next) => (next, frame.arg(1), frame.arg(2)),

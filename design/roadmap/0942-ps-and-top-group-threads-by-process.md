@@ -1,8 +1,9 @@
 ---
-status: NOT-STARTED
+status: BUILT
 raised: 2026-10-21
+built: 2026-10-27
 milestone_dependencies: 126, 282, 812
-decision_dependencies: unwritten
+decision_dependencies: 313
 machine_requirements: none
 specific_machine: none
 needs_person: no
@@ -81,8 +82,8 @@ holding only part of a process would learn that a sibling exists outside its dom
 were the process's total. The count should then be the count within its domain. Whether that is
 acceptable, or the count must be the true total, is the open question below.
 
-This is a wire-and-authority question on the syscall surface, so it is calef's (§10 (process model: capability-based, microkernel); rule 3 in
-`AGENTS.md`), and unwritten.
+This is a wire-and-authority question on the syscall surface (§10 (process model: capability-based, microkernel); rule 3 in
+`AGENTS.md`). §313 (`ENUMERATE` on a domain covers which of its threads share a process) records the ruling below.
 
 ## Where the data comes from
 
@@ -115,24 +116,27 @@ two are separable: the grouping is useful with an opaque label, and `CMD` slots 
 column on the same record walk. If calef wants `CMD` first, this one waits on it. That is a
 dependency on a milestone that does not yet exist, so `milestone_dependencies` does not list it.
 
-## Open questions for calef
+## Ruling (2026-10-27 UTC)
 
-1. Authority. Does `ENUMERATE` on a domain cover learning thread-to-process membership, as it
-   covered `CPU_TIME` (§150, §204), or does a process grouping need its own right or its own
-   decision?
-2. A partial process. When a process has threads in several supervision domains, does the
-   count mean the threads this viewer can see (its domain only), or the process's true member
-   count? The first leaks nothing and can undercount; the second tells a confined viewer that a
-   sibling exists elsewhere.
-3. Form. A column on every row, grouped sections with the threads indented under the process,
-   or a flag? And does `top` rank by process by default, by thread by default, or on a flag?
-4. The label. An opaque per-walk ordinal, or something stable across runs of `ps`? Stable
-   across runs means the kernel hands out a process identity a program can hold, which `ps` has
-   deliberately never been given.
-5. Order against `CMD`. Build this first with an opaque label, or wait and ship the grouping
-   and the name together?
+Section 313 holds the authority decision; this answers the five questions the block raised.
 
-## Exit criteria, once the decision is written
+1. Authority. `ENUMERATE` on a domain covers learning thread-to-process membership, as a new
+   `SURVEY` record selector under the rule of §150 and §204. No new right.
+2. A partial process. The count is of the threads in the viewer's domain, never the process's true
+   total. A confined viewer is never told a sibling exists elsewhere.
+3. Form. One label column and one `THR` column on every row. `top` ranks per thread by default and
+   gains a flag to rank by process, summing `CPU_TIME`.
+4. The label. An opaque ordinal for one walk. The kernel hands out no process identity, and no label
+   stays stable across runs.
+5. Order against `CMD`. This milestone ships first, with the opaque label.
+
+Questions 3 to 5 took defaults that a later ruling can reverse cheaply. Names ship provisional:
+the selector `record::PROCESS`, the columns `PROC` and `THR`, and the `top` flag.
+
+## Exit criteria
+
+Built, with two differences: the test in item 4 uses hand-written spinner threads that the test
+supervises one by one (a `std` thread has no supervisor, see `BUGS`), and item 5 waits as it said.
 
 1. A new `SURVEY` selector (or whatever the ruling chooses) answers a process label for every
    thread in a domain, in `abi::survey::record`, `is_known` and `sched::survey_supervised`, on
@@ -156,10 +160,23 @@ dependency on a milestone that does not yet exist, so `milestone_dependencies` d
 
 ## BUGS
 
-- The decision is unwritten. The authority question and the five above are open.
-- **The process page is `#[cfg(feature = "system_tests")]`-only to userspace today.**
-  `process_threads_started` is a test hook and is not what `ps` would read.
+- **A `std` thread is not supervised, so `ps` shows only a program's first thread.** Supervision
+  comes from the reserved fault slot of the process's shared table at `START`, and the first
+  member's `START` consumes that slot (`notes/processes.md`). `std::thread::spawn` fills no such slot, so
+  the workers of `rg --threads 4` are in no domain and the label and `THR` cannot group them. The
+  test in `system_tests/src/user/process_label_tests.rs` proves the grouping on threads whose
+  starter supervises each one. The user-visible `rg` check waits on a design
+  for how a process's later threads get supervisors, which is its own milestone and a ruling.
+- **The counts are of the viewer's domain** (§313), so a process with a thread supervised elsewhere
+  reads as smaller than it is. That is the ruling, not a defect.
+- **The shell cannot send `top`'s rank-by-process flag**, so at the prompt `top` ranks by thread
+  (`top::RANK_BY_PROCESS`, as `pgrep`'s selector).
 - **`CMD` is a separate gap.** An opaque label is the most this can show.
+- The label costs the kernel a scan of the domain per row, at most the square of the thread table
+  (256), under `IPC_TABLES`.
+
+Names, all provisional: `abi::survey::record::PROCESS`, the `PROC` and `THR` columns,
+`ps::Survey::join_process`, `ps::Survey::rank_by_process_cpu_time`, `top::RANK_BY_PROCESS`.
 
 Reuse: the tree's own `SURVEY` selector (§204) and `Survey::join_cpu_time` are the mechanism, so
 nothing outside is taken. Prior art, recalled rather than read. Linux `ps` and `top` group by tgid
@@ -167,8 +184,14 @@ and show `NLWP` (threads in the process), with `-L` or `H` for the per-thread vi
 `zx_object_get_info` lists a process's threads from a process handle, so grouping is the handle the
 caller holds; seL4 has no enumeration at all.
 
+## Follow-on
+
+- **Recorded.** A `std` thread has no supervisor, so `ps` cannot group a `std` program's workers
+  yet; the limitation lives in `BUGS` above, beside the feature.
+- **Recorded.** The shell cannot send `top`'s rank-by-process flag; also in `BUGS` above.
+- **Decision.** The authority ruling is `design/decisions/0313-enumerate-covers-which-threads-share-a-process.md`.
+
 ## Index row
 
 `ps` and `top` list threads one per row, so a program with several threads reads as unrelated
-rows. This groups them by process and shows a thread count, from a new `SURVEY` record, and
-waits on a ruling about whether `ENUMERATE` covers learning that threads share a process.
+rows. This groups them by process and shows a thread count, from a new `SURVEY` record that `ENUMERATE` already covers (§313).
