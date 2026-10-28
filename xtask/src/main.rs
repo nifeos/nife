@@ -59,6 +59,7 @@ mod time_record;
 mod uefi;
 mod uefi_screen_modes;
 mod usage;
+mod vt_replay;
 
 use crate::archive::{
     has_initial_ramdisk_aarch64, has_initial_ramdisk_riscv, has_initial_ramdisk_x86,
