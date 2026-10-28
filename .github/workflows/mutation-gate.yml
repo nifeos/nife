@@ -195,10 +195,12 @@ jobs:
 
       # The corpus is what `.cargo/mutants.toml` leaves in, and `kernel/` and `components/` are
       # the whole of it that no host test reaches. A pull request touching only those passes,
-      # but the summary has to say what green means here, or a green check reads as
-      # mutation-tested when nothing ran. The other excluded globs (uefi_loader's entry file,
-      # system_tests, the host arms) are not listed: the run itself is the honest answer for
-      # them, and a diff of nothing generates none in seconds.
+      # but the summary no longer reads as a mutation result, which it is not: roadmap 955,
+      # part 3 retired "no mutants: outside the corpus", and the mutant report for these lines
+      # is the advisory kernel mutants (diff-scoped) workflow, which mutates them under QEMU
+      # in shards. The other excluded globs (uefi_loader's entry file, system_tests, the host
+      # arms) are not listed: the run itself is the honest answer for them, and a diff of
+      # nothing generates none in seconds.
       - name: Pass pull requests outside the corpus, saying so
         run: |
           base="${{ steps.ends.outputs.base }}"
@@ -210,16 +212,19 @@ jobs:
           fi
           if [ -z "$(printf '%s\n' "$changed" | grep -v -E '^(kernel|components)/')" ]; then
             {
-              echo "### Mutation gate: no mutants: outside the corpus"
+              echo "### Mutation gate: nothing to decide here; the kernel corpus is the diff-scoped check's to mutate"
               echo
-              echo 'Every changed file is under `kernel/` or `components/`, which `.cargo/mutants.toml`'
-              echo 'excludes: no host test executes a line there, so there is nothing to mutate here.'
-              echo 'This pass is not a mutation result. Changed files include:'
+              echo 'Every changed file is under `kernel/` or `components/`, which no host census'
+              echo 'reaches: the host runs exclude the kernel whole (`.cargo/mutants.toml`), so this'
+              echo 'gate has no mutants to decide and passes. This pass is not a mutation result,'
+              echo 'and it is not the mutant report for these lines: the advisory kernel mutants'
+              echo '(diff-scoped) workflow mutates them under QEMU and reports survivors into the'
+              echo 'triage ledger. Changed files include:'
               echo '```'
               printf '%s\n' "$changed" | head -5
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "==> outside the corpus; passing with the summary that says so"
+            echo "==> outside the host corpus; passing, and naming the check that mutates these lines"
             exit 0
           fi
           echo "==> the diff reaches $(printf '%s\n' "$changed" | grep -c -v -E '^(kernel|components)/') file(s) outside kernel/ and components/; running"

@@ -3649,6 +3649,13 @@ echo "==> every mutation exclusion names code that exists"
 python3 helpers/mutation_exclusion_check.py --selftest >/dev/null
 python3 helpers/mutation_exclusion_check.py check
 
+# Roadmap 955, part 3 (provisional): the diff-scoped kernel check's glue
+# (helpers/mutation_kernel_diff.py), the corpus filter, the arch routing, the shard math and the
+# advisory verdict, against fixtures with no git, no cargo and no QEMU. The kernel mutants
+# (diff-scoped) workflow is the only thing that runs the real split, so a change to these rules is
+# verified here, where it lands.
+python3 helpers/mutation_kernel_diff.py --selftest >/dev/null
+
 # The architect-label diff rules, the live architect-ruled read, record-ruling and the hold-release
 # rerun are checked by script/lint-fleet since milestone 889, as are the merge-watcher,
 # merge-queue-share and debt-paydown-share selftests further down.
