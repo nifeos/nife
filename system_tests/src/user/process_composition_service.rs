@@ -29,7 +29,7 @@ pub struct Witness {
 /// what it holds.
 ///
 /// Its endowment is the progenitor's shape, which is `builder`'s: the archive read-only at
-/// `INITIAL_RAMDISK_VA` with its length in `x1`, a memory region in slot 0, and a `WRITE`-only
+/// `INITIAL_RAMDISK_VIRTUAL_ADDRESS` with its length in `x1`, a memory region in slot 0, and a `WRITE`-only
 /// report line in slot 1, narrower than the progenitor's `WRITE|GRANT` because the witness never
 /// delegates it. The region is the lending budget, every right: the witness endows its child's slot
 /// 0 through `CAPABILITY_INSERT`, which gates on `GRANT`, and milestone 824 (a retype mints no right its

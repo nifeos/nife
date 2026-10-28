@@ -76,6 +76,16 @@ pub struct Handoff {
     pub registers: u16,
 }
 
+/// The spawn word's two fields share no bit (the page count, a `u32`, below bit 32; the register
+/// mask, a `u16`, above it), which the compiler checks here; the mutation exclusion for
+/// [`Handoff::pack`] names this constant. The constant-assertion lint is off on purpose: the
+/// assertion is constant by construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_DIRECT_MEMORY_ACCESS_WORD_FIELDS_SHARE_NO_BIT: () =
+    assert!(u32::MAX as u64 + ((u16::MAX as u64) << 32) == 0x0000_ffff_ffff_ffff);
+
 impl Handoff {
     /// The three spawn words.
     ///
@@ -304,6 +314,17 @@ impl BringUpStep {
         }
     }
 }
+
+/// The report words' fields share no bit: a byte at 0:7, a byte at 8:15, and the 16-bit and
+/// 32-bit fields the callers shift above bit 16, which the compiler checks here; the mutation
+/// exclusions for [`keyboard_report`], [`ports_report`] and [`failure_report`] name this constant.
+/// The constant-assertion lint is off on purpose: the assertion is constant by construction, and
+/// the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_REPORT_WORD_FIELDS_SHARE_NO_BIT: () =
+    assert!(0xffu64 + (0xff << 8) + (0xffff << 16) + (0xffff << 32) == 0x0000_ffff_ffff_ffff);
 
 /// [`KEYBOARD_FOUND`]'s word 1: the port, its speed id, and the device's vendor and product ids.
 ///

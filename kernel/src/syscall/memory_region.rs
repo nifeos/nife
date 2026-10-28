@@ -1,5 +1,5 @@
 //! **The `MemoryRegion` methods**: map, retype, split, destroy and the usage records, and the arm
-//! of [`invoke`](super::invoke) that decodes them. See notes/syscall-boundary.md.
+//! of [`invoke`] that decodes them. See notes/syscall-boundary.md.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
@@ -7,7 +7,7 @@
 use super::*;
 use crate::arch::mmu;
 
-/// **The `MemoryRegion` arm of [`invoke`](super::invoke)**: the WRITE check each spending method
+/// **The `MemoryRegion` arm of [`invoke`]**: the WRITE check each spending method
 /// asks for, then the method's out-of-line body.
 ///
 /// `#[inline(always)]`, unlike the bodies, because this is decoder and `script/fastpath-footprint`

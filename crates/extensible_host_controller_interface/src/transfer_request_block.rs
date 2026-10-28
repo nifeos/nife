@@ -19,6 +19,39 @@ pub(crate) const ISP: u32 = 1 << 2;
 /// Immediate Data: the TRB's first two dwords are the data itself (the setup packet).
 pub(crate) const IDT: u32 = 1 << 6;
 
+/// The transfer control word's fields share no bit: the type at 10:15 against the toggle, short
+/// packet, completion and immediate-data bits at 1, 2, 5 and 6, all of them against dword 1's
+/// fields at 16 and above, and the endpoint at 16:23 against the slot at 24:31. The compiler
+/// checks it here; the mutation exclusions for this file's TRB builders name this constant. The
+/// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
+/// compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+// This module is private, so nothing outside can reach the constants; the mutation exclusions in
+// .cargo/mutants.toml are their readers, and helpers/mutation_exclusion_check.py fails if they
+// are gone.
+#[allow(dead_code)]
+pub const THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT: () = assert!(
+    ((0x3fu32 << 10) & (1 << 1 | 1 << 2 | 1 << 5 | 1 << 6)) == 0
+        && ((0x3fu32 << 10 | 1 << 1 | 1 << 2 | 1 << 5 | 1 << 6) & (u32::MAX << 16)) == 0
+        && ((0xffu32 << 16) & (0xff << 24)) == 0
+);
+
+/// The stamped cycle bit shares no bit with the word the [`TransferRequestBlock::with_cycle`]
+/// masks first: the mask clears bit 0 and the stamp is a `bool`, so the compiler's own range
+/// check closes the argument. The mutation exclusion for `with_cycle` names this constant. The
+/// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
+/// compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+// This module is private, so nothing outside can reach the constant; the mutation exclusions in
+// .cargo/mutants.toml are its readers, and helpers/mutation_exclusion_check.py fails if it is
+// gone.
+#[allow(dead_code)]
+pub const THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT: () = assert!(((!1u32) & 1) == 0);
+
 pub(crate) const fn control(kind: u8) -> u32 {
     (kind as u32) << 10
 }
@@ -33,8 +66,9 @@ impl TransferRequestBlock {
 
     /// The cycle bit.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
-    pub const fn cycle(&self) -> bool {
+    /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from `cycle`:
+    /// the question shape asks a `bool` `is_`, `has_`, `can_` or a finite verb.
+    pub const fn is_cycle(&self) -> bool {
         self.0[3] & 1 != 0
     }
 

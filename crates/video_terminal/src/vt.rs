@@ -170,8 +170,10 @@ impl Vt {
 
     /// **How many scrolled-off rows this terminal keeps**: [`SCROLLBACK_ROWS`], or fewer when a
     /// row is wider than [`SCROLLBACK_CELLS`] can hold that many of.
+    ///
+    /// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
     #[must_use]
-    pub(crate) const fn scrollback_depth(&self) -> u32 {
+    pub const fn scrollback_depth(&self) -> u32 {
         let fit = (SCROLLBACK_CELLS / self.cols as usize) as u32;
         if fit < SCROLLBACK_ROWS as u32 {
             fit
@@ -334,7 +336,7 @@ impl Vt {
     }
 
     /// **What changed since the last call, clearing the record**, as a [`Damage`]. Taking it also
-    /// records where the cursor was drawn ([`Vt::drawn`]).
+    /// records where the cursor was drawn (`Vt::drawn`).
     ///
     /// # Examples
     ///

@@ -108,7 +108,14 @@
 # cannot create one. A line that cannot be read at all is reported rather than failed, but only when
 # the kernel demonstrably wrote during the boot; with one writer there is nothing to shuffle, so a
 # missing line is a real one and still fails. See `boot_claim` in
-# `xtask/src/swish_check/transcript.rs`.
+# `xtask/src/swish_check/transcript.rs`. A typed line's answer reads the same way, for the
+# observed face of the same defect: run 40640221952 (2026-10-28) failed because the
+# capability-slot gauge reached the UART through the counted fallback while `std_exerciser beside
+# six` answered, and the splice destroyed the greeting the check demands. A phrase missing from an
+# answer is now read once more with `find_marker`, and passes with a report only when the
+# intruding bytes carry the kernel's own words (a gauge's or a fault report's). The phrase is
+# still demanded whole and in order; a silent program, or a userspace splice (a background job's
+# line over an answer), still fails.
 #
 # **The cost of that choice, stated plainly: it can pass a boot it should have failed.** If the
 # progenitor's

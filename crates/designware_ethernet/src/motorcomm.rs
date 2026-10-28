@@ -34,8 +34,10 @@ pub(crate) const REG_ADDR: u8 = 0x1e;
 pub(crate) const REG_DATA: u8 = 0x1f;
 
 /// **Clock gating register** (`YT8521_CLOCK_GATING_REG`, `motorcomm.c`).
+///
+/// Name: recorded (`YT8521_CLOCK_GATING_REG` in `motorcomm.c`).
 #[doc(alias = "clock gating register")]
-pub(crate) const CLOCK_GATING_REG: u16 = 0x000c;
+pub const CLOCK_GATING_REG: u16 = 0x000c;
 /// **Clock gating register, receive clock enable** (`YT8521_CGR_RX_CLK_EN`, `motorcomm.c`). Clear
 /// it to keep the receive clock running with no cable; Linux clears it for
 /// `motorcomm,keep-pll-enabled`. Cleared here unconditionally, because the controller's
@@ -45,8 +47,10 @@ pub(crate) const CLOCK_GATING_REG: u16 = 0x000c;
 #[doc(alias = "receive clock enable")]
 pub(crate) const CGR_RX_CLK_EN: u16 = 1 << 12;
 /// **Extended register, sleep control 1** (`YT8521_EXTREG_SLEEP_CONTROL1_REG`, `motorcomm.c`).
+///
+/// Name: recorded (`YT8521_EXTREG_SLEEP_CONTROL1_REG` in `motorcomm.c`).
 #[doc(alias = "extended register, sleep control 1")]
-pub(crate) const EXTREG_SLEEP_CONTROL1_REG: u16 = 0x0027;
+pub const EXTREG_SLEEP_CONTROL1_REG: u16 = 0x0027;
 /// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
 /// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
 /// `motorcomm,auto-sleep-disabled`; this driver clears it for
@@ -92,6 +96,13 @@ pub(crate) const RGMII_RXC_DS_SHIFT: u16 = 13;
 /// bits are bits 5:4, its high bit is bit 12.
 #[doc(alias = "rgmii receive data drive strength mask")]
 pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
+/// The mask's two fields share no bit, so its `|` is its `^`, which the compiler checks here; the
+/// exclusion of the mask's or-versus-xor mutant names this constant. The clippy lints fold the
+/// literals; that is what a gate is, allowed here for exactly that reason.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_RECEIVE_DATA_DRIVE_FIELDS_SHARE_NO_BIT: () = assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]
 pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
@@ -437,6 +448,17 @@ pub fn configure(
         pad_drive,
     })
 }
+
+/// The delay and drive fields the two words compose share no bit, and the transmit delay select
+/// is zero: every `|` here is its `^`, and a shift by `TX_DELAY_SEL_SHIFT` is the identity; the
+/// compiler checks both here, and the mutation exclusions for `configure` name this constant.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT: () = assert!(
+    (0xf << RX_DELAY_SEL_SHIFT) & (0xf << TX_DELAY_SEL_SHIFT) == 0
+        && (0x7 << RGMII_RXC_DS_SHIFT) & RGMII_RXD_DS_MASK == 0
+        && TX_DELAY_SEL_SHIFT == 0
+);
 
 /// **Set the transmit clock's inversion for the speed just negotiated**, OpenBSD's
 /// `ytphy_yt8521_update`. Returns the new RGMII configuration word.

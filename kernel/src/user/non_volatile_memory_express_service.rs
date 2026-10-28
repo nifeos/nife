@@ -209,12 +209,12 @@ pub struct DmaEscape {
     /// The controller's PCIe requester id, which ties a fault to it when the IOMMU reports no
     /// address (AMD-Vi under QEMU 11.1.1; see `arch/x86_64/iommu.rs`'s `Fault::addr`).
     pub rid: u32,
-    /// The kernel thread running the attacker, which [`DmaEscape::release`] waits out.
+    /// The kernel thread running the attacker, which [`DmaEscape::release_completed`] waits out.
     thread: crate::thread::ThreadId,
-    /// The one-page region `report` lives in, so [`DmaEscape::release`] can destroy it; a kernel
+    /// The one-page region `report` lives in, so [`DmaEscape::release_completed`] can destroy it; a kernel
     /// rendezvous (`create_rendezvous`) is never freed.
     ep_region: u64,
-    /// The controller the attacker was given, kept so [`DmaEscape::release`] can take it down
+    /// The controller the attacker was given, kept so [`DmaEscape::release_completed`] can take it down
     /// before handing its region back.
     controller: crate::non_volatile_memory_express::NonVolatileMemoryExpress,
 }
@@ -235,7 +235,7 @@ impl DmaEscape {
     pub fn is_canary_intact(&self) -> bool {
         let p = crate::arch::mmu::phys_to_virt(self.victim) as *const u8;
         (0..page_frames::FRAME_SIZE as usize).all(|i| {
-            // SAFETY: `victim` is a frame this wiring allocated and frees only in `release`, which
+            // SAFETY: `victim` is a frame this wiring allocated and frees only in `release_completed`, which
             // consumes `self`, so it is still ours here. The direct map covers all of RAM, and `i`
             // stays inside the one frame. CPU reads bypass the IOMMU, which is the point: only the
             // device's view of this frame is unmapped.
@@ -252,8 +252,10 @@ impl DmaEscape {
     /// until both hold something may still read or DMA into these frames. The IOMMU domain's
     /// tables stay, for the reason `retire` gives.
     ///
-    /// Name: ratified 2026-10-05 (calef, #1647).
-    pub fn release(self) -> bool {
+    /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+    /// `release`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite verb, and
+    /// this performs the release, so the ruled `is_released` would misstate it.
+    pub fn release_completed(self) -> bool {
         // Ten seconds of TCG, far past an `exit` that follows the report this caller already took.
         let deadline = crate::arch::timer::now() + 10 * crate::arch::timer::frequency();
         while crate::sched::is_thread_present(self.thread) && crate::arch::timer::now() < deadline {
@@ -272,7 +274,7 @@ impl DmaEscape {
 ///
 /// The storage twin of `display_service::start_backing_escape`: the attacker gets exactly the
 /// honest server's world and differs only in the physical address it writes into a PRP. The kernel
-/// picks the victim frame and plants its canary, and only [`DmaEscape::release`] frees it, after
+/// picks the victim frame and plants its canary, and only [`DmaEscape::release_completed`] frees it, after
 /// the controller is disabled. The kernel picks it because a server guessing "the frame past my
 /// region" may guess a frame inside the domain; see notes/dma.md for the use-after-free.
 #[cfg(feature = "system_tests")]

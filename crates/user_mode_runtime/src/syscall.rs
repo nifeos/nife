@@ -107,14 +107,14 @@ pub(crate) unsafe fn trap6(nr: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u6
     (w0, w1, w2, w3, w4, w5)
 }
 
-/// **One syscall with every register the caller's to choose**: [`trap6`], public, for the one
+/// **One syscall with every register the caller's to choose**: `trap6`, public, for the one
 /// program that must be able to say anything to the kernel (milestone 779 (fuzz the surface a
 /// confined process can reach), provisional). `fixtures/src/confined_syscall_fuzzer.rs` draws the
 /// number and all six words at random, unknown numbers included, which no typed wrapper here can
 /// express. Every other caller wants a typed wrapper, and this is not one.
 ///
 /// # Safety
-/// [`trap6`]'s: the kernel validates the capability and the method before acting. A caller that
+/// `trap6`'s: the kernel validates the capability and the method before acting. A caller that
 /// passes `SYS_EXIT` does not come back.
 ///
 /// Name: provisional, milestone 779's lane, 2026-10-06 (UTC).

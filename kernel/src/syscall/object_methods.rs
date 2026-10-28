@@ -1,6 +1,6 @@
 //! **The methods of the smaller objects**: `Notification`, `Reboot`, `Timer`, `Process`, the
 //! interrupt and virtio capabilities, `PortRange`, the rendezvous badge and reap, and the two helpers
-//! [`invoke`](super::invoke) leaves its rare Reply and abort paths to. Each is out of line; see
+//! [`invoke`] leaves its rare Reply and abort paths to. Each is out of line; see
 //! notes/syscall-boundary.md.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
@@ -15,7 +15,7 @@ use super::*;
 /// table, or a caller no longer waiting), so the server can undo what it minted.
 ///
 /// Out of line, handed the syscall's own registers, and looking the Reply up again, so the arm in
-/// [`invoke`](super::invoke) is a jump; plain `REPLY` stays inline.
+/// [`invoke`] is a jump; plain `REPLY` stays inline.
 #[inline(never)]
 pub(super) fn reply_other(
     slot: u64,

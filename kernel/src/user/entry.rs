@@ -169,7 +169,7 @@ pub fn spawn_elf_child_builder(
         for i in 0..initial_ramdisk_pages {
             space
                 .map_physical(
-                    INITIAL_RAMDISK_VA + i * FRAME_SIZE,
+                    INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
                     initial_ramdisk_start + i * FRAME_SIZE,
                     Flags::user_rodata(),
                     crate::revoke::PageMapSource::NoCapability,

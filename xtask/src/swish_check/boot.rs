@@ -683,7 +683,7 @@ fn build_leg(arch: &str, fresh: bool) -> bool {
                 uefi_image_with(Some(probe_features()))
             }
     } else if riscv {
-        redoxfs_server_build(RISCV_TARGET) && mkdisk() && mkredoxfs_of(SWISH_CHECK_DISK_MIB) && initial_ramdisk_riscv()
+        redoxfs_server_build(RISCV_TARGET) && mkdisk() && mkredoxfs_of(SWISH_CHECK_DISK_MIB) && has_initial_ramdisk_riscv()
     } else {
         redoxfs_server_build(TARGET) && mkredoxfs_of(SWISH_CHECK_DISK_MIB) && mkdisk() && user()
     } // After the archive build, whose packages it copies: a package the image's catalog
@@ -1185,7 +1185,8 @@ fn report_line_times(
 }
 
 /// **Read each typed line's answer out of the transcript and check it**: one complaint per wanted
-/// phrase missing, per `^C`'d line that answered, and per tagged job that did not run.
+/// phrase missing (unless the kernel's own splice explains it, which `one_answer_failures`
+/// reports instead), per `^C`'d line that answered, and per tagged job that did not run.
 ///
 /// Walked in order with a moving cursor, not searched. The script types `wc < gate.txt`
 /// twice on purpose and the two answers are the whole point of the append arm, so a search
@@ -1252,20 +1253,42 @@ fn one_answer_failures(l: &Line, answer: &str, before_next: &str) -> Vec<String>
     // **And whether the program said it anyway** (the noteless flake, 2026-10-04
     // UTC): an answer cut short by something the gate read as a prompt is a
     // misread transcript, not a silent program, and the line says which.
+    // **And whether the kernel wrote over the answer** (run 40640221952, 2026-10-28): the
+    // capability-slot gauge reached the UART through the counted fallback
+    // (kernel/src/kernel_log.rs's BUGS) while this program's answer was being written, and
+    // the splice destroyed the greeting byte by byte. The phrase is still demanded whole, in
+    // order; only the kernel's own wedged bytes are stepped over, and only when they carry
+    // the kernel's words as evidence. A silent program, or a userspace splice, still fails.
     for want in want {
-        if !answer.contains(want) {
-            let misread = if before_next.contains(want) {
-                "; the wanted text is in the transcript before the next line's \
-                 echo, so the program wrote it and the gate cut the answer short \
-                 (see `without_redraws`)"
-            } else {
-                ""
-            };
-            failed.push(format!(
-                "`{line}` answered {:?}, wanted {want:?}{misread}",
-                answer.trim()
-            ));
+        if answer.contains(want) {
+            continue;
         }
+        if let Marker::Interleaved(intruder) = find_marker(answer, want)
+            && kernel_wrote_the_intruder(&intruder)
+        {
+            eprintln!(
+                "swish-check: read {want:?} in `{line}`'s answer only after stepping over {} \
+                 characters another writer had spliced through it. Every byte of the phrase is \
+                 present and in order, and the intruding text ({intruder:?}) carries the kernel's \
+                 own words, so a kernel line was written straight to the UART over this answer \
+                 (the counted fallback, kernel/src/kernel_log.rs's BUGS) rather than the answer \
+                 being lost. NOT treated as a failure; the splice is the defect, and \
+                 notes/swish-check-flake.md records its family.",
+                intruder.chars().count()
+            );
+            continue;
+        }
+        let misread = if before_next.contains(want) {
+            "; the wanted text is in the transcript before the next line's \
+             echo, so the program wrote it and the gate cut the answer short \
+             (see `without_redraws`)"
+        } else {
+            ""
+        };
+        failed.push(format!(
+            "`{line}` answered {:?}, wanted {want:?}{misread}",
+            answer.trim()
+        ));
     }
     // **And a line that runs jobs ran them** ([`Line`]'s doc): the summary's job
     // count is summed from these tags, so a tagged line whose job was never built

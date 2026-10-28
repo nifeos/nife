@@ -1221,6 +1221,14 @@ RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p kernel --lib --document-
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p xtask -p serial_console -p stick_maker \
     -p sealed_pair -p walk_pricing -p c_library_errno
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --manifest-path redoxfs_server/Cargo.toml --lib
+# BUGS: only the two lints in DOCFLAGS are denied. Every other rustdoc lint stays warn, so a
+# warning class can ride this section green for days: 65 `rustdoc::private_intra_doc_links`
+# warnings (public docs linking items the 2026-10-18 visibility sweep, "narrow N items no other
+# package reads to pub(crate)", had made `pub(crate)`) printed on every build from 2026-10-18 to
+# 2026-10-28 while the section exited 0, and no gate read them. The tree is back to zero warnings
+# as of 2026-10-28; the follow-up that closes the gap is denying
+# `rustdoc::private_intra_doc_links` here, so the class fails this section instead of decorating
+# its output. Until then, a rustdoc warning a lane reports by hand has no gate behind it.
 
 # The decisions (one file per decision, milestone 114 (split `DECISIONS.md`, and give a decision a
 # status)): their numbering, each file's frontmatter against the schema milestone 582 (a decision's
@@ -3634,6 +3642,34 @@ script/mutation-census --selftest >/dev/null
 # The gate workflow is the only thing that runs the real decision, so a change to these rules is
 # verified here, where it lands.
 python3 helpers/mutation_diff_gate.py --selftest >/dev/null
+# Part 2 of the survivor proposal (a survivor accepted once is not accepted forever) says
+# script/lint "checks each scoped exclusion" and fails "an entry whose function no longer exists
+# or whose named assertion is gone". helpers/mutation_exclusion_check.py is that check, and the
+# only reader `exclude_re` has: an entry that names no code excludes nothing, and its mutants
+# come back as new survivors. It is textual on purpose, so every invocation and the pre-push
+# hook's --no-cargo mode can afford it: it parses the shapes the entries use (the scoped
+# ^<file>:\d+:\d+: replace ...$ entry, function-shaped or const-item, and the older `module::`
+# paths), requires the named file, function, type and `THE_*` const assertion to exist, and
+# fails a shape it cannot read, so an entry the check does not understand cannot pass by reading
+# nothing (design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md). The selftest proves
+# every rule against fixtures, including the generic `Host<R, D>::reset` form.
+echo "==> every mutation exclusion names code that exists"
+python3 helpers/mutation_exclusion_check.py --selftest >/dev/null
+python3 helpers/mutation_exclusion_check.py check
+
+# Roadmap 955, part 3 (provisional): the diff-scoped kernel check's glue
+# (helpers/mutation_kernel_diff.py), the corpus filter, the arch routing, the shard math and the
+# advisory verdict, against fixtures with no git, no cargo and no QEMU. The kernel mutants
+# (diff-scoped) workflow is the only thing that runs the real split, so a change to these rules is
+# verified here, where it lands.
+python3 helpers/mutation_kernel_diff.py --selftest >/dev/null
+
+# Roadmap 955, part 4 (provisional): the rolling census's glue
+# (helpers/mutation_kernel_census.py), the slice table, the rotation state, the wall-clock window
+# and the record, against fixtures with no git, no cargo and no QEMU. The kernel mutants (rolling
+# census) workflow is the only thing that runs the real night, so a change to these rules is
+# verified here, where it lands. It shares the diff check's table, so both selftests run.
+python3 helpers/mutation_kernel_census.py --selftest >/dev/null
 
 # The architect-label diff rules, the live architect-ruled read, record-ruling and the hold-release
 # rerun are checked by script/lint-fleet since milestone 889, as are the merge-watcher,

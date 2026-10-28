@@ -13,7 +13,7 @@ use crate::syscall::trap6;
 /// thread is ready, control goes there and back, which is one context-switch round trip.
 ///
 /// Not `nomem`: while this thread is away others write memory it shares with them, which a caller
-/// spinning on a shared word with `yield_now` relies on. Through [`trap6`], because the kernel
+/// spinning on a shared word with `yield_now` relies on. Through `trap6`, because the kernel
 /// writes its result into `x0`/`a0`/`rdi` on the way out of a yield too.
 pub fn yield_now() {
     // SAFETY: SYS_YIELD gives up the CPU and comes back; it reads no argument and touches no

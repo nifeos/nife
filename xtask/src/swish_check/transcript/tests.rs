@@ -180,3 +180,57 @@ $ kernel_test_subject
         BootClaim::Silent
     ));
 }
+
+/// **The answer run 40640221952's aarch64 leg read, verbatim** (2026-10-28, the job's failure
+/// line): the kernel's capability-slot gauge spliced through `std_exerciser`'s greeting one byte
+/// at a time, on the counted fallback, while the six background jobs the line exists to run
+/// beside pushed the boot's peak to 36. Every byte of the greeting is present and in order; no
+/// byte of it survives contiguously past the first word.
+const GAUGE_SPLICED_ANSWER: &str = "h  capellability so from stld oots: 36 of 64 at peak\n\
+     n nife\nos nife\nargs [\"std_exerciser\", \"beside\", \"six\"]\nvec sum 149985000\n\
+     string len 500\nmap lookup 1369\nfs honestly unsupported\nnet honestly unsupported\n\
+     instant monotonic ok\nwall clock ok\nentropy ok\nconfig seeded\nenv ok\npaths ok\n\
+     exiting through process::exit";
+
+/// The greeting the CI run wanted and the splice destroyed.
+const GREETING: &str = "hello from std on nife";
+
+/// **The run that failed CI reads again**: the phrase is interleaved, the intruding bytes carry
+/// the gauge's own words, and the evidence gate accepts it. Red before the fix with CI's own
+/// `wanted "hello from std on nife"`; green after.
+#[test]
+fn the_gauge_spliced_answer_reads_again() {
+    assert!(!GAUGE_SPLICED_ANSWER.contains(GREETING));
+    let Marker::Interleaved(intruder) = find_marker(GAUGE_SPLICED_ANSWER, GREETING) else {
+        panic!("every byte of the greeting is present and in order; the splice must read");
+    };
+    assert!(
+        kernel_wrote_the_intruder(&intruder),
+        "the intruding text is the gauge's own bytes: {intruder:?}"
+    );
+    assert!(intruder.contains("capability slots:"));
+}
+
+/// **A userspace intruder is not excused.** A background job's line wedged into the same greeting
+/// is the same destruction without the kernel's words, so the gate refuses it and the answer
+/// fails as before.
+#[test]
+fn a_userspace_splice_does_not_read_as_the_kernel() {
+    let spliced = "h  [1] job_sleeper running in the background\nello from std on nife";
+    let Marker::Interleaved(intruder) = find_marker(spliced, GREETING) else {
+        panic!("the greeting's bytes are present and in order");
+    };
+    assert!(!kernel_wrote_the_intruder(&intruder));
+}
+
+/// **And a phrase the program never wrote stays missing**, however much kernel vocabulary
+/// surrounds it: nothing is present to read, so [`find_marker`] finds nothing and there is no
+/// intruder for [`kernel_wrote_the_intruder`] to excuse. The answer fails.
+#[test]
+fn a_missing_greeting_stays_missing_beside_kernel_vocabulary() {
+    let silent = "  capability slots: 36 of 64 at peak\nargs [\"std_exerciser\"]\n";
+    assert!(matches!(
+        find_marker(silent, GREETING),
+        Marker::Absent { .. }
+    ));
+}

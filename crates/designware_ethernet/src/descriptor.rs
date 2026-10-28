@@ -129,6 +129,16 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
     ]
 }
 
+/// The three bits the receive word sets are distinct single bits, so the `|`s are their `^`s,
+/// which the compiler checks here; the mutation exclusion for `receive_descriptor_words` names
+/// this constant. The compiler is the gate's only reader, and it reads at const evaluation, so
+/// `dead_code` is allowed here for exactly that reason.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+#[allow(dead_code)]
+pub const THE_RECEIVE_DESCRIPTOR_SET_BITS_SHARE_NO_BIT: () =
+    assert!(RDES3_OWN | RDES3_IC | RDES3_BUF1V == RDES3_OWN ^ RDES3_IC ^ RDES3_BUF1V);
+
 /// **A transmit descriptor for one whole frame in one buffer**: the address, the length with
 /// interrupt-on-completion, and word 3 owned, first and last, with the frame length. The device
 /// inserts the CRC and pads a short frame (checksum and padding control zero).
@@ -144,6 +154,24 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
         des2 as u64 | (descriptor_word_3 as u64) << 32,
     ]
 }
+
+/// Word 2's length field and interrupt bit share no bit; word 3's three set bits are distinct
+/// single bits and none of them reaches the length field; and word 2 sits a whole word below the
+/// shifted word 3, for every value either can hold. The compiler checks it here, and the
+/// mutation exclusion for `transmit_descriptor_words` names this constant. The compiler is the
+/// gate's only reader, and it reads at const evaluation, so `dead_code` is allowed here for
+/// exactly that reason.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+#[allow(dead_code)]
+pub const THE_TRANSMIT_DESCRIPTOR_BITS_SHARE_NO_BIT: () = assert!(
+    TDES2_IC & TDES2_BUF1_LEN == 0
+        && (TDES3_OWN | TDES3_FS | TDES3_LS == TDES3_OWN ^ TDES3_FS ^ TDES3_LS)
+        && TDES3_OWN & TDES3_FRAME_LEN == 0
+        && TDES3_FS & TDES3_FRAME_LEN == 0
+        && TDES3_LS & TDES3_FRAME_LEN == 0
+        && ((u32::MAX as u64) << 32) & (u32::MAX as u64) == 0
+);
 
 /// What a receive descriptor's word 3 says, judged.
 ///
@@ -197,3 +225,13 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
     }
     ReceiveVerdict::Frame(length)
 }
+
+/// First and last are distinct single bits, so the mask and the compared value read the same
+/// under `|` and under `^`, which the compiler checks here; the mutation exclusion for
+/// `receive_verdict` names this constant. The compiler is the gate's only reader, and it reads at
+/// const evaluation, so `dead_code` is allowed here for exactly that reason.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+#[allow(dead_code)]
+pub const THE_FIRST_AND_LAST_BITS_SHARE_NO_BIT: () =
+    assert!(RDES3_FD | RDES3_LD == RDES3_FD ^ RDES3_LD);

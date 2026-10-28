@@ -11,41 +11,10 @@ designware_ethernet,rx_verdict,replace | with ^
 designware_ethernet,select_rgmii,replace | with ^
 designware_ethernet,tx_descriptor_words,replace | with ^
 designware_ethernet,tx_queue_mode,replace | with ^
-designware_mobile_storage,"Host<R, D>::idmac_start",replace | with ^
-designware_mobile_storage,"Host<R, D>::idmac_stop",replace | with ^
-designware_mobile_storage,"Host<R, D>::idmac_wait",replace > with >=
-designware_mobile_storage,"Host<R, D>::idmac_wait",replace | with ^
-designware_mobile_storage,"Host<R, D>::wait_fifo",replace & with ^
-designware_mobile_storage,"Host<R, D>::wait_fifo",replace & with |
-designware_mobile_storage,"Host<R, D>::wait_fifo",replace | with ^
-designware_mobile_storage,Mbr::scratch,replace < with <=
-designware_mobile_storage,fifo_step,replace < with <=
-designware_mobile_storage,fifo_step,replace > with >=
-designware_mobile_storage,fifoth_for_dma,replace | with ^
-designware_mobile_storage,mmc_power_up,replace > with >=
-documentation,Layout::flush_table,replace += with *=
-documentation,Layout::rule,replace += with *=
-documentation,Layout::write_table_rule,replace += with *=
 driver_process_contract,Handoff::pack,replace | with ^
-e1000e,Handoff::pack,replace | with ^
-e1000e,cycle_init,replace & with ^
-e1000e,cycle_init,replace & with |
-e1000e,cycle_init,replace | with &
-e1000e,cycle_init,replace | with ^
-e1000e,init_hw,replace | with ^
-e1000e,lcd_config,replace | with ^
-e1000e,phy_reset_generic,replace | with ^
-e1000e,read_dword_at_byte,delete !
-e1000e,read_dword_at_byte,replace >> with <<
-e1000e,read_dword_at_byte,replace | with ^
-e1000e,reg,replace | with ^
-e1000e,tx_word,replace | with ^
-e1000e,write_smbus_addr,replace | with ^
 extensible_host_controller_interface,Capabilities::doorbell,replace * with /
-grant_plan,Windows::take,replace + with *
 non_volatile_memory_express,Command::create_io_cq,replace | with ^
 non_volatile_memory_express,Command::create_io_sq,replace | with ^
 non_volatile_memory_express,Handoff::pack,replace | with ^
 non_volatile_memory_express,cc_enabled,replace | with ^
-serial_console,dial_in_warning,delete !
 system_log_contract,,replace - with /

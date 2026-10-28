@@ -254,7 +254,8 @@ fn a_client_stages_in_the_window_its_badge_names() {
 /// in both directions, and the IOMMU, not the server's arithmetic, is all that refuses it.
 ///
 /// The proof is the IOMMU fault and an untouched canary, not the completion status; the patch
-/// widens the domain over the victim and the escape lands. See notes/non-volatile-memory-express/the-dma-escape-test.md.
+/// widens the domain over the victim and the escape lands. See
+/// notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.non_volatile_memory_express_tests.a_confined_el0_server_cannot_dma_outside_its_region.patch`
 #[test_case]
@@ -353,7 +354,7 @@ fn a_confined_el0_server_cannot_dma_outside_its_region() {
     // And the frames: the controller's DMA region, the victim and the report endpoint's region,
     // which the suite's frame ledger would otherwise carry to the end of the boot.
     assert!(
-        esc.release(),
+        esc.release_completed(),
         "the DMA-escape wiring could not give its frames back: the attacker never exited, the \
          controller would not disable, or its endpoint region would not reclaim",
     );

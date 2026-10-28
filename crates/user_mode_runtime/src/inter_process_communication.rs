@@ -137,7 +137,7 @@ pub fn receive_badged_bound(slot: u64) -> Result<(u64, u64, u64, u64), u64> {
 /// supervisor reads `w3`, the faulting address. The sixth word is the dead child's label (§148
 /// (resolves by asking the kernel), as amended 2026-10-04): the badge its builder put on the
 /// supervision capability in `abi::fault::FAULT_EP_SLOT`, or `0` when unbadged or unstamped,
-/// because [`invoke6`] zeroes the register on the way in. See `abi::fault`.
+/// because `invoke6` zeroes the register on the way in. See `abi::fault`.
 pub fn receive_fault(slot: u64) -> (u64, u64, u64, u64, u64, u64) {
     // SAFETY: forwarded from `invoke6`'s contract.
     unsafe { invoke6(slot, abi::rendezvous::RECEIVE, 0, 0, 0) }

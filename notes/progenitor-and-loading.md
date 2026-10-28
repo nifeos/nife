@@ -39,7 +39,7 @@ services today, by moving that wiring into the first process.)
 
 `spawn_elf_child_builder` hands a builder three things: a building untyped budget (slot 0), a
 report endpoint (slot 1, with `GRANT` so it can endow a child), and the whole initrd. The initrd is
-mapped read-only at `INITIAL_RAMDISK_VA` so the builder can read the ELF. Its length arrives in `x1`.
+mapped read-only at `INITIAL_RAMDISK_VIRTUAL_ADDRESS` so the builder can read the ELF. Its length arrives in `x1`.
 
 `build_child` then does, entirely through the milestone-19 granular verbs, what the kernel's
 `map_segments` used to do privileged:
@@ -100,7 +100,7 @@ argument survives the crossing: the least_authority_demo reports `n*n`, not `n` 
 Through 19d/19e the initrd *was* one ELF: the kernel parsed the whole blob as the init program, and
 init, to load a child, parsed that same blob again (children were roles of the one binary). 19f
 turns the blob into a nifefs archive, the same named-file format the virtio disk uses, so one
-parser serves both the RAM archive and the disk. `cargo xtask` packs it (`initial_ramdisk_aarch64`, renamed
+parser serves both the RAM archive and the disk. `cargo xtask` packs it (`has_initial_ramdisk_aarch64`, renamed
 from `mkinitrd` 2026-08-27); it holds one
 entry today, `progenitor`.
 
@@ -113,7 +113,7 @@ Two readers changed, each in its own domain:
   kernel gains a nifefs read, which is proportionate to the ELF parse it already does for init and
   is bounded (a 512-byte superblock, count capped at 15). The milestone tour and the kernel-wired
   demos load a program the same way, through `user::program(name)`.
-- **A builder** parses `INITIAL_RAMDISK_VA` as a nifefs archive and looks up its child by name,
+- **A builder** parses `INITIAL_RAMDISK_VIRTUAL_ADDRESS` as a nifefs archive and looks up its child by name,
   rather than treating the whole blob as one ELF.
 
 Why the archive rides *beside* the kernel (handed in via the device tree) rather than baked into
@@ -137,7 +137,7 @@ budget: `no building budget for init`. It came in a test that had nothing to do 
 which is the usual signature of a resource the whole suite shares. (That message reads `no building
 budget for the progenitor` today; it is quoted here as it read on the day.)
 
-So `initial_ramdisk_aarch64` (`mkinitrd` before 2026-08-27) now strips each ELF
+So `has_initial_ramdisk_aarch64` (`mkinitrd` before 2026-08-27) now strips each ELF
 (`llvm-objcopy --strip-debug`) before packing, and the archive is **4.3 MB**. Nothing lost
 anything. `crates/elf` parses program headers only and has no section-header code at all, so no
 loader on either side of the boundary could ever see a debug section. The kernel prints a raw `pc`

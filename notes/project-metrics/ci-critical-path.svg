@@ -34,7 +34,7 @@
 <rect class="s4" x="238.8" y="148" width="298.8" height="12" rx="2"><title>fuzz: starts at 0.3, takes 11.9</title></rect>
 <text class="mut val" x="541.5" y="158" font-size="10">11.9 (256 of 321)</text>
 <text class="fg" x="222" y="178" font-size="11" text-anchor="end">swish-check</text>
-<rect class="s6" x="238.3" y="168" width="272.9" height="12" rx="2"><title>swish-check: starts at 0.3, takes 10.9</title></rect>
+<rect class="s5" x="238.3" y="168" width="272.9" height="12" rx="2"><title>swish-check: starts at 0.3, takes 10.9</title></rect>
 <text class="mut val" x="515.2" y="178" font-size="10">10.9 (256 of 321)</text>
 <text class="fg" x="222" y="198" font-size="11" text-anchor="end">falsify-shard (verify)</text>
 <rect class="s0" x="252.5" y="188" width="227.5" height="12" rx="2"><title>falsify-shard (verify): starts at 0.9, takes 9.1</title></rect>
@@ -55,7 +55,7 @@
 <rect class="other" x="237.5" y="288" width="168.3" height="12" rx="2"><title>swish-check-x86_64: starts at 0.3, takes 6.7</title></rect>
 <text class="mut val" x="409.8" y="298" font-size="10">6.7 (256 of 321)</text>
 <text class="fg" x="222" y="318" font-size="11" text-anchor="end">bench</text>
-<rect class="s5" x="238.3" y="308" width="85.2" height="12" rx="2"><title>bench: starts at 0.3, takes 3.4</title></rect>
+<rect class="s6" x="238.3" y="308" width="85.2" height="12" rx="2"><title>bench: starts at 0.3, takes 3.4</title></rect>
 <text class="mut val" x="327.5" y="318" font-size="10">3.4 (256 of 321)</text>
 <text class="fg" x="222" y="338" font-size="11" text-anchor="end">boot-file-size-check</text>
 <rect class="other" x="238.8" y="328" width="45.2" height="12" rx="2"><title>boot-file-size-check: starts at 0.3, takes 1.8</title></rect>

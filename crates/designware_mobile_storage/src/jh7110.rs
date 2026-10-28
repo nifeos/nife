@@ -23,7 +23,9 @@ pub const SDIO1_BASE: u64 = 0x1602_0000;
 /// Each controller's window, `0x10000` in both trees.
 pub const WINDOW_SIZE: u64 = 0x1_0000;
 /// The rate both trees assign the `ciu` clock, which the controller divides for the card.
-pub(crate) const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
 /// Both trees' `fifo-depth`.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree

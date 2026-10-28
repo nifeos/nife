@@ -20,7 +20,9 @@ pub(crate) const MINUTES_PER_DAY: i64 = 1440;
 /// have is a 99-month count, about 3,013 days, plus a month's slack for a month day; a rule limited
 /// with `in` repeats within a year. Past this bound the rule has no next occurrence, which is how a
 /// line spent by `through` reads too.
-pub(crate) const HORIZON_DAYS: i64 = 99 * 31 + 62;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const HORIZON_DAYS: i64 = 99 * 31 + 62;
 
 /// How often a rule repeats: RFC 5545's FREQ.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -200,7 +202,9 @@ pub(crate) fn month_day_matches(on: MonthDay, dom: u8, dow: u8, month_len: u8) -
 
 /// **Is day `d` one the rule fires on**, ignoring the time of day. RFC 5545's day-level expansion,
 /// written as a predicate: `next` asks it of each day in turn, so no matching day can be skipped.
-pub(crate) fn day_matches(rule: &Rule, d: i64) -> bool {
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub fn day_matches(rule: &Rule, d: i64) -> bool {
     if rule.starting.is_some_and(|s| d < s) || rule.through.is_some_and(|t| d > t) {
         return false;
     }
@@ -254,7 +258,9 @@ fn in_phase(rule: &Rule, d: i64, year: i32, month: u8) -> bool {
 ///
 /// Twenty-four iterations at most and one trailing-zero count each, which is what lets Kani prove
 /// its three properties over every mask (`proofs::a_time_of_day_is_strictly_later_and_listed`).
-pub(crate) fn next_time(hours: u32, minutes: u64, after: i32) -> Option<u16> {
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub fn next_time(hours: u32, minutes: u64, after: i32) -> Option<u16> {
     let minutes = minutes & ((1u64 << 60) - 1);
     let mut h = if after < 0 { 0 } else { (after / 60) as u32 };
     while h < 24 {

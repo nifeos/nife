@@ -175,6 +175,17 @@ pub const fn command(physical_layer_device_address: u8, register: u8, write: boo
         | GB
 }
 
+/// The command word's five fields share no bit, so its `|`s are its `^`s: the clock range, the
+/// PHY and register addresses (five bits each, reduced by mask), the operation, and the busy
+/// bit; the compiler checks the pairwise disjointness here, and the mutation exclusion for
+/// `command` names this constant. Each operand enters through its own field mask.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT: () = assert!(
+    (CR_500_800 << CR_SHIFT) | (0x1f << PA_SHIFT) | (0x1f << RDA_SHIFT) | (0x3 << 2) | GB
+        == (CR_500_800 << CR_SHIFT) ^ (0x1f << PA_SHIFT) ^ (0x1f << RDA_SHIFT) ^ (0x3 << 2) ^ GB
+);
+
 /// **A management data input/output (MDIO) bus**: a clause 22 PHY register file, reached somehow.
 /// The MAC's MDIO pair is one implementation ([`Bus`]); a test's simulated PHY is another.
 ///
@@ -257,6 +268,14 @@ pub fn physical_layer_device_id(
     Ok(u32::from(high) << 16 | u32::from(low))
 }
 
+/// The identifier's high half is shifted above the low half's whole width, so the halves share no
+/// bit for every value the bus can return; the compiler checks it here, and the mutation
+/// exclusion for `physical_layer_device_id` names this constant.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_PHYSICAL_LAYER_DEVICE_ID_HALVES_SHARE_NO_BIT: () =
+    assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
+
 /// **Is the link up right now?** Two reads of the latched-low status bit, so a drop since the last
 /// look does not read as down forever and a link that is up now reads as up.
 pub fn link_is_up(
@@ -280,6 +299,14 @@ pub fn restart_autonegotiation(
         bmcr | BMCR_ANENABLE | BMCR_ANRESTART,
     )
 }
+
+/// The enable and restart bits share no bit, so the swap between them is `|`-versus-`^` over
+/// disjoint bits; the compiler checks it here, and the mutation exclusion for
+/// `restart_autonegotiation` names this constant.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_AUTONEGOTIATION_ENABLE_AND_RESTART_SHARE_NO_BIT: () =
+    assert!(BMCR_ANENABLE & BMCR_ANRESTART == 0);
 
 #[cfg(test)]
 mod tests {

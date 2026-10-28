@@ -23,10 +23,10 @@
 //!   digit loop without the column; whether they become `write_right` calls at width `0` is no
 //!   one's milestone yet.
 //!
-//! Name: provisional (milestone 793, 2026-10-15 UTC), for calef's naming pass. Considered and set
-//! aside: `padnum` (floated in the block; abbreviates `num`, and reads as a verb phrase),
-//! `decimal_writer` (suggests a fixed-point type), `padded_number` (names the output, not the
-//! crate), `number_column` (reads as a column's ordinal).
+//! Name: ratified 2026-10-28 (calef, relayed by the maintainer on the naming review, pull request
+//! #2870). Refused `padnum` (abbreviates `num`, and reads as a verb phrase), `decimal_writer`
+//! (suggests a fixed-point type), `padded_number` (names the output, not the crate), and
+//! `number_column` (reads as a column's ordinal).
 
 #![cfg_attr(not(test), no_std)]
 

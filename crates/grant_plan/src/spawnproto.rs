@@ -183,7 +183,7 @@ const HELD_BIT: u64 = 1 << 47;
 const RELEASE_BIT: u64 = 1 << 48;
 
 /// **Where a session holds the machine statistics page** (milestone 126, DECISIONS §225): `READ |
-/// GRANT`, so it can delegate it with [`MACHINE_BIT`] and not write it. A named slot probed at
+/// GRANT`, so it can delegate it with `MACHINE_BIT` and not write it. A named slot probed at
 /// `_start`, for [`RUN_UNVOUCHED_SLOT`]'s reasons.
 ///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
@@ -810,17 +810,17 @@ pub struct Wiring {
     /// `PROGRAM_ARGUMENTS_BIT`.
     pub program_arguments: bool,
     /// **The directory grant is a set of names, which follows as one `READ` frame** (milestone
-    /// 205). See [`NAMESET_BIT`].
+    /// 205). See `NAMESET_BIT`.
     pub nameset: bool,
     /// **The machine statistics page follows as the last delegated capability** (milestone 126).
-    /// See [`MACHINE_BIT`].
+    /// See `MACHINE_BIT`.
     pub machine: bool,
     /// **This is a graphical terminal launch, and no capability follows** (milestone 632
     /// (provisional)): the spawn service builds the session from its own copies. See
-    /// [`GRAPHICS_BIT`].
+    /// `GRAPHICS_BIT`.
     pub graphics: bool,
     /// **Unused, and a request that sets it is refused; no capability follows** (milestone 715
-    /// (provisional)). See [`KEYBOARD_BIT`]; meaningless unless `graphics` is also set.
+    /// (provisional)). See `KEYBOARD_BIT`; meaningless unless `graphics` is also set.
     pub keyboard: bool,
     /// **The shell holds this job's region and its exit** (milestone 933). Two capabilities follow
     /// the interrupt pair; see `HELD_BIT`.
@@ -912,7 +912,7 @@ pub const fn held_shares(program: crate::Program) -> bool {
     program.manifest().share
 }
 
-/// **The "release" request for job `label`** ([`RELEASE_BIT`]): the three words the shell sends
+/// **The "release" request for job `label`** (`RELEASE_BIT`): the three words the shell sends
 /// when it has torn down a job it held.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/933-every-job-built-like-a-supervised-job.

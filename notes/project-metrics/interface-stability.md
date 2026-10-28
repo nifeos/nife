@@ -8,44 +8,50 @@ Sorted by breaking changes in the last four weeks (2026W41 to 2026W44), then by 
 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
-| `filesystem_contract` | 260 | 24 | 302 | 474 | 137 | 121 (88%) |
-| `grant_plan` | 216 | 308 | 301 | 1131 | 230 | 176 (77%) |
-| `globally_unique_identifier_partition_table` | 75 | 6 | 103 | 284 | 55 | 43 (78%) |
+| `filesystem_contract` | 263 | 28 | 305 | 478 | 143 | 127 (89%) |
+| `grant_plan` | 225 | 326 | 310 | 1149 | 242 | 187 (77%) |
+| `globally_unique_identifier_partition_table` | 75 | 7 | 103 | 285 | 58 | 46 (79%) |
 | `installed_programs` | 74 | 41 | 77 | 94 | 37 | 31 (84%) |
-| `login_contract` | 23 | 15 | 32 | 93 | 48 | 46 (96%) |
-| `package_archive` | 19 | 30 | 20 | 130 | 35 | 27 (77%) |
-| `hot_swap_contract` | 13 | 10 | 24 | 126 | 65 | 60 (92%) |
+| `login_contract` | 23 | 15 | 32 | 93 | 49 | 47 (96%) |
+| `hot_swap_contract` | 19 | 11 | 30 | 127 | 67 | 62 (93%) |
+| `package_archive` | 19 | 30 | 20 | 130 | 36 | 28 (78%) |
+| `capability_plan` | 18 | 15 | 18 | 15 | 13 | 12 (92%) |
+| `abi` | 13 | 62 | 47 | 190 | 138 | 128 (93%) |
 | `component_plan` | 13 | 12 | 16 | 138 | 36 | 30 (83%) |
-| `compositor` | 10 | 3 | 21 | 101 | 46 | 38 (83%) |
-| `credential_contract` | 9 | 6 | 39 | 73 | 47 | 40 (85%) |
-| `line_editor` | 8 | 27 | 20 | 145 | 61 | 50 (82%) |
+| `line_editor` | 10 | 27 | 22 | 145 | 64 | 53 (83%) |
+| `compositor` | 10 | 3 | 21 | 101 | 47 | 39 (83%) |
+| `credential_contract` | 9 | 6 | 39 | 73 | 49 | 41 (84%) |
 | `graphics_contract` | 8 | 0 | 19 | 33 | 36 | 35 (97%) |
-| `abi` | 7 | 55 | 41 | 183 | 131 | 121 (92%) |
-| `capability_manifest_note` | 7 | 41 | 7 | 81 | 39 | 29 (74%) |
-| `socket_contract` | 6 | 23 | 21 | 81 | 45 | 40 (89%) |
+| `environment_contract` | 7 | 6 | 8 | 50 | 22 | 20 (91%) |
+| `capability_manifest_note` | 7 | 41 | 7 | 81 | 40 | 30 (75%) |
+| `socket_contract` | 6 | 23 | 21 | 81 | 49 | 43 (88%) |
+| `clock_contract` | 6 | 7 | 11 | 61 | 45 | 41 (91%) |
 | `current_cpu_contract` | 6 | 6 | 6 | 19 | 25 | 13 (52%) |
-| `clock_contract` | 4 | 3 | 9 | 57 | 41 | 37 (90%) |
-| `environment_contract` | 4 | 3 | 5 | 47 | 20 | 18 (90%) |
-| `capability_plan` | 4 | 3 | 4 | 3 | 10 | 9 (90%) |
-| `std_runtime_contract` | 4 | 12 | 4 | 29 | 27 | 24 (89%) |
-| `nifefs` | 3 | 1 | 10 | 42 | 54 | 41 (76%) |
-| `counter_frequency_contract` | 3 | 2 | 4 | 17 | 25 | 21 (84%) |
-| `boot_slot` | 3 | 7 | 3 | 55 | 21 | 16 (76%) |
-| `byte_sink_contract` | 2 | 1 | 8 | 49 | 38 | 37 (97%) |
-| `entropy_contract` | 2 | 2 | 5 | 19 | 31 | 28 (90%) |
+| `std_runtime_contract` | 4 | 12 | 4 | 29 | 28 | 25 (89%) |
+| `nifefs` | 3 | 1 | 10 | 42 | 55 | 42 (76%) |
+| `counter_frequency_contract` | 3 | 2 | 4 | 17 | 26 | 22 (85%) |
+| `boot_slot` | 3 | 7 | 3 | 55 | 22 | 17 (77%) |
+| `supervision_protocol` | 2 | 7 | 24 | 71 | 70 | 61 (87%) |
+| `byte_sink_contract` | 2 | 1 | 8 | 49 | 39 | 38 (97%) |
+| `entropy_contract` | 2 | 2 | 5 | 19 | 32 | 29 (91%) |
 | `measured_boot` | 2 | 24 | 2 | 65 | 32 | 23 (72%) |
 | `address_space_map` | 1 | 1 | 1 | 43 | 0 | 0 |
 | `capability_witness_contract` | 1 | 11 | 1 | 14 | 23 | 19 (83%) |
 | `program_argument_contract` | 1 | 0 | 1 | 29 | 0 | 0 |
-| `supervision_protocol` | 0 | 6 | 22 | 70 | 68 | 59 (87%) |
 | `elf` | 0 | 0 | 3 | 82 | 53 | 42 (79%) |
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
 | `allocation_cache` | 0 | 20 | 0 | 20 | 0 | 0 |
 
 ## What broke in 2026W44
 
-Read at `be1882b03621` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `7a21d411ba93` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
+> - `abi`: removed `CapSlot`
+> - `abi`: syscall renamed, number kept (syscall), now `SYS_CAPABILITY_DELETE` `SYS_CAP_DELETE`
+> - `abi`: syscall renamed, number kept (method or encoding), now `rendezvous::NO_CAPABILITY` `rendezvous::NO_CAP`
+> - `abi`: syscall renamed, number kept (method or encoding), now `rendezvous::RECEIVE_CAPABILITY` `rendezvous::RECEIVE_CAP`
+> - `abi`: syscall renamed, number kept (method or encoding), now `rendezvous::SEND_CAPABILITY` `rendezvous::SEND_CAP`
+> - `abi`: syscall renamed, number kept (method or encoding), now `thread_control_block::CAPABILITY_INSERT` `thread_control_block::CAP_INSERT`
 > - `address_space_map`: removed `MAX_STACK_PAGES`
 > - `boot_slot`: removed `MAX_NIBBLE`
 > - `boot_slot`: removed `cmdline::MAX_LEN`
@@ -54,12 +60,28 @@ Read at `be1882b03621` against the week before. Each line is one removed or chan
 > - `capability_manifest_note`: removed `MAX_VERBS`
 > - `capability_manifest_note`: removed `MAX_ZONES`
 > - `capability_manifest_note`: removed `ZONE_MAX`
+> - `capability_plan`: removed `CapNeed`
+> - `capability_plan`: removed `CapNeed: impl Clone`
+> - `capability_plan`: removed `CapNeed: impl Copy`
+> - `capability_plan`: removed `CapNeed: impl Debug`
+> - `capability_plan`: removed `CapNeed: impl Eq`
+> - `capability_plan`: removed `CapNeed: impl PartialEq`
+> - `capability_plan`: removed `CapNeed: impl StructuralPartialEq`
+> - `capability_plan`: removed `CapNeed::direction`
+> - `capability_plan`: removed `CapNeed::role`
 > - `capability_plan`: removed `MAX_CAPS`
 > - `capability_plan`: removed `MAX_LIVE`
 > - `capability_plan`: removed `MAX_MAPS`
+> - `capability_plan`: removed `Plan::caps`
+> - `capability_plan`: changed `Refusal`
+> - `capability_plan`: removed `Refusal::TooManyCaps`
+> - `capability_plan`: changed `Requirements`
+> - `capability_plan`: removed `Requirements::caps`
 > - `clock_contract`: removed `ClockPage::init`
 > - `clock_contract`: removed `policy::MAX_STEP_BACKWARD_NANOS`
 > - `clock_contract`: removed `policy::MAX_STEP_FORWARD_NANOS`
+> - `clock_contract`: removed `policy::NOT_AFTER_NANOS`
+> - `clock_contract`: removed `policy::NOT_BEFORE_NANOS`
 > - `compositor`: removed `MAX_SURFACE_BYTES`
 > - `compositor`: removed `MAX_WINDOWS`
 > - `counter_frequency_contract`: removed `MAX_PLAUSIBLE_HZ`
@@ -71,12 +93,18 @@ Read at `be1882b03621` against the week before. Each line is one removed or chan
 > - `environment_contract`: removed `LANG_MAX`
 > - `environment_contract`: removed `TERM_MAX`
 > - `environment_contract`: removed `TZ_MAX`
+> - `environment_contract`: removed `domain::KNOWN_LANG`
+> - `environment_contract`: removed `domain::KNOWN_TERM`
+> - `environment_contract`: removed `domain::KNOWN_TZ`
 > - `filesystem_contract`: removed `blk::TRANSFER_MAX`
 > - `filesystem_contract`: removed `fs::MAX_HANDLE`
 > - `filesystem_contract`: removed `fs::MAX_LEN`
 > - `filesystem_contract`: removed `fs::TRANSFER_MAX`
 > - `filesystem_contract`: removed `grant::MAX_NAME`
 > - `filesystem_contract`: removed `nameset::MAX_NAMES`
+> - `filesystem_contract`: changed `verb::LAST`
+> - `filesystem_contract`: changed `verb::TABLE`
+> - `filesystem_contract`: changed `verb::file_grant::POLICY`
 > - `filesystem_contract`: removed `xattr::MAX_COUNT`
 > - `filesystem_contract`: removed `xattr::MAX_KIND`
 > - `filesystem_contract`: removed `xattr::MAX_NAME`
@@ -86,12 +114,18 @@ Read at `be1882b03621` against the week before. Each line is one removed or chan
 > - `globally_unique_identifier_partition_table`: removed `MAX_BLOCK_SIZE`
 > - `globally_unique_identifier_partition_table`: removed `MIN_BLOCK_SIZE`
 > - `globally_unique_identifier_partition_table`: removed `mbr::PROTECTIVE_OS_TYPE`
+> - `grant_plan`: changed `BUILTINS`
+> - `grant_plan`: changed `Command`
+> - `grant_plan`: removed `Command::Caps`
 > - `grant_plan`: removed `MAX_DECLARED_SHORT_OPTIONS`
 > - `grant_plan`: removed `MAX_FILE_NAME`
 > - `grant_plan`: removed `MAX_POSITIONALS`
 > - `grant_plan`: removed `MAX_SHORT_OPTIONS`
 > - `grant_plan`: removed `MAX_VERB`
 > - `grant_plan`: changed `MemoryGrantDeclaration::Required`
+> - `grant_plan`: changed `PROGRAM_COUNT`
+> - `grant_plan`: changed `Program`
+> - `grant_plan`: changed `Refusal`
 > - `grant_plan`: changed `Refusal::MemoryGrantOutOfRange`
 > - `grant_plan`: removed `expand::MAX_NAME`
 > - `grant_plan`: removed `expand::MAX_NAMES`
@@ -103,18 +137,31 @@ Read at `be1882b03621` against the week before. Each line is one removed or chan
 > - `grant_plan`: removed `nav::MAX_DIRECTORY_NAME`
 > - `grant_plan`: removed `nav::MAX_NAME`
 > - `grant_plan`: removed `nav::RENDER_MAX`
+> - `grant_plan`: removed `spawnproto::CAP_TAG`
 > - `grant_plan`: removed `spawnproto::HOLDER_MAX`
 > - `grant_plan`: removed `spawnproto::IMAGE_MAX_PAGES`
+> - `grant_plan`: changed `spawnproto::SHELL_BUDGET_PAGES`
+> - `grant_plan`: changed `spawnproto::Wiring`
 > - `grant_plan`: removed `verbs::MAX_VERB`
+> - `hot_swap_contract`: changed `BACKEND`
+> - `hot_swap_contract`: changed `BROKER`
+> - `hot_swap_contract`: changed `CLIENT`
+> - `hot_swap_contract`: changed `CONSOLE`
+> - `hot_swap_contract`: changed `STATEFUL_BACKEND`
+> - `hot_swap_contract`: removed `try_receive_cap`
 > - `line_editor`: removed `LINE_MAX`
 > - `line_editor`: removed `PROMPT_MAX`
 > - `line_editor`: removed `RAW_QUEUE_MAX`
+> - `line_editor`: changed `component::CONSOLE`
+> - `line_editor`: changed `component::DISPLAY`
 > - `login_contract`: removed `MAX_IDENTITY`
 > - `login_contract`: removed `MAX_SECRET`
 > - `nifefs`: removed `MAX_FILES`
 > - `package_archive`: removed `MAX_MEMBERS`
 > - `socket_contract`: removed `DATA_MAX`
 > - `std_runtime_contract`: removed `HEAP_MAX`
+> - `supervision_protocol`: changed `ChildEndowment`
+> - `supervision_protocol`: removed `ChildEndowment::caps`
 
 ## Co-change per package
 
@@ -122,32 +169,32 @@ Every package in `packages/`, 2026W29 to 2026W44, by the method of the contracts
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|
-| `kernel` | 1942 | 1045 (54%) | 851 (44%) | 50% | `contracts` (325) |
-| `contracts` | 1113 | 758 (68%) | 695 (62%) | 63% | `kernel` (325) |
-| `host-tools` | 835 | 588 (70%) | 492 (59%) | 65% | `kernel` (236) |
-| `system-tests` | 484 | 278 (57%) | 269 (56%) | 51% | `kernel` (114) |
-| `init` | 436 | 370 (85%) | 364 (83%) | 80% | `contracts` (127) |
-| `fixtures` | 367 | 291 (79%) | 281 (77%) | 70% | `kernel` (74) |
-| `runtime` | 286 | 236 (83%) | 214 (75%) | 75% | `kernel` (62) |
-| `drivers` | 279 | 197 (71%) | 186 (67%) | 63% | `kernel` (80) |
-| `boot` | 223 | 159 (71%) | 146 (65%) | 60% | `host-tools` (50) |
-| `display` | 214 | 148 (69%) | 139 (65%) | 58% | `kernel` (43) |
-| `swish` | 155 | 141 (91%) | 136 (88%) | 87% | `contracts` (61) |
-| `network` | 121 | 100 (83%) | 97 (80%) | 75% | `init` (28) |
-| `redoxfs` | 121 | 87 (72%) | 83 (69%) | 51% | `contracts` (15) |
-| `terminal` | 116 | 98 (84%) | 96 (83%) | 76% | `init` (31) |
-| `login` | 105 | 88 (84%) | 86 (82%) | 68% | `contracts` (17) |
-| `timetable` | 100 | 72 (72%) | 68 (68%) | 55% | `init` (15) |
-| `process-tools` | 89 | 73 (82%) | 69 (78%) | 65% | `init` (10) |
-| `time` | 66 | 62 (94%) | 60 (91%) | 86% | `init` (10) |
-| `filesystem` | 50 | 45 (90%) | 44 (88%) | 78% | `contracts` (9) |
-| `core-tools` | 47 | 43 (91%) | 43 (91%) | 75% | `process-tools` (4) |
-| `jig` | 34 | 29 (85%) | 29 (85%) | 64% | `fixtures` (6) |
-| `entropy` | 32 | 31 (97%) | 31 (97%) | 91% | `display` (7) |
-| `c-library` | 28 | 17 (61%) | 13 (46%) | 47% | `system-tests` (3) |
+| `kernel` | 1977 | 1071 (54%) | 874 (44%) | 50% | `contracts` (329) |
+| `contracts` | 1155 | 788 (68%) | 725 (63%) | 62% | `kernel` (329) |
+| `host-tools` | 857 | 608 (71%) | 509 (59%) | 66% | `kernel` (240) |
+| `system-tests` | 512 | 297 (58%) | 287 (56%) | 51% | `kernel` (120) |
+| `init` | 456 | 388 (85%) | 382 (84%) | 80% | `contracts` (134) |
+| `fixtures` | 386 | 309 (80%) | 298 (77%) | 71% | `kernel` (74) |
+| `runtime` | 295 | 244 (83%) | 222 (75%) | 75% | `kernel` (62) |
+| `drivers` | 290 | 206 (71%) | 192 (66%) | 63% | `kernel` (80) |
+| `boot` | 226 | 162 (72%) | 149 (66%) | 60% | `host-tools` (50) |
+| `display` | 220 | 154 (70%) | 145 (66%) | 58% | `kernel` (43) |
+| `swish` | 167 | 152 (91%) | 147 (88%) | 87% | `contracts` (66) |
+| `redoxfs` | 131 | 96 (73%) | 92 (70%) | 53% | `contracts` (20) |
+| `network` | 125 | 104 (83%) | 101 (81%) | 75% | `init` (28) |
+| `terminal` | 121 | 103 (85%) | 101 (83%) | 76% | `init` (31) |
+| `login` | 113 | 93 (82%) | 91 (81%) | 64% | `contracts` (17) |
+| `timetable` | 109 | 79 (72%) | 75 (69%) | 55% | `contracts` (15) |
+| `process-tools` | 98 | 80 (82%) | 76 (78%) | 65% | `kernel` (11) |
+| `time` | 75 | 71 (95%) | 69 (92%) | 87% | `init` (10) |
+| `filesystem` | 53 | 48 (91%) | 47 (89%) | 80% | `contracts` (11) |
+| `core-tools` | 50 | 46 (92%) | 46 (92%) | 76% | `process-tools` (4) |
+| `jig` | 36 | 31 (86%) | 31 (86%) | 67% | `fixtures` (6) |
+| `entropy` | 34 | 33 (97%) | 33 (97%) | 91% | `display` (7) |
+| `c-library` | 29 | 18 (62%) | 14 (48%) | 47% | `system-tests` (3) |
 | `cryptography` | 28 | 26 (93%) | 24 (86%) | 87% | `fixtures` (8) |
+| `rmle` | 24 | 21 (88%) | 21 (88%) | 50% | `contracts` (2) |
 | `disk-tools` | 23 | 23 (100%) | 23 (100%) | 100% | `contracts` (2) |
-| `rmle` | 23 | 20 (87%) | 20 (87%) | 50% | `contracts` (2) |
 | `system_installer` | 22 | 22 (100%) | 22 (100%) | 100% | `init` (4) |
 | `demos` | 13 | 12 (92%) | 12 (92%) | 50% | `fixtures` (1) |
 | `mdr` | 5 | 5 (100%) | 5 (100%) | 100% | `contracts` (2) |
@@ -158,11 +205,11 @@ Each crate a per-crate release milestone names (`helpers/crate_release.py`), on 
 
 | crate | commits | crossing | touching another | crossing, mass excluded |
 |---|---:|---:|---:|---:|
-| `designware_mobile_storage` | 67 | 34 (51%) | 32 (48%) | 48% |
-| `e1000e` | 43 | 25 (58%) | 24 (56%) | 50% |
-| `extensible_host_controller_interface` | 26 | 18 (69%) | 18 (69%) | 53% |
-| `file_allocation_table` | 41 | 27 (66%) | 22 (54%) | 53% |
-| `designware_ethernet` | 34 | 24 (71%) | 23 (68%) | 64% |
+| `file_allocation_table` | 50 | 29 (58%) | 24 (48%) | 46% |
+| `designware_mobile_storage` | 70 | 37 (53%) | 34 (49%) | 49% |
+| `e1000e` | 45 | 27 (60%) | 26 (58%) | 50% |
+| `extensible_host_controller_interface` | 28 | 20 (71%) | 20 (71%) | 53% |
+| `designware_ethernet` | 40 | 28 (70%) | 25 (62%) | 62% |
 | `jh7110_entropy` | 49 | 41 (84%) | 40 (82%) | 71% |
-| `jh7110_clock_and_reset` | 47 | 39 (83%) | 38 (81%) | 75% |
+| `jh7110_clock_and_reset` | 48 | 40 (83%) | 39 (81%) | 75% |
 | `non_volatile_memory_express` | 58 | 52 (90%) | 49 (84%) | 84% |

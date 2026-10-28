@@ -105,7 +105,7 @@ fn a_simulated_controller_runs_exactly_what_was_produced_across_laps() {
             let mut ran = std::vec::Vec::new();
             for _ in 0..16 {
                 let t = memory[*dequeue as usize];
-                if t.cycle() != *ccs {
+                if t.is_cycle() != *ccs {
                     break;
                 }
                 if t.kind() == transfer_request_block_type::LINK {

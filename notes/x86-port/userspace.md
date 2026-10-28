@@ -45,7 +45,7 @@ inventing a policy for a case the machine never produces would be code nobody co
 
 ### `xtask` grew a third packer, and one latent bug came out with it
 
-There is no table of programs to pack. All three packers, `initial_ramdisk_x86` among them, pack
+There is no table of programs to pack. All three packers, `has_initial_ramdisk_x86` among them, pack
 every `[[bin]]` in `components/Cargo.toml` and `fixtures/Cargo.toml` (`declared_programs()` in
 `xtask`, milestone 150), so no list can drift between callers. See notes/adding-a-program.md.
 

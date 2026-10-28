@@ -221,7 +221,7 @@ fn run(
     if !r.sys.has_clocks_running() || !r.aon.has_clocks_running() {
         return Err(Error::ClocksNotRunning);
     }
-    if !r.aon.every_reset_released() {
+    if !r.aon.all_resets_are_released() {
         return Err(Error::ResetsHeld);
     }
 

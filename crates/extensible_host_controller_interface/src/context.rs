@@ -75,6 +75,15 @@ pub const fn slot(speed: u8, port: u8, entries: u8) -> [u32; 8] {
     ]
 }
 
+/// The slot context's two dword-0 fields share no bit (the speed id at 20:23, the context count
+/// at 27:31), which the compiler checks here; the mutation exclusion for [`slot`] names this
+/// constant. The constant-assertion lint is off on purpose: the assertion is constant by
+/// construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT: () = assert!(((0xfu32 << 20) & (0x1f << 27)) == 0);
+
 /// The slot context's device address, assigned by Address Device: dword 3's low byte of a slot
 /// context the controller wrote.
 ///
@@ -114,6 +123,19 @@ pub const fn endpoint(
         0,
     ]
 }
+
+/// The endpoint context's fields share no bit: dword 1's type at 1:2, kind at 3:10 and packet
+/// size at 16:31, and dword 4's two `u16` halves, which the compiler checks here; the mutation
+/// exclusion for [`endpoint`] names this constant. The constant-assertion lint is off on
+/// purpose: the assertion is constant by construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_ENDPOINT_CONTEXT_FIELDS_SHARE_NO_BIT: () = assert!(
+    ((3u32 << 1) & (0xff << 3)) == 0
+        && ((0xffu32 << 3) & (0xffff << 16)) == 0
+        && ((0xffffu32 << 16) & 0xffff) == 0
+);
 
 /// Endpoint 0's context with a new packet size, everything else as [`endpoint`] built it for
 /// `dequeue`: what Evaluate Context takes once the device's descriptor has said its size.

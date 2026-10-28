@@ -189,4 +189,311 @@ exclude_re = [
     # not compiled into anything. Matched as a module path, which nothing outside a test module
     # uses.
     "tests::",
+
+    # **e1000e's register words** (roadmap 954, part 4). One entry per function and shape whose
+    # OR-to-XOR swaps are no-ops because the operands share no bit, and one per file's
+    # constant-level swaps and zero shifts for the same reason. The argument compiles: a `const`
+    # assertion beside each covered word states the disjointness, the field membership or the
+    # shift identity, and an edit that broke it would fail the build there. Line and column stay
+    # `[0-9]+`, so an edit above a word cannot strand its entry; a rename or a rewrite that made
+    # operands overlap stops matching and the mutant reappears in the census as a survivor, which
+    # fails the weekly check. The killed mutants an entry sweeps are named in its reason.
+    #
+    # The control words and the transmit inter-packet gap (control.rs): the assertion beside each
+    # const fn states its operands' pairwise disjointness.
+    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in rctl$",
+    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in tctl$",
+    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in tipg$",
+    # The receive-error and transmit-command bytes (descriptor.rs) and the file's transmit
+    # descriptor word: single distinct bits, and a u16 length under a command byte at bit 24; the
+    # assertions beside them compile both arguments.
+    "^crates/e1000e/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    "^crates/e1000e/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_word$",
+    # The flush (pch/flush.rs): the dummy transmit's 512-byte length under a flag byte at bit 24,
+    # and RXDCTL's three added constants, which land in the register half the mask clears or
+    # share no bits with each other; the assertions beside each function compile both.
+    "^crates/e1000e/src/pch/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_word$",
+    "^crates/e1000e/src/pch/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in rxdctl$",
+    # The flash registers (pch/non_volatile_memory.rs). status::DONE and control::GO are `1 << 0`
+    # and `1 >> 0` is the same word, the shift identity; the file-level shift entry also sweeps
+    # the other `1 << n` status bits and the two `0b11 << n` masks, whose swaps are killed by
+    # the_flash_register_bits_are_the_ich8_unions. initialize_cycle ORs two write-one-to-clear
+    # error bits that share no bit (assertion beside the const modules), and its DONE write meets
+    # a bit the status write before it has already carried. read_u32_at_byte ORs the byte count
+    # into the field it just masked out (assertion beside the const modules).
+    "^crates/e1000e/src/pch/non_volatile_memory\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/e1000e/src/pch/non_volatile_memory\\.rs:\\d+:\\d+: replace \\| with \\^ in initialize_cycle$",
+    "^crates/e1000e/src/pch/non_volatile_memory\\.rs:\\d+:\\d+: replace \\| with \\^ in read_u32_at_byte$",
+    # The PHY (pch/physical_layer_device.rs): a value shifted left by five never reaches the
+    # five-bit register field beside it (assertion beside paged_offset), and the identifier's high
+    # word sits at bit 16 while the low one is a u16 (assertion beside id_at).
+    "^crates/e1000e/src/pch/physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in paged_offset$",
+    "^crates/e1000e/src/pch/physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in id_at$",
+    # The I219 bring-up (pch/sequence.rs): the ULP word's eight single-bit operands (assertion
+    # beside the constant), the identifier composition accessible shares with id_at (assertion
+    # beside it), the two OEM bits (beside oem_bits), the LANPHYPC counter value inside the field
+    # its word masks out (beside toggle_lanphypc), the SMBus address and flags (beside
+    # write_system_management_bus_address), initialize_hardware's unnamed Intel bits and the
+    # write-back constant that sets nothing the next line's prefetch does not set again (inside
+    # it; its TARC1 read join and its prefetch join are killed by
+    # initialize_hardware_writes_freebsds_values_from_any_starting_state), the copper link's
+    # advertised bits (beside setup_copper_link; the joins on a register's own value are killed by
+    # the same test), and the transmit errata's request count inside the field its word masks out
+    # (beside transmit_errata).
+    "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in accessible$",
+    "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in oem_bits$",
+    "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in toggle_lanphypc$",
+    "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in write_system_management_bus_address$",
+    "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in initialize_hardware$",
+    "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in setup_copper_link$",
+    "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_errata$",
+
+    # **Milestone 954 (a survivor accepted once is not accepted forever), part 4, this crate's
+    # noise:** `replace | with ^` over operands that share no bit, one entry per function, each
+    # naming the `const` beside the code whose `assert!` lets the compiler check the disjointness
+    # (`THE_*_SHARE_NO_BIT`). `x | y` equals `x ^ y` whenever the operands share no bit, so no test
+    # can kill these mutants, and the census counted them survived every week. The regex anchors on
+    # the file's path and the function's full name so it cannot reach another crate's or a longer
+    # name; the line and column are left to `\d+` because they move with every edit. A function
+    # named here that later gains a `|` over overlapping bits generates no mutant for it; that is
+    # the exclusion's known limit, narrowed by the named constant, which fails the build if the
+    # bits ever collide.
+    #
+    # Where a function's survivor set also holds a site the disjointness claim does not cover, the
+    # site's own row stays and says so; only the all-disjoint functions are excluded here.
+    #
+    # Command::word composes the start bit (31), the hold register (29) and the index masked to
+    # bits 5:0: THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT (command.rs).
+    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::word$',
+    # reset clears the three enables, disjoint per
+    # THE_DIRECT_MEMORY_ACCESS_ENABLES_SHARE_NO_BIT (registers.rs); the excluded
+    # `ctrl | CTRL_ALL_RESET` write's mutant, which
+    # reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets killed, is covered by
+    # the same exclusion.
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::reset$',
+    # set_clock writes the card clock enable (0) and low power (16), disjoint per
+    # THE_CLOCK_ENABLES_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::set_clock$',
+    # finish waits for DTO with ACD, and the data-error group with the data-timeout group, disjoint
+    # per THE_TRANSFER_OVER_BITS_SHARE_NO_BIT and
+    # THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::finish$',
+    # wait_queue tests the data-error group against the data-timeout group, disjoint per
+    # THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::wait_queue$',
+    # descriptor writes OWN (31) with CH (4), disjoint per
+    # THE_DESCRIPTOR_OWN_AND_CHAIN_BITS_SHARE_NO_BIT (internal_direct_memory_access.rs).
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in descriptor$',
+    # internal_direct_memory_access_start ORs the enable pair and BMOD's enable with fixed burst,
+    # disjoint per THE_DIRECT_MEMORY_ACCESS_ENABLES_SHARE_NO_BIT and
+    # THE_BUS_MODE_BITS_SHARE_NO_BIT (registers.rs); the `ctrl | CTRL_USE_INTERNAL_DMAC` write's
+    # mutant, which one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register
+    # killed, is covered by the same exclusion.
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_start$',
+    # internal_direct_memory_access_wait tests the same two disjoint pairs as finish, per
+    # THE_TRANSFER_OVER_BITS_SHARE_NO_BIT and THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT
+    # (registers.rs).
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_wait$',
+    # fifoth_for_pio composes the burst code (bit 29), the receive watermark (bits 27:16) and the
+    # transmit watermark (bits 11:0), disjoint per
+    # THE_POLLED_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^ in fifoth_for_pio$',
+    # fifoth_for_direct_memory_access composes the same three fields with the larger burst
+    # encoding, disjoint per
+    # THE_DIRECT_MEMORY_ACCESS_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^ in fifoth_for_direct_memory_access$',
+
+    # The crate's const-item survivors leave the same way. cargo-mutants names a const item's
+    # mutant with no function, so the file and the shape are the narrowest scope that survives an
+    # edit, and these entries reach the killed mutants of the same shapes in the same files; the
+    # tests that killed them stay. The compositions' disjointness is compiler-checked by the
+    # THE_*_SHARE_NO_BIT constants in the same files, and the constants' values are pinned by
+    # the_register_bits_are_the_databooks, the_operating_condition_arguments_are_the_specs and
+    # a_short_response_is_not_asked_for_as_a_long_one; the shift survivors are the `1 << 0`
+    # constants, where the shift is the identity.
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^$',
+    '^crates/designware_mobile_storage/src/card\.rs:\d+:\d+: replace \| with \^$',
+    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^$',
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace << with >>$',
+    # **designware_ethernet's disjoint-bits and zero-shift sites** (milestone 954 (a survivor
+    # accepted once is not accepted forever), 2026-10-28 UTC).
+    #
+    # A `|` over operands that share no bit equals a `^` over them, and a shift by zero equals the
+    # reverse shift, so no test can kill those mutants. Each entry's argument is a named
+    # `THE_*_SHARE_NO_BIT` constant beside the code, which fails the build if the operands ever
+    # come to share a bit, and helpers/mutation_exclusion_check.py fails an entry whose named
+    # constant is gone; for a shift by a literal, the argument is the identity itself. One
+    # function per entry (one file, for a constant with no enclosing function), never the crate;
+    # the shape is pinned so an entry cannot reach a different mutation. Each entry's limit, which
+    # the assertion narrows but does not close: a future `|` or shift added inside the excluded
+    # scope generates no mutant for it, and where a function's other mutants of the same shape are
+    # already killed, the entry stops running them too, while the tests that killed them stay.
+    # The register bits are `1 << n`; the survivors are the `1 << 0` bits, where the shift is the
+    # identity (`1 << 0 == 1 >> 0`). Every constant with `n > 0` has its value pinned
+    # literal-for-literal by registers::tests::the_bits_are_where_dwqereg_puts_them, which stays.
+    "^crates/designware_ethernet/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
+    # The clause 22 constants are `1 << n` the same way; the survivor is GB, `1 << 0`, the
+    # identity. Every other constant's value is pinned by
+    # management_data_input_output::tests::the_clause_22_bits_are_the_standards, which stays.
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace << with >>$",
+    # BUS's four burst-length bits are asserted pairwise disjoint by
+    # THE_BURST_LENGTH_BITS_SHARE_NO_BIT, beside BUS.
+    "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    # RGMII_RXD_DS_MASK's two fields are asserted disjoint by
+    # THE_RECEIVE_DATA_DRIVE_FIELDS_SHARE_NO_BIT, beside the mask.
+    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    # RSF against the threshold field, and the two flow-control threshold fields against each
+    # other, are asserted disjoint by THE_RECEIVE_QUEUE_MODE_FIELDS_SHARE_NO_BIT, beside
+    # receive_queue_mode.
+    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_queue_mode$",
+    # TSF against the threshold field, asserted disjoint by
+    # THE_TRANSMIT_QUEUE_MODE_FIELDS_SHARE_NO_BIT, beside transmit_queue_mode.
+    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_queue_mode$",
+    # THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT, beside configure, asserts its fields pairwise
+    # disjoint; field values reach their `|` through their own mask or a word the line above
+    # cleared, and the configure tests hold the rest (they kill the swaps at the two words read
+    # unmasked).
+    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    # THE_MAC_CONFIGURATION_BITS_SHARE_NO_BIT, beside mac_configuration, asserts the cleared
+    # speed, duplex and loopback bits and the final chain's five bits each pairwise disjoint; the
+    # chain's first swap toggles `conf` itself and the_mac_word_from_zero_and_from_all_ones kills
+    # it.
+    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
+    # THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT, beside configure, asserts the delay and drive
+    # fields pairwise disjoint.
+    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    # The transmit delay select is zero (THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT asserts
+    # it), so those two shifts are the identity; the same entry covers the function's
+    # shift-by-nonzero sites, which
+    # motorcomm::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
+    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace << with >> in configure$",
+    # The command word's five field masks are asserted pairwise disjoint by
+    # THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT, beside command; every operand enters through its own
+    # field's mask.
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in command$",
+    # The high half is shifted above the low half's whole width;
+    # THE_PHYSICAL_LAYER_DEVICE_ID_HALVES_SHARE_NO_BIT, beside the function, asserts it for the
+    # widest values either can hold.
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in physical_layer_device_id$",
+    # ANENABLE and ANRESTART are asserted disjoint by
+    # THE_AUTONEGOTIATION_ENABLE_AND_RESTART_SHARE_NO_BIT, beside the function; the swap
+    # against bmcr is killed by
+    # mdio::tests::restarting_a_negotiation_already_running_keeps_it_running.
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in restart_autonegotiation$",
+    # The payload's set bit and its six-bit counter are asserted disjoint by
+    # THE_PROBE_PAYLOAD_SET_BIT_AND_COUNTER_SHARE_NO_BIT, beside probe_frame.
+    "^crates/designware_ethernet/src/coherence\\.rs:\\d+:\\d+: replace \\| with \\^ in probe_frame$",
+    # OWN, IC and BUF1V are asserted pairwise disjoint by
+    # THE_RECEIVE_DESCRIPTOR_SET_BITS_SHARE_NO_BIT, beside the function.
+    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_descriptor_words$",
+    # THE_TRANSMIT_DESCRIPTOR_BITS_SHARE_NO_BIT, beside the function, asserts word 2's field and
+    # bit disjoint, word 3's three set bits pairwise disjoint and outside the length field, and
+    # the two words a whole word apart.
+    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_descriptor_words$",
+    # FD and LD are asserted distinct single bits by THE_FIRST_AND_LAST_BITS_SHARE_NO_BIT, beside
+    # receive_verdict.
+    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_verdict$",
+    # The interface value fits the field the function just cleared;
+    # THE_INTERFACE_SELECT_AND_CLEARED_WORD_SHARE_NO_BIT asserts that, which makes the `|` and the
+    # `^` agree for every word.
+    "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^ in select_reduced_gigabit_media_independent_interface$",
+
+    # **Milestone 954 (a survivor accepted once is not accepted forever), part 4, the remaining
+    # crates' noise** (2026-10-28 UTC): the same shape as the two blocks above, one entry per
+    # function (per file, for a constant with no enclosing function), each naming the
+    # THE_*_SHARE_NO_BIT constant beside the code whose assert! lets the compiler check the
+    # disjointness; a shift entry's argument is the identity. The census keys these survivors
+    # under names a rename has since moved (the carried rowless list's `cc_enabled`,
+    # `create_io_cq`, `create_io_sq`, the crate that held each Handoff); the entries spell the
+    # names as the tree has them now, which is what the next census will match.
+    #
+    # non_volatile_memory_express: the controller configuration word's three fields (the enable
+    # at bit 0, IOSQES at 16:18, IOCQES at 20:21), per
+    # THE_CONTROLLER_CONFIGURATION_FIELDS_SHARE_NO_BIT, beside the function.
+    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in enabled_controller_configuration$",
+    # The queue dwords' u16 halves, per THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT, beside the Command
+    # impl.
+    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in Command::create_io_completion_queue$",
+    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in Command::create_io_submission_queue$",
+    # The handoff word's three fields (dstrd above bit 32, blocks_per_transfer at 16:31, entries
+    # below), per THE_HANDOFF_WORD_FIELDS_SHARE_NO_BIT, beside Handoff.
+    "^crates/driver_process_contract/src/non_volatile_memory_express\\.rs:\\d+:\\d+: replace \\| with \\^ in Handoff::pack$",
+    # The spawn word's four shifted fields (the role above 48, the queue depth at 40:47, the
+    # writable bit at 39, the bus width at 32:35), per THE_SPAWN_WORD_FIELDS_SHARE_NO_BIT,
+    # beside Handoff.
+    "^crates/driver_process_contract/src/designware_mobile_storage\\.rs:\\d+:\\d+: replace \\| with \\^ in Handoff::pack$",
+    # The spawn word's two fields (the page count below bit 32, the register mask above), per
+    # THE_DIRECT_MEMORY_ACCESS_WORD_FIELDS_SHARE_NO_BIT, beside Handoff.
+    "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in Handoff::pack$",
+    # The report words (a byte, a byte, and the 16- and 32-bit fields the callers shift above bit
+    # 16), per THE_REPORT_WORD_FIELDS_SHARE_NO_BIT, beside the three functions.
+    "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in keyboard_report$",
+    "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in ports_report$",
+    "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
+    # extensible_host_controller_interface's own registers. The `1 << 0` constants (CONNECTED,
+    # COMMAND_RUN, STATUS_HALTED, IMAN_PENDING) are the shift survivors, where the shift is the
+    # identity; every other constant's value is pinned by
+    # the_register_bits_are_where_the_specification_puts_them and
+    # the_portsc_bits_are_where_the_specification_puts_them, which stay.
+    "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
+    # The const-level `|` survivors: CHANGES and PRESERVE (port.rs), per
+    # THE_PORT_CHANGE_BITS_SHARE_NO_BIT and THE_PRESERVED_FIELDS_SHARE_NO_BIT, beside them.
+    "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    # LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES's three bits (0, 4, 13:15), per
+    # THE_LEGACY_ENABLE_BITS_SHARE_NO_BIT, beside the constant; the killed mutants the entry
+    # sweeps are pinned by the_register_bits_are_where_the_specification_puts_them, which stays.
+    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    # The scratchpad count's two fields (5:9 against 0:4), per
+    # THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT, beside the impl.
+    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^ in Capabilities::decode$",
+    # The event pointer's halves (dword 0 below, dword 1 above bit 32), per
+    # THE_EVENT_POINTER_HALVES_SHARE_NO_BIT, beside the impl.
+    "^crates/extensible_host_controller_interface/src/event\\.rs:\\d+:\\d+: replace \\| with \\^ in Event::decode$",
+    # The context words: slot's two dword-0 fields (20:23 against 27:31), per
+    # THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT, and endpoint's dword-1 fields and dword-4 halves, per
+    # THE_ENDPOINT_CONTEXT_FIELDS_SHARE_NO_BIT, beside their functions.
+    "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in slot$",
+    "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in endpoint$",
+    # The transfer control words: the type field at 10:15 against the flag bits and the fields at
+    # 16 and above, per THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT, beside control().
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::link$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::disable_slot$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::address_device$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::configure_endpoint$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::evaluate_context$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::reset_endpoint$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::set_dequeue$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::setup$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::data$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::status$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::normal$",
+    # The cycle stamp, whose mask clears bit 0 and whose bool cannot hold more, per
+    # THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT, beside control().
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::with_cycle$",
+    # grant_plan: the rights bits (five single bits), per THE_RIGHTS_BITS_SHARE_NO_BIT, beside
+    # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.
+    "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",
+    "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace << with >> in WordGrant::rights$",
+    # The const-level shift survivors are command.rs's RECURSIVE and verbs.rs's CLOCK, both
+    # `1 << 0`, the identity; the rest of each file's constant shifts are pinned by existing
+    # tests, which stay.
+    "^crates/grant_plan/src/command\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/grant_plan/src/verbs\\.rs:\\d+:\\d+: replace << with >>$",
+    # serial_console: decode_exact's three pixel channels, each a byte shifted to its own third
+    # of the word, per THE_PIXEL_CHANNELS_SHARE_NO_BIT, beside the function.
+    "^crates/serial_console/src/screen\\.rs:\\d+:\\d+: replace \\| with \\^ in decode_exact$",
+    # system_log_contract: the flags module's `1 << 0` constant (KERNEL) is the shift survivor,
+    # the identity; the rest of the file's constant shifts are pinned by existing tests, which
+    # stay.
+    "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace << with >>$",
+    # control::word's masked fields and badge, per THE_CONTROL_WORD_FIELDS_SHARE_NO_BIT, beside
+    # the function; and the ring meta word's byte fields, per
+    # THE_HEADER_BYTE_FIELDS_SHARE_NO_BIT, beside it. cargo-mutants names these two with their
+    # module (`control::word`, `kernel_ring::meta`), a module where the entry's scope expects a
+    # type, so the entries carry the module under a leading `.*` and stay anchored on the file,
+    # the mutation and the function name.
+    "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in .*control::word$",
+    "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in .*kernel_ring::meta$",
 ]

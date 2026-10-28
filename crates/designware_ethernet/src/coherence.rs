@@ -21,7 +21,9 @@ pub(crate) const PROBE_ETHERTYPE: u16 = 0x88b5;
 pub(crate) const PROBE_LENGTH: usize = 128;
 /// What receive buffer 0 holds before the device writes it. Never a byte of [`probe_frame`]'s
 /// payload, so a buffer still holding it cannot be mistaken for a delivery.
-pub(crate) const POISON: u8 = 0xa5;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const POISON: u8 = 0xa5;
 /// How long the caller waits for receive descriptor 0 before reading the device's account. A
 /// 128-byte frame at any speed through a loopback is microseconds; a hundred milliseconds is
 /// slack for a slow first descriptor fetch, not a guess at the wire.
@@ -30,7 +32,9 @@ pub const WAIT_MICROSECONDS: u64 = 100_000;
 /// **The probe frame**: addressed from and to `station_address` (so the packet filter passes it),
 /// the experimental `EtherType`, and a payload whose every byte differs from [`POISON`] and from
 /// zero.
-pub(crate) fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
     let mut f = [0u8; PROBE_LENGTH];
     f[..6].copy_from_slice(&station_address);
     f[6..12].copy_from_slice(&station_address);
@@ -41,6 +45,16 @@ pub(crate) fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
     }
     f
 }
+
+/// The probe payload byte's set bit and its six-bit counter share no bit, so the byte is 0x40 to
+/// 0x7f under `|` and under `^` alike, which the compiler checks here; the mutation exclusion for
+/// `probe_frame` names this constant. A compile-time gate, not a runtime check: it must fail the
+/// build if the two ever share a bit. The clippy lints read any constant assertion as a runtime
+/// suspicion and fold it; that is what a gate is, allowed here for exactly that reason.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_PROBE_PAYLOAD_SET_BIT_AND_COUNTER_SHARE_NO_BIT: () = assert!(0x40 & 0x3f == 0);
 
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
 /// probe frame. The controller must already be configured and started in loopback; the receive

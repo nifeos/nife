@@ -138,6 +138,9 @@
 #   script/falsifications --mutants --file <rs> [--arch A] [--limit N] [--offset K] [--tiers T] [--budget S] [--out F]
 #                                           run one kernel file's cargo-mutants diffs under QEMU, two
 #                                           tiers, and report the wall clock per mutant (below)
+#   script/falsifications --mutants --patches <listing> [--arch A] [--limit N] [--budget S] [--out F]
+#                                           run a prepared listing's patches instead: the sharded
+#                                           half, fed by helpers/mutation_kernel_diff.py (below)
 #   script/falsifications --record-times <transcript>...      merge a sweep's per-record times into
 #                                           notes/project-metrics/falsification-times.tsv
 #
@@ -2467,10 +2470,20 @@ def record_times(logs):
 # adds over a clean run is visible, and a baseline that fails stops the run: a mutant "caught" by
 # a broken baseline is no evidence.
 #
+# **`--patches` is the sharded half** (roadmap 955, part 3). helpers/mutation_kernel_diff.py
+# filters one `--list --diff` listing to the corpus, routes each file to its architecture and
+# splits the result, and this flag runs one shard's text verbatim, so the job pays its baseline
+# once and every mutant in it boots. No cargo-mutants call happens here, and `--file` is not
+# needed: each block's patch rewrites its own file's header. A bare `--file` run still lists for
+# itself, unfiltered, which is what the cost measurement wants.
+#
 # BUGS.
 #
-# - It lists with `--no-config`, so `.cargo/mutants.toml` and its exclusions do not apply; part 2
-#   of the proposal puts the kernel's own section there.
+# - It lists with `--no-config`, so `.cargo/mutants.toml` and its exclusions do not apply, and
+#   that is deliberate: the toml's own `kernel/**` entry, which keeps the kernel out of the host
+#   census, would make a config-reading run list nothing. The toml's kernel section is addressed
+#   to the sharded runs, which apply it in helpers/mutation_kernel_diff.py before any patch is
+#   fed here; a bare `--file` run is a measurement of one named file.
 # - `arch/` code for an architecture other than `--arch` is listed and applied, but never compiled
 #   into the boot. Such a mutant survives for want of a leg, so a run over `arch/` must name the
 #   architecture whose file it mutates.
@@ -2479,27 +2492,30 @@ MUTANT_HEADER = re.compile(r"^(\S+\.rs):(\d+):(\d+): (.*)$")
 MUTANT_TIERS = ("kernel", "system")
 
 
-def mutant_patches(listing, rel):
-    """Split `cargo mutants --list --diff` output into (name, patch) pairs for file `rel`.
+def mutant_patches(listing, rel=None):
+    """Split `cargo mutants --list --diff` output into (name, patch) pairs.
 
     The tool prints `file:line:col: description`, then a diff whose headers are `--- file` and
     `+++ <description>`, then a blank line. `git apply` wants real paths, so the headers are
-    rewritten to `a/` and `b/`. A diff body line always starts with a space, `+`, `-` or `@@`, so
-    a truly empty line ends the block.
+    rewritten to `a/` and `b/`. With `rel` given, every block is that one file (the `--file` run);
+    with `rel` None the listing spans files (a `--patches` shard), so each block rewrites its own
+    header from the file its first line names. A diff body line always starts with a space, `+`,
+    `-` or `@@`, so a truly empty line ends the block.
     """
-    out, cur, name = [], None, None
+    out, cur, name, block_file = [], None, None, None
     for line in listing.splitlines():
         if cur is None:
-            if MUTANT_HEADER.match(line):
-                cur, name = [], line
+            m = MUTANT_HEADER.match(line)
+            if m:
+                cur, name, block_file = [], line, m.group(1)
             continue
         if line == "":
             out.append((name, "".join(l + "\n" for l in cur)))
-            cur, name = None, None
+            cur, name, block_file = None, None, None
         elif line.startswith("--- "):
-            cur.append("--- a/%s" % rel)
+            cur.append("--- a/%s" % (rel or block_file))
         elif line.startswith("+++ "):
-            cur.append("+++ b/%s" % rel)
+            cur.append("+++ b/%s" % (rel or block_file))
         else:
             cur.append(line)
     if cur:
@@ -2526,15 +2542,17 @@ def mutants_tier(arch, tier, limit):
 def mutants(a):
     opts, i = {"--arch": "aarch64", "--tiers": "kernel,system", "--offset": "0"}, 0
     while i < len(a):
-        if a[i] not in ("--file", "--arch", "--limit", "--offset", "--tiers", "--in-diff", "--out", "--budget"):
+        if a[i] not in ("--file", "--patches", "--arch", "--limit", "--offset", "--tiers",
+                        "--in-diff", "--out", "--budget"):
             sys.exit("script/falsifications --mutants: unknown option %r" % a[i])
         if i + 1 >= len(a):
             sys.exit("script/falsifications --mutants: %s needs a value" % a[i])
         opts[a[i]] = a[i + 1]
         i += 2
-    if "--file" not in opts:
+    if "--file" not in opts and "--patches" not in opts:
         sys.exit("usage: script/falsifications --mutants --file <path.rs> [--arch A] [--limit N] "
                  "[--offset K] [--tiers kernel|kernel,system] [--in-diff <diff>] [--budget S] "
+                 "[--out <tsv>]   |   --patches <listing> [--arch A] [--limit N] [--budget S] "
                  "[--out <tsv>]")
     tiers = opts["--tiers"].split(",")
     if tiers[0] != "kernel" or any(t not in MUTANT_TIERS for t in tiers) or len(tiers) > 2:
@@ -2546,22 +2564,34 @@ def mutants(a):
         print("and reverts patches with `git apply`. Commit or set the change aside first.\n")
         print(d)
         return 2
-    rel = opts["--file"]
-    cmd = ["cargo", "mutants", "--no-config", "--list", "--diff", "-p", "kernel", "--file", rel]
-    if "--in-diff" in opts:
-        cmd += ["--in-diff", opts["--in-diff"]]
-    listed = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
-    if listed.returncode != 0:
-        print(listed.stderr)
-        return 2
-    patches = mutant_patches(listed.stdout, rel)
+    rel = opts.get("--file")
+    if "--patches" in opts:
+        # The sharded half: the listing is already corpus-filtered, routed and split
+        # (helpers/mutation_kernel_diff.py), so no cargo-mutants call happens here and the tree
+        # only ever sees whole patches it can apply and revert.
+        try:
+            listed_text = open(opts["--patches"]).read()
+        except OSError as e:
+            print("script/falsifications --mutants: %s" % e)
+            return 2
+    else:
+        cmd = ["cargo", "mutants", "--no-config", "--list", "--diff", "-p", "kernel", "--file", rel]
+        if "--in-diff" in opts:
+            cmd += ["--in-diff", opts["--in-diff"]]
+        listed = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
+        if listed.returncode != 0:
+            print(listed.stderr)
+            return 2
+        listed_text = listed.stdout
+    patches = mutant_patches(listed_text, rel)
     first = int(opts["--offset"])
     patches = patches[first:first + int(opts["--limit"])] if "--limit" in opts else patches[first:]
     if not patches:
-        print("no mutants listed for %s" % rel)
+        print("no mutants listed" if rel is None else "no mutants listed for %s" % rel)
         return 1
     limit = LIMIT_KERNEL_TEST
-    print("%d mutant(s) of %s on %s, tiers %s" % (len(patches), rel, arch, ",".join(tiers)))
+    print("%d mutant(s) of %s on %s, tiers %s"
+          % (len(patches), rel or "a supplied listing", arch, ",".join(tiers)))
     base = {}
     for t in tiers:
         v, took = mutants_tier(arch, t, limit)

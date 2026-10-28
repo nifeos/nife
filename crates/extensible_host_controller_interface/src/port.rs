@@ -53,11 +53,41 @@ pub const CHANGES: u32 = CONNECT_CHANGE
     | LINK_CHANGE
     | CONFIG_ERROR_CHANGE;
 
+/// The seven change bits share no bit (each is alone at 17 to 23), which the compiler checks
+/// here; the mutation exclusions for this file's `|` constants name this constant. The
+/// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
+/// compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_PORT_CHANGE_BITS_SHARE_NO_BIT: () = assert!(
+    CONNECT_CHANGE
+        + ENABLE_CHANGE
+        + WARM_RESET_CHANGE
+        + OVER_CURRENT_CHANGE
+        + RESET_CHANGE
+        + LINK_CHANGE
+        + CONFIG_ERROR_CHANGE
+        == CHANGES
+);
+
 /// The bits a write may carry back unchanged: the read-only ones (ignored on write) and the
 /// read-write ones that must keep their value (power, indicator, link state without its strobe,
 /// wake enables). The same set Linux's `xhci_port_state_to_neutral` keeps.
 pub(crate) const PRESERVE: u32 =
     1 | 1 << 3 | 0xf << 10 | 1 << 30 | 0xf << 5 | 1 << 9 | 0x3 << 14 | 0x7 << 25;
+
+/// The eight preserved fields share no bit (0, 3, 5:8, 9, 10:13, 14:15, 25:27 and 30), which the
+/// compiler checks here; the mutation exclusions for this file's `|` constants name this
+/// constant. The constant-assertion lint is off on purpose: the assertion is constant by
+/// construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_PRESERVED_FIELDS_SHARE_NO_BIT: () = assert!(
+    1 + (1 << 3) + (0xf << 10) + (1 << 30) + (0xf << 5) + (1 << 9) + (0x3 << 14) + (0x7 << 25)
+        == PRESERVE
+);
 
 /// Port speed ids, the default ones every xHCI uses (xHCI 1.2 Table 7-13).
 pub mod speed {

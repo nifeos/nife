@@ -118,6 +118,12 @@ pub(crate) const BM_WUC_PAGE: u32 = 800;
 /// higher one; this port refuses it instead. Found while writing this module's Kani harness.
 pub(crate) const MAXIMUM_PAGE: u32 = 0x7ff;
 
+// A value shifted left by five has no bits in the low five, where the register field is masked,
+// so | and ^ compose the word identically; the compiler checks that here for the widest page
+// there is, and .cargo/mutants.toml excludes the function's OR-to-XOR swap on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!((u32::MAX << PHY_PAGE_SHIFT) & MAX_PHY_REG_ADDRESS == 0);
+
 /// A page and a register packed into the one offset [`read()`] and [`write()`] take: FreeBSD's
 /// `PHY_REG(page, reg)`.
 ///
@@ -204,9 +210,13 @@ pub mod registers {
 pub(crate) const PHY_REVISION_MASK: u32 = 0xffff_fff0;
 
 /// How long to wait for someone else's `SWFLAG` to clear, in ms (`PHY_CFG_TIMEOUT`).
-pub(crate) const SWFLAG_FREE_MS: u32 = 100;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const SWFLAG_FREE_MS: u32 = 100;
 /// How long to wait for ours to stick, in ms (`SW_FLAG_TIMEOUT`).
-pub(crate) const SWFLAG_TAKE_MS: u32 = 1000;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const SWFLAG_TAKE_MS: u32 = 1000;
 /// `EXTCNF_CTRL.SWFLAG`.
 pub(crate) const EXTCNF_CTRL_SWFLAG: u32 = 0x0000_0020;
 /// `FWSM.RSPCIPHY`: clear while firmware blocks a PHY reset.
@@ -232,7 +242,9 @@ pub fn read_mdic(
 }
 
 /// One MDIO write, `e1000_write_phy_reg_mdic`.
-pub(crate) fn write_mdic(
+///
+/// Name: recorded (FreeBSD's `e1000_write_phy_reg_mdic`).
+pub fn write_mdic(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
     register: u32,
@@ -281,7 +293,9 @@ pub struct Swflag(());
 impl Swflag {
     /// `e1000_acquire_swflag_ich8lan`: wait for the flag to be free, set it, and wait for it to
     /// read back set. On a refusal it clears the bit it wrote, as FreeBSD does.
-    pub(crate) fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
+    ///
+    /// Name: recorded (FreeBSD's `e1000_acquire_swflag_ich8lan`).
+    pub fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
         let mut ext = 0;
         let mut free = false;
         for _ in 0..SWFLAG_FREE_MS {
@@ -420,6 +434,12 @@ pub(crate) fn reset_blocked(hardware: &mut impl Hardware) -> bool {
     }
     true
 }
+
+// The high word sits at bit 16 and the low one is a u16, so | and ^ compose the identifier
+// identically; the compiler checks that here, and .cargo/mutants.toml excludes the function's
+// OR-to-XOR swap on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 
 /// Read the PHY identifier at the 82574L's address, the generic MDIO path with no pages and no
 /// semaphore (the 82574L has neither). What QEMU's gates prove of this module.

@@ -160,11 +160,14 @@ pub mod registers {
     ///
     /// Name: ratified 2026-10-26 (UTC).
     pub const AUTO_AGE: u64 = 0x64;
-    /// Build-time configuration enumerations, read-only \[trm\]. The highest offset the register
-    /// map defines, which is why one 4 KiB page covers this device with room to spare.
+    /// Build-time configuration enumerations, read-only \[trm\] (the register \[trm\] itself
+    /// calls `BUILD_CONFIG`). The highest offset the register map defines, which is why one 4 KiB
+    /// page covers this device with room to spare.
     ///
-    /// Name: ratified 2026-10-26 (UTC).
-    pub const BUILD_CONFIG: u64 = 0x68;
+    /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+    /// `BUILD_CONFIG`: `config` is ruled to expand; the manual's own name for the register does not
+    /// keep it.
+    pub const BUILD_CONFIGURATION: u64 = 0x68;
 }
 
 /// `CTRL`: execute a NOP. \[trm\] lists it as one of the command encodings; the vendor driver

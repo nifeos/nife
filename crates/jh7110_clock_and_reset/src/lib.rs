@@ -67,7 +67,9 @@ pub enum Step {
 
 /// A multiplexed clock's parent field, bits 27:24 of its word (\[mainline-clk\]'s
 /// `JH71X0_CLK_MUX_MASK`, `GENMASK(27, 24)`).
-pub(crate) const CLOCK_MUX_MASK: u32 = 0xf << CLOCK_MUX_SHIFT;
+///
+/// Name: recorded (mainline's `JH71X0_CLK_MUX_MASK`).
+pub const CLOCK_MUX_MASK: u32 = 0xf << CLOCK_MUX_SHIFT;
 
 /// Where [`CLOCK_MUX_MASK`]'s field starts (`JH71X0_CLK_MUX_SHIFT`).
 pub(crate) const CLOCK_MUX_SHIFT: u32 = 24;
@@ -326,8 +328,10 @@ pub const SYSTEM: Domain = Domain {
 
 /// **The SYS domain's register window**, `0x1302_0000`, size `0x1_0000`, in mainline's `syscrg`
 /// node and as `reg-names` entry `"sys"`/`"syscrg"` of both vendor nodes. The fallback when a tree
-/// names none of them, for [`SYSTEM_TOP_GROUP_BASE`]'s reason.
-pub(crate) const SYSTEM_BASE: u64 = 0x1302_0000;
+/// names none of them, for `SYSTEM_TOP_GROUP_BASE`'s reason.
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const SYSTEM_BASE: u64 = 0x1302_0000;
 
 /// The SYS window's size, `0x10000` in every tree that names it.
 pub(crate) const SYSTEM_SIZE: u64 = 0x1_0000;
@@ -440,7 +444,9 @@ pub const POWER_MANAGEMENT_CHIP_COMPATIBLES: [&[u8]; 2] = [
 
 /// How many steps a tree-derived plan can hold. Radon's tree names two clocks and one reset, one
 /// of those clocks virtual; four is slack, and a bus naming more is recorded as truncated.
-pub(crate) const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 
 /// **The plan for the PMIC's bus, and where it came from.** The PMIC (power management integrated
 /// circuit) is radon's AXP15060, on I2C5.
@@ -1166,9 +1172,11 @@ pub struct BringUpReport {
 impl BringUpReport {
     /// **Did every reset step read as released?** True for a plan with none.
     ///
-    /// Name: ratified 2026-10-26 (UTC).
+    /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+    /// `every_reset_released`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite
+    /// verb.
     #[must_use]
-    pub fn every_reset_released(&self) -> bool {
+    pub fn all_resets_are_released(&self) -> bool {
         self.resets_released == self.resets
     }
 

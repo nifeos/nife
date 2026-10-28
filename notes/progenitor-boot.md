@@ -19,7 +19,7 @@ starts itself. How the progenitor loads its children is in
    program-measurement table the progenitor checks every load against (milestone 104 (the measurement continues past init)).
 2. It builds the address space: the segments, a stack of `PROGENITOR_STACK_PAGES`, and the
    timebase page where the architecture has one. The whole initial ramdisk is mapped read-only at
-   `INITIAL_RAMDISK_VA`, so the progenitor can parse the archive and load the rest by name. The
+   `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, so the progenitor can parse the archive and load the rest by name. The
    archive's pages are mapped with `map_physical`, which records each mapping in this space's own
    log. That window is the largest in the tree (the aarch64 archive is a few thousand pages), so
    its log pages are budgeted at the call site with `crate::revoke::log_pages_for`. Each stack page

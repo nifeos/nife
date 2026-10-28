@@ -11,7 +11,7 @@
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::archive::{initial_ramdisk_path, initial_ramdisk_riscv, riscv_initial_ramdisk_path};
+use crate::archive::{has_initial_ramdisk_riscv, initial_ramdisk_path, riscv_initial_ramdisk_path};
 use crate::host::{cargo, workspace_root};
 use crate::scanout::screendump;
 use crate::{RISCV_TARGET, TARGET, profile_dir};
@@ -99,7 +99,7 @@ fn build_screen_leg(arch: &str) -> Option<(&'static str, String, String)> {
     let prepared = if arch == "aarch64" {
         crate::user()
     } else {
-        initial_ramdisk_riscv()
+        has_initial_ramdisk_riscv()
     };
     if !prepared || !cargo(&["build", "-p", "kernel", "--target", target]) {
         return None;

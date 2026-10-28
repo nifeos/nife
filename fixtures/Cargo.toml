@@ -257,7 +257,7 @@ test = false
 bench = false
 
 # The FS-service client (milestone 32 phase 2): opens a file through a granted directory capability,
-# reads it, writes and reads back a pattern, and reports. initial_ramdisk_aarch64 packs it as
+# reads it, writes and reads back a pattern, and reports. has_initial_ramdisk_aarch64 packs it as
 # "fs_test_client".
 [[bin]]
 name = "fs_test_client"
@@ -334,7 +334,7 @@ bench = false
 # The credential service's clients (milestone 56): the provisioner that fills the store, the honest
 # client that asks questions, and the attacker that holds the identical endowment and tries to write
 # it. One binary, three roles, because an attacker on the honest path is a fairer test of a boundary
-# than a different program failing for its own reasons. `initial_ramdisk_aarch64` packs it as
+# than a different program failing for its own reasons. `has_initial_ramdisk_aarch64` packs it as
 # "credentialer_test_client".
 [[bin]]
 name = "credentialer_test_client"
@@ -345,7 +345,7 @@ bench = false
 # The login service's test client (milestone 49, provisional name): presents an identity and a
 # secret, and on `login_contract::OK` receives the caretaker's endpoint, the file service's shared
 # frame, and a budget, then uses all three to prove they work rather than merely that they arrived.
-# `initial_ramdisk_aarch64` packs it as "login_test_client" for both ISAs.
+# `has_initial_ramdisk_aarch64` packs it as "login_test_client" for both ISAs.
 [[bin]]
 name = "login_test_client"
 path = "src/login_test_client.rs"
@@ -356,7 +356,7 @@ bench = false
 # writes to whatever is in its output slot, the sink that puts a real file behind that slot, and the
 # read-back that streams the file out over the same contract. They were one binary picking a role
 # out of `arg0` until the role numbers turned out to be three hand-maintained copies of a fact two
-# binaries had to agree on; splitting them deleted the numbers. `initial_ramdisk_aarch64` packs all
+# binaries had to agree on; splitting them deleted the numbers. `has_initial_ramdisk_aarch64` packs all
 # three under their own names for both ISAs.
 [[bin]]
 name = "sink_transcript_writer"

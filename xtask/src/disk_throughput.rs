@@ -29,7 +29,7 @@ use std::process::{Command, ExitCode, Stdio};
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
-use crate::archive::initial_ramdisk_x86;
+use crate::archive::has_initial_ramdisk_x86;
 use crate::host::workspace_root;
 use crate::uefi::uefi_stage;
 use crate::{RELEASE, X86_TARGET, cargo_profiled, profile_dir};
@@ -146,7 +146,7 @@ pub(crate) fn disk_throughput() -> ExitCode {
     // Release, always: see the module doc. The archive first and then the kernel, for the
     // measured-boot order `uefi::uefi_kernel` documents.
     RELEASE.store(!debug, Ordering::Relaxed);
-    if !initial_ramdisk_x86()
+    if !has_initial_ramdisk_x86()
         || !cargo_profiled(&[
             "build",
             "-p",

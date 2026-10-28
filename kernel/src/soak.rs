@@ -660,7 +660,7 @@ fn start_watchdog_clocks(
         },
     );
     let ready =
-        report.rejected == 0 && report.has_clocks_running() && report.every_reset_released();
+        report.rejected == 0 && report.has_clocks_running() && report.all_resets_are_released();
     if !ready {
         println!(
             "{WATCHDOG_MARKER} NOT ARMED: a clock did not read back running or a reset did not \

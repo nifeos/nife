@@ -74,6 +74,14 @@ pub const RECEIVE_ERRORS_FRAME: u8 = 0x01 | 0x02 | 0x04 | 0x10 | 0x80;
 /// covers the rest of the name. Refused `TX_COMMAND` (tx abbreviates transmit).
 pub const TRANSMIT_COMMAND: u8 = 0x01 | 0x02 | 0x08;
 
+// Both words OR single distinct bits, so | and ^ compose them identically; the compiler checks
+// that here, and .cargo/mutants.toml excludes the constants' OR-to-XOR swaps on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(
+    RECEIVE_ERRORS_FRAME == 0x01 ^ 0x02 ^ 0x04 ^ 0x10 ^ 0x80
+        && TRANSMIT_COMMAND == 0x01 ^ 0x02 ^ 0x08
+);
+
 /// Transmit status: descriptor done.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
@@ -127,6 +135,12 @@ pub fn receive_verdict(word: u64, room: usize) -> ReceiveVerdict {
     }
     ReceiveVerdict::Frame(len)
 }
+
+// The u16 length and the command byte at bit 24 share no bit, so | and ^ compose them
+// identically; the compiler checks that here, and .cargo/mutants.toml excludes the word's
+// OR-to-XOR swap on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!((u16::MAX as u64) & ((TRANSMIT_COMMAND as u64) << 24) == 0);
 
 /// A transmit descriptor's second word: `length` bytes, [`TRANSMIT_COMMAND`], status cleared.
 ///

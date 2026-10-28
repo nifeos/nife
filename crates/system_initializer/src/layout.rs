@@ -8,8 +8,9 @@
 use super::*;
 
 /// Where the kernel maps the initial ramdisk archive, read-only. Must match
-/// `kernel::user::INITIAL_RAMDISK_VA`.
-pub(super) const INITIAL_RAMDISK_VA: u64 = address_space_map::runtime_window(0x2000_0000);
+/// `kernel::user::INITIAL_RAMDISK_VIRTUAL_ADDRESS`.
+pub(super) const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 =
+    address_space_map::runtime_window(0x2000_0000);
 
 /// Stack pages every child the progenitor builds gets, mapped down from
 /// `supervision_protocol::CHILD_STACK_VA`; measured, with four pages of headroom.
