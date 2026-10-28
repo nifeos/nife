@@ -75,9 +75,9 @@ Names provisional: the helper, the note, both CSVs, the appendix, the chart, eve
   package's partner and the release-track crates; the method and its blind spots are in
   `notes/interface-stability.md`, "Co-change per package". Milestone 857 (crates released on their
   own) carries the eight crates' reading in its appendix. Branch `per-package-co-change`.
-- **Ruled 2026-10-28 (UTC).** `glob` and `machine_statistics_contract` join the per-crate measured
-  set (`helpers/interface_stability.py`'s contracts list; the ruling is on #2851). The CSVs take
-  no hand edits; the weekly metrics job regenerates them, so the two crates' rows appear at the
+- **Recorded.** Ruled 2026-10-28 (UTC): `glob` and `machine_statistics_contract` join the per-crate
+  measured set (`helpers/interface_stability.py`'s contracts list; the ruling is on #2851). The CSVs
+  take no hand edits; the weekly metrics job regenerates them, so the two crates' rows appear at the
   next weekly run.
 
 ## Index row
