@@ -190,7 +190,8 @@ exclude_re = [
     # uses.
     "tests::",
 
-    # **designware_ethernet's disjoint-bits and zero-shift sites** (milestone 954, 2026-10-28 UTC).
+    # **designware_ethernet's disjoint-bits and zero-shift sites** (milestone 954 (a survivor
+    # accepted once is not accepted forever), 2026-10-28 UTC).
     #
     # A `|` over operands that share no bit equals a `^` over them, and a shift by zero equals the
     # reverse shift, so no test can kill those mutants. Each entry's argument is a `const`
