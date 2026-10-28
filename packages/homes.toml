@@ -33,6 +33,7 @@ paths = [
     "README.md",
     "art/",
     "packages/homes.toml",
+    "packages/base-image.toml",
 ]
 
 [[home]]

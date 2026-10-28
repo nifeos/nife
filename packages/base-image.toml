@@ -1,0 +1,110 @@
+# base-image: the programs a nife image carries, and the version its base packages are built at.
+#
+# Milestone 909 (basalt composes the bootable image from its packages). `cargo xtask base-image`
+# reads this file, finds which package owns each program in packages/<name>.package.toml (milestone
+# 611 (every program and crate belongs to a package)), and takes that program's member out of the
+# package's archive, checked against the catalogue the build was handed. Nothing else can reach the
+# image.
+#
+# **The list is the image's decision, not a package's.** A package releases together; an image
+# carries what it boots, and the two differ. The `boot` package's `uefi_loader` is a disk image no
+# initial ramdisk carries, the `redoxfs` package also builds host tools, and `fixtures` is a test
+# package no release image carries. So this names programs, and the package definitions name
+# memberships.
+#
+# What is here is §241 (a threadbare base: the boot slot holds the kernel and what boots and
+# repairs, and every other program is a package) plus the tools the prompt has always offered. The
+# kernel is not listed: firmware enters it and no archive carries it, so `base-image` builds it from
+# the `kernel` package's crates after composing the archive.
+#
+# `version` is one number for the whole base, because the base packages release and are installed
+# together. Name, keys and version scheme are provisional, minted 2026-10-28 (UTC).
+version = "0.1.0"
+
+programs = [
+    # init: the progenitor and what supervises, reaps and logs. The kernel enters the progenitor.
+    "progenitor",
+    "root_supervisor",
+    "spawner",
+    "sub_server_supervisor",
+    "job_undertaker",
+    "broker",
+    "swapper",
+    "system_log",
+    "reboot",
+
+    # terminal: the two components that have to exist before the progenitor can say anything, and
+    # the sink and supervisor that complete the stack.
+    "console",
+    "input",
+    "line_editor",
+    "terminal_sink_caretaker",
+    "terminal_supervisor",
+
+    # swish: the shell, which is the image's terminal state.
+    "swish",
+
+    # login: the credential service and the session it opens.
+    "credentialer",
+    "identity_provisioner",
+    "login",
+    "login_audit_receiver",
+    "user_timetable_keeper",
+
+    # filesystem: the file server's clients and the caretakers that attenuate a directory grant.
+    "disk_tree",
+    "fs_file_caretaker",
+    "fs_nameset_caretaker",
+    "fs_subtree_caretaker",
+
+    # entropy: the service `uuid` and the login audit receiver draw from.
+    "entropy",
+
+    # network: the stack and the resolver, before `jig` can reach an index.
+    "domain_name_resolver",
+    "net_stack",
+
+    # timetable and time: the schedule the login session runs on and the clock it reads.
+    "timetable",
+    "clock",
+    "network_time_client",
+
+    # jig and mdr: the package client and the markdown renderer, which every image ships.
+    "jig",
+    "mdr",
+
+    # redoxfs: the file server and `mkfs`, so a prompt on a disk can read and write.
+    "redoxfs_server",
+    "mkfs",
+
+    # drivers and display: what the kernel and the progenitor enter on a machine with a disk and a
+    # screen. `block_driver` is not optional: the kernel's filesystem service panics without it, so
+    # an image that leaves it out boots to the progenitor and stops there.
+    "block_driver",
+    "non_volatile_memory_express",
+    "designware_mobile_storage",
+    "jh7110_entropy",
+    "gpu_driver",
+    "framebuffer_driver",
+    "keyboard_driver",
+    "usb_keyboard_driver",
+
+    # core-tools and process-tools: what a person types at a prompt.
+    "date",
+    "printenv",
+    "rm",
+    "uuid",
+    "wc",
+    "free",
+    "pgrep",
+    "pmap",
+    "ps",
+    "slabtop",
+    "top",
+    "uptime",
+    "vmstat",
+
+    # disk-tools: partitioning and surveying a real drive.
+    "disk_partitioner",
+    "disk_surveyor",
+]
