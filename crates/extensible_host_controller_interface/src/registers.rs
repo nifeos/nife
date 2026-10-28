@@ -298,7 +298,10 @@ mod tests {
         assert_eq!(capabilities.portsc(1), 0x440);
         assert_eq!(capabilities.portsc(8), 0x4b0);
         assert_eq!(capabilities.interrupter(ERDP), 0x1038);
+        // Slot 0 is the command ring's doorbell, so the stride is read at 0 as well as at 1.
+        assert_eq!(capabilities.doorbell(0), 0x2000);
         assert_eq!(capabilities.doorbell(1), 0x2004);
+        assert_eq!(capabilities.doorbell(2), 0x2008);
     }
 
     /// The scratchpad count is split across two fields, high bits first in the register but low

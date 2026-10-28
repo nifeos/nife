@@ -291,6 +291,15 @@ mod tests {
         assert_eq!(class_bytes(CLASSES - 1), LARGEST);
     }
 
+    /// An alignment equal to the grid is inside [`class`], and the first refusal is one past it:
+    /// both ends of the comparison are the constants, so the boundary is asserted, not hoped for.
+    #[test]
+    fn an_alignment_equal_to_the_grid_is_a_class_and_one_past_is_not() {
+        assert_eq!(class(1, GRID), Some(0));
+        assert_eq!(class(LARGEST, GRID), Some(CLASSES - 1));
+        assert_eq!(class(1, GRID + 1), None);
+    }
+
     /// A spill gives back half a full class and a refill into an empty one takes half a class, so
     /// a thread that only frees, or only allocates, takes the heap's lock once per eight blocks.
     #[test]
