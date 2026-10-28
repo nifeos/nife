@@ -200,8 +200,11 @@ holds the plan.
 1. The format is TOML (ruled 2026-09-27). Are the fields above the shape, and are
    `packages/<name>.package.toml`, `packages/homes.toml` and `.recipe.toml` the names?
 2. The kinds: answered, ratified at 07:23Z with the rule that a kind says where a package ends up.
-3. The homes. The proposal is one repository per package, named after it, which is Debian's
-   source-package shape. Grouping by #1389's seven divisions is the alternative. Which?
+3. The homes. Answered, ruled 2026-10-28 (UTC) with the rule that a program package leaves as one
+   repository per package, named after the package (§316 (one repository per package leaves the
+   tree)). The ruling refuses grouping by #1389's seven divisions. The repository names themselves
+   stay provisional until the naming review ratifies them; the brief is
+   design/roadmap/proposals/first-cut-names.md.
 4. The project records: `design/`, `briefs/`, `script/`, `helpers/` and `.github/`. Does this
    repository become their home, or do they leave too?
 5. The names: all 27 packages, `helpers/packages.py`, this note and the `homes` metric.

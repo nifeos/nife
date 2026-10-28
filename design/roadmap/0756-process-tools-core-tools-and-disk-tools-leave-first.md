@@ -32,9 +32,12 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   three packages came up; the ruling refuses it. The packages' `home` lines in
   `packages/*.package.toml` keep `status = "provisional"` until each repository exists; this rules
   the destination and does not flip that status. §201 (one roadmap until a citation has to cross),
-  amended the same day, rules the citation identity across repositories. Still open, and not
-  blocking until this block starts: the SDK's place in milestone 691 (packages move out of this
-  repository, one per pull request)'s order.
+  amended the same day, rules the citation identity across repositories. Ruled 2026-10-28: the
+  home's grain, one repository per package (§316 (one repository per package leaves the tree)).
+  Still open, and not blocking until this block starts: the three repositories' names themselves,
+  held for review in design/roadmap/proposals/first-cut-names.md. The citation identity the first
+  crossing writes stays open (§201). So does the SDK's place in milestone 691 (packages move out
+  of this repository, one per pull request)'s order.
 - Sequenced 2026-10-28 (UTC): the update path goes first, milestones 911 (scripted installs grant
   only what the owner's approval file allows), 909 (basalt composes the bootable image from its
   packages), then milestone 607 item 5. This cut waits for its conditions.
