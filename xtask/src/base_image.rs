@@ -92,7 +92,9 @@ pub(crate) fn base_image() -> bool {
         }
     };
     let Some(arch) = arguments.arch.as_deref() else {
-        eprintln!("usage: cargo xtask base-image <aarch64|riscv64|x86_64> [--from <dir>] [--catalog <path>] [--out <dir>] [--test] [--boot]");
+        eprintln!(
+            "usage: cargo xtask base-image <aarch64|riscv64|x86_64> [--from <dir>] [--catalog <path>] [--out <dir>] [--test] [--boot]"
+        );
         return false;
     };
     let root = workspace_root();
@@ -134,7 +136,14 @@ pub(crate) fn base_image() -> bool {
         None => root.join(format!("target/base-image-{arch}")),
     };
 
-    let composed = match compose(&root, arch, &packages, &catalog, &definition, arguments.test) {
+    let composed = match compose(
+        &root,
+        arch,
+        &packages,
+        &catalog,
+        &definition,
+        arguments.test,
+    ) {
         Ok(composed) => composed,
         Err(complaint) => {
             eprintln!("base-image ({arch}): {complaint}");
@@ -145,7 +154,10 @@ pub(crate) fn base_image() -> bool {
     if let Some(parent) = archive.parent()
         && let Err(e) = std::fs::create_dir_all(parent)
     {
-        eprintln!("base-image ({arch}): cannot create {}: {e}", parent.display());
+        eprintln!(
+            "base-image ({arch}): cannot create {}: {e}",
+            parent.display()
+        );
         return false;
     }
     let sources = match crate::package::image_index_sources() {
@@ -213,9 +225,7 @@ pub(crate) fn base_packages() -> bool {
     if !build_packages(&root, &arch, &definition, false) {
         return false;
     }
-    println!(
-        "base-packages: every package in {DEFINITION} for {arch} is in target/packages"
-    );
+    println!("base-packages: every package in {DEFINITION} for {arch} is in target/packages");
     true
 }
 
@@ -228,9 +238,7 @@ fn parse_arguments(args: Vec<String>) -> Result<Arguments, String> {
             "--boot" => parsed.boot = true,
             "--test" => parsed.test = true,
             "--arch" | "--from" | "--catalog" | "--out" => {
-                let value = rest
-                    .next()
-                    .ok_or_else(|| format!("{word} needs a value"))?;
+                let value = rest.next().ok_or_else(|| format!("{word} needs a value"))?;
                 match word.as_str() {
                     "--arch" => parsed.arch = Some(value),
                     "--from" => parsed.from = Some(value),
@@ -413,13 +421,17 @@ fn read_archives(dir: &Path) -> Result<BTreeMap<String, Vec<(String, Archive)>>,
         .collect();
     paths.sort();
     for path in paths {
-        let bytes = std::fs::read(&path)
-            .map_err(|e| format!("could not read {}: {e}", path.display()))?;
+        let bytes =
+            std::fs::read(&path).map_err(|e| format!("could not read {}: {e}", path.display()))?;
         let package = Package::parse(&bytes)
             .map_err(|e| format!("{} is not a package: {e:?}", path.display()))?;
-        package
-            .verify()
-            .map_err(|e| format!("{}: member {} does not match its digest", path.display(), e.index))?;
+        package.verify().map_err(|e| {
+            format!(
+                "{}: member {} does not match its digest",
+                path.display(),
+                e.index
+            )
+        })?;
         let stem = path
             .file_stem()
             .and_then(|stem| stem.to_str())
@@ -438,14 +450,17 @@ fn read_archives(dir: &Path) -> Result<BTreeMap<String, Vec<(String, Archive)>>,
             ));
         }
         let digest = crate::package::digest_label(&package_archive::sha256(&bytes));
-        packages.entry(package.name().to_string()).or_default().push((
-            stem,
-            Archive {
-                version: package.version().to_string(),
-                architecture: package.architecture().to_string(),
-                digest,
-            },
-        ));
+        packages
+            .entry(package.name().to_string())
+            .or_default()
+            .push((
+                stem,
+                Archive {
+                    version: package.version().to_string(),
+                    architecture: package.architecture().to_string(),
+                    digest,
+                },
+            ));
     }
     Ok(packages)
 }
@@ -503,8 +518,8 @@ fn compose(
     let archives = read_archives(dir)?;
     let catalog_text = std::fs::read_to_string(catalog_path)
         .map_err(|e| format!("could not read {}: {e}", catalog_path.display()))?;
-    let catalog = parse_catalog(&catalog_text)
-        .map_err(|e| format!("{}: {e}", catalog_path.display()))?;
+    let catalog =
+        parse_catalog(&catalog_text).map_err(|e| format!("{}: {e}", catalog_path.display()))?;
 
     let mut blobs = Vec::new();
     let mut used: BTreeMap<String, String> = BTreeMap::new();
@@ -697,7 +712,8 @@ programs = ["progenitor", "swish", "jig"]
             "`a` is listed twice"
         );
         assert_eq!(
-            parse_definition("version = \"0.1.0\"\nprograms = [\"a\"]\nmembers = [\"a\"]").unwrap_err(),
+            parse_definition("version = \"0.1.0\"\nprograms = [\"a\"]\nmembers = [\"a\"]")
+                .unwrap_err(),
             "unknown key members"
         );
     }
@@ -776,6 +792,9 @@ programs = ["progenitor", "swish", "jig"]
         // A test image adds the fixtures package's programs, which no definition lists.
         assert!(!owners.contains_key("kernel_test_subject"));
         let test = program_owners(&workspace_root(), true).unwrap();
-        assert_eq!(test.get("kernel_test_subject").map(String::as_str), Some("fixtures"));
+        assert_eq!(
+            test.get("kernel_test_subject").map(String::as_str),
+            Some("fixtures")
+        );
     }
 }

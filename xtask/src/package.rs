@@ -180,7 +180,10 @@ pub(crate) fn package_named(name: &str, arch: &str, version: &str) -> bool {
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
         Err(error) => {
-            eprintln!("package: --package {name}: could not read {}: {error}", path.display());
+            eprintln!(
+                "package: --package {name}: could not read {}: {error}",
+                path.display()
+            );
             return false;
         }
     };
@@ -315,7 +318,9 @@ fn program_path(
             format!("std_exerciser/target/{arch}-unknown-nife/release/{name}"),
         ),
         (
-            Source::Elf(format!("target/tls-graph/{arch}-unknown-nife/release/{name}")),
+            Source::Elf(format!(
+                "target/tls-graph/{arch}-unknown-nife/release/{name}"
+            )),
             format!("target/tls-graph/{arch}-unknown-nife/release/{name}"),
         ),
         (
@@ -344,7 +349,8 @@ fn definition_recipe(
     version: &str,
     programs: &[String],
 ) -> Result<String, String> {
-    let mut text = format!("name = \"{name}\"\nversion = \"{version}\"\narchitecture = \"{arch}\"\n");
+    let mut text =
+        format!("name = \"{name}\"\nversion = \"{version}\"\narchitecture = \"{arch}\"\n");
     for program in programs {
         let (source, path) = program_path(root, arch, program)?;
         let member = match source {

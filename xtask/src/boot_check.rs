@@ -186,7 +186,9 @@ pub(crate) fn boot_image(
     archive: &std::path::Path,
 ) -> bool {
     eprintln!();
-    eprintln!("--- base-image ({arch}): boot the composed image and climb the ladder to the prompt ---");
+    eprintln!(
+        "--- base-image ({arch}): boot the composed image and climb the ladder to the prompt ---"
+    );
     let Some(mut child) = start_boot_check_leg(arch, runner, kernel, archive) else {
         return false;
     };

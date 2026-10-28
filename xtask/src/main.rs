@@ -23,8 +23,8 @@ use std::process::ExitCode;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 mod archive;
-mod base_image;
 mod basalt;
+mod base_image;
 mod bench;
 mod board;
 mod boot_check;
