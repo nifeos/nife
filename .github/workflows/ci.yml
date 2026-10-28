@@ -11,6 +11,12 @@ name: CI
 #   greeting the splice had destroyed: it read "h  capellability so from stld oots: 36 of 64 at
 #   peak" where "hello from std on nife" was wanted. The job died 5.5 minutes into its 20, and
 #   was green on rerun.
+#
+# Observed failing: 2026-10-28, run 40701936737: the `bench` job's `icount` step went red when
+#   its riscv64 leg's 300 s hang-kill fired 1.7% above that leg's honest runtime on this runner
+#   (295 s green on run 40661663995 the same morning); the guest was mid-phase healthy, the
+#   instruction counts unchanged, and the bound now sits at twice the observed worst
+#   (xtask/src/icount.rs).
 
 on:
   push:
