@@ -59,6 +59,7 @@ not to is that nothing there needs a second copy of a number.
 | 1 | [Boot to a login prompt, into `swish`, to editing a file with `kilo`](01-login-to-kilo.md) |
 | 2 | [Run a Time Machine backup host](02-time-machine-backup-host.md) **(RETIRED 2026-08-30: the customer moved to borg over SSH)** |
 | 3 | [The same story, on real silicon, on all three architectures](03-login-to-kilo-on-silicon.md) |
+| 4 | [Install a system composed from packages, and update it from packages](04-install-and-update-from-packages.md) |
 
 ## The format
 
