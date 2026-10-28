@@ -7,8 +7,11 @@
 # crates/user_mode_runtime cannot build for the host, and script/mutation derives that set from
 # helpers/host-excluded-crates.sh and passes it to cargo-mutants on the command line, the same
 # derivation script/coverage and script/lint's clippy passes consume. What is listed below is
-# judgment, each entry with its reason, and it stays limited to things that physically cannot be
-# mutated here, never to things that are merely untested.
+# judgment, each entry with its reason. For the host census it stays limited to things that
+# physically cannot be mutated here, never to things that are merely untested; the kernel's own
+# section at the foot of `exclude_globs` adds entries of the `xtask` kind, where the mutant
+# compiles and runs but a verdict on it measures the harness or the test image, never a shipped
+# kernel.
 
 exclude_globs = [
     # `kernel` itself: no_std, QEMU-only, bare metal, and it takes no dependency on

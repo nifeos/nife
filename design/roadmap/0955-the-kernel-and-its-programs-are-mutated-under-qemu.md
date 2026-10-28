@@ -41,10 +41,9 @@ the corpus", and this is what retires that summary.
 The host census covers 20,974, so the unmutated half of the tree is about as large as the mutated
 half. In the kernel, `arch/` holds 3,879 (x86_64 2,066, riscv64 988, aarch64 825). The kernel side
 of the programs' wiring in `user/` holds 1,476. The confinement core holds about 1,800: `sched/`,
-`syscall/`, `revoke`, `cap`, `memory_region` and their neighbors. Tests, benches and self-tests held
-about 965 by the 2026-10-27 estimate; the kernel section of `.cargo/mutants.toml` (part 2,
-measured 2026-10-28 (UTC)) excludes 1,281, which leaves the kernel's corpus at 9,157 of 10,438
-listed that day.
+`syscall/`, `revoke`, `cap`, `memory_region` and their neighbors. Tests, benches and self-tests are
+the kernel section of `.cargo/mutants.toml`: 1,281 mutants excluded, which leaves the kernel's
+corpus at 9,157 of the 10,438 listed on 2026-10-28 (UTC).
 
 ## What one mutant costs
 
