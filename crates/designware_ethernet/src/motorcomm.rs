@@ -92,7 +92,10 @@ pub(crate) const RGMII_RXC_DS_SHIFT: u16 = 13;
 /// bits are bits 5:4, its high bit is bit 12.
 #[doc(alias = "rgmii receive data drive strength mask")]
 pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
-// The mask's two fields share no bit, so its `|` is its `^`.
+// The mask's two fields share no bit, so its `|` is its `^`. A compile-time gate, not a runtime
+// check: the exclusion of this constant's or-versus-xor mutant argues from it. The clippy lints
+// fold the literals; that is what a gate is, allowed here for exactly that reason.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
 const _: () = assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]

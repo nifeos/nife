@@ -187,7 +187,11 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
 }
 
 // The fields this word composes share no bit, so every `|` here is its `^`: store-and-forward
-// against the threshold field, and the two flow-control threshold fields against each other.
+// against the threshold field, and the two flow-control threshold fields against each other. A
+// compile-time gate, not a runtime check: the exclusion of this function's or-versus-xor mutants
+// argues from it. The clippy lints fold the second conjunct's literals; that is what a gate is,
+// allowed here for exactly that reason.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
 const _: () = assert!(
     registers::MTL_CHAN_RX_OP_MODE_RSF & registers::MTL_CHAN_RX_OP_MODE_RTC_MASK == 0
         && (0x3f << 14) & (0x3f << 8) == 0

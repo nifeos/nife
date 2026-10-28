@@ -43,7 +43,11 @@ pub(crate) fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
 }
 
 // The payload byte's set bit and its six-bit counter share no bit, so the byte is 0x40 to 0x7f
-// under `|` and under `^` alike.
+// under `|` and under `^` alike. A compile-time gate, not a runtime check: the exclusion of this
+// function's or-versus-xor mutants argues from it, so it must fail the build if the two ever share
+// a bit. The clippy lints read any constant assertion as a runtime suspicion and fold it; that is
+// what a gate is, allowed here for exactly that reason.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
 const _: () = assert!(0x40 & 0x3f == 0);
 
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
