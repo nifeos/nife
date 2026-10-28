@@ -35,12 +35,19 @@ set in PR #1375: a helper, a CSV under `notes/project-metrics/`, a chart and a g
 
 ## Proposals for calef
 
-- PROPOSED: the threshold for "stable". The note's proposal is, over four weeks, no syscall number
-  renumbered or removed, no in-place format change, and at most four contract breaking changes; a
-  crate is settled after four weeks with none. Co-change is reported, not thresholded.
 - PROPOSED: the `# Amendments` ledger convention, a dated list in a format crate's module
   documentation. Provisional; `capability_manifest_note` should carry the first entry when its in-place
   amendment of version 1 merges.
+
+Ruled 2026-10-28 (UTC), on the threshold proposal above: the policy is to accommodate change rather
+than wait for a lull. Frozen identifiers and additive growth are review discipline, not a gate:
+nobody renumbers or removes a syscall number, nobody changes a format in place (bump or amend), and
+growth happens by addition. This series reports violations weekly. The four-week-zero reading (a
+crate settled after four weeks with none) is a reported interpretation on the metrics page and
+gates nothing. The "at most four contract breaking changes" proposal is dropped: it has no
+remaining consumer now that the per-package co-change column and milestone 756 (process-tools,
+core-tools and disk-tools are the first code to leave this repository)'s re-aimed condition exist.
+Co-change stays reported, not thresholded.
 
 Names provisional: the helper, the note, both CSVs, the appendix, the chart, every
 `interface_*` column and the ledger heading.
@@ -68,6 +75,10 @@ Names provisional: the helper, the note, both CSVs, the appendix, the chart, eve
   package's partner and the release-track crates; the method and its blind spots are in
   `notes/interface-stability.md`, "Co-change per package". Milestone 857 (crates released on their
   own) carries the eight crates' reading in its appendix. Branch `per-package-co-change`.
+- **Recorded.** Ruled 2026-10-28 (UTC): `glob` and `machine_statistics_contract` join the per-crate
+  measured set (`helpers/interface_stability.py`'s contracts list; the ruling is on #2851). The CSVs
+  take no hand edits; the weekly metrics job regenerates them, so the two crates' rows appear at the
+  next weekly run.
 
 ## Index row
 
@@ -76,5 +87,6 @@ contract crates, the syscall surface in `abi`, the wire formats and the std ABI.
 from git to 2026W29 by reading each week's public API from rustdoc's JSON. It counts breaking changes next to
 additions, syscall renumbers apart from renames, format bumps and recorded amendments, and how often
 a contract commit also touches another division. Its first reading is 121 breaking changes and 449
-additions over the last four weeks, which is what "not yet stable" looks like in numbers, and it
-gives calef something to set a stability threshold against.
+additions over the last four weeks, which is what "not yet stable" looks like in numbers. The
+stability policy it serves is ruled 2026-10-28: accommodate change rather than wait for a lull, and
+this series reports the week's violations of the frozen-identifier review discipline.

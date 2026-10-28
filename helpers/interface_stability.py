@@ -63,20 +63,23 @@ PACKAGE_FIELDS = ['commits', 'commits_crossing', 'commits_touching_another',
 SCRATCH = pathlib.Path('target/interface-stability')
 
 # The contracts division: notes/packages-and-divisions.md (#1389, not yet on main), `abi`, the
-# fifteen `*_protocol` crates that are contracts (not `network_time_protocol`, a service whose name
-# says protocol), and the named formats two programs agree on. `capability_manifest_note` is the one addition:
-# it was born on 2026-09-26, after that note's census, and it is exactly the kind of crate the
-# division names. Membership is by the crate's name TODAY; a week in the past counts the crates
-# whose directory later became one of these (LINEAGE below), which is a restatement like every
-# other series on the metrics page.
+# sixteen `*_protocol` crates that are contracts (not `network_time_protocol`, a service whose name
+# says protocol), and the named formats two programs agree on. Three members sit outside that
+# note's census: `capability_manifest_note` was born on 2026-09-26, after it, and is exactly the
+# kind of crate the division names; `machine_statistics_contract` holds the one definition of where
+# each word of the kernel's statistics page lives, and `glob` is the pattern language the shell's
+# expansion and its grant share. Membership is by the crate's name TODAY; a week in the past counts
+# the crates whose directory later became one of these (LINEAGE below), which is a restatement like
+# every other series on the metrics page.
 CONTRACTS = (
     'abi',
     'byte_sink_contract', 'capability_witness_contract', 'clock_contract',
     'counter_frequency_contract', 'credential_contract', 'current_cpu_contract',
     'entropy_contract', 'environment_contract', 'filesystem_contract', 'graphics_contract',
-    'login_contract', 'socket_contract', 'std_runtime_contract', 'supervision_protocol',
+    'login_contract', 'machine_statistics_contract', 'socket_contract', 'std_runtime_contract',
+    'supervision_protocol',
     'hot_swap_contract',
-    'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs',
+    'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'glob',
     'globally_unique_identifier_partition_table', 'grant_plan', 'capability_plan', 'compositor',
     'line_editor', 'capability_manifest_note',
 )
