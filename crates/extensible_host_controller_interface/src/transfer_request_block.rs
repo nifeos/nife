@@ -50,8 +50,7 @@ pub const THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT: () = assert!(
 // .cargo/mutants.toml are its readers, and helpers/mutation_exclusion_check.py fails if it is
 // gone.
 #[allow(dead_code)]
-pub const THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT: () =
-    assert!(((!1u32) & 1) == 0);
+pub const THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT: () = assert!(((!1u32) & 1) == 0);
 
 pub(crate) const fn control(kind: u8) -> u32 {
     (kind as u32) << 10

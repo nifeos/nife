@@ -298,9 +298,8 @@ pub fn decode_exact(
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_PIXEL_CHANNELS_SHARE_NO_BIT: () = assert!(
-    ((0xffu32 << 16) & (0xff << 8)) == 0 && (((0xffu32 << 16) | (0xff << 8)) & 0xff) == 0
-);
+pub const THE_PIXEL_CHANNELS_SHARE_NO_BIT: () =
+    assert!(((0xffu32 << 16) & (0xff << 8)) == 0 && (((0xffu32 << 16) | (0xff << 8)) & 0xff) == 0);
 
 /// The character in one cell, or `?` when the cell matches nothing in `alphabet`.
 fn cell(

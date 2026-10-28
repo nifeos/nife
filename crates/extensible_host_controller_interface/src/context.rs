@@ -82,8 +82,7 @@ pub const fn slot(speed: u8, port: u8, entries: u8) -> [u32; 8] {
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT: () =
-    assert!(((0xfu32 << 20) & (0x1f << 27)) == 0);
+pub const THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT: () = assert!(((0xfu32 << 20) & (0x1f << 27)) == 0);
 
 /// The slot context's device address, assigned by Address Device: dword 3's low byte of a slot
 /// context the controller wrote.

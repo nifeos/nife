@@ -140,9 +140,8 @@ pub struct Handoff {
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_HANDOFF_WORD_FIELDS_SHARE_NO_BIT: () = assert!(
-    ((u32::MAX as u64) << 32) + ((u16::MAX as u64) << 16) + u16::MAX as u64 == u64::MAX
-);
+pub const THE_HANDOFF_WORD_FIELDS_SHARE_NO_BIT: () =
+    assert!(((u32::MAX as u64) << 32) + ((u16::MAX as u64) << 16) + u16::MAX as u64 == u64::MAX);
 
 impl Handoff {
     /// The three words, in `arg0`, `arg1`, `arg2` order.

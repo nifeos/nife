@@ -317,8 +317,7 @@ impl Command {
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT: () =
-    assert!(0xffffu32 + (0xffff << 16) == u32::MAX);
+pub const THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT: () = assert!(0xffffu32 + (0xffff << 16) == u32::MAX);
 
 /// **Physical Region Page pair** (PRP1 and PRP2, NVMe 1.4 section 4.3, Physical Region Page Entry
 /// and List): the two PRP words for one data transfer of `len` bytes at physical `base`, against

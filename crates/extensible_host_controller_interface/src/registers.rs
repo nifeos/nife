@@ -181,8 +181,7 @@ pub const THE_LEGACY_ENABLE_BITS_SHARE_NO_BIT: () =
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT: () =
-    assert!(((0x1fu32 << 5) & 0x1f) == 0);
+pub const THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT: () = assert!(((0x1fu32 << 5) & 0x1f) == 0);
 
 /// The write-one-to-clear event bits of `USBLEGCTLSTS`.
 ///

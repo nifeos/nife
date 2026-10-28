@@ -207,7 +207,7 @@ pub mod control {
     /// A control word's fields share no bit: the field and argument are masked to their bytes at
     /// 40:47 and 32:39, the badge is a `u32` below bit 32, and the operation sits above bit 56
     /// for every caller (the [`OPERATION_NAME`] family and the console's operations, all below
-   /// 0x100), which the compiler checks here; the mutation exclusion for [`word`] names this
+    /// 0x100), which the compiler checks here; the mutation exclusion for [`word`] names this
     /// constant. The constant-assertion lint is off on purpose: the assertion is constant by
     /// construction, and the compiler checking it is its job.
     ///
