@@ -1,6 +1,9 @@
 use super::{BUFFER_SIZE, DESCRIPTOR_BYTES, PAGE, RECEIVE_ENTRIES, TRANSMIT_ENTRIES};
 /// The receive descriptor ring.
 pub(crate) const RECEIVE_RING: u64 = 0;
+// Zero is load-bearing: `configure` writes the receive ring's base as `region + RECEIVE_RING`,
+// and only while this is zero does that word read the same with the plus swapped for a minus.
+const _: () = assert!(RECEIVE_RING == 0);
 /// The transmit descriptor ring.
 pub(crate) const TRANSMIT_RING: u64 = PAGE;
 /// The first receive buffer.
