@@ -141,8 +141,15 @@ fn start_icount_deadline(
     // A deadline on a thread, because the guest is not obliged to say anything: the read below
     // blocks, and a QEMU wedged before printing (or after panicking, since this kernel's panic
     // handler halts) never closes the pipe. Every unattended QEMU run is bounded (AGENTS.md), and a
-    // bound that waits for a marker is not one. Generous, as the instrument's work takes seconds.
-    const DEADLINE_SECONDS: u64 = 300;
+    // bound that waits for a marker is not one.
+    //
+    // The work is instruction-bound, not seconds-long: the tick phase runs 64 one-second virtual
+    // ticks, about 57 thousand million guest instructions each leg interprets. On CI's arm64
+    // runner that is 200 s for aarch64 and 295 s for riscv64 (run 40661663995, 2026-10-28), so
+    // 300 s sat 1.7% above riscv64's honest runtime and killed a healthy instrument mid-phase on
+    // the next run (40701936737, the same day, the runner 2% slower). 600 is twice the observed
+    // worst, and a true hang still dies here with the same printed line.
+    const DEADLINE_SECONDS: u64 = 600;
     const PANIC_GRACE_SECONDS: u64 = 3;
     let finished = std::sync::Arc::clone(finished);
     let panicked = std::sync::Arc::clone(panicked);
