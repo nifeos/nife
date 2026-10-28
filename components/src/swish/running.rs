@@ -928,11 +928,11 @@ pub(super) fn hold_pages(e: &Endowment, line: &[u8]) -> Option<u64> {
 
 /// Split the region and make sure the exit endpoint exists, or say the budget is spent.
 fn mint_held(pages: u64) -> Option<Minted> {
+    // The endpoint first: it is a page retyped from the budget itself, and one retyped after the
+    // region is split would leave the region short of being the budget's most recent carve, so its
+    // pages would not come back when it is destroyed.
+    let exit = held::exit_endpoint()?;
     let region = memory_region_split(pages)?;
-    let Some(exit) = held::exit_endpoint() else {
-        release_region(region);
-        return None;
-    };
     Some(Minted { region, exit })
 }
 

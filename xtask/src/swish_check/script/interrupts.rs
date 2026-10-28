@@ -169,11 +169,12 @@ pub(super) const LINES: &[Line] = &[
             "the job caught the interrupt and stopped cleanly after",
         ],
     ),
-    // **The shell's budget holds what the progenitor's pool held** (milestone 933): seven native
+    // **The shell's budget holds what the progenitor's pool held** (milestone 933): six native
     // jobs in the background, each a region of 48 pages and 4 of `--mem`, and a `std` job of 384
-    // pages in the foreground beside them. That is the pool's old mix (six native regions and one
-    // `std` region, `grant_plan::JOB_POOL_PAGES`) with one more native job. The seven are torn
-    // down after, so the budget they took comes back for the hundred cycles below.
+    // pages in the foreground beside them. That is the pool's old mix, six native regions and one
+    // `std` region (`grant_plan::JOB_POOL_PAGES`). The six are torn down after, so the budget they
+    // took comes back for the hundred cycles below. Six jobs hold eighteen slots of the shell's
+    // capability table, which keeps the boot's recorded peak where it was.
     line(
         0,
         "job_sleeper 0 --mem 4 &",
@@ -206,12 +207,7 @@ pub(super) const LINES: &[Line] = &[
     ),
     line(
         0,
-        "job_sleeper 0 --mem 4 &",
-        &["[7] job_sleeper running in the background"],
-    ),
-    line(
-        0,
-        "std_exerciser beside seven",
+        "std_exerciser beside six",
         &["hello from std on nife", "exiting through process::exit"],
     ),
     line(
@@ -243,10 +239,5 @@ pub(super) const LINES: &[Line] = &[
         0,
         "kill -9 %6",
         &["[6] job_sleeper: its process was torn down"],
-    ),
-    line(
-        0,
-        "kill -9 %7",
-        &["[7] job_sleeper: its process was torn down"],
     ),
 ];

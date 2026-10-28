@@ -14,12 +14,12 @@ const ROLE_PIPELINE: u64 = 3;
 const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
 const LINE_VA: u64 = address_space_map::pair_page(0x0000_0000_00b0_0000);
 
-/// The budget the shell mints its pipes out of, and the regions of the jobs it holds (milestone 933).
-/// Each pipeline splits a region off this and gives it back, so one number covers a script of
-/// several lines; a held job is one native region of `grant_plan::JOB_REGION_PAGES`. The boot
-/// grants `spawnproto::SHELL_BUDGET_PAGES`, which is far more than a script needs, so this is the
-/// original 128 and room for two held jobs.
-const SH_BUDGET_PAGES: u64 = 128 + 2 * grant_plan::JOB_REGION_PAGES;
+/// The budget the shell mints its pipes out of, and the region of the job it holds (milestone 933).
+/// Each pipeline and each job splits a region off this and gives it back, so one number covers a
+/// script of several lines. A scripted shell is never reclaimed, so every page here is a frame the
+/// suite keeps, which is why this is still the 128 the boot once granted and not the boot's
+/// `spawnproto::SHELL_BUDGET_PAGES`.
+const SH_BUDGET_PAGES: u64 = 128;
 
 /// Pages of stack below the one `run` maps: a shell needs more than a hand-sized program for
 /// `spawn_fs_client`'s measured reason, and milestone 50 (pipes and redirection) added an array of
