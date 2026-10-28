@@ -12,7 +12,7 @@ path.
 | step | milestone | decision | what this step needs |
 |---|---|---|---|
 | 1 | 911 | | the approval-file gate: a scripted install grants only what the owner's approval file allows, so composition and unattended updates run with nobody at a prompt |
-| 2 | 909 | | basalt builds the base packages from the pinned nife commit and composes each architecture's image by digest, 607's item 1 with basalt as the composer (§297, software reaches a nife system as a package); it waits on the dependencies 909's block names |
+| 2 | 909 | | basalt builds the base packages from the pinned nife commit and composes each architecture's image by digest, 607's item 1 with basalt as the composer, as §297 (software reaches a nife system as a package) says; it waits on the dependencies 909's block names |
 | 3 | 607 | | item 5 only: an OS update is a set of packages that lands through a boot slot, each slot a full copy, as U4 in §235 (the OS is built and updated from packages) rules; the block's other items are outside this story |
 | 4 | 756 | | the first cut: `process-tools`, `core-tools` and `disk-tools` leave for `nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools`. Condition 4 gates it: every interface the cut links carries a checkable version, and the moved package declares what it links |
 
@@ -36,4 +36,4 @@ run under QEMU.
 Every step above at `BUILT`. At that point a person installs a system composed by basalt from
 packages, updates it through a boot slot, and builds nothing to do either. The first three packages
 live in repositories of their own, with interfaces a peer can check, so a package can release
-without this repository (§151, the goal of the repository split is independent release).
+without this repository, as §151 (the goal of the repository split is independent release) rules.
