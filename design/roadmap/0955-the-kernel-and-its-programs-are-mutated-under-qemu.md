@@ -1,13 +1,16 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
 raised: 2026-10-27
+promoted_from: the-kernel-and-its-programs-are-mutated-under-qemu
 milestone_dependencies: 517, 742, 924
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# Mutation testing reaches the kernel and its programs under QEMU, a diff and a slice at a time
+# 955. Mutation testing reaches the kernel and its programs under QEMU, a diff and a slice at a time
+
+Promoted 2026-10-28 (UTC); the number 955 is provisional until the integrator confirms it at merge. *(Title and slug are drafts.)*
 
 Raised 2026-10-27 (UTC) by `lane/mutation-gaps-plan`, the second of the three mutation-testing
 gaps calef ruled closed that day. Nothing mutates the kernel or the user-mode programs. Kani proofs
@@ -131,7 +134,7 @@ already keys on, and execution stays with the driver that already knows how to b
 
 - The diff-scoped check, once required, holds new kernel code to 924's rule.
 - `script/cadence-check` fails when a slice in the census record is older than one rotation.
-- The census-wide check from `a-survivor-accepted-once-is-not-accepted-forever.md` covers the
+- The census-wide check from milestone 954 (a survivor accepted once is not accepted forever) covers the
   kernel's rows like any other crate's.
 
 ## Cost, measured by part 1 and estimated beyond it

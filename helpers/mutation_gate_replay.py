@@ -1,6 +1,6 @@
 """Replay the row-expiry rule over merged pull requests: how many would it have stopped, and why.
 
-Part 2 of the proposal design/roadmap/proposals/a-survivor-accepted-once-is-not-accepted-forever.md.
+Part 2 of the proposal design/roadmap/0954-a-survivor-accepted-once-is-not-accepted-forever.md.
 The diff gate's `--base-ref` rule (helpers/mutation_diff_gate.py) fails a survivor on a changed line
 whose triage row the pull request did not change. Before the workflow passes that flag, this script
 measures what it would have cost.
