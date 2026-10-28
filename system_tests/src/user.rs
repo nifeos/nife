@@ -1254,6 +1254,16 @@ mod ninth_pass_port_tests;
 #[cfg(test)]
 mod ninth_pass_authority_tests;
 
+/// **The mapping boundary's edges, and W^X against two aliases of one page** (a tenth outsider
+/// pass at the confinement claim, claims 10 and 11): the last user page mapped, a straddling run
+/// refused with nothing left mapped, a wrapping run, and the same frame mapped `MAP_RW` at one
+/// address and `MAP_CODE` at another.
+///
+/// Cross-ISA: `MAP_INTO` and the gate instantiate the running architecture's `Format`
+/// (DECISIONS §19).
+#[cfg(test)]
+mod tenth_pass_map_gate_tests;
+
 #[cfg(test)]
 mod code_pages;
 

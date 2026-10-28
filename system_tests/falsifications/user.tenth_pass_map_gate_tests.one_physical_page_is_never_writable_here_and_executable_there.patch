@@ -1,0 +1,39 @@
+Falsifies `system_tests::user::tenth_pass_map_gate_tests::one_physical_page_is_never_writable_here_and_executable_there` (claim 11).
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect is in the tree: `AddressSpace::MAP_INTO` never checks whether the frame it maps is
+already mapped in the same space. `MAP_RW` at one `va` and `MAP_CODE` at another leave every
+page-table leaf honest while the physical page is writable and executable through the two
+aliases. A builder holding `WRITE` on a space and a `READ | WRITE` frame reaches it with ordinary
+capabilities and no defect in the grant chain. The per-leaf proofs the row cites survive; the
+claim as published does not. The pass is milestone 936 (a tenth outsider pass attacks the
+confinement claim); on 2026-10-27 (UTC) the architect ruled that the escape sits on a shipped path
+and that its fix is mandatory.
+
+So the patch introduces no defect. It turns the witness's opt-in on, which is what
+`NIFE_ESCAPE_WITNESS=1` does by hand, and the replay boots the escape as it stands. The fix
+milestone re-cuts this patch to undo its fix instead, and drops the opt-in.
+
+Expected to fail: the witness assert, reporting `one physical page is writable at <writable va>
+and executable at <executable va>: every leaf is honest and the page is both, which is W^X defeated
+by alias (claim 11)`.
+
+Replayed on 2026-10-27 (UTC) against this tree, one ISA at a time under QEMU 11.1.2 with
+`cargo xtask test --arch <isa> --test tenth_pass_map_gate`: red at exactly that assertion on all
+three, with the two boundary tests in the module green beside it. aarch64 reported writable at
+0xffffffffe000 and executable at 0xfffffffff000; riscv64, 0x3fffffe000 and 0x3ffffff000; x86_64,
+0x7fffffffe000 and 0x7ffffffff000.
+
+diff --git a/system_tests/src/user/tenth_pass_map_gate_tests.rs b/system_tests/src/user/tenth_pass_map_gate_tests.rs
+--- a/system_tests/src/user/tenth_pass_map_gate_tests.rs
++++ b/system_tests/src/user/tenth_pass_map_gate_tests.rs
+@@ -247,7 +247,7 @@
+ /// stays bootable. Export `NIFE_ESCAPE_WITNESS=1` before `script/test` to run it.
+ const ESCAPE_WITNESS: bool = match option_env!("NIFE_ESCAPE_WITNESS") {
+     Some(v) => !v.is_empty(),
+-    None => false,
++    None => true,
+ };
+ 
+ /// **One physical page must never be writable through one virtual address and executable through
