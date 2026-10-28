@@ -26,8 +26,9 @@ provisional. This proposal still writes no code: §311 (a contract is code, not 
 the checks for an implementing lane, and every new name below is provisional.
 
 Reuse: the checks reuse the tree's rustdoc-JSON extraction and `FORMAT_CONST` pattern
-(`helpers/interface_stability.py`). No new code and no dependency; `cargo-semver-checks` and
-`cargo-public-api` stay refused as milestone 610 records.
+(`helpers/interface_stability.py`, the machinery behind milestone 610 (the interface's stability
+is measured weekly)). No new code and no dependency; `cargo-semver-checks` and `cargo-public-api`
+stay refused as milestone 610 records.
 
 ## What the tree does today
 
@@ -39,15 +40,15 @@ lane re-measured on 2026-10-28:
 
 - Five protocol crates carry a numbered magic on a shared-page layout: `TIMEBAS1`, `CURRCPU1`,
   `ENVCONF1`, `MACHSTA1`, `CLOCKv01`. Two carry an unnumbered one: `nifeargv`, `nifeklog`.
-- No IPC operation set carries a version a peer could check. `filesystem_contract` packs the
-  opcode into the first word's high byte; `socket_contract` and `login_contract` hold none. In
-  `hot_swap_contract`, `STATE_MAGIC` carries no number and `BOTH_VERSIONS` is a right bit.
+- No IPC operation set carries a version a peer could check: `filesystem_contract` packs the
+  opcode into the first word's high byte, `socket_contract` and `login_contract` hold none, and
+  in `hot_swap_contract` `STATE_MAGIC` carries no number.
 
 - Formats do better: `capability_manifest_note` (`VERSION = 1`, `ZONED_VERSION = 2`), `boot_slot`
   (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`).
-- §235 (packages build the OS, and the tree divides by release) ruled an ABI revision field into
-  the manifest note; it does not exist. The version 1 descriptor is 56 bytes, byte 55 its last
-  zero;
+- §235 (the OS is built and updated from packages, and the tree divides by what releases
+  together) ruled an ABI revision field into the manifest note; it does not exist. The version 1
+  descriptor is 56 bytes, byte 55 its last zero;
   version 2 appends zones after it. A grep for `ABI_REVISION` over `crates/` returns nothing.
 
 Milestone 610 measures that churn in its weekly series. The cells read
@@ -64,7 +65,7 @@ crate that owns the format (AGENTS.md rule 7), module-scoped where a crate holds
 `filesystem_contract` scopes block and file.** Per-crate scope and an external registry stay
 refused. `capability_manifest_note` already carries three version constants, one per format.
 
-Scope follows the check, and the check is per bind. `filesystem_contract` holds the block and
+The check is per bind, so the scope is per bind. `filesystem_contract` holds the block and
 file protocols; a per-crate constant would re-version file clients for a block-only break. The
 first cut's four interfaces do not share one kind:
 
@@ -125,11 +126,10 @@ older server gets no refusal today and misreads bytes tomorrow.
 of milestone 597 (a program carries its manifest in an ELF note), not a separate note. It left
 the encoding to whoever builds it: "the descriptor's reserved zero bytes, or a longer layout".
 Amending version 1 in place holds only while nothing outside the tree has acted on the note.
-597 built the note; version 2 joined it on 2026-10-19; the field does not exist today.
+597 built the note and version 2 joined it on 2026-10-19.
 
-What the field must hold: which interface versions the binary built against, at per-interface
-granularity. The gate's words are plural ("what it links"), and one number cannot say which
-interface moved.
+The field holds which interface versions the binary built against, at per-interface granularity:
+the gate's words are plural ("what it links"), and one number cannot say which interface moved.
 
 Options: (i) one coarse number, byte 55 as the ABI revision, amending versions 1 and 2 in
 place; (ii) a version 3 descriptor: version 1's 56 bytes unchanged, then a counted list of
@@ -201,8 +201,8 @@ Refusals: a tree-wide test listing every format constant's value is (b)'s lint d
 
 ## The compatibility obligation, and retiring a generation
 
-Heading provisional. The section records calef's ruling of 2026-10-29 (UTC, PR #2852), the part
-adding to the five questions above.
+Heading provisional. The section records calef's ruling of 2026-10-29 (UTC, PR #2852) beyond the
+five questions.
 
 A message-contract server owes the current generation and the last one (N-1). A break bumps the
 version, owes the dated ledger entry (question 4), and carries a one-generation dual path;
@@ -210,16 +210,16 @@ shipping the next generation closes the window. The rationale on record: 610's w
 shows the wire effectively frozen already, one format change in sixteen weeks and zero amendments,
 so N-1 costs a dual path a few times a year, not weekly. The weekly churn is the Rust API surface,
 not the wire. (The columns read zero over 2026W29 to 2026W44; the window's one layout change
-arrived as a new constant, not a changed one.)
+arrived as a new constant.)
 
 The carve-outs, ruled the same day:
 
 - Shared pages stay single-version. One writer and one reader leaves no served set to hold; a
   page-format break rides the update path (§235's U4 coherent set), changing both sides together.
 - The syscall ABI never dual-serves: §235's spawn-time refusal is the hard edge.
-- Stateful services cannot swap across versions (§116 declined live component state handoff; §208
-  (installing is granting) names the revisit). Their version changes ride the update path, where
-  clients re-bind at restart.
+- Stateful services cannot swap across versions (§116 (live component state handoff is declined,
+  for want of a customer) governs; §208 (installing is granting) names the revisit). Their version
+  changes ride the update path, where clients re-bind at restart.
 - Hot swap may carry a version change only on an N-1 contract, only for a stateless component,
   with the operator verifying that the new instance serves every bound client's version.
 
@@ -232,17 +232,17 @@ Retiring the legacy generation is itself a version event, never silent. It is a 
 bump with a dated ledger entry naming the migration, riding the update path (§235's U4 coherent
 set), so in-tree v1 clients move in the same release. The compiler proves that while nothing
 outside the tree consumes these interfaces. The spawn-time refusal then fires on a stale client
-binding, naming both versions. The ledger records each retirement and whether any client exercised the N-1
-shim;
-that is the recorded evidence for revisiting the N-1 rule (event-triggered) if shims go unused.
+binding, naming both versions. The ledger records each retirement and whether any client
+exercised the N-1 shim; that is the recorded evidence for revisiting the N-1 rule
+(event-triggered) if shims go unused.
 Posture on record: no customers yet, learn in practice; the rule permits breaking changes where
 it bites.
 
 ## The implementing milestone
 
-The eight-step plan moved to
+The eight-step plan lives in
 [the implementing proposal](the-linked-interfaces-carry-checkable-versions.md), re-aimed at the
-ruled shape. This proposal keeps the survey, the prior art and the costs as measured.
+ruled shape; this proposal keeps the survey, the prior art and the costs.
 
 ## The seven questions
 

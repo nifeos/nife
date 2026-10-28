@@ -15,14 +15,17 @@ day in PR #2852's comment; this proposal re-aims the eight-step plan at the rule
 proposes it for the merge queue, milestone number provisional until an integrator mints one. The
 shape proposal holds the questions, the options and the ruling; this one holds only the plan.
 
-The gate the plan serves is milestone 756's condition 4 as re-aimed on 2026-10-28: each interface
-the first cut links carries a checkable version, and the moved package declares what it links.
+The gate the plan serves is condition 4 of milestone 756 (`process-tools`, `core-tools` and
+`disk-tools` are the first code to leave this repository), re-aimed on 2026-10-28. The gate reads:
+each interface the first cut links carries a checkable version, and the moved package declares
+what it links.
 
-Reuse: the plan reuses machinery that exists, per AGENTS.md rule 6. The `abi` crate's
-pinned-values test, milestone 597's manifest-note encode and decode with its one-encoding Kani
-property, the `log_checks` assertions in `hot_swap_contract`, and 610's `FORMAT_CONST` pattern in
-`helpers/interface_stability.py`. No new dependency; `cargo-semver-checks` and `cargo-public-api`
-stay refused as milestone 610 records.
+Reuse: the plan reuses machinery that exists, per AGENTS.md rule 6. It takes the `abi` crate's
+pinned-values test, and milestone 597's (a program carries its manifest in an ELF note)
+manifest-note encode and decode with its one-encoding Kani property. It takes the `log_checks`
+assertions in `hot_swap_contract`, and 610's (the interface's stability is measured weekly)
+`FORMAT_CONST` pattern in `helpers/interface_stability.py`. No new dependency; `cargo-semver-checks`
+and `cargo-public-api` stay refused as milestone 610 records.
 
 ## The plan, eight steps
 
@@ -46,7 +49,8 @@ provisional.
    versions.
 
 3. The syscall ABI check runs at spawn. The progenitor compares the manifest note's declared ABI
-   version against the kernel's `ABI_VERSION` (§235), and refuses a mismatch naming both. The ABI
+   version against the kernel's `ABI_VERSION` (§235, the OS is built and updated from packages,
+   and the tree divides by what releases together), and refuses a mismatch naming both. The ABI
    never dual-serves; the refusal is the hard edge. Proves: the progenitor refuses a program whose
    note declares a version the kernel does not serve, and accepts one it does.
 
