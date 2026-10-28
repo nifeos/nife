@@ -63,6 +63,11 @@ name: kernel mutants (diff-scoped)
 #   because it applies and reverts patches there. The plan job had done its work; the shard's
 #   verdict step then said so honestly (no verdict table, exit 2). The fix downloads the artifact
 #   to the runner's temp directory, outside the tree.
+# Observed failing: 2026-10-28, run 40640527340: this workflow's own run on this pull request,
+#   after the ready flip: both jobs green, no check-run failed, and the run still concluded
+#   failure, because the plan had nothing to shard and a matrix that expands to zero combinations
+#   is a failed run on this runner. A run with nothing to mutate now sends one sentinel entry, and
+#   the shard job turns it into an honest green "nothing to mutate".
 
 on:
   pull_request:
@@ -168,12 +173,29 @@ jobs:
       - name: Install the pinned toolchain
         run: rustup show active-toolchain || helpers/rustup-retry.sh toolchain install
 
-      - name: Read the pinned cargo-mutants version
-        id: mutants
-        run: echo "version=$(cat .cargo-mutants-version)" >> "$GITHUB_OUTPUT"
-      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
-        with:
-          tool: cargo-mutants@${{ steps.mutants.outputs.version }}
+      # cargo-mutants publishes no aarch64 Linux release asset (every upstream release ships
+      # x86_64 only), so taiki-e/install-action has no aarch64_linux entry for the pinned
+      # version and every install of it here falls through cargo-binstall to an unpinned
+      # third-party build. This downloads the QuickInstall build of exactly the pinned version
+      # and checks it against the digest in .cargo-mutants-sha256, whose comments carry the URL
+      # and provenance: same bytes every run, and a version bump without a new digest fails
+      # here rather than drifting. Every job that reaches this step is aarch64
+      # (ubuntu-24.04-arm); the noop shard on ubuntu-24.04 skips it.
+      - name: Install the pinned cargo-mutants
+        run: |
+          version="$(cat .cargo-mutants-version)"
+          sum="$(sed -n '/^[0-9a-f]\{64\}$/p' .cargo-mutants-sha256)"
+          if [ "${#sum}" -ne 64 ]; then
+            echo "==> .cargo-mutants-sha256 must hold exactly one 64-hex digest line" >&2
+            exit 2
+          fi
+          url="https://github.com/cargo-bins/cargo-quickinstall/releases/download/cargo-mutants-${version}/cargo-mutants-${version}-aarch64-unknown-linux-gnu.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/cargo-mutants.tgz" "$url"
+          echo "${sum}  $RUNNER_TEMP/cargo-mutants.tgz" | sha256sum --check --strict -
+          mkdir -p "$HOME/.cargo/bin"
+          tar -xzf "$RUNNER_TEMP/cargo-mutants.tgz" -C "$HOME/.cargo/bin"
+          cargo mutants --version
 
       # `--no-config` is deliberate and .cargo/mutants.toml says why: the toml's own `kernel/**`
       # entry keeps the kernel out of the host census, so a config-reading run would list nothing.
@@ -203,15 +225,17 @@ jobs:
           if-no-files-found: warn
 
   shard:
-    name: shard ${{ matrix.index }}/${{ matrix.total }} (${{ matrix.arch }})
+    # A plan with nothing to shard sends one sentinel entry rather than an empty matrix: a matrix
+    # that expands to zero combinations turns the run red (run 40640527340: both jobs green, the
+    # run failed), and an advisory check must not read as a failure on a pull request it has
+    # nothing to say about. The sentinel lands on the cheap x86 runner and exits after saying so.
+    name: "${{ matrix.noop && 'kernel mutants (diff-scoped): nothing to mutate' || format('shard {0}/{1} ({2})', matrix.index, matrix.total, matrix.arch) }}"
     needs: plan
-    # An empty plan matrix means nothing to mutate or over the shard cap; zero matrix jobs run,
-    # and the plan's summary has already said which and why.
     if: ${{ !cancelled() && needs.plan.result == 'success' }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.noop && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
     # The design point is 20 minutes (baseline plus the budgeted mutant phase); the job bound
     # leaves room for setup and for one 600 s hung boot the tier limit must pay for.
-    timeout-minutes: 35
+    timeout-minutes: ${{ matrix.noop && 5 || 35 }}
     strategy:
       fail-fast: false
       max-parallel: 3
@@ -223,43 +247,76 @@ jobs:
       # default limit is the check for slow-but-alive.
       FALSIFICATIONS_RECORD_LIMIT: "600"
     steps:
+      - name: Nothing to mutate
+        if: ${{ matrix.noop }}
+        run: |
+          echo "==> no shard ran: the plan summary above says what this pass is (nothing in the"
+          echo "    corpus on the changed lines, or over the 10-shard cap). This green is not a"
+          echo "    mutation result."
+
       # The dispatched ref's own commit, for both events: the driver this step runs and the
       # helper that reads its table live in this tree, and the patches were generated against a
       # tree this commit holds.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: ${{ !matrix.noop }}
         with:
           fetch-depth: 0
 
       - name: Install the pinned toolchain
+        if: ${{ !matrix.noop }}
         run: rustup show active-toolchain || helpers/rustup-retry.sh toolchain install
 
-      - name: Read the pinned cargo-mutants version
-        id: mutants
-        run: echo "version=$(cat .cargo-mutants-version)" >> "$GITHUB_OUTPUT"
-      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
-        with:
-          tool: cargo-mutants@${{ steps.mutants.outputs.version }}
+      # cargo-mutants publishes no aarch64 Linux release asset (every upstream release ships
+      # x86_64 only), so taiki-e/install-action has no aarch64_linux entry for the pinned
+      # version and every install of it here falls through cargo-binstall to an unpinned
+      # third-party build. This downloads the QuickInstall build of exactly the pinned version
+      # and checks it against the digest in .cargo-mutants-sha256, whose comments carry the URL
+      # and provenance: same bytes every run, and a version bump without a new digest fails
+      # here rather than drifting. Every job that reaches this step is aarch64
+      # (ubuntu-24.04-arm); the noop shard on ubuntu-24.04 skips it.
+      - name: Install the pinned cargo-mutants
+        if: ${{ !matrix.noop }}
+        run: |
+          version="$(cat .cargo-mutants-version)"
+          sum="$(sed -n '/^[0-9a-f]\{64\}$/p' .cargo-mutants-sha256)"
+          if [ "${#sum}" -ne 64 ]; then
+            echo "==> .cargo-mutants-sha256 must hold exactly one 64-hex digest line" >&2
+            exit 2
+          fi
+          url="https://github.com/cargo-bins/cargo-quickinstall/releases/download/cargo-mutants-${version}/cargo-mutants-${version}-aarch64-unknown-linux-gnu.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/cargo-mutants.tgz" "$url"
+          echo "${sum}  $RUNNER_TEMP/cargo-mutants.tgz" | sha256sum --check --strict -
+          mkdir -p "$HOME/.cargo/bin"
+          tar -xzf "$RUNNER_TEMP/cargo-mutants.tgz" -C "$HOME/.cargo/bin"
+          cargo mutants --version
 
       # The kernel image build dominates a cold baseline (225 s of the 380 on aarch64); this pool
       # is shared with mutation-gate.yml's job, which keys the same way.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        if: ${{ !matrix.noop }}
         with:
           save-if: "true"
 
       - name: Cache QEMU
+        if: ${{ !matrix.noop }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
+        if: ${{ !matrix.noop }}
         run: script/ci-qemu
       - name: Put it on PATH
+        if: ${{ !matrix.noop }}
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
       - run: script/bootstrap
+        if: ${{ !matrix.noop }}
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
 
       - name: Fetch this shard's patches
+        if: ${{ !matrix.noop }}
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: mutant-shards
@@ -269,6 +326,7 @@ jobs:
       # applies and reverts patches here (run 40638299916 died on exactly that, an untracked
       # shards/ directory the artifact download had left in the checkout).
       - name: Run the shard's mutants
+        if: ${{ !matrix.noop }}
         run: |
           script/falsifications --mutants \
             --patches "${{ runner.temp }}/shards/${{ matrix.file }}" --arch "${{ matrix.arch }}" \
@@ -278,7 +336,7 @@ jobs:
       # Advisory: a survivor exits 0 with the table that says what clears it; a broken run (no
       # table, a malformed table) exits 2 and fails the job, never passes.
       - name: The verdict, advisory
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && !matrix.noop }}
         run: |
           python3 helpers/mutation_kernel_diff.py verdict \
             --tsv "$RUNNER_TEMP/shard-${{ matrix.index }}.tsv" \
@@ -286,7 +344,7 @@ jobs:
             --count "${{ matrix.count }}" --summary "$GITHUB_STEP_SUMMARY"
 
       - name: Keep the verdict table
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && !matrix.noop }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: shard-${{ matrix.index }}-verdicts

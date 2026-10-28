@@ -186,13 +186,15 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
     mode
 }
 
-// The fields this word composes share no bit, so every `|` here is its `^`: store-and-forward
-// against the threshold field, and the two flow-control threshold fields against each other. A
-// compile-time gate, not a runtime check: the exclusion of this function's or-versus-xor mutants
-// argues from it. The clippy lints fold the second conjunct's literals; that is what a gate is,
-// allowed here for exactly that reason.
-#[allow(clippy::assertions_on_constants, clippy::eq_op)]
-const _: () = assert!(
+/// The fields this word composes share no bit, so every `|` here is its `^`: store-and-forward
+/// against the threshold field, and the two flow-control threshold fields against each other;
+/// the compiler checks it here, and the mutation exclusion for `receive_queue_mode` names this
+/// constant. Clippy's `eq_op` lint folds the second conjunct's literals to `0 == 0`; that is
+/// what a gate is, allowed here for exactly that reason.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+#[allow(clippy::eq_op)]
+pub const THE_RECEIVE_QUEUE_MODE_FIELDS_SHARE_NO_BIT: () = assert!(
     registers::MTL_CHAN_RX_OP_MODE_RSF & registers::MTL_CHAN_RX_OP_MODE_RTC_MASK == 0
         && (0x3f << 14) & (0x3f << 8) == 0
 );
@@ -215,8 +217,12 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> 
     mode
 }
 
-// Store-and-forward and the threshold field share no bit, so the one `|` here is its `^`.
-const _: () =
+/// Store-and-forward and the threshold field share no bit, so the one `|` here is its `^`, which
+/// the compiler checks here; the mutation exclusion for `transmit_queue_mode` names this
+/// constant.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_TRANSMIT_QUEUE_MODE_FIELDS_SHARE_NO_BIT: () =
     assert!(registers::MTL_CHAN_TX_OP_MODE_TSF & registers::MTL_CHAN_TX_OP_MODE_TTC_MASK == 0);
 
 /// Can a controller of `direct_memory_access_address_bits` address a region of `bytes` at
@@ -354,14 +360,17 @@ pub fn configure(
     Ok(())
 }
 
-// The register fields configure composes share no bit: the outstanding-limit masks against each
-// other and against the burst-length bits (which is what `bus_burst_lengths` carries), the
-// transmit and receive burst-length fields against the bits set beside them, the receive buffer
-// size against the receive burst-length field, and the pause time against the flow-control
-// enable. A field value reaches its `|` through its own mask, and a word whose field the line
-// above cleared takes a value only inside that field; where neither holds, the configure tests
-// kill the swap.
-const _: () = assert!(
+/// The register fields configure composes share no bit: the outstanding-limit masks against each
+/// other and against the burst-length bits (which is what `bus_burst_lengths` carries), the
+/// transmit and receive burst-length fields against the bits set beside them, the receive buffer
+/// size against the receive burst-length field, and the pause time against the flow-control
+/// enable; the compiler checks it here, and the mutation exclusion for `configure` names this
+/// constant. A field value reaches its `|` through its own mask, and a word whose field the line
+/// above cleared takes a value only inside that field; where neither holds, the configure tests
+/// kill the swap.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT: () = assert!(
     registers::SYS_BUS_MODE_RD_OSR_LMT_MASK & registers::SYS_BUS_MODE_WR_OSR_LMT_MASK == 0
         && registers::SYS_BUS_MODE_RD_OSR_LMT_MASK
             & (registers::SYS_BUS_MODE_BLEN_256
@@ -417,11 +426,14 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
         | registers::MAC_CONF_RE
 }
 
-// The MAC word's fields share no bit: the speed, duplex and loopback bits the function clears
-// first, and the five bits the final chain sets. A swap inside either group is `|`-versus-`^`
-// over disjoint bits; the chain's first swap toggles `conf` itself, and
-// `the_mac_word_from_zero_and_from_all_ones` kills it.
-const _: () = assert!(
+/// The MAC word's fields share no bit: the speed, duplex and loopback bits the function clears
+/// first, and the five bits the final chain sets; the compiler checks it here, and the mutation
+/// exclusion for `mac_configuration` names this constant. A swap inside either group is
+/// `|`-versus-`^` over disjoint bits; the chain's first swap toggles `conf` itself, and
+/// `the_mac_word_from_zero_and_from_all_ones` kills it.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_MAC_CONFIGURATION_BITS_SHARE_NO_BIT: () = assert!(
     registers::MAC_CONF_PS
         | registers::MAC_CONF_FES
         | registers::MAC_CONF_DM

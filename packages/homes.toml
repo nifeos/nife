@@ -67,6 +67,7 @@ paths = [
     ".cargo-deny-version",
     ".cargo-fuzz-version",
     ".cargo-mutants-version",
+    ".cargo-mutants-sha256",
     ".kani-version",
 ]
 

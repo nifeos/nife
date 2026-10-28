@@ -103,6 +103,12 @@ def corpus_globs(toml_path, roots):
     `**/`-prefixed proof-file entries. The crate-whole entries (`kernel/**`, `xtask/**`), which
     keep these packages out of the host census, do not participate: applied whole they would end
     the run before it began."""
+    # BUGS: tomllib's parse error names a line and column but never the file. Run 40643028663
+    # (2026-10-28) failed here on a diff3 conflict marker a bad merge had left in
+    # `.cargo/mutants.toml`, and the message, `Invalid value (at line 251, column 1)`, did not
+    # name the file it read; a triage round must open the path `--toml` names (the workflow
+    # passes `.cargo/mutants.toml`) at that line to find the cause. This read and
+    # corpus_regexes() below are the two sites.
     entries = tomllib.loads(pathlib.Path(toml_path).read_text()).get("exclude_globs", [])
     return [g for g in entries
             if g.startswith("**/") or any(g.startswith(r + "/src/") for r in roots)]
@@ -185,7 +191,8 @@ def split(kept):
 
 def matrix_entries(shards):
     return [{"index": k + 1, "total": len(shards), "arch": arch, "file": "shard-%02d.txt" % (k + 1),
-             "count": len(blocks), "limit": SHARD_MUTANTS[arch], "budget": BUDGET_SECONDS[arch]}
+             "count": len(blocks), "limit": SHARD_MUTANTS[arch], "budget": BUDGET_SECONDS[arch],
+             "noop": False}
             for k, (arch, blocks) in enumerate(shards)]
 
 
@@ -251,7 +258,16 @@ def cmd_shards(args):
         with open(args.summary, "a") as fh:
             fh.write(text)
     allowed = shards if len(shards) <= MAX_SHARDS else []
-    print("matrix=" + json.dumps({"include": matrix_entries(allowed)}))
+    # A matrix that expands to zero combinations turns the whole run red (observed, run
+    # 40640527340: both jobs green, the run failed, no check-run failed), so a run with nothing to
+    # shard sends one sentinel entry instead, and the shard job turns it into an honest green
+    # "nothing to mutate" on the cheap runner.
+    if allowed:
+        entries = matrix_entries(allowed)
+    else:
+        entries = [{"index": 0, "total": 0, "arch": "none", "file": "", "count": 0, "limit": 0,
+                    "budget": 0, "noop": True}]
+    print("matrix=" + json.dumps({"include": entries}))
     return 0
 
 
@@ -469,16 +485,18 @@ def selftest():
         bad.write_text("mutant\tverdict\tkernel_s\tsystem_s\nonly-one-field\n")
         assert verdict(tsv=str(bad), count=1)[0] == 2
 
-        # The shards command: an empty corpus writes an empty matrix and says what the pass is;
-        # an over-cap diff is skipped with the cap named. Both exit 0. The matrix line goes to
-        # stdout, the human report to stderr and the summary file.
+        # The shards command: an empty corpus and an over-cap diff both send the one sentinel
+        # entry (a matrix that expands to zero combinations turns the run red), and say what the
+        # pass is. Both exit 0. The matrix line goes to stdout, the human report to stderr and
+        # the summary file.
         other = root / "other.txt"
         other.write_text(listing(("crates/other/src/lib.rs", 3, "replace == with != in f")))
         out = root / "out.txt"
         code, stdout, _err = _capture_shards(cmd_shards, argparse.Namespace(
             listing=[str(other)], toml=str(toml), roots="kernel,components",
             shard_dir=str(root / "s"), summary=str(out)))
-        assert code == 0 and '"include": []' in stdout, stdout
+        sentinel = json.loads(stdout.removeprefix("matrix="))
+        assert code == 0 and sentinel["include"][0]["noop"] is True, stdout
         assert "not a mutation result" in out.read_text(), out.read_text()
         big = root / "big.txt"
         big.write_text(listing(*[("kernel/src/sched/thing.rs", i + 2,
@@ -487,15 +505,17 @@ def selftest():
         code, stdout, _err = _capture_shards(cmd_shards, argparse.Namespace(
             listing=[str(big)], toml=str(toml), roots="kernel,components",
             shard_dir=str(root / "s2"), summary=str(out2)))
-        assert code == 0 and '"include": []' in stdout, stdout
+        sentinel = json.loads(stdout.removeprefix("matrix="))
+        assert code == 0 and sentinel["include"][0]["noop"] is True, stdout
         assert "cap of 10" in out2.read_text(), out2.read_text()
-        # A real plan writes its shard files, and each file re-parses to its own blocks in order.
+        # A real plan writes its shard files, sends real entries, and each file re-parses to its
+        # own blocks in order.
         out3 = root / "out3.txt"
         shard_dir = root / "s3"
         code, stdout, _err = _capture_shards(cmd_shards, argparse.Namespace(
             listing=[str(nine)], toml=str(toml), roots="kernel,components",
             shard_dir=str(shard_dir), summary=str(out3)))
-        assert code == 0 and '"index": 2' in stdout, stdout
+        assert code == 0 and '"noop": false' in stdout, stdout
         with _driver_parser() as mutant_patches:
             pairs = mutant_patches((shard_dir / "shard-01.txt").read_text(), None)
             assert [n for n, _p in pairs] == [f"kernel/src/sched/thing.rs:{i + 2}:5:"
