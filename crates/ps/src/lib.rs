@@ -255,31 +255,7 @@ impl Survey<'_> {
     ///
     /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
     pub fn rank_by_process_cpu_time(&mut self) {
-        // Each process total is summed once into a table indexed by label, so the comparator reads
-        // a figure instead of rescanning rows it is in the middle of moving. The kernel's labels
-        // are ordinals of at most `MAXIMUM_ROWS` processes; a label beyond that (a kernel that
-        // answers otherwise) totals 0 and sorts after the processes it can account for.
-        let mut total = [0u64; MAXIMUM_ROWS + 1];
-        for r in self.rows.iter() {
-            if let Some(slot) = r.process.and_then(|l| total.get_mut(l as usize)) {
-                *slot += r.cpu_ms.unwrap_or(0);
-            }
-        }
-        let of = |r: &Row| {
-            r.process
-                .and_then(|l| total.get(l as usize))
-                .copied()
-                .unwrap_or(0)
-        };
-        self.rows.sort_unstable_by(|a, b| {
-            a.process
-                .is_none()
-                .cmp(&b.process.is_none())
-                .then(of(b).cmp(&of(a)))
-                .then(a.process.cmp(&b.process))
-                .then(b.cpu_ms.unwrap_or(0).cmp(&a.cpu_ms.unwrap_or(0)))
-                .then(a.tid.cmp(&b.tid))
-        });
+        self.rank(true);
     }
 
     /// **Order the rows by CPU time, most first**, which is what makes a listing a `top`.
@@ -292,10 +268,43 @@ impl Survey<'_> {
     /// `sort_unstable_by` allocates nothing, which is why this can happen in a `no_std` program on
     /// a twelve-page stack.
     pub fn rank_by_cpu_time(&mut self) {
-        self.rows.sort_unstable_by(|a, b| {
-            b.cpu_ms
+        self.rank(false);
+    }
+
+    /// The one sort both rankings share, so the program carries one instance of it. With
+    /// `by_process`, rows group under their process, the process with the most summed CPU time
+    /// first; within a group, and with `by_process` clear, the order is the per-thread one.
+    fn rank(&mut self, by_process: bool) {
+        // Each process total is summed once into a table indexed by label, so the comparator reads
+        // a figure instead of rescanning rows it is in the middle of moving. The kernel's labels
+        // are ordinals of at most `MAXIMUM_ROWS` processes; a label beyond that (a kernel that
+        // answers otherwise) totals 0 and sorts after the processes it can account for.
+        let mut total = [0u64; MAXIMUM_ROWS + 1];
+        if by_process {
+            for r in self.rows.iter() {
+                if let Some(slot) = r.process.and_then(|l| total.get_mut(l as usize)) {
+                    *slot += r.cpu_ms.unwrap_or(0);
+                }
+            }
+        }
+        let of = |r: &Row| {
+            r.process
+                .and_then(|l| total.get(l as usize))
+                .copied()
                 .unwrap_or(0)
-                .cmp(&a.cpu_ms.unwrap_or(0))
+        };
+        self.rows.sort_unstable_by(|a, b| {
+            let grouping = if by_process {
+                a.process
+                    .is_none()
+                    .cmp(&b.process.is_none())
+                    .then(of(b).cmp(&of(a)))
+                    .then(a.process.cmp(&b.process))
+            } else {
+                core::cmp::Ordering::Equal
+            };
+            grouping
+                .then(b.cpu_ms.unwrap_or(0).cmp(&a.cpu_ms.unwrap_or(0)))
                 .then(a.cpu_ms.is_none().cmp(&b.cpu_ms.is_none()))
                 .then(a.tid.cmp(&b.tid))
         });
