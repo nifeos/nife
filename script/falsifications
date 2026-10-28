@@ -1300,6 +1300,27 @@ def selftest():
         if not ok:
             print("falsifications --selftest: packing: %s (loads %s)" % (what, loads))
             bad += 1
+    # `unclaimed()`'s search for the falsified function, against a scratch repository: a patch
+    # that carries the function's text is not a definition of it.
+    import tempfile
+    with tempfile.TemporaryDirectory() as repo:
+        def put(rel, text):
+            os.makedirs(os.path.join(repo, os.path.dirname(rel)), exist_ok=True)
+            with open(os.path.join(repo, rel), "w") as f:
+                f.write(text)
+        subprocess.run(["git", "-C", repo, "init", "-q"], check=True)
+        put("pkg/falsifications/m.a_witness.patch", "+fn a_witness() {}\n")
+        put("pkg/src/m.rs", "fn a_test() {}\n")
+        subprocess.run(["git", "-C", repo, "add", "-A"], check=True)
+        searches = [
+            ("a function only a patch carries is not defined", "a_witness", []),
+            ("a function in source is defined", "a_test", ["pkg/src/m.rs"]),
+        ]
+        for what, fn, want in searches:
+            got = defining_files(repo, "pkg", fn)
+            if got != want:
+                print("falsifications --selftest: %s: wanted %s, got %s" % (what, want, got))
+                bad += 1
     for what, base, head, want in cases:
         got = len(unrecorded_new_tests(base, head))
         if got != want:
@@ -1359,14 +1380,26 @@ def unclaimed(path, pkgs):
         return "rot", ("it declares `Falsifies %s`, which spells the filename `%s.patch`, not `%s`"
                        % (target, ".".join(segments), os.path.basename(path)))
     fn = segments[-1] if segments else ""
-    found = subprocess.run(
-        ["git", "-C", root, "grep", "-lE",
-         r"fn[[:space:]]+%s[[:space:]]*[(<]" % re.escape(fn), "--", pkg.reldir],
-        capture_output=True, text=True)
-    if found.returncode != 0:
+    found = defining_files(root, pkg.reldir, fn)
+    if not found:
         return "rot", ("it falsifies `%s`, and no function of that name exists in `%s` any more"
                        % (target, pkg.reldir))
-    return "gap", "%s (%s), which no Kani harness declares" % (target, found.stdout.split()[0])
+    return "gap", "%s (%s), which no Kani harness declares" % (target, found[0])
+
+
+def defining_files(repo, reldir, fn):
+    """The tracked files under `reldir` that define a function named `fn`, outside `falsifications/`.
+
+    A patch that adds the function it falsifies carries `fn <name>(` in its own text, so a search
+    that read the patches would find the patch and call the function present when the tree has none
+    (the tenth outsider pass's patch did exactly that). Only source counts as a definition.
+    """
+    found = subprocess.run(
+        ["git", "-C", repo, "grep", "-lE",
+         r"fn[[:space:]]+%s[[:space:]]*[(<]" % re.escape(fn), "--", reldir,
+         ":!%s/falsifications" % reldir],
+        capture_output=True, text=True)
+    return found.stdout.split() if found.returncode == 0 else []
 
 
 def check(hs, pkgs, kts=()):
