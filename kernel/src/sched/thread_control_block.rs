@@ -110,7 +110,7 @@ pub(super) fn thread_control_block_insert_from(
 /// builder placed a rendezvous in the reserved fault slot (§26 (the fault endpoint)). For the test
 /// progenitor, which runs a user program in a kernel thread (`user::run`) that `START` never
 /// reached, so that its exit reaches a shell as a death message with the label in its sixth word,
-/// as a held job's does at the real prompt (milestone 933).
+/// as a held job's does at the real prompt (milestone 933 (every job is built the way a supervised job is)).
 ///
 /// Name: provisional (milestone 933's lane, 2026-10-27 UTC).
 #[cfg(feature = "system_tests")]
