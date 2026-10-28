@@ -1,9 +1,17 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 161. Which subset counts as running Vaultwarden
+
+Ruled 2026-10-28 (UTC): Definition of done: Vaultwarden running on a board or host at a Tailscale
+address. A phone on the same tailnet runs the Bitwarden client, connects over Tailscale to a real
+certificate (Let's Encrypt, DNS-01 challenge, no open port), logs in, syncs its vault, writes an entry
+back and downloads an attachment. It receives a live update when another client changes an item.
+TLS, concurrency and the async runtime are therefore required; SQLite and threads are already built.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s lane, which found milestone 66 (somebody else's real application, running here) gated on
 `DECISION` with no decision anywhere a reader can open. The ask is the block's own and has been

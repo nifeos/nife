@@ -1,9 +1,16 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 188. What the lifted `fn check(ok: bool)` is called, now that nine programs write it out by hand
+
+Ruled 2026-10-28 (UTC): `require`: `user_mode_runtime::require` is the public name for the lifted
+`fn check(ok: bool)`, matching the kernel's `trust::require` semantics ("not recoverable and must
+not be recovered from") at one privilege level up. calef ratifies milestone 408's provisional
+`Name:` line.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c lane, which found milestone 408 (one home for `fn check(ok: bool)`)'s
 `DECISION` gate naming no section. Filed 2026-09-14 by milestone 291's lane, which added seven of

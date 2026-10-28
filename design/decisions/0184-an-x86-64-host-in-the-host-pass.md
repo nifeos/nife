@@ -1,9 +1,15 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 184. Does the host test pass run on a second architecture, and at what cadence?
+
+Ruled 2026-10-28 (UTC): Option 2, matrix leg: the host test pass runs on both architectures
+(arm64 and x86_64) on every pull request. Option 1 dominated (same runner cost, less honest shape);
+option 3 rejected because cost alone should not drive a day of latency. Unblocks milestone 403.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c lane, which found milestone 403 (an x86_64 host in the host pass)'s
 `DECISION` gate naming no section. Milestone 288 fixed four instances of "a test that states a fact

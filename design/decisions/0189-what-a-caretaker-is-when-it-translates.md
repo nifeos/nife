@@ -1,9 +1,17 @@
 ---
-status: PROPOSED
+status: DECIDED
 raised: 2026-09-19
+decided: 2026-10-28
+ratified_by: calef
 ---
 
 # 189. Which of two definitions `caretaker` carries, and what the translating shape is called
+
+Ruled 2026-10-28 (UTC): B, `caretaker` means translating: taking care of something, not preserving
+the same protocol; the 2026-08-03 ratification of `terminal_sink_caretaker` stands. `file_sink`
+→ `file_sink_caretaker`; calef accepts the `fs_file_caretaker` collision as the cost of consistency.
+Caretaker names say what they hold, then what they hand out. Unblocks milestone 413 and `file_sink`'s
+ratification.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote
 down)'s slice-c lane. That lane found milestone 413 (what a `caretaker` is, when the thing it holds
