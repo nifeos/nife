@@ -8,8 +8,8 @@ ratified_by: calef
 # 181. May `script/bootstrap` say "installed everything I could, and this machine is still not good enough" without failing?
 
 Ruled 2026-10-28 (UTC): C, split: `script/bootstrap` provisions and returns zero when it installed
-everything it could; QEMU adequacy is its own check where QEMU is invoked (running server, building
-the image), its own row in `script/ci-build`'s table; `script/setup` and `script/update` call the
+everything it could. QEMU adequacy is its own check where QEMU runs (running server, building the
+image); it gets its own row in `script/ci-build`'s table. `script/setup` and `script/update` call the
 check explicitly so a newcomer on a fresh machine still hears the verdict.
 
 Raised 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c lane, which found milestone 397 (`script/bootstrap` installs what is missing)'s

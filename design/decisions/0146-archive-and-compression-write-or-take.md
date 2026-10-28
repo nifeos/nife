@@ -9,7 +9,7 @@ ratified_by: calef
 
 Ruled 2026-10-28 (UTC): A, the seven verdicts as written: write tar; write inflate and stored-block
 deflate, revisit real deflate on measurement; defer zstd and zip; refuse bzip2, xz/LZMA and 7z.
-Unblocks milestone 258 (archive and compression: tar and zlib); milestone 99's block is corrected.
+Unblocks milestone 258 (archive and compression: tar and zlib); calef corrects milestone 99's block.
 
 Raised by calef, 2026-09-05, on being told no milestone covered archive
 utilities: *"Mint it. However we should debate write it and vendor it for each piece."*

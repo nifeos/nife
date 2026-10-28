@@ -9,7 +9,7 @@ ratified_by: calef
 
 Ruled 2026-10-28 (UTC): B, `caretaker` means translating: taking care of something, not preserving
 the same protocol; the 2026-08-03 ratification of `terminal_sink_caretaker` stands. `file_sink`
-→ `file_sink_caretaker`; the `fs_file_caretaker` collision is accepted as the cost of consistency.
+→ `file_sink_caretaker`; calef accepts the `fs_file_caretaker` collision as the cost of consistency.
 Caretaker names say what they hold, then what they hand out. Unblocks milestone 413 and `file_sink`'s
 ratification.
 
