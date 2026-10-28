@@ -130,7 +130,7 @@ impl<'a> Document<'a> {
         let mut previous: Option<&str> = None;
         for section in Sections::new(text) {
             let (name, lines) = section?;
-            if !super::generation::good_name(name) || name.len() > NAME_MAXIMUM {
+            if !name_fits(name) {
                 return Err(Refusal::Malformed);
             }
             if previous.is_some_and(|p| p >= name) {
@@ -196,14 +196,21 @@ impl<'a> Document<'a> {
     }
 }
 
+/// Whether `name` is one word a document's names are held to: the same words the table's
+/// rows are ([`super::generation::good_name`]), at [`NAME_MAXIMUM`] and under.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub fn name_fits(name: &str) -> bool {
+    super::generation::good_name(name) && name.len() <= NAME_MAXIMUM
+}
+
 /// The header's words: the approval's name and the file's digest it binds.
 fn header(text: &str) -> Option<(&str, Digest)> {
     let mut words = text.lines().next()?.split(' ');
     match (words.next(), words.next(), words.next(), words.next()) {
         (Some("approval"), Some(name), Some(hex), None) => {
             let digest = measured_boot::parse_digest(hex).ok()?;
-            (super::generation::good_name(name) && name.len() <= NAME_MAXIMUM)
-                .then_some((name, digest))
+            (name_fits(name)).then_some((name, digest))
         }
         _ => None,
     }
@@ -361,9 +368,7 @@ fn allow_word(line: &str) -> Result<Granted<'_>, Refusal> {
             Ok(Granted::Zone(zone))
         }
         (Some("allow"), Some("dir"), Some(name), Some(rights))
-            if words.next().is_none()
-                && super::generation::good_name(name)
-                && name.len() <= NAME_MAXIMUM =>
+            if words.next().is_none() && name_fits(name) =>
         {
             Ok(Granted::Directory(
                 name,
@@ -394,7 +399,7 @@ pub fn write(
         at += bytes.len();
         Ok(())
     };
-    if !super::generation::good_name(name) || name.len() > NAME_MAXIMUM {
+    if !name_fits(name) {
         return Err(Error::BadName);
     }
     push(b"approval ")?;
@@ -406,7 +411,7 @@ pub fn write(
     push(b"\n")?;
     let mut previous: Option<&str> = None;
     for package in packages {
-        if !super::generation::good_name(package.name) || package.name.len() > NAME_MAXIMUM {
+        if !name_fits(package.name) {
             return Err(Error::BadName);
         }
         if previous.is_some_and(|p| p >= package.name) {

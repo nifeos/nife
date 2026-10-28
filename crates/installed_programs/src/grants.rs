@@ -234,8 +234,8 @@ pub fn covers(allowed: Granted<'_>, ask: Granted<'_>) -> bool {
 /// ```
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
-pub fn extras<'g>(
-    allowed: &[Granted<'g>],
+pub fn extras<'g, 'a>(
+    allowed: &'a [Granted<'a>],
     asks: &'g [Granted<'g>],
 ) -> impl Iterator<Item = &'g Granted<'g>> {
     asks.iter().filter(move |ask| !covered(allowed, ask))
