@@ -1,7 +1,8 @@
-/* The ncurses screen test the vt replay harness records (milestone 705's step 0a).
+/* The ncurses screen test the vt replay harness records, for milestone 705 (the graphical
+ * terminal runs full-screen programs)'s step 0a.
  *
  * The census's ncurses test was a throwaway program that is not kept; this is the replacement,
- * drawing the same subjects on one screen: a box and its line-drawing characters, 256-colour
+ * drawing the same subjects on one screen: a box and its line-drawing characters, 256-color
  * fills, a scrolling window, insert and delete in place, and a flash. It draws once, waits for
  * one key, and exits on it, so the session's one checkpoint is the drawn screen. Record it with:
  *
@@ -21,7 +22,7 @@ int main(void)
     cbreak();
     noecho();
 
-    /* Four fills from the 256-colour cube and ramp, the palette work of the plan's step 8. */
+    /* Four fills from the 256-color cube and ramp, the palette work of the plan's step 8. */
     for (short i = 0; i < 4; i++)
         init_pair((short)(i + 1), COLOR_WHITE, (short)(16 + i * 73));
     for (short i = 0; i < 4; i++) {
@@ -53,7 +54,7 @@ int main(void)
     }
     wnoutrefresh(scroll);
 
-    /* Insert and delete in place, the plan's step 3: each line reads ABD with B in the middle. */
+    /* Insert and delete in place, the plan's step 3: each line ends "A B D" with the stray character gone. */
     mvaddstr(19, 2, "insert: ACD");
     move(19, 11);
     insch('B');

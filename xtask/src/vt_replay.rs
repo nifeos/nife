@@ -1,89 +1,43 @@
-//! **The terminal replay harness (milestone 705's step 0a): committed recordings in, match counts
-//! out, and a failure the moment a count drops.**
+//! **The terminal replay harness of milestone 705 (the graphical terminal runs full-screen
+//! programs)'s step 0a: recordings in, match counts out, a failure the moment a count drops.**
 //!
-//! Every full-screen feature milestone 705's engine plan adds to `crates/video_terminal` is graded
-//! by the same number: how many checkpoints of a committed recording render exactly the screen the
-//! oracle rendered. This command is that number's keeper. It replays each recording's output bytes
-//! through [`video_terminal::Vt`], snapshots the 24 text rows just before every recorded
-//! keystroke, compares each snapshot with the oracle's screen committed beside the recording, and
-//! holds every session's match count to what `manifest.toml` records. A count that drops fails the
-//! gate; a count that rises fails too, until the manifest is raised, so the tripwire always stands
-//! at the newest high-water mark. See design/roadmap/0705-the-graphical-terminal-runs-full-screen-programs/engine-plan.md,
-//! "Step 0a, the replay harness".
+//! It replays each recording's output bytes through [`video_terminal::Vt`], snapshots the text grid
+//! just before every recorded keystroke, compares each snapshot with the oracle's screen committed
+//! beside the recording, and holds every session's match count to `manifest.toml`'s. A count that
+//! drops fails the gate; a count that rises fails until the manifest is raised, so the tripwire
+//! always stands at the newest high-water mark. Grading needs no pty, no installed program and no
+//! emulator; it runs in milliseconds.
 //!
-//! Grading needs no pty, no installed program and no emulator: a recording is the bytes a program
-//! wrote plus the offsets of its keystrokes, and the whole gate runs in milliseconds.
-//!
-//! # The recording file
-//!
-//! One file per session, `<name>.rec`:
-//!
-//! ```text
-//! bytes 0..4   the magic "NVTR"
-//! bytes 4..6   version, u16 little-endian, currently 1
-//! then events to the end of the file, each:
-//!     0x00  u32 little-endian length, that many bytes   output the program wrote
-//!     0x01  u32 little-endian length, that many bytes   one keystroke the user sent
-//! ```
-//!
-//! A keystroke event carries the input bytes so a session can be re-recorded and a reader can see
-//! what was typed; it is never fed to the engine. Checkpoints fall out of the event stream: each
-//! keystroke's checkpoint is the grid after every output byte written before that keystroke, which
-//! is the screen the user was looking at when they pressed it. The screen after the program exits
-//! carries no keystroke, so it is never graded.
-//!
-//! # The expected screens, and where they come from
-//!
-//! `<name>.expected.txt` holds the oracle's screen for every graded checkpoint, one block per
-//! checkpoint, each block exactly [`video_terminal::script::ROWS`] rows introduced by a
-//! `@ checkpoint N` line. Rows are the grid's text with trailing blanks trimmed; the comparison is
-//! text only, not attributes or colours, the same rule the census states.
-//!
-//! The oracle is `alacritty_terminal` 0.26.0, calef's ruling of 2026-10-21 03:37 UTC. His 2026-10-19
-//! hold on its §46 take stands, so the oracle does not ride in this tree as a dependency: its
-//! screens were generated once on the host, reviewed, and committed. Provenance and the recipe are
-//! in recordings/README.md; the generator lands as a dev-dependency when the hold lifts.
-//!
-//! # The manifest
-//!
-//! `manifest.toml` carries one row per session: what ran, when, under which TERM, how many
-//! checkpoints it has, and the match count the gate holds. `vttest` sessions mark each checkpoint
-//! with the screen it shows; the entries named for a screen's place in the menu (as
-//! conformance.md numbers them, 132-column screens included) are graded, `skip` marks the
-//! 132-column screens the census excludes, and `menu` marks vttest's own menu screens.
+//! The oracle is `alacritty_terminal` 0.26.0, calef's ruling of 2026-10-21 03:37 UTC. His
+//! 2026-10-19 hold on its §46 (thin primitives or whole subsystems; we write everything in between)
+//! take keeps its generator out of the tree, so the oracle's screens are committed artifacts with
+//! provenance in crates/video_terminal/recordings/README.md, beside the recording format, the
+//! manifest's fields and the recording recipe.
 //!
 //! # EXAMPLES
 //!
 //! ```text
-//! $ cargo xtask vt-replay
-//! ==> vt-replay: grading 13 recordings from crates/video_terminal/recordings
-//! vim: 1 of 14 checkpoints match the oracle (manifest: 1)
-//! ...
-//! ==> census total: 13 of 74, vttest total: 7 of 24
-//! vt-replay: every count holds
-//! $ cargo xtask vt-replay --record vim     # needs the program and macOS's script(1)
+//! $ cargo xtask vt-replay                 # grade every recording, hold every count
+//! $ cargo xtask vt-replay --record vim    # capture a session; needs the program and script(1)
 //! $ cargo xtask vt-replay --list
 //! ```
 //!
 //! # BUGS
 //!
-//! - **The comparison is text only.** Attributes, colours and the cursor are not compared, so the
+//! - **The comparison is text only.** Attributes, colors and the cursor are not compared, so the
 //!   counts flatter every engine, ours included, exactly as the census's counts do.
 //! - **A wide character loses the column match by construction.** `Vt` holds one `char` per cell
 //!   until the plan's step 7; the oracle gives a wide character two columns. Any checkpoint whose
-//!   screen carries one fails. The census's counts carry the same caveat.
-//! - **The oracle's generator is not in the tree.** The §46 hold on `alacritty_terminal` stands,
-//!   so the committed screens cannot be regenerated from the tree; recordings/README.md records
-//!   how they were made. A step that re-records a session needs the generator from that note.
+//!   screen carries one fails, and the census's counts carry the same caveat.
 //! - **Recording is macOS-only** (`script(1)` and the census's Homebrew programs); grading runs
 //!   anywhere.
 //! - **A recording is one run.** Sessions are timing-shaped, so re-recording a session produces a
-//!   different byte stream; the committed recording, its expected screens and its manifest row are
-//!   one self-consistent triple and move together or not at all.
+//!   different byte stream; a recording, its expected screens and its manifest row are one
+//!   self-consistent triple and move together or not at all.
 //!
 //! Name: provisional. The subcommand (`vt-replay`), the module, the recording format's magic, the
-//! `recordings` directory and every type here are milestone 705's step 0a lane's wording, 2026-10-28
-//! (UTC); calef names things.
+//! `recordings` directory and every type here are the step 0a lane's wording, 2026-10-28 (UTC);
+//! calef names things.
 
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -469,7 +423,7 @@ fn grade_session(
         }
         None => &[],
     };
-    // A census session grades every checkpoint; a vttest session grades the labelled ones.
+    // A census session grades every checkpoint; a vttest session grades the labeled ones.
     let graded_labels: Vec<&str> = if labels.is_empty() {
         (0..row.checkpoints).map(|_| "").collect()
     } else {
