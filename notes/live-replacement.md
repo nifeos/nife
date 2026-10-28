@@ -15,7 +15,7 @@ under a client that is talking to it, and the client's stream is unbroken.*
 ```
 
 Five programs, sharing one module (`swap.rs`) the way the supervision tree
-shares `supervision_protocol`:
+shares `supervision_contract`:
 
 | program | what it is | what it holds |
 |---|---|---|

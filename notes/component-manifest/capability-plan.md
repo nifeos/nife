@@ -79,7 +79,7 @@ blocked before the incoming one starts, so the two never run against the page at
 ## Slots and well-formedness
 
 The order of `Requirements::caps` is the component's capability table slot order, because
-`supervision_protocol::ChildEndowment::caps` lands its entries in slots 0, 1, 2 and on. The component
+`supervision_contract::ChildEndowment::caps` lands its entries in slots 0, 1, 2 and on. The component
 derives its own slot numbers with `slot_of`, a `const fn`, so a reordered manifest or an undeclared
 role is a compile error rather than a component reading the wrong slot at run time. That is the rung
 the crate is built to reach. `contract` is not matched against anything: what makes a build

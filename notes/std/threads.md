@@ -15,7 +15,7 @@ Three slots of `std_runtime_contract`, all of them the program's own:
 | 12 | its address space, `READ` | the futex waits `std`'s locks make |
 
 The progenitor gives all three to every `std` program it builds (`StdLayout`), through
-`supervision_protocol`'s `CHILDS_OWN_PROCESS`, `CHILDS_OWN_THREAD` and `CHILDS_OWN_SPACE`
+`supervision_contract`'s `CHILDS_OWN_PROCESS`, `CHILDS_OWN_THREAD` and `CHILDS_OWN_SPACE`
 markers. Threads add no authority beyond the program's own memory and time: a thread's TCB, stack and
 thread-local block all come from the heap's region.
 

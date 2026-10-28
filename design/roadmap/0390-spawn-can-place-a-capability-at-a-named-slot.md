@@ -16,11 +16,11 @@ in `kernel/src/user.rs` still carries `arg0`, `arg1`, `arg2`, `grants` and `maps
 its `grants` field still documents "granted into slots 0, 1, 2, ... in order". There are still
 exactly 91 `Spawn { .. }` literals in `kernel/`. The three named slots are still
 `grant_plan::DOMAIN_SLOT` at 7, `DIAGNOSTICS_SLOT` at 8 and `ENTROPY_SLOT` at 9, and the userspace
-builder this would mirror is still `supervision_protocol`'s `placed: &'a [(u64, u64, u64)]` loop.
+builder this would mirror is still `supervision_contract`'s `placed: &'a [(u64, u64, u64)]` loop.
 *(Number provisional until the merge queue lands it.)*
 
 The mechanism already exists one layer up
-(`supervision_protocol::ChildEndowment::placed`) and the kernel side is a field and a loop. What needs
+(`supervision_contract::ChildEndowment::placed`) and the kernel side is a field and a loop. What needs
 deciding is whether the 91 `Spawn { .. }` literals get a `..Spawn::new()` idiom or an added field,
 which is a taste call inside the kernel and not a design fork.
 
@@ -28,7 +28,7 @@ In brief. `kernel::user::Spawn` grants capabilities into a child's table at slot
 order, and offers no way to place one at a slot the caller names. Three named slots now exist
 (`grant_plan::DOMAIN_SLOT` at 7, `DIAGNOSTICS_SLOT` at 8, `ENTROPY_SLOT` at 9), and **no test under
 `script/test` can spawn a program holding any of them**. The only builder that can place at a
-named slot is `supervision_protocol::build_child`, which runs in userspace inside
+named slot is `supervision_contract::build_child`, which runs in userspace inside
 `crates/system_initializer`. So every claim about a named slot's *endowed* direction is proven only
 by `script/swish-check`, which boots the real init twice and is one gate rather than the suite.
 
@@ -64,7 +64,7 @@ caught it.
 
 `Spawn` grows a `placed: &'a [(u64, crate::cap::Cap)]` beside `grants`, and `run` inserts each one
 at the slot named after the positional grants are laid down, which is exactly what
-`supervision_protocol::build_child` already does for the userspace path. The two loops should read the
+`supervision_contract::build_child` already does for the userspace path. The two loops should read the
 same, because they are the same operation on the same table.
 
 The only real work is the 91 existing `Spawn { .. }` literals. Two options and neither is
@@ -103,6 +103,6 @@ say the capability carried exactly `WRITE` and not `READ`. Milestone 126 found a
 would have caught it. It already costs the tree twice, in `date`'s declared second stream and in
 milestone 111's entropy endowment, and a fourth named slot inherits the gap for free. The shape is a
 `placed` field beside `grants` and a loop that reads the same as
-`supervision_protocol::build_child`'s, since it is the same operation on the same table. The only
+`supervision_contract::build_child`'s, since it is the same operation on the same table. The only
 real work is giving `Spawn` a `new()` so the 91 existing literals can end in `..Spawn::new()` and
 the next field after this one is free.

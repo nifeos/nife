@@ -138,7 +138,7 @@ pub mod supervisor {
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
     pub const SURFACE: u64 = 7;
-    /// Where the `line_editor` image is copied into the supervisor. Below `supervision_protocol`'s
+    /// Where the `line_editor` image is copied into the supervisor. Below `supervision_contract`'s
     /// scratch window, which starts at `0x1000_0000` and grows upward.
     pub const ELF_VA: u64 = 0x0800_0000;
     /// Where a `display_terminal` image is copied into the supervisor, when the spawner hands

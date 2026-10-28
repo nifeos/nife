@@ -43,8 +43,8 @@ Each line gives the name, its reach and the checks it fails, in the order to wor
 2. `crosses into N`: N other packages read it. Rename by family, so a type and the names that follow
    it move together.
 3. Crates, programs, scripts and documents: a newcomer meets these first. Rename by family.
-4. `wire or format`: defined in `abi`, a `*_contract` crate, `network_time_protocol`,
-   `supervision_protocol` or a format §307 (how long a name may be) lists. Another program parses
+4. `wire or format`: defined in `abi`, a `*_contract` crate, `network_time_protocol`
+   or a format §307 (how long a name may be) lists. Another program parses
    these, so list them for calef and never rename them in a lane.
 
 A hit that is a foreign identifier (DesignWare's `PA` for a PHY address, Intel's `IA32_*`) keeps its

@@ -1020,7 +1020,7 @@ mod nth_retype_tests;
 /// **A userspace builder keeps building past its scratch window** (milestone 604 (provisional),
 /// the builder's scratch cursor is bounded).
 ///
-/// `supervision_protocol`'s loader wraps its scratch cursor and probes for pages the kernel took
+/// `supervision_contract`'s loader wraps its scratch cursor and probes for pages the kernel took
 /// back when a child's region was destroyed; this builds 40 `ripgrep`-sized children through it on
 /// a table budget a climbing cursor runs out of at the thirty-seventh (measured with the wrap taken
 /// out). Its own header has the arithmetic; a module of its own for `tests.rs`' merge-hotspot

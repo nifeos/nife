@@ -120,7 +120,7 @@ covers it with room.
 
 ## The spawn site's own choices
 
-- The stack size is stated, not inherited, as `supervision_protocol`'s `CHILD_STACK_PAGES` rule
+- The stack size is stated, not inherited, as `supervision_contract`'s `CHILD_STACK_PAGES` rule
   asks. The timetable's working set is the plan: a `grant_plan::Endowment` is a kilobyte, and a
   `timetable::Registry` holds one per entry. Too small a stack dies with a data abort whose faulting
   address is the stack pointer. That is what a stack overflow looks like from the kernel, and it

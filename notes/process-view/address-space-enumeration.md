@@ -28,7 +28,7 @@ page.
 
 §114 (`pmap` gets its listing) required this audit. Every site that mints an
 `Object::AddressSpace` capability was found and checked:
-`components/src/builder.rs`, `crates/supervision_protocol::build_child_space`,
+`components/src/builder.rs`, `crates/supervision_contract::build_child_space`,
 `fixtures/src/hello.rs`'s `aspace_builder`, `fixtures/src/os_primitives_benchmarker.rs`'s
 `spawn_one`, and `kernel/src/bench.rs`'s `map_el0` harness. Every one retypes and maps. Every one
 except `hello.rs`'s deliberately-unconfigured demo consumes the capability at `ThreadControlBlock::CONFIGURE`, all

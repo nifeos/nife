@@ -12,7 +12,7 @@ tree by [elf-probe.sh](elf-probe.sh), and its mode names the section it feeds.
 ## What a candidate has to do here
 
 Ten packages depend on `crates/elf`. Most callers have no allocator: `kernel`, `measured_boot`,
-`supervision_protocol`, `system_initializer`, `uefi_loader`, `fixtures`, `system_tests`, and the
+`supervision_contract`, `system_initializer`, `uefi_loader`, `fixtures`, `system_tests`, and the
 five programs in `components` that spawn. The shell has a heap, and `jig` and `fuzz` are std. The
 kernel has no global allocator at all, so a reader that needs `alloc` cannot serve the main user.
 

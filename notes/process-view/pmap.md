@@ -40,7 +40,7 @@ is not only "keep it listable". It must also say, per method, what a bound space
 
 ### The retention premise holds, and the spawner is not the shell
 
-`crates/supervision_protocol`'s `Retention` has two variants: `Nothing` and `ThreadControlBlock {
+`crates/supervision_contract`'s `Retention` has two variants: `Nothing` and `ThreadControlBlock {
 reason }`. There is no variant for an address space.
 
 The spawner of a prompt job is the progenitor (`crates/system_initializer`), not `swish`. The shell

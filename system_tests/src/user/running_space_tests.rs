@@ -579,7 +579,7 @@ fn next_report(report: sched::RendezvousId) -> Option<[u64; 5]> {
 /// could not give it up writes it (milestone 95's negative control, the shape milestone 22 (trusted
 /// init) used).
 ///
-/// Both runs build one child with `supervision_protocol::build_child`, the progenitor's code, then
+/// Both runs build one child with `supervision_contract::build_child`, the progenitor's code, then
 /// write to the scratch page the child's code was filled through. Holding its own space (as the
 /// progenitor does at slot 28) the loader `UNMAP`s that page once it is in the child, and the write
 /// faults at that address; without it the write lands, so the fault is not an unmapped address.

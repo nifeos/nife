@@ -61,7 +61,7 @@ Of those 32 crates, 20 have no target under `fuzz/`:
   `extensible_host_controller_interface`, `e1000e`, `designware_ethernet`,
   `designware_mobile_storage`, `non_volatile_memory_express`, `virtio`.
 - Peer-process contracts: `graphics_contract` (reached only through `compositor`'s target),
-  `login_contract`, `credential_contract`, `supervision_protocol`, `hot_swap_contract`.
+  `login_contract`, `credential_contract`, `supervision_contract`, `hot_swap_contract`.
 
 The 12 with a target are `redoxfs_server`, `nifefs`, `globally_unique_identifier_partition_table`,
 `package_archive`, `elf`, `domain_name_system`, `http_response`, `device_tree_blob`,

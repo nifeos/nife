@@ -2,7 +2,7 @@
 
 *(Milestone 19d. `kernel/src/user/entry.rs` `spawn_elf_child_builder`, and the builders and children
 in `fixtures/` it enters, `report_child_builder` and `report_child` first. The loader described here lived in that file until milestone 96 (one init)
-gave the tree one of them; it is `crates/supervision_protocol`'s `build_child` now, and every caller
+gave the tree one of them; it is `crates/supervision_contract`'s `build_child` now, and every caller
 reaches it there. What the loader does is unchanged, and the steps below are still the steps.)*
 
 *This note said, until milestone 266, that the archive entry named `init` meant a different program
@@ -208,7 +208,7 @@ one hand), as milestone 404 (composing a process from two capabilities is proved
 no more). It holds two capabilities, a memory region in slot 0 and a report
 line in slot 1, plus the archive mapped read-only. From those it reads `least_authority_demo` out of
 the archive by name, mints a rendezvous and builds the child through
-`supervision_protocol::build_child_space`. It maps a frame of its own into the child's space and is
+`supervision_contract::build_child_space`. It maps a frame of its own into the child's space and is
 refused the same address twice, then configures and starts the thread and receives its answer.
 `system_tests::user::tests::a_process_composed_from_two_capabilities_runs_in_the_space_it_built`
 asserts every step on all three architectures under `script/test`. That is more than `builder` ever
@@ -234,9 +234,9 @@ carries why `components/src/progenitor.rs` is one program with one `GRANTS` tabl
 because they had no caller in any configuration. Every interactive build now reaches userspace through `boot_via_progenitor`, so the
 kernel has one way in rather than two.
 
-## What `supervision_protocol`'s loader holds to
+## What `supervision_contract`'s loader holds to
 
-`crates/supervision_protocol` is the tree's only userspace ELF loader. These are the choices its
+`crates/supervision_contract` is the tree's only userspace ELF loader. These are the choices its
 doc comments link here.
 
 The scratch window is where a builder maps each frame it fills for a child: 64 MiB, 16,384 pages, at

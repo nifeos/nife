@@ -16,7 +16,7 @@ retype), provisional. *(Title and slug are drafts.)*
 ## Why
 
 Milestone 757 built the fault and swept one `login` exchange. Its first sweep found a slot leak in
-`supervision_protocol::build_child_space` that had been recorded for five weeks with no test able
+`supervision_contract::build_child_space` that had been recorded for five weeks with no test able
 to reach it. Of milestone 745 (count the error paths no test reaches)'s 75 cleanup paths, the sweep reached `login`'s; 27 are in
 `system_initializer` and 10 in `swish`, and `login` has two exchanges the sweep does not run.
 

@@ -757,27 +757,27 @@ fn replace_if_asked(
 /// kept: since §32 (a supervisor may collect a corpse without being able to build one) the region
 /// capability is not the reap. See `notes/scheduled-execution/the-program.md`.
 fn fire(elf: &elf::Elf, arg: u64, report: bool, clock: bool) -> bool {
-    let Ok(region) = supervision_protocol::memory_region_split(BUDGET, INSTANCE_PAGES) else {
+    let Ok(region) = supervision_contract::memory_region_split(BUDGET, INSTANCE_PAGES) else {
         return false;
     };
     let mut placed = [(0, 0, 0); 3];
-    let Ok(child) = supervision_protocol::build_child(
+    let Ok(child) = supervision_contract::build_child(
         BUDGET,
         region,
         elf,
-        &supervision_protocol::ChildEndowment {
+        &supervision_contract::ChildEndowment {
             placed: slots(&mut placed, report, clock, None),
             maps: clock_map(clock),
             fault: Some(DEATHS),
-            ..supervision_protocol::ChildEndowment::new(supervision_protocol::Retention::Nothing)
+            ..supervision_contract::ChildEndowment::new(supervision_contract::Retention::Nothing)
         },
     ) else {
         // The child does not exist, so the pages go straight back to the budget.
-        supervision_protocol::memory_region_destroy(region);
+        supervision_contract::memory_region_destroy(region);
         return false;
     };
-    if !supervision_protocol::start_child(child, 0, arg, 0) {
-        supervision_protocol::memory_region_destroy(region);
+    if !supervision_contract::start_child(child, 0, arg, 0) {
+        supervision_contract::memory_region_destroy(region);
         return false;
     }
     capability_delete(region);
@@ -801,20 +801,20 @@ fn fire_with_grant(
     report: bool,
     clock: bool,
 ) -> Option<u64> {
-    let Ok(region) = supervision_protocol::memory_region_split(BUDGET, INSTANCE_PAGES + mem_pages)
+    let Ok(region) = supervision_contract::memory_region_split(BUDGET, INSTANCE_PAGES + mem_pages)
     else {
         return None;
     };
-    let Ok(mem_slot) = supervision_protocol::memory_region_split(region, mem_pages) else {
-        supervision_protocol::memory_region_destroy(region);
+    let Ok(mem_slot) = supervision_contract::memory_region_split(region, mem_pages) else {
+        supervision_contract::memory_region_destroy(region);
         return None;
     };
     let mut placed = [(0, 0, 0); 3];
-    let Ok(child) = supervision_protocol::build_child(
+    let Ok(child) = supervision_contract::build_child(
         BUDGET,
         region,
         elf,
-        &supervision_protocol::ChildEndowment {
+        &supervision_contract::ChildEndowment {
             // Slot 0: the report endpoint, when this timetable hands one out. Slot 1: the clock,
             // when the job gets one. Then the grant, narrowed to WRITE so the child may spend it
             // and not lend it (the same narrowing `system_initializer` gives a shell's `--mem`
@@ -822,17 +822,17 @@ fn fire_with_grant(
             placed: slots(&mut placed, report, clock, Some(mem_slot)),
             maps: clock_map(clock),
             fault: Some(DEATHS),
-            ..supervision_protocol::ChildEndowment::new(supervision_protocol::Retention::Nothing)
+            ..supervision_contract::ChildEndowment::new(supervision_contract::Retention::Nothing)
         },
     ) else {
         // `memory_region_destroy(region)` is owner authority over the whole region, not the supervised
         // reap `collect_grant` uses later: it reclaims `mem_slot` along with everything else here,
         // because nothing has been handed to a child yet for anyone else to still be holding.
-        supervision_protocol::memory_region_destroy(region);
+        supervision_contract::memory_region_destroy(region);
         return None;
     };
-    if !supervision_protocol::start_child(child, 0, arg, 0) {
-        supervision_protocol::memory_region_destroy(region);
+    if !supervision_contract::start_child(child, 0, arg, 0) {
+        supervision_contract::memory_region_destroy(region);
         return None;
     }
     capability_delete(region);
@@ -914,7 +914,7 @@ fn collect_grant(exits: &mut u64, faults: &mut u64, mem_slot: u64) {
     // a region with one), so it has to go before `reap` can succeed at all; nothing here needs to
     // try `reap` first and fail to learn that, because this call is only ever made about the one
     // instance that was built with a nested grant.
-    supervision_protocol::memory_region_destroy(mem_slot);
+    supervision_contract::memory_region_destroy(mem_slot);
     for _ in 0..REAP_ATTEMPTS {
         if reap(DEATHS, tid) == 0 {
             return;

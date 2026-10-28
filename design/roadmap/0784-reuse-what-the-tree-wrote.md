@@ -63,7 +63,7 @@ Kani-proved and outside the kernel, keep unless a proof is no longer worth havin
 
 The ABI, a capability, or one of the 19 `*_protocol` crates (rule 3). The crates: every `*_protocol` crate,
 `abi`, `grant_plan` (6,405), `swish` (3,404 plus the 3,690-line program), `system_initializer`
-(2,972), `supervision_protocol`, `hot_swap_contract`. Also `user_mode_runtime`, `system_log` (1,214), the
+(2,972), `supervision_contract`, `hot_swap_contract`. Also `user_mode_runtime`, `system_log` (1,214), the
 `process-tools` programs (`ps`, `pgrep`, `pmap`, `top`, `free`, `vmstat`, `slabtop`, `uptime`, about 1,700
 together, all reading nife's own statistics ABI), `login`, `credentialer` (already takes `argon2`).
 

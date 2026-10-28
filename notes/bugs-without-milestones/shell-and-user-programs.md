@@ -10,7 +10,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  components/src/system_log.rs | stack depth measured only on QEMU test paths; crowded-writer path runs host-only | system_log: stack high-water on all paths | S  |
 |  components/src/system_log.rs | at boot serves the kernel only: no unbadged intake, no writer badges, no reader windows, nothing at the prompt reads it (0613 BUILT, 0687 is persistence only) | system_log: writer badges, reader windows, a reader command | M  |
 |  components/src/timetable.rs | a hung child stops the whole timetable once the budget runs out; nothing kills a livelocked child | timetable: kill a livelocked child | M  |
-|  crates/supervision_protocol/src/lib.rs (last bullet) | The progenitor's scratch-window use is computed, not measured. | Measure the progenitor's scratch window use at runtime | S  |
+|  crates/supervision_contract/src/lib.rs (last bullet) | The progenitor's scratch-window use is computed, not measured. | Measure the progenitor's scratch window use at runtime | S  |
 |  crates/swish/src/bare.rs (bullets 1 and 3) | A bare installed program name is refused in a pipeline; the both-names refusal is proved on the host only and no gate boots a base that adds a colliding name. | Bare installed names in pipelines, and a boot gate for the both-names refusal | M  |
 |  crates/swish/src/complete.rs (space bullet) | A completed name containing a space is inserted unquoted, so the parser splits it. | Quote a completion that contains a space | S  |
 |  crates/swish/src/sequence.rs (first bullet) | No grouping (`{ }` or `( )`), so `time a && b` times only `a` and a chain cannot be timed whole. | Command grouping in swish | M  |

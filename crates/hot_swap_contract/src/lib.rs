@@ -1098,7 +1098,8 @@ pub const PLANT_MARKER: u64 = 0x5317_0a11;
 /// Trap. A half-built system is not worth limping along, and a fault is legible: the kernel prints
 /// the pc and the process dies where the mistake was.
 ///
-/// Delegates to [`user_mode_runtime::trap`] since milestone 130, for the reason `supervision_protocol::fail`
+/// Delegates to [`user_mode_runtime::trap`] since milestone 130 (the copy that outlived its
+/// reason: one trap instruction, forty-eight sites), for the reason `supervision_contract::fail`
 /// records: the name earns its keep, the duplicated asm did not.
 pub fn fail() -> ! {
     user_mode_runtime::trap()
