@@ -1,0 +1,15 @@
+# seeker at 0.1.0, as a riscv64 package: the program the approval file's entry allows, whose note
+# asks for the network and the zone `nife.test` (milestone 911 (scripted installs grant only what
+# the owner's approval file allows)). `script/swish-check` installs it under the approval and runs
+# it. The digest line is absent for the reason `uptime.recipe` gives. Name: provisional 2026-10-28 (UTC).
+
+name = "seeker"
+version = "0.1.0"
+architecture = "riscv64"
+
+[[member]]
+program = "seeker"
+
+[[member]]
+name = "seeker.license"
+file = "LICENSE-MIT"

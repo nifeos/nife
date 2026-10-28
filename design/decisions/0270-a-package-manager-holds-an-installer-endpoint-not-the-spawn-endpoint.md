@@ -107,6 +107,47 @@ bytes run by path as unvouched installed bytes, holds no installer endpoint, and
 anything reaches the progenitor. `activation_set`'s `a_manager_may_not_undo_another_managers_rows`
 and `spawnproto`'s `an_installer_badge_carries_its_job_and_is_no_other_senders` are the host tests.
 
+## Amendment, 2026-10-28 (UTC): Approve and Revoke, and the delegated badge
+
+Milestone 911 (scripted installs grant only what the owner's approval file allows) added the two
+methods this section's endpoint serves, and the delegation. What is in force now:
+
+- **The endpoint serves `Approve` and `Revoke`**, beside install, remove and rollback.
+  `Approve` (activation verb 6) carries the compiled approval records as frames; their header
+  binds them to the approval file's digest. The progenitor stores them at
+  `activation/approvals/<name>`, beside the installed-programs table's generations, never as rows
+  in them, per the ruling of 2026-10-12 on #2031 (a). `Revoke` (7) carries the name packed as a
+  removal's is, and deletes that file. Neither writes a generation. Both are the owner's verbs:
+  `jig approve <file>` and `jig revoke <name>` send them on the console's own installer endpoint.
+- **A delegated badge is the same endpoint object badged for one job and one approval**, never a
+  second one; the section's refusal of a second endpoint object stands. The badge word carries the
+  approval's id above bit 32 and the job's label below (`spawnproto::DELEGATED_APPROVAL_SHIFT`).
+  §230 writes it, and `BADGE` needs `GRANT`, which a holder lacks, so no holder can forge or widen
+  it. The console places it for a spawn whose line says `--within <name>`. The id is the
+  progenitor's key for the store's file, which it reads per request: the file is the authority, so
+  a revoke's deletion and a re-approve's replacement both reach the next request, with no restart
+  and no new endpoint.
+- **The check is in the installer, not in the holder.** The progenitor checks every `Install`,
+  `Remove` and `Rollback` under a delegated badge against that approval's stored records before it
+  writes anything. The asks must lie within the package's entry. A removal asks the entry's
+  `remove` answer, a reinstall the `update` answer, and a rollback asks every restored row to lie
+  within it, grants and all (the ruling of 2026-10-12 on #2031, the rollback's half). A refusal
+  (`NotApproved`) names the package in a follower message, as `NameTaken` names the holder. The
+  progenitor answers a badge whose approval is gone with `Revoked`, acting on nothing. A delegated
+  badge may send neither `Approve` nor `Revoke`, so it can neither widen its own approval nor mint
+  another. `Vouch` stays refused, as the section above rules.
+- **One-run and standing.** The one-run form is the console's `--within <name>` on a job, which
+  ends at the job's reap, as the endpoint's filing does (§270 above). The standing form is a
+  service manifest's ask, whose declaration milestone 910 (a package declares a service) owns.
+  Until 910 builds the declaration, `jig` holds the endpoint alone, and the gate proves the
+  delegation with `jig` as the holder.
+- No new syscall and no new kernel method: a badge on the same endpoint, two activation verbs on
+  the same wire, and a file beside the generations are all §230, §208 and §16 as built.
+
+The rulings behind this amendment are the block's (recorded on #2030 and #2031, 2026-10-12 UTC).
+The milestone's building lane edited this section with that provenance; the section number stays
+provisional until the merge queue lands it.
+
 ## BUGS
 
 - "A `login` session cannot grant it" is proved by construction, not by a gate. Sessions hold no

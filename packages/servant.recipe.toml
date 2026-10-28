@@ -1,0 +1,16 @@
+# servant, as a aarch64 package: the program whose note asks to run as a service (milestone 911
+# (scripted installs grant only what the owner's approval file allows)). `script/swish-check`
+# installs it so the confirmation lists the ask and the record carries it; nothing starts it, which
+# is milestone 910 (a package declares a service)'s. The digest line is absent for the reason
+# `uptime.recipe` gives. Name: provisional 2026-10-28 (UTC).
+
+name = "servant"
+version = "0.1.0"
+architecture = "aarch64"
+
+[[member]]
+program = "servant"
+
+[[member]]
+name = "servant.license"
+file = "LICENSE-MIT"

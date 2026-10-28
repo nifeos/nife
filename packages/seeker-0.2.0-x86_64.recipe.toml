@@ -1,0 +1,20 @@
+# seeker at 0.2.0, as a x86_64 package: the second version, whose note asks one zone more than
+# 0.1.0's (`example.net` beside `nife.test`), so the approval file's entry does not cover it and the
+# subset test refuses it, naming the extra zone, while the previous version stays installed and
+# running (milestone 911 (scripted installs grant only what the owner's approval file allows)).
+# Rows key on the digest (milestone 614 (two installed versions of one program, each runnable, and a caller
+# granted the one it needs)'s ruling 2), so the member is `seeker_v2`'s bytes under
+# the name `seeker` by the `as` key. The digest line is absent for the reason `uptime.recipe`
+# gives. Name: provisional 2026-10-28 (UTC).
+
+name = "seeker"
+version = "0.2.0"
+architecture = "x86_64"
+
+[[member]]
+program = "seeker_v2"
+as = "seeker"
+
+[[member]]
+name = "seeker.license"
+file = "LICENSE-MIT"

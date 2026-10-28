@@ -909,7 +909,7 @@ fn store_approval(
     let Ok(document) = installed_programs::approval::Document::parse(text) else {
         return Answer::from((S::NotExecutable, live));
     };
-    let act2 = files.directory(act as u64, installed_programs::approval::STORE);
+    let act2 = files.directory(act, installed_programs::approval::STORE);
     if act2 < 0 {
         return Answer::from((S::StoreFailed, live));
     }
@@ -951,7 +951,7 @@ fn drop_approval(cx: &EditContext, named: &[u8]) -> Answer {
     };
     let act2 = files.named(
         fs_operation::OPENDIR,
-        act as u64,
+        act,
         installed_programs::approval::STORE,
         dir::ENUMERATE | dir::READ | dir::DESCEND,
     );
