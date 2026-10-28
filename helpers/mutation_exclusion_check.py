@@ -11,9 +11,10 @@ come back counted as new survivors with no signal anywhere.
     python3 helpers/mutation_exclusion_check.py check       # the real tree; script/lint
     python3 helpers/mutation_exclusion_check.py --selftest  # fixtures, no git, no cargo; script/lint
 
-Exit 0: every entry passes. Exit 1: the failures, listed. Exit 2: bad input (the config does not
-parse as TOML, or this module's own read of the array disagrees with tomllib's, which is this
-module's bug and must not silently check the wrong entries).
+Exit 0: every entry passes. Exit 1: the failures, listed; the bad-input paths (the config does
+not parse as TOML, or this module's own read of the array disagrees with tomllib's, which is this
+module's bug and must not silently check the wrong entries) exit 1 the same way, each with its
+reason on standard error.
 
 THE GRAMMAR, read from the tool rather than guessed at. cargo-mutants 27.1.0 (the pin in
 .cargo-mutants-version) matches each `exclude_re` against the mutant's whole name,
@@ -46,7 +47,8 @@ WHAT IS CHECKED.
   part 4), the named const exists beside the code the entry excludes. An annotation
   `(registers.rs)` names the file for every name before it that no
   annotation has claimed yet, which is how the reasons write a list of names sharing one file; a
-  name with no annotation lives in the entry's own file. A name that resolves nowhere fails lint.
+  name with no annotation lives in the entry's own file, and a module-path entry names no file,
+  so its reason must annotate. A name that resolves nowhere fails lint.
 
 COST. The config read, the entry files (about a dozen small files), and one walk of the tracked
 `.rs` tree for `mod` declarations. No cargo, no tree build, a fraction of a second.
@@ -57,7 +59,11 @@ BUGS
   population: a function that exists but compiles into no test build passes here. The weekly
   census and the diff gate (helpers/mutation_diff_gate.py) see the real population.
 - `fn`, type and `const` names are searched in the file's raw text, comments included, so a
-  comment that keeps a name can keep a stale entry green.
+  comment that keeps a name can keep a stale entry green. The window is the whole file, with no
+  module or cfg awareness: a `fn` of the entry's name inside a nested or `#[cfg]`-gated inline
+  module keeps the entry green here, although cargo-mutants names that mutant with the module in
+  its path (`proofs::compose`), so the entry can match nothing while passing. A scope-aware
+  check is deliberately not built; the census sees the real population.
 - Only a function path's last two segments are checked, and the type only on the two-segment
   `Type::fn` form. Enclosing module segments are not resolved against the tree's module tree.
 - A reason that names a const with no annotation while the const lives in another file fails, on
@@ -166,7 +172,7 @@ def read_entries(raw):
             sys.exit("mutation exclusions: tomllib reads an exclude_re array that this module's"
                      " textual read cannot find")
         return []
-    entries, at = [], 0
+    entries, at = [], block.start(1)
     try:
         strings = array_strings(block.group(1))
     except ValueError as err:
@@ -211,9 +217,15 @@ class Tree:
     def __init__(self, root, files):
         self.root = pathlib.Path(root)
         self.files = list(files)
+        self._tracked = set(self.files)
         self._texts = {}
 
     def text(self, rel):
+        # Resolve against the tracked list, never the filesystem alone: on a case-insensitive
+        # checkout an entry whose name differs in case from every tracked path would find a file
+        # here and pass, then break a case-sensitive CI.
+        if rel not in self._tracked:
+            return None
         if rel not in self._texts:
             path = self.root / rel
             self._texts[rel] = path.read_text(errors="replace") if path.is_file() else None
@@ -259,6 +271,11 @@ def assertion_failures(reason, scope_rel, tree, where):
                     f"{where}: the reason names const {name} in {annotated}, and no file of that"
                     f" name declares it; the named assertion is gone")
         else:
+            if scope_rel is None:
+                failures.append(
+                    f"{where}: the reason names const {name} with no file annotation, and a"
+                    f" module-path entry names no file to look beside")
+                continue
             source = tree.text(scope_rel)
             if source is None or not const_declaration(name).search(source):
                 failures.append(
@@ -310,11 +327,15 @@ def check_entry(entry, tree):
     if scoped is not None:
         return check_scoped(scoped, text, reason, line, tree)
     if MODULE_PATH.fullmatch(text) is not None:
+        failures = []
         mod = text.split("::")[0]
         if tree.declares(mod_declaration(mod)) is None:
-            return [f"{where}: no mod {mod} anywhere in the tree; the module-path entry matches"
-                    " nothing"]
-        return []
+            failures.append(f"{where}: no mod {mod} anywhere in the tree; the module-path entry"
+                            " matches nothing")
+        # The named-assertion rule runs here too, with no file scope: a reason that names a const
+        # must annotate where it lives, since the entry names no file of its own.
+        failures += assertion_failures(reason, None, tree, where)
+        return failures
     return [f"{where}: the entry matches no shape this check reads (an anchored"
             f" ^<file>:\\d+:\\d+: replace ...$ scope, or a `module::` path): {text}"]
 
@@ -405,6 +426,13 @@ def selftest():
                          {"crates/x/src/registers.rs": BITS})
     assert len(failures) == 1 and "crates/x/src/lib.rs is not in the tree" in failures[0], failures
 
+    # The tracked list decides what exists, not the filesystem probe: on a case-insensitive
+    # checkout an entry whose name differs in case from every tracked path fails, where probing
+    # the filesystem would find the file and pass locally, then break case-sensitive CI.
+    failures = tree_with(config(("case", scoped("crates/x/src/Lib\\.rs", "\\| with \\^",
+                                                "Thing::compose"))), files)
+    assert len(failures) == 1 and "Lib.rs is not in the tree" in failures[0], failures
+
     # The type half of the path is gone, with the fn still there.
     failures = tree_with(config((good_reason, good_fn)),
                          {"crates/x/src/lib.rs": "pub fn compose(a: u32) -> u32 { a }\n",
@@ -431,6 +459,16 @@ def selftest():
     # A module-path entry whose module is nowhere.
     failures = tree_with(config(("matched as a module path", "interleavings::")), files)
     assert len(failures) == 1 and "no mod interleavings" in failures[0], failures
+
+    # The named-assertion rule reaches module-path entries too: the annotation resolves like any
+    # other, and no annotation has no entry file to look beside.
+    ok = tree_with(config(("per THE_KANI_SHARE_NO_BIT (kani.rs)", "proofs::")),
+                   {"crates/x/src/other.rs": "mod proofs {}\n",
+                    "crates/x/src/kani.rs": "pub const THE_KANI_SHARE_NO_BIT: () = ();\n"})
+    assert ok == [], ok
+    failures = tree_with(config(("per THE_KANI_SHARE_NO_BIT", "proofs::")),
+                         {"crates/x/src/other.rs": "mod proofs {}\n"})
+    assert len(failures) == 1 and "module-path entry names no file" in failures[0], failures
 
     # The named assertion: present in the annotated file, gone from it, and annotated for a file
     # that does not exist.
