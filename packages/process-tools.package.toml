@@ -8,7 +8,10 @@
 # Name: ratified 2026-10-06 (calef, relayed to lane/disk-tools-rename). He answered
 # "process-tools". Refused `procps` (the GNU/Linux term of art, given up on purpose so package
 # names follow one rule, spelled out, with `core-tools` and `disk-tools`). The programs and crates
-# inside keep their names: `ps`, `pgrep`, `top`, `free` and the rest.
+# inside keep their names: `ps`, `pgrep`, `top`, `free` and the rest. Ratified 2026-10-28 as the
+# repository's name too (calef, relayed by the maintainer on the naming review, pull request
+# #2870): `nifeos/process-tools`, one repository per package (§316 (one repository per package
+# leaves the tree)). The `home` line stays provisional until the repository exists (§316).
 
 name = "process-tools"
 kind = "base"
