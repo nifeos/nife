@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-27
 promoted_from: the-kernel-and-its-programs-are-mutated-under-qemu
 milestone_dependencies: 517, 742, 924
@@ -10,7 +10,7 @@ needs_person: no
 ---
 # 955. Mutation testing reaches the kernel and its programs under QEMU, a diff and a slice at a time
 
-Promoted 2026-10-28 (UTC); the number 955 is provisional until the integrator confirms it at merge. *(Title and slug are drafts.)*
+*(Title and slug are drafts.)*
 
 Raised 2026-10-27 (UTC) by `lane/mutation-gaps-plan`, the second of the three mutation-testing
 gaps calef ruled closed that day. Nothing mutates the kernel or the user-mode programs. Kani proofs
@@ -40,8 +40,9 @@ the corpus", and this is what retires that summary.
 The host census covers 20,974, so the unmutated half of the tree is about as large as the mutated
 half. In the kernel, `arch/` holds 3,879 (x86_64 2,066, riscv64 988, aarch64 825). The kernel side
 of the programs' wiring in `user/` holds 1,476. The confinement core holds about 1,800: `sched/`,
-`syscall/`, `revoke`, `cap`, `memory_region` and their neighbors. Tests, benches and self-tests
-hold about 965, and those leave the count by exclusion.
+`syscall/`, `revoke`, `cap`, `memory_region` and their neighbors. Tests, benches and self-tests are
+the kernel section of `.cargo/mutants.toml`: 1,281 mutants excluded, which leaves the kernel's
+corpus at 9,157 of the 10,438 listed on 2026-10-28 (UTC).
 
 ## What one mutant costs
 
@@ -207,6 +208,23 @@ is therefore a ceiling, and the census record shows what each week actually got.
 Reuse: cargo-mutants generates every mutant (`--list --diff`), `script/falsifications` runs each
 one under QEMU, and `helpers/mutation_diff_gate.py` and the triage ledger judge the result. The
 one piece written new is the workflow that feeds the first into the second.
+
+## Follow-on
+
+- **Done.** Part 1, the driver and the measurement: `script/falsifications --mutants` and
+  `.github/workflows/kernel-mutants-cost.yml`; the numbers sit under Cost above.
+- **Done.** Part 2, the kernel's exclusions: the kernel section of `.cargo/mutants.toml`, PR
+  #2846, 1,281 mutants measured out on 2026-10-28 (UTC).
+- **Outstanding.** Part 3, the diff-scoped check: advisory, sharded so each job stays under 20
+  minutes, on every kernel and `components` pull request. Not started, checked on this branch:
+  `.github/workflows/` holds no workflow for it (`kernel-mutants-cost.yml` is the cost
+  measurement only), and `script/falsifications --mutants` still lists with `--no-config`.
+- **Outstanding.** Part 4, the rolling census: one workflow, the slice list under How the work
+  splits, two jobs a night in the window above. Not started, checked the same way: no census
+  workflow or slice list exists in `.github/workflows/`.
+- **Outstanding.** Part 5, triage, one lane per slice as each lands, under the companion
+  proposals' rules for accepted and hanging survivors. Not started, checked by searching the
+  triage record and `.cargo/mutants-baseline.txt`, which name no kernel row.
 
 ## Names
 
