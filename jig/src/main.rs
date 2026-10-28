@@ -18,7 +18,20 @@
 //! jig install <name>[@<ver>]   fetch a package by name and install it
 //! jig remove <package>         a new generation without the package's programs
 //! jig rollback                 the generation below the live one becomes live
+//! jig approve <file>           store the approval file's compiled records, on the owner's yes
+//! jig revoke <name>            drop the named approval
 //! ```
+
+//! The flags an install, removal or rollback takes, after the operand: `--approved <file>`
+//! replaces the owner's prompt with the check that the package's asks are within the file's
+//! entry, and fails closed naming every extra grant; `--within <name>` sends the request on the
+//! delegated endpoint the spawn placed, whose check is the progenitor's; `--json` prints one
+//! machine-readable object. `jig approve` prints every grant the file contains and asks once;
+//! `jig revoke <name>` drops the stored approval.
+
+//! # EXIT STATUS
+//! Documented and stable: `0` the verb succeeded; `1` it was refused or failed, and said why;
+//! `2` the line was not a spelling of the verbs above.
 
 //! Name: ratified 2026-10-06 (calef). See `grant_plan::Program::Jig`.
 
@@ -62,8 +75,8 @@ const STAGING_VA: u64 = address_space_map::pair_page(0x0400_0000);
 /// This machine's architecture, as a package stem spells it.
 const ARCHITECTURE: &str = std::env::consts::ARCH;
 
-const USAGE: &str = "  jig update | jig list [-u] | jig install <file or name> | jig remove <package> | \
-                     jig rollback";
+const USAGE: &str = "  jig update | jig list [-u] | jig install <file or name> [--approved <file>] \
+                     | jig remove <package> | jig rollback | jig approve <file> | jig revoke <name>";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -77,15 +90,96 @@ fn main() -> ExitCode {
         ["list", "--upgradable" | "--upgradeable"] => {
             refuse("jig spells that list -u; it takes no long form")
         }
-        ["install", path] if path.contains('/') => install_file(path),
-        ["install", name] => install_name(name),
-        ["remove", package] => remove(package),
-        ["rollback"] => rollback(),
+        ["install", rest @ ..] => install(rest),
+        ["remove", rest @ ..] => remove(rest),
+        ["rollback", rest @ ..] => rollback(rest),
+        ["approve", rest @ ..] => approve(rest),
+        ["revoke", rest @ ..] => revoke(rest),
         _ => {
             println!("{USAGE}");
             ExitCode::from(2)
         }
     }
+}
+
+/// **The flags an install, removal, rollback, approve or revoke takes** (milestone 911 (scripted
+/// installs grant only what the owner's approval file allows)): `--approved <file>` and
+/// `--within <name>` before or after the operand, `--json` anywhere. A word this reader does not
+/// know is a usage exit, not a silence.
+struct Flags<'a> {
+    /// The approval file the answer is held to, as the line named it.
+    approved: Option<&'a str>,
+    /// The approval the spawn delegated this job to, whose check is the progenitor's.
+    within: Option<&'a str>,
+    /// The machine-readable form.
+    json: bool,
+    /// The verb's one operand: a package, a package file, an approval file or a name.
+    operand: Option<&'a str>,
+}
+
+/// [`Flags`] from the words after the verb, or `None` for a line that is not one spelling.
+fn parse_flags<'a>(words: &'a [&'a str]) -> Option<Flags<'a>> {
+    let mut flags = Flags {
+        approved: None,
+        within: None,
+        json: false,
+        operand: None,
+    };
+    let mut words = words.iter();
+    while let Some(word) = words.next() {
+        match *word {
+            "--approved" => flags.approved = Some(words.next()?),
+            "--within" => flags.within = Some(words.next()?),
+            "--json" => flags.json = true,
+            w if w.starts_with('-') => return None,
+            w => {
+                if flags.operand.is_some() {
+                    return None;
+                }
+                flags.operand = Some(w);
+            }
+        }
+    }
+    Some(flags)
+}
+
+/// The console's three trailer messages, the answered-by every non-delegated request sends
+/// (milestone 911): the kind word and two empty ones.
+const CONSOLE_TRAILER: [(u64, u64, u64); 3] =
+    [(spawnproto::ANSWERED_CONSOLE, 0, 0), (0, 0, 0), (0, 0, 0)];
+
+/// **One JSON string**, escaped: the quotes, the backslash and the controls a name could carry.
+fn json_string(text: &str) -> String {
+    let mut out = String::from("\"");
+    for c in text.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// **The machine-readable refusal**, one object: what was refused and, for the subset test's
+/// failure, every extra grant as data (milestone 911, item 7).
+fn json_refused(extra: &[String], why: &str) {
+    let each: Vec<String> = extra.iter().map(|e| json_string(e)).collect();
+    println!(
+        "  {{\"result\":\"refused\",\"why\":{},\"extra\":[{}]}}",
+        json_string(why),
+        each.join(",")
+    );
+}
+
+/// **The machine-readable result**, one object: the verb and the generation live afterwards.
+fn json_result(what: &str, generation: u64) {
+    println!(
+        "  {{\"result\":{},\"generation\":{generation}}}",
+        json_string(what)
+    );
 }
 
 /// **The image's catalog**, as this program was handed it: the text before the page's first zero
@@ -297,8 +391,16 @@ struct Reply {
 }
 
 /// **Send one activation request on the installer endpoint and read its answer**: the frames
-/// of `staged` for an install, the packed name for a removal, nothing for a rollback.
-fn ask(verb: Activation, staged: Option<&Staged>, name: Option<&str>) -> Reply {
+/// of `staged` for an install, the packed name for a removal, nothing for a rollback, and then
+/// `trailer`, the answered-by messages an install and a removal always send (milestone 911:
+/// how the answer was given, which the progenitor writes beside the record). An `Approve`'s
+/// records are their own trailer; it sends none of these.
+fn ask(
+    verb: Activation,
+    staged: Option<&Staged>,
+    name: Option<&str>,
+    trailer: &[(u64, u64, u64)],
+) -> Reply {
     let len = staged.map_or(0, |s| s.len);
     let (w0, w1, w2) = spawnproto::activation_request(verb, len);
     rt::send(INSTALLER_SLOT, w0, w1, w2);
@@ -323,6 +425,9 @@ fn ask(verb: Activation, staged: Option<&Staged>, name: Option<&str>) -> Reply {
         let (lo, hi) = filesystem_contract::grant::pack_name(name.as_bytes()).unwrap_or((0, 0));
         rt::send(INSTALLER_SLOT, lo, hi, name.len() as u64);
     }
+    for (a, b, c) in trailer {
+        rt::send(INSTALLER_SLOT, *a, *b, *c);
+    }
     let (r0, r1, r2) = rt::receive(INSTALLER_REPLY_SLOT);
     let status = S::from_word(r0);
     let mut holder = String::new();
@@ -344,22 +449,32 @@ fn ask(verb: Activation, staged: Option<&Staged>, name: Option<&str>) -> Reply {
     }
 }
 
-/// **What each program in a package asks the owner for**, listed before the package is sent
-/// (milestone 892 (a std program at the prompt holds the network and a resolver), "The network at
-/// install, ruled"): the network and each resolver zone its manifest note names, the root zone
-/// flagged apart in capitals, since it is any name at all. A program that asks for neither is not
-/// listed. Bytes this cannot read are left for the progenitor to refuse.
-///
-/// Whether anything was listed, which is whether the owner must be asked ([`owner_says_yes`]).
-fn say_asks(bytes: &[u8]) -> bool {
+/// **What one program of a package asks the owner for** (milestone 892 (a std program at the
+/// prompt holds the network and a resolver), "The network at install, ruled"; the service ask is
+/// milestone 911 (scripted installs grant only what the owner's approval file allows)'s, note
+/// version 3): the network, each resolver zone its manifest note names, and the service. A
+/// program whose bytes or note cannot be read asks nothing, and the progenitor refuses those
+/// bytes its own way.
+#[derive(Debug)]
+struct Asks {
+    /// The program's name, as the package names the member.
+    name: String,
+    network: bool,
+    service: bool,
+    /// The zones, as the note spells them; the root zone is empty.
+    zones: Vec<String>,
+}
+
+/// **Every program's asks in `bytes`**, in the package's order.
+fn asks(bytes: &[u8]) -> Vec<Asks> {
     let Ok(package) = package_archive::Package::parse(bytes) else {
-        return false;
+        return Vec::new();
     };
-    let mut any = false;
+    let mut out = Vec::new();
     for index in 0..package.len() {
-        let (Some(name), Some(member)) = (
-            package_archive::program_name(&package, index),
+        let (Some(member), Some(name)) = (
             package.member(index),
+            package_archive::program_name(&package, index),
         ) else {
             continue;
         };
@@ -378,19 +493,81 @@ fn say_asks(bytes: &[u8]) -> bool {
         ) else {
             continue;
         };
-        if !m.network && zones.is_empty() {
+        let Ok(service) = capability_manifest_note::service(d) else {
+            continue;
+        };
+        if !m.network && !service && zones.is_empty() {
             continue;
         }
+        out.push(Asks {
+            name: name.to_string(),
+            network: m.network,
+            service,
+            zones: zones
+                .iter()
+                .map(|z| String::from_utf8_lossy(z).into_owned())
+                .collect(),
+        });
+    }
+    out
+}
+
+/// **One grant, in the words the confirmation prints it in**, which is what the approval file's
+/// display and its refusals share (milestone 911: "by the same names jig install's confirmation
+/// prints").
+fn say_grant(what: &installed_programs::Granted<'_>) -> String {
+    match what {
+        installed_programs::Granted::Network => "reaches the network (connects out)".to_string(),
+        installed_programs::Granted::Zone(zone) if zone.is_empty() => {
+            "LOOKS UP ANY NAME AT ALL (the root zone)".to_string()
+        }
+        installed_programs::Granted::Zone(zone) => format!("looks up names in {zone}"),
+        installed_programs::Granted::Service => {
+            "runs as a service, now and at every boot".to_string()
+        }
+        installed_programs::Granted::Directory(name, rights) => {
+            format!("holds {name} ({})", rights.spell())
+        }
+        installed_programs::Granted::Installer => {
+            "holds the installer, within this approval".to_string()
+        }
+    }
+}
+
+/// **One `Granted` as data**, the `--json` refusal's spelling of it.
+fn json_grant(what: &installed_programs::Granted<'_>) -> String {
+    match what {
+        installed_programs::Granted::Network => "network".to_string(),
+        installed_programs::Granted::Zone(zone) if zone.is_empty() => "zone .".to_string(),
+        installed_programs::Granted::Zone(zone) => format!("zone {zone}"),
+        installed_programs::Granted::Service => "service".to_string(),
+        installed_programs::Granted::Directory(name, rights) => {
+            format!("dir {name} {}", rights.spell())
+        }
+        installed_programs::Granted::Installer => "installer".to_string(),
+    }
+}
+
+/// **The asks listed before the package is sent**, the one confirmation (milestone 892; calef's
+/// rulings on #2405). Whether anything was listed, which is whether the owner must be asked
+/// ([`owner_says_yes`]).
+fn say_asks(listed: &[Asks]) -> bool {
+    let mut any = false;
+    for asks in listed {
         any = true;
-        println!("  {name} asks for:");
-        if m.network {
+        println!("  {} asks for:", asks.name);
+        if asks.network {
             println!("    reaches the network (connects out)");
         }
-        for zone in zones.iter().filter(|z| !z.is_empty()) {
-            println!("    looks up names in {}", String::from_utf8_lossy(zone));
+        for zone in &asks.zones {
+            if zone.is_empty() {
+                println!("    LOOKS UP ANY NAME AT ALL (the root zone)");
+            } else {
+                println!("    looks up names in {zone}");
+            }
         }
-        if zones.has_root() {
-            println!("    LOOKS UP ANY NAME AT ALL (the root zone)");
+        if asks.service {
+            println!("    runs as a service, now and at every boot");
         }
     }
     any
@@ -417,19 +594,115 @@ fn owner_says_yes() -> bool {
 }
 
 /// **Send `staged` to the installer and say what came of it**, naming a refused program from these
-/// bytes, which are the ones the progenitor judged (milestone 919).
-fn send_install(staged: &mut Staged, fetched: bool) -> ExitCode {
-    if say_asks(staged.bytes()) && !owner_says_yes() {
-        println!("  not installed; nothing was granted");
-        return ExitCode::FAILURE;
-    }
-    let reply = ask(Activation::Install, Some(staged), None);
+/// bytes, which are the ones the progenitor judged (milestone 919). The flags decide who answers
+/// (milestone 911 (scripted installs grant only what the owner's approval file allows)): the
+/// owner's yes, the `--approved` file's subset test, or neither under `--within`, whose check is
+/// the progenitor's. The trailer says which, beside the record.
+fn send_install(staged: &mut Staged, fetched: bool, flags: &Flags<'_>) -> ExitCode {
+    let listed = asks(staged.bytes());
+    let answered = if let Some(within) = flags.within {
+        // The delegated endpoint's check is the progenitor's; the owner is not asked, and jig
+        // runs no subset test of its own (it holds no file). The trailer says the console sent
+        // it, which the badge's approval overrides.
+        println!("  installing within approval {within}; the progenitor decides");
+        CONSOLE_TRAILER
+    } else if let Some(path) = flags.approved {
+        // The owner's own file replaces the prompt: the asks must be within its entry, and the
+        // failure names every extra grant (the block's example is the shape).
+        match approval_answer(staged.bytes(), path, flags.json) {
+            Ok(trailer) => trailer,
+            Err(exit) => return exit,
+        }
+    } else {
+        if say_asks(&listed) && !owner_says_yes() {
+            println!("  not installed; nothing was granted");
+            return ExitCode::FAILURE;
+        }
+        CONSOLE_TRAILER
+    };
+    let reply = ask(Activation::Install, Some(staged), None, &answered);
     let program = reply.member.checked_sub(1).and_then(|index| {
         let package = package_archive::Package::parse(staged.bytes()).ok()?;
         let index = usize::try_from(index).ok()?;
         package_archive::program_name(&package, index).map(String::from)
     });
-    answer(Activation::Install, fetched, reply, program.as_deref())
+    answer(
+        Activation::Install,
+        fetched,
+        reply,
+        program.as_deref(),
+        flags.json,
+    )
+}
+
+/// **The approval's subset test, and the trailer that says it answered** (milestone 911): the
+/// file parsed whole, each program's asks against the package's entry, and the failure naming
+/// every extra grant before anything is sent, "before anything is fetched past the manifest".
+/// The trailer binds the answer to the file's name and digest.
+fn approval_answer(bytes: &[u8], path: &str, json: bool) -> Result<[(u64, u64, u64); 3], ExitCode> {
+    let failure = |why: &str, extra: &[String]| {
+        if json {
+            json_refused(extra, why);
+        } else {
+            for line in extra {
+                println!("  refused: {line}");
+            }
+        }
+        ExitCode::FAILURE
+    };
+    let text = read_approval_text(path, json)?;
+    let file = parse_approval(&text, path, json)?;
+    let package = package_archive::Package::parse(bytes).ok();
+    let package_name = package.as_ref().map(|p| p.name()).unwrap_or("");
+    let version = package.as_ref().map(|p| p.version()).unwrap_or("");
+    let entry = match file.entry(package_name) {
+        Some(entry) => entry,
+        None => {
+            let why = format!(
+                "{package_name} {version} is not in {path}, which {} bounds",
+                file.name()
+            );
+            return Err(failure(&why, &[]));
+        }
+    };
+    // Every extra grant, named: the block's sentence is one per extra, and the `--json`
+    // refusal carries the same grants as data. The extras are said here, in the ask's own
+    // words, because the grant's zones borrow the note the loop owns.
+    let mut lines: Vec<String> = Vec::new();
+    let mut data: Vec<String> = Vec::new();
+    for asks in asks(bytes) {
+        let mut granted: Vec<installed_programs::Granted<'_>> = Vec::new();
+        if asks.network {
+            granted.push(installed_programs::Granted::Network);
+        }
+        if asks.service {
+            granted.push(installed_programs::Granted::Service);
+        }
+        for zone in &asks.zones {
+            granted.push(installed_programs::Granted::Zone(zone));
+        }
+        for why in installed_programs::extras(&entry.allows, &granted) {
+            lines.push(format!(
+                "{package_name} {version} asks for {}, which {} does not allow",
+                say_grant(why),
+                file.name()
+            ));
+            data.push(json_grant(why));
+        }
+    }
+    if !lines.is_empty() {
+        if json {
+            json_refused(&data, "");
+        } else {
+            for line in lines {
+                println!("  refused: {line}");
+            }
+        }
+        return Err(ExitCode::FAILURE);
+    }
+    // The grants given are exactly the asks; the answer binds to the file's digest, which the
+    // progenitor could not otherwise know.
+    Ok(approval_trailer(&text, &file))
 }
 
 /// Whether this process was granted an installer endpoint; says why not when it was not.
@@ -441,8 +714,27 @@ fn holds_installer() -> bool {
     held
 }
 
+/// **`jig install <path> ...`**: the file's bytes, sent as they are. The progenitor's catalog
+/// decides. The flags decide who answers: the owner's yes, the `--approved` file's check, or the
+/// delegated endpoint's.
+fn install(words: &[&str]) -> ExitCode {
+    let Some(flags) = parse_flags(words) else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    let Some(operand) = flags.operand else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    if operand.contains('/') {
+        install_file(operand, &flags)
+    } else {
+        install_name(operand, &flags)
+    }
+}
+
 /// **`jig install <path>`**: the file's bytes, sent as they are. The progenitor's catalog decides.
-fn install_file(path: &str) -> ExitCode {
+fn install_file(path: &str, flags: &Flags<'_>) -> ExitCode {
     if !holds_installer() {
         return ExitCode::FAILURE;
     }
@@ -467,13 +759,13 @@ fn install_file(path: &str) -> ExitCode {
     if let Err(e) = file.read_exact(staged.bytes()) {
         return say_io(path, e);
     }
-    send_install(&mut staged, false)
+    send_install(&mut staged, false, flags)
 }
 
 /// **`jig install <name>`**: the catalog names the stem, the package source serves
 /// `/<stem>.nifepkg`, and what arrives is checked before anything is sent: it must be the package
 /// asked for, and the catalog must vouch for its digest.
-fn install_name(name: &str) -> ExitCode {
+fn install_name(name: &str, flags: &Flags<'_>) -> ExitCode {
     if !holds_installer() {
         return ExitCode::FAILURE;
     }
@@ -483,7 +775,7 @@ fn install_name(name: &str) -> ExitCode {
             return refuse("the index copy cannot be read; run jig update");
         };
         match index.find(name, ARCHITECTURE) {
-            Ok(entry) => return install_indexed(&entry),
+            Ok(entry) => return install_indexed(&entry, flags),
             Err(Miss::SeveralVersions) => {
                 return refuse(
                     "the index offers several versions of that package; \
@@ -521,7 +813,7 @@ fn install_name(name: &str) -> ExitCode {
             "this image's catalog does not vouch for those bytes; nothing was sent to the installer",
         );
     }
-    send_install(&mut staged, true)
+    send_install(&mut staged, true, flags)
 }
 
 /// **`GET /<stem>.nifepkg` from the package source**, into a staging run sized from the response's
@@ -700,7 +992,7 @@ fn update() -> ExitCode {
 /// **A package the index copy lists, fetched over HTTPS and judged by the entry's digest**
 /// (milestone 801): the entry's listed locations, each only at a public address (Q1), then each of
 /// the image's repositories' own `targets/`. The bytes go straight into the staging run.
-fn install_indexed(entry: &Entry<'_>) -> ExitCode {
+fn install_indexed(entry: &Entry<'_>, flags: &Flags<'_>) -> ExitCode {
     let sources = match sources() {
         Ok(s) => s,
         Err(why) => return refuse(why),
@@ -784,7 +1076,7 @@ fn install_indexed(entry: &Entry<'_>) -> ExitCode {
         );
     }
     println!("  fetched {} from {whence} over TLS", entry.stem);
-    send_install(&mut staged, true)
+    send_install(&mut staged, true, flags)
 }
 
 /// Run one fetch into the staging run from its start, and set the run's length to what arrived.
@@ -815,8 +1107,18 @@ fn fill(
 
 /// **`jig remove <package>`**, or `<package>@<version>` for one version: every row the package
 /// installed, whatever its programs are called (calef, 2026-10-14 (UTC), milestone 919 (a package
-/// carries several programs): "jig remove should work on packages, not programs.").
-fn remove(package: &str) -> ExitCode {
+/// carries several programs): "jig remove should work on packages, not programs."). Under
+/// `--approved <file>` the entry's `remove` answer is checked first; under `--within <name>` the
+/// delegated endpoint's check is the progenitor's.
+fn remove(words: &[&str]) -> ExitCode {
+    let Some(flags) = parse_flags(words) else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    let Some(package) = flags.operand else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
     if !filesystem_contract::grant::fits_words(package.as_bytes()) {
         println!("{USAGE}");
         return ExitCode::from(2);
@@ -824,24 +1126,277 @@ fn remove(package: &str) -> ExitCode {
     if !holds_installer() {
         return ExitCode::FAILURE;
     }
+    let answered = if flags.within.is_some() {
+        CONSOLE_TRAILER
+    } else if let Some(path) = flags.approved {
+        match removal_answer(package, path, flags.json) {
+            Ok(trailer) => trailer,
+            Err(exit) => return exit,
+        }
+    } else {
+        CONSOLE_TRAILER
+    };
     answer(
         Activation::Remove,
         false,
-        ask(Activation::Remove, None, Some(package)),
+        ask(Activation::Remove, None, Some(package), &answered),
         None,
+        flags.json,
     )
 }
 
-/// **`jig rollback`**: one generation back.
-fn rollback() -> ExitCode {
+/// **The removal the approval file allows** (milestone 911): a removal passes when the entry
+/// says `remove = true`, and fails closed before anything is sent. The trailer binds the answer
+/// to the file's name and digest, the same binding an approved install's carries.
+fn removal_answer(package: &str, path: &str, json: bool) -> Result<[(u64, u64, u64); 3], ExitCode> {
+    let text = read_approval_text(path, json)?;
+    let file = parse_approval(&text, path, json)?;
+    let entry = file
+        .entry(package)
+        .ok_or_else(|| not_bounded(package, path, &file, json))?;
+    if !entry.remove {
+        let why = format!(
+            "{package} may not be removed by {}, whose entry says remove = false",
+            file.name()
+        );
+        if json {
+            json_refused(&[], &why);
+        } else {
+            println!("  refused: {why}");
+        }
+        return Err(ExitCode::FAILURE);
+    }
+    Ok(approval_trailer(&text, &file))
+}
+
+/// **The approval file read whole**, or the refusal naming the line: the bytes the answer's
+/// digest is taken over. The caller parses it beside the text, since the parse borrows it.
+fn read_approval_text(path: &str, json: bool) -> Result<String, ExitCode> {
+    let failure = |why: String| {
+        if json {
+            json_refused(&[], &why);
+        } else {
+            println!("  refused: {why}");
+        }
+        ExitCode::FAILURE
+    };
+    std::fs::read_to_string(path.strip_prefix("./").unwrap_or(path)).map_err(|e| {
+        failure(format!(
+            "could not read the approval file {path}: {:?}",
+            e.kind()
+        ))
+    })
+}
+
+/// **The approval file parsed whole**, or the refusal naming the line.
+fn parse_approval<'a>(
+    text: &'a str,
+    path: &str,
+    json: bool,
+) -> Result<approval_file::File<'a>, ExitCode> {
+    approval_file::File::parse(text).map_err(|e| {
+        let why = format!(
+            "the approval file {path} cannot be read: line {}: {:?}",
+            e.at, e.why
+        );
+        if json {
+            json_refused(&[], &why);
+        } else {
+            println!("  refused: {why}");
+        }
+        ExitCode::FAILURE
+    })
+}
+
+/// **The not-bounded refusal**: the package no entry of the file's bounds, so it may receive
+/// nothing (the subset test fails closed).
+fn not_bounded(package: &str, path: &str, file: &approval_file::File<'_>, json: bool) -> ExitCode {
+    let why = format!("{package} is not in {path}, which {} bounds", file.name());
+    if json {
+        json_refused(&[], &why);
+    } else {
+        println!("  refused: {why}");
+    }
+    ExitCode::FAILURE
+}
+
+/// **The answered trailer for an approval**: the file's name and the digest of the bytes the
+/// answer was given on, which the progenitor could not otherwise know (milestone 911).
+fn approval_trailer(text: &str, file: &approval_file::File<'_>) -> [(u64, u64, u64); 3] {
+    spawnproto::answered_approval(file.name(), &package_archive::sha256(text.as_bytes()))
+}
+
+/// **`jig rollback`**: one generation back. Under `--within <name>` the delegated endpoint's
+/// check is the progenitor's, against the approval the badge carries.
+fn rollback(words: &[&str]) -> ExitCode {
+    let Some(flags) = parse_flags(words) else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    if flags.operand.is_some() || flags.approved.is_some() {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    }
+    if !holds_installer() {
+        return ExitCode::FAILURE;
+    }
+    // A rollback writes no generation, so it carries no answered line; the trailer is still
+    // sent, and the progenitor takes it and drops it.
+    let answered = CONSOLE_TRAILER;
+    answer(
+        Activation::Rollback,
+        false,
+        ask(Activation::Rollback, None, None, &answered),
+        None,
+        flags.json,
+    )
+}
+
+/// **`jig approve <file>`**: the file compiled on the owner's console, every grant it contains
+/// printed (the root zone flagged apart, the way the confirmation flags it), the changed grants
+/// only when the name is stored already, one yes covering all of it, and the records sent as an
+/// `Approve` request (milestone 911). `--within <name>` sends without the ask: the delegated
+/// endpoint refuses it, which is the row the gate proves.
+fn approve(words: &[&str]) -> ExitCode {
+    let Some(flags) = parse_flags(words) else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    let Some(path) = flags.operand else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    if !holds_installer() {
+        return ExitCode::FAILURE;
+    }
+    let text = match read_approval_text(path, flags.json) {
+        Ok(t) => t,
+        Err(exit) => return exit,
+    };
+    let file = match parse_approval(&text, path, flags.json) {
+        Ok(file) => file,
+        Err(exit) => return exit,
+    };
+    // The store's file for this name, for the diff the re-approval shows (Done-when 5): the
+    // changed grants only. The text is held while the document borrows it.
+    let stored_text = std::fs::read_to_string(format!(
+        "{}/{}/{}",
+        installed_programs::DIRECTORY,
+        installed_programs::approval::STORE,
+        file.name()
+    ))
+    .unwrap_or_default();
+    let stored = if stored_text.is_empty() {
+        None
+    } else {
+        installed_programs::approval::Document::parse(&stored_text).ok()
+    };
+    let name = file.name();
+    match stored {
+        None => {
+            println!("  {name} approves:");
+            for section in file.sections() {
+                println!("    {}:", section.name);
+                for allow in &section.allows {
+                    println!("      {}", say_grant(allow));
+                }
+            }
+        }
+        Some(stored) => {
+            println!("  {name}, changed since the stored approval:");
+            let mut any = false;
+            for section in file.sections() {
+                let old = stored.entry(section.name).ok().flatten();
+                // The stored section's allows, read back through the document's reader; a
+                // section that no longer parses is a store nobody compiled, so the whole diff
+                // says so and the approval is refused until jig approve re-runs.
+                let stored_allows = match old
+                    .as_ref()
+                    .map(|s| s.allows().collect::<Result<Vec<_>, _>>())
+                    .transpose()
+                {
+                    Ok(allows) => allows,
+                    Err(_) => {
+                        return refuse(
+                            "the stored approval cannot be read; jig revoke drops it, and jig \
+                             approve stores it again",
+                        );
+                    }
+                };
+                let mut lines: Vec<String> = Vec::new();
+                for a in &section.allows {
+                    if !stored_allows
+                        .as_ref()
+                        .is_none_or(|stored| stored.iter().any(|g| g == a))
+                    {
+                        lines.push(say_grant(a));
+                    }
+                }
+                for a in stored_allows.iter().flatten() {
+                    if !section.allows.iter().any(|g| g == a) {
+                        lines.push(format!("no longer: {}", say_grant(a)));
+                    }
+                }
+                if lines.is_empty() {
+                    continue;
+                }
+                any = true;
+                println!("    {}:", section.name);
+                for line in lines {
+                    println!("      {line}");
+                }
+            }
+            if !any {
+                println!("    nothing; the records are the stored ones");
+            }
+        }
+    }
+    if flags.within.is_none() && !owner_says_yes() {
+        println!("  not approved; nothing was stored");
+        return ExitCode::FAILURE;
+    }
+    // The records travel as frames, the digest in their header binding them to these bytes.
+    let digest = package_archive::sha256(text.as_bytes());
+    let mut out = vec![0u8; 4096];
+    let n = match approval_file::compile(&file, digest, &mut out) {
+        Ok(n) => n,
+        Err(e) => {
+            return refuse(&format!("the approval file cannot be compiled: {e:?}"));
+        }
+    };
+    let mut staged = match Staged::new(n as u64) {
+        Ok(s) => s,
+        Err(why) => return refuse(why),
+    };
+    staged.bytes().copy_from_slice(&out[..n]);
+    let reply = ask(Activation::Approve, Some(&staged), None, &[]);
+    answer(Activation::Approve, false, reply, None, flags.json)
+}
+
+/// **`jig revoke <name>`**: the progenitor drops the named approval, and every later request
+/// under a badge that carries it is answered `Revoked` (milestone 911).
+fn revoke(words: &[&str]) -> ExitCode {
+    let Some(flags) = parse_flags(words) else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    let Some(name) = flags.operand else {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    if !filesystem_contract::grant::fits_words(name.as_bytes()) {
+        println!("{USAGE}");
+        return ExitCode::from(2);
+    }
     if !holds_installer() {
         return ExitCode::FAILURE;
     }
     answer(
-        Activation::Rollback,
+        Activation::Revoke,
         false,
-        ask(Activation::Rollback, None, None),
+        ask(Activation::Revoke, None, Some(name), &[]),
         None,
+        flags.json,
     )
 }
 
@@ -862,8 +1417,16 @@ fn say_io(path: &str, e: std::io::Error) -> ExitCode {
 
 /// **What the progenitor's answer means**, in the words the shell's `package` builtin used, so a
 /// person who learned those reads the same sentences. Every answer names the generation live
-/// afterwards, because after a refusal that is still the fact a person needs.
-fn answer(verb: Activation, fetched: bool, reply: Reply, program: Option<&str>) -> ExitCode {
+/// afterwards, because after a refusal that is still the fact a person needs. Under `--json` the
+/// same answer is one object, the verb and the generation (milestone 911, item 7), and a
+/// `NotApproved` refusal names the package as data ([`json_refused`]'s `extra`).
+fn answer(
+    verb: Activation,
+    fetched: bool,
+    reply: Reply,
+    program: Option<&str>,
+    json: bool,
+) -> ExitCode {
     let Reply {
         status,
         live,
@@ -878,6 +1441,14 @@ fn answer(verb: Activation, fetched: bool, reply: Reply, program: Option<&str>) 
         (S::Done, Activation::Install) if fetched => "fetched and installed",
         (S::Done, Activation::Install) => "installed",
         (S::Done, Activation::Remove) => "removed",
+        (S::Done, Activation::Approve) => {
+            named = format!("approved {holder}");
+            named.as_str()
+        }
+        (S::Done, Activation::Revoke) => {
+            named = format!("revoked {holder}");
+            named.as_str()
+        }
         (S::Done, _) => "rolled back",
         (S::NotCataloged, _) => {
             "refused: neither this image's catalog nor its index copy vouches for those bytes"
@@ -907,13 +1478,32 @@ fn answer(verb: Activation, fetched: bool, reply: Reply, program: Option<&str>) 
             "refused: that version holds a program's default and several other versions of it are \
              live, so none can take its place"
         }
-        (S::NotServedHere, _) => "refused: the installer endpoint does not take that request",
+        (S::NotServedHere, _) => {
+            "refused: the installer endpoint does not take that request; a delegated badge may \
+             neither approve nor revoke"
+        }
         (S::NotYours, _) => {
             "refused: another package manager installed that, and it is not jig's to undo"
         }
+        // The delegated check's refusals (milestone 911): the approval does not allow this, with
+        // the package named, or its approval is not stored, which is a revoke's doing.
+        (S::NotApproved, _) => {
+            named = format!("refused: approval holder does not allow {holder}");
+            named.as_str()
+        }
+        (S::Revoked, _) => {
+            named = format!("refused: approval {holder} is not stored; jig approve stores it");
+            named.as_str()
+        }
         (S::NotExecutable | S::Unknown, _) => "the progenitor could not take that request",
     };
-    if live == 0 {
+    if json {
+        if status == S::Done {
+            json_result(json_verb(verb), live);
+        } else {
+            json_refused(&[], said);
+        }
+    } else if live == 0 {
         println!("  {said}; nothing is installed");
     } else {
         println!("  {said}; generation {live} is live");
@@ -922,5 +1512,17 @@ fn answer(verb: Activation, fetched: bool, reply: Reply, program: Option<&str>) 
         ExitCode::SUCCESS
     } else {
         ExitCode::FAILURE
+    }
+}
+
+/// The verb, as the `--json` result names it.
+fn json_verb(verb: Activation) -> &'static str {
+    match verb {
+        Activation::Install => "installed",
+        Activation::Remove => "removed",
+        Activation::Rollback => "rolled back",
+        Activation::Approve => "approved",
+        Activation::Revoke => "revoked",
+        Activation::Vouch => "vouched",
     }
 }

@@ -293,6 +293,10 @@ struct Resolved {
     image_digest: Option<measured_boot::Digest>,
     verb: [u8; grant_plan::MAXIMUM_VERB],
     verb_len: Option<usize>,
+    /// **The approval a delegated line asked to act within** (milestone 911 (scripted installs
+    /// grant only what the owner's approval file allows)), as the line's `--within <name>` said.
+    within: [u8; 32],
+    within_len: Option<usize>,
 }
 
 impl Resolved {
@@ -434,6 +438,7 @@ impl Service<'_> {
         if let Some(label) = spawnproto::installer_label(badge) {
             serve_installer(
                 label,
+                spawnproto::installer_approval(badge),
                 (w0, w1, w2),
                 &mut self.spawn,
                 (own_ut, images_ut, fs, self.c.catalogue),
@@ -461,6 +466,7 @@ impl Service<'_> {
                     fs,
                     catalog: self.c.catalogue,
                     manager: installed_programs::OWNER,
+                    allowed: None,
                 },
                 &mut self.fs_mapped,
             );
@@ -759,6 +765,20 @@ impl Service<'_> {
             verb[..w.len()].copy_from_slice(w);
             Some(w.len())
         });
+        // **The delegation the line asked for** (milestone 911 (scripted installs grant only what
+        // the owner's approval file allows)): `--within <name>` on the same page the verb was
+        // read from, the grant "installer, within approval X" as the console says it. The
+        // progenitor reads it when it places the installer endpoint, and the badge carries the
+        // approval the name is stored under.
+        let mut within = [0u8; 32];
+        let within_len = args_seen.and_then(|theirs| {
+            // SAFETY: `receive_args` mapped the shell's frame read-only at `theirs`, one page,
+            // and it stays mapped until the shell reclaims its frame after this request's answer.
+            let page = unsafe {
+                core::slice::from_raw_parts(theirs as *const u8, spawnproto::IMAGE_PAGE as usize)
+            };
+            grant_plan::delegated_within(page, &mut within)
+        });
         let manifest = if wiring.image {
             image_manifest
         } else {
@@ -781,6 +801,8 @@ impl Service<'_> {
             image_digest,
             verb,
             verb_len,
+            within,
+            within_len,
         }
     }
 
@@ -873,12 +895,21 @@ impl Service<'_> {
             (true, Some(r)) => copy_text(own_ut, r, self.c.index_sources),
             _ => None,
         };
+        // **The delegated installer endpoint** (milestone 911 (scripted installs grant only what
+        // the owner's approval file allows)): a line that asked to act within an approval gets
+        // the same endpoint badged with that approval's id, minted for the name here so the
+        // store's file is found per request. The owner's console alone places it, as the plain
+        // one is.
+        let delegated = job
+            .within_len
+            .map(|len| self.spawn.approval_id_for(&job.within[..len]));
         let (installer, catalog_page, installer_failed, catalog_failed) = self.package_parts(
             req,
             manifest,
             region,
             (std_layout, wants_installer),
             dir.label,
+            delegated,
         );
         // Resolver badges only under `job_undertaker`, whose reap forgets the grants; a
         // screen-narrowed job is reaped by the shell (milestone 892's BUGS).
@@ -1056,6 +1087,7 @@ impl Service<'_> {
         region: Option<u64>,
         (std_layout, wants_installer): (bool, bool),
         label: u64,
+        delegated: Option<u64>,
     ) -> PackageParts {
         let Channels {
             own_ut, spawn_ep, ..
@@ -1071,6 +1103,7 @@ impl Service<'_> {
                 (spawn_ep, label),
                 own_ut,
                 self.c.catalogue,
+                delegated,
             ),
             _ => (None, None),
         };

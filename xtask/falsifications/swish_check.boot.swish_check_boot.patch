@@ -36,15 +36,15 @@ the region split serves.
 diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initializer/src/spawn_loop.rs
 --- a/crates/system_initializer/src/spawn_loop.rs
 +++ b/crates/system_initializer/src/spawn_loop.rs
-@@ -249,6 +249,7 @@ struct Resolved {
-     image_digest: Option<measured_boot::Digest>,
-     verb: [u8; grant_plan::MAXIMUM_VERB],
-     verb_len: Option<usize>,
-+    unvouched: bool,
+@@ -298,6 +298,7 @@
+     within: [u8; 32],
+     within_len: Option<usize>,
  }
++    unvouched: bool,
  
  impl Resolved {
-@@ -277,9 +278,9 @@ impl Wants {
+     /// The verb the line's argv carried, if it carried one.
+@@ -325,9 +326,9 @@
      /// Read each declaration from the program's own manifest, never from the request: a person
      /// designates none of these, so no bit on the wire carries them. See
      /// notes/system-initializer/the-spawn-service.md, "What a manifest declares that no command line can".
@@ -56,15 +56,15 @@ diff --git a/crates/system_initializer/src/spawn_loop.rs b/crates/system_initial
          let wants_config = manifest.is_some_and(|m| m.configuration);
          let wants_entropy = manifest.is_some_and(|m| m.entropy);
          let wants_network = manifest.is_some_and(|m| m.network);
-@@ -714,6 +715,7 @@ impl Service<'_> {
-             image_digest,
-             verb,
-             verb_len,
-+            unvouched,
+@@ -805,6 +806,7 @@
+             within_len,
          }
      }
++            unvouched,
  
-@@ -786,7 +788,7 @@ impl Service<'_> {
+     /// Build and start an interruptible job from the shell's own job untyped, and answer it.
+     fn spawn_interruptible(&self, req: &Request, elf: Option<&elf::Elf>, failure: u64) {
+@@ -875,7 +877,7 @@
      ) {
          let own_ut = self.c.own_ut;
          let manifest = job.manifest;

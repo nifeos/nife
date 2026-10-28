@@ -102,7 +102,13 @@ pub(super) fn copy_args(
 /// - A job that answers and then does not exit holds that wait, and `^C` cannot reach it.
 /// - [`STASHED`] first messages at once; one more is dropped and its sender's follow-ups refused.
 ///   Only a pipeline of that many installer holders reaches it.
+/// **The approvals one boot's table holds** (milestone 911): the delegated badges this boot
+/// can place, each a name the store's file is read by. A ninth is refused at spawn, as a fifth
+/// installer holder is.
+pub(super) const APPROVALS_MAXIMUM: usize = 8;
+
 pub(super) struct SpawnEndpoint {
+    approvals: [Option<([u8; 32], usize)>; APPROVALS_MAXIMUM],
     ep: u64,
     /// The file service's unbadged endpoint, which a reap's `UNBIND` goes to, or `None` on a boot
     /// with no disk (and then no window is ever bound).
@@ -149,6 +155,7 @@ const INSTALLER_HOLDERS: usize = 4;
 impl SpawnEndpoint {
     pub(super) fn new(ep: u64, files: Option<u64>, resolver: Option<u64>) -> Self {
         Self {
+            approvals: [None; APPROVALS_MAXIMUM],
             ep,
             files,
             windows: job_windows(),
@@ -267,6 +274,39 @@ impl SpawnEndpoint {
             .flatten()
             .find(|(l, ..)| *l == label)
             .map(|&(_, ep, m)| (ep, m))
+    }
+
+    /// **The id the delegated badge carries for `name`**, minted when the table does not have
+    /// the name yet, or the id an `Approve` has already given it (milestone 911 (scripted
+    /// installs grant only what the owner's approval file allows)). The table
+    /// ([`APPROVALS_MAXIMUM`]) is the badge's key for the store's file; the file, read per
+    /// request, is the authority. A name keeps its id for the boot, so a revoke-then-approve is
+    /// the same badge checked against the new records.
+    pub(super) fn approval_id_for(&mut self, name: &[u8]) -> u64 {
+        if let Some(at) = self
+            .approvals
+            .iter()
+            .position(|a| a.is_some_and(|(n, len)| &n[..len] == name))
+        {
+            return at as u64 + 1;
+        }
+        let at = self
+            .approvals
+            .iter_mut()
+            .position(|a| a.is_none())
+            .unwrap_or(APPROVALS_MAXIMUM - 1);
+        let mut kept = [0u8; 32];
+        let len = name.len().min(32);
+        kept[..len].copy_from_slice(&name[..len]);
+        self.approvals[at] = Some((kept, len));
+        at as u64 + 1
+    }
+
+    /// **The name the id was minted for**, or `None` for one it was not.
+    pub(super) fn approval_name(&self, id: u64) -> Option<&[u8]> {
+        let at = usize::try_from(id).ok()?.checked_sub(1)?;
+        let (name, len) = self.approvals.get(at)?.as_ref()?;
+        Some(&name[..*len])
     }
 
     /// A fresh label for the next job.

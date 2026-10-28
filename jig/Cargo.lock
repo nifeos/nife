@@ -55,6 +55,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "approval_file"
+version = "0.1.0"
+dependencies = [
+ "domain_name_resolution_contract",
+ "installed_programs",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -551,6 +559,7 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_map",
+ "approval_file",
  "capability_manifest_note",
  "elf",
  "entropy_backend",

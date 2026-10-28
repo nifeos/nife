@@ -108,6 +108,14 @@ pub const MAXIMUM_VERB: usize = 16;
 /// only the activation directory, comparing what is installed with the index copy beneath it.
 pub(crate) const JIG_VERBS: &[VerbGrant] = &[
     VerbGrant {
+        verb: "approve",
+        // The owner's console compiles the file and sends the records; the store is read
+        // through the activation directory for the diff the re-approval shows (milestone 911
+        // (scripted installs grant only what the owner's approval file allows)). Standard
+        // input rides with the installer, which is what the one yes is read through.
+        authorities: ManifestAuthorities::INSTALLER.union(ManifestAuthorities::ACTIVATION),
+    },
+    VerbGrant {
         verb: "install",
         authorities: ManifestAuthorities::INSTALLER
             .union(ManifestAuthorities::CATALOG)
@@ -126,6 +134,11 @@ pub(crate) const JIG_VERBS: &[VerbGrant] = &[
     },
     VerbGrant {
         verb: "remove",
+        authorities: ManifestAuthorities::INSTALLER,
+    },
+    VerbGrant {
+        verb: "revoke",
+        // The owner's console drops the named approval; the name rides the request.
         authorities: ManifestAuthorities::INSTALLER,
     },
     VerbGrant {
@@ -234,6 +247,40 @@ fn verb_key<'o>(
         len += 1 + option.len();
     }
     Some(&out[..len])
+}
+
+/// **The approval a delegated line asks to act within** (milestone 911 (scripted installs grant
+/// only what the owner's approval file allows)): the word after `--within` on the argument page,
+/// copied into `out`, its length returned. `None` when the line says no `--within`, when the
+/// name is empty, or when it is longer than thirty-two bytes, which is the store's component
+/// bound. The progenitor reads this when it places the installer endpoint, and the badge
+/// carries the approval the name is stored under; `jig` reads its own copy of the same words to
+/// know that its check is the progenitor's.
+///
+/// ```
+/// use grant_plan::delegated_within;
+/// let mut page = [0u8; program_argument_contract::PAGE_BYTES];
+/// grant_plan::argv(b"jig install --within lab-runner greeting", &mut page).unwrap();
+/// let mut out = [0u8; 32];
+/// let n = delegated_within(&page, &mut out).unwrap();
+/// assert_eq!(&out[..n], b"lab-runner");
+/// ```
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub fn delegated_within(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
+    let args = program_argument_contract::ArgPage::parse(page);
+    let mut words = args.iter().skip(1);
+    while let Some(word) = words.next() {
+        if word == b"--within" {
+            let name = words.next()?;
+            if name.is_empty() || name.len() > 32 || name.contains(&b' ') {
+                return None;
+            }
+            out[..name.len()].copy_from_slice(name);
+            return Some(name.len());
+        }
+    }
+    None
 }
 
 /// **The verb on an argument page**: its `argv[1]`, and `argv[2]` after a space when both fit,

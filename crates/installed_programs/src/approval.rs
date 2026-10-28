@@ -106,6 +106,23 @@ impl Section<'_> {
     pub fn allows(&self) -> impl Iterator<Item = Result<Granted<'_>, Refusal>> {
         self.lines.lines().map(allow_word)
     }
+
+    /// **Whether the section allows one ask** (milestone 911 (scripted installs grant only what
+    /// the owner's approval file allows)): the subset test's one-ask form, which the delegated
+    /// check runs per request, where no list is kept. A section that no longer parses allows
+    /// nothing, which is the refusal, not a guess.
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+    pub fn covers(&self, ask: Granted<'_>) -> Result<bool, Refusal> {
+        let mut any = false;
+        for allowed in self.allows() {
+            let allowed = allowed?;
+            if super::grants::covers(allowed, ask) {
+                any = true;
+            }
+        }
+        Ok(any)
+    }
 }
 
 /// **A compiled approval, read strictly.** The text is the document; every lookup re-reads it,
