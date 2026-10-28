@@ -20,10 +20,10 @@ is what prices breaks; waiting for stability inverts the causality.
 calef ruled the shape on 2026-10-29 (UTC), in PR #2852's comment. The five questions below record
 what calef weighed and what calef ruled, and the ruling added a compatibility obligation and a
 retirement provision that "The compatibility obligation, and retiring a generation" records. The
-implementing work sits in the merge queue as
-[the implementing proposal](the-linked-interfaces-carry-checkable-versions.md), milestone number
-provisional. This proposal still writes no code: §311 (a contract is code, not prose) reserves
-the checks for an implementing lane, and every new name below is provisional.
+implementing work is milestone 956 (the linked interfaces carry checkable versions), promoted from
+[the implementing proposal](../0956-the-linked-interfaces-carry-checkable-versions.md) on 2026-10-28.
+This proposal writes no code: §311 (a contract is code, not prose) reserves the checks for an
+implementing lane, and every new name below is provisional.
 
 Reuse: the checks reuse the tree's rustdoc-JSON extraction and `FORMAT_CONST` pattern
 (`helpers/interface_stability.py`, the machinery behind milestone 610 (the interface's stability
@@ -240,9 +240,8 @@ it bites.
 
 ## The implementing milestone
 
-The eight-step plan lives in
-[the implementing proposal](the-linked-interfaces-carry-checkable-versions.md), re-aimed at the
-ruled shape; this proposal keeps the survey, the prior art and the costs.
+The eight-step plan lives in milestone 956, re-aimed at the ruled shape; this proposal keeps the
+survey, the prior art and the costs.
 
 ## The seven questions
 
