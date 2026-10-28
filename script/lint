@@ -3634,6 +3634,20 @@ script/mutation-census --selftest >/dev/null
 # The gate workflow is the only thing that runs the real decision, so a change to these rules is
 # verified here, where it lands.
 python3 helpers/mutation_diff_gate.py --selftest >/dev/null
+# Part 2 of the survivor proposal (a survivor accepted once is not accepted forever) says
+# script/lint "checks each scoped exclusion" and fails "an entry whose function no longer exists
+# or whose named assertion is gone". helpers/mutation_exclusion_check.py is that check, and the
+# only reader `exclude_re` has: an entry that names no code excludes nothing, and its mutants
+# come back as new survivors. It is textual on purpose, so every invocation and the pre-push
+# hook's --no-cargo mode can afford it: it parses the shapes the entries use (the scoped
+# ^<file>:\d+:\d+: replace ...$ entry, function-shaped or const-item, and the older `module::`
+# paths), requires the named file, function, type and `THE_*` const assertion to exist, and
+# fails a shape it cannot read, so an entry the check does not understand cannot pass by reading
+# nothing (design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md). The selftest proves
+# every rule against fixtures, including the generic `Host<R, D>::reset` form.
+echo "==> every mutation exclusion names code that exists"
+python3 helpers/mutation_exclusion_check.py --selftest >/dev/null
+python3 helpers/mutation_exclusion_check.py check
 
 # The architect-label diff rules, the live architect-ruled read, record-ruling and the hold-release
 # rerun are checked by script/lint-fleet since milestone 889, as are the merge-watcher,
