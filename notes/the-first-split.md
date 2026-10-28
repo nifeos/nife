@@ -42,7 +42,7 @@ checked below.
 | An SDK archive (S2) | §235 Fork 4, milestone 607 item 4 | no | No `xtask` command builds one. A program outside the tree has no way to get `abi` and its protocols except a clone. |
 | A contract never links the runtime | §235 P3, milestone 607 item 3 | no | Four contract crates still depend on `user_mode_runtime`: `counter_frequency_contract`, `current_cpu_contract`, `supervision_contract`, `hot_swap_contract`. |
 | `components` split into one crate per package | milestone 691 (packages move out, one per pull request) | no | One crate, `components`, holds 56 binaries from 18 packages. A crate cannot live in two repositories, so no package with a program in it can move. |
-| A ratified home | milestone 611 (every program and crate belongs to a package), §235 Fork 3 | no | 0 of 27 packages ratified; 26 provisional, 1 undecided (`redoxfs`). |
+| A ratified home | milestone 611 (every program and crate belongs to a package), §235 Fork 3 | no | 0 of 29 packages ratified; 29 provisional, none undecided. |
 
 **Three of the nine hold no, structurally, for any code-carrying cut**: the components crate, the
 SDK archive, and the co-change column. Protocol churn is the precondition §151 named, and it is the
