@@ -13,11 +13,24 @@
 #
 #   1. `script/fmt --check`.
 #   2. `script/lint --no-cargo`: every lint check that does not invoke cargo. Clippy stays in CI.
+#      Skipped when helpers/pre-push-lint-cache.sh holds this machine's marker that the same
+#      checks already passed on the same tree: the marker is keyed on every input the checks read
+#      (the working tree with its untracked files, the index, the committed tip, the merge base,
+#      the lint tools' binaries), so a skipped hook passes exactly when the run it skips would
+#      have, and any failure to key or record lands on a run, never on a skip. CI reruns
+#      everything and stays the authority either way.
 #   3. On a checkout with `git config nife.fleet true` only: the queued-branch refusal, the fleet
 #      tooling's own lint and the ready-status check, all in helpers/pre-push-fleet.sh.
 #   4. All but the queued-branch refusal are skipped for a push whose commits change no files, which is a claim (an empty
 #      commit, §90 (the claim is a draft pull request)). That push used to be refused for "milestone N has no roadmap
 #      block", five false refusals on 2026-10-03, because the block comes after the claim.
+#
+# The marker (2026-10-28, fix 3 in notes/lint-cost-2026-10-18.md): a `--no-cargo` run costs one to
+# four minutes on this machine (notes/lint-cost-2026-10-18.md section 1), and a push that follows a
+# passing lint on an unchanged tree paid for it again on every retry of the push. Skipping repeats
+# is also a safety change: GitHub closes an idle push connection somewhere between 300 and 480 s
+# (milestone 729's header; #2478), so every second the hook runs is time an approved push can die
+# in.
 #
 # How it got here. The hook grew one gate per incident (clippy on 2026-09-29, then the prose
 # ratchets, then the baselines check), each after a lane lost a queue cycle, and the list lagged
@@ -111,16 +124,33 @@ fi
 # put back by hand. The checks find the repository from their own working directory, which is what
 # a person running `script/lint` gets, so clearing the hook's git environment is the whole fix.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_CONFIG_PARAMETERS
-out="$(mktemp "${TMPDIR:-/tmp}/nife-pre-push.XXXXXX")"
-if ! "$root/script/lint" --no-cargo >"$out" 2>&1; then
-    echo "pre-push: script/lint --no-cargo failed; CI runs these checks too and will fail the same way." >&2
-    tail -n 15 "$out" | sed 's/^/  | /' >&2
-    echo "  Fix:    script/lint --no-cargo   (read its output, fix, commit, push again)" >&2
-    echo "  Bypass: git push --no-verify" >&2
+
+# **The text checks run once per tree, not once per push.** helpers/pre-push-lint-cache.sh keys a
+# machine-local marker on every input the checks read and keeps it outside every worktree (an
+# in-tree marker would feed the next tree hash, and a hook must not drop files into the tree).
+# A key that cannot be computed, a marker that is absent, and a cache that cannot be written all
+# land on the run below: they are never a skip and never a refused push.
+lint_key="$("$root/helpers/pre-push-lint-cache.sh" key 2>/dev/null)" || lint_key=
+if [ -n "$lint_key" ] && "$root/helpers/pre-push-lint-cache.sh" check "$lint_key" >/dev/null 2>&1; then
+    echo "pre-push: script/lint --no-cargo skipped; this machine's marker says the same checks passed on this tree already (helpers/pre-push-lint-cache.sh)."
+else
+    out="$(mktemp "${TMPDIR:-/tmp}/nife-pre-push.XXXXXX")"
+    if ! "$root/script/lint" --no-cargo >"$out" 2>&1; then
+        echo "pre-push: script/lint --no-cargo failed; CI runs these checks too and will fail the same way." >&2
+        tail -n 15 "$out" | sed 's/^/  | /' >&2
+        echo "  Fix:    script/lint --no-cargo   (read its output, fix, commit, push again)" >&2
+        echo "  Bypass: git push --no-verify" >&2
+        rm -f "$out"
+        exit 1
+    fi
     rm -f "$out"
-    exit 1
+    # Keyed after the run, so the marker names the tree the checks just judged rather than the one
+    # they started on.
+    lint_key="$("$root/helpers/pre-push-lint-cache.sh" key 2>/dev/null)" || lint_key=
+    if [ -n "$lint_key" ]; then
+        "$root/helpers/pre-push-lint-cache.sh" write "$lint_key" >/dev/null 2>&1 || true
+    fi
 fi
-rm -f "$out"
 
 # The fleet's checks: its own lint, and the ready-status check. helpers/pre-push-fleet.sh.
 if [ -n "$fleet" ]; then
