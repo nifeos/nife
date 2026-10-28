@@ -26,6 +26,28 @@
 # `no-cargo` runs only the sections `--no-cargo` keeps, with LINT_NO_CARGO=1. `clippy` stops after
 # the section that carries the `--clippy` cut, which is where `script/lint --clippy` stopped.
 #
+# This script times each section in whole seconds around its `sh -c`. As a section completes, one
+# line names it and its seconds, so the cost appears where the run's own output already flows:
+#
+#     lint-section-time: clippy: host crates + xtask 187
+#
+# A section still running, or one the run never reached, shows as the absence of its line. The
+# table at the end sorts the sections that ran slowest first, beside the failure summary and the
+# verdict. The lines carry no `==>`, so the log readers that attribute a lint job by its last
+# `==>` marker (script/ci-log-baseline, helpers/hang_evidence.py) see nothing new.
+#
+# One row per section also lands in a CSV outside this repository, on script/effort's precedent
+# (the collector must write from a launchd run without touching a worktree). The default is
+# ~/.local/share/nife/lint-section-times.csv; NIFE_LINT_TIMES overrides it. Columns, in order, with
+# no header row, because two lint runs share this machine and a create-time header would race:
+# date (UTC), mode, section, seconds, exit. The name is quoted CSV-style, so a comma inside it
+# still reads as part of the name. A directory that cannot be created, or a write that fails, is
+# skipped silently: these rows are a measurement, and writing one must never change the verdict.
+# helpers/lint-sections-selftest.sh holds all of this, including the unwritable case. The rows
+# carry the per-section wall time that notes/lint-cost-2026-10-18.md does not; what they mean and
+# where they should land once a week of them exists is that note's maintainer call, not this
+# script's.
+#
 # Name: provisional, minted 2026-10-19 (UTC) by lane maintainer/lint-cost.
 
 set -u
@@ -43,9 +65,19 @@ fi
 LINT_SECTION=1
 export LINT_SECTION
 
+# Where the per-section rows go (see the header). The directory is created once, here: a failed
+# creation empties the file name, and every per-section write then skips, so the loop below never
+# repeats the decision.
+lint_times_default="${HOME:-}/.local/share/nife/lint-section-times.csv"
+lint_times_file=${NIFE_LINT_TIMES:-$lint_times_default}
+if ! mkdir -p "$(dirname "$lint_times_file")" 2>/dev/null; then
+    lint_times_file=""
+fi
+
 tab="$(printf '\t')"
 ran=0
 failed=""
+times=""
 # The index is read on fd 3 so that a section reading stdin cannot eat it.
 while IFS="$tab" read -r id keep name <&3; do
     if [ "$mode" = no-cargo ] && [ "$keep" = 0 ]; then
@@ -53,17 +85,34 @@ while IFS="$tab" read -r id keep name <&3; do
     fi
     cat "$dir/preamble" "$dir/$id" >"$dir/run"
     ran=$((ran + 1))
+    start=$(date +%s)
     sh -c 'lint_tmp=$1; shift; . "$lint_tmp"' "$lint_self" "$dir/run"
     status=$?
     if [ "$status" -ne 0 ]; then
         failed="$failed  $name (exit $status)
 "
     fi
+    secs=$(($(date +%s) - start))
+    echo "lint-section-time: $name $secs"
+    times="$times$secs$tab$name
+"
+    if [ -n "$lint_times_file" ]; then
+        # The subshell keeps a redirect failure (a full disk, a file that lost its permission)
+        # inside its own stderr: the row is skipped silently, and the verdict carries on.
+        (printf '%s,%s,"%s",%s,%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$mode" \
+            "$(printf '%s' "$name" | sed 's/"/""/g')" "$secs" "$status" \
+            >>"$lint_times_file") 2>/dev/null || :
+    fi
     if [ "$mode" = clippy ] && grep -q '"--clippy"' "$dir/$id"; then
         echo "==> clippy-only mode: the rest of lint still runs before any report or merge"
         break
     fi
 done 3<"$dir/index"
+
+if [ "$ran" -gt 0 ]; then
+    echo "lint: seconds per section, slowest first ($ran sections)"
+    printf '%s' "$times" | sort -rn | awk -F"$tab" '{ printf "%6d  %s\n", $1, $2 }'
+fi
 
 if [ -n "$failed" ]; then
     count="$(printf '%s' "$failed" | grep -c .)"

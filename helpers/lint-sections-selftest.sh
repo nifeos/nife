@@ -8,10 +8,14 @@
 # A fixture lint script has four sections that fail on demand (a test, an `exit 3`, a plain
 # command under `set -e`, and one that runs a stubbed cargo) and one that reads a file an earlier
 # section wrote. For each of the 16 combinations of planted failures, in both `all` and `no-cargo`
-# mode, three things must hold:
+# mode, five things must hold:
 #   1. the helper exits non-zero exactly when the fixture run whole, as one `set -e` script, does;
 #   2. its summary names exactly the planted sections that run in that mode;
-#   3. the last section runs whatever failed before it.
+#   3. the last section runs whatever failed before it;
+#   4. every section that runs prints its lint-section-time line and appends one CSV row per
+#      section to the file NIFE_LINT_TIMES names, the section's exit last, and the section the
+#      mode drops prints neither;
+#   5. a CSV file that cannot be written leaves the verdict and the output alone.
 # No tree and no real cargo: it runs in milliseconds, and in `script/lint --no-cargo`.
 
 set -eu
@@ -26,6 +30,11 @@ chmod +x "$work/bin/cargo"
 PATH="$work/bin:$PATH"
 OUT="$work/out"
 export OUT
+# The CSV rows land beside the fixture, through the override, so a selftest never writes the
+# machine-local file a real lint run uses.
+TIMES="$work/times.csv"
+NIFE_LINT_TIMES="$TIMES"
+export NIFE_LINT_TIMES
 
 cat >"$work/lint" <<'FIXTURE'
 set -e
@@ -64,8 +73,12 @@ for combo in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
         LINT_NO_CARGO=1 sh "$whole" >/dev/null 2>&1
         fast=$?
         rm -rf "$OUT"; mkdir "$OUT"
+        rows_before=0
+        if [ -f "$TIMES" ]; then rows_before=$(wc -l <"$TIMES" | tr -d ' '); fi
         out="$(sh helpers/lint-sections.sh "$work/lint" "$mode" 2>&1)"
         keep=$?
+        rows_after=0
+        if [ -f "$TIMES" ]; then rows_after=$(wc -l <"$TIMES" | tr -d ' '); fi
         set -e
 
         [ $((fast != 0)) -eq $((keep != 0)) ] \
@@ -73,6 +86,43 @@ for combo in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
         named="$(printf '%s\n' "$out" | sed -n 's/^  \([a-e]\) .*(exit [0-9]*)$/\1/p' | tr '\n' ' ' | sed 's/^/ /; s/ $//')"
         [ "$named" = "$want" ] || fail "planted [$planted] $mode: summary named [$named], wanted [$want]"
         printf '%s\n' "$out" | grep -q '^e ran$' || fail "planted [$planted] $mode: the last section never ran"
+
+        # One lint-section-time line per section that ran, never one for the section the mode
+        # drops, and one CSV row per section that ran, the section's exit last.
+        for entry in "a|a" "b|b reads the preamble" "c|c writes a file" "d|d runs cargo" \
+            "e|e reads what c wrote"; do
+            key=${entry%%|*}
+            label=${entry#*|}
+            if [ "$mode" = no-cargo ] && [ "$key" = d ]; then
+                if printf '%s\n' "$out" | grep -q "^lint-section-time: $label "; then
+                    fail "planted [$planted] $mode: the dropped section reports a time"
+                fi
+            else
+                printf '%s\n' "$out" | grep -q "^lint-section-time: $label [0-9][0-9]*\$" \
+                    || fail "planted [$planted] $mode: no lint-section-time line for $key"
+            fi
+        done
+        want_rows=5
+        [ "$mode" = all ] || want_rows=4
+        [ $((rows_after - rows_before)) -eq "$want_rows" ] \
+            || fail "planted [$planted] $mode: $((rows_after - rows_before)) CSV rows, wanted $want_rows"
+        failed_rows=$(tail -n "$want_rows" "$TIMES" | grep -c ',[1-9][0-9]*$' || true)
+        [ "$failed_rows" -eq "$(printf '%s' "$want" | wc -w | tr -d ' ')" ] \
+            || fail "planted [$planted] $mode: $failed_rows failed CSV rows, wanted [$want]"
     done
 done
+
+# The CSV rows are a measurement, never a gate: point the file at a parent that is a plain file,
+# so its directory cannot be created, and hold the verdict and the output to what they were.
+unset PLANT_A PLANT_B PLANT_C PLANT_D
+: >"$work/blocked"
+rm -rf "$OUT"; mkdir "$OUT"
+out="$(NIFE_LINT_TIMES="$work/blocked/times.csv" sh helpers/lint-sections.sh "$work/lint" all 2>&1)"
+blocked=$?
+[ "$blocked" -eq 0 ] || fail "an unwritable CSV file changed the verdict (exit $blocked)"
+printf '%s\n' "$out" | grep -q '^lint: all 5 sections passed$' \
+    || fail "an unwritable CSV file changed the output: $out"
+if printf '%s\n' "$out" | grep -qiE 'mkdir|permission|denied|no such'; then
+    fail "an unwritable CSV file was not skipped silently"
+fi
 echo "lint-sections-selftest: ok"
