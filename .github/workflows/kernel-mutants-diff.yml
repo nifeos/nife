@@ -1,0 +1,269 @@
+name: kernel mutants (diff-scoped)
+
+# **Part 3 of roadmap 955 (the kernel and its programs are mutated under QEMU)**: every kernel and
+# `components` pull request gets a mutant report, the gap milestone 924 (a survivor on a pull
+# request's own lines cannot merge untriaged) leaves when its gate passes a kernel diff with
+# "no mutants: outside the corpus". cargo-mutants lists the mutants on
+# the diff's own lines, helpers/mutation_kernel_diff.py filters them to the corpus, routes each
+# file to its architecture and splits them into shards, and `script/falsifications --mutants
+# --patches` replays each shard under QEMU in two tiers (the kernel suite first, the whole-system
+# image only for what survives it). Survivors are reported in the ledger vocabulary of
+# milestone 85 (mutation testing over the host crates), under 924's key.
+#
+# **Advisory, and why.** The block rules this check advisory until it has run green for four
+# weeks; making it required is calef's settings change afterwards. So nothing here can block a
+# merge, and it never joins the merge queue: no `merge_group` trigger at all, unlike
+# mutation-gate.yml, whose analysis of the queue's range is why a required check cannot skip that
+# event. A broken run still fails the job (exit 2, a broken run is never a pass); a survivor
+# never does (`verdict --strict` is the shape the promotion would flip).
+#
+# **Sharded, never longer.** Each shard job pays its baseline first (380 s on aarch64, 785 s on
+# x86_64, both image builds included, part 1's measurement) plus a setup reserve, and its mutant
+# phase is capped twice: the plan sends at most 7 mutants per aarch64 shard and 2 per x86_64 and
+# riscv64 shard, and the driver's own `--budget` stops it cleanly if mutants run slower than
+# measured. A larger diff takes more shards, never a longer job. A diff needing more than 10
+# shards is skipped with that stated in the summary: a lane once queued 40 mutant jobs on these
+# shared runners and the run was cancelled (milestone 741 (does a standing proof notice a
+# regression)), and `max-parallel: 3` keeps even a
+# full run out of the merge queue's way. The tier boots are bounded at 600 s
+# (FALSIFICATIONS_RECORD_LIMIT), so one hung boot costs the job its verdict, not its bound.
+#
+# **Hosted runners only, and no fork runs mutants.** Every job names a `ubuntu-24.04-arm` hosted
+# runner, and the plan job refuses a pull request from a fork, so nothing here runs on owned
+# hardware (a fork's pull request never may) and no fork burns the pool.
+#
+# **No draft runs.** The same draft gate mutation-gate.yml argues for: lanes push to drafts all
+# day, and the check runs when the pull request is marked ready. Like every skip here it fails
+# toward running.
+#
+# **Dispatch names both ends.** A `workflow_dispatch` carries `base` and `tip`, and the jobs then
+# check the tip out, because `--in-diff` requires the diff to match the tree it is read against
+# and the patches to match the tree they apply to. On a `pull_request` event the checkout is the
+# platform's merge commit and its first parent is the base, as in mutation-gate.yml. This is the
+# deliberately small proof path: a dispatch whose diff is one or two mutants, one architecture.
+#
+# Name: provisional. An architect names things.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - kernel/**
+      - components/**
+      - .github/workflows/kernel-mutants-diff.yml
+      - helpers/mutation_kernel_diff.py
+      - script/falsifications
+      - .cargo/mutants.toml
+  workflow_dispatch:
+    inputs:
+      base:
+        description: the commit to diff against
+        type: string
+        required: true
+      tip:
+        description: the commit whose changed lines are mutated; the jobs check it out
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kernel-mutants-diff-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  draft-gate:
+    name: draft gate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.state.outputs.run }}
+    timeout-minutes: 5
+    steps:
+      - id: state
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "==> ${{ github.event_name }} is not a pull request; running the check"
+            exit 0
+          fi
+          draft="$(gh pr view "$PR_NUMBER" \
+                     --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft 2>/dev/null || true)"
+          if [ "$draft" = "true" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "==> pull request is a draft right now; the check runs when it is marked ready"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "==> pull request is not a draft; running the check"
+          fi
+
+  plan:
+    name: plan (list the diff's mutants, split the shards)
+    needs: draft-gate
+    # Fail toward running, as the gate's job does; the fork guard keeps a fork's pull request
+    # from spending the shared pool.
+    if: ${{ needs.draft-gate.outputs.run != 'false' && !cancelled()
+            && (github.event_name != 'pull_request'
+                || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.shards.outputs.matrix }}
+    steps:
+      # Full history: the first-parent read below wants the parents, `git diff` wants blobs, and
+      # in dispatch mode the checkout IS the tip, so the listing and the patches match its tree.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tip || github.sha }}
+
+      - name: Resolve the diff's two ends
+        id: ends
+        run: |
+          tip="${{ inputs.tip }}"
+          if [ -n "$tip" ]; then
+            base="${{ inputs.base }}"
+          else
+            tip="HEAD"
+            parents="$(git rev-list --parents -n 1 HEAD | wc -w)"
+            parents=$((parents - 1))
+            if [ "$parents" -eq 2 ]; then
+              base="$(git rev-parse HEAD^1)"
+            else
+              echo "==> this checkout has $parents parent(s) and no 'base' input was given;" >&2
+              echo "    the check cannot guess the diff, so it fails (never passes)" >&2
+              exit 1
+            fi
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "tip=$tip" >> "$GITHUB_OUTPUT"
+          echo "==> diffing $base..$tip"
+
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain || helpers/rustup-retry.sh toolchain install
+
+      - name: Read the pinned cargo-mutants version
+        id: mutants
+        run: echo "version=$(cat .cargo-mutants-version)" >> "$GITHUB_OUTPUT"
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: cargo-mutants@${{ steps.mutants.outputs.version }}
+
+      # `--no-config` is deliberate and .cargo/mutants.toml says why: the toml's own `kernel/**`
+      # entry keeps the kernel out of the host census, so a config-reading run would list nothing.
+      # The corpus rule the toml's kernel section addresses to this run is applied by the helper
+      # below, reading this same file. The listing spans the workspace; the helper keeps only
+      # `kernel/` and `components/`.
+      - name: List the diff's mutants
+        run: |
+          git diff "${{ steps.ends.outputs.base }}..${{ steps.ends.outputs.tip }}" > pr.diff
+          wc -l pr.diff
+          cargo mutants --no-config --list --diff --in-diff pr.diff > listing.txt
+          wc -l listing.txt
+
+      - name: Split the shards
+        id: shards
+        run: |
+          python3 helpers/mutation_kernel_diff.py shards \
+            --listing listing.txt --toml .cargo/mutants.toml \
+            --shard-dir shards --summary "$GITHUB_STEP_SUMMARY" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Keep the shards
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: mutant-shards
+          path: shards
+          if-no-files-found: warn
+
+  shard:
+    name: shard ${{ matrix.index }}/${{ matrix.total }} (${{ matrix.arch }})
+    needs: plan
+    # An empty plan matrix means nothing to mutate or over the shard cap; zero matrix jobs run,
+    # and the plan's summary has already said which and why.
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04-arm
+    # The design point is 20 minutes (baseline plus the budgeted mutant phase); the job bound
+    # leaves room for setup and for one 600 s hung boot the tier limit must pay for.
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      # A tier that hangs dies at 600 s with a `timeout` verdict instead of holding the job for
+      # the driver's default 30-minute limit. The slowest tier observed is about 220 s (part 1),
+      # so this bounds a hang, not a slow suite; the summary tells the author a rerun with the
+      # default limit is the check for slow-but-alive.
+      FALSIFICATIONS_RECORD_LIMIT: "600"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tip || github.sha }}
+
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain || helpers/rustup-retry.sh toolchain install
+
+      - name: Read the pinned cargo-mutants version
+        id: mutants
+        run: echo "version=$(cat .cargo-mutants-version)" >> "$GITHUB_OUTPUT"
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: cargo-mutants@${{ steps.mutants.outputs.version }}
+
+      # The kernel image build dominates a cold baseline (225 s of the 380 on aarch64); this pool
+      # is shared with mutation-gate.yml's job, which keys the same way.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          save-if: "true"
+
+      - name: Cache QEMU
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        run: script/ci-qemu
+      - name: Put it on PATH
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+        env:
+          NIFE_SKIP_LINT_TOOLS: "1"
+
+      - name: Fetch this shard's patches
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: mutant-shards
+          path: shards
+
+      - name: Run the shard's mutants
+        run: |
+          script/falsifications --mutants \
+            --patches "shards/${{ matrix.file }}" --arch "${{ matrix.arch }}" \
+            --tiers kernel,system --budget "${{ matrix.budget }}" --limit "${{ matrix.limit }}" \
+            --out "$RUNNER_TEMP/shard-${{ matrix.index }}.tsv"
+
+      # Advisory: a survivor exits 0 with the table that says what clears it; a broken run (no
+      # table, a malformed table) exits 2 and fails the job, never passes.
+      - name: The verdict, advisory
+        if: ${{ !cancelled() }}
+        run: |
+          python3 helpers/mutation_kernel_diff.py verdict \
+            --tsv "$RUNNER_TEMP/shard-${{ matrix.index }}.tsv" \
+            --arch "${{ matrix.arch }}" --index "${{ matrix.index }}" --total "${{ matrix.total }}" \
+            --count "${{ matrix.count }}" --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the verdict table
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: shard-${{ matrix.index }}-verdicts
+          path: ${{ runner.temp }}/shard-${{ matrix.index }}.tsv
+          if-no-files-found: warn

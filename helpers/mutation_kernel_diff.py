@@ -43,11 +43,14 @@ THE ROUTE. An `arch/` file runs on its own architecture, or its mutant survives 
 (the driver's own BUGS list says why). Everything else runs on aarch64, which part 1 measured 24%
 cheaper per mutant.
 
-THE KEY AND THE LEDGER are milestone 85's and 924's, imported rather than restated: a survivor
+THE KEY AND THE LEDGER are the rule of milestone 85 (mutation testing over the host crates) and
+the key of milestone 924 (a survivor on a pull request's own lines cannot merge untriaged),
+imported rather than restated: a survivor
 keys on (crate, function, mutation) through the rename chain, and only an `equivalent` or `gap`
 row clears one, because this check, like the gate, has just watched the mutant live.
 
-Name: provisional, minted 2026-10-28 for milestone 955 part 3; an architect names things.
+Name: provisional, minted 2026-10-28 for milestone 955 (mutation testing reaches the kernel and
+its programs under QEMU, a diff and a slice at a time), part 3; an architect names things.
 """
 
 import argparse
@@ -211,7 +214,8 @@ def cmd_shards(args):
             f"The corpus keeps {total} mutant(s)"
             f" ({', '.join(f'{a} {n}' for a, n in counts.items())}), which needs {len(shards)}"
             f" shards, over this run's cap of {MAX_SHARDS}. A lane once queued 40 mutant jobs on"
-            " the shared runners and the run was cancelled (milestone 741), so a larger diff is"
+            " the shared runners and the run was cancelled (milestone 741 (does a standing proof"
+            " notice a regression)), so a larger diff is"
             " skipped, never squeezed into longer jobs.",
             "",
             "Nothing is sharded and nothing boots. The rolling census (roadmap 955, part 4)"
