@@ -955,6 +955,8 @@ const _: () = assert!(
 /// `e1000_set_master_slave_mode` is left out: FreeBSD's `em` runs it with `e1000_ms_hw_default`,
 /// which writes `PHY_1000T_CTRL` back unchanged. FreeBSD's short wait for link afterwards is the
 /// kernel's own `STATUS.LU` wait.
+///
+/// Name: recorded (FreeBSD's `e1000_setup_copper_link_pch_lpt`).
 pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
     let c = (hardware.read(mac::CTRL) | crate::CTRL_SLU) & !(CTRL_FRCSPD | CTRL_FRCDPX);
     hardware.write(mac::CTRL, c);
