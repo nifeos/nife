@@ -68,7 +68,7 @@ Inside the login block, the progenitor places anything that lives past it after 
 peaks there, never in the build's `caps`. `place_login_capabilities` does so for the run-unvouched
 endpoint and the durable window's page, and `start_identity_provisioner` for the provisioner's
 window-0 page. Each takes a slot the build has just given back. The blobs `login` is handed cost no
-slots: `supervision_protocol`'s `fill_and_map` holds one frame capability at a time.
+slots: `supervision_contract`'s `fill_and_map` holds one frame capability at a time.
 
 ## The stack the boot runs on
 

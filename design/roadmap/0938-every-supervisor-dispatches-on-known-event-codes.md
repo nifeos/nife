@@ -26,11 +26,11 @@ Nothing is wrong today, because the kernel sends only the two codes. The work ha
 Enumerate every receiver of the supervision endpoint (`receive_fault` and its peers). Decide per
 consumer what an unknown code does; ignoring it and receiving again is the reading §300 implies,
 and a consumer that cannot ignore one says why. Then add what keeps it true, ideally one shared
-dispatch in `supervision_protocol` that a consumer cannot bypass, so the rule is a type rather than
+dispatch in `supervision_contract` that a consumer cannot bypass, so the rule is a type rather than
 a review.
 The correction to §300's sentence about the tree is the integrator's.
 
-Reuse: none exists; the dispatch is on this tree's own §26 wire, and `supervision_protocol` is where the shared shape would live.
+Reuse: none exists; the dispatch is on this tree's own §26 wire, and `supervision_contract` is where the shared shape would live.
 
 ## Index row
 

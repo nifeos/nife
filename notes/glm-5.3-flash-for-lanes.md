@@ -63,7 +63,7 @@ uncommitted. The grader reran every gate in each clone; the model's own claims w
 
 | run | wall min | finished | `script/lint` | tests | matches the merged answer | corrections a reviewer would make | cost, USD |
 |---|---|---|---|---|---|---|---|
-| (a) Flash | 12.3 | yes, 1 commit | pass | n/a (comments) | same 7 files, plus 2 stale `swap.rs` mentions the merged one missed | 1: `c_confiner`'s comment names `c_seam` and omits `supervision_protocol` | 0.07 |
+| (a) Flash | 12.3 | yes, 1 commit | pass | n/a (comments) | same 7 files, plus 2 stale `swap.rs` mentions the merged one missed | 1: `c_confiner`'s comment names `c_seam` and omits `supervision_contract` | 0.07 |
 | (a) GLM-5.3 | 24.0 | yes, 1 commit | pass | `hot_swap_contract` pass | wider: 16 files, the supervision and NTP families too, and two notes | 0 | 1.93 |
 | (b) Flash | 18.3 | yes, 1 commit | pass | 5 crates pass | yes; one test pins a literal where the merged one pins `argon2`'s own constant | 1: that pin; its report says Kani proves a branch dead, which a test does | 0.14 |
 | (b) GLM-5.3 | 14.3 | yes, 1 commit | pass | 5 crates pass | yes | 1: British spelling of "behavior", twice | 1.53 |

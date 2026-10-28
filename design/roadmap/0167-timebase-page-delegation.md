@@ -9,7 +9,7 @@ needs_person: no
 ---
 # 167. Handing a computed page to a userspace-built child: closing the x86_64 timebase page's delegation gap
 
-A process built through the userspace ELF loader (`crates/supervision_protocol::build_child_space`)
+A process built through the userspace ELF loader (`crates/supervision_contract::build_child_space`)
 cannot reach the real x86_64 timebase page that a kernel-built process gets automatically.
 
 No hardware dependency; this is capability plumbing.
@@ -26,7 +26,7 @@ capability is involved, because the kernel does not need permission to touch its
 
 ## Why `build_child_space` cannot do the same thing
 
-`crates/supervision_protocol::build_child_space` runs in userspace, inside whatever process calls
+`crates/supervision_contract::build_child_space` runs in userspace, inside whatever process calls
 it (`root_supervisor`, `spawner`, and any other builder role), and builds every page of the child it
 constructs by `Untyped::RETYPE`ing a fresh frame out of its own budget
 (`retype_page_frame_from(build_ut)`). It has no mechanism for mapping a specific, pre-existing physical
@@ -39,10 +39,10 @@ faulting.** `build_child_space` retypes a fresh, zeroed placeholder frame instea
 `counter_frequency_contract::PAGE_VA`. `counter_frequency_contract::TimebasePage::hz()` reads a zeroed page as `None`
 ("unknown"), never as a fabricated rate. `user_rt::cntfrq()` falls back to its old hardcoded
 `1_000_000_000` in that case. The honest gap is recorded in both crates' own `BUGS` sections:
-`crates/counter_frequency_contract`'s (*"A process built by `supervision_protocol::build_child_space` reads a
+`crates/counter_frequency_contract`'s (*"A process built by `supervision_contract::build_child_space` reads a
 placeholder, not the kernel's real number... closing it needs a capability handed from whoever built
 the calling process, forwarded through every generation of the supervision tree"*) and
-`crates/supervision_protocol`'s own comment at the `build_child_space` call site making the identical
+`crates/supervision_contract`'s own comment at the `build_child_space` call site making the identical
 point. This milestone is where that closing happens.
 
 ## What it needs, three real pieces

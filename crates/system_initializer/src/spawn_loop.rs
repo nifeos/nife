@@ -938,7 +938,7 @@ impl Service<'_> {
         // `build_child` copied every segment out of staging, and destroying it now returns its
         // pages, since it is the pool's top carve.
         if let Some(st) = staging {
-            supervision_protocol::memory_region_destroy(st);
+            supervision_contract::memory_region_destroy(st);
             capability_delete(st);
         }
         let tcb = built
@@ -1732,7 +1732,7 @@ fn receive_delegated(
 /// words are on its argument page (§170 (how a foreign program is told what to do)), the grant's
 /// own words behind a directory grant (`spawnproto::GRANT_WORDS`, forwarded unread), and the line's
 /// integer otherwise.
-fn start_job(built: Option<supervision_protocol::Child>, req: &Request, std_layout: bool) -> bool {
+fn start_job(built: Option<supervision_contract::Child>, req: &Request, std_layout: bool) -> bool {
     match built {
         Some(child) => {
             let (a0, a1, a2) = match req.grant {
@@ -1756,7 +1756,7 @@ fn build_job(
     (std_layout, std_parts): (bool, Option<&StdLayout>),
     native: &NativeEndowment,
     (fault, held): (Option<u64>, bool),
-) -> Option<supervision_protocol::Child> {
+) -> Option<supervision_contract::Child> {
     // A held job's `ThreadControlBlock` goes to the shell that asked for it (§309), as a supervised
     // job's does (milestone 933).
     let retention = || {

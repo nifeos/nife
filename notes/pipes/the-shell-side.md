@@ -95,7 +95,7 @@ which is why `>` and `|` are one mechanism. The rules for the rest of `spawnprot
 - The screen endpoint goes over as `READ | GRANT`. The progenitor installs it as the child's fault
   target, and the shell needs `RECEIVE` and `REAP` on its own copy, as `job_undertaker`'s deaths
   endpoint does. The progenitor narrows its copy no further than `READ` when it inserts the child's
-  (`supervision_protocol::build_child_space`). Less than `READ` would leave it nothing to hand on.
+  (`supervision_contract::build_child_space`). Less than `READ` would leave it nothing to hand on.
 
 A stage whose output was substituted owes the shell no answer, so the progenitor acks instead.
 Without the ack a failed spawn is invisible, and the pipeline waits on a producer that does not

@@ -12,7 +12,7 @@
 //! `capsh(1)` is a different tool). Refused `designation`, `designate` and `designator` (the user
 //! designates; this crate's work starts after that). Refused `endow`, `award`, `confer`, `bestow`,
 //! `allot` and `furnish` (grant is already this tree's word, and `endow` is taken by
-//! `supervision_protocol::ChildEndowment`). Not named for `swish`: seven things use it.
+//! `supervision_contract::ChildEndowment`). Not named for `swish`: seven things use it.
 
 #![no_std]
 // milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 22-item

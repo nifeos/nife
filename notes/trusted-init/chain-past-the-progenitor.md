@@ -215,7 +215,7 @@ still load unmeasured bytes, and both are test or demo programs rather than the 
   measuring the blob at the point `root_supervisor` reads it.
 - `c_confiner`, which builds `c_shim`.
 
-Both run through `supervision_protocol::build_child`, the tree's only loader since milestone 96, and
+Both run through `supervision_contract::build_child`, the tree's only loader since milestone 96, and
 both could read the same table; neither does today. The table already carries their programs'
 digests, so the remaining work is the call, not the data.
 

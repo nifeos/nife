@@ -29,7 +29,7 @@ client. The alternative was a crate holding two constants.
 ## Why `login` is handed one program, not the boot archive
 
 `login` gets the caretaker's ELF bytes mapped at a fixed address, not the initial ramdisk archive.
-`crates/system_initializer` spawns it through `supervision_protocol::build_child`, which can map
+`crates/system_initializer` spawns it through `supervision_contract::build_child`, which can map
 only pages the spawner holds a `PageFrame` capability for. The archive is reserved RAM that the
 frame allocator does not own and no capability names. Milestone 233 (`login` dies on every boot) records the
 boot that died at `_start` because of it.
@@ -38,6 +38,6 @@ Giving `login` the archive is the refused option. It needs one program's bytes a
 check them against. A service that can read every file in the boot image to answer a password holds
 authority it never exercises.
 
-A blob costs the spawner no capability-table slots at all: `supervision_protocol`'s own
+A blob costs the spawner no capability-table slots at all: `supervision_contract`'s own
 `fill_and_map` holds one frame at a time and deletes it. That is what let it fit against the
 21-of-24 peak that `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` records.

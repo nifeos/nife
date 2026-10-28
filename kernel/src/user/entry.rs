@@ -259,7 +259,7 @@ pub(crate) fn run_with_device_run(image: &[u8], spawn: Spawn, device: DeviceRun)
 
 /// [`run`], and the process also holds its own address space, `WRITE`, at `slot` (§255 (each
 /// socket is its own capability)): the network stack's spawn, so it can `UNMAP` a closed socket's
-/// page. `supervision_protocol::CHILDS_OWN_SPACE` is the progenitor's twin. Never
+/// page. `supervision_contract::CHILDS_OWN_SPACE` is the progenitor's twin. Never
 /// returns. Name provisional.
 pub fn run_with_own_space(image: &[u8], spawn: Spawn, slot: u64) -> ! {
     run_with(image, spawn, None, Some(slot))

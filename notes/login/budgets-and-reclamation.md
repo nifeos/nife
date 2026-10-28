@@ -12,10 +12,10 @@ for that to cost nothing over the life of the process, and the measurements behi
 or `fail(2)` if it cannot.
 
 - `OWN_UT_PAGES` (128) pays for the page tables of `build_child`'s temporary mappings, never a
-  child's. Its only spender is `mint`'s `build_child`. `supervision_protocol::fill_and_map`'s scratch
+  child's. Its only spender is `mint`'s `build_child`. `supervision_contract::fill_and_map`'s scratch
   cursor is one process-wide allocator, so every segment and blob page of every caretaker this
   process builds moves it on, successful build or not. Each 2 MiB it first reaches costs a page
-  table. Since milestone 604 (the builder's scratch cursor is bounded) the cursor wraps inside `supervision_protocol::SCRATCH_WINDOW`, so the
+  table. Since milestone 604 (the builder's scratch cursor is bounded) the cursor wraps inside `supervision_contract::SCRATCH_WINDOW`, so the
   most it can cost is `SCRATCH_TABLE_PAGES` (32). Measured on 2026-08-26 over a whole aarch64 suite
   run, the twenty-six caretakers the login tests build spend `usage() == (1, 128)` of it. So 128 is
   128 times the observed high-water, not a tight count.

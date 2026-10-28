@@ -175,8 +175,13 @@ producing `*_protocol` names (`network_time_protocol` is NTPv4's own), and those
 contract suffix. The tree already says "wire contract" and "service contract" for these crates.
 
 Nineteen crates took the suffix; `network_time_protocol` keeps its word, as the standard's name.
-`supervision_protocol` waits for its split into `supervision_contract` and `process_builder`.
-`script/lint` check 3 holds the spelling and lists those two exceptions by name.
+`script/lint` check 3 holds the spelling and lists that one exception by name.
+
+calef, 2026-10-28 (UTC, relayed by the maintainer), ruled the last exception closed:
+`supervision_protocol` is `supervision_contract`. Supervision is nife's own protocol, not an
+external standard's, so the standard's exception never held; the crate takes the suffix whole. The
+split that would lift `process_builder` out of the crate is still open and is a separate question
+from the name.
 
 ## A ruled name is not asked again, and its rename has a deadline
 

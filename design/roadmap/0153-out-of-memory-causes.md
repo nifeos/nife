@@ -82,7 +82,7 @@ let slot = sched::grant(crate::cap::page_frame_cap(phys, Rights::ALL))
 The region was fine. The capability table was full, because `MemoryRegion::DESTROY` frees a
 region but never the destroyer's own table slot naming it, and the service leaked two slots per
 request. Both facts read as one `Error::OutOfMemory` at the call site, and the userspace helper
-(`supervision_protocol::retype_page_frame_from`) narrows even that to `Err(())`.
+(`supervision_contract::retype_page_frame_from`) narrows even that to `Err(())`.
 
 What the collapse actually cost, which is the part worth quoting to whoever picks this up:
 
