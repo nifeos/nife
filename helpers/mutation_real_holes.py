@@ -1,6 +1,6 @@
 """Classify a census's survivors by mutation shape and by what their triage row claims, and count the real holes.
 
-Part 1 of the proposal design/roadmap/proposals/a-survivor-accepted-once-is-not-accepted-forever.md
+Part 1 of the proposal design/roadmap/0954-a-survivor-accepted-once-is-not-accepted-forever.md
 (milestone number provisional, minted by the integrator when the proposal is promoted). A census
 counts every missed mutant alike, but most are mutants no test can kill: an OR swapped for an
 exclusive OR over operands that share no bit, a value shifted by zero or zero shifted. The number

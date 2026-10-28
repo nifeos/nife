@@ -18,7 +18,7 @@ This replaces a rule that `notes/mutation-testing.md`'s caveats and a follow-on 
 for, a `--report` rule that compares a timeout with the package's baseline test time. Telling a
 deadlock from a slow test stops mattering once every hang has to become a failure. Milestone 663
 (bound the host pass) stays separate and is the outer bound this proposal relies on. The companion
-proposal `a-survivor-accepted-once-is-not-accepted-forever.md` builds the census-wide check this
+milestone 954 (a survivor accepted once is not accepted forever) builds the census-wide check this
 one extends to timeouts.
 
 ## What a timeout is today

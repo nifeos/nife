@@ -1,13 +1,16 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
 raised: 2026-10-27
+promoted_from: a-survivor-accepted-once-is-not-accepted-forever
 milestone_dependencies: 740, 924
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A survivor accepted once is not accepted forever, and lanes work the accepted pile down
+# 954. A survivor accepted once is not accepted forever, and lanes work the accepted pile down
+
+Promoted 2026-10-28 (UTC); the number 954 is provisional until the integrator confirms it at merge. *(Title and slug are drafts.)*
 
 Raised 2026-10-27 (UTC) by `lane/mutation-gaps-plan`. calef ruled that day that three gaps in
 mutation testing close, and this is the first: accepted is not killed. The weekly census, the inflow

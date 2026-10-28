@@ -2408,7 +2408,7 @@ def record_times(logs):
 
 
 # **Mutants under QEMU, part 1 of "the kernel and its programs are mutated under QEMU"**
-# (design/roadmap/proposals/the-kernel-and-its-programs-are-mutated-under-qemu.md). Provisional
+# (design/roadmap/0955-the-kernel-and-its-programs-are-mutated-under-qemu.md). Provisional
 # flags; an architect names things.
 #
 #   script/falsifications --mutants --file <path.rs> [--arch aarch64] [--limit N] [--offset K]

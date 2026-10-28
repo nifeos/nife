@@ -206,7 +206,7 @@ pub(crate) fn test() -> bool {
 
 /// `--image kernel|system`: run one of a leg's two test images. A kernel mutant is run against the
 /// kernel's unit tests first, and only a survivor pays for the whole-system image
-/// (design/roadmap/proposals/the-kernel-and-its-programs-are-mutated-under-qemu.md). Skips the
+/// (design/roadmap/0955-the-kernel-and-its-programs-are-mutated-under-qemu.md). Skips the
 /// screen tour, the post-run image checks and, on x86_64, the extra machines, as `--test` does:
 /// they judge a whole run. False after refusing a value, or the flag beside `--test` or `--hvf`.
 /// Name: provisional.
