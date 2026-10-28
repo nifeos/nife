@@ -26,9 +26,8 @@ This proposal writes no code: §311 (a contract is code, not prose) reserves the
 implementing lane, and every new name below is provisional.
 
 Reuse: the checks reuse the tree's rustdoc-JSON extraction and `FORMAT_CONST` pattern
-(`helpers/interface_stability.py`, the machinery behind milestone 610 (the interface's stability
-is measured weekly)). No new code and no dependency; `cargo-semver-checks` and `cargo-public-api`
-stay refused as milestone 610 records.
+(`helpers/interface_stability.py`, milestone 610's machinery). No new code and no dependency;
+`cargo-semver-checks` and `cargo-public-api` stay refused as milestone 610 records.
 
 ## What the tree does today
 
