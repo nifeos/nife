@@ -132,6 +132,18 @@ pub struct Handoff {
     pub size_bytes: u64,
 }
 
+/// The handoff word's three fields share no bit (dstrd, a `u32`, shifted above bit 32;
+/// `blocks_per_transfer`, a `u16`, above bit 16; `entries`, a `u16`, below it), which the compiler
+/// checks here; the mutation exclusion for [`Handoff::pack`] names this constant. The
+/// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
+/// compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_HANDOFF_WORD_FIELDS_SHARE_NO_BIT: () = assert!(
+    ((u32::MAX as u64) << 32) + ((u16::MAX as u64) << 16) + u16::MAX as u64 == u64::MAX
+);
+
 impl Handoff {
     /// The three words, in `arg0`, `arg1`, `arg2` order.
     ///
