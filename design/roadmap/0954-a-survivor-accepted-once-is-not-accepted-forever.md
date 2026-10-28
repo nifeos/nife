@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-27
 promoted_from: a-survivor-accepted-once-is-not-accepted-forever
 milestone_dependencies: 740, 924
@@ -10,7 +10,7 @@ needs_person: no
 ---
 # 954. A survivor accepted once is not accepted forever, and lanes work the accepted pile down
 
-Promoted 2026-10-28 (UTC); the number 954 is provisional until the integrator confirms it at merge. *(Title and slug are drafts.)*
+*(Title and slug are drafts.)*
 
 Raised 2026-10-27 (UTC) by `lane/mutation-gaps-plan`. calef ruled that day that three gaps in
 mutation testing close, and this is the first: accepted is not killed. The weekly census, the inflow
@@ -107,9 +107,11 @@ a crate or a shape tree-wide.
 
 ## What done means
 
-The headline is real holes: census survivors that no algebraic argument answers. After this work
-that means `caller` rows, `gap` rows and anything unrowed. Today the number is unknown and at most
-196, the 712 less the two noise shapes. Measured on the first census after the last part lands:
+The headline is real holes: census survivors that no algebraic argument answers. Part 1 measured
+it: the 2026-10-26 census holds 32 real holes, at most 103 if every unrowed noise-shape candidate
+is one, and the count lives in
+`notes/mutation-testing/survivor-classification.md` and the census record's `real_holes` column.
+Measured on the first census after the last part lands:
 
 - No census survivor has a `killed` row or no row at all. Today there are 94.
 - The census holds no disjoint-bits or zero-shift survivor. Each one either leaves through a
@@ -127,17 +129,20 @@ reason.
 
 ## How the work splits
 
-Each part is one lane. Each crate lane re-derives its survivors with `script/mutation -p <crate>` on
+Parts 1 and 2 have shipped: the measurement and the mechanism. The remaining four parts are one
+lane each. Each crate lane re-derives its survivors with `script/mutation -p <crate>` on
 its own worktree. The largest crate here, `grant_plan`, has 1,312 mutants, about 50 minutes at the
 census's measured 2.35 seconds per mutant. A crate lane changes one crate per pull request, so the
 gate runs only that diff's mutants. The gate of milestone 924 (a survivor on a pull request's own
 lines cannot merge untriaged) ran 217 of them in three minutes on #2797, well under its 20-minute
 cap.
 
-1. The measurement. Classify every live survivor by shape and by the reason its row gives, flag
-   copied reasons, and publish the real-hole count per crate as a census report column. No code
-   changes, so this lane runs first and decides how large parts 4 and 5 are.
-2. The mechanism. The weekly job gains a census-wide check. Every survivor needs an
+1. Shipped. The measurement. The classes name every live survivor's shape and the reason its row
+   gives, flag copied reasons, and the census record's `real_holes` column carries the real-hole
+   count per crate beside the classification page. The 2026-10-26 census holds 32 real
+   holes, at most 103 with the unrowed noise-shape candidates, and 516 noise-shape sites of which
+   148 their own lines prove.
+2. Shipped. The mechanism. The weekly job gains a census-wide check. Every survivor needs an
    `equivalent` or `gap` row, and a `killed` row for a live survivor fails, the gate's own rule.
    The triage file gains `kind` and `verified` columns, and existing rows backfill as
    `unclassified`. `script/lint` holds the `unclassified` count to a baseline that only falls, the
@@ -179,6 +184,23 @@ Reuse: `helpers/mutation_inflow.py`'s key, rename chain and ledger reader, which
 the weekly job already share; `.cargo/mutants.toml`'s `exclude_re`, which cargo-mutants already
 reads; and the prose ratchet's baseline shape for the `unclassified` count. Nothing new is written
 where one of these fits.
+
+## Follow-on
+
+- **Outstanding.** Part 3, the 94 with no row or a stale one, one lane per driver crate. Checked
+  against the classes CSV's `unrowed` and `stale killed` columns and the carried list
+  `notes/project-metrics/mutation-rowless-survivors.csv`, 50 keys.
+- **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first. Checked
+  against `notes/project-metrics/mutation-shape-sites.csv`: 516 noise-shape sites, 148 the lines
+  prove, 368 a lane must read.
+- **Outstanding.** Part 5, the eight crates' remaining survivors, one lane each, and the
+  `unclassified` rows behind them. Checked against the classification page's real-hole column (32)
+  and the `unclassified` ratchet baseline, 406 rows.
+- **Outstanding.** Part 6, the remaining crates in batches ordered by real holes. Checked against
+  the classification page's per-crate real-hole counts.
+- **Outstanding.** A weekly step regenerates the shape-sites file, so the per-site verdicts keep
+  pace with each census without a lane re-running the checker by hand. Checked by its absence: the
+  committed file names the 2026-10-26 census, and nothing regenerates it.
 
 ## Names
 

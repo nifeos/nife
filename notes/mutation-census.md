@@ -12,7 +12,12 @@ to ask which crates moved between two of those days.
 The data is in the tree, versioned with the code it describes:
 
 - [`notes/project-metrics/mutation-census.csv`](project-metrics/mutation-census.csv), one row per
-  crate per census: `census,run,crate,tested,caught,missed,timeout,unviable`.
+  crate per census: `census,run,crate,tested,caught,missed,timeout,unviable,real_holes`. `real_holes`
+  counts the crate's survivors that no algebraic argument answers, in helpers/mutation_real_holes.py's
+  sense. `--add` computes it from the census's own shard output against the triage file of the
+  recording day. A blank cell means the census predates the column; the live count for the newest
+  census lives in
+  [`notes/mutation-testing/survivor-classification.md`](mutation-testing/survivor-classification.md).
 - [`notes/project-metrics/mutation-census-renames.csv`](project-metrics/mutation-census-renames.csv),
   the crate renames a comparison has to resolve before it can join two censuses.
 
@@ -114,7 +119,9 @@ machine_discovery                   615 ->   622   88.1% ->  87.6%    73 ->   77
 `((k_b - k_a) - rate_a * (v_b - v_a)) / v_b`, and the column sums to the move rather than merely
 ranking it. That matters because a crate can shift the corpus rate without its own rate shifting, by
 growing or shrinking against the average; `machine_discovery` is that case and the decomposition
-says so instead of leaving a reader to infer it.
+says so instead of leaving a reader to infer it. The table also carries a `real holes` column per
+crate, read from the record's own column; a census recorded before the column shows `-`, and so do
+its totals.
 
 ## The first finding: the fall did not happen
 
