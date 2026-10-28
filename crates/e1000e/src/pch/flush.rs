@@ -20,6 +20,12 @@ pub(crate) const TRANSMIT_DUMMY_LENGTH: u16 = 512;
 pub const fn required(status: u16, tdlen: u32) -> bool {
     status & FLUSH_DESC_REQUIRED != 0 && tdlen != 0
 }
+// The 512-byte length and the flag byte at bit 24 share no bit, so | and ^ compose them
+// identically; the compiler checks that here, and .cargo/mutants.toml excludes the word's
+// OR-to-XOR swap on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!((TRANSMIT_DUMMY_LENGTH as u64) & (0x02u64 << 24) == 0);
+
 /// The dummy transmit descriptor's second word: insert FCS, 512 bytes, no end of packet and no
 /// status report, exactly FreeBSD's `txd_lower`.
 ///
@@ -36,9 +42,22 @@ pub const fn transmit_word() -> u64 {
 pub const fn tail_after(tdt: u32, entries: u16) -> u32 {
     (tdt + 1) % entries as u32
 }
+// The mask clears the register's low half, 0x1f and 1 << 8 land in that cleared half, and the two
+// small constants and 0x0100_0000 share no bits with each other, so in the OR chain every swapped
+// XOR meets two operands that share no bit. The compiler checks that here, and
+// .cargo/mutants.toml excludes the word's OR-to-XOR swaps on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(
+    0x1f_u32 & 0xffff_c000 == 0
+        && (1u32 << 8) & 0xffff_c000 == 0
+        && 0x1f & (1u32 << 8) == 0
+        && (1u32 << 8) & 0x0100_0000 == 0
+);
+
 /// **Receive Descriptor Control** (`E1000_RXDCTL`, FreeBSD's `e1000_regs.h`) for the receive flush:
 /// prefetch threshold 31, host threshold 1, granularity in descriptors, the rest of the register
 /// kept.
+///
 #[doc(alias = "receive descriptor control")]
 pub const fn rxdctl(rxdctl: u32) -> u32 {
     (rxdctl & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000

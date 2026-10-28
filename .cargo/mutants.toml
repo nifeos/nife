@@ -189,4 +189,63 @@ exclude_re = [
     # not compiled into anything. Matched as a module path, which nothing outside a test module
     # uses.
     "tests::",
+
+    # **e1000e's register words** (roadmap 954, part 4). One entry per function and shape whose
+    # OR-to-XOR swaps are no-ops because the operands share no bit, and one per file's
+    # constant-level swaps and zero shifts for the same reason. The argument compiles: a `const`
+    # assertion beside each covered word states the disjointness, the field membership or the
+    # shift identity, and an edit that broke it would fail the build there. Line and column stay
+    # `[0-9]+`, so an edit above a word cannot strand its entry; a rename or a rewrite that made
+    # operands overlap stops matching and the mutant reappears in the census as a survivor, which
+    # fails the weekly check. The killed mutants an entry sweeps are named in its reason.
+    #
+    # The control words and the transmit inter-packet gap (control.rs): the assertion beside each
+    # const fn states its operands' pairwise disjointness.
+    "crates/e1000e/src/control\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in rctl$",
+    "crates/e1000e/src/control\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in tctl$",
+    "crates/e1000e/src/control\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in tipg$",
+    # The receive-error and transmit-command bytes (descriptor.rs) and the file's transmit
+    # descriptor word: single distinct bits, and a u16 length under a command byte at bit 24; the
+    # assertions beside them compile both arguments.
+    "crates/e1000e/src/descriptor\\.rs:[0-9]+:[0-9]+: replace \\| with \\^$",
+    "crates/e1000e/src/descriptor\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in transmit_word$",
+    # The flush (pch/flush.rs): the dummy transmit's 512-byte length under a flag byte at bit 24,
+    # and RXDCTL's three added constants, which land in the register half the mask clears or
+    # share no bits with each other; the assertions beside each function compile both.
+    "crates/e1000e/src/pch/flush\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in transmit_word$",
+    "crates/e1000e/src/pch/flush\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in rxdctl$",
+    # The flash registers (pch/non_volatile_memory.rs). status::DONE and control::GO are `1 << 0`
+    # and `1 >> 0` is the same word, the shift identity; the file-level shift entry also sweeps
+    # the other `1 << n` status bits and the two `0b11 << n` masks, whose swaps are killed by
+    # the_flash_register_bits_are_the_ich8_unions. initialize_cycle ORs two write-one-to-clear
+    # error bits that share no bit (assertion beside the const modules), and its DONE write meets
+    # a bit the status write before it has already carried. read_u32_at_byte ORs the byte count
+    # into the field it just masked out (assertion beside the const modules).
+    "crates/e1000e/src/pch/non_volatile_memory\\.rs:[0-9]+:[0-9]+: replace << with >>$",
+    "crates/e1000e/src/pch/non_volatile_memory\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in initialize_cycle$",
+    "crates/e1000e/src/pch/non_volatile_memory\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in read_u32_at_byte$",
+    # The PHY (pch/physical_layer_device.rs): a value shifted left by five never reaches the
+    # five-bit register field beside it (assertion beside paged_offset), and the identifier's high
+    # word sits at bit 16 while the low one is a u16 (assertion beside id_at).
+    "crates/e1000e/src/pch/physical_layer_device\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in paged_offset$",
+    "crates/e1000e/src/pch/physical_layer_device\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in id_at$",
+    # The I219 bring-up (pch/sequence.rs): the ULP word's eight single-bit operands (assertion
+    # beside the constant), the identifier composition accessible shares with id_at (assertion
+    # beside it), the two OEM bits (beside oem_bits), the LANPHYPC counter value inside the field
+    # its word masks out (beside toggle_lanphypc), the SMBus address and flags (beside
+    # write_system_management_bus_address), initialize_hardware's unnamed Intel bits and the
+    # write-back constant that sets nothing the next line's prefetch does not set again (inside
+    # it; its TARC1 read join and its prefetch join are killed by
+    # initialize_hardware_writes_freebsds_values_from_any_starting_state), the copper link's
+    # advertised bits (beside setup_copper_link; the joins on a register's own value are killed by
+    # the same test), and the transmit errata's request count inside the field its word masks out
+    # (beside transmit_errata).
+    "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^$",
+    "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in accessible$",
+    "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in oem_bits$",
+    "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in toggle_lanphypc$",
+    "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in write_system_management_bus_address$",
+    "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in initialize_hardware$",
+    "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in setup_copper_link$",
+    "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in transmit_errata$",
 ]
