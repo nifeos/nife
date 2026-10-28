@@ -212,9 +212,9 @@ XpressRICH root complex is a different host bridge (no `pci-host-ecam-generic` n
 board-side follow-up, and this driver is written to need only a working enumeration and a BAR from
 it.
 
-## The DMA escape test
+## The direct memory access escape test
 
-[`non-volatile-memory-express/the-dma-escape-test.md`](non-volatile-memory-express/the-dma-escape-test.md)
+[`non-volatile-memory-express/the-direct-memory-access-escape-test.md`](non-volatile-memory-express/the-direct-memory-access-escape-test.md)
 carries the test that aims a confined server's controller outside its region, and its attacker
 role.
 

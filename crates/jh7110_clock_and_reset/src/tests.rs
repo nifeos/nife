@@ -511,23 +511,23 @@ fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
     assert_eq!(i2c5_clock_frequency(&no_fbdiv), PLL2_DEFAULT_HZ);
 }
 
-/// `every_reset_released` compares the two counts, so a plan with one reset that read back still
+/// `all_resets_are_released` compares the two counts, so a plan with one reset that read back still
 /// asserted is not released, and a plan with no reset step is (vacuously) released.
 #[test]
-fn every_reset_released_counts_the_released_against_the_planned() {
-    assert!(BringUpReport::default().every_reset_released());
+fn all_resets_are_released_counts_the_released_against_the_planned() {
+    assert!(BringUpReport::default().all_resets_are_released());
     let one_of_two = BringUpReport {
         resets: 2,
         resets_released: 1,
         ..BringUpReport::default()
     };
-    assert!(!one_of_two.every_reset_released());
+    assert!(!one_of_two.all_resets_are_released());
     let both = BringUpReport {
         resets: 2,
         resets_released: 2,
         ..BringUpReport::default()
     };
-    assert!(both.every_reset_released());
+    assert!(both.all_resets_are_released());
 }
 
 // The SD/MMC bring-up plans.

@@ -37,12 +37,12 @@ pub(crate) fn main() -> ExitCode {
                 && user()
                 && cargo(&["run", "-p", "kernel", "--target", TARGET])
         }
-        // `initial_ramdisk_aarch64` only packs, so this calls `user()` (build, then pack), as its
+        // `has_initial_ramdisk_aarch64` only packs, so this calls `user()` (build, then pack), as its
         // two siblings build and pack in one call.
         "initial-ramdisk-aarch64" => user(),
-        "initial-ramdisk-riscv" => initial_ramdisk_riscv(),
+        "initial-ramdisk-riscv" => has_initial_ramdisk_riscv(),
         // The third archive (milestone 161). Same programs, built for x86_64.
-        "initial-ramdisk-x86" => initial_ramdisk_x86(),
+        "initial-ramdisk-x86" => has_initial_ramdisk_x86(),
         // The bootable UEFI image (milestone 87): the entry real firmware can start, staged at
         // target/esp for a QEMU/OVMF boot or for a FAT32 stick. See notes/x86-uefi-boot.md.
         // Name: `uefi-image` and `uefi-boot` ratified 2026-08-30 (calef, in session, on milestone

@@ -1172,9 +1172,11 @@ pub struct BringUpReport {
 impl BringUpReport {
     /// **Did every reset step read as released?** True for a plan with none.
     ///
-    /// Name: ratified 2026-10-26 (UTC).
+    /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+    /// `every_reset_released`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite
+    /// verb.
     #[must_use]
-    pub fn every_reset_released(&self) -> bool {
+    pub fn all_resets_are_released(&self) -> bool {
         self.resets_released == self.resets
     }
 

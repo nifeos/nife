@@ -194,8 +194,8 @@ script/swish-check   # if the shell spawns it: both ISAs, and much faster than t
 script/test          # all three architectures
 ```
 
-`cargo xtask build` packs the aarch64 archive only, whatever the name suggests; `initial_ramdisk_riscv()` and
-`initial_ramdisk_x86()` are called by `test` and `swish-check`. That no longer hides a packing mistake,
+`cargo xtask build` packs the aarch64 archive only, whatever the name suggests; `has_initial_ramdisk_riscv()` and
+`has_initial_ramdisk_x86()` are called by `test` and `swish-check`. That no longer hides a packing mistake,
 because all three archives pack one list, but it is still not a check of the other two builds.
 
 **Run swish-check once with a deliberately wrong expectation.** A green harness only proves the

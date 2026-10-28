@@ -339,7 +339,7 @@ pub const CARETAKER_ELF_VA: u64 = 0x0000_0000_0100_0000;
 ///
 /// Four megabytes above [`CARETAKER_ELF_VA`] so a caretaker image would have to grow forty-fold
 /// before the two could meet. Both sit well below
-/// `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA` and well above the per-channel scratch
+/// `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VIRTUAL_ADDRESS` and well above the per-channel scratch
 /// VAs `login` bump-allocates, which is the only other thing in that address space that grows.
 pub const PROGRAM_MEASUREMENTS_VA: u64 = 0x0000_0000_0140_0000;
 

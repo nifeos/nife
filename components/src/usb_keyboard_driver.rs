@@ -645,7 +645,7 @@ impl Host {
         let phys = |page: u64| self.dma_phys + page * PAGE_BYTES;
         // One slot: this driver serves one device at a time, and gives a slot back before it
         // asks for another.
-        let config = self.op(registers::CONFIG);
+        let config = self.op(registers::CONFIGURATION);
         self.set_reg(config, (self.reg(config) & !0xff) | 1);
 
         // The slot array, its entry 0 the scratchpad array when the controller wants one.

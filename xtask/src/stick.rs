@@ -22,7 +22,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use super::{RISCV_TARGET, TARGET, cargo_profiled, profile_dir, user};
-use crate::archive::{initial_ramdisk_path, initial_ramdisk_riscv, riscv_initial_ramdisk_path};
+use crate::archive::{has_initial_ramdisk_riscv, initial_ramdisk_path, riscv_initial_ramdisk_path};
 use crate::host::workspace_root;
 use crate::portable_executable;
 use crate::uefi::uefi_image;
@@ -135,7 +135,7 @@ fn payload_aarch64() -> bool {
 /// stick is for the bench as well as for QEMU; the feature changes only how a test run exits,
 /// which a tour never does. `stick-boot` proves it boots under QEMU's EDK2.
 fn payload_riscv64() -> bool {
-    if !initial_ramdisk_riscv()
+    if !has_initial_ramdisk_riscv()
         || !cargo_profiled(&[
             "build",
             "-p",

@@ -15,7 +15,7 @@ The least_authority_demo is the first program that is its own binary, not a role
 lives in `components/src/least_authority_demo.rs`: its own `_start`, its own panic handler, ~30
 lines, and not one line of hello's code. It shares the `user` package's `link.ld` (so it links at
 `0x40_0000` like hello), which is not a conflict because each program runs in its own address space.
-`initial_ramdisk_aarch64` packs it as a second archive entry, `"least_authority_demo"`, beside the boot
+`has_initial_ramdisk_aarch64` packs it as a second archive entry, `"least_authority_demo"`, beside the boot
 program's.
 
 Every consumer that used to spawn "a role-6 least_authority_demo of hello" now loads

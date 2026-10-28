@@ -1,6 +1,8 @@
-# The DMA escape test
+# The direct memory access escape test
 
-*Name: provisional. For the NVMe server's DMA escape test and its attacker role. calef names files.*
+*Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), replacing
+`the-dma-escape-test`: the spelled-out rule expands `dma`. For the NVMe server's DMA escape test
+and its attacker role.*
 
 The appendix to [`notes/non-volatile-memory-express.md`](../non-volatile-memory-express.md), whose
 section "The confinement story, which is the interesting part" carries why the server is confined.

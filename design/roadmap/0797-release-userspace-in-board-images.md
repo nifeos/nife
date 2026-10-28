@@ -32,7 +32,7 @@ Every job-mix and soak number recorded from radon was taken with debug userspace
 the profile changes all of them at once. The change has to come with a new baseline, taken
 interleaved against the old payload on the same evening. Every note that quotes a radon number
 has to say which side of the change it is on. `swish-check --release` already met the same mismatch
-and fixed it for its own path (the comment at `initial_ramdisk_riscv`).
+and fixed it for its own path (the comment at `has_initial_ramdisk_riscv`).
 
 Reuse: xtask's existing `RELEASE` flag and `profile_dir()`, which `bench`, `soak` and `install`
 already set; nothing new is built.

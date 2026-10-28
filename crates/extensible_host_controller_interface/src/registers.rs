@@ -54,10 +54,12 @@ pub const CRCR: u64 = 0x18;
 ///
 /// Name: ratified 2026-10-25 (#2720).
 pub const DCBAAP: u64 = 0x30;
-/// Operational register: `CONFIG`, whose low byte is how many slots are enabled.
+/// Operational register: the register the xHCI specification calls `CONFIG`, whose low byte is how
+/// many slots are enabled.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const CONFIG: u64 = 0x38;
+/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from `CONFIG`:
+/// `config` is ruled to expand; the specification's name for the register does not keep it.
+pub const CONFIGURATION: u64 = 0x38;
 /// Operational register: port 1's `PORTSC`; port `n`'s is `0x10 * (n - 1)` further.
 pub(crate) const PORTSC_BASE: u64 = 0x400;
 

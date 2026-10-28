@@ -16,8 +16,8 @@ use crate::{RISCV_TARGET, TARGET, X86_TARGET, profile_dir};
 
 /// **Build the two program packages, `components` and `fixtures`, for `target`**, in the run's
 /// profile and with the attacker roles only when [`crate::CONFINEMENT_ATTACKERS`] says so. The one
-/// place the three initial ramdisk builders ([`crate::user`], [`initial_ramdisk_riscv`],
-/// [`initial_ramdisk_x86`]) spell that build, so the feature cannot reach one architecture's
+/// place the three initial ramdisk builders ([`crate::user`], [`has_initial_ramdisk_riscv`],
+/// [`has_initial_ramdisk_x86`]) spell that build, so the feature cannot reach one architecture's
 /// archive and not another's. Switching between a test and any other boot recompiles
 /// `components`, because cargo fingerprints features; that is the price of the shipped image not
 /// containing the attacker. Name provisional.
@@ -324,10 +324,10 @@ fn check_declared_programs(names: &[String]) -> Result<(), String> {
 ///     --target riscv64imac-unknown-none-elf
 /// ```
 ///
-/// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
-/// His words: "B for #1998." Refused `initrd_riscv` (the foreign spelling, which stops at the
-/// boundary where it arrives).
-pub(crate) fn initial_ramdisk_riscv() -> bool {
+/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+/// `initial_ramdisk_riscv`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite
+/// verb.
+pub(crate) fn has_initial_ramdisk_riscv() -> bool {
     // The whole package, never a `--bin` list: a list has to be kept in step with
     // `declared_programs` by hand. Every program compiles for this target.
     if !build_programs(RISCV_TARGET) {
@@ -393,10 +393,9 @@ pub(crate) fn x86_initial_ramdisk_path() -> String {
 ///     --target x86_64-unknown-none
 /// ```
 ///
-/// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
-/// His words: "B for #1998." Refused `initrd_x86` (the foreign spelling, which stops at the
-/// boundary where it arrives).
-pub(crate) fn initial_ramdisk_x86() -> bool {
+/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+/// `initial_ramdisk_x86`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite verb.
+pub(crate) fn has_initial_ramdisk_x86() -> bool {
     if !build_programs(X86_TARGET) {
         return false;
     }
@@ -445,10 +444,10 @@ pub(crate) fn initial_ramdisk_x86() -> bool {
 /// aarch64 kernel, including the `initial-ramdisk-aarch64` subcommand. The image is generated and
 /// never checked in. See notes/adding-a-program/the-archives.md.
 ///
-/// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
-/// His words: "B for #1998." Refused `initrd_aarch64` (the foreign spelling, which stops at the
-/// boundary where it arrives).
-pub(crate) fn initial_ramdisk_aarch64() -> bool {
+/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+/// `initial_ramdisk_aarch64`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite
+/// verb.
+pub(crate) fn has_initial_ramdisk_aarch64() -> bool {
     let Some(mut blobs) = declared_program_blobs("initial-ramdisk-aarch64", bin_elf) else {
         return false;
     };

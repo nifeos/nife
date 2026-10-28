@@ -66,8 +66,9 @@ impl TransferRequestBlock {
 
     /// The cycle bit.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
-    pub const fn cycle(&self) -> bool {
+    /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from `cycle`:
+    /// the question shape asks a `bool` `is_`, `has_`, `can_` or a finite verb.
+    pub const fn is_cycle(&self) -> bool {
         self.0[3] & 1 != 0
     }
 

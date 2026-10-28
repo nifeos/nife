@@ -60,7 +60,9 @@ mod uefi;
 mod uefi_screen_modes;
 mod usage;
 
-use crate::archive::{initial_ramdisk_aarch64, initial_ramdisk_riscv, initial_ramdisk_x86};
+use crate::archive::{
+    has_initial_ramdisk_aarch64, has_initial_ramdisk_riscv, has_initial_ramdisk_x86,
+};
 use crate::bench::bench;
 use crate::board::{board_console, board_script};
 use crate::boot_check::boot_check;
@@ -93,7 +95,7 @@ const RISCV_TARGET: &str = "riscv64imac-unknown-none-elf";
 /// The `x86_64` target (milestone 161). The kernel is built and run through cargo +
 /// `helpers/qemu-runner-x86_64.sh`, exactly as the RISC-V one is, and since item 4's hand-off this
 /// const also builds the third userspace archive: `initial-ramdisk-x86` compiles `user` for it and
-/// [`initial_ramdisk_x86`] packs the same programs RISC-V's archive carries. See
+/// [`has_initial_ramdisk_x86`] packs the same programs RISC-V's archive carries. See
 /// notes/x86-port/userspace.md.
 const X86_TARGET: &str = "x86_64-unknown-none";
 
@@ -123,5 +125,5 @@ fn build() -> bool {
 /// an **ELF**: the kernel's loader wants program headers, unlike the kernel itself, which QEMU
 /// wants as a flat image. See notes/elf.md.
 pub(crate) fn user() -> bool {
-    archive::build_programs(TARGET) && initial_ramdisk_aarch64()
+    archive::build_programs(TARGET) && has_initial_ramdisk_aarch64()
 }

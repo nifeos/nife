@@ -151,7 +151,7 @@ impl NonVolatileMemoryExpress {
             },
             cid: 0,
         };
-        let cap = Capabilities(c.reg64(registers::CAP));
+        let cap = Capabilities(c.reg64(registers::CAPABILITIES));
         // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
         // naming the controller, not in a process that cannot reach its doorbells
         // (`MAXIMUM_DOORBELL_STRIDE`).
@@ -390,7 +390,7 @@ impl NonVolatileMemoryExpress {
         if when == "pre " {
             crate::println!(
                 "diag nvme cap {:#x} vs {:#x} dstrd {}",
-                self.reg64(registers::CAP),
+                self.reg64(registers::CAPABILITIES),
                 self.reg32(0x08),
                 self.dstrd
             );

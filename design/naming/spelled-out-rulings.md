@@ -225,3 +225,12 @@ calef ruled on 2026-10-18 (UTC) that `config`, `spec`, `arg`, `mem`, `dir`, `va`
 | `ipc`, ruled by §154 on 2026-09-18 | 1,668 | 285 |
 
 Each family lands as its own pull request, serially. `ipc_receive_cap` also carries `cap`, which the section above already rules. A site where the owner's spelling is unclear goes to the architect as a list.
+
+## `per-ipc-depth` keeps `IPC`: a term of art
+
+Ruled 2026-10-28 (UTC), relayed by the maintainer: `IPC` in
+`notes/stack-high-water/per-ipc-depth.md` is a term of art, and the document keeps its name. The
+ruling declines the expansion for this one name. §154 (the acronym test is whether the phrase is
+spoken) ruled `ipc` expands on 2026-09-18, and the rest of that worklist stands.
+`helpers/name_checks.py` carries the exception beside its check, so the name prints as excepted by
+a ruling instead of sitting in the ratified-failures list.
