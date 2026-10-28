@@ -77,7 +77,7 @@ CONTRACTS = (
     'counter_frequency_contract', 'credential_contract', 'current_cpu_contract',
     'entropy_contract', 'environment_contract', 'filesystem_contract', 'graphics_contract',
     'login_contract', 'machine_statistics_contract', 'socket_contract', 'std_runtime_contract',
-    'supervision_protocol',
+    'supervision_contract',
     'hot_swap_contract',
     'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'glob',
     'globally_unique_identifier_partition_table', 'grant_plan', 'capability_plan', 'compositor',
@@ -253,7 +253,7 @@ def std_abi_source_texts():
 # compared with a fresh one from the new.
 SURFACE_VERSION = 'v4'
 # The interface as a nife program sees it: every contract crate is `no_std` and builds for the
-# kernel's own first target, and two (`supervision_protocol`, `hot_swap_contract`) link
+# kernel's own first target, and two (`supervision_contract`, `hot_swap_contract`) link
 # `user_mode_runtime`, which does not build for the host at all. BUGS: items behind a
 # `cfg(target_arch)` for riscv64 or x86_64 are not read.
 TARGET = 'aarch64-unknown-none-softfloat'
@@ -925,7 +925,7 @@ def measure(rev, lineage_map, wanted):
     # `-m`: every file gets today's mtime. `git archive` stamps files with the commit's time, which
     # is OLDER than the artifacts the previous week left in the shared target directory, and cargo
     # then trusts a stale `abi` rmeta and fails to build the crates that use it. Measured: that
-    # failure is what first showed `supervision_protocol` as unmeasured on five weeks.
+    # failure is what first showed `supervision_contract` as unmeasured on five weeks.
     subprocess.run(['tar', '-x', '-m', '-C', str(tree)], input=archive, check=True)
     present = {}
     for toml in sorted((tree / 'crates').glob('*/Cargo.toml')):

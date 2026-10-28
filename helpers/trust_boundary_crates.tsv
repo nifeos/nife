@@ -162,8 +162,9 @@ std_runtime_protocol	shared	retired
 steal_request	kernel	retired
 stick_maker	host	-
 subtree_scope	userspace	redoxfs_server
+supervision_contract	userspace	components,fixtures
 supervision_proto	userspace	retired
-supervision_protocol	userspace	components,fixtures
+supervision_protocol	userspace	retired
 swap_proto	userspace	retired
 swap_protocol	userspace	retired
 swish	userspace	components

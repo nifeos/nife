@@ -48,7 +48,7 @@ to the progenitor's reaper.
 
 An image's frames are copied before they are hashed, because the caller keeps a mapping of them and
 could change the bytes between a hash and a build. The progenitor maps each frame through the
-loader's scratch window (`supervision_protocol::map_scratch`) and copies it into a page of its own.
+loader's scratch window (`supervision_contract::map_scratch`) and copies it into a page of its own.
 It deletes the capability before taking the next, so a request of any size costs its capability
 table one transient slot. A digest found in the installed-programs table is vouched and runs with
 that entry's manifest. An install copies its frames the same way, and a vouch sends its frames

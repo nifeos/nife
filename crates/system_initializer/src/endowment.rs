@@ -153,7 +153,7 @@ pub struct BootEndowment {
     pub usb_keyboard_attach: u64,
     /// **This process's own address space** (§249 (a running address space stays nameable), its
     /// 2026-10-05 amendment ruling the slot): an `AddressSpace` capability with `WRITE` alone, no
-    /// `GRANT`, granted on every boot. [`boot`](crate::boot) hands it to `supervision_protocol` before it builds
+    /// `GRANT`, granted on every boot. [`boot`](crate::boot) hands it to `supervision_contract` before it builds
     /// anything, so every page the loader fills for a child is given up with `UNMAP` the moment it
     /// is in the child, and the progenitor keeps no window onto a boot server's memory (milestone
     /// 95 (an unmap primitive, and the mappings init never lets go)). Kept for the life of the

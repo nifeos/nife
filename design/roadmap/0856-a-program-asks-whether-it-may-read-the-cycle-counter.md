@@ -38,7 +38,7 @@ What has to be decided before building, and it is an architect's:
   the kernel test's. Asking "may I" matters once a real program can be granted.
 
 Reuse: `counter_frequency_contract`'s page and its parent-fills-child propagation through
-`supervision_protocol::build_child_space` were considered as the carrier and are the cheapest
+`supervision_contract::build_child_space` were considered as the carrier and are the cheapest
 route for riscv64 and x86_64; the choice is the architect's because it widens an ambient page.
 
 ## Index row

@@ -31,7 +31,7 @@ Sorted by breaking changes in the last four weeks (2026W41 to 2026W44), then by 
 | `nifefs` | 3 | 1 | 10 | 42 | 55 | 42 (76%) |
 | `counter_frequency_contract` | 3 | 2 | 4 | 17 | 26 | 22 (85%) |
 | `boot_slot` | 3 | 7 | 3 | 55 | 22 | 17 (77%) |
-| `supervision_protocol` | 2 | 7 | 24 | 71 | 70 | 61 (87%) |
+| `supervision_contract` | 2 | 7 | 24 | 71 | 70 | 61 (87%) |
 | `byte_sink_contract` | 2 | 1 | 8 | 49 | 39 | 38 (97%) |
 | `entropy_contract` | 2 | 2 | 5 | 19 | 32 | 29 (91%) |
 | `measured_boot` | 2 | 24 | 2 | 65 | 32 | 23 (72%) |
@@ -160,8 +160,8 @@ Read at `7a21d411ba93` against the week before. Each line is one removed or chan
 > - `package_archive`: removed `MAX_MEMBERS`
 > - `socket_contract`: removed `DATA_MAX`
 > - `std_runtime_contract`: removed `HEAP_MAX`
-> - `supervision_protocol`: changed `ChildEndowment`
-> - `supervision_protocol`: removed `ChildEndowment::caps`
+> - `supervision_contract`: changed `ChildEndowment`
+> - `supervision_contract`: removed `ChildEndowment::caps`
 
 ## Co-change per package
 

@@ -63,10 +63,10 @@ SPELLED_OUT = {
     "pos", "opt", "opts", "mtime",
 }
 # Packages two programs agree through: `abi`, the wire-contract crates (`script/lint` check 3 holds
-# their spelling, `network_time_protocol` and `supervision_protocol` its two exceptions), and the
+# their spelling, `network_time_protocol` its one exception), and the
 # on-disk formats §307 (how long a name may be) lists. Something else another program parses is
 # missed; the BUGS below say so.
-WIRE = {"abi", "network_time_protocol", "supervision_protocol", "nifefs", "package_archive",
+WIRE = {"abi", "network_time_protocol", "nifefs", "package_archive",
         "documentation"}
 # Spelled in two halves because script/lint's naming check refuses the word outside design/.
 _SERVICE_WORD = "dae" + "mon"

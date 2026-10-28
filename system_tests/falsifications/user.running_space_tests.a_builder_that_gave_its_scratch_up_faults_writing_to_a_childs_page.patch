@@ -10,9 +10,9 @@ onto every boot server.
 Expected to fail: in the run with its own space, the assertion that no second report arrives,
 because the write landed and the witness said so.
 
-diff --git a/crates/supervision_protocol/src/lib.rs b/crates/supervision_protocol/src/lib.rs
---- a/crates/supervision_protocol/src/lib.rs
-+++ b/crates/supervision_protocol/src/lib.rs
+diff --git a/crates/supervision_contract/src/lib.rs b/crates/supervision_contract/src/lib.rs
+--- a/crates/supervision_contract/src/lib.rs
++++ b/crates/supervision_contract/src/lib.rs
 @@ -790,7 +790,7 @@
      // The page is written and in the child (or the build failed): either way this builder is done
      // with its own window onto it. Given up here, one page at a time, rather than after the child

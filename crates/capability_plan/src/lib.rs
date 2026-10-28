@@ -165,7 +165,7 @@ pub struct StateHandoff {
 
 /// What a component declares it needs: the capability half of a contract, beside the wire half.
 /// The order of [`capabilities`](Requirements::capabilities) is the component's capability table slot order,
-/// because `supervision_protocol::ChildEndowment::capabilities` lands its entries in slots 0, 1, 2, ...,
+/// because `supervision_contract::ChildEndowment::capabilities` lands its entries in slots 0, 1, 2, ...,
 /// and the component derives its own slot numbers with [`slot_of`]. Supervision (§32 (a supervisor
 /// may collect a corpse without being able to build one)) and start arguments are not declared: a
 /// manifest declares what a component needs, not how it is started. See
@@ -415,7 +415,7 @@ impl Refusal {
     }
 }
 
-/// **Exactly what to endow one child with**, in the form `supervision_protocol::ChildEndowment` takes.
+/// **Exactly what to endow one child with**, in the form `supervision_contract::ChildEndowment` takes.
 ///
 /// A value with no allocation, bounded by [`MAXIMUM_CAPABILITIES`] and [`MAXIMUM_MAPS`], so a supervisor
 /// holds it on its stack and hands out slices of it.

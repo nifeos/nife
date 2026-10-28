@@ -27,7 +27,7 @@ The real surface, re-measured:
   `configure_thread_control_block`, `tcb_insert_cap` -> `thread_control_block_insert_cap`,
   `start_tcb` -> `start_thread_control_block`, and `tcb_ptr` -> `thread_control_block_ptr`;
 - `tcb_configure`/`tcb_cap_insert` in `syscall.rs`'s dispatch, `tcb_start` in `supervision_proto`
-  (now `supervision_protocol`) and `system_initializer`, and the `Thread` struct's own
+  (now `supervision_contract`) and `system_initializer`, and the `Thread` struct's own
   `tcb_kmem`/`tcb_region` fields;
 - the `Tid` half's own compound names: `current_tid` -> `current_thread_id`, `set_current_tid` ->
   `set_current_thread_id`, `write_tid` -> `write_thread_id` in `crates/ps`, and five test names

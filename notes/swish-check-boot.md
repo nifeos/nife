@@ -103,7 +103,7 @@ fault. `echo $?` reading `2` right after `least_authority_demo` proves the disti
 thread the kernel killed does not set a status.
 
 What a deliberate trap does was measured for milestone 233. `least_authority_demo` was patched to
-call `supervision_protocol::fail()` on `least_authority_demo 5`, and the gate was run against it.
+call `supervision_contract::fail()` on `least_authority_demo 5`, and the gate was run against it.
 The check fired, naming the thread and the reason, so it can fail. The prompt also never came back
 for `least_authority_demo 6`. The shell waits on the result endpoint of a job that faulted instead
 of sending, and nothing wakes that wait, so a spawned command that traps hangs the shell. That

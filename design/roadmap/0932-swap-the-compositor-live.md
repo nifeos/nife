@@ -36,7 +36,7 @@ dependency above.
 
 - The quiesce opcode on `compositor::proto`, ruled first.
 - Its spawner supervises its swaps, the rule milestone 23 applies to the terminal: whoever builds
-  the compositor on that boot holds it, through `hot_swap_contract` and `supervision_protocol`.
+  the compositor on that boot holds it, through `hot_swap_contract` and `supervision_contract`.
 - A test in the shape of `system_tests::user::terminal_display_swap_tests`: two windows drawn
   before a swap and after it, compared pixel for pixel with the scene the kernel computes.
 

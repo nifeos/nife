@@ -15,16 +15,14 @@
 //! complete authority in both directions (§142). See notes/supervision.md and
 //! notes/progenitor-and-loading.md.
 //!
-//! The examples run under `cargo test --doc -p supervision_protocol` on an aarch64 host, not in
+//! The examples run under `cargo test --doc -p supervision_contract` on an aarch64 host, not in
 //! `script/test`'s host pass, which excludes this crate for its `user_mode_runtime` dependency.
 //!
-//! Name: provisional. Reopened by calef on 2026-10-22 (UTC, #2562), whose ruling was
-//! "`supervision_protocol`: reopen". The question put to him: the crate holds the supervision tree's
-//! protocol words and also the tree's only userspace ELF loader, which builds a child process and
-//! states its authority as a `ChildEndowment`, so `_protocol` names only the first half. The rename
-//! waits on the split into `supervision_contract` and `process_builder` that
-//! design/naming/convention-rulings.md names. `ChildEndowment` is an open naming question of its
-//! own (§69 (`Endow` is a verb)).
+//! Name: ratified 2026-10-28 (calef, relayed by the maintainer), replacing
+//! `supervision_protocol`. Refused keeping `_protocol` under the standard's exception
+//! (`network_time_protocol`): supervision is nife's own protocol, not an external standard's.
+//! The split that would lift `process_builder` out of this crate is still open
+//! (design/naming/convention-rulings.md).
 
 use user_mode_runtime::{
     address_space_map_into, capability_delete, destroy_memory_region, invoke,
@@ -231,7 +229,7 @@ pub fn give_up_own_page(va: u64) -> bool {
 /// Every field is public and [`ChildEndowment::new`] is the nothing-endowment to build from:
 ///
 /// ```
-/// use supervision_protocol::{CHILD_STACK_PAGES, ChildEndowment, Retention};
+/// use supervision_contract::{CHILD_STACK_PAGES, ChildEndowment, Retention};
 ///
 /// // A sub-server that gets exactly one endpoint, is born supervised, and holds nothing else.
 /// // `..ChildEndowment::new(Retention::Nothing)` is the intended shape: what is not listed is not
@@ -342,7 +340,7 @@ impl<'a> ChildEndowment<'a> {
 /// # Examples
 ///
 /// ```
-/// use supervision_protocol::{ChildEndowment, Retention};
+/// use supervision_contract::{ChildEndowment, Retention};
 ///
 /// // The ordinary case, and it says so out loud rather than by omission.
 /// let ordinary = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
@@ -411,7 +409,7 @@ pub struct Child {
 /// # Examples
 ///
 /// ```no_run
-/// # use supervision_protocol::{ChildEndowment, Retention, build_child, start_child};
+/// # use supervision_contract::{ChildEndowment, Retention, build_child, start_child};
 /// # fn demo(own: u64, per_child: u64, elf: &elf::Elf) -> Result<(), ()> {
 /// let endow = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
 ///
@@ -757,7 +755,7 @@ pub fn memory_region_destroy(ut: u64) -> bool {
 /// # Examples
 ///
 /// ```no_run
-/// # use supervision_protocol::{ChildEndowment, Retention, build_child, start_child};
+/// # use supervision_contract::{ChildEndowment, Retention, build_child, start_child};
 /// # fn demo(own: u64, per_child: u64, elf: &elf::Elf) -> Result<(), ()> {
 /// let endow = ChildEndowment { fault: Some(7), ..ChildEndowment::new(Retention::Nothing) };
 /// let child = build_child(own, per_child, elf, &endow)?;

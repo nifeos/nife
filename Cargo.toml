@@ -72,7 +72,7 @@ members = [
     "crates/c_seam",
     "crates/c_library_errno",
     "crates/c_program_fixture",
-    "crates/supervision_protocol",
+    "crates/supervision_contract",
     "crates/system_initializer",
     "crates/hot_swap_contract",
     "crates/soak_page",

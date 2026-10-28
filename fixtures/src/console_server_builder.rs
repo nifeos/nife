@@ -21,7 +21,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use supervision_protocol::{
+use supervision_contract::{
     ChildEndowment, Retention, build_child, retype_obj_from, retype_page_frame_from, start_child,
 };
 use user_mode_runtime::{exit, map_page_frame, receive, require, send};

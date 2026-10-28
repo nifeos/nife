@@ -67,7 +67,7 @@ misaligned or kernel-half `va`, and a page already given up.
    code to `abi::Error` is a wire change of its own, and `BadPointer` already means "not memory you
    could have touched yourself", which an unmapped page is.
 2. What the tree does in the analogous case. `MAP_INTO` of an address already mapped answers
-   `BadPointer` rather than succeeding or replacing, and `supervision_protocol::map_scratch` relies
+   `BadPointer` rather than succeeding or replacing, and `supervision_contract::map_scratch` relies
    on that refusal as its free list. `UNMAP` is the same rule read the other way. Inside the
    kernel, `MappingHold::forget_mapping` is silent on a missing record, but it is a rollback, and
    for a rollback "nothing left to undo" is the right answer.
@@ -98,7 +98,7 @@ the caller still holds can map the page again; one already deleted was never nee
    not work, and the reason is structural: `UNMAP` names an address, not a capability. The mapping
    record stores the run's base address, which every derivative of a capability shares (§132 (what
    `PageFrame::REVOKE` owes an overlapping run)), so there is no single slot to consume. And in the
-   case §162 was decided for, there is nothing to consume: `supervision_protocol::fill_and_map` and
+   case §162 was decided for, there is nothing to consume: `supervision_contract::fill_and_map` and
    `system_initializer::receive_image` delete each frame capability right after mapping it. A
    second alternative, refusing `UNMAP` unless the caller still holds the capability, loses for the
    same reason. It would make the progenitor's windows impossible to give up.
@@ -168,7 +168,7 @@ Built 2026-10-05 (UTC) on §249 (a running address space stays nameable), by the
 - **A second bind is refused** with `WrongObject`, from a bound mark on the entry.
 - **The kernel grants the progenitor its own space** at slot 28, `WRITE` alone
   (`system_initializer::BootEndowment::own_space`). It hands the slot to
-  `supervision_protocol::give_up_scratch_through` before it builds anything, and the loader then
+  `supervision_contract::give_up_scratch_through` before it builds anything, and the loader then
   `UNMAP`s each scratch page the moment the page is in the child (`give_up_own_page`). The same call
   closes the three other windows it opened onto memory it hands on: the shell's output page after
   the last boot line, and the virtio-rng and NIC DMA pages once their physical base is read.
@@ -218,7 +218,7 @@ path changed. The registry itself is 21,904 bytes of `.bss` at 288 slots.
   co-placements in a row fail `assert!(placed, ...)`, which says the scheduler put both on one core
   every time. A migration between the stand-down check and the `UNMAP` fails the later `assert_ne!`
   on the two recorded cores, "proves nothing about another core's TLB".
-- The negative control proves the loader, not the boot. It drives the `supervision_protocol` code
+- The negative control proves the loader, not the boot. It drives the `supervision_contract` code
   the progenitor builds boot servers with, in a fixture granted its own space the way the kernel
   grants the progenitor's. A boot that wrote into a boot server would kill the progenitor, so the
   boot itself is proven only by building every server through that code (`script/swish-check`)
@@ -250,7 +250,7 @@ bounded), the loader's wrapping window, which needs no `UNMAP`. What it leaves o
   pays it too. Milestone 658 (a region reap scans every mapping on the machine per page) is the fix.
 - It keeps 32 frames. Measured by the suite's frame ledger on aarch64, run alone, 2026-09-26: both
   regions reclaim without error and the exerciser exits, yet 32 frames do not come back. 32 is also
-  `supervision_protocol::SCRATCH_TABLE_PAGES`, which points at the tables the builder's own region
+  `supervision_contract::SCRATCH_TABLE_PAGES`, which points at the tables the builder's own region
   paid for. That is a guess from one number, not a trace.
 - It proves the loader, not the progenitor. The progenitor's own numbers (its 128-page table
   budget, its job pool against the window) are compile-time assertions in
