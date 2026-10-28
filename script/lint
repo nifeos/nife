@@ -1221,6 +1221,14 @@ RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p kernel --lib --document-
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet -p xtask -p serial_console -p stick_maker \
     -p sealed_pair -p walk_pricing -p c_library_errno
 RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --manifest-path redoxfs_server/Cargo.toml --lib
+# BUGS: only the two lints in DOCFLAGS are denied. Every other rustdoc lint stays warn, so a
+# warning class can ride this section green for days: 65 `rustdoc::private_intra_doc_links`
+# warnings (public docs linking items the 2026-10-18 visibility sweep, "narrow N items no other
+# package reads to pub(crate)", had made `pub(crate)`) printed on every build from 2026-10-18 to
+# 2026-10-28 while the section exited 0, and no gate read them. The tree is back to zero warnings
+# as of 2026-10-28; the follow-up that closes the gap is denying
+# `rustdoc::private_intra_doc_links` here, so the class fails this section instead of decorating
+# its output. Until then, a rustdoc warning a lane reports by hand has no gate behind it.
 
 # The decisions (one file per decision, milestone 114 (split `DECISIONS.md`, and give a decision a
 # status)): their numbering, each file's frontmatter against the schema milestone 582 (a decision's

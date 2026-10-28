@@ -80,7 +80,9 @@ pub const SCROLL_LINES: usize = 48;
 
 /// **How many more lines arrive in one write**, after the per-line ones: five scrolls inside a
 /// single present, the shape a program printing a paragraph produces. See [`SCROLL_LINES`].
-pub(crate) const SCROLL_TAIL_LINES: usize = 5;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const SCROLL_TAIL_LINES: usize = 5;
 
 /// One scroller line, `scroll NN\r\n` with `NN` zero-padded: written into `out`, returning its
 /// length. The number is the line's own index, so a picture scrolled by the wrong number of rows

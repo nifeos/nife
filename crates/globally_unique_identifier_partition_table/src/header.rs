@@ -17,7 +17,9 @@ pub const SIGNATURE: [u8; 8] = *b"EFI PART";
 /// GPT revision 1.0, encoded as `0x00010000` (major in the high 16 bits). The only revision that
 /// has ever existed, and the only one this crate accepts: a revision we do not know is a header
 /// whose fields might not be where we think they are.
-pub(crate) const REVISION: u32 = 0x0001_0000;
+///
+/// Name: recorded (the UEFI specification's revision field).
+pub const REVISION: u32 = 0x0001_0000;
 
 /// The size of the defined part of the header in bytes, and the size this crate writes. A header
 /// may declare more, up to its block (the spec reserves room to grow); [`Header::decode`] accepts

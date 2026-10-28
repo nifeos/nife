@@ -120,8 +120,10 @@ pub enum Response {
 
 impl Response {
     /// Does the card send a CRC the controller can check? All but R3 and no response.
+    ///
+    /// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
     #[must_use]
-    pub(crate) const fn checks_crc(self) -> bool {
+    pub const fn checks_crc(self) -> bool {
         !matches!(self, Response::None | Response::R3)
     }
 
