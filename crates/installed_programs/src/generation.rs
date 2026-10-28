@@ -16,7 +16,14 @@
 //! assert_eq!(lookup(generation_1, "uptime").unwrap().unwrap().version, "0.1.0");
 //!
 //! let mut second = [0u8; 512];
-//! let n = without_package(generation_1, "uptime", None, &mut second).unwrap();
+//! let n = without_package(
+//!     generation_1,
+//!     "uptime",
+//!     None,
+//!     &installed_programs::Answered::Console,
+//!     &mut second,
+//! )
+//! .unwrap();
 //! let generation_2 = core::str::from_utf8(&second[..n]).unwrap();
 //! assert!(lookup(generation_2, "uptime").unwrap().is_none());
 //! // Generation 1 is untouched, so rolling back is naming it again.
@@ -34,6 +41,7 @@
 
 pub use measured_boot::Digest;
 
+use super::answered::{Answered, parse as parse_answered};
 use super::grants::{Grant, Granted, ROOT_ZONE, classify_grant, grant_before, grants};
 
 /// Why a table or an edit was refused.
@@ -139,9 +147,9 @@ pub fn entries(table: &str) -> impl Iterator<Item = Result<Entry<'_>, Error>> {
                 digest,
                 manager,
             })),
-            // A well-formed pointer or grant line is not a row; that it is well-formed was the
-            // check.
-            Line::Pointer { .. } | Line::Grant(_) => None,
+            // A well-formed pointer, grant or answered line is not a row; that it is well-formed
+            // was the check.
+            Line::Pointer { .. } | Line::Grant(_) | Line::Answered(_) => None,
             Line::Malformed => Some(Err(Error::Malformed)),
         })
 }
@@ -156,8 +164,9 @@ pub(crate) fn defaults(table: &str) -> impl Iterator<Item = Result<Pointer<'_>, 
         .filter(|line| !line.is_empty() && !line.starts_with('#'))
         .filter_map(|line| match classify(line) {
             Line::Pointer { program, digest } => Some(Ok(Pointer { program, digest })),
-            // A well-formed row or grant is not a pointer; that it is well-formed was the check.
-            Line::Row { .. } | Line::Grant(_) => None,
+            // A well-formed row, grant or answered line is not a pointer; that it is well-formed
+            // was the check.
+            Line::Row { .. } | Line::Grant(_) | Line::Answered(_) => None,
             Line::Malformed => Some(Err(Error::Malformed)),
         })
 }
@@ -176,15 +185,19 @@ pub(super) enum Line<'a> {
         digest: Digest,
     },
     Grant(Grant<'a>),
+    /// **How the generation's answer was given** (milestone 911): beside the grant record, one
+    /// line per generation. The iterators skip it; the readers of the record do not.
+    Answered(Answered<'a>),
     Malformed,
 }
 
 /// Classify one line. A row is `<digest> <program> <version> <package> <manager>`, or the four
 /// words before the manager column existed (read as `NO_MANAGER`); a pointer line is
-/// `default <program> <digest>`; anything else is malformed. A digest is its text form,
-/// `sha256:<64 hex>` (`measured_boot::parse_digest`), so an unlabeled or unknown one makes the line
-/// malformed and the table unreadable. A row's first word is the key, which is why `default` is a
-/// word no digest can be: it has no label.
+/// `default <program> <digest>`; a grant line is `grant ...`; an answered line is
+/// `answered console`, or `answered approval <name> <digest>`; anything else is malformed. A
+/// digest is its text form, `sha256:<64 hex>` (`measured_boot::parse_digest`), so an unlabeled or
+/// unknown one makes the line malformed and the table unreadable. A row's first word is the key,
+/// which is why `default`, `grant` and `answered` are words no digest can be: none has a label.
 pub(super) fn classify(line: &str) -> Line<'_> {
     let mut words = line.split(' ');
     let Some(first) = words.next() else {
@@ -192,6 +205,12 @@ pub(super) fn classify(line: &str) -> Line<'_> {
     };
     if first == "grant" {
         return classify_grant(words);
+    }
+    if first == "answered" {
+        return match parse_answered(words) {
+            Ok(answered) => Line::Answered(answered),
+            Err(_) => Line::Malformed,
+        };
     }
     if first == "default" {
         let (Some(program), Some(hex), None) = (words.next(), words.next(), words.next()) else {
@@ -380,7 +399,9 @@ pub fn with_entries<'a, I>(
 where
     I: Iterator<Item = Entry<'a>>,
 {
-    with_entries_granting(table, entries, image_carries, core::iter::empty, out)
+    // A plain install or vouch that records no grants records no answer either: the `answered`
+    // line is beside the grant record, and there is no record to sit beside.
+    with_entries_granting(table, entries, image_carries, core::iter::empty, None, out)
 }
 
 /// **[`with_entries`], and the owner's grants to the new rows** (milestone 892 (a std program at
@@ -391,12 +412,17 @@ where
 /// merge with themselves. The lines come out sorted and each once, as [`grants`] reads them. A grant for no new row, or a zone
 /// spelled other than the resolver spells it, is [`Error::Malformed`] and nothing is written.
 ///
+/// `answered` is the line beside the record (milestone 911 (scripted installs grant only what the
+/// owner's approval file allows)): how this answer was given, one line per generation, after the
+/// grants.
+///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 pub fn with_entries_granting<'a, I, G>(
     table: &'a str,
     entries: impl Fn() -> I,
     image_carries: impl Fn(&str) -> bool,
     granted: impl Fn() -> G,
+    answered: Option<&Answered<'_>>,
     out: &mut [u8],
 ) -> Result<usize, Refused<'a>>
 where
@@ -409,8 +435,9 @@ where
     for g in granted() {
         let named = entries().any(|e| e.digest == g.digest);
         let spelled = match g.what {
-            Granted::Network => true,
+            Granted::Network | Granted::Service | Granted::Installer => true,
             Granted::Zone(z) => domain_name_resolution_contract::is_canonical_zone(z.as_bytes()),
+            Granted::Dir(name, _) => good_name(name),
         };
         if !named || !spelled {
             return Err(Error::Malformed.into());
@@ -420,6 +447,9 @@ where
     write_rows(table, &entries, &mut writer)?;
     write_pointers(table, &entries, &mut writer)?;
     write_grants(table, |_| true, &granted, &mut writer)?;
+    if let Some(answered) = answered {
+        writer.answered(answered)?;
+    }
     Ok(writer.at)
 }
 
@@ -574,11 +604,14 @@ fn replaces(existing: &Entry<'_>, entry: &Entry<'_>) -> bool {
 /// a rollback undoes a vouch, and brings a removed package back, since its bytes stay. Removing
 /// what is not installed is [`Error::NotInstalled`]. Nothing is written on a refusal.
 ///
-/// Name: provisional, milestone 919's lane, 2026-10-14 (UTC).
+/// Name: provisional, milestone 919's lane, 2026-10-14 (UTC). `answered` is the removal's own
+/// line beside the record (milestone 911 (scripted installs grant only what the owner's approval
+/// file allows)): how this removal's answer was given, one line per generation, after the grants.
 pub fn without_package(
     table: &str,
     package: &str,
     version: Option<&str>,
+    answered: &Answered<'_>,
     out: &mut [u8],
 ) -> Result<usize, Error> {
     let gone = |e: &Entry<'_>| {
@@ -623,6 +656,7 @@ pub fn without_package(
         &core::iter::empty,
         &mut writer,
     )?;
+    writer.answered(answered)?;
     Ok(writer.at)
 }
 
@@ -824,7 +858,11 @@ pub fn format_current(number: u32, out: &mut [u8]) -> Result<usize, Error> {
     Ok(writer.at)
 }
 
-fn good_name(name: &str) -> bool {
+/// Whether `name` is one word a line can hold: nonempty, no `#`, and nothing at or below a
+/// space. The sibling modules' readers (`answered`'s approval name, the approval document's
+/// package names) hold their names to the same words, so one line kind cannot be mistaken for
+/// another.
+pub(super) fn good_name(name: &str) -> bool {
     !name.is_empty() && !name.starts_with('#') && name.bytes().all(|b| b > b' ' && b != 0x7f)
 }
 
@@ -862,12 +900,28 @@ impl Writer<'_> {
         self.bytes(&measured_boot::digest_text(&g.digest))?;
         match g.what {
             Granted::Network => self.bytes(b" network")?,
+            Granted::Service => self.bytes(b" service")?,
+            Granted::Installer => self.bytes(b" installer")?,
             Granted::Zone(zone) => {
                 self.bytes(b" zone ")?;
                 self.bytes(if zone.is_empty() { ROOT_ZONE } else { zone }.as_bytes())?;
             }
+            Granted::Dir(name, rights) => {
+                self.bytes(b" dir ")?;
+                self.bytes(name.as_bytes())?;
+                self.bytes(b" ")?;
+                self.bytes(rights.spell().as_bytes())?;
+            }
         }
         self.bytes(b"\n")
+    }
+
+    /// The generation's one `answered` line: how its answer was given (milestone 911), after the
+    /// grants.
+    fn answered(&mut self, a: &Answered<'_>) -> Result<(), Error> {
+        let mut line = [0u8; 16 + 32 + measured_boot::DIGEST_TEXT_LEN];
+        let n = a.write(&mut line)?;
+        self.bytes(&line[..n])
     }
 
     fn pointer(&mut self, program: &str, digest: &Digest) -> Result<(), Error> {
@@ -887,6 +941,8 @@ mod tests {
     use std::{format, vec};
 
     use super::*;
+    use crate::answered::{answered, record, same_record};
+    use crate::grants::{DirRights, covers, extras};
     use crate::network_granted;
 
     /// The store as the protocol in the crate documentation uses it: generation files that are
@@ -943,13 +999,19 @@ mod tests {
         }
         fn remove(&mut self, package: &str) -> Result<(), Error> {
             let mut out = vec![0u8; 4096];
-            let n = without_package(self.table(), package, None, &mut out)?;
+            let n = without_package(self.table(), package, None, &Answered::Console, &mut out)?;
             self.commit(&out[..n]);
             Ok(())
         }
         fn remove_version(&mut self, package: &str, version: &str) -> Result<(), Error> {
             let mut out = vec![0u8; 4096];
-            let n = without_package(self.table(), package, Some(version), &mut out)?;
+            let n = without_package(
+                self.table(),
+                package,
+                Some(version),
+                &Answered::Console,
+                &mut out,
+            )?;
             self.commit(&out[..n]);
             Ok(())
         }
@@ -1053,7 +1115,7 @@ mod tests {
         );
 
         let mut m = [0u8; 512];
-        let n = without_package(&t3, "uptime", None, &mut m).unwrap();
+        let n = without_package(&t3, "uptime", None, &Answered::Console, &mut m).unwrap();
         let t4 = core::str::from_utf8(&m[..n]).unwrap();
         assert!(lookup(t4, "uptime").unwrap().is_none());
         assert_eq!(lookup_digest(t4, &[4; 32]).unwrap().unwrap().package, OWNER);
@@ -1170,7 +1232,13 @@ mod tests {
         let newest = store.newest();
         let mut out = [0u8; 4096];
         assert_eq!(
-            without_package(store.table(), "uptime", Some("0.4.0"), &mut out),
+            without_package(
+                store.table(),
+                "uptime",
+                Some("0.4.0"),
+                &Answered::Console,
+                &mut out
+            ),
             Err(Error::SeveralVersions)
         );
         assert_eq!(store.newest(), newest, "a refusal writes no generation");
@@ -1550,7 +1618,7 @@ mod tests {
         let table = format!("{a} p 1 pkg\n{b} p 2 pkg\ndefault p {a}\ndefault p {b}\n");
         let mut out = [0u8; 512];
         assert_eq!(
-            without_package(&table, "pkg", Some("1"), &mut out),
+            without_package(&table, "pkg", Some("1"), &Answered::Console, &mut out),
             Err(Error::Malformed)
         );
     }
@@ -1604,7 +1672,7 @@ mod tests {
         let a = format!("sha256:{}", "11".repeat(32));
         let table = format!("{a} p 1 pkg\n{a} p 2 pkg\ndefault p {a}\n");
         let mut out = [0u8; 512];
-        let n = without_package(&table, "pkg", Some("2"), &mut out).unwrap();
+        let n = without_package(&table, "pkg", Some("2"), &Answered::Console, &mut out).unwrap();
         let after = core::str::from_utf8(&out[..n]).unwrap();
         assert_eq!(versions_of(after, "p").count(), 1);
         assert!(lookup_version(after, "p", "1").unwrap().is_some());
@@ -1748,7 +1816,7 @@ mod tests {
             .filter(|g| g.digest == a)
             .filter_map(|g| match g.what {
                 Granted::Zone(z) => Some(z),
-                Granted::Network => None,
+                Granted::Network | Granted::Service | Granted::Installer | Granted::Dir(..) => None,
             })
             .collect();
         assert_eq!(zones, ["", "nife.test"]);
@@ -1786,7 +1854,7 @@ mod tests {
             "an install keeps others' grants"
         );
         let next = next.to_string();
-        let n = without_package(&next, "dialer", None, &mut out).unwrap();
+        let n = without_package(&next, "dialer", None, &Answered::Console, &mut out).unwrap();
         let after = core::str::from_utf8(&out[..n]).unwrap();
         assert!(
             !after.contains(&format!("grant {ta}")),
@@ -1830,6 +1898,7 @@ mod tests {
             || core::iter::once(entry("reach", a)),
             |_| false,
             || reach.into_iter(),
+            None,
             &mut out,
         )
         .unwrap();
@@ -1851,6 +1920,7 @@ mod tests {
             || core::iter::once(entry("other", b)),
             |_| false,
             || other.into_iter(),
+            None,
             &mut out,
         )
         .unwrap();
@@ -1870,6 +1940,7 @@ mod tests {
             || core::iter::once(entry("reach", a)),
             |_| false,
             || reach.into_iter(),
+            None,
             &mut out,
         )
         .unwrap();
@@ -1885,7 +1956,8 @@ mod tests {
                 || core::iter::once(entry("reach", a)),
                 |_| false,
                 || stray.into_iter(),
-                &mut out
+                None,
+                &mut out,
             )
             .map(|_| ()),
             Err(Error::Malformed.into()),
@@ -1901,7 +1973,8 @@ mod tests {
                 || core::iter::once(entry("reach", a)),
                 |_| false,
                 || misspelled.into_iter(),
-                &mut out
+                None,
+                &mut out,
             )
             .map(|_| ()),
             Err(Error::Malformed.into())
@@ -1921,5 +1994,260 @@ mod tests {
         assert_eq!(lookup(&one, "uptime").unwrap().unwrap().version, "0.2.0");
         let two = format!("{one}default uptime {ta}\n");
         assert_eq!(lookup(&two, "uptime"), Err(Error::Malformed));
+    }
+
+    /// **The grant record is byte-identical across the paths, and how the answer was given is a
+    /// line beside it, never inside it** (milestone 911 (scripted installs grant only what the
+    /// owner's approval file allows), Done-when 4): the same grants written for the console's yes
+    /// and for an approval's answer make the same `grant` lines and different `answered` lines,
+    /// and each line reads back.
+    #[test]
+    fn two_paths_write_one_record_and_their_answers_differ() {
+        let a = [0x5au8; 32];
+        let text = |d: &Digest| String::from_utf8(measured_boot::digest_text(d).to_vec()).unwrap();
+        let ta = text(&a);
+        let asks = [
+            Grant {
+                digest: a,
+                what: Granted::Network,
+            },
+            Grant {
+                digest: a,
+                what: Granted::Zone("nife.test"),
+            },
+        ];
+        let entry = || Entry {
+            program: "reach",
+            version: "0.1.0",
+            package: "reach",
+            digest: a,
+            manager: "jig",
+        };
+        let mut out = vec![0u8; 4096];
+        let n = with_entries_granting(
+            "",
+            || core::iter::once(entry()),
+            |_| false,
+            || asks.into_iter(),
+            Some(&Answered::Console),
+            &mut out,
+        )
+        .unwrap();
+        let console = core::str::from_utf8(&out[..n]).unwrap().to_string();
+        let n = with_entries_granting(
+            "",
+            || core::iter::once(entry()),
+            |_| false,
+            || asks.into_iter(),
+            Some(&Answered::Approval("lab-runner", [0x77u8; 32])),
+            &mut out,
+        )
+        .unwrap();
+        let scripted = core::str::from_utf8(&out[..n]).unwrap().to_string();
+        assert!(
+            same_record(&console, &scripted),
+            "the records agree: {console} against {scripted}"
+        );
+        assert_ne!(console, scripted, "the answers do not");
+        assert_eq!(
+            answered(&console).unwrap(),
+            Some(Answered::Console),
+            "the console's line"
+        );
+        assert_eq!(
+            answered(&scripted).unwrap(),
+            Some(Answered::Approval("lab-runner", [0x77u8; 32])),
+            "the approval's line, name and file digest"
+        );
+        // The record itself, as text: the grant lines, sorted, once.
+        let lines: vec::Vec<_> = record(&scripted).collect();
+        assert_eq!(
+            lines,
+            [
+                format!("grant {ta} network"),
+                format!("grant {ta} zone nife.test")
+            ]
+        );
+        // A vouch, which grants nothing, records no answer: the line is beside the record.
+        let mut vouched = [0u8; 512];
+        let n = with_entry("", &vouch("a.out", 3), false, &mut vouched).unwrap();
+        assert_eq!(
+            answered(core::str::from_utf8(&vouched[..n]).unwrap()),
+            Ok(None)
+        );
+    }
+
+    /// **The `answered` line is one per generation and held to its grammar** (milestone 911):
+    /// a second one is no single answer, and a line this reader does not know makes the table
+    /// unreadable, as every line kind's reader does.
+    #[test]
+    fn an_answered_line_is_read_strictly() {
+        let mut out = [0u8; 512];
+        let n = with_entry("", &row("uptime", "uptime", "0.1.0", 1), false, &mut out).unwrap();
+        let rows = core::str::from_utf8(&out[..n]).unwrap().to_string();
+        assert_eq!(answered(&rows).unwrap(), None, "no answer without one");
+        let with_line = format!("{rows}answered console\n");
+        assert_eq!(answered(&with_line).unwrap(), Some(Answered::Console));
+        let twice = format!("{with_line}answered approval runner {}\n", "1".repeat(71));
+        assert_eq!(answered(&twice), Err(Error::Malformed));
+        for bad in [
+            "answered\n",
+            "answered maybe\n",
+            "answered console now\n",
+            "answered approval runner\n",
+            "answered approval console\n",
+            "answered approval runner sha256:nope\n",
+            "answered approval runner sha256:3 extra\n",
+            "answered approval  sha256:3333333333333333333333333333333333333333333333333333333333333333\n",
+        ] {
+            assert_eq!(
+                answered(&format!("{rows}{bad}")),
+                Err(Error::Malformed),
+                "{bad}"
+            );
+        }
+        // The other readers skip a well-formed answered line and refuse a malformed one.
+        assert!(lookup(&with_line, "uptime").unwrap().is_some());
+        assert!(grants(&with_line).flatten().next().is_none());
+        assert_eq!(
+            lookup(&format!("{rows}answered bogus\n"), "uptime"),
+            Err(Error::Malformed)
+        );
+    }
+
+    /// **The grants a package may hold beyond the network and zones** (milestone 911): a service,
+    /// a directory with its rights and the installer each spell one line, read back exactly, and
+    /// sort into the record by their words as the table's reader holds them.
+    #[test]
+    fn service_dir_and_installer_grants_round_trip() {
+        let a = [0x33u8; 32];
+        let text = |d: &Digest| String::from_utf8(measured_boot::digest_text(d).to_vec()).unwrap();
+        let ta = text(&a);
+        let asks = [
+            Grant {
+                digest: a,
+                what: Granted::Dir("monit/state", DirRights::RW),
+            },
+            Grant {
+                digest: a,
+                what: Granted::Installer,
+            },
+            Grant {
+                digest: a,
+                what: Granted::Service,
+            },
+        ];
+        let mut out = vec![0u8; 4096];
+        let n = with_entries_granting(
+            "",
+            || {
+                core::iter::once(Entry {
+                    program: "monit",
+                    version: "5.36",
+                    package: "monit",
+                    digest: a,
+                    manager: "jig",
+                })
+            },
+            |_| false,
+            || asks.into_iter(),
+            Some(&Answered::Console),
+            &mut out,
+        )
+        .unwrap();
+        let table = core::str::from_utf8(&out[..n]).unwrap();
+        let lines: vec::Vec<_> = record(table).collect();
+        assert_eq!(
+            lines,
+            [
+                format!("grant {ta} dir monit/state rw"),
+                format!("grant {ta} installer"),
+                format!("grant {ta} service"),
+            ]
+        );
+        assert_eq!(answered(table).unwrap(), Some(Answered::Console));
+        // `r` reads back as `r`, and a rights word this reader does not know is malformed.
+        let mut narrow = [0u8; 4096];
+        let n = with_entries_granting(
+            "",
+            || {
+                core::iter::once(Entry {
+                    program: "monit",
+                    version: "5.36",
+                    package: "monit",
+                    digest: a,
+                    manager: "jig",
+                })
+            },
+            |_| false,
+            || {
+                core::iter::once(Grant {
+                    digest: a,
+                    what: Granted::Dir("monit/state", DirRights::R),
+                })
+            },
+            None,
+            &mut narrow,
+        )
+        .unwrap();
+        let table = core::str::from_utf8(&narrow[..n]).unwrap();
+        assert!(
+            record(table).eq(core::iter::once(format!("grant {ta} dir monit/state r"))),
+            "the rights spell as the file does: {table}"
+        );
+        for bad in [
+            format!("grant {ta} dir monit/state rwx\n"),
+            format!("grant {ta} dir monit/state\n"),
+            format!("grant {ta} dir\n"),
+            format!("grant {ta} service now\n"),
+        ] {
+            assert_eq!(
+                network_granted(&format!("{table}{bad}"), &a),
+                Err(Error::Malformed),
+                "{bad}"
+            );
+        }
+    }
+
+    /// **The subset test never grants the intersection and names every extra grant** (milestone
+    /// 911, the rule the approval file holds installs to): an ask the allowance does not cover is
+    /// named, in order, and an `r` ask lies within a `rw` allowance but not the other way. The
+    /// root zone is spelled, never implied.
+    #[test]
+    fn the_subset_test_names_every_extra_grant_and_never_grants_the_intersection() {
+        let allowed = [
+            Granted::Network,
+            Granted::Zone("nife.test"),
+            Granted::Dir("state", DirRights::RW),
+        ];
+        assert_eq!(extras(&allowed, &[]).count(), 0, "no asks, no extras");
+        let asks = [
+            Granted::Network,
+            Granted::Zone("example.net"),
+            Granted::Service,
+        ];
+        let named: vec::Vec<_> = extras(&allowed, &asks).copied().collect();
+        assert_eq!(
+            named,
+            [Granted::Zone("example.net"), Granted::Service],
+            "every extra grant, in the asks' order"
+        );
+        // The root zone is spelled out: one zone never covers another, and no zone covers the root.
+        assert!(!covers(Granted::Zone("nife.test"), Granted::Zone("")));
+        assert!(!covers(Granted::Zone(""), Granted::Zone("nife.test")));
+        assert!(covers(Granted::Zone(""), Granted::Zone("")));
+        // Rights subset, both ways.
+        assert!(covers(
+            Granted::Dir("state", DirRights::RW),
+            Granted::Dir("state", DirRights::R)
+        ));
+        assert!(!covers(
+            Granted::Dir("state", DirRights::R),
+            Granted::Dir("state", DirRights::RW)
+        ));
+        assert!(!covers(
+            Granted::Dir("other", DirRights::RW),
+            Granted::Dir("state", DirRights::R)
+        ));
     }
 }
