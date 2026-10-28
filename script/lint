@@ -4248,7 +4248,8 @@ echo "==> every RETYPE outside the run wrapper passes 0"
 # before it passed 0 and still means one page, so a raw invoke passing anything else is a run asked
 # for by accident. The one intended caller is `user_mode_runtime::retype_page_frame_run`.
 # The kernel's own tests are exempt: they drive the handler directly with every count on purpose.
-if git grep -n 'memory_region::RETYPE,' -- '*.rs' ':!vendor' ':!kernel' \
+# They live in `kernel/` and in `system_tests/`, the suite that boots as its own image.
+if git grep -n 'memory_region::RETYPE,' -- '*.rs' ':!vendor' ':!kernel' ':!system_tests' \
     | grep -v 'RETYPE, 0, 0, 0)' | grep -v '// run wrapper$'; then
     echo "lint: a RETYPE above passes a count. Ask for a run through" >&2
     echo "      user_mode_runtime::retype_page_frame_run, or pass 0 for one page." >&2
