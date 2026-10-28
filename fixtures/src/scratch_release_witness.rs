@@ -5,7 +5,7 @@
 //! Holds a memory region the child is built straight out of (slot 0), a report endpoint (slot 1), a
 //! small region that pays for its own page tables (slot 2), and, in one of the kernel test's two
 //! runs, a `WRITE` capability to its own address space (slot 3), as the kernel endows the
-//! progenitor at slot 28. It builds one child with `supervision_protocol::build_child`, the path
+//! progenitor at slot 28. It builds one child with `supervision_contract::build_child`, the path
 //! the progenitor builds every boot server with, then writes to the first page of its own scratch
 //! window, where the loader filled the child's first page.
 
@@ -34,7 +34,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use supervision_protocol::{
+use supervision_contract::{
     ChildEndowment, Retention, SCRATCH_WINDOW, build_child, give_up_scratch_through,
 };
 use user_mode_runtime::{capability_delete, exit, is_granted, send};

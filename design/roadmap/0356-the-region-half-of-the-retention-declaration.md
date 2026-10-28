@@ -12,7 +12,7 @@ needs_person: no
 Filed as a proposal on 2026-09-03 by the
 `maintainer/spawn-retention-field` lane, while building DECISIONS §142's answer; promoted by
 milestone 433 on 2026-09-19. Premise checked against the tree that day and unchanged:
-`crates/supervision_protocol/src/lib.rs` still declares `Retention` with exactly two variants
+`crates/supervision_contract/src/lib.rs` still declares `Retention` with exactly two variants
 (`Nothing` and `ThreadControlBlock { reason }`), the region is named only in prose there ("after
 `START` the only authority over this child is the region it was built from"). §142 (what a spawner
 retains over a child after `START`) has been DECIDED since 2026-09-03 with nothing added about the

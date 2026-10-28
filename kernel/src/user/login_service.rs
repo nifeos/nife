@@ -16,7 +16,7 @@ const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
 const CLIENT_SCRATCH_UT_PAGES: u64 = 5;
 
 /// Stack pages beyond the one page `run` maps. `login` parses an ELF and builds a child address
-/// space (`supervision_protocol::build_child`), deeper than `root_supervisor`'s 8-page stack
+/// space (`supervision_contract::build_child`), deeper than `root_supervisor`'s 8-page stack
 /// covers; sixteen is the size `credentialer.rs`'s Argon2id loop needed.
 const LOGIN_STACK_PAGES: u64 = 16;
 
@@ -138,7 +138,7 @@ pub struct Wiring {
 
 /// Copy `bytes` into fresh read-only pages at consecutive VAs from `base`.
 ///
-/// The kernel-side twin of `supervision_protocol`'s `blobs`, read-only so a child cannot rewrite
+/// The kernel-side twin of `supervision_contract`'s `blobs`, read-only so a child cannot rewrite
 /// an image it hands on. An empty `bytes` maps nothing; `login` learns that from a zero length in
 /// its argument register.
 fn map_blob(space: &mut AddressSpace, base: u64, bytes: &[u8]) {

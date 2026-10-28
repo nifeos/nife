@@ -40,7 +40,7 @@ checked below.
 | No package moves before a per-package co-change column exists | §235 Fork 3 amendment | no | Milestone 610 is BUILT and its own Follow-on records the column as owed and not built. Section 2 below is a one-off reading of it, which is not the column. |
 | The image is assembled from base packages by digest | §235 P1, milestone 607 (nife is built and updated from packages) item 1 | no | Not started. `xtask/src/archive.rs` packs ELFs out of `target/`, not packages by digest. This is the thing `basalt` would assemble from. |
 | An SDK archive (S2) | §235 Fork 4, milestone 607 item 4 | no | No `xtask` command builds one. A program outside the tree has no way to get `abi` and its protocols except a clone. |
-| A contract never links the runtime | §235 P3, milestone 607 item 3 | no | Four contract crates still depend on `user_mode_runtime`: `counter_frequency_contract`, `current_cpu_contract`, `supervision_protocol`, `hot_swap_contract`. |
+| A contract never links the runtime | §235 P3, milestone 607 item 3 | no | Four contract crates still depend on `user_mode_runtime`: `counter_frequency_contract`, `current_cpu_contract`, `supervision_contract`, `hot_swap_contract`. |
 | `components` split into one crate per package | milestone 691 (packages move out, one per pull request) | no | One crate, `components`, holds 56 binaries from 18 packages. A crate cannot live in two repositories, so no package with a program in it can move. |
 | A ratified home | milestone 611 (every program and crate belongs to a package), §235 Fork 3 | no | 0 of 27 packages ratified; 26 provisional, 1 undecided (`redoxfs`). |
 
@@ -61,7 +61,7 @@ merged 2026-10-04T05:32Z) is broken out because the brief named it. It touched 1
 | `filesystem_contract` | 23 | 1 | 6 | 1 | 10 |
 | `login_contract` | 15 | 1 | 5 | 0 | 1 |
 | `hot_swap_contract` | 14 | 1 | 7 | 0 | 10 |
-| `supervision_protocol` | 10 | 0 | 4 | 0 | 2 |
+| `supervision_contract` | 10 | 0 | 4 | 0 | 2 |
 | `socket_contract` | 8 | 1 | 5 | 0 | 13 |
 | `byte_sink_contract`, `credential_contract`, `std_runtime_contract` | 6 each | 1, 1, 0 | 4, 3, 2 | 0 | 5, 4, 0 |
 | the other ten | 2 to 5 each | | | 0 to 2 | 0 to 5 |

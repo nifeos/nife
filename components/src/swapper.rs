@@ -20,7 +20,7 @@
 // uses a different slice of both, so the unused halves are expected (§38).
 use capability_plan::Provisions;
 use hot_swap_contract::log_checks as lc;
-use supervision_protocol::{ChildEndowment, Retention};
+use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
     address_space_map_into, capability_delete, cntfrq, map_page_frame, now, receive, receive_bound,
     receive_fault, revoke_page_frame, send, timer_arm,
@@ -345,10 +345,10 @@ fn build_without_devices(
     // authority: `maps_without_devices` is the declaration minus what a revoke is about to take, and
     // `devices` below is the rest of it. `capability_plan` sorts device mappings last so both
     // halves are slices of one plan and neither can be built by hand.
-    let Ok(region) = supervision_protocol::memory_region_split(ROOT_UT, component.pages()) else {
+    let Ok(region) = supervision_contract::memory_region_split(ROOT_UT, component.pages()) else {
         bail(stage)
     };
-    let Ok((child, aspace)) = supervision_protocol::build_child_space(
+    let Ok((child, aspace)) = supervision_contract::build_child_space(
         ROOT_UT,
         region,
         elf,
@@ -670,7 +670,7 @@ fn drain(w: &Wiring, stage: u64) {
 /// A child laid out and endowed but not configured, so it cannot run: `direct`'s step 1, for a
 /// component with nothing to defer.
 struct Unstarted {
-    child: supervision_protocol::Child,
+    child: supervision_contract::Child,
     aspace: u64,
     region: u64,
 }
@@ -681,10 +681,10 @@ fn build_unstarted(
     faultep: u64,
     stage: u64,
 ) -> Unstarted {
-    let Ok(region) = supervision_protocol::memory_region_split(ROOT_UT, plan.pages()) else {
+    let Ok(region) = supervision_contract::memory_region_split(ROOT_UT, plan.pages()) else {
         bail(stage)
     };
-    let Ok((child, aspace)) = supervision_protocol::build_child_space(
+    let Ok((child, aspace)) = supervision_contract::build_child_space(
         ROOT_UT,
         region,
         elf,
@@ -711,10 +711,10 @@ fn launch(u: Unstarted, elf: &elf::Elf, args: [u64; 3], stage: u64) {
 
 /// [`launch`], returning the child's region capability instead of dropping it.
 fn launch_keeping_region(u: Unstarted, elf: &elf::Elf, args: [u64; 3], stage: u64) -> u64 {
-    if supervision_protocol::configure_child(u.child.tcb, u.aspace, elf.entry()).is_err() {
+    if supervision_contract::configure_child(u.child.tcb, u.aspace, elf.entry()).is_err() {
         bail(stage)
     }
-    if !supervision_protocol::start_child(u.child, args[0], args[1], args[2]) {
+    if !supervision_contract::start_child(u.child, args[0], args[1], args[2]) {
         bail(stage + 1)
     }
     u.region
@@ -1148,7 +1148,7 @@ fn quiesce_within(
 /// every resident this is used on has been parked far longer than a scheduling quantum.
 fn end_region(region: u64, stage: u64) {
     for _ in 0..1000 {
-        if supervision_protocol::memory_region_destroy(region) {
+        if supervision_contract::memory_region_destroy(region) {
             return;
         }
         user_mode_runtime::yield_now();
@@ -1274,7 +1274,7 @@ fn start_child_keeping_region(
     args: [u64; 3],
     stage: u64,
 ) -> u64 {
-    let Ok(region) = supervision_protocol::memory_region_split(ROOT_UT, plan.pages()) else {
+    let Ok(region) = supervision_contract::memory_region_split(ROOT_UT, plan.pages()) else {
         bail(stage)
     };
     let endow = ChildEndowment {
@@ -1284,10 +1284,10 @@ fn start_child_keeping_region(
         fault: Some(faultep),
         ..ChildEndowment::new(Retention::Nothing)
     };
-    let Ok(child) = supervision_protocol::build_child(ROOT_UT, region, elf, &endow) else {
+    let Ok(child) = supervision_contract::build_child(ROOT_UT, region, elf, &endow) else {
         bail(stage + 1)
     };
-    if !supervision_protocol::start_child(child, args[0], args[1], args[2]) {
+    if !supervision_contract::start_child(child, args[0], args[1], args[2]) {
         bail(stage + 2)
     }
     region
@@ -1302,7 +1302,7 @@ fn start_bound(
     signal: u64,
     stage: u64,
 ) {
-    let Ok(region) = supervision_protocol::memory_region_split(ROOT_UT, plan.pages()) else {
+    let Ok(region) = supervision_contract::memory_region_split(ROOT_UT, plan.pages()) else {
         bail(stage)
     };
     let endow = ChildEndowment {
@@ -1314,14 +1314,14 @@ fn start_bound(
             reason: "bind the broker's warning notification before it runs",
         })
     };
-    let Ok(child) = supervision_protocol::build_child(ROOT_UT, region, elf, &endow) else {
+    let Ok(child) = supervision_contract::build_child(ROOT_UT, region, elf, &endow) else {
         bail(stage + 1)
     };
     let tcb = child.tcb;
     if user_mode_runtime::notification_bind(signal, tcb) != 0 {
         bail(stage + 2)
     }
-    if !supervision_protocol::start_child(child, 0, 0, 0) {
+    if !supervision_contract::start_child(child, 0, 0, 0) {
         bail(stage + 2)
     }
     capability_delete(tcb);
@@ -1411,14 +1411,14 @@ fn image<'a>(fs: &nifefs::Fs<'a>, name: &str, stage: u64) -> elf::Elf<'a> {
 }
 
 fn obj(objtype: u64, stage: u64) -> u64 {
-    match supervision_protocol::retype_obj_from(ROOT_UT, objtype) {
+    match supervision_contract::retype_obj_from(ROOT_UT, objtype) {
         Ok(s) => s,
         Err(()) => bail(stage),
     }
 }
 
 fn page_frame(stage: u64) -> u64 {
-    match supervision_protocol::retype_page_frame_from(ROOT_UT) {
+    match supervision_contract::retype_page_frame_from(ROOT_UT) {
         Ok(s) => s,
         Err(()) => bail(stage),
     }

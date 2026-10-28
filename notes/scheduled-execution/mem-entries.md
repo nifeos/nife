@@ -12,7 +12,7 @@ carries a nested grant can never be collected through `reap` until the grant is 
 its own separate capability.
 
 The nesting survives the correction for a better reason. It is the only thing that can ever pair
-a death with a grant. A builder is never told its child's tid: `supervision_protocol::build_child`
+a death with a grant. A builder is never told its child's tid: `supervision_contract::build_child`
 hands back a TCB capability, and `abi::thread_control_block` has no method that reads one out. So
 the only fact this process has about a death is the tid the kernel stamped on it.
 `fire_with_grant` keeps the split untyped's own capability rather than `capability_delete`-ing it the

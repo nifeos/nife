@@ -585,7 +585,7 @@ confined_syscall_fuzzer_contract = { version = "0.1.0", path = "../crates/confin
 # need it, so it is a crate rather than a second copy.
 loaded_image_check = { version = "0.1.0", path = "../crates/loaded_image_check" }
 c_seam = { version = "0.1.0", path = "../crates/c_seam" }
-supervision_protocol = { version = "0.1.0", path = "../crates/supervision_protocol" }
+supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
 # The interactive system, built once (milestone 96). Both inits are a table of the slot numbers
 # their own kernel granted plus a call into this.
 system_initializer = { version = "0.1.0", path = "../crates/system_initializer" }

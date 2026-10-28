@@ -163,15 +163,15 @@ impl StdLayout {
         // `READ` for futex waits (milestone 812 (real threads in one address space)).
         l.place(
             rt::PROCESS_SLOT,
-            supervision_protocol::CHILDS_OWN_PROCESS,
+            supervision_contract::CHILDS_OWN_PROCESS,
             BIND,
         );
         l.place(
             rt::THREAD_SLOT,
-            supervision_protocol::CHILDS_OWN_THREAD,
+            supervision_contract::CHILDS_OWN_THREAD,
             WRITE,
         );
-        l.place(rt::SPACE_SLOT, supervision_protocol::CHILDS_OWN_SPACE, READ);
+        l.place(rt::SPACE_SLOT, supervision_contract::CHILDS_OWN_SPACE, READ);
         l
     }
 

@@ -12,7 +12,7 @@ needs_person: no
 Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
 from milestone 68's block; numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and
 it holds.** `xtask/src/main.rs`'s host test invocation still excludes `user_mode_runtime`,
-`hot_swap_contract`, `virtio`, `supervision_protocol` and `system_initializer` by name (alongside
+`hot_swap_contract`, `virtio`, `supervision_contract` and `system_initializer` by name (alongside
 `kernel`, `components` and `fixtures`). The comment above it still carries the whole account. The
 exclusions are `user_mode_runtime` and everything that depends on it, because `--exclude` removes a
 package from the test selection and not from the dependency graph. No crate has been split.
@@ -20,7 +20,7 @@ package from the test selection and not from the dependency graph. No crate has 
 No decision is owed and nothing is missing. The split is ordinary refactoring inside
 crates this tree owns, and the gate that would prove it is the one already running.
 
-**In brief.** `hot_swap_contract`, `virtio`, `supervision_protocol` and `system_initializer` each take an
+**In brief.** `hot_swap_contract`, `virtio`, `supervision_contract` and `system_initializer` each take an
 unconditional dependency on `user_mode_runtime`, which is EL0 syscall `asm!` and cannot compile for the host.
 `--exclude` removes a package from the test selection but not from the dependency graph, so all four
 are excluded by name in `xtask`, along with `user_mode_runtime` itself. Split each one so the pure logic lives
@@ -51,7 +51,7 @@ build. That is a tripwire on the growth of the problem, not a fix for it.
 ## What it would take
 
 Five crates, each a separate piece of work, and they are not equal. `hot_swap_contract` and
-`supervision_protocol` are protocol crates whose pure half is message layout and whose syscall half is
+`supervision_contract` are protocol crates whose pure half is message layout and whose syscall half is
 the `CALL`, which is the cleanest shape. `virtio` and `system_initializer` carry more. The measure
 of success is mechanical and already automated: a crate leaves the `--exclude` list in
 `xtask/src/main.rs`, `script/lint`'s derived-set check agrees, and the host pass runs its doctests.
@@ -59,7 +59,7 @@ of success is mechanical and already automated: a crate leaves the `--exclude` l
 ## Where it came from
 
 Milestone 68 (code-quality gates: one lint policy, and the lints that lost)'s block: *"Split the pure half from the syscall half in `user_rt`, `hot_swap_contract`,
-`virtio`, `supervision_protocol` and `system_initializer`. Each takes an unconditional `user_rt`
+`virtio`, `supervision_contract` and `system_initializer`. Each takes an unconditional `user_rt`
 dependency, so the host test selection excludes it and nothing in CI ever runs its doctests. That is
 five crates whose examples can rot unnoticed inside the gate milestone 68 exists to be."*
 
@@ -70,7 +70,7 @@ The exclusion and its history are commented at the host-test invocation in `xtas
 
 ## Index row
 
-`hot_swap_contract`, `virtio`, `supervision_protocol` and `system_initializer` each take an
+`hot_swap_contract`, `virtio`, `supervision_contract` and `system_initializer` each take an
 unconditional dependency on `user_mode_runtime`, which is EL0 syscall `asm!` and cannot compile for
 the host, so all four are excluded from the host pass by name along with `user_mode_runtime` itself.
 Splitting each so the pure logic lives where the host can build it and the syscall half is what

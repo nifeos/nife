@@ -2726,9 +2726,10 @@ rm -f "/tmp/nife-fixed-tmp-paths.$$"
 #    rule spells out network standards, so external standards keep producing `*_protocol` names that
 #    collided with the suffix. The tree already said "wire contract" and "service contract".
 #
-#    **Two crates keep `_protocol`, by name, and the list is the exception.** `network_time_protocol`
-#    is the NTPv4 standard's own name (calef, 2026-10-18). `supervision_protocol` is waiting for its
-#    split into `supervision_contract` and `process_builder`. A new `*_protocol` crate fails.
+#    **One crate keeps `_protocol`, by name, and the list is the exception.** `network_time_protocol`
+#    is the NTPv4 standard's own name (calef, 2026-10-18). `supervision_protocol` took the suffix as
+#    `supervision_contract` on 2026-10-28 (calef, relayed by the maintainer): supervision is nife's
+#    own protocol, so the standard's exception never held. A new `*_protocol` crate fails.
 #
 #    **The glob is the whole hazard here**: this loop selects the crates it judges, so a glob that
 #    matches nothing passes by checking nothing. The counter makes an empty glob say so, and it
@@ -2752,7 +2753,7 @@ for dir in "$(dirname "$0")"/../crates/*protocol; do
     [ -d "$dir" ] || continue
     name="$(basename "$dir")"
     case "$name" in
-        network_time_protocol|supervision_protocol) ;;
+        network_time_protocol) ;;
         *) echo "lint: crate $name ends in _protocol; nife's wire-contract crates end in _contract (design/naming.md)" >&2; exit 1 ;;
     esac
 done

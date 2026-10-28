@@ -11,7 +11,7 @@
 //!
 //! 1. Read `least_authority_demo` out of the archive by name and parse its ELF.
 //! 2. Mint a rendezvous out of its own memory, for the child to answer on.
-//! 3. Build the child with `supervision_protocol::build_child_space`, every composer's loader: an
+//! 3. Build the child with `supervision_contract::build_child_space`, every composer's loader: an
 //!    address space, W^X segments, a stack, a thread, and `WRITE` on that rendezvous in slot 0.
 //! 4. Map a frame of its own into that space twice, which must be refused (break-before-make holds
 //!    in a space a process built).
@@ -38,7 +38,7 @@
 use capability_witness_contract::process_composition::{
     CHILD_ANSWERED, CHILD_FOUND, DOUBLE_MAP_REFUSED, FRAME_MAPPED, SPACE_BUILT, STARTED,
 };
-use supervision_protocol::{
+use supervision_contract::{
     ChildEndowment, Retention, build_child_space, configure_child, start_child,
 };
 use user_mode_runtime::{

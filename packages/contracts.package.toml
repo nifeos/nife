@@ -27,7 +27,7 @@ interfaces = [
     "login_contract",
     "socket_contract",
     "std_runtime_contract",
-    "supervision_protocol",
+    "supervision_contract",
     "hot_swap_contract",
     "elf",
     "measured_boot",

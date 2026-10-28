@@ -171,18 +171,20 @@ known gap rather than a decision.
   `memory_regions`, `generational_table`, `address_space_identifier`, `intrusive_queue`,
   `inter_process_communication`, `direct_memory_access_validator`, `measured_boot`,
   `user_mode_heap`.
-- Wire contracts, spelled `*_protocol` and checked for it by `script/lint`:
+- Wire contracts, spelled `*_contract` and checked for it by `script/lint`:
   `filesystem_contract`, `socket_contract`, `byte_sink_contract`, `credential_contract`,
   `clock_contract`, `entropy_contract`, `graphics_contract`, `environment_contract`,
-  `login_contract`, `network_time_protocol`, `supervision_protocol`, `hot_swap_contract`,
+  `login_contract`, `network_time_protocol`, `supervision_contract`, `hot_swap_contract`,
   `counter_frequency_contract`, `capability_witness_contract`. Plus `abi`, which is the syscall
   boundary and predates the suffix.
 
-  The suffix is `_protocol`, not `_proto`, by milestone 265 (calef, 2026-09-05: *"I think `_proto`
+  The suffix was `_protocol`, not `_proto`, by milestone 265 (calef, 2026-09-05: *"I think `_proto`
   was lazy on my part. It should have been `_protocol` globally to differentiate from
   prototype."*). `proto` is a truncation rather than an abbreviation. It is equally short for
   `prototype`, which this tree uses for a real thing. Wherever a dated passage below spells a crate
-  `_proto`, that is what it was called then and the passage is left alone.
+  `_proto`, that is what it was called then and the passage is left alone. calef's 2026-10-18 ruling
+  (UTC) moved nife's own wire-contract crates to `_contract`; the record is in
+  [convention-rulings.md](convention-rulings.md).
 - Format and hardware parsers: `elf`, `device_tree_blob`, `pci`,
   `globally_unique_identifier_partition_table`, `nifefs`.
 - Userspace libraries: `user_mode_runtime`, `grant_plan`, `virtio`, `video_terminal`,
@@ -195,7 +197,7 @@ known gap rather than a decision.
 `compositor` is the scene, the clipping and damage-rectangle arithmetic, and the composition itself.
 `line_editor` is a sans-IO editor with a `line_editor::proto` inside it. Renaming either to
 `*_proto` would promise a wire definition and deliver an algorithm, which is exactly the kind of
-claim §39 (a component is named for what it is) is about. The `*_proto` check is right to leave them
+claim §39 (a component is named for what it is) is about. The `*_contract` check is right to leave them
 alone.
 
 ### The 2026-08-01 census

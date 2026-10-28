@@ -89,10 +89,10 @@ crates/std_runtime_contract/src/lib.rs::ARGS_SLOT spelled-out
 crates/std_runtime_contract/src/lib.rs::CONFIG_PAGE spelled-out
 crates/std_runtime_contract/src/lib.rs::CONFIG_SLOT spelled-out
 crates/std_runtime_contract/src/lib.rs::FS_DIR_SLOT spelled-out
-crates/supervision_protocol/src/lib.rs::CHILD_STACK_VA spelled-out
-crates/supervision_protocol/src/lib.rs::give_up_own_page question-shape
-crates/supervision_protocol/src/lib.rs::memory_region_destroy question-shape
-crates/supervision_protocol/src/lib.rs::start_child question-shape
+crates/supervision_contract/src/lib.rs::CHILD_STACK_VA spelled-out
+crates/supervision_contract/src/lib.rs::give_up_own_page question-shape
+crates/supervision_contract/src/lib.rs::memory_region_destroy question-shape
+crates/supervision_contract/src/lib.rs::start_child question-shape
 crates/system_log_contract/src/lib.rs::WINDOW_VA spelled-out
 crates/system_log_contract/src/lib.rs::at_line_start question-shape
 crates/timetable/src/admission.rs::schedulable question-shape

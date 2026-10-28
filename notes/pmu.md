@@ -101,7 +101,7 @@ the test compares the number a program reports with the one the kernel read from
 The vehicle is `coremark`, the one program that reports its own `cntfrq` over IPC. The kernel
 spawns `coremark_builder` with `spawn_elf_child_builder`, which maps the timebase page on the
 architectures that need one. `coremark_builder` then builds `coremark` through
-`supervision_protocol::build_child_space`, the tree's one userspace ELF loader. The number the test
+`supervision_contract::build_child_space`, the tree's one userspace ELF loader. The number the test
 asserts on has crossed both hops. The second test checks that this machine's rate is inside
 `counter_frequency_contract`'s plausibility band, the half its host tests cannot reach.
 

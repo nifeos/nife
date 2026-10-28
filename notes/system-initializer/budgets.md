@@ -75,7 +75,7 @@ again.
 `PROGENITOR_RESERVED_PAGES` is 128. It pays for the page tables reaching the loader's scratch
 window, which are the progenitor's own mappings and must never come out of a child's region. Tearing
 that region down would free tables under a window the progenitor never unmaps. The loader's cursor
-wraps inside `supervision_protocol::SCRATCH_WINDOW`, so those tables cost at most
+wraps inside `supervision_contract::SCRATCH_WINDOW`, so those tables cost at most
 `SCRATCH_TABLE_PAGES` however long the machine runs, and an assertion holds that half spoken for.
 The other half builds `job_undertaker` (its image, twelve stack pages, tables, address space and
 thread) and the tables under `ACTIVATION_FS_VA` and `IMAGE_STAGING_VA`.

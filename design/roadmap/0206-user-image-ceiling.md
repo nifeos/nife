@@ -81,7 +81,7 @@ for 190 of it.
 - **Recorded.** Band checks see membership, not collisions within one program; two protocol crates
   restate their numbers: `crates/address_space_map/src/lib.rs`.
 - **Recorded.** The userspace loader refuses a too-large image as `Err(())`, with no reason:
-  `crates/supervision_protocol/src/lib.rs`.
+  `crates/supervision_contract/src/lib.rs`.
 
 ## BUGS
 

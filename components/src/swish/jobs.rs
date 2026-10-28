@@ -114,7 +114,7 @@ fn release(h: Held) {
         destroy_memory_region(h.budget);
         capability_delete(h.budget);
     }
-    supervision_protocol::forget_thread_control_block(h.tcb);
+    supervision_contract::forget_thread_control_block(h.tcb);
 }
 
 /// Delete this shell's slots for a job's frame and region, on every path that ends with them.

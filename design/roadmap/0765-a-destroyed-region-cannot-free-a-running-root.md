@@ -95,7 +95,7 @@ second region) is reasoned from `configure_thread_control_block`, which checks o
 an embryo.
 
 Who builds this shape today? Nobody. Every `ADDRESS_SPACE` retype in the tree takes its TCB from
-the same region: `supervision_protocol::build_child_space` (`build_ut` for both),
+the same region: `supervision_contract::build_child_space` (`build_ut` for both),
 `fixtures/src/job_mix_task.rs` and `os_primitives_benchmarker.rs` (the child's region for both),
 `system_tests/src/user/reap_tests.rs`, and `process_composition_witness`, which binds nothing. So the hole
 is reachable only by a program that sets out to build it.

@@ -12,7 +12,7 @@ use super::*;
 pub(super) const INITIAL_RAMDISK_VA: u64 = address_space_map::runtime_window(0x2000_0000);
 
 /// Stack pages every child the progenitor builds gets, mapped down from
-/// `supervision_protocol::CHILD_STACK_VA`; measured, with four pages of headroom.
+/// `supervision_contract::CHILD_STACK_VA`; measured, with four pages of headroom.
 ///
 /// `kernel::user::pipeline_service`'s `SHELL_EXTRA_STACK` must stay level with this, or a test
 /// wiring finds faults the boot does not have (notes/pipes/the-boot.md). The kernel cannot depend
@@ -65,12 +65,12 @@ pub(super) const SH_BUDGET_PAGES: u64 = spawnproto::SHELL_BUDGET_PAGES;
 /// **What the progenitor keeps for itself after the boot servers are up**: the page tables
 /// reaching the loader's scratch window, which must never come out of a child's region, and the
 /// building of `job_undertaker`. The scratch window's tables cost at most
-/// `supervision_protocol::SCRATCH_TABLE_PAGES`, and the assertion below keeps that half spoken for.
+/// `supervision_contract::SCRATCH_TABLE_PAGES`, and the assertion below keeps that half spoken for.
 /// See notes/system-initializer/budgets.md.
 ///
 /// Name: ratified 2026-10-18 (calef: "Progenitors numbers are ratified."), replacing `INIT_OWN_PAGES`.
 pub const PROGENITOR_RESERVED_PAGES: u64 = 128;
-const _: () = assert!(PROGENITOR_RESERVED_PAGES >= 2 * supervision_protocol::SCRATCH_TABLE_PAGES);
+const _: () = assert!(PROGENITOR_RESERVED_PAGES >= 2 * supervision_contract::SCRATCH_TABLE_PAGES);
 
 /// **One job's region**: everything a spawned program is made of, so a single reclaim frees all of
 /// it. Spent per live job, not per job ever run. Counted from the largest debug image the prompt
@@ -128,7 +128,7 @@ pub const IMAGE_POOL_PAGES: u64 = grant_plan::image_region_pages(
 /// other half is the boot servers', unmeasured; see notes/system-initializer/budgets.md.
 const _: () = assert!(
     JOBS_BUDGET_PAGES + IMAGE_POOL_PAGES + spawnproto::IMAGE_MAXIMUM_PAGES
-        <= supervision_protocol::SCRATCH_WINDOW_PAGES / 2
+        <= supervision_contract::SCRATCH_WINDOW_PAGES / 2
 );
 
 /// Where the progenitor maps the shell's output frame in **its own** address space, to print the one line it

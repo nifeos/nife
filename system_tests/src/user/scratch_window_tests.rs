@@ -1,7 +1,7 @@
 //! A userspace builder keeps building past its scratch window (milestone 604 (provisional), the
 //! builder's scratch cursor is bounded).
 //!
-//! `supervision_protocol`'s loader maps every page it fills for a child into the builder's own
+//! `supervision_contract`'s loader maps every page it fills for a child into the builder's own
 //! space, inside a fixed window it wraps around, probing for free pages. This proves the kernel's
 //! half: destroying a child's region takes the builder's scratch mappings of its frames back
 //! (DECISIONS §13 (frame revocation)), and `PageFrame::MAP` refuses a taken page whole, so a probe

@@ -59,7 +59,7 @@ list is short and it is what makes the blockers concrete:
    `retype_into_kernel_object(budget, abi::objtype::RENDEZVOUS)`, which
    `fixtures/src/rendezvous_minter.rs` proves works from EL0.
 3. Build and start 34 processes with a per-child grant set, each carrying its own rights.
-   `supervision_protocol::build_child` and `start_child`.
+   `supervision_contract::build_child` and `start_child`.
 4. Split 32 per-task budgets off its own region (`job_mix::TASK_BUDGET_PAGES` is 25 pages each,
    and a task needs its own because the map and spawn jobs spend it).
 5. Read the wall clock and the counter frequency, and print machine-readable lines
@@ -95,7 +95,7 @@ protocol for the shell to ask it to run, which is squarely *anything two program
 ### Blocker two: a shell-spawned program never receives the initrd
 
 `crates/system_initializer`'s `spawn_service` builds every job with
-`supervision_protocol::build_child` (`:2470-2496`), and `build_child_space` maps ELF segments, stack
+`supervision_contract::build_child` (`:2470-2496`), and `build_child_space` maps ELF segments, stack
 pages, an x86_64 timebase placeholder and `endow.maps` -- nothing else. The `maps` a normal job may
 receive are chosen at `:2451-2462` and are exactly three: a filesystem client page, the clock page,
 or the config page, with the comment *"One extra mapping at most, today"*. `INITIAL_RAMDISK_VA` reaches only

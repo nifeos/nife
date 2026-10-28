@@ -24,7 +24,7 @@
 //!
 //! - **Nothing restarts a timetable that faults.** This process exits, and the schedule stays on
 //!   disk for the next `SCHEDULE` or the boot-time re-deriver.
-//! - **The timetable's image is copied twice**: `supervision_protocol::build_child` takes a child's
+//! - **The timetable's image is copied twice**: `supervision_contract::build_child` takes a child's
 //!   data only as a copied blob or a mapped frame, and `login` hands this process bytes.
 //! - **A durable timetable holds no clock** (`login` has none to pass down), so every calendar line
 //!   in a durable schedule is `timetable::Unbacked::WallClock` and never fires.
@@ -42,7 +42,7 @@
 #![no_main]
 
 use login_contract::user_timetable_keeper as contract;
-use supervision_protocol::{
+use supervision_contract::{
     ChildEndowment, Retention, build_child, memory_region_destroy, memory_region_split,
     retype_obj_from as retype_obj, start_child,
 };

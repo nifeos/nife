@@ -128,13 +128,13 @@ pub const BANDS: [(&str, Band); 8] = [
 pub const IMAGE_BASE: u64 = IMAGE.start;
 
 /// **The stack pointer a thread starts with.** Stacks grow down, so this is one past the highest
-/// stack byte. Was `kernel::user::USER_STACK_TOP` and `supervision_protocol::CHILD_STACK_VA + PAGE`,
+/// stack byte. Was `kernel::user::USER_STACK_TOP` and `supervision_contract::CHILD_STACK_VA + PAGE`,
 /// both `0x50_1000`.
 pub const STACK_TOP: u64 = STACK.end;
 
 /// **The highest stack page**: the one page every loader maps, and the page below which a program
 /// given a deeper stack gets the rest. Was `kernel::user::USER_STACK_VA` and
-/// `supervision_protocol::CHILD_STACK_VA`, both `0x50_0000`.
+/// `supervision_contract::CHILD_STACK_VA`, both `0x50_0000`.
 pub const STACK_TOP_PAGE: u64 = STACK_TOP - PAGE;
 
 /// **The most stack pages a loader may map**, down from [`STACK_TOP_PAGE`]. One fewer than the band

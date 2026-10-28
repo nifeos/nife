@@ -22,7 +22,7 @@ const FIRES: u64 = 4;
 /// Stack pages for the timetable, tracking `timetable::contract::STACK_PAGES`, which carries the
 /// measurement.
 ///
-/// A number a spawn site **states** rather than inherits, which is `supervision_protocol`'s own rule
+/// A number a spawn site **states** rather than inherits, which is `supervision_contract`'s own rule
 /// (`CHILD_STACK_PAGES`: "a builder that silently inherits somebody else's stack size finds faults
 /// that builder does not have"). The timetable's working set is the plan itself, a kilobyte of
 /// `grant_plan::Endowment` per `timetable::Registry` entry. Eight pages died with a data abort at the

@@ -27,7 +27,7 @@
 use capability_plan::Provisions;
 use line_editor::component::{self, supervisor as s};
 use line_editor::proto;
-use supervision_protocol::{Child as Built, ChildEndowment, Retention};
+use supervision_contract::{Child as Built, ChildEndowment, Retention};
 use user_mode_runtime::{
     Delivered, capability_delete as delete_capability, cntfrq, notification_poll,
     notification_signal, notification_wait, now, receive, receive_fault, receive_request, reply,
@@ -298,13 +298,13 @@ impl<'a> Child<'a> {
         let budget = match self.kind {
             Kind::LineEditor { .. } => 0,
             Kind::DisplayTerminal => {
-                supervision_protocol::memory_region_split(place, display::MAP_BUDGET_PAGES).ok()?
+                supervision_contract::memory_region_split(place, display::MAP_BUDGET_PAGES).ok()?
             }
         };
         let laid = match &self.kind {
             Kind::LineEditor { .. } => {
                 let plan = self.plan_for(self.controls[p]);
-                let region = supervision_protocol::memory_region_split(place, plan.pages()).ok()?;
+                let region = supervision_contract::memory_region_split(place, plan.pages()).ok()?;
                 let endow = ChildEndowment {
                     capabilities: plan.capabilities(),
                     maps: plan.maps(),
@@ -313,7 +313,7 @@ impl<'a> Child<'a> {
                     stack_pages: component::STACK_PAGES,
                     ..ChildEndowment::new(Retention::Nothing)
                 };
-                supervision_protocol::build_child_space(s::BUDGET, region, &self.image, &endow)
+                supervision_contract::build_child_space(s::BUDGET, region, &self.image, &endow)
                     .ok()
                     .map(|(child, aspace)| (child, aspace, region))
             }
@@ -335,10 +335,10 @@ impl<'a> Child<'a> {
                     fault: Some(self.faultep),
                     ..ChildEndowment::new(Retention::Nothing)
                 };
-                supervision_protocol::memory_region_split(place, display::INSTANCE_PAGES)
+                supervision_contract::memory_region_split(place, display::INSTANCE_PAGES)
                     .ok()
                     .and_then(|region| {
-                        supervision_protocol::build_child_space(
+                        supervision_contract::build_child_space(
                             s::BUDGET,
                             region,
                             &self.image,
@@ -403,9 +403,9 @@ impl<'a> Child<'a> {
                 absorb,
             ),
         };
-        if supervision_protocol::configure_child(laid.child.tcb, laid.aspace, self.image.entry())
+        if supervision_contract::configure_child(laid.child.tcb, laid.aspace, self.image.entry())
             .is_err()
-            || !supervision_protocol::start_child(laid.child, a0, a1, a2)
+            || !supervision_contract::start_child(laid.child, a0, a1, a2)
         {
             fail()
         }
@@ -643,7 +643,7 @@ impl Supervisor<'_> {
     /// after it (notes/hung-component/terminal-supervisor-bound.md).
     fn quiesce(&self, served: u64, faultep: u64) -> Quiesce {
         let Some(d) = &self.deadline else { fail() };
-        let Ok(region) = supervision_protocol::memory_region_split(d.bay, s::STAND_IN_PAGES) else {
+        let Ok(region) = supervision_contract::memory_region_split(d.bay, s::STAND_IN_PAGES) else {
             fail()
         };
         // The stand-in calls through a copy badged `SUPERVISOR_BADGE`, the only one the terminal
@@ -654,7 +654,7 @@ impl Supervisor<'_> {
             _ => fail(),
         };
         let granted = [(badged, abi::rights::WRITE), (d.wake, abi::rights::WRITE)];
-        let built = supervision_protocol::build_child(
+        let built = supervision_contract::build_child(
             s::BUDGET,
             region,
             &d.own,
@@ -670,7 +670,7 @@ impl Supervisor<'_> {
 
         let bound = cntfrq() * s::QUIESCE_BOUND_MS / 1000;
         let started = now();
-        if !supervision_protocol::start_child(child, MODE_STAND_IN, 0, 0)
+        if !supervision_contract::start_child(child, MODE_STAND_IN, 0, 0)
             || timer_arm(d.timer, started + bound, d.wake, DEADLINE) < 0
         {
             fail()
@@ -735,7 +735,7 @@ fn end_region(region: u64) {
         return;
     }
     for _ in 0..1000 {
-        if supervision_protocol::memory_region_destroy(region) {
+        if supervision_contract::memory_region_destroy(region) {
             return;
         }
         user_mode_runtime::yield_now();
@@ -763,14 +763,14 @@ fn collect(faultep: u64, region: u64) {
 }
 
 fn bay(pages: u64) -> u64 {
-    match supervision_protocol::memory_region_split(s::BUDGET, pages) {
+    match supervision_contract::memory_region_split(s::BUDGET, pages) {
         Ok(slot) => slot,
         Err(_) => fail(),
     }
 }
 
 fn obj(objtype: u64) -> u64 {
-    match supervision_protocol::retype_obj_from(s::BUDGET, objtype) {
+    match supervision_contract::retype_obj_from(s::BUDGET, objtype) {
         Ok(slot) => slot,
         Err(()) => fail(),
     }

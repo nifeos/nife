@@ -23,7 +23,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use supervision_protocol::{ChildEndowment, Retention, build_child, start_child};
+use supervision_contract::{ChildEndowment, Retention, build_child, start_child};
 use user_mode_runtime::{exit, require, send};
 
 const MEMORY_REGION: u64 = 0;

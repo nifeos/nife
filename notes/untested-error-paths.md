@@ -129,7 +129,7 @@ syscalls run under QEMU, where host instrumentation does not reach. The run excl
 | `redoxfs_server` | 237 | 16 |
 | `kernel/src/arch/` | 86 | 68 |
 | `system_initializer` | 84 | 37 |
-| `supervision_protocol`, `cryptography_provider`, `hot_swap_contract`, `user_mode_runtime` | 51 | 6 |
+| `supervision_contract`, `cryptography_provider`, `hot_swap_contract`, `user_mode_runtime` | 51 | 6 |
 | total | 1,159 | 602 |
 
 The 75 cleanup paths are all here: 27 in `system_initializer`, 17 in `login`, 10 in `swish`, 13 in
