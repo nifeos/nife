@@ -422,6 +422,12 @@ pub fn counts(said: &[u8]) -> (u64, u64, u64) {
 /// (`Wiring::screen`, DECISIONS §106 (take the `terminal_sink_caretaker` narrowing)). Each needs
 /// something this stub lacks, so neither bit is drained and a line setting one would desync the
 /// count of delegated capabilities; `script/swish-check` covers both.
+///
+/// # BUGS
+///
+/// - A held job (milestone 933) is supervised on the shell's endpoint, and this stub cannot reap
+///   its corpse: the thread is a kernel one, outside any region the shell destroys. Each keeps its
+///   address space and stack for the boot (`SUITE_PAGE_FRAME_BUDGET`'s comment).
 fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
     loop {
         let m = crate::sched::ipc_receive(spawn_ep);

@@ -13,7 +13,7 @@ fn the_job_pool_check_reads_free_as_ci_printed_it() {
     assert!(super::yours_used_kib(leaked).unwrap() > super::YOURS_CEILING_KIB);
     // The same line after the fix, measured locally on aarch64 on 2026-10-27 (UTC): the shell's
     // static pages and `free` alone.
-    let whole = "Yours:        7296         460        6836\n";
+    let whole = "Yours:        7296         268        7028\n";
     assert!(super::yours_used_kib(whole).unwrap() <= super::YOURS_CEILING_KIB);
     assert_eq!(super::yours_used_kib("no such row\n"), None);
 }

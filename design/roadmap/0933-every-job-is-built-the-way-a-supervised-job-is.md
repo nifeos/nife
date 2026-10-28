@@ -87,11 +87,14 @@ The numbers are in pages of 4 KiB, measured with `free` at the prompt on all thr
 | a directory-granted job's region | 98 | 98 |
 | a `std` job's region | 384 | 384 |
 | `free`'s `Yours:` total | 672 | 1,824 |
-| `free`'s `Yours:` used, idle shell plus `free` | 48 | 115 |
+| `free`'s `Yours:` used, idle shell plus `free` | 48 | 67 |
 
-The shell's own static pages are 67 (268 KiB): `Yours:` reads 460 KiB with `free` running and
-192 KiB of that is `free`. After a hundred spawn-and-reap cycles of `job_sleeper` it reads 768 KiB on
-both sides of the cycles on aarch64, riscv64 and x86_64, the same figure to the kibibyte.
+The shell's own static pages are 19 (76 KiB): `Yours:` reads 268 KiB with `free` running and
+192 KiB of that is `free`. A held job costs the shell 48 pages for its life and nothing after, and
+the same 48 came from the pool before, so the cost per job moved and did not grow. After a hundred
+spawn-and-reap cycles of `job_sleeper` it reads 576 KiB on both sides of the cycles on aarch64,
+riscv64 and x86_64, the same figure to the kibibyte. The boot shell holds six native jobs and a
+`std` job at once (`script/swish-check`), the pool's old mix; its budget has 1,824 pages for them.
 
 The pool has not shrunk, and the shell's endowment grew by 672 pages. The ruling says the shell
 grows by what the pool shrinks. The pool still serves pipeline stages, and one graphical terminal
@@ -143,6 +146,8 @@ domain, so it does not change this; a viewer of both domains would need a second
 - Background jobs finishing out of order leave a hole in the shell's budget until the later ones
   go, the carve order's cost (`notes/object-revocation.md`).
 - A held `ps` does not list a pipeline's stages, and the reverse (above).
+- The kernel suite's test progenitor cannot reap a scripted shell's held jobs, so each leaves a
+  corpse: 157 frames on aarch64, in `SUITE_PAGE_FRAME_BUDGET`. The production path does not.
 - A background job holds up to three slots in the shell's capability table (its region, its thread
   control block and its budget), so eight of them take twenty-four of the table's sixty-four. No
   test fills the table.

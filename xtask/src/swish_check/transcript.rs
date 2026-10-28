@@ -35,9 +35,9 @@ pub(super) const SLOT_GAUGE: &str = "capability slots:";
 
 /// **What the shell's own budget holds when no job does**, in KiB: its page tables, its exit
 /// endpoint, its sleeper and the other pages it keeps for the session. Measured on aarch64 on
-/// 2026-10-27 (UTC) as the first `free` row less `free`'s own region: 460 less 192. Name:
+/// 2026-10-27 (UTC) as the first `free` row less `free`'s own region: 268 less 192. Name:
 /// provisional (milestone 933's lane).
-pub(super) const SHELL_STATIC_KIB: u64 = 280;
+pub(super) const SHELL_STATIC_KIB: u64 = 80;
 
 /// **The most of the shell's budget `free`'s `Yours:` line may report in use**, in KiB: the shell's
 /// own static pages, and two job regions (`grant_plan::JOB_REGION_PAGES`, 48 pages of 4 KiB). One
