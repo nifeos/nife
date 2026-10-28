@@ -146,10 +146,13 @@ how the updater (858) holds it across reboots.
 
 The progenitor checks every delegated request against X's stored records before anything is
 written, because a delegated holder is trusted to be nothing more than a holder of that badge. A
-holder under X cannot send `Approve` or `Vouch`. A `Rollback` under X passes when every row the
-previous generation restores lies within X's records, and fails naming the row when one does not
-(ruled 2026-10-12): returning to what the file allowed grants nothing new. The owner's vouch rows
-lie outside every approval, so the check skips them; it still restores them.
+holder under X cannot send `Approve` or `Vouch`. A `Rollback` under X passes when every row it
+restores lies within X's records, and fails naming the row when one does not (ruled 2026-10-12,
+read 2026-10-28 UTC): returning to what the file allowed grants nothing new. A row the live
+generation already holds is not something the rollback grants, so the check reads the target
+generation's rows the live one does not: a rollback that only removes passes, and one that would
+bring back a package the file does not bound is refused. The owner's vouch rows lie outside every
+approval, so the check skips them; it still restores them.
 
 Approvals are not generations: the progenitor stores them beside the installed-programs table's
 generations, never as rows in them, so `jig rollback` restores packages and leaves every approval
@@ -226,8 +229,8 @@ Under QEMU on aarch64, riscv64 and x86_64, in `script/swish-check`, with fixture
    no new endpoint.
 6. A refused scripted install exits with its documented code, and `--json` names each extra
    grant.
-7. A delegated holder rolls back to a generation within its approval, and is refused a rollback to
-   one holding a row outside it, which the refusal names.
+7. A delegated holder rolls back to a generation within its approval, and is refused a rollback
+   that would restore a row outside it, which the refusal names.
 8. A rollback leaves approvals unchanged: after `jig revoke X`, rolling back to a generation from
    before the revoke leaves X revoked, and an approval made after the restored generation stays.
 

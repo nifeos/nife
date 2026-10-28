@@ -560,4 +560,12 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     let mut nine = D;
     nine[DESCRIPTOR_LEN] = (MAXIMUM_ZONES + 1) as u8;
     assert_eq!(decode(&nine), Err(Error::BadField(DESCRIPTOR_LEN)));
+
+    // **The walk reads every zone to its last byte** (milestone 911): a zone whose last label is
+    // one character, so an end computed one byte short leaves a trailing dot the contract refuses.
+    // A zone ending in a longer label would hide the same fault, which is why this one is here.
+    const SHORT: &[&str] = &["a.x"];
+    const S: [u8; serviced_len(SHORT)] = encode_serviced(&grant_plan::NO_NOTE_MANIFEST, SHORT, true);
+    assert_eq!(decode(&S), Ok(grant_plan::NO_NOTE_MANIFEST));
+    assert_eq!(zones(&S).unwrap().iter().next(), Some(&b"a.x"[..]));
 }

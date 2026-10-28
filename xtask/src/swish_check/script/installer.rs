@@ -86,6 +86,14 @@ pub(super) const LINES: &[Line] = &[
         "jig install ./noteless.nifepkg",
         &["installed; generation 1 is live"],
     ),
+    // **The floor: a rollback never targets the initial generation** (ruled 2026-10-28): the store
+    // starts at the empty generation 0, so rolling back to it would wipe every installed program
+    // in one verb. At generation 1 there is no earlier generation to return to, and nothing moves.
+    line(
+        1,
+        "jig rollback",
+        &["refused: there is no generation before the live one"],
+    ),
     line(0, "cd /", &[]),
     // **And what it installed runs, by its bytes** (DECISIONS §219 (how the shell names an
     // installed program to the spawner) option D). A path, so the shell reads the file into frames

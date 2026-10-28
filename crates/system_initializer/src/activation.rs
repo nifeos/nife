@@ -659,6 +659,9 @@ fn rollback(cx: &EditContext, new: &mut [u8; PAGE_BYTES]) -> (spawnproto::Activa
     let live = cx.live;
     let table = cx.table;
     let manager = cx.manager;
+    // **The initial generation is not a rollback target** (ruled 2026-10-28): generation 0 is the
+    // store's empty table, so rolling back to it would wipe every installed program in one verb.
+    // A live generation of 0 or 1 therefore has nothing it may return to.
     if live <= 1 {
         return (S::NoEarlier, live);
     }
@@ -677,10 +680,12 @@ fn rollback(cx: &EditContext, new: &mut [u8; PAGE_BYTES]) -> (spawnproto::Activa
         Err(_) => return (S::StoreFailed, live),
     }
     // **The delegated check** (milestone 911 (scripted installs grant only what the owner's
-    // approval file allows), the ruling of 2026-10-12 on #2031): a rollback under an approval
-    // passes when every row the previous generation restores lies within its records, and is
-    // refused, naming the row, when one does not. The rows are the target generation's, grants
-    // and all; a row whose package the approval does not bound lies outside it. The owner's
+    // approval file allows), the ruling of 2026-10-12 on #2031, read 2026-10-28): a rollback under
+    // an approval passes when every row it **restores** lies within its records, and is refused,
+    // naming the row, when one does not. A row the live generation already holds is not something
+    // this rollback grants, so the check is over the target's rows the live generation does not:
+    // removing a package returns to what was there, while bringing one back is the grant the
+    // ruling bounds. A row whose package the approval does not bound lies outside it. The owner's
     // vouch rows are not the holder's to undo and no approval bounds them, so the check skips
     // them; they are still restored.
     if let Some(allowed) = cx.allowed {
@@ -698,8 +703,14 @@ fn rollback(cx: &EditContext, new: &mut [u8; PAGE_BYTES]) -> (spawnproto::Activa
                 .filter(|g| g.digest == row.digest)
                 .all(|g| entry.covers(g.what) == Ok(true))
         };
+        let held = |row: &installed_programs::Entry<'_>| {
+            installed_programs::entries(table)
+                .flatten()
+                .any(|live| live.program == row.program && live.digest == row.digest)
+        };
         let outside = installed_programs::entries(older)
             .flatten()
+            .filter(|row| !held(row))
             .find(|row| !within(row));
         if let Some(row) = outside {
             return refused_not_approved(cx, row.package);

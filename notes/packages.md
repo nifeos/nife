@@ -238,7 +238,7 @@ Install stages the package as an image is staged, so the progenitor checks its o
 must be the image catalog's line for the stem in its header, and the member named after the
 package is the program. Its bytes go to `packages/<name>/<version>/<program>`, one component per
 field, so each stays within a directory name's 16 bytes. Remove writes a generation without
-the entry and leaves the bytes, which is what lets a rollback bring them back. Rollback points `current` one generation below the live one and writes nothing else.
+the entry and leaves the bytes, which is what lets a rollback bring them back. Rollback points `current` one generation below the live one and writes nothing else. The initial generation is never a target: generation 0 is the empty table, so a rollback to it would wipe every installed program in one verb, and a live generation of 0 or 1 is refused with `NoEarlier` (ruled 2026-10-28 UTC, gated by `script/swish-check`'s `jig rollback` row at generation 1).
 
 All three share one commit order: the new generation is created and written whole, `current` is
 written to `current.next` and renamed over `current`, and the device is synced before the reply. A

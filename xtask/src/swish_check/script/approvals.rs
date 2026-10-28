@@ -148,9 +148,9 @@ pub(super) const LINES: &[Line] = &[
         &["seeker 0.2.0: holding the network and two zones"],
     ),
     // **A delegated holder rolls back to a generation within its approval** (Done-when 7): the
-    // rows the previous generation restores all lie in `lab-runner`, dialer's only when the
-    // owner has installed it, which is the next line's business. The interactive install asks;
-    // the owner's yes covers the root zone the note asks for.
+    // rollback only removes, since the live generation already holds every row the target does, so
+    // it grants nothing and passes. The interactive install asks; the owner's yes covers the root
+    // zone the note asks for.
     asked(
         1,
         "jig install ./dialer.nifepkg",
@@ -163,15 +163,17 @@ pub(super) const LINES: &[Line] = &[
         &["rolled back; generation"],
     ),
     line(0, "dialer", &["no such program"]),
-    // **And is refused a rollback to one holding a row outside it, which the refusal names**
-    // (Done-when 7): dialer again, and the generation below the live one is the one that
-    // installed it.
+    // **And is refused a rollback that would restore a row outside it, which the refusal names**
+    // (Done-when 7, read 2026-10-28): dialer is installed at the owner's console and then removed,
+    // so the generation below the live one holds dialer and the live one does not. Rolling back
+    // would bring dialer back, and `lab-runner` does not bound dialer, so the refusal names it.
     asked(
         1,
         "jig install ./dialer.nifepkg",
         (OWNERS_QUESTION, "y"),
         &["installed; generation"],
     ),
+    line(1, "jig remove dialer", &["removed; generation"]),
     line(
         1,
         "jig rollback --within lab-runner",
