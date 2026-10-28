@@ -219,7 +219,9 @@ impl Profile {
 /// Every marker was first quoted from `notes/visionfive2.md`'s bench runbook and then checked
 /// against bytes off the wire on 2026-09-01; the captures are in `tests/fixtures/captured/` and the
 /// tests assert on them. See `notes/board-console.md` for the table of where each one came from.
-pub(crate) static RADON: Profile = Profile {
+///
+/// Name: recorded (the board's codename; `notes/visionfive2.md`).
+pub static RADON: Profile = Profile {
     name: "radon",
     prologue: &[
         // DRAM and the PLLs are up and we are running out of SRAM.

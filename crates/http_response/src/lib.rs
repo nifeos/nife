@@ -15,7 +15,7 @@
 //! - A close-delimited body is refused, so a server that omits `Content-Length` cannot serve nife.
 //! - Header values other than the two it reads are skipped, not validated.
 //! - The head parse is `httparse`'s, vouched for by upstream fuzzing, not proved here.
-//! - At most [`MAXIMUM_HEADERS`] header lines, or [`Error::HeadTooLong`] under the byte cap.
+//! - At most `MAXIMUM_HEADERS` header lines, or [`Error::HeadTooLong`] under the byte cap.
 //! - The head is re-parsed on every read until it ends, quadratic in the cap; not measured.
 //! - A minor version other than 0 or 1 is refused.
 //!
@@ -54,7 +54,7 @@ pub const REDIRECT_HEAD_MAXIMUM: usize = 32 * 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// The status line and headers ran past the reader's bound ([`HEAD_MAXIMUM`] unless it was made
-    /// with more room) without the blank line that ends them, or held more than [`MAXIMUM_HEADERS`]
+    /// with more room) without the blank line that ends them, or held more than `MAXIMUM_HEADERS`
     /// header lines.
     HeadTooLong,
     /// The first line is not `HTTP/1.<digit> <three digits> ...`.

@@ -44,7 +44,7 @@ pub(super) fn address_space_invoke(
 
 /// `AddressSpace::MAP_INTO`: map the frame in slot `a1` at `a0` in the space `name`, shaped by
 /// `a2` for a `PageFrame` (`MAP_RW`, `MAP_CODE`, else read-only), device read/write for a
-/// `DeviceFrame`. The other half of [`page_frame_map`](super::page_frame::page_frame_map).
+/// `DeviceFrame`. The other half of [`page_frame_map`].
 ///
 /// Needs `WRITE` on the space and the shape's right on the frame. All or none: `BadPointer` for a
 /// run outside the user half or an unresolved space, `OutOfMemory` when page tables run out.

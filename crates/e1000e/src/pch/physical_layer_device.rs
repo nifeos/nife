@@ -204,9 +204,13 @@ pub mod registers {
 pub(crate) const PHY_REVISION_MASK: u32 = 0xffff_fff0;
 
 /// How long to wait for someone else's `SWFLAG` to clear, in ms (`PHY_CFG_TIMEOUT`).
-pub(crate) const SWFLAG_FREE_MS: u32 = 100;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const SWFLAG_FREE_MS: u32 = 100;
 /// How long to wait for ours to stick, in ms (`SW_FLAG_TIMEOUT`).
-pub(crate) const SWFLAG_TAKE_MS: u32 = 1000;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const SWFLAG_TAKE_MS: u32 = 1000;
 /// `EXTCNF_CTRL.SWFLAG`.
 pub(crate) const EXTCNF_CTRL_SWFLAG: u32 = 0x0000_0020;
 /// `FWSM.RSPCIPHY`: clear while firmware blocks a PHY reset.
@@ -232,7 +236,9 @@ pub fn read_mdic(
 }
 
 /// One MDIO write, `e1000_write_phy_reg_mdic`.
-pub(crate) fn write_mdic(
+///
+/// Name: recorded (FreeBSD's `e1000_write_phy_reg_mdic`).
+pub fn write_mdic(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
     register: u32,
@@ -281,7 +287,9 @@ pub struct Swflag(());
 impl Swflag {
     /// `e1000_acquire_swflag_ich8lan`: wait for the flag to be free, set it, and wait for it to
     /// read back set. On a refusal it clears the bit it wrote, as FreeBSD does.
-    pub(crate) fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
+    ///
+    /// Name: recorded (FreeBSD's `e1000_acquire_swflag_ich8lan`).
+    pub fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
         let mut ext = 0;
         let mut free = false;
         for _ in 0..SWFLAG_FREE_MS {

@@ -16,7 +16,7 @@
 //! - **Characters sharing a glyph decode as the first in alphabet order**, and nothing checks
 //!   `bitmap_font` for duplicate glyphs.
 //! - **A scheme whose ink is not the brighter colour decodes to a grid of `?`**: ink and paper
-//!   split at their per-channel midpoint ([`ink_thresholds`]).
+//!   split at their per-channel midpoint (`ink_thresholds`).
 
 /// What `screen_console` paints ink with, as one 24-bit RGB triplet: its own
 /// [`screen_console::ScreenConsole::FOREGROUND`], converted, so the reader takes its color from

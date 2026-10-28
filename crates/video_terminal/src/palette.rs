@@ -12,7 +12,7 @@ use super::*;
 /// **The sixteen ANSI colours**, normal then bright, as `0x00RRGGBB` words: Solarized Dark from
 /// Schoonover's table (§104 (the rich-text font is DejaVu Sans Mono, and the palette is
 /// Solarized)), but entry 14 is `0x93a1a0`, one unit off, so it passes the gate
-/// ([`PaletteFaults`]). See notes/video-terminal/palette-keymap-and-script.md.
+/// (`PaletteFaults`). See notes/video-terminal/palette-keymap-and-script.md.
 ///
 /// # BUGS
 ///
