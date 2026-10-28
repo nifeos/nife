@@ -5,13 +5,15 @@ use super::*;
 #[test]
 fn the_job_pool_check_reads_free_as_ci_printed_it() {
     // Run 37110045386's riscv64 transcript, verbatim: two stranded regions beside `free`'s own.
+    // The figure is the progenitor's pool then; the shell's budget carries its static pages too.
     let leaked = "$ free\n                total        used        free\n\
                   Mem:        262144       84292      177852\n\
-                  Yours:        2688         576        2112\n";
-    assert_eq!(super::yours_used_kib(leaked), Some(576));
+                  Yours:        2688         960        1728\n";
+    assert_eq!(super::yours_used_kib(leaked), Some(960));
     assert!(super::yours_used_kib(leaked).unwrap() > super::YOURS_CEILING_KIB);
-    // The same line after the fix, measured locally on riscv64: `free` alone.
-    let whole = "Yours:        2688         192        2496\n";
+    // The same line after the fix, measured locally on aarch64 on 2026-10-27 (UTC): the shell's
+    // static pages and `free` alone.
+    let whole = "Yours:        7296         268        7028\n";
     assert!(super::yours_used_kib(whole).unwrap() <= super::YOURS_CEILING_KIB);
     assert_eq!(super::yours_used_kib("no such row\n"), None);
 }

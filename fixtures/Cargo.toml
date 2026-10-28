@@ -74,6 +74,14 @@ path = "src/coremark_builder.rs"
 test = false
 bench = false
 
+# The job sleeper (milestone 933 (every job is built the way a supervised job is), provisional): an ordinary program that waits a given number of
+# milliseconds, or for ever, so the prompt's job control has something to hold.
+[[bin]]
+name = "job_sleeper"
+path = "src/job_sleeper.rs"
+test = false
+bench = false
+
 # The memory grant depleter (milestone 31): spends exactly the untyped budget `--mem N` grants it
 # and reports how many pages it could map. The program that makes the memory grant real, not
 # parsed-and-ignored.

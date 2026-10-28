@@ -1,5 +1,5 @@
 ---
-status: DECIDED
+status: AMENDED
 raised: 2026-09-04
 decided: 2026-09-04
 ratified_by: calef
@@ -16,6 +16,8 @@ No recommendation, deliberately. This is upstream of a syscall-surface question 
 a convention every future spawn path is written against, so it sits in the *move fast on what can be
 undone; be methodical on what cannot* tenet's irreversible category. Each answer below says what it
 would make true and what it would cost. Picking is calef's.
+
+Amended 2026-10-27 (UTC): [a requester may hold a job's region](0142-spawn-retention/amendment-2026-10-27.md).
 
 The evidence is in [`0142-spawn-retention/`](0142-spawn-retention/README.md); this page is
 complete without it:

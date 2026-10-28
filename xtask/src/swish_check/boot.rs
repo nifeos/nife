@@ -568,6 +568,7 @@ fn transcript_failures(leg: &Leg, console: &Console, failed: &mut Vec<String>) -
     failed.extend(slot_gauge_failure(arch, &after_hand_over(&raw_transcript)));
     failed.extend(stack_gauge_failures(arch, &console.gauges, &filtered));
     failed.extend(job_pool_failure(&filtered));
+    failed.extend(held_cycles_failure(&filtered));
     failed.extend(flood_failure(arch, &console.raw));
     whole
 }
@@ -1448,6 +1449,26 @@ fn job_pool_failure(filtered: &str) -> Option<String> {
     })
 }
 
+/// **And a hundred jobs the shell held left its budget as they found it** (milestone 933 (every job
+/// is built the way a supervised job is)). `free`'s `Yours:` row is the shell's budget as
+/// `MemoryRegion::USAGE` sees it, read once before the hundred jobs of `script::CYCLES_BEFORE` and
+/// once after `script::CYCLES_AFTER`; the second may not be larger than the first. `None` when the
+/// script has no such pair, as on a leg that skips it.
+fn held_cycles_failure(filtered: &str) -> Option<String> {
+    let (_, from_before) = filtered.split_once(CYCLES_BEFORE)?;
+    let before = yours_used_kib(from_before)?;
+    let (_, from_after) = from_before.split_once(CYCLES_AFTER)?;
+    let after = yours_used_kib(from_after)?;
+    (after > before).then(|| {
+        format!(
+            "`free` reports {after} KiB of the shell's budget in use after a hundred held jobs, \
+             against {before} KiB before them. Something a held job cost was not given back: its \
+             region (`held::collect`), or the pages a request carried (the argv and name-set pages \
+             `release_argv` returns)."
+        )
+    })
+}
+
 /// **Milestone 342's flood verdict** (milestone 342 (the kernel and the `console` server drive one
 /// UART from two address spaces, and nothing arbitrates)): every kernel flood line on a line of its
 /// own, or, for the detached control, how many were not. `None` when no flood probe is running.
@@ -1559,7 +1580,7 @@ fn report_leg_passed(leg: &Leg) {
          rendered one of those pages straight at the prompt with no `| wc` in front of it, ran \
          a && past a command that succeeded and not past one it refused, {network}stopped a \
          supervised job with ^C and tore down one that ignored it, and ran \
-         {jobs} jobs through the progenitor's bounded job pool after the progenitor gave its \
-         construction budget away{std_ran}"
+         {jobs} jobs through bounded budgets, the progenitor's job pool and the shell's own, after \
+         the progenitor gave its construction budget away{std_ran}"
     );
 }

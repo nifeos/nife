@@ -51,14 +51,15 @@ pub use image::{
     image_manifest, image_request_fits,
 };
 pub use manifest::{
-    CATALOG_SLOT, DIAGNOSTICS_SLOT, DOMAIN_SLOT, DirectoryGrantDeclaration, ENTROPY_SLOT,
-    FileGrantDeclaration, INDEX_SOURCES_SLOT, INSTALLER_REPLY_SLOT, INSTALLER_SLOT,
-    IndexStoreDeclaration, InputDeclaration, MACHINE_SLOT, MAXIMUM_DECLARED_SHORT_OPTIONS,
-    Manifest, MemoryGrantDeclaration, NETWORK_SLOT, NO_SHORT_OPTIONS, OutputDeclaration,
+    CATALOG_SLOT, DIAGNOSTICS_SLOT, DIRECTORY_JOB_REGION_PAGES, DOMAIN_SLOT,
+    DirectoryGrantDeclaration, ENTROPY_SLOT, FileGrantDeclaration, INDEX_SOURCES_SLOT,
+    INSTALLER_REPLY_SLOT, INSTALLER_SLOT, IndexStoreDeclaration, InputDeclaration, JOB_POOL_PAGES,
+    JOB_REGION_PAGES, MACHINE_SLOT, MAXIMUM_DECLARED_SHORT_OPTIONS, Manifest,
+    MemoryGrantDeclaration, NETWORK_SLOT, NO_SHORT_OPTIONS, OutputDeclaration,
     ProgramArgumentDeclaration, REBOOT_SLOT, SHARE_SLOT, SHELL_CONFIGURATION_SLOT,
     SHELL_CONFIGURATION_VIRTUAL_ADDRESS, STD_REGION_PAGES, SYNC_SLOT, ShortOptions,
     StartupContract, UNVOUCHED_MANIFEST, UNVOUCHED_STD_MANIFEST, WordGrant, image_region_pages,
-    named_std_region_pages,
+    job_region_pages, named_std_region_pages,
 };
 pub use parsing::{
     BUILTINS, MAXIMUM_POSITIONALS, ParsedInvocation, UserVerb, argv, check_words, each_word,

@@ -87,7 +87,61 @@ pub(super) const LINES: &[Line] = &[
         ],
     ),
     line(0, "jobs", &["no jobs"]),
-    line(0, "date &", &["& runs only a supervised job"]),
+    // **Job control on an ordinary program** (milestone 933 (every job is built the way a
+    // supervised job is)): `job_sleeper` is not interruptible and keeps no frame, so the shell
+    // holds only the region it built it from and the endpoint its death arrives on. A job blocked
+    // for ever and a job that exits on its own, listed; the cooperative `kill` refused with a
+    // sentence; `kill -9` tearing down the blocked one; `wait` seeing the other exit while it waits;
+    // a blocked job brought to the foreground and torn down by `^C`; one in the foreground that
+    // ends on its own; and one that speaks while `wait` has the prompt.
+    // Every job here is built from the shell's own budget, so none counts against the pool.
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[1] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 2500 --mem 4 &",
+        &["[2] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "jobs",
+        &["[1] job_sleeper running", "[2] job_sleeper running"],
+    ),
+    line(0, "kill %1", &["that job has no cooperative stop"]),
+    line(
+        0,
+        "kill -9 %1",
+        &["[1] job_sleeper: its process was torn down and its memory reclaimed"],
+    ),
+    line(0, "wait %2", &["[2] job_sleeper:", "the job finished."]),
+    line(0, "jobs", &["no jobs"]),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[1] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "fg %1",
+        &[
+            "running job_sleeper in the foreground",
+            "^C: tearing the job down.",
+            "its memory reclaimed",
+        ],
+    ),
+    line(0, "job_sleeper 40 --mem 4", &["the sleeper woke"]),
+    // A background job's output goes to the terminal's sink whenever it is written, over whatever
+    // the prompt is doing, so the gate lets this one speak only while a `wait` has the prompt.
+    line(
+        0,
+        "job_sleeper 1500 --mem 4 &",
+        &["[1] job_sleeper running in the background"],
+    ),
+    line(0, "wait %1", &["[1] job_sleeper:", "the job finished."]),
+    line(0, "jobs", &["no jobs"]),
     // **Ctrl-Z** (milestone 48's phase two): a job brought to the foreground with a bare `fg`,
     // which is in [`SWISH_CHECK_SUSPENDED`], is suspended by the `^Z` the gate presses, listed
     // stopped, resumed in the background with `bg`, and finished in the foreground with `^C`.
@@ -114,5 +168,76 @@ pub(super) const LINES: &[Line] = &[
             "running interrupt_heeder in the foreground",
             "the job caught the interrupt and stopped cleanly after",
         ],
+    ),
+    // **The shell's budget holds what the progenitor's pool held** (milestone 933): six native
+    // jobs in the background, each a region of 48 pages and 4 of `--mem`, and a `std` job of 384
+    // pages in the foreground beside them. That is the pool's old mix, six native regions and one
+    // `std` region (`grant_plan::JOB_POOL_PAGES`). The six are torn down after, so the budget they
+    // took comes back for the hundred cycles below. Six jobs hold eighteen slots of the shell's
+    // capability table, which keeps the boot's recorded peak where it was.
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[1] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[2] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[3] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[4] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[5] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "job_sleeper 0 --mem 4 &",
+        &["[6] job_sleeper running in the background"],
+    ),
+    line(
+        0,
+        "std_exerciser beside six",
+        &["hello from std on nife", "exiting through process::exit"],
+    ),
+    line(
+        0,
+        "kill -9 %1",
+        &["[1] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %2",
+        &["[2] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %3",
+        &["[3] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %4",
+        &["[4] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %5",
+        &["[5] job_sleeper: its process was torn down"],
+    ),
+    line(
+        0,
+        "kill -9 %6",
+        &["[6] job_sleeper: its process was torn down"],
     ),
 ];

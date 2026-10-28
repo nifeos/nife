@@ -47,6 +47,12 @@ and each of the two spaces pays one more gigabyte-level table. A region too smal
 `build_child`, which the prompt reports as "could not spawn" with no way to tell it from an empty
 pool.
 
+The shell holds the regions of the jobs it starts from the program table (see
+`design/roadmap/0933-every-job-is-built-the-way-a-supervised-job-is.md`). So `SHELL_BUDGET_PAGES` carries the same mix as the pool,
+`grant_plan::JOB_POOL_PAGES` at 672 pages, beside its 128 pages and the image's 1,024 staging
+pages: 1,824 in all. The pool keeps its 672 until the stages of a pipeline, the image pool's jobs
+and the graphical session move as well.
+
 `JOBS_BUDGET_PAGES` is six job regions and one `std` region (`grant_plan::STD_REGION_PAGES`). It is
 small on purpose. `script/swish-check` runs more jobs through it than it could hold without the
 regions coming back, so the gate proves that a bounded budget is enough. Widening it silently

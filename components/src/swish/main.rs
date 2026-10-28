@@ -62,6 +62,7 @@ use user_mode_runtime::{
 // use has children of its own: `wiring`, `terminal`, `directory` and `status`. The globs below
 // are how a module names what a sibling lends it with `pub(super)`.
 mod capabilities;
+mod held;
 mod jobs;
 mod navigation;
 mod pipeline;

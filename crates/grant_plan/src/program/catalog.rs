@@ -388,5 +388,14 @@ programs! {
         /// collide with shipped commands. Its verbs are apt's where apt has one
         /// (design/naming/command-line-rulings.md, 2026-10-10).
         Jig { id: 22, name: "jig" },
+        /// **Wait a given number of milliseconds, or for ever, and say so** (milestone 933 (every
+        /// job is built the way a supervised job is), `fixtures/src/job_sleeper.rs`).
+        ///
+        /// An ordinary program, not an interruptible one, that is still running when the next line
+        /// is typed: what `&`, `jobs`, `wait`, `kill -9` and `fg` need to be shown on a program the
+        /// shell holds no frame for. It takes a budget to retype its timer from.
+        ///
+        /// Name: provisional (milestone 933's lane, 2026-10-27 UTC).
+        JobSleeper { id: 23, name: "job_sleeper" },
     }
 }

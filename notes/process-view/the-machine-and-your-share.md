@@ -196,7 +196,11 @@ refusal of paging out is ever lifted, §225 says a `Swap:` line takes the same t
 There are no `shared`, `buff/cache` or `available` columns. The kernel has no page cache and no
 shared memory accounting to report, so `available` would only repeat `free`.
 
-`Yours:` is the machine's whole job pool, not one prompt's. The share view the progenitor places at
+For a job the shell holds, `Yours:` is the shell's budget, which is one prompt's (the held-job
+milestone is `design/roadmap/0933-every-job-is-built-the-way-a-supervised-job-is.md`). For a stage of a pipeline it is the
+progenitor's job pool, which the rest of this paragraph describes.
+
+`Yours:` for a stage is the machine's whole job pool, not one prompt's. The share view the progenitor places at
 `grant_plan::SHARE_SLOT` is `jobs_ut` (`crates/system_initializer`), the single region every job
 and every graphical terminal session is split from, and `USAGE`'s subtree records sum all of them.
 So `free` and `slabtop` in one session see pages another session spent. That is a counting channel

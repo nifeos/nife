@@ -15,12 +15,14 @@ use std::sync::LazyLock;
 pub(super) use after_reboot::{
     FROM_BASALT, ON_THE_DISK_TREE, REACH_LINES, RESOLVING_LINE, SWISH_CHECK_AFTER_REBOOT,
 };
+pub(super) use cycles::{CYCLES_AFTER, CYCLES_BEFORE};
 pub(super) use line::{JOB_DID_NOT_RUN, Line, asked, interrupted_at_prompt, keys, line};
 
 use super::*;
 
 mod after_reboot;
 mod clock_configuration;
+mod cycles;
 mod directories;
 mod installer;
 mod interrupts;
@@ -57,6 +59,7 @@ pub(super) const SWISH_CHECK_KEYBOARD_BOOT: &[Line] =
 // Index exception (2026-10-15): the assembly is this index's table of contents, one line
 // per topic child, and grows only as the `mod` list grows.
 pub(super) static SWISH_CHECK_SCRIPT: LazyLock<Vec<Line>> = LazyLock::new(|| {
+    let cycles = cycles::lines();
     [
         pipes_files::LINES,
         clock_configuration::LINES,
@@ -72,6 +75,7 @@ pub(super) static SWISH_CHECK_SCRIPT: LazyLock<Vec<Line>> = LazyLock::new(|| {
         scope::LINES,
         network::LINES,
         interrupts::LINES,
+        cycles.as_slice(),
         std_exerciser::LINES,
     ]
     .concat()

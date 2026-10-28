@@ -889,9 +889,61 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     Ok((DirWords { caretaker, child }, set))
 }
 
+/// **What this shell holds of a job it starts** (milestone 933 (every job is built the way a
+/// supervised job is)): the pages of the region the progenitor builds it from, which this shell
+/// splits off its own budget so that it can tear the job down, and where the job goes if it runs
+/// in the background. No `Hold` is the progenitor's pool and `job_undertaker`, which the pipeline
+/// and image paths still use.
+///
+/// Name: provisional (milestone 933's lane, 2026-10-27 UTC).
+pub(super) struct Hold<'a> {
+    pub(super) pages: u64,
+    pub(super) background: Option<&'a mut Jobs>,
+}
+
+/// The region and exit endpoint this shell minted for one held job, before the request.
+struct Minted {
+    region: u64,
+    exit: u64,
+}
+
+/// **The pages of the region a job is held in, or `None` when the progenitor builds it elsewhere**:
+/// a supervised job (its own path), a file grant (refused before it gets here), the graphical
+/// terminal (the spawn service builds it from its own copies) and an installer holder (its region
+/// comes from the image pool, which is sized for a package). `line` is the typed line, whose verb
+/// narrows a manifest as it does at the progenitor, so both sides count the same region
+/// (`grant_plan::job_region_pages`).
+pub(super) fn hold_pages(e: &Endowment, line: &[u8]) -> Option<u64> {
+    if e.interruptible || e.file.is_some() || e.program == grant_plan::Program::GraphicalTerminal {
+        return None;
+    }
+    let mut verb = [0u8; grant_plan::MAXIMUM_VERB];
+    let verb = grant_plan::verb_of(line, &mut verb);
+    let manifest = grant_plan::narrow_by_verb(&e.program.manifest(), e.program.verbs(), verb);
+    if manifest.installer {
+        return None;
+    }
+    Some(grant_plan::job_region_pages(
+        &manifest,
+        e.directory.is_some(),
+    ))
+}
+
+/// Split the region and make sure the exit endpoint exists, or say the budget is spent.
+fn mint_held(pages: u64) -> Option<Minted> {
+    // The endpoint first: it is a page retyped from the budget itself, and one retyped after the
+    // region is split would leave the region short of being the budget's most recent carve, so its
+    // pages would not come back when it is destroyed.
+    let exit = held::exit_endpoint()?;
+    let region = memory_region_split(pages)?;
+    Some(Minted { region, exit })
+}
+
 /// Grant and spawn. The one moment authority moves: split any memory grant off our own budget,
 /// direct the progenitor to load the program, delegate the grant, and read the one answer that comes back.
-pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
+/// With a [`Hold`] the progenitor builds the job from a region this shell splits off for it, and
+/// the answer is the job's output and then its death, on this shell's own exit endpoint.
+pub(super) fn spawn(e: Endowment, argv: Option<Argv>, hold: Option<Hold<'_>>) {
     // Unreachable while `plan` refuses a `file:` without `holdings().dir`. If that flips, a file
     // grant must be refused loudly here, never dropped while the child runs without it.
     if e.file.is_some() {
@@ -924,11 +976,33 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
         None
     };
 
+    // After every split above, so that the job's region is the budget's most recent carve and
+    // comes back whole when the job is torn down.
+    let (held, background) = match hold {
+        Some(Hold { pages, background }) => match mint_held(pages) {
+            Some(m) => (Some(m), background),
+            None => {
+                failed();
+                print(b"  this shell's memory budget is exhausted; nothing left to grant\n");
+                if let Some(slot) = mem_slot {
+                    release_region(slot);
+                }
+                if let Some(w) = &set_grant {
+                    release_words_grant(w, true);
+                }
+                release_unsent_argv(argv);
+                return;
+            }
+        },
+        None => (None, None),
+    };
+
     let (w0, w1, w2) = plain_request(
         &e,
         argv.is_some(),
         dir_words.is_some(),
         set_grant.is_some_and(|w| w.set.is_some()),
+        held.as_ref().map(|_| background.is_some()),
     );
     send(SPAWN, w0, w1, w2);
 
@@ -952,19 +1026,45 @@ pub(super) fn spawn(e: Endowment, argv: Option<Argv>) {
         send_set(w);
     }
 
+    // A held job's region and exit lead the delegation, after the interrupt pair a supervised job
+    // sends and before the sink (`spawnproto::HELD_BIT`). The region goes with every right, as a
+    // supervised job's does: the progenitor builds from it, and what it builds carries the budget's
+    // rights. The exit goes `READ` for the supervision slot, `WRITE` for an answer, and `GRANT` so
+    // the progenitor can badge a copy with the job's label.
+    if let Some(m) = &held {
+        delegate(m.region, abi::rights::ALL);
+        // `ENUMERATE` too, for a program that declares a process domain (`ps`): its domain is this
+        // shell's, the threads of the jobs it holds.
+        delegate(
+            m.exit,
+            abi::rights::READ | abi::rights::WRITE | abi::rights::GRANT | abi::rights::ENUMERATE,
+        );
+        // And, for a program that declares a share view, this shell's budget narrowed to the right
+        // to enumerate it: `free` and `slabtop` then describe where the job's memory is.
+        if spawnproto::held_shares(e.program) {
+            delegate(BUDGET, abi::rights::ENUMERATE | abi::rights::GRANT);
+        }
+    }
+
     // The progenitor narrows the budget to `SPEND_ONLY` in the child.
     if let Some(slot) = mem_slot {
         // Every right: the progenitor builds the child from it, and since milestone 824 (a retype
         // mints no right its budget lacks) what it builds carries the budget's rights.
         delegate(slot, abi::rights::ALL);
-        capability_delete(slot); // our copy is delegated; free the slot
+        // Our copy is delegated, so free the slot; a held job's budget is kept instead, because
+        // this shell destroys it with the job's region and gets the pages back (milestone 933).
+        if held.is_none() {
+            capability_delete(slot);
+        }
     }
     delegate_machine_page(machine_wiring(&e));
 
     // One reader, one word: a real program's answer, or the progenitor's spawn-failed sentinel. A program
     // whose manifest says it writes **bytes** is the exception: its answer is a stream, so it is
     // drained by a reader that knows the sink contract's framing.
-    if e.program.manifest().output.is_byte_stream() {
+    if let Some(m) = held {
+        finish_held(&e, m, mem_slot, background);
+    } else if e.program.manifest().output.is_byte_stream() {
         drain_text();
     } else {
         let answer = receive(RESULT).0;
@@ -1053,7 +1153,13 @@ fn spawn_dir_grant(
 }
 
 /// [`spawn`]'s request words for a plain line: `args`, `dir` and `nameset` say what follows it.
-fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u64, u64) {
+fn plain_request(
+    e: &Endowment,
+    args: bool,
+    dir: bool,
+    nameset: bool,
+    held: Option<bool>,
+) -> (u64, u64, u64) {
     // `diagnostics` is false (DECISIONS §67 (a program's second stream is a declaration)): a plain
     // line has no `2>`, and a declared second stream gets the terminal's own sink. `2>` goes down
     // [`pipeline`].
@@ -1074,7 +1180,9 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
             // Always false (DECISIONS §106 (an unredirected tail stage's output goes to the
             // screen)): every `writes_while_reading` program also declares
             // `InputDeclaration::Required`, which takes [`run`]'s `Source::File` arm instead.
-            screen: false,
+            // A held job's `screen` is "quiet": its output defaults to the terminal's sink, which
+            // is a background job's, and no endpoint follows (`spawnproto::HELD_BIT`).
+            screen: held == Some(true),
             image: false,
             run_unvouched: false,
             program_arguments: args,
@@ -1086,6 +1194,7 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
             // service's call, from what the boot granted.
             graphics: e.program == grant_plan::Program::GraphicalTerminal,
             keyboard: false,
+            held: held.is_some(),
         },
     )
 }
@@ -1096,9 +1205,18 @@ fn plain_request(e: &Endowment, args: bool, dir: bool, nameset: bool) -> (u64, u
 /// It drains until `OPERATION_EOF` (milestone 50 (pipes and redirection)). Stopping earlier would
 /// leave a message queued that the next command's single `receive` takes as its answer.
 pub(super) fn drain_text() {
+    drain_text_with(&mut || Some(receive(RESULT)));
+}
+
+/// [`drain_text`] over any reader of the job's messages: `None` is a job that ended without saying
+/// it was finished, which ends the drain without a complaint (a held job's clean exit, milestone
+/// 933).
+pub(super) fn drain_text_with(read: &mut dyn FnMut() -> Option<(u64, u64, u64)>) {
     print(b"  ");
     for _ in 0..MAXIMUM_OUTPUT_CHUNKS {
-        let (w0, w1, w2) = receive(RESULT);
+        let Some((w0, w1, w2)) = read() else {
+            return;
+        };
         // Checked before decoding: the progenitor's sentinel is `u64::MAX`, whose top byte is an opcode this
         // contract does not define, so it would otherwise read as a malformed message rather than as
         // the one thing it is.
@@ -1256,6 +1374,74 @@ pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
 /// smaller than forever. See `notes/swish-language/running.md`, "The output ceiling".
 pub(super) const MAXIMUM_OUTPUT_CHUNKS: usize = 4096;
 
+/// **Take the answer to a held job's request, and then the job**: the progenitor's one answer, the
+/// job's `ThreadControlBlock` after a good one (§309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it)), and then either the job in the foreground,
+/// read to its death and torn down, or the job kept in `background` (milestone 933).
+fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Option<&mut Jobs>) {
+    let (answer, label, _) = receive(RESULT);
+    if answer != spawnproto::SPAWN_OK {
+        // The progenitor has reclaimed the region; this shell's slot for it is stale. The budget
+        // it was to spend is still this shell's, and goes back above the region's pages.
+        capability_delete(held.region);
+        if let Some(slot) = budget {
+            release_region(slot);
+        }
+        if e.program.manifest().output.is_byte_stream() {
+            drain_text_with(&mut || Some((answer, 0, 0)));
+        } else {
+            outcome(*e, answer);
+        }
+        return;
+    }
+    let tcb = receive_capability(RESULT).1;
+    match background {
+        Some(jobs) => keep_background(jobs, Held::exit(label, held.region, budget, tcb, e.program)),
+        None => {
+            foreground_held(e, label);
+            held::collect(held.region, label);
+            if let Some(slot) = budget {
+                release_region(slot);
+            }
+            supervision_protocol::forget_thread_control_block(tcb);
+        }
+    }
+}
+
+/// Read a held job's output and then its death, and say how it went. The job's messages and its
+/// death arrive in order on the exit endpoint, so a fault before the answer ends the read.
+fn foreground_held(e: &Endowment, label: u64) {
+    // `Some(fault)` once the job's death has been heard.
+    let mut fate: Option<bool> = None;
+    if e.program.manifest().output.is_byte_stream() {
+        drain_text_with(&mut || match held::read_job(label) {
+            Ok(message) => Some(message),
+            Err(fault) => {
+                fate = Some(fault);
+                fault.then_some((spawnproto::JOB_FAULTED, 0, 0))
+            }
+        });
+    } else {
+        match held::read_job(label) {
+            Ok((answer, ..)) => outcome(*e, answer),
+            Err(fault) => {
+                fate = Some(fault);
+                if fault {
+                    outcome(*e, spawnproto::JOB_FAULTED);
+                } else {
+                    failed();
+                    print(b"  that command exited without answering\n");
+                }
+            }
+        }
+    }
+    // Its output is read to the end; the death is still to come, and a fault after the last byte is
+    // still news.
+    if fate.is_none() && held::await_death(label) {
+        failed();
+        print(swish::FAULTED_SENTENCE);
+    }
+}
+
 /// Report what the spawned program did, in terms of the grant it was given.
 fn outcome(e: Endowment, answer: u64) {
     // **The only failure a spawned child reports back today**, which is why the sweep's stop rule
@@ -1350,13 +1536,23 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
                 {
                     super::prompt::leave_raw();
                 }
+                let hold = hold_pages(&endow, spec.line()).map(|pages| Hold {
+                    pages,
+                    background: None,
+                });
                 match assemble_argv(spec.line(), 0) {
-                    Ok(a) => spawn(endow, Some(a)),
+                    Ok(a) => spawn(endow, Some(a), hold),
                     Err(Some(r)) => refuse(spec, r),
                     Err(None) => out_of_budget(),
                 }
             }
-            _ => spawn(endow, None),
+            _ => {
+                let hold = hold_pages(&endow, spec.line()).map(|pages| Hold {
+                    pages,
+                    background: None,
+                });
+                spawn(endow, None, hold);
+            }
         },
     }
 }
