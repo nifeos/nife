@@ -23,6 +23,7 @@ mod fadt;
 mod gtdt;
 mod madt;
 mod mcfg;
+mod region;
 mod root;
 mod sdt;
 mod spcr;
@@ -48,6 +49,7 @@ pub use madt::{
     parse_madt,
 };
 pub use mcfg::{McfgEntry, mcfg_entry};
+pub use region::{BIOS_AREA, DirectMapRegion, EBDA_SEGMENT_PTR, RegionError, Table, TableRefusal};
 pub use root::{RSDP_SIGNATURE, Rsdp, parse_rsdp, root_entry, root_entry_count};
 pub use sdt::{AcpiError, SDT_HEADER_LEN, SdtHeader, is_checksum_ok, parse_sdt_header};
 pub use spcr::{SPCR_PL011, SPCR_SBSA_UART, Spcr, parse_spcr};

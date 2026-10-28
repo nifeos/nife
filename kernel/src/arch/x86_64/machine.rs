@@ -218,20 +218,13 @@ pub(crate) fn print_memory_map(info: &BootInfo) {
 // host test can do.
 // ---------------------------------------------------------------------------------------------
 
+pub(crate) use machine_discovery::acpi::DirectMapRegion;
 use machine_discovery::acpi::ivrs::IvrsUnits;
 use machine_discovery::acpi::{
-    self, DmarUnits, ISA_INTERRUPT_COUNT, IsaInterruptRouting, MADT_PCAT_COMPAT, MadtEntry, Rsdp,
-    SdtHeader, isa_interrupt_table, madt_entries, mcfg_entry, parse_dmar, parse_fadt_reset,
-    parse_madt, parse_rsdp, parse_sdt_header, root_entry, root_entry_count,
+    self, DmarUnits, ISA_INTERRUPT_COUNT, IsaInterruptRouting, MADT_PCAT_COMPAT, MadtEntry, Table,
+    TableRefusal, isa_interrupt_table, madt_entries, mcfg_entry, parse_dmar, parse_fadt_reset,
+    parse_madt, root_entry, root_entry_count,
 };
-
-/// The BIOS area the RSDP is required to be in when it is not in the EBDA: `0xe0000..0x100000`,
-/// scanned on 16-byte boundaries.
-const BIOS_AREA: core::ops::Range<u64> = 0x000e_0000..0x0010_0000;
-
-/// Where the BIOS Data Area records the Extended BIOS Data Area's segment. The EBDA's first
-/// kilobyte is the other place an RSDP is allowed to be.
-const EBDA_SEGMENT_PTR: u64 = 0x0000_040e;
 
 /// The most root-table entries the walk will follow. A machine has a dozen or two tables; the cap
 /// exists because the count comes from a length field firmware wrote.
@@ -318,17 +311,6 @@ impl Default for Acpi {
     }
 }
 
-/// Read `len` bytes at physical address `at` through the direct map.
-///
-/// # Safety
-/// `at..at + len` must be inside the boot map's direct map (the low [`BOOT_DIRECT_MAP_LIMIT`],
-/// which is what [`reachable`] checks) and must be memory rather than a device register block,
-/// since this is an ordinary read.
-unsafe fn phys_slice<'a>(at: u64, len: usize) -> &'a [u8] {
-    // SAFETY: the caller's obligation, restated: an in-range physical address naming memory.
-    unsafe { core::slice::from_raw_parts(phys_to_virt(at) as *const u8, len) }
-}
-
 /// How far the boot page tables' direct map reaches: the low 4 GiB.
 ///
 /// `boot.s` builds 2048 2 MiB page-directory entries under a four-entry PDPT that both PML4[0]
@@ -338,89 +320,52 @@ unsafe fn phys_slice<'a>(at: u64, len: usize) -> &'a [u8] {
 /// notes/x86-port/acpi-and-pci.md.
 const BOOT_DIRECT_MAP_LIMIT: u64 = 0x1_0000_0000;
 
-/// Is the direct map able to reach this physical address? Firmware supplies these addresses, and
-/// one above [`BOOT_DIRECT_MAP_LIMIT`] computes an address that is right and unmapped.
+/// **The region the ACPI walk may read**: the boot map's low [`BOOT_DIRECT_MAP_LIMIT`] bytes
+/// (§192 (does the ACPI walk's direct-map read take a bound, and is the bound per-read or a region
+/// it holds?)).
 ///
-/// A refusal is not ignorable: an unreachable table hides the APICs, PCIe window and IOMMU, so
-/// `read_acpi` reports each one. Tables above 4 GiB (none seen) need the boot map widened, not this
-/// loosened.
-fn is_reachable(at: u64, len: usize) -> bool {
-    at != 0 && at.saturating_add(len as u64) <= BOOT_DIRECT_MAP_LIMIT
+/// Built once, by `discovery::initialize`, and handed to [`read_acpi`]. Every address and length a
+/// table supplies is checked against it by `DirectMapRegion::read`, so one above the limit is a
+/// refusal the walk reports rather than a dereference of an address that is right and unmapped.
+/// Tables above 4 GiB (none seen) need the boot map widened, not this loosened.
+///
+/// Must run before `mmu::initialize`, which replaces the boot map this extent describes.
+pub(crate) fn boot_direct_map() -> DirectMapRegion<'static> {
+    // SAFETY: the boot page tables map physical 0..BOOT_DIRECT_MAP_LIMIT at `phys_to_virt(0)`, and
+    // stay in place until `mmu::initialize`, after the last use of the region. The walk reads
+    // through it only what its checked reads name, and firmware places the ACPI structures in
+    // ordinary memory rather than a register block.
+    unsafe {
+        DirectMapRegion::from_ptr(
+            0,
+            phys_to_virt(0) as *const u8,
+            BOOT_DIRECT_MAP_LIMIT as usize,
+        )
+    }
 }
 
-/// Find the ACPI root pointer: where the loader said (PVH has a field, which QEMU leaves zero),
-/// then the first kilobyte of the EBDA, then the BIOS area `0xe0000..0x100000`. The last two scan
-/// for an eight-byte string, so `parse_rsdp`'s checksum is all that separates a hit from chance.
-pub(crate) fn find_rsdp(hint: u64) -> Option<(u64, Rsdp)> {
-    if is_reachable(hint, 36)
-        // SAFETY: `reachable` checked the range is in the direct map, and firmware places this
-        // structure in ordinary memory.
-        && let Ok(rsdp) = parse_rsdp(unsafe { phys_slice(hint, 36) })
-    {
-        return Some((hint, rsdp));
-    }
-
-    // SAFETY: the BIOS Data Area is at a fixed low physical address on every PC and is memory.
-    let bda = unsafe { phys_slice(EBDA_SEGMENT_PTR, 2) };
-    // A SEGMENT, not an address: the BDA holds it in real-mode form, so it is shifted left four to
-    // become the physical address. Reading it as an address directly would land in the first 64 KiB
-    // and find nothing, quietly.
-    let ebda = (u16::from_le_bytes([bda[0], bda[1]]) as u64) << 4;
-    if ebda >= 0x400
-        && let Some(found) = scan_for_rsdp(ebda..ebda + 0x400)
-    {
-        return Some(found);
-    }
-
-    scan_for_rsdp(BIOS_AREA)
-}
-
-/// Scan `range` on 16-byte boundaries for a well-formed RSDP.
-fn scan_for_rsdp(range: core::ops::Range<u64>) -> Option<(u64, Rsdp)> {
-    let mut at = range.start & !0xf;
-    while at + 36 <= range.end {
-        if is_reachable(at, 36) {
-            // SAFETY: `reachable` checked the range; the low megabyte is memory.
-            let bytes = unsafe { phys_slice(at, 36) };
-            if let Ok(rsdp) = parse_rsdp(bytes) {
-                return Some((at, rsdp));
-            }
+/// Read the table at physical `at` through `region`, printing why when it is refused.
+///
+/// A refusal for reach is reported apart from a bad checksum: one is a table to distrust, the other
+/// a boot map to widen. The checks themselves are `DirectMapRegion::table`'s.
+fn table_at<'a>(region: &DirectMapRegion<'a>, at: u64) -> Option<Table<'a>> {
+    match region.table(at) {
+        Ok(table) => Some(table),
+        Err(TableRefusal::HeaderOutsideRegion) => {
+            crate::println!(
+                "                {at:#012x}  outside the boot map's low {} GiB, cannot be read",
+                BOOT_DIRECT_MAP_LIMIT / (1024 * 1024 * 1024),
+            );
+            None
         }
-        at += 16;
+        Err(TableRefusal::LengthOutsideRegion(length)) => {
+            crate::println!(
+                "                {at:#012x}  {length} bytes long, which runs past the boot map",
+            );
+            None
+        }
+        Err(TableRefusal::BadHeader(_) | TableRefusal::BadChecksum) => None,
     }
-    None
-}
-
-/// Read the header of the table at physical `at`, verifying its checksum over the whole table.
-///
-/// A table whose checksum fails is reported as absent rather than used, which is the only safe
-/// reading: a corrupt MADT would hand out an APIC address, and there is nothing downstream that
-/// could notice it was wrong.
-fn table_at(at: u64) -> Option<(SdtHeader, &'static [u8])> {
-    // Out of reach is reported apart from a bad checksum: one is a table to distrust, the other a
-    // boot map to widen.
-    if !is_reachable(at, acpi::SDT_HEADER_LEN) {
-        crate::println!(
-            "                {at:#012x}  outside the boot map's low {} GiB, cannot be read",
-            BOOT_DIRECT_MAP_LIMIT / (1024 * 1024 * 1024),
-        );
-        return None;
-    }
-    // SAFETY: `reachable` checked the header's range.
-    let header = parse_sdt_header(unsafe { phys_slice(at, acpi::SDT_HEADER_LEN) }).ok()?;
-    if !is_reachable(at, header.length as usize) {
-        crate::println!(
-            "                {at:#012x}  {} bytes long, which runs past the boot map",
-            header.length,
-        );
-        return None;
-    }
-    // SAFETY: `reachable` checked the whole table's range, using the length the header states.
-    let whole = unsafe { phys_slice(at, header.length as usize) };
-    if !acpi::is_checksum_ok(whole) {
-        return None;
-    }
-    Some((header, &whole[acpi::SDT_HEADER_LEN..]))
 }
 
 /// Walk the tables and collect what the kernel will need, printing a line per table as it goes.
@@ -428,10 +373,10 @@ fn table_at(at: u64) -> Option<(SdtHeader, &'static [u8])> {
 /// Printing during the walk rather than after is deliberate: this is the first code in the boot that
 /// follows pointers firmware wrote, so if one of them is wrong the last line printed says which
 /// table was being read.
-pub(crate) fn read_acpi(hint: u64) -> Acpi {
+pub(crate) fn read_acpi(region: &DirectMapRegion<'_>, hint: u64) -> Acpi {
     let mut found = Acpi::default();
 
-    let Some((at, rsdp)) = find_rsdp(hint) else {
+    let Some((at, rsdp)) = region.find_rsdp(hint) else {
         crate::println!("  acpi        : no RSDP found (loader said {hint:#x}, and no scan hit)");
         return found;
     };
@@ -442,7 +387,11 @@ pub(crate) fn read_acpi(hint: u64) -> Acpi {
         if wide { "xsdt" } else { "rsdt" },
     );
 
-    let Some((root_header, root_body)) = table_at(root) else {
+    let Some(Table {
+        header: root_header,
+        body: root_body,
+    }) = table_at(region, root)
+    else {
         crate::println!("                root table unreadable or failed its checksum");
         return found;
     };
@@ -452,7 +401,7 @@ pub(crate) fn read_acpi(hint: u64) -> Acpi {
         let Some(pa) = root_entry(root_body, i, wide) else {
             break;
         };
-        let Some((header, body)) = table_at(pa) else {
+        let Some(Table { header, body }) = table_at(region, pa) else {
             crate::println!("                {pa:#012x}  unreadable or bad checksum");
             continue;
         };
