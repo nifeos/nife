@@ -81,6 +81,64 @@ struct Arguments {
     test: bool,
 }
 
+/// **Where a composed image comes from**: the definition it carries, the packages directory, that
+/// directory's catalog, and where the kernel and archive are written. Name provisional
+/// (2026-10-28 UTC).
+struct Plan {
+    definition: Definition,
+    packages: PathBuf,
+    catalog: PathBuf,
+    out: PathBuf,
+}
+
+/// **Read the definition and locate the packages**, adding the fixtures package's programs to a
+/// test image. `None` when a step refused, having said why.
+fn plan(arguments: &Arguments, arch: &str, root: &Path) -> Option<Plan> {
+    let mut definition = match read_definition(root) {
+        Ok(definition) => definition,
+        Err(complaint) => {
+            eprintln!("base-image: {complaint}");
+            return None;
+        }
+    };
+    // A test image carries the fixtures package's programs as well: the kernel's boot self-test
+    // runs two of them and the shell's check types at the others, and a release image carries none.
+    if arguments.test {
+        match crate::archive::fixture_programs() {
+            Ok(programs) => definition.programs.extend(programs),
+            Err(complaint) => {
+                eprintln!("base-image: {complaint}");
+                return None;
+            }
+        }
+    }
+
+    // The packages: built here from the tree, or named by the caller.
+    let packages = match arguments.from.as_deref() {
+        Some(dir) => PathBuf::from(dir),
+        None => {
+            if !build_packages(root, arch, &definition, arguments.test) {
+                return None;
+            }
+            root.join("target/packages")
+        }
+    };
+    let catalog = match arguments.catalog.as_deref() {
+        Some(path) => PathBuf::from(path),
+        None => packages.join(CATALOG),
+    };
+    let out = match arguments.out.as_deref() {
+        Some(dir) => PathBuf::from(dir),
+        None => root.join(format!("target/base-image-{arch}")),
+    };
+    Some(Plan {
+        definition,
+        packages,
+        catalog,
+        out,
+    })
+}
+
 /// **`cargo xtask base-image`**: compose one architecture's kernel and initial ramdisk from
 /// packages, and optionally boot it to the prompt.
 pub(crate) fn base_image() -> bool {
@@ -98,43 +156,15 @@ pub(crate) fn base_image() -> bool {
         return false;
     };
     let root = workspace_root();
-    let mut definition = match read_definition(&root) {
-        Ok(definition) => definition,
-        Err(complaint) => {
-            eprintln!("base-image: {complaint}");
-            return false;
-        }
+    let Some(plan) = plan(&arguments, arch, &root) else {
+        return false;
     };
-    // A test image carries the fixtures package's programs as well: the kernel's boot self-test
-    // runs two of them and the shell's check types at the others, and a release image carries none.
-    if arguments.test {
-        match crate::archive::fixture_programs() {
-            Ok(programs) => definition.programs.extend(programs),
-            Err(complaint) => {
-                eprintln!("base-image: {complaint}");
-                return false;
-            }
-        }
-    }
-
-    // The packages: built here from the tree, or named by the caller.
-    let packages = match arguments.from.as_deref() {
-        Some(dir) => PathBuf::from(dir),
-        None => {
-            if !build_packages(&root, arch, &definition, arguments.test) {
-                return false;
-            }
-            root.join("target/packages")
-        }
-    };
-    let catalog = match arguments.catalog.as_deref() {
-        Some(path) => PathBuf::from(path),
-        None => packages.join(CATALOG),
-    };
-    let out = match arguments.out.as_deref() {
-        Some(dir) => PathBuf::from(dir),
-        None => root.join(format!("target/base-image-{arch}")),
-    };
+    let Plan {
+        definition,
+        packages,
+        catalog,
+        out,
+    } = plan;
 
     let composed = match compose(
         &root,
