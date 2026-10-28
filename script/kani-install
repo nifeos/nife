@@ -25,7 +25,15 @@ case "$pin" in
 	;;
 esac
 
-have="$(cargo kani --version 2>/dev/null | awk '{print $2}' || true)"
+# `cargo kani --version` prints two lines, and the version to compare with the pin is the first
+# three-part number on the first: "Kani Rust Verifier 0.68.0 (cargo plugin)", then "CBMC 6.11.0".
+# Field 2 of the first line is the word "Rust", and the second line carries CBMC's own version, so
+# neither a field nor the whole output can be compared as-is.
+have="$(cargo kani --version 2>/dev/null | awk 'NR == 1 {
+    for (i = 1; i <= NF; i++) {
+        if ($i ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) { print $i; exit }
+    }
+}' || true)"
 if [ "$have" = "$pin" ]; then
 	exit 0
 fi

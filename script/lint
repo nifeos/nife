@@ -4413,3 +4413,53 @@ if ! grep -q -- '--version "=\$pin"' script/kani-install; then
     exit 1
 fi
 echo "Kani: pinned at $kani_pin, one install path"
+
+# The check above proves the install path is the one file. This proves the version check in that
+# file MATCHES, which the static check cannot see: `cargo kani --version` prints its version on the
+# first line and CBMC's on the second, and a check that reads the wrong field never matches, so an
+# installed pin is reinstalled on every caller (~15 s each) and two lanes race on ~/.cargo/bin and
+# ~/.kani. The stub prints what a real cargo-kani prints; the first run sees an older version and
+# installs, the second sees the pin and must not run cargo again.
+echo "==> script/kani-install: an installed pin is not reinstalled"
+kani_pin="$(tr -d '[:space:]' <.kani-version)"
+kstub="$(mktemp -d)"
+mkdir -p "$kstub/tree/script" "$kstub/bin"
+cp script/kani-install "$kstub/tree/script/kani-install"
+cp .kani-version "$kstub/tree/.kani-version"
+cat >"$kstub/bin/cargo" <<'KANI_STUB'
+#!/bin/sh
+printf '%s\n' "$*" >>"$KANI_STUB_LOG"
+if [ "$1" = kani ] && [ "$2" = --version ]; then
+    printf 'Kani Rust Verifier %s (cargo plugin)\nCBMC 6.11.0\n' "$KANI_STUB_VERSION"
+fi
+exit 0
+KANI_STUB
+chmod +x "$kstub/bin/cargo"
+if ! KANI_STUB_LOG="$kstub/first" KANI_STUB_VERSION=0.0.1 PATH="$kstub/bin:$PATH" \
+    sh "$kstub/tree/script/kani-install" >"$kstub/first.out" 2>&1; then
+    echo "lint: script/kani-install failed against an older installed Kani:" >&2
+    sed 's/^/  /' "$kstub/first.out" >&2
+    rm -rf "$kstub"
+    exit 1
+fi
+if ! grep -q "found '0.0.1'" "$kstub/first.out" || ! grep -q "^install .*kani-verifier .*=.*$kani_pin" "$kstub/first" 2>/dev/null; then
+    echo "lint: script/kani-install did not read the older version and install the pin:" >&2
+    sed 's/^/  /' "$kstub/first.out" >&2
+    rm -rf "$kstub"
+    exit 1
+fi
+if ! KANI_STUB_LOG="$kstub/second" KANI_STUB_VERSION="$kani_pin" PATH="$kstub/bin:$PATH" \
+    sh "$kstub/tree/script/kani-install" >"$kstub/second.out" 2>&1; then
+    echo "lint: script/kani-install failed against the installed pin:" >&2
+    sed 's/^/  /' "$kstub/second.out" >&2
+    rm -rf "$kstub"
+    exit 1
+fi
+if ! grep -q '^kani --version$' "$kstub/second" 2>/dev/null || grep -v '^kani --version$' "$kstub/second" | grep -q .; then
+    echo "lint: script/kani-install reinstalled Kani $kani_pin with it already installed:" >&2
+    sed 's/^/  /' "$kstub/second" >&2
+    rm -rf "$kstub"
+    exit 1
+fi
+rm -rf "$kstub"
+echo "script/kani-install: an installed pin is left alone"
