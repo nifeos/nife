@@ -42,6 +42,10 @@ pub(crate) fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
     f
 }
 
+// The payload byte's set bit and its six-bit counter share no bit, so the byte is 0x40 to 0x7f
+// under `|` and under `^` alike.
+const _: () = assert!(0x40 & 0x3f == 0);
+
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
 /// probe frame. The controller must already be configured and started in loopback; the receive
 /// tail write in step 1 and the transmit tail write in step 3 are what set it moving.

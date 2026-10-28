@@ -92,6 +92,8 @@ pub(crate) const RGMII_RXC_DS_SHIFT: u16 = 13;
 /// bits are bits 5:4, its high bit is bit 12.
 #[doc(alias = "rgmii receive data drive strength mask")]
 pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
+// The mask's two fields share no bit, so its `|` is its `^`.
+const _: () = assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]
 pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
@@ -437,6 +439,14 @@ pub fn configure(
         pad_drive,
     })
 }
+
+// The delay and drive fields the two words compose share no bit, and the transmit delay select is
+// zero: every `|` here is its `^`, and a shift by `TX_DELAY_SEL_SHIFT` is the identity.
+const _: () = assert!(
+    (0xf << RX_DELAY_SEL_SHIFT) & (0xf << TX_DELAY_SEL_SHIFT) == 0
+        && (0x7 << RGMII_RXC_DS_SHIFT) & RGMII_RXD_DS_MASK == 0
+        && TX_DELAY_SEL_SHIFT == 0
+);
 
 /// **Set the transmit clock's inversion for the speed just negotiated**, OpenBSD's
 /// `ytphy_yt8521_update`. Returns the new RGMII configuration word.

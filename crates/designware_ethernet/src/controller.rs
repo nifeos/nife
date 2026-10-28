@@ -186,6 +186,13 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
     mode
 }
 
+// The fields this word composes share no bit, so every `|` here is its `^`: store-and-forward
+// against the threshold field, and the two flow-control threshold fields against each other.
+const _: () = assert!(
+    registers::MTL_CHAN_RX_OP_MODE_RSF & registers::MTL_CHAN_RX_OP_MODE_RTC_MASK == 0
+        && (0x3f << 14) & (0x3f << 8) == 0
+);
+
 /// The transmit operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic.
 pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
     let mut mode = current;
@@ -203,6 +210,10 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> 
         (tqs << registers::MTL_CHAN_TX_OP_MODE_TQS_SHIFT) & registers::MTL_CHAN_TX_OP_MODE_TQS_MASK;
     mode
 }
+
+// Store-and-forward and the threshold field share no bit, so the one `|` here is its `^`.
+const _: () =
+    assert!(registers::MTL_CHAN_TX_OP_MODE_TSF & registers::MTL_CHAN_TX_OP_MODE_TTC_MASK == 0);
 
 /// Can a controller of `direct_memory_access_address_bits` address a region of `bytes` at
 /// `physical_address`, with tail pointers that only carry the low 32 bits?
@@ -339,6 +350,34 @@ pub fn configure(
     Ok(())
 }
 
+// The register fields configure composes share no bit: the outstanding-limit masks against each
+// other and against the burst-length bits (which is what `bus_burst_lengths` carries), the
+// transmit and receive burst-length fields against the bits set beside them, the receive buffer
+// size against the receive burst-length field, and the pause time against the flow-control
+// enable. A field value reaches its `|` through its own mask, and a word whose field the line
+// above cleared takes a value only inside that field; where neither holds, the configure tests
+// kill the swap.
+const _: () = assert!(
+    registers::SYS_BUS_MODE_RD_OSR_LMT_MASK & registers::SYS_BUS_MODE_WR_OSR_LMT_MASK == 0
+        && registers::SYS_BUS_MODE_RD_OSR_LMT_MASK
+            & (registers::SYS_BUS_MODE_BLEN_256
+                | registers::SYS_BUS_MODE_BLEN_128
+                | registers::SYS_BUS_MODE_BLEN_64
+                | registers::SYS_BUS_MODE_BLEN_32)
+            == 0
+        && registers::SYS_BUS_MODE_WR_OSR_LMT_MASK
+            & (registers::SYS_BUS_MODE_BLEN_256
+                | registers::SYS_BUS_MODE_BLEN_128
+                | registers::SYS_BUS_MODE_BLEN_64
+                | registers::SYS_BUS_MODE_BLEN_32)
+            == 0
+        && registers::CHAN_TX_CONTROL_PBL_MASK & registers::CHAN_TX_CONTROL_OSP == 0
+        && registers::CHAN_RX_CONTROL_RPBL_MASK
+            & (registers::DMA_CH0_RX_CONTROL_RBSZ_MASK << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT)
+            == 0
+        && (0xffff << registers::QX_TX_FLOW_CTRL_PT_SHIFT) & registers::QX_TX_FLOW_CTRL_TFE == 0
+);
+
 /// **The MAC configuration word for a link**, OpenBSD's `dwqe_mii_statchg` and `dwqe_up`: the
 /// port and speed select for the negotiated speed, duplex, carrier sense off, jabber off, burst
 /// on, transmitter and receiver on. `loopback` turns the MAC's own loopback on for the coherence
@@ -373,6 +412,31 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
         | registers::MAC_CONF_TE
         | registers::MAC_CONF_RE
 }
+
+// The MAC word's fields share no bit: the speed, duplex and loopback bits the function clears
+// first, and the five bits the final chain sets. A swap inside either group is `|`-versus-`^`
+// over disjoint bits; the chain's first swap toggles `conf` itself, and
+// `the_mac_word_from_zero_and_from_all_ones` kills it.
+const _: () = assert!(
+    registers::MAC_CONF_PS
+        | registers::MAC_CONF_FES
+        | registers::MAC_CONF_DM
+        | registers::CONFIG_LM
+        == registers::MAC_CONF_PS
+            ^ registers::MAC_CONF_FES
+            ^ registers::MAC_CONF_DM
+            ^ registers::CONFIG_LM
+        && (registers::MAC_CONF_BE
+            | registers::MAC_CONF_JD
+            | registers::MAC_CONF_DCRS
+            | registers::MAC_CONF_TE
+            | registers::MAC_CONF_RE)
+            == (registers::MAC_CONF_BE
+                ^ registers::MAC_CONF_JD
+                ^ registers::MAC_CONF_DCRS
+                ^ registers::MAC_CONF_TE
+                ^ registers::MAC_CONF_RE)
+);
 
 /// **Start both DMA channels and the MAC** at `link`, OpenBSD's order: receive DMA, transmit DMA,
 /// then the MAC. Nothing moves until the data plane hands the device descriptors.

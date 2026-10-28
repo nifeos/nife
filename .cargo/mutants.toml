@@ -189,4 +189,70 @@ exclude_re = [
     # not compiled into anything. Matched as a module path, which nothing outside a test module
     # uses.
     "tests::",
+
+    # **designware_ethernet's disjoint-bits and zero-shift sites** (milestone 954, 2026-10-28 UTC).
+    #
+    # A `|` over operands that share no bit equals a `^` over them, and a shift by zero equals the
+    # reverse shift, so no test can kill those mutants. Each entry's argument is a `const`
+    # assertion beside the code, which fails the build if the operands ever come to share a bit;
+    # for a shift by a literal, the argument is the identity itself. One function per entry (one
+    # file, for a constant with no enclosing function), never the crate; the shape is pinned so an
+    # entry cannot reach a different mutation. Each entry's limit, which the assertion narrows but
+    # does not close: a future `|` or shift added inside the excluded scope generates no mutant for
+    # it, and where a function's other mutants of the same shape are already killed, the entry
+    # stops running them too, while the tests that killed them stay.
+    "^crates/designware_ethernet/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
+    # The register bits are `1 << n`; the survivors are the `1 << 0` bits, where the shift is the
+    # identity (`1 << 0 == 1 >> 0`). Every constant with `n > 0` has its value pinned
+    # literal-for-literal by registers::tests::the_bits_are_where_dwqereg_puts_them, which stays.
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace << with >>$",
+    # The clause 22 constants are `1 << n` the same way; the survivor is GB, `1 << 0`, the
+    # identity. Every other constant's value is pinned by
+    # management_data_input_output::tests::the_clause_22_bits_are_the_standards, which stays.
+    "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    # BUS's four burst-length bits are asserted pairwise disjoint by the `const` beside BUS.
+    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    # RGMII_RXD_DS_MASK's two fields are asserted disjoint by the `const` beside the mask.
+    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_queue_mode$",
+    # RSF against the threshold field, and the two flow-control threshold fields against each
+    # other, are asserted disjoint by the `const` beside receive_queue_mode.
+    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_queue_mode$",
+    # TSF against the threshold field, asserted by the `const` beside transmit_queue_mode.
+    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    # The `const` beside configure asserts its fields pairwise disjoint; field values reach their
+    # `|` through their own mask or a word the line above cleared, and the configure tests hold the
+    # rest (they kill the swaps at the two words read unmasked).
+    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
+    # The `const` beside mac_configuration asserts the cleared speed, duplex and loopback bits and
+    # the final chain's five bits each pairwise disjoint; the chain's first swap toggles `conf`
+    # itself and the_mac_word_from_zero_and_from_all_ones kills it.
+    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    # The `const` beside configure asserts the delay and drive fields pairwise disjoint.
+    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace << with >> in configure$",
+    # The transmit delay select is zero (asserted beside configure), so those two shifts are the
+    # identity; the same entry covers the function's shift-by-nonzero sites, which
+    # motorcomm::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in command$",
+    # The command word's five field masks are asserted pairwise disjoint by the `const` beside
+    # command; every operand enters through its own field's mask.
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in physical_layer_device_id$",
+    # The high half is shifted above the low half's whole width; the `const` beside the function
+    # asserts it for the widest values either can hold.
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in restart_autonegotiation$",
+    # ANENABLE and ANRESTART are asserted disjoint by the `const` beside the function; the swap
+    # against bmcr is killed by
+    # mdio::tests::restarting_a_negotiation_already_running_keeps_it_running.
+    "^crates/designware_ethernet/src/coherence\\.rs:\\d+:\\d+: replace \\| with \\^ in probe_frame$",
+    # The payload's set bit and its six-bit counter are asserted disjoint by the `const` beside
+    # probe_frame.
+    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_descriptor_words$",
+    # OWN, IC and BUF1V are asserted pairwise disjoint by the `const` beside the function.
+    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_descriptor_words$",
+    # The `const` beside the function asserts word 2's field and bit disjoint, word 3's three set
+    # bits pairwise disjoint and outside the length field, and the two words a whole word apart.
+    "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_verdict$",
+    # FD and LD are asserted distinct single bits by the `const` beside receive_verdict.
+    "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^ in select_reduced_gigabit_media_independent_interface$",
+    # The interface value fits the field the function just cleared; the `const` beside it asserts
+    # that, which makes the `|` and the `^` agree for every word.
 ]
