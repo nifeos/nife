@@ -103,6 +103,12 @@ def corpus_globs(toml_path, roots):
     `**/`-prefixed proof-file entries. The crate-whole entries (`kernel/**`, `xtask/**`), which
     keep these packages out of the host census, do not participate: applied whole they would end
     the run before it began."""
+    # BUGS: tomllib's parse error names a line and column but never the file. Run 40643028663
+    # (2026-10-28) failed here on a diff3 conflict marker a bad merge had left in
+    # `.cargo/mutants.toml`, and the message, `Invalid value (at line 251, column 1)`, did not
+    # name the file it read; a triage round must open the path `--toml` names (the workflow
+    # passes `.cargo/mutants.toml`) at that line to find the cause. This read and
+    # corpus_regexes() below are the two sites.
     entries = tomllib.loads(pathlib.Path(toml_path).read_text()).get("exclude_globs", [])
     return [g for g in entries
             if g.startswith("**/") or any(g.startswith(r + "/src/") for r in roots)]
