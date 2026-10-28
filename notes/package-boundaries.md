@@ -96,7 +96,7 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `timetable` | base | crates: `periodic_deadline*`, `timetable`, `timetable_store`; programs: `timetable`; paths: `components/timetable.conf` | interfaces only | `timetable` (provisional) |
 | `demos` | optional | programs: `least_authority_demo` | interfaces only | `demos` (provisional) |
 | `display` | optional | crates: `compositor*`, `extensible_host_controller_interface*`, `glyph_atlas*`, `glyph_atlas_generator`, `usb`, `video_terminal*`; programs: `compositor`, `display_terminal`, `framebuffer_driver`, `glyph_atlas_generator`, `gpu_driver`, `graphical_terminal`, `keyboard_driver`, `usb_keyboard_driver`; paths: `vendor/dejavu/` | interfaces only | `display` (provisional) |
-| `redoxfs` | optional | crates: `redoxfs`, `redoxfs_host`, `redoxfs_server`; programs: `mkfs`, `redoxfs`, `redoxfs-ar`, `redoxfs-clone`, `redoxfs-mkfs`, `redoxfs-resize`, `redoxfs_host`, `redoxfs_server`, `second_mount`; paths: `vendor/redoxfs.divergence.patch`, `vendor/redoxfs.pin` | interfaces only | undecided: the server and host tool are ours and the library is Redox's; whether the port goes upstream is open |
+| `redoxfs` | optional | crates: `redoxfs`, `redoxfs_host`, `redoxfs_server`; programs: `mkfs`, `redoxfs`, `redoxfs-ar`, `redoxfs-clone`, `redoxfs-mkfs`, `redoxfs-resize`, `redoxfs_host`, `redoxfs_server`, `second_mount`; paths: `vendor/redoxfs.divergence.patch`, `vendor/redoxfs.pin` | interfaces only | `redoxfs` (provisional) |
 | `rmle` | optional | programs: `rmle` | interfaces only | `rmle` (provisional) |
 | `system_installer` | optional | programs: `system_installer` | interfaces only | `system_installer` (provisional) |
 | `c-library` | sdk | crates: `c_library`, `c_library_errno`; paths: `vendor/relibc/` | interfaces only | `c-library` (provisional) |
@@ -108,9 +108,9 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `system-tests` | test | crates: `system_tests`; programs: `system_tests` | `kernel` | `system_tests` (provisional) |
 <!-- end of package table -->
 
-27 packages: 16 base, 5 optional, 4 sdk and 2 test by the table's count, `system-tests` having
-joined from milestone 609 (the system tests leave the kernel crate). One has an undecided home; the
-other 26 carry a provisional one. On 2026-09-27, 1,718 of 2,678 tracked paths had an undecided
+29 packages: 17 base, 5 optional, 5 sdk and 2 test by the table's count, `system-tests` having
+joined from milestone 609 (the system tests leave the kernel crate). None has an undecided home;
+all 29 carry a provisional one. On 2026-09-27, 1,718 of 2,678 tracked paths had an undecided
 home and 960 a provisional one; the weekly metrics page has the current count.
 
 ## How the packages were drawn
@@ -153,8 +153,10 @@ The judgment calls, each a place the table could reasonably differ:
 - The `components` crate itself sits in `init`. It is a build container that the moves dissolve.
 - `socket_test_client.rs` and `virtio_net_transport.rs` are `path` members of `network`, because
   `net_stack` includes both through `#[path]` and neither is a binary.
-- `redoxfs` holds the vendored library, the server and the host tool. Its home is the one undecided
-  package home: whether the port goes upstream is open.
+- `redoxfs` holds the vendored library, the server and the host tool. calef ruled its home with
+  the name (2026-10-28, relayed by the maintainer): the package leaves as `nifeos/redoxfs` under
+  the upstream name, whole. It keeps `redoxfs` for the vendored library and the `redoxfs_` prefix
+  for the first-party server and host tool. Whether the port goes upstream stays open.
 - Documentation is in no package yet. calef (2026-09-27): "I'm thinking of building a website for
   much of our documentation. It may also ship in packages." Until that is settled every note has an
   undecided home, and [the proposal](../design/roadmap/0684-a-documentation-site.md) holds the
