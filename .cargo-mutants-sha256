@@ -1,0 +1,14 @@
+# The sha256 of the aarch64-unknown-linux-gnu build of cargo-mutants at the version in
+# .cargo-mutants-version. .github/workflows/kernel-mutants-diff.yml downloads that build and
+# fails the job when its digest differs from the one hex line below.
+#
+# cargo-mutants publishes no aarch64 Linux release asset (every upstream release ships x86_64
+# only), so the bytes are QuickInstall's rebuild of the crates.io package:
+# cargo-bins/cargo-quickinstall release tag cargo-mutants-27.1.0, asset
+# cargo-mutants-27.1.0-aarch64-unknown-linux-gnu.tar.gz,
+# https://github.com/cargo-bins/cargo-quickinstall/releases/download/cargo-mutants-27.1.0/cargo-mutants-27.1.0-aarch64-unknown-linux-gnu.tar.gz
+# Pinned 2026-10-28 (UTC): the asset's minisign signature verified against that repository's
+# minisign.pub (key 6B2490DA9B769EDD), then this digest computed from the verified bytes. Bump
+# this digest in the same commit as .cargo-mutants-version; a version whose build is not
+# re-pinned fails the workflow's install step rather than drifting.
+f1f2e2dd680ac281467b39d43a6cbc9d6a9d367362ca4450158120a811cb1994
