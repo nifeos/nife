@@ -13,30 +13,41 @@ needs_person: no
 
 Raised 2026-10-28 (UTC) by the lane of milestone 756 (process-tools, core-tools and disk-tools are
 the first code to leave this repository), as that block's naming half. §316 (one repository per
-package leaves the tree) rules the grain the cut leaves at; this brief holds the names for calef's
-review. Nothing here carries a ruling. calef ratifies names, and every name below stays provisional
-until they rule.
+package leaves the tree) rules the grain the cut leaves at. This brief held the cut's names for
+calef's naming review, and calef ruled every question in it the same day, relayed by the maintainer
+on pull request #2870. What is in force now:
+
+- `process-tools`, `core-tools` and `disk-tools` stand as the package names and as the repository
+  names of the first cut.
+- `number_writer` stands as the crate's name. The review's other two coined names already carried
+  ratified blocks in the tree before the review ran: `disk_surveyor` on 2026-08-03 (milestone 57
+  (partitioning and formatting a real drive)) and `disk_partitioner` on 2026-09-13.
+
+Each ratification sits in the record where the name lives: §316 holds the grain and the shape
+beside it, the three manifests' `Name:` blocks hold the package and repository names, and
+`crates/number_writer/src/lib.rs` holds the crate's. The sections below are the review as it ran,
+kept for what they measured and refused.
 
 Reuse: the six surfaces each name must survive come from the tree's own records (§305, §250, §307)
 rather than a new list, and the freezing evidence is
 [notes/the-first-split.md](../../../notes/the-first-split.md)'s measurements. This brief writes no
-code; the deliverable is the review.
+code; the deliverable was the review.
 
 ## The six names
 
 Three package names, calef's rulings of 2026-10-06 (UTC), each in place of a distribution's term of
 art (`procps`, `coreutils`, `util-linux`), and the three repository names they become under §316's
-rule. Each `packages/<name>.package.toml` already points `home` at the same string, with
-`status = "provisional"`; the naming review ratifies the names, and a home status flips when each
-repository exists.
+rule. Ratified 2026-10-28 (UTC) as both, on this review. Each `packages/<name>.package.toml` points
+`home` at the same string with `status = "provisional"`, and keeps that status until the repository
+exists: ratifying a name and ratifying a home stay two events (§316).
 
-| string | names today | becomes, under the ruling |
+| string | names today | is, under the ruling |
 |---|---|---|
 | `process-tools` | the package of Debian's procps programs (milestone 126 (the `procps` package)) | the repository `nifeos/process-tools` |
 | `core-tools` | the package holding `date`, `printenv`, `rm`, `uuid` and `wc` | the repository `nifeos/core-tools` |
 | `disk-tools` | the package holding `disk_surveyor` and `disk_partitioner` | the repository `nifeos/disk-tools` |
 
-Each name must survive six surfaces at once:
+Each name holds six surfaces at once:
 
 1. A GitHub repository name under `nifeos`.
 2. A git dependency URL fragment, `https://github.com/nifeos/<repository>`, pinned by `rev` to a
@@ -49,8 +60,8 @@ Each name must survive six surfaces at once:
    moved-things entry, a bump's `nifeos/<repo>@<sha>` line.
 6. A row in the workspace's front page, the table of checkouts.
 
-A rename after anything exists touches every surface on that list. A rename today touches three
-manifests, the generated package table, and prose.
+A rename after anything exists touches every surface on that list. The review ran before the first
+image ships, when a rename still touches three manifests, the generated package table, and prose.
 
 ## The fifteen binaries
 
@@ -63,33 +74,31 @@ manifests, the generated package table, and prose.
 `number_writer` rides with the first group as a crate rather than a program: it is the
 right-aligned number writer `free`, `vmstat` and `slabtop` share.
 
-Why this review runs now, and why most of these names are close to frozen.
-[notes/the-first-split.md](../../../notes/the-first-split.md) measures the cut's outside references
-as 24 by program name and 0 by path, and one of the 24 is a gate: `swish-check` types `ps` at the
-real prompt and asserts its output header
+What the review found. [notes/the-first-split.md](../../../notes/the-first-split.md) measures the
+cut's outside references as 24 by program name and 0 by path, and one of the 24 is a gate:
+`swish-check` types `ps` at the real prompt and asserts its output header
 (`xtask/src/swish_check/script/process_tools.rs`). No one can rename a program that basalt images
-ship without breaking the user scripts that type it. After the first image ships, the
-compatibility surface closes. Today it is still open, which makes this the cheap moment for every
-rename anyone wants.
+ship without breaking the user scripts that type it, so the review ran while the compatibility
+surface was still open.
 
-### The coined names, read closest
+### The coined names, as the review found them
 
 - `disk_surveyor`, which stands in for `lsblk`, and `disk_partitioner`, which stands in for
-  `fdisk`. Agent nouns in `snake_case`, no abbreviation in either, and each parses without prior
-  Unix exposure.
-- `number_writer`, the crate. Its provenance block records what lost: `padnum` (abbreviates
-  `num`, and reads as a verb phrase), `decimal_writer` (names a fixed-point type),
-  `padded_number` (names the output, not the crate), and `number_column` (reads as an ordinal).
-
-All three pass every check below outright.
+  `fdisk`: agent nouns in `snake_case`, no abbreviation in either, each parsing without prior Unix
+  exposure. Both already carried ratified `Name:` blocks when the review opened (2026-08-03 and
+  2026-09-13).
+- `number_writer`, the crate, the review's one live name. Its provenance block records what lost:
+  `padnum` (abbreviates `num`, and reads as a verb phrase), `decimal_writer` (names a fixed-point
+  type), `padded_number` (names the output, not the crate), and `number_column` (reads as a
+  column's ordinal). Ratified 2026-10-28 (UTC), relayed by the maintainer on this review.
 
 ### The inherited names, read as a compatibility surface
 
 The thirteen Unix names fail no user's memory, and renaming them buys nothing. Each arrives across
 Unix's interface and keeps its owner's spelling; typed commands keep their latitude under §154 (the
 acronym test is whether the phrase is spoken). Unix convention abbreviates six of them: `ps`,
-`pgrep`, `pmap`, `wc`, `rm` and `uuid`. What each would have to become, if calef wants nife's own
-names; the sketches say what the name would have to say, and propose nothing:
+`pgrep`, `pmap`, `wc`, `rm` and `uuid`. What each would have to become, if calef ever wants nife's
+own names; the sketches say what the name would have to say, and propose nothing:
 
 | name | reads as today | a nife-owned name would have to say, for example |
 |---|---|---|
@@ -115,30 +124,30 @@ zero failing rows on the nine `process-tools` crates and on each of the fifteen 
 under `components/src/`. Nothing else this brief names fails either. The checker reaches Rust
 names, so the three hyphenated package strings sit outside it; the conventions below cover them.
 
-| name | name_checks.py | acronym test (§154) | nouns over verbs | §307 (how long a name may be) |
-|---|---|---|---|---|
-| `process-tools` | outside its reach (not a Rust name) | passes: no abbreviation | passes: noun | passes: 13 bytes, under the 16-byte install cap and the 252-byte file name |
-| `core-tools` | outside its reach (not a Rust name) | passes: no abbreviation | passes: noun | passes: 10 bytes |
-| `disk-tools` | outside its reach (not a Rust name) | passes: no abbreviation | passes: noun | passes: 10 bytes |
-| `ps` | passes | passes as an inherited name | passes | passes |
-| `pgrep` | passes | passes as an inherited name | passes | passes |
-| `pmap` | passes | passes as an inherited name | passes | passes |
-| `top` | passes | passes as an inherited name | passes | passes |
-| `uptime` | passes | passes | passes | passes |
-| `free` | passes | passes as an inherited name | passes | passes |
-| `vmstat` | passes | passes as an inherited name | passes | passes |
-| `slabtop` | passes | passes as an inherited name | passes | passes |
-| `date` | passes | passes | passes | passes |
-| `printenv` | passes | passes as an inherited name | passes | passes |
-| `rm` | passes | passes as an inherited name | fails alone (a verb), passes as Unix's word | passes |
-| `uuid` | passes | passes as an inherited name | passes | passes |
-| `wc` | passes | passes as an inherited name | passes | passes |
-| `disk_surveyor` | passes | passes | passes | passes |
-| `disk_partitioner` | passes | passes | passes | passes: 16 bytes, the longest program name here, far under the bound |
-| `number_writer` | passes | passes | passes | passes |
+| name | name_checks.py | acronym test (§154) | nouns over verbs | §307 (how long a name may be) | status |
+|---|---|---|---|---|---|
+| `process-tools` | outside its reach (not a Rust name) | passes: no abbreviation | passes: noun | passes: 13 bytes, under the 16-byte install cap and the 252-byte file name | ratified: package 2026-10-06, repository 2026-10-28 |
+| `core-tools` | outside its reach (not a Rust name) | passes: no abbreviation | passes: noun | passes: 10 bytes | ratified: package 2026-10-06, repository 2026-10-28 |
+| `disk-tools` | outside its reach (not a Rust name) | passes: no abbreviation | passes: noun | passes: 10 bytes | ratified: package 2026-10-06, repository 2026-10-28 |
+| `ps` | passes | passes as an inherited name | passes | passes | inherited |
+| `pgrep` | passes | passes as an inherited name | passes | passes | inherited |
+| `pmap` | passes | passes as an inherited name | passes | passes | inherited |
+| `top` | passes | passes as an inherited name | passes | passes | inherited |
+| `uptime` | passes | passes | passes | passes | inherited |
+| `free` | passes | passes as an inherited name | passes | passes | inherited |
+| `vmstat` | passes | passes as an inherited name | passes | passes | inherited |
+| `slabtop` | passes | passes as an inherited name | passes | passes | inherited |
+| `date` | passes | passes | passes | passes | inherited |
+| `printenv` | passes | passes as an inherited name | passes | passes | inherited |
+| `rm` | passes | passes as an inherited name | fails alone (a verb), passes as Unix's word | passes | inherited |
+| `uuid` | passes | passes as an inherited name | passes | passes | inherited |
+| `wc` | passes | passes as an inherited name | passes | passes | inherited |
+| `disk_surveyor` | passes | passes | passes | passes | ratified 2026-08-03 |
+| `disk_partitioner` | passes | passes | passes | passes: 16 bytes, the longest program name here, far under the bound | ratified 2026-09-13 |
+| `number_writer` | passes | passes | passes | passes | ratified 2026-10-28 |
 
 None fails. A pass is not a claim to be right: design/naming/rules-a-script-can-check.md holds the
-rules no script can apply, and applying them to people's memories is what this review is for.
+rules no script can apply, and applying them to people's memories is what this review was for.
 
 ## The pattern the first cut sets
 
@@ -150,24 +159,27 @@ also edits that repository's name on GitHub, the pins that point at it, and ever
 in the meantime. The cheap moment is before the second package exists, and the first cut is what
 sets the pattern the second one copies.
 
-## Questions for calef
+## The ruling
 
-Each question below is one decision. If you do nothing, the default happens: the provisional name
-stands, and stays flagged provisional in its provenance block.
+All four questions the review put to calef have answers, and nothing in this file waits on anyone.
 
-1. `process-tools`, as the package name and the repository name. Ratify, or rename. The 2026-10-06
-   ruling refused `procps` (the GNU/Linux term of art, given up so package names follow one
-   spelled-out rule). `process-utils` loses to the same rule (it abbreviates "utilities"). The
-   `-tools` suffix is what makes the three names read as one family. Default: `process-tools`
-   stands.
-2. `core-tools`, as the package name and the repository name. Ratify, or rename. The 2026-10-06
-   ruling refused `coreutils` for the same reason. `core-utilities` spells the word out and
-   lengthens the name, and reads as two nouns with no role named. Default: `core-tools` stands.
-3. `disk-tools`, as the package name and the repository name. Ratify, or rename. The 2026-10-06
-   ruling refused `util-linux` as "a horrible package name for a nife package"
-   ([notes/package-boundaries.md](../../../notes/package-boundaries.md)). `disk-utils` loses to the
-   same spelled-out rule. Default: `disk-tools` stands.
-4. The coined names `disk_surveyor` and `disk_partitioner`, and the crate `number_writer`. Ratify,
-   or rename; its provenance block or the table above records what each replaced. Nothing
-   ships yet, so a rename today breaks no user script; after the first basalt image it would.
-   Default: each stands.
+1. `process-tools` as the package name and the repository name. Ratified 2026-10-28 (UTC), relayed
+   by the maintainer on this review. The 2026-10-06 ruling had refused `procps` (the GNU/Linux
+   term of art, given up so package names follow one spelled-out rule), and `process-utils` loses
+   to the same rule (it abbreviates "utilities"). Recorded in the manifest's `Name:` block, beside
+   §316.
+2. `core-tools` as the package name and the repository name. Ratified 2026-10-28 (UTC) the same
+   way. The 2026-10-06 ruling had refused `coreutils` for the same reason, and `core-utilities`
+   spells the word out only to lengthen the name and drop the role. Recorded in the manifest's
+   `Name:` block, beside §316.
+3. `disk-tools` as the package name and the repository name. Ratified 2026-10-28 (UTC) the same
+   way. The 2026-10-06 ruling had refused `util-linux` as "a horrible package name for a nife
+   package" ([notes/package-boundaries.md](../../../notes/package-boundaries.md)), and `disk-utils`
+   loses to the same spelled-out rule. Recorded in the manifest's `Name:` block, beside §316.
+4. The coined names, raised as three. `disk_surveyor` and `disk_partitioner` already carried
+   ratified `Name:` blocks when the review opened (2026-08-03, milestone 57 (partitioning and
+   formatting a real drive); 2026-09-13), so the live question was `number_writer` alone.
+   Ratified 2026-10-28 (UTC); recorded in `crates/number_writer/src/lib.rs`.
+
+The `home` lines keep `status = "provisional"` until each repository exists (§316). That, and not
+the names, is what remains of milestone 756's precondition 6.
