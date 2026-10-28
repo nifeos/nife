@@ -147,12 +147,10 @@ how the updater (858) holds it across reboots.
 The progenitor checks every delegated request against X's stored records before anything is
 written, because a delegated holder is trusted to be nothing more than a holder of that badge. A
 holder under X cannot send `Approve` or `Vouch`. A `Rollback` under X passes when every row it
-restores lies within X's records, and fails naming the row when one does not (ruled 2026-10-12,
-read 2026-10-28 UTC): returning to what the file allowed grants nothing new. A row the live
-generation already holds is not something the rollback grants, so the check reads the target
-generation's rows the live one does not: a rollback that only removes passes, and one that would
-bring back a package the file does not bound is refused. The owner's vouch rows lie outside every
-approval, so the check skips them; it still restores them.
+restores, the target's rows the live generation does not hold, lies within X's records, and fails
+naming the row when one does not (ruled 2026-10-12). A rollback that only removes restores nothing
+and passes. The owner's vouch rows lie outside every approval, so the check skips them; it still
+restores them.
 
 Approvals are not generations: the progenitor stores them beside the installed-programs table's
 generations, never as rows in them, so `jig rollback` restores packages and leaves every approval
