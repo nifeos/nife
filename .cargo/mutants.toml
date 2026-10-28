@@ -87,6 +87,65 @@ exclude_globs = [
     # runs, so a mutant here is caught by CI going red, not by a unit suite. Mutating it would
     # spend hours measuring the build system instead of the OS.
     "xtask/**",
+
+    # **The kernel's own section** (roadmap 955, the kernel and its programs are mutated under
+    # QEMU). The kernel's mutation runs, the diff-scoped check on kernel pull requests and the
+    # rolling census, list with `--no-config`, because the `kernel/**` entry at the top of this
+    # array excludes the crate whole from the host census and a config-reading run would list
+    # nothing. This section is theirs to consume: a kernel run reads this file, takes the
+    # `exclude_globs` entries that name a path under `kernel/src/` (the host census's own
+    # `kernel/**` entry above does not, and it is why a config-reading kernel run lists nothing),
+    # and treats a file any of them matches as outside its corpus. On a host run the section is
+    # unreachable by construction: `kernel/**` has already removed every path the entries name,
+    # and no entry matches a path outside `kernel/`.
+    #
+    # A module behind a plain `#[cfg(test)]`, such as `kernel/src/tests.rs` or any inline
+    # `mod tests`, needs no entry here: the tool already declines to mutate those. It is exactly
+    # the compound and feature forms below, which that skip does not recognize, that would
+    # otherwise reach an image build and score MISSED.
+    #
+    # The bench and workload boots. `bench`, `icount`, `storage_bench`, `disk_throughput`,
+    # `network_bench`, `job_mix`, `lock_wait` and `soak_test` are kernel features that neither
+    # test image enables: the kernel unit-test image builds default features under `cfg(test)`
+    # and the system image adds only `system_tests` (`system_tests/Cargo.toml`). The module
+    # declarations stay behind their feature cfgs, so a patch to one of these files edits a file
+    # no image build reads: both tiers run the unmutated kernel, the verdict is always
+    # "survived", and the run pays both image preparations for it. What proves each module is
+    # the boot that builds its feature (`script/bench`, `cargo xtask soak` and its siblings),
+    # never the test suite. The `uefi_loader` entries above are this same pattern.
+    "kernel/src/bench.rs",
+    "kernel/src/bench/**",
+    "kernel/src/icount.rs",
+    "kernel/src/storage_bench.rs",
+    "kernel/src/disk_throughput.rs",
+    "kernel/src/network_bench.rs",
+    "kernel/src/job_mix.rs",
+    "kernel/src/lock_wait.rs",
+    "kernel/src/soak.rs",
+
+    # The boot self-tests (milestone 268 (every architecture boots the same way)). `cfg(not(any(test, feature = "system_tests", feature =
+    # "bench")))` compiles them into a production boot and into no test image, so a mutant there
+    # is unreachable in both tiers: the group above, worn from the other side. Their checker is
+    # the boot ladder verdict (`boot_ladder::SELF_TEST`), which a program reads, and
+    # notes/self-test-checks.md holds the checks.
+    "kernel/src/self_test.rs",
+
+    # The test harness and what the two suites share. `cfg(any(test, feature = "system_tests"))`
+    # puts these in both images, so their mutants run; but a mutant of the harness measures the
+    # harness, which is the judgment that leaves `xtask` out above, and its verdict says nothing
+    # about a shipped kernel.
+    "kernel/src/testing.rs",
+    "kernel/src/user/test_support.rs",
+    "kernel/src/user/fs_service/test_files.rs",
+
+    # The system-test image's own scaffolding, behind `feature = "system_tests"` alone: the
+    # fault-injection hooks the tests trip on demand and the stand-in installer. The kernel image
+    # declares none of them, so their mutants pay the kernel tier to survive it, and a shipping
+    # build has no code that could fire, so a system-tier verdict is a verdict on the test image.
+    # Each module's own header states the cfg and the reason.
+    "kernel/src/retype_fault.rs",
+    "kernel/src/delegation_pause.rs",
+    "kernel/src/user/fs_service/test_install.rs",
 ]
 
 # Matched against mutant names ("replace X with Y in path::fn"). Entries arrive with reasons or
