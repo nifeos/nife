@@ -248,7 +248,6 @@ exclude_re = [
     "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in initialize_hardware$",
     "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in setup_copper_link$",
     "crates/e1000e/src/pch/sequence\\.rs:[0-9]+:[0-9]+: replace \\| with \\^ in transmit_errata$",
-||||||| a31527261
 
     # **designware_ethernet's disjoint-bits and zero-shift sites** (milestone 954 (a survivor
     # accepted once is not accepted forever), 2026-10-28 UTC).
