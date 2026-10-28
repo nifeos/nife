@@ -1,0 +1,446 @@
+name: kernel mutants (rolling census)
+
+# **Part 4 of roadmap 955 (the kernel and its programs are mutated under QEMU)**: the rolling
+# census. One advisory workflow on a schedule: two jobs a night, each taking a slice from the
+# slice list in helpers/mutation_kernel_census.py and mutating it under QEMU with the job's wall
+# clock as the budget. A night's jobs are shards whose budget is the wall clock instead of the
+# diff, as part 3's feeding path anticipated: the listing here is the whole corpus (`cargo mutants
+# --no-config --list --diff`, no `--in-diff`), the corpus filter and routing are the diff helper's,
+# and `script/falsifications --mutants --patches` runs each window in two tiers (the kernel suite
+# first, the whole-system image only for what survives it).
+#
+# **Advisory, always, and therefore never on a merge.** The census has no `pull_request` trigger at
+# all: it never sits on a merge, never joins the merge queue, and a fork can never trigger it,
+# because only `schedule` and `workflow_dispatch` raise it. Survivors exit 0 with the table that
+# says what clears each (milestone 85's key, 924's rules); a broken run exits 2 and fails the job.
+# There is no promotion to a required check on this one: the census is a rotation's record, not a
+# gate on a change.
+#
+# **The night.** Cron `0 8 * * 0,2-6` starts the window at 08:00 UTC, six nights a week, Monday
+# free for the host census; that is 00:00 to 06:00 Pacific in daylight time and 00:00 to 05:00 in
+# standard time, the window calef set on 2026-10-27 (UTC). Every job reads the wall clock seconds
+# before the driver runs (`window`) and stops cleanly by 13:00 UTC, whatever time the night began:
+# GitHub starts scheduled runs late, so a late night is a short night, never an overrun into the
+# working day. A start too late to pay even one mutant is skipped with that stated, not started.
+# Ten runner-hours a night, at most, and two jobs are the whole matrix: nothing here can fill the
+# concurrency pool the way milestone 741's 40-job run did.
+#
+# **The rotation state travels in artifacts, and a lost state restarts honestly.** Each night's
+# `state` job fuses the two windows' verdict tables into `census-state` and uploads it; the next
+# night's plan job downloads the newest successful run's copy on the same branch (a proof dispatch
+# writes its own branch's state and never touches the scheduled rotation). Covered sets hold whole
+# mutant names, the same identity the driver's TSV rows carry, so a shifted line re-runs its mutant
+# instead of hiding behind the old name; the diff check (part 3) mutates every line a pull request
+# touches anyway, so the drift a name set re-runs is work that check already did. An expired
+# artifact (90 days) or a missing one begins a fresh rotation from the front: over-covering, never
+# under-covering. The record, notes/project-metrics/kernel-mutation-census.csv, one row per slice a
+# night worked, is appended through a pull request the way the host census records its own, so the
+# rotation outlives the artifacts.
+#
+# **Dispatch names the proof, and never touches main's rotation.** A `workflow_dispatch` may force
+# one slice (`slice`), cap both windows (`limit`) and override the wall-clock budget (`budget`).
+# These are the proof path: small, cheap, and scoped to the dispatched branch's own state.
+#
+# The slice jobs run no cargo-mutants at all: the plan materialized their windows, and the driver's
+# `--patches` path never calls the tool. The tier boots are bounded at 600 s
+# (FALSIFICATIONS_RECORD_LIMIT), so one hung boot costs the job its verdict, not its bound.
+#
+# Name: provisional. An architect names things.
+#
+# Observed failing: 2026-10-28, by script: the run this record wants is this workflow's own first
+#   dispatch, which cannot exist before the push that this gate refuses, the circularity
+#   codeql.yml named on 2026-10-09. The proof dispatches follow in this pull request and replace
+#   this record: first a staged broken run (a window that held a mutant and ran nothing must fail,
+#   exit 2), then a green one-mutant run, then a second dispatch that reads the first one's state
+#   and resumes past it.
+#
+# BUGS: the record job's arm has never been watched; it runs only from main, so its first
+#   observation is the first scheduled night after this lands. The plan, slice and state jobs'
+#   arms are the ones the dispatches above watch.
+
+on:
+  schedule:
+    # 08:00 UTC, Sunday and Tuesday through Saturday. Monday stays free for the host census, whose
+    # cron says 05:00 UTC but which GitHub has started as late as 10:55 UTC; a kernel night beside
+    # it would put ten jobs in the pool at once (the block's "When the rolling census runs").
+    - cron: "0 8 * * 0,2-6"
+  workflow_dispatch:
+    inputs:
+      slice:
+        description: "the proof path: run one named slice only (see helpers/mutation_kernel_census.py)"
+        type: string
+        required: false
+      limit:
+        description: "the proof path: cap each window at N mutants"
+        type: number
+        required: false
+      budget:
+        description: "the proof path: override the wall-clock budget with N seconds"
+        type: number
+        required: false
+
+permissions:
+  contents: read
+  actions: read
+
+# A five-hour job is worth queueing for, never cancelling: the night behind it would start from the
+# same state and redo its work. Keyed on the ref, so a proof dispatch queues behind its own
+# branch's dispatches and never behind main's night.
+concurrency:
+  group: kernel-mutants-census-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: plan (the rotation, tonight's two windows)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    outputs:
+      matrix: ${{ steps.windows.outputs.matrix }}
+    steps:
+      # One commit is enough: the listing needs no history (there is no diff) and the state needs
+      # no git at all. The checkout is this run's own commit, the tree the slice jobs check out
+      # too, so the windows the plan materializes apply against the tree the jobs run.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install the pinned toolchain
+        run: rustup show active-toolchain || helpers/rustup-retry.sh toolchain install
+
+      # cargo-mutants publishes no aarch64 Linux release asset (every upstream release ships
+      # x86_64 only), so taiki-e/install-action has no aarch64_linux entry for the pinned
+      # version and every install of it here falls through cargo-binstall to an unpinned
+      # third-party build. This downloads the QuickInstall build of exactly the pinned version
+      # and checks it against the digest in .cargo-mutants-sha256, whose comments carry the URL
+      # and provenance: same bytes every run, and a version bump without a new digest fails
+      # here rather than drifting.
+      - name: Install the pinned cargo-mutants
+        run: |
+          version="$(cat .cargo-mutants-version)"
+          sum="$(sed -n '/^[0-9a-f]\{64\}$/p' .cargo-mutants-sha256)"
+          if [ "${#sum}" -ne 64 ]; then
+            echo "==> .cargo-mutants-sha256 must hold exactly one 64-hex digest line" >&2
+            exit 2
+          fi
+          url="https://github.com/cargo-bins/cargo-quickinstall/releases/download/cargo-mutants-${version}/cargo-mutants-${version}-aarch64-unknown-linux-gnu.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/cargo-mutants.tgz" "$url"
+          echo "${sum}  $RUNNER_TEMP/cargo-mutants.tgz" | sha256sum --check --strict -
+          mkdir -p "$HOME/.cargo/bin"
+          tar -xzf "$RUNNER_TEMP/cargo-mutants.tgz" -C "$HOME/.cargo/bin"
+          cargo mutants --version
+
+      # `--no-config` is deliberate and .cargo/mutants.toml says why: the toml's own `kernel/**`
+      # entry keeps the kernel out of the host census, so a config-reading run would list nothing.
+      # The corpus rule the toml's kernel section addresses to this run is applied by the helper,
+      # reading this same file. No `--in-diff`: the census's listing is the slice, not a diff.
+      - name: List the corpus
+        run: |
+          cargo mutants --no-config --list --diff > listing.txt
+          wc -l listing.txt
+
+      # The rotation state: the newest successful run's census-state artifact on this branch.
+      # Absent (first night, expired, or a fresh branch) means a fresh rotation, which the plan
+      # summary states; a state that exists but does not parse fails the job (exit 2), because a
+      # broken run is never a pass and a silent restart would spend a night re-covering.
+      - name: Fetch the previous night's state
+        id: state-prev
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prev=""
+          ids="$(gh run list --workflow kernel-mutants-census.yml --branch "$GITHUB_REF_NAME" \
+                   --status success --limit 6 --json databaseId --jq '.[].databaseId')"
+          for id in $ids; do
+            rm -rf prev-state
+            if gh run download "$id" --name census-state --dir prev-state 2>/dev/null; then
+              prev="$(find prev-state -name state.json -print -quit 2>/dev/null || true)"
+              if [ -n "$prev" ]; then
+                echo "==> rotation state from run $id: $prev"
+                break
+              fi
+            fi
+          done
+          if [ -z "$prev" ]; then
+            echo "==> no state found: this night begins a fresh rotation"
+          fi
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Cut tonight's two windows
+        id: windows
+        env:
+          PREV: ${{ steps.state-prev.outputs.prev }}
+          ONLY: ${{ inputs.slice }}
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          args=(--listing listing.txt --toml .cargo/mutants.toml --shard-dir shards
+                --summary "$GITHUB_STEP_SUMMARY")
+          if [ -n "$PREV" ]; then args+=(--state "$PREV"); fi
+          if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
+          if [ -n "$LIMIT" ]; then args+=(--limit "$LIMIT"); fi
+          python3 helpers/mutation_kernel_census.py plan "${args[@]}" >> "$GITHUB_OUTPUT"
+
+      # The windows and the state material in one artifact: the slice jobs take their job files
+      # from it, and the state job takes state-material.json, the pruned state the night's tables
+      # fuse into.
+      - name: Keep the plan
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: census-plan
+          path: shards
+          if-no-files-found: error
+
+  slice:
+    # The matrix always holds exactly two slots, the block's two jobs a night. A slot with nothing
+    # to run (every slice is covered, or the forced slice is) is a noop entry on the cheap x86
+    # runner that says so, rather than an empty matrix, which turns the run red (part 3's run
+    # 40640527340 found that).
+    name: "${{ matrix.noop && 'kernel census: nothing to run in this slot' || format('slice {0} ({1}, slot {2})', matrix.slice, matrix.arch, matrix.slot) }}"
+    needs: plan
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    runs-on: ${{ matrix.noop && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    # The window is five hours plus setup; the driver stops at the wall clock long before this. A
+    # job that reaches the ceiling means the wall-clock stop failed, which is a broken mechanism
+    # and must fail loudly rather than overrun into the working day.
+    timeout-minutes: ${{ matrix.noop && 5 || 330 }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      # A tier that hangs dies at 600 s with a `timeout` verdict instead of holding the job for
+      # the driver's default 30-minute limit, part 3's bound and reasoning.
+      FALSIFICATIONS_RECORD_LIMIT: "600"
+    steps:
+      - name: Nothing to run
+        if: ${{ matrix.noop }}
+        run: |
+          echo "==> no window in this slot tonight: the plan summary above says what the rotation"
+          echo "    state is. This green is not a mutation result."
+
+      # This run's own commit, for both events, as part 3's workflow argues: the driver and the
+      # helper the steps invoke live in this tree, and the windows were materialized against this
+      # same tree by the plan job.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: ${{ !matrix.noop }}
+
+      - name: Install the pinned toolchain
+        if: ${{ !matrix.noop }}
+        run: rustup show active-toolchain || helpers/rustup-retry.sh toolchain install
+
+      # The kernel image build dominates a cold baseline (225 s of the 380 on aarch64); this pool
+      # is shared with mutation-gate.yml's job, which keys the same way.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        if: ${{ !matrix.noop }}
+        with:
+          save-if: "true"
+
+      - name: Cache QEMU
+        if: ${{ !matrix.noop }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        if: ${{ !matrix.noop }}
+        run: script/ci-qemu
+      - name: Put it on PATH
+        if: ${{ !matrix.noop }}
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+        if: ${{ !matrix.noop }}
+        env:
+          NIFE_SKIP_LINT_TOOLS: "1"
+
+      # To the runner's temp directory, never into the checkout: the driver refuses
+      # `git status --porcelain` noise, because it applies and reverts patches here (part 3's
+      # run 40638299916 died on exactly that).
+      - name: Fetch this slot's window
+        if: ${{ !matrix.noop }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: census-plan
+          path: ${{ runner.temp }}/plan
+
+      # The wall clock, read seconds before the driver runs: budget to 13:00 UTC today, less a
+      # margin that covers one in-flight mutant and the steps after the driver. The proof path's
+      # `budget` input overrides it. A start too late for even one mutant is a skipped night,
+      # stated, never a run that pays its baseline and produces nothing.
+      - name: Read the wall clock into the budget
+        id: window
+        if: ${{ !matrix.noop }}
+        env:
+          OVERRIDE: ${{ inputs.budget }}
+        run: |
+          extra=()
+          if [ -n "$OVERRIDE" ]; then extra+=(--override "$OVERRIDE"); fi
+          read_out="$(python3 helpers/mutation_kernel_census.py window --arch '${{ matrix.arch }}' "${extra[@]}")"
+          eval "$read_out"
+          echo "budget=$budget" >> "$GITHUB_OUTPUT"
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+          if [ "$skip" = "1" ]; then
+            {
+              echo "### Kernel census (advisory), slice ${{ matrix.slice }}: nothing ran tonight"
+              echo
+              echo "The job reached the driver too late for even one mutant before 13:00 UTC"
+              echo "($budget s left after the margin), so it started nothing. A late night is a"
+              echo "short night: the slice resumes from where it stopped on the next night, and"
+              echo "the census record shows the night as what it was."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Run the window's mutants
+        if: ${{ !matrix.noop && steps.window.outputs.skip != '1' }}
+        run: |
+          script/falsifications --mutants \
+            --patches "${{ runner.temp }}/plan/${{ matrix.file }}" --arch "${{ matrix.arch }}" \
+            --tiers kernel,system --budget "${{ steps.window.outputs.budget }}" \
+            --out "$RUNNER_TEMP/census-${{ matrix.slot }}.tsv"
+
+      # Advisory: a survivor exits 0 with the table that says what clears it; a broken run (no
+      # table, a malformed table, or a window that held mutants and produced none) exits 2 and
+      # fails the job, never passes.
+      - name: The verdict, advisory
+        if: ${{ !cancelled() && !matrix.noop && steps.window.outputs.skip != '1' }}
+        run: |
+          python3 helpers/mutation_kernel_census.py verdict \
+            --tsv "$RUNNER_TEMP/census-${{ matrix.slot }}.tsv" \
+            --slice "${{ matrix.slice }}" --arch "${{ matrix.arch }}" --slot "${{ matrix.slot }}" \
+            --count "${{ matrix.count }}" --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the window's table
+        if: ${{ always() && !matrix.noop }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: census-tsv-${{ matrix.slot }}
+          path: ${{ runner.temp }}/census-${{ matrix.slot }}.tsv
+          if-no-files-found: warn
+
+  state:
+    name: carry the rotation state forward
+    needs: [plan, slice]
+    # Only a fully green night writes state: a broken run is re-run from the previous state, which
+    # is the honest recovery (the night's work is redone, never lost).
+    if: ${{ success() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Fetch the plan's material
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: census-plan
+          path: plan
+
+      # A night where both slots skipped or idled uploads no table; the download failing on an
+      # empty pattern is not a broken night, so it continues and the state carries over unchanged.
+      - name: Fetch the night's tables
+        continue-on-error: true  # outcome: exception, a night whose slots all skipped or idled uploads no table at all; the state carries over unchanged
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: census-tsv-*
+          path: tsvs
+
+      - name: Fuse the night's tables into the next state
+        run: |
+          python3 helpers/mutation_kernel_census.py state \
+            --matrix '${{ needs.plan.outputs.matrix }}' --material plan/state-material.json \
+            --tsvs tsvs --date "$(date -u +%F)" --run "$GITHUB_RUN_ID" --out state.json
+
+      - name: Keep the state
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: census-state
+          path: state.json
+          if-no-files-found: error
+
+  # Appends the night's rows to the census record through a pull request, never a push to main
+  # (mutation.yml's argument: a record other people quote is irreversible once it lands
+  # unreviewed). The environment's deployment branches are `main` only, so a dispatch from another
+  # branch skips this job.
+  record:
+    name: record the night in the census record
+    needs: [plan, slice, state]
+    if: ${{ success() && github.ref == 'refs/heads/main' }}
+    environment: automation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    # **The App is optional** (milestone 889 (the tree's gates stop depending on the fleet tooling),
+    # provisional), as in mutation.yml and toolchain-bump.yml, which have the full argument. With
+    # the App's secrets absent (a fork, or a repository the App is not installed on) the token step
+    # is skipped and every `steps.app-token.outputs.token || github.token` below falls through to
+    # the ephemeral token. That token pushes the branch but may not open a pull request, so the run
+    # ends green with the compare link in its summary (helpers/pull-request-by-hand.sh).
+    env:
+      AUTOMATION_APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
+    steps:
+      - name: Mint an installation token for the automation App, when it is installed
+        id: app-token
+        if: env.AUTOMATION_APP_ID != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_KEY }}
+          # The same narrow set mutation.yml mints: contents and pull requests, nothing wider.
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      - name: Fetch the night's tables
+        continue-on-error: true  # outcome: exception, a night whose slots all skipped or idled uploads no table at all; nothing to record is a green outcome
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: census-tsv-*
+          path: tsvs
+
+      - name: Append the night's rows
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
+          # Who the pull request's opening line names: the App, or the fallback above.
+          PR_AUTHOR: ${{ steps.app-token.outputs.token && 'nife-smelter[bot]' || 'github-actions[bot]' }}
+          # Non-empty only when the App's token was minted; see the push-only branch below.
+          USING_APP: ${{ steps.app-token.outputs.token && 'yes' || '' }}
+        run: |
+          set -e
+          python3 helpers/mutation_kernel_census.py record \
+            --matrix '${{ needs.plan.outputs.matrix }}' --tsvs tsvs \
+            --date "$(date -u +%F)" --run "$GITHUB_RUN_ID" \
+            --csv notes/project-metrics/kernel-mutation-census.csv \
+            --summary "$GITHUB_STEP_SUMMARY"
+          if git diff --quiet -- notes/project-metrics && [ -z "$(git ls-files --others --exclude-standard notes/project-metrics)" ]; then
+            echo "Nothing to record."
+            exit 0
+          fi
+          branch="kernel-mutation/census"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add notes/project-metrics/kernel-mutation-census.csv
+          git commit -m "kernel mutation census: record $(date -u +%F) (run $GITHUB_RUN_ID)
+
+          One row per slice the night's jobs worked, in notes/project-metrics/
+          kernel-mutation-census.csv, from the scheduled workflow's own artifacts, which expire
+          in about 90 days. Append-only; nothing from a past night changes."
+          git push --force origin "$branch"
+          body="**Lane:** $branch, opened by a scheduled workflow; $PR_AUTHOR is the author GitHub shows.
+
+          Records the kernel mutation census rows for $(date -u +%F) ([run $GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)): one row per slice the night's jobs worked, in \`kernel-mutation-census.csv\`. Append-only; nothing from a past night changes."
+          # No App token: push only, and leave the pull request to a person (calef's ruling on
+          # #2442, 2026-10-20 UTC). `github.token` may not open one, and the repository setting
+          # that would let it stays off. The summary carries the compare link, title and body.
+          if [ -z "$USING_APP" ]; then
+            helpers/pull-request-by-hand.sh "$branch" "kernel mutation census: record $(date -u +%F)" "$body"
+            exit 0
+          fi
+          existing="$(gh pr list --head "$branch" --state open --json number --jq '.[].number')"
+          if [ -z "$existing" ]; then
+            gh pr create --head "$branch" --base main \
+              --title "kernel mutation census: record $(date -u +%F)" --body "$body"
+          else
+            gh pr edit "$existing" --title "kernel mutation census: record $(date -u +%F)" --body "$body"
+          fi
