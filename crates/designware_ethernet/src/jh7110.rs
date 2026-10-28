@@ -61,8 +61,12 @@ pub const BUS: Bus = Bus {
     write_outstanding: 0xf,
 };
 
-// The four burst-length bits are distinct single bits, so the constant's `|`s are its `^`s.
-const _: () = assert!(
+/// The four burst-length bits are distinct single bits, so the constant's `|`s are its `^`s,
+/// which the compiler checks here; the exclusion of the file's constant-item or-versus-xor
+/// mutants names this constant.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_BURST_LENGTH_BITS_SHARE_NO_BIT: () = assert!(
     registers::SYS_BUS_MODE_BLEN_256
         | registers::SYS_BUS_MODE_BLEN_128
         | registers::SYS_BUS_MODE_BLEN_64
@@ -118,9 +122,14 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
         | PHY_INTF_RGMII << GMAC0_SYSTEM_CONTROLLER_SHIFT
 }
 
-// The interface value fits the field the line above cleared, so the `|` holds for every word the
-// function is given and is its `^`.
-const _: () = assert!(PHY_INTF_RGMII & SYSTEM_CONTROLLER_FIELD == PHY_INTF_RGMII);
+/// The interface value fits the field the function clears, which the compiler checks here: a
+/// value inside the field shares no bit with the word outside it, so the `|` in
+/// `select_reduced_gigabit_media_independent_interface` is its `^` for every word, and the
+/// exclusion of those mutants names this constant.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+pub const THE_INTERFACE_SELECT_AND_CLEARED_WORD_SHARE_NO_BIT: () =
+    assert!(PHY_INTF_RGMII & SYSTEM_CONTROLLER_FIELD == PHY_INTF_RGMII);
 
 /// The interface select a syscon word holds for `gmac0`.
 pub const fn interface(word: u32) -> u32 {
