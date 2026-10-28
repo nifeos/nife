@@ -23,6 +23,7 @@ use std::process::ExitCode;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 mod archive;
+mod base_image;
 mod basalt;
 mod bench;
 mod board;

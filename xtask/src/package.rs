@@ -94,8 +94,48 @@ enum Source {
     /// the image's catalog leaves out a recipe whose `std` program was not built, so its package is
     /// in the image exactly when the gate's lines for it can run. Key name provisional.
     StdProgram(String),
+    /// A path relative to the repository root, read stripped as a program: for a program built by
+    /// a workspace of its own (`jig`, `mdr`, the RedoxFS server), whose build does not put it in
+    /// `target/<triple>/<profile>/`. Milestone 909 (basalt composes the bootable image from its
+    /// packages) added it so one verb can pack a package from the tree's own build. Key name
+    /// provisional.
+    Elf(String),
     /// A path relative to the repository root.
     File(String),
+}
+
+/// **`cargo xtask package`**, whichever shape was asked for: a recipe path, or `--package <name>
+/// --arch <arch>` for a package milestone 611 declares. Name provisional (2026-10-28 UTC).
+pub(crate) fn command(args: Vec<String>) -> bool {
+    if args.first().map(String::as_str) != Some("--package") {
+        return package(args.into_iter().next());
+    }
+    let mut name = None;
+    let mut arch = None;
+    let mut version = String::from("0.1.0");
+    let mut rest = args.iter();
+    while let Some(flag) = rest.next() {
+        let Some(value) = rest.next() else {
+            eprintln!("package: {flag} needs a value");
+            return false;
+        };
+        match flag.as_str() {
+            "--package" => name = Some(value.clone()),
+            "--arch" => arch = Some(value.clone()),
+            "--version" => version = value.clone(),
+            other => {
+                eprintln!("package: unknown flag {other}");
+                return false;
+            }
+        }
+    }
+    match (name, arch) {
+        (Some(name), Some(arch)) => package_named(&name, &arch, &version),
+        _ => {
+            eprintln!("usage: cargo xtask package --package <name> --arch <arch> [--version <v>]");
+            false
+        }
+    }
 }
 
 /// `cargo xtask package <recipe>`: build it, check it against the recipe, and report.
@@ -119,6 +159,69 @@ pub(crate) fn package(recipe_path: Option<String>) -> bool {
             return false;
         }
     };
+    report_and_write(&root, &built)
+}
+
+/// **`cargo xtask package --package <name> --arch <arch> [--version <v>]`**: build the package
+/// `packages/<name>.package.toml` declares from this tree's own build (milestone 909 (basalt
+/// composes the bootable image from its packages)).
+///
+/// The definition is milestone 611's (every program and crate belongs to a package), and its
+/// `programs` list is the membership this packs, each as the member `bin/<program>`. A program is
+/// looked for where its own build puts it, named in [`program_path`]; one that is not built is
+/// refused by name rather than skipped, because a package missing a program boots and then fails
+/// at the prompt.
+///
+/// The whole rest of the path is the recipe path's: one parser, one producer, one digest check.
+pub(crate) fn package_named(name: &str, arch: &str, version: &str) -> bool {
+    let root = workspace_root();
+    let path = root.join("packages").join(format!("{name}.package.toml"));
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) => {
+            eprintln!("package: --package {name}: could not read {}: {error}", path.display());
+            return false;
+        }
+    };
+    let programs = match parse_definition(&text) {
+        Ok(programs) => programs,
+        Err(complaint) => {
+            eprintln!("package: --package {name}: {complaint}");
+            return false;
+        }
+    };
+    package_members(name, arch, version, &programs)
+}
+
+/// **Pack the package `name` from an explicit member list**: the programs it carries, as
+/// `bin/<program>`.
+///
+/// [`package_named`] takes the list from the definition's `programs` line. `fixtures` is the one
+/// package whose definition names a crate and no programs, because its membership is its
+/// manifest's 79 `[[bin]]` blocks and no release image carries them; `cargo xtask base-image
+/// --test` passes that list here (milestone 909 (basalt composes the bootable image from its
+/// packages)).
+pub(crate) fn package_members(name: &str, arch: &str, version: &str, programs: &[String]) -> bool {
+    let root = workspace_root();
+    let recipe = match definition_recipe(&root, name, arch, version, programs) {
+        Ok(recipe) => recipe,
+        Err(complaint) => {
+            eprintln!("package: --package {name} --arch {arch}: {complaint}");
+            return false;
+        }
+    };
+    let built = match build(&root, &recipe) {
+        Ok(built) => built,
+        Err(complaint) => {
+            eprintln!("package: --package {name} --arch {arch}: {complaint}");
+            return false;
+        }
+    };
+    report_and_write(&root, &built)
+}
+
+/// Print what [`build`] made and write it under `target/packages/`.
+fn report_and_write(root: &std::path::Path, built: &Built) -> bool {
     let parsed = Package::parse(&built.file).expect("build() read it back already");
     println!(
         "{} {} {}, {} members, {} bytes",
@@ -132,7 +235,7 @@ pub(crate) fn package(recipe_path: Option<String>) -> bool {
         let name = parsed.member_name(index).unwrap_or("");
         let len = parsed.member(index).map(<[u8]>::len).unwrap_or(0);
         let digest = parsed.member_digest(index).unwrap_or_default();
-        println!("  {name:<24} {len:>9} bytes  {}", labeled(&digest));
+        println!("  {name:<24} {len:>9} bytes  {}", digest_label(&digest));
     }
     if built.recorded {
         println!(
@@ -145,9 +248,9 @@ pub(crate) fn package(recipe_path: Option<String>) -> bool {
             built.digest
         );
     }
-    match write_out(&root, &built) {
+    match write_out(root, built) {
         Ok(written) => {
-            println!("wrote {}", relative(&root, &written));
+            println!("wrote {}", relative(root, &written));
             println!("package: PASS");
             true
         }
@@ -155,6 +258,162 @@ pub(crate) fn package(recipe_path: Option<String>) -> bool {
             eprintln!("package: {complaint}");
             false
         }
+    }
+}
+
+/// The `programs` a `packages/<name>.package.toml` declares, or why it cannot be packed.
+///
+/// Only the two keys this build needs are read; `helpers/packages.py --check` is the format's
+/// strict reader, and a second strict one here would be a second definition of the format.
+fn parse_definition(text: &str) -> Result<Vec<String>, String> {
+    let table: toml::Table = text
+        .parse()
+        .map_err(|e: toml::de::Error| e.message().to_string())?;
+    let programs = match table.get("programs") {
+        None => Vec::new(),
+        Some(toml::Value::Array(entries)) => entries
+            .iter()
+            .map(|entry| {
+                entry
+                    .as_str()
+                    .filter(|name| !name.is_empty())
+                    .map(str::to_string)
+                    .ok_or_else(|| "programs is an array of non-empty names".to_string())
+            })
+            .collect::<Result<Vec<_>, _>>()?,
+        Some(_) => return Err("programs is an array of non-empty names".to_string()),
+    };
+    if programs.is_empty() {
+        return Err(
+            "the package declares no programs; the kernel is built by `base-image`, not packed"
+                .to_string(),
+        );
+    }
+    Ok(programs)
+}
+
+/// **Where this tree's build put the program `name` for `arch`**, as a recipe member line.
+///
+/// The four places a program of the base packages is built, in the order the image has always
+/// looked: cargo's own target directory, the `std` farm, the TLS graph (where `jig` and `mdr`
+/// build) and the RedoxFS server's workspace. Naming the place rather than searching the tree is
+/// what makes a program that moved here a refusal that names the paths it tried.
+fn program_path(
+    root: &std::path::Path,
+    arch: &str,
+    name: &str,
+) -> Result<(Source, String), String> {
+    let triple = triple(arch)?;
+    let candidates = [
+        (
+            Source::Program(name.to_string()),
+            format!("target/{triple}/{}/{name}", profile_dir()),
+        ),
+        (
+            Source::StdProgram(name.to_string()),
+            format!("std_exerciser/target/{arch}-unknown-nife/release/{name}"),
+        ),
+        (
+            Source::Elf(format!("target/tls-graph/{arch}-unknown-nife/release/{name}")),
+            format!("target/tls-graph/{arch}-unknown-nife/release/{name}"),
+        ),
+        (
+            Source::Elf(format!("redoxfs_server/target/{triple}/release/{name}")),
+            format!("redoxfs_server/target/{triple}/release/{name}"),
+        ),
+    ];
+    let mut tried = Vec::new();
+    for (source, path) in candidates {
+        if root.join(&path).exists() {
+            return Ok((source, path));
+        }
+        tried.push(path);
+    }
+    Err(format!(
+        "`{name}` is not built for {arch}; looked for {}",
+        tried.join(", ")
+    ))
+}
+
+/// The recipe text for `packages/<name>.package.toml`'s programs, as [`build`] reads one.
+fn definition_recipe(
+    root: &std::path::Path,
+    name: &str,
+    arch: &str,
+    version: &str,
+    programs: &[String],
+) -> Result<String, String> {
+    let mut text = format!("name = \"{name}\"\nversion = \"{version}\"\narchitecture = \"{arch}\"\n");
+    for program in programs {
+        let (source, path) = program_path(root, arch, program)?;
+        let member = match source {
+            Source::Program(_) => format!("program = {program:?}"),
+            Source::StdProgram(_) => format!("std_program = {program:?}"),
+            Source::Elf(_) => format!("elf = {path:?}"),
+            Source::File(_) => unreachable!("program_path names programs only"),
+        };
+        text.push_str(&format!(
+            "\n[[member]]\n{member}\nas = {:?}\n",
+            format!("bin/{program}")
+        ));
+    }
+    // nife's licence, as the recipe format's file members: the image takes `bin/` members only, so
+    // this is what a package a person installs carries beside the program.
+    for licence in ["LICENSE-MIT", "LICENSE-APACHE"] {
+        text.push_str(&format!(
+            "\n[[member]]\nname = {:?}\nfile = {licence:?}\n",
+            format!("doc/{licence}")
+        ));
+    }
+    Ok(text)
+}
+
+/// **Build the programs the base packages contain**, for one architecture (milestone 909 (basalt
+/// composes the bootable image from its packages)): `components`, the two `std` programs every
+/// image ships, and the RedoxFS server with `mkfs`.
+///
+/// The three places are the three builds that put a base program where [`program_path`] looks.
+/// `fixtures` is not built: no base package contains a fixtures program, and the image's own
+/// packaging is what decides that, not this build.
+pub(crate) fn build_base_programs(triple: &str, arch: &str, test: bool) -> bool {
+    if !crate::cargo_profiled(&["build", "-p", "components", "--target", triple]) {
+        eprintln!("package: building components for {arch} failed");
+        return false;
+    }
+    // The fixtures package's programs, when the image a test boots carries them: the boot self-test
+    // and the shell's check run them, and they live in their own crate of this workspace.
+    if test && !crate::cargo_profiled(&["build", "-p", "fixtures", "--target", triple]) {
+        eprintln!("package: building fixtures for {arch} failed");
+        return false;
+    }
+    // `jig` and `mdr` are `std` programs on nife's own ABI, so their target is the `-unknown-nife`
+    // one, not the bare-metal triple the kernel and `components` use.
+    let std_triple = format!("{arch}-unknown-nife");
+    for built in [
+        crate::farm::build_jig(&std_triple),
+        crate::farm::build_mdr(&std_triple),
+    ] {
+        if let Err(e) = built {
+            eprintln!("package: {e}");
+            return false;
+        }
+    }
+    if !crate::disk::redoxfs_server_build(triple) {
+        eprintln!("package: building the RedoxFS server for {arch} failed");
+        return false;
+    }
+    true
+}
+
+/// The nife triple for one architecture name.
+pub(crate) fn triple(arch: &str) -> Result<&'static str, String> {
+    match arch {
+        "aarch64" => Ok(TARGET),
+        "riscv64" => Ok(RISCV_TARGET),
+        "x86_64" => Ok(X86_TARGET),
+        other => Err(format!(
+            "unknown architecture {other}; it is aarch64, riscv64 or x86_64"
+        )),
     }
 }
 
@@ -185,7 +444,7 @@ pub(crate) fn build(root: &std::path::Path, text: &str) -> Result<Built, String>
         // process from, and debug sections nobody on the target reads would cost more than the
         // program.
         let content = match source {
-            Source::Program(_) | Source::StdProgram(_) => {
+            Source::Program(_) | Source::StdProgram(_) | Source::Elf(_) => {
                 crate::inspect::read_stripped(&path.display().to_string())
             }
             Source::File(_) => std::fs::read(&path),
@@ -218,7 +477,7 @@ pub(crate) fn build(root: &std::path::Path, text: &str) -> Result<Built, String>
     }
 
     let measured = sha256(&file);
-    let digest = labeled(&measured);
+    let digest = digest_label(&measured);
     // **The recorded digest is checked before anything is written**, which is the order §195 asks
     // for even though it costs a rebuild to find out. A package whose bytes do not reproduce the
     // reviewed line is one nothing accepts, so leaving it on disk beside a catalogue entry
@@ -230,7 +489,7 @@ pub(crate) fn build(root: &std::path::Path, text: &str) -> Result<Built, String>
             "the recipe records {}, these bytes are {digest}: a rebuild that does not \
              reproduce the reviewed digest is the failure DECISIONS §195 exists to make visible; \
              nothing was written",
-            labeled(recorded)
+            digest_label(recorded)
         ));
     }
     Ok(Built {
@@ -239,6 +498,21 @@ pub(crate) fn build(root: &std::path::Path, text: &str) -> Result<Built, String>
         digest,
         recorded: recipe.digest.is_some(),
     })
+}
+
+/// **Empty `target/packages/` before a whole base is built for one architecture.**
+///
+/// [`write_out`] appends one catalogue line per package and the catalogue's readers refuse a stem
+/// listed twice, which is the right answer for a directory holding two builds of one package. A
+/// run that builds the base as one step therefore starts from an empty directory, so the catalogue
+/// and the archives beside it describe one architecture rather than the last three.
+pub(crate) fn clear_output(root: &std::path::Path) -> Result<(), String> {
+    let output = root.join(OUTPUT);
+    match std::fs::remove_dir_all(&output) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!("could not clear {}: {e}", output.display())),
+    }
 }
 
 /// Write a built package under `target/packages/` and its line into the host's catalogue there.
@@ -389,14 +663,14 @@ fn relative(root: &std::path::Path, path: &std::path::Path) -> String {
 }
 
 /// A digest in the text form every catalog, recipe and activation row shares, `sha256:<hex>`.
-fn labeled(digest: &measured_boot::Digest) -> String {
+pub(crate) fn digest_label(digest: &measured_boot::Digest) -> String {
     String::from_utf8_lossy(&measured_boot::digest_text(digest)).into_owned()
 }
 
 /// Where a member's bytes live on this host.
 fn resolve(root: &std::path::Path, architecture: &str, source: &Source) -> Result<PathBuf, String> {
     match source {
-        Source::File(path) => Ok(root.join(path)),
+        Source::File(path) | Source::Elf(path) => Ok(root.join(path)),
         Source::StdProgram(name) => {
             let path = std_program_path(root, architecture, name);
             if path.exists() {
@@ -485,7 +759,7 @@ fn parse_recipe(text: &str) -> Result<Recipe, String> {
         };
         let field = |key: &str| entry.get(key).and_then(toml::Value::as_str);
         for key in entry.keys() {
-            if !["program", "std_program", "name", "file", "as"].contains(&key.as_str()) {
+            if !["program", "std_program", "elf", "name", "file", "as"].contains(&key.as_str()) {
                 return Err(format!("member {number}: unknown key {key}"));
             }
         }
@@ -493,28 +767,32 @@ fn parse_recipe(text: &str) -> Result<Recipe, String> {
             return Err(format!("member {number}: `as` is a non-empty name"));
         }
         match (
-            (field("program"), field("std_program")),
+            (field("program"), field("std_program"), field("elf")),
             field("as"),
             field("name"),
             field("file"),
         ) {
-            ((Some(program), None), as_name, None, None) => {
+            ((Some(program), None, None), as_name, None, None) => {
                 // `as` renames the member: the ELF is built under one name and packaged under
                 // another, which is how `greeting` at 0.2.0 packs the second fixture's bytes.
                 let named = as_name.unwrap_or(program);
                 members.push((named.to_string(), Source::Program(program.to_string())));
             }
-            ((None, Some(program)), as_name, None, None) => {
+            ((None, Some(program), None), as_name, None, None) => {
                 let named = as_name.unwrap_or(program);
                 members.push((named.to_string(), Source::StdProgram(program.to_string())));
             }
-            ((None, None), None, Some(member), Some(path)) => {
+            ((None, None, Some(path)), as_name, None, None) => {
+                let named = as_name.unwrap_or(path);
+                members.push((named.to_string(), Source::Elf(path.to_string())));
+            }
+            ((None, None, None), None, Some(member), Some(path)) => {
                 members.push((member.to_string(), Source::File(path.to_string())));
             }
             _ => {
                 return Err(format!(
-                    "member {number} is either `program` or `std_program` alone (optionally `as` a \
-                     member name) or `name` with `file`"
+                    "member {number} is either `program`, `std_program` or `elf` alone (optionally \
+                     `as` a member name) or `name` with `file`"
                 ));
             }
         }
@@ -641,7 +919,7 @@ file = "LICENSE-MIT"
         );
         assert_eq!(
             parse_recipe(&RECIPE.replace("file = \"LICENSE-MIT\"", "")).unwrap_err(),
-            "member 2 is either `program` or `std_program` alone (optionally `as` a \
+            "member 2 is either `program`, `std_program` or `elf` alone (optionally `as` a \
              member name) or `name` with `file`"
         );
         assert_eq!(
@@ -688,7 +966,7 @@ as = \"greeting\"
                  = \"x\"\nfile = \"LICENSE-MIT\"\nas = \"y\"\n"
             )
             .unwrap_err(),
-            "member 1 is either `program` or `std_program` alone (optionally `as` a \
+            "member 1 is either `program`, `std_program` or `elf` alone (optionally `as` a \
              member name) or `name` with `file`"
         );
     }
