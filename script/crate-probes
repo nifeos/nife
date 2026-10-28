@@ -40,8 +40,9 @@
 #     change its answer because crates.io moved rather than because this tree did; the run stamps
 #     the resolved version beside each result so a diff is readable.
 #   * It needs the network, so it is not wired into `script/test`. It is a `ci` row of
-#     `script/ci-build` (§174), so a crate that stops building, or whose version moves out from under
-#     this tree, turns the pull request red. It builds
+#     `script/ci-build` (milestone 341 (give the three instruments nothing runs a caller), §174 (a
+#     caller for each of the three uncalled instruments)), so a crate that stops building, or whose
+#     version moves out from under this tree, turns the pull request red. It builds
 #     against this checkout's own farm by path (`RUSTUP_TOOLCHAIN=$ROOT/target/nife-farm`), not
 #     through a toolchain name: until 2026-10-10 it named the account-wide `nife-dev` link, and a
 #     lane relinking that mid-run broke every probe after it.

@@ -1,0 +1,23 @@
+Falsifies `machine_discovery::acpi::region::verification::no_read_leaves_the_region`.
+
+The defect: the bound check tests where the read starts instead of where it ends. A read
+whose first byte is inside the region and whose length runs past the far edge is then
+accepted, and the slice index panics on the boot path. This is the shape a reader reaches
+for while tidying: "the address is inside the region" is true and is not the condition the
+length needs. A host test of the one boundary catches it too, but the proof covers every
+base, address and length at once.
+
+Expected to fail: `assert!(offset + len <= N as u64)`, or the slice index inside `read`.
+
+diff --git a/crates/machine_discovery/src/acpi/region.rs b/crates/machine_discovery/src/acpi/region.rs
+--- a/crates/machine_discovery/src/acpi/region.rs
++++ b/crates/machine_discovery/src/acpi/region.rs
+@@ -123,7 +123,7 @@
+             .checked_sub(self.first)
+             .ok_or(RegionError::OutsideRegion)?;
+         let offset_end = end - self.first;
+-        if offset_end > self.bytes.len() as u64 {
++        if offset > self.bytes.len() as u64 {
+             return Err(RegionError::OutsideRegion);
+         }
+         // Both offsets are at most `bytes.len()`, which is a `usize`, so the casts cannot truncate.

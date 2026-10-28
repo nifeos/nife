@@ -269,6 +269,11 @@ def build_image(tree):
     return versions, podman_out('image', 'inspect', '--format', '{{.Id}}', PASS_IMAGE)[1]
 
 
+class Seen(set):
+    """The models a harness named, and `problem` when it could not read them back (else None)."""
+    problem = None
+
+
 class Box:
     """One pass's container runs: the image, the pass's own volume, the clone and the results.
 
@@ -316,7 +321,7 @@ class Claude:
                 found.add(event.get('model'))
             if event.get('type') == 'assistant':
                 found.add(event.get('message', {}).get('model'))
-        return {m for m in found if m}
+        return Seen(m for m in found if m)
 
     def probe(self, model, box, log):
         session = str(uuid.uuid4())
@@ -339,7 +344,8 @@ class Opencode:
     No `--dir` argument: opencode 2.x dropped it, and the clone is already the container's
     working directory (`-w` in Box.argv), which is what both calls below rely on. The model
     read-back is `opencode session export <id>` (2.x moved it under `session`), whose assistant
-    messages carry `model` as `{providerID, id}`.
+    messages carry `model` as `{providerID, id}`. A failed or unreadable export reads no model,
+    so the pin check stops the launch with a record rather than a crash.
     """
     name = 'opencode'
     version_arg = 'OPENCODE_VERSION'
@@ -349,10 +355,23 @@ class Opencode:
 
     @staticmethod
     def models(session, box, log):
-        _, out = box.run(['opencode', 'session', 'export', session], log)
+        status, out = box.run(['opencode', 'session', 'export', session], log)
         start = out.find('{')
-        record = json.loads(out[start:]) if start >= 0 else {}
-        found = set()
+        record, problem = {}, None
+        if status != 0:
+            problem = 'session export exited %d' % status
+        elif start < 0:
+            problem = 'session export printed no record'
+        else:
+            try:
+                record = json.loads(out[start:])
+            except ValueError:
+                problem = 'session export printed a record json.loads refuses'
+        if problem:
+            print('launch-pass: %s (session %s); reading no model from it' % (problem, session),
+                  file=sys.stderr)
+        found = Seen()
+        found.problem = problem
         for m in record.get('messages', []):
             model = m.get('model') if m.get('type') == 'assistant' else None
             if model and model.get('providerID') and model.get('id'):
@@ -441,6 +460,8 @@ def attack(record, harness, box, prompt, scratch):
     model = record['model_pinned']
     session, reported = harness.probe(model, box, os.path.join(scratch, 'setup.log'))
     record.update(session_id=session, model_reported=sorted(reported))
+    if reported.problem:
+        record['model_readback'] = reported.problem
     if reported != {model}:
         record['status'] = 'stopped: the session reported %s, not the pinned model' % sorted(reported)
         write_record(record_path, record)
@@ -452,6 +473,12 @@ def attack(record, harness, box, prompt, scratch):
     status, seen = harness.send(session, model, prompt, box, os.path.join(scratch, 'attack.log'))
     record.update(status='reported' if status == 0 else 'harness exited %d' % status,
                   models_seen=sorted(seen), finished=now())
+    if seen.problem:
+        # The brief went out and the models could not be read back: `models_seen: []` here is
+        # not "the harness named no model", so the record says why and `complete` refuses it.
+        record['model_readback'] = seen.problem
+        print('launch-pass: the models could not be read back after the brief (%s)' % seen.problem,
+              file=sys.stderr)
     write_record(record_path, record)
     print('launch-pass: %s. Keep the volume %s until the pass is collected; then '
           '`podman volume rm %s`' % (record['status'], box.volume, box.volume))
@@ -467,6 +494,9 @@ def complete(args):
                          % record['completion']['started'])
     if record.get('status') != 'reported':
         raise SystemExit('launch-pass: refused: the record says %r, not a finished pass' % record.get('status'))
+    if record.get('model_readback'):
+        raise SystemExit('launch-pass: refused: the record says the models could not be read back (%s); '
+                         'the pass is unverified' % record['model_readback'])
     with (sys.stdin if args.short_rows == '-' else open(args.short_rows)) as source:
         lines = [line.rstrip() for line in source if line.strip()]
     if not lines or not all(SHORT_ROW.match(line) for line in lines):
@@ -503,6 +533,26 @@ model = os.environ['FAKE_SERVED']
 if argv[:1] == ['--version']:
     print('1.0 (fake)')
 elif argv[:2] == ['session', 'export']:
+    fails = os.environ.get('FAKE_EXPORT_FAILS')
+    # FAKE_EXPORT_AFTER_PROBE: the first export (the probe's) is good, later ones fail. The call
+    # was logged above, so the probe's export is the first line naming `session export`.
+    if fails and os.environ.get('FAKE_EXPORT_AFTER_PROBE'):
+        with open(os.environ['FAKE_CALLS']) as seen:
+            fails = sum(1 for line in seen if json.loads(line)[:2] == ['session', 'export']) > 1
+    if fails:
+        print('Exporting session')
+        good = json.dumps({'info': {'id': 's'}, 'messages': [{'type': 'assistant', 'model': {
+            'providerID': model.split('/')[0], 'id': model.split('/')[-1]}}]})
+        mode = os.environ['FAKE_EXPORT_FAILS']
+        if mode == 'nonzero-good-json':
+            print(good); sys.exit(1)
+        elif mode == 'zero-truncated-json':
+            print(good[:-9])
+        elif mode == 'no-brace':
+            print('export unavailable')
+        else:
+            print(good[:-9]); sys.exit(1)
+        sys.exit(0)
     print('Exporting session'); print(json.dumps({'info': {'id': 's'}, 'messages': [
         {'type': 'user', 'text': 'probe'},
         {'type': 'assistant', 'agent': 'build', 'model': {'providerID': model.split('/')[0],
@@ -617,11 +667,11 @@ def selftest_home_refused(argv, scratch, key):
         raise AssertionError('a run mounting $HOME with %r passed the check' % extra)
 
 
-def selftest_launch(tree, tmp, reviewer, served, commit):
+def selftest_launch(tree, tmp, reviewer, served, commit, tag=''):
     """One launch against the fakes; returns its exit, its record, the harness calls and the record path."""
     os.environ['FAKE_SERVED'] = served
     reset_calls()
-    scratch = os.path.join(tmp, 'pass-%s-%s' % (reviewer, served.replace('/', '-')))
+    scratch = os.path.join(tmp, 'pass-%s-%s%s' % (reviewer, served.replace('/', '-'), tag))
     args = argparse.Namespace(tree=tree, reviewer=reviewer, model=None, scratch=scratch,
                               commit=commit, dry_run=False, prompt=None)
     status = launch(args)
@@ -687,6 +737,11 @@ def selftest_refusals(tree, tmp, commit):
     assert launch(args) == 0 and os.path.getsize(os.environ['FAKE_PODMAN_CALLS']) == 0
 
 
+def selftest_clean_record(tree, tmp, commit):
+    """The record of a launch whose exports all work."""
+    return selftest_launch(tree, tmp, 'glm', 'zai-coding-plan/glm-5.3', commit, '-clean')[1]
+
+
 def selftest():
     real_tree = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     selftest_real_prompt(real_tree)
@@ -701,6 +756,32 @@ def selftest():
         status, record, calls, _ = selftest_launch(tree, tmp, 'glm', 'zai-coding-plan/glm-5.3', commit)
         assert status == 0 and record['status'] == 'reported' and record['model_reported'] == ['zai-coding-plan/glm-5.3']
         assert record['key_variable'] == 'ZHIPU_API_KEY' and SECRET not in json.dumps(record)
+        # A failing `session export` reads no model and stops the launch with a record, never a
+        # traceback (the tenth pass's collection stuck at `attacking` on exactly this). The pinned
+        # model is served, so the export is the only reason the run stops. Each way an export can
+        # fail is bound alone: a nonzero exit with good JSON, a zero exit with truncated JSON, and
+        # output with no `{`.
+        for mode, why in (('nonzero-good-json', 'exited 1'), ('zero-truncated-json', 'refuses'),
+                          ('no-brace', 'printed no record')):
+            os.environ['FAKE_EXPORT_FAILS'] = mode
+            status, record, calls, _ = selftest_launch(
+                tree, tmp, 'glm', 'zai-coding-plan/glm-5.3', commit, '-probe-' + mode)
+            del os.environ['FAKE_EXPORT_FAILS']
+            assert status == 1 and record['status'].startswith('stopped'), record
+            assert why in record['model_readback'], record
+            assert not any('### Your job' in ' '.join(c) for c in calls), 'the brief went out'
+        # The export that fails only after the brief went out: the probe passes, the pass runs, and
+        # the record says the read-back failed instead of `models_seen: []` looking like no model.
+        os.environ.update(FAKE_EXPORT_FAILS='nonzero-good-json', FAKE_EXPORT_AFTER_PROBE='1')
+        status, record, calls, path = selftest_launch(
+            tree, tmp, 'glm', 'zai-coding-plan/glm-5.3', commit, '-send')
+        del os.environ['FAKE_EXPORT_FAILS'], os.environ['FAKE_EXPORT_AFTER_PROBE']
+        assert any('### Your job' in ' '.join(c) for c in calls), 'the brief did not go out'
+        assert status == 0 and record['status'] == 'reported' and record['models_seen'] == [], record
+        assert 'exited 1' in record['model_readback'], record
+        assert 'model_readback' not in selftest_clean_record(tree, tmp, commit)
+        expect_refusal(lambda: complete(argparse.Namespace(complete=path, short_rows='-')),
+                       'could not be read back')
         status, record, calls, path = selftest_launch(tree, tmp, 'fable', 'claude-fable-5-1', commit)
         assert status == 0 and record['status'] == 'reported' and record['model_reported'] == ['claude-fable-5-1']
         assert record['image_digest'] == 'sha256:fakeimage' and record['harness_version'] == '1.0'

@@ -3,7 +3,7 @@ status: NOT-STARTED
 raised: 2026-10-07
 promoted_from: lab-machines-update-themselves
 milestone_dependencies: 198, 809, 805, 23, 666, 592, 593, 53, 911
-decision_dependencies: unwritten
+decision_dependencies: 159, 250
 machine_requirements: x86_64 and riscv64 silicon with a writable boot disk and a hardware watchdog
 specific_machine: radon (calef's preferred lab machine, and the one whose chooser, disk writes and watchdog are unbuilt)
 needs_person: yes
