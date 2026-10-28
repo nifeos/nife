@@ -9,7 +9,8 @@
 # Name: ratified 2026-10-28 (calef, relayed by the maintainer, pull request #2872). The member
 # crates keep their names, `c_library` and `c_library_errno`; `c_library`'s own name comes up at
 # its first publication, under milestone 857 (crates released on their own, and proofs offered to
-# the projects that already exist)'s one-crate-at-a-time review.
+# the projects that already exist)'s one-crate-at-a-time review. The `home` line stays provisional
+# until the repository exists (§316 (one repository per package leaves the tree)).
 
 name = "nife-libc"
 kind = "sdk"
