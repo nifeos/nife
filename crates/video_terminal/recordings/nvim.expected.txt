@@ -1,0 +1,350 @@
+@ checkpoint 0
+你 好  e 😀  (the census's wide, combining and emoji line)
+//! The engine: the parser's state and `Vt`, the grid it maintains.
+//!
+//! Name: provisional (the lane of milestone 874 (the terminal engine moves its
+palette and its
+//! tests out), 2026-10-12 UTC), named for `Vt`, the central type, as §282 (when
+ a file is split,
+//! the parent becomes an index) asks; calef names things.
+
+use super::cell::{
+    BOLD, DIM, INVISIBLE, ITALIC, REVERSE, STRIKETHROUGH, STRIKETHROUGH_ROW, UND
+ERLINE_CURLY,
+    UNDERLINE_DASHED, UNDERLINE_DOTTED, UNDERLINE_DOUBLE, UNDERLINE_NONE, UNDERL
+INE_ROW,
+    UNDERLINE_SINGLE,
+};
+use super::*;
+use crate::handoff::{
+    CELL_WORDS, CELL_WORDS_1, FLAG_CURSOR_VISIBLE, FLAG_IGNORE, FLAG_WRAP_PENDIN
+G, HEADER_WORDS,
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, un
+derline_word,
+<l52g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs  1,1            Top
+E1568: Terminal did not respond to DSR request for 'background' color. Startup m
+@ checkpoint 1
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, un
+derline_word,
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
+};
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states disti
+nguish sequences
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<l52g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs  16,1            1%
+E1568: Terminal did not respond to DSR request for 'background' color          m
+@ checkpoint 2
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a bac
+kground in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth m
+arks the sequence
+/// ignored rather than growing the array.
+pub(crate) const MAXIMUM_PARAMS: usize = 16;
+
+/// **A terminal's live grid, plus its off-screen history.**
+///
+/// Construct with [`Vt::new`], push bytes with [`Vt::feed`], read pixels with [
+`Vt::pixel`], ask
+/// what changed with [`Vt::take_damage`], and scroll with [`Vt::scroll_up`]/[`V
+t::scroll_down`].
+///
+/// **A `Vt` is several hundred KiB and must never be a runtime-constructed l@@@
+<l52g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs  32,1            2%
+E1568: Terminal did not respond to DSR request for 'background' color          m
+@ checkpoint 3
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, un
+derline_word,
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
+};
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states disti
+nguish sequences
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<l52g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs  32,1            1%
+E1568: Terminal did not respond to DSR request for 'background' color          m
+@ checkpoint 4
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+<l52g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs  32,1            1%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+<l52g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs  32,1            1%
+:split
+@ checkpoint 5
+    Esc,                                │    Esc,
+    /// Inside `ESC [`, accumulating par│    /// Inside `ESC [`, accumulating pa
+ameters.                                │rameters.
+    Csi,                                │    Csi,
+    /// Inside a **string** sequence (`E│    /// Inside a **string** sequence (`
+SC ]`, the operating-system command, and│ESC ]`, the operating-system command, a
+ its relatives),                        │nd its relatives),
+    /// whose arbitrary text a parser wi│    /// whose arbitrary text a parser w
+thout this state would print, a window t│ithout this state would print, a window
+itle included.                          │ title included.
+    Str,                                │    Str,
+<-56207/vt_sample.rs  32,1            2% <56207/vt_sample.rs  32,1            2%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+<l52g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs  32,1            1%
+:split
+@ checkpoint 6
+    Esc,                                │    Esc,
+    /// Inside `ESC [`, accumulating par│    /// Inside `ESC [`, accumulating pa
+ameters.                                │rameters.
+    Csi,                                │    Csi,
+    /// Inside a **string** sequence (`E│    /// Inside a **string** sequence (`
+SC ]`, the operating-system command, and│ESC ]`, the operating-system command, a
+ its relatives),                        │nd its relatives),
+    /// whose arbitrary text a parser wi│    /// whose arbitrary text a parser w
+thout this state would print, a window t│ithout this state would print, a window
+itle included.                          │ title included.
+    Str,                                │    Str,
+<-56207/vt_sample.rs  32,1            2% <56207/vt_sample.rs  32,1            2%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+<l52g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs  32,1            1%
+:split
+@ checkpoint 7
+    Esc,                                │    Csi,
+    /// Inside `ESC [`, accumulating par│    /// Inside a **string** sequence (`
+ameters.                                │ESC ]`, the operating-system command, a
+    Csi,                                │nd its relatives),
+    /// Inside a **string** sequence (`E│    /// whose arbitrary text a parser w
+SC ]`, the operating-system command, and│ithout this state would print, a window
+ its relatives),                        │ title included.
+    /// whose arbitrary text a parser wi│    /// Inside a string sequence, havin
+thout this state would print, a window t│g just seen `ESC`: a `\` ends the strin
+itle included.                          │g (ST), anything else
+    /// Inside a string sequence, hav@@@│    /// is part of it.
+<207/vt_sample.rs [+] 31,1            2% <07/vt_sample.rs [+] 32,1            2%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs [+] 31,1            1%
+:split
+@ checkpoint 8
+    Esc,                                │        }
+    /// Inside `ESC [`, accumulating par│        let face = match (attr.is_bold(
+ameters.                                │), attr.is_italic()) {
+    Csi,                                │            (false, false) => &glyph_at
+    /// Inside a **string** sequence (`E│las::REGULAR,
+SC ]`, the operating-system command, and│            (true, false) => &glyph_atl
+ its relatives),                        │as::BOLD,
+    /// whose arbitrary text a parser wi│            (false, true) => &glyph_atl
+thout this state would print, a window t│as::OBLIQUE,
+itle included.                          │            (true, true) => &glyph_atla
+    /// Inside a string sequence, hav@@@│s::BOLD_OBLIQUE,
+<207/vt_sample.rs [+] 31,1            2% <07/vt_sample.rs [+] 313,32         25%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs [+] 31,1            1%
+/glyph                                                        [1/5]
+@ checkpoint 9
+    Esc,                                │        }
+    /// Inside `ESC [`, accumulating par│        let face = match (attr.is_bold(
+ameters.                                │), attr.is_italic()) {
+    Csi,                                │            (false, false) => &glyph_at
+    /// Inside a **string** sequence (`E│las::REGULAR,
+SC ]`, the operating-system command, and│            (true, false) => &glyph_atl
+ its relatives),                        │as::BOLD,
+    /// whose arbitrary text a parser wi│            (false, true) => &glyph_atl
+thout this state would print, a window t│as::OBLIQUE,
+itle included.                          │            (true, true) => &glyph_atla
+    /// Inside a string sequence, hav@@@│s::BOLD_OBLIQUE,
+<207/vt_sample.rs [+] 31,1            2% <07/vt_sample.rs [+] 314,31         25%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs [+] 31,1            1%
+/glyph                                                        [2/5]
+@ checkpoint 10
+    Esc,                                │        }
+    /// Inside `ESC [`, accumulating par│        let face = match (attr.is_bold(
+ameters.                                │), attr.is_italic()) {
+    Csi,                                │            (false, false) => &glyph_at
+    /// Inside a **string** sequence (`E│las::REGULAR,
+SC ]`, the operating-system command, and│            (true, false) => &glyph_atl
+ its relatives),                        │as::BOLD,
+    /// whose arbitrary text a parser wi│            (false, true) => &glyph_atl
+thout this state would print, a window t│as::OBLIQUE,
+itle included.                          │            (true, true) => &glyph_atla
+    /// Inside a string sequence, hav@@@│s::BOLD_OBLIQUE,
+<207/vt_sample.rs [+] 31,1            2% <07/vt_sample.rs [+] 314,31         25%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs [+] 31,1            1%
+-- INSERT --
+@ checkpoint 11
+    Esc,                                │        }
+    /// Inside `ESC [`, accumulating par│        let face = match (attr.is_bold(
+ameters.                                │), attr.is_italic()) {
+    Csi,                                │            (false, false) => &glyph_at
+    /// Inside a **string** sequence (`E│las::REGULAR,
+SC ]`, the operating-system command, and│            (true, false) => &你 好 😀 gly
+ its relatives),                        │ph_atlas::BOLD,
+    /// whose arbitrary text a parser wi│            (false, true) => &glyph_atl
+thout this state would print, a window t│as::OBLIQUE,
+itle included.                          │            (true, true) => &glyph_atla
+    /// Inside a string sequence, hav@@@│s::BOLD_OBLIQUE,
+<207/vt_sample.rs [+] 31,1            2% <07/vt_sample.rs [+] 314,41-37      25%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs [+] 31,1            1%
+-- INSERT --
+@ checkpoint 12
+    Esc,                                │        }
+    /// Inside `ESC [`, accumulating par│        let face = match (attr.is_bold(
+ameters.                                │), attr.is_italic()) {
+    Csi,                                │            (false, false) => &glyph_at
+    /// Inside a **string** sequence (`E│las::REGULAR,
+SC ]`, the operating-system command, and│            (true, false) => &你 好 😀 gly
+ its relatives),                        │ph_atlas::BOLD,
+    /// whose arbitrary text a parser wi│            (false, true) => &glyph_atl
+thout this state would print, a window t│as::OBLIQUE,
+itle included.                          │            (true, true) => &glyph_atla
+    /// Inside a string sequence, hav@@@│s::BOLD_OBLIQUE,
+<207/vt_sample.rs [+] 31,1            2% <07/vt_sample.rs [+] 314,37-35      25%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs [+] 31,1            1%
+
+@ checkpoint 13
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+    /// is part of it.
+    StrEsc,
+<g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs [+] 31,1            2%
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the stri@@@
+<g36064xt6n8r0000gn/T/vt-replay-record-56207/vt_sample.rs [+] 31,1            1%
+:q

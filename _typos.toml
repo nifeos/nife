@@ -24,7 +24,11 @@
 # when `script/board-console` wrote a truncated `evice` into a job-mix transcript (its own defect,
 # recorded in notes/bench-runbook.md's BUGS); the alternative was editing a transcript to please a
 # checker, which would make it no longer a transcript.
-extend-exclude = ["vendor/", "patches/", "*.lock", "target/", "bench/**/*.log"]
+# The terminal replay harness's expected screens join them for the same reason:
+# `crates/video_terminal/recordings/**/*.expected.txt` is a verbatim capture of what a program
+# painted on a screen on a date, not prose anybody wrote, so there is no author to correct and
+# nothing to ratchet (milestone 705 (the graphical terminal runs full-screen programs)'s step 0a).
+extend-exclude = ["vendor/", "patches/", "*.lock", "target/", "bench/**/*.log", "crates/video_terminal/recordings/**/*.expected.txt"]
 
 # The allowlist is almost entirely HARDWARE, and that is the honest characterisation rather than an
 # excuse: a spell checker aimed at an operating system meets register mnemonics constantly, and they

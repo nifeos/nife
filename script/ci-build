@@ -138,6 +138,11 @@ checks() {
     cat <<'TABLE'
 rule-violations|local|script/rule-violations --check
 fmt|local|script/fmt --check
+# The terminal replay harness (milestone 705 (the graphical terminal runs full-screen programs)'s
+# step 0a): milliseconds of grading against crates/video_terminal/recordings once xtask is built,
+# so a developer runs it on the way to a push and the engine plan's counts cannot drop silently.
+# In CI it rides in the lint job beside rule-violations, for the same reason.
+vt-replay|local|cargo xtask vt-replay
 lint|local|script/lint
 image-permissions|local|script/image-permissions
 icount|local|script/icount

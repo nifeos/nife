@@ -1,0 +1,350 @@
+@ checkpoint 0
+你 好  e 😀  (the census's wide, combining and emoji line)
+//! The engine: the parser's state and `Vt`, the grid it maintains.
+//!
+//! Name: provisional (the lane of milestone 874 (the terminal engine moves its
+palette and its
+//! tests out), 2026-10-12 UTC), named for `Vt`, the central type, as §282 (when
+ a file is split,
+//! the parent becomes an index) asks; calef names things.
+
+use super::cell::{
+    BOLD, DIM, INVISIBLE, ITALIC, REVERSE, STRIKETHROUGH, STRIKETHROUGH_ROW, UND
+ERLINE_CURLY,
+    UNDERLINE_DASHED, UNDERLINE_DOTTED, UNDERLINE_DOUBLE, UNDERLINE_NONE, UNDERL
+INE_ROW,
+    UNDERLINE_SINGLE,
+};
+use super::*;
+use crate::handoff::{
+    CELL_WORDS, CELL_WORDS_1, FLAG_CURSOR_VISIBLE, FLAG_IGNORE, FLAG_WRAP_PENDIN
+G, HEADER_WORDS,
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, un
+derline_word,
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
+<64xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs" 1211L, 47063B
+@ checkpoint 1
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, un
+derline_word,
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
+};
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states disti
+nguish sequences
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+<64xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs" 1211L, 47063B
+@ checkpoint 2
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a bac
+kground in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth m
+arks the sequence
+/// ignored rather than growing the array.
+pub(crate) const MAXIMUM_PARAMS: usize = 16;
+
+/// **A terminal's live grid, plus its off-screen history.**
+///
+/// Construct with [`Vt::new`], push bytes with [`Vt::feed`], read pixels with [
+`Vt::pixel`], ask
+/// what changed with [`Vt::take_damage`], and scroll with [`Vt::scroll_up`]/[`V
+t::scroll_down`].
+///
+/// **A `Vt` is several hundred KiB and must never be a runtime-constructed loca
+l or return
+@
+
+@ checkpoint 3
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, un
+derline_word,
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
+};
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states disti
+nguish sequences
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+
+@ checkpoint 4
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+<olders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+<olders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs
+:split
+@ checkpoint 5
+    Csi,                                |    Csi,
+    /// Inside a **string** sequence (`E|    /// Inside a **string** sequence (`
+SC ]`, the operating-system command, and|ESC ]`, the operating-system command, a
+ its relatives),                        |nd its relatives),
+    /// whose arbitrary text a parser wi|    /// whose arbitrary text a parser w
+thout this state would print, a window t|ithout this state would print, a window
+itle included.                          | title included.
+    Str,                                |    Str,
+    /// Inside a string sequence, having|    /// Inside a string sequence, havin
+ just seen `ESC`: a `\` ends the string |g just seen `ESC`: a `\` ends the strin
+(ST), anything else                     |g (ST), anything else
+</T/vt-replay-record-56031/vt_sample.rs  <T/vt-replay-record-56031/vt_sample.rs
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+<olders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs
+:split
+@ checkpoint 6
+    Csi,                                |    Csi,
+    /// Inside a **string** sequence (`E|    /// Inside a **string** sequence (`
+SC ]`, the operating-system command, and|ESC ]`, the operating-system command, a
+ its relatives),                        |nd its relatives),
+    /// whose arbitrary text a parser wi|    /// whose arbitrary text a parser w
+thout this state would print, a window t|ithout this state would print, a window
+itle included.                          | title included.
+    Str,                                |    Str,
+    /// Inside a string sequence, having|    /// Inside a string sequence, havin
+ just seen `ESC`: a `\` ends the string |g just seen `ESC`: a `\` ends the strin
+(ST), anything else                     |g (ST), anything else
+</T/vt-replay-record-56031/vt_sample.rs  <T/vt-replay-record-56031/vt_sample.rs
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+<olders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs
+:split
+@ checkpoint 7
+    Csi,                                |    Csi,
+    /// Inside a **string** sequence (`E|    /// Inside a **string** sequence (`
+SC ]`, the operating-system command, and|ESC ]`, the operating-system command, a
+ its relatives),                        |nd its relatives),
+    /// whose arbitrary text a parser wi|    /// whose arbitrary text a parser w
+thout this state would print, a window t|ithout this state would print, a window
+itle included.                          | title included.
+    Str,                                |    Str,
+    /// is part of it.                  |    /// is part of it.
+    StrEsc,                             |    StrEsc,
+}                                       |}
+<t-replay-record-56031/vt_sample.rs [+]  <-replay-record-56031/vt_sample.rs [+]
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// is part of it.
+    StrEsc,
+<rs/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs [+]
+:split
+@ checkpoint 8
+    Csi,                                |            return fg;
+    /// Inside a **string** sequence (`E|        }
+SC ]`, the operating-system command, and|        let face = match (attr.is_bold(
+ its relatives),                        |), attr.is_italic()) {
+    /// whose arbitrary text a parser wi|            (false, false) => &glyph_at
+thout this state would print, a window t|las::REGULAR,
+itle included.                          |            (true, false) => &glyph_atl
+    Str,                                |as::BOLD,
+    /// is part of it.                  |            (false, true) => &glyph_atl
+    StrEsc,                             |as::OBLIQUE,
+}                                       |@
+<t-replay-record-56031/vt_sample.rs [+]  <-replay-record-56031/vt_sample.rs [+]
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// is part of it.
+    StrEsc,
+<rs/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs [+]
+/glyph
+@ checkpoint 9
+    Csi,                                |            return fg;
+    /// Inside a **string** sequence (`E|        }
+SC ]`, the operating-system command, and|        let face = match (attr.is_bold(
+ its relatives),                        |), attr.is_italic()) {
+    /// whose arbitrary text a parser wi|            (false, false) => &glyph_at
+thout this state would print, a window t|las::REGULAR,
+itle included.                          |            (true, false) => &glyph_atl
+    Str,                                |as::BOLD,
+    /// is part of it.                  |            (false, true) => &glyph_atl
+    StrEsc,                             |as::OBLIQUE,
+}                                       |@
+<t-replay-record-56031/vt_sample.rs [+]  <-replay-record-56031/vt_sample.rs [+]
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// is part of it.
+    StrEsc,
+<rs/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs [+]
+/glyph
+@ checkpoint 10
+    Csi,                                |            return fg;
+    /// Inside a **string** sequence (`E|        }
+SC ]`, the operating-system command, and|        let face = match (attr.is_bold(
+ its relatives),                        |), attr.is_italic()) {
+    /// whose arbitrary text a parser wi|            (false, false) => &glyph_at
+thout this state would print, a window t|las::REGULAR,
+itle included.                          |            (true, false) => &glyph_atl
+    Str,                                |as::BOLD,
+    /// is part of it.                  |            (false, true) => &glyph_atl
+    StrEsc,                             |as::OBLIQUE,
+}                                       |@
+<t-replay-record-56031/vt_sample.rs [+]  <-replay-record-56031/vt_sample.rs [+]
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// is part of it.
+    StrEsc,
+<rs/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs [+]
+-- INSERT --
+@ checkpoint 11
+    Csi,                                |            return fg;
+    /// Inside a **string** sequence (`E|        }
+SC ]`, the operating-system command, and|        let face = match (attr.is_bold(
+ its relatives),                        |), attr.is_italic()) {
+    /// whose arbitrary text a parser wi|            (false, false) => &glyph_at
+thout this state would print, a window t|las::REGULAR,
+itle included.                          |            (true, false) => &你 好 😀 gly
+    Str,                                |ph_atlas::BOLD,
+    /// is part of it.                  |            (false, true) => &glyph_atl
+    StrEsc,                             |as::OBLIQUE,
+}                                       |@
+<t-replay-record-56031/vt_sample.rs [+]  <-replay-record-56031/vt_sample.rs [+]
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// is part of it.
+    StrEsc,
+<rs/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs [+]
+-- INSERT --
+@ checkpoint 12
+    Csi,                                |            return fg;
+    /// Inside a **string** sequence (`E|        }
+SC ]`, the operating-system command, and|        let face = match (attr.is_bold(
+ its relatives),                        |), attr.is_italic()) {
+    /// whose arbitrary text a parser wi|            (false, false) => &glyph_at
+thout this state would print, a window t|las::REGULAR,
+itle included.                          |            (true, false) => &你 好 😀 gly
+    Str,                                |ph_atlas::BOLD,
+    /// is part of it.                  |            (false, true) => &glyph_atl
+    StrEsc,                             |as::OBLIQUE,
+}                                       |@
+<t-replay-record-56031/vt_sample.rs [+]  <-replay-record-56031/vt_sample.rs [+]
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// is part of it.
+    StrEsc,
+<rs/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs [+]
+                                                                     ^[
+@ checkpoint 13
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// is part of it.
+    StrEsc,
+}
+
+@
+<rs/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs [+]
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// is part of it.
+    StrEsc,
+<rs/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56031/vt_sample.rs [+]
+:q

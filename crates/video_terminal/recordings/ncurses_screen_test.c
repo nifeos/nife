@@ -41,7 +41,6 @@ int main(void)
     waddch(frame, ACS_RTEE);
     waddch(frame, ACS_URCORNER);
     mvwaddstr(frame, 2, 2, "0123456789");
-    wnoutrefresh(frame);
 
     /* A five-row scrolling window: four rows written in, then four more that push them up. */
     WINDOW *scroll = newwin(5, 34, 13, 26);
@@ -52,9 +51,9 @@ int main(void)
         wscrl(scroll, 1);
         mvwprintw(scroll, 4, 1, "scrolled row %d", i);
     }
-    wnoutrefresh(scroll);
 
-    /* Insert and delete in place, the plan's step 3: each line ends "A B D" with the stray character gone. */
+    /* Insert and delete in place, the plan's step 3: each line ends "A B D" with the stray
+     * character gone. */
     mvaddstr(19, 2, "insert: ACD");
     move(19, 11);
     insch('B');
@@ -62,8 +61,12 @@ int main(void)
     move(20, 12);
     delch();
 
-    mvaddstr(21, 2, "any key exits");
-    refresh();
+    /* The base window first, the subwindows over it, then one update. A refresh(stdscr) after
+     * the subwindows' own would copy stdscr's blanks over them. */
+    wnoutrefresh(stdscr);
+    wnoutrefresh(frame);
+    wnoutrefresh(scroll);
+    doupdate();
     flash();
     getch();
     endwin();

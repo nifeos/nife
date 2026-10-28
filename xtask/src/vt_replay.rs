@@ -11,7 +11,7 @@
 //! The oracle is `alacritty_terminal` 0.26.0, calef's ruling of 2026-10-21 03:37 UTC. His
 //! 2026-10-19 hold on its §46 (thin primitives or whole subsystems; we write everything in between)
 //! take keeps its generator out of the tree, so the oracle's screens are committed artifacts with
-//! provenance in crates/video_terminal/recordings/README.md, beside the recording format, the
+//! provenance in `crates/video_terminal/recordings/README.md`, beside the recording format, the
 //! manifest's fields and the recording recipe.
 //!
 //! # EXAMPLES
@@ -470,6 +470,24 @@ fn grade_session(
     Ok((matched, block))
 }
 
+/// Grade one manifest row: read its recording and its expected screens, replay and compare.
+fn grade_one(row: &SessionRow) -> Result<(usize, usize), String> {
+    let bytes = std::fs::read(recording_path(&row.name))
+        .map_err(|_| format!("{}: the recording file is missing", row.name))?;
+    let recording =
+        Recording::from_bytes(&row.name, &bytes).map_err(|e| format!("{}: {e}", row.name))?;
+    let expected_text = std::fs::read_to_string(expected_path(&row.name)).map_err(|_| {
+        format!(
+            "{}: the expected screens are missing ({} does not exist)",
+            row.name,
+            expected_path(&row.name).display()
+        )
+    })?;
+    let expected =
+        ExpectedScreens::parse(&expected_text, ROWS).map_err(|e| format!("{}: {e}", row.name))?;
+    grade_session(&recording, row, &expected)
+}
+
 /// The gate: grade every session in the manifest and hold every count.
 fn grade_all() -> bool {
     let manifest = match Manifest::load() {
@@ -495,42 +513,10 @@ fn grade_all() -> bool {
     let mut vttest = (0usize, 0usize);
     let mut drifted = Vec::new();
     for row in &manifest.sessions {
-        let recording = match std::fs::read(recording_path(&row.name)) {
-            Ok(bytes) => match Recording::from_bytes(&row.name, &bytes) {
-                Ok(recording) => recording,
-                Err(e) => {
-                    eprintln!("vt-replay: {}: {e}", row.name);
-                    drifted.push(row.name.clone());
-                    continue;
-                }
-            },
-            Err(_) => {
-                eprintln!("vt-replay: {}: the recording file is missing", row.name);
-                drifted.push(row.name.clone());
-                continue;
-            }
-        };
-        let Ok(expected_text) = std::fs::read_to_string(expected_path(&row.name)) else {
-            eprintln!(
-                "vt-replay: {}: the expected screens are missing ({} does not exist)",
-                row.name,
-                expected_path(&row.name).display()
-            );
-            drifted.push(row.name.clone());
-            continue;
-        };
-        let expected = match ExpectedScreens::parse(&expected_text, ROWS) {
-            Ok(expected) => expected,
-            Err(e) => {
-                eprintln!("vt-replay: {}: {e}", row.name);
-                drifted.push(row.name.clone());
-                continue;
-            }
-        };
-        let (matched, graded) = match grade_session(&recording, row, &expected) {
+        let (matched, graded) = match grade_one(row) {
             Ok(counts) => counts,
             Err(e) => {
-                eprintln!("vt-replay: {}: {e}", row.name);
+                eprintln!("vt-replay: {e}");
                 drifted.push(row.name.clone());
                 continue;
             }

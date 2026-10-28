@@ -1,0 +1,100 @@
+@ checkpoint 0
+  Left     File     Command     Options     Right
+┌<─ ...ees/705-vt-replay-harness ─.[^]>┐┌<─ ...ees/705-vt-replay-harness ─.[^]>┐
+│.n     Name      │ Size  │Modify time ││.n     Name      │ Size  │Modify time │
+│/..              │UP--DIR│Oct 28 12:10││/..              │UP--DIR│Oct 28 12:10│
+│/.agents         │     96│Oct 28 12:10││/.agents         │     96│Oct 28 12:10│
+│/.cargo          │    160│Oct 28 12:10││/.cargo          │    160│Oct 28 12:10│
+│/.claude         │    128│Oct 28 12:10││/.claude         │    128│Oct 28 12:10│
+│/.githooks       │    128│Oct 28 12:10││/.githooks       │    128│Oct 28 12:10│
+│/.github         │    288│Oct 28 12:10││/.github         │    288│Oct 28 12:10│
+│/art             │    160│Oct 28 12:10││/art             │    160│Oct 28 12:10│
+│/bench           │   1088│Oct 28 12:10││/bench           │   1088│Oct 28 12:10│
+│/briefs          │    512│Oct 28 12:10││/briefs          │    512│Oct 28 12:10│
+│/c_library       │    256│Oct 28 12:10││/c_library       │    256│Oct 28 12:10│
+│/components      │    224│Oct 28 12:10││/components      │    224│Oct 28 12:10│
+│/crates          │   3648│Oct 28 12:10││/crates          │   3648│Oct 28 12:10│
+│/cryptogr~erciser│    256│Oct 28 12:10││/cryptogr~erciser│    256│Oct 28 12:10│
+│/cryptogr~rovider│    160│Oct 28 12:10││/cryptogr~rovider│    160│Oct 28 12:10│
+│/design          │   1056│Oct 28 12:10││/design          │   1056│Oct 28 12:10│
+├──────────────────────────────────────┤├──────────────────────────────────────┤
+│UP--DIR                               ││UP--DIR                               │
+└────────────────── 169G / 460G (36%) ─┘└────────────────── 169G / 460G (36%) ─┘
+Hint: Completion works on all input lines in all dialogs. Just press M-Tab.
+$
+ 1Help   2Menu   3View   4Edit   5Copy   6RenMov 7Mkdir  8Delete 9PullDn10Quit
+@ checkpoint 1
+  Left     File     Command     Options     Right
+┌<─ ...ees/705-vt-replay-harness ─.[^]>┐┌<─ ...ees/705-vt-replay-harness ─.[^]>┐
+│.n     Name      │ Size  │Modify time ││.n     Name      │ Size  │Modify time │
+│/..              │UP--DIR│Oct 28 12:10││/..              │UP--DIR│Oct 28 12:10│
+│/.agents         │     96│Oct 28 12:10││/.agents         │     96│Oct 28 12:10│
+│/.cargo          │    160│Oct 28 12:10││/.cargo          │    160│Oct 28 12:10│
+│/.claude         │    128│Oct 28 12:10││/.claude         │    128│Oct 28 12:10│
+│/.githooks       │    128│Oct 28 12:10││/.githooks       │    128│Oct 28 12:10│
+│/.github         │    288│Oct 28 12:10││/.github         │    288│Oct 28 12:10│
+│/art             │    160│Oct 28 12:10││/art             │    160│Oct 28 12:10│
+│/bench           │   1088│Oct 28 12:10││/bench           │   1088│Oct 28 12:10│
+│/briefs          │    512│Oct 28 12:10││/briefs          │    512│Oct 28 12:10│
+│/c_library       │    256│Oct 28 12:10││/c_library       │    256│Oct 28 12:10│
+│/components      │    224│Oct 28 12:10││/components      │    224│Oct 28 12:10│
+│/crates          │   3648│Oct 28 12:10││/crates          │   3648│Oct 28 12:10│
+│/cryptogr~erciser│    256│Oct 28 12:10││/cryptogr~erciser│    256│Oct 28 12:10│
+│/cryptogr~rovider│    160│Oct 28 12:10││/cryptogr~rovider│    160│Oct 28 12:10│
+│/design          │   1056│Oct 28 12:10││/design          │   1056│Oct 28 12:10│
+├──────────────────────────────────────┤├──────────────────────────────────────┤
+│UP--DIR                               ││UP--DIR                               │
+└────────────────── 169G / 460G (36%) ─┘└────────────────── 169G / 460G (36%) ─┘
+Hint: Completion works on all input lines in all dialogs. Just press M-Tab.
+$
+ 1Help   2Menu   3View   4Edit   5Copy   6RenMov 7Mkdir  8Delete 9PullDn10Quit
+@ checkpoint 2
+  Left     File     Command     Options     Right
+┌<─ ...ees/705-vt-replay-harness ─.[^]>┐┌<─ ...ees/705-vt-replay-harness ─.[^]>┐
+│.n     Name      │ Size  │Modify time ││.n     Name      │ Size  │Modify time │
+│/..              │UP--DIR│Oct 28 12:10││/..              │UP--DIR│Oct 28 12:10│
+│/.agents         │     96│Oct 28 12:10││/.agents         │     96│Oct 28 12:10│
+│/.cargo          │    160│Oct 28 12:10││/.cargo          │    160│Oct 28 12:10│
+│/.claude         │    128│Oct 28 12:10││/.claude         │    128│Oct 28 12:10│
+│/.githooks       │    128│Oct 28 12:10││/.githooks       │    128│Oct 28 12:10│
+│/.github         │    288│Oct 28 12:10││/.github         │    288│Oct 28 12:10│
+│/art             │    160│Oct 28 12:10││/art             │    160│Oct 28 12:10│
+│/bench           │   1088│Oct 28 12:10││/bench           │   1088│Oct 28 12:10│
+│/briefs          │    512│Oct 28 12:10││/briefs          │    512│Oct 28 12:10│
+│/c_library       │    256│Oct 28 12:10││/c_library       │    256│Oct 28 12:10│
+│/components      │    224│Oct 28 12:10││/components      │    224│Oct 28 12:10│
+│/crates          │   3648│Oct 28 12:10││/crates          │   3648│Oct 28 12:10│
+│/cryptogr~erciser│    256│Oct 28 12:10││/cryptogr~erciser│    256│Oct 28 12:10│
+│/cryptogr~rovider│    160│Oct 28 12:10││/cryptogr~rovider│    160│Oct 28 12:10│
+│/design          │   1056│Oct 28 12:10││/design          │   1056│Oct 28 12:10│
+├──────────────────────────────────────┤├──────────────────────────────────────┤
+│UP--DIR                               ││UP--DIR                               │
+└────────────────── 169G / 460G (36%) ─┘└────────────────── 169G / 460G (36%) ─┘
+Hint: Completion works on all input lines in all dialogs. Just press M-Tab.
+$
+ 1Help   2Menu   3View   4Edit   5Copy   6RenMov 7Mkdir  8Delete 9PullDn10Quit
+@ checkpoint 3
+  Left     File     Command     Options     Right
+┌<─ ...ees/705-vt-replay-harness ─.[^]>┐┌<─ ...ees/705-vt-replay-harness ─.[^]>┐
+│.n     Name      │ Size  │Modify time ││.n     Name      │ Size  │Modify time │
+│/..              │UP--DIR│Oct 28 12:10││/..              │UP--DIR│Oct 28 12:10│
+│/.agents         │     96│Oct 28 12:10││/.agents         │     96│Oct 28 12:10│
+│/.cargo          │    160│Oct 28 12:10││/.cargo          │    160│Oct 28 12:10│
+│/.claude         │    128│Oct 28 12:10││/.claude         │    128│Oct 28 12:10│
+│/.githooks       │    128│Oct 28 12:10││/.githooks       │    128│Oct 28 12:10│
+│/.github         │    288│Oct 28 12:10││/.github         │    288│Oct 28 12:10│
+│/art             │    160│Oct 28 12:10││/art             │    160│Oct 28 12:10│
+│/bench           │   1088│Oct 28 12:10││/bench           │   1088│Oct 28 12:10│
+│/briefs          │    512│Oct 28 12:10││/briefs          │    512│Oct 28 12:10│
+│/c_library       │    256│Oct 28 12:10││/c_library       │    256│Oct 28 12:10│
+│/components      │    224│Oct 28 12:10││/components      │    224│Oct 28 12:10│
+│/crates          │   3648│Oct 28 12:10││/crates          │   3648│Oct 28 12:10│
+│/cryptogr~erciser│    256│Oct 28 12:10││/cryptogr~erciser│    256│Oct 28 12:10│
+│/cryptogr~rovider│    160│Oct 28 12:10││/cryptogr~rovider│    160│Oct 28 12:10│
+│/design          │   1056│Oct 28 12:10││/design          │   1056│Oct 28 12:10│
+├──────────────────────────────────────┤├──────────────────────────────────────┤
+│UP--DIR                               ││UP--DIR                               │
+└────────────────── 169G / 460G (36%) ─┘└────────────────── 169G / 460G (36%) ─┘
+Hint: Completion works on all input lines in all dialogs. Just press M-Tab.
+$
+ 1Help   2Menu   3View   4Edit   5Copy   6RenMov 7Mkdir  8Delete 9PullDn10Quit

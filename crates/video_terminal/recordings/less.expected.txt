@@ -1,0 +1,275 @@
+@ checkpoint 0
+你 好  e 😀  (the census's wide, combining and emoji line)
+//! The engine: the parser's state and `Vt`, the grid it maintains.
+//!
+//! Name: provisional (the lane of milestone 874 (the terminal engine moves its
+palette and its
+//! tests out), 2026-10-12 UTC), named for `Vt`, the central type, as §282 (when
+ a file is split,
+//! the parent becomes an index) asks; calef names things.
+
+use super::cell::{
+    BOLD, DIM, INVISIBLE, ITALIC, REVERSE, STRIKETHROUGH, STRIKETHROUGH_ROW, UND
+ERLINE_CURLY,
+    UNDERLINE_DASHED, UNDERLINE_DOTTED, UNDERLINE_DOUBLE, UNDERLINE_NONE, UNDERL
+INE_ROW,
+    UNDERLINE_SINGLE,
+};
+use super::*;
+use crate::handoff::{
+    CELL_WORDS, CELL_WORDS_1, FLAG_CURSOR_VISIBLE, FLAG_IGNORE, FLAG_WRAP_PENDIN
+G, HEADER_WORDS,
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, un
+derline_word,
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
+/folders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56321/vt_sample.rs
+@ checkpoint 1
+};
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states disti
+nguish sequences
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+:
+@ checkpoint 2
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a bac
+kground in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth m
+arks the sequence
+/// ignored rather than growing the array.
+pub(crate) const MAXIMUM_PARAMS: usize = 16;
+
+/// **A terminal's live grid, plus its off-screen history.**
+///
+/// Construct with [`Vt::new`], push bytes with [`Vt::feed`], read pixels with [
+`Vt::pixel`], ask
+/// what changed with [`Vt::take_damage`], and scroll with [`Vt::scroll_up`]/[`V
+t::scroll_down`].
+///
+/// **A `Vt` is several hundred KiB and must never be a runtime-constructed loca
+l or return
+/// value.** Build it in a `static` with constant geometry and retarget it with
+[`Vt::reset_to`];
+/// `script/stack-frame-check` catches a violation. See notes/video-terminal.md,
+ "The grid's
+/// capacity".
+pub struct Vt {
+:
+@ checkpoint 3
+    cells: [Cell; MAXIMUM_CELLS],
+    /// Off-screen history: a ring of whole rows, oldest overwritten first. See
+    /// [`Vt::scroll_up`]/[`Vt::scroll_down`] for the read side and [`Vt::line_f
+eed`] for the write
+    /// side (a row scrolled off the live grid's top is pushed here before being
+ discarded).
+    scrollback: [Cell; SCROLLBACK_CELLS],
+    /// The ring index (in rows) the **next** pushed row will occupy. Rows alrea
+dy stored occupy the
+    /// `sb_len` slots immediately before this one, wrapping.
+    sb_tail: u32,
+    /// How many scrollback rows are populated, capped at [`SCROLLBACK_ROWS`].
+    sb_len: u32,
+    /// How many rows scrolled back from the live view, `0..=sb_len`. `0` is the
+ ordinary live view;
+    /// nonzero means [`Vt::cell`] (and therefore [`Vt::pixel`]/[`Vt::row_bytes`
+]) reads from
+    /// [`scrollback`](Self::scrollback) for the topmost `view_offset` display r
+ows.
+    view_offset: u32,
+    cols: u32,
+    rows: u32,
+    col: u32,
+:
+@ checkpoint 4
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a bac
+kground in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth m
+arks the sequence
+/// ignored rather than growing the array.
+pub(crate) const MAXIMUM_PARAMS: usize = 16;
+
+/// **A terminal's live grid, plus its off-screen history.**
+///
+/// Construct with [`Vt::new`], push bytes with [`Vt::feed`], read pixels with [
+`Vt::pixel`], ask
+/// what changed with [`Vt::take_damage`], and scroll with [`Vt::scroll_up`]/[`V
+t::scroll_down`].
+///
+/// **A `Vt` is several hundred KiB and must never be a runtime-constructed loca
+l or return
+/// value.** Build it in a `static` with constant geometry and retarget it with
+[`Vt::reset_to`];
+/// `script/stack-frame-check` catches a violation. See notes/video-terminal.md,
+ "The grid's
+/// capacity".
+pub struct Vt {
+:
+@ checkpoint 5
+};
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states disti
+nguish sequences
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and
+ its relatives),
+    /// whose arbitrary text a parser without this state would print, a window t
+itle included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string
+(ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+:
+@ checkpoint 6
+        self.sb_tail = sb_len % self.scrollback_depth();
+        self.view_offset = view_offset;
+        self.col = col;
+        self.row = row;
+        self.attr = attr;
+        self.wrap_pending = flags & FLAG_WRAP_PENDING != 0;
+        self.cursor_visible = flags & FLAG_CURSOR_VISIBLE != 0;
+        self.ignore = flags & FLAG_IGNORE != 0;
+        self.state = state;
+        self.params = params;
+        self.subs = subs;
+        self.nparams = nparams;
+        self.utf8_need = utf8_need as u8;
+        self.utf8_code = utf8_code;
+        self.scrolled = 0;
+        self.drawn = None;
+        self.damage_all();
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests;
+(END)
+@ checkpoint 7
+        self.sb_len = sb_len;
+        self.sb_tail = sb_len % self.scrollback_depth();
+        self.view_offset = view_offset;
+        self.col = col;
+        self.row = row;
+        self.attr = attr;
+        self.wrap_pending = flags & FLAG_WRAP_PENDING != 0;
+        self.cursor_visible = flags & FLAG_CURSOR_VISIBLE != 0;
+        self.ignore = flags & FLAG_IGNORE != 0;
+        self.state = state;
+        self.params = params;
+        self.subs = subs;
+        self.nparams = nparams;
+        self.utf8_need = utf8_need as u8;
+        self.utf8_code = utf8_code;
+        self.scrolled = 0;
+        self.drawn = None;
+        self.damage_all();
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+:
+@ checkpoint 8
+        }
+        self.sb_len = sb_len;
+        self.sb_tail = sb_len % self.scrollback_depth();
+        self.view_offset = view_offset;
+        self.col = col;
+        self.row = row;
+        self.attr = attr;
+        self.wrap_pending = flags & FLAG_WRAP_PENDING != 0;
+        self.cursor_visible = flags & FLAG_CURSOR_VISIBLE != 0;
+        self.ignore = flags & FLAG_IGNORE != 0;
+        self.state = state;
+        self.params = params;
+        self.subs = subs;
+        self.nparams = nparams;
+        self.utf8_need = utf8_need as u8;
+        self.utf8_code = utf8_code;
+        self.scrolled = 0;
+        self.drawn = None;
+        self.damage_all();
+        Ok(())
+    }
+}
+
+:
+@ checkpoint 9
+        }
+        self.sb_len = sb_len;
+        self.sb_tail = sb_len % self.scrollback_depth();
+        self.view_offset = view_offset;
+        self.col = col;
+        self.row = row;
+        self.attr = attr;
+        self.wrap_pending = flags & FLAG_WRAP_PENDING != 0;
+        self.cursor_visible = flags & FLAG_CURSOR_VISIBLE != 0;
+        self.ignore = flags & FLAG_IGNORE != 0;
+        self.state = state;
+        self.params = params;
+        self.subs = subs;
+        self.nparams = nparams;
+        self.utf8_need = utf8_need as u8;
+        self.utf8_code = utf8_code;
+        self.scrolled = 0;
+        self.drawn = None;
+        self.damage_all();
+        Ok(())
+    }
+}
+
+Pattern not found  (press RETURN)
+@ checkpoint 10
+        }
+        self.sb_len = sb_len;
+        self.sb_tail = sb_len % self.scrollback_depth();
+        self.view_offset = view_offset;
+        self.col = col;
+        self.row = row;
+        self.attr = attr;
+        self.wrap_pending = flags & FLAG_WRAP_PENDING != 0;
+        self.cursor_visible = flags & FLAG_CURSOR_VISIBLE != 0;
+        self.ignore = flags & FLAG_IGNORE != 0;
+        self.state = state;
+        self.params = params;
+        self.subs = subs;
+        self.nparams = nparams;
+        self.utf8_need = utf8_need as u8;
+        self.utf8_code = utf8_code;
+        self.scrolled = 0;
+        self.drawn = None;
+        self.damage_all();
+        Ok(())
+    }
+}
+
+Pattern not found  (press RETURN)

@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-02
 promoted_from: the-graphical-terminal-runs-full-screen-programs
 milestone_dependencies: 29, 142
@@ -161,6 +161,25 @@ A takes no dependency, and the kernel's witness keeps predicting every feature. 
 committer and six commits in the 39 months after 0.3.3. Neovim, its heaviest embedder, carries ten
 fixes upstream does not have ([G's upkeep](0705-the-graphical-terminal-runs-full-screen-programs/option-g-upkeep.md)).
 F waits on the held `alacritty_terminal` take, and its pty cut would be carried for good.
+
+## Progress
+
+The tree holds the engine plan's step 0a as of 2026-10-28 (UTC): `cargo xtask vt-replay` (name
+provisional) replays crates/video_terminal/recordings' sessions through `video_terminal::Vt` and
+holds every match count, so no later step can lower one silently. The harness grades the ten
+programs' sessions and vttest's menus 1, 2 and 8, and measures 22 of 84 census checkpoints and 7
+of 24 vttest screens. The vttest count matches the plan's predicted starting point; the census
+count does not grade the census's own sessions, which the tree never kept. Reuse: this lane wrote
+the harness, and the oracle, `alacritty_terminal` 0.26.0, stays out of the tree while the hold on
+its take stands; its screens live beside the recordings (recordings/README.md).
+
+## Follow-on
+
+- **Outstanding.** The engine plan's steps 1 to 18: the parser repairs, the screen operations, the
+  reply path and the negotiated features, one pull request each against the plan's table, with the
+  harness holding their counts. Checked 2026-10-28 (UTC) against engine-plan.md's step table.
+- **Recorded.** The oracle's generator, which the §46 hold on `alacritty_terminal` keeps out of the
+  tree until the hold lifts; the recipe lives in `crates/video_terminal/recordings/README.md`.
 
 ## What is needed from calef
 

@@ -1,0 +1,25 @@
+@ checkpoint 0
+                          ┌────────────────────────────────┐
+                          │ line drawing: ┌├─┤┐            │
+                          │ 0123456789                     │
+                          │                                │
+                          │                                │
+                          │                                │
+                          │                                │
+                          │                                │
+                          │                                │
+                          │                                │
+                          │                                │
+                          └────────────────────────────────┘
+
+
+                           scrolled row 4
+                           scrolled row 5
+                           scrolled row 6
+                           scrolled row 7
+
+  insert: ABCD
+  delete: ABD
+
+
+
