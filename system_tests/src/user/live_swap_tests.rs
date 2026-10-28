@@ -116,7 +116,7 @@ const MAXIMUM_REPORTS: usize = 42;
 /// Spawn the operator the way the kernel spawns the progenitor, and return the report rendezvous
 /// every process in the run holds a WRITE view of.
 ///
-/// The endowment is `spawn_elf_child_builder`'s (the archive read-only at `INITIAL_RAMDISK_VA`, an
+/// The endowment is `spawn_elf_child_builder`'s (the archive read-only at `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, an
 /// untyped in slot 0, a report rendezvous in slot 1) plus a `WRITE|GRANT` device capability in slot
 /// 2, as the progenitor gets at boot, so what is tested is the operator's choices.
 fn spawn_swapper(role: u64) -> (sched::RendezvousId, u64, u64, u64) {

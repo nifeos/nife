@@ -8,7 +8,7 @@ use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use crate::archive::{initial_ramdisk_x86, x86_initial_ramdisk_path};
+use crate::archive::{has_initial_ramdisk_x86, x86_initial_ramdisk_path};
 use crate::disk::{disk_path, mkdisk, mknvmedisk, nvme_disk_path};
 use crate::host::workspace_root;
 use crate::scanout::{ScanoutReferee, screendump};
@@ -103,13 +103,13 @@ pub(crate) fn uefi_kernel(features: Option<&str>) -> Option<String> {
     // `target/init-measure-x86_64.txt`, which `kernel/build.rs` compiles in as the measured-boot
     // trust root, so a kernel built first vouches for the previous archive and the handover refuses
     // ("MEASURED BOOT REFUSED"). QEMU rarely shows it; two benches did
-    // (notes/x86-uefi-boot/running-under-firmware.md). `initial_ramdisk_x86` never builds the
+    // (notes/x86-uefi-boot/running-under-firmware.md). `has_initial_ramdisk_x86` never builds the
     // kernel, so this order is safe.
     let mut build = vec!["build", "-p", "kernel", "--target", X86_TARGET];
     if let Some(list) = features {
         build.extend(["--features", list]);
     }
-    if !initial_ramdisk_x86() || !cargo_profiled(&build) {
+    if !has_initial_ramdisk_x86() || !cargo_profiled(&build) {
         return None;
     }
     let built = workspace_root().join(format!("target/{X86_TARGET}/{}/kernel", profile_dir()));
@@ -813,7 +813,7 @@ fn prepare_uefi_test() -> bool {
     // spawned, and the only thread xtask ever starts (the transcript reader in swish_check_leg)
     // copies pipe bytes into a String and never touches the environment.
     unsafe { std::env::remove_var("NIFE_X86_FIXTURES_REQUIRED") };
-    initial_ramdisk_x86()
+    has_initial_ramdisk_x86()
 }
 
 /// One test image's boot under OVMF, and its verdict: [`uefi_test`] runs it for each image.

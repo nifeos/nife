@@ -17,15 +17,15 @@ use super::*;
 ///
 /// let mut ring = ProducerRing::new(0x1000, 4);
 /// let a = ring.enqueue(TransferRequestBlock::enable_slot());
-/// assert_eq!((a.index, a.transfer_request_block.cycle(), a.link), (0, true, None));
+/// assert_eq!((a.index, a.transfer_request_block.is_cycle(), a.link), (0, true, None));
 /// ring.enqueue(TransferRequestBlock::enable_slot());
 /// let c = ring.enqueue(TransferRequestBlock::enable_slot());
 /// assert_eq!(c.index, 2);
 /// let (at, link) = c.link.unwrap(); // the third TRB fills the lap, so the link is written too
 /// assert_eq!(at, 3);
-/// assert!(link.cycle()); // stamped with the lap it ends, so the controller follows it
+/// assert!(link.is_cycle()); // stamped with the lap it ends, so the controller follows it
 /// let d = ring.enqueue(TransferRequestBlock::enable_slot());
-/// assert_eq!((d.index, d.transfer_request_block.cycle()), (0, false)); // second lap, cycle flipped
+/// assert_eq!((d.index, d.transfer_request_block.is_cycle()), (0, false)); // second lap, cycle flipped
 /// assert_eq!(ring.address_of(d.index), 0x1000);
 /// ```
 ///
@@ -160,7 +160,7 @@ impl EventRing {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn is_ready(&self, transfer_request_block: &TransferRequestBlock) -> bool {
-        transfer_request_block.cycle() == self.cycle
+        transfer_request_block.is_cycle() == self.cycle
     }
 
     /// Consume the entry at [`index`](Self::index).

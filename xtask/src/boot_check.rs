@@ -3,8 +3,8 @@
 use std::process::Command;
 
 use crate::archive::{
-    initial_ramdisk_path, initial_ramdisk_riscv, initial_ramdisk_x86, riscv_initial_ramdisk_path,
-    x86_initial_ramdisk_path,
+    has_initial_ramdisk_riscv, has_initial_ramdisk_x86, initial_ramdisk_path,
+    riscv_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::host::{flag_value, run};
 use crate::{RISCV_TARGET, RUNNER, TARGET, X86_TARGET, profile_dir, user};
@@ -68,14 +68,14 @@ pub(crate) fn boot_check() -> bool {
             "riscv64",
             RISCV_TARGET,
             "helpers/qemu-runner-riscv64.sh",
-            initial_ramdisk_riscv as fn() -> bool,
+            has_initial_ramdisk_riscv as fn() -> bool,
             riscv_initial_ramdisk_path as fn() -> String,
         ),
         (
             "x86_64",
             X86_TARGET,
             "helpers/qemu-runner-x86_64.sh",
-            initial_ramdisk_x86 as fn() -> bool,
+            has_initial_ramdisk_x86 as fn() -> bool,
             x86_initial_ramdisk_path as fn() -> String,
         ),
     ]

@@ -110,6 +110,20 @@ KEPT = {
     # A gate: it builds, boots and reports whether the boot passed, like `stick_boot` beside it.
     "xtask/src/stick.rs::acpi_boot": ({"question-shape"}, _ACTS),
 }
+# A name an architect's ruling keeps although a check refuses it, keyed by `path::name`, each with
+# the ruling and its date. Where KEPT excuses a rule of design/naming.md, this records the ruling
+# itself, which outranks the check. The report lists an entry it still finds, so the exception
+# stays visible instead of the name sitting in the ratified-failures list forever.
+RULED = {
+    "notes/stack-high-water/per-ipc-depth.md::per-ipc-depth":
+        "calef ruled `IPC` a term of art, declining the expansion (2026-10-28 UTC, relayed by the "
+        "maintainer); design/naming/spelled-out-rulings.md holds the record",
+    "kernel/src/user/non_volatile_memory_express_service.rs::release_completed":
+        "calef ruled the rename of `release` here on 2026-10-28 (UTC, relayed by the maintainer): "
+        "the function performs the release, so the ruled `is_released` would misstate it, and "
+        "`release_completed` acts and reports whether it worked, which design/naming.md exempts "
+        "from the question shape",
+}
 # design/naming.md's question shapes. A finite verb first (`contains`, `starts_with`) is read as a
 # first word ending in `s`, which also passes a plural noun: the check's known false pass.
 _QUESTION_FIRST = {"is", "has", "can", "was", "will", "all", "any"}
@@ -283,6 +297,16 @@ def survey(cands, sources, manifests, british=None, reach=None):
 def _order(row):
     rank = {"local": 0, "wire or format": 3}.get(row["reach"], 1 if row["readers"] else 2)
     return rank, row["path"], row["line"]
+
+
+def _split_ruled(rows):
+    """(the rows no ruling covers, the rows a ruling excepts). A ruled row carries its `ruled`
+    reason, so the report can show the ruling beside the check it outranks."""
+    rest, ruled = [], []
+    for r in rows:
+        why = RULED.get(f"{r['path']}::{r['name']}")
+        (ruled if why else rest).append(dict(r, ruled=why) if why else r)
+    return rest, ruled
 
 
 def load(root):
@@ -551,6 +575,13 @@ def _selftest():
     stale_kept = ratchet_problems(judged, cases, cases, RULES, kept={"x/src/gone.rs::f": None})
     assert len(stale_kept) == 1 and "KEPT names x/src/gone.rs::f" in stale_kept[0]
     assert "judged no name" in ratchet_problems(set(), cases, cases, RULES)[0]
+    listed = [{"path": "notes/stack-high-water/per-ipc-depth.md", "line": 1, "kind": "document",
+               "name": "per-ipc-depth", "failures": ["spelled-out: `ipc` is ruled to expand"]}]
+    rest, ruled = _split_ruled(listed)
+    assert not rest and len(ruled) == 1 and "term of art" in ruled[0]["ruled"], \
+        "a name a ruling excepts leaves the failing list with its ruling attached"
+    rest, ruled = _split_ruled([dict(listed[0], path="notes/other.md", name="other")])
+    assert rest and not ruled, "a name no ruling names stays listed"
     _selftest_split()
     print("name_checks: selftest ok")
 
@@ -599,7 +630,7 @@ def _selftest_split():
         f"a name that crossed into another crate is not a move: {across}"
 
 
-def _report(rows, ratified_rows):
+def _report(rows, ratified_rows, ruled_rows):
     by_reach = collections.Counter("crosses" if r["readers"] else r["reach"] for r in rows)
     by_check = collections.Counter(f.split(":")[0] for r in rows for f in r["failures"])
     print(f"unratified names failing a naming rule: {len(rows)} "
@@ -621,6 +652,11 @@ def _report(rows, ratified_rows):
           f"later rule never overrules calef's ruling; listed so he can reopen one")
     for r in sorted(ratified_rows, key=lambda r: (r["path"], r["line"])):
         print(f"  {r['path']}:{r['line']} {r['kind']} {r['name']} {'; '.join(r['failures'])}")
+    print(f"\nEXCEPTED BY A RULING ({len(ruled_rows)}): a check refuses the name and an "
+          f"architect's ruling keeps it; the ruling, not the check, has the last word")
+    for r in sorted(ruled_rows, key=lambda r: (r["path"], r["line"])):
+        print(f"  {r['path']}:{r['line']} {r['kind']} {r['name']} {'; '.join(r['failures'])} <- "
+              f"{r['ruled']}")
 
 
 def main(argv):
@@ -657,7 +693,8 @@ def main(argv):
         return 0
     if prefixes:
         rows = [r for r in rows if r["path"].startswith(prefixes)]
-    _report(rows, survey(kept, sources, manifests, british, reach))
+    ratified, ruled = _split_ruled(survey(kept, sources, manifests, british, reach))
+    _report(rows, ratified, ruled)
     return 0
 
 

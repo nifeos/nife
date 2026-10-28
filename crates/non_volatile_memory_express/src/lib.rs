@@ -11,10 +11,12 @@
 /// Register offsets in BAR0 (NVMe 1.4 section 3.1). All are 4-byte registers or 8-byte registers
 /// the kernel accesses as two 4-byte halves (the spec permits either for the 64-bit ones).
 pub mod registers {
-    /// Controller Capabilities, 64-bit read-only. See [`super::Capabilities`].
+    /// Controller Capabilities (the register the specification calls `CAP`), 64-bit read-only.
+    /// See [`super::Capabilities`].
     ///
-    /// Name: ratified 2026-10-25 (#2720).
-    pub const CAP: u64 = 0x00;
+    /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from `CAP`:
+    /// `cap` is ruled to expand; the specification's name for the register does not keep it.
+    pub const CAPABILITIES: u64 = 0x00;
     /// Controller Configuration, 32-bit. See [`super::enabled_controller_configuration`].
     ///
     /// Name: ratified 2026-10-25 (#2720).

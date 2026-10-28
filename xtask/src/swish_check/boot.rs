@@ -683,7 +683,7 @@ fn build_leg(arch: &str, fresh: bool) -> bool {
                 uefi_image_with(Some(probe_features()))
             }
     } else if riscv {
-        redoxfs_server_build(RISCV_TARGET) && mkdisk() && mkredoxfs_of(SWISH_CHECK_DISK_MIB) && initial_ramdisk_riscv()
+        redoxfs_server_build(RISCV_TARGET) && mkdisk() && mkredoxfs_of(SWISH_CHECK_DISK_MIB) && has_initial_ramdisk_riscv()
     } else {
         redoxfs_server_build(TARGET) && mkredoxfs_of(SWISH_CHECK_DISK_MIB) && mkdisk() && user()
     } // After the archive build, whose packages it copies: a package the image's catalog

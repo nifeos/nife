@@ -23,7 +23,6 @@ nothing on it changes. On the Mac radon's UART goes into, in a worktree of the c
 ```sh
 pgrep -l qemu                                   # nothing of yours should be running
 git log -1 --format=%h                          # goes in the Results row
-cargo xtask std-exerciser                       # builds jig; an archive without it is refused
 ```
 
 In a second terminal, the TFTP server, left running: `script/board-netboot`. The Ethernet cable

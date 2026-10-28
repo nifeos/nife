@@ -159,10 +159,10 @@ pub(super) fn open_archive(
 ) -> (nifefs::Fs<'static>, &'static str) {
     let len = initial_ramdisk_len as usize;
     // SAFETY: the kernel mapped `initial_ramdisk_len` bytes of reserved RAM, read-only, at
-    // INITIAL_RAMDISK_VA. It is reserved memory that outlives every process, so the borrow is
+    // INITIAL_RAMDISK_VIRTUAL_ADDRESS. It is reserved memory that outlives every process, so the borrow is
     // honest for the whole boot.
     let archive: &'static [u8] =
-        unsafe { core::slice::from_raw_parts(INITIAL_RAMDISK_VA as *const u8, len) };
+        unsafe { core::slice::from_raw_parts(INITIAL_RAMDISK_VIRTUAL_ADDRESS as *const u8, len) };
     let Ok(fs) = nifefs::Fs::parse(archive) else {
         fail()
     };

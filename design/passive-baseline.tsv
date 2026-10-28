@@ -1947,7 +1947,7 @@ notes/net/the-test-clients.md	11
 notes/nifefs.md	21
 notes/non-cooperative-fallback.md	16
 notes/non-volatile-memory-express.md	22
-notes/non-volatile-memory-express/the-dma-escape-test.md	4
+notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md	4
 notes/notification-objects.md	21
 notes/ntlm.md	24
 notes/ntp.md	17

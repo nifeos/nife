@@ -1,7 +1,7 @@
 //! **Builds a process out of an ELF it parsed in userspace** (milestone 19d (run a real workload)).
 //! `kernel::user::spawn_elf_child_builder` enters this program with a building budget in slot 0, a
 //! report endpoint in slot 1 and the initial ramdisk mapped read-only at
-//! `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA`, its length in `x1`. It reads
+//! `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VIRTUAL_ADDRESS`, its length in `x1`. It reads
 //! `report_child` out of the archive by name, builds it from its own budget through the granular
 //! verbs (retype an address space, copy each segment into retyped frames, retype a thread, endow
 //! it, start it) and grants it the report endpoint. The kernel never touches the child's bytes, so
@@ -33,7 +33,7 @@ user_mode_runtime::program_entry!(start);
 
 fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     // SAFETY: forwarded from user_mode_runtime::initial_ramdisk::bytes's own contract: the kernel
-    // mapped the archive at INITIAL_RAMDISK_VA and passed its length in x1.
+    // mapped the archive at INITIAL_RAMDISK_VIRTUAL_ADDRESS and passed its length in x1.
     let archive = unsafe { user_mode_runtime::initial_ramdisk::bytes(initial_ramdisk_len) };
     let Some(elf) = nifefs::Fs::parse(archive)
         .ok()

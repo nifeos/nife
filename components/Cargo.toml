@@ -32,7 +32,7 @@ confinement_attackers = ["driver_process_contract/confinement_attackers"]
 input_race_probe = []
 
 # The console server (milestone 19f (run a real workload).3): the second program lifted out of
-# `hello`. `initial_ramdisk_aarch64` packs it under "console"; the progenitor loads it by name.
+# `hello`. `has_initial_ramdisk_aarch64` packs it under "console"; the progenitor loads it by name.
 [[bin]]
 name = "console"
 path = "src/console.rs"
@@ -68,7 +68,7 @@ bench = false
 
 # `swish` (milestone 19f.5): the shell, the last program lifted out of hello, and the most wired.
 # A swish is the shot that goes through the net touching nothing, which is least authority in one
-# word. `initial_ramdisk_aarch64` packs it as "swish"; `system_initializer` loads it by that name.
+# word. `has_initial_ramdisk_aarch64` packs it as "swish"; `system_initializer` loads it by that name.
 [[bin]]
 name = "swish"
 path = "src/swish/main.rs"
@@ -98,7 +98,7 @@ bench = false
 # The file caretaker (milestone 31 phase 2): a directory capability attenuated to one file, in one
 # direction. It is the caretaker that stands between the FS server and a program the command line
 # granted a single file, and it is a separate process so the narrowing is an address-space boundary
-# rather than a branch. initial_ramdisk_aarch64 packs it as "fs_file_caretaker".
+# rather than a branch. has_initial_ramdisk_aarch64 packs it as "fs_file_caretaker".
 [[bin]]
 name = "fs_file_caretaker"
 path = "src/fs_file_caretaker.rs"
@@ -109,7 +109,7 @@ bench = false
 # capability to one SUBTREE with an explicit rights ladder. It is what `cd` and a per-process
 # namespace resolve to, and it is a separate process for fs_file_caretaker's reason: the FS
 # server's handle table is per server, so only an address-space boundary keeps a program off the
-# parent directory. initial_ramdisk_aarch64 packs it as "fs_subtree_caretaker".
+# parent directory. has_initial_ramdisk_aarch64 packs it as "fs_subtree_caretaker".
 [[bin]]
 name = "fs_subtree_caretaker"
 path = "src/fs_subtree_caretaker.rs"
@@ -119,7 +119,7 @@ bench = false
 # The nameset caretaker (milestone 47's globbing lane): the same caretaker over a namespace of the
 # names a pattern matched. A third caretaker rather than a mode on `fs_subtree_caretaker`, because
 # that program's design property is that it performs no checks at all, and a name filter is a check
-# on every name-taking verb. initial_ramdisk_aarch64 packs it as "fs_nameset_caretaker".
+# on every name-taking verb. has_initial_ramdisk_aarch64 packs it as "fs_nameset_caretaker".
 [[bin]]
 name = "fs_nameset_caretaker"
 path = "src/fs_nameset_caretaker.rs"
@@ -159,7 +159,7 @@ test = false
 bench = false
 
 # The net server (milestone 30, piece 3): smoltcp as a userspace TCP/IP stack driving the confined
-# NIC. Links `extern crate alloc` over user_mode_runtime's heap. `initial_ramdisk_aarch64` packs it
+# NIC. Links `extern crate alloc` over user_mode_runtime's heap. `has_initial_ramdisk_aarch64` packs it
 # as "net_stack" for both ISAs.
 [[bin]]
 name = "net_stack"
@@ -169,7 +169,7 @@ bench = false
 
 # The GPU driver (milestone 29, the display ladder's rung one): drives the virtio-gpu device
 # over the confined transport and serves the framebuffer contract to clients.
-# `initial_ramdisk_aarch64` packs it as "gpu_driver" for both ISAs.
+# `has_initial_ramdisk_aarch64` packs it as "gpu_driver" for both ISAs.
 [[bin]]
 name = "gpu_driver"
 path = "src/gpu_driver.rs"
@@ -190,7 +190,7 @@ bench = false
 # The compositor (milestone 33, rung two): multiplexes one screen among mutually distrusting clients.
 # It is rung one's client at the display seam (display cannot tell it from `painter`), and it holds one
 # doorbell endpoint for all its clients plus one input endpoint per focusable client.
-# `initial_ramdisk_aarch64` packs it as "compositor" for both ISAs.
+# `has_initial_ramdisk_aarch64` packs it as "compositor" for both ISAs.
 [[bin]]
 name = "compositor"
 path = "src/compositor.rs"
@@ -200,7 +200,7 @@ bench = false
 # The display terminal (milestone 29's remaining increment): the component that makes the
 # framebuffer readable. One binary, two wirings (rung one's display endpoint, or rung two's
 # doorbell), because being a client at both seams is what proves neither contract needed to change
-# to carry text. `initial_ramdisk_aarch64` packs it as "display_terminal" for both ISAs.
+# to carry text. `has_initial_ramdisk_aarch64` packs it as "display_terminal" for both ISAs.
 [[bin]]
 name = "display_terminal"
 path = "src/display_terminal.rs"
@@ -242,7 +242,7 @@ bench = false
 # The clock service (milestone 51, DECISIONS §43): owns the RTC's registers and the wall clock's
 # offset, publishes the offset into a page its readers hold read-only, and serves proposals it is
 # free to refuse. Both RTC drivers ride in it, on both ISAs, because the device is a fact about the
-# board rather than the instruction set. `initial_ramdisk_aarch64` packs it as "clock" for both
+# board rather than the instruction set. `has_initial_ramdisk_aarch64` packs it as "clock" for both
 # ISAs.
 [[bin]]
 name = "clock"
@@ -252,7 +252,7 @@ bench = false
 
 # `date` (milestone 51, DECISIONS §43): reads the clock page, hands the number to the host-tested
 # `calendar` crate, prints. It holds a read-only mapping and therefore cannot set the clock; there is
-# no `date -s` here on purpose. `initial_ramdisk_aarch64` packs it as "date" for both ISAs.
+# no `date -s` here on purpose. `has_initial_ramdisk_aarch64` packs it as "date" for both ISAs.
 [[bin]]
 name = "date"
 path = "src/date.rs"
@@ -262,7 +262,7 @@ bench = false
 # `printenv` (milestone 47's environment-variable fork, DECISIONS §111): reads the inert-
 # configuration page the progenitor endows and prints TZ/LANG/TERM. `date`'s own shape, one manifest field
 # over: a read-only mapping and nothing else, so there is no way for this program to change what a
-# shell hands its own children. `initial_ramdisk_aarch64` packs it as "printenv" for both ISAs.
+# shell hands its own children. `has_initial_ramdisk_aarch64` packs it as "printenv" for both ISAs.
 [[bin]]
 name = "printenv"
 path = "src/printenv.rs"
@@ -272,7 +272,7 @@ bench = false
 # `rm` (milestone 47's rmdir lane): the first program endowed a **directory** capability, and the
 # reason `rm` stopped being a shell builtin. A builtin runs with the shell's whole endowment; this
 # takes an attenuated grant, so its recursion can only reach what it was handed.
-# `initial_ramdisk_aarch64` packs it as "rm" for both ISAs.
+# `has_initial_ramdisk_aarch64` packs it as "rm" for both ISAs.
 [[bin]]
 name = "rm"
 path = "src/rm.rs"
@@ -282,7 +282,7 @@ bench = false
 # `disk_surveyor` (milestone 57): what drives are attached, and how the one it holds is divided up.
 # It holds a read-only roster mapping (the listing) and a block-service endpoint (the one disk), and
 # the whole point is that those are two authorities rather than one. Its second role is the negative
-# control: it writes to the roster's address and dies. `initial_ramdisk_aarch64` packs it for both
+# control: it writes to the roster's address and dies. `has_initial_ramdisk_aarch64` packs it for both
 # ISAs.
 #
 # A surveyor maps land they do not own, which is the split this program exists to demonstrate.
@@ -295,7 +295,7 @@ bench = false
 # `disk_partitioner` (milestone 57's write half): writes the map the surveyor reads. The pair of
 # authorities it needs is the demonstration: ONE disk, and an entropy endpoint for the unique ids a
 # GPT requires. Without the second it writes nothing at all rather than inventing an id, and the
-# same binary's verify role reads the disk back to show which happened. `initial_ramdisk_aarch64`
+# same binary's verify role reads the disk back to show which happened. `has_initial_ramdisk_aarch64`
 # packs it for both ISAs. Provisional name (milestone 57 (partitioning and formatting a real
 # drive)'s lane): calef settles program names.
 [[bin]]
@@ -320,7 +320,7 @@ bench = false
 
 # The keyboard driver (milestone 29's input): a confined userspace virtio-input driver whose whole
 # power to inject a keystroke is the mapping of the compositor's input ring, not the doorbell every
-# client holds. `initial_ramdisk_aarch64` packs it as "keyboard_driver" for both ISAs.
+# client holds. `has_initial_ramdisk_aarch64` packs it as "keyboard_driver" for both ISAs.
 [[bin]]
 name = "keyboard_driver"
 path = "src/keyboard_driver.rs"
@@ -348,7 +348,7 @@ bench = false
 # The entropy service (milestone 56, DECISIONS §44): owns a virtio-rng device and is the only thing
 # that can read it; clients hold an endpoint that means "you may obtain randomness". The driver rides
 # in it, the way both RTC drivers ride in the clock service, because a separate driver process would
-# add a hop and hold exactly the same authority. `initial_ramdisk_aarch64` packs it as "entropy" for
+# add a hop and hold exactly the same authority. `has_initial_ramdisk_aarch64` packs it as "entropy" for
 # both ISAs.
 [[bin]]
 name = "entropy"
@@ -400,7 +400,7 @@ bench = false
 # The credential service (milestone 56, the credential half): holds the credential store and serves
 # one question over one endpoint. Its authority to *write* the store is a second endpoint that it
 # deletes at the seal, so a client cannot be refused permission to write it; there is no object left
-# for the request to travel through. `initial_ramdisk_aarch64` packs it as "credentialer" for both
+# for the request to travel through. `has_initial_ramdisk_aarch64` packs it as "credentialer" for both
 # ISAs.
 [[bin]]
 name = "credentialer"
@@ -411,7 +411,7 @@ bench = false
 # The login service (milestone 49, provisional name): authenticates a presented identity against
 # the credential service and, on success, mints a fresh directory capability (a
 # `fs_subtree_caretaker` built for that principal) and a fresh budget rather than mutating anything
-# ambient. `initial_ramdisk_aarch64` packs it as "login" for both ISAs.
+# ambient. `has_initial_ramdisk_aarch64` packs it as "login" for both ISAs.
 [[bin]]
 name = "login"
 path = "src/login.rs"
@@ -421,7 +421,7 @@ bench = false
 # The login audit receiver (milestone 49 (users and attribution), its boot-wiring update;
 # `audit_sink` until calef's 2026-09-13 ruling was performed on 2026-09-24): drains `login`'s AUDIT
 # endpoint so its blocking `send` on a successful login never parks the whole service, holding
-# nothing but that one READ capability. `initial_ramdisk_aarch64` packs it as "login_audit_receiver"
+# nothing but that one READ capability. `has_initial_ramdisk_aarch64` packs it as "login_audit_receiver"
 # for both ISAs.
 [[bin]]
 name = "login_audit_receiver"
@@ -441,7 +441,7 @@ bench = false
 # The provisioning tool (milestone 155, provisional name; DECISIONS §117): a `useradd`-equivalent
 # that PUTs an identity and secret into the credential store and creates that identity's home
 # subtree as one act, so a principal never exists with one and not the other for longer than this
-# tool's own two calls. `initial_ramdisk_aarch64` packs it as "identity_provisioner" for both ISAs.
+# tool's own two calls. `has_initial_ramdisk_aarch64` packs it as "identity_provisioner" for both ISAs.
 [[bin]]
 name = "identity_provisioner"
 path = "src/identity_provisioner.rs"
@@ -450,7 +450,7 @@ bench = false
 
 # `user_timetable_keeper` (milestone 152 (durable delegation), S1 of 2026-09-26): built by `login`
 # from a user's session budget when they open their schedule; it builds their timetable, holds it,
-# and is what keeps the session alive after they disconnect. `initial_ramdisk_aarch64` packs it as
+# and is what keeps the session alive after they disconnect. `has_initial_ramdisk_aarch64` packs it as
 # "user_timetable_keeper". Name: ratified 2026-10-06 (calef, in conversation), replacing the
 # provisional `session`; the source file's header has the reasons.
 [[bin]]
@@ -599,7 +599,7 @@ bench = false
 
 # The least-authority demo (milestone 19f.2): the first program that is its own binary rather than
 # a role of `hello`. It shares this package's `build.rs` link.ld (linked at the address-space map's image base) but no code.
-# Same test/bench reasoning as `hello`'s block. `initial_ramdisk_aarch64` packs it into the archive
+# Same test/bench reasoning as `hello`'s block. `has_initial_ramdisk_aarch64` packs it into the archive
 # under the name "least_authority_demo".
 [[bin]]
 name = "least_authority_demo"

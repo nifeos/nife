@@ -16,8 +16,8 @@ use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::archive::{
-    initial_ramdisk_path, initial_ramdisk_riscv, initial_ramdisk_x86, riscv_initial_ramdisk_path,
-    x86_initial_ramdisk_path,
+    has_initial_ramdisk_riscv, has_initial_ramdisk_x86, initial_ramdisk_path,
+    riscv_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::disk::{
     disk_path, mkblankdisk, mkdisk, mkgptdisk, mknvmedisk, mkredoxfs, mkredoxfs_crash,
@@ -539,8 +539,8 @@ fn host_tests() -> bool {
 /// nifefs data disk, then the TLS graph's programs for the legs this run boots.
 pub(crate) fn build_suite_programs(legs: ArchLegs) -> bool {
     // Build the std demo (milestone 27 (Rust `std` on the native ABI)) for every custom target
-    // first, so every initial ramdisk carries it: initial_ramdisk_aarch64 (inside `user`) packs the
-    // aarch64 std_exerciser, initial_ramdisk_riscv packs the riscv one. Outside the leg guards
+    // first, so every initial ramdisk carries it: has_initial_ramdisk_aarch64 (inside `user`) packs the
+    // aarch64 std_exerciser, has_initial_ramdisk_riscv packs the riscv one. Outside the leg guards
     // below because BOTH legs need it, and the nifefs data disk with it: it is arch-neutral, and
     // the riscv leg reads it whether or not the aarch64 leg ran.
     if !std_exerciser() || !mkdisk() {
@@ -656,7 +656,7 @@ fn aarch64_suite(hvf: bool, filtered: bool) -> bool {
 /// image boots. Shared with `cargo xtask coverage`, which boots the same images instrumented.
 pub(crate) fn prepare_aarch64_images() -> bool {
     // The FS server (milestone 32 phase 2), for the aarch64 bare target, before `user()` so
-    // initial_ramdisk_aarch64 packs it; then the RedoxFS test images the runner attaches as
+    // has_initial_ramdisk_aarch64 packs it; then the RedoxFS test images the runner attaches as
     // extra mmio disks.
     redoxfs_server_build(TARGET)
         && user()
@@ -679,7 +679,7 @@ fn riscv64_suite(filtered: bool) -> bool {
     // `cargo()` exports: the riscv ELF loader must never be handed aarch64 ELFs. The disk is
     // arch-neutral (a nifefs data image) and was built by mkdisk() above.
     // The riscv FS server, before the riscv archive that packs it.
-    if !redoxfs_server_build(RISCV_TARGET) || !initial_ramdisk_riscv() {
+    if !redoxfs_server_build(RISCV_TARGET) || !has_initial_ramdisk_riscv() {
         return false;
     }
     // Fresh images for this leg: the aarch64 leg writes the shared image, and reusing it would
@@ -740,7 +740,7 @@ fn x86_64_suite(filtered: bool) -> bool {
     // this leg builds all five, regenerating every image the earlier legs wrote so it is not
     // order-coupled to them.
     if !redoxfs_server_build(X86_TARGET)
-        || !initial_ramdisk_x86()
+        || !has_initial_ramdisk_x86()
         || !mkdisk()
         || !mkredoxfs()
         || !mkredoxfs_crash()

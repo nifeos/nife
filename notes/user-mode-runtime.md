@@ -177,7 +177,7 @@ needs a block driver, and the block driver is itself a userspace program. The ke
 region by reading `linux,initrd-start` from the device tree, and every run passes QEMU's `-initrd`.
 Those spellings stop at the boundary, as design/naming.md records.
 
-The kernel maps the archive read-only at `INITIAL_RAMDISK_VA` before `_start`, through
+The kernel maps the archive read-only at `INITIAL_RAMDISK_VIRTUAL_ADDRESS` before `_start`, through
 `kernel::user::boot_progenitor` at boot and `spawn_elf_child_builder` in the tests. `bytes` keeps an
 `unsafe` call site, unlike `MappedWindow`, because it returns a whole `'static` slice. No type can
 validate its `len`, so the obligation stays a sentence rather than an `assert!`.

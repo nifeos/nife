@@ -1,8 +1,10 @@
 # fixtures: every program and crate that exists to be tested against. Never in a release image.
 #
-# Milestone 611 (every program and crate belongs to a package). The package's name, kind, home
-# and membership are provisional, the lane's proposal for calef to ratify; the format is
-# helpers/packages.py's header, and notes/package-boundaries.md has the table and the reasons.
+# Milestone 611 (every program and crate belongs to a package). The kind, home and membership are
+# provisional, the lane's proposal for calef to ratify; the format is helpers/packages.py's
+# header, and notes/package-boundaries.md has the table and the reasons.
+#
+# Name: ratified 2026-10-28 (calef, relayed by the maintainer, pull request #2872).
 
 name = "fixtures"
 kind = "test"

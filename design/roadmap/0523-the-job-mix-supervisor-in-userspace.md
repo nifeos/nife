@@ -98,7 +98,7 @@ protocol for the shell to ask it to run, which is squarely *anything two program
 `supervision_protocol::build_child` (`:2470-2496`), and `build_child_space` maps ELF segments, stack
 pages, an x86_64 timebase placeholder and `endow.maps` -- nothing else. The `maps` a normal job may
 receive are chosen at `:2451-2462` and are exactly three: a filesystem client page, the clock page,
-or the config page, with the comment *"One extra mapping at most, today"*. `INITIAL_RAMDISK_VA` reaches only
+or the config page, with the comment *"One extra mapping at most, today"*. `INITIAL_RAMDISK_VIRTUAL_ADDRESS` reaches only
 the kernel-spawned progenitor (mapped in `user/entry.rs` and `user/progenitor_boot.rs`), and `a1` carries the manifest's
 integer argument rather than `initial_ramdisk_len`.
 
