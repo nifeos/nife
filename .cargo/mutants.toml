@@ -189,4 +189,60 @@ exclude_re = [
     # not compiled into anything. Matched as a module path, which nothing outside a test module
     # uses.
     "tests::",
+
+    # **Milestone 954 (a survivor accepted once is not accepted forever), part 4, this crate's
+    # noise:** `replace | with ^` over operands that share no bit, one entry per function, each
+    # naming the `const` beside the code whose `assert!` lets the compiler check the disjointness
+    # (`THE_*_SHARE_NO_BIT`). `x | y` equals `x ^ y` whenever the operands share no bit, so no test
+    # can kill these mutants, and the census counted them survived every week. The regex anchors on
+    # the file's path and the function's full name so it cannot reach another crate's or a longer
+    # name; the line and column are left to `\d+` because they move with every edit. A function
+    # named here that later gains a `|` over overlapping bits generates no mutant for it; that is
+    # the exclusion's known limit, narrowed by the named constant, which fails the build if the
+    # bits ever collide. Mutants of a `const` item carry no function name, so no scoped entry can
+    # reach them; the crate's const-item survivors keep their `equivalent` rows instead.
+    #
+    # Where a function's survivor set also holds a site the disjointness claim does not cover, the
+    # site's own row stays and says so; only the all-disjoint functions are excluded here.
+    #
+    # Command::word composes the start bit (31), the hold register (29) and the index masked to
+    # bits 5:0: THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT (command.rs).
+    'src/command\.rs:\d+:\d+: replace \| with \^ in Command::word$',
+    # reset clears the three enables, disjoint per
+    # THE_DIRECT_MEMORY_ACCESS_ENABLES_SHARE_NO_BIT (registers.rs); the excluded
+    # `ctrl | CTRL_ALL_RESET` write's mutant, which
+    # reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets killed, is covered by
+    # the same exclusion.
+    'src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::reset$',
+    # set_clock writes the card clock enable (0) and low power (16), disjoint per
+    # THE_CLOCK_ENABLES_SHARE_NO_BIT (registers.rs).
+    'src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::set_clock$',
+    # finish waits for DTO with ACD, and the data-error group with the data-timeout group, disjoint
+    # per THE_TRANSFER_OVER_BITS_SHARE_NO_BIT and
+    # THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT (registers.rs).
+    'src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::finish$',
+    # wait_queue tests the data-error group against the data-timeout group, disjoint per
+    # THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT (registers.rs).
+    'src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::wait_queue$',
+    # descriptor writes OWN (31) with CH (4), disjoint per
+    # THE_DESCRIPTOR_OWN_AND_CHAIN_BITS_SHARE_NO_BIT (internal_direct_memory_access.rs).
+    'src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in descriptor$',
+    # internal_direct_memory_access_start ORs the enable pair and BMOD's enable with fixed burst,
+    # disjoint per THE_DIRECT_MEMORY_ACCESS_ENABLES_SHARE_NO_BIT and
+    # THE_BUS_MODE_BITS_SHARE_NO_BIT (registers.rs); the `ctrl | CTRL_USE_INTERNAL_DMAC` write's
+    # mutant, which one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register
+    # killed, is covered by the same exclusion.
+    'src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_start$',
+    # internal_direct_memory_access_wait tests the same two disjoint pairs as finish, per
+    # THE_TRANSFER_OVER_BITS_SHARE_NO_BIT and THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT
+    # (registers.rs).
+    'src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_wait$',
+    # fifoth_for_pio composes the burst code (bit 29), the receive watermark (bits 27:16) and the
+    # transmit watermark (bits 11:0), disjoint per
+    # THE_POLLED_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT (registers.rs).
+    'src/registers\.rs:\d+:\d+: replace \| with \^ in fifoth_for_pio$',
+    # fifoth_for_direct_memory_access composes the same three fields with the larger burst
+    # encoding, disjoint per
+    # THE_DIRECT_MEMORY_ACCESS_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT (registers.rs).
+    'src/registers\.rs:\d+:\d+: replace \| with \^ in fifoth_for_direct_memory_access$',
 ]
