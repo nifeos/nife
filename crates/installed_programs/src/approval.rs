@@ -756,4 +756,22 @@ mod tests {
         let n = write("r", [0; 32], &[ok], &mut out).unwrap();
         assert!(Document::parse(core::str::from_utf8(&out[..n]).unwrap()).is_ok());
     }
+
+    /// **Only `update` and `remove` are policy words** (milestone 911): a line naming anything
+    /// else is malformed, so the guard is what keeps a stranger's word from reading as a policy.
+    /// A section with the same shape under another word is refused, not silently taken.
+    #[test]
+    fn a_policy_word_that_is_neither_update_nor_remove_is_malformed() {
+        assert_eq!(policy_of("update true\nremove false", "update"), Ok(true));
+        assert_eq!(policy_of("update true\nremove false", "remove"), Ok(false));
+        // The same two lines under a word this grammar does not know: both are refused.
+        assert_eq!(
+            policy_of("update true\ndelete true", "update"),
+            Err(Refusal::Malformed)
+        );
+        assert_eq!(
+            policy_of("removed true", "remove"),
+            Err(Refusal::Malformed)
+        );
+    }
 }

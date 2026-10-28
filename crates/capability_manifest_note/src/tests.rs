@@ -487,6 +487,18 @@ fn a_serviced_note_names_its_exact_length_and_pads_to_four() {
     let n = &NOTE.0;
     // 20 bytes of header and owner, then 58 of descriptor, rounded to four: 80.
     assert_eq!(n.len(), 80);
+    // The name field's length word is the owner plus its NUL, so a reader finds the descriptor
+    // exactly where the owner's name ends; the descriptor is the encoder's own bytes.
+    assert_eq!(
+        u32::from_le_bytes([n[0], n[1], n[2], n[3]]) as usize,
+        OWNER.len() + 1
+    );
+    assert_eq!(
+        &n[HEADER_LEN..HEADER_LEN + OWNER.len()],
+        OWNER,
+        "the owner's name sits where the header says it does"
+    );
+    assert_eq!(n[HEADER_LEN + OWNER.len()], 0, "and its NUL follows it");
     let descsz = u32::from_le_bytes([n[4], n[5], n[6], n[7]]) as usize;
     assert_eq!(descsz, serviced_len(&[]));
     assert_eq!(descsz, 58);

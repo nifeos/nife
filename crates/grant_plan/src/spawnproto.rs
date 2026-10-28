@@ -1244,6 +1244,10 @@ mod tests {
             delegated & !INSTALLER_BADGE,
             (3 << DELEGATED_APPROVAL_SHIFT) | 7
         );
+        // **The installer bit is what makes it an installer, not the approval field.** A badge
+        // carrying a job and an id but without the endpoint's own bit is no installer at all, so
+        // the check reads the bit (`&`) and cannot pass on a nonzero field alone (`|` or `^`).
+        assert_eq!(installer_approval((3 << DELEGATED_APPROVAL_SHIFT) | 7), None);
     }
 
     /// **The answered trailer round-trips**, console and approval alike, and the packing is the

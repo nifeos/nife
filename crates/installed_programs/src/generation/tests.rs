@@ -1377,3 +1377,27 @@ fn the_subset_test_names_every_extra_grant_and_never_grants_the_intersection() {
         Granted::Directory("state", DirectoryRights::R)
     ));
 }
+
+/// **A directory grant's name is held to the row columns' rule** (milestone 911): the guard is
+/// not decoration, so a name with a `#`, a control byte or nothing is malformed, and one the
+/// columns can hold is a grant.
+#[test]
+fn a_directory_grants_name_is_held_to_the_columns_rule() {
+    let digest = format!("sha256:{}", "11".repeat(32));
+    assert!(matches!(
+        classify(&format!("grant {digest} dir state rw")),
+        Line::Grant(Grant {
+            what: Granted::Directory("state", DirectoryRights::RW),
+            ..
+        })
+    ));
+    for bad in ["", "#x", "a\u{7f}b", "state\u{0}"] {
+        assert!(
+            matches!(
+                classify(&format!("grant {digest} dir {bad} rw")),
+                Line::Malformed
+            ),
+            "{bad:?} must be malformed"
+        );
+    }
+}
