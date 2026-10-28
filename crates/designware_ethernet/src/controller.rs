@@ -28,7 +28,9 @@ pub enum Error {
 }
 
 /// How long the software reset may take: OpenBSD's 30000 polls 10 µs apart.
-pub(crate) const RESET_LIMIT_MICROSECONDS: u64 = 300_000;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const RESET_LIMIT_MICROSECONDS: u64 = 300_000;
 
 /// What the controller says it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -153,7 +155,7 @@ pub struct Bus {
     pub receive_channel_burst_length: u32,
     /// `snps,force_thresh_dma_mode`: threshold mode rather than store and forward.
     pub threshold_mode: bool,
-    /// The system bus's permitted burst lengths: the [`registers::SYS_BUS_MODE`] `BLEN` bits
+    /// The system bus's permitted burst lengths: the `registers::SYS_BUS_MODE` `BLEN` bits
     /// `snps,blen` names, a different setting from the channels' burst lengths.
     pub bus_burst_lengths: u32,
     /// `snps,rd_osr_lmt`.

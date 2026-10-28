@@ -225,6 +225,13 @@ const ULP_CONFIG1_CLEARED: u16 = 0x0004 // IND
     | 0x0400 // EN_ULP_LANPHYPC
     | 0x0800 // DIS_CLR_STICKY_ON_PERST
     | 0x1000; // DISABLE_SMB_PERST
+// The chain above ORs single distinct bits, so | and ^ compose them identically; the compiler
+// checks that here, and .cargo/mutants.toml excludes the constant's OR-to-XOR swaps on this
+// assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(
+    ULP_CONFIG1_CLEARED == 0x0004 ^ 0x0010 ^ 0x0100 ^ 0x0040 ^ 0x0020 ^ 0x0400 ^ 0x0800 ^ 0x1000
+);
 const BM_WUC_HOST_WU_BIT: u16 = 1 << 4;
 const HV_SMB_ADDR_MASK: u16 = 0x007f;
 const HV_SMB_ADDR_PEC_EN: u16 = 0x0200;
@@ -442,6 +449,12 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
     reset
 }
 
+// The high identifier word sits at bit 16 and the low one is a u16, so | and ^ compose the word
+// identically; the compiler checks that here, and .cargo/mutants.toml excludes the function's
+// OR-to-XOR swap on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
+
 /// **`e1000_phy_is_accessible_pchlan`**, for parts at Lynx Point and later. Two tries at the
 /// identifier; on success, and only without an ME, unforce `SMBus` in the PHY and the MAC.
 ///
@@ -493,6 +506,13 @@ fn accessible(hardware: &mut impl Hardware, flag: &Swflag, id: &mut u32) -> bool
     ok
 }
 
+// The 50 ms value sits inside the counter field the word before it just masked out, so | and ^
+// compose the word identically; the compiler checks that here, and .cargo/mutants.toml excludes
+// the function's OR-to-XOR swap on it (the read join's swap is killed by
+// the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd and stays mutated).
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(FEXTNVM3_PHY_CFG_COUNTER_50MSEC & !FEXTNVM3_PHY_CFG_COUNTER_MASK == 0);
+
 /// **`e1000_toggle_lanphypc_pch_lpt`**: fully power-cycle the PHY by driving the `LANPHYPC` pin
 /// low for a millisecond, then wait for the hardware's "LCD power cycle done".
 fn toggle_lanphypc(hardware: &mut impl Hardware) {
@@ -525,6 +545,9 @@ fn physical_layer_device_reset_generic(hardware: &mut impl Hardware) -> Result<(
     }
     let f = Swflag::acquire(hardware)?;
     let ctrl = hardware.read(mac::CTRL);
+    // CTRL.PHY_RST is clear on every entry: each pulse writes CTRL back without it and a global
+    // reset returns CTRL to its defaults. On that caller claim `ctrl | CTRL_PHY_RST` and
+    // `ctrl ^ CTRL_PHY_RST` agree; the triage row records it as a caller equivalence.
     hardware.write(mac::CTRL, ctrl | CTRL_PHY_RST);
     flush_writes(hardware);
     // `phy->reset_delay_us`, 100 for every PCH part.
@@ -744,6 +767,18 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
     Ok(())
 }
 
+// The strap field the address comes from fits the SMB address field, and the two flags share no
+// bit with it or each other, so in the OR chain every swapped XOR meets two operands that share
+// no bit; the compiler checks that here, and .cargo/mutants.toml excludes the function's
+// OR-to-XOR swaps on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(
+    (STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK >> STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_SHIFT)
+        & !(HV_SMB_ADDR_MASK as u32)
+        == 0
+        && HV_SMB_ADDR_PEC_EN & HV_SMB_ADDR_VALID == 0
+);
+
 /// **`e1000_write_smbus_addr`**: the PHY's System Management Bus (`SMBus`) address, for the
 /// I217-family PHY every I219 carries.
 #[doc(alias = "smbus")]
@@ -777,6 +812,12 @@ fn write_system_management_bus_address(
     )?;
     Ok(())
 }
+
+// The two OEM bits share no bit, so the mask's | and ^ compose it identically; the compiler
+// checks that here, and .cargo/mutants.toml excludes the function's OR-to-XOR swap on this
+// assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(HV_OEM_BITS_GBE_DIS & HV_OEM_BITS_LPLU == 0);
 
 /// **`e1000_oem_bits_config_ich8lan`** for D0: carry the MAC's gigabit-disable and LPLU settings
 /// into the PHY's OEM bits and restart autonegotiation to apply them.
@@ -815,6 +856,27 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
 // ---------------------------------------------------------------------------------------------
 // Pass 3: hardware bits and the copper link.
 // ---------------------------------------------------------------------------------------------
+
+// Every OR in initialize_hardware joins operands that share no bit, and FULL_TX_DESC_WB sets
+// nothing outside the WTHRESH field it follows except bit 24, which the next line's prefetch
+// constant sets again, so each OR-to-XOR swap composes identical words; the compiler checks that
+// here, and .cargo/mutants.toml excludes the function's OR-to-XOR swaps on this assertion (the
+// TARC1 read join and the prefetch join are killed by
+// initialize_hardware_writes_freebsds_values_from_any_starting_state and stay mutated).
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(
+    (1 << 22) & CTRL_EXT_PHYPDEN == 0
+        && (1 << 23) & (1 << 24) == 0
+        && (1 << 23) & (1 << 26) == 0
+        && (1 << 23) & (1 << 27) == 0
+        && (1 << 24) & (1 << 26) == 0
+        && (1 << 24) & (1 << 27) == 0
+        && (1 << 26) & (1 << 27) == 0
+        && (1 << 26) & (1 << 30) == 0
+        && RFCTL_NFSW_DIS & RFCTL_NFSR_DIS == 0
+        && TXDCTL_FULL_TX_DESC_WB & !TXDCTL_WTHRESH
+            == TXDCTL_MAX_TX_DESC_PREFETCH & !TXDCTL_PTHRESH
+);
 
 /// **`e1000_init_hw_ich8lan`**, the parts that are not already the kernel's (it programs the
 /// receive address and clears the multicast table itself): `e1000_initialize_hw_bits_ich8lan`, the
@@ -862,6 +924,27 @@ pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
     Ok(())
 }
 
+// Every OR in setup_copper_link that joins two constants joins two that share no bit, and
+// AUTO_MDI_MDIX lands inside the MDIX field its word just masked out, so each such OR-to-XOR swap
+// composes identical words; the compiler checks that here, and .cargo/mutants.toml excludes the
+// function's OR-to-XOR swaps on this assertion. The joins on a register's own value (SLU into
+// CTRL, the capability bits into the words just read) are killed by
+// initialize_hardware_writes_freebsds_values_from_any_starting_state and stay mutated.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(
+    CTRL_FRCSPD & CTRL_FRCDPX == 0
+        && I82577_CFG_ASSERT_CRS_ON_TX & I82577_CFG_ENABLE_DOWNSHIFT == 0
+        && I82577_PHY_CTRL2_AUTO_MDI_MDIX & !I82577_PHY_CTRL2_MDIX_CFG_MASK == 0
+        && NWAY_AR_ASM_DIR & NWAY_AR_PAUSE == 0
+        && NWAY_AR_10T_HD_CAPS & NWAY_AR_10T_FD_CAPS == 0
+        && NWAY_AR_10T_HD_CAPS & NWAY_AR_100TX_HD_CAPS == 0
+        && NWAY_AR_10T_HD_CAPS & NWAY_AR_100TX_FD_CAPS == 0
+        && NWAY_AR_10T_FD_CAPS & NWAY_AR_100TX_HD_CAPS == 0
+        && NWAY_AR_10T_FD_CAPS & NWAY_AR_100TX_FD_CAPS == 0
+        && NWAY_AR_100TX_HD_CAPS & NWAY_AR_100TX_FD_CAPS == 0
+        && MII_CR_AUTO_NEG_EN & MII_CR_RESTART_AUTO_NEG == 0
+);
+
 /// **`e1000_setup_copper_link_pch_lpt`**: set link up with speed and duplex unforced, configure the
 /// 82577-family PHY (`e1000_copper_link_setup_82577`: carrier sense on transmit, downshift, auto
 /// MDI/MDI-X), advertise every speed, and restart autonegotiation
@@ -872,7 +955,9 @@ pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
 /// `e1000_set_master_slave_mode` is left out: FreeBSD's `em` runs it with `e1000_ms_hw_default`,
 /// which writes `PHY_1000T_CTRL` back unchanged. FreeBSD's short wait for link afterwards is the
 /// kernel's own `STATUS.LU` wait.
-pub(crate) fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
+///
+/// Name: recorded (FreeBSD's `e1000_setup_copper_link_pch_lpt`).
+pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
     let c = (hardware.read(mac::CTRL) | crate::CTRL_SLU) & !(CTRL_FRCSPD | CTRL_FRCDPX);
     hardware.write(mac::CTRL, c);
     let f = Swflag::acquire(hardware)?;
@@ -917,6 +1002,12 @@ pub(crate) fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Erro
     f.release(hardware);
     Ok(out?)
 }
+
+// MULTIQ_2_REQ sits inside the MULTIQ_3_REQ field the word before it just masked out, so | and ^
+// compose the word identically; the compiler checks that here, and .cargo/mutants.toml excludes
+// the function's OR-to-XOR swap on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(TARC0_CB_MULTIQ_2_REQ & !TARC0_CB_MULTIQ_3_REQ == 0);
 
 /// **`em_initialize_transmit_unit`'s "SPT and KBL errata workarounds"**, after `TCTL` is written:
 /// multiple outstanding requests on, `IOSFPC`'s receive threshold, and `TARC0`'s request count

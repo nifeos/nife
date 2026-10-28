@@ -520,7 +520,7 @@ fn note_peak(peak: u16, ceiling: usize) {
 /// **The highest occupancy any capability table has reached, and that table's capacity.**
 ///
 /// `(0, 0)` before anything has ever been inserted. One number for every instantiation linked
-/// into the binary; see [`PEAK`]'s BUGS.
+/// into the binary; see `PEAK`'s BUGS.
 pub fn highest_seen() -> (usize, usize) {
     let packed = PEAK.load(core::sync::atomic::Ordering::Relaxed);
     ((packed >> 16) as usize, (packed & 0xffff) as usize)

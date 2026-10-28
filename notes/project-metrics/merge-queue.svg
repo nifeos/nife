@@ -50,9 +50,9 @@
 <path class="seg s0" d="M542.8,324.0 V232.6 Q542.8,228.6 546.8,228.6 H577.4 Q581.4,228.6 581.4,232.6 V324.0 Z"><title>2026W43, ejected share: 28.7</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
 <text class="fg val" x="562.1" y="223.6" font-size="10" text-anchor="middle">28.7</text>
-<path class="seg s0" d="M601.4,324.0 V293.8 Q601.4,289.8 605.4,289.8 H636.0 Q640.0,289.8 640.0,293.8 V324.0 Z"><title>2026W44, ejected share: 10.3</title></path>
+<path class="seg s0" d="M601.4,324.0 V275.5 Q601.4,271.5 605.4,271.5 H636.0 Q640.0,271.5 640.0,275.5 V324.0 Z"><title>2026W44, ejected share: 15.8</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="620.7" y="284.8" font-size="10" text-anchor="middle">10.3</text>
+<text class="fg val" x="620.7" y="266.5" font-size="10" text-anchor="middle">15.8</text>
 <rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">ejected share</tspan></text>
 <line x1="672" y1="88" x2="683" y2="88" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>

@@ -1,5 +1,5 @@
 //! A screen on aarch64 and riscv64 under QEMU, whose firmware never lights one: a
-//! [`ramfb`](crate::drivers::ramfb) over static pixels, handed to `console::attach_screen` as the
+//! [`ramfb`] over static pixels, handed to `console::attach_screen` as the
 //! same [`Framebuffer`] `x86_64` produces. A real board's display is milestone 157 (real display
 //! output on the board).
 //!

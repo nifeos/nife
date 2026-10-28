@@ -124,7 +124,9 @@ pub mod throughput {
     /// fresh space until the old one is freed. The bytes are pinned rather than the transfer count,
     /// so two runs move the same file however the requests are shaped, and a before and an after
     /// compare.
-    pub(crate) const TOTAL: u64 = 1024 * 1024;
+    ///
+    /// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+    pub const TOTAL: u64 = 1024 * 1024;
 
     /// Transfers per phase: [`TOTAL`] divided by [`UNIT`]. 256 at one page, 16 at sixteen.
     pub const BLOCKS: u64 = TOTAL / UNIT as u64;

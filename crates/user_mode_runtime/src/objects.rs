@@ -294,7 +294,7 @@ pub fn thread_control_block_resume(tcb_slot: u64) -> i64 {
 
 /// Drop the capability in `slot` from this thread's capability table (`SYS_CAPABILITY_DELETE`). Deleting an empty
 /// slot is a no-op. A program that retypes many objects (a loader, a spawner) frees each slot as
-/// soon as it is done with it, so its fixed capability table does not fill. Through [`trap6`] for
+/// soon as it is done with it, so its fixed capability table does not fill. Through `trap6` for
 /// [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from

@@ -61,7 +61,9 @@ pub enum Error {
 /// Where the flash registers sit in BAR0 on SPT (`E1000_FLASH_BASE_ADDR`).
 pub(crate) const FLASH_BASE_ADDR: u64 = 0xe000;
 /// Hardware sequencing flash status, low half; control, high half (`ICH_FLASH_HSFSTS`).
-pub(crate) const HSFSTS: u64 = 0x04;
+///
+/// Name: recorded (`ICH_FLASH_HSFSTS`).
+pub const HSFSTS: u64 = 0x04;
 /// Flash linear address (`ICH_FLASH_FADDR`).
 pub(crate) const FADDR: u64 = 0x08;
 /// Flash data 0 (`ICH_FLASH_FDATA0`).
@@ -92,6 +94,20 @@ pub mod control {
     /// Its mask.
     pub(crate) const BYTE_COUNT_MASK: u16 = 0b11 << 8;
 }
+
+// `initialize_cycle` ORs the two write-one-to-clear error bits into the status it just read, and
+// they share no bit, so | and ^ compose them identically; the compiler checks that here, and
+// .cargo/mutants.toml excludes the function's OR-to-XOR swaps on this assertion (the DONE write's
+// swap is excluded on the write-back beside it, which has already carried the bit).
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(
+    status::ERROR ^ status::DIRECT_ACCESS_ERROR == status::ERROR | status::DIRECT_ACCESS_ERROR
+);
+// The byte count `read_u32_at_byte` ORs in sits inside the field it just masked out, so | and ^
+// compose them identically; the compiler checks that here, and .cargo/mutants.toml excludes the
+// function's OR-to-XOR swap on this assertion.
+#[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!((3u16 << control::BYTE_COUNT_SHIFT) & !control::BYTE_COUNT_MASK == 0);
 
 /// `ICH_FLASH_LINEAR_ADDR_MASK`.
 pub(crate) const LINEAR_ADDRESS_MASK: u32 = 0x00ff_ffff;
