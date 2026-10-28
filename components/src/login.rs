@@ -34,7 +34,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use supervision_protocol::{
+use supervision_contract::{
     ChildEndowment, Retention, build_child, memory_region_destroy, memory_region_split,
     retype_obj_from as retype_obj, retype_page_frame_from, start_child,
 };
@@ -124,7 +124,7 @@ const CHANNEL_UT_PAGES: u64 = 32;
 const CARETAKER_FS_VA: u64 = address_space_map::pair_page(0x0000_0000_0060_0000);
 
 /// This process's own scratch: page tables for [`build_child`]'s own temporary mappings (never a
-/// child's), spent only by [`mint`]'s `build_child` calls. `supervision_protocol::fill_and_map`'s
+/// child's), spent only by [`mint`]'s `build_child` calls. `supervision_contract::fill_and_map`'s
 /// scratch cursor wraps inside `SCRATCH_WINDOW`, so the most it can cost is `SCRATCH_TABLE_PAGES`
 /// (32); a whole aarch64 suite run measured one page, so 128 is margin, not a tight count. See
 /// notes/login/budgets-and-reclamation.md, "Four budgets, each with its own parent".
@@ -273,7 +273,7 @@ fn vouched_caretaker(
     //
     // SAFETY: the spawner maps `caretaker_len` bytes read-only at `CARETAKER_ELF_VA`, for the
     // lifetime of this process, before `_start` runs (`login_contract::CARETAKER_ELF_VA`'s own
-    // contract). Both spawners do: `crates/system_initializer` through `supervision_protocol`'s
+    // contract). Both spawners do: `crates/system_initializer` through `supervision_contract`'s
     // `blobs`, and `kernel::user::login_service::start` through `map_new`. A zero length is a slice
     // of nothing rather than a read of nothing, which is the case below.
     let care_bytes = unsafe {
@@ -1547,7 +1547,7 @@ fn wipe_page(va: u64) {
 
 fn fail(step: u64) -> ! {
     send(AUDIT, 0xDEAD_0000_0000_0000 | step, 0, 0);
-    supervision_protocol::fail()
+    supervision_contract::fail()
 }
 
 user_mode_runtime::panic_handler!();

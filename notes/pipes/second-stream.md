@@ -194,7 +194,7 @@ of them was a boot that hung on the ISA nobody tested.
 Milestone 96 made it one. `crates/system_initializer` holds the construction and the spawn service,
 and each init is now the table of slot numbers its own kernel granted plus a call into it: the two
 grant orders differ, and nothing else does. The loader went the same way, from three copies
-(`supervision_protocol` plus a `build_child` in each init) to `supervision_protocol`'s, which the
+(`supervision_contract` plus a `build_child` in each init) to `supervision_contract`'s, which the
 inits reach through the crate. What the two files still say for themselves is the thing that is
 genuinely theirs, which is what the kernel put in which slot.
 

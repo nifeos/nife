@@ -150,7 +150,7 @@ clock. They all call `map_timebase_page`.
 `user_address_space_create` maps no timebase page. That syscall serves every purpose that wants a
 bare address-space object, most of which build nothing like an ELF process, and one test's
 hand-sized region has no table budget for it. The userspace loader
-(`supervision_protocol::build_child_space`) writes the page itself from the rate the parent holds,
+(`supervision_contract::build_child_space`) writes the page itself from the rate the parent holds,
 so a parent that knows nothing hands down nothing rather than a plausible constant.
 
 ## The registry

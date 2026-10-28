@@ -53,20 +53,20 @@ recorded limitation rather than a pass:
    machine with no nife kernel under it is a fault, not a syscall. The examples are type-checked
    against the real signatures and executed by the QEMU boot and `script/swish-check`.
 
-3. An executing doctest that the gate does not run (`hot_swap_contract`, `supervision_protocol`, and the
+3. An executing doctest that the gate does not run (`hot_swap_contract`, `supervision_contract`, and the
    two above that are not `no_run`). See BUGS below; this is the one honest gap.
 
 ## BUGS
 
 - **Five crates' doctests are never run by `script/test`.** `user_mode_runtime`, `hot_swap_contract`, `virtio`,
-  `supervision_protocol` and `system_initializer` take unconditional `user_mode_runtime` dependencies, so the host
+  `supervision_contract` and `system_initializer` take unconditional `user_mode_runtime` dependencies, so the host
   test selection excludes them (the list is in `xtask/src/suite.rs`, derived and checked by
   `script/lint`). Their examples run under `cargo test --doc -p <crate>` on an aarch64 host and
   are checked by nothing in CI. On an x86_64 host they do not even compile, which is a property of the
   packages and not of the examples. The fix is to split each crate's pure half out from its syscall
   half. That is a lane of its own, and is what would let the arithmetic in `hot_swap_contract::digest`
   and
-  the constants in `supervision_protocol` be gate-checked like every other wire contract.
+  the constants in `supervision_contract` be gate-checked like every other wire contract.
 
 - **`rustdoc --show-coverage` undercounts.** See the section above. It is still the right tool for
   "does this crate have any example at all", which is what the examples half is about.
@@ -103,7 +103,7 @@ a hard gate, so those crates cannot regress:
 `intrusive_queue`, `line_editor`,
 `manual`, `measured_boot`, `nifefs`, `network_time_protocol`, `non_volatile_memory_express`,
 `paging`, `pgrep`. `ps`, `memory_regions`, `byte_sink_contract`, `generational_table`,
-`socket_contract`, `work_steal_slot`, `supervision_protocol`,
+`socket_contract`, `work_steal_slot`, `supervision_contract`,
 `hot_swap_contract`, `swish`, `system_initializer`, `timetable`, `user_mode_runtime`, `video_terminal`,
 `virtio`, `thread_wake_handshake`.
 

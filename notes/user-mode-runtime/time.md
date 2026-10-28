@@ -39,7 +39,7 @@ and no program holds one for the PIT.
 builds a top-level address space maps the page (`kernel::user::map_x86_timebase_page`).
 
 Both publish the rate on the timebase page, mapped read-only into every process at
-`counter_frequency_contract::PAGE_VA`. `supervision_protocol::build_child_space` fills a child's
+`counter_frequency_contract::PAGE_VA`. `supervision_contract::build_child_space` fills a child's
 page from its parent's rate, so a subtree inherits the measured number. A parent that does not know
 the rate writes a zeroed page, and its whole subtree refuses rather than guessing.
 `cntfrq_checked` returns `None` for a zeroed or unrecognized page, and `cntfrq` panics on it.

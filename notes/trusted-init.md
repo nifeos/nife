@@ -219,7 +219,7 @@ collected. Until 2026-10-05 (UTC) the progenitor also kept a writable mapping of
 the progenitor can read and write any page it laid down for a child. That sentence is kept here
 because §162 (whether a holder can give up a mapping) quotes it; §249 (a running address space stays
 nameable) closed the gap, and the loader now unmaps each page once it is in the child. Milestone 96 (one init: the spawn service written twice) made `crates/system_initializer` the one progenitor and
-`supervision_protocol`'s builder the one loader. The shape, the proofs and the BUGS in full are in
+`supervision_contract`'s builder the one loader. The shape, the proofs and the BUGS in full are in
 [trusted-init/interactive-boot.md](trusted-init/interactive-boot.md).
 
 ## The chain continues past the progenitor (milestone 104)

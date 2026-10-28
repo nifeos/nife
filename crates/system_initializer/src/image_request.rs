@@ -13,7 +13,7 @@ use super::*;
 /// Where the progenitor maps the file service's client-window pool to read and write the
 /// installed-programs table. Mapped once, on first use, with page tables from its own budget.
 /// Clear of every other window this process maps (`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS`, the
-/// peek pages below it, and `supervision_protocol::SCRATCH_WINDOW` at `0x1000_0000`).
+/// peek pages below it, and `supervision_contract::SCRATCH_WINDOW` at `0x1000_0000`).
 pub(super) const ACTIVATION_FS_VA: u64 = address_space_map::pair_page(0x0f40_0000);
 
 /// **Where the progenitor maps the second mounted tree's client-window pool**, to zero a window
@@ -46,7 +46,7 @@ const _: () = assert!(
 pub(super) fn receive_args(spawn: &mut SpawnEndpoint, own_ut: u64) -> Option<u64> {
     let frame = opt_capability(spawn.receive_capability().1)?;
     // Revoked when the shell reclaims its frame; the scratch window reuses the page on a later lap.
-    let theirs = supervision_protocol::map_scratch(frame, false, own_ut).ok();
+    let theirs = supervision_contract::map_scratch(frame, false, own_ut).ok();
     capability_delete(frame);
     theirs
 }
@@ -65,7 +65,7 @@ pub(super) fn copy_args(
 ) -> Option<u64> {
     let page = retype_page_frame(region).ok()?;
     // Fresh from the child's region, so reaping the child takes this mapping back.
-    let Ok(ours) = supervision_protocol::map_scratch(page, true, own_ut) else {
+    let Ok(ours) = supervision_contract::map_scratch(page, true, own_ut) else {
         capability_delete(page);
         return None;
     };
@@ -84,7 +84,7 @@ pub(super) fn copy_args(
     let same_verb = agrees(copied);
     // Written, and the child's from here: give our window onto it up (milestone 95, §249). Without
     // a capability to our own space this does nothing, and the region's reap takes it back as before.
-    supervision_protocol::give_up_own_page(ours);
+    supervision_contract::give_up_own_page(ours);
     if !same_verb {
         capability_delete(page);
         return None;
@@ -484,18 +484,18 @@ pub(super) struct Frames {
 }
 
 /// Where [`take_frames`] mapped each frame, for [`stage_frames`] to copy from: the page's index in
-/// `supervision_protocol::SCRATCH_WINDOW`, one entry per page of the largest image. The progenitor
+/// `supervision_contract::SCRATCH_WINDOW`, one entry per page of the largest image. The progenitor
 /// has one thread, so `Relaxed` is all the ordering there is. An index, not an address, to keep
 /// this `.bss` at two bytes an entry: the kernel suite's frame ledger counts every progenitor.
 static FRAME_VIEWS: [AtomicU16; spawnproto::IMAGE_MAXIMUM_PAGES as usize] =
     [const { AtomicU16::new(0) }; spawnproto::IMAGE_MAXIMUM_PAGES as usize];
 
 // Every page of the scratch window has an index that fits.
-const _: () = assert!(supervision_protocol::SCRATCH_WINDOW_PAGES <= u16::MAX as u64 + 1);
+const _: () = assert!(supervision_contract::SCRATCH_WINDOW_PAGES <= u16::MAX as u64 + 1);
 
 /// The scratch page with index `i`.
 fn scratch_page(i: u16) -> u64 {
-    supervision_protocol::SCRATCH_WINDOW.start + u64::from(i) * supervision_protocol::PAGE
+    supervision_contract::SCRATCH_WINDOW.start + u64::from(i) * supervision_contract::PAGE
 }
 
 /// **Take an image request's frames off the spawn endpoint**, mapping each read-only in the
@@ -518,10 +518,10 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
             continue;
         };
         if f.ok {
-            match supervision_protocol::map_scratch(frame, false, own_ut) {
+            match supervision_contract::map_scratch(frame, false, own_ut) {
                 Ok(va) => {
-                    let i = (va - supervision_protocol::SCRATCH_WINDOW.start)
-                        / supervision_protocol::PAGE;
+                    let i = (va - supervision_contract::SCRATCH_WINDOW.start)
+                        / supervision_contract::PAGE;
                     FRAME_VIEWS[f.views as usize].store(i as u16, Relaxed);
                     f.views += 1;
                 }
@@ -578,12 +578,12 @@ pub(super) fn stage_frames(
                 }
             }
         }
-        supervision_protocol::give_up_own_page(theirs);
+        supervision_contract::give_up_own_page(theirs);
     }
     match (staging, ok) {
         (Some(st), true) => Some(st),
         (Some(st), false) => {
-            supervision_protocol::memory_region_destroy(st);
+            supervision_contract::memory_region_destroy(st);
             capability_delete(st);
             None
         }

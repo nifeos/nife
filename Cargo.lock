@@ -250,7 +250,7 @@ dependencies = [
  "slabtop",
  "smoltcp",
  "socket_contract",
- "supervision_protocol",
+ "supervision_contract",
  "swish",
  "system_initializer",
  "system_log",
@@ -544,7 +544,7 @@ dependencies = [
  "nifefs",
  "soak_page",
  "socket_contract",
- "supervision_protocol",
+ "supervision_contract",
  "system_initializer",
  "timetable",
  "timetable_store",
@@ -1298,7 +1298,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "supervision_protocol"
+name = "supervision_contract"
 version = "0.1.0"
 dependencies = [
  "abi",
@@ -1368,7 +1368,7 @@ dependencies = [
  "package_index",
  "socket_contract",
  "std_runtime_contract",
- "supervision_protocol",
+ "supervision_contract",
  "user_mode_runtime",
  "video_terminal",
 ]

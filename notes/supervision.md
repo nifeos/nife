@@ -228,7 +228,7 @@ other side.
   `capability_table.get(FAULT_EP_SLOT)` rather than `get_with`, so **any** `Rendezvous` capability
   there makes the thread supervised, `Rights::NONE` included. It is the one place in the kernel where a
   capability's *presence* authorizes something and its rights are never consulted. And
-  `supervision_protocol` is the only site that places one, with `abi::rights::READ`, chosen by every
+  `supervision_contract` is the only site that places one, with `abi::rights::READ`, chosen by every
   spawner that uses `build_child` (`system_initializer`, `root_supervisor`, `c_confiner`,
   `builder`).
 
@@ -240,7 +240,7 @@ other side.
   the **deletion**, and the ordering inside `start_tcb` is load-bearing.
 
   **What is actually wrong is the record.** `crates/system_initializer` ("to place a `READ` view of
-  it in each job's reserved fault slot") and `supervision_protocol` both present the choice of `READ`
+  it in each job's reserved fault slot") and `supervision_contract` both present the choice of `READ`
   as a deliberate narrowing, and `abi::fault::FAULT_EP_SLOT`'s own doc says the clearing is what
   keeps the kernel the only sender. All three are true sentences that a reader assembles into a
   false one: that placing it with `WRITE` would open a hole. It would not, and neither would
@@ -252,5 +252,5 @@ other side.
   would make the rights mean something and would refuse every current caller, since they all place
   `READ`; requiring `READ` would encode the accident. Deciding which right a supervision placement
   should demand is a syscall-surface question and belongs to an architect (§16 (object revocation),
-  §26 (the fault endpoint)). Until then, read the `READ` in `supervision_protocol` as arbitrary and
+  §26 (the fault endpoint)). Until then, read the `READ` in `supervision_contract` as arbitrary and
   the deletion as the mechanism.

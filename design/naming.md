@@ -3,8 +3,8 @@
 What the tree's names mean, which conventions are rules, and which of those a machine checks.
 
 This file is the authority for naming conventions, per §155 (the naming conventions move out of the
-constitution, and the note becomes the rule). `AGENTS.md` keeps only the authority. Where
-the two disagree, this file is the rule and `AGENTS.md` is the bug. The headline rule is
+constitution, and the note becomes the rule). Where it and `AGENTS.md` disagree, this file is the
+rule and `AGENTS.md` is the bug. The headline rule is
 [§39 (a component is named for what it is)](decisions/0039-component-names.md).
 
 The [appendices](#appendices) hold the argument, examples and refusals.
@@ -112,7 +112,8 @@ the limit pick a name.
 - Never `-d`, which claims a Unix daemon. The vocabulary is component (the shippable unit), service
   (what it offers) and contract (the wire protocol). "Server" is a fine role word.
 - A program's binary, source file and archive entry share one string.
-- Wire-contract crates end in `_contract` (calef, 2026-10-18 UTC); a standard keeps its word
+- Wire-contract crates end in `_contract` (calef, 2026-10-18 UTC; `supervision_contract` (calef,
+  2026-10-28 UTC, relayed by the maintainer)); a standard keeps its word
   (`network_time_protocol`). `abi`
   predates the suffix. `compositor` and `line_editor` hold protocol modules but are logic crates.
 - A crate that is a component's engine takes the component's name.
@@ -311,8 +312,8 @@ This is rung three of the ladder: no gate can tell an account from an intention 
 6. Lowercase, hyphenated `notes/` and `design/` filenames.
 7. One `Name:` block per name, in a known state.
 
-A separate check refuses a count above two before "halves". `linedisc` would pass every check. What
-caught it was a person not knowing the word, and that remains the test.
+A separate check refuses a count above two before "halves". What caught `linedisc` was a person not
+knowing the word, and that remains the test.
 
 Names meet the current rules (calef, 2026-10-18 UTC). A revised rule lands with its check, a new
 or renamed name passes each check, and lanes rename unratified violators, still

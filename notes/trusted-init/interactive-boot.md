@@ -116,11 +116,11 @@ disagree about. aarch64's boot path is shared with the test roles of milestone 1
 endpoint and a test SGI the interactive system never uses, and numbers everything after them
 differently. That is data the crate takes (`BootEndowment::unused`), not code it repeats.
 
-The smaller one was the loader. `crates/supervision_protocol`'s child builder was a generalization of
+The smaller one was the loader. `crates/supervision_contract`'s child builder was a generalization of
 the two inits' `build_child`, so the logic existed three times. This increment added the fault slot
 to all three rather than unifying them. Unifying loaders and migrating the boot path in one pass
 would have made a boot failure ambiguous. Milestone 96 (one init: the spawn service written twice) did both, in that order, with
-`script/swish-check` between them. `supervision_protocol`'s is the tree's only loader now; what it grew
+`script/swish-check` between them. `supervision_contract`'s is the tree's only loader now; what it grew
 is what the inits needed, a capability placed at a named slot (§67's diagnostic stream) and a
 stack size the caller states. The stack is a field rather than a constant because the two callers
 honestly differ: four pages is enough for the supervision tree, and a child at the prompt gets twelve

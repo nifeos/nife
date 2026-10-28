@@ -104,12 +104,12 @@ stack's base at 0x7f000000; an image may be at most 496 MiB
 ```
 
 An image linked for the old layout at `0x40_0000` is refused as outside the band, naming the
-base to relink at. `supervision_protocol`'s loader makes the same check, but it reports every failure
+base to relink at. `supervision_contract`'s loader makes the same check, but it reports every failure
 as `Err(())`, so there the check only makes the failure early and clean.
 
 ## What changed with it
 
-- `kernel::user::USER_STACK_VA` and `supervision_protocol::CHILD_STACK_VA` are both the map's
+- `kernel::user::USER_STACK_VA` and `supervision_contract::CHILD_STACK_VA` are both the map's
   `STACK_TOP_PAGE`, so neither can move alone.
 - `crates/user_mode_runtime/link.ld` links at `0x6000_0000`. A linker script cannot name a Rust
   constant, so the map's host test parses the script's `. =` line and fails if the two differ.

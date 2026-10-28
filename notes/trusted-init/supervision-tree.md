@@ -14,7 +14,7 @@ hold less, and to make it hold it for less time.
 ## The tree
 
 Four small portable programs (`components/src/root_supervisor.rs`, `spawner.rs`,
-`sub_server_supervisor.rs`, `first_attempt_crasher.rs`, sharing `crates/supervision_protocol`):
+`sub_server_supervisor.rs`, `first_attempt_crasher.rs`, sharing `crates/supervision_contract`):
 
 ```text
   root_supervisor   the root untyped + the initrd + a report endpoint       (briefly)

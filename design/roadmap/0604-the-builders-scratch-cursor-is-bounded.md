@@ -113,7 +113,7 @@ and the revocation is portable kernel code (DECISIONS §19 (architectural parity
 
 - **Recorded.** The count is computed rather than measured on a progenitor, the probe is one
   thread's, a builder still maps every live child, and `BadPointer` doubles as "taken": the BUGS
-  above, and beside the code in `crates/supervision_protocol/src/lib.rs`.
+  above, and beside the code in `crates/supervision_contract/src/lib.rs`.
 - **Decision.** Removing a builder's mapping of a live child is still
   `design/decisions/0162-giving-up-a-mapping.md`, unchanged by this.
 - **Milestone 595.** Its pool growth for `rg` is now checked against the window at compile time.

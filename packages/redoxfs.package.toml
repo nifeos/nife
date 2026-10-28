@@ -1,12 +1,18 @@
 # redoxfs: the RedoxFS server, its host tool and the vendored library it serves.
 #
-# Milestone 611 (every program and crate belongs to a package). The package's name, kind, home
-# and membership are provisional, the lane's proposal for calef to ratify; the format is
+# Name: ratified 2026-10-28 (calef, relayed by the maintainer). The package leaves this tree under
+# the upstream name, whole: as `nifeos/redoxfs`, keeping `redoxfs` for the vendored library and the
+# `redoxfs_` prefix for the first-party server and host tool. This is the attribution reading: the
+# package is Redox's filesystem, ported; the server, the host tool and the divergence patch are
+# ours. Whether the port goes upstream is still open, and it is a separate question from the name.
+#
+# Milestone 611 (every program and crate belongs to a package). The package's kind, home and
+# membership are provisional, the lane's proposal for calef to ratify; the format is
 # helpers/packages.py's header, and notes/package-boundaries.md has the table and the reasons.
 
 name = "redoxfs"
 kind = "optional"
-home = { status = "undecided", reason = "the server and host tool are ours and the library is Redox's; whether the port goes upstream is open" }
+home = { repo = "redoxfs", status = "provisional" }
 crates = ["redoxfs_server", "redoxfs_host", "redoxfs"]
 # The server enforces subtree grants itself (milestone 606 (a directory walk costs what it does on
 # Linux), rulings D and T1 of 2026-09-27): `redoxfs_server` carries

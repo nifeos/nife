@@ -1,5 +1,5 @@
 #![no_std]
-// `Result<_, ()>` throughout the build path, for `supervision_protocol`'s reason: every failure here is
+// `Result<_, ()>` throughout the build path, for `supervision_contract`'s reason: every failure here is
 // a syscall that already returned its own error through the ABI, and a second, richer error would be
 // inventing detail the kernel did not provide. See that crate's head comment.
 #![allow(clippy::result_unit_err)]
@@ -64,7 +64,7 @@ use measurement::*;
 use spawn_loop::*;
 use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};
 // The tree's only loader, named here rather than qualified at every call.
-use supervision_protocol::{
+use supervision_contract::{
     ChildEndowment, Retention, build_child, forget_thread_control_block, hand_to_requester,
     retype_obj_from as retype_obj, retype_page_frame_from as retype_page_frame, start_child,
 };

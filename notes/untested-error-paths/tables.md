@@ -109,7 +109,7 @@ region, so neither verdict is known.
 | redoxfs_server | 237 | 16 |
 | kernel (arch) | 86 | 68 |
 | system_initializer | 84 | 37 |
-| supervision_protocol | 24 | 0 |
+| supervision_contract | 24 | 0 |
 | cryptography_provider | 20 | 0 |
 | hot_swap_contract | 5 | 2 |
 | user_mode_runtime | 2 | 4 |
