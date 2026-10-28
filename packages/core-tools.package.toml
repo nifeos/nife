@@ -9,7 +9,10 @@
 # core-tools?", he answered "core-tools". Refused `coreutils` (GNU's term of art, given up on
 # purpose so the name matches `disk-tools` and the spelled-out rule against abbreviating
 # "utilities"). `uuid` joined in the same day's ruling: "uuid can be used for lots of applications.
-# Putting it in disk-utils doesn't seem right."
+# Putting it in disk-utils doesn't seem right." Ratified 2026-10-28 as the repository's name too
+# (calef, relayed by the maintainer on the naming review, pull request #2870): `nifeos/core-tools`,
+# one repository per package (§316 (one repository per package leaves the tree)). The `home` line
+# stays provisional until the repository exists (§316).
 
 name = "core-tools"
 kind = "base"
