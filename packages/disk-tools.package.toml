@@ -11,7 +11,10 @@
 # in the same ruling: "uuid can be used for lots of applications. Putting it in disk-utils doesn't
 # seem right." Debian's grouping of uuidgen (util-linux, uuid-runtime) was refused as wrong for a
 # general tool. `coreutils` became `core-tools` the same day, so uuid is in
-# packages/core-tools.package.toml.
+# packages/core-tools.package.toml. Ratified 2026-10-28 as the repository's name too (calef,
+# relayed by the maintainer on the naming review, pull request #2870): `nifeos/disk-tools`, one
+# repository per package (§316 (one repository per package leaves the tree)). The `home` line
+# stays provisional until the repository exists (§316).
 
 name = "disk-tools"
 kind = "base"

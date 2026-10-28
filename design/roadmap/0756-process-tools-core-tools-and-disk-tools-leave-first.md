@@ -33,11 +33,11 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   `packages/*.package.toml` keep `status = "provisional"` until each repository exists; this rules
   the destination and does not flip that status. §201 (one roadmap until a citation has to cross),
   amended the same day, rules the citation identity across repositories. Ruled 2026-10-28: the
-  home's grain, one repository per package (§316 (one repository per package leaves the tree)).
-  Still open, and not blocking until this block starts: the three repositories' names themselves,
-  held for review in design/roadmap/proposals/first-cut-names.md. The citation identity the first
-  crossing writes stays open (§201). So does the SDK's place in milestone 691 (packages move out
-  of this repository, one per pull request)'s order.
+  home's grain, one repository per package (§316 (one repository per package leaves the tree)), and
+  the names, ratified the same day on the naming review
+  (design/roadmap/proposals/first-cut-names.md, pull request #2870). Still open, and not blocking
+  until this block starts: the citation identity the first crossing writes (§201), and the SDK's
+  place in milestone 691 (packages move out of this repository, one per pull request)'s order.
 - Sequenced 2026-10-28 (UTC): the update path goes first, milestones 911 (scripted installs grant
   only what the owner's approval file allows), 909 (basalt composes the bootable image from its
   packages), then milestone 607 item 5. This cut waits for its conditions.
@@ -100,8 +100,10 @@ a two-repo change.
      2026-10-04 list.
    - basalt can take a component's output as a package by digest: §235's P1, milestone 607 item 1.
    - The home and its repository name are ratified, and §201's citation identity is ruled, since
-     this cut is its revisit event. Ruled 2026-10-28 (UTC): the three repositories above, and
-     §201 (one roadmap until a citation has to cross) as amended.
+     this cut is its revisit event. Ruled 2026-10-28 (UTC): the three repositories above, the names
+     ratified on the naming review (pull request #2870), and §201 (one roadmap until a citation
+     has to cross) as amended. What remains of this precondition is the homes: each flips to
+     ratified when its repository exists.
 3. Milestone 691's order is amended: leaves of the release graph first, the SDK last of the
    leaves, not first. Its rule is right for a settled tree and moves the most volatile piece first
    on this one.

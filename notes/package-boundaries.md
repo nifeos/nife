@@ -2,7 +2,10 @@
 
 *Milestone 611 (every program and crate belongs to a package, and every package has a home). The
 file name, the key names of both TOML files, every package name and every home below are
-provisional; the four kinds were ratified on 2026-09-27 (UTC). calef ratifies the table; the questions are at the end.* What a package is as a file on a target is [notes/packages.md](packages.md). This note is
+provisional; the four kinds were ratified on 2026-09-27 (UTC). The tree ratified `process-tools`,
+`core-tools` and `disk-tools` as package names on 2026-10-06 (UTC) and as repository names on
+2026-10-28 (UTC), each recorded in its manifest; the blanket still holds for the rest. calef
+ratifies the table; the questions are at the end.* What a package is as a file on a target is [notes/packages.md](packages.md). This note is
 about the tree: which crate, program and path belongs to which package, and where each is going.
 
 ## What calef ruled
@@ -202,9 +205,10 @@ holds the plan.
 2. The kinds: answered, ratified at 07:23Z with the rule that a kind says where a package ends up.
 3. The homes. Answered, ruled 2026-10-28 (UTC) with the rule that a program package leaves as one
    repository per package, named after the package (§316 (one repository per package leaves the
-   tree)). The ruling refuses grouping by #1389's seven divisions. The repository names themselves
-   stay provisional until the naming review ratifies them; the brief is
-   design/roadmap/proposals/first-cut-names.md.
+   tree)). The ruling refuses grouping by #1389's seven divisions. The same day's naming review
+   ratified `process-tools`, `core-tools` and `disk-tools` as the package names and the repository
+   names (design/roadmap/proposals/first-cut-names.md, pull request #2870); each `home` line stays
+   provisional until its repository exists.
 4. The project records: `design/`, `briefs/`, `script/`, `helpers/` and `.github/`. Does this
    repository become their home, or do they leave too?
 5. The names: all 27 packages, `helpers/packages.py`, this note and the `homes` metric.

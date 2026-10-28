@@ -39,11 +39,15 @@ program package releases as one unit, its programs and the crates behind them, s
 package grain, one repository holding that package's crates and programs. Which grain governs
 follows from what the piece is, not from its size.
 
-## What it does not settle
+## The names
 
-The names. This section fixes the shape, three repositories at one repository per package, and not
-the strings. `process-tools`, `core-tools` and `disk-tools` stay provisional until the naming
-review ratifies them, and the review brief is
-[design/roadmap/proposals/first-cut-names.md](../roadmap/proposals/first-cut-names.md). §151 (the
-goal of the repository split is independent release) decides the test a piece passes to earn
-separation; this section decides the grain a leaving package moves at. Neither names anything.
+Ruled 2026-10-28 (UTC), on the naming review this section held open
+([design/roadmap/proposals/first-cut-names.md](../roadmap/proposals/first-cut-names.md), relayed by
+the maintainer on pull request #2870): `process-tools`, `core-tools` and `disk-tools` stand as the
+package names and as the repository names of the first cut. The repositories do not exist yet, so
+ratifying a name and ratifying a home stay two events, per the rule above. milestone 756
+(process-tools, core-tools and disk-tools are the first code to leave this repository)'s
+precondition 6 asks for the home and the repository name ratified. The ruling covers the names;
+the gap that remains is the homes, which wait on the repositories. §151 (the goal of the repository split
+is independent release) decides the test a piece passes to earn separation; this section decides
+the grain a leaving package moves at.
