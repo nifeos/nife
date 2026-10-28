@@ -5,8 +5,8 @@ use std::process::Command;
 use std::sync::atomic::Ordering;
 
 use crate::archive::{
-    initial_ramdisk_path, initial_ramdisk_riscv, initial_ramdisk_x86, riscv_initial_ramdisk_path,
-    x86_initial_ramdisk_path,
+    has_initial_ramdisk_riscv, has_initial_ramdisk_x86, initial_ramdisk_path,
+    riscv_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::disk::{disk_path, mkdisk, mkredoxfs, redoxfs_server_build};
 use crate::host::{flag_value, kernel_elf, run, workspace_root};
@@ -193,7 +193,7 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
 /// `os_primitives_benchmarker` and `coremark`. Its baseline is `bench/baseline-riscv64.txt`.
 /// `cargo xtask bench --riscv [--check|--save]`.
 fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
-    if !initial_ramdisk_riscv()
+    if !has_initial_ramdisk_riscv()
         || !run(
             "cargo",
             &[
@@ -253,7 +253,7 @@ fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
 fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
     // `--keyboard` needs `keyboard_driver`, and the plain x86_64 bench boot has no initial ramdisk.
     // Built before the kernel, whose build measures the archive's programs.
-    if keyboard() && !initial_ramdisk_x86() {
+    if keyboard() && !has_initial_ramdisk_x86() {
         return false;
     }
     if !run(

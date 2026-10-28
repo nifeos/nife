@@ -17,7 +17,7 @@
 //!
 //! fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 //!     // SAFETY: the kernel maps `initial_ramdisk_len` bytes of the archive, read-only, at
-//!     // INITIAL_RAMDISK_VA, before this process's `_start` runs (`bytes`'s own contract).
+//!     // INITIAL_RAMDISK_VIRTUAL_ADDRESS, before this process's `_start` runs (`bytes`'s own contract).
 //!     let archive = unsafe { user_mode_runtime::initial_ramdisk::bytes(initial_ramdisk_len) };
 //!     let _ = archive;
 //!     loop {}
@@ -25,21 +25,20 @@
 //! ```
 
 /// Where the kernel maps the initial ramdisk archive before any program's `_start` runs. Must match
-/// `kernel::user::INITIAL_RAMDISK_VA`, the kernel-side constant this value mirrors, which every
+/// `kernel::user::INITIAL_RAMDISK_VIRTUAL_ADDRESS`, the kernel-side constant this value mirrors, which every
 /// kernel-side spawn path (`kernel::user::boot_progenitor` at boot, `spawn_elf_child_builder` in
 /// the tests) maps this many bytes at, read-only, before starting the process.
 ///
-/// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
-/// His words: "B for #1998." Refused `INITRD_VA` (the foreign spelling, which stops at the boundary
-/// where it arrives).
-pub const INITIAL_RAMDISK_VA: u64 = 0x2000_0000;
+/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
+/// `INITIAL_RAMDISK_VA`: `va` is ruled to expand.
+pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = 0x2000_0000;
 
 /// The initial ramdisk archive bytes this process was handed at spawn. `len` is the value `_start`
 /// received in its second argument register (`x1`/`a1`/`rsi`), which the kernel set to the
 /// archive's real length.
 ///
 /// # Safety
-/// The kernel maps `len` bytes of the archive, read-only, at [`INITIAL_RAMDISK_VA`], before
+/// The kernel maps `len` bytes of the archive, read-only, at [`INITIAL_RAMDISK_VIRTUAL_ADDRESS`], before
 /// this process's `_start` runs, for the whole lifetime of the process; that reserved RAM outlives
 /// every process, which is what makes the `'static` lifetime honest. The caller must pass the
 /// `len` its own `_start` actually received: no type can check that (notes/unsafe-obligations.md).
@@ -49,5 +48,7 @@ pub const INITIAL_RAMDISK_VA: u64 = 0x2000_0000;
 /// name).
 pub unsafe fn bytes(len: u64) -> &'static [u8] {
     // SAFETY: forwarded from this function's own contract, verbatim.
-    unsafe { core::slice::from_raw_parts(INITIAL_RAMDISK_VA as *const u8, len as usize) }
+    unsafe {
+        core::slice::from_raw_parts(INITIAL_RAMDISK_VIRTUAL_ADDRESS as *const u8, len as usize)
+    }
 }

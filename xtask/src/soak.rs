@@ -10,8 +10,8 @@ use std::process::{Command, ExitCode};
 use std::sync::atomic::Ordering;
 
 use crate::archive::{
-    initial_ramdisk_path, initial_ramdisk_riscv, initial_ramdisk_x86, riscv_initial_ramdisk_path,
-    x86_initial_ramdisk_path,
+    has_initial_ramdisk_riscv, has_initial_ramdisk_x86, initial_ramdisk_path,
+    riscv_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::board::{open_capture, parse_duration};
 use crate::disk::mkdisk;
@@ -273,14 +273,14 @@ fn kernel_leg(command: &str, arch: &str) -> Option<(&'static str, &'static str, 
         }),
         // `mkdisk` here too: the riscv64 runner refuses a `NIFE_DISK` naming a missing file, so
         // a fresh worktree dies before the kernel prints a line. The run itself reads no disk.
-        "riscv64" => (mkdisk() && initial_ramdisk_riscv()).then(|| {
+        "riscv64" => (mkdisk() && has_initial_ramdisk_riscv()).then(|| {
             (
                 RISCV_TARGET,
                 "helpers/qemu-runner-riscv64.sh",
                 riscv_initial_ramdisk_path(),
             )
         }),
-        "x86_64" => initial_ramdisk_x86().then(|| {
+        "x86_64" => has_initial_ramdisk_x86().then(|| {
             (
                 X86_TARGET,
                 "helpers/qemu-runner-x86_64.sh",

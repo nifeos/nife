@@ -3,7 +3,7 @@
 //! on one hand). It holds a memory region (slot 0) and a report line (slot 1), and from those alone
 //! composes and runs a child in the steps below. The kernel allocates nothing on the way: every
 //! object is retyped from the region it was handed. Reading the archive is not a third capability:
-//! the kernel maps it read-only at `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VA`, naming
+//! the kernel maps it read-only at `user_mode_runtime::initial_ramdisk::INITIAL_RAMDISK_VIRTUAL_ADDRESS`, naming
 //! no kernel object. The verdict is one word, a bit per step
 //! (`capability_witness_contract::process_composition`).
 
@@ -67,7 +67,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
 /// word says where.
 fn compose(initial_ramdisk_len: u64) -> u64 {
     // SAFETY: forwarded from user_mode_runtime::initial_ramdisk::bytes's own contract: the kernel
-    // mapped the archive at INITIAL_RAMDISK_VA and passed its length in x1.
+    // mapped the archive at INITIAL_RAMDISK_VIRTUAL_ADDRESS and passed its length in x1.
     let archive = unsafe { user_mode_runtime::initial_ramdisk::bytes(initial_ramdisk_len) };
     let Some(elf) = nifefs::Fs::parse(archive)
         .ok()

@@ -94,7 +94,7 @@ fn narrowed_archive(programs: &[&'static str]) -> &'static [u8] {
 /// **Spawn the timetable the way a boot would**, and hand back the three endpoints it is wired to.
 ///
 /// Deliberately the same endowment shape `spawn_elf_child_builder` and
-/// `c_seam_tests::spawn_confiner` use (the archive read-only at `INITIAL_RAMDISK_VA`, capabilities
+/// `c_seam_tests::spawn_confiner` use (the archive read-only at `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, capabilities
 /// in numbered slots, nothing privileged), so what is under test is the scheduler rather than a
 /// shortcut. Its complete authority is the four slots below, which is the same list
 /// `components/src/timetable.rs`'s header states and the reason a scheduled `date` in the shipped
@@ -191,7 +191,7 @@ fn report_until(t: &Spawned, deadline: u64) -> Option<u64> {
 
 /// Where a registrar-mode timetable finds its registration page. The spawn site's choice, passed
 /// in `a2`; clear of the loader's scratch window (`0x1000_0000` upward), the archive at
-/// [`INITIAL_RAMDISK_VA`] and the stack below [`USER_STACK_VA`].
+/// [`INITIAL_RAMDISK_VIRTUAL_ADDRESS`] and the stack below [`USER_STACK_VA`].
 const REGISTRATION_VA: u64 = 0x0600_0000;
 
 /// [`spawn_timetable`], with the archive's program list chosen by the caller and, when
@@ -293,11 +293,14 @@ fn spawn_timetable_with(
     }
 }
 
-/// Copy `archive` into `archive_pages` fresh read-only pages at [`INITIAL_RAMDISK_VA`].
+/// Copy `archive` into `archive_pages` fresh read-only pages at [`INITIAL_RAMDISK_VIRTUAL_ADDRESS`].
 fn map_the_archive(space: &mut AddressSpace, archive: &[u8], archive_pages: u64) {
     for i in 0..archive_pages {
         let page = space
-            .map_new(INITIAL_RAMDISK_VA + i * FRAME_SIZE, Flags::user_rodata())
+            .map_new(
+                INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
+                Flags::user_rodata(),
+            )
             .expect("could not map the narrowed archive");
         let from = (i * FRAME_SIZE) as usize;
         let to = (from + FRAME_SIZE as usize).min(archive.len());

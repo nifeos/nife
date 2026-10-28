@@ -94,7 +94,7 @@ A format change has to reach all of them, and one of them was the reason this ne
 
 1. The kernel (`kernel/src/user/loader.rs`, `kernel/src/main.rs`), which parses the initrd to find
    `progenitor`. Uses `nifefs::Fs`.
-2. **`xtask`** (`initial_ramdisk_aarch64`, `initial_ramdisk_riscv`, `initial_ramdisk_x86`, `mkdisk`), which writes every image and then parses it
+2. **`xtask`** (`has_initial_ramdisk_aarch64`, `has_initial_ramdisk_riscv`, `has_initial_ramdisk_x86`, `mkdisk`), which writes every image and then parses it
    back to hash the boot programs. Uses `nifefs::write_image` and `Fs`.
 3. The EL0 blk driver (`crates/virtio`), which walked the directory out of a 512-byte DMA buffer
    with the offsets **restated by hand**: stride 32, start block at +24, a `count.min(15)` bound with

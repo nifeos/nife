@@ -200,7 +200,7 @@ fn progenitor_address_space(
     for i in 0..ramdisk_pages {
         space
             .map_physical(
-                INITIAL_RAMDISK_VA + i * FRAME_SIZE,
+                INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
                 ramdisk_start + i * FRAME_SIZE,
                 Flags::user_rodata(),
                 crate::revoke::PageMapSource::NoCapability,
