@@ -10,28 +10,29 @@ needs_person: no
 # Interfaces a peer can check: version constants, bind-time checks, and what a package declares
 
 Raised 2026-10-28 (UTC) by the lane `proposal/version-carrying-interfaces`. calef ruled the same
-day that the project accommodates interface change rather than waiting for it to stop: the first
+day that the project accommodates interface change rather than waiting for it to stop. The first
 repository cut's gate becomes "each interface the cut links carries a checkable version, and the
-moved package declares what it links", replacing milestone 756's condition 4 (four settled weeks
-per linked interface). The reasoning: in a monorepo a break is free, because the compiler catches
-every consumer in the same tree, so churn prices nothing; the split is what prices breaks;
-waiting for stability inverts the causality.
+moved package declares what it links". It replaces condition 4 of milestone 756 (the first code
+to leave this repository): four settled weeks per linked interface. The reasoning: in a monorepo
+a break is free, because the compiler catches every consumer in the same tree, so churn prices
+nothing; the split is what prices breaks; waiting for stability inverts the causality.
 
-It answers the five questions the ruling leaves open, with options and one
-recommendation each. It sketches code and writes none: §311 (a contract is code, not prose)
-reserves the checks for an implementing lane, and the ruling on the shape is what this lane stops
-for. Every new name below is provisional.
+It answers the ruling's five open questions with options and a recommendation each. It
+sketches code and writes none: §311 (a contract is code, not prose) reserves the checks for an
+implementing lane, and the ruling on the shape is what this lane stops for. Every new name below
+is provisional.
 
 Reuse: the checks reuse the tree's rustdoc-JSON extraction and `FORMAT_CONST` pattern
-(`helpers/interface_stability.py`). The proposal writes no new code and takes no dependency;
-`cargo-semver-checks` and `cargo-public-api` stay refused as milestone 610 records.
+(`helpers/interface_stability.py`). No new code and no dependency; `cargo-semver-checks` and
+`cargo-public-api` stay refused as milestone 610 records.
 
 ## What the tree does today
 
 §151 (the goal of the repository split is independent release and third-party programs) named the
-precondition in 2026-09: "the wire protocols carry real version numbers and have stopped churning
-weekly (milestone 39, §14)". Milestone 756 measured it on 2026-10-04 and found the first half
-unmet; this lane re-measured on 2026-10-28:
+precondition in 2026-09. Per milestone 39 (repository structure for a loosely-coupled OS) and §14
+(the project's direction): the wire protocols carry real version numbers and have stopped
+churning weekly. Milestone 756 measured it on 2026-10-04 and found the first half unmet; this
+lane re-measured on 2026-10-28:
 
 - Five protocol crates carry a numbered magic on a shared-page layout: `TIMEBAS1`, `CURRCPU1`,
   `ENVCONF1`, `MACHSTA1`, `CLOCKv01`. Two carry an unnumbered one: `nifeargv`, `nifeklog`.
@@ -41,13 +42,14 @@ unmet; this lane re-measured on 2026-10-28:
   `BOTH_VERSIONS` is a right bit, not an identity.
 - Formats do better: `capability_manifest_note` (`VERSION = 1`, `ZONED_VERSION = 2`), `boot_slot`
   (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`).
-- The ABI revision field §235 ruled into the manifest note does not exist. The version 1
-  descriptor runs 56 bytes and byte 55 is its last zero; version 2 appends zones after it. A
-  grep for `ABI_REVISION` and `abi_revision` over `crates/` returns nothing.
+- The ABI revision field §235 (the OS is built and updated from packages) ruled into the manifest
+  note does not exist. The version 1 descriptor runs 56 bytes and byte 55 is its last zero;
+  version 2 appends zones after it. A grep for `ABI_REVISION` over `crates/` returns nothing.
 
-Milestone 610's weekly series measures that churn: 157 breaking changes to the contract crates
-over 2026W37 to 2026W40, the first split's reading. Under the restated boundary headline,
-2026W39 to 2026W42 read 10 boundary moves and 49 syscall additions.
+Milestone 610 (the interface's stability is measured weekly) measures that churn in its weekly
+series: 157 breaking changes to the contract crates over 2026W37 to 2026W40, the first split's
+reading. Under the restated boundary headline, 2026W39 to 2026W42 read 10 boundary moves and 49
+syscall additions.
 
 ## Question 1: where the version constant lives, and what its scope is
 
@@ -56,8 +58,7 @@ Options: (a) one constant per crate; (b) one per operation set, module-scoped in
 
 **Recommendation: (c), one version constant per wire format, defined in the crate that owns the
 format (AGENTS.md rule 7), module-scoped where a crate holds several.** The tree already does
-this: `capability_manifest_note` carries three version constants, one per format. A crate with
-one format takes one constant at its root.
+this: `capability_manifest_note` carries three version constants, one per format.
 
 Scope follows the check, and the check is per bind: `filesystem_contract` holds the block and
 file protocols, so a per-crate constant would re-version file clients for a block-only break.
@@ -74,15 +75,14 @@ The first cut's four interfaces do not share one kind:
   The page gains a version word beside the magic (a new index in the `word` module, provisionally
   `VERSION`), because a shared page has no CALL to carry one.
 
-New constants named `*VERSION*` join the measured surface for free. The helper's `FORMAT_CONST`
+New constants named `*VERSION*` join the measured surface for free: the helper's `FORMAT_CONST`
 pattern reads any public `*VERSION*`, `*MAGIC*` or `*REVISION*` constant as a format identity, so
 610's format-bump column counts these with no helper change.
 
 Refusals. Embedding the version inside the magic word, as `MACHSTA1` and `CRKR0002` do, stays
 the shared-page convention. The added word is for operation-set contracts, whose opcode fills the
-whole first word and has nowhere to embed a number. A registry of interface versions outside the
-crates loses: it holds a fact about an interface away from the interface, rung 4 where rung 3
-fits.
+whole first word and has nowhere to embed a number. A registry outside the crates loses: it holds
+a fact about an interface away from the interface, rung 4 where rung 3 fits.
 
 ## Question 2: what the bind-time check compares, and where it lives
 
@@ -96,7 +96,7 @@ definition, no prose to drift (§311). Where the check lives depends on the inte
 
 - A message-based contract: the caller asks once at bind. One reserved operation (provisionally
   `OPERATION_VERSION`, opcode 0 where the protocol leaves it free) returns the server's version,
-  and the caller refuses a mismatch, naming both numbers. The kernel routes these words without
+  and the caller refuses, naming both numbers. The kernel routes these words without
   reading opcodes; the check belongs to the two endpoints.
 - A shared-page format: the reader checks the magic and the version word before trusting any
   other word. One side writes and one reads; the check is one-sided by nature.
@@ -108,8 +108,8 @@ definition, no prose to drift (§311). Where the check lives depends on the inte
   the version, and assembly checks the record.
 
 A mismatch refuses cleanly and names both versions: "server speaks 2; the client built against
-1". The progenitor already refuses a program whose note it cannot accept, as the malformed-note
-witness shows.
+1". The progenitor already refuses a program whose note it cannot accept (the malformed-note
+witness).
 
 The check is code both sides use, in the contract crate. A sketch:
 `agrees(own: u32, served: u32) -> Result<u32, Mismatch>`, with `Mismatch` carrying both numbers,
@@ -118,14 +118,15 @@ one per protocol. This lane writes none of it; the ruling on the shape is the ga
 Refusals. A client-only check loses: the server knows what it still serves, and Fuchsia's
 component manager refuses a component whose declared ABI revision the platform does not cover. A
 server-only check loses symmetrically: a client that binds an older server gets no refusal today
-and misreads bytes tomorrow. Declaring the version on every message costs a header field on every
+and misreads bytes tomorrow. Declaring the version on every message costs a header field per
 call, the Model Context Protocol's 2026 shape.
 
 ## Question 3: what the package declares, and the note field's encoding
 
 §235 ruled, on 2026-09-27 (UTC) in #1389, that the ABI revision is a field in
-milestone 597's manifest note, not a separate note, with the encoding left to whoever builds it:
-"the descriptor's reserved zero bytes, or a longer layout". Amending version 1 in place holds
+milestone 597's (a program carries its manifest in an ELF note) manifest note, not a separate
+note. It left the encoding to whoever builds it: "the descriptor's reserved zero bytes, or a
+longer layout". Amending version 1 in place holds
 only while nothing outside the tree has acted on the note. Milestone 597 built the note; version
 2 joined it on 2026-10-19; the field does not exist today.
 
@@ -152,12 +153,12 @@ the declaration's meaning across a rename.
 
 Who checks the declaration: the kernel's served versions are the same constants, under rule 7's
 one definition. Until the split, the progenitor and the package link the same crates, so the
-comparison runs once per interface at spawn. After the split, basalt's manifest carries the
-kernel's table, and assembly refuses a package declaring a version the image does not serve.
+comparison runs at spawn. After the split, basalt's manifest carries the kernel's table, and
+assembly refuses a package declaring a version the image does not serve.
 
 ## Question 4: what a version bump owes, and what an addition owes
 
-Milestone 610 already records the ledger discipline: a dated list in the format's own module
+Milestone 610 records the ledger discipline: a dated list in the format's own module
 documentation, one item per in-place amendment, at AGENTS.md's rung 3. Nothing checks that an
 entry exists; 610's BUGS says so.
 
@@ -171,9 +172,9 @@ Options:
 
 **Recommendation: (b).** The migration note lives in the ledger item, beside the format it
 migrates, not in a document a reader must find. An addition is a change an older peer ignores
-without misreading: a new opcode an old server answers with its unknown-operation refusal, a new
-optional field. The definition is behavioral: a semantic change behind an unchanged number is a
-break and owes the bump, which is also 610's blind spot about unchanged signatures.
+without misreading: a new opcode, answered with the unknown-operation refusal, or a new optional
+field. The definition is behavioral: a semantic change behind an unchanged number is a break and
+owes the bump, which is also 610's blind spot about unchanged signatures.
 
 The prior art splits the same way. ext4's superblock separates compatible from incompatible
 feature sets, and the mount rule refuses an unknown incompatible bit while ignoring an unknown
@@ -191,20 +192,20 @@ weekly 610 series, which records a week late and refuses nothing.
 Options:
 
 - (a) Nothing beyond 610 and review.
-- (b) A pinned-values test in `abi`, plus a lint rule: a pull request that changes a
-  `FORMAT_CONST` value must change the same crate's version constant.
+- (b) A pinned-values test in `abi`, plus a lint rule: a pull request changing a `FORMAT_CONST`
+  value must change its crate's version constant.
 - (c) A full interface diff at pull time, reusing the helper's rustdoc-JSON extraction to compare
   base and head.
 
 **Recommendation: (b), priced.** The `abi` test spells every public number as an expected literal:
-six syscall constants today, the method numbers in the object modules, the `Error` codes.
+six syscall constants today, the object modules' method numbers, the `Error` codes.
 Updating it is the deliberate, visible act a renumber should be; skipping it fails CI. The
 lint reads the pull request's changed lines, not a build, and fails when a magic or version value
 moved without its constant. Together they put the rule at rung 2, a gate that fires, not
 rung 4, somebody notices.
 
-Option (c) costs a rustdoc run on the pinned nightly per pull request, which at the tree's pull
-rate is minutes of CI most hours. It also inherits 610's blind spots: `#[doc(hidden)]`
+Option (c) costs a nightly rustdoc run per pull request, minutes of CI at the tree's pull rate.
+It also inherits 610's blind spots: `#[doc(hidden)]`
 items, `cfg(target_arch)` items for the other two architectures, glob re-exports, and a macro's
 fingerprint being its source text. The compiler already catches every in-tree consumer in the
 same pull request; (c) buys intent detection, and (b) buys that for the two rules that matter
@@ -217,8 +218,8 @@ duplicates the surface to check it and rots with every addition.
 ## The plan an implementing lane follows
 
 1. Re-derive the cut's linked interface list from `packages/process-tools.package.toml`
-   membership and the crate dependency graph, not from 756's inline list of four, which came from
-   one derivation on 2026-10-04. The lane starts from the graph.
+   membership and the crate dependency graph, not from 756's inline list of four (one derivation,
+   2026-10-04). The lane starts from the graph.
 2. Add the linked interfaces to the helper's `CONTRACTS` set, so 610's per-crate view measures
    them. Today `abi` is in; `address_space_map`, `glob` and `machine_statistics_contract` are
    not, so three of the four have no row.
@@ -235,10 +236,10 @@ duplicates the surface to check it and rots with every addition.
 
 ## The seven questions
 
-1. Refused options, and why each lost: per-crate scope (question 1). The single-byte ABI field
-   (question 3). Client-only and server-only checks (question 2). A separate migration document
-   per break (question 4). The rustdoc diff at pull time now (question 5). A registry of versions
-   outside the crates (question 1). Version declared on every message (question 2).
+1. Refused options, and why each lost: per-crate scope (question 1); the single-byte ABI field
+   (question 3); client-only and server-only checks (question 2); a separate migration document
+   per break (question 4). The rustdoc diff at pull time now (question 5). A registry outside the
+   crates (question 1). Version on every message (question 2).
 2. What the tree already does: the survey above, dated 2026-10-28. One version constant per
    format in `capability_manifest_note`; magics beside the formats they number; no ABI revision
    field. And 610's `FORMAT_CONST` pattern already reads `*VERSION*` constants as identities.
@@ -274,10 +275,10 @@ duplicates the surface to check it and rots with every addition.
 
 ## What a no does
 
-If the ruling refuses the shape, the cut's gate stays unmet and the split waits. The proposal
+A no leaves the cut's gate unmet and the split waits. The proposal
 returns, re-aimed at whatever shape the ruling picks instead. Blocking now: the version's scope
 (question 1), the check's placement (question 2), the manifest field's granularity and encoding
-(question 3), and the enforcement tier (question 5). Eventual, not blocking: the ledger's first
+(question 3), and the enforcement tier (question 5). Eventual: the ledger's first
 real entries, the rustdoc diff's trigger, and the interface ids' ratification.
 
 ## BUGS
@@ -286,7 +287,7 @@ real entries, the rustdoc diff's trigger, and the interface ids' ratification.
   grant is invisible to the stamp: a program that maps a shared page by hand declares nothing
   about it. Every program in the first cut links the contracts of the pages it reads.
 - The graceful reading of an unversioned peer, where its unknown-operation refusal reads as
-  version 0, holds only where the server answers an unknown opcode with a clean error. The
+  version 0, holds only where the server answers an unknown opcode cleanly. The
   contract crates define the reply's shape; each server's behavior is its own.
 - The diff-grep lint reads changed lines, so a value change spelled as a reorder or an enum
   renumbering reaches it only as a version-constant miss. The rustdoc diff would catch it.
