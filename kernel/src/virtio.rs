@@ -653,7 +653,7 @@ pub(crate) fn unregister(id: u64) -> bool {
 const RESET_POLLS: u32 = 100_000;
 
 /// How many devices are registered right now. Test support and the exit criterion's witness.
-#[cfg(any(test, feature = "system_tests"))]
+#[cfg(test)]
 pub(crate) fn live_count() -> usize {
     DEVICES.lock().table.len()
 }
