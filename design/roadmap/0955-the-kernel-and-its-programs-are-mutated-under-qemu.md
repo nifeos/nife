@@ -1,6 +1,5 @@
 ---
-status: IN-PROGRESS
-branch: milestone/955-the-kernel-and-its-programs-are-mutated-under-qemu
+status: PARTIAL
 raised: 2026-10-27
 promoted_from: the-kernel-and-its-programs-are-mutated-under-qemu
 milestone_dependencies: 517, 742, 924
@@ -209,6 +208,23 @@ is therefore a ceiling, and the census record shows what each week actually got.
 Reuse: cargo-mutants generates every mutant (`--list --diff`), `script/falsifications` runs each
 one under QEMU, and `helpers/mutation_diff_gate.py` and the triage ledger judge the result. The
 one piece written new is the workflow that feeds the first into the second.
+
+## Follow-on
+
+- **Done.** Part 1, the driver and the measurement: `script/falsifications --mutants` and
+  `.github/workflows/kernel-mutants-cost.yml`; the numbers sit under Cost above.
+- **Done.** Part 2, the kernel's exclusions: the kernel section of `.cargo/mutants.toml`, PR
+  #2846, 1,281 mutants measured out on 2026-10-28 (UTC).
+- **Outstanding.** Part 3, the diff-scoped check: advisory, sharded so each job stays under 20
+  minutes, on every kernel and `components` pull request. Not started, checked on this branch:
+  `.github/workflows/` holds no workflow for it (`kernel-mutants-cost.yml` is the cost
+  measurement only), and `script/falsifications --mutants` still lists with `--no-config`.
+- **Outstanding.** Part 4, the rolling census: one workflow, the slice list under How the work
+  splits, two jobs a night in the window above. Not started, checked the same way: no census
+  workflow or slice list exists in `.github/workflows/`.
+- **Outstanding.** Part 5, triage, one lane per slice as each lands, under the companion
+  proposals' rules for accepted and hanging survivors. Not started, checked by searching the
+  triage record and `.cargo/mutants-baseline.txt`, which name no kernel row.
 
 ## Names
 
