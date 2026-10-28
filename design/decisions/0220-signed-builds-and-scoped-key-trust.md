@@ -182,8 +182,8 @@ On nife, a private key follows the rule of milestone 65 (a secrets service), kep
 (password-equivalent material): hold the key, expose the operation, never the key. A signing service
 holds the key and a session holds a `SIGN` endpoint to it, the shape §41 (the endpoint is the
 broker) gives every secret. But then the signature proves only "a session holding that endpoint
-asked". D2's capability already says that. Where the key rests across a reboot is the open question
-of §165 (where a stored secret comes from), and a signing key inherits it whole. Recommended: build
+asked". D2's capability already says that. §165 (where a stored secret comes from on a boot that is not a test) answers where the key rests
+across a reboot: a console, entered before the store seals. A signing key inherits that answer whole. Recommended: build
 no signer on nife until a build made on nife must run somewhere else.
 
 ## Revocation

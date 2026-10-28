@@ -96,8 +96,7 @@ than waiting for all of 53 to call any of it started.
 ### Adjacent, not blocking: milestone 131
 
 The share this milestone builds still admits guests. A family backup target that admits guests is
-not one calef would trust with the only copy. Milestone 131 (a share is configured, not compiled, and
-its secret arrives from somewhere) is what closes that.
+not one calef would trust with the only copy. Milestone 131 (configure a service instead of compiling it, and type its secret at a console) is what closes that.
 
 It is not a prerequisite for the protocol-correctness gate above. The first real Mac contact can and
 should happen against the guest share this tree already has, the same way every QEMU gate does today.

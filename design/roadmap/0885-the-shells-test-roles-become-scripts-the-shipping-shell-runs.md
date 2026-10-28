@@ -2,7 +2,7 @@
 status: NOT-STARTED
 raised: 2026-10-11
 milestone_dependencies: 844
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no

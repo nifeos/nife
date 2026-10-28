@@ -3,7 +3,7 @@ status: NOT-STARTED
 raised: 2026-09-21
 promoted_from: the-disk-an-installer-names-has-no-model
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: 193
 machine_requirements: none
 specific_machine: none
 needs_person: no

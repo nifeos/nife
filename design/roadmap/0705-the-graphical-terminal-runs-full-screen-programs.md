@@ -3,7 +3,7 @@ status: NOT-STARTED
 raised: 2026-10-02
 promoted_from: the-graphical-terminal-runs-full-screen-programs
 milestone_dependencies: 29, 142
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no

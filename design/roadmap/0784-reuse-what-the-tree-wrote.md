@@ -154,7 +154,7 @@ Rechecked under this rule, reading each crate's source for threads and runtimes:
 | Crate | Serves | That component | Threads, async, OS APIs | Verdict |
 |---|---|---|---|---|
 | `pulldown-cmark` 0.13.4 | `mdr` | `no_std` program, could be std | none | unblocked: candidate 9a |
-| `fatfs` 0.3.6 | `system_installer` | base `no_std` program | none | measured in [an appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md), with [the options](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md); ruling pending |
+| `fatfs` 0.3.6 | `system_installer` | base `no_std` program | none | measured in [an appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md), with [the options](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md); ruled 2026-10-22 (UTC) on #2580: build our own, and `fatfs` stays the test oracle outside the base graph |
 | `kibi` 0.3.3 | `rmle` | `optional` program | no threads; needs `libc` termios and raw stdin | blocked on the PAL, not on std |
 | `rustyline` 18.0.0 | `line_editor` | engine used by the terminal service | no threads; `libc` and `nix` termios | blocked on the PAL, and the engine sits under the console |
 | uutils `uucore` 0.12.0 | `coreutils` | base programs, could be std | `std::thread` in test modules only; `libc` in its feature modules | unchanged: survey which `uu_*` build |

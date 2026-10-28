@@ -3,7 +3,7 @@ status: NOT-STARTED
 raised: 2026-10-10
 promoted_from: an-image-carries-its-distributions-root-as-a-default-trust-line
 milestone_dependencies: 666, 858
-decision_dependencies: unwritten
+decision_dependencies: 195, 220
 machine_requirements: none
 specific_machine: none
 needs_person: no
