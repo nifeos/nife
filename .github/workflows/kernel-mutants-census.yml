@@ -12,7 +12,9 @@ name: kernel mutants (rolling census)
 # **Advisory, always, and therefore never on a merge.** The census has no `pull_request` trigger at
 # all: it never sits on a merge, never joins the merge queue, and a fork can never trigger it,
 # because only `schedule` and `workflow_dispatch` raise it. Survivors exit 0 with the table that
-# says what clears each (milestone 85's key, 924's rules); a broken run exits 2 and fails the job.
+# says what clears each (milestone 85 (mutation testing over the host crates)'s key, 924 (a
+# survivor on a pull request's own lines cannot merge untriaged)'s rules); a broken run exits 2
+# and fails the job.
 # There is no promotion to a required check on this one: the census is a rotation's record, not a
 # gate on a change.
 #
@@ -23,7 +25,8 @@ name: kernel mutants (rolling census)
 # GitHub starts scheduled runs late, so a late night is a short night, never an overrun into the
 # working day. A start too late to pay even one mutant is skipped with that stated, not started.
 # Ten runner-hours a night, at most, and two jobs are the whole matrix: nothing here can fill the
-# concurrency pool the way milestone 741's 40-job run did.
+# concurrency pool the way milestone 741 (does a standing proof notice a regression)'s 40-job run
+# did.
 #
 # **The rotation state travels in artifacts, and a lost state restarts honestly.** Each night's
 # `state` job fuses the two windows' verdict tables into `census-state` and uploads it; the next

@@ -54,7 +54,10 @@ imports from helpers/mutation_kernel_diff.py, not restatements: the toml's own i
 in code, `parse_blocks`, `read_tsv`, `decide` and the untriaged table the two checks share, and the
 baseline and per-mutant seconds the cost workflow measured. What is census-specific here is only
 what the diff check has no shape for: the slice table, the rotation state, the wall clock and the
-record.
+record. The verdicts speak the ledger's language whole: a survivor keys on (crate, function,
+mutation) under milestone 85 (mutation testing over the host crates)'s rule, and what clears one is
+milestone 924 (a survivor on a pull request's own lines cannot merge untriaged)'s rule, an
+`equivalent` or `gap` row or a test that kills it.
 
 THE SLICE LIST is the block's order, "in order of what a wrong line costs": the confinement core
 first, then `arch/` per architecture, then the programs' wiring, then `components` against the
