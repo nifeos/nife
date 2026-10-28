@@ -2,7 +2,7 @@
 status: PARTIAL
 raised: 2026-09-19
 milestone_dependencies: 384, 494, 501, 809, 855
-decision_dependencies: unwritten
+decision_dependencies: 195, 220, 250
 machine_requirements: riscv64, aarch64 and x86_64 silicon, each on a wired network that reaches the internet
 specific_machine: radon (with an Oracle Cloud Ampere A1 instance and xenon's installed system; calef's exit criterion of 2026-10-24 UTC names the three)
 needs_person: yes

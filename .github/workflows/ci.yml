@@ -1391,6 +1391,12 @@ jobs:
           command -v cargo-machete >/dev/null || cargo install cargo-machete --locked
           command -v typos        >/dev/null || cargo install typos-cli     --locked
       - run: helpers/hang_evidence.py run -- script/ci-build lint
+      # **The violation ledger, as its own step** (milestone 341 (give the three instruments nothing
+      # runs a caller), §174 (a caller for each of the three uncalled instruments)). It is a
+      # `local` row of `script/ci-build` that takes 0.07 seconds, so it rides in this job rather than
+      # in a job of its own: a new job gates nothing until the ruleset requires it, and this job's
+      # verdict is already required (as `clippy`, through the relay job below).
+      - run: helpers/hang_evidence.py run -- script/ci-build rule-violations
       # **The fleet tooling's checks, as their own step** (milestone 889 (the tree's gates stop
       # depending on the fleet tooling), provisional). The 22 checks of the lane, queue, label and
       # identity machinery left script/lint for script/lint-fleet, so that a stranger's lint reads

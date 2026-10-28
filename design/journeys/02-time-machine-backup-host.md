@@ -39,8 +39,7 @@ Steps 1 through 3 are built and are the foundation the rest stands on, not steps
 Steps 4 and 5 are coupled: 55 names the real gap and 53 is where it is closed, in that order because
 55's own text frames riscv64-first as a reversible sequencing call, not a fork.
 
-**Adjacent, not on this journey's critical path.** Milestone 131 ("a share is configured, not
-compiled, and its secret arrives from somewhere") is explicitly named in 55's own text as something
+**Adjacent, not on this journey's critical path.** Milestone 131 ("configure a service instead of compiling it, and type its secret at a console") is explicitly named in 55's own text as something
 first real Mac contact should happen *before*, against the existing guest share, not wait on.
 Milestone 163 ("the JH7110's PCIe root complex: a real driver for the PLDA XpressRICH controller")
 is needed for the *full* persistent-storage validation a production host would want, but 55's text

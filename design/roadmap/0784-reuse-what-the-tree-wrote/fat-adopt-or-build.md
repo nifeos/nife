@@ -102,4 +102,4 @@ measurements' mount harness from closing in 30 minutes. Whether it is restructur
 wait on a question its maintainer has not settled. Base would carry a 5,204-line parser for hostile
 sticks that nothing here can prove. B is the better choice if calef ranks the time over the proofs.
 
-Ruled: pending.
+Ruled A on #2580, 2026-10-22 (UTC): build our own full-featured FAT crate. `fatfs` stays the test oracle, outside the base graph.

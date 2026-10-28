@@ -1,14 +1,19 @@
 ---
-status: NOT-STARTED
+status: SUPERSEDED
 raised: 2026-10-03
+superseded_by: 915
 promoted_from: x86-64s-double-fault-runs-on-a-stack-of-its-own
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
 # 717. x86_64's double fault runs on a stack of its own
+
+Overtaken by milestone 915 (NMI, double fault and machine check run on their own stacks):
+`kernel/src/arch/x86_64/ist.rs` allocates the per-core stacks and calls `set_interrupt_stack` for
+the double fault. The text below is the block as filed.
 
 *Title and slug are drafts.*
 Raised at calef's request, from the first of two findings in `notes/ci.md`. The second is the
