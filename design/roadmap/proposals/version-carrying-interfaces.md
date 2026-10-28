@@ -123,8 +123,8 @@ call, the Model Context Protocol's 2026 shape.
 
 ## Question 3: what the package declares, and the note field's encoding
 
-§235 ruled, on 2026-09-27 (UTC) in #1389, that the ABI revision is a field in
-milestone 597's (a program carries its manifest in an ELF note) manifest note, not a separate
+§235 ruled, on 2026-09-27 (UTC) in #1389, that the ABI revision is a field in the manifest note
+of milestone 597 (a program carries its manifest in an ELF note), not a separate
 note. It left the encoding to whoever builds it: "the descriptor's reserved zero bytes, or a
 longer layout". Amending version 1 in place holds
 only while nothing outside the tree has acted on the note. Milestone 597 built the note; version
