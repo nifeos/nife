@@ -151,6 +151,7 @@ swish-check-x86_64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && s
 rg-threads-aarch64-riscv64|ci|cargo xtask basalt-fetch && NIFE_RIPGREP_REQUIRED=1 cargo test -p walk_pricing && NIFE_RIPGREP_REQUIRED=1 NIFE_SMP=4 script/test --arch aarch64,riscv64 --test ripgrep && NIFE_IOPING_REQUIRED=1 NIFE_HACKBENCH_REQUIRED=1 NIFE_SPEEDTEST1_REQUIRED=1 script/test --arch aarch64,riscv64 --test unmodified_
 rg-threads-x86_64|ci|cargo xtask basalt-fetch && NIFE_RIPGREP_REQUIRED=1 NIFE_SMP=4 script/test --arch x86_64 --test ripgrep && NIFE_IOPING_REQUIRED=1 NIFE_HACKBENCH_REQUIRED=1 NIFE_SPEEDTEST1_REQUIRED=1 script/test --arch x86_64 --test unmodified_
 boot-check|local|script/boot-check
+base-image|ci|cargo xtask base-image aarch64 --boot
 release-uefi-boot|ci|cargo xtask uefi-boot --release
 acpi-boot|ci|cargo xtask acpi-boot
 netboot-rehearsal|ci|cargo xtask uefi-image --release && script/netboot-rehearsal --check && script/netboot-rehearsal && script/netboot-rehearsal --mac 02:00:00:00:00:01
@@ -196,6 +197,13 @@ TABLE
 #                       `rg`'s one-core test comes along. Each `NIFE_<PROGRAM>_REQUIRED` refuses
 #                       its program's skip. An exception to the rows' names, kept because a row of
 #                       its own would provision a runner for it.
+#   base-image          builds fifteen packages from this tree's own definitions, composes an image
+#                       from them and boots it to the shell (milestone 909 (basalt composes the
+#                       bootable image from its packages)). It rebuilds `components`, the std farm,
+#                       the RedoxFS server and the kernel, so nothing another row built is warm,
+#                       and a developer names it when touching composition. It runs one
+#                       architecture here because nife proves the verb; basalt's workflow, the
+#                       customer, composes and boots all three.
 #   fastpath-footprint  builds two RELEASE kernels, which no other check builds, so there is
 #                       nothing warm to share and a developer would wait for a cold build.
 #   release-uefi-boot   boots the release x86_64 UEFI image under OVMF to the shell, the profile
