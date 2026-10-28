@@ -3,7 +3,7 @@
 # Milestone 909 (basalt composes the bootable image from its packages). `cargo xtask base-image`
 # reads this file, finds which package owns each program in packages/<name>.package.toml (milestone
 # 611 (every program and crate belongs to a package)), and takes that program's member out of the
-# package's archive, checked against the catalogue the build was handed. Nothing else can reach the
+# package's archive, checked against the catalog the build was handed. Nothing else can reach the
 # image.
 #
 # **The list is the image's decision, not a package's.** A package releases together; an image

@@ -149,7 +149,7 @@ fn boot_check_leg(
         return false;
     };
 
-    // The same recogniser `cargo xtask board-console` points at a real board, which is the point:
+    // The same recognizer `cargo xtask board-console` points at a real board, which is the point:
     // a gate that used a second reader would be gating something the bench does not measure.
     let policy = boot_check_policy();
 
@@ -173,8 +173,8 @@ fn boot_check_leg(
 }
 
 /// **Boot a kernel and its archive, watch the console to the prompt, and say whether it got
-/// there**: milestone 909's gate on an image composed from packages (basalt composes the bootable
-/// image from its packages), on `boot_check`'s own recogniser and policy so the composed boot is
+/// there**: milestone 909 (basalt composes the bootable image from its packages) gates an image
+/// composed from packages, on `boot_check`'s own recognizer and policy so the composed boot is
 /// judged exactly as a tree-built one is.
 ///
 /// The paths are explicit because the composed kernel and archive are not the tree's: they are

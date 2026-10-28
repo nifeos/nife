@@ -14,7 +14,7 @@
 //! $ cargo xtask package packages/uptime.recipe.toml
 //! uptime 0.1.0 aarch64, 2 members, 4600 bytes
 //!   uptime          4528 bytes  sha256:7d8e...c1
-//!   uptime.licence    68 bytes  sha256:a3f0...9e
+//!   uptime.license    68 bytes  sha256:a3f0...9e
 //! wrote target/packages/uptime-0.1.0-aarch64.nifepkg
 //! digest sha256:9f2c...4b  (recorded in the recipe, and it matches)
 //! package: PASS
@@ -38,7 +38,7 @@
 //!                              # packs is built under another name
 //!
 //! [[member]]
-//! name = "uptime.licence"      # any file, by a path relative to the repository root
+//! name = "uptime.license"      # any file, by a path relative to the repository root
 //! file = "LICENSE-MIT"
 //! ```
 //!
@@ -105,7 +105,8 @@ enum Source {
 }
 
 /// **`cargo xtask package`**, whichever shape was asked for: a recipe path, or `--package <name>
-/// --arch <arch>` for a package milestone 611 declares. Name provisional (2026-10-28 UTC).
+/// --arch <arch>` for a package milestone 611 (every program and crate belongs to a package)
+/// declares. Name provisional (2026-10-28 UTC).
 pub(crate) fn command(args: Vec<String>) -> bool {
     if args.first().map(String::as_str) != Some("--package") {
         return package(args.into_iter().next());
@@ -357,12 +358,12 @@ fn definition_recipe(
             format!("bin/{program}")
         ));
     }
-    // nife's licence, as the recipe format's file members: the image takes `bin/` members only, so
+    // nife's license, as the recipe format's file members: the image takes `bin/` members only, so
     // this is what a package a person installs carries beside the program.
-    for licence in ["LICENSE-MIT", "LICENSE-APACHE"] {
+    for license in ["LICENSE-MIT", "LICENSE-APACHE"] {
         text.push_str(&format!(
-            "\n[[member]]\nname = {:?}\nfile = {licence:?}\n",
-            format!("doc/{licence}")
+            "\n[[member]]\nname = {:?}\nfile = {license:?}\n",
+            format!("doc/{license}")
         ));
     }
     Ok(text)
@@ -419,7 +420,7 @@ pub(crate) fn triple(arch: &str) -> Result<&'static str, String> {
 
 /// A package built from a recipe and checked, not yet written anywhere.
 pub(crate) struct Built {
-    /// `name-version-architecture`, the file's stem and its catalogue name.
+    /// `name-version-architecture`, the file's stem and its catalog name.
     pub(crate) stem: String,
     pub(crate) file: Vec<u8>,
     /// SHA-256 over the whole file, in its text form, `sha256:<64 lowercase hex>`.
@@ -480,7 +481,7 @@ pub(crate) fn build(root: &std::path::Path, text: &str) -> Result<Built, String>
     let digest = digest_label(&measured);
     // **The recorded digest is checked before anything is written**, which is the order §195 asks
     // for even though it costs a rebuild to find out. A package whose bytes do not reproduce the
-    // reviewed line is one nothing accepts, so leaving it on disk beside a catalogue entry
+    // reviewed line is one nothing accepts, so leaving it on disk beside a catalog entry
     // vouching for it would be the tool disagreeing with itself.
     if let Some(recorded) = &recipe.digest
         && *recorded != measured
@@ -502,9 +503,9 @@ pub(crate) fn build(root: &std::path::Path, text: &str) -> Result<Built, String>
 
 /// **Empty `target/packages/` before a whole base is built for one architecture.**
 ///
-/// [`write_out`] appends one catalogue line per package and the catalogue's readers refuse a stem
+/// [`write_out`] appends one catalog line per package and the catalog's readers refuse a stem
 /// listed twice, which is the right answer for a directory holding two builds of one package. A
-/// run that builds the base as one step therefore starts from an empty directory, so the catalogue
+/// run that builds the base as one step therefore starts from an empty directory, so the catalog
 /// and the archives beside it describe one architecture rather than the last three.
 pub(crate) fn clear_output(root: &std::path::Path) -> Result<(), String> {
     let output = root.join(OUTPUT);
@@ -515,7 +516,7 @@ pub(crate) fn clear_output(root: &std::path::Path) -> Result<(), String> {
     }
 }
 
-/// Write a built package under `target/packages/` and its line into the host's catalogue there.
+/// Write a built package under `target/packages/` and its line into the host's catalog there.
 fn write_out(root: &std::path::Path, built: &Built) -> Result<PathBuf, String> {
     let output = root.join(OUTPUT);
     std::fs::create_dir_all(&output)
@@ -523,26 +524,26 @@ fn write_out(root: &std::path::Path, built: &Built) -> Result<PathBuf, String> {
     let written = output.join(format!("{}.nifepkg", built.stem));
     std::fs::write(&written, &built.file)
         .map_err(|e| format!("could not write {}: {e}", written.display()))?;
-    // The catalogue line is `measured_boot`'s manifest shape (a name, a space, 64 hex characters),
+    // The catalog line is `measured_boot`'s manifest shape (a name, a space, 64 hex characters),
     // which is the format the progenitor already reads to decide whether a program may run. §195
     // makes the image's measurement table the first source of trust, so a package's entry looking
     // like an entry in that table is the point rather than a coincidence.
-    let catalogue = output.join("catalog");
-    append(&catalogue, &format!("{} {}\n", built.stem, built.digest))
-        .map_err(|e| format!("could not write {}: {e}", catalogue.display()))?;
+    let catalog = output.join("catalog");
+    append(&catalog, &format!("{} {}\n", built.stem, built.digest))
+        .map_err(|e| format!("could not write {}: {e}", catalog.display()))?;
     Ok(written)
 }
 
 /// **The image's own package source** (rung 3a of milestone 198): build every recipe under
 /// `packages/` whose architecture is `architecture`, write each package where the test's HTTP peer
-/// serves it from, and return the catalogue lines for the image to carry.
+/// serves it from, and return the catalog lines for the image to carry.
 ///
 /// This is DECISIONS §195's "the image's measured table becomes the first source" made literal: the
-/// catalogue goes into the initial ramdisk archive *before* the measurement table is computed, so
-/// the kernel's trust root vouches for the catalogue and the catalogue for the package, and a
+/// catalog goes into the initial ramdisk archive *before* the measurement table is computed, so
+/// the kernel's trust root vouches for the catalog and the catalog for the package, and a
 /// package fetched over plain HTTP is checked against a digest that never crossed the network.
 /// Every archive build therefore runs the producer end to end.
-pub(crate) fn image_catalogue(architecture: &str) -> Result<String, String> {
+pub(crate) fn image_catalog(architecture: &str) -> Result<String, String> {
     let root = workspace_root();
     let dir = root.join("packages");
     let mut recipes: Vec<PathBuf> = std::fs::read_dir(&dir)
@@ -555,7 +556,7 @@ pub(crate) fn image_catalogue(architecture: &str) -> Result<String, String> {
         })
         .collect();
     recipes.sort();
-    let mut catalogue = String::new();
+    let mut catalog = String::new();
     for path in recipes {
         let text = std::fs::read_to_string(&path)
             .map_err(|e| format!("could not read {}: {e}", path.display()))?;
@@ -572,20 +573,20 @@ pub(crate) fn image_catalogue(architecture: &str) -> Result<String, String> {
         }
         let built = build(&root, &text).map_err(|c| format!("{}: {c}", relative(&root, &path)))?;
         write_out(&root, &built)?;
-        catalogue.push_str(&format!("{} {}\n", built.stem, built.digest));
+        catalog.push_str(&format!("{} {}\n", built.stem, built.digest));
     }
     // **`jig` is handed the catalog in one page** (milestone 809 (the package client becomes a
     // program); `system_initializer`'s `copy_catalog`), and the progenitor refuses to start it with
     // a catalog that does not fit. So a catalog that outgrows the page fails here, at the build,
     // naming the size, rather than as a `jig` that will not spawn. Strictly less than a page,
     // because the zero byte after the text is where it ends.
-    if catalogue.len() >= 4096 {
+    if catalog.len() >= 4096 {
         return Err(format!(
             "the {architecture} catalog is {} bytes, and jig is handed it in one 4096-byte page",
-            catalogue.len()
+            catalog.len()
         ));
     }
-    Ok(catalogue)
+    Ok(catalog)
 }
 
 /// **The image's index sources** (milestone 801 (packages over the internet)), packed as
@@ -641,7 +642,7 @@ fn checked_index_sources(text: String) -> Result<String, String> {
     Ok(text)
 }
 
-/// Append a catalogue line, replacing any earlier line for the same name so a rebuild does not
+/// Append a catalog line, replacing any earlier line for the same name so a rebuild does not
 /// leave two answers to one question.
 fn append(path: &std::path::Path, line: &str) -> std::io::Result<()> {
     let name = line.split(' ').next().unwrap_or_default();
@@ -821,7 +822,7 @@ architecture = "aarch64"
 program = "uptime"
 
 [[member]]
-name = "uptime.licence"
+name = "uptime.license"
 file = "LICENSE-MIT"
 "#;
 
@@ -855,7 +856,7 @@ file = "LICENSE-MIT"
             vec![
                 ("uptime".to_string(), Source::Program("uptime".to_string())),
                 (
-                    "uptime.licence".to_string(),
+                    "uptime.license".to_string(),
                     Source::File("LICENSE-MIT".to_string())
                 ),
             ]

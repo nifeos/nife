@@ -1066,7 +1066,7 @@ jobs:
   # bootable image from its packages)). Until this job, every image nife booted in CI was packed
   # from the tree: `cargo xtask image` walked `components` and `fixtures` and read each program off
   # disk. This composes the same image from `.nifepkg` archives instead, each checked against the
-  # catalogue that vouches for it, and takes every program it boots out of one of those archives, so
+  # catalog that vouches for it, and takes every program it boots out of one of those archives, so
   # a binary no package carries cannot reach the image. The kernel is the one exception and it is
   # the composer's recorded gap: firmware enters it, no archive carries it.
   #
@@ -1120,6 +1120,17 @@ jobs:
       # One row of `script/ci-build`'s table: build the base packages from this tree's own
       # definitions, compose the image from them, and boot it to the swish prompt.
       - run: helpers/hang_evidence.py run -- script/ci-build base-image
+        env:
+          NIFE_TIME_RECORD: ${{ github.workspace }}/target/time-record.tsv
+      - name: Summarize where the time went
+        if: always() && hashFiles('target/time-record.tsv') != ''
+        run: cargo xtask time-summary target/time-record.tsv >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the time record
+        if: always() && hashFiles('target/time-record.tsv') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: time-record-base-image
+          path: target/time-record.tsv
       # A composition failure names the package or the program in its own line, and the boot's
       # serial log is what says how far the image got.
       - name: Upload the boot logs

@@ -2,19 +2,15 @@
 //!
 //! Milestone 909 (basalt composes the bootable image from its packages). The image is the kernel
 //! plus the initial ramdisk the kernel hands the progenitor. nife's own build has packed that
-//! ramdisk from the tree since milestone 19f; this composes it instead from `.nifepkg` archives,
-//! each checked against the catalogue that vouches for it, and takes every program it puts in
-//! out of one of those archives. A binary no package carries cannot reach the image this way.
-//!
-//! # What decides the membership
+//! ramdisk from the tree since milestone 19f (run a real workload); this composes it instead from
+//! `.nifepkg` archives, each checked against the catalog that vouches for it, so a binary no
+//! package carries cannot reach the image.
 //!
 //! `packages/base-image.toml` lists the programs the image carries (milestone 611 (every program
 //! and crate belongs to a package) owns the other direction: which package a program belongs to).
 //! The list is the image's decision, not a package's: a package releases together, while an image
 //! carries what it boots, and the two differ (the `boot` package's `uefi_loader` is a disk image
 //! no initial ramdisk carries, and the `redoxfs` package also builds host tools).
-//!
-//! # The order
 //!
 //! One-way, as every archive build already is: compose the archive, write the measurement manifest
 //! the kernel build reads, then build the kernel. A kernel built before its archive has no trust
@@ -25,27 +21,23 @@
 //! ```text
 //! $ cargo xtask base-image aarch64
 //! $ cargo xtask base-image riscv64 --from /tmp/basalt/rolling/targets \
-//!       --catalogue /tmp/basalt/rolling/metadata/stand-in-index --out /tmp/image-riscv
+//!       --catalog /tmp/basalt/rolling/metadata/stand-in-index --out /tmp/image-riscv
 //! ```
 //!
 //! Without `--from`, the base packages are built from this tree first ([`build_packages`]), which
-//! is what keeps nife's own image testable before basalt pins the commit. With `--from`, only the
-//! kernel is built here; every program comes from the archives named.
+//! keeps nife's own image testable before basalt pins the commit.
 //!
 //! # BUGS
 //!
-//! - **The kernel is built here, not taken from a package.** The kernel is firmware's entry, never
-//!   an archive entry, and `cargo xtask package` builds a package from programs; the `kernel`
-//!   package declares crates and no programs. The image's binary claim is therefore about the
-//!   ramdisk, which is the claim milestone 909's "Done when" makes.
-//! - **The image's catalogue lists only the packages it used.** `jig` still needs the fetched
-//!   index for anything else, which is what `SOURCES_ENTRY` is for.
-//! - **A package's digest is checked against the catalogue it was handed.** The catalogue's own
-//!   trust is the build that wrote it: basalt's two-build `reproduce` comparison and the recipes'
-//!   recorded digests. The base packages record none yet (their bytes move with the kernel's
-//!   measurement manifest through the programs' ELFs), which is milestone 909's BUGS on basalt's
-//!   side.
-//! - Name provisional: the verb, the definition file and its keys, minted 2026-10-28 (UTC).
+//! - **The kernel is built here, not taken from a package.** It is firmware's entry, never an
+//!   archive entry, and the `kernel` package declares crates and no programs, so this builds it
+//!   from those crates. The binary claim is about the ramdisk, which is 909's "Done when".
+//! - **The catalog lists only the packages the image used.** `jig` needs the fetched index for
+//!   anything else, which is what `SOURCES_ENTRY` is for.
+//! - **A package's digest is checked against the catalog it was handed.** That catalog's trust is
+//!   the build that wrote it; the base packages record no digest of their own yet (909's BUGS).
+//!
+//! Name: provisional, minted 2026-10-28 (UTC) by lane milestone/909-basalt-composes-the-image.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -57,8 +49,8 @@ use crate::host::workspace_root;
 /// The file that says which programs an image carries.
 const DEFINITION: &str = "packages/base-image.toml";
 
-/// The catalogue's file name in a packages directory, in `cargo xtask package`'s own shape.
-const CATALOGUE: &str = "catalog";
+/// The catalog's file name in a packages directory, in `cargo xtask package`'s own shape.
+const CATALOG: &str = "catalog";
 
 /// The package whose programs a test image adds: `fixtures`, the test programs every archive
 /// build packs. Its definition names its crate rather than 79 programs, so `--test` takes the
@@ -81,7 +73,7 @@ struct Arguments {
     arch: Option<String>,
     /// Where the packages are, when they were built elsewhere.
     from: Option<String>,
-    catalogue: Option<String>,
+    catalog: Option<String>,
     out: Option<String>,
     boot: bool,
     /// Carry the `fixtures` package's programs too: the image a test boots, not the image a
@@ -100,7 +92,7 @@ pub(crate) fn base_image() -> bool {
         }
     };
     let Some(arch) = arguments.arch.as_deref() else {
-        eprintln!("usage: cargo xtask base-image <aarch64|riscv64|x86_64> [--from <dir>] [--catalogue <path>] [--out <dir>] [--test] [--boot]");
+        eprintln!("usage: cargo xtask base-image <aarch64|riscv64|x86_64> [--from <dir>] [--catalog <path>] [--out <dir>] [--test] [--boot]");
         return false;
     };
     let root = workspace_root();
@@ -133,16 +125,16 @@ pub(crate) fn base_image() -> bool {
             root.join("target/packages")
         }
     };
-    let catalogue = match arguments.catalogue.as_deref() {
+    let catalog = match arguments.catalog.as_deref() {
         Some(path) => PathBuf::from(path),
-        None => packages.join(CATALOGUE),
+        None => packages.join(CATALOG),
     };
     let out = match arguments.out.as_deref() {
         Some(dir) => PathBuf::from(dir),
         None => root.join(format!("target/base-image-{arch}")),
     };
 
-    let composed = match compose(&root, arch, &packages, &catalogue, &definition, arguments.test) {
+    let composed = match compose(&root, arch, &packages, &catalog, &definition, arguments.test) {
         Ok(composed) => composed,
         Err(complaint) => {
             eprintln!("base-image ({arch}): {complaint}");
@@ -169,7 +161,7 @@ pub(crate) fn base_image() -> bool {
         &archive.display().to_string(),
         "the composed image",
         &composed.blobs,
-        &composed.catalogue,
+        &composed.catalog,
         &sources,
     ) else {
         return false;
@@ -203,7 +195,7 @@ pub(crate) fn base_image() -> bool {
 }
 
 /// **`cargo xtask base-packages`**: build every base package the image needs from this tree, into
-/// `target/packages` with its catalogue. The half of `base-image` a builder that composes elsewhere
+/// `target/packages` with its catalog. The half of `base-image` a builder that composes elsewhere
 /// runs first (milestone 909); it builds no image and no kernel.
 pub(crate) fn base_packages() -> bool {
     let arch = match std::env::args().nth(2) {
@@ -238,14 +230,14 @@ fn parse_arguments(args: Vec<String>) -> Result<Arguments, String> {
         match word.as_str() {
             "--boot" => parsed.boot = true,
             "--test" => parsed.test = true,
-            "--arch" | "--from" | "--catalogue" | "--out" => {
+            "--arch" | "--from" | "--catalog" | "--out" => {
                 let value = rest
                     .next()
                     .ok_or_else(|| format!("{word} needs a value"))?;
                 match word.as_str() {
                     "--arch" => parsed.arch = Some(value),
                     "--from" => parsed.from = Some(value),
-                    "--catalogue" => parsed.catalogue = Some(value),
+                    "--catalog" => parsed.catalog = Some(value),
                     "--out" => parsed.out = Some(value),
                     _ => unreachable!(),
                 }
@@ -444,7 +436,7 @@ fn read_archives(dir: &Path) -> Result<BTreeMap<String, Vec<(String, Archive)>>,
         );
         if stem != expected {
             return Err(format!(
-                "{} is package `{expected}`; the file's name is the catalogue's key",
+                "{} is package `{expected}`; the file's name is the catalog's key",
                 path.display()
             ));
         }
@@ -461,10 +453,10 @@ fn read_archives(dir: &Path) -> Result<BTreeMap<String, Vec<(String, Archive)>>,
     Ok(packages)
 }
 
-/// Parse a catalogue: `<stem> sha256:<64 hex>` lines, blank lines and `#` comments skipped, as
+/// Parse a catalog: `<stem> sha256:<64 hex>` lines, blank lines and `#` comments skipped, as
 /// `cargo xtask package` writes it. Anything else is refused, because a line nobody reads is a
 /// package nobody vouches for.
-fn parse_catalogue(text: &str) -> Result<BTreeMap<String, String>, String> {
+fn parse_catalog(text: &str) -> Result<BTreeMap<String, String>, String> {
     let mut lines = BTreeMap::new();
     for (number, raw) in text.lines().enumerate() {
         let line = raw.trim();
@@ -490,32 +482,32 @@ fn parse_catalogue(text: &str) -> Result<BTreeMap<String, String>, String> {
     Ok(lines)
 }
 
-/// What [`compose`] produced: the archive's entries and the catalogue that goes into it.
+/// What [`compose`] produced: the archive's entries and the catalog that goes into it.
 struct Composed {
     /// `(entry name, bytes)`, in the order `packages/base-image.toml` lists them.
     blobs: Vec<(String, Vec<u8>)>,
-    /// The catalogue lines of exactly the packages the image used.
-    catalogue: String,
+    /// The catalog lines of exactly the packages the image used.
+    catalog: String,
     /// `(stem, digest)` for each package the image used.
     packages: Vec<(String, String)>,
 }
 
 /// **Compose the archive's entries from packages**: for every program the definition names, the
-/// member `bin/<program>` of the package that owns it, checked against the catalogue.
+/// member `bin/<program>` of the package that owns it, checked against the catalog.
 fn compose(
     root: &Path,
     arch: &str,
     dir: &Path,
-    catalogue_path: &Path,
+    catalog_path: &Path,
     definition: &Definition,
     test: bool,
 ) -> Result<Composed, String> {
     let owners = program_owners(root, test)?;
     let archives = read_archives(dir)?;
-    let catalogue_text = std::fs::read_to_string(catalogue_path)
-        .map_err(|e| format!("could not read {}: {e}", catalogue_path.display()))?;
-    let catalogue = parse_catalogue(&catalogue_text)
-        .map_err(|e| format!("{}: {e}", catalogue_path.display()))?;
+    let catalog_text = std::fs::read_to_string(catalog_path)
+        .map_err(|e| format!("could not read {}: {e}", catalog_path.display()))?;
+    let catalog = parse_catalog(&catalog_text)
+        .map_err(|e| format!("{}: {e}", catalog_path.display()))?;
 
     let mut blobs = Vec::new();
     let mut used: BTreeMap<String, String> = BTreeMap::new();
@@ -534,16 +526,16 @@ fn compose(
                 archive.version, definition.version
             ));
         }
-        let vouched = catalogue.get(&stem).ok_or_else(|| {
+        let vouched = catalog.get(&stem).ok_or_else(|| {
             format!(
-                "{} lists no `{stem}`; a package the catalogue does not vouch for cannot enter the \
+                "{} lists no `{stem}`; a package the catalog does not vouch for cannot enter the \
                  image",
-                catalogue_path.display()
+                catalog_path.display()
             )
         })?;
         if *vouched != archive.digest {
             return Err(format!(
-                "{stem}: the catalogue records {vouched}, these bytes are {}",
+                "{stem}: the catalog records {vouched}, these bytes are {}",
                 archive.digest
             ));
         }
@@ -574,7 +566,7 @@ fn compose(
     }
     Ok(Composed {
         blobs,
-        catalogue: text,
+        catalog: text,
         packages: order
             .into_iter()
             .map(|stem| {
@@ -586,7 +578,7 @@ fn compose(
 }
 
 /// **Build every base package the image needs from this tree's own build**, then leave them in
-/// `target/packages` with their catalogue. `false` after saying what failed.
+/// `target/packages` with their catalog. `false` after saying what failed.
 ///
 /// The programs' builds come first, because a package is packed from what the tree built:
 /// `components` for the native programs, the `std` farm's TLS graph for `jig` and `mdr`, and the
@@ -609,7 +601,7 @@ fn build_packages(root: &Path, arch: &str, definition: &Definition, test: bool) 
     packages.sort();
     packages.dedup();
 
-    // The base is built as one step, so the directory the catalogue is written into starts empty:
+    // The base is built as one step, so the directory the catalog is written into starts empty:
     // an appended line for a package a previous run left there would read as two builds of it.
     if let Err(e) = crate::package::clear_output(root) {
         eprintln!("base-image: {e}");
@@ -708,31 +700,31 @@ programs = ["progenitor", "swish", "jig"]
             "`a` is listed twice"
         );
         assert_eq!(
-            parse_definition("version = \"0.1.0\"\nprogrammes = [\"a\"]").unwrap_err(),
-            "unknown key programmes"
+            parse_definition("version = \"0.1.0\"\nprograms = [\"a\"]\nmembers = [\"a\"]").unwrap_err(),
+            "unknown key members"
         );
     }
 
     #[test]
-    fn a_catalogue_is_checked_line_by_line() {
-        let catalogue = parse_catalogue(
+    fn a_catalog_is_checked_line_by_line() {
+        let catalog = parse_catalog(
             "# a comment\n\nuptime-0.1.0-aarch64 sha256:\
              7d8e7d1f6e1a5d3c5b10b1f1e0b9a7c3d4e5f60718293a4b5c6d7e8f90123456\n",
         )
         .unwrap();
-        assert_eq!(catalogue.len(), 1);
+        assert_eq!(catalog.len(), 1);
         let hex = "a".repeat(64);
         assert_eq!(
-            parse_catalogue(&format!("uptime-0.1.0-aarch64 {hex}")).unwrap_err(),
+            parse_catalog(&format!("uptime-0.1.0-aarch64 {hex}")).unwrap_err(),
             "line 1: Unlabeled: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         );
         assert_eq!(
-            parse_catalogue("uptime-0.1.0-aarch64").unwrap_err(),
+            parse_catalog("uptime-0.1.0-aarch64").unwrap_err(),
             "line 1: \"uptime-0.1.0-aarch64\" is not `<stem> sha256:<hex>`"
         );
         let line = format!("uptime-0.1.0-aarch64 sha256:{hex}");
         assert_eq!(
-            parse_catalogue(&format!("{line}\n{line}")).unwrap_err(),
+            parse_catalog(&format!("{line}\n{line}")).unwrap_err(),
             "line 2: `uptime-0.1.0-aarch64` is listed twice"
         );
     }
@@ -752,7 +744,7 @@ programs = ["progenitor", "swish", "jig"]
                 "riscv64".into(),
                 "--from".into(),
                 "/tmp/p".into(),
-                "--catalogue".into(),
+                "--catalog".into(),
                 "/tmp/i".into(),
                 "--out".into(),
                 "/tmp/o".into(),
@@ -761,7 +753,7 @@ programs = ["progenitor", "swish", "jig"]
             Arguments {
                 arch: Some("riscv64".into()),
                 from: Some("/tmp/p".into()),
-                catalogue: Some("/tmp/i".into()),
+                catalog: Some("/tmp/i".into()),
                 out: Some("/tmp/o".into()),
                 boot: false,
                 test: false,
