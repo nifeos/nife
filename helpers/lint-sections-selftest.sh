@@ -47,7 +47,7 @@ echo "==> b reads the preamble"
 echo "==> c writes a file"
 echo built >"$OUT/built"
 if [ -n "${PLANT_C:-}" ]; then false; fi
-echo "==> d runs cargo"
+echo "==> d, the cargo one"
 cargo clippy
 echo "==> e reads what c wrote"
 [ -f "$OUT/built" ]
@@ -83,13 +83,13 @@ for combo in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
 
         [ $((fast != 0)) -eq $((keep != 0)) ] \
             || fail "planted [$planted] $mode: fail-fast exit $fast, keep-going exit $keep"
-        named="$(printf '%s\n' "$out" | sed -n 's/^  \([a-e]\) .*(exit [0-9]*)$/\1/p' | tr '\n' ' ' | sed 's/^/ /; s/ $//')"
+        named="$(printf '%s\n' "$out" | sed -n 's/^  \([a-e]\)[ ,].*(exit [0-9]*)$/\1/p' | tr '\n' ' ' | sed 's/^/ /; s/ $//')"
         [ "$named" = "$want" ] || fail "planted [$planted] $mode: summary named [$named], wanted [$want]"
         printf '%s\n' "$out" | grep -q '^e ran$' || fail "planted [$planted] $mode: the last section never ran"
 
         # One lint-section-time line per section that ran, never one for the section the mode
         # drops, and one CSV row per section that ran, the section's exit last.
-        for entry in "a|a" "b|b reads the preamble" "c|c writes a file" "d|d runs cargo" \
+        for entry in "a|a" "b|b reads the preamble" "c|c writes a file" "d|d, the cargo one" \
             "e|e reads what c wrote"; do
             key=${entry%%|*}
             label=${entry#*|}
@@ -116,6 +116,19 @@ for combo in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
             | awk -F, -v want="$(hostname)" '$2 != want' | wc -l | tr -d ' ')
         [ "$bad_host" -eq 0 ] \
             || fail "planted [$planted] $mode: $bad_host CSV rows do not name this machine's host"
+        # The name column is quoted CSV-style because a name can carry a comma, and section d's
+        # now does: its row must quote the name whole, with exactly the seconds and the exit after
+        # it, and a planted d failure must show its exit as the row's last field.
+        if [ "$mode" = all ]; then
+            tail -n "$want_rows" "$TIMES" \
+                | grep -q ',"d, the cargo one",[0-9][0-9]*,[0-9][0-9]*$' \
+                || fail "planted [$planted] $mode: section d's row does not quote its name whole"
+            if [ -n "${PLANT_D:-}" ]; then
+                tail -n "$want_rows" "$TIMES" \
+                    | grep -q ',"d, the cargo one",[0-9][0-9]*,[1-9][0-9]*$' \
+                    || fail "planted [$planted] $mode: section d's planted exit is not its row's last field"
+            fi
+        fi
     done
 done
 

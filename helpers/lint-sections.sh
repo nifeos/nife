@@ -43,15 +43,16 @@
 # date (UTC), host, mode, section, seconds, exit. The host is `hostname`'s output at write time,
 # unquoted: a base-system hostname is letters, digits, hyphens and dots, so it never carries the
 # comma the name can, and the name stays quoted CSV-style so a comma inside it reads as part of the
-# name. A machine adopts the logging by pulling main and running lint: there is no setup step, the
-# CSV is per machine by design, and the host column keeps a row attributable when files from
-# several machines are combined later. The whole path stays /bin/sh over base-system tools (`date`,
-# `hostname`, `sed`), no python: a machine whose python is too old for lint's own sections must
-# still log its section times. A directory that cannot be created, or a write that fails, is
-# skipped silently: these rows are a measurement, and writing one must never change the verdict.
-# helpers/lint-sections-selftest.sh holds all of this, including the unwritable case. The rows
-# carry the per-section wall time that notes/lint-cost-2026-10-18.md does not; what they mean and
-# where they should land once a week of them exists is that note's maintainer call, not this
+# name. helpers/lint-sections-selftest.sh plants a comma in a section name so the quoting stays
+# provably correct. A machine adopts the logging by pulling main and running lint: there is no
+# setup step, the CSV is per machine by design, and the host column keeps a row attributable when
+# files from several machines are combined later. The whole path stays /bin/sh over base-system
+# tools (`date`, `hostname`, `sed`), no python: a machine whose python is too old for lint's own
+# sections must still log its section times. A directory that cannot be created, or a write that
+# fails, is skipped silently: these rows are a measurement, and writing one must never change the
+# verdict. helpers/lint-sections-selftest.sh holds all of this, including the unwritable case. The
+# rows carry the per-section wall time that notes/lint-cost-2026-10-18.md does not; what they mean
+# and where they should land once a week of them exists is that note's maintainer call, not this
 # script's.
 #
 # Name: provisional, minted 2026-10-19 (UTC) by lane maintainer/lint-cost.
