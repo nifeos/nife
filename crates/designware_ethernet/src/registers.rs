@@ -3,7 +3,7 @@
 //!
 //! Transcribed from OpenBSD's `sys/dev/ic/dwqereg.h` (revision of 2026-07-31, commit
 //! `59ec3ab4d107`, ISC license, notice in the crate root), with [`CONFIG_LM`] from Linux's
-//! `stmmac/dwmac4.h` and [`DMA_CH0_RX_CONTROL_RBSZ_SHIFT`] from U-Boot's `dwc_eth_qos.h`. The MAC
+//! `stmmac/dwmac4.h` and `DMA_CH0_RX_CONTROL_RBSZ_SHIFT` from U-Boot's `dwc_eth_qos.h`. The MAC
 //! and MTL are page `0x0000`; page `0x1000` holds the DMA channel's tail pointers beside its ring
 //! bases and the controller's software reset, and there is no IOMMU, so a process given that page
 //! can repoint a ring and reset the MAC.

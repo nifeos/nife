@@ -34,8 +34,10 @@ pub(crate) const REG_ADDR: u8 = 0x1e;
 pub(crate) const REG_DATA: u8 = 0x1f;
 
 /// **Clock gating register** (`YT8521_CLOCK_GATING_REG`, `motorcomm.c`).
+///
+/// Name: recorded (`YT8521_CLOCK_GATING_REG` in `motorcomm.c`).
 #[doc(alias = "clock gating register")]
-pub(crate) const CLOCK_GATING_REG: u16 = 0x000c;
+pub const CLOCK_GATING_REG: u16 = 0x000c;
 /// **Clock gating register, receive clock enable** (`YT8521_CGR_RX_CLK_EN`, `motorcomm.c`). Clear
 /// it to keep the receive clock running with no cable; Linux clears it for
 /// `motorcomm,keep-pll-enabled`. Cleared here unconditionally, because the controller's
@@ -45,8 +47,10 @@ pub(crate) const CLOCK_GATING_REG: u16 = 0x000c;
 #[doc(alias = "receive clock enable")]
 pub(crate) const CGR_RX_CLK_EN: u16 = 1 << 12;
 /// **Extended register, sleep control 1** (`YT8521_EXTREG_SLEEP_CONTROL1_REG`, `motorcomm.c`).
+///
+/// Name: recorded (`YT8521_EXTREG_SLEEP_CONTROL1_REG` in `motorcomm.c`).
 #[doc(alias = "extended register, sleep control 1")]
-pub(crate) const EXTREG_SLEEP_CONTROL1_REG: u16 = 0x0027;
+pub const EXTREG_SLEEP_CONTROL1_REG: u16 = 0x0027;
 /// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
 /// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
 /// `motorcomm,auto-sleep-disabled`; this driver clears it for

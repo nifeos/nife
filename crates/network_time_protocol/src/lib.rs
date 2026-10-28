@@ -63,12 +63,16 @@ pub const UNIX_MINIMUM: u64 = 0;
 /// earlier, so [`Timestamp::from_unix`] refuses it rather than returning a wrong answer.
 /// `UNIX_MINIMUM..UNIX_LIMIT` is exactly the range over which Unix → NTP → Unix is the identity,
 /// and that is the property Kani proves.
-pub(crate) const UNIX_LIMIT: u64 = (TICKS_PER_SECOND - UNIX_DELTA) + (1 << 31);
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const UNIX_LIMIT: u64 = (TICKS_PER_SECOND - UNIX_DELTA) + (1 << 31);
 
 /// The highest stratum a synchronised server may claim (RFC 5905 `MAXSTRAT`). 1 is a reference
 /// clock, 15 is fifteen hops from one, 16 means "unsynchronised" and anything above is reserved.
 /// A reply outside `1..=15` is not a time source ([`Reject::Stratum`]).
-pub(crate) const MAXIMUM_STRATUM: u8 = 15;
+///
+/// Name: recorded (RFC 5905's `MAXSTRAT`).
+pub const MAXIMUM_STRATUM: u8 = 15;
 
 /// The root distance we refuse outright, in [`Short`] units: 16 seconds, RFC 5905's `MAXDISP`.
 ///
@@ -78,12 +82,16 @@ pub(crate) const MAXIMUM_STRATUM: u8 = 15;
 /// describing something the protocol cannot mean; a server 200 ms away over a bad path is merely a
 /// poor sample, and deciding what to do with a poor sample is the service's call, made with the
 /// other samples in front of it.
-pub(crate) const MAXIMUM_ROOT_DISTANCE: Short = Short(16 << 16);
+///
+/// Name: recorded (RFC 5905's `MAXDISP`).
+pub const MAXIMUM_ROOT_DISTANCE: Short = Short(16 << 16);
 
 /// The poll interval a request advertises, as log2 seconds: 6, which is 64 seconds. The server does
 /// not act on it for a unicast client; it exists so the packet is well-formed and so a server that
 /// rate-limits can see we are not asking often.
-pub(crate) const DEFAULT_POLL: i8 = 6;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const DEFAULT_POLL: i8 = 6;
 
 /// The NTP mode field (RFC 5905 §7.3). Three bits, in the low bits of the first octet.
 pub mod mode {
@@ -111,7 +119,9 @@ pub mod leap {
     pub const DELETE: u8 = 2;
     /// **The clock is not synchronised.** The server is telling us its own time is not to be
     /// trusted, and [`super::Query::accept`] believes it.
-    pub(crate) const UNSYNCHRONISED: u8 = 3;
+    ///
+    /// Name: recorded (RFC 5905's leap indicator 3).
+    pub const UNSYNCHRONISED: u8 = 3;
 }
 
 // =================================================================================================

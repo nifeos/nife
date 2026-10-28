@@ -1,7 +1,7 @@
 //! **The socket contract's shared frame, as a value** (milestone 410 (six copies of the
 //! shared-frame accessors)): one mapped page laid out by [`socket_contract`], its header fields
 //! and payload reached as methods over offsets, each bounds-checked through
-//! [`MappedWindow`](crate::mapped_window::MappedWindow). Each program maps its own frame wherever
+//! [`MappedWindow`]. Each program maps its own frame wherever
 //! its image leaves room, so the type is constructed with its base. It lives here rather than in
 //! `crates/socket_contract` because `MappedWindow` cannot compile for the host and that crate's
 //! wire format is host-tested. See notes/user-mode-runtime.md.
@@ -26,7 +26,7 @@
 //! `SharedFrame`, which doubles a word `socket_contract`'s docs already put on "frame"; over
 //! `PageFrame`, which names the kernel object a frame is minted from rather than the layout read
 //! through it; and over holding a second `base: u64` field beside the window, which would
-//! duplicate the base [`MappedWindow`](crate::mapped_window::MappedWindow) already carries and
+//! duplicate the base [`MappedWindow`] already carries and
 //! give the two copies a way to disagree. The module takes its name from the contract it reads,
 //! `socket_frame`, so `socket_contract::` stays the one place a reader looks for the wire.
 

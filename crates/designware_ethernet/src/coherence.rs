@@ -21,7 +21,9 @@ pub(crate) const PROBE_ETHERTYPE: u16 = 0x88b5;
 pub(crate) const PROBE_LENGTH: usize = 128;
 /// What receive buffer 0 holds before the device writes it. Never a byte of [`probe_frame`]'s
 /// payload, so a buffer still holding it cannot be mistaken for a delivery.
-pub(crate) const POISON: u8 = 0xa5;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const POISON: u8 = 0xa5;
 /// How long the caller waits for receive descriptor 0 before reading the device's account. A
 /// 128-byte frame at any speed through a loopback is microseconds; a hundred milliseconds is
 /// slack for a slow first descriptor fetch, not a guess at the wire.
@@ -30,7 +32,9 @@ pub const WAIT_MICROSECONDS: u64 = 100_000;
 /// **The probe frame**: addressed from and to `station_address` (so the packet filter passes it),
 /// the experimental `EtherType`, and a payload whose every byte differs from [`POISON`] and from
 /// zero.
-pub(crate) fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
     let mut f = [0u8; PROBE_LENGTH];
     f[..6].copy_from_slice(&station_address);
     f[6..12].copy_from_slice(&station_address);

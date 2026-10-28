@@ -61,7 +61,9 @@ pub enum Error {
 /// Where the flash registers sit in BAR0 on SPT (`E1000_FLASH_BASE_ADDR`).
 pub(crate) const FLASH_BASE_ADDR: u64 = 0xe000;
 /// Hardware sequencing flash status, low half; control, high half (`ICH_FLASH_HSFSTS`).
-pub(crate) const HSFSTS: u64 = 0x04;
+///
+/// Name: recorded (`ICH_FLASH_HSFSTS`).
+pub const HSFSTS: u64 = 0x04;
 /// Flash linear address (`ICH_FLASH_FADDR`).
 pub(crate) const FADDR: u64 = 0x08;
 /// Flash data 0 (`ICH_FLASH_FDATA0`).

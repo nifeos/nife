@@ -249,6 +249,73 @@ exclude_re = [
     "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in setup_copper_link$",
     "^crates/e1000e/src/pch/sequence\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_errata$",
 
+    # **Milestone 954 (a survivor accepted once is not accepted forever), part 4, this crate's
+    # noise:** `replace | with ^` over operands that share no bit, one entry per function, each
+    # naming the `const` beside the code whose `assert!` lets the compiler check the disjointness
+    # (`THE_*_SHARE_NO_BIT`). `x | y` equals `x ^ y` whenever the operands share no bit, so no test
+    # can kill these mutants, and the census counted them survived every week. The regex anchors on
+    # the file's path and the function's full name so it cannot reach another crate's or a longer
+    # name; the line and column are left to `\d+` because they move with every edit. A function
+    # named here that later gains a `|` over overlapping bits generates no mutant for it; that is
+    # the exclusion's known limit, narrowed by the named constant, which fails the build if the
+    # bits ever collide.
+    #
+    # Where a function's survivor set also holds a site the disjointness claim does not cover, the
+    # site's own row stays and says so; only the all-disjoint functions are excluded here.
+    #
+    # Command::word composes the start bit (31), the hold register (29) and the index masked to
+    # bits 5:0: THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT (command.rs).
+    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::word$',
+    # reset clears the three enables, disjoint per
+    # THE_DIRECT_MEMORY_ACCESS_ENABLES_SHARE_NO_BIT (registers.rs); the excluded
+    # `ctrl | CTRL_ALL_RESET` write's mutant, which
+    # reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets killed, is covered by
+    # the same exclusion.
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::reset$',
+    # set_clock writes the card clock enable (0) and low power (16), disjoint per
+    # THE_CLOCK_ENABLES_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::set_clock$',
+    # finish waits for DTO with ACD, and the data-error group with the data-timeout group, disjoint
+    # per THE_TRANSFER_OVER_BITS_SHARE_NO_BIT and
+    # THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::finish$',
+    # wait_queue tests the data-error group against the data-timeout group, disjoint per
+    # THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::wait_queue$',
+    # descriptor writes OWN (31) with CH (4), disjoint per
+    # THE_DESCRIPTOR_OWN_AND_CHAIN_BITS_SHARE_NO_BIT (internal_direct_memory_access.rs).
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in descriptor$',
+    # internal_direct_memory_access_start ORs the enable pair and BMOD's enable with fixed burst,
+    # disjoint per THE_DIRECT_MEMORY_ACCESS_ENABLES_SHARE_NO_BIT and
+    # THE_BUS_MODE_BITS_SHARE_NO_BIT (registers.rs); the `ctrl | CTRL_USE_INTERNAL_DMAC` write's
+    # mutant, which one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register
+    # killed, is covered by the same exclusion.
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_start$',
+    # internal_direct_memory_access_wait tests the same two disjoint pairs as finish, per
+    # THE_TRANSFER_OVER_BITS_SHARE_NO_BIT and THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT
+    # (registers.rs).
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_wait$',
+    # fifoth_for_pio composes the burst code (bit 29), the receive watermark (bits 27:16) and the
+    # transmit watermark (bits 11:0), disjoint per
+    # THE_POLLED_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^ in fifoth_for_pio$',
+    # fifoth_for_direct_memory_access composes the same three fields with the larger burst
+    # encoding, disjoint per
+    # THE_DIRECT_MEMORY_ACCESS_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT (registers.rs).
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^ in fifoth_for_direct_memory_access$',
+
+    # The crate's const-item survivors leave the same way. cargo-mutants names a const item's
+    # mutant with no function, so the file and the shape are the narrowest scope that survives an
+    # edit, and these entries reach the killed mutants of the same shapes in the same files; the
+    # tests that killed them stay. The compositions' disjointness is compiler-checked by the
+    # THE_*_SHARE_NO_BIT constants in the same files, and the constants' values are pinned by
+    # the_register_bits_are_the_databooks, the_operating_condition_arguments_are_the_specs and
+    # a_short_response_is_not_asked_for_as_a_long_one; the shift survivors are the `1 << 0`
+    # constants, where the shift is the identity.
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^$',
+    '^crates/designware_mobile_storage/src/card\.rs:\d+:\d+: replace \| with \^$',
+    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^$',
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace << with >>$',
     # **designware_ethernet's disjoint-bits and zero-shift sites** (milestone 954 (a survivor
     # accepted once is not accepted forever), 2026-10-28 UTC).
     #

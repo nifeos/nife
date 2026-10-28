@@ -7,7 +7,9 @@ pub(crate) const H2ME_ULP: u32 = 0x0000_0800;
 /// `H2ME.ENFORCE_SETTINGS`: ask the ME to apply the host's request.
 pub(crate) const H2ME_ENFORCE_SETTINGS: u32 = 0x0000_1000;
 /// How long to wait for the ME, in milliseconds: FreeBSD's 250 polls of 10 ms.
-pub(crate) const WAIT_MS: u64 = 2500;
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const WAIT_MS: u64 = 2500;
 
 /// The `H2ME` value that asks the ME to take the PHY out of ULP (the forced path).
 pub const fn request(h2me: u32) -> u32 {

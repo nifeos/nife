@@ -37,7 +37,9 @@ pub(crate) const ESCAPE_BYTE: u8 = b'\r';
 ///
 /// The byte is sent just after the arming banner and the first beat follows within five seconds, so
 /// a healthy board answers well inside this.
-pub(crate) const CONFIRM_WINDOW: Duration = Duration::from_secs(15);
+///
+/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+pub const CONFIRM_WINDOW: Duration = Duration::from_secs(15);
 
 /// The arming announcement's distinctive phrase, from `kernel/src/soak.rs`'s `arm_reboot`.
 ///
@@ -187,7 +189,9 @@ impl<'a> Escape<'a> {
     ///
     /// The log's error. A failed port write is reported and logged, not returned: the board is
     /// still talking.
-    pub(crate) fn observe_line(
+    ///
+    /// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+    pub fn observe_line(
         &mut self,
         line: &str,
         at: Duration,

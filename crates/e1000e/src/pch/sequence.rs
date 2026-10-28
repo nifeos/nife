@@ -924,16 +924,6 @@ pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
     Ok(())
 }
 
-/// **`e1000_setup_copper_link_pch_lpt`**: set link up with speed and duplex unforced, configure the
-/// 82577-family PHY (`e1000_copper_link_setup_82577`: carrier sense on transmit, downshift, auto
-/// MDI/MDI-X), advertise every speed, and restart autonegotiation
-/// (`e1000_copper_link_autoneg`, `e1000_phy_setup_autoneg`).
-///
-/// Two departures. The pause bits are advertised clear, because this driver programs no flow
-/// control watermarks (the module's `BUGS`); FreeBSD advertises full flow control. And
-/// `e1000_set_master_slave_mode` is left out: FreeBSD's `em` runs it with `e1000_ms_hw_default`,
-/// which writes `PHY_1000T_CTRL` back unchanged. FreeBSD's short wait for link afterwards is the
-/// kernel's own `STATUS.LU` wait.
 // Every OR in setup_copper_link that joins two constants joins two that share no bit, and
 // AUTO_MDI_MDIX lands inside the MDIX field its word just masked out, so each such OR-to-XOR swap
 // composes identical words; the compiler checks that here, and .cargo/mutants.toml excludes the
@@ -955,7 +945,17 @@ const _: () = assert!(
         && MII_CR_AUTO_NEG_EN & MII_CR_RESTART_AUTO_NEG == 0
 );
 
-pub(crate) fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
+/// **`e1000_setup_copper_link_pch_lpt`**: set link up with speed and duplex unforced, configure the
+/// 82577-family PHY (`e1000_copper_link_setup_82577`: carrier sense on transmit, downshift, auto
+/// MDI/MDI-X), advertise every speed, and restart autonegotiation
+/// (`e1000_copper_link_autoneg`, `e1000_phy_setup_autoneg`).
+///
+/// Two departures. The pause bits are advertised clear, because this driver programs no flow
+/// control watermarks (the module's `BUGS`); FreeBSD advertises full flow control. And
+/// `e1000_set_master_slave_mode` is left out: FreeBSD's `em` runs it with `e1000_ms_hw_default`,
+/// which writes `PHY_1000T_CTRL` back unchanged. FreeBSD's short wait for link afterwards is the
+/// kernel's own `STATUS.LU` wait.
+pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
     let c = (hardware.read(mac::CTRL) | crate::CTRL_SLU) & !(CTRL_FRCSPD | CTRL_FRCDPX);
     hardware.write(mac::CTRL, c);
     let f = Swflag::acquire(hardware)?;
