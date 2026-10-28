@@ -139,8 +139,8 @@ fn kernel_wrote_during_boot(transcript: &str) -> bool {
 /// scheduler's idle loop and a user-fault report. Their words are the evidence
 /// `one_answer_failures` asks for before it believes a splice rather than a missing answer, in
 /// the shape [`boot_claim`] gives the boot lines. The gauges are spelled without the indent
-/// [`GaugeFilter`] carries (`crate::swish_check::gauge`), because an intruded byte stream begins
-/// mid-line and the words must survive that.
+/// [`GaugeFilter::NEEDLES`](crate::swish_check::gauge::GaugeFilter::NEEDLES) carries, because an
+/// intruded byte stream begins mid-line and the words must survive that.
 ///
 /// This is evidence, not safety: a program that printed this vocabulary could excuse a phrase it
 /// never wrote. That is the same accepted trade [`boot_claim`] makes, and
