@@ -121,10 +121,12 @@ def corpus_regexes(toml_path):
 
 class Block:
     """One listed mutant: its header fields and its raw text, blank line included, so a shard file
-    re-serializes to exactly what the driver's patch parser reads."""
+    re-serializes to exactly what the driver's patch parser reads. `full` is the header line whole
+    (`file:line:col: name`), the identity the driver's TSV rows carry; `name` is the description
+    alone, what `exclude_re` matches against."""
 
-    def __init__(self, file, line, name, raw):
-        self.file, self.line, self.name, self.raw = file, line, name, raw
+    def __init__(self, file, line, name, raw, full):
+        self.file, self.line, self.name, self.raw, self.full = file, line, name, raw, full
 
 
 def parse_blocks(text):
@@ -141,12 +143,14 @@ def parse_blocks(text):
             continue
         if line == "":
             cur["lines"].append("")
-            out.append(Block(cur["file"], cur["line"], cur["name"], "\n".join(cur["lines"]) + "\n"))
+            out.append(Block(cur["file"], cur["line"], cur["name"],
+                             "\n".join(cur["lines"]) + "\n", cur["lines"][0]))
             cur = None
         else:
             cur["lines"].append(line)
     if cur:
-        out.append(Block(cur["file"], cur["line"], cur["name"], "\n".join(cur["lines"]) + "\n"))
+        out.append(Block(cur["file"], cur["line"], cur["name"],
+                         "\n".join(cur["lines"]) + "\n", cur["lines"][0]))
     return out
 
 
@@ -275,6 +279,26 @@ VERDICT_KIND = {"survived": "missed"}
 VERDICT_KIND.update({f"timeout-{t}": "timeout" for t in ("kernel", "system")})
 
 
+def untriaged_table(untriaged):
+    """The step summary's table: one row per untriaged survivor key, with what clears it. The key
+    is milestone 85's and the clearing rules are 924's; the diff check and the rolling census both
+    render this one table, so the two summaries cannot drift apart."""
+    rows = ["| crate | function | mutation | kinds | what is missing |",
+            "|---|---|---|---|---|"]
+    for (crate, function, mutation), kinds_seen, why in untriaged:
+        missing = {
+            "none": f"a row in {TRIAGE_PATH} (`equivalent` or `gap`), or a test that kills it",
+            "killed": "this run saw the mutant live, so its `killed` row is false here: kill"
+                      " it with a test, or write the `equivalent` or `gap` row",
+            "stale": "its row is unchanged, and this diff changed the function it describes:"
+                     " read the row against the new code and update it, or kill the mutant"
+                     " with a test",
+        }[why]
+        rows.append(f"| {crate} | `{function}` | `{mutation}` |"
+                    f" {', '.join(sorted(kinds_seen))} | {missing} |")
+    return rows
+
+
 def read_tsv(path):
     """The driver's `--out` table as (mutant, verdict) pairs. A missing file is a broken run."""
     p = pathlib.Path(path)
@@ -333,20 +357,8 @@ def cmd_verdict(args):
             "This check is advisory (roadmap 955, part 3): it does not block the merge, and the"
             " rolling census revisits every file.",
             "",
-            "| crate | function | mutation | kinds | what is missing |",
-            "|---|---|---|---|---|",
         ]
-        for (crate, function, mutation), kinds_seen, why in untriaged:
-            missing = {
-                "none": f"a row in {TRIAGE_PATH} (`equivalent` or `gap`), or a test that kills it",
-                "killed": "this run saw the mutant live, so its `killed` row is false here: kill"
-                          " it with a test, or write the `equivalent` or `gap` row",
-                "stale": "its row is unchanged, and this diff changed the function it describes:"
-                         " read the row against the new code and update it, or kill the mutant"
-                         " with a test",
-            }[why]
-            body.append(f"| {crate} | `{function}` | `{mutation}` |"
-                        f" {', '.join(sorted(kinds_seen))} | {missing} |")
+        body += untriaged_table(untriaged)
         unviable = sum(1 for _n, v in rows if v == "unviable")
         stale = sum(1 for _n, v in rows if v == "stale")
         if unviable or stale:
