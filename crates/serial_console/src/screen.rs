@@ -291,6 +291,16 @@ pub fn decode_exact(
     })
 }
 
+/// A pixel word's three channels share no bit: each is one byte, shifted to its own third of the
+/// word, which the compiler checks here; the mutation exclusion for [`decode_exact`] names this
+/// constant. The constant-assertion lint is off on purpose: the assertion is constant by
+/// construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_PIXEL_CHANNELS_SHARE_NO_BIT: () =
+    assert!(((0xffu32 << 16) & (0xff << 8)) == 0 && (((0xffu32 << 16) | (0xff << 8)) & 0xff) == 0);
+
 /// The character in one cell, or `?` when the cell matches nothing in `alphabet`.
 fn cell(
     pixels: &[u8],

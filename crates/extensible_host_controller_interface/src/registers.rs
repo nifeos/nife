@@ -163,6 +163,26 @@ pub const LEGACY_OPERATING_SYSTEM_OWNED: u32 = 1 << 24;
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_ENABLES` (`smi` spelled out, as
 /// the acronym test asks).
 pub const LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES: u32 = 1 | 1 << 4 | 0b111 << 13;
+
+/// The three SMI-enable bits share no bit (0, 4 and 13:15), which the compiler checks here; the
+/// mutation exclusions for this file's constants name this constant. The constant-assertion lint
+/// is off on purpose: the assertion is constant by construction, and the compiler checking it is
+/// its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_LEGACY_ENABLE_BITS_SHARE_NO_BIT: () =
+    assert!(1 + (1 << 4) + (0b111 << 13) == LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES);
+
+/// The scratchpad count's two fields share no bit (the high field shifted to 5:9, the low field
+/// at 0:4), which the compiler checks here; the mutation exclusion for
+/// [`Capabilities::decode`] names this constant. The constant-assertion lint is off on purpose:
+/// the assertion is constant by construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT: () = assert!(((0x1fu32 << 5) & 0x1f) == 0);
+
 /// The write-one-to-clear event bits of `USBLEGCTLSTS`.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `LEGACY_SMI_EVENTS` (`smi` spelled out, as
@@ -298,7 +318,10 @@ mod tests {
         assert_eq!(capabilities.portsc(1), 0x440);
         assert_eq!(capabilities.portsc(8), 0x4b0);
         assert_eq!(capabilities.interrupter(ERDP), 0x1038);
+        // Slot 0 is the command ring's doorbell, so the stride is read at 0 as well as at 1.
+        assert_eq!(capabilities.doorbell(0), 0x2000);
         assert_eq!(capabilities.doorbell(1), 0x2004);
+        assert_eq!(capabilities.doorbell(2), 0x2008);
     }
 
     /// The scratchpad count is split across two fields, high bits first in the register but low

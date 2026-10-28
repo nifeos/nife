@@ -103,6 +103,16 @@ pub fn enabled_controller_configuration() -> u32 {
     1 | (6 << 16) | (4 << 20)
 }
 
+/// The configuration word's three fields share no bit (the enable at bit 0, IOSQES at 16:18,
+/// IOCQES at 20:21), which the compiler checks here; the mutation exclusion for
+/// [`enabled_controller_configuration`] names this constant. The constant-assertion lint is off
+/// on purpose: the assertion is constant by construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_CONTROLLER_CONFIGURATION_FIELDS_SHARE_NO_BIT: () =
+    assert!(1 + (6 << 16) + (4 << 20) == 0x0046_0001);
+
 /// A queue's role, which picks its doorbell: submission tails are even doorbells, completion
 /// heads odd (NVMe 1.4 sections 3.1.24-25).
 ///
@@ -298,6 +308,16 @@ impl Command {
         c
     }
 }
+
+/// The queue dwords' fields share no bit by construction: a `u16` in the low half and a `u16`
+/// shifted to the high half, which the compiler checks here; the mutation exclusions for
+/// [`Command::create_io_completion_queue`] and [`Command::create_io_submission_queue`] name this
+/// constant. The constant-assertion lint is off on purpose: the assertion is constant by
+/// construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT: () = assert!(0xffffu32 + (0xffff << 16) == u32::MAX);
 
 /// **Physical Region Page pair** (PRP1 and PRP2, NVMe 1.4 section 4.3, Physical Region Page Entry
 /// and List): the two PRP words for one data transfer of `len` bytes at physical `base`, against

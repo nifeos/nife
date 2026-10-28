@@ -109,6 +109,19 @@ pub struct Handoff {
     pub queue_depth: u8,
 }
 
+/// The spawn word's four shifted fields share no bit (the role above bit 48, the queue depth at
+/// 40:47, the writable bit at 39, the bus width at 32:35; the clock rate below needs no assertion,
+/// a `u32` cannot reach bit 32), which the compiler checks here; the mutation exclusion for
+/// [`Handoff::pack`] names this constant. The constant-assertion lint is off on purpose: the
+/// assertion is constant by construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+pub const THE_SPAWN_WORD_FIELDS_SHARE_NO_BIT: () = assert!(
+    (ROLE << 48) + (0xffu64 << 40) + (1 << 39) + (0xf << 32)
+        == (ROLE << 48) | (0xffu64 << 40) | (1 << 39) | (0xf << 32)
+);
+
 impl Handoff {
     /// The three spawn words: `[ROLE << 48 | queue_depth << 40 | writable << 39 | bus_width << 32
     /// | card_interface_unit_hz, first, sectors]`.

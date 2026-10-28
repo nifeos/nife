@@ -398,4 +398,102 @@ exclude_re = [
     # THE_INTERFACE_SELECT_AND_CLEARED_WORD_SHARE_NO_BIT asserts that, which makes the `|` and the
     # `^` agree for every word.
     "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^ in select_reduced_gigabit_media_independent_interface$",
+
+    # **Milestone 954 (a survivor accepted once is not accepted forever), part 4, the remaining
+    # crates' noise** (2026-10-28 UTC): the same shape as the two blocks above, one entry per
+    # function (per file, for a constant with no enclosing function), each naming the
+    # THE_*_SHARE_NO_BIT constant beside the code whose assert! lets the compiler check the
+    # disjointness; a shift entry's argument is the identity. The census keys these survivors
+    # under names a rename has since moved (the carried rowless list's `cc_enabled`,
+    # `create_io_cq`, `create_io_sq`, the crate that held each Handoff); the entries spell the
+    # names as the tree has them now, which is what the next census will match.
+    #
+    # non_volatile_memory_express: the controller configuration word's three fields (the enable
+    # at bit 0, IOSQES at 16:18, IOCQES at 20:21), per
+    # THE_CONTROLLER_CONFIGURATION_FIELDS_SHARE_NO_BIT, beside the function.
+    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in enabled_controller_configuration$",
+    # The queue dwords' u16 halves, per THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT, beside the Command
+    # impl.
+    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in Command::create_io_completion_queue$",
+    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in Command::create_io_submission_queue$",
+    # The handoff word's three fields (dstrd above bit 32, blocks_per_transfer at 16:31, entries
+    # below), per THE_HANDOFF_WORD_FIELDS_SHARE_NO_BIT, beside Handoff.
+    "^crates/driver_process_contract/src/non_volatile_memory_express\\.rs:\\d+:\\d+: replace \\| with \\^ in Handoff::pack$",
+    # The spawn word's four shifted fields (the role above 48, the queue depth at 40:47, the
+    # writable bit at 39, the bus width at 32:35), per THE_SPAWN_WORD_FIELDS_SHARE_NO_BIT,
+    # beside Handoff.
+    "^crates/driver_process_contract/src/designware_mobile_storage\\.rs:\\d+:\\d+: replace \\| with \\^ in Handoff::pack$",
+    # The spawn word's two fields (the page count below bit 32, the register mask above), per
+    # THE_DIRECT_MEMORY_ACCESS_WORD_FIELDS_SHARE_NO_BIT, beside Handoff.
+    "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in Handoff::pack$",
+    # The report words (a byte, a byte, and the 16- and 32-bit fields the callers shift above bit
+    # 16), per THE_REPORT_WORD_FIELDS_SHARE_NO_BIT, beside the three functions.
+    "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in keyboard_report$",
+    "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in ports_report$",
+    "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
+    # extensible_host_controller_interface's own registers. The `1 << 0` constants (CONNECTED,
+    # COMMAND_RUN, STATUS_HALTED, IMAN_PENDING) are the shift survivors, where the shift is the
+    # identity; every other constant's value is pinned by
+    # the_register_bits_are_where_the_specification_puts_them and
+    # the_portsc_bits_are_where_the_specification_puts_them, which stay.
+    "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
+    # The const-level `|` survivors: CHANGES and PRESERVE (port.rs), per
+    # THE_PORT_CHANGE_BITS_SHARE_NO_BIT and THE_PRESERVED_FIELDS_SHARE_NO_BIT, beside them.
+    "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    # LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES's three bits (0, 4, 13:15), per
+    # THE_LEGACY_ENABLE_BITS_SHARE_NO_BIT, beside the constant; the killed mutants the entry
+    # sweeps are pinned by the_register_bits_are_where_the_specification_puts_them, which stays.
+    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    # The scratchpad count's two fields (5:9 against 0:4), per
+    # THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT, beside the impl.
+    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^ in Capabilities::decode$",
+    # The event pointer's halves (dword 0 below, dword 1 above bit 32), per
+    # THE_EVENT_POINTER_HALVES_SHARE_NO_BIT, beside the impl.
+    "^crates/extensible_host_controller_interface/src/event\\.rs:\\d+:\\d+: replace \\| with \\^ in Event::decode$",
+    # The context words: slot's two dword-0 fields (20:23 against 27:31), per
+    # THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT, and endpoint's dword-1 fields and dword-4 halves, per
+    # THE_ENDPOINT_CONTEXT_FIELDS_SHARE_NO_BIT, beside their functions.
+    "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in slot$",
+    "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in endpoint$",
+    # The transfer control words: the type field at 10:15 against the flag bits and the fields at
+    # 16 and above, per THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT, beside control().
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::link$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::disable_slot$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::address_device$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::configure_endpoint$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::evaluate_context$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::reset_endpoint$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::set_dequeue$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::setup$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::data$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::status$",
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::normal$",
+    # The cycle stamp, whose mask clears bit 0 and whose bool cannot hold more, per
+    # THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT, beside control().
+    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::with_cycle$",
+    # grant_plan: the rights bits (five single bits), per THE_RIGHTS_BITS_SHARE_NO_BIT, beside
+    # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.
+    "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",
+    "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace << with >> in WordGrant::rights$",
+    # The const-level shift survivors are command.rs's RECURSIVE and verbs.rs's CLOCK, both
+    # `1 << 0`, the identity; the rest of each file's constant shifts are pinned by existing
+    # tests, which stay.
+    "^crates/grant_plan/src/command\\.rs:\\d+:\\d+: replace << with >>$",
+    "^crates/grant_plan/src/verbs\\.rs:\\d+:\\d+: replace << with >>$",
+    # serial_console: decode_exact's three pixel channels, each a byte shifted to its own third
+    # of the word, per THE_PIXEL_CHANNELS_SHARE_NO_BIT, beside the function.
+    "^crates/serial_console/src/screen\\.rs:\\d+:\\d+: replace \\| with \\^ in decode_exact$",
+    # system_log_contract: the flags module's `1 << 0` constant (KERNEL) is the shift survivor,
+    # the identity; the rest of the file's constant shifts are pinned by existing tests, which
+    # stay.
+    "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace << with >>$",
+    # control::word's masked fields and badge, per THE_CONTROL_WORD_FIELDS_SHARE_NO_BIT, beside
+    # the function; and the ring meta word's byte fields, per
+    # THE_HEADER_BYTE_FIELDS_SHARE_NO_BIT, beside it. cargo-mutants names these two with their
+    # module (`control::word`, `kernel_ring::meta`), a module where the entry's scope expects a
+    # type, so the entries carry the module under a leading `.*` and stay anchored on the file,
+    # the mutation and the function name.
+    "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in .*control::word$",
+    "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in .*kernel_ring::meta$",
 ]

@@ -389,6 +389,18 @@ pub enum WordGrant {
     Create,
 }
 
+/// The rights bits share no bit: enumerate (0), read (1), write (2), create (3) and descend (5)
+/// are five single bits, which the compiler checks here; the mutation exclusions for
+/// [`WordGrant::rights`] name this constant. The constant-assertion lint is off on purpose: the
+/// assertion is constant by construction, and the compiler checking it is its job.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+#[allow(clippy::assertions_on_constants, clippy::eq_op)]
+// This module is private, so nothing outside can reach the constant; the mutation exclusion in
+// .cargo/mutants.toml is its reader, and helpers/mutation_exclusion_check.py fails if it is gone.
+#[allow(dead_code)]
+pub const THE_RIGHTS_BITS_SHARE_NO_BIT: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
+
 impl WordGrant {
     /// The rights a caretaker asks the file service for, as `filesystem_contract::dir`'s bits. Spelled
     /// as numbers here because this crate does not link the filesystem contract (see its

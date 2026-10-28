@@ -204,6 +204,21 @@ pub mod control {
         (operation << 56) | ((field & 0xff) << 40) | ((arg & 0xff) << 32) | badge as u64
     }
 
+    /// A control word's fields share no bit: the field and argument are masked to their bytes at
+    /// 40:47 and 32:39, the badge is a `u32` below bit 32, and the operation sits above bit 56
+    /// for every caller (the [`OPERATION_NAME`] family and the console's operations, all below
+    /// 0x100), which the compiler checks here; the mutation exclusion for [`word`] names this
+    /// constant. The constant-assertion lint is off on purpose: the assertion is constant by
+    /// construction, and the compiler checking it is its job.
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+    #[allow(clippy::assertions_on_constants, clippy::eq_op)]
+    pub const THE_CONTROL_WORD_FIELDS_SHARE_NO_BIT: () = assert!(
+        ((0xffu64 << 56) & (0xff << 40)) == 0
+            && ((0xffu64 << 56 | 0xff << 40) & (0xff << 32)) == 0
+            && ((0xffu64 << 56 | 0xff << 40 | 0xff << 32) & 0xffff_ffff) == 0
+    );
+
     /// A control word's `(operation, field, arg, badge)`.
     pub const fn fields(w0: u64) -> (u64, u64, u64, u32) {
         (
@@ -515,6 +530,16 @@ pub mod kernel_ring {
     const fn meta(severity: u8, flags: u8, len: usize) -> u64 {
         severity as u64 | (flags as u64) << 8 | (len as u64) << 16
     }
+
+    /// The meta word's byte fields share no bit: severity is a `u8` at 0:7, flags a `u8` at 8:15,
+    /// and len's shift starts above both, which the compiler checks here; the mutation exclusion
+    /// for [`meta`] names this constant. The constant-assertion lint is off on purpose: the
+    /// assertion is constant by construction, and the compiler checking it is its job.
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+    #[allow(clippy::assertions_on_constants, clippy::eq_op)]
+    pub const THE_HEADER_BYTE_FIELDS_SHARE_NO_BIT: () =
+        assert!(u8::MAX as u64 + ((u8::MAX as u64) << 8) == 0xffff);
 
     fn slot(seq: u64) -> usize {
         (1 + (seq % SLOTS) as usize) * SLOT_WORDS
@@ -880,6 +905,17 @@ mod tests {
         words[SLOT_WORDS].store(BUSY, Ordering::Relaxed);
         let mut out = [0u8; record::TEXT_MAXIMUM];
         assert_eq!(ring.read(0, &mut out), Read::Overwritten);
+    }
+
+    /// **A never-written slot reads as neither of the words a reader acts on.** `EMPTY`'s whole
+    /// job is to be distinct from `BUSY` (an append is writing this slot now) and from `DETACHED`
+    /// (no drainer has ever written the cursor page); the reader refuses an unwritten sequence
+    /// number by cursor, so the sentinel is otherwise never compared, which is why the suite
+    /// never noticed the value at all.
+    #[test]
+    fn the_unwritten_slot_is_neither_busy_nor_detached() {
+        assert_ne!(kernel_ring::EMPTY, kernel_ring::BUSY);
+        assert_ne!(kernel_ring::EMPTY, kernel_ring::DETACHED);
     }
 
     /// **Each record keeps its own words.** Two full records side by side read back whole, with
