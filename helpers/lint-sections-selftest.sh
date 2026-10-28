@@ -13,8 +13,8 @@
 #   2. its summary names exactly the planted sections that run in that mode;
 #   3. the last section runs whatever failed before it;
 #   4. every section that runs prints its lint-section-time line and appends one CSV row per
-#      section to the file NIFE_LINT_TIMES names, the section's exit last, and the section the
-#      mode drops prints neither;
+#      section to the file NIFE_LINT_TIMES names, the host column second naming the machine that
+#      wrote the row, the section's exit last, and the section the mode drops prints neither;
 #   5. a CSV file that cannot be written leaves the verdict and the output alone.
 # No tree and no real cargo: it runs in milliseconds, and in `script/lint --no-cargo`.
 
@@ -109,6 +109,13 @@ for combo in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
         failed_rows=$(tail -n "$want_rows" "$TIMES" | grep -c ',[1-9][0-9]*$' || true)
         [ "$failed_rows" -eq "$(printf '%s' "$want" | wc -w | tr -d ' ')" ] \
             || fail "planted [$planted] $mode: $failed_rows failed CSV rows, wanted [$want]"
+        # The host column: each row the run wrote names the machine that wrote it, `hostname`'s
+        # own output, so rows combined from several machines later stay attributable to their
+        # machine.
+        bad_host=$(tail -n "$want_rows" "$TIMES" \
+            | awk -F, -v want="$(hostname)" '$2 != want' | wc -l | tr -d ' ')
+        [ "$bad_host" -eq 0 ] \
+            || fail "planted [$planted] $mode: $bad_host CSV rows do not name this machine's host"
     done
 done
 
