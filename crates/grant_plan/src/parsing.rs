@@ -113,7 +113,7 @@ pub fn each_word(
 /// Name: provisional (milestone 47, 2026-09-26).
 pub const BUILTINS: &[&[u8]] = &[
     b"apropos", b"bg", b"bind", b"caps", b"cd", b"echo", b"fg", b"help", b"jobs", b"kill", b"ls",
-    b"mkdir", b"pwd", b"time", b"touch", b"wait", b"xargs",
+    b"mkdir", b"pwd", b"scope", b"time", b"touch", b"wait", b"xargs",
 ];
 
 /// Parse a whole command line into a [`Command`]. Pure and allocation-free.
@@ -141,6 +141,7 @@ pub fn parse(line: &[u8]) -> Command<'_> {
         b"caps" => Command::Capabilities(rest),
         b"time" => Command::Time(rest),
         b"xargs" => Command::Xargs(rest),
+        b"scope" => Command::Scope(rest),
         // A path operand is one designation however many slashes it has, so `trim` is all the
         // classification it needs.
         b"cd" => Command::Cd(trim(rest)),

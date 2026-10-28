@@ -27,6 +27,7 @@ pub fn write_help(out: &mut dyn FnMut(&[u8])) {
     out(b"  caps <command>          preview what that command would grant\n");
     out(b"  time <command>          run it and say how long it took (WALL clock, not CPU)\n");
     out(b"  xargs <command>         run it once per BATCH when its pattern matches too many\n");
+    out(b"  scope { commands }      run them, then put back this shell's directory and names\n");
     out(b"  cd [path]               move inside the directory you hold ('cd' is your root)\n");
     out(b"  pwd                     where you are, relative to YOUR root\n");
     out(b"  ls [path]               list a directory you can reach\n");

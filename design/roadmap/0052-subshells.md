@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-07-31
 milestone_dependencies: none
 decision_dependencies: 160, 312
@@ -9,12 +9,28 @@ needs_person: no
 ---
 # 52. Subshells without `fork`, and what copying an endowment means
 
-Not started, and ruled by §160 (what a subshell copies) on 2026-10-27. Milestone 50 (pipes
-and redirection) is BUILT; it removed most of the requirement and changed what is left, and that
-remainder is the thing to build. §160 chose option 4 below: one scoped-block form for the shell's own
-state, and isolation by running `swish` again explicitly as a child whose endowment is derived from
-the parent's. `( ... )` keeps no Unix meaning (§312 (swish has one way to do each job in its language)). Spellings
-ship provisional.
+Partial. §160 (what a subshell copies) ruled this on 2026-10-27, option 4 below: one scoped-block
+form for the shell's own state, and isolation by running `swish` again explicitly as a child
+whose endowment derives from the parent's. `( ... )` keeps no Unix meaning (§312 (swish has one
+way to do each job in its language)). Spellings ship provisional.
+
+Built: `scope { commands }`, which puts back the working directory and the bound names on every way
+out and refuses, before anything runs, a block that would start, stop, wait for or resume a
+background job. `( ... )` is a refusal that names both forms. The spelling `swish -c` is reserved
+and answers that the child is not built. Proven by host tests in `crates/swish` and by
+`script/swish-check` on all three architectures; the detail is in
+[`notes/swish-language/scoped-block.md`](../../notes/swish-language/scoped-block.md).
+
+Not built: the isolated child. Two things stand in the way, and neither is the shell's:
+
+- The spawn service answers every request on one result endpoint, so a child shell that spawned
+  would read the answers meant for its parent. Each shell needs a result endpoint of its own, made
+  by the spawn service.
+- A directory grant is a caretaker over a name to descend into, so a shell standing at its root has
+  no grant to give. The child needs a grant of the directory a shell stands in.
+
+The child also needs the line it runs, which a native program receives only through an integer
+today; only `std` programs get an argument page.
 
 This block lays out the problem and the options §160 chose among.
 
@@ -150,6 +166,19 @@ need.
 Sequencing. After milestone 50 (pipes and redirection), because 50 removes most of the
 requirement and changes what is left. **Effort: not estimated**, because the design is not chosen and
 the options differ by more than an order of magnitude.
+
+## Follow-on
+
+- **Outstanding.** The isolated child, `swish -c`: this shell run again as a child whose endowment
+  derives from the parent's. Checked 2026-10-27 against `crates/system_initializer/src/spawn_loop.rs`,
+  where every request is answered on the one `result_ep`, and against `Service::native_endowment`,
+  where a native child gets its line only as an integer. It needs a result endpoint per shell made
+  by the spawn service, a directory grant of the directory a shell stands in, and a native argument
+  page. The child passes no capability that cannot derive (a device frame, a one-shot reply).
+- **Recorded.** `notes/swish-language/scoped-block.md` carries the scoped block's limits beside it:
+  no variables or options to save yet, and no pipeline stage.
+- **Decision.** `design/decisions/0160-what-a-subshell-copies.md` rules the mechanism, and
+  `design/decisions/0312-swish-has-one-way-to-do-each-job.md` rules the language rule it falls under.
 
 ## Index row
 

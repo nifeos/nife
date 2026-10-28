@@ -109,7 +109,8 @@ impl Drop for At {
 /// refusing to hand back less than was asked for without saying so). A client cannot read its own
 /// capability, so asking for more than the operation needs breaks under every narrowed grant while
 /// passing every test that grants the root's full rights, which is the mistake `readdir` records
-/// having nearly shipped.
+/// having nearly shipped. An object that is held rather than used for one verb has no minimum, and
+/// asks for `fsproto::dir::PARENT_RIGHTS` (§98), the parent's rights whatever they are.
 pub(super) fn descend(p: &mut Page, parent: &At, name: &str, want: u64) -> io::Result<At> {
     p.put(name.as_bytes());
     let handle = request(proto::req(proto::OPENDIR, parent.0, name.len() as u64), want)?;

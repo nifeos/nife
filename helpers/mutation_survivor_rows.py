@@ -1,6 +1,6 @@
 """The census-wide check, and the shape rules for the triage file's `kind`, `verified` and `home` columns.
 
-Part 2 of the proposal design/roadmap/proposals/a-survivor-accepted-once-is-not-accepted-forever.md
+Part 2 of the proposal design/roadmap/0954-a-survivor-accepted-once-is-not-accepted-forever.md
 (milestone number provisional, minted by the integrator when the proposal is promoted). Part 1 is
 helpers/mutation_real_holes.py. The inflow check (helpers/mutation_inflow.py) fails only on a
 survivor it can blame to a pull request merged since the last census, and the diff gate

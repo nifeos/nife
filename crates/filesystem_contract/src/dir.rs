@@ -45,6 +45,29 @@ pub const SETTIME: u64 = 1 << 6;
 /// the root can ever be constructed with more.
 pub const ALL: u64 = ENUMERATE | READ | WRITE | CREATE | REMOVE | DESCEND | SETTIME;
 
+/// **"The parent's rights, whatever they are"**, spelled as `1 << 63` in the rights word of
+/// [`super::fs::OPENDIR`] and [`super::fs::MKDIR`] (§98 (`OPENDIR` cannot be asked to attenuate), ruled 2026-10-27 UTC).
+///
+/// A client cannot read its own capability, so a directory it holds for later use has no minimum to
+/// ask for, and asking for [`ALL`] is `EPERM` under every narrowed grant. This value says "whatever
+/// the parent carries": the server resolves it with [`Rights::resolve`] and the result is `parent &
+/// parent`, so it cannot widen anything.
+///
+/// **It cannot collide with a rights mask.** A mask is a subset of [`ALL`], the seven low bits, and
+/// this value has none of them set; a compile-time assertion below fails the build if a right is ever
+/// added at bit 63. It is compared by equality, so a word that merely has bit 63 set among others is
+/// not the sentinel and keeps the meaning it had before: the server ignores bits outside [`ALL`].
+///
+/// Name: provisional (lane opendir-rights-sentinel, 2026-10-27 UTC); an architect's to ratify. The
+/// value is the lowest bit no right can reach that also cannot be mistaken for "all ones", which a
+/// careless caller passes when it means everything.
+pub const PARENT_RIGHTS: u64 = 1 << 63;
+
+const _: () = assert!(
+    PARENT_RIGHTS & ALL == 0 && PARENT_RIGHTS != 0,
+    "the parent-rights sentinel must not be a rights mask: a right was added at bit 63"
+);
+
 /// **What a recursive removal needs, at every level** (milestone 47's `rm -r`): [`ENUMERATE`] to
 /// see what is there, [`DESCEND`] to walk into it, [`REMOVE`] to take names out. Named here
 /// because the `rm` program asks for exactly this on every descent and the wiring that grants it
@@ -176,6 +199,22 @@ impl Rights {
     /// back into a [`Rights`]: there is no constructor that takes this.
     pub const fn bits(self) -> u64 {
         self.0
+    }
+
+    /// **The rights word a request means**, given the rights of the directory it is made on:
+    /// [`PARENT_RIGHTS`] becomes this set's own bits, and any other word is returned as it is.
+    ///
+    /// It only picks which mask [`Rights::attenuate`] is then given, so the intersection stays that
+    /// one `&`. With the sentinel the result is `self & self`.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by the lane of §98 (`OPENDIR` cannot be asked to
+    /// attenuate).
+    pub const fn resolve(self, requested: u64) -> u64 {
+        if requested == PARENT_RIGHTS {
+            self.0
+        } else {
+            requested
+        }
     }
 }
 

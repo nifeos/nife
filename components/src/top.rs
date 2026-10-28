@@ -13,6 +13,8 @@
 //! - It does not refresh: an interval spin would be charged to this thread by the counter the table
 //!   ranks on (`crates/top`'s `BUGS` has the rest).
 //! - `top` lists itself, `running` and still accumulating, as Unix's does.
+//! - **Ranking by process needs a flag the shell cannot send**, so at the prompt `top` ranks by
+//!   thread; the `PROC` and `THR` columns show at the prompt either way (`top::RANK_BY_PROCESS`).
 //! - Everything `ps` records applies: no `CMD` column, whole generational tids, snapshot rows.
 //!
 //! Name: ratified 2026-10-06 (calef): the standard term for a ranked view. It stays its own program
@@ -46,7 +48,10 @@ static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 
 user_mode_runtime::program_entry!(start);
 
-fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
+/// `a1` is the flag word, in `grant_plan::spawnproto`'s integer-argument position (as `pgrep`'s
+/// selector): [`top::RANK_BY_PROCESS`] ranks by process, and zero, which is all a shell can send,
+/// ranks by thread.
+fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
     HAS_DIAG.store(is_granted(DIAG_SLOT), Ordering::Relaxed);
 
     // Walk first, complain second, print third (§67): a survey cannot know its complaints up front,
@@ -56,8 +61,17 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     found.join_cpu_time(&mut |cursor| {
         survey_record(DOMAIN_SLOT, cursor, abi::survey::record::CPU_TIME)
     });
+    // **The process walk** (milestone 942 (`ps` and `top` show which process each thread belongs to), §313 (`ENUMERATE` on a domain covers which of its threads share a process)): a third record over the same endpoint and right,
+    // joined on the tid like the second.
+    found.join_process(&mut |cursor| {
+        survey_record(DOMAIN_SLOT, cursor, abi::survey::record::PROCESS)
+    });
     // The ranking is the program. Everything above it is `ps`.
-    found.rank_by_cpu_time();
+    if top::ranks_by_process(a1) {
+        found.rank_by_process_cpu_time();
+    } else {
+        found.rank_by_cpu_time();
+    }
 
     found.write_diagnostics(&mut |bytes| write_on(diag_slot(), bytes));
     diag_end();

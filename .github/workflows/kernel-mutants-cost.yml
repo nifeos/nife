@@ -1,7 +1,7 @@
 name: kernel mutants cost
 
 # **What does one kernel mutant cost on a CI runner?** Part 1 of
-# design/roadmap/proposals/the-kernel-and-its-programs-are-mutated-under-qemu.md. The proposal
+# design/roadmap/0955-the-kernel-and-its-programs-are-mutated-under-qemu.md. The proposal
 # estimated 20 seconds against the kernel suite and 150 against both images, from a local rebuild
 # time and a merge-group run. This runs `script/falsifications --mutants` for one kernel file on the
 # runner the kernel suite uses, and the step summary reports the measured seconds per mutant and per

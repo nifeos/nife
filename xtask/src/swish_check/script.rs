@@ -34,6 +34,7 @@ mod packages;
 mod pipes_files;
 mod process_tools;
 mod redirection;
+mod scope;
 mod std_exerciser;
 mod std_programs;
 mod words;
@@ -71,6 +72,7 @@ pub(super) static SWISH_CHECK_SCRIPT: LazyLock<Vec<Line>> = LazyLock::new(|| {
         redirection::LINES,
         directories::LINES,
         words::LINES,
+        scope::LINES,
         network::LINES,
         interrupts::LINES,
         cycles.as_slice(),

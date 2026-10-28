@@ -188,6 +188,27 @@ pub enum Refusal {
     /// with a four-byte length per word). Refused whole rather than truncated, for
     /// [`Refusal::TooManyNames`]'s reason. Name: provisional.
     ArgumentsTooLong,
+    // ---- milestone 52 (subshells without `fork`)'s scoped block and isolation (DECISIONS §160 (what a subshell copies)). Spellings provisional.
+    /// **A scoped block that is not `scope { commands }`**: no braces, a brace that never closes,
+    /// or text after the closing brace. A block is one command, so what follows it on the line has
+    /// to be a connector, and a `|` after one is refused rather than guessed at. Name: provisional.
+    ScopeMalformed,
+    /// **Scoped blocks nested past `swish::scope::MAXIMUM_DEPTH`**, each
+    /// level costing a frame on the few pages of stack this shell has. Name: provisional.
+    ScopeTooDeep,
+    /// **A change the block could not put back**: it would start, stop, wait for or resume a
+    /// background job, and the shell holds those jobs as capabilities (a region and a thread) that
+    /// leaving the block cannot return. Decided before anything in the block runs, and the message
+    /// names the isolation form. Name: provisional.
+    ScopeCannotRestore,
+    /// **`( ... )`**, which has no Unix meaning here (§160 (what a subshell copies); §312 (swish
+    /// has one way to do each job in its language)): its two jobs have a form each, and the
+    /// message points at both. Name: provisional.
+    GroupingParentheses,
+    /// **`swish -c`, the isolated child, whose spelling is reserved and whose child is not built.**
+    /// It needs a result endpoint of its own for each shell (the spawn service answers every
+    /// request on one) and a way to grant the directory a shell stands in. Name: provisional.
+    IsolationNotBuilt,
 }
 
 /// The kind of capability a command designated but the shell cannot back. Phase 1 has one; the
@@ -307,6 +328,42 @@ impl Refusal {
             Refusal::ArgumentsTooLong => {
                 "those words do not fit on its argument page (4,080 bytes, four more for each word)"
             }
+            // Milestone 52's, in `scope_message`.
+            Refusal::ScopeMalformed
+            | Refusal::ScopeTooDeep
+            | Refusal::ScopeCannotRestore
+            | Refusal::IsolationNotBuilt
+            | Refusal::GroupingParentheses => self.scope_message(),
+        }
+    }
+}
+
+impl Refusal {
+    /// The lines of milestone 52's refusals (DECISIONS §160). Each says which form to reach for,
+    /// because the refusal is the whole documentation of a spelling that ships provisional.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
+    fn scope_message(self) -> &'static str {
+        match self {
+            Refusal::ScopeMalformed => {
+                "a scoped block is 'scope { commands }' with nothing after the closing brace on \
+                 its command: join what follows with ;, && or ||"
+            }
+            Refusal::ScopeTooDeep => "scoped blocks nest at most 3 deep",
+            Refusal::ScopeCannotRestore => {
+                "a scoped block cannot put back a background job it would start, stop, wait for \
+                 or resume: the commands need an isolated child, 'swish -c', which is \
+                 reserved and not built yet"
+            }
+            Refusal::IsolationNotBuilt => {
+                "'swish -c' is reserved for an isolated child shell and that child is not built \
+                 yet: it needs a result endpoint of its own and a grant of the directory it stands in"
+            }
+            Refusal::GroupingParentheses => {
+                "( ) groups nothing in this shell: use 'scope { commands }' to keep the directory \
+                 and names it changes, or 'swish -c' (reserved, not built yet) for an isolated child"
+            }
+            _ => unreachable!("not a scoped-block refusal"),
         }
     }
 }

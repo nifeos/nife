@@ -11,6 +11,11 @@
 //! # BUGS
 //!
 //! - No `CMD` column: there is no display name, and no design for who may see one.
+//! - **`THR` counts the threads of the viewer's domain, never the process's true total** (§313 (`ENUMERATE` on a domain covers which of its threads share a process)): a
+//!   sibling supervised elsewhere is invisible, and so is a sibling nobody supervises (only a
+//!   process's first thread is supervised unless its starter supervises each one).
+//! - `PROC` is an ordinal for one walk, not a process identity: it can renumber if a process ends
+//!   between two runs, and the label walk and the state walk are joined on the tid.
 //! - The tid prints whole (`(generation << 32) | slot`); split, it would expose the table's shape.
 //! - `ps` does not sort; [`Survey::rank_by_cpu_time`] is for `components/src/top.rs`.
 //! - `TIME` is a second walk ([`Survey::join_cpu_time`]); a thread that dies between prints `-`.
@@ -48,6 +53,16 @@ pub struct Row {
     /// on a CPU at a tick, a different fact from "not asked". It also stays `None` for a thread
     /// that died between the two walks.
     pub cpu_ms: Option<u64>,
+    /// **Which process of the domain the thread belongs to**, as `abi::survey::record::PROCESS`
+    /// labeled it in one walk (§313), or `None` when nobody asked or the thread died between
+    /// walks.
+    ///
+    /// Two rows with the same label share an address space and a capability table. The label means
+    /// nothing outside the walk that returned it, and a program compares it only against other
+    /// rows of the same [`Survey`]. The thread count of a process is the number of rows that carry
+    /// its label ([`Survey::threads_with_label`]): threads of the viewer's domain, never the
+    /// process's true total.
+    pub process: Option<u64>,
 }
 
 /// A finished walk of one domain: the rows, and whatever went wrong.
@@ -137,6 +152,7 @@ pub fn collect<'a>(
             tid,
             state,
             cpu_ms: None,
+            process: None,
         };
         n += 1;
         cursor = next;
@@ -167,9 +183,34 @@ impl Survey<'_> {
     /// [`is_refused`](Self::is_refused) tells the caller. notes/process-view/the-ps-crate.md has
     /// the cost and the bargain.
     pub fn join_cpu_time(&mut self, read: &mut dyn FnMut(u64) -> (i64, u64, u64)) {
+        self.join(read, |row, ms| row.cpu_ms = Some(ms));
+    }
+
+    /// **Fill in [`Row::process`] from a walk of the same domain** (milestone 942 (`ps` and `top`
+    /// show which process each thread belongs to), `abi::survey::record::PROCESS`).
+    ///
+    /// `read(cursor)` is one `SURVEY` asking for the process record. It joins on the tid exactly as
+    /// [`join_cpu_time`](Self::join_cpu_time) does, and a thread that died between the walks keeps
+    /// `None`. A label of 0 is "no label" and is kept as `None`. The count per process is then
+    /// computed here from the rows, so the kernel exposes no count.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
+    pub fn join_process(&mut self, read: &mut dyn FnMut(u64) -> (i64, u64, u64)) {
+        self.join(read, |row, label| {
+            row.process = (label != 0).then_some(label);
+        });
+    }
+
+    /// One more walk of the domain, `apply`ing each answer to the row with the same tid. The loop
+    /// both joins share.
+    fn join(
+        &mut self,
+        read: &mut dyn FnMut(u64) -> (i64, u64, u64),
+        apply: impl Fn(&mut Row, u64),
+    ) {
         let mut cursor = 0u64;
         loop {
-            let (next, tid, ms) = read(cursor);
+            let (next, tid, word) = read(cursor);
             if next < 0 {
                 self.refused = Some(next);
                 return;
@@ -185,10 +226,36 @@ impl Survey<'_> {
                 return;
             }
             if let Some(row) = self.rows.iter_mut().find(|r| r.tid == tid) {
-                row.cpu_ms = Some(ms);
+                apply(row, word);
             }
             cursor = next;
         }
+    }
+
+    /// **How many rows carry `label`**: the threads of that process that the viewer's domain
+    /// holds (§313). Never the process's true member count, which this program cannot learn.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
+    pub fn threads_with_label(&self, label: u64) -> usize {
+        self.rows
+            .iter()
+            .filter(|r| r.process == Some(label))
+            .count()
+    }
+
+    /// **Order the rows by their process's total CPU time, most first**, then by label, then by
+    /// each thread's own time: the per-process ranking `top` offers beside
+    /// [`rank_by_cpu_time`](Self::rank_by_cpu_time).
+    ///
+    /// A process's total is the sum of its rows' [`Row::cpu_ms`], the unknown ones counting as
+    /// zero. The threads of one process end up adjacent. A row with no label is its own group and
+    /// sorts after every labeled process, for the reason an unknown figure sorts last in the
+    /// per-thread ranking. The order is total (ties break on label, then tid), so a redraw of an
+    /// idle machine does not shuffle.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane milestone/942-ps-top-process-grouping.
+    pub fn rank_by_process_cpu_time(&mut self) {
+        self.rank(true);
     }
 
     /// **Order the rows by CPU time, most first**, which is what makes a listing a `top`.
@@ -201,10 +268,43 @@ impl Survey<'_> {
     /// `sort_unstable_by` allocates nothing, which is why this can happen in a `no_std` program on
     /// a twelve-page stack.
     pub fn rank_by_cpu_time(&mut self) {
-        self.rows.sort_unstable_by(|a, b| {
-            b.cpu_ms
+        self.rank(false);
+    }
+
+    /// The one sort both rankings share, so the program carries one instance of it. With
+    /// `by_process`, rows group under their process, the process with the most summed CPU time
+    /// first; within a group, and with `by_process` clear, the order is the per-thread one.
+    fn rank(&mut self, by_process: bool) {
+        // Each process total is summed once into a table indexed by label, so the comparator reads
+        // a figure instead of rescanning rows it is in the middle of moving. The kernel's labels
+        // are ordinals of at most `MAXIMUM_ROWS` processes; a label beyond that (a kernel that
+        // answers otherwise) totals 0 and sorts after the processes it can account for.
+        let mut total = [0u64; MAXIMUM_ROWS + 1];
+        if by_process {
+            for r in self.rows.iter() {
+                if let Some(slot) = r.process.and_then(|l| total.get_mut(l as usize)) {
+                    *slot += r.cpu_ms.unwrap_or(0);
+                }
+            }
+        }
+        let of = |r: &Row| {
+            r.process
+                .and_then(|l| total.get(l as usize))
+                .copied()
                 .unwrap_or(0)
-                .cmp(&a.cpu_ms.unwrap_or(0))
+        };
+        self.rows.sort_unstable_by(|a, b| {
+            let grouping = if by_process {
+                a.process
+                    .is_none()
+                    .cmp(&b.process.is_none())
+                    .then(of(b).cmp(&of(a)))
+                    .then(a.process.cmp(&b.process))
+            } else {
+                core::cmp::Ordering::Equal
+            };
+            grouping
+                .then(b.cpu_ms.unwrap_or(0).cmp(&a.cpu_ms.unwrap_or(0)))
                 .then(a.cpu_ms.is_none().cmp(&b.cpu_ms.is_none()))
                 .then(a.tid.cmp(&b.tid))
         });
@@ -269,12 +369,29 @@ impl Survey<'_> {
         // The TIME column appears only when somebody asked for it (`Survey::join_cpu_time`), so a
         // `pgrep`-shaped caller that did not is not handed a column of dashes to explain.
         let timed = self.rows().iter().any(|r| r.cpu_ms.is_some());
+        // The same for the process columns (milestone 942): `PROC` and `THR` appear only when the
+        // process walk ran, so a caller that did not ask is not handed a column of dashes.
+        let grouped = self.rows().iter().any(|r| r.process.is_some());
+        if grouped {
+            out(b"PROC  THR");
+        }
         if timed {
             out(b"         TID  STATE     TIME(ms)\n");
         } else {
             out(b"         TID  STATE\n");
         }
         for row in self.rows() {
+            if grouped {
+                // The count is the rows that carry this row's label, so it equals the group's size
+                // on the table by construction; `-` for a row the walk could not label.
+                write_cell(row.process, 4, out);
+                out(b"  ");
+                write_cell(
+                    row.process.map(|l| self.threads_with_label(l) as u64),
+                    3,
+                    out,
+                );
+            }
             write_thread_id(row.tid, out);
             out(b"  ");
             let name = state_name(row.state);
@@ -331,6 +448,31 @@ pub fn refusal(code: i64) -> &'static str {
 /// The width the `STATE` column is padded to: the longest name [`state_name`] can return
 /// (`running`, seven characters), so the column after it starts in the same place on every line.
 const STATE_WIDTH: usize = 7;
+
+/// A number right-aligned in `width` columns, or `-` when there is none. A wider number pushes the
+/// column rather than losing a digit.
+fn write_cell(value: Option<u64>, width: usize, out: &mut dyn FnMut(&[u8])) {
+    let mut buf = [0u8; 20];
+    let mut i = buf.len();
+    match value {
+        None => {
+            i -= 1;
+            buf[i] = b'-';
+        }
+        Some(mut v) => loop {
+            i -= 1;
+            buf[i] = b'0' + (v % 10) as u8;
+            v /= 10;
+            if v == 0 {
+                break;
+            }
+        },
+    }
+    for _ in (buf.len() - i)..width {
+        out(b" ");
+    }
+    out(&buf[i..]);
+}
 
 /// A CPU-time figure right-aligned in eight columns, or `-` when the row has none.
 ///
@@ -423,6 +565,7 @@ mod tests {
                 tid: 9,
                 state: abi::survey::DEAD,
                 cpu_ms: None,
+                process: None,
             }
         );
     }
@@ -603,6 +746,12 @@ mod tests {
         assert_eq!(ms(12_345_678), "12345678");
         assert_eq!(ms(123_456_789), "123456789");
         assert_eq!(shown(|o| write_ms(None, o)), "       -");
+        let cell = |v, w| shown(|o| write_cell(v, w, o));
+        assert_eq!(cell(Some(7), 4), "   7");
+        assert_eq!(cell(Some(12), 4), "  12");
+        assert_eq!(cell(Some(123), 4), " 123");
+        assert_eq!(cell(Some(12_345), 4), "12345");
+        assert_eq!(cell(None, 3), "  -");
     }
 
     /// A CPU-time reader over a canned domain: `entries` in slot order, then done.
@@ -737,5 +886,169 @@ mod tests {
                 "a refusal is a clause the program name prefixes: {m}",
             );
         }
+    }
+
+    /// A process-label reader over a canned domain: `(tid, label)` in slot order, then done.
+    fn labels(entries: &'static [(u64, u64)]) -> impl FnMut(u64) -> (i64, u64, u64) {
+        times(entries)
+    }
+
+    /// Three threads in one process and one in another, in the order the kernel meets them.
+    const FOUR: &[(u64, u64)] = &[(3, 1), (4, 2), (5, 1), (6, 1)];
+
+    fn four_threads<'a>(rows: &'a mut [Row; MAXIMUM_ROWS]) -> Survey<'a> {
+        collect(
+            rows,
+            &mut domain(&[
+                (3, abi::survey::RUNNING),
+                (4, abi::survey::BLOCKED),
+                (5, abi::survey::BLOCKED),
+                (6, abi::survey::READY),
+            ]),
+        )
+    }
+
+    /// **Threads of one process share a label, and the count is the rows that carry it.**
+    ///
+    /// Joined on the tid like `TIME`, with the process walk in a different order from the state
+    /// walk, so a join on position would mislabel.
+    #[test]
+    fn a_process_walk_labels_threads_and_counts_them_from_the_rows() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut labels(&[(6, 1), (5, 1), (4, 2), (3, 1)]));
+
+        let label: Vec<_> = s.rows().iter().map(|r| r.process).collect();
+        assert_eq!(label, [Some(1), Some(2), Some(1), Some(1)]);
+        assert_eq!(s.threads_with_label(1), 3);
+        assert_eq!(s.threads_with_label(2), 1);
+        assert_eq!(s.threads_with_label(9), 0);
+    }
+
+    /// **The table shows the label and the count on every row**, in front of the columns it
+    /// already had, so a line reading `TID  STATE` is still a substring of the header.
+    #[test]
+    fn the_table_prints_a_label_and_a_thread_count() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut labels(FOUR));
+        let text = shown(|o| s.write_report(o));
+        let lines: Vec<&str> = text.lines().collect();
+        assert_eq!(lines[0], "PROC  THR         TID  STATE");
+        assert_eq!(lines[1], "   1    3           3  running");
+        assert_eq!(lines[2], "   2    1           4  blocked");
+        assert_eq!(lines[3], "   1    3           5  blocked");
+        assert_eq!(lines[4], "   1    3           6  ready");
+        assert_eq!(lines.len(), 5);
+    }
+
+    /// **A thread that died between the walks prints `-` and is not counted into a process it
+    /// was never seen in**, the way a missing `TIME` figure degrades. The survivors' count is
+    /// still the number of rows that carry the label.
+    #[test]
+    fn a_thread_that_dies_between_the_walks_degrades_to_a_dash() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut labels(&[(3, 1), (4, 2), (6, 1)]));
+        assert_eq!(s.rows()[2].process, None);
+        assert_eq!(s.threads_with_label(1), 2);
+        let text = shown(|o| s.write_report(o));
+        assert!(text.contains("   -    -           5  blocked"), "{text}");
+        assert!(text.contains("   1    2           3  running"), "{text}");
+    }
+
+    /// A label of 0 is the kernel saying it has none, and prints as a dash rather than a group.
+    #[test]
+    fn a_zero_label_is_no_label() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut labels(&[(3, 0)]));
+        assert_eq!(s.rows()[0].process, None);
+    }
+
+    /// A refusal on the process walk is a refusal of the listing, as it is on the `TIME` walk.
+    #[test]
+    fn a_refusal_in_the_process_walk_is_still_a_refusal() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut |_| (abi::Error::NotPermitted as i64, 0, 0));
+        assert!(s.is_refused());
+    }
+
+    /// **No process column appears when nobody asked.**
+    #[test]
+    fn the_process_columns_appear_only_when_they_were_asked_for() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let s = four_threads(&mut rows);
+        let text = shown(|o| s.write_report(o));
+        assert!(!text.contains("PROC"));
+        assert!(!text.contains("THR"));
+    }
+
+    /// **Ranking by process puts the process that spent the most first, and keeps its threads
+    /// together.** One process of three modest threads outranks a single busier thread, which is
+    /// the case a per-thread ranking gets backwards.
+    #[test]
+    fn ranking_by_process_sums_the_threads_and_keeps_them_together() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut labels(FOUR));
+        // Process 1 has 40 + 30 + 20 = 90; process 2 has one thread at 80.
+        s.join_cpu_time(&mut times(&[(3, 40), (4, 80), (5, 30), (6, 20)]));
+        s.rank_by_process_cpu_time();
+        let tids: Vec<_> = s.rows().iter().map(|r| r.tid).collect();
+        assert_eq!(tids, [3, 5, 6, 4]);
+
+        // The per-thread ranking puts the single 80 ms thread first, which is the contrast.
+        s.rank_by_cpu_time();
+        assert_eq!(s.rows()[0].tid, 4);
+    }
+
+    /// An unlabeled row is its own group and sorts after every process; an empty table is fine.
+    #[test]
+    fn ranking_by_process_sorts_the_unlabeled_last_and_survives_nothing() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut labels(&[(4, 2), (5, 1)]));
+        s.join_cpu_time(&mut times(&[(3, 999), (4, 10), (5, 5), (6, 7)]));
+        s.rank_by_process_cpu_time();
+        let tids: Vec<_> = s.rows().iter().map(|r| r.tid).collect();
+        assert_eq!(tids, [4, 5, 3, 6]);
+
+        let mut none = [Row::default(); MAXIMUM_ROWS];
+        let mut empty = collect(&mut none, &mut domain(&[]));
+        empty.rank_by_process_cpu_time();
+        assert!(empty.rows().is_empty());
+    }
+
+    /// **The process with the larger total comes first even when its label is larger.** Label
+    /// order and total order must disagree for the sum to be what ranks: process 2 spends 100 ms
+    /// across two threads, process 1 spends 60 ms in one.
+    #[test]
+    fn a_larger_total_outranks_a_smaller_label() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        s.join_process(&mut labels(&[(3, 1), (4, 2), (5, 2), (6, 2)]));
+        s.join_cpu_time(&mut times(&[(3, 60), (4, 30), (5, 30), (6, 40)]));
+        s.rank_by_process_cpu_time();
+        let tids: Vec<_> = s.rows().iter().map(|r| r.tid).collect();
+        assert_eq!(tids, [6, 4, 5, 3]);
+    }
+
+    /// The widest domain the kernel can express has `MAXIMUM_ROWS` processes, so the last label
+    /// is `MAXIMUM_ROWS` itself and its total counts like any other.
+    #[test]
+    fn the_highest_label_still_has_a_total() {
+        let mut rows = [Row::default(); MAXIMUM_ROWS];
+        let mut s = four_threads(&mut rows);
+        let last = MAXIMUM_ROWS as u64;
+        s.join_process(&mut |cursor| match cursor {
+            0 => (1, 3, 1),
+            1 => (2, 4, last),
+            _ => (abi::survey::DONE as i64, 0, 0),
+        });
+        s.join_cpu_time(&mut times(&[(3, 10), (4, 90)]));
+        s.rank_by_process_cpu_time();
+        assert_eq!(s.rows()[0].tid, 4);
     }
 }

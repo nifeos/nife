@@ -40,7 +40,9 @@ pub const CREATE: u64 = 6;
 /// `std::fs::write` relies on, since it truncates unconditionally.
 pub const TRUNCATE: u64 = 7;
 /// **Descend**: resolve the name in the shared page under the directory handle in [`req_handle`]
-/// and hand back a handle to the child directory. `w1` is the requested [`super::dir`] mask.
+/// and hand back a handle to the child directory. `w1` is the requested [`super::dir`] mask, or
+/// [`super::dir::PARENT_RIGHTS`] for "the parent's rights, whatever they are" (§98 (`OPENDIR` cannot be asked to attenuate)), which a client
+/// that cannot read its own capability asks for when it holds the directory for later use.
 /// Reply `r0` = the new directory handle, or an error.
 ///
 /// The child's rights are [`super::dir::Rights::attenuate`] of the parent's, so no descendant
@@ -58,7 +60,8 @@ pub const OPENDIR: u64 = 8;
 /// by name, so a directory changed between two calls can repeat or skip a name.
 pub const READDIR: u64 = 9;
 /// **Make a child directory and hand back a capability to it**: [`OPENDIR`]'s shape and its
-/// attenuation, so making a directory mints no more authority than finding one. Needs
+/// attenuation, so making a directory mints no more authority than finding one. `w1` takes
+/// [`super::dir::PARENT_RIGHTS`] as [`OPENDIR`] does. Needs
 /// [`super::dir::CREATE`] and [`super::dir::DESCEND`]; `EEXIST` if the name is there, for
 /// [`CREATE`]'s reason.
 pub const MKDIR: u64 = 10;
