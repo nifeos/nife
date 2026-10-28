@@ -3664,6 +3664,13 @@ python3 helpers/mutation_exclusion_check.py check
 # verified here, where it lands.
 python3 helpers/mutation_kernel_diff.py --selftest >/dev/null
 
+# Roadmap 955, part 4 (provisional): the rolling census's glue
+# (helpers/mutation_kernel_census.py), the slice table, the rotation state, the wall-clock window
+# and the record, against fixtures with no git, no cargo and no QEMU. The kernel mutants (rolling
+# census) workflow is the only thing that runs the real night, so a change to these rules is
+# verified here, where it lands. It shares the diff check's table, so both selftests run.
+python3 helpers/mutation_kernel_census.py --selftest >/dev/null
+
 # The architect-label diff rules, the live architect-ruled read, record-ruling and the hold-release
 # rerun are checked by script/lint-fleet since milestone 889, as are the merge-watcher,
 # merge-queue-share and debt-paydown-share selftests further down.
