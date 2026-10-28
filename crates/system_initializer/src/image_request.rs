@@ -102,6 +102,7 @@ pub(super) fn copy_args(
 /// - A job that answers and then does not exit holds that wait, and `^C` cannot reach it.
 /// - [`STASHED`] first messages at once; one more is dropped and its sender's follow-ups refused.
 ///   Only a pipeline of that many installer holders reaches it.
+///
 /// **The approvals one boot's table holds** (milestone 911): the delegated badges this boot
 /// can place, each a name the store's file is read by. A ninth is refused at spawn, as a fifth
 /// installer holder is.

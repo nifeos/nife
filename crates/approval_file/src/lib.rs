@@ -22,8 +22,12 @@
 //!
 //! Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 
-use std::string::String;
-use std::vec::Vec;
+#![no_std]
+
+extern crate alloc;
+
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 use installed_programs::{DirectoryRights, Granted, ROOT_ZONE};
 
@@ -127,7 +131,7 @@ pub struct File<'a> {
 
 impl<'a> File<'a> {
     /// The file `text` spells, or the refusal naming the line. Every section carries its two
-    /// policy answers, its names are held to [`name_ok`], and its sections are sorted.
+    /// policy answers, its names are held to [`name_fits`], and its sections are sorted.
     ///
     /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn parse(text: &'a str) -> Result<Self, Error> {
@@ -247,7 +251,7 @@ impl<'a> File<'a> {
 /// requests are checked against: the header binding the file's digest, one section per package.
 /// The digest is the file's own bytes'; an approval binds to the file's digest at `jig approve`,
 /// per the ruling of 2026-10-12 on #2030. `out` too small is
-/// [`installed_programs::approval::Error::TooSmall`], and a refusal writes nothing.
+/// [`installed_programs::Error::TooSmall`], and a refusal writes nothing.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub fn compile(
@@ -427,7 +431,7 @@ fn basic_string(value: &str) -> Option<&str> {
     let end = rest.find('"')?;
     let got = &rest[..end];
     let after = rest[end + 1..].trim_start();
-    (after.is_empty() || after.starts_with('#') && got.find('\\').is_none()).then_some(got)
+    (!got.contains('\\') && (after.is_empty() || after.starts_with('#'))).then_some(got)
 }
 
 /// A `["a", "b"]` array of basic strings, one line, or `None`.

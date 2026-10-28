@@ -925,10 +925,10 @@ fn install(
             Ok(Some(entry)) => entry,
             Ok(None) => {
                 // No entry bounds the package, so its first ask is the one that fails.
-                if let Some(p) = got.programs().next() {
-                    if let Some(ask) = asked_grants_of(&p).next() {
-                        return refused_with_ask(cx, package.name(), ask).into();
-                    }
+                if let Some(p) = got.programs().next()
+                    && let Some(ask) = asked_grants_of(&p).next()
+                {
+                    return refused_with_ask(cx, package.name(), ask).into();
                 }
                 return refused_not_approved(cx, package.name()).into();
             }

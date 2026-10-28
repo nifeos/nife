@@ -5,8 +5,8 @@
 //! the subset test's shape: the previous version stays installed and running.
 //!
 //! The package is `seeker` (`packages/seeker.recipe.toml`); 0.2.0's member is
-//! [`crate::seeker_v2`]'s bytes (`packages/seeker-0.2.0.recipe.toml`). Listed in `packaged_only`,
-//! so no archive packs it.
+//! [`seeker_v2`](../seeker_v2.rs)'s bytes (`packages/seeker-0.2.0.recipe.toml`). Listed in
+//! `packaged_only`, so no archive packs it.
 //!
 //! Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 

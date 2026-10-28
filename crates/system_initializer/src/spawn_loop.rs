@@ -899,21 +899,13 @@ impl Service<'_> {
             (true, Some(r)) => copy_text(own_ut, r, self.c.index_sources),
             _ => None,
         };
-        // **The delegated installer endpoint** (milestone 911 (scripted installs grant only what
-        // the owner's approval file allows)): a line that asked to act within an approval gets
-        // the same endpoint badged with that approval's id, minted for the name here so the
-        // store's file is found per request. The owner's console alone places it, as the plain
-        // one is.
-        let delegated = job
-            .within_len
-            .map(|len| self.spawn.approval_id_for(&job.within[..len]));
-        let (installer, catalog_page, installer_failed, catalog_failed) = self.package_parts(
+        let (installer, catalog_page, installer_failed, catalog_failed) = self.installer_endpoint(
             req,
+            job,
             manifest,
             region,
             (std_layout, wants_installer),
             dir.label,
-            delegated,
         );
         // Resolver badges only under `job_undertaker`, whose reap forgets the grants; a
         // screen-narrowed job is reaped by the shell (milestone 892's BUGS).
@@ -929,13 +921,7 @@ impl Service<'_> {
         let native = self.native_endowment(req, manifest, &wants, &dir, out);
         // The argv copy is carved from the job's region so its reclaim frees the page; a copy that
         // could not be made fails the spawn rather than running without the line's words.
-        let args_page = match (std_layout, region, req.args_seen) {
-            (true, Some(r), Some(theirs)) => copy_args(own_ut, r, theirs, |copy| {
-                grant_plan::verb_of_page(copy, &mut [0u8; grant_plan::MAXIMUM_VERB]) == job.verb()
-            }),
-            _ => None,
-        };
-        let args_failed = std_layout && req.args_seen.is_some() && args_page.is_none();
+        let (args_page, args_failed) = self.carve_args(job, region, (std_layout, req.args_seen));
         let std_parts = match (std_layout, region) {
             (true, Some(r)) => {
                 let parts = (
@@ -1077,6 +1063,52 @@ impl Service<'_> {
                 },
             )
         }
+    }
+
+    /// **The argv copy a `std` job gets**, carved from the job's own region so its reclaim frees
+    /// the page, and whether a copy the line asked for could not be made, which fails the spawn
+    /// rather than running the job without the line's words.
+    fn carve_args(
+        &mut self,
+        job: &Resolved,
+        region: Option<u64>,
+        (std_layout, seen): (bool, Option<u64>),
+    ) -> (Option<u64>, bool) {
+        let own_ut = self.c.own_ut;
+        let page = match (std_layout, region, seen) {
+            (true, Some(r), Some(theirs)) => copy_args(own_ut, r, theirs, |copy| {
+                grant_plan::verb_of_page(copy, &mut [0u8; grant_plan::MAXIMUM_VERB]) == job.verb()
+            }),
+            _ => None,
+        };
+        (page, std_layout && seen.is_some() && page.is_none())
+    }
+
+    /// **The installer endpoint and the catalog page a job gets**, and whether either failed: a
+    /// line that asked to act within an approval gets the same endpoint badged with that
+    /// approval's id, minted for the name here so the store's file is found per request. The
+    /// owner's console alone places it, as the plain one is (milestone 911 (scripted installs
+    /// grant only what the owner's approval file allows)).
+    fn installer_endpoint(
+        &mut self,
+        req: &Request,
+        job: &Resolved,
+        manifest: Option<grant_plan::Manifest>,
+        region: Option<u64>,
+        (std_layout, wants_installer): (bool, bool),
+        label: u64,
+    ) -> PackageParts {
+        let delegated = job
+            .within_len
+            .map(|len| self.spawn.approval_id_for(&job.within[..len]));
+        self.package_parts(
+            req,
+            manifest,
+            region,
+            (std_layout, wants_installer),
+            label,
+            delegated,
+        )
     }
 
     /// Make a package manager's installer endpoint and reply endpoint, and its copy of the

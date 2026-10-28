@@ -10,7 +10,7 @@ activation_set	shared	retired
 address_space_identifier	kernel	kernel
 address_space_map	shared	components,fixtures,jig,kernel,redoxfs_server,std
 allocation_cache	userspace	std
-approval_file	host	-
+approval_file	userspace	jig
 argument_protocol	shared	retired
 asid	kernel	retired
 bitfont	shared	retired

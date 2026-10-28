@@ -533,7 +533,7 @@ pub const fn answered_console() -> (u64, u64, u64) {
 }
 
 /// The approval's three trailer messages: the kind, the approval's name packed as a removal's
-/// name is ([`filesystem_contract::grant::pack_name`], sixteen bytes at most), then the file's
+/// name is (`filesystem_contract::grant::pack_name`, sixteen bytes at most), then the file's
 /// digest the records bind to, thirty-two raw bytes over two messages. The name is the approval
 /// file's own `approval` key; a longer name is refused at compile time, before this is built.
 ///
@@ -673,7 +673,7 @@ pub const ASK_DIRECTORY: u64 = 5;
 
 /// **The message that names the ask a `--approved` install's check refused** (milestone 911):
 /// the kind ([`ASK_NETWORK`] and its neighbors) with a directory's rights above it (`1` reads,
-/// `3` reads and writes, the bit spelling [`installed_programs::DirectoryRights`] keeps), and,
+/// `3` reads and writes, the bit spelling `installed_programs::DirectoryRights` keeps), and,
 /// for a zone or a directory, the name packed as a removal's name is.
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.

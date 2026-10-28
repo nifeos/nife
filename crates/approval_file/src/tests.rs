@@ -3,6 +3,8 @@
 //!
 //! Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 
+use alloc::format;
+use alloc::vec;
 use installed_programs::{Digest, Granted};
 
 use super::*;
@@ -63,6 +65,30 @@ fn the_example_file_parses_whole() {
     );
 }
 
+/// **Every key a line may carry reaches its grant**: the network and the installer, which no
+/// example file asks for, and two directories in one table, each kept by its own name.
+#[test]
+fn the_network_and_the_installer_and_a_second_directory_are_kept() {
+    let text = "approval = \"r\"\n\
+         [package.m]\n\
+         network   = true\n\
+         installer = true\n\
+         dirs      = { \"a\" = \"r\", \"b\" = \"rw\" }\n\
+         update    = true\n\
+         remove    = false\n";
+    let file = File::parse(text).unwrap();
+    let m = file.entry("m").unwrap();
+    assert_eq!(
+        m.allows,
+        [
+            Granted::Directory("a", DirectoryRights::R),
+            Granted::Directory("b", DirectoryRights::RW),
+            Granted::Installer,
+            Granted::Network,
+        ]
+    );
+}
+
 /// **The grammar is held to exactly**: an unknown key, a bad value, a zone the resolver would
 /// not spell, a rights word other than `r` or `rw`, a missing policy answer, a duplicate, a
 /// section out of order, a name too long, and no header are each refused, naming the line.
@@ -105,6 +131,16 @@ fn the_grammar_refuses_what_it_does_not_know() {
         &Why::BadValue,
         3,
     );
+    // Two directories of one table are each kept, and the second by the same name is a duplicate.
+    refused(
+        "approval = \"r\"\n[package.m]\ndirs = { \"a\" = \"r\", \"a\" = \"rw\" }\nupdate = true\nremove = false\n",
+        &Why::DuplicateKey,
+        3,
+    );
+    // This reader holds a basic string to no escapes, so a backslash is refused wherever it
+    // stands, with or without a comment after the value.
+    refused("approval = \"a\\b\" # note\n", &Why::BadName, 1);
+    refused("approval = \"a\\b\"\n", &Why::BadName, 1);
     refused(
         "approval = \"r\"\n[package.m]\nservice = true\nremove = false\n",
         &Why::MissingPolicy("update"),

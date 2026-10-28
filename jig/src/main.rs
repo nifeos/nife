@@ -1510,111 +1510,12 @@ fn answer(
     let program = program.map_or("one of its programs".to_string(), |p| {
         format!("the program {p}")
     });
-    let named;
-    let mut extra = Vec::new();
-    // The ask the reply's third message named, when the refusal is an `--approved` install's:
-    // the kind, the directory rights and the zone's name, decoded from the words the
-    // progenitor spelled.
-    let mut zone = [0u8; 16];
-    let decoded = ask
-        .as_ref()
-        .and_then(|&[word, lo, hi]| spawnproto::refused_ask_from_words((word, lo, hi), &mut zone));
-    let said_text = match (status, verb) {
-        (S::Done, Activation::Install) if fetched => "fetched and installed",
-        (S::Done, Activation::Install) => "installed",
-        (S::Done, Activation::Remove) => "removed",
-        (S::Done, Activation::Approve) => {
-            named = format!(
-                "approved {} (sha256:{})",
-                said.named.unwrap_or(""),
-                said.digest.unwrap_or("")
-            );
-            named.as_str()
-        }
-        (S::Done, Activation::Revoke) => {
-            named = format!("revoked {}", said.named.unwrap_or(""));
-            named.as_str()
-        }
-        (S::Done, _) => "rolled back",
-        (S::NotCataloged, _) => {
-            "refused: neither this image's catalog nor its index copy vouches for those bytes"
-        }
-        (S::NoProgram, _) => {
-            "refused: that package carries no program jig can install: none named after it or \
-             under bin/, or a bin/ name that is empty, nested or repeated"
-        }
-        (S::NotInstalled, _) => "refused: no package of that name is in the live generation",
-        (S::NoEarlier, _) => "refused: there is no generation before the live one",
-        (S::StoreFailed, _) => "could not write the installed programs",
-        // calef, 2026-10-14 (UTC): "If two packages offer the same program name, refuse the
-        // second package. Need to remove the first one before installing the second one."
-        (S::NameTaken, _) => {
-            named = format!(
-                "refused: the package {holder} already provides {program}; \
-                 jig remove {holder} first"
-            );
-            named.as_str()
-        }
-        (S::ImageName, _) => {
-            named =
-                format!("refused: the image carries {program}; a new base updates it, not install");
-            named.as_str()
-        }
-        (S::Ambiguous, _) => {
-            "refused: that version holds a program's default and several other versions of it are \
-             live, so none can take its place"
-        }
-        (S::NotServedHere, _) => {
-            "refused: the installer endpoint does not take that request; a delegated badge may \
-             neither approve nor revoke"
-        }
-        (S::NotYours, _) => {
-            "refused: another package manager installed that, and it is not jig's to undo"
-        }
-        // The delegated check's refusals (milestone 911): the approval does not allow this
-        // package, named in the reply's follower messages, or the approval is not stored, which
-        // is a revoke's doing. The owner's own `--approved` install is refused with the ask
-        // named as the third message, which the owner may read whole.
-        (S::NotApproved, _) => {
-            named = match (decoded, said.approved, said.package) {
-                (Some((kind, rights, name)), Some(approval), Some(package)) => {
-                    let what = ask_of(kind, rights, name);
-                    extra.push(json_grant(&what));
-                    format!(
-                        "refused: {package} {} asks for {}, which {approval} does not allow",
-                        said.version.unwrap_or(""),
-                        say_grant(&what)
-                    )
-                }
-                _ => match said.within.or(said.approved) {
-                    Some(name) => format!("refused: approval {name} does not allow {holder}"),
-                    None => {
-                        format!("refused: the approval on this endpoint does not allow {holder}")
-                    }
-                },
-            };
-            named.as_str()
-        }
-        (S::Revoked, _) => {
-            named = match (said.within, said.approved) {
-                (Some(name), _) => {
-                    format!("refused: approval {name} is not stored; jig approve stores it")
-                }
-                (None, Some(name)) => format!(
-                    "refused: approval {name} is not stored as this file's records; jig approve \
-                     stores it"
-                ),
-                (None, None) => "refused: the approval on this endpoint is not stored".to_string(),
-            };
-            named.as_str()
-        }
-        (S::NotExecutable | S::Unknown, _) => "the progenitor could not take that request",
-    };
+    let (said_text, extra) = answer_words(verb, fetched, status, &holder, ask, said, &program);
     if json {
         if status == S::Done {
             json_result(json_verb(verb), live);
         } else {
-            json_refused(&extra, said_text);
+            json_refused(&extra, &said_text);
         }
     } else if live == 0 {
         println!("  {said_text}; nothing is installed");
@@ -1626,6 +1527,112 @@ fn answer(
     } else {
         ExitCode::FAILURE
     }
+}
+
+/// **The words one answer earns**, and the grants a refusal names as data: the line for `status`,
+/// and for `--json` one `extra` entry per grant an ask names (milestone 911, item 7).
+///
+/// The ask an `--approved` install's check refused is the reply's third message. `ask` holds its
+/// words, which this decodes into the kind, the directory rights and the zone's name, spelled the
+/// way the ask names them.
+fn answer_words(
+    verb: Activation,
+    fetched: bool,
+    status: S,
+    holder: &str,
+    ask: Option<[u64; 3]>,
+    said: &Said<'_>,
+    program: &str,
+) -> (String, Vec<String>) {
+    let mut extra = Vec::new();
+    let mut zone = [0u8; 16];
+    let decoded = ask
+        .as_ref()
+        .and_then(|&[word, lo, hi]| spawnproto::refused_ask_from_words((word, lo, hi), &mut zone));
+    let said_text = match (status, verb) {
+        (S::Done, Activation::Install) if fetched => "fetched and installed".to_string(),
+        (S::Done, Activation::Install) => "installed".to_string(),
+        (S::Done, Activation::Remove) => "removed".to_string(),
+        (S::Done, Activation::Approve) => format!(
+            "approved {} (sha256:{})",
+            said.named.unwrap_or(""),
+            said.digest.unwrap_or("")
+        ),
+        (S::Done, Activation::Revoke) => format!("revoked {}", said.named.unwrap_or("")),
+        (S::Done, _) => "rolled back".to_string(),
+        (S::NotCataloged, _) => {
+            "refused: neither this image's catalog nor its index copy vouches for those bytes"
+                .to_string()
+        }
+        (S::NoProgram, _) => {
+            "refused: that package carries no program jig can install: none named after it or \
+             under bin/, or a bin/ name that is empty, nested or repeated"
+                .to_string()
+        }
+        (S::NotInstalled, _) => {
+            "refused: no package of that name is in the live generation".to_string()
+        }
+        (S::NoEarlier, _) => "refused: there is no generation before the live one".to_string(),
+        (S::StoreFailed, _) => "could not write the installed programs".to_string(),
+        // calef, 2026-10-14 (UTC): "If two packages offer the same program name, refuse the
+        // second package. Need to remove the first one before installing the second one."
+        (S::NameTaken, _) => format!(
+            "refused: the package {holder} already provides {program}; \
+             jig remove {holder} first"
+        ),
+        (S::ImageName, _) => {
+            format!("refused: the image carries {program}; a new base updates it, not install")
+        }
+        (S::Ambiguous, _) => {
+            "refused: that version holds a program's default and several other versions of it are \
+             live, so none can take its place"
+                .to_string()
+        }
+        (S::NotServedHere, _) => {
+            "refused: the installer endpoint does not take that request; a delegated badge may \
+             neither approve nor revoke"
+                .to_string()
+        }
+        (S::NotYours, _) => {
+            "refused: another package manager installed that, and it is not jig's to undo"
+                .to_string()
+        }
+        // The delegated check's refusals (milestone 911): the approval does not allow this
+        // package, named in the reply's follower messages, or the approval is not stored, which
+        // is a revoke's doing. The owner's own `--approved` install is refused with the ask
+        // named as the third message, which the owner may read whole.
+        (S::NotApproved, _) => match (decoded, said.approved, said.package) {
+            (Some((kind, rights, name)), Some(approval), Some(package)) => {
+                let what = ask_of(kind, rights, name);
+                extra.push(json_grant(&what));
+                format!(
+                    "refused: {package} {} asks for {}, which {approval} does not allow",
+                    said.version.unwrap_or(""),
+                    say_grant(&what)
+                )
+            }
+            _ => match said.within.or(said.approved) {
+                Some(name) => format!("refused: approval {name} does not allow {holder}"),
+                None => {
+                    format!("refused: the approval on this endpoint does not allow {holder}")
+                }
+            },
+        },
+        (S::Revoked, _) => match (said.within, said.approved) {
+            (Some(name), _) => {
+                format!("refused: approval {name} is not stored; jig approve stores it")
+            }
+            (None, Some(name)) => format!(
+                "refused: approval {name} is not stored as this file's records; jig approve \
+                 stores it"
+            ),
+            (None, None) => "refused: the approval on this endpoint is not stored".to_string(),
+        },
+        (S::NotExecutable | S::Unknown, _) => {
+            "the progenitor could not take that request".to_string()
+        }
+    };
+    (said_text, extra)
 }
 
 /// **The ask the reply's third message named**, as a [`Granted`] for the wording and the data:
