@@ -104,7 +104,9 @@ revisit event section 1 defines. The rule, in force now:
 
 - One-way links. A record points at code as `nifeos/<repo>@<sha>` for a commit and as
   `nifeos/<repo>` for a repository. Code does not cite roadmap records or decisions. When code
-  moves out, the moves/stays/gone sort (ruled 2026-10-26) converts citations to rulings into
+  moves out, the moves/stays/gone sort (ruled 2026-10-26,
+  [§315 (a crate's documentation leaves with it)](0315-a-crates-documentation-leaves-with-it.md),
+  its number provisional until the merge queue mints it) converts citations to rulings into
   reasoning carried in the crate's own documentation.
 - Ratify a name before anything moves, and leave ratification history behind: a component
   repository receives names, not their history.
