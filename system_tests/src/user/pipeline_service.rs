@@ -14,7 +14,7 @@ const ROLE_PIPELINE: u64 = 3;
 const OUT_VA: u64 = address_space_map::pair_page(0x0000_0000_00c0_0000);
 const LINE_VA: u64 = address_space_map::pair_page(0x0000_0000_00b0_0000);
 
-/// The budget the shell mints its pipes out of, and the region of the job it holds (milestone 933).
+/// The budget the shell mints its pipes out of, and the region of the job it holds (milestone 933 (every job is built the way a supervised job is)).
 /// Each pipeline and each job splits a region off this and gives it back, so one number covers a
 /// script of several lines. A scripted shell is never reclaimed, so every page here is a frame the
 /// suite keeps, which is why this is still the 128 the boot once granted and not the boot's
@@ -444,21 +444,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         // In the protocol's order. A capability received but never expected, or expected and
         // never sent, deadlocks both sides, which is why the order is the contract.
         //
-        // A held job's region and exit lead (milestone 933). The region is dropped, since the stub
-        // builds nothing from it and the shell destroys an empty one; the exit endpoint is what the
-        // job answers on and dies on, so the shell reads it as it does at the prompt.
-        let held_exit = if wiring.held {
-            let region = crate::sched::inter_process_communication_receive_capability(spawn_ep);
-            let _ = crate::sched::delete_current_capability(region[1]);
-            let exit = take_rendezvous(spawn_ep);
-            if prog.is_some_and(grant_plan::spawnproto::held_shares) {
-                let share = crate::sched::inter_process_communication_receive_capability(spawn_ep);
-                let _ = crate::sched::delete_current_capability(share[1]);
-            }
-            exit
-        } else {
-            None
-        };
+        let held_exit = wiring.held.then(|| take_held(spawn_ep, prog)).flatten();
         let label = NEXT_LABEL.fetch_add(1, Ordering::Relaxed);
         let sink = if wiring.sink {
             take_rendezvous(spawn_ep)
@@ -543,19 +529,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         // progenitor owes it an ack. Unredirected, the child's own message is the shell's single
         // read.
         if wiring.held {
-            // One answer with the label, then a capability standing in for the thread control
-            // block, which a foreground shell deletes unread.
-            if started {
-                crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_OK, label, 0]);
-                crate::sched::inter_process_communication_send_capability(
-                    result,
-                    0,
-                    rendezvous_capability(result, Rights::WRITE),
-                    0,
-                );
-            } else {
-                crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_FAILED, 0, 0]);
-            }
+            answer_held(result, started.then_some(label));
         } else if wiring.sink {
             crate::sched::ipc_send(
                 result,
@@ -572,6 +546,38 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         } else if !started {
             crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_FAILED, 0, 0]);
         }
+    }
+}
+
+/// **Take a held job's region and exit** (milestone 933) and answer with the exit endpoint. The
+/// region is dropped, since the stub builds nothing from it and the shell destroys an empty one; the
+/// exit endpoint is what the job answers on and dies on, so the shell reads it as it does at the
+/// prompt. A share view, when the program declares one, is dropped too.
+fn take_held(spawn_ep: RendezvousId, prog: Option<grant_plan::Program>) -> Option<RendezvousId> {
+    let region = crate::sched::inter_process_communication_receive_capability(spawn_ep);
+    let _ = crate::sched::delete_current_capability(region[1]);
+    let exit = take_rendezvous(spawn_ep);
+    if prog.is_some_and(grant_plan::spawnproto::held_shares) {
+        let share = crate::sched::inter_process_communication_receive_capability(spawn_ep);
+        let _ = crate::sched::delete_current_capability(share[1]);
+    }
+    exit
+}
+
+/// **A held job's one answer**: the label and then a capability standing in for the thread control
+/// block, which a foreground shell deletes unread; or the failure sentinel when it did not start.
+fn answer_held(result: RendezvousId, label: Option<u64>) {
+    match label {
+        Some(label) => {
+            crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_OK, label, 0]);
+            crate::sched::inter_process_communication_send_capability(
+                result,
+                0,
+                rendezvous_capability(result, Rights::WRITE),
+                0,
+            );
+        }
+        None => crate::sched::ipc_send(result, [grant_plan::spawnproto::SPAWN_FAILED, 0, 0]),
     }
 }
 

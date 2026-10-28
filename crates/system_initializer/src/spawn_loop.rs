@@ -858,22 +858,8 @@ impl Service<'_> {
         // region as the program it serves (§92 (a caretaker is supervised by the client it serves)).
         let std_layout = manifest.is_some_and(|m| m.startup == grant_plan::StartupContract::Std);
         let wants_installer = manifest.is_some_and(|m| m.installer);
-        // A held job is built from the shell's region (milestone 933), which the progenitor neither
-        // carves nor reclaims once the job runs. An installer holder's region comes from the image
-        // pool, and a quiet job's output goes to a sink this boot may not have; the honest shell
-        // asks for neither, and either is refused with the shell's region given back.
-        let held_region = req.delegated.held.map(|(region, _)| region);
-        let held_misfit = req.wiring.held
-            && (held_region.is_none()
-                || wants_installer
-                || (req.wiring.screen && self.c.term_sink.is_none()));
-        let region = match (held_region, req.wiring.held) {
-            (Some(held), _) => Some(held),
-            (None, true) => None,
-            (None, false) => {
-                self.split_job_region(req, manifest, image_region, (std_layout, wants_installer))
-            }
-        };
+        let (region, held_misfit) =
+            self.job_region(req, manifest, image_region, (std_layout, wants_installer));
         // The index store (milestone 801 (packages over the internet), ruling I2) takes the `std`
         // layout's one directory slot, so only a line that named none, on the owner's console.
         let store = manifest
@@ -902,23 +888,8 @@ impl Service<'_> {
         } else {
             (NO_RESOLVERS, false)
         };
-        // A screen-narrowed job's keystrokes are its session's, so it gets no console input.
-        let quiet = req.delegated.screen.is_some() || (req.wiring.held && req.wiring.screen);
-        let wants_stdin = std_layout && wants.console_input && !quiet;
-        let stdin = wants_stdin
-            .then(|| badged(self.c.boot_terminal, line_editor::proto::STDIN_BADGE).ok())
-            .flatten();
-        let stdin_failed = wants_stdin && stdin.is_none();
-
-        // `deaths` badged with the job's label (§148 (resolves by asking the kernel)). No label, no
-        // build: a job not recognized at its reap would hold its window for the rest of the boot. A
-        // held job is supervised on the shell's endpoint, with the same label (milestone 933).
-        let supervisor = req.delegated.held.map_or(self.c.deaths, |(_, exit)| exit);
-        let labeled = if req.delegated.screen.is_none() {
-            badged(supervisor, dir.label).ok()
-        } else {
-            None
-        };
+        let (stdin, stdin_failed) = self.console_input(req, &wants, std_layout);
+        let labeled = self.supervision(req, dir.label);
         let out = self.output(req, labeled);
         let native = self.native_endowment(req, manifest, &wants, &dir, out);
         // The argv copy is carved from the job's region so its reclaim frees the page; a copy that
@@ -988,6 +959,57 @@ impl Service<'_> {
             labeled,
         };
         self.finish_job(req, ok, job.failure, leftovers);
+    }
+
+    /// **A job's region, and whether the request asked for what a held job cannot have.** A held
+    /// job is built from the shell's region (milestone 933 (every job is built the way a supervised
+    /// job is)), which the progenitor neither carves nor reclaims once the job runs. An installer
+    /// holder's region comes from the image pool, and a quiet job's output goes to a sink this boot
+    /// may not have; the honest shell asks for neither, and the build refuses either, with the
+    /// shell's region given back.
+    fn job_region(
+        &mut self,
+        req: &Request,
+        manifest: Option<grant_plan::Manifest>,
+        image_region: Option<u64>,
+        (std_layout, wants_installer): (bool, bool),
+    ) -> (Option<u64>, bool) {
+        let held_region = req.delegated.held.map(|(region, _)| region);
+        let misfit = req.wiring.held
+            && (held_region.is_none()
+                || wants_installer
+                || (req.wiring.screen && self.c.term_sink.is_none()));
+        let region = match (held_region, req.wiring.held) {
+            (Some(held), _) => Some(held),
+            (None, true) => None,
+            (None, false) => {
+                self.split_job_region(req, manifest, image_region, (std_layout, wants_installer))
+            }
+        };
+        (region, misfit)
+    }
+
+    /// **The console input of a `std` job that declares it, and whether it went without.** A
+    /// quiet job's keystrokes are its session's, so it gets none.
+    fn console_input(&self, req: &Request, wants: &Wants, std_layout: bool) -> (Option<u64>, bool) {
+        let quiet = req.delegated.screen.is_some() || (req.wiring.held && req.wiring.screen);
+        let wants_stdin = std_layout && wants.console_input && !quiet;
+        let stdin = wants_stdin
+            .then(|| badged(self.c.boot_terminal, line_editor::proto::STDIN_BADGE).ok())
+            .flatten();
+        (stdin, wants_stdin && stdin.is_none())
+    }
+
+    /// **The job's supervision capability: `deaths` badged with its label** (§148 (resolves by
+    /// asking the kernel)). No label, no build: a job not recognized at its reap would hold its
+    /// window for the rest of the boot. A held job is supervised on the shell's endpoint, with the
+    /// same label. `None` for a screen-narrowed job, whose supervisor is the shell's own.
+    fn supervision(&self, req: &Request, label: u64) -> Option<u64> {
+        if req.delegated.screen.is_some() {
+            return None;
+        }
+        let supervisor = req.delegated.held.map_or(self.c.deaths, |(_, exit)| exit);
+        badged(supervisor, label).ok()
     }
 
     /// Split a normal job's region: the image's own, carved before its frames, or one from the
