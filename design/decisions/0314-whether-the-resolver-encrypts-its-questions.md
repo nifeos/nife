@@ -34,8 +34,8 @@ I read each claim below from the tree at `790878c03`.
 - Kani proves the name decoder, the header codec and the TCP length-prefix reassembly (`proofs.rs`:
   `tcp_reassembly_is_total_and_honest`). DoT carries exactly that framing.
 - The resolver is a `no_std` program in `components`. The TLS client,
-  `pinned_tls_client`, is milestone 501 (a TLS client that speaks to one pinned peer): a `std`
-  package outside the main workspace, over `rustls` 0.23 and this tree's `cryptography_provider`: §196 (nife carries
+  `pinned_tls_client`, is milestone 501 (a TLS client that speaks to one pinned peer). It is a
+  `std` package outside the main workspace. It runs over `rustls` 0.23 and this tree's `cryptography_provider`: §196 (nife carries
   TLS) and §198 (the glue is ours, the primitives are not). TLS 1.3 only, one pinned root for one
   host name.
 
