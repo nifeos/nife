@@ -1,0 +1,100 @@
+@ checkpoint 0
+********************************************************************************
+*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*
+*+                                                                            +*
+*+                                                                            +*
+*+                                                                            +*
+*+                                                                            +*
+*+                                                                            +*
+*+                                                                            +*
+*+        EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE        +*
+*+        E                                                          E        +*
+*+        E The screen should be cleared,  and have an unbroken bor- E        +*
+*+        E der of *'s and +'s around the edge,   and exactly in the E        +*
+*+        E middle  there should be a frame of E's around this  text E        +*
+*+        E with  one (1) free position around it.    Push <RETURN>  E        +*
+*+        E                                                          E        +*
+*+        EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE        +*
+*+                                                                            +*
+*+                                                                            +*
+*+                                                                            +*
+*+                                                                            +*
+*+                                                                            +*
+*+                                                                            +*
+*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*
+********************************************************************************
+@ checkpoint 1
+Test of autowrap, mixing control and print characters.
+The left/right margins should have letters in order:
+I                                                                              i
+J                                                                              j
+K                                                                              k
+L                                                                              l
+M                                                                              m
+N                                                                              n
+O                                                                              o
+P                                                                              p
+Q                                                                              q
+R                                                                              r
+S                                                                              s
+T                                                                              t
+U                                                                              u
+V                                                                              v
+W                                                                              w
+X                                                                              x
+Y                                                                              y
+Z                                                                              z
+
+Push <RETURN>
+
+
+@ checkpoint 2
+Test of cursor-control characters inside ESC sequences.
+Below should be four identical lines:
+
+A B C D E F G H I
+A B C D E F G H I
+A B C D E F G H I
+A B C D E F G H I
+
+Push <RETURN>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@ checkpoint 3
+Test of leading zeros in ESC sequences.
+Two lines below you should see the sentence "This is a correct sentence".
+
+This is a correct sentence
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Push <RETURN>
+
+
+
+

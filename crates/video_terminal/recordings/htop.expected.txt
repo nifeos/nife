@@ -1,0 +1,200 @@
+@ checkpoint 0
+
+    0[||||||||||                 28.0%]   4[||||||||                    20.0%]
+    1[||||||||                   18.8%]   5[||||||                      14.7%]
+    2[||||                       10.0%]   6[|||||||                     17.9%]
+    3[||                          5.3%]   7[||                           4.7%]
+  Mem[|||||||||||||||||||||10.4G/16.0G] Tasks: 631, 1286 thr, 0 kthr; 2 runnin
+  Swp[||||||                381M/2.00G] Load average: 2.74 2.88 3.57
+                                        Uptime: 9 days, 17:45:18
+
+  [Main]
+     PID USER       PRI  NI  VIRT   RES S  CPU%▽MEM%   TIME+  Command
+   71095 calef       17   0  416G  166M R  50.6  1.0  8h38:58 /Applications/Ghos
+   50649 calef        0   0  424G  313M S   3.4  1.9  1:54.82 opencode
+   56167 calef       40   0  415G 26240 S   1.0  0.2  0:00.09 /System/Library/Fr
+    5869 calef       24   0  415G  8752 S   0.6  0.1 51:23.69 /Applications/Xcod
+   33567 calef       24   0  424G  726M S   0.5  4.4  1h01:38 /Users/calef/.open
+   27689 calef       17   0  418G  286M S   0.2  1.7  4:05.37 /Applications/Fire
+   41081 calef       24   0  415G  5344 S   0.2  0.0  0:20.30 ssh anvil
+     669 calef       17   0  415G 49120 S   0.2  0.3 37:37.81 /System/Library/Co
+     738 calef       17   0  415G 44608 S   0.1  0.3 11:36.81 /usr/libexec/shari
+   56116 calef       17   0  415G 30656 S   0.1  0.2  5:34.65 /System/Library/Fr
+   56170 calef       40   0  415G 20048 S   0.1  0.1  0:00.08 /System/Library/Fr
+   81171 calef       17   0  419G 1074M S   0.1  6.6 24:20.40 /Applications/Fire
+F1Help  F2Setup F3SearchF4FilterF5Tree  F6SortByF7Nice -F8Nice +F9Kill  F10Quit
+@ checkpoint 1
+
+    0[||||||||||                 28.0%]   4[||||||||                    20.0%]
+    1[||||||||                   18.8%]   5[||||||                      14.7%]
+    2[||||                       10.0%]   6[|||||||                     17.9%]
+    3[||                          5.3%]   7[||                           4.7%]
+  Mem[|||||||||||||||||||||10.4G/16.0G] Tasks: 631, 1286 thr, 0 kthr; 2 runnin
+  Swp[||||||                381M/2.00G] Load average: 2.74 2.88 3.57
+                                        Uptime: 9 days, 17:45:18
+
+  [Main]
+     PID△USER       PRI  NI  VIRT   RES S  CPU% MEM%   TIME+  Command
+       0 root        24   0     0     0 ?   0.0  0.0  0:00.00 kernel_task
+       1 root         8   0     0     0 ?   0.0  0.0  0:00.00 launchd
+     128 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ dirhelper
+     136 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ MTLCompilerServ
+     137 calef       17   0  415G 14080 S   0.0  0.1  0:00.84 ├─ /System/Library
+     354 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ logd
+     356 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ UserEventAgent
+     358 root        50   0     0     0 ?   0.0  0.0  0:00.00 ├─ fseventsd
+     359 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ mediaremoted
+     362 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ systemstats
+    1178 root        17   0     0     0 ?   0.0  0.0  0:00.00 │  └─ systemstats
+     366 root        24   0     0     0 ?   0.0  0.0  0:00.00 ├─ configd
+F1Help  F2Setup F3SearchF4FilterF5List  F6SortByF7Nice -F8Nice +F9Kill  F10Quit
+@ checkpoint 2
+
+    0[|||||||||||                29.9%]   4[||||||                      16.6%]
+    1[|||||                       9.7%]   5[||||||||                    19.8%]
+    2[|||                         6.9%]   6[||||||                      14.9%]
+    3[||                          3.2%]   7[|||                          3.7%]
+  Mem[|||||||||||||||||||||10.4G/16.0G] Tasks: 631, 1283 thr, 0 kthr; 1 runnin
+  Swp[||||||                381M/2.00G] Load average: 2.74 2.88 3.57
+                                        Uptime: 9 days, 17:45:20
+
+  [Main]
+     PID△USER       PRI  NI  VIRT   RES S  CPU% MEM%   TIME+  Command
+       0 root        24   1     0     0 ?   0.0  0.0  0:00.00 kernel_task
+       1 root         8   0     0     0 ?   0.0  0.0  0:00.00 launchd
+     128 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ dirhelper
+     136 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ MTLCompilerServ
+     137 calef       17   0  415G 14080 S   0.0  0.1  0:00.84 ├─ /System/Library
+     354 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ logd
+     356 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ UserEventAgent
+     358 root        50   0     0     0 ?   0.0  0.0  0:00.00 ├─ fseventsd
+     359 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ mediaremoted
+     362 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ systemstats
+    1178 root        17   0     0     0 ?   0.0  0.0  0:00.00 │  └─ systemstats
+     366 root        24   0     0     0 ?   0.0  0.0  0:00.00 ├─ configd
+F1Help  F2Setup F3SearchF4FilterF5List  F6SortByF7Nice -F8Nice +F9Kill  F10Quit
+@ checkpoint 3
+
+    0[|||||||||||                29.9%]   4[||||||                      16.6%]
+    1[|||||                       9.7%]   5[||||||||                    19.8%]
+    2[|||                         6.9%]   6[||||||                      14.9%]
+    3[||                          3.2%]   7[|||                          3.7%]
+  Mem[|||||||||||||||||||||10.4G/16.0G] Tasks: 631, 1283 thr, 0 kthr; 1 runnin
+  Swp[||||||                381M/2.00G] Load average: 2.74 2.88 3.57
+                                        Uptime: 9 days, 17:45:20
+
+  [Main]
+     PID△USER       PRI  NI  VIRT   RES S  CPU% MEM%   TIME+  Command
+       0 root        24   2     0     0 ?   0.0  0.0  0:00.00 kernel_task
+       1 root         8   0     0     0 ?   0.0  0.0  0:00.00 launchd
+     128 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ dirhelper
+     136 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ MTLCompilerServ
+     137 calef       17   0  415G 14080 S   0.0  0.1  0:00.84 ├─ /System/Library
+     354 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ logd
+     356 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ UserEventAgent
+     358 root        50   0     0     0 ?   0.0  0.0  0:00.00 ├─ fseventsd
+     359 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ mediaremoted
+     362 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ systemstats
+    1178 root        17   0     0     0 ?   0.0  0.0  0:00.00 │  └─ systemstats
+     366 root        24   0     0     0 ?   0.0  0.0  0:00.00 ├─ configd
+F1Help  F2Setup F3SearchF4FilterF5List  F6SortByF7Nice -F8Nice +F9Kill  F10Quit
+@ checkpoint 4
+
+    0[|||||||||                  26.6%]   4[|||||||                     20.6%]
+    1[|||||                      12.5%]   5[||||||                      14.2%]
+    2[|||||                      11.3%]   6[|||||||                     18.8%]
+    3[|                           1.2%]   7[|                            1.9%]
+  Mem[|||||||||||||||||||||10.4G/16.0G] Tasks: 631, 1278 thr, 0 kthr; 1 runnin
+  Swp[||||||                381M/2.00G] Load average: 2.60 2.84 3.55
+                                        Uptime: 9 days, 17:45:22
+
+  [Main]
+     PID△USER       PRI  NI  VIRT   RES S  CPU% MEM%   TIME+  Command
+       0 root        21   0     0     0 ?   0.0  0.0  0:00.00 kernel_task
+       1 root         8   0     0     0 ?   0.0  0.0  0:00.00 launchd
+     128 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ dirhelper
+     136 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ MTLCompilerServ
+     137 calef       17   0  415G 14080 S   0.0  0.1  0:00.84 ├─ /System/Library
+     354 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ logd
+     356 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ UserEventAgent
+     358 root        50   0     0     0 ?   0.0  0.0  0:00.00 ├─ fseventsd
+     359 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ mediaremoted
+     362 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ systemstats
+    1178 root        17   0     0     0 ?   0.0  0.0  0:00.00 │  └─ systemstats
+     366 root        24   0     0     0 ?   0.0  0.0  0:00.00 ├─ configd
+F1Help  F2Setup F3SearchF4FilterF5List  F6SortByF7Nice -F8Nice +F9Kill  F10Quit
+@ checkpoint 5
+htop 3.5.3-3.5.3 - (C) 2004-2019 Hisham Muhammad. (C) 2020-2026 htop dev team.
+Released under the GNU GPLv2+. See 'man' page for more info.
+
+CPU usage bar: [low/normal/kernel/virt                             used%]
+Memory bar:    [wired/speculative/active/purgeable/compressed/inactive used/tota
+Swap bar:      [used                                          used/total]
+
+Type and layout of header meters are configurable in the setup screen.
+
+Process state: R: running; S: sleeping; t: traced/stopped; Z: zombie; D: disk sl
+eep
+       #: hide/show header meters            S-Tab: switch to previous screen ta
+b    Tab: switch to next screen tab          Space: tag process
+  Arrows: scroll process list                    c: tag process and its children
+  Digits: incremental PID search                 U: untag all processes
+    F3 /: incremental name search             F9 k: kill process/tagged processe
+s   F4 \: incremental name filtering          F7 ]: higher priority (root only)
+    F5 t: tree view                           F8 [: lower priority (+ nice)
+       p: toggle program path                    e: show process environment
+       m: toggle merged command                  i: set IO priority
+       Z: pause/resume process updates           l: list open files with lsof
+       u: show processes of a single user        x: list file locks of process
+       H: hide/show user process threads         s: trace syscalls with strace
+       K: hide/show kernel threads               w: wrap process command in mult
+@ checkpoint 6
+
+    0[|||||||||||                28.4%]   4[||||||||                    20.7%]
+    1[|||||                      12.4%]   5[|||||||                     19.7%]
+    2[||||                        9.8%]   6[|||||                       12.3%]
+    3[||                          2.5%]   7[||                           3.7%]
+  Mem[|||||||||||||||||||||10.4G/16.0G] Tasks: 631, 1282 thr, 0 kthr; 1 runnin
+  Swp[||||||                381M/2.00G] Load average: 2.60 2.84 3.55
+                                        Uptime: 9 days, 17:45:24
+
+  [Main]
+     PID△USER       PRI  NI  VIRT   RES S  CPU% MEM%   TIME+  Command
+       0 root        24   0     0     0 ?   0.0  0.0  0:00.00 kernel_task
+       1 root         8   0     0     0 ?   0.0  0.0  0:00.00 launchd
+     128 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ dirhelper
+     136 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ MTLCompilerServ
+     137 calef       17   0  415G 14080 S   0.0  0.1  0:00.84 ├─ /System/Library
+     354 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ logd
+     356 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ UserEventAgent
+     358 root        50   0     0     0 ?   0.0  0.0  0:00.00 ├─ fseventsd
+     359 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ mediaremoted
+     362 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ systemstats
+    1178 root        17   0     0     0 ?   0.0  0.0  0:00.00 │  └─ systemstats
+     366 root        24   0     0     0 ?   0.0  0.0  0:00.00 ├─ configd
+F1Help  F2Setup F3SearchF4FilterF5List  F6SortByF7Nice -F8Nice +F9Kill  F10Quit
+@ checkpoint 7
+
+    0[|||||||||||                28.4%]   4[||||||||                    20.7%]
+    1[|||||                      12.4%]   5[|||||||                     19.7%]
+    2[||||                        9.8%]   6[|||||                       12.3%]
+    3[||                          2.5%]   7[||                           3.7%]
+  Mem[|||||||||||||||||||||10.4G/16.0G] Tasks: 631, 1282 thr, 0 kthr; 1 runnin
+  Swp[||||||                381M/2.00G] Load average: 2.60 2.84 3.55
+                                        Uptime: 9 days, 17:45:24
+
+  [Main]
+     PID△USER       PRI  NI  VIRT   RES S  CPU% MEM%   TIME+  Command
+     368 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ powerd
+     369 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ IOMFB_bics_daem
+     373 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ remoted
+     377 _corespeec  17   0     0     0 ?   0.0  0.0  0:00.00 ├─ corespeechd_sys
+     379 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ watchdogd
+     383 root        50   0     0     0 ?   0.0  0.0  0:00.00 ├─ mds
+     385 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ kernelmanagerd
+     386 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ diskarbitration
+     390 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ syslogd
+     392 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ thermalmonitord
+     393 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ contextstored
+     394 root        17   0     0     0 ?   0.0  0.0  0:00.00 ├─ xprotectd
+F1Help  F2Setup F3SearchF4FilterF5List  F6SortByF7Nice -F8Nice +F9Kill  F10Quit

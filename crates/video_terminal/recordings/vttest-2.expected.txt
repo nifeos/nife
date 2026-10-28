@@ -1,0 +1,325 @@
+@ checkpoint 0
+********************************************************************************
+********************************************************************************
+********************************************************************************
+
+This should be three identical lines of *'s completely filling
+the top of the screen without any empty lines between.
+(Test of WRAP AROUND mode setting.)
+Push <RETURN>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@ checkpoint 1
+      *     *     *     *     *     *     *     *     *     *     *     *     *
+      *     *     *     *     *     *     *     *     *     *     *     *     *
+
+Test of TAB setting/resetting. These two lines
+should look the same. Push <RETURN>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@ checkpoint 2
+1234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+  This is 80 column mode, light background.
+   This is 80 column mode, light background.
+    This is 80 column mode, light background.
+     This is 80 column mode, light background.
+      This is 80 column mode, light background.
+       This is 80 column mode, light background.
+        This is 80 column mode, light background.
+         This is 80 column mode, light background.
+          This is 80 column mode, light background.
+           This is 80 column mode, light background.
+            This is 80 column mode, light background.
+             This is 80 column mode, light background.
+              This is 80 column mode, light background.
+               This is 80 column mode, light background.
+                This is 80 column mode, light background.
+                 This is 80 column mode, light background.
+                  This is 80 column mode, light background.
+                   This is 80 column mode, light background.Push <RETURN>
+
+
+
+
+@ checkpoint 3
+1234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+  This is 80 column mode, dark background.
+   This is 80 column mode, dark background.
+    This is 80 column mode, dark background.
+     This is 80 column mode, dark background.
+      This is 80 column mode, dark background.
+       This is 80 column mode, dark background.
+        This is 80 column mode, dark background.
+         This is 80 column mode, dark background.
+          This is 80 column mode, dark background.
+           This is 80 column mode, dark background.
+            This is 80 column mode, dark background.
+             This is 80 column mode, dark background.
+              This is 80 column mode, dark background.
+               This is 80 column mode, dark background.
+                This is 80 column mode, dark background.
+                 This is 80 column mode, dark background.
+                  This is 80 column mode, dark background.
+                   This is 80 column mode, dark background.Push <RETURN>
+
+
+
+
+@ checkpoint 4
+Push <RETURN>own region [12..13] size 2 Line 29
+
+
+
+
+
+
+
+
+
+
+Soft scroll up region [12..13] size 2 Line 29
+
+
+
+
+
+
+
+
+
+
+
+
+@ checkpoint 5
+Push <RETURN>
+Soft scroll down region [1..24] size 24 Line 29
+Soft scroll down region [1..24] size 24 Line 28
+Soft scroll down region [1..24] size 24 Line 27
+Soft scroll down region [1..24] size 24 Line 26
+Soft scroll down region [1..24] size 24 Line 25
+Soft scroll down region [1..24] size 24 Line 24
+Soft scroll down region [1..24] size 24 Line 23
+Soft scroll down region [1..24] size 24 Line 22
+Soft scroll down region [1..24] size 24 Line 21
+Soft scroll down region [1..24] size 24 Line 20
+Soft scroll down region [1..24] size 24 Line 19
+Soft scroll down region [1..24] size 24 Line 18
+Soft scroll down region [1..24] size 24 Line 17
+Soft scroll down region [1..24] size 24 Line 16
+Soft scroll down region [1..24] size 24 Line 15
+Soft scroll down region [1..24] size 24 Line 14
+Soft scroll down region [1..24] size 24 Line 13
+Soft scroll down region [1..24] size 24 Line 12
+Soft scroll down region [1..24] size 24 Line 11
+Soft scroll down region [1..24] size 24 Line 10
+Soft scroll down region [1..24] size 24 Line 9
+Soft scroll down region [1..24] size 24 Line 8
+Soft scroll down region [1..24] size 24 Line 7
+@ checkpoint 6
+Push <RETURN>own region [12..13] size 2 Line 29
+
+
+
+
+
+
+
+
+
+
+Jump scroll up region [12..13] size 2 Line 29
+
+
+
+
+
+
+
+
+
+
+
+
+@ checkpoint 7
+Push <RETURN>
+Jump scroll down region [1..24] size 24 Line 29
+Jump scroll down region [1..24] size 24 Line 28
+Jump scroll down region [1..24] size 24 Line 27
+Jump scroll down region [1..24] size 24 Line 26
+Jump scroll down region [1..24] size 24 Line 25
+Jump scroll down region [1..24] size 24 Line 24
+Jump scroll down region [1..24] size 24 Line 23
+Jump scroll down region [1..24] size 24 Line 22
+Jump scroll down region [1..24] size 24 Line 21
+Jump scroll down region [1..24] size 24 Line 20
+Jump scroll down region [1..24] size 24 Line 19
+Jump scroll down region [1..24] size 24 Line 18
+Jump scroll down region [1..24] size 24 Line 17
+Jump scroll down region [1..24] size 24 Line 16
+Jump scroll down region [1..24] size 24 Line 15
+Jump scroll down region [1..24] size 24 Line 14
+Jump scroll down region [1..24] size 24 Line 13
+Jump scroll down region [1..24] size 24 Line 12
+Jump scroll down region [1..24] size 24 Line 11
+Jump scroll down region [1..24] size 24 Line 10
+Jump scroll down region [1..24] size 24 Line 9
+Jump scroll down region [1..24] size 24 Line 8
+Jump scroll down region [1..24] size 24 Line 7
+@ checkpoint 8
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This line should be the one above the bottom of the screen. Push <RETURN>
+Origin mode test. This line should be at the bottom of the screen.
+@ checkpoint 9
+This line should be at the top of the screen. Push <RETURN>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Origin mode test. This line should be at the bottom of the screen.
+@ checkpoint 10
+                   Graphic rendition test pattern:
+
+
+vanilla                                bold
+
+     underline                              bold underline
+
+blink                                  bold blink
+
+     underline blink                        bold underline blink
+
+negative                               bold negative
+
+     underline negative                     bold underline negative
+
+blink negative                         bold blink negative
+
+     underline blink negative               bold underline blink negative
+
+
+
+
+Dark background. Push <RETURN>
+
+@ checkpoint 11
+                   Graphic rendition test pattern:
+
+
+vanilla                                bold
+
+     underline                              bold underline
+
+blink                                  bold blink
+
+     underline blink                        bold underline blink
+
+negative                               bold negative
+
+     underline negative                     bold underline negative
+
+blink negative                         bold blink negative
+
+     underline blink negative               bold underline blink negative
+
+
+
+
+Light background. Push <RETURN>
+
+@ checkpoint 12
+AAAAA
+AAAAA
+AAAAA
+AAAAA
+
+
+
+           normal      bold        underscored blinking    reversed
+
+stars:     **********  **********  **********  **********  **********
+
+line:      ──────────  ──────────  ──────────  ──────────  ──────────
+
+x'es:      xxxxxxxxxx  xxxxxxxxxx  xxxxxxxxxx  xxxxxxxxxx  xxxxxxxxxx
+
+diamonds:  ◆◆◆◆◆◆◆◆◆◆  ◆◆◆◆◆◆◆◆◆◆  ◆◆◆◆◆◆◆◆◆◆  ◆◆◆◆◆◆◆◆◆◆  ◆◆◆◆◆◆◆◆◆◆
+
+
+
+
+Test of the SAVE/RESTORE CURSOR feature. There should
+be ten characters of each flavour, and a rectangle
+of 5 x 4 A's filling the top left of the screen.
+Push <RETURN>

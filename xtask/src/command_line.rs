@@ -121,6 +121,12 @@ pub(crate) fn main() -> ExitCode {
         // Milestone 807 (the kernel suite reports what each test cost): the time record as markdown,
         // for a CI step summary. Name provisional. See xtask/src/time_record.rs.
         "time-summary" => time_record::summary(),
+        // The terminal replay harness of milestone 705 (the graphical terminal runs full-screen
+        // programs)'s step 0a: replay committed recordings through `video_terminal::Vt` and hold
+        // every session's match count to the manifest's. Grading runs in milliseconds with no pty
+        // and no installed program; `--record <name>` captures a new session and so needs the
+        // census's programs. Name provisional. See xtask/src/vt_replay.rs.
+        "vt-replay" => vt_replay::vt_replay(),
         "undefined-behavior-check" => undefined_behavior_check(),
         "bench" => bench(),
         // The instruction-count instrument (milestone 78): the two timing claims a wall clock

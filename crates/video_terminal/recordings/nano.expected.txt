@@ -1,0 +1,200 @@
+@ checkpoint 0
+...lders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56536/vt_sample.rs
+你 好  e 😀  (the census's wide, combining and emoji line)
+//! The engine: the parser's state and `Vt`, the grid it maintains.
+//!
+//! Name: provisional (the lane of milestone 874 (the terminal engine moves its>
+//! tests out), 2026-10-12 UTC), named for `Vt`, the central type, as §282 (whe>
+//! the parent becomes an index) asks; calef names things.
+
+use super::cell::{
+    BOLD, DIM, INVISIBLE, ITALIC, REVERSE, STRIKETHROUGH, STRIKETHROUGH_ROW, UN>
+    UNDERLINE_DASHED, UNDERLINE_DOTTED, UNDERLINE_DOUBLE, UNDERLINE_NONE, UNDER>
+    UNDERLINE_SINGLE,
+};
+use super::*;
+use crate::handoff::{
+    CELL_WORDS, CELL_WORDS_1, FLAG_CURSOR_VISIBLE, FLAG_IGNORE, FLAG_WRAP_PENDI>
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, u>
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
+};
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist>
+                              [ Read 1211 lines ]
+^G Help      ^O Write Out ^F Where Is  ^K Cut       ^T Execute   ^C Location
+^X Exit      ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line
+@ checkpoint 1
+...lders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56536/vt_sample.rs
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist>
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an>
+    /// whose arbitrary text a parser without this state would print, a window >
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string>
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba>
+                              [ Read 1211 lines ]
+^G Help      ^O Write Out ^F Where Is  ^K Cut       ^T Execute   ^C Location
+^X Exit      ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line
+@ checkpoint 2
+...lders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56536/vt_sample.rs
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist>
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an>
+    /// whose arbitrary text a parser without this state would print, a window >
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string>
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba>
+                              [ Read 1211 lines ]
+^G Help      ^O Write Out ^F Where Is  ^K Cut       ^T Execute   ^C Location
+^X Exit      ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line
+@ checkpoint 3
+...lders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56536/vt_sample.rs
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist>
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an>
+    /// whose arbitrary text a parser without this state would print, a window >
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string>
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba>
+                              [ Read 1211 lines ]
+^G Help      ^O Write Out ^F Where Is  ^K Cut       ^T Execute   ^C Location
+^X Exit      ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line
+@ checkpoint 4
+...lders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56536/vt_sample.rs
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist>
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an>
+    /// whose arbitrary text a parser without this state would print, a window >
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string>
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba>
+                              [ Read 1211 lines ]
+^G Help      ^O Write Out ^F Where Is  ^K Cut       ^T Execute   ^C Location
+^X Exit      ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line
+@ checkpoint 5
+...vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56536/vt_sample.rs Modified
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist>
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+你 好 😀 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an>
+    /// whose arbitrary text a parser without this state would print, a window >
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string>
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba>
+                              [ Read 1211 lines ]
+^G Help      ^O Write Out ^F Where Is  ^K Cut       ^T Execute   ^C Location
+^X Exit      ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line
+@ checkpoint 6
+...vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56536/vt_sample.rs Modified
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist>
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an>
+    /// whose arbitrary text a parser without this state would print, a window >
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string>
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba>
+/// color are ten, with room for a reset and a rendition or two. A seventeenth >
+
+^G Help      ^O Write Out ^F Where Is  ^K Cut       ^T Execute   ^C Location
+^X Exit      ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line
+@ checkpoint 7
+...vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56536/vt_sample.rs Modified
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist>
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an>
+    /// whose arbitrary text a parser without this state would print, a window >
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string>
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba>
+/// color are ten, with room for a reset and a rendition or two. A seventeenth >
+Save modified buffer?
+ Y Yes
+ N No           ^C Cancel

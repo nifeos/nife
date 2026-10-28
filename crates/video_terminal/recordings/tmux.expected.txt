@@ -1,0 +1,250 @@
+@ checkpoint 0
+calef@patagonia 705-vt-replay-harness %
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[0] 0:tmux*                                      "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 1
+calef@patagonia 705-vt-replay-harness % │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+[0] 0:zsh*                                       "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 2
+calef@patagonia 705-vt-replay-harness % │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        ├───────────────────────────────────────
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+[0] 0:tmux*                                      "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 3
+calef@patagonia 705-vt-replay-harness % │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        ├───────────────────────────────────────
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+[0] 0:zsh*                                       "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 4
+calef@patagonia 705-vt-replay-harness % │calef@patagonia 705-vt-replay-harness %
+                                        │ less '{sample}'
+                                        │{sample}: No such file or directory
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        ├───────────────────────────────────────
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+[0] 0:zsh*                                       "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 5
+calef@patagonia 705-vt-replay-harness % │calef@patagonia 705-vt-replay-harness %
+                                        │ less '{sample}'
+                                        │{sample}: No such file or directory
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │ q
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        ├───────────────────────────────────────
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+[0] 0:zsh*                                       "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 6
+calef@patagonia 705-vt-replay-harness % │calef@patagonia 705-vt-replay-harness %
+                                        │ less '{sample}'
+                                        │{sample}: No such file or directory
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │ q
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        ├───────────────────────────────────────
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+[0] 0:zsh*                                       "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 7
+                                        │calef@patagonia 705-vt-replay-harness %
+~                                       │ less '{sample}'
+~                                       │{sample}: No such file or directory
+~                                       │calef@patagonia 705-vt-replay-harness %
+~                                       │ q
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+~                                       ├───────────────────────────────────────
+~                                       │calef@patagonia 705-vt-replay-harness %
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+~                                       │
+"{sample}" [New]                        │
+[0] 0:zsh*                                       "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 8
+calef@patagonia 705-vt-replay-harness % │calef@patagonia 705-vt-replay-harness %
+vim '{sample}'                          │ less '{sample}'
+calef@patagonia 705-vt-replay-harness % │{sample}: No such file or directory
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │ q
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        ├───────────────────────────────────────
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+[0] 0:vim*                                       "patagonia.lan" 12:49 28-Oct-26
+@ checkpoint 9
+calef@patagonia 705-vt-replay-harness % │calef@patagonia 705-vt-replay-harness %
+vim '{sample}'                          │ less '{sample}'
+calef@patagonia 705-vt-replay-harness % │{sample}: No such file or directory
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │ q
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        ├───────────────────────────────────────
+                                        │calef@patagonia 705-vt-replay-harness %
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+kill-pane 0? (y/n)

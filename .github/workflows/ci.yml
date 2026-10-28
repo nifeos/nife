@@ -1410,6 +1410,12 @@ jobs:
       # in a job of its own: a new job gates nothing until the ruleset requires it, and this job's
       # verdict is already required (as `clippy`, through the relay job below).
       - run: helpers/hang_evidence.py run -- script/ci-build rule-violations
+      # **The terminal replay harness, as its own step** (milestone 705 (the graphical terminal
+      # runs full-screen programs)'s step 0a). It grades crates/video_terminal/recordings in
+      # milliseconds and holds the engine plan's match counts, so an engine change cannot drop
+      # one silently. A `local` row that rides in this job for rule-violations's reason: this
+      # job's clippy has already built xtask, so the step's marginal cost is the grading itself.
+      - run: helpers/hang_evidence.py run -- script/ci-build vt-replay
       # **The fleet tooling's checks, as their own step** (milestone 889 (the tree's gates stop
       # depending on the fleet tooling), provisional). The 22 checks of the lane, queue, label and
       # identity machinery left script/lint for script/lint-fleet, so that a stranger's lint reads

@@ -479,7 +479,11 @@ if mode == "--selftest":
 
 candidates = subprocess.run(
     ["git", "-C", root, "grep", "-I", "--untracked", "-l", "-E", PREFILTER,
-     "--", ":!vendor/", ":!patches/", ":!*.lock", ":!script/citations"],
+     "--", ":!vendor/", ":!patches/", ":!*.lock", ":!script/citations",
+     # The terminal replay harness's expected screens are verbatim captures of what a program
+     # painted (crates/video_terminal/recordings/README.md), so their citation-looking text is
+     # the recorded screen rather than this tree's prose, and there is nothing to ground.
+     ":!crates/video_terminal/recordings/*.expected.txt"],
     capture_output=True, text=True,
 ).stdout.split()
 
@@ -649,7 +653,11 @@ if mode == "--ratchet":
     # it gets the baseline-drift treatment rather than a gloss.
     EXCLUDE = (":!vendor/", ":!patches/", ":!*.lock", ":!*.log", ":!script/citations",
                ":!design/roadmap/README.md", ":!notes/project-metrics/baseline-drift.md",
-               ":!notes/dependency-census/dependencies.tsv")
+               ":!notes/dependency-census/dependencies.tsv",
+               # The terminal replay harness's expected screens (milestone 705 (the graphical
+               # terminal runs full-screen programs)'s step 0a) join the captured log for the same
+               # reason: a verbatim capture of what a program painted, not prose anybody wrote.
+               ":!crates/video_terminal/recordings/*.expected.txt")
 
     # Reading the committed tip instead of the working tree is correct, for the reason above the
     # diff below: line numbers from a `base..tip` diff are the tip's, and an edited file would
@@ -1176,7 +1184,11 @@ if mode == "--census":
 
     files = subprocess.run(
         ["git", "-C", root, "ls-files", "--", ":!vendor/", ":!patches/", ":!*.lock", ":!*.log",
-         ":!script/citations", ":!design/roadmap/README.md"],
+         ":!script/citations", ":!design/roadmap/README.md",
+         # The terminal replay harness's expected screens (crates/video_terminal/recordings) are
+         # verbatim captures of what a program painted: their citation-looking text is the
+         # recorded screen, not this tree's prose, so there is nothing to ground.
+         ":!crates/video_terminal/recordings/*.expected.txt"],
         capture_output=True, text=True,
     ).stdout.split("\n")
 

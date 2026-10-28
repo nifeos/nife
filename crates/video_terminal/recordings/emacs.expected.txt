@@ -1,0 +1,200 @@
+@ checkpoint 0
+File Edit Options Buffers Tools Lisp-Interaction Help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-UUU:--- F1  *scratch*      All L1     (Lisp Interaction ElDoc) ----------------
+
+@ checkpoint 1
+File Edit Options Buffers Tools Help
+NG, HEADER_WORDS,
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, u\
+nderline_word,
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,
+};
+
+/// The parser's state. Deliberately few: most of a full VT's dozen states dist\
+inguish sequences
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum State {
+    /// Printing.
+    Ground,
+    /// `ESC` has been seen.
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an\
+d its relatives),
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+-UUU:--- F1  vt_sample.rs    2% L15    (Fundamental) ---------------------------
+For information about GNU Emacs and the GNU system, type C-h C-a.
+@ checkpoint 2
+File Edit Options Buffers Tools Help
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string\
+ (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+ckground in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth \
+marks the sequence
+/// ignored rather than growing the array.
+pub(crate) const MAXIMUM_PARAMS: usize = 16;
+
+/// **A terminal's live grid, plus its off-screen history.**
+///
+/// Construct with [`Vt::new`], push bytes with [`Vt::feed`], read pixels with \
+[`Vt::pixel`], ask
+/// what changed with [`Vt::take_damage`], and scroll with [`Vt::scroll_up`]/[`\
+-UUU:--- F1  vt_sample.rs    3% L31    (Fundamental) ---------------------------
+
+@ checkpoint 3
+File Edit Options Buffers Tools Help
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string\
+ (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+-UUU:--- F1  vt_sample.rs    3% L31    (Fundamental) ---------------------------
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an\
+d its relatives),
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string\
+ (ST), anything else
+-UUU:--- F1  vt_sample.rs    3% L31    (Fundamental) ---------------------------
+
+@ checkpoint 4
+File Edit Options Buffers Tools Help
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string\
+ (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+-UUU:--- F1  vt_sample.rs    3% L31    (Fundamental) ---------------------------
+    Esc,
+    /// Inside `ESC [`, accumulating parameters.
+    Csi,
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, an\
+d its relatives),
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string\
+ (ST), anything else
+-UUU:--- F1  vt_sample.rs    3% L31    (Fundamental) ---------------------------
+
+@ checkpoint 5
+File Edit Options Buffers Tools Help
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+    Str,
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string\
+ (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+-UUU:--- F1  vt_sample.rs    3% L31    (Fundamental) ---------------------------
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string\
+ (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+ckground in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth \
+marks the sequence
+-UUU:--- F1  vt_sample.rs    4% L33    (Fundamental) ---------------------------
+
+@ checkpoint 6
+File Edit Options Buffers Tools Help
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+    Str,
+你 好 😀     /// Inside a string sequence, having just seen `ESC`: a `\` ends the \
+string (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+-UUU:**- F1  vt_sample.rs    3% L31    (Fundamental) ---------------------------
+你 好 😀     /// Inside a string sequence, having just seen `ESC`: a `\` ends the \
+string (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+ckground in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth \
+marks the sequence
+-UUU:**- F1  vt_sample.rs    4% L33    (Fundamental) ---------------------------
+
+@ checkpoint 7
+File Edit Options Buffers Tools Help
+    /// whose arbitrary text a parser without this state would print, a window \
+title included.
+    Str,
+你 好 😀     /// Inside a string sequence, having just seen `ESC`: a `\` ends the \
+string (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+-UUU:**- F1  vt_sample.rs    3% L31    (Fundamental) ---------------------------
+你 好 😀     /// Inside a string sequence, having just seen `ESC`: a `\` ends the \
+string (ST), anything else
+    /// is part of it.
+    StrEsc,
+}
+
+/// How many numeric parameters a CSI sequence may carry: a foreground and a ba\
+ckground in 24-bit
+/// color are ten, with room for a reset and a rendition or two. A seventeenth \
+marks the sequence
+-UUU:**- F1  vt_sample.rs    4% L33    (Fundamental) ---------------------------
+No mark set in this buffer

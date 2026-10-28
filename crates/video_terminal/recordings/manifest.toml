@@ -1,0 +1,132 @@
+# The terminal replay harness's sessions, one row each, for milestone 705 (the graphical
+# terminal runs full-screen programs)'s step 0a.
+#
+# `matches` is the count the gate holds: a run that matches fewer fails the gate, a run that
+# matches more fails until this row is raised, so the tripwire always stands at the newest
+# high-water mark. A session's recording (`<name>.rec`), its oracle screens
+# (`<name>.expected.txt`) and its row here move together; the provenance of the screens is in
+# README.md beside them.
+#
+# For a vttest session, `screens` names the screen each checkpoint shows, as conformance.md
+# numbers them, 132-column screens included. An entry that names a screen is graded; `skip`
+# marks the 132-column screens the census excludes and `menu` marks vttest's own menu screens.
+
+[sessions.vim]
+kind = "census"
+program = "vim 9.1, macOS"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "scroll, split, vertical split, delete, search, insert CJK, quit"
+checkpoints = 14
+matches = 11
+
+[sessions.nvim]
+kind = "census"
+program = "Neovim 0.12.6, Homebrew"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "the same keys as the vim session"
+checkpoints = 14
+matches = 0
+
+[sessions.less]
+kind = "census"
+program = "less 668, macOS"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "page forward and back, G then k, search"
+checkpoints = 11
+matches = 6
+
+[sessions.top]
+kind = "census"
+program = "top, macOS"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "help, sort by CPU, quit"
+checkpoints = 6
+matches = 0
+
+[sessions.htop]
+kind = "census"
+program = "htop 3.5.3"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "tree view, move, help, page, quit"
+checkpoints = 8
+matches = 0
+
+[sessions.nano]
+kind = "census"
+program = "nano 9.2"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "page, lines down, insert CJK, cut, quit"
+checkpoints = 8
+matches = 0
+
+[sessions.ncurses-test]
+kind = "census"
+program = "ncurses_screen_test.c, ncursesw 6.6"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "box, line drawing, 256 colors, a scrolling window, insert and delete, flash"
+checkpoints = 1
+matches = 0
+
+[sessions.emacs]
+kind = "census"
+program = "Emacs 31.1, -nw -Q"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "scroll, split, insert CJK, quit"
+checkpoints = 8
+matches = 1
+
+[sessions.mc]
+kind = "census"
+program = "Midnight Commander 4.8.33, -u"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "move, switch panel; it did not exit, the capture ended it"
+checkpoints = 4
+matches = 4
+
+[sessions.tmux]
+kind = "census"
+program = "tmux 3.8, empty config"
+term = "xterm-256color"
+captured = "2026-10-28"
+session = "split both ways, run less and vim inside, close"
+checkpoints = 10
+matches = 0
+
+[sessions.vttest-1]
+kind = "vttest"
+program = "vttest 2.7, Homebrew"
+term = "xterm"
+captured = "2026-10-28"
+session = "menu 1, cursor movement"
+checkpoints = 8
+matches = 1
+screens = ["menu", "1.1", "skip", "1.3", "skip", "1.5", "1.6", "menu"]
+
+[sessions.vttest-2]
+kind = "vttest"
+program = "vttest 2.7, Homebrew"
+term = "xterm"
+captured = "2026-10-28"
+session = "menu 2, screen features"
+checkpoints = 17
+matches = 5
+screens = ["menu", "2.1", "2.2", "skip", "2.4", "skip", "2.6", "2.7", "2.8", "2.9", "2.10", "2.11", "2.12", "2.13", "2.14", "2.15", "menu"]
+
+[sessions.vttest-8]
+kind = "vttest"
+program = "vttest 2.7, Homebrew"
+term = "xterm"
+captured = "2026-10-28"
+session = "menu 8, VT102 insert and delete"
+checkpoints = 16
+matches = 1
+screens = ["menu", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "skip", "skip", "skip", "skip", "skip", "skip", "skip", "menu"]

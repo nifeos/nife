@@ -96,7 +96,10 @@ CEILINGS = {
 # --- what is out of scope -----------------------------------------------------------------------
 
 EXCLUDED_PREFIXES = ('vendor/', 'patches/', 'target/')
-EXCLUDED_SUFFIXES = ('.lock', '.csv', '.tsv', '.svg')
+# `.rec` and `.expected.txt` are the terminal replay harness's committed captures
+# (crates/video_terminal/recordings/README.md): what a program painted on a screen on a date,
+# the bench transcript's category, not prose anybody wrote.
+EXCLUDED_SUFFIXES = ('.lock', '.csv', '.tsv', '.svg', '.rec', '.expected.txt')
 
 
 def in_scope(path):
