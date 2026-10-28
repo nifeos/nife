@@ -34,6 +34,14 @@ work:
 7. `--json`: one object per result or refusal, exit codes documented in `jig`'s header (0, 1,
    2), and a subset-test refusal naming each extra grant as data.
 
+The store sits at `activation/approvals/<name>`, read per request, so a revoke deletes and a
+re-approve replaces with no restart and no new endpoint. The subset test for a scripted install
+runs in the progenitor, against the store's records the trailer's digest binds; `jig` pre-flights
+the package's entry, and the refusal names the ask that exceeded it, which the reply's third
+follower carries. `Approve`'s reply carries the records it replaced, so the console's re-approval
+diffs against what was in force. The delegated check runs a `Rollback` against the badge's
+approval, every row and its grants, the owner's vouch rows skipped.
+
 The seed writes the packages and the approval files (`xtask/src/disk.rs`). `servant`'s note asks
 to run as a service. `seeker` at 0.1.0 and 0.2.0 carries two notes asking one zone apart.
 `lab-runner` is the owner's file, which bounds every package the live generation holds; the seed

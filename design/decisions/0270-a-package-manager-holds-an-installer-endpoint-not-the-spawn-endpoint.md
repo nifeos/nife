@@ -116,7 +116,8 @@ methods this section's endpoint serves, and the delegation. What is in force now
   `Approve` (activation verb 6) carries the compiled approval records as frames; their header
   binds them to the approval file's digest. The progenitor stores them at
   `activation/approvals/<name>`, beside the installed-programs table's generations, never as rows
-  in them, per the ruling of 2026-10-12 on #2031 (a). `Revoke` (7) carries the name packed as a
+  in them, per the ruling of 2026-10-12 on #2031 (a); its answer carries the records the store
+  held before, for the console's diff of what changed. `Revoke` (7) carries the name packed as a
   removal's is, and deletes that file. Neither writes a generation. Both are the owner's verbs:
   `jig approve <file>` and `jig revoke <name>` send them on the console's own installer endpoint.
 - **A delegated badge is the same endpoint object badged for one job and one approval**, never a
@@ -131,11 +132,16 @@ methods this section's endpoint serves, and the delegation. What is in force now
   `Remove` and `Rollback` under a delegated badge against that approval's stored records before it
   writes anything. The asks must lie within the package's entry. A removal asks the entry's
   `remove` answer, a reinstall the `update` answer, and a rollback asks every restored row to lie
-  within it, grants and all (the ruling of 2026-10-12 on #2031, the rollback's half). A refusal
-  (`NotApproved`) names the package in a follower message, as `NameTaken` names the holder. The
-  progenitor answers a badge whose approval is gone with `Revoked`, acting on nothing. A delegated
-  badge may send neither `Approve` nor `Revoke`, so it can neither widen its own approval nor mint
-  another. `Vouch` stays refused, as the section above rules.
+  within it, grants and all (the ruling of 2026-10-12 on #2031, the rollback's half). The owner's
+  vouch rows lie outside every approval and are not the holder's to undo, so the check skips them.
+  A refusal (`NotApproved`) names the package in a follower message, as `NameTaken` names the
+  holder. The progenitor answers a badge whose approval is gone with `Revoked`, acting on nothing.
+  A delegated badge may send neither `Approve` nor `Revoke`, so it can neither widen its own
+  approval nor mint another. `Vouch` stays refused, as the section above rules. The owner's own
+  scripted install carries an `answered` trailer naming the approval and its digest, and the
+  progenitor checks it against the stored records bound to that digest, refusing with the ask
+  named in a third follower. The answer the trailer names is what the record writes, so the
+  installer cannot write what nothing allowed.
 - **One-run and standing.** The one-run form is the console's `--within <name>` on a job, which
   ends at the job's reap, as the endpoint's filing does (§270 above). The standing form is a
   service manifest's ask, whose declaration milestone 910 (a package declares a service) owns.

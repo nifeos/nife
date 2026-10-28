@@ -469,6 +469,10 @@ impl Service<'_> {
                     allowed: None,
                 },
                 &mut self.fs_mapped,
+                // The spawn endpoint's activation verbs are the owner's vouch and install;
+                // the store's records are read on the installer endpoint's requests, where
+                // the check is.
+                None,
             );
             // Only a vouch arrives here, and a vouch's answer names no member and no holder.
             let (r0, r1, r2) = spawnproto::activation_reply(answer.status, answer.live, 0);

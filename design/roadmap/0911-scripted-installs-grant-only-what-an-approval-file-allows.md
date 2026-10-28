@@ -17,7 +17,7 @@ Item 5's one-run form is built and gated with `jig` as the holder; the standing 
 *(Minted 2026-10-12 (UTC) by lane `maintainer/mint-scripted-installs` at calef's request. The
 number is provisional until the merge queue lands it; the title, the slug and every name below
 (`--approved`, `jig approve`, `jig revoke`, `--json`, the file's keys, "approval file", "grant
-record") are drafts, after common package-tool spellings. calef names them.)*
+record") are drafts. calef names them.)*
 
 Appendices, in [this block's directory](0911-scripted-installs-grant-only-what-an-approval-file-allows/README.md):
 [an example approval file](0911-scripted-installs-grant-only-what-an-approval-file-allows/an-example-file.md),
@@ -30,9 +30,8 @@ maintainer proposed the design below, and he answered: *"Yes, write it up as a m
 **In brief.** The owner writes an approval file once, naming the packages it may install and the
 exact grants each may receive. `jig install --approved <file> <pkg>` installs with no prompt
 when the manifest asks for no more than the file allows, and fails closed, naming the extra grant,
-when it asks for more. A script that installs on its own holds an installer endpoint the owner
-delegated, badged to one approval file, so the progenitor refuses it anything outside that file.
-The same file drives basalt's image composition and a lab machine's own updates.
+when it asks for more. A script that installs on its own holds an installer endpoint badged to one
+approval file, so the progenitor refuses it anything outside that file.
 
 ## Why a plain `--yes` is refused
 
@@ -41,14 +40,14 @@ install` shows everything the install grants, and one confirmation covers it. Mi
 package declares a service: install starts it, boot starts it, update restarts it) adds "runs as a
 service, now and at every boot" to that list. Milestone 892 (a std program at the prompt holds the
 network and a name resolver)'s item 3 (ruled "c" on #2011) adds the manifest's resolver zones,
-asked for and granted at install. Each granted zone is one badge, under §252 (a resolver grant is
-one zone per client badge). A root-zone ask is flagged apart.
+asked for and granted at install. Each granted zone is one badge, under §252. A root-zone ask is
+flagged apart.
 
 A `--yes` answers that confirmation without reading it. It would approve a root-zone ask blindly.
 On the next update it would approve whatever the new version asks, so a package that gained a
 zone, a service or a directory would get it with nobody having seen the request. That is the one
-thing the confirmation exists to prevent. The approval file keeps the owner's judgment and moves it
-earlier: the owner reads the grants once, when writing the file, and a script can only replay them.
+thing the confirmation exists to prevent. The approval file moves the owner's judgment earlier:
+the owner reads the grants once, when writing the file, and a script can only replay them.
 
 ## What exists, and who else touches this
 
@@ -71,8 +70,7 @@ pre-approved or unattended installs; each neighbor owns a piece this milestone r
   them, and 858 depends on this milestone.
 
 909 and 858 are not dependencies of this block, though both use it: 858 waits on silicon and a
-person, and the edge here would hold scripted installs behind a board. 909's block gains this
-dependency in its own pull request.
+person, and the edge here would hold scripted installs behind a board.
 
 ## The approval file
 
@@ -106,7 +104,10 @@ Only `jig` parses the file. It compiles it on the owner's console into canonical
 one per package, sorted, in the encoding the installed-programs table already stores
 (`crates/installed_programs`, §208 (installing a package is granting it, and the installed
 programs are versioned)). A human-readable file is for the owner. The progenitor compares records,
-and never parses the file.
+and never parses the file. The subset test runs in the progenitor, against the store's records the
+trailer binds: a scripted install sends an `answered` trailer naming the approval and its digest,
+which the progenitor could not otherwise know. `jig` pre-flights the package's entry before
+anything is fetched past the manifest.
 
 ## The grant record, which every path writes
 
@@ -116,21 +117,18 @@ encoding, no timestamp, no trace of how the answer was given. Three paths write 
 
 1. An interactive `jig install` at the owner's console: the owner reads the list and says yes, and
    the record is the asks.
-2. A scripted `jig install --approved <file>`, or a delegated holder: the asks pass the subset
-   test, and the record is the asks.
-3. basalt's image composition (909), on the host: each package passes the same test against the
+2. basalt's image composition (909), on the host: each package passes the same test against the
    image's approval file, and the image's first installed-programs table holds the records.
 
-For the same grants, the three records are byte-identical. How the answer was given is recorded
-beside the record, not inside it, in a column like §270's manager column: `console`, or the
-approval's name and digest. That keeps the audit question ("who allowed this?") answerable without
-making two equal grants look different to anything that compares them.
+For the same grants, the records from both paths are byte-identical. How the answer was given is
+recorded beside the record, not inside it, in a column like §270's manager column: `console`, or
+the approval's name and digest. That keeps the audit question ("who allowed this?") answerable
+without making two equal grants look different to anything that compares them.
 
 ## The authority is a capability
 
 `--approved` at the owner's console needs nothing new: the owner already holds the authority, and
-the file only replaces the prompt with a check that fails closed. Delegation differs from `apt -y`,
-which runs with all of root's authority whatever the script meant to do.
+the file only replaces the prompt with a check that fails closed.
 
 At the owner's console, `jig approve <file>` prints every grant the file contains, flags any
 root-zone entry the way an interactive install does, and asks once. On yes, `jig` sends the
@@ -150,7 +148,8 @@ The progenitor checks every delegated request against X's stored records before 
 written, because a delegated holder is trusted to be nothing more than a holder of that badge. A
 holder under X cannot send `Approve` or `Vouch`. A `Rollback` under X passes when every row the
 previous generation restores lies within X's records, and fails naming the row when one does not
-(ruled 2026-10-12): returning to what the file allowed grants nothing new.
+(ruled 2026-10-12): returning to what the file allowed grants nothing new. The owner's vouch rows
+lie outside every approval, so the check skips them; it still restores them.
 
 Approvals are not generations: the progenitor stores them beside the installed-programs table's
 generations, never as rows in them, so `jig rollback` restores packages and leaves every approval
@@ -171,15 +170,14 @@ now."*
 So `jig` covers one machine: repositories (add, remove), its local index, install, upgrade, remove,
 rollback and approvals. Managing a fleet (role files, schedules, signing, fleet status) is a
 separate layer, out of scope and not defined. Two hooks keep it possible: `Approve` leaves room for
-a later signed form, and results and refusals come in a machine-readable form, `--json` with
-stable exit codes (item 7 of the work).
+a later signed form, and results and refusals come in a machine-readable form.
 
 ## Prior art
 
 Read 2026-10-12 (UTC) and kept [in an appendix](0911-scripted-installs-grant-only-what-an-approval-file-allows/prior-art.md).
 apt's `-y` and Android's auto-grant policy approve everything, including what an update newly asks.
 NixOS declares which packages run but not what they may do. Fuchsia's capability allowlists,
-checked by the authority that grants, are the nearest model; this file keeps its list per package.
+checked by the granting authority, are the nearest model; this file keeps its list per package.
 
 ## The work
 
@@ -192,7 +190,7 @@ checked by the authority that grants, are the nearest model; this file keeps its
    §270's semantics amended in `design/decisions/` (per §10 (process model: capability-based,
    microkernel; untyped memory deferred)). Re-approval as ruled, and room in `Approve` for the
    signed form. Approvals live beside the generations, never as rows in them, and a `Rollback`
-   under a badge is checked against that badge's approval.
+   under a badge is checked against that badge's approval, skipping the owner's vouch rows.
 5. The two delegation forms: a one-run grant at spawn from the owner's console, and the standing ask
    in a service manifest beside 910's declaration.
 6. A host-side check basalt's composition can call, sharing item 1's crate, so 909 can adopt it.
@@ -205,11 +203,12 @@ Lane `milestone/911-scripted-installs-approval-file` (#2853). All seven items ar
 ([what was built, per item](0911-scripted-installs-grant-only-what-an-approval-file-allows/the-gate.md)):
 the grant record and its `answered` column (`crates/installed_programs`). The approval file's
 grammar, its compile and its host-side check (`crates/approval_file`). `--approved` on install and
-remove. `Approve` and `Revoke` on the installer endpoint, with the delegated badge, the store, and
-§270 amended in place. The one-run delegation (`--within <name>`), the endpoint badged with the
-approval's id. The host-side check for basalt's composition. `--json` with the documented exit
-codes. The host tests cover the two-paths-agree property, the subset test's extras, the store's grammar
-and the record's reads. The seed writes the fixtures and three approval files.
+remove, with the subset test in the progenitor, against the store. `Approve` and `Revoke` on the
+installer endpoint, with the delegated badge, the store, and §270 amended in place. The one-run
+delegation (`--within <name>`). The host-side check for basalt's composition. `--json` with the
+documented exit codes. The host tests cover the two-paths-agree property, the subset test's
+extras, the store's grammar and the record's reads. The seed writes the fixtures and three
+approval files.
 
 ## Done when
 
@@ -257,7 +256,7 @@ zones; a manifest that asks for zones and no service stays version 2, so no dige
   `installer` and `dirs` allow keys and the `Granted::Installer` and `Granted::Directory` records
   are exercised by host tests alone until 910's declaration exists.
 - The delegated holder in the gate is a fresh `jig` per line, so "a delegation already running"
-  is the mechanism's property (the check reads the store per request, host-tested and shown by the
+  is the mechanism's property (the check reads the store per request, shown by the
   refused-then-allowed sequence), not a long-lived holder's. A holder that lives across requests
   waits on 910's standing form.
 - A store write is not staged and renamed; a torn `approvals/<name>` file fails to parse, which
@@ -265,8 +264,9 @@ zones; a manifest that asks for zones and no service stays version 2, so no dige
   exposure a generation's own write has before its commit.
 - The approval ids are per-boot: a badge from before a reboot carries an id the new boot's table
   answers `Revoked` to, until the standing form's re-placement (910's) or a fresh delegation.
-- `jig approve` reads the store through the activation directory; on a boot with no disk it says
-  so and stores nothing. The `update` answer is enforced where the approval is stored (delegated
+- The store is the progenitor's to read, and a std holder's namespace root is the directory it was
+  granted, so the diff travels in the `Approve` reply; on a boot with no disk the store write
+  fails and says so. The `update` answer is enforced where the approval is stored (delegated
   installs of installed packages): a console `--approved` install of an installed package is the
   owner acting, and the answer does not bind it; the file's asks still do.
 
@@ -275,8 +275,7 @@ zones; a manifest that asks for zones and no service stays version 2, so no dige
 - **Outstanding.** The standing delegation form: the ask in a service manifest beside 910's
   declaration, so a lab machine's updater (858) holds it across reboots. Checked 2026-10-28: 910
   is NOT-STARTED, and no manifest can spell the ask.
-- **Outstanding.** A real service package in the wild (858's updater, monit): the fixtures carry
-  the ask and the record, and nothing starts them. Checked 2026-10-28: same dependency.
+- **Outstanding.** A real service package in the wild (858's updater, monit): same dependency.
 - **Milestone 909.** The image composition reads an approval file and calls
   `approval_file::check` per package. Checked 2026-10-28: the check is host-callable; 909 has not adopted it.
 

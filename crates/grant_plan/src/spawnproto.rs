@@ -322,7 +322,10 @@ pub enum Activation {
     /// compiled records (`installed_programs::approval`), whose header carries the approval's
     /// name and the file's digest the records bind to; the progenitor stores them beside the
     /// installed-programs table's generations, never as rows in them, and answers
-    /// [`ActivationStatus::Done`]. Only an **undelegated** installer badge may send it: a badge
+    /// [`ActivationStatus::Done`]. The reply's word 2 is **the stored records' length in bytes**
+    /// that were there before this one replaced them, 0 when the name was not stored: the
+    /// records travel back as follower messages ([`stored_words`]), so the console's re-approval
+    /// shows what changed. Only an **undelegated** installer badge may send it: a badge
     /// that carries an approval is answered [`ActivationStatus::NotServedHere`], so no holder can
     /// widen its own approval or mint another.
     ///
@@ -435,8 +438,11 @@ pub enum ActivationStatus {
     /// owner's approval file allows), the check in the installer): the package is outside the
     /// badge's approval, its asks exceed its entry, the entry's `remove` answer refuses a
     /// removal, or a rollback would restore a row outside it. Nothing was read past the frames
-    /// and nothing was written. One message follows naming the package ([`holder_words`]).
-    /// Provisional.
+    /// and nothing was written. Word 2 is **how many messages follow** ([`holder_words`]): two,
+    /// naming the package, from a delegated badge's check, which tells a holder no more than
+    /// which package was refused; three from the owner's own `--approved` install, whose third
+    /// message names the ask that exceeded the entry ([`refused_ask_words`]), which the owner may
+    /// read. Provisional.
     NotApproved = 16,
     /// **The badge's approval is not stored** (milestone 911): it was revoked by
     /// [`Activation::Revoke`], or it was never approved. Nothing is read and nothing is written;
@@ -636,6 +642,94 @@ pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXI
     }
     let len = usize::try_from(len).map_or(HOLDER_MAXIMUM, |l| l.min(HOLDER_MAXIMUM));
     core::str::from_utf8(&out[..len]).unwrap_or("")
+}
+
+/// The ask kinds a [`ActivationStatus::NotApproved`] refusal's third message carries, for an
+/// undelegated badge's `--approved` install (milestone 911): the grant the entry did not cover,
+/// which the owner's console may read. A zone's or a directory's name rides words 1 and 2
+/// ([`pack_name`]); the others ride the kind alone. The kinds are this crate's own numbers; the
+/// check that mints them maps `installed_programs::Granted` onto them, and the gate's zone row
+/// is what catches a swapped pair.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_NETWORK: u64 = 1;
+/// The service ask's kind ([`ASK_NETWORK`]).
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_SERVICE: u64 = 2;
+/// The installer ask's kind ([`ASK_NETWORK`]).
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_INSTALLER: u64 = 3;
+/// The zone ask's kind ([`ASK_NETWORK`]); the zone's name rides words 1 and 2.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_ZONE: u64 = 4;
+/// The directory ask's kind ([`ASK_NETWORK`]); the directory's name rides words 1 and 2, and the
+/// rights do not travel: the caller spells them from the ask it already holds.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_DIRECTORY: u64 = 5;
+
+/// **The message that names the ask a `--approved` install's check refused** (milestone 911):
+/// the kind ([`ASK_NETWORK`] and its neighbors) with a directory's rights above it (`1` reads,
+/// `3` reads and writes, the bit spelling [`installed_programs::DirectoryRights`] keeps), and,
+/// for a zone or a directory, the name packed as a removal's name is.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub fn refused_ask_words(kind: u64, rights: u64, name: &str) -> (u64, u64, u64) {
+    let (lo, hi) = pack_name(name.as_bytes());
+    (kind | (rights << 8), lo, hi)
+}
+
+/// [`refused_ask_words`] read back: the kind, the directory rights, and the name in `out`, or
+/// `None` for a word that carries no kind this side knows. The name's length is the packed
+/// form's, cut at sixteen bytes.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub fn refused_ask_from_words(
+    (word, lo, hi): (u64, u64, u64),
+    out: &mut [u8; 16],
+) -> Option<(u64, u64, &str)> {
+    let kind = word & 0xff;
+    if !matches!(kind, ASK_NETWORK..=ASK_DIRECTORY) {
+        return None;
+    }
+    let len = unpack_name(lo, hi, out);
+    let name = core::str::from_utf8(&out[..len]).unwrap_or("");
+    Some((kind, word >> 8, name))
+}
+
+/// **How many messages carry `len` bytes of stored records** ([`Activation::Approve`]'s reply):
+/// three words a message, one more for the tail's remainder.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub const fn stored_messages(len: u64) -> u64 {
+    len.div_ceil(24)
+}
+
+/// **One message of the stored records an `Approve`'s reply carries back** (milestone 911): the
+/// bytes at `at` of `records`, little-endian words, zero-padded at the tail. The console's
+/// re-approval diffs its file against these, which is why they travel: the store is the
+/// progenitor's to read, and a std holder's namespace root is the directory it was granted.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub fn stored_words(records: &[u8], at: usize) -> (u64, u64, u64) {
+    let mut bytes = [0u8; 24];
+    let end = (at + 24).min(records.len());
+    if at < end {
+        bytes[..end - at].copy_from_slice(&records[at..end]);
+    }
+    let word = |i: usize| {
+        let mut w = [0u8; 8];
+        w.copy_from_slice(&bytes[i * 8..i * 8 + 8]);
+        u64::from_le_bytes(w)
+    };
+    (word(0), word(1), word(2))
 }
 
 /// **The largest image `IMAGE_BIT` may carry, in pages** (4 MiB). A ceiling both sides read, so the
@@ -1067,6 +1161,7 @@ pub const SPAWN_OK: u64 = 0;
 #[cfg(test)]
 mod tests {
     use super::*;
+    extern crate alloc;
 
     #[test]
     fn the_mounted_trees_rights_are_list_walk_and_read() {
@@ -1202,6 +1297,58 @@ mod tests {
             "",
             "not UTF-8 spells nothing"
         );
+    }
+
+    /// **The refused ask travels as one message, name and kind** (milestone 911), and a kind
+    /// this side does not know spells nothing: the reply's third follower is the owner's to
+    /// read, and a future kind must not decode as one of these five. A directory's rights ride
+    /// above the kind, and a kind's own bits are the low byte, so a wider kind word is still
+    /// read as its kind.
+    #[test]
+    fn a_refused_ask_round_trips() {
+        for (kind, rights, name) in [
+            (ASK_NETWORK, 0, ""),
+            (ASK_SERVICE, 0, ""),
+            (ASK_INSTALLER, 0, ""),
+            (ASK_ZONE, 0, "example.net"),
+            (ASK_DIRECTORY, 1, "monit/state"),
+            (ASK_DIRECTORY, 3, "monit/state"),
+        ] {
+            let mut out = [0u8; 16];
+            assert_eq!(
+                refused_ask_from_words(refused_ask_words(kind, rights, name), &mut out),
+                Some((kind, rights, name))
+            );
+        }
+        let mut out = [0u8; 16];
+        assert_eq!(refused_ask_from_words((0, 0, 0), &mut out), None);
+        assert_eq!(refused_ask_from_words((6, 0, 0), &mut out), None);
+        // A kind word wider than the kind is the rights riding above it, and the kind is its
+        // low byte alone.
+        assert_eq!(
+            refused_ask_from_words((ASK_ZONE | (1 << 8), 0, 0), &mut out),
+            Some((ASK_ZONE, 1, ""))
+        );
+    }
+
+    /// **The stored records travel three words a message, tail padded** (milestone 911), and the
+    /// count the reply's word 2 buys is the count the bytes need.
+    #[test]
+    fn stored_records_round_trip() {
+        let records: &[u8] = b"approval lab-runner sha256:0f\n[package.seeker]";
+        let mut back = alloc::vec::Vec::new();
+        for m in 0..stored_messages(records.len() as u64) as usize {
+            let (a, b, c) = stored_words(records, m * 24);
+            back.extend_from_slice(&a.to_le_bytes());
+            back.extend_from_slice(&b.to_le_bytes());
+            back.extend_from_slice(&c.to_le_bytes());
+        }
+        back.truncate(records.len());
+        assert_eq!(back, records);
+        assert_eq!(stored_messages(0), 0);
+        assert_eq!(stored_messages(1), 1);
+        assert_eq!(stored_messages(24), 1);
+        assert_eq!(stored_messages(25), 2);
     }
 
     #[test]
