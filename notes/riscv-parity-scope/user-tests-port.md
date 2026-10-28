@@ -97,7 +97,7 @@ both ISAs before being restored:
 | --- | --- | --- |
 | Fault assertions | `outlaw`'s `READ_KERNEL` reads an *unmapped* address instead of the kernel's | `a_user_program_cannot_read_a_kernel_address` fails on `Translation(Read)` versus `Permission(Read)`. This is the one worth having: it proves the permission-versus-translation distinction is load-bearing on RISC-V too, where it is *derived* by walking the tables rather than read out of a register. |
 | ELF rejection | `paging::Mapper::map`'s `WrongHalf` guard disabled | `an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused` fails with `left: None`: the load fully succeeded, mapping a user program on top of the kernel. |
-| Capability rules | the `GRANT` check on `SEND_CAP` disabled | `a_capability_can_be_delegated_over_ipc_and_grant_gates_re_delegation` fails as a lost-wakeup hang, identically on both. The receiver's re-delegation is no longer refused, so it blocks in the send it expected to fail and its verdict never arrives. Red, but through the watchdog rather than the assertion. |
+| Capability rules | the `GRANT` check on `SEND_CAPABILITY` disabled | `a_capability_can_be_delegated_over_ipc_and_grant_gates_re_delegation` fails as a lost-wakeup hang, identically on both. The receiver's re-delegation is no longer refused, so it blocks in the send it expected to fail and its verdict never arrives. Red, but through the watchdog rather than the assertion. |
 | `userspace_init_*` | hello's `child()` reports `CHILD_WORD ^ 1` | `the_report_child_builder_parses_an_elf_and_builds_a_running_child` fails on the exact word. |
 
 The first of those is also what found the publication-ordering defect above. Breaking a test

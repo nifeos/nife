@@ -65,7 +65,7 @@ the kernel at `START` (milestone 105 (the two forks), §148 (resolves by asking 
 writes it only on a death delivered to a plain `RECEIVE`, so the mailbox stays five words. A
 receiver zeroes the register first, as `receive_fault` does, so `0` means unbadged or not a death.
 The child holds no capability carrying its label, and a sender's badge arrives in `w3`, so a label
-can be neither learned nor forged. `RECEIVE_CAP` and in-kernel receives do not get it.
+can be neither learned nor forged. `RECEIVE_CAPABILITY` and in-kernel receives do not get it.
 `sub_server_supervisor` uses it to tell two children apart.
 
 Both events flow because restart policy needs to tell "crashed" from "finished": a crash is a reason

@@ -266,7 +266,7 @@ fn split_inherits_the_parent_capabilitys_rights_never_widening() {
         !child.rights.allows(Rights::GRANT),
         "escalation: a GRANT-less untyped split into a GRANT-bearing child",
     );
-    // Without GRANT it cannot be delegated: `SEND_CAP` and `CAP_INSERT` both refuse.
+    // Without GRANT it cannot be delegated: `SEND_CAPABILITY` and `CAPABILITY_INSERT` both refuse.
     assert!(
         !child.rights.allows(Rights::GRANT),
         "a spend-only child must be un-delegatable",

@@ -133,6 +133,24 @@ impl<D: Disk> Server<D> {
         Ok(self.install(Entry::Dir(ptr, granted)))
     }
 
+    /// **Narrow a directory handle already held** (`fs::NARROW`, §173 (narrowing the root of the shell's namespace)): hand back a second handle
+    /// to the same directory carrying `requested` rights, resolving no name.
+    ///
+    /// The rights are [`Rights::attenuate`] of the held handle's, the function [`Server::open_dir`]
+    /// and [`Server::make_dir`] narrow through, so the new handle carries nothing the held one
+    /// lacked. `EPERM` if the intersection is smaller than the request, for `open_dir`'s reason (no
+    /// silent degradation). Needs no right: narrowing cannot widen. A file handle is `ENOTDIR`.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by the lane of milestone 328 (a grant on the root of the shell's namespace).
+    pub fn narrow(&mut self, handle: u32, requested: u64) -> Result<u32> {
+        let (ptr, rights) = self.dir_at(handle)?;
+        let granted = rights.attenuate(requested);
+        if granted != Rights::root(requested) {
+            return Err(Error::new(EPERM));
+        }
+        Ok(self.install(Entry::Dir(ptr, granted)))
+    }
+
     /// Make a child directory and hand back a capability to it: `mkdir` as descend-with-creation,
     /// sharing [`Server::open_dir`]'s rights arithmetic exactly.
     ///

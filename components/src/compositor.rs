@@ -144,7 +144,7 @@ fn flush(damage: Rect) {
     // PAIR: `barrier()` in components/src/gpu_driver.rs, which the driver issues before it moves the
     // virtqueue index and again before it notifies the device. The `call(DISPLAY, FLUSH, ...)` below
     // is what orders these pixels against the driver *reading* them (the driver is blocked in
-    // `receive_cap`); this fence is what covers the driver-to-device leg not being ours to see.
+    // `receive_capability`); this fence is what covers the driver-to-device leg not being ours to see.
     core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
     let (r0, _) = call(
         DISPLAY,
@@ -308,7 +308,7 @@ fn start(windows: u64, focusable: u64, _arg2: u64) -> ! {
         // One wait point, and everything arrives here: a client's HELLO or COMMIT, and the input
         // source's ring. `receive_request`'s `delivered` is the kernel-minted one-shot Reply naming
         // the caller, which is how a reply reaches whoever rang without this program ever knowing
-        // who that was. Anything else (a client's SEND_CAP; milestone 706 (a `CALL` server can tell
+        // who that was. Anything else (a client's SEND_CAPABILITY; milestone 706 (a `CALL` server can tell
         // a Reply from a delegation)) gets no reply, and a delegated capability is deleted rather
         // than answered into.
         let req = receive_request(DOORBELL);

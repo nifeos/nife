@@ -143,6 +143,9 @@ pub(crate) fn test() -> bool {
         return false;
     }
     let filter = export_test_filter();
+    if !image_flag_is_acceptable(filter.is_some(), hvf) {
+        return false;
+    }
     if !export_test_repeat(filter.as_deref()) {
         return false;
     }
@@ -190,7 +193,7 @@ pub(crate) fn test() -> bool {
     // adds a QEMU console and the suite's machine has a virtio-gpu on console 0. Not under `--cpu`,
     // a cost decision: nothing on the screen path varies with `-cpu`, and the leg still runs on
     // every ordinary `script/test`. See notes/serial-less-output/ramfb.md.
-    if flag_value("--cpu").is_none() {
+    if flag_value("--cpu").is_none() && flag_value("--image").is_none() {
         if legs.aarch64() && !crate::screen::screen_boot("aarch64") {
             return false;
         }
@@ -198,7 +201,33 @@ pub(crate) fn test() -> bool {
             return false;
         }
     }
-    images_after_the_run(legs, filter.is_some())
+    images_after_the_run(legs, filter.is_some() || flag_value("--image").is_some())
+}
+
+/// `--image kernel|system`: run one of a leg's two test images. A kernel mutant is run against the
+/// kernel's unit tests first, and only a survivor pays for the whole-system image
+/// (design/roadmap/proposals/the-kernel-and-its-programs-are-mutated-under-qemu.md). Skips the
+/// screen tour, the post-run image checks and, on x86_64, the extra machines, as `--test` does:
+/// they judge a whole run. False after refusing a value, or the flag beside `--test` or `--hvf`.
+/// Name: provisional.
+fn image_flag_is_acceptable(filtered: bool, hvf: bool) -> bool {
+    let Some(image) = flag_value("--image") else {
+        return true;
+    };
+    if image != "kernel" && image != "system" {
+        eprintln!("test: --image takes kernel or system, not {image:?}");
+        return false;
+    }
+    if filtered || hvf {
+        eprintln!("test: --image does not combine with --test or --hvf");
+        return false;
+    }
+    true
+}
+
+/// Whether this run boots the named image: always without `--image`, otherwise only that one.
+fn image_selected(name: &str) -> bool {
+    flag_value("--image").is_none_or(|image| image == name)
 }
 
 /// `--hvf` and `--arch`, read together because the first constrains the second: which legs this
@@ -508,7 +537,7 @@ fn host_tests() -> bool {
 
 /// **The programs every leg's archive packs that the suite builds first**: `std_exerciser` and the
 /// nifefs data disk, then the TLS graph's programs for the legs this run boots.
-fn build_suite_programs(legs: ArchLegs) -> bool {
+pub(crate) fn build_suite_programs(legs: ArchLegs) -> bool {
     // Build the std demo (milestone 27 (Rust `std` on the native ABI)) for every custom target
     // first, so every initial ramdisk carries it: initial_ramdisk_aarch64 (inside `user`) packs the
     // aarch64 std_exerciser, initial_ramdisk_riscv packs the riscv one. Outside the leg guards
@@ -538,7 +567,7 @@ fn build_suite_programs(legs: ArchLegs) -> bool {
 
 /// The test-leg devices: a virtio-gpu, a virtio keyboard, two virtio-rngs and an NVMe controller,
 /// set in this process's environment for every leg's runner to read.
-fn attach_test_leg_devices() {
+pub(crate) fn attach_test_leg_devices() {
     // Attach a virtio-gpu for the display test (milestone 29). Set here, in `test`, rather than in
     // `cargo()`: the benchmark boot uses the same runner and adding a device to it would change what
     // the icount instrument measures, so the GPU is a test-leg device only. Both ISA legs get it,
@@ -588,17 +617,7 @@ fn aarch64_suite(hvf: bool, filtered: bool) -> bool {
         "--- kernel tests, aarch64 (QEMU {}) ---",
         crate::host::qemu_version("aarch64")
     );
-    // The FS server (milestone 32 phase 2), for the aarch64 bare target, before `user()` so
-    // initial_ramdisk_aarch64 packs it; then the RedoxFS test images the runner attaches as
-    // extra mmio disks.
-    if !redoxfs_server_build(TARGET)
-        || !user()
-        || !mkredoxfs()
-        || !mkredoxfs_crash()
-        || !mkgptdisk()
-        || !mkblankdisk()
-        || !mknvmedisk()
-    {
+    if !prepare_aarch64_images() {
         return false;
     }
     // `cargo()` only exports the env the runner needs; the test itself runs under the scanout
@@ -618,15 +637,34 @@ fn aarch64_suite(hvf: bool, filtered: bool) -> bool {
     } else {
         // The environment `cargo()` sets, since this child is spawned by the recorder.
         runner_env();
-        time_record::cargo_test(
-            &time_record::leg("aarch64"),
-            "kernel",
-            &["test", "-p", "kernel", "--target", TARGET],
-        ) && cargo_test_with_scanout_check(
-            "aarch64",
-            &["test", "-p", "system_tests", "--target", TARGET],
-        )
+        (!image_selected("kernel")
+            || time_record::cargo_test(
+                &time_record::leg("aarch64"),
+                "kernel",
+                &["test", "-p", "kernel", "--target", TARGET],
+            ))
+            && (!image_selected("system")
+                || cargo_test_with_scanout_check(
+                    "aarch64",
+                    &["test", "-p", "system_tests", "--target", TARGET],
+                ))
     }
+}
+
+/// **The aarch64 leg's images**: the FS server, the userspace archive, the RedoxFS, GPT, blank and
+/// NVMe test disks. Everything the kernel test images read from the host, built before either
+/// image boots. Shared with `cargo xtask coverage`, which boots the same images instrumented.
+pub(crate) fn prepare_aarch64_images() -> bool {
+    // The FS server (milestone 32 phase 2), for the aarch64 bare target, before `user()` so
+    // initial_ramdisk_aarch64 packs it; then the RedoxFS test images the runner attaches as
+    // extra mmio disks.
+    redoxfs_server_build(TARGET)
+        && user()
+        && mkredoxfs()
+        && mkredoxfs_crash()
+        && mkgptdisk()
+        && mkblankdisk()
+        && mknvmedisk()
 }
 
 /// **The riscv64 leg**: its own archive and fresh images, then both test images.
@@ -671,14 +709,18 @@ fn riscv64_suite(filtered: bool) -> bool {
         if !filtered_leg("riscv64", RISCV_TARGET) {
             return false;
         }
-    } else if !time_record::cargo_test(
-        &time_record::leg("riscv64"),
-        "kernel",
-        &["test", "-p", "kernel", "--target", RISCV_TARGET],
-    ) || !cargo_test_with_scanout_check(
-        "riscv64",
-        &["test", "-p", "system_tests", "--target", RISCV_TARGET],
-    ) {
+    } else if (image_selected("kernel")
+        && !time_record::cargo_test(
+            &time_record::leg("riscv64"),
+            "kernel",
+            &["test", "-p", "kernel", "--target", RISCV_TARGET],
+        ))
+        || (image_selected("system")
+            && !cargo_test_with_scanout_check(
+                "riscv64",
+                &["test", "-p", "system_tests", "--target", RISCV_TARGET],
+            ))
+    {
         return false;
     }
     true
@@ -751,20 +793,27 @@ fn x86_64_suite(filtered: bool) -> bool {
         if !filtered_leg("x86_64", X86_TARGET) {
             return false;
         }
-    } else if !time_record::cargo_test(
-        &time_record::leg("x86_64"),
-        "kernel",
-        &["test", "-p", "kernel", "--target", X86_TARGET],
-    ) || !cargo_test_with_scanout_only(
-        "x86_64",
-        &["test", "-p", "system_tests", "--target", X86_TARGET],
-    ) {
+    } else if (image_selected("kernel")
+        && !time_record::cargo_test(
+            &time_record::leg("x86_64"),
+            "kernel",
+            &["test", "-p", "kernel", "--target", X86_TARGET],
+        ))
+        || (image_selected("system")
+            && !cargo_test_with_scanout_only(
+                "x86_64",
+                &["test", "-p", "system_tests", "--target", X86_TARGET],
+            ))
+    {
         return false;
     }
-    if !filtered && !x86_64_behind_a_root_port() {
+    // `--image` runs one image and none of the other machines below, for the same reason a filter
+    // does not.
+    let narrowed = filtered || flag_value("--image").is_some();
+    if !narrowed && !x86_64_behind_a_root_port() {
         return false;
     }
-    if !filtered && std::env::var_os("NIFE_IOMMU").is_none() && !x86_64_on_amd_vi() {
+    if !narrowed && std::env::var_os("NIFE_IOMMU").is_none() && !x86_64_on_amd_vi() {
         return false;
     }
     // **And the same kernel started by real firmware** (milestone 87). The suite above rides
@@ -1196,6 +1245,17 @@ fn hvf_verdict(verdict: Option<bool>, watched: bool) -> bool {
 /// field is a filesystem path emitted by cargo, so it contains no escapes, and the only artifact
 /// line `cargo test --no-run -p kernel` emits with a non-null `executable` is the one we want.
 pub(crate) fn kernel_test_elf(package: &str, target: &str, who: &str) -> Option<String> {
+    kernel_test_elf_with(package, target, who, &[])
+}
+
+/// [`kernel_test_elf`] with extra arguments for `cargo test --no-run`: a feature, a target
+/// directory. `cargo xtask coverage` builds its instrumented image this way.
+pub(crate) fn kernel_test_elf_with(
+    package: &str,
+    target: &str,
+    who: &str,
+    extra: &[&str],
+) -> Option<String> {
     let mut args = std::vec![
         "test",
         "-p",
@@ -1210,6 +1270,7 @@ pub(crate) fn kernel_test_elf(package: &str, target: &str, who: &str) -> Option<
     if RELEASE.load(Ordering::Relaxed) {
         args.push("--release");
     }
+    args.extend_from_slice(extra);
     let out = Command::new("cargo")
         .args(&args)
         .stdout(std::process::Stdio::piped())

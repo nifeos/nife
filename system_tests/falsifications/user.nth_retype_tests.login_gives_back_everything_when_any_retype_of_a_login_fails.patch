@@ -21,7 +21,7 @@ index de5379aa5..911ed186b 100644
              aspace,
          )),
 -        Err(()) => {
--            cap_delete(aspace);
+-            capability_delete(aspace);
 -            Err(())
 -        }
 +        Err(()) => Err(()),

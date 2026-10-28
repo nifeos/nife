@@ -35,7 +35,7 @@ pub const OPERATION_SUSPEND_COUNT: u64 = 9;
 /// It gives the terminal a second writer without a second page: [`OPERATION_WRITE`] reads the one
 /// client output page init maps, the problem §55 (the file behind a `>` is the shell itself)
 /// records for `filesystem_contract`. Eight bytes is the request shape, not a choice: a served
-/// request arrives through `receive_cap` with two data words, so a sixteen-byte
+/// request arrives through `receive_capability` with two data words, so a sixteen-byte
 /// `byte_sink_contract` message is two of these. See notes/terminal-contract.md ("The IPC
 /// protocol") and notes/sink-protocol.md.
 pub const OPERATION_PRINT: u64 = 5;
@@ -175,7 +175,7 @@ pub const CTL_QUIT: u64 = 2;
 
 /// Supervisor → quiesced terminal, on its control endpoint: **write your state into the run this
 /// message carries** (milestone 23, for `display_terminal`, whose handoff comes from the machine's
-/// swap reserve and so cannot be mapped at build). A `SEND_CAP` of the run; a plain `SEND` means
+/// swap reserve and so cannot be mapped at build). A `SEND_CAPABILITY` of the run; a plain `SEND` means
 /// "into the run you already map", which is a replacement that absorbed from it earlier in the
 /// same swap. Answered [`NOTE_WRITTEN`] or [`NOTE_NOT_WRITTEN`]. A replacement started with
 /// [`START_ABSORB`] takes the same message, before it serves, and reads the run instead.

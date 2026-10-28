@@ -101,7 +101,7 @@ That is the same class of mistake in the other direction: a debug number in a re
   `call_reply` bench measures the fused shape, but it has no EL0 twin. So the structurally matched
   comparison to seL4's published pair is not measured at all.
   *Corrected 2026-09-04 by milestone 188 (the IPC fastpath): a real service issues `CALL`,
-  `RECEIVE_CAP`, `REPLY`, three syscalls to seL4's two, not four. Four is only `ipc_rtt_el0`'s count.
+  `RECEIVE_CAPABILITY`, `REPLY`, three syscalls to seL4's two, not four. Four is only `ipc_rtt_el0`'s count.
   The residual one is the `ReplyRecv` fusion this tree lacks, a syscall-surface question and
   calef's. See [the fastpath footprint appendix](fastpath-footprint-gate.md).*
 - Different measurement methods. seL4 times a single operation through the PMU with the caches hot

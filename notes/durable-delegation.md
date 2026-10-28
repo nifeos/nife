@@ -36,7 +36,7 @@ way `mint` builds a caretaker. Borrowed from the session's caretaker, it would d
 
 ### 1. Who keeps a durable session nameable after its client leaves (reattachment)
 
-Today `login` delegates the budget and then `cap_delete`s its own copy. When the client process
+Today `login` delegates the budget and then `capability_delete`s its own copy. When the client process
 exits, the budget still exists, because it belongs to `login`'s construction region. But nothing can
 name it. It is the orphaned session the design warned about, and a reconnect mints a second one
 beside it. Something has to keep one capability per durable identity.

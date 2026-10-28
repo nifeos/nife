@@ -124,7 +124,7 @@ fn serve(dir: u64) -> ! {
     table.0[0] = Some(dir);
 
     loop {
-        // A CALL-only contract: a plain SEND or a client's SEND_CAP has nobody waiting, so it does
+        // A CALL-only contract: a plain SEND or a client's SEND_CAPABILITY has nobody waiting, so it does
         // no work here, and a delegated capability is deleted rather than answered into (milestone
         // 706 (a CALL server can tell a Reply from a delegation)).
         let req = receive_request(CLIENT);
@@ -210,12 +210,23 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
 
     // The whole grant, in one request. The FS server intersects the asked rights with its own and
     // refuses if the intersection is smaller, so a wiring that asked for more fails here, loudly.
-    put(&buf[..n]);
-    let (r0, _) = call(
-        FS,
-        fs::req(fs::OPENDIR, fs::ROOT, n as u64),
-        grant::spec_rights(spec),
-    );
+    //
+    // An empty name is the root of the shell's namespace, which has no name to descend into, so the
+    // grant narrows the handle this process already holds (`fs::NARROW`, §173 (narrowing the root of the shell's namespace)).
+    let (r0, _) = if n == 0 {
+        call(
+            FS,
+            fs::req(fs::NARROW, fs::ROOT, 0),
+            grant::spec_rights(spec),
+        )
+    } else {
+        put(&buf[..n]);
+        call(
+            FS,
+            fs::req(fs::OPENDIR, fs::ROOT, n as u64),
+            grant::spec_rights(spec),
+        )
+    };
     // A refused descent is answered, not trapped: the waiter is the progenitor, which serves every
     // command and has no second thread, so a caretaker that died silently would park the machine in
     // `RECEIVE`, and `rm nosuchdir/x` is ordinary. It then exits: with no narrowed handle, serving

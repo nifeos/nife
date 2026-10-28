@@ -93,3 +93,16 @@ fn grant_words_pack_exactly() {
     assert_eq!(hi16, u64::from_le_bytes(*b"ijklmnop"));
     assert_eq!(grant::pack_name(b"abcdefghijklmnopq"), None);
 }
+
+/// **The root of the shell's namespace is an empty name with the rights beside it** (milestone
+/// 328, §173 (narrowing the root of the shell's namespace)). `fits` refuses an empty name, so zero cannot be a real directory's length, and a
+/// caretaker reads it as "narrow the handle you hold" with the rights from the same word.
+#[test]
+fn a_root_grant_is_an_empty_name_carrying_its_rights() {
+    assert!(!grant::fits(b""));
+    assert!(grant::pack_name(b"").is_none());
+    let spec = grant::spec(0, crate::dir::REMOVE);
+    let mut buf = [0u8; grant::WORDS_NAME];
+    assert_eq!(grant::unpack_name(0, 0, grant::spec_len(spec), &mut buf), 0);
+    assert_eq!(grant::spec_rights(spec), crate::dir::REMOVE);
+}

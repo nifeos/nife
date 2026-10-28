@@ -3,10 +3,10 @@
 *Name: provisional, minted 2026-10-11 (UTC) by lane/final-longest-notes, for what the parent said
 about `next_after`'s Kani harnesses. calef names files.*
 
-An appendix of [scheduled execution](../scheduled-execution.md), for its section "The
+An appendix of [scheduled execution](scheduled-execution.md), for its section "The
 arithmetic, and the decision inside it", under §212 (a prose budget). The
 parent keeps the three properties and why Kani holds them. This file keeps the two things about
-`crates/timetable/src/proofs.rs` worth knowing before anyone edits `next_after`.
+`crates/periodic_deadline/src/proofs.rs` worth knowing before anyone edits `next_after`.
 
 ## A measurement: one operator, three orders of magnitude
 

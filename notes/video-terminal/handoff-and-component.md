@@ -48,7 +48,7 @@ through a copy badged `line_editor::proto::SUPERVISOR_BADGE` (refused on any oth
 `QUIESCED`, after which it reads only `CONTROL`. Unlike `line_editor`'s, its handoff run
 is not mapped at build. It comes from the machine's swap reserve
 (`line_editor::component::supervisor::SWAP_RESERVE_PAGES`), which exists only while a swap holds
-it. So it arrives with `CTL_HANDOFF`, a `SEND_CAP` on `CONTROL`, and is mapped at
+it. So it arrives with `CTL_HANDOFF`, a `SEND_CAPABILITY` on `CONTROL`, and is mapped at
 `HANDOFF_ADDRESS`. The blob is written into it and answered `NOTE_WRITTEN` on `SUPERVISOR`. A
 replacement started with `START_ABSORB` takes the same message before it serves.
 

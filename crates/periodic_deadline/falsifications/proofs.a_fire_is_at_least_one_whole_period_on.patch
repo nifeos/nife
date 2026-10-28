@@ -1,4 +1,4 @@
-Falsifies `timetable::proofs::a_fire_is_at_least_one_whole_period_on`.
+Falsifies `periodic_deadline::proofs::a_fire_is_at_least_one_whole_period_on`.
 
 The defect: the first candidate is one nanosecond short of a whole period on,
 `prev.saturating_add(period - 1)` in place of `prev.saturating_add(period)`. This is the
@@ -10,9 +10,9 @@ Expected to fail: the harness's `assert!(next_after(prev, period, now) >= prev +
 `now` in `prev ..= prev + period - 2`, where the function answers `prev + period - 1` and a
 schedule tightens by a nanosecond every time an entry is re-armed.
 
-diff --git a/crates/timetable/src/registry.rs b/crates/timetable/src/registry.rs
---- a/crates/timetable/src/registry.rs
-+++ b/crates/timetable/src/registry.rs
+diff --git a/crates/periodic_deadline/src/lib.rs b/crates/periodic_deadline/src/lib.rs
+--- a/crates/periodic_deadline/src/lib.rs
++++ b/crates/periodic_deadline/src/lib.rs
 @@ -439,3 +439,3 @@ pub const fn next_after(prev: u64, period: u64, now: u64) -> u64 {
      }
 -    let first = prev.saturating_add(period);

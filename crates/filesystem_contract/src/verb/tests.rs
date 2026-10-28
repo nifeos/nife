@@ -54,13 +54,13 @@ fn every_verb_has_a_row_that_says_what_its_words_mean() {
     assert_eq!(open.needs_any, dir::READ | dir::WRITE);
     assert_eq!(open.needs_all, 0);
 
-    // The four verbs that hand back authority, which is what a renumbering proxy must install.
+    // The five verbs that hand back authority, which is what a renumbering proxy must install.
     let mints: Vec<&str> = (verb::FIRST..=verb::LAST)
         .filter_map(verb::of)
         .filter(|v| v.mints_handle)
         .map(|v| v.name)
         .collect();
-    assert_eq!(mints, ["OPEN", "CREATE", "OPENDIR", "MKDIR"]);
+    assert_eq!(mints, ["OPEN", "CREATE", "OPENDIR", "MKDIR", "NARROW"]);
 }
 
 /// **No caretaker can forward a binding** (milestone 606, ruling D). `BIND` and `UNBIND` are
@@ -75,6 +75,34 @@ fn bind_and_unbind_are_not_directory_verbs() {
         );
         assert!(code > verb::LAST);
     }
+}
+
+/// **`NARROW` names a handle and a mask, resolves no name and demands no right** (§173 (narrowing the root of the shell's namespace)). A name
+/// filter must not see it (nothing in it is a directory entry), a read-only grant must not refuse
+/// it (it cannot widen), and a renumbering proxy must install the handle it mints.
+#[test]
+fn narrow_carries_a_mask_and_a_minted_handle_and_no_name() {
+    let v = verb::of(fs::NARROW).unwrap();
+    assert_eq!(v.name, "NARROW");
+    assert_eq!(fs::NARROW, 23);
+    assert_eq!((v.needs_all, v.needs_any), (0, 0));
+    assert!(!v.carries_len(), "NARROW resolves no name");
+    assert!(v.carries_w1, "the rights mask rides in the second word");
+    assert!(v.mints_handle);
+    assert!(!v.mutates());
+    assert!(!v.takes_name());
+}
+
+/// **A name filter refuses exactly the verbs that reissue a handle without a name**, and today that
+/// is `NARROW` alone: every other minting verb names an entry the filter can check.
+#[test]
+fn only_narrow_reissues_a_handle_without_a_name() {
+    let reissuing: Vec<&str> = verb::TABLE
+        .iter()
+        .filter(|v| v.reissues_handle())
+        .map(|v| v.name)
+        .collect();
+    assert_eq!(reissuing, ["NARROW"]);
 }
 
 /// **`STATFS` asks for no right and mints no handle**, which is the whole of its row and the
@@ -236,6 +264,7 @@ fn a_file_grants_refusals_keep_their_separate_meanings() {
         fs::RENAME,
         fs::UNLINK,
         fs::RMDIR,
+        fs::NARROW,
     ] {
         assert_eq!(
             verb::file_grant::of(operation),
@@ -272,6 +301,7 @@ fn the_verb_predicates_partition_the_table_as_documented() {
         "LISTXATTR",
         "STATFS",
         "SYNC",
+        "NARROW",
     ];
     // needs_all intersects WRITE | CREATE | REMOVE. SETMTIME_AT's needs_all also carries
     // SETTIME, but it mutates because it carries WRITE too; SETTIME alone never appears

@@ -155,22 +155,27 @@ fn start(interval: u64) {
     instructions::write_cntv_ctl(CNTV_CTL_ENABLE);
 }
 
-/// Move the deadline forward by exactly one interval.
+/// Move the deadline forward by exactly one interval, or by the whole periods a late tick skipped.
 ///
-/// **`previous + interval`, not `now + interval`**, so the deadlines stay on the boot grid. A
-/// deadline already past counts a missed tick and re-anchors to now, rather than firing in a loop.
+/// The arithmetic is `periodic_deadline::next_after(fired, interval, now)`, the proved function (§178
+/// (where the timer re-arm seam goes), milestone 360 (`crates/timetable`'s proved `next_after` is
+/// not what the timer calls)): **`previous + interval`, not `now + interval`**, so the deadlines
+/// stay on the boot grid. A tick that arrives late comes back onto its original beat and fires
+/// once, rather than in a loop. The arch layer only reads the registers, counts the miss and arms.
+/// See notes/aarch64-port.md, "The Generic Timer".
 fn rearm(interval: u64) {
     let now = instructions::read_cntvct();
     // Read before the write below: the icount instrument compares the arrival against it.
     let fired = instructions::read_cntv_cval();
-    let mut next = fired + interval;
+    let next = periodic_deadline::next_after(fired, interval, now);
 
-    if next <= now {
+    // Late: the deadline after `fired` had already passed, so `next_after` skipped it.
+    let due = fired.saturating_add(interval);
+    if due <= now {
         MISSED_TICKS[cpu::id()].fetch_add(1, Ordering::Relaxed);
         // Interrupt context: record, never print (§9 (locking: IrqSafeMutex, plus a discipline)).
         #[cfg(any(test, feature = "system_tests"))]
-        miss_detail::record(now, next);
-        next = now + interval;
+        miss_detail::record(now, due);
     }
 
     instructions::write_cntv_cval(next);
@@ -486,7 +491,8 @@ mod tests {
             }
         };
 
-        // A miss re-anchors the grid, so a window holding one proves nothing: retry it. An
+        // A window holding a miss moves the deadline by more than one interval per tick, so it proves
+        // nothing about the one-interval law: retry it. An
         // exhausted budget skips rather than fails, and the budget is not widened.
         const ATTEMPTS: u32 = 8;
         let mut attempts = 0;
@@ -509,8 +515,8 @@ mod tests {
             crate::println!(
                 "    (UNMEASURED: no miss-free window in {} tries, so the re-arm law was not \
                  tested this run. {} misses recorded on this core, the last re-armed {} counter \
-                 ticks late against an interval of {}. A miss re-anchors the grid, so a window \
-                 containing one proves nothing either way, and whether these misses are a \
+                 ticks late against an interval of {}. A miss makes the deadline skip whole \
+                 periods, so a window containing one proves nothing about the one-interval law, and whether these misses are a \
                  contended host or a slow handler is the one question a wall clock cannot answer \
                  from inside the guest. `script/icount` answers it and asserts this same law with \
                  no host term in it. Milestone 62; notes/load-sensitive-assertions.md.)",
@@ -570,6 +576,55 @@ mod tests {
             within_periods(20, || timer::missed_ticks_on(cpu) > before),
             "holding a lock across two tick periods did NOT lose a tick, which means \
              InterruptSafeMutex is not masking interrupts and the deadlock is live"
+        );
+    }
+
+    /// **A late tick returns to the grid** (§178 (where the timer re-arm seam goes), milestone 360
+    /// (`crates/timetable`'s proved `next_after` is not what the timer calls)).
+    ///
+    /// Masks interrupts across two and a half periods, so the handler runs late, then asserts the
+    /// armed deadline is still congruent to its old value modulo the interval. A re-arm from `now`
+    /// leaves the grid at a random offset and fails this; the proved `next_after` keeps the phase.
+    /// Skips when the thread changes cpu between the reads, because the deadline is per cpu.
+    #[test_case]
+    fn a_late_tick_returns_to_the_grid() {
+        use crate::arch::timer;
+        use crate::sync::{InterruptSafeMutex, rank};
+
+        static M: InterruptSafeMutex<u32> = InterruptSafeMutex::new(rank::PAGE_FRAMES, 0);
+
+        let interval = timer::interval();
+        // Inside the critical section the thread cannot migrate or be preempted, so the phase and
+        // the miss count belong to the cpu named here.
+        let (cpu, phase, before) = {
+            let _guard = M.lock();
+            let cpu = crate::cpu::id();
+            let phase = timer::deadline() % interval;
+            let before = timer::missed_ticks_on(cpu);
+            timer::spin_for(interval * 2 + interval / 2);
+            (cpu, phase, before)
+        };
+
+        // Bounded wait: a descheduled host only makes the delivery later.
+        assert!(
+            within_periods(20, || timer::missed_ticks_on(cpu) > before),
+            "a lock held across two and a half periods did not make a tick late"
+        );
+
+        // Both reads inside one critical section again, so the deadline is this cpu's and no
+        // tick lands between reading it and comparing.
+        let after = {
+            let _guard = M.lock();
+            (crate::cpu::id() == cpu).then(|| timer::deadline() % interval)
+        };
+        let Some(after) = after else {
+            crate::testing::skip!("the thread moved cpus, so the deadline read is another's");
+        };
+        assert_eq!(
+            after, phase,
+            "a late tick left the grid: the deadline's phase moved from {phase} to {after} \
+             counter ticks of {interval}. Re-arming from now instead of from the deadline that \
+             fired does exactly this."
         );
     }
 

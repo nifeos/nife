@@ -187,8 +187,8 @@ a kernel that re-anchors the whole grid arms the timer with the very word it rec
 the comparison on every tick forever. Claim 2's span starts at the same place, and claim 3 counts
 misses, of which re-anchoring produces none. Nothing moves.
 
-Here the law needs no retry loop, claim 3 paying for itself. The suite's twin must find a window in which `MISSED_TICKS` did not move, because a miss re-anchors the grid on
-purpose. On a loaded host it sometimes cannot find one in eight tries, and that is the whole of
+Here the law needs no retry loop, claim 3 paying for itself. The suite's twin must find a window in which `MISSED_TICKS` did not move, because a miss moves the deadline by
+more than one interval. On a loaded host it sometimes cannot find one in eight tries, and that is the whole of
 milestone 62's disposition of it. Virtual time has no deschedules, `missed == 0` is asserted a few
 lines above, and the window is therefore miss-free by assertion.
 

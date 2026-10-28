@@ -37,8 +37,8 @@ use socket_contract::fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
 use socket_contract::*;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{
-    call, call_receiving, cap_delete, exit, is_granted, map_page_frame, retype_into_page_frame,
-    send, send_capability,
+    call, call_receiving, capability_delete, exit, is_granted, map_page_frame,
+    retype_into_page_frame, send, send_capability,
 };
 
 /// The output slot: the sink contract.
@@ -101,7 +101,7 @@ fn exchange() -> Result<usize, &'static [u8]> {
     let result = converse(socket, frame);
     // Closed before the answer is judged, so a failed exchange still gives the socket back.
     let _ = call(socket, OPERATION_CLOSE, 0);
-    cap_delete(socket);
+    capability_delete(socket);
     result
 }
 

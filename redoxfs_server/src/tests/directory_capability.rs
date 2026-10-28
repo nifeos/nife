@@ -175,6 +175,64 @@ fn opendir_takes_a_path_and_narrows_to_the_request() {
     );
 }
 
+/// **`NARROW` attenuates a held handle and resolves no name** (§173 (narrowing the root of the shell's namespace), milestone 328 (a grant on the root of the shell's namespace)): the top
+/// prompt's `rm gate.txt` is a handle on the bound directory carrying `REMOVE` and nothing else.
+///
+/// The expected rights come from `Rights::attenuate`, the proved function the server calls, so
+/// this test restates no arithmetic. The narrowed handle can take a name out and can do nothing
+/// else; asking for more than the held handle carries is `EPERM`; a file is `ENOTDIR`; and the
+/// handle it was narrowed from is untouched.
+#[test]
+fn narrowing_the_root_grants_exactly_the_requested_rights() {
+    let mut srv = server_with_tree();
+    let root = filesystem_contract::fs::ROOT as u32;
+    let errno = |r: Result<u32>| r.err().map(|e| e.errno);
+
+    let held = filesystem_contract::dir::Rights::root(dir::ALL);
+    let expected = held.attenuate(dir::REMOVE);
+    assert_eq!(expected.bits(), dir::REMOVE);
+
+    let narrowed = srv.narrow(root, dir::REMOVE).unwrap();
+    assert_ne!(narrowed, root, "a second handle, not the first again");
+    assert_eq!(
+        srv.read_dir(narrowed, 0, &mut [0u8; 4096])
+            .err()
+            .map(|e| e.errno),
+        Some(EPERM),
+        "REMOVE alone cannot even look"
+    );
+    assert_eq!(
+        errno(srv.open_file_at(narrowed, &named("motd"))),
+        Some(ENOENT),
+        "REMOVE alone cannot open"
+    );
+    srv.unlink(narrowed, &named("motd"))
+        .expect("REMOVE removes");
+    assert_eq!(
+        errno(srv.open_file_at(root, &named("motd"))),
+        Some(ENOENT),
+        "the name went from the directory both handles name"
+    );
+    assert!(
+        srv.open_file_path(root, &named("sub/deeper/leaf"), dir::READ)
+            .is_ok()
+    );
+
+    // Narrowing a narrowed handle cannot widen it, and a request wider than the handle is refused.
+    assert_eq!(errno(srv.narrow(narrowed, dir::ALL)), Some(EPERM));
+    assert_eq!(errno(srv.narrow(narrowed, dir::READ)), Some(EPERM));
+    let again = srv.narrow(narrowed, dir::REMOVE).unwrap();
+    srv.close(again).unwrap();
+
+    // A file handle has nothing to narrow.
+    let file = srv
+        .open_file_path(root, &named("sub/deeper/leaf"), dir::READ)
+        .unwrap();
+    assert_eq!(errno(srv.narrow(file, dir::READ)), Some(ENOTDIR));
+    // A handle nobody minted.
+    assert_eq!(errno(srv.narrow(999, dir::READ)), Some(EBADF));
+}
+
 /// **A badge the server has no window for reaches nothing** (milestone 726 (an unknown badge fails closed in subtree_scope), calef's ruling of
 /// 2026-10-03). A nonzero badge at or past `CLIENT_WINDOWS` used to fold onto badge 0 and carry
 /// the endpoint's whole authority; now `admit` refuses it `EBADF`, and badge 0 stays open.

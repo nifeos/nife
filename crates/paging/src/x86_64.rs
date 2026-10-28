@@ -141,30 +141,30 @@ impl PageFormat for Ia32e {
     }
 
     fn leaf_flags(entry: u64) -> Flags {
-        let mut capabilities = 0;
+        let mut access = 0;
         if entry & RW != 0 {
-            capabilities |= ACCESS_WRITE;
+            access |= ACCESS_WRITE;
         }
         if entry & US != 0 {
-            capabilities |= ACCESS_USER;
+            access |= ACCESS_USER;
         }
         if entry & XD == 0 {
             if entry & US != 0 {
-                capabilities |= ACCESS_USER_EXEC;
+                access |= ACCESS_USER_EXEC;
             } else if entry & SW_KERNEL_EXEC != 0 {
-                capabilities |= ACCESS_KERNEL_EXEC;
+                access |= ACCESS_KERNEL_EXEC;
             }
         }
         if entry & G != 0 {
-            capabilities |= ACCESS_GLOBAL;
+            access |= ACCESS_GLOBAL;
         }
         if entry & SW_DEVICE != 0 {
-            capabilities |= ACCESS_DEVICE;
+            access |= ACCESS_DEVICE;
             if entry & PCD == 0 {
-                capabilities |= ACCESS_WRITE_COMBINE;
+                access |= ACCESS_WRITE_COMBINE;
             }
         }
-        Flags::from_access(capabilities)
+        Flags::from_access(access)
     }
 
     /// A PD entry (2 MiB) or a PDPT entry (1 GiB) with `PS` set, and otherwise the page leaf's
@@ -259,11 +259,11 @@ impl PageFormat for Vtd {
 
     /// The only two facts a second-level leaf carries: read (always, once present) and write.
     fn leaf_flags(entry: u64) -> Flags {
-        let mut capabilities = 0;
+        let mut access = 0;
         if entry & VTD_W != 0 {
-            capabilities |= ACCESS_WRITE;
+            access |= ACCESS_WRITE;
         }
-        Flags::from_access(capabilities)
+        Flags::from_access(access)
     }
 
     /// **Pages only.** VT-d has second-level superpages (bit 7, `SP`), but whether this unit
@@ -356,11 +356,11 @@ impl PageFormat for AmdVi {
     }
 
     fn leaf_flags(entry: u64) -> Flags {
-        let mut capabilities = 0;
+        let mut access = 0;
         if entry & AMD_VI_IW != 0 {
-            capabilities |= ACCESS_WRITE;
+            access |= ACCESS_WRITE;
         }
-        Flags::from_access(capabilities)
+        Flags::from_access(access)
     }
 
     /// **Pages only**, the same call [`Vtd`] makes and for the same reason: a DMA domain is a few

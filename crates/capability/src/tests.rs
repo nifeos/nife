@@ -12,7 +12,7 @@ enum Obj {
 /// itself.
 #[test]
 fn the_occupied_mask_is_exactly_the_occupied_slots() {
-    let capability = |n| Cap {
+    let capability = |n| Capability {
         object: Obj::PageFrame(n),
         rights: Rights::ALL,
     };
@@ -49,7 +49,7 @@ fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::PageFrame(0x1000),
             rights: Rights::READ,
         },
@@ -57,7 +57,7 @@ fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
     .unwrap();
     cs.put(
         1,
-        Cap {
+        Capability {
             object: Obj::Console,
             rights: Rights::WRITE,
         },
@@ -65,7 +65,7 @@ fn delete_matching_takes_the_matched_and_spares_the_neighbor() {
     .unwrap();
     cs.put(
         15,
-        Cap {
+        Capability {
             object: Obj::PageFrame(0x2000),
             rights: Rights::ALL,
         },
@@ -89,7 +89,7 @@ fn an_unheld_slot_is_not_permission_denied_it_is_nothing() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::Console,
             rights: Rights::WRITE,
         },
@@ -112,7 +112,7 @@ fn derive_cannot_widen_rights() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::PageFrame(0x1000),
             rights: Rights::READ,
         },
@@ -141,7 +141,7 @@ fn a_derived_capability_names_the_same_object_with_less_authority() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::PageFrame(0x4000),
             rights: Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
         },
@@ -170,7 +170,7 @@ fn get_with_refuses_rights_you_do_not_have() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::Console,
             rights: Rights::READ,
         },
@@ -190,7 +190,7 @@ fn deleting_a_capability_makes_the_object_unnameable() {
     let mut cs: CapabilityTable<Obj, 16> = CapabilityTable::new();
     cs.put(
         0,
-        Cap {
+        Capability {
             object: Obj::Console,
             rights: Rights::ALL,
         },
@@ -248,7 +248,7 @@ fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
 /// writing the same word); a test that outgrows it fails loudly.
 #[test]
 fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
-    let capability = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(3),
         rights: Rights::READ,
     };
@@ -272,7 +272,7 @@ fn the_high_water_word_reports_the_occupancy_and_the_capacity_that_set_it() {
 /// slot `insert` takes, lowest first, because the kernel's Reply mint relies on first-free.
 #[test]
 fn the_free_slot_word_fills_to_zero_and_hands_back_the_lowest_hole() {
-    let capability = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(1),
         rights: Rights::READ,
     };
@@ -304,7 +304,7 @@ fn the_free_slot_word_fills_to_zero_and_hands_back_the_lowest_hole() {
 #[test]
 fn a_full_table_says_so() {
     let mut cs: CapabilityTable<Obj, 2> = CapabilityTable::new();
-    let capability = Cap {
+    let capability = Capability {
         object: Obj::Console,
         rights: Rights::ALL,
     };
@@ -318,7 +318,7 @@ fn a_full_table_says_so() {
 #[test]
 fn insert_at_or_above_respects_its_floor() {
     let mut t: CapabilityTable<u8, 64> = CapabilityTable::new();
-    let capability = |o| Cap {
+    let capability = |o| Capability {
         object: o,
         rights: Rights::ALL,
     };
@@ -385,7 +385,7 @@ fn rights_bits_are_the_wire_format() {
 #[test]
 fn insert_at_fills_exactly_the_named_slot() {
     let mut cs: CapabilityTable<Obj, 4> = CapabilityTable::new();
-    let capability = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(7),
         rights: Rights::READ,
     };
@@ -410,7 +410,7 @@ fn insert_at_fills_exactly_the_named_slot() {
 /// missed one would be invisible: the number would simply be a little too low, forever.
 #[test]
 fn the_peak_records_what_was_reached_and_never_what_is_left() {
-    let capability = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(1),
         rights: Rights::READ,
     };
@@ -450,7 +450,7 @@ fn the_peak_records_what_was_reached_and_never_what_is_left() {
 /// by every instantiation in the binary, including the other tests in this module.
 #[test]
 fn the_global_high_water_mark_is_never_below_a_table_that_reached_it() {
-    let capability = Cap {
+    let capability = Capability {
         object: Obj::PageFrame(2),
         rights: Rights::WRITE,
     };

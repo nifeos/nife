@@ -13,7 +13,7 @@ visible in the code.
    memory-grant page count (`request`, `prog_id`, `program_argument`, `memory_grant_pages`).
 2. The directory grant, if announced (`Wiring::directory_grant`): `GRANT_WORDS` plain `SEND`s.
    They come before the capabilities because they are data, and mixing the orders would put a
-   `RECEIVE` where a `RECEIVE_CAP` belongs.
+   `RECEIVE` where a `RECEIVE_CAPABILITY` belongs.
 3. Delegation, in a fixed order both sides read from the same `Wiring`. First the supervised
    job's pair, then the sink, the source, the diagnostic endpoint and the screen-narrowed tail's
    completion endpoint. Then the `--mem` untyped, split from the shell's own budget, and the
@@ -109,7 +109,7 @@ death and collects the corpse, and the word lets it say so.
 
 ## The reaped message's layout
 
-The kernel delivers a badge on a plain `SEND` too, in `x3` for `RECEIVE` and `RECEIVE_CAP` alike,
+The kernel delivers a badge on a plain `SEND` too, in `x3` for `RECEIVE` and `RECEIVE_CAPABILITY` alike,
 under milestone 613 (a system log service: the in-memory half)'s amendment to §230 (badged endpoint
 capabilities). That is why the progenitor can check the badge on every receive of a request.
 
@@ -117,7 +117,7 @@ capabilities). That is why the progenitor can check the badge on every receive o
 beside the death (§148 (resolves by asking the kernel)). The progenitor keys on it because it chose
 it before the job ran; it holds the job's thread capability, not its thread id, so a tid alone would
 name nothing it knows. The tid rides along because the ruling asked for it and a trace reader wants
-it. `w0` and `w1` are the two data words a `RECEIVE_CAP` returns (`x0`, `x2`), so a reaped message
+it. `w0` and `w1` are the two data words a `RECEIVE_CAPABILITY` returns (`x0`, `x2`), so a reaped message
 arriving where a delegated capability was expected is still read whole.
 
 ## BUGS

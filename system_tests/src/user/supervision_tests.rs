@@ -48,8 +48,8 @@ pub(super) fn build_child_in(
 pub(super) fn build_child_with(
     region: u64,
     stub: &[u32],
-    capabilities: &[crate::capability_object::Cap],
-    fault: Option<crate::capability_object::Cap>,
+    capabilities: &[crate::capability_object::Capability],
+    fault: Option<crate::capability_object::Capability>,
 ) -> u64 {
     super::supervised_child::spawn(region, stub, capabilities, fault)
         .expect("could not build the child")

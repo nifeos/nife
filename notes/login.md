@@ -207,9 +207,9 @@ use login_contract as proto;
 send(REQUEST, proto::connect_word(), 0, 0);
 let (word, _, _) = receive(RESULT);
 assert_eq!(word, proto::CONNECTED);
-let (_, priv_request, _) = receive_cap(RESULT); // WRITE
-let (_, priv_result, _) = receive_cap(RESULT);  // READ
-let (_, page, _) = receive_cap(RESULT);         // the staging page, READ | WRITE
+let (_, priv_request, _) = receive_capability(RESULT); // WRITE
+let (_, priv_result, _) = receive_capability(RESULT);  // READ
+let (_, page, _) = receive_capability(RESULT);         // the staging page, READ | WRITE
 
 // Phase two, on the private pair only.
 let w0 = proto::place(page, b"alice", b"correct horse battery staple", proto::LOGIN).unwrap();
@@ -218,7 +218,7 @@ let (verdict, _, _) = receive(priv_result);
 assert_eq!(verdict, proto::OK);
 // In this fixed order: the directory, the file service's shared frame, the budget,
 // the logout ticket, the terminal (and the run-unvouched endpoint when the reply says so).
-let (_, dir_ep, _) = receive_cap(priv_result);
+let (_, dir_ep, _) = receive_capability(priv_result);
 ```
 
 A refusal sends nothing further:
@@ -228,7 +228,7 @@ let w0 = proto::place(page, b"alice", b"wrong", proto::LOGIN).unwrap();
 send(priv_request, w0, 0, 0);
 let (verdict, _, _) = receive(priv_result);
 assert_eq!(verdict, proto::DENIED);
-// No RECEIVE_CAP here. The protocol promises nothing follows a refusal; a client that tried anyway
+// No RECEIVE_CAPABILITY here. The protocol promises nothing follows a refusal; a client that tried anyway
 // would block forever, which `login_test_client.rs` relies on as its own check that the promise
 // holds: its wrong-secret run is `LOGIN` with `credential_proto::fixture::WRONG` for a secret, the
 // same code as the honest run (milestone 293).
@@ -245,7 +245,7 @@ Guest tests (`kernel::user::login_tests`, both aarch64 and riscv64):
 - A correct identity and secret produce a directory capability that answers a real `READDIR` and a
   budget that retypes a real page, not merely that the capabilities arrived.
 - A wrong secret is refused, and the client proves nothing followed the refusal by never calling
-  `RECEIVE_CAP` on that path.
+  `RECEIVE_CAPABILITY` on that path.
 - Two different identities each get an independently working channel, and the service's own audit
   trail names each correctly, in the order they were established.
 - Two clients connecting together get independent channels and neither observes the other's secret

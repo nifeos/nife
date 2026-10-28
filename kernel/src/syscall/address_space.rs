@@ -12,7 +12,7 @@ use crate::arch::mmu;
 #[inline(never)]
 pub(super) fn address_space_invoke(
     frame: &mut TrapFrame,
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
     name: u64,
     method: u64,
     [a0, a1, a2]: [u64; 3],
@@ -54,7 +54,7 @@ pub(super) fn address_space_invoke(
 /// read and `MEMORY_REGION` for each page table retyped. Never `IPC_TABLES`.
 #[inline(never)]
 fn address_space_map_into(
-    capability: crate::capability_object::Cap,
+    capability: crate::capability_object::Capability,
     name: u64,
     a0: u64,
     a1: u64,

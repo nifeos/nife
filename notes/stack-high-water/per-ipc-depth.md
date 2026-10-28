@@ -14,7 +14,7 @@ on "roughly 1 to 2 KiB" per IPC, and that figure was an estimate.
 
 `kernel/src/ipc_stack_depth.rs` (module, feature and line prefix all provisional). It is the same
 paint and scan as the parent's, re-armed per operation. Just before one SEND, RECEIVE, CALL,
-RECEIVE_CAP or REPLY, the thread paints its own kernel stack up to a margin below its live `sp`. Just
+RECEIVE_CAPABILITY or REPLY, the thread paints its own kernel stack up to a margin below its live `sp`. Just
 after, it scans. 256 samples per operation, reported as median, min and max, each as a distance from
 the stack's top.
 
@@ -166,14 +166,14 @@ top; "floor" is where the paint stopped.
 |---|---|---|---|
 | kernel null, the instrument alone | floor 240, median 240 | floor 240, median 240 | match |
 | kernel CALL/REPLY, client CALL | 624, below caller 384 | 624, below caller 384 | match to the byte |
-| kernel CALL/REPLY, server RECEIVE_CAP | 576, below caller 368 | 576, below caller 368 | match to the byte |
+| kernel CALL/REPLY, server RECEIVE_CAPABILITY | 576, below caller 368 | 576, below caller 368 | match to the byte |
 | kernel CALL/REPLY, server REPLY | at floor, at most 304 | at floor, at most 304 | match |
 | kernel SEND/RECEIVE, client | RECEIVE blocks, 576; SEND at floor 336 | SEND blocks, 496; RECEIVE 352 | floors match; a different operation blocked |
 | kernel SEND/RECEIVE, server | RECEIVE blocks, 544; SEND at floor 320 | SEND blocks, 480; RECEIVE 320 | floors match; a different operation blocked |
 | EL0, floor of every series | 752 | 768 | 16 bytes deeper on radon |
 | EL0 SEND/RECEIVE, deeper op | RECEIVE 944, or SEND 848 | RECEIVE 960 | 16 deeper (boot 1's assignment) |
 | EL0 CALL/REPLY, client CALL | 1,008 | 1,024 | 16 deeper |
-| EL0 CALL/REPLY, server RECEIVE_CAP | 992 | 1,008 | 16 deeper |
+| EL0 CALL/REPLY, server RECEIVE_CAPABILITY | 992 | 1,008 | 16 deeper |
 
 Two readings.
 

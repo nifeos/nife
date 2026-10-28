@@ -129,7 +129,7 @@ checks that gate a pull request)); the measurements are 2026-09-03's.*
 | `crate-probes` | **nothing** | no | **green, measured today, 43 of 50, about 3 minutes** |
 | `repeat-under-load` | `script/runner-container`, which nothing calls | no | unknown |
 | `soak-test` | **nothing** | no | unknown |
-| `rule-violations --check` | **nothing** | no | green (2 open strikes, threshold 3) |
+| `rule-violations --check` | the `rule-violations` `local` row of `script/ci-build`, run as a step of the `lint` job (milestone 341 (give the three instruments nothing runs a caller)) | yes | green (2 open strikes, threshold 3), 0.07 seconds (2026-10-27) |
 | `journeys` | **nothing** | no | report only, cannot fail |
 | `apropos`, `catch-up` | **nothing** | no | tools, no verdict |
 

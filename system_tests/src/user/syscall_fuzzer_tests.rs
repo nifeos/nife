@@ -12,14 +12,14 @@
 //! # What the generator reaches
 //!
 //! Objects: two rendezvous, one notification, two single-page frames, and the Reply capabilities
-//! `CALL` mints. Methods: `SEND`, `RECEIVE`, `SEND_CAP`, `RECEIVE_CAP`, `CALL`, `BADGE` on a
+//! `CALL` mints. Methods: `SEND`, `RECEIVE`, `SEND_CAPABILITY`, `RECEIVE_CAPABILITY`, `CALL`, `BADGE` on a
 //! rendezvous; `REPLY`; `SIGNAL`, `WAIT`, `POLL`, `BIND` on the notification; `REVOKE` on a frame;
-//! an unknown method on each; and `SYS_CAP_DELETE`. The actors are kernel threads, not an EL0
+//! an unknown method on each; and `SYS_CAPABILITY_DELETE`. The actors are kernel threads, not an EL0
 //! program, so the trap entry is not exercised here.
 
 //! # BUGS
 //!
-//! - `SYS_CAP_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
+//! - `SYS_CAPABILITY_DELETE` is driven through `sched::delete_current_capability`, not `syscall::dispatch`.
 //! - Not generated: `REAP`, `SURVEY`, `MemoryRegion`, `AddressSpace`, `ThreadControlBlock`,
 //!   `Timer`, `Interrupt`, `PageFrame::MAP` and `SLICE`, a bound notification, and death messages.
 //! - An unexpected wake is caught, but possibly some steps after the operation that caused it.
@@ -34,7 +34,7 @@ use abi::Error;
 
 use super::wait_for;
 use crate::arch::exceptions::TrapFrame;
-use crate::capability_object::{Cap, Object, Rights};
+use crate::capability_object::{Capability, Object, Rights};
 use crate::sched::{self, RendezvousId};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
 
@@ -60,7 +60,7 @@ const CORPUS: &[u64] = &[180, 559];
 /// got, so a weekly run with a large count fits under the per-test budget
 /// (`test_times::DEFAULT_BUDGET_SECONDS`, 90 s).
 const SWEEP_SECONDS: u64 = 60;
-const NO_CAP: u64 = abi::rendezvous::NO_CAP;
+const NO_CAPABILITY: u64 = abi::rendezvous::NO_CAPABILITY;
 /// A method number no object answers.
 const NO_METHOD: u64 = 99;
 
@@ -87,11 +87,11 @@ impl Rng {
     fn chance(&mut self, percent: u64) -> bool {
         self.below(100) < percent
     }
-    /// A data word: mostly small, sometimes a value a receiver could misread (`NO_CAP`, an error
+    /// A data word: mostly small, sometimes a value a receiver could misread (`NO_CAPABILITY`, an error
     /// code, the `BOUND` and `REPLY_DELIVERED` tags).
     fn word(&mut self) -> u64 {
         match self.below(8) {
-            0 => NO_CAP,
+            0 => NO_CAPABILITY,
             1 => (Error::NoSuchSlot as i64) as u64,
             2 => abi::notification::BOUND,
             3 => abi::rendezvous::REPLY_DELIVERED,
@@ -180,7 +180,7 @@ impl Answer {
             n: 0,
         }
     }
-    /// A receive's five words, as `RECEIVE` and `RECEIVE_CAP` return them.
+    /// A receive's five words, as `RECEIVE` and `RECEIVE_CAPABILITY` return them.
     fn msg(m: [u64; 5]) -> Self {
         Answer {
             r: Ok(m[0] as i64),
@@ -240,9 +240,9 @@ struct Census {
     delegated: u64,
     replied: u64,
     revoked: u64,
-    /// A frame revoked while a copy of it was staged in a parked `SEND_CAP`.
+    /// A frame revoked while a copy of it was staged in a parked `SEND_CAPABILITY`.
     staged_frame_revoked: u64,
-    /// A `SEND_CAP` or `CALL` that met a plain `RECEIVE`, on either order. Since §246 it installs
+    /// A `SEND_CAPABILITY` or `CALL` that met a plain `RECEIVE`, on either order. Since §246 it installs
     /// nothing; the count says the case was reached.
     capability_to_plain_receive: u64,
 }
@@ -318,7 +318,7 @@ impl Model {
                 self.tables[a][s] = Some(c);
                 s as u64
             }
-            None => NO_CAP,
+            None => NO_CAPABILITY,
         }
     }
 
@@ -355,7 +355,7 @@ impl Model {
                     }
                 };
                 if matches!(capability, Some(c) if matches!(c.obj, Obj::Ep(_)))
-                    && method == abi::rendezvous::SEND_CAP
+                    && method == abi::rendezvous::SEND_CAPABILITY
                     && !matches!(v.me, Some(Answer { r: Err(_), .. }))
                 {
                     self.census.delegated += 1;
@@ -390,12 +390,12 @@ impl Model {
                     if self.park[caller] == Park::AwaitReply {
                         self.census.replied += 1;
                         self.park[caller] = Park::Idle;
-                        // x2 is `NO_CAP`: a plain REPLY carries no capability, and since
+                        // x2 is `NO_CAPABILITY`: a plain REPLY carries no capability, and since
                         // `REPLY_CAPABILITY` (§255 (each socket is its own capability)) every CALL
                         // returns x2, so the model holds the kernel to it.
                         woken[caller] = Some(Answer {
                             r: Ok(a0 as i64),
-                            regs: [a1, abi::rendezvous::NO_CAP, 0, 0],
+                            regs: [a1, abi::rendezvous::NO_CAPABILITY, 0, 0],
                             n: 2,
                         });
                     }
@@ -442,11 +442,11 @@ impl Model {
                     }
                 }
             }
-            r::RECEIVE | r::RECEIVE_CAP => {
+            r::RECEIVE | r::RECEIVE_CAPABILITY => {
                 if !capability.allows(Rights::READ) {
                     return refuse(Error::NotPermitted);
                 }
-                let with_capability = method == r::RECEIVE_CAP;
+                let with_capability = method == r::RECEIVE_CAPABILITY;
                 let Some(sender) = self.senders[ep].pop() else {
                     self.receivers[ep].push(a);
                     self.park[a] = Park::Recv {
@@ -457,7 +457,7 @@ impl Model {
                 };
                 Some(self.collect(a, sender, with_capability, woken))
             }
-            r::SEND_CAP => self.send_capability(a, ep, capability, [a0, a1, a2], woken),
+            r::SEND_CAPABILITY => self.send_capability(a, ep, capability, [a0, a1, a2], woken),
             r::CALL => self.call(a, ep, capability, [a0, a1], woken),
             r::BADGE => {
                 if !capability.allows(Rights::GRANT) || a0 == 0 || capability.badge != 0 {
@@ -470,7 +470,7 @@ impl Model {
                         ..capability
                     },
                 ) {
-                    NO_CAP => refuse(Error::OutOfMemory),
+                    NO_CAPABILITY => refuse(Error::OutOfMemory),
                     s => Some(Answer::ok(s as i64)),
                 }
             }
@@ -478,7 +478,7 @@ impl Model {
         }
     }
 
-    /// `SEND_CAP`: delegate the capability in slot `a0`, narrowed to rights `a1`, with data word `a2`.
+    /// `SEND_CAPABILITY`: delegate the capability in slot `a0`, narrowed to rights `a1`, with data word `a2`.
     fn send_capability(
         &mut self,
         a: usize,
@@ -506,7 +506,7 @@ impl Model {
             badge: src.badge,
         };
         match self.receivers[ep].pop() {
-            // Receiver-first: only a RECEIVE_CAP takes the capability (§246, see
+            // Receiver-first: only a RECEIVE_CAPABILITY takes the capability (§246, see
             // `plain_receive`).
             Some(receiver) => {
                 let s = match self.plain_receive(receiver) {
@@ -639,7 +639,7 @@ impl Model {
                     return refuse(Error::NotPermitted);
                 }
                 // Every copy in every table goes, the invoker's too, and so does a copy staged
-                // in a parked SEND_CAP.
+                // in a parked SEND_CAPABILITY.
                 for t in self.tables.iter_mut() {
                     for s in t.iter_mut() {
                         if matches!(s, Some(c) if c.obj == Obj::Frame(fr)) {
@@ -664,7 +664,7 @@ impl Model {
 
     /// **Is the parked `receiver` in a plain `RECEIVE`?** The model's one statement of §246 (a
     /// plain `RECEIVE` never takes a capability), PROVISIONAL number, calef's ruling A of
-    /// 2026-10-04 UTC: a `SEND_CAP` or `CALL` that meets a plain `RECEIVE` installs nothing,
+    /// 2026-10-04 UTC: a `SEND_CAPABILITY` or `CALL` that meets a plain `RECEIVE` installs nothing,
     /// whichever side parked first. The sender-first half is in `collect`. Counted, so a green run
     /// says it was reached.
     fn plain_receive(&mut self, receiver: usize) -> bool {
@@ -686,8 +686,9 @@ impl Model {
         };
         self.park[receiver] = Park::Idle;
         if capability {
-            // Milestone 634: x1 is NO_CAP unless a capability was installed.
-            Answer::msg([m[0], NO_CAP, m[1], m[3], 0])
+            // Milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver a sender-chosen
+            // slot): x1 is NO_CAPABILITY unless a capability was installed.
+            Answer::msg([m[0], NO_CAPABILITY, m[1], m[3], 0])
         } else {
             Answer::msg(m)
         }
@@ -706,7 +707,7 @@ impl Model {
                 self.park[sender] = Park::Idle;
                 woken[sender] = Some(Answer::ok(0));
                 if with_capability {
-                    Answer::msg([msg[0], NO_CAP, msg[1], badge, 0])
+                    Answer::msg([msg[0], NO_CAPABILITY, msg[1], badge, 0])
                 } else {
                     Answer::msg([msg[0], msg[1], msg[2], badge, 0])
                 }
@@ -722,7 +723,7 @@ impl Model {
                 if with_capability {
                     let s = match capability {
                         Some(c) => self.insert(a, c),
-                        None => NO_CAP,
+                        None => NO_CAPABILITY,
                     };
                     Answer::msg([data, s, 0, badge, 0])
                 } else {
@@ -785,7 +786,7 @@ fn reply_of(caller: usize) -> ModelCapability {
 }
 
 fn reply_tag(slot: u64) -> u64 {
-    if slot == NO_CAP {
+    if slot == NO_CAPABILITY {
         0
     } else {
         abi::rendezvous::REPLY_DELIVERED
@@ -797,7 +798,7 @@ fn reply_tag(slot: u64) -> u64 {
 
 #[derive(Clone, Copy)]
 enum Cmd {
-    Grant(Cap),
+    Grant(Capability),
     Op(Op),
     /// Read back the table only.
     Look,
@@ -811,7 +812,7 @@ struct Mail {
     seq: u64,
     cmd: Cmd,
     answer: Answer,
-    table: [Option<Cap>; SLOTS],
+    table: [Option<Capability>; SLOTS],
 }
 
 static MAIL: [spin_lock::SpinLock<Mail>; ACTORS] = [const {
@@ -848,7 +849,7 @@ fn actor(i: usize, doorbell: RendezvousId) {
                 Answer::ok(0)
             }
             Cmd::Op(Op::Delete { slot }) => {
-                // `syscall::dispatch`'s SYS_CAP_DELETE arm, which ignores the result.
+                // `syscall::dispatch`'s SYS_CAPABILITY_DELETE arm, which ignores the result.
                 let _ = sched::delete_current_capability(slot);
                 Answer::ok(0)
             }
@@ -862,7 +863,7 @@ fn actor(i: usize, doorbell: RendezvousId) {
                 }
             }
         };
-        // Written straight into the mail: a local `[Option<Cap>; SLOTS]` is a 2 KiB array in this
+        // Written straight into the mail: a local `[Option<Capability>; SLOTS]` is a 2 KiB array in this
         // thread-stack frame (5,360 bytes on x86_64 at 64 slots, over the guard page).
         {
             let mut m = MAIL[i].lock();
@@ -931,7 +932,11 @@ impl Stage {
     }
 }
 
-fn abstract_capability(c: &Cap, w: &World, tids: &[ThreadId; ACTORS]) -> Option<ModelCapability> {
+fn abstract_capability(
+    c: &Capability,
+    w: &World,
+    tids: &[ThreadId; ACTORS],
+) -> Option<ModelCapability> {
     let obj = match c.object {
         Object::Rendezvous(id, _) => Obj::Ep(w.eps.iter().position(|&e| e == id)?),
         Object::Notification(id) if id == w.note => Obj::Note,
@@ -952,7 +957,7 @@ fn abstract_capability(c: &Cap, w: &World, tids: &[ThreadId; ACTORS]) -> Option<
     })
 }
 
-fn real_capability(m: ModelCapability, w: &World) -> Cap {
+fn real_capability(m: ModelCapability, w: &World) -> Capability {
     let rights = Rights::from_bits(m.rights);
     match m.obj {
         Obj::Ep(e) => {
@@ -989,7 +994,12 @@ impl Run<'_> {
         self.check_table(a, &mail.table, what);
     }
 
-    fn check_table(&self, a: usize, real: &[Option<Cap>; SLOTS], what: &dyn core::fmt::Debug) {
+    fn check_table(
+        &self,
+        a: usize,
+        real: &[Option<Capability>; SLOTS],
+        what: &dyn core::fmt::Debug,
+    ) {
         for s in 0..SLOTS {
             let got = real[s].map(|c| abstract_capability(&c, &self.world, &self.stage.tids));
             let want = self.model.tables[a][s];
@@ -1216,8 +1226,8 @@ fn pick_op(rng: &mut Rng, m: &Model, a: usize) -> Op {
         Some(Obj::Ep(_)) => match rng.below(13) {
             0..=2 => (r::SEND, [rng.word(), rng.word(), rng.word()]),
             3 | 4 => (r::RECEIVE, [0; 3]),
-            5 | 6 => (r::SEND_CAP, [any_slot(rng), rights(rng), rng.word()]),
-            7..=9 => (r::RECEIVE_CAP, [0; 3]),
+            5 | 6 => (r::SEND_CAPABILITY, [any_slot(rng), rights(rng), rng.word()]),
+            7..=9 => (r::RECEIVE_CAPABILITY, [0; 3]),
             10 | 11 => (r::CALL, [rng.word(), rng.word(), 0]),
             _ => (
                 r::BADGE,
@@ -1436,9 +1446,9 @@ fn seeded_syscalls_agree_with_the_shadow_model() {
             crate::println!("    syscall fuzzer: seeds 0..{SUITE_SEEDS} and corpus {CORPUS:?}");
         }
         Some((first, count)) => {
-            let capability = start + SWEEP_SECONDS * hz;
+            let cap = start + SWEEP_SECONDS * hz;
             for seed in first..first.saturating_add(count) {
-                if crate::arch::timer::now() > capability {
+                if crate::arch::timer::now() > cap {
                     break;
                 }
                 tally(&mut total, run_seed(&mut stage, seed));

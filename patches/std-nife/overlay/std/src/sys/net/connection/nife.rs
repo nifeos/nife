@@ -4,7 +4,7 @@
 //! A program given the network holds a `Stack` endpoint and an untyped budget (`pal/nife/rt.rs`).
 //! Opening a socket is a `CALL` on that endpoint, answered with **the socket's own capability**
 //! (§255 (each socket is its own capability)). The PAL hands it a shared `PageFrame` minted from
-//! the untyped (`SEND_CAP`, `OPERATION_ATTACH_PAGE_FRAME`), and every later operation is one
+//! the untyped (`SEND_CAPABILITY`, `OPERATION_ATTACH_PAGE_FRAME`), and every later operation is one
 //! blocking `CALL` on the socket with the payload in the frame; bytes never cross a message. Socket
 //! ids are local registry indices, and each open socket costs one of the process's 64 slots. See
 //! notes/std/net.md.
@@ -281,7 +281,7 @@ fn ensure_page(id: u64) -> io::Result<u64> {
 }
 
 /// File `socket` as id `id`'s open socket and, if it carries bytes, hand it a copy of the id's page
-/// (`SEND_CAP`, `OPERATION_ATTACH_PAGE_FRAME`), narrowed to read/write. On failure the socket is
+/// (`SEND_CAPABILITY`, `OPERATION_ATTACH_PAGE_FRAME`), narrowed to read/write. On failure the socket is
 /// closed and the id released.
 fn take_socket(id: u64, socket: u64, carries_bytes: bool) -> io::Result<()> {
     lock().slots()[id as usize].socket = socket;
@@ -294,7 +294,7 @@ fn take_socket(id: u64, socket: u64, carries_bytes: bool) -> io::Result<()> {
         let sent = unsafe {
             rt::invoke(
                 socket,
-                abi::rendezvous::SEND_CAP,
+                abi::rendezvous::SEND_CAPABILITY,
                 frame,
                 abi::rights::READ | abi::rights::WRITE,
                 OPERATION_ATTACH_PAGE_FRAME,
@@ -333,7 +333,7 @@ fn open(is_tcp: bool) -> io::Result<u64> {
 fn abandon(id: u64) {
     let socket = socket_of(id);
     let _ = rt::call(socket, OPERATION_CLOSE, 0);
-    rt::cap_delete(socket);
+    rt::capability_delete(socket);
     free_id(id);
 }
 
@@ -1101,7 +1101,7 @@ fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
     let sent = unsafe {
         rt::invoke(
             rt::RESOLVER_SLOTS[i],
-            abi::rendezvous::SEND_CAP,
+            abi::rendezvous::SEND_CAPABILITY,
             frame,
             abi::rights::READ | abi::rights::WRITE,
             resolve::request(resolve::OPERATION_ATTACH_PAGE_FRAME),

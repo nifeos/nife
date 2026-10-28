@@ -103,7 +103,7 @@ pub(super) fn mounted_job_channel(tree: Fs, w: u64, own_ut: u64, mapped: &mut bo
     }
     let page = window_page(tree.page, w)?;
     let Some(ep) = window_endpoint(tree.ep, w) else {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     };
     Some(Fs { ep, page })
@@ -145,13 +145,15 @@ pub(super) fn bound_channel(
         filesystem_contract::grant::spec_len(spec),
         &mut buf,
     );
-    let name = core::str::from_utf8(&buf[..n]).ok()?;
-    let handle = files.named(
-        fs_operation::OPENDIR,
-        fs_operation::ROOT,
-        name,
-        filesystem_contract::grant::spec_rights(spec),
-    );
+    let rights = filesystem_contract::grant::spec_rights(spec);
+    // An empty name is the root of the shell's namespace, which has no name to descend into: the
+    // grant narrows the root handle instead (`fs::NARROW`, §173 (narrowing the root of the shell's namespace)).
+    let handle = if n == 0 {
+        files.narrow(fs_operation::ROOT, rights)
+    } else {
+        let name = core::str::from_utf8(&buf[..n]).ok()?;
+        files.named(fs_operation::OPENDIR, fs_operation::ROOT, name, rights)
+    };
     bind_window(fs, &files, (windows, w), handle)
 }
 
@@ -198,7 +200,7 @@ fn bind_window(
     }
     let page = window_page(fs.page, w)?;
     let Some(ep) = window_endpoint(fs.ep, w) else {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     };
     Some(Fs { ep, page })
@@ -306,7 +308,7 @@ pub(super) fn job_channel(fs: Fs, w: u64, own_ut: u64, mapped: &mut bool) -> Opt
     }
     let page = window_page(fs.page, w)?;
     let Some(ep) = window_endpoint(fs.ep, w) else {
-        cap_delete(page);
+        capability_delete(page);
         return None;
     };
     Some(Fs { ep, page })
@@ -359,6 +361,17 @@ impl FsCalls {
         // SAFETY: the page is mapped read/write (`map`) and `len` is at most a page.
         unsafe { core::ptr::copy_nonoverlapping(name.as_ptr(), Self::page(), len) };
         call(self.ep, fs_operation::req(verb, handle, len as u64), w1).0 as i64
+    }
+
+    /// `fs::NARROW`: a second handle on the directory `handle` names, carrying `rights` (§173). No
+    /// name rides in the page. A negative reply is the server's refusal.
+    pub(super) fn narrow(&self, handle: u64, rights: u64) -> i64 {
+        call(
+            self.ep,
+            fs_operation::req(fs_operation::NARROW, handle, 0),
+            rights,
+        )
+        .0 as i64
     }
 
     pub(super) fn close(&self, handle: i64) {

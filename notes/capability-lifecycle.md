@@ -27,9 +27,9 @@ corner of `READ` is on `capability::Rights::ENUMERATE`, where a reader meets it.
 supervision endpoint is what `RECEIVE` and `REAP` take, so a `ps` granted `READ` could reap a child,
 and a domain names its members rather than acting on them.
 
-## `SEND_CAP` is share, not move
+## `SEND_CAPABILITY` is share, not move
 
-Delegating a capability over IPC (`SEND_CAP`, whose body is `sched::inter_process_communication_delegate_capability`) reads the
+Delegating a capability over IPC (`SEND_CAPABILITY`, whose body is `sched::inter_process_communication_delegate_capability`) reads the
 sender's cap and delivers a *new* one to the receiver:
 
 ```rust
@@ -44,7 +44,7 @@ Ok(Cap { object: src.object, rights: self.rights })
 tidiness one** (2026-10-04 UTC). Until then the syscall layer read the source with `current_capability`
 and handed the copy to `inter_process_communication_send_capability`, which filed it under a second hold of the lock. A
 `PageFrame::REVOKE` or `MemoryRegion::DESTROY` sweep could run between the two, delete the source,
-and pass by before the copy was filed, so the copy survived the revoke. `CAP_INSERT` and `SLICE`
+and pass by before the copy was filed, so the copy survived the revoke. `CAPABILITY_INSERT` and `SLICE`
 had the same shape. `sched::Delegation` carries the argument and
 `system_tests::user::revocation_window_tests` the three tests that drove a sweep into the gap.
 A `MAP` had the use-side version of the same gap: it read its frame, then mapped and recorded, and
@@ -72,7 +72,7 @@ This section was headed "Two independent narrowings" and had the first two rows 
 heading no longer counts them, because the count is the part that rots and the independence is the
 part that matters.
 
-`SEND_CAP` needs `WRITE` on the *endpoint* (may I send here?) and `GRANT` on the *delegated*
+`SEND_CAPABILITY` needs `WRITE` on the *endpoint* (may I send here?) and `GRANT` on the *delegated*
 capability (was I trusted to lend it?). Two rights, two objects, two questions.
 
 ## Frames, end to end
@@ -81,7 +81,7 @@ The frame path shows every piece confining the next:
 
 1. `MemoryRegion::RETYPE` mints the owner a `PageFrame` with `READ|WRITE|GRANT` (`syscall.rs:181`).
 2. The owner maps it writable (`PageFrame::MAP` with the writable flag needs `WRITE`).
-3. The owner delegates a `READ`-only, no-`GRANT` derivative with `SEND_CAP`.
+3. The owner delegates a `READ`-only, no-`GRANT` derivative with `SEND_CAPABILITY`.
 4. The consumer's `PageFrame::MAP` sees `READ` without `WRITE`, so it is confined to `user_rodata`: it
    maps the same physical page but cannot write it, and cannot pass it on.
 
@@ -159,7 +159,7 @@ recorded), which is precisely why it is a first-class object there and parked he
 ## Where authority can enter at all
 
 Only three ways, and none is ambient: retype it out of untyped you hold, be handed it
-(`SEND_CAP` / spawn-time grant), or derive a narrower copy of one you already have. There is no
+(`SEND_CAPABILITY` / spawn-time grant), or derive a narrower copy of one you already have. There is no
 `open(path)`, no global name, no way to mint authority from who you are. A thread's capability table is empty
 until something puts a capability in it. That is the whole of §10, seen from the object's side.
 
@@ -169,11 +169,11 @@ until something puts a capability in it. That is the whole of §10, seen from th
 Each holds `IPC_TABLES` for its whole walk and takes each table's lock beneath it.
 
 Every sweep clears the hand-off slot too. A capability sent to a rendezvous nobody is receiving
-on yet sits in the sender's `Thread::outgoing_capability`, in no table, until a `RECEIVE_CAP` files it. A
+on yet sits in the sender's `Thread::outgoing_capability`, in no table, until a `RECEIVE_CAPABILITY` files it. A
 sweep that read tables alone would leave a live capability there, and `MemoryRegion::DESTROY` would
 return its pages while it was still on its way (the use-after-free of §13 (capability revocation
 and untyped reclamation)). `delete_reply_capabilities_naming` applies the same rule to `Reply`. The send
-is not failed: the data word still arrives and the receiver sees `NO_CAP`, as it does when its
+is not failed: the data word still arrives and the receiver sees `NO_CAPABILITY`, as it does when its
 table is full, so no new error reaches userspace. `kernel::user::revocation_in_flight_tests` is the
 falsification.
 
@@ -230,12 +230,12 @@ own table (`grant_derived`) holds that table's lock across both. A sweep then fa
 (the source is gone, and the delegation answers `NoSuchSlot`) or wholly after (the copy is in a
 table it walks). A copy read in one critical section and filed in another could be filed after a
 sweep passed, and a `PageFrame` has no generation to make it inert.
-`system_tests::user::revocation_window_tests` drives a sweep into that window on `SEND_CAP`,
-`CAP_INSERT` and `SLICE`. Passing a slot leaves no parameter a stale copy could arrive through.
+`system_tests::user::revocation_window_tests` drives a sweep into that window on `SEND_CAPABILITY`,
+`CAPABILITY_INSERT` and `SLICE`. Passing a slot leaves no parameter a stale copy could arrive through.
 
 The tests drive the frame because it has the most to lose: under `MemoryRegion::DESTROY` a
 surviving copy names pages the allocator is about to hand to somebody else. `DeviceFrame::REVOKE`
-and `x86_64`'s `PortRange::REVOKE` delegate through the same `SEND_CAP` and `CAP_INSERT` path, so
+and `x86_64`'s `PortRange::REVOKE` delegate through the same `SEND_CAPABILITY` and `CAPABILITY_INSERT` path, so
 the one fix covers them. Two cores could produce the interleaving by timing, but the window is a few
 hundred instructions wide. So `delegation_pause` holds an armed thread at the start of its
 delegation with no lock held. The test runs the whole sweep, then lets the thread go.

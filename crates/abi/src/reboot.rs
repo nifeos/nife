@@ -1,4 +1,4 @@
-/// `invoke(cap, REBOOT, _, _, _)`. **On success it does not return**: the kernel asks the firmware
+/// `invoke(capability, REBOOT, _, _, _)`. **On success it does not return**: the kernel asks the firmware
 /// for a cold reset (PSCI `SYSTEM_RESET` on aarch64, SBI SRST type 1 on riscv64, and on `x86_64`
 /// the FADT reset register, then port `0xCF9`, then the 8042). When every route was refused it
 /// returns the reason, one of the four `Reset…` values of [`crate::Error`], and the firmware's raw

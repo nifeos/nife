@@ -12,7 +12,7 @@ use crate::sync::{InterruptSafeGuard, InterruptSafeMutex, rank};
 
 /// One recorded mapping: `va` in the owning space maps `phys`, under the capability whose run
 /// starts at `object`. `phys == 0` is a tombstone (no real frame is 0). The run's base names a
-/// capability and all its derivatives, because `Cap::derive` never changes the object; a mapping
+/// capability and all its derivatives, because `Capability::derive` never changes the object; a mapping
 /// made with no capability records the page itself (`object == phys`).
 ///
 /// # BUGS
@@ -79,8 +79,11 @@ pub fn log_pages_for(n: u64) -> u64 {
 #[derive(Clone, Copy)]
 pub enum PageMapSource {
     /// The capability whose object begins at this physical address, **and every capability derived
-    /// from it**: `Cap::derive` narrows rights and never changes the object, so one address names
+    /// from it**: `Capability::derive` narrows rights and never changes the object, so one address names
     /// the whole family. For a `PageFrame` run this is the run's base, not the page being mapped.
+    ///
+    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+    /// `Cap` under the capability ruling of 2026-10-06 (UTC).
     Capability(u64),
     /// No capability names this page. `MemoryRegion::MAP` retypes and maps in one step, and the
     /// kernel's own loaders map pages straight into a space they are building; in both cases there
@@ -360,7 +363,7 @@ impl MappingHold {
     pub fn current_capability(
         &self,
         slot: u64,
-    ) -> Result<crate::capability_object::Cap, crate::capability_object::Error> {
+    ) -> Result<crate::capability_object::Capability, crate::capability_object::Error> {
         crate::sched::current_capability(slot)
     }
 

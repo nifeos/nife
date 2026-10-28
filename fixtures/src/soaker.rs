@@ -5,7 +5,7 @@
 //! **It stresses cross-core IPC rendezvous at the highest rate the machine will do them**, through
 //! the real syscall boundary, because that is where the one defect this risk has produced lived (a
 //! receiver made `Ready` with nothing delivered, in `sched::wake_load_aware`). A round trip
-//! (`CALL`, `RECEIVE_CAP`, `REPLY`, the caller waking) is two block/wake handshakes, each of which
+//! (`CALL`, `RECEIVE_CAPABILITY`, `REPLY`, the caller waking) is two block/wake handshakes, each of which
 //! may place its peer on another core, and with two runnable threads per core the run queues empty
 //! often enough to keep `serve_steal_request` under load too.
 
@@ -125,7 +125,7 @@ fn start(role: u64, index: u64, seed: u64) -> ! {
                 core::hint::spin_loop();
             }
         } else if role == ROLE_RESPONDER {
-            // `receive_request` (a `RECEIVE_CAP`), not `receive`: a CALL arrives with a reply capability,
+            // `receive_request` (a `RECEIVE_CAPABILITY`), not `receive`: a CALL arrives with a reply capability,
             // and answering it is what completes the caller's parked rendezvous. A responder that
             // used `receive` would leave every caller blocked forever, which is a hang this workload
             // would then report as a finding about the kernel.
