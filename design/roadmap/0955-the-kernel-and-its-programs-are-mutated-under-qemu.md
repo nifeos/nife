@@ -1,5 +1,6 @@
 ---
-status: NOT-STARTED
+status: IN-PROGRESS
+branch: milestone/955-the-kernel-and-its-programs-are-mutated-under-qemu
 raised: 2026-10-27
 promoted_from: the-kernel-and-its-programs-are-mutated-under-qemu
 milestone_dependencies: 517, 742, 924
@@ -10,7 +11,7 @@ needs_person: no
 ---
 # 955. Mutation testing reaches the kernel and its programs under QEMU, a diff and a slice at a time
 
-Promoted 2026-10-28 (UTC); the number 955 is provisional until the integrator confirms it at merge. *(Title and slug are drafts.)*
+*(Title and slug are drafts.)*
 
 Raised 2026-10-27 (UTC) by `lane/mutation-gaps-plan`, the second of the three mutation-testing
 gaps calef ruled closed that day. Nothing mutates the kernel or the user-mode programs. Kani proofs
