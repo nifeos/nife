@@ -137,17 +137,12 @@ pub fn split(line: &[u8]) -> Result<Sequence<'_>, Refusal> {
                 _ => {}
             }
         }
-        if depth > 0 {
-            c.step(line[i]);
-            i += 1;
-            continue;
-        }
         // A single `|` is the pipe operator and belongs to `line::split`; only the doubled form is
         // a connector. A single `&` is left alone: [`background`] reads it, at the line's end only.
         let (found, width) = match (c.is_open(), line[i]) {
-            (false, b';') => (Joint::Always, 1),
-            (false, b'&') if line.get(i + 1) == Some(&b'&') => (Joint::OnSuccess, 2),
-            (false, b'|') if line.get(i + 1) == Some(&b'|') => (Joint::OnFailure, 2),
+            (false, b';') if depth == 0 => (Joint::Always, 1),
+            (false, b'&') if depth == 0 && line.get(i + 1) == Some(&b'&') => (Joint::OnSuccess, 2),
+            (false, b'|') if depth == 0 && line.get(i + 1) == Some(&b'|') => (Joint::OnFailure, 2),
             _ => {
                 c.step(line[i]);
                 i += 1;
@@ -415,6 +410,14 @@ mod scope_tests {
         assert_eq!(s.len(), 2);
         // A brace that is not a block's is text, and the connector after it still cuts.
         assert_eq!(split(b"echo { ; echo }").unwrap().len(), 2);
+    }
+
+    /// A brace that is not a word of its own, inside a block, is text: it neither opens nor closes.
+    #[test]
+    fn braces_stuck_to_words_inside_a_block_do_not_count() {
+        let s = split(b"scope { echo {x} ; echo a}b ; ls } && echo done").unwrap();
+        assert_eq!(s.len(), 2);
+        assert_eq!(s.segments()[1], (Joint::OnSuccess, &b"echo done"[..]));
     }
 
     #[test]

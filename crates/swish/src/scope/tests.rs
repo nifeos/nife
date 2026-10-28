@@ -86,3 +86,68 @@ fn parentheses_open_a_group_only_at_the_start_of_a_command() {
     assert!(!has_parenthesized_command(b"a || b"));
     assert!(!has_parenthesized_command(b"ls"));
 }
+
+#[test]
+fn a_leading_pipe_or_a_doubled_one_is_read_exactly() {
+    // A single `|` starts a stage; the first byte of the segment may be one.
+    assert!(has_parenthesized_command(b"| (x)"));
+    // The two bytes of `||` start no stage, whichever of them the scan is on.
+    assert!(!has_parenthesized_command(b"a || (b)"));
+    assert!(!has_parenthesized_command(b"a ||(b)"));
+    assert!(has_parenthesized_command(b"a |(b)"));
+}
+
+#[test]
+fn a_block_opens_after_any_word_boundary_not_only_at_the_line_start() {
+    // `opens_block` reads the word before the brace, which starts after a space or a connector.
+    for line in [
+        &b"echo a ; scope { ls }"[..],
+        b"echo a;scope { ls }",
+        b"echo a&&scope { ls }",
+        b"a || scope { ls }",
+        b"a | scope { ls }",
+        b"  scope { ls }",
+    ] {
+        let brace = line.iter().position(|&b| b == b'{').unwrap();
+        assert!(opens_block(line, brace), "{line:?}");
+    }
+    for line in [
+        &b"xscope { ls }"[..],
+        b"echo scoped { ls }",
+        b"echo a ; cope { ls }",
+    ] {
+        let brace = line.iter().position(|&b| b == b'{').unwrap();
+        assert!(!opens_block(line, brace), "{line:?}");
+    }
+}
+
+#[test]
+fn inside_a_block_only_a_brace_word_counts() {
+    // A brace stuck to other bytes is text, whichever way it faces.
+    let line = b"scope { echo {x} ; echo a}b ; ls }";
+    let mut depth = 0usize;
+    let mut seen = 0;
+    for i in 0..line.len() {
+        match brace_step(line, i, depth) {
+            1 => depth += 1,
+            -1 => depth -= 1,
+            _ => {}
+        }
+        seen += 1;
+    }
+    assert_eq!(seen, line.len());
+    assert_eq!(depth, 0);
+    // And the step itself: neither brace-shaped byte inside a word moves the depth.
+    assert_eq!(brace_step(b"scope { {x} }", 8, 1), 0);
+    assert_eq!(brace_step(b"scope { a}b }", 9, 1), 0);
+    assert_eq!(brace_step(b"scope { { }", 8, 1), 1);
+    assert_eq!(brace_step(b"scope { a }", 10, 1), -1);
+}
+
+#[test]
+fn only_a_brace_after_scope_opens_a_block() {
+    // The byte at the position must itself be the brace.
+    assert!(!opens_block(b"scope x", 5));
+    assert!(!opens_block(b"scope {x", 6));
+    assert!(!opens_block(b"scope", 4));
+}
