@@ -215,8 +215,8 @@ Verification failed for - syscall::proofs::the_run_end_is_exact_and_refuses_exac
 Complete - 0 successfully verified harnesses, 2 failures, 2 total.
 ```
 
-Both catch it. That was run on 2026-08-30 and is the reason these two harnesses are worth their
-place rather than an assertion that they are.
+Both catch it. That run, on 2026-08-30, is why these two harnesses earn their place rather than an
+assertion.
 
 ## Adding a harness to `kernel/src`
 
@@ -284,4 +284,8 @@ place rather than an assertion that they are.
   custom-section `link_section` under `kernel/src` without the `target_os = "none"` gate. If that
   runner label ever changes, this row breaks, and the fix is putting `aarch64-cpu` behind a target
   `cfg`.
+- The macOS host compile lacks confirmation since the gate landed (2026-10-29 UTC). The custom
+  section names are ELF, and rustc validates them against the object format, so a Mach-O host
+  refuses an ungated one. No CI runner compiles the kernel on Mach-O, so nothing exercises the fix;
+  a script/verify on a macOS machine on this head owes it.
 - **This note does not price the rest of the work.** What was measured is that the front door opens.
