@@ -343,10 +343,10 @@ fi
 # harness (glob's, minutes on its own).
 #
 # Four jobs, not "all cores", because the bound is memory: notes/verification/glob-proofs.md
-# records one harness that reached 3.5 GB before it was killed, DECISIONS §203 budgets "about 3.5 GB
-# a harness", and concurrent harnesses multiply the peak. That figure is the largest harness seen,
-# not a typical, so budgeting on it errs high. Four fits the dev Mac and
-# cordoba's 23 GB; **CI's 16 GB runner fits two**, measured the hard way: four runs were
+# records one harness that reached 3.5 GB before it was killed, DECISIONS §203 (capacity is rented
+# rather than bought) budgets "about 3.5 GB a harness", and concurrent harnesses multiply the peak.
+# That figure is the largest harness seen, not a typical, so budgeting on it errs high. Four fits the
+# dev Mac and cordoba's 23 GB; **CI's 16 GB runner fits two**, measured the hard way: four runs were
 # memory-killed mid-glob before verify.yml pinned VERIFY_JOBS=2 (the kill reports as a bare
 # "operation was canceled", which cost an evening to attribute). Override with VERIFY_JOBS=N;
 # VERIFY_JOBS=1 serializes the execution again (the output stays terse either way).

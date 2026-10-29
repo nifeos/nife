@@ -61,11 +61,11 @@ CI already computes, not spare parallel capacity.
 
 Each child runs `VERIFY_JOBS` harnesses at once, 4 by default, and the tree records 3.5 GB for the
 largest harness. `notes/verification/glob-proofs.md` has one `glob` harness reaching 3.5 GB with the
-kill at twelve minutes, and DECISIONS §203 budgets "about 3.5 GB a harness". That is a peak rather
-than a typical, so the guard errs high. It reads the figure as GiB, larger than the recorded GB. On
-128 GiB, four children at four jobs budget 56 GiB and fit. On a 16 GiB Mac, two children budget
-28 GiB and do not, so the default falls to one and says so, and one child is the serial run this
-flag exists to replace.
+kill at twelve minutes, and DECISIONS §203 (capacity is rented rather than bought) budgets "about
+3.5 GB a harness". That is a peak rather than a typical, so the guard errs high. It reads the figure
+as GiB, larger than the recorded GB. On 128 GiB, four children at four jobs budget 56 GiB and fit.
+On a 16 GiB Mac, two children budget 28 GiB and do not, so the default falls to one and says so,
+and one child is the serial run this flag exists to replace.
 
 ## What holds it
 
