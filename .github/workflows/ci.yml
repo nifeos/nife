@@ -1496,7 +1496,7 @@ jobs:
       # runs a caller), §174 (a caller for each of the three uncalled instruments)). It is a
       # `local` row of `script/ci-build` that takes 0.07 seconds, so it rides in this job rather than
       # in a job of its own: a new job gates nothing until the ruleset requires it, and this job's
-      # verdict is already required (as `clippy`, through the relay job below).
+      # verdict is the required check `lint`.
       - run: helpers/hang_evidence.py run -- script/ci-build rule-violations
       # **The terminal replay harness, as its own step** (milestone 705 (the graphical terminal
       # runs full-screen programs)'s step 0a). It grades crates/video_terminal/recordings in
@@ -1509,9 +1509,8 @@ jobs:
       # identity machinery left script/lint for script/lint-fleet, so that a stranger's lint reads
       # no fleet file. They still gate every pull request and merge group from here: a step in
       # this job, rather than a job of its own, because a new job gates nothing until the ruleset
-      # requires it, and this job's verdict is already required (as `clippy`, through the relay
-      # job below). When the fleet tooling moves to its own repository this step becomes a call to
-      # that repository's reusable workflow.
+      # requires it, and this job's verdict is the required check `lint`. When the fleet tooling
+      # moves to its own repository this step becomes a call to that repository's reusable workflow.
       - name: The fleet tooling's checks
         run: script/lint-fleet
       # The one host-only tool with no selftest in script/lint. The gate (helpers/prose_only.py,
@@ -1575,26 +1574,6 @@ jobs:
       - name: Check the job's wall time against its budget
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
-
-  # **Transitional: delete this job once ruleset 19596094 requires `lint` instead of `clippy`.**
-  # A required check is matched by name, so renaming the job alone would leave the merge queue
-  # waiting on a `clippy` that never reports, while groups built ahead of the rename never report
-  # `lint`. This job re-reports `lint`'s verdict under the old name, so both names are true at once
-  # and the ruleset swap has no window. The order (merge, swap the ruleset once open pull requests
-  # have run this workflow, then delete this job) is in notes/scripts.md, "CI leverages them".
-  clippy:
-    name: clippy
-    runs-on: ubuntu-24.04
-    needs: lint
-    if: ${{ !cancelled() }}
-    timeout-minutes: 5
-    steps:
-      - name: Report lint's verdict under the old check name
-        env:
-          LINT_RESULT: ${{ needs.lint.result }}
-        run: |
-          echo "==> lint: $LINT_RESULT"
-          case "$LINT_RESULT" in success|skipped) ;; *) exit 1 ;; esac
 
   fastpath-footprint:
     name: fastpath footprint (the IPC path must stay L1i-sized)

@@ -179,8 +179,8 @@ developer does, from one list, and a job without a row is the defect that list p
 across jobs with its own scope predicate, and the table does not claim it.
 
 The lint job is named `lint` (calef, 2026-10-08 UTC). It runs every check in `script/lint`, then
-`script/lint-fleet`. The three-step rename of a required check, with the maintainer's ruleset
-commands and the step still outstanding, is in [lint-job-rename.md](scripts/lint-job-rename.md).
+`script/lint-fleet`. The ruleset requires `lint` directly; the rename steps are in
+[lint-job-rename.md](scripts/lint-job-rename.md).
 
 ## The versioned hooks
 
