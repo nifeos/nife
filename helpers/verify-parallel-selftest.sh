@@ -118,7 +118,11 @@ out="$tmp/fail.out"
 : >"$log"
 NIFE_SELFTEST_FAIL_CRATE=glob
 export NIFE_SELFTEST_FAIL_CRATE
-if run --parallel 4 >"$out" 2>&1; then
+# The same fixture as the four-child run above. Without it the memory guard reads the real machine,
+# and a host small enough to refuse the run forks no child at all, which is a refusal this
+# assertion cannot see: the summary it reads then carries no shard line to match.
+if NIFE_HEAVY_SLOTS=4 NIFE_VERIFY_MEMORY_BYTES=$((128 * 1024 * 1024 * 1024)) \
+	run --parallel 4 >"$out" 2>&1; then
 	fail "a run whose child failed exited zero" "$out"
 fi
 unset NIFE_SELFTEST_FAIL_CRATE
