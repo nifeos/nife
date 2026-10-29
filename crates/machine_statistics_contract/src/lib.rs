@@ -85,7 +85,9 @@ pub mod word {
     pub const FREE_FRAMES: usize = 4;
     /// The page layout's version, [`VERSION`](super::VERSION) as a word. The check the ruling
     /// places beside the magic: a reader that finds the magic but not its version refuses the
-    /// page. *(Index provisional, minted 2026-10-29 (UTC).)*
+    /// page.
+    ///
+    /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
     pub const VERSION: usize = 5;
 
     /// The first word of core `id`'s line. `id` is a cpu id, a name and not an index into the
