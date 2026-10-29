@@ -12,6 +12,17 @@
 
 #![no_std]
 
+/// The syscall ABI's version: the generation of the syscall numbers, the method numbers and the
+/// error codes a program was built against, all one surface. One constant for the whole surface,
+/// module-scoped constants refused (calef's ruling of 2026-10-29 UTC, PR #2852, question 1: the
+/// scope is the syscall surface a program matches). The check is at spawn, not at run time: the
+/// progenitor compares the manifest note's declared version against this and refuses a mismatch
+/// naming both (milestone 956 (the linked interfaces carry checkable versions)); the ABI never
+/// dual-serves.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const ABI_VERSION: u32 = 1;
+
 /// `exit(code)`: end the calling thread's process and every thread in it. Needs no capability,
 /// because it acts on the caller itself.
 pub const SYS_EXIT: u64 = 0;

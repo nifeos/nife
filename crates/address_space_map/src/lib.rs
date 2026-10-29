@@ -20,6 +20,14 @@
 #![cfg_attr(not(test), no_std)]
 
 /// The page size every loader maps in, on all three architectures.
+/// The layout's version: the bands, the pair-page arithmetic and the fixed windows a loader and a
+/// kernel compile in from this crate, all one map. One constant for the whole layout (calef's
+/// ruling of 2026-10-29 UTC, PR #2852, question 1); nothing checks it at run time, and the
+/// declaration of milestone 956 (the linked interfaces carry checkable versions) names it.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 pub const PAGE: u64 = 4096;
 
 /// **A half-open range of user virtual addresses**, `[start, end)`.

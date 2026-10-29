@@ -29,6 +29,16 @@ pub use current_cpu_contract::CPU_ID_BOUND;
 /// The page's first word: what tells a prepared page from a frame nobody has written.
 pub const MAGIC: [u8; 8] = *b"MACHSTA1";
 
+/// The page layout's version, written into the header line at [`word::VERSION`] and checked by
+/// every reader before it trusts any other word (milestone 956 (the linked interfaces carry
+/// checkable versions); the placement is calef's ruling of 2026-10-29 UTC, PR #2852). A break
+/// bumps this and re-mints [`MAGIC`]'s digit in the same change, with the dated ledger entry the
+/// interface-stability discipline owes; a shared page serves one generation, so one word carries
+/// it whole.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// The words the page carries: one header line, then one line per possible core.
 pub const WORDS: usize = word::LINE * (1 + CPU_ID_BOUND);
 
@@ -73,6 +83,10 @@ pub mod word {
     pub const TOTAL_FRAMES: usize = 3;
     /// Frames free right now.
     pub const FREE_FRAMES: usize = 4;
+    /// The page layout's version, [`VERSION`](super::VERSION) as a word. The check the ruling
+    /// places beside the magic: a reader that finds the magic but not its version refuses the
+    /// page. *(Index provisional, minted 2026-10-29 (UTC).)*
+    pub const VERSION: usize = 5;
 
     /// The first word of core `id`'s line. `id` is a cpu id, a name and not an index into the
     /// online set (`current_cpu_contract`'s own warning).
@@ -95,12 +109,13 @@ pub mod word {
     pub const RUNNABLE: usize = 5;
 }
 
-/// Build a fresh page's header: the magic, the frame size and the tick rate. The kernel writes this
-/// into a zeroed frame once, at boot, before any counter moves.
+/// Build a fresh page's header: the magic, the version, the frame size and the tick rate. The
+/// kernel writes this into a zeroed frame once, at boot, before any counter moves.
 #[must_use]
 pub fn build_header(frame_bytes: u64, tick_hz: u64) -> [u64; word::LINE] {
     let mut line = [0u64; word::LINE];
     line[word::MAGIC] = u64::from_le_bytes(MAGIC);
+    line[word::VERSION] = u64::from(VERSION);
     line[word::FRAME_BYTES] = frame_bytes;
     line[word::TICK_HZ] = tick_hz;
     line
@@ -161,10 +176,11 @@ impl Snapshot {
     /// A reader over a page a kernel filled, here built on the host from words:
     ///
     /// ```
-    /// use machine_statistics_contract::{Snapshot, WORDS, word};
+    /// use machine_statistics_contract::{Snapshot, VERSION, WORDS, word};
     ///
     /// let mut words = [0u64; WORDS];
     /// words[word::MAGIC] = u64::from_le_bytes(*b"MACHSTA1");
+    /// words[word::VERSION] = u64::from(VERSION);
     /// words[word::FRAME_BYTES] = 4096;
     /// words[word::TICK_HZ] = 100;
     /// words[word::TOTAL_FRAMES] = 32768;
@@ -184,6 +200,12 @@ impl Snapshot {
     #[must_use]
     pub fn from_words(words: &[u64; WORDS]) -> Option<Snapshot> {
         if words[word::MAGIC] != u64::from_le_bytes(MAGIC) {
+            return None;
+        }
+        // The version check the ruling places beside the magic, before any counter word is
+        // trusted: a page written by another generation reads as no page at all rather than as
+        // words in the wrong places.
+        if words[word::VERSION] != u64::from(VERSION) {
             return None;
         }
         let mut cpus = [Cpu::default(); CPU_ID_BOUND];
@@ -314,6 +336,20 @@ mod tests {
         let mut w = prepared();
         w[word::MAGIC] ^= 1;
         assert!(Snapshot::from_words(&w).is_none());
+    }
+
+    /// **A page of another generation reads as no page at all** (milestone 956's check): the
+    /// magic alone no longer admits a page; the reader checks the version word beside it, so a
+    /// reader built against one layout cannot print another layout's words in its own places.
+    #[test]
+    fn a_page_of_another_version_has_no_answer() {
+        let mut w = prepared();
+        w[word::VERSION] = u64::from(VERSION) + 1;
+        assert!(Snapshot::from_words(&w).is_none());
+        // A page that predates the word (all zeroes there) is refused too, not read as version 0.
+        let mut old = prepared();
+        old[word::VERSION] = 0;
+        assert!(Snapshot::from_words(&old).is_none());
     }
 
     /// **Every accessor sums only the online cores, and each answers its own word.** Two online

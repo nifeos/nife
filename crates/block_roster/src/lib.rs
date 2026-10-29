@@ -23,9 +23,27 @@
 
 #![no_std]
 
-/// `"blkrostr"` little-endian, at offset 0. A page that does not start with this is not a roster,
-/// and in particular a zeroed frame is not an empty one.
-pub const MAGIC: u64 = u64::from_le_bytes(*b"blkrostr");
+/// `"blkrosv1"` little-endian, at offset 0. A page that does not start with this is not a roster,
+/// and in particular a zeroed frame is not an empty one. The digits are the page layout's version
+/// ([`VERSION`]), by the shared-page convention the other numbered magics here already follow
+/// (`CLOCKv01`, `MACHSTA1`); a bump re-mints both in one change.
+///
+/// Amended in place 2026-10-29 (UTC): the unnumbered `"blkrostr"` gained its version digits when
+/// milestone 956 (the linked interfaces carry checkable versions) put a version beside every
+/// format the first cut links. Nothing outside this tree had read a roster page; readers and
+/// writers rebuilt together.
+///
+/// # Amendments
+///
+/// - 2026-10-29: the magic gained the version digits, `"blkrostr"` to `"blkrosv1"`, version 1;
+///   layout unchanged. No migration: every reader and writer is in this tree.
+pub const MAGIC: u64 = u64::from_le_bytes(*b"blkrosv1");
+
+/// The page layout's version, the digits [`MAGIC`] carries. A break bumps this and re-mints the
+/// magic in the same change, with a dated amendment above.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
 
 /// Bytes per entry. Two `u32`s, and the fixed width is what lets a reader index without parsing.
 pub const ENTRY_BYTES: usize = 8;
