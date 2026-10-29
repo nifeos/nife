@@ -70,11 +70,13 @@ exhaustive list of what a harness in `kernel/src` cannot see. The same list is i
    The `kernel` row runs on two hosts and, via script/verify-riscv64, a third target; see below.
 4. The panic handler is absent. Nothing proved here says anything about what the kernel does
    after a panic.
-5. The link sections are absent. Under `cfg(kani)` the host target is not `target_os = "none"`,
-   so `STACKS` and `SECONDARY_STACKS` are ordinary statics rather than statics in their own regions.
-   A harness reasoning about guard-page layout would therefore be reasoning about a fiction. Do not
-   write one; the region-size claim is held by
-   `the_secondary_stack_region_is_the_size_the_linker_reserved` in a real build instead.
+5. The link sections are absent: every custom-section `link_section` under `kernel/src` carries the
+   `target_os = "none"` gate, because a bare-metal section means nothing to a host compile. Under
+   `cfg(kani)` the host target is not `target_os = "none"`, so `STACKS` and `SECONDARY_STACKS` are
+   ordinary statics rather than statics in their own regions. A harness reasoning about guard-page
+   layout would therefore be reasoning about a fiction. Do not write one;
+   `the_secondary_stack_region_is_the_size_the_linker_reserved` holds the region-size claim in a
+   real build instead.
 6. MMIO and fixed physical addresses are raw pointers to nothing under a model checker. The same
    argument applies: stub the boundary, do not pretend.
 
@@ -272,18 +274,14 @@ place rather than an assertion that they are.
   number in `script/verify`'s table can say. Its seconds column is one figure for two jobs, and
   the harness count a reader would infer from "the kernel row passed" is the host's rather than the
   tree's. The tree has six kernel harnesses; neither host runs more than four.
-- The paragraph below was the old statement of this and is kept as the account. It said the
-  `kernel` row *needs* an aarch64 host. Since milestone 304 it needs an aarch64 host and an
-  x86_64 one, and the `aarch64-cpu` fix it names as a contingency had already landed on 2026-08-31,
-  which is why the second host cost nothing on that axis.
 - The `kernel` row needed an aarch64 host, and nothing enforced that. `kernel/Cargo.toml` depends
   on `aarch64-cpu` unconditionally, and `crate::arch::mmu::Format` resolves by the host's
   `target_arch` under Kani, so `cargo kani -p kernel` on an x86_64 box would fail to build and would
   be proving a different `Format` if it did. It works today because every job in
   `.github/workflows/verify.yml` runs on `ubuntu-24.04-arm`, which is aarch64 Linux, and because
   the dev machine is Apple Silicon. Milestone 193's block predicted the opposite ("CI is x86_64
-  Linux and it very likely will not [compile]"); the premise was checked and is false, and the two
-  ELF-style `link_section` names it worried about are valid ELF anyway, so only the Mach-O host ever
-  rejected them. If that runner label ever changes, this row breaks, and the fix is putting
-  `aarch64-cpu` behind a target `cfg`.
+  Linux and it very likely will not [compile]"); the check proved it false: `script/lint` fails a
+  custom-section `link_section` under `kernel/src` that lacks the `target_os = "none"` gate, so a
+  host compile drops the section and rustc does not refuse the ELF name on Mach-O. If that runner
+  label ever changes, this row breaks, and the fix is putting `aarch64-cpu` behind a target `cfg`.
 - **This note does not price the rest of the work.** What was measured is that the front door opens.

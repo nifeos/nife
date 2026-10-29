@@ -89,6 +89,22 @@ note](mmu.md).
 `.eh_frame` (stack-unwinding tables), `.comment` (compiler version strings). Dead weight
 in a kernel.
 
+## Custom sections mean nothing to a host build
+
+`.text.boot` is the first custom section, and the kernel has more. The hot path goes in
+`.text.hot.*` sections so the script can place it together, and the interrupt and secondary
+stacks get regions of their own so the mapper can punch guard pages beside them. The Rust names
+each section with `#[link_section = "..."]`, and the name matters only to the script that places
+it.
+
+rustc hands a `link_section` name to the object format and validates it while codegen runs.
+`.text.hot.exception_dispatch` is a valid ELF name and an invalid Mach-O one, so a macOS host
+compiling the kernel for the prover dies with `invalid Mach-O section specifier`. The gate
+`#[cfg_attr(target_os = "none", unsafe(link_section = "..."))]` keeps the exact name for this
+bare-metal build and drops the attribute on a host, where the placement means nothing.
+`script/lint` fails any custom-section `link_section` that lacks the gate
+(`helpers/lint_link_section_target.py`).
+
 ## Why it's worth the discomfort
 
 A linker script feels like arcane build-system tax. It isn't. It is the first place the
