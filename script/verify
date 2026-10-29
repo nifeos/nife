@@ -568,12 +568,6 @@ if [ -n "$parallel" ]; then
 		fi
 		printf '%s\n' "$line" >>"$summary"
 		printf '%s\n' "$line"
-		# The packer's drift check is the one `warning:` line a child's log carries that the summary
-		# should repeat; the rest are the compiler's, and a suite summary is not a build log.
-		drift="$(sed -n 's/^warning: prove shard /drift: /p' "$log" 2>/dev/null || true)"
-		if [ -n "$drift" ]; then
-			printf 'shard %s/%s: %s\n' "$k" "$children" "$drift" | tee -a "$summary"
-		fi
 		k=$((k + 1))
 	done
 	if [ -n "$failed" ]; then
