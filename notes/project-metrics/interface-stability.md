@@ -47,7 +47,7 @@ Sorted by breaking changes in the last four weeks (2026W41 to 2026W44), then by 
 
 ## What broke in 2026W44
 
-Read at `338d2334847d` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `fc5b83da8c85` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `abi`: removed `CapSlot`
 > - `abi`: syscall renamed, number kept (syscall), now `SYS_CAPABILITY_DELETE` `SYS_CAP_DELETE`

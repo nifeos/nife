@@ -94,9 +94,9 @@
 <path class="seg s7" d="M576.6,324.0 V269.9 Q576.6,268.0 578.5,268.0 H578.5 Q580.4,268.0 580.4,269.9 V324.0 Z"><title>2026W43, boot-check: 8.4</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
 <path class="seg s0" d="M601.4,324.0 V322.2 Q601.4,320.3 603.2,320.3 H603.4 Q605.2,320.3 605.2,322.2 V324.0 Z"><title>2026W44, falsify (verify): 0.6</title></path>
-<path class="seg s1" d="M606.2,324.0 V233.5 Q606.2,231.6 608.1,231.6 H608.1 Q610.0,231.6 610.0,233.5 V324.0 Z"><title>2026W44, prove (verify): 13.9</title></path>
+<path class="seg s1" d="M606.2,324.0 V233.6 Q606.2,231.7 608.1,231.7 H608.1 Q610.0,231.7 610.0,233.6 V324.0 Z"><title>2026W44, prove (verify): 13.9</title></path>
 <path class="seg s2" d="M611.0,324.0 V240.9 Q611.0,239.0 612.9,239.0 H612.9 Q614.9,239.0 614.9,240.9 V324.0 Z"><title>2026W44, test: 12.8</title></path>
-<path class="seg s3" d="M615.9,324.0 V233.8 Q615.9,231.9 617.8,231.9 H617.8 Q619.7,231.9 619.7,233.8 V324.0 Z"><title>2026W44, cpu-matrix: 13.8</title></path>
+<path class="seg s3" d="M615.9,324.0 V233.7 Q615.9,231.8 617.8,231.8 H617.8 Q619.7,231.8 619.7,233.7 V324.0 Z"><title>2026W44, cpu-matrix: 13.9</title></path>
 <path class="seg s4" d="M620.7,324.0 V239.7 Q620.7,237.8 622.6,237.8 H622.6 Q624.5,237.8 624.5,239.7 V324.0 Z"><title>2026W44, fuzz: 13.0</title></path>
 <path class="seg s5" d="M625.5,324.0 V252.7 Q625.5,250.7 627.5,250.7 H627.5 Q629.4,250.7 629.4,252.7 V324.0 Z"><title>2026W44, swish-check: 11.0</title></path>
 <path class="seg s6" d="M630.4,324.0 V254.4 Q630.4,252.5 632.3,252.5 H632.3 Q634.2,252.5 634.2,254.4 V324.0 Z"><title>2026W44, bench: 10.8</title></path>
