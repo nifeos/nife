@@ -769,9 +769,6 @@ mod tests {
             policy_of("update true\ndelete true", "update"),
             Err(Refusal::Malformed)
         );
-        assert_eq!(
-            policy_of("removed true", "remove"),
-            Err(Refusal::Malformed)
-        );
+        assert_eq!(policy_of("removed true", "remove"), Err(Refusal::Malformed));
     }
 }

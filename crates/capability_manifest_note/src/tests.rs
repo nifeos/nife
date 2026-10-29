@@ -566,7 +566,8 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     // computed two short lands on `ab.` from `ab.cd`. Both leave a trailing dot the contract
     // refuses, where a zone ending in a longer label would hide the same fault.
     const SHORT: &[&str] = &["a.x", "ab.cd"];
-    const S: [u8; serviced_len(SHORT)] = encode_serviced(&grant_plan::NO_NOTE_MANIFEST, SHORT, true);
+    const S: [u8; serviced_len(SHORT)] =
+        encode_serviced(&grant_plan::NO_NOTE_MANIFEST, SHORT, true);
     assert_eq!(decode(&S), Ok(grant_plan::NO_NOTE_MANIFEST));
     let mut got = zones(&S).unwrap().iter();
     assert_eq!(got.next(), Some(&b"a.x"[..]));
