@@ -1,7 +1,7 @@
 ---
-status: IN-PROGRESS
+status: BUILT
+built: 2026-10-29
 raised: 2026-10-28
-branch: milestone/956-local-parallel-prove
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -62,6 +62,12 @@ while the 80-vCPU box on the desk idles at 9.4%.
 `helpers/verify_times.py` packs the shards and asserts the partition. `script/kani-install` and
 `verify.yml` stay as they are. The one new piece is the sizing arithmetic and the fork-and-join
 orchestration, which no existing script carries.
+
+## Follow-on
+
+- **Recorded.** The 2.5 belongs to one host and one table, and `script/verify --parallel`'s own
+  end-to-end on a many-core Linux host is still unmeasured; the caveat lives in
+  `design/roadmap/0957-local-parallel-prove.md`.
 
 ## Index row
 
