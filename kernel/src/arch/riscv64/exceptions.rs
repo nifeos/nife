@@ -326,7 +326,10 @@ unsafe extern "C" {
 /// Context: interrupt context, with interrupts masked.
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
-#[unsafe(link_section = ".text.hot.riscv_trap_dispatch")]
+#[cfg_attr(
+    target_os = "none",
+    unsafe(link_section = ".text.hot.riscv_trap_dispatch")
+)]
 extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
     // A U-mode trap stays on its thread's kernel stack: the syscall may block, which an interrupt
     // stack may not.
@@ -357,7 +360,10 @@ extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
 /// interrupt stack (a trap from S-mode).
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
-#[unsafe(link_section = ".text.hot.riscv_trap_body")]
+#[cfg_attr(
+    target_os = "none",
+    unsafe(link_section = ".text.hot.riscv_trap_body")
+)]
 extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
     let scause = frame.scause;
 
