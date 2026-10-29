@@ -5,6 +5,12 @@
 //!
 //! Name: provisional (milestone 900's lane, 2026-10-15 UTC).
 
+use std::sync::LazyLock;
+
+/// The approvals topic's rows (milestone 911 (scripted installs grant only what the owner's
+/// approval file allows)), appended after the reach lines below.
+use approvals::LINES as APPROVAL_LINES;
+
 use super::*;
 
 /// **The one line that resolves a name at the prompt**: `jig install uptime` tries the entry's
@@ -23,7 +29,9 @@ pub(in crate::swish_check) const RESOLVING_LINE: &str = "jig install uptime";
 /// run. `greeting` (generation 2, and its 0.2.0 as generation 3) keeps running when `noteless` is
 /// removed, since a generation drops one program and not its neighbors. Why the numbers skip one
 /// (DECISIONS §221 (the boot prompt is the owner's console)) is in notes/swish-check-harness.md.
-pub(in crate::swish_check) const SWISH_CHECK_AFTER_REBOOT: &[Line] = &[
+pub(in crate::swish_check) static SWISH_CHECK_AFTER_REBOOT: LazyLock<Vec<Line>> = LazyLock::new(
+    || {
+        [
     // **The shell holds no display device** (milestone 715 (provisional); row 32 of
     // notes/confinement-claims.md). The spawn service keeps the gpu's four capabilities, which
     // would otherwise sit from `spawnproto::SHELL_GPU_SLOT` (22), so " 21 62" asserts nothing sits
@@ -455,10 +463,17 @@ pub(in crate::swish_check) const SWISH_CHECK_AFTER_REBOOT: &[Line] = &[
     ),
     line(1, "jig remove reach", &["removed; generation"]),
     line(0, "reach", &["no such program"]),
-];
+    ]
+    // The approvals topic (milestone 911 (scripted installs grant only what the owner's approval file
+    // allows)), appended after the reach lines; the concatenation keeps the table order.
+    .into_iter()
+.chain(APPROVAL_LINES.iter().cloned())
+.collect()
+    },
+);
 
 /// What `jig install` asks before it installs a package that asks for grants (milestone 892).
-const OWNERS_QUESTION: &str = "grant these and install? [y/N]";
+pub(in crate::swish_check) const OWNERS_QUESTION: &str = "grant these and install? [y/N]";
 
 /// The lines that install and run `reach`, skipped where `std_exerciser` was not built, since its
 /// package is built from that workspace (`package::Source::StdProgram`).

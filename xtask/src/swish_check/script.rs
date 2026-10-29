@@ -21,6 +21,7 @@ pub(super) use line::{JOB_DID_NOT_RUN, Line, asked, interrupted_at_prompt, keys,
 use super::*;
 
 mod after_reboot;
+mod approvals;
 mod clock_configuration;
 mod cycles;
 mod directories;

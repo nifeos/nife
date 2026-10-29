@@ -40,7 +40,7 @@ pub(super) fn swish_check_leg(arch: &str) -> bool {
         && (one_boot
             || swish_check_boot(
                 arch,
-                SWISH_CHECK_AFTER_REBOOT,
+                &SWISH_CHECK_AFTER_REBOOT,
                 false,
                 graphical.then_some(Keystrokes::Serial),
             ))

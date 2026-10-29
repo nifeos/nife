@@ -293,6 +293,10 @@ struct Resolved {
     image_digest: Option<measured_boot::Digest>,
     verb: [u8; grant_plan::MAXIMUM_VERB],
     verb_len: Option<usize>,
+    /// **The approval a delegated line asked to act within** (milestone 911 (scripted installs
+    /// grant only what the owner's approval file allows)), as the line's `--within <name>` said.
+    within: [u8; 32],
+    within_len: Option<usize>,
 }
 
 impl Resolved {
@@ -434,6 +438,7 @@ impl Service<'_> {
         if let Some(label) = spawnproto::installer_label(badge) {
             serve_installer(
                 label,
+                spawnproto::installer_approval(badge),
                 (w0, w1, w2),
                 &mut self.spawn,
                 (own_ut, images_ut, fs, self.c.catalogue),
@@ -461,8 +466,13 @@ impl Service<'_> {
                     fs,
                     catalog: self.c.catalogue,
                     manager: installed_programs::OWNER,
+                    allowed: None,
                 },
                 &mut self.fs_mapped,
+                // The spawn endpoint's activation verbs are the owner's vouch and install;
+                // the store's records are read on the installer endpoint's requests, where
+                // the check is.
+                None,
             );
             // Only a vouch arrives here, and a vouch's answer names no member and no holder.
             let (r0, r1, r2) = spawnproto::activation_reply(answer.status, answer.live, 0);
@@ -759,6 +769,20 @@ impl Service<'_> {
             verb[..w.len()].copy_from_slice(w);
             Some(w.len())
         });
+        // **The delegation the line asked for** (milestone 911 (scripted installs grant only what
+        // the owner's approval file allows)): `--within <name>` on the same page the verb was
+        // read from, the grant "installer, within approval X" as the console says it. The
+        // progenitor reads it when it places the installer endpoint, and the badge carries the
+        // approval the name is stored under.
+        let mut within = [0u8; 32];
+        let within_len = args_seen.and_then(|theirs| {
+            // SAFETY: `receive_args` mapped the shell's frame read-only at `theirs`, one page,
+            // and it stays mapped until the shell reclaims its frame after this request's answer.
+            let page = unsafe {
+                core::slice::from_raw_parts(theirs as *const u8, spawnproto::IMAGE_PAGE as usize)
+            };
+            grant_plan::delegated_within(page, &mut within)
+        });
         let manifest = if wiring.image {
             image_manifest
         } else {
@@ -781,6 +805,8 @@ impl Service<'_> {
             image_digest,
             verb,
             verb_len,
+            within,
+            within_len,
         }
     }
 
@@ -873,8 +899,9 @@ impl Service<'_> {
             (true, Some(r)) => copy_text(own_ut, r, self.c.index_sources),
             _ => None,
         };
-        let (installer, catalog_page, installer_failed, catalog_failed) = self.package_parts(
+        let (installer, catalog_page, installer_failed, catalog_failed) = self.installer_endpoint(
             req,
+            job,
             manifest,
             region,
             (std_layout, wants_installer),
@@ -894,13 +921,7 @@ impl Service<'_> {
         let native = self.native_endowment(req, manifest, &wants, &dir, out);
         // The argv copy is carved from the job's region so its reclaim frees the page; a copy that
         // could not be made fails the spawn rather than running without the line's words.
-        let args_page = match (std_layout, region, req.args_seen) {
-            (true, Some(r), Some(theirs)) => copy_args(own_ut, r, theirs, |copy| {
-                grant_plan::verb_of_page(copy, &mut [0u8; grant_plan::MAXIMUM_VERB]) == job.verb()
-            }),
-            _ => None,
-        };
-        let args_failed = std_layout && req.args_seen.is_some() && args_page.is_none();
+        let (args_page, args_failed) = self.carve_args(job, region, (std_layout, req.args_seen));
         let std_parts = match (std_layout, region) {
             (true, Some(r)) => {
                 let parts = (
@@ -1044,6 +1065,52 @@ impl Service<'_> {
         }
     }
 
+    /// **The argv copy a `std` job gets**, carved from the job's own region so its reclaim frees
+    /// the page, and whether a copy the line asked for could not be made, which fails the spawn
+    /// rather than running the job without the line's words.
+    fn carve_args(
+        &mut self,
+        job: &Resolved,
+        region: Option<u64>,
+        (std_layout, seen): (bool, Option<u64>),
+    ) -> (Option<u64>, bool) {
+        let own_ut = self.c.own_ut;
+        let page = match (std_layout, region, seen) {
+            (true, Some(r), Some(theirs)) => copy_args(own_ut, r, theirs, |copy| {
+                grant_plan::verb_of_page(copy, &mut [0u8; grant_plan::MAXIMUM_VERB]) == job.verb()
+            }),
+            _ => None,
+        };
+        (page, std_layout && seen.is_some() && page.is_none())
+    }
+
+    /// **The installer endpoint and the catalog page a job gets**, and whether either failed: a
+    /// line that asked to act within an approval gets the same endpoint badged with that
+    /// approval's id, minted for the name here so the store's file is found per request. The
+    /// owner's console alone places it, as the plain one is (milestone 911 (scripted installs
+    /// grant only what the owner's approval file allows)).
+    fn installer_endpoint(
+        &mut self,
+        req: &Request,
+        job: &Resolved,
+        manifest: Option<grant_plan::Manifest>,
+        region: Option<u64>,
+        (std_layout, wants_installer): (bool, bool),
+        label: u64,
+    ) -> PackageParts {
+        let delegated = job
+            .within_len
+            .map(|len| self.spawn.approval_id_for(&job.within[..len]));
+        self.package_parts(
+            req,
+            manifest,
+            region,
+            (std_layout, wants_installer),
+            label,
+            delegated,
+        )
+    }
+
     /// Make a package manager's installer endpoint and reply endpoint, and its copy of the
     /// image's catalog, each only when its manifest declares it; and say whether either failed.
     /// The installer is placed only for the owner's console, in the `std` layout (§270 (a package
@@ -1056,6 +1123,7 @@ impl Service<'_> {
         region: Option<u64>,
         (std_layout, wants_installer): (bool, bool),
         label: u64,
+        delegated: Option<u64>,
     ) -> PackageParts {
         let Channels {
             own_ut, spawn_ep, ..
@@ -1071,6 +1139,7 @@ impl Service<'_> {
                 (spawn_ep, label),
                 own_ut,
                 self.c.catalogue,
+                delegated,
             ),
             _ => (None, None),
         };

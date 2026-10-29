@@ -72,7 +72,8 @@ pub use planning::{
 pub use program::{PROGRAM_COUNT, Program};
 pub use refusal::{CapabilityKind, Refusal};
 pub use verbs::{
-    MAXIMUM_VERB, ManifestAuthorities, VerbGrant, narrow_by_verb, verb_of, verb_of_page,
+    MAXIMUM_VERB, ManifestAuthorities, VerbGrant, delegated_within, narrow_by_verb, verb_of,
+    verb_of_page,
 };
 
 mod lexing;

@@ -263,6 +263,25 @@ pub(crate) const DOWNLOADED_SOLO: &str = "downloads/solo.nifepkg";
 /// granted, so it is refused once installed. Provisional name.
 pub(crate) const DOWNLOADED_DIALER: &str = "downloads/dialer.nifepkg";
 
+/// **`servant`'s package, on the disk for every leg** (milestone 911 (scripted installs grant
+/// only what the owner's approval file allows)): a program whose note asks to run as a service.
+/// Provisional name.
+pub(crate) const DOWNLOADED_SERVANT: &str = "downloads/servant.nifepkg";
+
+/// **`seeker`'s package and its 0.2.0, on the disk for every leg** (milestone 911): the program
+/// the approval file's entry allows, and the second version whose note asks one zone more, which
+/// the subset test refuses. Provisional names.
+pub(crate) const DOWNLOADED_SEEKER: &str = "downloads/seeker.nifepkg";
+pub(crate) const DOWNLOADED_SEEKER_0_2_0: &str = "downloads/0.2.0/seeker.nifepkg";
+
+/// **The approval files, on the disk for every leg** (milestone 911): the owner's file the
+/// console's `--approved` and `jig approve` read, the same file edited (the same approval name,
+/// one zone more allowed, which a re-approve takes), and the second approval the
+/// rollback-leaves-approvals row makes after the generation it must survive. Provisional names.
+pub(crate) const APPROVAL_FILE: &str = "downloads/lab-runner.toml";
+pub(crate) const APPROVAL_FILE_EDITED: &str = "downloads/lab-runner-edited.toml";
+pub(crate) const APPROVAL_FILE_RUNNER: &str = "downloads/runner.toml";
+
 /// **`reach`'s package, on the disk when `std_exerciser` was built** (milestone 892): a `std`
 /// program whose note asks for the network and the zone `nife.test`, which the gate installs
 /// answering yes and then runs holding both. Provisional name.
@@ -555,6 +574,11 @@ fn stage_installed(architecture: &str) -> Result<String, String> {
     let dialer = read_built_package(&root, &format!("dialer-0.1.0-{architecture}"))?;
     // Built only beside `std_exerciser` (`package::Source::StdProgram`); its lines go with it.
     let reach = read_built_package(&root, &format!("reach-0.1.0-{architecture}")).ok();
+    // The approval files' packages (milestone 911 (scripted installs grant only what the owner's
+    // approval file allows)): the service ask, the zones ask at two versions.
+    let servant = read_built_package(&root, &format!("servant-0.1.0-{architecture}"))?;
+    let seeker = read_built_package(&root, &format!("seeker-0.1.0-{architecture}"))?;
+    let seeker_v2 = read_built_package(&root, &format!("seeker-0.2.0-{architecture}"))?;
     let (archive, image) = image_lacking_the_packages(architecture)?;
 
     let source = package_source_dir(architecture);
@@ -595,12 +619,28 @@ fn stage_installed(architecture: &str) -> Result<String, String> {
     if let Some(reach) = &reach {
         write_seed_file(tree.join(DOWNLOADED_REACH), reach)?;
     }
+    write_seed_file(tree.join(DOWNLOADED_SERVANT), &servant)?;
+    write_seed_file(tree.join(DOWNLOADED_SEEKER), &seeker)?;
+    write_seed_file(tree.join(DOWNLOADED_SEEKER_0_2_0), &seeker_v2)?;
+    write_seed_file(
+        tree.join(APPROVAL_FILE),
+        approval_file_text(false).as_bytes(),
+    )?;
+    write_seed_file(
+        tree.join(APPROVAL_FILE_EDITED),
+        approval_file_text(true).as_bytes(),
+    )?;
+    write_seed_file(
+        tree.join(APPROVAL_FILE_RUNNER),
+        runner_file_text().as_bytes(),
+    )?;
     eprintln!(
         "seed_installed ({architecture}): {stem} ({} bytes, digest {}) at {DOWNLOADED_PACKAGE}, \
          a tampered copy, {noteless_stem} at \
          {DOWNLOADED_NOTELESS}, {greeting_v2_stem} at {DOWNLOADED_GREETING_0_2_0}, duet at \
-         {DOWNLOADED_DUET}, solo at {DOWNLOADED_SOLO}, dialer at {DOWNLOADED_DIALER}, and three \
-         unvouched programs; no installed-programs table. The package source at {} serves {greeting_stem} \
+         {DOWNLOADED_DUET}, solo at {DOWNLOADED_SOLO}, dialer at {DOWNLOADED_DIALER}, servant at \
+         {DOWNLOADED_SERVANT}, seeker at {DOWNLOADED_SEEKER}, and three approval files; \
+         no installed-programs table. The package source at {} serves {greeting_stem} \
          and a lying {stem}",
         package.len(),
         String::from_utf8_lossy(&measured_boot::digest_text(&package_archive::sha256(
@@ -610,6 +650,42 @@ fn stage_installed(architecture: &str) -> Result<String, String> {
     );
     eprintln!("seed_installed ({architecture}): {said}; {indexed_stem} is the index's alone");
     Ok(tree.display().to_string())
+}
+
+/// **The approval files the gate seeds**, the owner's own text (milestone 911 (scripted installs
+/// grant only what the owner's approval file allows)). `lab-runner` bounds every package the live
+/// generation holds when the gate reaches its approvals topic, so a delegated rollback to a
+/// generation within it is possible: the ask-free fixtures' entries bound their presence, and the
+/// two policy answers are the file's to carry. The edited file is the same approval name with one
+/// zone more allowed, which is what a re-approve takes and what the unedited store refuses.
+fn approval_file_text(edited: bool) -> String {
+    let zones = if edited {
+        "[\"example.net\", \"nife.test\"]"
+    } else {
+        "[\"nife.test\"]"
+    };
+    format!(
+        "approval = \"lab-runner\"\n\n\
+         [package.greeting]\nupdate = true\nremove = true\n\n\
+         [package.hackbench]\nupdate = true\nremove = true\n\n\
+         [package.ioping]\nupdate = true\nremove = true\n\n\
+         [package.noteless]\nupdate = true\nremove = true\n\n\
+         [package.rg]\nupdate = true\nremove = true\n\n\
+         [package.rmle]\nupdate = true\nremove = true\n\n\
+         [package.seeker]\nnetwork = true\nzones = {zones}\nupdate = true\nremove = false\n\n\
+         [package.servant]\nservice = true\nupdate = false\nremove = false\n\n\
+         [package.sqlite]\nupdate = true\nremove = true\n"
+    )
+}
+
+/// **The second approval file**, `runner`, which the gate stores late: an approval made after the
+/// generation a later rollback restores, which the rollback must leave alone (milestone 911,
+/// Done-when 8). It allows `servant`, and allows its update, so a delegated install of the
+/// installed bytes passes under it.
+fn runner_file_text() -> String {
+    "approval = \"runner\"\n\n\
+     [package.servant]\nservice = true\nupdate = true\nremove = true\n"
+        .to_string()
 }
 
 /// The package the archive build wrote as `target/packages/<stem>.nifepkg`.

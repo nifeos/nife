@@ -40,6 +40,7 @@ members = [
     "crates/package_index",
     "crates/http_response",
     "crates/installed_programs",
+    "crates/approval_file",
     "crates/direct_memory_access_validator",
     "crates/device_tree_blob",
     "crates/elf",

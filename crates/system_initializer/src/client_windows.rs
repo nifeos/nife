@@ -384,7 +384,7 @@ impl FsCalls {
 
     /// Read a file from offset 0 into `out`, up to `out.len()` bytes (at most a page). `None` on an
     /// error.
-    fn read(&self, handle: u64, out: &mut [u8]) -> Option<usize> {
+    pub(super) fn read(&self, handle: u64, out: &mut [u8]) -> Option<usize> {
         let want = out.len().min(PAGE_BYTES);
         let n = call(
             self.ep,

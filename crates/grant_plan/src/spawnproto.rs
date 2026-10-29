@@ -317,6 +317,27 @@ pub enum Activation {
     ///
     /// Name: provisional (milestone 198, lane `milestone/198-owner-console`, 2026-09-26).
     Vouch = 5,
+    /// **The owner's approval file, compiled and stored** (milestone 911 (scripted installs grant
+    /// only what the owner's approval file allows); `jig approve <file>`). The frames are the
+    /// compiled records (`installed_programs::approval`), whose header carries the approval's
+    /// name and the file's digest the records bind to; the progenitor stores them beside the
+    /// installed-programs table's generations, never as rows in them, and answers
+    /// [`ActivationStatus::Done`]. The reply's word 2 is **the stored records' length in bytes**
+    /// that were there before this one replaced them, 0 when the name was not stored: the
+    /// records travel back as follower messages ([`stored_words`]), so the console's re-approval
+    /// shows what changed. Only an **undelegated** installer badge may send it: a badge
+    /// that carries an approval is answered [`ActivationStatus::NotServedHere`], so no holder can
+    /// widen its own approval or mint another.
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+    Approve = 6,
+    /// **The named approval is dropped** (milestone 911; `jig revoke <name>`). The name follows as
+    /// one data message, packed as a [`Activation::Remove`]'s is. The progenitor deletes the
+    /// store's file; every later request under a badge that carries the approval is answered
+    /// [`ActivationStatus::Revoked`]. Only an undelegated installer badge may send it.
+    ///
+    /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+    Revoke = 7,
 }
 
 impl Activation {
@@ -326,15 +347,20 @@ impl Activation {
             2 => Some(Self::Remove),
             3 => Some(Self::Rollback),
             5 => Some(Self::Vouch),
+            6 => Some(Self::Approve),
+            7 => Some(Self::Revoke),
             _ => None,
         }
     }
 }
 
-/// Build an activation request. `len` is the file's length for [`Activation::Install`] and
-/// [`Activation::Vouch`], whose frames follow, and ignored otherwise.
+/// Build an activation request. `len` is the data length for [`Activation::Install`],
+/// [`Activation::Vouch`] and [`Activation::Approve`], whose frames follow, and ignored otherwise.
 pub fn activation_request(verb: Activation, len: u64) -> (u64, u64, u64) {
-    let w0 = if matches!(verb, Activation::Install | Activation::Vouch) {
+    let w0 = if matches!(
+        verb,
+        Activation::Install | Activation::Vouch | Activation::Approve
+    ) {
         len
     } else {
         0
@@ -408,6 +434,20 @@ pub enum ActivationStatus {
     /// "refuses to remove or roll back a row it did not install"). Nothing was written.
     /// Provisional.
     NotYours = 15,
+    /// **The approval does not allow this** (milestone 911 (scripted installs grant only what the
+    /// owner's approval file allows), the check in the installer): the package is outside the
+    /// badge's approval, its asks exceed its entry, the entry's `remove` answer refuses a
+    /// removal, or a rollback would restore a row outside it. Nothing was read past the frames
+    /// and nothing was written. Word 2 is **how many messages follow** ([`holder_words`]): two,
+    /// naming the package, from a delegated badge's check, which tells a holder no more than
+    /// which package was refused; three from the owner's own `--approved` install, whose third
+    /// message names the ask that exceeded the entry ([`refused_ask_words`]), which the owner may
+    /// read. Provisional.
+    NotApproved = 16,
+    /// **The badge's approval is not stored** (milestone 911): it was revoked by
+    /// [`Activation::Revoke`], or it was never approved. Nothing is read and nothing is written;
+    /// the holder may do nothing under it until `jig approve` stores the name again. Provisional.
+    Revoked = 17,
 }
 
 impl ActivationStatus {
@@ -427,6 +467,8 @@ impl ActivationStatus {
             13 => Self::Ambiguous,
             14 => Self::NotServedHere,
             15 => Self::NotYours,
+            16 => Self::NotApproved,
+            17 => Self::Revoked,
             _ => Self::Unknown,
         }
     }
@@ -465,6 +507,132 @@ pub fn holder_words(holder: &str) -> [(u64, u64, u64); 2] {
     [(word(0), word(1), len as u64), (word(2), word(3), 0)]
 }
 
+/// **The trailer an install or a removal sends after its data**, the answer beside the record
+/// (milestone 911 (scripted installs grant only what the owner's approval file allows), item 1):
+/// how the answer was given. One message for the console's yes, three for an approval, whose
+/// name and file digest the progenitor alone cannot know. The sender always sends it; the
+/// progenitor reads it for every install and removal and writes the generation's `answered`
+/// line from it, from the badge's approval instead when the request arrived on a delegated
+/// endpoint.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ANSWERED_CONSOLE: u64 = 0;
+/// The trailer's kind word for an approval's answer ([`answered_console`]).
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ANSWERED_APPROVAL: u64 = 1;
+
+/// The console's one trailer message: the answer was the owner's yes at the prompt, or the
+/// owner's own `--approved` file whose check `jig` ran (the console holds the authority either
+/// way). A delegated request overrides it with the badge's approval.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub const fn answered_console() -> (u64, u64, u64) {
+    (ANSWERED_CONSOLE, 0, 0)
+}
+
+/// The approval's three trailer messages: the kind, the approval's name packed as a removal's
+/// name is (`filesystem_contract::grant::pack_name`, sixteen bytes at most), then the file's
+/// digest the records bind to, thirty-two raw bytes over two messages. The name is the approval
+/// file's own `approval` key; a longer name is refused at compile time, before this is built.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub fn answered_approval(name: &str, digest: &[u8; 32]) -> [(u64, u64, u64); 3] {
+    let (lo, hi) = pack_name(name.as_bytes());
+    let word = |at: usize| {
+        let mut w = [0u8; 8];
+        w.copy_from_slice(&digest[at..at + 8]);
+        u64::from_le_bytes(w)
+    };
+    [
+        (ANSWERED_APPROVAL, lo, hi),
+        (word(0), word(8), word(16)),
+        (word(24), 0, 0),
+    ]
+}
+
+/// The name packed the way a removal's name is: sixteen bytes, little-endian words, zero-padded
+/// (`filesystem_contract::grant::pack_name`'s rule, spelled here because this crate does not link
+/// the contract; the test pins the two).
+fn pack_name(name: &[u8]) -> (u64, u64) {
+    let mut bytes = [0u8; 16];
+    let len = name.len().min(16);
+    bytes[..len].copy_from_slice(&name[..len]);
+    (
+        u64::from_le_bytes(bytes[..8].try_into().unwrap_or([0; 8])),
+        u64::from_le_bytes(bytes[8..].try_into().unwrap_or([0; 8])),
+    )
+}
+
+/// [`pack_name`] read back: the length the words carry, or 0 for words that spell nothing.
+fn unpack_name(lo: u64, hi: u64, out: &mut [u8; 16]) -> usize {
+    let words = [lo.to_le_bytes(), hi.to_le_bytes()];
+    let mut packed = [0u8; 16];
+    packed[..8].copy_from_slice(&words[0]);
+    packed[8..].copy_from_slice(&words[1]);
+    let len = packed
+        .iter()
+        .rposition(|&b| b != 0)
+        .map_or(0, |at| at + 1)
+        .min(16);
+    out[..len].copy_from_slice(&packed[..len]);
+    len
+}
+
+/// [`answered_approval`] and [`answered_console`] read back: how the answer was given, or
+/// `None` for words that spell neither kind. `out` holds the unpacked name.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub fn answered_from_trailer(
+    (kind, lo, hi): (u64, u64, u64),
+    more: &[(u64, u64, u64)],
+    out: &mut [u8; 16],
+) -> Option<Answered> {
+    match kind {
+        ANSWERED_CONSOLE if lo == 0 && hi == 0 => Some(Answered::Console),
+        ANSWERED_APPROVAL if more.len() >= 2 => {
+            let len = unpack_name(lo, hi, out);
+            let mut digest = [0u8; 32];
+            for (i, (a, b, c)) in more[..2].iter().enumerate() {
+                for (at, w) in [a, b, c].into_iter().enumerate() {
+                    let byte = i * 24 + at * 8;
+                    if byte < 32 {
+                        let take = 8.min(32 - byte);
+                        digest[byte..byte + take].copy_from_slice(&w.to_le_bytes()[..take]);
+                    }
+                }
+            }
+            Some(Answered::Approval {
+                name: *out,
+                len,
+                digest,
+            })
+        }
+        _ => None,
+    }
+}
+
+/// **How a trailer said the answer was given**, as the generation's `answered` line spells it
+/// (`installed_programs::Answered`). The progenitor's reading of [`answered_from_trailer`].
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Answered {
+    /// The owner's console.
+    Console,
+    /// The approval named, bound to the file's digest.
+    Approval {
+        /// The name, as `out` was given room for it.
+        name: [u8; 16],
+        /// The name's length, at most sixteen bytes.
+        len: usize,
+        /// The file's digest the records bind to.
+        digest: [u8; 32],
+    },
+}
+
 /// [`holder_words`] read back into `out`: the holder's name, or `""` for words that do not spell
 /// one.
 pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXIMUM]) -> &str {
@@ -474,6 +642,94 @@ pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXI
     }
     let len = usize::try_from(len).map_or(HOLDER_MAXIMUM, |l| l.min(HOLDER_MAXIMUM));
     core::str::from_utf8(&out[..len]).unwrap_or("")
+}
+
+/// The ask kinds a [`ActivationStatus::NotApproved`] refusal's third message carries, for an
+/// undelegated badge's `--approved` install (milestone 911): the grant the entry did not cover,
+/// which the owner's console may read. A zone's or a directory's name rides words 1 and 2
+/// ([`pack_name`]); the others ride the kind alone. The kinds are this crate's own numbers; the
+/// check that mints them maps `installed_programs::Granted` onto them, and the gate's zone row
+/// is what catches a swapped pair.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_NETWORK: u64 = 1;
+/// The service ask's kind ([`ASK_NETWORK`]).
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_SERVICE: u64 = 2;
+/// The installer ask's kind ([`ASK_NETWORK`]).
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_INSTALLER: u64 = 3;
+/// The zone ask's kind ([`ASK_NETWORK`]); the zone's name rides words 1 and 2.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_ZONE: u64 = 4;
+/// The directory ask's kind ([`ASK_NETWORK`]); the directory's name rides words 1 and 2, and the
+/// rights do not travel: the caller spells them from the ask it already holds.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const ASK_DIRECTORY: u64 = 5;
+
+/// **The message that names the ask a `--approved` install's check refused** (milestone 911):
+/// the kind ([`ASK_NETWORK`] and its neighbors) with a directory's rights above it (`1` reads,
+/// `3` reads and writes, the bit spelling `installed_programs::DirectoryRights` keeps), and,
+/// for a zone or a directory, the name packed as a removal's name is.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub fn refused_ask_words(kind: u64, rights: u64, name: &str) -> (u64, u64, u64) {
+    let (lo, hi) = pack_name(name.as_bytes());
+    (kind | (rights << 8), lo, hi)
+}
+
+/// [`refused_ask_words`] read back: the kind, the directory rights, and the name in `out`, or
+/// `None` for a word that carries no kind this side knows. The name's length is the packed
+/// form's, cut at sixteen bytes.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub fn refused_ask_from_words(
+    (word, lo, hi): (u64, u64, u64),
+    out: &mut [u8; 16],
+) -> Option<(u64, u64, &str)> {
+    let kind = word & 0xff;
+    if !matches!(kind, ASK_NETWORK..=ASK_DIRECTORY) {
+        return None;
+    }
+    let len = unpack_name(lo, hi, out);
+    let name = core::str::from_utf8(&out[..len]).unwrap_or("");
+    Some((kind, word >> 8, name))
+}
+
+/// **How many messages carry `len` bytes of stored records** ([`Activation::Approve`]'s reply):
+/// three words a message, one more for the tail's remainder.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub const fn stored_messages(len: u64) -> u64 {
+    len.div_ceil(24)
+}
+
+/// **One message of the stored records an `Approve`'s reply carries back** (milestone 911): the
+/// bytes at `at` of `records`, little-endian words, zero-padded at the tail. The console's
+/// re-approval diffs its file against these, which is why they travel: the store is the
+/// progenitor's to read, and a std holder's namespace root is the directory it was granted.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub fn stored_words(records: &[u8], at: usize) -> (u64, u64, u64) {
+    let mut bytes = [0u8; 24];
+    let end = (at + 24).min(records.len());
+    if at < end {
+        bytes[..end - at].copy_from_slice(&records[at..end]);
+    }
+    let word = |i: usize| {
+        let mut w = [0u8; 8];
+        w.copy_from_slice(&bytes[i * 8..i * 8 + 8]);
+        u64::from_le_bytes(w)
+    };
+    (word(0), word(1), word(2))
 }
 
 /// **The largest image `IMAGE_BIT` may carry, in pages** (4 MiB). A ceiling both sides read, so the
@@ -780,37 +1036,80 @@ pub const fn reaped(label: u64, tid: u64) -> (u64, u64, u64) {
 /// the job's label for a program declaring `Manifest::installer`, at `crate::INSTALLER_SLOT`, which
 /// serves install, remove and rollback and answers [`ActivationStatus::NotServedHere`] otherwise.
 ///
-/// Labels count from 1 and stay below this bit, and [`UNDERTAKER_BADGE`] is `1` without it, so no
-/// two kinds of sender share a badge. A holder that promises frames and never sends them holds the
+/// Since milestone 911 (scripted installs grant only what the owner's approval file allows) a
+/// **delegated** endpoint's badge also carries the approval the holder acts within
+/// ([`DELEGATED_APPROVAL_SHIFT`]): the same endpoint object, badged for one job and one approval,
+/// not a second one. Labels count from 1 and stay below 2³² ([`installer_badge`]'s doc), the
+/// approval's id rides above them, and [`UNDERTAKER_BADGE`] is `1` without the bit, so no two
+/// kinds of sender share a badge. A holder that promises frames and never sends them holds the
 /// progenitor until its reaped message ends the wait, or for good if it never dies.
 ///
 /// Name: provisional (milestone 809).
 pub const INSTALLER_BADGE: u64 = 1 << 62;
 
-/// The installer endpoint's badge for the job labeled `label` ([`INSTALLER_BADGE`]).
+/// **Where a delegated installer badge's approval id sits** (milestone 911): bit 32 up, thirty
+/// bits of per-boot ids under [`INSTALLER_BADGE`]'s bit. A badge carries one approval or none;
+/// the id is the progenitor's key for the name, and the store's file, read per request, is the
+/// authority. The kernel writes the badge (§230 (badged endpoint capabilities)) and `BADGE` needs
+/// `GRANT`, which a holder lacks, so no holder can forge or widen it.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+pub const DELEGATED_APPROVAL_SHIFT: u64 = 32;
+
+/// The installer endpoint's badge for the job labeled `label` ([`INSTALLER_BADGE`]): the plain,
+/// undelegated endpoint, whose requests are the owner's own.
 #[must_use]
 pub const fn installer_badge(label: u64) -> u64 {
     INSTALLER_BADGE | label
 }
 
+/// **The delegated installer endpoint's badge** (milestone 911): [`installer_badge`] of `label`,
+/// and the approval id `approval` above [`DELEGATED_APPROVAL_SHIFT`]. A label at 2³² or an id at
+/// 2³⁰ would collide, so a caller that minted one has already refused it; the progenitor's label
+/// counts jobs from 1 and its ids count approvals from 1.
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub const fn delegated_installer_badge(label: u64, approval: u64) -> u64 {
+    INSTALLER_BADGE | (approval << DELEGATED_APPROVAL_SHIFT) | label
+}
+
 /// **The job label an installer endpoint's badge carries**, or `None` for a badge that is not one
-/// ([`INSTALLER_BADGE`]).
+/// ([`INSTALLER_BADGE`]): the label below [`DELEGATED_APPROVAL_SHIFT`], whatever approval the
+/// badge also carries.
 #[must_use]
 pub const fn installer_label(badge: u64) -> Option<u64> {
     if badge & INSTALLER_BADGE != 0 {
-        Some(badge & !INSTALLER_BADGE)
+        Some(badge & !(INSTALLER_BADGE | (0x3fff_ffff << DELEGATED_APPROVAL_SHIFT)))
     } else {
         None
     }
 }
 
-/// **Whether the installer endpoint serves this verb** ([`INSTALLER_BADGE`]): install, remove and
-/// rollback, and never a vouch.
+/// **The approval id a delegated installer badge carries**, or `None` for the plain, undelegated
+/// endpoint ([`delegated_installer_badge`]).
+///
+/// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
+#[must_use]
+pub const fn installer_approval(badge: u64) -> Option<u64> {
+    let id = (badge & (0x3fff_ffff << DELEGATED_APPROVAL_SHIFT)) >> DELEGATED_APPROVAL_SHIFT;
+    match (badge & INSTALLER_BADGE != 0, id) {
+        (true, 1..) => Some(id),
+        _ => None,
+    }
+}
+
+/// **Whether the installer endpoint serves this verb** ([`INSTALLER_BADGE`]): install, remove,
+/// rollback, and the owner's approve and revoke; never a vouch.
 #[must_use]
 pub const fn installer_serves(verb: Activation) -> bool {
     matches!(
         verb,
-        Activation::Install | Activation::Remove | Activation::Rollback
+        Activation::Install
+            | Activation::Remove
+            | Activation::Rollback
+            | Activation::Approve
+            | Activation::Revoke
     )
 }
 
@@ -862,6 +1161,7 @@ pub const SPAWN_OK: u64 = 0;
 #[cfg(test)]
 mod tests {
     use super::*;
+    extern crate alloc;
 
     #[test]
     fn the_mounted_trees_rights_are_list_walk_and_read() {
@@ -894,6 +1194,116 @@ mod tests {
         assert_eq!(held_answer(7), (SPAWN_OK, 7, 0));
     }
 
+    /// **An approval is one of the activation verbs, and only the ones it serves are served**
+    /// (milestone 911 (scripted installs grant only what the owner's approval file allows)):
+    /// `Approve` and `Revoke` read back, the request words carry the records' length for the
+    /// one that has frames, and the installer endpoint serves both beside install, remove and
+    /// rollback, never a vouch.
+    #[test]
+    fn approve_and_revoke_are_verbs_the_installer_serves() {
+        let (w0, w1, w2) = activation_request(Activation::Approve, 512);
+        assert_eq!(w0, 512, "the records' length travels");
+        assert_eq!(activation(w1, w2), Some(Some(Activation::Approve)));
+        let (r0, w1, w2) = activation_request(Activation::Revoke, 0);
+        assert_eq!(activation(w1, w2), Some(Some(Activation::Revoke)));
+        assert_eq!(r0, 0, "a revoke carries no length");
+        assert!(installer_serves(Activation::Approve));
+        assert!(installer_serves(Activation::Revoke));
+        assert!(installer_serves(Activation::Install));
+        assert!(!installer_serves(Activation::Vouch));
+    }
+
+    /// **The statuses the delegated check answers** (milestone 911): `NotApproved` for an
+    /// install, removal or rollback the approval does not allow, `Revoked` for one whose
+    /// approval is gone, and a word this reader does not know is `Unknown`.
+    #[test]
+    fn not_approved_and_revoked_read_back() {
+        assert_eq!(
+            ActivationStatus::from_word(16),
+            ActivationStatus::NotApproved
+        );
+        assert_eq!(ActivationStatus::from_word(17), ActivationStatus::Revoked);
+        assert_eq!(ActivationStatus::from_word(18), ActivationStatus::Unknown);
+    }
+
+    /// **A delegated badge carries its job and its approval, and neither can be read as the
+    /// other** (milestone 911): the label survives the approval's bits, an undelegated badge
+    /// carries no approval, and the kernel's own one-word badge (`reaped`) reads as neither.
+    #[test]
+    fn a_delegated_badge_carries_its_job_and_its_approval() {
+        let delegated = delegated_installer_badge(7, 3);
+        assert_eq!(installer_label(delegated), Some(7));
+        assert_eq!(installer_approval(delegated), Some(3));
+        let plain = installer_badge(7);
+        assert_eq!(installer_label(plain), Some(7));
+        assert_eq!(installer_approval(plain), None);
+        assert_eq!(installer_approval(reaped(9, 9).0), None);
+        assert_eq!(installer_label(reaped(9, 9).0), None);
+        // The two forms are the same endpoint object: one badge bit, one endpoint.
+        assert_eq!(
+            delegated & !INSTALLER_BADGE,
+            (3 << DELEGATED_APPROVAL_SHIFT) | 7
+        );
+        // **The installer bit is what makes it an installer, not the approval field.** A badge
+        // carrying a job and an id but without the endpoint's own bit is no installer at all, so
+        // the check reads the bit (`&`) and cannot pass on a nonzero field alone (`|` or `^`).
+        assert_eq!(
+            installer_approval((3 << DELEGATED_APPROVAL_SHIFT) | 7),
+            None
+        );
+    }
+
+    /// **The answered trailer round-trips**, console and approval alike, and the packing is the
+    /// removal name's rule (`filesystem_contract::grant::pack_name`), which this crate spells
+    /// because it does not link the contract. A kind word this reader does not know spells
+    /// nothing.
+    #[test]
+    fn an_answered_trailer_round_trips() {
+        use filesystem_contract::grant;
+        let (lo, hi) = grant::pack_name(b"lab-runner").unwrap();
+        assert_eq!(
+            pack_name(b"lab-runner"),
+            (lo, hi),
+            "the packing is the removal name's"
+        );
+        assert_eq!(answered_console(), (ANSWERED_CONSOLE, 0, 0));
+        let mut out = [0u8; 16];
+        assert_eq!(
+            answered_from_trailer(answered_console(), &[], &mut out),
+            Some(Answered::Console)
+        );
+        let digest = [0x5au8; 32];
+        let trailer = answered_approval("lab-runner", &digest);
+        assert_eq!(trailer[0].0, ANSWERED_APPROVAL);
+        assert_eq!(trailer.len(), 3);
+        match answered_from_trailer(trailer[0], &trailer[1..], &mut out) {
+            Some(Answered::Approval {
+                name,
+                len,
+                digest: got,
+            }) => {
+                assert_eq!(&name[..len], b"lab-runner");
+                assert_eq!(got, digest);
+            }
+            other => panic!("{other:?}"),
+        }
+        assert_eq!(answered_from_trailer((9, 0, 0), &[], &mut out), None);
+        // The console's kind word carries no name: a follow word under it is no console answer,
+        // and an approval's kind word with fewer than two followers spells nothing.
+        assert_eq!(
+            answered_from_trailer((ANSWERED_CONSOLE, 0, 1), &[], &mut out),
+            None
+        );
+        assert_eq!(
+            answered_from_trailer((ANSWERED_CONSOLE, 1, 0), &[], &mut out),
+            None
+        );
+        assert_eq!(
+            answered_from_trailer(answered_approval("lab-runner", &digest)[0], &[], &mut out),
+            None
+        );
+    }
+
     /// A holder's name survives the two messages whole, at the full width and empty.
     #[test]
     fn a_holder_name_round_trips() {
@@ -908,6 +1318,58 @@ mod tests {
             "",
             "not UTF-8 spells nothing"
         );
+    }
+
+    /// **The refused ask travels as one message, name and kind** (milestone 911), and a kind
+    /// this side does not know spells nothing: the reply's third follower is the owner's to
+    /// read, and a future kind must not decode as one of these five. A directory's rights ride
+    /// above the kind, and a kind's own bits are the low byte, so a wider kind word is still
+    /// read as its kind.
+    #[test]
+    fn a_refused_ask_round_trips() {
+        for (kind, rights, name) in [
+            (ASK_NETWORK, 0, ""),
+            (ASK_SERVICE, 0, ""),
+            (ASK_INSTALLER, 0, ""),
+            (ASK_ZONE, 0, "example.net"),
+            (ASK_DIRECTORY, 1, "monit/state"),
+            (ASK_DIRECTORY, 3, "monit/state"),
+        ] {
+            let mut out = [0u8; 16];
+            assert_eq!(
+                refused_ask_from_words(refused_ask_words(kind, rights, name), &mut out),
+                Some((kind, rights, name))
+            );
+        }
+        let mut out = [0u8; 16];
+        assert_eq!(refused_ask_from_words((0, 0, 0), &mut out), None);
+        assert_eq!(refused_ask_from_words((6, 0, 0), &mut out), None);
+        // A kind word wider than the kind is the rights riding above it, and the kind is its
+        // low byte alone.
+        assert_eq!(
+            refused_ask_from_words((ASK_ZONE | (1 << 8), 0, 0), &mut out),
+            Some((ASK_ZONE, 1, ""))
+        );
+    }
+
+    /// **The stored records travel three words a message, tail padded** (milestone 911), and the
+    /// count the reply's word 2 buys is the count the bytes need.
+    #[test]
+    fn stored_records_round_trip() {
+        let records: &[u8] = b"approval lab-runner sha256:0f\n[package.seeker]";
+        let mut back = alloc::vec::Vec::new();
+        for m in 0..stored_messages(records.len() as u64) as usize {
+            let (a, b, c) = stored_words(records, m * 24);
+            back.extend_from_slice(&a.to_le_bytes());
+            back.extend_from_slice(&b.to_le_bytes());
+            back.extend_from_slice(&c.to_le_bytes());
+        }
+        back.truncate(records.len());
+        assert_eq!(back, records);
+        assert_eq!(stored_messages(0), 0);
+        assert_eq!(stored_messages(1), 1);
+        assert_eq!(stored_messages(24), 1);
+        assert_eq!(stored_messages(25), 2);
     }
 
     #[test]

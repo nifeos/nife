@@ -37,7 +37,7 @@ fn the_noteless_install_line_names_the_seeded_file() {
 /// hackbench`'s (milestone 907 (hackbench is packaged in basalt)), and `speedtest1` is `jig install
 /// sqlite`'s (milestone 897 (SQLite is packaged in basalt)). `alto` and `tenor` are the two
 /// programs of `duet` (milestone 919 (a package carries several programs)).
-const INSTALLED_BY_THE_SCRIPT: [&str; 10] = [
+const INSTALLED_BY_THE_SCRIPT: [&str; 12] = [
     "greeting",
     "noteless",
     "greeting@0.1.0",
@@ -48,6 +48,8 @@ const INSTALLED_BY_THE_SCRIPT: [&str; 10] = [
     "alto",
     "tenor",
     "reach",
+    "servant",
+    "seeker",
 ];
 
 /// **The several-program packages' install lines name the files the seed writes** (milestone
@@ -92,7 +94,7 @@ fn no_script_types_a_silent_line_twice_in_a_row() {
     // that must answer something fails either way when it prints nothing (the second copy
     // then answers "no answer at all"), so only a line wanting no answer is a hazard, and
     // `network_echo_client --mem 4`, typed twice on purpose, wants one.
-    for script in [&**SWISH_CHECK_SCRIPT, SWISH_CHECK_AFTER_REBOOT] {
+    for script in [&**SWISH_CHECK_SCRIPT, &SWISH_CHECK_AFTER_REBOOT] {
         for pair in script.windows(2) {
             assert!(
                 pair[0].typed != pair[1].typed || !pair[0].answer.is_empty(),
@@ -110,7 +112,10 @@ fn no_script_types_a_silent_line_twice_in_a_row() {
 /// can see, and the transcript cannot either.
 #[test]
 fn a_job_count_names_a_program() {
-    for l in SWISH_CHECK_SCRIPT.iter().chain(SWISH_CHECK_AFTER_REBOOT) {
+    for l in SWISH_CHECK_SCRIPT
+        .iter()
+        .chain(SWISH_CHECK_AFTER_REBOOT.iter())
+    {
         let heads = l
             .echoed
             .split(['|', '&', ';'])

@@ -11,24 +11,22 @@ rolls back packages itself, fetched by name. What is missing is in "Where this s
 
 DECISIONS §197 (a package is one archive file), in
 [its own file](../design/decisions/0197-a-package-is-one-archive-file.md), ruled the container: one archive file per package, identified by name and version, the shape
-`.deb`, `.apk` and `.hpkg` all use. It accepted a cost out loud while doing it, because a container
-is bytes a target must parse: *"the reader owes a fuzz target and the Kani treatment `crates/nifefs`
+`.deb`, `.apk` and `.hpkg` all use. It accepted a cost: a container is bytes a target must parse: *"the reader owes a fuzz target and the Kani treatment `crates/nifefs`
 and `crates/elf` already carry."*
 
 DECISIONS §195 (a reviewed recipe vouches for a package), in
 [its own file](../design/decisions/0195-a-recipe-vouches-and-the-owner-may-overrule.md), ruled
 trust. A package's digest lives in a version-controlled recipe changed by human review. Trust is
-scoped per source the owner opted into, and the owner may overrule. That is Homebrew's arrangement,
-and Homebrew is also §197's worked example of the pairing.
+scoped per source the owner opted into, and the owner may overrule. Homebrew is also §197's worked example of the pairing.
 
 What installing one does was the third fork, and DECISIONS §208 (installing a package is granting it, and
 the installed programs are versioned) ruled it on 2026-09-23.
 
 ## The format
 
-`crates/package_archive` holds it, and holds it once: the host tool writes a package with the same
-code a target reads one with, which is the arrangement `crates/nifefs` has for the boot archive.
-The crate's own documentation carries the byte layout and the reasons; three choices a reader
+`crates/package_archive` holds it, and holds it once: the host tool writes a package with the code
+a target reads one with, the arrangement `crates/nifefs` has for the boot archive.
+The crate's own documentation carries the byte layout; three choices a reader
 comparing this against `.hpkg` will ask about:
 
 - **Offsets are absolute**, so a reader never has to know where the table of contents ends to find
@@ -81,9 +79,8 @@ with it; nobody had fetched one.
 
 Three things in that run are the mechanism.
 
-It reads its own output back with the target's parser before writing anything to disk, since a
-producer that could emit a file its consumer refuses would ship one, and no target-side gate would
-catch it.
+It reads its own output back with the target's parser before writing, since a producer that could
+emit a file its consumer refuses ships one no target-side gate would catch.
 
 A recipe's recorded digest is checked before anything is written. A rebuild that does not
 reproduce the reviewed line is exactly the failure §195's arrangement exists to make visible, so the
@@ -110,7 +107,7 @@ What proves the producer, and what running and installing cost, is in
 Built 2026-09-24 by the rung 3a consumer lane, in three pieces:
 
 - The image carries its own package source. Every archive build (`cargo xtask initial-ramdisk-aarch64`
-  and `initial-ramdisk-riscv`) runs every recipe under `packages/` for its architecture, writes the package
+  and `initial-ramdisk-riscv`) runs every recipe under `packages/`, writes the package
   to `target/packages/`, and packs the catalog lines as the archive entry
   `package_archive::CATALOG` (provisional name), above the measurement table. So the kernel's
   trust root vouches for the catalog, and the catalog vouches for the package. That is §195's
@@ -271,12 +268,14 @@ removed) is met, and so is §219's gate D2. The boot prompt is the owner's conso
 - A vouch, the catalog's, the owner's or [the index copy's](packages/jig.md), grants whatever the
   note asks, the network included (milestone 597 (a program carries its manifest in an ELF note)).
 - Nothing collects `packages/`. A removed package's bytes stay, which is what rollback needs.
-- Rollback is by number, to the generation one below the live one, as Nix's is (recalled, not
-  read). Undoing a rollback is another install.
+- Rollback is by number, to the generation one below the live one, as Nix's is. The initial
+  generation is never a target (ruled 2026-10-28 UTC): the store refuses a rollback at generation
+  0 or 1 with `NoEarlier`, so no verb wipes the table empty in one step. Undoing a rollback is
+  another install.
 - A program is the member named after the package or a `bin/<program>` member (milestone 810
   (`ripgrep` is packaged in basalt)); the format marks none executable.
-- The `SYNC` before the reply is not falsified. QEMU keeps a killed guest's writes, so no gate
-  here can lose a generation that was not synced.
+- The `SYNC` before the reply is not falsified: QEMU keeps a killed guest's writes, so no gate
+  here can lose an unsynced generation.
 - A note may declare only what an image request can carry (`grant_plan::image_can_carry`): no
   file, directory, input, option or `std` runtime yet. Milestone 597's BUGS has the list.
 - Only a plain line runs an image. A path in a pipe or behind a redirection reaches the planner as
@@ -301,7 +300,7 @@ removed) is met, and so is §219's gate D2. The boot prompt is the owner's conso
   ([packages/fetching.md](packages/fetching.md)).
 - `greeting` and `noteless` (no manifest note) prove the path, not a useful program.
 - The package peer is a `guestfwd` process over slirp, not a server on a LAN: enough to prove the
-  client, not a real network card or a host elsewhere on a network (rung 3b).
+  client, not a real network card or a host elsewhere (rung 3b).
 - Plain HTTP carries the package, and that is safe only because of the image's catalog. A
   source whose digests arrive over the same connection would be worth nothing against a machine in
   the middle; that is what §196 (nife carries TLS)'s TLS is for on rung 3c.
