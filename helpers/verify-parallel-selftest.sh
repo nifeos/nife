@@ -51,6 +51,12 @@ NIFE_HEAVY_SLOT_DIR="$tmp/slots"
 export NIFE_HEAVY_SLOT_DIR
 mkdir -p "$NIFE_HEAVY_SLOT_DIR"
 
+# The hook's --no-cargo mode tells heavy scripts to take no slot, because a real wait there is idle
+# time on the push connection git holds open. This test's parent takes a slot in the private
+# directory above and never waits on a real job, so the mode is cleared here and the single-slot
+# claim stays asserted on every path that runs this file.
+unset LINT_NO_CARGO
+
 log="$tmp/cargo.log"
 export NIFE_SELFTEST_LOG="$log"
 
