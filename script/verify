@@ -568,14 +568,14 @@ if [ -n "$parallel" ]; then
 		fi
 		printf '%s\n' "$line" >>"$summary"
 		printf '%s\n' "$line"
+		# The packer's drift check is the one `warning:` line a child's log carries that the summary
+		# should repeat; the rest are the compiler's, and a suite summary is not a build log.
+		drift="$(sed -n 's/^warning: prove shard /drift: /p' "$log" 2>/dev/null || true)"
+		if [ -n "$drift" ]; then
+			printf 'shard %s/%s: %s\n' "$k" "$children" "$drift" | tee -a "$summary"
+		fi
 		k=$((k + 1))
 	done
-	# A shard that ran far from its plan warns inside its own log. Surfacing it here puts the table's
-	# drift in front of the person who ran the suite, rather than only whoever opens a log.
-	warnings="$(grep -h '^warning:' "$logdir"/shard-*-of-"$children".log 2>/dev/null || true)"
-	if [ -n "$warnings" ]; then
-		printf '%s\n' "$warnings" | sed 's/^/parallel: /' | tee -a "$summary"
-	fi
 	if [ -n "$failed" ]; then
 		echo "parallel: NO SUITE VERDICT: shard(s)$failed failed. Each shard's own result stands, and one of them alone reruns with its counterexample trace: script/verify --shard <k>/$children <args>" >&2
 		echo "parallel: summary in $summary" >&2

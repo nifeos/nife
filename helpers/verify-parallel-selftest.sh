@@ -54,6 +54,9 @@ cat >"$tree/bin/cargo" <<'STUB'
 #!/bin/sh
 [ "$1" = kani ] && [ "$2" = "--version" ] && { echo "cargo-kani 0.68.0"; exit 0; }
 printf '%s\n' "$*" >>"$NIFE_SELFTEST_LOG"
+# A compiler-shaped warning, so the test can tell the summary's one kind of warning (the packer's
+# drift check) from the kind that must stay in the child's log.
+echo "warning: use of an unstable feature" >&2
 crate=""
 prev=""
 for a in "$@"; do
@@ -185,6 +188,12 @@ fi
 # One install from the parent and one from each child, which is a no-op once Kani is at the pin.
 [ "$(grep -c '^install$' "$log")" -eq 5 ] ||
 	fail "expected 5 install calls (the parent, then each child), found $(grep -c '^install$' "$log")" "$log"
+# The drift warning is the only kind the summary repeats; the compiler's stay in the child's log.
+[ "$(grep -c 'drift:' "$dir/summary.txt")" -eq 4 ] ||
+	fail "the packer's drift warning did not reach the summary" "$dir/summary.txt"
+if grep -q 'unstable feature' "$dir/summary.txt"; then
+	fail "the summary repeated the compiler's warnings" "$dir/summary.txt"
+fi
 
 # 3. One child failing: the parent fails, names that shard, and claims no verdict.
 fail_crate=glob

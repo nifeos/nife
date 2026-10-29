@@ -115,6 +115,12 @@ asserts the partition; this work adds one subcommand, `shards`, so one place par
   racy.
 - The children share one target directory, so cargo's build lock serializes their compiles. The
   967 s includes that cost, and the solver dominates it.
+- A Mac cannot prove the `kernel` row, parallel or not. Kani builds for the host, the host is
+  Mach-O, and Mach-O rejects `kernel/src/arch/aarch64/exceptions.rs`'s ELF-style `link_section`, so
+  `script/verify --only kernel` fails the same way `--parallel` does. A parallel run on the dev Mac
+  therefore ends with one failed child; the first end-to-end one did, with the other 21 crates of
+  its shard green. The row proves on the Linux hosts the matrix uses, which is where the mode wants
+  to run.
 
 ## Names
 
