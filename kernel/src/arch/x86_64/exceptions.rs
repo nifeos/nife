@@ -540,7 +540,10 @@ unsafe extern "C" {
 /// address it passes. Nothing else may call it.
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
-#[unsafe(link_section = ".text.hot.x86_syscall_handler")]
+#[cfg_attr(
+    target_os = "none",
+    unsafe(link_section = ".text.hot.x86_syscall_handler")
+)]
 pub(crate) unsafe extern "C" fn x86_syscall_handler(frame: *mut TrapFrame) {
     // SAFETY: `x86_syscall_entry` built the frame directly below the pointer it passed, and no
     // other caller exists (the symbol is only referenced from trap.s).
