@@ -2,6 +2,7 @@
 """How long the Kani proofs take in CI, per crate and per shard, and whether script/verify knows.
 
     python3 helpers/verify_times.py shard k/n < table          # script/verify's packer (crates on stdout)
+    python3 helpers/verify_times.py shards                     # CI's prove shard count, from verify.yml
     python3 helpers/verify_times.py shard-check k/n SECONDS < table   # warn if a shard ran far off its estimate
     python3 helpers/verify_times.py crates [--runs N]          # median CI seconds per crate, as TSV
     python3 helpers/verify_times.py refresh [--runs N] [--dry-run]   # rewrite the table if it drifted
@@ -430,6 +431,10 @@ def drift(table, measured, n):
 
 
 def shard_count():
+    """How many prove shards CI runs, read from the matrix in verify.yml.
+
+    This is the one place the number is parsed, so `shards` below and the refresh's own drift
+    check cannot disagree about it."""
     m = re.search(r"script/verify --shard \$\{\{ matrix\.shard \}\}/(\d+)", open(VERIFY_YML).read())
     if not m:
         sys.exit("verify_times: cannot find the prove shard count in %s" % VERIFY_YML)
@@ -741,6 +746,11 @@ def main(argv):
     cmd = argv[1] if len(argv) > 1 else ""
     if cmd == "shard" and len(argv) == 3:
         return shard(argv[2])
+    if cmd == "shards" and len(argv) == 2:
+        # Read by `script/verify --parallel`, whose default child count is the smaller of this and
+        # the machine's heavy-job slots (helpers/verify_parallel.py).
+        print(shard_count())
+        return 0
     if cmd == "shard-check" and len(argv) == 4:
         return shard_check(argv[2], float(argv[3]))
     if cmd == "crates":

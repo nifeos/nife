@@ -168,6 +168,20 @@ echo "==> the heavy-job slots (a full machine holds a job back; a killed holder 
 # them. Proved in a scratch tree with a private slot directory and one slot, so it never waits on a
 # real job: helpers/heavy-slot-selftest.sh lists its five stages and what breaks each.
 helpers/heavy-slot-selftest.sh >/dev/null
+# The local parallel prove (milestone 957): the whole table forked into shard children that run
+# inside the one slot their parent holds. helpers/verify-parallel-selftest.sh says what it proves,
+# over a stub cargo and a private slot directory, so it costs milliseconds and takes no real slot.
+helpers/verify-parallel-selftest.sh >/dev/null
+
+echo "==> script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot"
+# The local parallel prove, milestone 957 (local parallel prove of the Kani verification suite): a stub
+# kani-install and a stub `cargo` in a scratch tree, so the shard children are the real orchestration
+# over stubbed proving, and the whole thing costs milliseconds with no Kani and no slot of the
+# machine's. Its stages, and what breaks each, are at the top of the file; a deadlock (a child
+# waiting for the slot its parent holds) is proved against a one-slot fixture under a deadline,
+# because a deadlock never returns on its own.
+python3 helpers/verify_parallel.py --selftest >/dev/null
+helpers/verify-parallel-selftest.sh >/dev/null
 
 echo "==> script/push believes origin's ref, not git's exit status"
 # A push that never landed has exited 141 and exited 0 alike (#2478), and no CI run pushes, so this
