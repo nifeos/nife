@@ -2,75 +2,36 @@
 
 The appendix to [notes/packages.md](../packages.md) for milestone 809 (the package client becomes a
 program), built 2026-10-10 (UTC). `jig` installs, removes and rolls back packages and lists what the
-image vouches for. The progenitor stays the installer; `jig` asks it.
+image vouches for. The progenitor stays the installer; `jig` asks it. Since milestone 911 (scripted
+installs grant only what the owner's approval file allows), `jig` also holds the owner's approvals.
+`jig approve <file>` stores an approval file's compiled records, and `jig revoke <name>` drops one.
+`jig install --approved <file>` replaces the owner's prompt with the check that the package's asks
+lie within the file's entry, failing closed and naming every extra grant.
 
-## EXAMPLES
+## Scripted installs, and the approvals
 
-From `script/swish-check`'s first boot, on all three architectures:
+The flags an install, removal or rollback takes, after the operand:
 
-```
-$ jig list
-  packages this image vouches for (its catalog; no index yet):
-  greeting 0.1.0
-  ...
-$ cd downloads
-$ jig install ./noteless.nifepkg
-  installed; generation 1 is live
-$ cd /
-$ jig install nosuch
-  refused: this image's catalog names no such package, so nothing was fetched
-$ jig install greeting@0.1.0
-  fetched and installed; generation 2 is live
-$ installed/jig rollback
-  this jig holds no installer endpoint; only the owner's console grants one
-```
+- `--approved <file>`: the owner's own file replaces the prompt. Every program's asks must lie
+  within the file's entry for the package; the failure names each extra grant, in the block's
+  shape, `refused: <package> <version> asks for <grant>, which <approval> does not allow`. The
+  removal asks the entry's `remove` answer. The record carries the answer beside itself as the
+  approval's name and digest, which the progenitor could not otherwise know.
+- `--within <name>`: the console delegated this spawn. The endpoint's badge carries the approval,
+  the progenitor's check replaces `jig`'s, and nothing prompts: a delegated holder is nothing more
+  than a holder of that badge (DECISIONS §270's amendment). The refusal comes back `NotApproved`
+  or `Revoked`, and `jig` says it with the package's name.
+- `--json`: one machine-readable object per result or refusal, with the exit codes documented in
+  the program's own header (0 success, 1 refused or failed, 2 usage). A subset-test refusal names
+  each extra grant as data.
 
-From the second boot, after `update` (milestone 801 (packages over the internet), 2026-10-12 UTC),
-riscv64's transcript:
-
-```
-$ jig update
-  index updated: 4 packages for riscv64, from basalt.test over TLS
-$ jig list
-  packages the index offers (the copy jig update wrote):
-  greeting 0.1.0
-  rebound 0.1.0
-  uptime 0.1.0
-  greeting 0.3.0
-$ jig install uptime
-  passed over https://packages.basalt.test:8443/rolling/targets/uptime-0.1.0-riscv64.nifepkg: not resolved: NotFound
-  refused: the index does not vouch for the bytes that arrived; nothing was sent to the installer
-$ jig install greeting@0.3.0
-  passed over https://packages.basalt.test:8443/rolling/targets/greeting-0.3.0-riscv64.nifepkg: not resolved: NotFound
-  fetched greeting-0.3.0-riscv64 from basalt.test over TLS
-  fetched and installed; generation 6 is live
-```
-
-`jig list -u`, typed after that `update` and before `greeting` 0.3.0 is installed, compares the
-live generation, which holds `greeting` 0.1.0 and 0.2.0, with the copy:
-
-```
-$ jig list -u
-  installed packages the index offers newer (the copy jig update wrote):
-  greeting 0.2.0 -> 0.3.0
-$ jig list --upgradable
-  refused: jig spells that list -u; it takes no long form
-```
-
-Newer is Debian's order, dpkg's `verrevcmp` (calef, 2026-10-18 UTC: "Debian dpkg order"), in
-`package_index::version`: `1.10` is newer than `1.9`, and `1.0~rc1` older than `1.0`. A version
-dpkg would refuse or warn about (an empty one, one not starting with a digit, or one with a
-character outside `0-9 A-Z a-z . + ~`) refuses an index at `update`, and an installed row's at
-`list -u`, naming it.
-
-The image's catalog names no `greeting` 0.3.0, so the installer took it on the index copy's word.
-The listed location is passed over because this prompt cannot resolve it; the repository's own
-copy is the fallback.
-
-The verbs are apt's where apt has one; [the record](../../design/naming/command-line-rulings.md#jig-takes-apts-verbs)
-has each spelling. A word with a `/` is a file, so a package file in this directory is `./<file>`.
-It is installed from the directory it is in, because a word is designated at the current directory,
-and the root cannot be narrowed to one name.
+`jig approve <file>` prints every grant the file contains (the root zone flagged apart, the way the
+confirmation flags it), asks once, and sends the compiled records to the progenitor as an `Approve`
+request. On a name stored already it shows only the grants changed since the stored digest, which
+is the re-approval the block's Done-when 5 asks for; the `approve` verb reads the store's file
+through the activation directory it holds read-only. `jig revoke <name>` drops it. An approval
+lives beside the installed-programs table's generations, never as rows in them, so `jig rollback`
+changes no approval.
 
 ## What it holds
 
@@ -217,3 +178,10 @@ installs from the Pages copy. The ignored test `a_release_download_is_e46_then_o
 - A copy run by path carries a note that asks for less than the image's `jig` holds, so it lists
   nothing and installs nothing. That is the point of the `installed/jig` line, and also all a copy
   can do.
+- The `update` answer in an approval file binds only a delegated install of an installed package,
+  where the approval is stored. The console's `--approved` path checks the asks and the `remove`
+  answer; the progenitor's delegated check runs the `update` answer, since only it knows whether
+  the package has a live row. The owner writing the file decides both.
+- The progenitor reads `--within` from the line's words when it places the endpoint, and `jig`
+  reads them when it decides not to prompt; a line that says it on a verb that holds no installer
+  says nothing to anybody.

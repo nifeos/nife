@@ -40,6 +40,13 @@ elf = { path = "../crates/elf" }
 package_archive = { path = "../crates/package_archive" }
 # What is installed, for `list -u`: the installed-programs table's reader and where it lives.
 installed_programs = { path = "../crates/installed_programs" }
+# **The owner's approval file** (milestone 911 (scripted installs grant only what the owner's
+# approval file allows)): the parser and the compiler to the records `jig approve` sends, and
+# the subset test `install --approved` holds the package's asks to.
+approval_file = { path = "../crates/approval_file" }
+# The digest's text form, for the `approved` line's `sha256:` (milestone 911): the same spelling
+# every record and the answered lines use.
+measured_boot = { path = "../crates/measured_boot" }
 socket_contract = { path = "../crates/socket_contract" }
 std_runtime_contract = { path = "../crates/std_runtime_contract" }
 user_mode_runtime = { path = "../crates/user_mode_runtime" }

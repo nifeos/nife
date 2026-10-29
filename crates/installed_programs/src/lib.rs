@@ -7,7 +7,11 @@
 //! [`with_entry`], [`without_package`]); a one-line `current` names the live one
 //! ([`parse_current`], [`format_current`]). Any malformed line makes the whole table
 //! [`Error::Malformed`]: a half-parsed table would vouch for whatever survived. The line format,
-//! rows keyed on digest, pointers and `grant` lines, is in notes/packages/installed-programs.md.
+//! rows keyed on digest, pointers, `grant` lines and the `answered` line, is in
+//! notes/packages/installed-programs.md. [`approval`] is the compiled approval: what `jig approve`
+//! sends, what the progenitor stores beside the generations, and what a delegated holder's
+//! requests are checked against (milestone 911 (scripted installs grant only what the owner's
+//! approval file allows)).
 
 //! # BUGS
 //!
@@ -25,7 +29,12 @@
 
 pub use measured_boot::Digest;
 
+mod answered;
+pub mod approval;
 mod generation;
 mod grants;
+pub use answered::{Answered, answered, record, records_agree};
 pub use generation::*;
-pub use grants::{Grant, Granted, ROOT_ZONE, grants, network_granted};
+pub use grants::{
+    DirectoryRights, Grant, Granted, ROOT_ZONE, covers, extras, grants, network_granted,
+};

@@ -291,7 +291,10 @@ unsafe extern "C" {
 /// "The split around the interrupt stack".
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
-#[unsafe(link_section = ".text.hot.exception_dispatch")]
+#[cfg_attr(
+    target_os = "none",
+    unsafe(link_section = ".text.hot.exception_dispatch")
+)]
 extern "C" fn exception_dispatch(frame: &mut TrapFrame, index: u64) {
     let top = crate::interrupt_stack::top_for_trap(is_from_lower_el(index));
     let deferred_switch = if top == 0 {

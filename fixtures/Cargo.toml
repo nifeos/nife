@@ -170,6 +170,31 @@ path = "src/dialer.rs"
 test = false
 bench = false
 
+# servant (milestone 911 (scripted installs grant only what the owner's approval file allows);
+# name provisional): a program whose version 3 note asks to run as a service, which
+# `script/swish-check` installs so the confirmation lists the ask and the record carries it.
+# Nothing starts it; that is milestone 910 (a package declares a service)'s. `packaged_only`.
+[[bin]]
+name = "servant"
+path = "src/servant.rs"
+test = false
+bench = false
+
+# seeker (milestone 911; name provisional): a program whose note asks for the network and the
+# zone `nife.test`, at 0.1.0, and `seeker_v2` whose 0.2.0 note asks one zone more, which is what
+# the subset test refuses. `packaged_only`.
+[[bin]]
+name = "seeker"
+path = "src/seeker.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "seeker_v2"
+path = "src/seeker_v2.rs"
+test = false
+bench = false
+
 # The interrupt_heeder (DECISIONS §24): a long-running job that heeds the cooperative ^C,
 # polling a shared flag between work units and exiting cleanly when the shell sets it. The
 # cooperative interrupt tier.
@@ -569,7 +594,7 @@ bench = false
 # be a `[[bin]]` above, and must not be a program the shell or the boot needs, and `xtask` refuses
 # the archive otherwise. Key name provisional.
 [package.metadata.nife]
-packaged_only = ["greeting", "noteless", "greeting_v2", "alto", "tenor", "dialer"]
+packaged_only = ["greeting", "noteless", "greeting_v2", "alto", "tenor", "dialer", "servant", "seeker", "seeker_v2"]
 
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.

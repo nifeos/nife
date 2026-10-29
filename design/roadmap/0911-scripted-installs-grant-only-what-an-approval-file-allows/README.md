@@ -7,6 +7,8 @@ prose budget), has no room for. Neither file is needed to act on the block.
 
 - [`an-example-file.md`](an-example-file.md): an approval file in TOML, with provisional keys.
 - [`prior-art.md`](prior-art.md): Debian, Android, NixOS, Fuchsia, and one machine against many.
+- [`the-gate.md`](the-gate.md): the gate, row by row, what `script/swish-check` proves for the
+  block's Done-when list (2026-10-28).
 
 Name: provisional, minted 2026-10-12 (UTC) by maintainer/911-rollback-rulings, which split the
 parent under §212. The directory follows §212's siting default. calef names directories.

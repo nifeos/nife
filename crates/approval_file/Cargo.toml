@@ -1,0 +1,17 @@
+[package]
+name = "approval_file"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# The compiled records the file compiles to, and the subset test over them. `jig` compiles the
+# file on the owner's console; basalt's composition (milestone 909 (basalt composes the bootable
+# image from its packages)) checks its packages against one the same way, host-side.
+installed_programs = { version = "0.1.0", path = "../installed_programs" }
+# The spelling a zone entry is held to, which is the resolver's.
+domain_name_resolution_contract = { path = "../domain_name_resolution_contract" }

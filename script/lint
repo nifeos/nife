@@ -759,6 +759,25 @@ if [ -n "$cfi_bad" ]; then
 fi
 echo "CFI: every hand-written .s file with an exported symbol carries call-frame information"
 
+# Every custom-section `link_section` under `kernel/src` is gated to the bare-metal target.
+#
+# The kernel compiles twice: for bare metal, where the linker scripts (`kernel/link-*.ld`) place
+# these sections, and for the host, where `script/verify` drives Kani. On the host the section
+# name is a placeholder, but rustc validates it against the object format when it codegens the
+# item, so a Mach-O host refuses an ELF name with `invalid Mach-O section specifier`, which is how
+# a `script/verify` run died at the kernel compile (issue #2885). The `target_os = "none"` gate
+# keeps the exact ELF name for the linker scripts and drops the attribute on the host.
+#
+# Four sites across three files carried the ungated form when this landed (the exception
+# dispatchers), and each is a codegen path away from the same host-compile failure. The helper
+# walks `kernel/src`, reads each attribute whole so a multi-line `cfg_attr` is one unit, and fails
+# any custom section without the gate, so the next one cannot land ungated.
+# `notes/kernel-proofs.md` stub-list item 5 and `notes/linker-scripts.md` carry the design. The
+# empty-selector guard fails a run that judges no custom section at all.
+echo "==> the custom-section link_section names are gated to the bare-metal target"
+python3 "$(dirname "$0")/../helpers/lint_link_section_target.py" --selftest >/dev/null
+python3 "$(dirname "$0")/../helpers/lint_link_section_target.py" || exit 1
+
 # Every committed `.dtb` is what the `.dts` beside it compiles to. The device-tree fixtures
 # commit both halves of each pair, and a sweep can edit the text without reaching the binary
 # beside it: five blobs kept a name the tree had renamed away five weeks earlier, because nothing
