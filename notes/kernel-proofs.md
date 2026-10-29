@@ -281,7 +281,7 @@ place rather than an assertion that they are.
   `.github/workflows/verify.yml` runs on `ubuntu-24.04-arm`, which is aarch64 Linux, and because
   the dev machine is Apple Silicon. Milestone 193's block predicted the opposite ("CI is x86_64
   Linux and it very likely will not [compile]"); the check proved it false: `script/lint` fails a
-  custom-section `link_section` under `kernel/src` that lacks the `target_os = "none"` gate, so a
-  host compile drops the section and rustc does not refuse the ELF name on Mach-O. If that runner
-  label ever changes, this row breaks, and the fix is putting `aarch64-cpu` behind a target `cfg`.
+  custom-section `link_section` under `kernel/src` without the `target_os = "none"` gate. If that
+  runner label ever changes, this row breaks, and the fix is putting `aarch64-cpu` behind a target
+  `cfg`.
 - **This note does not price the rest of the work.** What was measured is that the front door opens.
