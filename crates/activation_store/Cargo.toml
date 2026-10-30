@@ -1,0 +1,14 @@
+[package]
+name = "activation_store"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# The grammar every generation's body is held to, and the readers that refuse a body that is not a
+# table. The container carries generations; their grammar stays this crate's one definition.
+installed_programs = { version = "0.1.0", path = "../installed_programs" }
