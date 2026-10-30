@@ -143,6 +143,7 @@ pgrep	userspace	components
 pmap	userspace	components
 portable_executable	host	retired
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
+program_asks	userspace	components,fixtures
 ps	userspace	components
 regions	kernel	retired
 screen_console	shared	components,kernel,uefi_loader

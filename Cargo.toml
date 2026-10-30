@@ -41,6 +41,7 @@ members = [
     "crates/http_response",
     "crates/installed_programs",
     "crates/approval_file",
+    "crates/program_asks",
     "crates/direct_memory_access_validator",
     "crates/device_tree_blob",
     "crates/elf",

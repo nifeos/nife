@@ -1058,6 +1058,17 @@ name = "program_argument_contract"
 version = "0.1.0"
 
 [[package]]
+name = "program_asks"
+version = "0.1.0"
+dependencies = [
+ "capability_manifest_note",
+ "elf",
+ "grant_plan",
+ "installed_programs",
+ "package_archive",
+]
+
+[[package]]
 name = "ps"
 version = "0.1.0"
 dependencies = [
@@ -1366,6 +1377,7 @@ dependencies = [
  "nifefs",
  "package_archive",
  "package_index",
+ "program_asks",
  "socket_contract",
  "std_runtime_contract",
  "supervision_contract",
