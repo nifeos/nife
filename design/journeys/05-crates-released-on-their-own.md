@@ -6,7 +6,8 @@ calef asked for this journey on 2026-10-29 (UTC): *"Lets create that journey. I 
 as a unit and use it to direct AI development of many milestones."* The subject was a journey for
 the crates, parallel to journey 4's package journey. He scoped it the same day: *"We cannot control
 adoption. We can control the crates we externalize."* So this file tracks externalization, and it
-holds only what nife controls. [Milestone 857](../roadmap/0857-crates-released-on-their-own.md)
+holds only what nife controls.
+[Milestone 857 (crates released on their own)](../roadmap/0857-crates-released-on-their-own.md)
 holds the program: each publish-ours crate publishes when ready (proofs passing, API stable),
 through its own milestone at its review (calef, 2026-10-07 (UTC)); one repository per crate under
 `nifeos`; and the release order ruled 2026-10-27 (UTC). The story, per crate: nife builds and
@@ -20,7 +21,7 @@ unbuilt step from the table, the way journey 4 directs the package work.
 | step | milestone | decision | what this step needs |
 |---|---|---|---|
 | 1 | 887 | | the machinery every crate repository calls from its move onward: the shared template's nine ruled checks, the allowlist lint that keeps `publish = false` the default, the `crate-maintainers` team as the crates.io owner, and trusted publishing, with every release waiting in the `crates-io` environment for calef. The template's two remaining checks (the scoped-token first publish and the semver baseline) wait at step 9 |
-| 2 | 813 | | the first publication in the ruled order: `file_allocation_table` finishes the write half, stages 6 to 9 (allocation and write, directories and rename, the general FAT12/16/32 format, timestamps and the label), then the move, the soak, the 0.1.0 publication, and nife consuming the release by checksum in `Cargo.lock`. Milestone 140's FAT32 stratum depends on it |
+| 2 | 813 | | the first publication in the ruled order: `file_allocation_table` finishes the write half, stages 6 to 9 (allocation and write, directories and rename, the general FAT12/16/32 format, timestamps and the label), then the move, the soak, the 0.1.0 publication, and nife consuming the release by checksum in `Cargo.lock`. Milestone 140 (mount a drive this system did not create) needs it for its FAT32 stratum |
 | 3 | 820 | | the second publication in the ruled order: `extensible_host_controller_interface`, released with `usb`, once the crate gains the two harnesses its table still marks `none yet` (the event ring, the capability walk), then the move, the soak, the publication and nife consuming the release |
 | 4 | 857 | | the third publication in the ruled order, `generational_table`: no milestone owns it yet, and fork 7 mints one at its review with calef, quoting his ruling and its disposition; before release, the record says whether `slotmap` already covers allocation-free fixed capacity |
 | 5 | 814 | | `non_volatile_memory_express`: class A, so no cut, and its process plan already left for `non_volatile_memory_express_contract` (#2736); its eight harnesses prove, so the step is the move, the soak, the publication and nife consuming the release |
@@ -31,7 +32,8 @@ unbuilt step from the table, the way journey 4 directs the package work.
 | 10 | 819 | | `jh7110_clock_and_reset`: its cut is done and its name ratified, and it holds no harness yet, so the harnesses and their falsification patches come first; then the move, the soak, the publication and the consumption |
 
 Two orderings govern the program, and they order different events. The soak order sits in the
-per-crate blocks: `jh7110_entropy` (milestone 818) is the pilot and soaks first, because it is the
+per-crate blocks: `jh7110_entropy`, milestone 818 (proven JH7110 TRNG logic, released on its own),
+is the pilot and soaks first, because it is the
 smallest crate with a real cut and the cut is where refactor lessons show up. The publication order
 calef ruled on 2026-10-27 (UTC), in
 [milestone 857](../roadmap/0857-crates-released-on-their-own.md) and again as risk 8's first
@@ -46,10 +48,11 @@ The path holds only publish dispositions. The survey's contribute rows (paging, 
 `elf`, `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) wait,
 by the ruling of 2026-10-27 (UTC), until a published crate has users who ask for them upstream, so
 nife controls no externalization step for them today. The internal set stays in this tree, and its
-reviews close as one sitting (857's item 7). calef refused `portable_executable` (milestone 821,
-ruled 2026-10-21 (UTC): its input is nife's own build product, so a published proof protects no
-known user), and it is no longer a crate; the conversion lives in `xtask` (the survey's
-corrections, 2026-10-27 (UTC)). No step here expects any of them. The soak's own fourth condition,
+reviews close as one sitting (857's item 7). calef refused milestone 821 (`portable_executable`: an
+ELF-to-PE converter, proven, then released on its own) on 2026-10-21 (UTC): its input is nife's own
+build product, so a published proof protects no known user. The crate no longer exists, and the
+conversion lives in `xtask` (the survey's corrections, 2026-10-27 (UTC)). No step here expects any
+of them. The soak's own fourth condition,
 the stranger test (the crate builds and proves from its README alone), is controlled work and
 stays; what nobody controls is who, if anyone, depends on the result.
 
