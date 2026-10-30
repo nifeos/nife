@@ -26,7 +26,9 @@ Reuse: the two Rust implementations are `ufs-core` 0.1.5 (Apache-2.0, a 2,778-li
 `rufs` 0.6.0 (BSD-2-Clause, a 2,711-line read/write implementation over FUSE). The oracle is
 FreeBSD's `newfs`, `makefs` and `fsck_ffs`, all BSD-2-Clause, all building on a host. The crash
 injector comes from milestone 37 (Prove RedoxFS's crash consistency), which injects power cuts, torn
-writes and a lying device and needs no change.
+writes and a lying device and needs no change. The activation store reuses the table and its grammar
+(`crates/installed_programs`) and the approval file and its check (`crates/approval_file`); UFS2
+supplies the container.
 
 ## Why UFS2
 
@@ -72,7 +74,8 @@ two images, `rufs` reads both, and then `fsck_ffs` judges what nife writes.
 The deliverable is a server that mounts an existing UFS2 image and reads files through it, bound to
 the `filesystem_contract` the RedoxFS server uses today. No `CREATE` and no `TRUNCATE` yet, the same
 honest gap milestone 32 (A real filesystem: RedoxFS behind a capability FS server) recorded for its
-first phase.
+first phase. The composed image's launch volume is this image, and it carries the first
+installed-programs table (see below).
 
 ### Phase 3: the write path
 
@@ -94,14 +97,31 @@ Then run the injector from milestone 37 (Prove RedoxFS's crash consistency) agai
 publish the three numbers RedoxFS carries: 186 lying-device cases, 112 recovered, 74 refused, 0
 silently wrong. A launch store that cannot match the zero is not done, whatever else it does.
 
-## The decision asked
+## The activation store rides on this arc
 
-Two of them, for calef:
+The composed image's first installed-programs table lives on this volume (calef, 2026-10-30 UTC, on
+#2894), as files under `activation/`. The arc therefore carries a deliverable it did not before:
+phase 2's image holds `activation/1` and `activation/current`, and phase 3's write path is what a
+`mkfs` uses to write them.
 
-1. Add BSD-2-Clause to `deny.toml`'s allow-list, or refuse UFS2's FreeBSD half and keep only the
-   Apache-2.0 reader.
-2. Re-aim DECISIONS §34 (RedoxFS is the primary filesystem, on three conditions) from RedoxFS to
-   UFS2 once phases 2 through 4 pass, which is what moves RedoxFS to a retirement lane of its own.
+The table's grammar stays nife's. `installed_programs` owns the generations and the `current`
+pointer, and `approval_file` owns the check. UFS2 owns the container only. No bespoke store crate
+and no seed image is built, which is the simplification the ruling buys: one store, one format and
+one writer, where a separate store would have owed a migration to this filesystem later.
+
+This raises the ordering cost, and it is worth stating. A composed image can carry a table only
+once this arc reads and writes a UFS2 volume, so 909's table half lands with phase 2 rather than
+immediately. The check half of 909 item 3 does not wait on the arc and proceeds on its own.
+
+## What calef ruled
+
+Ruled 2026-10-30 (UTC), on #2894:
+
+1. BSD-2-Clause joins `deny.toml`'s allow-list, because UFS2's FreeBSD half (`rufs`, `newfs`,
+   `makefs`, `fsck_ffs`, soft updates) is BSD-2-Clause, and it is the half the oracle and the
+   journal come from.
+2. DECISIONS §34 (RedoxFS is the primary filesystem, on three conditions) re-aims from RedoxFS to
+   UFS2 when UFS2 lands, not before, which is what moves RedoxFS to a retirement lane of its own.
 
 ## What stays
 
