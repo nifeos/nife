@@ -13,7 +13,7 @@ calef ruled the plan in a top-level session on 2026-10-30 (UTC), while lane
 bench/cross-os-reference-columns recorded it. Milestones 826 through 834 plan nife's half of each
 cross-OS comparison; the reference side (which operating systems, what every row records, which
 machine collects which rows) is the missing piece.
-[notes/cross-os-reference-columns.md](../../notes/cross-os-reference-columns.md) holds it; this
+[notes/cross-os-reference-columns.md](../../../notes/cross-os-reference-columns.md) holds it; this
 proposal asks for the evenings that fill it.
 
 Reuse: every benchmark runs unmodified and each operating system installs from its own published
@@ -37,8 +37,8 @@ whether the distribution moves the number.
 
 ## Which fatal risks it informs
 
-[Risk 6](../fatal-risks/6-a-confined-driver-is-too-slow.md): the fio and SPDK columns on xenon are
-its reference set. [Risk 4](../fatal-risks/4-the-per-crossing-cost.md): the lmbench subset builds
+[Risk 6](../../fatal-risks/6-a-confined-driver-is-too-slow.md): the fio and SPDK columns on xenon are
+its reference set. [Risk 4](../../fatal-risks/4-the-per-crossing-cost.md): the lmbench subset builds
 its crossing-cost table across operating systems. Every cross-OS claim gains credibility a stranger
 can check: the unix rows run on stock installs anyone can reproduce.
 
