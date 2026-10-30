@@ -894,7 +894,7 @@ fn install(
     // resolver zones and the service (milestone 892 (a std program at the prompt holds the
     // network and a resolver); the service ask is milestone 911's, note version 3). `jig
     // install` lists these asks and sends nothing without the owner's yes.
-    let granted = || got.programs().flat_map(asked_grants);
+    let granted = || got.programs().flat_map(|p| program_asks::asked_grants(&p));
     // **The delegated check** (milestone 911 (scripted installs grant only what the owner's
     // approval file allows)), before anything is placed or written: every program's asks within
     // the package's entry, and the entry's `update` answer when the package is installed
@@ -912,7 +912,8 @@ fn install(
             return refused_not_approved(cx, package.name()).into();
         }
         for p in got.programs() {
-            let outside = asked_grants_of(&p).any(|ask| entry.covers(ask) != Ok(true));
+            let outside =
+                program_asks::asked_grants_of(&p).any(|ask| entry.covers(ask) != Ok(true));
             if outside {
                 return refused_not_approved(cx, package.name()).into();
             }
@@ -937,7 +938,7 @@ fn install(
             Ok(None) => {
                 // No entry bounds the package, so its first ask is the one that fails.
                 if let Some(p) = got.programs().next()
-                    && let Some(ask) = asked_grants_of(&p).next()
+                    && let Some(ask) = program_asks::asked_grants_of(&p).next()
                 {
                     return refused_with_ask(cx, package.name(), ask).into();
                 }
@@ -946,7 +947,7 @@ fn install(
             Err(_) => return Answer::from((S::StoreFailed, live)),
         };
         for p in got.programs() {
-            let outside = asked_grants_of(&p).find(|ask| entry.covers(*ask) != Ok(true));
+            let outside = program_asks::asked_grants_of(&p).find(|ask| entry.covers(*ask) != Ok(true));
             if let Some(ask) = outside {
                 return refused_with_ask(cx, package.name(), ask).into();
             }
@@ -969,53 +970,6 @@ fn install(
         return Answer::from((S::StoreFailed, live));
     }
     Answer::from((S::Done, m))
-}
-
-/// **What one program's note asks the owner for**: the network, if it asks, then each resolver zone,
-/// keyed on the program's digest. Nothing for a program whose bytes or note cannot be read, which
-/// runs with none of them either (`endowed_image` refuses it).
-fn asked_grants<'b>(
-    p: package_archive::Program<'b>,
-) -> impl Iterator<Item = installed_programs::Grant<'b>> + use<'b> {
-    let digest = p.digest;
-    asked_grants_of(&p).map(move |what| installed_programs::Grant { digest, what })
-}
-
-/// **What one program's note asks for**, as the grants the owner's yes covers: the network,
-/// each resolver zone, and the service ask of note version 3 (milestone 911 (scripted installs
-/// grant only what the owner's approval file allows)). Nothing for a program whose bytes or note
-/// cannot be read, which runs with none of them either (`endowed_image` refuses it).
-fn asked_grants_of<'b>(
-    p: &package_archive::Program<'b>,
-) -> impl Iterator<Item = installed_programs::Granted<'b>> + use<'b> {
-    use installed_programs::Granted;
-    let note = elf::Elf::parse(p.bytes).ok().and_then(|elf| {
-        elf.note(
-            capability_manifest_note::OWNER,
-            capability_manifest_note::MANIFEST,
-        )
-        .ok()
-        .flatten()
-    });
-    let decoded = note.and_then(|d| {
-        Some((
-            capability_manifest_note::decode(d).ok()?,
-            capability_manifest_note::zones(d).ok()?,
-            capability_manifest_note::service(d).ok()?,
-        ))
-    });
-    let network = decoded
-        .is_some_and(|(m, _, _)| m.network)
-        .then_some(Granted::Network);
-    let service = decoded
-        .is_some_and(|(_, _, s)| s)
-        .then_some(Granted::Service);
-    let zones = decoded.into_iter().flat_map(move |(_, zones, _)| {
-        zones
-            .iter()
-            .filter_map(|z| Some(Granted::Zone(core::str::from_utf8(z).ok()?)))
-    });
-    network.into_iter().chain(service).chain(zones)
 }
 
 /// **The owner's `Approve`** (milestone 911 (scripted installs grant only what the owner's
