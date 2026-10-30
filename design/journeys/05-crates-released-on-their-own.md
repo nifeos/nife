@@ -1,5 +1,5 @@
 ---
-status: WORKING
+status: PARTIAL
 raised: 2026-10-29
 ---
 # 5. Externalize the publish-ours crates, one release at a time
