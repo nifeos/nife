@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: gating-ci-rents-more-concurrency-before-it-owns-a-runner
 raised: 2026-10-24
 milestone_dependencies: none
 decision_dependencies: unwritten
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# Gating CI rents more concurrency before it owns a runner
+# 965. Gating CI rents more concurrency before it owns a runner
 
 *(Title and slug provisional.)*
 
@@ -20,8 +21,8 @@ Raised 2026-10-24 (UTC) by lane `maintainer/proposal-self-hosted-gating-runners`
 request, during the run of milestone 929 (comments in the Linux style across first-party Rust).
 About 40 pull requests were in flight, and hosted CI was the only thing they waited on. Two
 appendices sit beside this file:
-[measurement.md](gating-ci-rents-more-concurrency-before-it-owns-a-runner/measurement.md) and
-[security.md](gating-ci-rents-more-concurrency-before-it-owns-a-runner/security.md).
+[measurement.md](0965-gating-ci-rents-more-concurrency-before-it-owns-a-runner/measurement.md) and
+[security.md](0965-gating-ci-rents-more-concurrency-before-it-owns-a-runner/security.md).
 
 ## The claim and the decision asked
 
@@ -31,11 +32,11 @@ for x86_64 jobs. For a project with one maintainer, its security cost is small i
 it.
 
 The decision: may jobs that gate a merge run on hardware the project owns, and if so, which jobs?
-[§299 (the build machine is bought)](../../decisions/0299-the-build-machine-is-bought.md) leaves
+[§299 (the build machine is bought)](../decisions/0299-the-build-machine-is-bought.md) leaves
 exactly this open: "Whether anything that gates a merge runs on" the build machine.
 
 - (a) Hosted runners only, with the cap raised by renting the Enterprise tier, as
-  [§214 (the Team plan buys runner concurrency)](../../decisions/0214-the-team-plan-buys-runner-concurrency.md)
+  [§214 (the Team plan buys runner concurrency)](../decisions/0214-the-team-plan-buys-runner-concurrency.md)
   did with Team.
 - (b) Self-hosted runners for merge-group runs and pushes to `main` only.
 - (c) Self-hosted runners for pull-request runs too.
@@ -71,7 +72,7 @@ are the sharper reading. At 03:36:13, 60 jobs were in progress, 20 on `ubuntu-24
   cancelled by a later push. Thirty pull requests needed 46 merge-group runs.
 
 The owned host doing the lane work was not the limit:
-[`briefs/run-a-milestone-wide.md`](../../../briefs/run-a-milestone-wide.md) records its CPUs about
+[`briefs/run-a-milestone-wide.md`](../../briefs/run-a-milestone-wide.md) records its CPUs about
 85% idle, because "CI runs off the host".
 
 §214 set the condition for this question: "Reconsider a self-hosted runner only if 60 concurrent
@@ -132,7 +133,7 @@ workflow. It does not stop forks, issues or comments, and none of those triggers
 It does nothing about a stolen token. One thing is unverified: whether `nife-smelter[bot]` counts as
 a collaborator, and seven workflows open pull requests as it. The other candidates are weaker:
 interaction limits expire, fork-workflow disabling exists only for private repositories, and
-approval for every external contributor is already set. [security.md](gating-ci-rents-more-concurrency-before-it-owns-a-runner/security.md)
+approval for every external contributor is already set. [security.md](0965-gating-ci-rents-more-concurrency-before-it-owns-a-runner/security.md)
 has each, read live.
 
 ## Security
@@ -220,7 +221,7 @@ slots, matching Enterprise 440. A larger slot would speed `verify`, whose `VERIF
 16 GB bound, but would change what the job measures.
 
 Power is unmeasured; at a few hundred watts around the clock (an assumption) it costs the same
-order as the seat, and [the ledger](../../../notes/project-metrics/ledger.md) would record it.
+order as the seat, and [the ledger](../../notes/project-metrics/ledger.md) would record it.
 The larger cost is maintenance: runner releases to take before old ones stop receiving jobs
 (recalled), an image to rebuild, and somebody who answers when it stops.
 
@@ -246,8 +247,9 @@ Each job on an owned runner writes its runner kind and image digest into its sum
   runner container's header. So owned slots match the hosted shape, carry their own label, and are
   compared job by job before they gate.
 - The image is pinned by digest and built from the hosted label's Ubuntu release. When
-  [the Ubuntu 26.04 proposal](ci-runners-move-to-ubuntu-26-04.md) flips a label, the owned image
-  flips in the same pull request, and its cache keys carry the runner kind as well as the release.
+  [milestone 962 (CI's hosted runners move from Ubuntu 24.04 to Ubuntu 26.04)](0962-ci-runners-move-to-ubuntu-26-04.md)
+  flips a label, the owned image flips in the same pull request, and its cache keys carry the
+  runner kind as well as the release.
 
 ## Rollout and rollback
 

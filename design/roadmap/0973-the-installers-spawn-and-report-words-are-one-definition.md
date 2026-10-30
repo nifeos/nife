@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-installers-spawn-and-report-words-are-one-definition
 raised: 2026-10-27
 milestone_dependencies: 407
 decision_dependencies: 187
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The installer's spawn and report words are one definition
+# 973. The installer's spawn and report words are one definition
 
 Raised by the 2026-10-27 documentation sweep
-([its report](../../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 6).
+([its report](../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 6).
 Name: provisional, for this file and for every module name it sketches.
 
 This proposal adds rows to a class the tree already tracks. Milestone 407 (one definition of the
@@ -108,3 +109,11 @@ own exit is the gate.
 
 Neither `install_service.rs` nor `system_installer.rs` defines a role, slot or verdict constant,
 both take them from the shared definitions, and `cargo xtask install-boot` passes.
+
+## Index row
+
+The kernel's install offer spawns `system_installer` at most three times a boot. The two sides
+agree on five things that each spells for itself. The tree already tracks that class as milestone
+407 (one definition of the numbers a kernel test and its program agree on). This block sketches one
+definition both sides depend on and leaves the crate to §187 (one crate per kernel-test pair, or one
+crate for all of them?). It can also become a row of 407.

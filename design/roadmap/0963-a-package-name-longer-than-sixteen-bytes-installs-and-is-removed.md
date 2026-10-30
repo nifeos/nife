@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-package-name-longer-than-sixteen-bytes-installs-and-is-removed
 raised: 2026-10-24
 milestone_dependencies: 946
 decision_dependencies: 307
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A package name longer than sixteen bytes installs and is removed
+# 963. A package name longer than sixteen bytes installs and is removed
 
 *(Title and slug provisional.)*
 
@@ -40,3 +41,10 @@ progenitor.
 
 On aarch64, riscv64 and x86_64: a package whose name is over 16 bytes installs with `jig install`
 and is removed with `jig remove`. `vouch` records a file whose name is over 16 bytes.
+
+## Index row
+
+§307 (how long a name may be) holds `jig install` to a package name of at most sixteen bytes,
+so nothing installs that `jig remove` cannot remove. The activation messages are the last
+sixteen-byte bound between a 252-byte name and its install. The work carries a longer name in the
+Remove and Vouch messages, grows the buffers that read it, and moves rule 5's check with them.

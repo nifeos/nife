@@ -23,13 +23,13 @@ include basalt taking a component's output as a package by digest, which step 2 
 **Adjacent, not on this journey's critical path.** Milestone 910 (a package declares a service) is
 what turns a package's service ask into something install starts, boot starts and update restarts;
 this journey's fixtures exercise a service ask through the approval file alone, so nothing here
-waits on 910. Pull request #2852 (`proposal/version-carrying-interfaces`) proposes the milestone
-that builds step 4's gate: the manifest note lists the interfaces a package links, each with a
-version a peer can check. The integrator mints that milestone's number at merge; step 4 tracks the
-gate through 756's block. Milestone 858 (lab machines update themselves through packages, and only
-a new kernel reboots them) rides the slot mechanism step 3 fills: its unattended updates install
-only within an approval file (911's bound), on silicon, with a person present; this journey's steps
-run under QEMU.
+waits on 910. Pull request #2852 (`proposal/version-carrying-interfaces`) carried milestone 979
+(interfaces a peer can check) and the block that builds step 4's gate, milestone 956 (the linked
+interfaces carry checkable versions): the manifest note lists the interfaces a package links, each
+with a version a peer can check. Step 4 tracks the gate through 756's block. Milestone 858 (lab
+machines update themselves through packages, and only a new kernel reboots them) rides the slot
+mechanism step 3 fills: its unattended updates install only within an approval file (911's bound),
+on silicon, with a person present; this journey's steps run under QEMU.
 
 ## What "done" looks like
 

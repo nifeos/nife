@@ -213,7 +213,8 @@ that for every input up to a bound, not only for the inputs a test happened to t
   driver receives there right after reporting, so the window is one system call wide.
 - The driver is mapped the USB Legacy Support capability (`USBLEGSUP`, `USBLEGCTLSTS`) whenever it
   sits on a page nothing else withholds. A compromised driver can then hand the controller back to
-  the firmware's SMI handler. The kernel never needs the driver to touch it. Proposed as
-  `the-xhci-driver-is-not-mapped-the-legacy-support-capability` in `design/roadmap/proposals/`.
+  the firmware's SMI handler. The kernel never needs the driver to touch it. Filed as milestone 960
+  (the xHCI driver is not mapped the USB Legacy Support capability),
+  `design/roadmap/0960-the-xhci-driver-is-not-mapped-the-legacy-support-capability.md`.
 - Silicon is one machine, xenon. Every timeout but the port settle is the specification's
   limit, not a measurement.

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: first-cut-names
 raised: 2026-10-28
 milestone_dependencies: 756
 decision_dependencies: 316
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The first cut's names
+# 978. The first cut's names
 
 *(Title and slug provisional.)*
 
@@ -30,7 +31,7 @@ kept for what they measured and refused.
 
 Reuse: the six surfaces each name must survive come from the tree's own records (§305, §250, §307)
 rather than a new list, and the freezing evidence is
-[notes/the-first-split.md](../../../notes/the-first-split.md)'s measurements. This brief writes no
+[notes/the-first-split.md](../../notes/the-first-split.md)'s measurements. This brief writes no
 code; the deliverable was the review.
 
 ## The six names
@@ -74,7 +75,7 @@ image ships, when a rename still touches three manifests, the generated package 
 `number_writer` rides with the first group as a crate rather than a program: it is the
 right-aligned number writer `free`, `vmstat` and `slabtop` share.
 
-What the review found. [notes/the-first-split.md](../../../notes/the-first-split.md) measures the
+What the review found. [notes/the-first-split.md](../../notes/the-first-split.md) measures the
 cut's outside references as 24 by program name and 0 by path, and one of the 24 is a gate:
 `swish-check` types `ps` at the real prompt and asserts its output header
 (`xtask/src/swish_check/script/process_tools.rs`). No one can rename a program that basalt images
@@ -174,7 +175,7 @@ All four questions the review put to calef have answers, and nothing in this fil
    `Name:` block, beside §316.
 3. `disk-tools` as the package name and the repository name. Ratified 2026-10-28 (UTC) the same
    way. The 2026-10-06 ruling had refused `util-linux` as "a horrible package name for a nife
-   package" ([notes/package-boundaries.md](../../../notes/package-boundaries.md)), and `disk-utils`
+   package" ([notes/package-boundaries.md](../../notes/package-boundaries.md)), and `disk-utils`
    loses to the same spelled-out rule. Recorded in the manifest's `Name:` block, beside §316.
 4. The coined names, raised as three. `disk_surveyor` and `disk_partitioner` already carried
    ratified `Name:` blocks when the review opened (2026-08-03, milestone 57 (partitioning and
@@ -183,3 +184,11 @@ All four questions the review put to calef have answers, and nothing in this fil
 
 The `home` lines keep `status = "provisional"` until each repository exists (§316). That, and not
 the names, is what remains of milestone 756's precondition 6.
+
+## Index row
+
+The first cut's naming half, held for calef's review and ruled the same day: `process-tools`,
+`core-tools` and `disk-tools` stand as the package and repository names and `number_writer` as
+the crate's, each ratified in the record where the name lives. The block keeps the review as it
+ran, with the six surfaces each name must survive, the fifteen binaries the cut moves, and the
+conventions the mechanical checks apply by hand.

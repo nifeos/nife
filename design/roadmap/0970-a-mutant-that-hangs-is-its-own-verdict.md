@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-mutant-that-hangs-is-its-own-verdict
 raised: 2026-10-27
 milestone_dependencies: 663, 924
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A mutant that hangs is its own verdict, and a test that hangs fails instead
+# 970. A mutant that hangs is its own verdict, and a test that hangs fails instead
 
 Raised 2026-10-27 (UTC) by `lane/mutation-gaps-plan`, the third of the three mutation-testing gaps
 calef ruled closed that day. A timeout counts as neither caught nor missed, and three instruments

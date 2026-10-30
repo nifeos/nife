@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-xhci-driver-is-not-mapped-the-legacy-support-capability
 raised: 2026-10-20
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: xenon (the only PC whose controller's capability layout matters here)
 needs_person: yes
 ---
-# The xHCI driver is not mapped the USB Legacy Support capability
+# 960. The xHCI driver is not mapped the USB Legacy Support capability
 
 Raised by the 2026-10-20 security audit
-([its report](../../audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md),
+([its report](../audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md),
 finding 4). Name: provisional.
 
 Reuse: `register_window`'s existing withheld ranges and its Kani harness; the kernel's
@@ -36,3 +37,11 @@ controller if that range shares a page the driver needs.
 The Kani harness covers the third range. Before landing, a reading on xenon of where its
 controller places the capability, since a refusal there would take the keyboard away: that is the
 person this needs.
+
+## Index row
+
+The kernel does the legacy-support handshake, because the firmware relationship is one no
+process should hold. The driver's register window withholds only the MSI-X table and pending-bit
+array, so `USBLEGSUP` and `USBLEGCTLSTS` map writable whenever they share a page with nothing else
+withheld. The fix adds the capability's eight bytes as a third withheld range, after a reading on
+xenon of where its controller places them.

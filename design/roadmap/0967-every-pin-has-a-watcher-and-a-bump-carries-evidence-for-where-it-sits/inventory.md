@@ -1,7 +1,7 @@
 # Every pin in the tree, and what watches it
 
 Appendix to
-[the proposal](../every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits.md).
+[milestone 967](../0967-every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits.md).
 Measured on 2026-10-25 (UTC) against `main` at `e865d8838`, with #2714 applied for the lockfile rows.
 The kernel's rows, under "The kernel's registry crates" and "The verification path", were read again
 on 2026-10-26 (UTC) at `01b316db9`.

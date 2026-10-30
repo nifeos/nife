@@ -1,6 +1,6 @@
-# The prior art, read for this proposal: an appendix to the version-carrying-interfaces proposal
+# Milestone 979 appendix: the prior art, read for this block
 
-[The proposal](../version-carrying-interfaces.md) keeps the questions, the options and the
+[Milestone 979](../0979-version-carrying-interfaces.md) keeps the questions, the options and the
 recommendations. This appendix holds what this lane read on 2026-10-28 about how five systems and
 one protocol handle ABI and wire-protocol versioning and bind-time checks, with the citation
 beside each lesson. The appendix marks anything the lane recalls rather than read.

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: ci-runners-move-to-ubuntu-26-04
 raised: 2026-10-23
 milestone_dependencies: none
 decision_dependencies: unwritten
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# CI's hosted runners move from Ubuntu 24.04 to Ubuntu 26.04
+# 962. CI's hosted runners move from Ubuntu 24.04 to Ubuntu 26.04
 
 *(Title and slug provisional.)*
 

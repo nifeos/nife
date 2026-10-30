@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-loaders-two-install-agreements-are-code
 raised: 2026-10-27
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The loader's two install agreements are code
+# 974. The loader's two install agreements are code
 
 Raised by the 2026-10-27 documentation sweep
-([its report](../../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 7).
+([its report](../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 7).
 Name: provisional, for this file and for every function and constant it sketches.
 
 Reuse: two crates both sides already depend on. `machine_discovery` holds the x86_64 handoff that
@@ -90,3 +91,11 @@ data, slot and EFI partitions, and refuses a table with a gap at index 1 and one
 No literal module index remains in `machine.rs` or `write_start_info`, `confirm` and the chooser
 both reach a slot through `boot_slot::nth_slot`, and `cargo xtask install-boot` and `cargo xtask
 confirm-boot` pass.
+
+## Index row
+
+The install path carries two agreements that only prose states. `uefi_loader` hands the kernel
+the archive as module 0 and the boot file as module 1, while the kernel reads literal indices. Both
+sides must also agree on which partition is boot slot `n`. The fix encodes each in a crate both
+sides already depend on, `machine_discovery` for the PVH order and `boot_slot` for the slot
+states.

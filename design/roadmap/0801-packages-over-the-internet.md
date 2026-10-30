@@ -109,12 +109,13 @@ and nife has no driver for it; an A1's is `virtio-net-pci`, and nife has a virti
 | leg | machine | state, 2026-10-24 | waits on | procedure |
 |---|---|---|---|---|
 | x86_64 | xenon's installed system | rehearsed under QEMU against the live host | 494's bench boot and a fresh install, both on the same evening | `notes/xenon-bench-2026-10-18.md`, steps 1, 2, 4 and 5 |
-| riscv64 | radon, booted over the network | cannot pass: no entropy at the prompt, no file service, no wall clock | the proposal `radons-booted-system-runs-jig`, and calef's ruling in it on where the time comes from | `notes/packages/jig-on-radon.md` |
-| aarch64 | an Oracle Cloud Ampere A1 instance | cannot pass: the booted system reaches no PCIe device, and has no entropy, disk or clock | the proposal `an-aarch64-cloud-instance-drives-its-pcie-devices`, after milestone 578 (an ACPI discovery path for aarch64)'s item 7 boots the instance | `notes/rented-metal/oracle-a1.md`, section 5b |
+| riscv64 | radon, booted over the network | cannot pass: no entropy at the prompt, no file service, no wall clock | milestone 966 (radon's booted system runs `jig`), and calef's ruling in it on where the time comes from | `notes/packages/jig-on-radon.md` |
+| aarch64 | an Oracle Cloud Ampere A1 instance | cannot pass: the booted system reaches no PCIe device, and has no entropy, disk or clock | milestone 964 (an aarch64 cloud instance drives its PCIe devices), after milestone 578 (an ACPI discovery path for aarch64)'s item 7 boots the instance | `notes/rented-metal/oracle-a1.md`, section 5b |
 
 The A1 does have a NIC nife can drive, but only once the loader describes the PCI host bridge from
-ACPI and the booted system claims a virtio-net over PCIe. Both proposals are in
-`design/roadmap/proposals/`.
+ACPI and the booted system claims a virtio-net over PCIe. Both are blocks now: milestone 964 (an
+aarch64 cloud instance drives its PCIe devices) and milestone 966 (radon's booted system runs
+`jig`).
 
 The second index address is scheduled, and it is calef's hands: he will do basalt's README steps 1
 to 6 for `basalt.crickertech.com` and `nifeos/basalt-backup` himself. No leg waits on it.
@@ -227,12 +228,12 @@ real silicon)'s network half, which leases; aarch64's machine is a rented A1 ins
   runs 494's bench boot and 260's network boot. Checked 2026-10-24: no xenon log under `bench/`
   runs `jig`, and the QEMU rehearsal passes.
 - **Outstanding.** The riscv64 leg on radon, `notes/packages/jig-on-radon.md`. It cannot pass until
-  the proposal `radons-booted-system-runs-jig` is built (checked 2026-10-24 against
+  milestone 966 (radon's booted system runs `jig`) is built (checked 2026-10-24 against
   `bench/radon-2026-10-22/53-ordinary-and-reboot.log`: `entropy : NONE`, no resolver, no file
   service).
 - **Outstanding.** The aarch64 leg on an Oracle Cloud Ampere A1 instance,
-  `notes/rented-metal/oracle-a1.md` section 5b. It cannot pass until the proposal
-  `an-aarch64-cloud-instance-drives-its-pcie-devices` is built; the ACPI-derived tree has no PCI
+  `notes/rented-metal/oracle-a1.md` section 5b. It cannot pass until milestone 964 (an aarch64
+  cloud instance drives its PCIe devices) is built; the ACPI-derived tree has no PCI
   host bridge (`uefi_loader/src/device_tree_from_acpi.rs`'s BUGS).
 - **Outstanding.** The second index address, scheduled and calef's hands: basalt's README steps 1 to 6 for
   `basalt.crickertech.com`. Checked 2026-10-24: the name does not resolve and `nifeos/basalt-backup`

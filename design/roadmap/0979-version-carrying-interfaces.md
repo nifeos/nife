@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: version-carrying-interfaces
 raised: 2026-10-28
 milestone_dependencies: 597, 610
 decision_dependencies: 235
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# Interfaces a peer can check: version constants, bind-time checks, and what a package declares
+# 979. Interfaces a peer can check: version constants, bind-time checks, and what a package declares
 
 Raised 2026-10-28 (UTC) by the lane `proposal/version-carrying-interfaces`. calef ruled the same
 day that the project accommodates interface change rather than waiting for it to stop. The first
@@ -18,10 +19,11 @@ because the compiler catches every consumer in the same tree, so churn prices no
 is what prices breaks; waiting for stability inverts the causality.
 
 calef ruled the shape on 2026-10-29 (UTC), in PR #2852's comment. The five questions below record
-what calef weighed and what calef ruled, and the ruling added a compatibility obligation and a
-retirement provision that "The compatibility obligation, and retiring a generation" records. The
-implementing work is milestone 956 (the linked interfaces carry checkable versions), promoted from
-[the implementing proposal](../0956-the-linked-interfaces-carry-checkable-versions.md) on 2026-10-28.
+what calef weighed and ruled. The ruling also added a compatibility obligation and a retirement
+provision, in the section that names them. The
+implementing work is milestone 956 (the linked interfaces carry checkable versions);
+[that block](0956-the-linked-interfaces-carry-checkable-versions.md) came from a proposal on
+2026-10-28.
 This proposal writes no code: §311 (a contract is code, not prose) reserves the checks for an
 implementing lane, and every new name below is provisional.
 
@@ -50,9 +52,9 @@ lane re-measured on 2026-10-28:
   descriptor is 56 bytes, byte 55 its last zero;
   version 2 appends zones after it. A grep for `ABI_REVISION` over `crates/` returns nothing.
 
-Milestone 610 measures that churn in its weekly series. The cells read
-reads 157 breaking changes to the contract crates over 2026W37 to 2026W40, the first split's
-reading, and 10 boundary moves with 49 syscall additions over 2026W39 to 2026W42.
+Milestone 610 measures that churn weekly: 157 breaking changes to the contract crates over 2026W37
+to 2026W40, the first split's reading, and 10 boundary moves with 49 syscall additions over 2026W39
+to 2026W42.
 
 ## Question 1: where the version constant lives, and what its scope is
 
@@ -93,14 +95,12 @@ declared version; (c) both, and each refuses a mismatch, naming both versions.
 
 **Ruled (calef, 2026-10-29 UTC, PR #2852): (c), both sides check, and the refusal names both
 versions; placement by kind as proposed.** One amendment rides the compatibility ruling: the
-check compares sets, and the server's served set must contain a client's declared version; the
-compatibility section below defines that set. The caller asks once at bind; the server answers
-with its set; the client binds or refuses, naming both sides. Both come from question 1's constants, one
-definition, no prose to drift (§311). Placement follows the interface's kind:
+check compares sets, and the server's served set must contain a client's declared version, which
+the compatibility section below defines. Both come from question 1's constants, one definition, no
+prose to drift (§311). Placement follows the interface's kind:
 
 - A message-based contract: one reserved operation (provisionally `OPERATION_VERSION`, opcode 0
-  where the protocol leaves it free) returns the server's served set. The caller binds only if
-  its version is in it, refusing with both numbers. The kernel routes these words without reading
+  where the protocol leaves it free) returns the server's served set. The kernel routes these words without reading
   opcodes; the check belongs to the two endpoints.
 - A shared-page format: the reader checks the magic and the version word before trusting any
   other word. One side writes and one reads; the check is one-sided by nature.
@@ -141,8 +141,8 @@ it cannot rot. The encode and decode machinery and the one-encoding
 property carry over from 597's gate.
 
 The refused coarse byte matches Fuchsia's stamp, which RFC-0239 calls coarse. It spends the
-in-place amendment §235's condition protects, and it fails the equal-cost test: it cannot answer
-a second interface bump, where (ii) answers as cheaply as the first.
+in-place amendment §235's condition protects and fails the equal-cost test the seven questions
+record.
 
 The pairs need an interface identity that survives a crate rename. Provisionally each interface
 crate carries `INTERFACE_ID: u64` beside its version constant, values never reused.
@@ -205,11 +205,10 @@ five questions.
 
 A message-contract server owes the current generation and the last one (N-1). A break bumps the
 version, owes the dated ledger entry (question 4), and carries a one-generation dual path;
-shipping the next generation closes the window. The rationale on record: 610's wire-level series
-shows the wire effectively frozen already, one format change in sixteen weeks and zero amendments,
-so N-1 costs a dual path a few times a year, not weekly. The weekly churn is the Rust API surface,
-not the wire. (The columns read zero over 2026W29 to 2026W44; the window's one layout change
-arrived as a new constant.)
+shipping the next generation closes the window. The rationale on record: 610's series shows one
+format change in sixteen weeks and zero amendments, and reads zero over 2026W29 to 2026W44, the
+window's one layout change arriving as a new constant. The wire has stopped moving, so N-1 costs a
+dual path a few times a year, not weekly. The weekly churn is the Rust API surface, not the wire.
 
 The carve-outs, ruled the same day:
 
@@ -257,11 +256,10 @@ survey, the prior art and the costs.
    Linux's syscall promise is add-only; ext4 splits compatible from incompatible sets at mount.
    glibc's loader binds the symbol version a binary names. MCP's 2026 revision declares the
    version per request. Citations, and what this lane did not verify, are in
-   [the appendix](version-carrying-interfaces/prior-art.md).
-4. The premise, checked: each sub-claim comes from a command run on 2026-10-28. No operation set
-   carries a checkable version; five numbered magics and two unnumbered (756 measured the same on
-   2026-10-04); no ABI revision field (grep, and byte 55); the churn is real (610's series, cited
-   above). The ruling's causal claim matches the tree's words: the `abi` crate exists so a change
+   [the appendix](0979-version-carrying-interfaces/prior-art.md).
+4. The premise, checked: each sub-claim comes from a command run on 2026-10-28, and the survey
+   above lists what each returned, including what 756 measured the same on 2026-10-04. The
+   ruling's causal claim matches the tree's words: the `abi` crate exists so a change
    "fails to compile on both sides at once".
 5. Costs. A version constant is one line per interface and joins the measured series with no
    helper change. The note's version 3 costs encode, decode, and the Kani property. The
@@ -279,9 +277,8 @@ survey, the prior art and the costs.
 
 ## What the ruling leaves open
 
-The implementing proposal carries the work. Eventual, not blocking: the ledger's first entries,
-the rustdoc diff's trigger (a consumer outside the tree), the N-1 rule's event-triggered revisit,
-and the interface ids' ratification.
+Eventual, not blocking: the ledger's first entries, the rustdoc diff's trigger (a consumer outside
+the tree), the N-1 rule's event-triggered revisit, and the interface ids' ratification.
 
 ## BUGS
 
@@ -297,3 +294,11 @@ and the interface ids' ratification.
 - The 610 series reads the new constants as additions in their first week; that is true, not a
   defect.
 - One recollection stands unverified in the prior art, and the appendix marks it.
+
+## Index row
+
+calef ruled that the project accommodates interface change rather than waiting for it to stop,
+so the first cut's gate becomes each interface the cut links carries a checkable version and the
+moved package declares what it links. The block records the five questions, the compatibility
+obligation and the retirement provision, and hands the checks to milestone 956 (the linked
+interfaces carry checkable versions), which builds them.

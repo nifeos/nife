@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: radons-booted-system-runs-jig
 raised: 2026-10-24
 milestone_dependencies: 53, 801
 decision_dependencies: unwritten
@@ -7,14 +8,14 @@ machine_requirements: riscv64 silicon with a wired network on the internet
 specific_machine: radon (801's riscv64 leg is ruled to run on it, and its TRNG and NIC are JH7110 parts)
 needs_person: yes
 ---
-# radon's booted system runs `jig`: entropy, a disk and the time
+# 966. radon's booted system runs `jig`: entropy, a disk and the time
 
 Raised 2026-10-24 (UTC) by `maintainer/record-2026-10-24-b`, recording calef's ruling that milestone
 801 (packages over the internet) closes on real silicon on three machines, radon among them. The
 lane was asked to make `jig update` and `jig install ioping` runnable on radon. Checked against the
 tree and radon's last ordinary boot, they are not, for three reasons, and the third is a design
 question. This proposal is that work. The bench step it ends with is written:
-[notes/packages/jig-on-radon.md](../../../notes/packages/jig-on-radon.md).
+[notes/packages/jig-on-radon.md](../../notes/packages/jig-on-radon.md).
 
 ## What radon's ordinary image has today
 
@@ -67,7 +68,7 @@ time by hand at the console, because every radon boot would then need a person b
 The ruling does not settle NTS (`notes/ntp.md` keeps that a separate fork). An Oracle A1 instance has the
 same gap, and may close it without this ruling: its firmware has a clock the loader can read before
 it exits boot services
-([the A1 proposal](an-aarch64-cloud-instance-drives-its-pcie-devices.md)).
+([milestone 964 (an aarch64 cloud instance drives its PCIe devices)](0964-an-aarch64-cloud-instance-drives-its-pcie-devices.md)).
 
 Reuse: everything but the RAM block server exists. The TRNG's service is milestone 159 (a real
 hardware entropy source: the JH7110's TRNG)'s, the resolver 892's, `network_time_client` 290's,
@@ -90,3 +91,10 @@ block server is about a hundred lines over `filesystem_contract::blk`, modeled o
 - The RAM disk is a stand-in. Milestone 801 (packages over the internet)'s riscv64 leg on it proves the fetch, the digest check
   and the installer on radon's own NIC, not that radon keeps an install.
 - None of the three items has been built, so the predictions above are readings of the tree.
+
+## Index row
+
+`jig update` and `jig install ioping` cannot run on radon: the prompt has no entropy, no name
+resolver, no file service and no wall clock. The work wires the JH7110 TRNG into the hand-over,
+grants the disk the file service needs, and rules that a machine with no RTC fetches the time
+once at boot, with the bench step in `notes/packages/jig-on-radon.md`.

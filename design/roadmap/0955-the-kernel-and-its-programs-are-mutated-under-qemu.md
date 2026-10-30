@@ -180,8 +180,8 @@ The kernel alone, both tiers, passes in about four weeks.
 
 GitHub-hosted runners cost this public repository no money. The limit is the organization's shared
 concurrency. Milestone 741's first scaled run queued 40 jobs on those runners, and the maintainer
-cancelled it. And `gating-ci-rents-more-concurrency-before-it-owns-a-runner.md` is the open proposal
-about that limit. The rolling census therefore runs at a capped `max-parallel`, outside the hours
+cancelled it. And milestone 965 (gating CI rents more concurrency before it owns a runner) is the
+open block about that limit. The rolling census therefore runs at a capped `max-parallel`, outside the hours
 the merge queue is busy. The diff-scoped check on pull requests runs on hosted runners only,
 never on owned hardware, since pull requests from forks never run there.
 

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-futex-word-is-walked-and-touched-under-the-revocation-lock
 raised: 2026-10-20
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A futex word is walked and touched under the revocation lock
+# 958. A futex word is walked and touched under the revocation lock
 
 Raised by the 2026-10-20 security audit
-([its report](../../audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md),
+([its report](../audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md),
 finding 3). Name: provisional.
 
 Reuse: the lock the revocation path already takes over a space's mappings. Nothing new is written
@@ -24,7 +25,7 @@ two. A sibling thread holding `WRITE` on the region behind the word can destroy 
 (`kernel/src/sched/region_reaping.rs`). If the frame is then reused, four zero bytes land in a
 frame the exiting space no longer owns, which may be another process's page or a kernel object.
 
-`WAIT`'s load has the same unlocked walk, and [notes/futex.md](../../../notes/futex.md)'s `BUGS`
+`WAIT`'s load has the same unlocked walk, and [notes/futex.md](../../notes/futex.md)'s `BUGS`
 records it as a one-bit observation. The store is a write, which is worse. Neither is shown
 reachable: the window is a few instructions, and the audit did not confirm that a destroyed
 region's frames can be reused before the store lands.
@@ -39,3 +40,11 @@ they cannot, record why and close this as moot.
 
 A kernel test that races a region's destroy against a thread exit whose clear-word lies in it, and
 checks that no byte outside the exiting space's frames changes.
+
+## Index row
+
+The thread exit's clear-word and `WAIT`'s load both walk a user address, then touch the word,
+with no lock held across the two. A sibling thread's region destroy can therefore leave four zero
+bytes in a frame the exiting space no longer owns. The fix takes the revocation path's own hold over
+the walk and the store, after settling whether a destroyed region's frames can return inside that
+window.

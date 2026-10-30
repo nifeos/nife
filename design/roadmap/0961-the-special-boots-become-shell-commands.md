@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-special-boots-become-shell-commands
 raised: 2026-10-21
 milestone_dependencies: 890
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The kernel's special boots become commands typed at the production shell
+# 961. The kernel's special boots become commands typed at the production shell
 
 *(Title and slug provisional. Every program name below is provisional too.)*
 
@@ -263,3 +264,11 @@ hook exists in a production build.
 
 They print under their own prefix and are recorded in `bench/` beside the quiet boot's numbers.
 The quiet-machine baseline stays the tripwire.
+
+## Index row
+
+A special boot is a cargo feature that changes what the kernel does after it boots. The kernel
+measured is therefore not the kernel that ships, each measurement takes its own card or image, and
+on a board the operator reflashes to change which number they want. The plan moves each one to a
+program the production shell starts, keeps only what needs a kernel-side counter, and deletes each
+retired feature.
