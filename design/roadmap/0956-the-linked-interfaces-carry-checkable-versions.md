@@ -38,8 +38,12 @@ provisional.
    `ABI_VERSION` at the crate root; `address_space_map` and `glob` each carry `VERSION`;
    `machine_statistics_contract` gains a version word beside its `MACHSTA1` magic, a new index in
    the crate's `word` module. One constant per wire format, module-scoped where a crate holds
-   several, as ruled (question 1). Proves: the constants are public, and 610's `FORMAT_CONST`
-   pattern reads them, so the next weekly series counts them.
+   several, as ruled (question 1). A format whose magic predates the version digits mints them in
+   the same change where no reader outside the tree holds an old one, so block_roster's
+   `blkrostr` and program_argument_contract's `nifeargv` gain theirs. The ruling of 2026-10-30
+   (UTC) covers this step's constants and those two re-mints, so the step owes no separate
+   decision. Proves: the constants are public, and 610's `FORMAT_CONST` pattern reads them, so
+   the next weekly series counts them.
 
 2. The bind check becomes set membership, in each message contract. The sketch from the shape
    proposal: `member(own: u32, served: &[u32]) -> Result<u32, Mismatch>`, with `Mismatch` carrying
