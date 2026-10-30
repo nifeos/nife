@@ -1331,7 +1331,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W44,crate,vmstat,1,1,1,0,0
 2026W44,crate,walk_pricing,5,5,5,0,0
 2026W44,crate,work_steal_slot,5,5,5,0,0
-2026W44,crate,xtask,52,45,39,34,27
+2026W44,crate,xtask,53,45,39,35,27
 2026W44,package,boot,20,20,19,5,5
 2026W44,package,contracts,128,97,93,89,60
 2026W44,package,core-tools,9,9,9,2,2
@@ -1343,7 +1343,7 @@ week,kind,unit,commits,commits_crossing,commits_touching_another,commits_excludi
 2026W44,package,entropy,8,8,8,0,0
 2026W44,package,filesystem,10,10,10,2,2
 2026W44,package,fixtures,43,39,38,18,14
-2026W44,package,host-tools,52,45,38,34,27
+2026W44,package,host-tools,53,45,38,35,27
 2026W44,package,init,56,51,51,29,26
 2026W44,package,jig,9,9,9,4,4
 2026W44,package,kernel,132,97,90,88,56
