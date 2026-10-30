@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: lint-stops-paying-per-item-costs
 raised: 2026-10-29
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,12 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# script/lint stops paying per-item costs
-
-*(Title and slug are drafts.)*
+# 980. script/lint stops paying per-item costs
 
 Raised 2026-10-29 (UTC) by a session that measured `script/lint` at calef's request.
-[notes/lint-cost-2026-10-18.md](../../../notes/lint-cost-2026-10-18.md) ranked the fixes and changed
+[notes/lint-cost-2026-10-18.md](../../notes/lint-cost-2026-10-18.md) ranked the fixes and changed
 what a gate refuses. This proposal keeps every verdict and names the per-item costs: places where a
 check repeats work once per file, per workflow or per corpus.
 
@@ -125,9 +124,6 @@ fits.
 
 ## Follow-on
 
-- **Proposed.** The shared corpus index, part 5, after its design note.
-- **Proposed.** The cargo half, part 6: share the lint ratchet with the clippy sections, and collapse
-  rustdoc's four invocations into one.
 - **Recorded.** `helpers/trust_boundary.py --check` fails in a checkout whose `fs_server/` holds only
   a stale `target/` directory: it looks for `fs_server/Cargo.toml`, and the crate is `redoxfs_server`
   since `0c0ef2367`. A leftover local directory turns a gate red and says nothing true. This is a
@@ -136,6 +132,6 @@ fits.
 ## Index row
 
 A local `script/lint` run costs about 205 s warm and 300 s cold: 118 in `--no-cargo`, and 86 to 184 in
-cargo. A dozen sections hold most of it, and each repeats work once per file, workflow or corpus.
-Proposed: replace the per-item costs with one pass each, keep every verdict, and hold the total to a
-ceiling that only falls.
+cargo. A dozen sections hold most of it, and each repeats work once per file, workflow or corpus. This
+milestone replaces the per-item costs with one pass each, keeps every verdict, and holds the total
+to a ceiling that only falls.
