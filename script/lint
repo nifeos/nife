@@ -1276,6 +1276,16 @@ RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --manifest-path redoxfs_ser
 echo "==> decisions"
 "$(dirname "$0")/decisions" --check
 
+# The journeys (one file per user story, one directory over): their frontmatter against the schema
+# design/journeys/README.md states, the H1 number against the filename, every cited milestone and
+# decision resolving, and a status that agrees with the milestones its steps name (a `DELIVERED`
+# journey cites only `BUILT` ones, a `PROPOSED` one cites none, and `retired` belongs to `RETIRED`
+# alone). A journey's progress stays a report: a step is an editorial claim about what a story
+# needs, and the rollup can regress when a milestone is re-scoped without that being a defect. The
+# schema is a record, and this gate can read it.
+echo "==> journeys"
+"$(dirname "$0")/journeys" --check
+
 # A numbered record's file name carries exactly four digits (calef, 2026-10-07 UTC), so a directory
 # listing sorts in numeric order: before it, `100-the-terminal-font.md` sat between `10-` and `11-`.
 # Four rather than three so nothing is renamed again at 1000. Only the path is padded; a `§N` or

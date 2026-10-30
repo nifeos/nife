@@ -15,16 +15,21 @@
 # the gap that tracing the story end to end found (milestone 177). This is the mechanism that
 # question deserves, rather than a one-off trace repeated by hand each time someone asks it again.
 #
-# A journey has no status field of its own; design/journeys/README.md explains why (the same reason
-# script/roadmap's Built-date check and script/lint's counted-claims checks exist: a hand-written
-# number nobody re-derives drifts the moment reality moves under it). Everything printed here is
-# computed fresh from the two records, every run.
+# A journey's frontmatter carries its status, the date it was raised and, for a retired story, the
+# date it was retired. Status carries intent and attention, never a progress count. The count stays
+# computed fresh from the two records on every run, because a hand-written number nobody re-derives
+# drifts the moment reality moves under it. design/journeys/README.md has the schema for a reader,
+# and the constants below are its only copy in code.
 #
-# With no arguments, lists every journey with a one-line rollup. Given a journey's number, slug, or
-# filename (with or without `.md`), prints that journey's full step-by-step detail. `--check`
-# validates that every journey file's table rows parse, that every filename's number agrees with its
-# own H1, and that every milestone and decision a step cites exists in its index, and exits non-zero
-# on a problem, which is what a gate wants.
+# With no arguments, lists every journey with its status and built count on one line. Given a
+# journey's number, slug, or filename (with or without `.md`), prints that journey's full
+# step-by-step detail, its status, its raise date and, where they apply, the date it was retired and
+# the date it was delivered. `--check` holds every file to the schema (the status vocabulary, the
+# `retired` pairing, and dates in `raised` and `retired`) and to the status-versus-steps agreement
+# (a `DELIVERED` journey cites only `BUILT` milestones, a `PROPOSED` one cites none). It also
+# validates that every table row parses, that every filename's number agrees with its own H1, and
+# that every milestone and decision a step cites resolves. It exits non-zero on a problem, which is
+# what a gate wants.
 #
 # Name: recorded (DECISIONS §134's split of the `script/` family, and design/journeys/README.md
 # for the stem). Deliberately the third instance of the `script/roadmap` and `script/decisions`
@@ -52,6 +57,52 @@ rd = os.path.join(root, "design", "roadmap")
 dd = os.path.join(root, "design", "decisions")
 
 problems = []
+
+# ---- the schema, spelled once ----------------------------------------------------------------
+# The keys a journey's frontmatter may carry, the five words `status` may take, and the shape of a
+# date. This is the schema's only copy in code: design/journeys/README.md describes the same three
+# keys for a reader, and the checks below hold every file to it. A key that is not here is refused,
+# which is what keeps a journey's number in its filename and its title in its H1.
+KEYS = ('status', 'raised', 'retired')
+STATUSES = ('PROPOSED', 'WORKING', 'PARTIAL', 'DELIVERED', 'RETIRED')
+DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+FIELD = re.compile(r"([a-z_]+): *(\S.*)")
+
+
+def frontmatter(lines):
+    """(fields, [(line, problem)]) for a journey file's frontmatter, or (None, [(1, problem)]).
+
+    The format is the one design/decisions/ and design/roadmap/ use: `---`, flat `key: value` lines,
+    `---`. No lists and no nesting; a value may not contain ": " or " #", which YAML would read as
+    something other than a string.
+    """
+    if not lines or lines[0] != '---':
+        return None, [(1, "no frontmatter. A journey opens with `---`, `status` and `raised`, and "
+                          "`retired` when its status is RETIRED")]
+    try:
+        end = lines.index('---', 1)
+    except ValueError:
+        return {}, [(1, "the frontmatter is never closed by a second '---'")]
+    fields, out = {}, []
+    for n, line in enumerate(lines[1:end], start=2):
+        m = FIELD.fullmatch(line)
+        if not m:
+            out.append((n, f"{line[:40]!r} is not '<key>: <value>'. The frontmatter is flat "
+                           f"key-value pairs and nothing else"))
+            continue
+        spelled, value = m.group(1), m.group(2).strip()
+        if spelled not in KEYS:
+            out.append((n, f"{spelled!r} is not one of the keys {', '.join(KEYS)}. A journey's "
+                           f"number is its filename's and its title is the H1"))
+        elif spelled in fields:
+            out.append((n, f"{spelled!r} twice. One fact, one key"))
+        elif ": " in value or " #" in value:
+            out.append((n, f"{spelled}'s value carries ': ' or ' #', which YAML would read as "
+                           f"something other than a string"))
+            fields[spelled] = value
+        else:
+            fields[spelled] = value
+    return fields, out
 
 
 # A decision's status, from its frontmatter, which is the only place it lives (milestone 582 (a
@@ -83,9 +134,10 @@ def load_decisions(d):
     return out
 
 # The milestone blocks, read the way script/roadmap reads them: the number is the filename's and
-# the status is its frontmatter or its prose status line (helpers/roadmap_block.py reads both). Only
-# the number and the status are wanted here, so this deliberately does not re-implement the rest of that script's validation: a block
-# this cannot parse is script/roadmap --check's failure to report, not this one's.
+# the status and `built` date are its frontmatter or its prose status line
+# (helpers/roadmap_block.py reads both). Only those two facts are wanted here, so this deliberately
+# does not re-implement the rest of that script's validation: a block this cannot parse is
+# script/roadmap --check's failure to report, not this one's.
 BLOCK = re.compile(r"(\d+)-[a-z0-9][a-z0-9-]*\.md")
 
 
@@ -101,9 +153,9 @@ def load_blocks(d):
         if not m:
             continue
         lines = open(os.path.join(d, fname)).read().split("\n")
-        status = roadmap_block.status_and_built("\n".join(lines))[0]
+        status, built = roadmap_block.status_and_built("\n".join(lines))
         if status:
-            out[int(m.group(1))] = status
+            out[int(m.group(1))] = (status, built)
     return out
 
 
@@ -116,7 +168,7 @@ STEP_ROW = re.compile(
 
 FNAME = re.compile(r"(\d+)-[a-z0-9][a-z0-9-]*\.md")
 
-journeys = {}  # number -> (slug, title, [ (step, milestone, decision_or_None, need) ])
+journeys = {}  # number -> the record built below
 slugs = {}     # slug -> number, for lookup by either
 for fname in sorted(os.listdir(jd)):
     if fname == "README.md" or not fname.endswith(".md"):
@@ -131,6 +183,31 @@ for fname in sorted(os.listdir(jd)):
         problems.append(f"journey {num} has two files")
     text = open(os.path.join(jd, fname)).read()
     lines = text.split("\n")
+    fields, fm_problems = frontmatter(lines)
+    for n, p in fm_problems:
+        problems.append(f"{fname}:{n}: {p}")
+    if fields is None:
+        # No frontmatter at all: the one problem names the fix, so the missing keys add nothing.
+        fields, status, raised, retired = {}, '', '', ''
+    else:
+        status = fields.get('status', '')
+        raised = fields.get('raised', '')
+        retired = fields.get('retired', '')
+        if not status:
+            problems.append(f"{fname}: no `status` key. A journey's state is its frontmatter's")
+        elif status not in STATUSES:
+            problems.append(f"{fname}: status {status!r} is not one of {', '.join(STATUSES)}")
+        if not raised:
+            problems.append(f"{fname}: no `raised` key")
+        elif not DATE.fullmatch(raised):
+            problems.append(f"{fname}: raised {raised!r} is not YYYY-MM-DD")
+        if retired and not DATE.fullmatch(retired):
+            problems.append(f"{fname}: retired {retired!r} is not YYYY-MM-DD")
+        if retired and status != 'RETIRED':
+            problems.append(f"{fname}: `retired` is set and the status is {status}. The key "
+                            f"belongs to RETIRED alone")
+        if status == 'RETIRED' and not retired:
+            problems.append(f"{fname}: RETIRED with no `retired` date")
     title = None
     for line in lines:
         if line.startswith("# "):
@@ -163,15 +240,17 @@ for fname in sorted(os.listdir(jd)):
         steps.append((step, ms, dec, need))
     if not steps:
         problems.append(f"{fname}: no parseable step rows (| step | milestone | decision | need |)")
-    # A retired journey is a story the project stopped telling, and it is the one thing about a
-    # journey that a human must write and a tool cannot derive. It is NOT the status field
-    # design/journeys/README.md refuses: that refusal is about hand-written *progress* ("70% done"),
-    # which drifts because nobody re-derives it. Retirement is intent, and intent has no computable
-    # source. Recorded as a `**RETIRED` marker in the file so the record and the report cannot
-    # disagree, which is what happened for one run on 2026-08-30 when journey 2 was retired in prose
-    # and this script kept listing it as live work.
-    retired = any(line.startswith("**RETIRED") for line in lines)
-    journeys[num] = (slug, title, steps, retired)
+    # A DELIVERED journey says a person can do the whole thing today, so every milestone it cites
+    # must be BUILT. A PROPOSED one says nothing is built yet, so none may be. Both are checked
+    # against the blocks rather than trusted, because the two records are what can disagree.
+    for _step, ms, _dec, _need in steps:
+        ms_status = milestones.get(ms, (None, ''))[0]
+        if status == 'DELIVERED' and ms_status != 'BUILT':
+            problems.append(f"{fname}: DELIVERED, and step milestone {ms} is {ms_status or 'missing'}")
+        if status == 'PROPOSED' and ms_status == 'BUILT':
+            problems.append(f"{fname}: PROPOSED, and step milestone {ms} is BUILT")
+    journeys[num] = {'slug': slug, 'title': title, 'steps': steps, 'status': status,
+                     'raised': raised, 'retired': retired}
     slugs[slug] = num
 
 if mode == "--check":
@@ -179,9 +258,10 @@ if mode == "--check":
         print(f"journeys: {p}", file=sys.stderr)
     if problems:
         sys.exit(1)
-    print(f"journeys: {len(journeys)} journeys ({sum(1 for j in journeys.values() if j[3])} retired), "
-          f"{sum(len(j[2]) for j in journeys.values())} steps, "
-          f"every cited milestone and decision resolves")
+    retired = sum(1 for j in journeys.values() if j['status'] == 'RETIRED')
+    print(f"journeys: {len(journeys)} journeys ({retired} retired), "
+          f"{sum(len(j['steps']) for j in journeys.values())} steps, "
+          f"every status in vocabulary, every cited milestone and decision resolves")
     sys.exit(0)
 
 if problems:
@@ -190,8 +270,30 @@ if problems:
 
 
 def rollup(steps):
-    built = sum(1 for _, ms, _, _ in steps if milestones.get(ms) == "BUILT")
+    built = sum(1 for _, ms, _, _ in steps if milestones.get(ms, (None, ''))[0] == "BUILT")
     return built, len(steps)
+
+
+def delivered(steps):
+    """The latest `built` date among the steps a DELIVERED journey cites, or ''.
+
+    Derived on every run and stored nowhere: the milestone blocks hold the only copy of a build
+    date, and a `delivered:` key would be a second copy that drifts.
+    """
+    dates = [milestones[ms][1] for _step, ms, _dec, _need in steps
+             if milestones.get(ms, (None, ''))[0] == 'BUILT' and milestones[ms][1]]
+    return max(dates) if dates else ''
+
+
+def state_line(j):
+    """One line saying where the journey stands: its status and the dates that belong to it."""
+    line = f"  {j['status'] or 'NO STATUS'}, raised {j['raised'] or '?'}"
+    if j['retired']:
+        line += f", retired {j['retired']}"
+    if j['status'] == 'DELIVERED':
+        line += (f", delivered {delivered(j['steps']) or '?'} (the latest `built` date among the "
+                 f"steps below)")
+    return line + "."
 
 
 if mode and mode != "--check":
@@ -206,28 +308,29 @@ if mode and mode != "--check":
     else:
         num = None
     if num is None or num not in journeys:
-        known = ", ".join(f"{n} ({s})" for n, (s, _, _) in sorted(journeys.items()))
+        known = ", ".join(f"{n} ({j['slug']})" for n, j in sorted(journeys.items()))
         print(f"journeys: no journey matching {mode!r}. Known: {known}", file=sys.stderr)
         sys.exit(2)
-    slug, title, steps, retired = journeys[num]
-    built, total = rollup(steps)
-    print(f"journey {num}: {title}")
-    if retired:
-        print("  RETIRED. The steps below are a record, not current intent; see the file.")
+    j = journeys[num]
+    built, total = rollup(j['steps'])
+    print(f"journey {num}: {j['title']}")
+    print(state_line(j))
+    if j['status'] == 'RETIRED':
+        print("  The steps below are a record, not current intent; see the file.")
     print()
-    for step, ms, dec, need in steps:
-        mstatus = milestones.get(ms, "?")
+    for step, ms, dec, need in j['steps']:
+        mstatus = milestones.get(ms, ('?', ''))[0]
         line = f"  {step}. milestone {ms:<4} {mstatus:<11} {need}"
         if dec is not None:
             line += f"  [decision {dec}: {decisions.get(dec, '?')}]"
         print(line)
-    print(f"\n{built}/{total} steps on a BUILT milestone" + ("  (retired)" if retired else ""))
+    print(f"\n{built}/{total} steps on a BUILT milestone")
     sys.exit(0)
 
 for num in sorted(journeys):
-    slug, title, steps, retired = journeys[num]
-    built, total = rollup(steps)
-    state = "RETIRED    " if retired else f"{built}/{total} built"
-    print(f"  {num:>2}  {slug:<24} {state}   {title}")
+    j = journeys[num]
+    built, total = rollup(j['steps'])
+    print(f"  {num:>2}  {j['slug']:<24} {j['status'] or 'NO STATUS':<9} {built}/{total} built   "
+          f"{j['title']}")
 print(f"\n{len(journeys)} journeys. `script/journeys <number|slug>` for detail.")
 PY

@@ -1,3 +1,7 @@
+---
+status: PARTIAL
+raised: 2026-08-30
+---
 # 3. The same story, on real silicon, on all three architectures
 
 calef, 2026-08-30. Journey 1 (login to `kilo`) told end to end, with no emulator anywhere: boot a
