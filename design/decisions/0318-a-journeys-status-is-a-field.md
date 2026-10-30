@@ -15,7 +15,8 @@ the status is `RETIRED`. `status` takes exactly one of five words: `PROPOSED`, `
 `PARTIAL`, `DELIVERED`, `RETIRED`. The number stays in the filename and the title in the H1.
 `script/journeys --check` holds every file to the schema and to four rules about the milestones it
 cites, and `script/journeys` computes the journey's progress from those milestones and the cited
-decisions on every run.
+decisions on every run. `script/lint` runs that check, so a file that breaks the schema fails CI and
+the pre-push hook rather than waiting for a reader to run the command.
 
 | key | values |
 |---|---|

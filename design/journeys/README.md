@@ -136,13 +136,9 @@ whose cited decision is not `DECIDED` in the direction the step needs still read
 tool does not try to parse *which way* a decision went; it says what a step needs and lets a reader
 hold the decision's own text against it.
 
-**The state report is not a gate.** Nothing fails a build over a journey's progress: a journey can
-regress if a milestone it depends on is re-scoped down to `PARTIAL`, and that is information rather
-than a defect for CI to catch. What `--check` gates is the record, the schema above and the status's
-agreement with the steps it cites.
-
-## BUGS
-
-- `script/journeys --check` runs in no automatic gate. `script/lint`, the pre-push hook and CI do not
-  call it, so a journey file that breaks the schema surfaces only when somebody runs the command.
-  Wiring it into `script/lint` changes that script's section list and wants its own lane.
+**The report is not a gate, and the schema is one.** Nothing fails a build over a journey's
+progress: a step is an editorial claim about what a story needs, and the rollup can regress when a
+milestone is re-scoped down to `PARTIAL` without that being a defect for CI to catch. What
+`script/lint` gates is the record, through `script/journeys --check`: the shape, the vocabulary, a
+`raised` and `retired` that are dates, the `retired` pairing, and the status against the milestones
+its steps cite. CI and the pre-push hook run it with the rest of lint.
