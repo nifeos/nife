@@ -27,7 +27,9 @@ package releases together and an image carries what it boots. It lists the `driv
 programs because the kernel's filesystem service panics without `block_driver`: an image that left
 the drivers out boots to the progenitor and stops there. `cargo xtask package --package <name>
 --arch <arch> [--version <v>]` packs one package from its milestone 611 (every program and crate
-belongs to a package) definition, and `cargo xtask base-packages <arch>` builds the base set.
+belongs to a package) definition, and `cargo xtask base-packages <arch> [--test]` builds the base
+set. `--test` adds the `fixtures` package, the one the composed test image's boot self-test runs
+and no release image carries.
 
 `cargo xtask base-image <arch> [--from <dir>] [--catalog <path>] [--out <dir>] [--test] [--boot]`
 composes the image. It takes every program's `bin/<program>` member out of the archive of the

@@ -58,7 +58,7 @@ const CATALOG: &str = "catalog";
 const TEST_PACKAGE: &str = "fixtures";
 
 /// What `packages/base-image.toml` says.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Definition {
     /// The version every base package is built at (provisional: one version for the base, because
     /// the packages release and are installed together).
@@ -91,27 +91,38 @@ struct Plan {
     out: PathBuf,
 }
 
+/// **The definition a test image carries**: `packages/base-image.toml`'s programs plus the
+/// `fixtures` package's, which no definition lists. The kernel's boot self-test runs two of them
+/// and the shell's check types at the others, and a release image carries none.
+///
+/// `test` false returns the definition unchanged. A refusal says what could not be read; the
+/// caller puts its verb in front of it.
+fn with_test_programs(mut definition: Definition, test: bool) -> Result<Definition, String> {
+    if test {
+        definition
+            .programs
+            .extend(crate::archive::fixture_programs()?);
+    }
+    Ok(definition)
+}
+
 /// **Read the definition and locate the packages**, adding the fixtures package's programs to a
 /// test image. `None` when a step refused, having said why.
 fn plan(arguments: &Arguments, arch: &str, root: &Path) -> Option<Plan> {
-    let mut definition = match read_definition(root) {
+    let definition = match read_definition(root) {
         Ok(definition) => definition,
         Err(complaint) => {
             eprintln!("base-image: {complaint}");
             return None;
         }
     };
-    // A test image carries the fixtures package's programs as well: the kernel's boot self-test
-    // runs two of them and the shell's check types at the others, and a release image carries none.
-    if arguments.test {
-        match crate::archive::fixture_programs() {
-            Ok(programs) => definition.programs.extend(programs),
-            Err(complaint) => {
-                eprintln!("base-image: {complaint}");
-                return None;
-            }
+    let definition = match with_test_programs(definition, arguments.test) {
+        Ok(definition) => definition,
+        Err(complaint) => {
+            eprintln!("base-image: {complaint}");
+            return None;
         }
-    }
+    };
 
     // The packages: built here from the tree, or named by the caller.
     let packages = match arguments.from.as_deref() {
@@ -239,10 +250,18 @@ pub(crate) fn base_image() -> bool {
 /// **`cargo xtask base-packages`**: build every base package the image needs from this tree, into
 /// `target/packages` with its catalog. The half of `base-image` a builder that composes elsewhere
 /// runs first (milestone 909); it builds no image and no kernel.
+///
+/// `--test` adds the `fixtures` package, the one the composed test image's boot self-test runs and
+/// no release image carries. A builder that composes with `--test` asks for the same set here; the
+/// two flags are one decision, which is why [`with_test_programs`] is their one reader.
 pub(crate) fn base_packages() -> bool {
-    let Some(arch) = std::env::args().nth(2) else {
-        eprintln!("usage: cargo xtask base-packages <aarch64|riscv64|x86_64>");
-        return false;
+    let (arch, test) = match parse_base_packages_arguments(std::env::args().skip(2).collect()) {
+        Ok(arguments) => arguments,
+        Err(complaint) => {
+            eprintln!("base-packages: {complaint}");
+            eprintln!("usage: cargo xtask base-packages <aarch64|riscv64|x86_64> [--test]");
+            return false;
+        }
     };
     let root = workspace_root();
     let definition = match read_definition(&root) {
@@ -252,11 +271,46 @@ pub(crate) fn base_packages() -> bool {
             return false;
         }
     };
-    if !build_packages(&root, &arch, &definition, false) {
+    let definition = match with_test_programs(definition, test) {
+        Ok(definition) => definition,
+        Err(complaint) => {
+            eprintln!("base-packages: {complaint}");
+            return false;
+        }
+    };
+    if !build_packages(&root, &arch, &definition, test) {
         return false;
     }
-    println!("base-packages: every package in {DEFINITION} for {arch} is in target/packages");
+    println!(
+        "base-packages: every package in {DEFINITION}{} for {arch} is in target/packages",
+        if test {
+            " and the test image's `fixtures`"
+        } else {
+            ""
+        }
+    );
     true
+}
+
+/// **`cargo xtask base-packages`, its arguments**: one architecture, and whether the packages are
+/// for a test image. A pure function over the words, so the refusals are host-testable.
+fn parse_base_packages_arguments(args: Vec<String>) -> Result<(String, bool), String> {
+    let mut arch = None;
+    let mut test = false;
+    for word in args {
+        match word.as_str() {
+            "--test" => test = true,
+            other if other.starts_with('-') => return Err(format!("unknown argument {other}")),
+            other => {
+                if arch.is_some() {
+                    return Err(format!("one architecture only, not also {other}"));
+                }
+                arch = Some(other.to_string());
+            }
+        }
+    }
+    arch.map(|arch| (arch, test))
+        .ok_or_else(|| "no architecture".to_string())
 }
 
 /// Parse the verb's arguments. A pure function over the words, so the refusals are host-testable.
@@ -810,6 +864,47 @@ programs = ["progenitor", "swish", "jig"]
             parse_arguments(vec!["aarch64".into(), "--nonsense".into()]).unwrap_err(),
             "unknown argument --nonsense"
         );
+    }
+
+    #[test]
+    fn base_packages_arguments_read_as_an_architecture_and_a_test_flag() {
+        assert_eq!(
+            parse_base_packages_arguments(vec!["aarch64".into()]).unwrap(),
+            ("aarch64".into(), false)
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec!["x86_64".into(), "--test".into()]).unwrap(),
+            ("x86_64".into(), true)
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec!["--test".into(), "riscv64".into()]).unwrap(),
+            ("riscv64".into(), true)
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec![]).unwrap_err(),
+            "no architecture"
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec!["aarch64".into(), "--from".into()]).unwrap_err(),
+            "unknown argument --from"
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec!["aarch64".into(), "riscv64".into()]).unwrap_err(),
+            "one architecture only, not also riscv64"
+        );
+    }
+
+    #[test]
+    fn a_test_definition_carries_the_fixtures_package() {
+        // `base-packages --test` and `base-image --test` ask for one set, so both read it here.
+        let definition = parse_definition(DEFINITION).unwrap();
+        assert_eq!(
+            with_test_programs(definition.clone(), false).unwrap(),
+            definition
+        );
+        let test = with_test_programs(definition, true).unwrap();
+        assert!(test.programs.contains(&"progenitor".to_string()));
+        assert!(test.programs.contains(&"kernel_test_subject".to_string()));
     }
 
     #[test]
