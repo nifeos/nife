@@ -100,8 +100,8 @@ and basalt's existing repository, source-archive and publish path.
    --catalog <index> --test --boot` once per architecture, beside the `jig install` legs. It boots
    an image composed from the base packages the pin's builder packed, and that image reaches the
    prompt; the kernel still comes from the `kernel` package's crates, the gap the block's `BUGS`
-   entry records. The job is not one of the four check names basalt's ruleset requires, so adding
-   it there is calef's act.
+   entry records. Both composed rows are two of the seven check names basalt's ruleset requires, so
+   a composed image that stops booting holds a merge.
 5. nife's own image build stays for nife's tests, composed from the same package definitions, so a
    nife change can be tested before basalt pins it. `cargo xtask image` still packs the tree's
    image for every existing check, and `cargo xtask base-image` composes the same membership from
@@ -136,9 +136,6 @@ than replaced.
   `reproduce` job compares two independent builds. Nothing yet compares a base package's bytes
   against a reviewed line, so a byte that moves without changing the index passes. Home: 917
   (basalt's packages build reproducibly), or a recipe table shaped for a set rather than a package.
-- **The composed boot holds no merge yet.** It is one job beside the gate's others, and its name is
-  provisional. It is not one of the four check names basalt's ruleset requires, so a composed image
-  that stops booting does not hold a merge until calef adds it there.
 - **`script/swish-check`'s rows have not run against a composed image.** `--test` composes the
   base plus the `fixtures` package, which is what the kernel's boot self-test and the shell's check
   run; the rows' own claims on that image are the next piece. Until they run, a composed image
