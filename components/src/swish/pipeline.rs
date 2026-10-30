@@ -948,7 +948,7 @@ fn spawn_stage(
     }
     if let Some(slot) = screen {
         // READ, not WRITE: this is the child's fault target, and this shell needs `RECEIVE` and
-        // `REAP` on it. `supervision_contract::build_child_space` inserts the child's copy at READ.
+        // `REAP` on it. `process_builder::build_child_space` inserts the child's copy at READ.
         delegate(slot, abi::rights::READ | abi::rights::GRANT);
     }
     if let Some(slot) = mem_slot {

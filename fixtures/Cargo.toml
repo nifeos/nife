@@ -611,6 +611,7 @@ confined_syscall_fuzzer_contract = { version = "0.1.0", path = "../crates/confin
 loaded_image_check = { version = "0.1.0", path = "../crates/loaded_image_check" }
 c_seam = { version = "0.1.0", path = "../crates/c_seam" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
+process_builder = { version = "0.1.0", path = "../crates/process_builder" }
 # The interactive system, built once (milestone 96). Both inits are a table of the slot numbers
 # their own kernel granted plus a call into this.
 system_initializer = { version = "0.1.0", path = "../crates/system_initializer" }
@@ -619,6 +620,8 @@ system_initializer = { version = "0.1.0", path = "../crates/system_initializer" 
 # own slot numbers from the declarations they are built against.
 capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
+# The serving loop both swappable programs run; the wire format stays in `hot_swap_contract`.
+hot_swap_server = { version = "0.1.0", path = "../crates/hot_swap_server" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The soak workload's shared page (milestone 219). The kernel reads what the soaker writes, so the
 # layout and the reply transform live in one crate rather than in two copies.

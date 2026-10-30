@@ -23,5 +23,5 @@ pub(super) fn must_ok(ok: bool) {
 /// Trap. The kernel prints the pc and kills the process, which is the legible way for a builder to
 /// say that the system it was asked to build cannot exist.
 pub(super) fn fail() -> ! {
-    supervision_contract::fail()
+    process_builder::fail()
 }

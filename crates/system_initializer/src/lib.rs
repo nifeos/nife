@@ -61,13 +61,14 @@ pub use layout::{
 };
 use line_editor::proto;
 use measurement::*;
+use process_builder::{
+    build_child, forget_thread_control_block, hand_to_requester, retype_obj_from as retype_obj,
+    retype_page_frame_from as retype_page_frame, start_child,
+};
 use spawn_loop::*;
 use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};
 // The tree's only loader, named here rather than qualified at every call.
-use supervision_contract::{
-    ChildEndowment, Retention, build_child, forget_thread_control_block, hand_to_requester,
-    retype_obj_from as retype_obj, retype_page_frame_from as retype_page_frame, start_child,
-};
+use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
     address_space_map_into, call, capability_delete, is_granted, map_page_frame, receive,
     receive_badged, receive_capability_badged, retype_into_kernel_object, retype_into_page_frame,
