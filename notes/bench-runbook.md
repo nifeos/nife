@@ -6,7 +6,9 @@ This page points at procedures rather than repeating them. Every step below live
 already, and a second copy would drift from the first, which is the defect milestone 236 (three
 derivations are copied between scripts, and nothing notices when they drift) exists for. What this
 page adds is the part nothing else holds: which machine to
-spend an evening on, in what order, and what a result would mean.
+spend an evening on, in what order, and what a result would mean. For the cross-OS suite's
+reference columns, which operating systems an evening installs and which rows it takes are
+[cross-os-reference-columns.md](cross-os-reference-columns.md)'s.
 
 ## The three machines, honestly
 
