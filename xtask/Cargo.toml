@@ -108,6 +108,13 @@ package_archive = { version = "0.1.0", path = "../crates/package_archive" }
 # The image's index sources (milestone 801 (packages over the internet)): the entry's name and the
 # reader the archive build checks its own text with.
 package_index = { version = "0.1.0", path = "../crates/package_index" }
+# The approval file and the grant records it compiles to (milestone 911 (scripted installs grant
+# only what the owner's approval file allows)). `cargo xtask base-image` checks each package's asks
+# against the image's approval file with the same reader `jig install --approved` uses, so the
+# composition and the install share one subset test.
+approval_file = { version = "0.1.0", path = "../crates/approval_file" }
+# The grant vocabulary the check reads and writes (`Granted`, `extras`).
+installed_programs = { version = "0.1.0", path = "../crates/installed_programs" }
 # Recipes and package declarations are TOML (calef, 2026-09-27; JSON refused for having no comments,
 # YAML too). A §46 (thin primitives or whole subsystems) dependency, taken rather than written: it is
 # host-only and never on the shipping graph, no target reads a recipe, it parses a format calef chose
