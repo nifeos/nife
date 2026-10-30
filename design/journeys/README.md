@@ -91,11 +91,10 @@ what "done" looks like), and one table:
   so).
 - **milestone.** The milestone number this step's progress is read from. Required, and the block it
   names must exist.
-- **decision.** The number of a decision this specific step is additionally blocked by (`§120` is
-  written `120`), when the milestone's own status does not tell the whole story (a `PARTIAL`
-  milestone can still have the one piece a journey needs sitting behind a separately-decided hold;
-  journey 1's own step 4, before DECISIONS §120 was amended 2026-08-26, is the worked example).
-  Blank when the milestone's own status is the whole answer.
+- **decision.** A decision's number, written without `§`, when that decision blocks this specific
+  step as well as the milestone: a `PARTIAL` milestone can still have the one piece a journey needs
+  sitting behind a separately-decided hold, and journey 1's step 4 carries a decision for that
+  reason. Blank when the milestone's own status is the whole answer.
 - **what this step needs.** One line, human-written, naming the specific slice of that milestone
   this journey's story needs, not the milestone's full scope. This is the column a milestone's own
   coarse status cannot carry: `PARTIAL` says nothing about *which* part is missing.

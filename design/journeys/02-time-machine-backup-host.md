@@ -10,9 +10,10 @@ family's backups are now **borg over SSH on cordoba**, with Immich for images, b
 existing Linux ecosystem while nife was not ready; SMB is no longer in that path either. calef,
 2026-08-30: *"Journey 2 is dead so put a fork in it."*
 
-Milestone 54's adapter, milestone 55's Time Machine half and the shares they served left the tree on
-2026-08-30. **notes/smb.md is the record of what they did**, and it is the place to start for anyone
-reviving this.
+Milestone 54 (a network file service a Mac can actually mount)'s adapter and milestone 55 (Time
+Machine: SMB3 with Apple's extensions, and mDNS)'s Time Machine half left the tree with the shares
+they served on 2026-08-30. **notes/smb.md is the record of what they did**, and it is the place to
+start for anyone reviving this.
 
 **This file is kept rather than deleted, because the steps below are still true statements about
 what was built** and because a retired journey is evidence about the project rather than clutter: it
