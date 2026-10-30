@@ -1,3 +1,7 @@
+---
+status: PROPOSED
+raised: 2026-10-29
+---
 # 4. Install a system composed from packages, and update it from packages
 
 *The slug is this lane's coinage and provisional; calef names things.*

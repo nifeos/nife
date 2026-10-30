@@ -1,3 +1,7 @@
+---
+status: WORKING
+raised: 2026-10-29
+---
 # 5. Externalize the publish-ours crates, one release at a time
 
 *The slug is this lane's coinage and provisional; calef names things.*

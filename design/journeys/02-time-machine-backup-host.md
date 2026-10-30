@@ -1,13 +1,18 @@
+---
+status: RETIRED
+raised: 2026-08-26
+retired: 2026-08-30
+---
 # 2. Run a Time Machine backup host
 
-**RETIRED 2026-08-30 by calef.** The customer this journey served stopped using Time Machine. The
+The customer this journey served stopped using Time Machine. The
 family's backups are now **borg over SSH on cordoba**, with Immich for images, both built with the
 existing Linux ecosystem while nife was not ready; SMB is no longer in that path either. calef,
 2026-08-30: *"Journey 2 is dead so put a fork in it."*
 
-**And the code is gone as of the same day.** Milestone 54's adapter, milestone 55's Time Machine
-half and the shares they served were deleted from the tree. **notes/smb.md is the record of what
-they did**, and it is the place to start for anyone reviving this.
+Milestone 54's adapter, milestone 55's Time Machine half and the shares they served left the tree on
+2026-08-30. **notes/smb.md is the record of what they did**, and it is the place to start for anyone
+reviving this.
 
 **This file is kept rather than deleted, because the steps below are still true statements about
 what was built** and because a retired journey is evidence about the project rather than clutter: it
@@ -15,12 +20,6 @@ is the worked example of principle 1's own warning, a customer with a real deadl
 because the work did not land in time. Milestones 54 and 55 are now `REMOVED`, and 65, 107, 53 and
 131 keep their own statuses; all of them are repriced in their own blocks, not here. Nothing below
 should be read as current intent.
-
-**Journeys have no status field** (design/journeys/README.md says why), so retirement is recorded in
-prose here and in that README's index. The roadmap did not have a word for this either; it does now,
-minted the same day, and `REMOVED` is why milestones 54 and 55 can say what happened while this file
-still needs a paragraph. If a second journey is ever retired, that is the point to ask an architect
-whether this convention should grow a field rather than borrow the roadmap's.
 
 calef, 2026-08-26: a second journey, running a Time Machine backup host. Unlike journey 1, this
 story is not waiting on unwritten code for its first light: milestone 55's own 2026-08-22 scoping
