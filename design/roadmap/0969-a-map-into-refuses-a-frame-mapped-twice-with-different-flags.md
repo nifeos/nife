@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-map-into-refuses-a-frame-mapped-twice-with-different-flags
 raised: 2026-10-27
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# A `MAP_INTO` refuses a frame mapped twice with different flags
+# 969. A `MAP_INTO` refuses a frame mapped twice with different flags
 
 The tenth outsider pass's lane raised this on 2026-10-27 (UTC) while it recorded milestone 936
 (a tenth outsider pass attacks the confinement claim). calef ruled the same day that the escape
@@ -42,3 +43,11 @@ An architect rules three things before the lane starts. The first is the refusal
 difference, or only the writable-and-executable pair. The second is the check's home, the dispatcher
 or the hold. The third is whether claim 11 covers the cross-space alias, and if so what the fix
 refuses there.
+
+## Index row
+
+`MAP_INTO` never refuses a frame the space already maps. `MAP_RW` at one `va` and `MAP_CODE` at
+another leave every page-table leaf honest while the physical page is both writable and executable.
+That defeats W^X by alias on a shipped path. The fix refuses a second mapping of a frame the space
+already maps when the flags would differ, inside the mapping hold. It also lets the pass's witness
+join the default suite on all three architectures.

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: an-aarch64-cloud-instance-drives-its-pcie-devices
 raised: 2026-10-24
 milestone_dependencies: 578, 801
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: aarch64 SBBR cloud firmware with virtio over PCIe
 specific_machine: oracle-a1 (an Oracle Cloud Ampere A1 instance; calef ruled 801's aarch64 leg onto it on 2026-10-24 UTC)
 needs_person: yes
 ---
-# An aarch64 cloud instance drives its PCIe devices, so `jig` runs on it
+# 964. An aarch64 cloud instance drives its PCIe devices, so `jig` runs on it
 
 Raised 2026-10-24 (UTC) by `maintainer/record-2026-10-24-b`. calef ruled that day that milestone
 801 (packages over the internet)'s aarch64 leg runs on an Oracle Cloud Ampere A1 instance, whose
@@ -18,7 +19,7 @@ today, for two reasons in the tree, and the instance offers nothing else `jig` n
 ## What an A1 boot gets today
 
 The A1 boot is milestone 578 (an ACPI discovery path for aarch64)'s item 7,
-[notes/rented-metal/oracle-a1.md](../../../notes/rented-metal/oracle-a1.md). Under QEMU with the same
+[notes/rented-metal/oracle-a1.md](../../notes/rented-metal/oracle-a1.md). Under QEMU with the same
 description (`acpi=on`, GICv3, a `virtio-blk-pci` disk and a `virtio-net-pci` NIC) it reaches `$`
 with `pcie : none`:
 
@@ -59,3 +60,11 @@ choice: a crate such as `acpi`'s AML half, or MSI-X, which needs no AML. Unsurve
 
 - The device inventory in item 4 is a reading of Oracle's documentation (paravirtualized mode is
   virtio over PCIe) until a boot lists it.
+
+## Index row
+
+The aarch64 leg of the package path runs on an Oracle Cloud Ampere A1 instance. Its network is
+`virtio-net-pci`. That boot reaches no PCIe device. It has no entropy, no disk and no clock. The
+instance offers nothing else `jig` needs. The work describes the PCIe host bridge from ACPI. It then
+claims virtio-net, virtio-blk and virtio-rng behind it. Each sits behind the SMMU where there is
+one.

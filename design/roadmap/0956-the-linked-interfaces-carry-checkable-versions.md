@@ -11,8 +11,9 @@ needs_person: no
 # 956. The linked interfaces carry checkable versions
 
 Raised 2026-10-29 (UTC) by the lane `proposal/version-carrying-interfaces`, as the implementing
-proposal behind [the shape proposal](proposals/version-carrying-interfaces.md). calef ruled the
-shape that day in PR #2852's comment; this block re-aims the eight-step plan at the ruled shape.
+block behind [milestone 979 (interfaces a peer can check)](0979-version-carrying-interfaces.md).
+calef ruled the shape that day in PR #2852's comment; this block re-aims the eight-step plan at the
+ruled shape.
 The shape proposal holds the questions, the options and the ruling; this one holds the plan, and
 an integrator minted its number on 2026-10-28 (UTC) so condition 4 of milestone 756 has a block to
 point at.

@@ -1,7 +1,7 @@
 # Security: what an owned runner exposes, and the settings that narrow it
 
 An appendix to
-[gating-ci-rents-more-concurrency-before-it-owns-a-runner.md](../gating-ci-rents-more-concurrency-before-it-owns-a-runner.md),
+[gating-ci-rents-more-concurrency-before-it-owns-a-runner.md](../0965-gating-ci-rents-more-concurrency-before-it-owns-a-runner.md),
 which keeps the threat model and the preconditions. This file holds GitHub's own words, what this
 repository already sets, what a job could reach, the stronger VM shape, and the pull-request
 settings behind option (e). Everything was read on 2026-10-24 (UTC).

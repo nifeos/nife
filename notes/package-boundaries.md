@@ -209,7 +209,8 @@ holds the plan.
    repository per package, named after the package (§316 (one repository per package leaves the
    tree)). The ruling refuses grouping by #1389's seven divisions. The same day's naming review
    ratified `process-tools`, `core-tools` and `disk-tools` as the package names and the repository
-   names (design/roadmap/proposals/first-cut-names.md, pull request #2870); each `home` line stays
+   names; milestone 978 (the first cut's names) records that in
+   `design/roadmap/0978-first-cut-names.md` and pull request #2870. Each `home` line stays
    provisional until its repository exists.
 4. The project records: `design/`, `briefs/`, `script/`, `helpers/` and `.github/`. Does this
    repository become their home, or do they leave too?

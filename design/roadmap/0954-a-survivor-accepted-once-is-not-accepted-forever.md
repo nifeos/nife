@@ -59,7 +59,7 @@ The 612 equivalents cluster by operator:
 The top crates by missed plus timeout, from the same census: `designware_ethernet` 78, `e1000e`
 76, `designware_mobile_storage` 75, `paging` 73, `extensible_host_controller_interface` 50,
 `grant_plan` 44, `video_terminal` 42 and `filesystem_contract` 33. Timeouts belong to the
-companion proposal, `a-mutant-that-hangs-is-its-own-verdict.md`.
+companion milestone 970 (a mutant that hangs is its own verdict).
 
 ## The four holes
 

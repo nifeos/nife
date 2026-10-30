@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: every-cargo-mutants-install-comes-from-the-pinned-digest
 raised: 2026-10-28
 milestone_dependencies: 955
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# Every cargo-mutants install in CI comes from the pinned digest
+# 977. Every cargo-mutants install in CI comes from the pinned digest
 
 *(Title and slug provisional.)*
 

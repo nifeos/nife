@@ -273,5 +273,5 @@ Milestone 402, `design/roadmap/0402-a-service-report-nobody-is-obliged-to-drain.
 - No NTS and no MAC, as the crate half of this file records at length.
 - A boot whose clock is `UNKNOWN` runs the client once, from the progenitor, announced like the
   resolver (calef, 2026-10-25 UTC;
-  [the proposal](../design/roadmap/proposals/radons-booted-system-runs-jig.md)). Until that is
-  built, nothing in the interactive boot runs it; the tests wire it.
+  [milestone 966 (radon's booted system runs `jig`)](../design/roadmap/0966-radons-booted-system-runs-jig.md)).
+  Until that is built, nothing in the interactive boot runs it; the tests wire it.

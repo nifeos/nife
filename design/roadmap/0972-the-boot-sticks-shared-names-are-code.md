@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-boot-sticks-shared-names-are-code
 raised: 2026-10-27
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The boot stick's shared names are code
+# 972. The boot stick's shared names are code
 
 Raised by the 2026-10-27 documentation sweep
-([its report](../../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 8).
+([its report](../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 8).
 Name: provisional, for this file and for every constant it sketches.
 
 Reuse: `crates/boot_ladder`, which already holds the boot lines the kernel prints and the gates
@@ -62,3 +63,10 @@ import.
 `git grep -n "handing the system to the userspace progenitor" -- ':!bench' ':!*.md'` finds only
 `crates/boot_ladder`, the removable-media names appear outside it only in tests and docs, and
 `cargo xtask stick-boot` and `helpers/stick-maker-proof.sh` pass.
+
+## Index row
+
+Five names cross between the programs that build, write and boot the stick. Every side spells
+each one itself. A changed handover line passes every unit test and fails every boot gate as a
+timeout that reads like a hang. The fix gives each agreement one definition, in `boot_ladder` where
+it already holds the boot lines. The gates then read the same constants.

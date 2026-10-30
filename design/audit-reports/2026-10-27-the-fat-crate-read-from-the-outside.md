@@ -169,7 +169,7 @@ side and no shared code. `install_service.rs` records why: the words are the ker
 with a program it spawns. Under the method that is a contract stated in prose, and
 `hot_swap_contract` is the tree's existing shape for the same convention. Proposed as [the
 installer's spawn and report words are one
-definition](../roadmap/proposals/the-installers-spawn-and-report-words-are-one-definition.md). It is
+definition](../roadmap/0973-the-installers-spawn-and-report-words-are-one-definition.md). It is
 the installer's rows within milestone 407 (one definition of the numbers a kernel test and its
 program agree on), whose measurement does not list this pair, and it waits on §187 (one crate per
 kernel-test pair, or one crate for all of them?) for where the definitions live.
@@ -180,7 +180,7 @@ The PVH module order (archive at 0, boot file at 1) is an array order in `write_
 literal indices in the kernel's `machine.rs`, each comment naming the other. Which partition is boot
 slot `n` is counted twice, by the chooser's `read_table` and by `confirm`'s loop, which the appendix
 calls "the whole agreement between the two". Proposed as [the loader's two install agreements are
-code](../roadmap/proposals/the-loaders-two-install-agreements-are-code.md), with constants in
+code](../roadmap/0974-the-loaders-two-install-agreements-are-code.md), with constants in
 `machine_discovery` and a `boot_slot::nth_slot`.
 
 ### 8. MINTED: the boot stick's shared names are spelled on every side
@@ -188,7 +188,7 @@ code](../roadmap/proposals/the-loaders-two-install-agreements-are-code.md), with
 The kernel's handover line, which every boot gate waits for, is spelled in six places; the loader's
 first line in three; each architecture's removable-media file name in four; the payload directory's
 environment variables in two; and the downloads' names in two. Proposed as [the boot stick's shared
-names are code](../roadmap/proposals/the-boot-sticks-shared-names-are-code.md), in
+names are code](../roadmap/0972-the-boot-sticks-shared-names-are-code.md), in
 `crates/boot_ladder` beside the lines it already holds.
 
 ### 9. MINTED: the boot stick notes want the pilots' rewrite
@@ -197,7 +197,7 @@ The sort found 17 passages in the boot stick notes that narrate a code doc and 6
 their code. This sweep made none of those cuts: the system-initializer pilot measured a third of
 first-pass cuts as wrong, and a review pass is what caught them. Proposed as [the boot stick notes
 are read against their
-code](../roadmap/proposals/the-boot-stick-notes-are-read-against-their-code.md), with the rows the
+code](../roadmap/0971-the-boot-stick-notes-are-read-against-their-code.md), with the rows the
 sort produced.
 
 ### 10. FIXED: the boot stick notes contradicted their code in twelve places

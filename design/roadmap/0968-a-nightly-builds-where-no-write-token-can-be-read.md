@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-nightly-builds-where-no-write-token-can-be-read
 raised: 2026-10-26
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A nightly builds where no write token can be read
+# 968. A nightly builds where no write token can be read
 
 Raised by the 2026-10-26 security audit
-([its report](../../audit-reports/2026-10-26-the-compiler.md), finding 1). Name: provisional.
+([its report](../audit-reports/2026-10-26-the-compiler.md), finding 1). Name: provisional.
 
 Reuse: the `restamp` job's shape in `toolchain-bump.yml`, which already builds under a new nightly
 with `contents: read` and hands its results to `propose` as an artifact.
@@ -58,3 +59,13 @@ On `main`, a scheduled or dispatched run opens or updates the bump pull request 
 job log shows the build job with no `automation` deployment and no token step. A probe step,
 removed after that run, in the build job prints whether `git config --get-regexp
 'http.*extraheader'` and the checkout's credentials file are empty.
+
+## Index row
+
+The `propose` job mints an installation token that writes contents and pull requests. It checks
+the tree out with that token, and `actions/checkout` keeps it for later git commands. Every later
+step can read it. One runs `cargo xtask std-exerciser`, on a nightly rustup installed minutes
+earlier. It also runs the build scripts in `xtask`'s and `std_exerciser`'s registry graphs. A
+compromised step can therefore push to any branch. That commit merges once CI goes green, because
+the job arms auto-merge on its own branch. The fix builds where no write token can be read, and
+hands the result to the job that writes.

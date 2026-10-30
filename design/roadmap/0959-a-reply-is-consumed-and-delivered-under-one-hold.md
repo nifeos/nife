@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-reply-is-consumed-and-delivered-under-one-hold
 raised: 2026-10-20
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A reply is consumed and delivered under one hold
+# 959. A reply is consumed and delivered under one hold
 
 Raised by the 2026-10-20 security audit
-([its report](../../audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md),
+([its report](../audit-reports/2026-10-20-the-window-the-supply-chain-audit-left-unread.md),
 finding 2). Name: provisional.
 
 Reuse: the existing `IPC_TABLES` hold that `REPLY_CAPABILITY` already takes to file its carried
@@ -43,3 +44,10 @@ by any other route.
 A kernel test with two threads of one process holding one Reply slot: the second `REPLY` is
 `NoSuchSlot`, and a client parked on a second call receives that call's answer only. The fast path
 is on this route, so the change records `syscall_entry`'s measured footprint before and after.
+
+## Index row
+
+Two server threads share one capability table, so both can read the same `Reply` slot: one
+answers the client, the client wakes and parks for an unrelated server, and the second thread's
+stale copy arrives as that server's reply. The fix removes the capability from the table, checks
+it was still `Reply(tid)`, and delivers under one hold, so a second thread finds the slot empty.

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-boot-stick-notes-are-read-against-their-code
 raised: 2026-10-27
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The boot stick notes are read against their code
+# 971. The boot stick notes are read against their code
 
 Raised by the 2026-10-27 documentation sweep
-([its report](../../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 9).
+([its report](../audit-reports/2026-10-27-the-fat-crate-read-from-the-outside.md), finding 9).
 Name: provisional.
 
 Reuse: the method of the two pilots, #2778 (`notes/system-initializer`) and #2782
@@ -46,3 +47,10 @@ Six passages belong beside their code:
 Each passage of the area has a row in a ledger (gone, moves, stays, contract) with the symbol it
 rests on, and a review has read every gone and moves row against the code. The note's headings and
 anchors still resolve from every file that cites them.
+
+## Index row
+
+The 2026-10-27 sweep sorted about 5,400 words of boot-stick notes by reading each against its
+code. It fixed every contradiction it found but made none of the cuts and moves. The pilots measured
+that a third of first-pass cuts removed something a reader needs. This is the review pass: cut
+seventeen passages that narrate what a code doc already says, and move six beside their code.

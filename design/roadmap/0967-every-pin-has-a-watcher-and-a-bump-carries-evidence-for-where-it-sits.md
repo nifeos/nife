@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits
 raised: 2026-10-25
 milestone_dependencies: none
 decision_dependencies: unwritten
@@ -7,13 +8,13 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# Every pin has a watcher, and a dependency bump carries evidence for where it sits
+# 967. Every pin has a watcher, and a dependency bump carries evidence for where it sits
 
 *(Title and slug provisional.)*
 
 Raised 2026-10-25 (UTC) by lane `dependency-updates-measured`, at calef's request for a mechanism
 that detects dependency updates and takes them in a measured way. The appendix
-[inventory.md](every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits/inventory.md)
+[inventory.md](0967-every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits/inventory.md)
 lists every pin in the tree, what watches it, and the measurements this file cites.
 
 Reuse: Dependabot's `directories`, `groups`, `group-by` and `cooldown`; `script/kani-bump` and the
@@ -195,3 +196,10 @@ and raising the limit is a change §81 leaves to us if it ever binds.
    a one-line change.
 7. The three decisions put architect attention where semantics move and keep one number implicit in
    Dependabot's default; none of them rests on effort.
+
+## Index row
+
+Detection has gaps and incorporation has one rule for everything: a bump to `uuid`, which the
+x86_64 kernel links, meets the same gate as a fuzz harness's `libfuzzer-sys`. The work puts a
+watcher on every pin, classes each package by where it sits, gives each class the evidence its
+position owes, and records a bump that fails, with the inventory in the appendix beside it.

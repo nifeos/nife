@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-function-level-rename-table-beside-the-census-rename-ledger
 raised: 2026-10-28
 milestone_dependencies: 740
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A function-level rename table beside the census rename ledger
+# 975. A function-level rename table beside the census rename ledger
 
 Raised 2026-10-28 (UTC) by `lane/954-rename-table-proposal`, cut to write down what the first two
 part-3 lanes of milestone 954 (a survivor accepted once is not accepted forever) found. Each lane
@@ -71,7 +72,7 @@ Both sides of every comparison resolve the same way, so chained renames compose.
 
 The lane doing the rename writes the row, at rename time, in the pull request that renames the
 function. Nothing can derive the row, so the pointer sits where the renamer already looks:
-[notes/skills/naming-authority/SKILL.md](../../../notes/skills/naming-authority/SKILL.md) is what a
+[notes/skills/naming-authority/SKILL.md](../../notes/skills/naming-authority/SKILL.md) is what a
 lane reads before any rename, and this work adds the rule there. Two checks hold it up. The
 `orphans` command that `script/lint` already runs fails a triage row whose crate names no package.
 It gains the function component: a row whose function the crate no longer defines fails, unless a

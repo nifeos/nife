@@ -11,7 +11,7 @@ radon".
 It cannot pass yet. radon's ordinary image has the NIC, a lease and `jig`. It has no entropy at
 the prompt, so no resolver and no TLS. It has no file service, so nowhere to keep the index copy
 or an install, and no wall clock to check a certificate's dates. The proposal
-[radon's booted system runs `jig`](../../design/roadmap/proposals/radons-booted-system-runs-jig.md)
+[radon's booted system runs `jig`](../../design/roadmap/0966-radons-booted-system-runs-jig.md)
 is that work, and the wall clock waits on a ruling of calef's there. Step A below runs on today's
 tree and records which gap bites first; step B is the leg itself, once the proposal is built.
 

@@ -1,7 +1,7 @@
 # Measurement: hosted CI during the milestone-929 run
 
 An appendix to
-[gating-ci-rents-more-concurrency-before-it-owns-a-runner.md](../gating-ci-rents-more-concurrency-before-it-owns-a-runner.md).
+[gating-ci-rents-more-concurrency-before-it-owns-a-runner.md](../0965-gating-ci-rents-more-concurrency-before-it-owns-a-runner.md).
 Every figure was read from the GitHub API and `git` on 2026-10-24 between 03:35 and 03:50 UTC. All
 times are UTC.
 
