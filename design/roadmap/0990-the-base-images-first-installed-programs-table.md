@@ -17,14 +17,16 @@ and the image's first installed-programs table holds the resulting grant records
 host-callable and needs no new format. The second half needs a place to put a generation, and a
 composed image has no such place.
 
-Ruled 2026-10-30 (UTC) by calef, on #2894: the first table lives on the UFS2 launch volume, and a
-seed image is not a separate artifact. The options below are the fork that ruling answered. UFS2
-replaces RedoxFS as the launch filesystem (ruled 2026-10-31 UTC), so the launch volume is the
-volume every installed program lives on, not a store beside it.
+Ruled 2026-10-30 (UTC) by calef, on #2894: the first table lives on the launch volume, and a seed
+image is not a separate artifact. The options below are the fork that ruling answered. Ruled
+2026-10-31 (UTC) by calef: that ruling carries over unchanged to RedoxFS, which is now the launch
+store (decision 34). The same day, decision 34 refused UFS2, which the ruling had named. In force
+now: the first table is files `activation/1` and `activation/current` on the RedoxFS launch volume.
 
 Reuse: the table and its grammar (`crates/installed_programs`), the approval file and its check
-(`crates/approval_file`), and the launch filesystem the table lives on, UFS2 through the server the
-UFS2 arc (the proposal `ufs2-read-and-write-against-freebsds-tools`) builds. Nothing here proposes a
+(`crates/approval_file`), and the launch filesystem the table lives on, RedoxFS, which nife already builds and runs.
+`seed_installed` in `xtask/src/disk.rs` already seeds a RedoxFS disk for the swish-check gate, so
+the host-side tool that writes files into a RedoxFS image exists. Nothing here proposes a
 second table, a second grammar or a second approval format.
 
 ## The failure
@@ -49,7 +51,7 @@ shape and the boot path, not a line of code inside `compose`.
 
 ### A. The launch volume carries the first generation
 
-`base-image` writes the launch filesystem's image, a UFS2 volume carrying `activation/1` and
+`base-image` writes the launch filesystem's image, a RedoxFS volume carrying `activation/1` and
 `activation/current`, and `boot_check::boot_image` attaches it. The boot path changes from
 archive-only to archive plus a launch volume, and every boot of a composed image carries the
 filesystem the installer succeeds on and rolls back.
@@ -61,7 +63,7 @@ boot that no measurement vouches for.
 
 The alternative container for A, a bespoke nife-native store beside the archive, holds the same
 shape with a smaller format of its own. It is the option the 2026-10-29 ruling first chose, and the
-2026-10-30 ruling replaced the container with the launch filesystem.
+2026-10-30 ruling replaced the container with the launch filesystem, now RedoxFS.
 
 ### B. The initrd carries a read-only generation
 
@@ -89,7 +91,7 @@ to the boot, which is the opposite of what item 3 asks: the host composes the im
 
 ## The ruling
 
-**A**, with the container changed to the UFS2 launch volume. The table lives on that volume as files
+**A**, with the container changed to the RedoxFS launch volume. The table lives on that volume as files
 under `activation/`, and a seed image is not a separate artifact: generation 1 is present on the
 volume at build time. Three facts follow.
 
@@ -97,17 +99,18 @@ volume at build time. Three facts follow.
   filesystem. The question the options left open, which store is live when both exist, does not
   arise, because there is one.
 - The table's grammar stays nife's. `installed_programs` owns the generations and the `current`
-  pointer, and `approval_file` owns the check. UFS2 owns only the container.
+  pointer, and `approval_file` owns the check. RedoxFS owns only the container.
 - The volume ships with the composed image, so the first table arrives with the same measurement as
   every other boot artifact.
 
-The choice is not the cheaper one. A bespoke nife-native store could land today, and the launch
-volume waits for a UFS2 server that does not exist. It wins because it leaves one store, one format
-and one writer, and because a second store would owe a migration to the launch filesystem later.
+A bespoke nife-native store would have been a second format beside the launch filesystem. The
+launch volume wins because it leaves one store, one format and one writer, and because a second
+store would owe a migration to the launch filesystem later. RedoxFS is already running, so this
+milestone no longer waits on a filesystem server that does not exist.
 
 ## The work
 
-1. `cargo xtask base-image` writes a UFS2 launch volume beside the kernel and the initial ramdisk.
+1. `cargo xtask base-image` writes a RedoxFS launch volume beside the kernel and the initial ramdisk.
    Generation 1 under `activation/` holds the grant records `compose` produced, one per package,
    and `activation/current` names it.
 2. `boot_check::boot_image` attaches the volume on all three architectures, and the progenitor's
@@ -132,11 +135,10 @@ volume.
   the composition checks every package against it.
 - No signing or pinning of the launch volume. That is milestone 917 (basalt's packages build
   reproducibly) and 607's item 6.
-- No UFS2 server. The UFS2 arc (`ufs2-read-and-write-against-freebsds-tools`) builds it, and its
-  phase 2 (make, judge, read) is what a launch volume needs. This milestone starts once that phase
-  lands.
+- No new filesystem server. RedoxFS is the launch store (decision 34), and this milestone uses the
+  server and the host tool that already exist. It starts once milestone 911 lands.
 
-The launch volume's attach point, its measurement and the `mkfs` step that writes `activation/1`
+The launch volume's attach point, its measurement and the step that writes `activation/1`
 are provisional names until the implementing lane names them. `compose` keeps the check seam, so
 the ruling changes where the records go and not how the composition checks them.
 
