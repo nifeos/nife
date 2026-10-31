@@ -61,6 +61,18 @@ pub enum WriteError<E> {
     ///
     /// Name: provisional. As `NotAFile`.
     NotAFile,
+    /// The entry is not a directory a caller may remove: a file, `.` or `..`.
+    ///
+    /// Name: provisional. The condition.
+    NotADirectory,
+    /// The directory holds entries other than `.` and `..`.
+    ///
+    /// Name: provisional. The condition.
+    DirectoryNotEmpty,
+    /// A directory cannot move into itself or below itself.
+    ///
+    /// Name: provisional. The condition; it would cut the tree off from the root.
+    MovedIntoItself,
 }
 
 impl<E> From<ChainError<E>> for WriteError<E> {
