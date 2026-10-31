@@ -98,14 +98,14 @@ allow = [
     # **Approved by calef on 2026-09-20**, with the reasoning above put to him: permissive,
     # no copyleft, and strictly easier than the Apache half of the pair this tree publishes under.
     "ISC",
-    # **BSD-2-Clause, arriving with UFS2.** UFS2 is the launch filesystem (DECISIONS §34 (UFS2 is
-    # the launch filesystem, and RedoxFS stays primary until UFS2 meets the bar)), and its FreeBSD
-    # half carries this license: `rufs`, the read/write Rust implementation, and the oracle
-    # the server is judged by (`newfs`, `makefs`, `fsck_ffs`), with soft updates and their journal.
-    # BSD-2-Clause is BSD-3-Clause above minus the no-endorsement clause: permissive, attribution,
-    # no copyleft, and strictly easier than a license this list already holds.
+    # **BSD-2-Clause.** BSD-3-Clause above minus the no-endorsement clause: permissive,
+    # attribution, no copyleft, and strictly easier than a license this list already holds. It
+    # joined for UFS2's FreeBSD half; UFS2 is not built (DECISIONS §34 (RedoxFS is the primary
+    # filesystem, on three conditions)), and the entry stays because a license this easy needs no
+    # second reading. No crate in the tree needs it today: `zerocopy` offers it beside MIT and
+    # Apache-2.0.
     #
-    # **Ruled 2026-10-31 (UTC)**, with UFS2's selection as the launch filesystem, on #2899.
+    # **Ruled 2026-10-31 (UTC)**, on #2899.
     "BSD-2-Clause",
     # **Zlib, arriving with `object`.** That is milestone 784 (reuse what the tree wrote), item (g):
     # `object`'s `write_core` feature, which its PE writer sits behind, takes `hashbrown` with its

@@ -505,6 +505,12 @@ mod child_thread_tests;
 #[cfg(test)]
 mod force_kill_tests;
 
+/// **Whether the shell gets a `--mem` grant back after the job built from it**: a sub-region left
+/// behind refuses `DESTROY` for good, and a process left running refuses it once. Cross-ISA for
+/// `force_kill_tests`' reason: the only per-architecture part is the spin instruction.
+#[cfg(test)]
+mod memory_grant_reclaim_tests;
+
 /// **A first process that gives its authority away, and a supervision tree that outlives it** (milestone 22
 /// phase B.2).
 ///
