@@ -22,19 +22,16 @@
 //! [`MasterBootRecord`]: [`Partition::device`] shows one partition as a device of its own, and
 //! [`Volume::open`] opens the volume inside it.
 //!
-//! The table is writable through [`WritableSectorDevice`], the write half of the sector interface.
-//! [`Volume::allocate_cluster`] takes a free cluster and links it after a chain's last,
-//! [`Volume::truncate_chain`] and [`Volume::free_chain`] give clusters back, and every one writes
-//! each live copy of the table in an order that leaves a crash at worst a leaked cluster, never a
-//! shared one. The FAT32 `FSInfo` hints ([`FsInfo`]) follow those changes in memory and
-//! [`Volume::sync`] writes them. The first change after open clears the volume's clean-shutdown bit
-//! (FAT16 and FAT32) and [`Volume::sync`] sets it back, so a volume dropped mid-change stays marked
-//! dirty ([`Volume::is_clean`]).
+//! The table is writable through [`WritableSectorDevice`]. [`Volume::allocate_cluster`],
+//! [`Volume::truncate_chain`] and [`Volume::free_chain`] take and give back clusters, each writing
+//! every live copy of the table so a crash leaks a cluster and never shares one. The FAT32 `FSInfo`
+//! hints ([`FsInfo`]) follow in memory and [`Volume::sync`] writes them. The first change clears the
+//! clean-shutdown bit (FAT16 and FAT32) and the sync sets it back ([`Volume::is_clean`]).
 //!
-//! [`Volume::create_file`] makes an empty file with an 8.3 name, [`Volume::open_file_writer`] opens a
-//! [`FileWriter`] that writes, extends and sets a length, and [`Volume::remove_file`] deletes. A
-//! directory that fills grows by a cluster, except the fixed root of FAT12 and FAT16. Every
-//! operation returns a [`WriteError`].
+//! [`Volume::create_file`] makes an empty file with an 8.3 name, [`Volume::open_file_writer`] opens
+//! a [`FileWriter`] that writes, extends and sets a length, and [`Volume::remove_file`] deletes. A
+//! full directory grows by a cluster, except the fixed root of FAT12 and FAT16. Each operation
+//! returns a [`WriteError`].
 //!
 //! The `mkfs` lays out one shape: a FAT32 EFI system partition holding one boot file at
 //! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT

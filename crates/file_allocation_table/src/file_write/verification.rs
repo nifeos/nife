@@ -79,7 +79,7 @@ fn a_partial_sector_write_keeps_the_head_and_zeroes_the_slack() {
     let offset: usize = kani::any();
     kani::assume(offset <= kept);
     let length: usize = kani::any();
-    kani::assume(length >= 1 && length <= 4 && offset + length <= SMALL);
+    kani::assume((1..=4).contains(&length) && offset + length <= SMALL);
     let bytes: [u8; 4] = kani::any();
     merge_partial(&mut buffer, kept, offset, &bytes[..length]);
     let probe: usize = kani::any();
