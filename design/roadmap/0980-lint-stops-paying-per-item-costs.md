@@ -87,6 +87,8 @@ Each part is one lane, ordered by seconds saved per hour of work.
 5. One shared corpus index. A small helper that lists the tracked files, their text and their hashes
    once per run, so the text gates read it rather than each walking the tree. An estimate of 10 to
    15 s. This is the largest piece and the one to design carefully.
+   [notes/lint-corpus-index.md](../../notes/lint-corpus-index.md) is the design note, with the
+   measurement that moves the saving from the text to what gates derive from it.
 6. The cargo half. The lint ratchet is the one cost there that does not move with build state, so
    decide whether it can share the clippy sections' work and whether rustdoc's four invocations
    collapse into one. The builds are not worth touching.
