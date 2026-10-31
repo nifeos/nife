@@ -3496,6 +3496,13 @@ echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
 # design/passive-baseline.tsv holds it and its count has not risen there or since the merge base.
 python3 helpers/prose_ratchet.py --selftest
 python3 helpers/prose_ratchet.py --check
+echo "==> the removed-files index (design/removed.tsv: each path absent, each sha real, no retired number returns)"
+# lint-quick
+# 2026-10-31 (UTC) the architect ruled that files nothing depends on are removed and an index keeps
+# what went. helpers/removed_index.py, whose header is the manual, holds the index true and refuses a
+# roadmap block that takes a removed block's number, which is how a number is never minted twice.
+python3 helpers/removed_index.py --selftest
+python3 helpers/removed_index.py --check
 echo "==> the file-length ratchet (§266's 2,000-line ceiling on Rust files)"
 # Milestone 841 (a ratchet on Rust file length, and its dashboard row). calef ruled §266 (a Rust
 # source file stays under 2,000 lines) on 2026-10-08 (UTC): the measure (physical lines, comments
