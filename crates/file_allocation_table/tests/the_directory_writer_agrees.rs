@@ -159,9 +159,12 @@ fn tree_of(entries: &[(&str, bool, &[u8])]) -> Vec<(String, bool, Vec<u8>)> {
     v
 }
 
-fn scenario(label: &str, mebibytes: usize, fat_type: FatType) {
+/// How many entries the root holds before the directory stage: the named files and the fifteen
+/// that share an alias base.
+const ROOT_FILES: usize = 6 + 15;
+
+fn long_names(label: &str, mebibytes: usize, fat_type: FatType) -> Memory {
     let mut volume = Volume::open(formatted(mebibytes, fat_type, 512)).unwrap();
-    let total = volume.count_free_clusters().unwrap();
     let long_255 = "x".repeat(251) + ".txt";
     let names = [
         "Hello World.txt",
@@ -192,10 +195,13 @@ fn scenario(label: &str, mebibytes: usize, fat_type: FatType) {
             .unwrap_or_else(|| panic!("{label}: {name}"));
         assert_eq!(found.2, format!("body {i}").as_bytes());
     }
-    assert_eq!(tree.len(), names.len() + 15, "{label}");
+    assert_eq!(tree.len(), ROOT_FILES, "{label}");
     check_with_fsck(&image.bytes, &format!("{label}-names"));
+    image
+}
 
-    // Directories, a file inside, renames across them, and the refusals.
+/// Directories, a file inside, renames across them, and the refusals.
+fn directories_and_moves(label: &str, image: Memory) -> Memory {
     let mut volume = Volume::open(image).unwrap();
     let docs = volume.make_directory(0, "Documents And Settings").unwrap();
     let docs_cluster = docs.first_cluster();
@@ -251,8 +257,11 @@ fn scenario(label: &str, mebibytes: usize, fat_type: FatType) {
             .any(|(p, _, _)| p == "/lower.txt" || p.starts_with("/Documents And Settings/"))
     );
     check_with_fsck(&image.bytes, &format!("{label}-moved"));
+    image
+}
 
-    // Remove everything, directories last, and the volume is empty.
+/// Remove everything the stage made, directories last.
+fn remove_all(label: &str, image: Memory) {
     let mut volume = Volume::open(image).unwrap();
     for path in ["Sub Moved/deep file.txt", "Renamed Notes.txt"] {
         let entry = volume.lookup(path).unwrap();
@@ -268,12 +277,17 @@ fn scenario(label: &str, mebibytes: usize, fat_type: FatType) {
         .filter(|e| !e.is_volume_label())
         .map(|e| e.long_name().map_or(String::new(), |_| "x".to_string()))
         .collect();
-    assert_eq!(rest.len(), names.len() + 15, "{label}");
+    assert_eq!(rest.len(), ROOT_FILES, "{label}");
     volume.sync().unwrap();
     let image = volume.into_device();
     check_with_fsck(&image.bytes, &format!("{label}-removed"));
-    assert_eq!(oracle_tree(&image.bytes).len(), names.len() + 15, "{label}");
-    let _ = total;
+    assert_eq!(oracle_tree(&image.bytes).len(), ROOT_FILES, "{label}");
+}
+
+fn scenario(label: &str, mebibytes: usize, fat_type: FatType) {
+    let image = long_names(label, mebibytes, fat_type);
+    let image = directories_and_moves(label, image);
+    remove_all(label, image);
 }
 
 #[test]
