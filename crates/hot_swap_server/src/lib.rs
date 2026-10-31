@@ -9,6 +9,23 @@
 //! `supervision_contract` and `process_builder`. See notes/live-replacement.md and
 //! notes/state-handoff.md.
 //!
+//! # Examples
+//!
+//! ```no_run
+//! use hot_swap_server::start;
+//!
+//! // A fixture's `_start` is this call and nothing else. `a0` picks the system: a device flag for
+//! // the three stateless ones, `START_FRESH` or `START_ABSORB` for the stateful one. The operator
+//! // chooses what a binary serves by the argument, not by the program, which is why the same
+//! // function is both instances' entry point. `xform` is the one thing that differs between them.
+//! fn serve_v1() -> ! {
+//!     start(1, |arg| arg.wrapping_mul(2), 0, 0x1000_0000, 0)
+//! }
+//! ```
+//!
+//! Every entry point here is a syscall loop from EL0 and returns `!`, so the example has nothing to
+//! assert. It runs under `cargo test --doc -p hot_swap_server` on an aarch64 host.
+//!
 //! Name: provisional, minted 2026-10-29 (UTC) by lane
 //! `milestone/607-item-3-contracts-drop-the-runtime`. calef names it.
 
