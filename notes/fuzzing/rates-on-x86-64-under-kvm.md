@@ -61,5 +61,5 @@ Every figure is from 2026-10-31 (UTC).
 
 The every-core column at 4 is four runs of four guests, two of them beside 40 busy loops at the
 same priority, which cut the rate by a third. At 4 guests the counter deadline rarely fails either,
-so that row does not tell the two apart; 8 and 16 guests do, and are unmeasured. Until they are
-measured, size a concurrent run at 4 guests or fewer.
+so that row does not tell the two apart. 8 and 16 guests would, and nobody has run them yet; until
+someone does, size a concurrent run at 4 guests or fewer.
