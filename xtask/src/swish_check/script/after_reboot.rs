@@ -403,20 +403,7 @@ pub(in crate::swish_check) static SWISH_CHECK_AFTER_REBOOT: LazyLock<Vec<Line>> 
             c_program_fixture::SPEEDTEST1_HASH,
         ],
     ),
-    // **`rmle`, the first first-party package basalt builds** (milestone 921 (rmle is packaged in
-    // basalt)): the editor's `[[bin]]`, built by basalt at the nife commit it pins, installed from
-    // basalt's index. It is not typed afterwards: no prompt line can start `rmle` yet, because only
-    // the kernel harness wires its raw terminal (`kernel/src/user/rmle_service.rs`).
-    line(
-        1,
-        "jig install rmle",
-        &[
-            "fetched rmle-",
-            "from basalt.test over TLS",
-            "fetched and installed; generation 15 is live",
-        ],
-    ),
-    // **The demos, the second first-party package** (milestone 922 (the demos are packaged in
+    // **The demos, the first-party package** (milestone 922 (the demos are packaged in
     // basalt)): `demos` carries `least_authority_demo`. The package is fetched from basalt and
     // accepted by its digest, and then the installer refuses it, because this image carries that
     // program and a base program is updated by a new base, not installed over. The refusal is the
@@ -429,7 +416,7 @@ pub(in crate::swish_check) static SWISH_CHECK_AFTER_REBOOT: LazyLock<Vec<Line>> 
             "fetched demos-",
             "from basalt.test over TLS",
             "refused: the image carries the program least_authority_demo; a new base updates it, not \
-             install; generation 15 is live",
+             install; generation 14 is live",
         ],
     ),
     // **A yes grants exactly what was asked, and the program holds it** (milestone 892). `reach`
@@ -497,7 +484,7 @@ const DISK_TREE_IOPING_LINE: &str = "ioping -c 5 -i 0 -s 4k -S 4m -o 1m n1";
 pub(in crate::swish_check) const ON_THE_DISK_TREE: &[&str] =
     &["ls /disk/nvme0", "cd /disk/nvme0", DISK_TREE_IOPING_LINE];
 
-/// The lines that need a repository from basalt (milestones 810, 906, 907, 897, 921 and 922),
+/// The lines that need a repository from basalt (milestones 810, 906, 907, 897 and 922),
 /// skipped without one outside CI.
 pub(in crate::swish_check) const FROM_BASALT: &[&str] = &[
     "jig install ripgrep",
@@ -513,6 +500,5 @@ pub(in crate::swish_check) const FROM_BASALT: &[&str] = &[
     HACKBENCH_LINE,
     "jig install sqlite",
     c_program_fixture::SPEEDTEST1_MEMDB,
-    "jig install rmle",
     "jig install demos",
 ];

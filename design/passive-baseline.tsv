@@ -604,7 +604,7 @@ design/roadmap/0167-timebase-page-delegation.md	5
 design/roadmap/0168-multitasking-benchmark.md	19
 design/roadmap/0168-multitasking-benchmark/holes-closed-2026-09-19.md	13
 design/roadmap/0168-multitasking-benchmark/radon-2026-09-16.md	4
-design/roadmap/0169-kilo-editor.md	5
+design/roadmap/0169-kilo-editor.md	3
 design/roadmap/0170-nano-editor.md	17
 design/roadmap/0171-git-core-userspace.md	4
 design/roadmap/0172-capability-native-subprocess.md	7
@@ -1375,7 +1375,6 @@ design/roadmap/0917-basalts-packages-build-reproducibly-and-the-recipe-records-e
 design/roadmap/0918-a-package-carries-its-programs-documentation-and-jig-installs-it.md	14
 design/roadmap/0919-a-package-carries-several-programs.md	14
 design/roadmap/0920-an-outsider-pass-is-launched-pinned-and-floor-checked.md	21
-design/roadmap/0921-rmle-is-packaged-in-basalt.md	4
 design/roadmap/0922-demos-are-packaged-in-basalt.md	5
 design/roadmap/0923-exfat-waits-for-its-patents.md	3
 design/roadmap/0924-survivors-cannot-merge-untriaged.md	12

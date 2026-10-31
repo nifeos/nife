@@ -4978,9 +4978,6 @@ kernel/src/user/raw_mode_service.rs
 kernel/src/user/raw_mode_service.rs::Wiring
 kernel/src/user/raw_mode_service.rs::start
 kernel/src/user/raw_mode_service.rs::start_replaceable
-kernel/src/user/rmle_service.rs
-kernel/src/user/rmle_service.rs::Wiring
-kernel/src/user/rmle_service.rs::start
 kernel/src/user/test_support.rs::wait_for
 kernel/src/user/virtio_service.rs
 kernel/src/user/virtio_service.rs::start
@@ -5506,7 +5503,6 @@ system_tests/src/user/revoke_service.rs::wire
 system_tests/src/user/ripgrep_tests.rs
 system_tests/src/user/riscv_virtio_tests.rs
 system_tests/src/user/rm_program_tests.rs
-system_tests/src/user/rmle_tests.rs
 system_tests/src/user/running_space_tests.rs
 system_tests/src/user/scratch_window_tests.rs
 system_tests/src/user/shell_navigation_tests.rs

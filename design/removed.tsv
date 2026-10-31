@@ -16,3 +16,8 @@ design/roadmap/0880-the-x86-64-mmu-file-is-split-along-its-seams.md	2026-10-31	c
 design/roadmap/0881-the-kernel-benchmark-file-is-split-along-its-seams.md	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	BUILT and uncited
 design/roadmap/0901-the-ten-longest-notes-become-a-page-and-its-appendices.md	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	BUILT and uncited
 design/roadmap/0904-the-rest-of-the-prose-budget-backlog-is-paid-down.md	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	BUILT and uncited
+components/src/rmle.rs	2026-10-31	46ab0825e0a25125e8400dcf4e67c48eb35dd717	the rmle text editor program was removed on the architect's ruling of 2026-10-31 (UTC); many text editors can run on nife
+packages/rmle.package.toml	2026-10-31	46ab0825e0a25125e8400dcf4e67c48eb35dd717	the rmle text editor program was removed on the architect's ruling of 2026-10-31 (UTC); many text editors can run on nife
+kernel/src/user/rmle_service.rs	2026-10-31	46ab0825e0a25125e8400dcf4e67c48eb35dd717	the rmle text editor program was removed on the architect's ruling of 2026-10-31 (UTC); many text editors can run on nife
+system_tests/src/user/rmle_tests.rs	2026-10-31	46ab0825e0a25125e8400dcf4e67c48eb35dd717	the rmle text editor program was removed on the architect's ruling of 2026-10-31 (UTC); many text editors can run on nife
+design/roadmap/0921-rmle-is-packaged-in-basalt.md	2026-10-31	46ab0825e0a25125e8400dcf4e67c48eb35dd717	the block packaged rmle in basalt; the rmle text editor program was removed on the architect's ruling of 2026-10-31 (UTC)

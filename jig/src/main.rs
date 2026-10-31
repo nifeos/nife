@@ -467,15 +467,7 @@ fn ask(
         let mut bytes = vec![0u8; len];
         for i in 0..spawnproto::stored_messages(len as u64) {
             let (a, b, c) = rt::receive(INSTALLER_REPLY_SLOT);
-            let mut write = |at: usize, word: u64| {
-                let take = word.to_le_bytes();
-                let out = &mut bytes[at..(at + 8).min(len)];
-                out.copy_from_slice(&take[..out.len()]);
-            };
-            let at = (i * 24) as usize;
-            write(at, a);
-            write(at + 8, b);
-            write(at + 16, c);
+            spawnproto::put_stored_words(&mut bytes, (i * 24) as usize, (a, b, c));
         }
         stored = String::from_utf8(bytes).ok();
     }

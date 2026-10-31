@@ -166,8 +166,8 @@ would stop the terminal until a `CTL_RESUME` nobody sends. `line_editor`'s whole
   `r1 = FLAG_RETRY`. So does an `OPERATION_READRAW` reply, whose `r1` is otherwise data, which is safe
   because a raw read never returns zero bytes. `proto::is_retry` reads both.
 
-A client that speaks the contract handles all three flags; `swish` and `rmle`, the two readers in
-the tree, re-issue on `FLAG_RETRY`. The shell's response is the model: on
+A client that speaks the contract handles all three flags; `swish`, the one reader in
+the tree, re-issues on `FLAG_RETRY`. The shell's response is the model: on
 `FLAG_INTERRUPTED` it discards and reprompts, on `FLAG_EOF` it notes there is nowhere to exit to
 and reprompts. Neither flag carries a signal or a process identity; the terminal reports a fact
 about the read, and what to do with it is the client's business.

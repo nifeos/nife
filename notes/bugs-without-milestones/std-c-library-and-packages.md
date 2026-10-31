@@ -37,4 +37,3 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  roadmap 0851 | `realloc` always copies (1.5 N peak); commit page tables stay until exit | In-place realloc and table reclaim | M  |
 |  roadmap 0918 | `FAQ.md` raw HTML headings render as text; check only reports | Renderer handles raw HTML headings | S  |
 |  roadmap 0919 | one 4,096-byte generation holds ~two dozen programs; 13 used by two packages | Generation grows past one page | M  |
-|  roadmap 0921 | installed `rmle` cannot be started (no raw terminal wiring at prompt) | A raw terminal launch path for rmle | M  |

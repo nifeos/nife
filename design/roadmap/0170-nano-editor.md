@@ -41,10 +41,8 @@ this block depends on it, and as a milestone its dependency fields would match t
 If another program comes to need the terminal layer before nano does, split it then
 (`notes/roadmap.md`: a dependency on part of a milestone means split it).
 
-`rmle` (`components/src/rmle.rs`), from milestone 169 (`kilo`: the smallest real text editor),
-stays. Its raw-keystroke primitive, `OPERATION_RAWMODE` and `OPERATION_READRAW` in
-`crates/line_editor`, is what termios sits on. Whether the `rmle` program itself is retired once
-nano runs is calef's call then, not this block's.
+The raw-keystroke primitive from milestone 169 (`kilo`: the smallest real text editor),
+`OPERATION_RAWMODE` and `OPERATION_READRAW` in `crates/line_editor`, is what termios sits on.
 
 ## The architect's rulings
 
@@ -103,8 +101,8 @@ terminal cannot honor are accepted and listed in BUGS rather than faked.
 ### The terminal's size, a new `line_editor` operation
 
 relibc's `ioctl` (`vendor/relibc/header/sys_ioctl/mod.rs`) answers every request with `ENOTTY`.
-The terminal contract carries no size (`notes/terminal-contract.md`), which is why `rmle` is fixed
-at 80x24.
+The terminal contract carries no size (`notes/terminal-contract.md`), which is why a program
+cannot learn the window size.
 
 Per the ruling, `crates/line_editor` gains an operation, `OPERATION_WINDOWSIZE`, that answers rows
 and columns. `c_library`'s `ioctl` maps `TIOCGWINSZ` onto it and fills a `struct winsize`. The
