@@ -204,6 +204,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         }
         let mut index = 0;
         let mut found = None;
+        let mut grown_at = None;
         // Each pass either moves to the next slot or grows the directory by a cluster, and the
         // directory cannot pass `MOST_SLOTS`, so twice that many passes end the search.
         for _ in 0..2 * MOST_SLOTS {
@@ -216,7 +217,10 @@ impl<D: WritableSectorDevice> Volume<D> {
                     break;
                 }
                 Some(_) => index += 1,
-                None if self.grow_directory(directory)? => {}
+                // A directory that grew and still has no slot at `index` is damaged.
+                None if grown_at != Some(index) && self.grow_directory(directory)? => {
+                    grown_at = Some(index);
+                }
                 None => break,
             }
         }

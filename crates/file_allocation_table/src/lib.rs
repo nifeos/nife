@@ -53,7 +53,10 @@
 //! - A file's name is an 8.3 short name; long names, directories and renames are not written yet.
 //! - A directory slot is found by walking from the directory's first cluster each time, so creating
 //!   in a directory of n clusters costs n chain steps per slot read.
-//! - Timestamps are zero and a writer sets only the archive attribute.
+//! - Timestamps are zero and a writer sets only the archive attribute, and a writer does not refuse a
+//!   read-only file.
+//! - The 65,536-entry ceiling of a directory (`grow_directory`'s limit) is untested: reaching it
+//!   needs a volume and a test of that size.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
 //!   backwards seek walks the chain again from its start.
 //! - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table, and
