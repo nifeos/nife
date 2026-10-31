@@ -141,9 +141,9 @@ These already measure a userspace program: `os_primitives_benchmarker` self-time
 boot stays. The same program also becomes a command, so a board on the production kernel gives the
 same rows.
 
-Two rows need more than a shell child holds. `spawn_el0` builds and destroys a process, which is
-523's blocker 1 (construction authority). `map_el0` may need a region larger than the 64-page
-`--mem` ceiling. The rest fit what the shell grants. The fs rows need the filesystem client page,
+Two rows need more than a shell child holds. `spawn_el0` builds a process and endows it, which
+needs `GRANT` on its budget, and a `--mem` grant carries none (523's blocker 1). `map_el0` may need
+a region larger than the `--mem` ceiling its manifest would declare. The rest fit what the shell grants. The fs rows need the filesystem client page,
 which the shell already endows.
 
 The baseline does not move (D6). `script/bench --check` gates against `bench/baseline-*.txt`, taken
@@ -276,10 +276,10 @@ The quiet-machine baseline stays the tripwire.
 - **Done.** Step 7, the deletion of `tsc_probe`, landed in pull request #2921. Checked by
   `grep -rn tsc_probe kernel script xtask .github`, which finds nothing.
 - **Outstanding.** Step 1, the `bench` EL0 rows as a command. Only `null_syscall` and the
-  `sink_throughput` pair can run as shell children today. The other rows need a peer process, a
-  target address space or an untyped region built for them, which is the process construction
-  authority `crates/grant_plan` withholds from everything the shell spawns (milestone 523's blocker
-  one). It is a question for the architect, raised in the lane report. Checked by reading the roles
+  `sink_throughput` pair can run as shell children today. The other rows need a peer process that
+  shares an endpoint, a target address space or a budget they can lend from. A shell child cannot
+  spawn a peer by name, and cannot endow what it builds from a `--mem` grant, which carries no
+  `GRANT` (milestone 523's blocker one). It is a question for the architect, raised in the lane report. Checked by reading the roles
   in `fixtures/src/os_primitives_benchmarker.rs` against `kernel/src/bench/el0.rs`.
 - **Outstanding.** Steps 2 through 5 wait on the inputs the Order section names. None has started.
 - **Milestone 523.** Step 6 is milestone 523 (moving the job-mix supervisor into userspace).

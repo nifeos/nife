@@ -115,6 +115,9 @@ package_index = { version = "0.1.0", path = "../crates/package_index" }
 approval_file = { version = "0.1.0", path = "../crates/approval_file" }
 # The grant vocabulary the check reads and writes (`Granted`, `extras`).
 installed_programs = { version = "0.1.0", path = "../crates/installed_programs" }
+# What a packaged program's note asks for (milestone 911): the one reading of the note, shared
+# with the progenitor's install, that the composition checks against the image's approval file.
+program_asks = { version = "0.1.0", path = "../crates/program_asks" }
 # Recipes and package declarations are TOML (calef, 2026-09-27; JSON refused for having no comments,
 # YAML too). A §46 (thin primitives or whole subsystems) dependency, taken rather than written: it is
 # host-only and never on the shipping graph, no target reads a recipe, it parses a format calef chose

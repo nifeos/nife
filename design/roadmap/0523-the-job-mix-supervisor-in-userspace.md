@@ -18,8 +18,8 @@ to do, and what each would cost. `--features job_mix` is how the number is taken
 
 Five of them, and they are not one question wearing five hats. Two are the
 syscall surface (a thread's placement, a `START` return value), one is the spawn manifest, one is
-the shell's authority model as `crates/grant_plan` states it in its own words. One is an ABI
-fact about what a process may know about its machine. Any single one left unanswered leaves an
+the rights the progenitor puts on a memory grant. One is an ABI fact about what a process may know
+about its machine. Any single one left unanswered leaves an
 instrument that either cannot be built or produces a number its own page says is not quotable.
 
 ## What provoked it
@@ -67,30 +67,37 @@ list is short and it is what makes the blockers concrete:
 6. Print the placement census, because `notes/job-mix.md`'s procedure reads it at step 3 and
    `kernel/src/job_mix.rs`'s first `BUGS` entry says a number without it is not quotable.
 
-Items 1 to 4 are all things *some* program in this tree already does. None of them is a thing a
-shell-spawned program does, and that is the shape of what follows.
+Items 1 to 4 are all things *some* program in this tree already does. A shell child holding `--mem`
+may do 2, 4 and the building half of 3, and that is the shape of what follows.
 
 ## The five blockers, each with what would close it
 
-### Blocker one: process construction is the authority the shell deliberately withholds
+### Blocker one: a shell child may build a process, and may lend it nothing it made
 
-`crates/grant_plan/src/lib.rs:358-360` states it as design intent, not as an omission: *"spawning by
-name is the shell's own capability and is granted to nothing the shell spawns"*. It is echoed in
-milestone 126 (the `procps` package: who else is running, and who is allowed to ask)
-and milestone 281 (`watch` holds exactly what `ps` holds, so it is nothing). Of the thirteen programs the shell can run
-(`least_authority_demo`, `memory_grant_depleter`, `interrupt_heeder`, `interrupt_ignorer`, `date`,
-`rm`, `wc`, `mdr`, `ps`, `pgrep`, `uptime`, `printenv`, `uuid`), **not one** contains a
-`build_child`, a `retype_into_kernel_object(.., RENDEZVOUS)` or a `memory_region_split`. Even
-`memory_grant_depleter`, the only one holding an untyped at all, only maps frames with it.
+Every spending method of a memory region asks for `WRITE` alone (`memory_region_invoke`), and
+`RETYPE_OBJ` makes spaces, threads, processes and rendezvous (`memory_region_retype_obj`). A `--mem`
+grant arrives as `abi::rights::SPEND_ONLY`, every right but `GRANT` (`native_endowment` in
+`crates/system_initializer`), so its holder can build a process and start it.
 
-A job-mix supervisor is a program whose entire job is building 34 processes. Admitting it to that
-list is a change to what the shell's manifest is willing to grant, and the manifest is a published
-contract between the shell and the progenitor.
+The mechanism withholds three things:
 
-What would close it: a new `MemoryGrantDeclaration`-shaped declaration for construction authority, or a
-decision that this one program is endowed by the progenitor at boot rather than by the shell. Both
-are an architect's, and the second brings blocker 1b with it: a boot-built supervisor needs a wire
-protocol for the shell to ask it to run, which is squarely *anything two programs agree on*.
+1. `GRANT` on the grant. A retyped object carries its budget's rights (`mint_child`, milestone 824
+   (a retype mints no right its budget lacks)), and `ThreadControlBlock::CAPABILITY_INSERT` needs
+   `GRANT` on what it inserts. So a child built from `--mem` receives nothing its builder made, and
+   item 3's grant sets cannot be given. The exception: a program whose manifest declares the network
+   gets every right on its grant (`native_endowment`), today `network_echo_client`, at 16 pages.
+2. Spawning by name. The spawn endpoint is the shell's (`grant_plan::spawnproto`), and §270 (a
+   package manager holds an installer endpoint, not the spawn endpoint) keeps it from `jig`. A
+   builder needs the ELF, blocker two.
+3. Pages beyond the shell's budget, which is blocker three.
+
+A supervisor endows 34 processes built from `job_mix_task`, so it needs all three, and each changes
+the manifest, a published contract between the shell and the progenitor.
+
+What would close it: a manifest field that asks for `GRANT` on the memory grant, as the network
+declaration gets. Or the progenitor endows this one program at boot
+rather than the shell. Both are an architect's. The second brings blocker 1b: a boot-built
+supervisor needs a wire protocol for the shell to ask it to run, *anything two programs agree on*.
 
 ### Blocker two: a shell-spawned program never receives the initrd
 
@@ -110,25 +117,22 @@ What would close it: a fourth `maps` kind and a manifest field declaring it, whi
 program the whole archive. That is a wide grant by this tree's standards and it deserves an argument
 rather than a patch.
 
-### Blocker three: `--mem` tops out at 64 pages against a need of about 3,000
+### Blocker three: a `--mem` grant tops out at 128 pages against a need of about 3,000
 
-The only non-`Forbidden` memory manifest in the tree is `memory_grant_depleter`'s,
-`MemoryGrantDeclaration::Required { min: 1, max: 64 }` (`crates/grant_plan/src/lib.rs:450-454`), and its comment
-says why the ceiling is where it is: *"a sanity ceiling the shell's own budget can actually back"*.
-The shell's whole budget is `SH_BUDGET_PAGES = 128` (`components/src/swish.rs:143`, matched at
-`crates/system_initializer/src/lib.rs:503`), and a job's region is `JOB_REGION_PAGES = 40` out of a
-`JOBS_BUDGET_PAGES = 240` pool for six live jobs.
+Each manifest declares its own range (`MemoryGrantDeclaration::Required`): 64 pages for
+`memory_grant_depleter`, 16 for `job_sleeper` and `network_echo_client`. Behind every range stands
+the shell's budget, `spawnproto::SHELL_BUDGET_PAGES`, whose share for `--mem`, pipes and the shell's
+windows is 128 pages; the rest stages images and holds jobs.
 
 A supervisor needs, roughly: 34 children at about 40 pages each for segments, stack, page tables and
 a TCB; 32 task budgets at `job_mix::TASK_BUDGET_PAGES` (25); and 67 rendezvous pages. That is about
 2,200 pages, call it 3,072 with headroom, 12 MiB. The progenitor's own root region is 12,288
-pages (created by `boot_progenitor`, `user/progenitor_boot.rs`) with roughly 2,800 already committed to the shell, the jobs pool,
-the credentialer and login, so the memory exists. What does not exist is a route from it to a
-shell-spawned program, and widening `SH_BUDGET_PAGES` by a factor of twenty-four to carry one
-benchmark is a cost every interactive boot pays.
+pages (`boot_progenitor`), and the shell, the jobs pool and the image pool take 4,928 of them, so
+the memory exists, but no route takes it to a shell-spawned program. Widening the shell's 128-page
+share twenty-fourfold for one benchmark is a cost every interactive boot pays.
 
-What would close it: a manifest ceiling per program rather than one shell budget for all of
-them, or the boot-endowed route of blocker 1.
+What would close it: a source for the pages outside the shell's budget, sized by the manifest that
+asks, or the boot-endowed route of blocker 1.
 
 ### Blocker four: nothing lets a userspace thread learn where it was placed, so the census dies
 
@@ -266,7 +270,7 @@ an hour on a tool that cries wolf.
   and milestone 168 (a multi-tasking workload benchmark: the number that would decide the event-kernel question) still takes its number through
   `--features job_mix`.
 - **The page counts in blocker 3 are arithmetic, not a measurement.** 40 pages per child is
-  `system_initializer`'s `JOB_REGION_PAGES` used as a stand-in; a real supervisor might need more
+  an estimate near `grant_plan::JOB_REGION_PAGES` (48); a real supervisor might need more
   for a debug build of `job_mix_task` and would find out by being refused. Nobody has built one.
 - **Blocker 4's option A was not tried.** That `START` returning the placed core is one line is read
   off `sched::spawn_reporting_placement`'s body, not compiled. The count of callers that compare its
@@ -280,8 +284,9 @@ userspace program would delete the special build whose diverted tour drops measu
 scheduling, which DECISIONS §96 says is the subject. The brief's premise that it needs milestone
 229's cycle-counter grant is false: the clock is the ambient generic counter and userspace already
 reads it with the same instruction. Five real blockers, each needing calef. A shell-spawned program
-is denied process construction by `grant_plan`'s stated intent, never receives the initrd, tops out
-at a 64-page memory grant against a need of ~3,000. It cannot learn where its threads were placed (so
-milestone 240's census dies, and three options for fixing that are priced here). On riscv64
+may build a process from its `--mem` grant but cannot endow it, holding no `GRANT`. It cannot spawn
+by name, never receives the initrd, and tops out at the shell's 128-page share against ~3,000. It
+cannot learn where its threads were placed (so milestone 240's census dies, and three options for
+fixing that are priced here). On riscv64
 it cannot learn the counter frequency, which would make radon's `jpm_median` silently 2.5x high and is
 itself gated on milestone 167.

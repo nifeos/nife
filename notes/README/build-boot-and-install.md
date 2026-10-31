@@ -10,6 +10,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [What a nife package is, and what still cannot be done with one](../packages.md).
 - [Serving the lab's update index from cordoba: a spec for calef's homelab agent](../lab-index-on-cordoba.md).
 - [Package boundaries: every crate and program in a package, every path with a home](../package-boundaries.md).
+- [The composed image's first installed-programs table](../the-first-installed-programs-table.md): what its first generation holds, what measured boot needs from it, and why it waits on the UFS2 launch volume.
 - [Who may write the activation set: a proposal](../who-may-write-the-activation-set.md).
 - [Two boot slots, so a bad upgrade cannot brick the machine](../boot-slots.md).
 - [Packages that build the OS, and divisions that release together: the measurements](../packages-and-divisions.md).

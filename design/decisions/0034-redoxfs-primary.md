@@ -5,70 +5,38 @@ decided: 2026-07-29
 ratified_by: calef
 ---
 
-# 34. UFS2 is the launch filesystem, and RedoxFS stays primary until UFS2 meets the bar
+# 34. RedoxFS is the primary filesystem, on three conditions
 
-**Decided 2026-10-31 (UTC), on #2899.** UFS2 is nife's launch filesystem: the writable store the
-image boots into, that `jig` installs packages onto, and that holds the installed-programs table.
-It replaces RedoxFS in stages, and RedoxFS then leaves the tree.
+**Decided 2026-07-29 (UTC); its launch-store role reaffirmed 2026-10-31 (UTC), on #2927.** RedoxFS
+is the primary on-disk filesystem and the launch store: the writable volume the image boots into,
+that `jig` installs packages onto, and that holds the installed-programs table under `activation/`.
+It is not yet the *root* filesystem, and §34.3 below is why that is a separate piece of work rather
+than a relabelling.
 
-## The staged replacement, and the bar
+## What could replace it, and what will not
 
-Until UFS2 meets the bar, RedoxFS is the primary filesystem, on three conditions, as the rest of
-this page records. UFS2 meets the bar when, on aarch64, riscv64 and x86_64, it:
+The next measurement is ext4 through `rsext4` (Starry-OS, Apache-2.0, `no_std`, two dependencies),
+under the injector of milestone 37 (Prove RedoxFS's crash consistency), judged by `e2fsck -fn` after
+Linux replays the journal. The proposal `ext4-through-rsext4-under-the-crash-injector` carries it.
+If it passes, one ext4 server may become both the launch store and the reader of Linux drives that
+milestone 190 (ext4, read and write) wants, and RedoxFS then leaves through a milestone of its own.
+If it fails, RedoxFS stays.
 
-1. boots the composed image from a UFS2 launch volume,
-2. takes `jig` installs onto that volume, and
-3. holds the installed-programs table the progenitor reads.
+nife does not build a UFS2 server (milestone 981 (UFS2, read and write), refused). UFS2 would need a writer, an `fsck` and
+a crash mechanism nife does not have, and it reads few drives other systems made. The measurement
+lives in [`ufs2-builds-2026-10-31.md`](../../notes/ufs2-builds-2026-10-31.md), and the four routes
+compared are in [the launch filesystem's candidates](../../notes/launch-filesystem-candidates.md).
 
-Milestone 981 (UFS2, read and write: a Rust server with FreeBSD's tools as the oracle) builds the
-server and owns the bar. Milestone 982 (Retire RedoxFS once a launch store proves itself) removes
-RedoxFS once all three hold, and not before. BSD-2-Clause sits on `deny.toml`'s allow-list for
-UFS2's FreeBSD half (ruled the same day).
+Two measurements from 2026-10-31 (UTC) stand behind this. nife's whole divergence from RedoxFS
+0.9.1 applies to upstream's head without a conflict, and that head needs one more import to build
+`no_std`. And two Rust ext4 writers, `rsext4` and `rust-fs-ext4`, write images that pass `e2fsck -fn`
+with `metadata_csum` on.
 
-The UFS2 server is a `std` program, granted the clock slot by its starter (ruled 2026-10-31 UTC,
-on #2917).
-
-## Why UFS2
-
-[The launch filesystem's candidates](../../notes/launch-filesystem-candidates.md) holds the survey.
-RedoxFS earned this role partly on upstream maintenance, and that reason moved: since 0.9.1 its
-upstream has cut no release and added no feature this tree uses, and the next pin bump conflicts.
-UFS2 wins on the rest. Its license is permissive (BSD-2-Clause; `ufs-core` is Apache-2.0). Its
-format is small and documented, and it carries permissions, symlinks, hard links and extended
-attributes natively, where RedoxFS needs the attribute layer below. Two Rust implementations exist
-to start from. And FreeBSD's `newfs`, `makefs` and `fsck_ffs` give it the strongest oracle of any
-candidate.
-
-What it costs, stated plainly: UFS2 has no copy-on-write and no block checksums. Its crash claim
-comes from soft updates, their journal (SUJ) or `fsck` on mount, and no Rust implementation has
-either ordering mechanism yet. The crash claim is not part of the bar. Milestone 981 proves it after
-the removal, with the injector of milestone 37 (Prove RedoxFS's crash consistency), against
-RedoxFS's standard of 0 silently wrong. Until then the launch store has weaker crash evidence than
-RedoxFS had, and `fsck` on mount is its floor: an accepted risk.
-
-Refused: HAMMER2, with no implementation to reuse and no extended attributes; ext4, whose Rust
-writers cannot handle `metadata_csum`; and keeping RedoxFS for good. btrfs and OpenZFS lack a Rust
-writer, and GPL-2.0 and CDDL-1.0 bar a linked write path; §135 (running GPL software is aggregation)
-keeps them reachable as confined programs.
-
-## Prior art
-
-Recalled, not re-read for this page. FreeBSD has rooted on UFS2 by default since 5.0, and added SUJ
-in 9.0; OpenBSD and NetBSD ship FFSv2 too. Fuchsia replaced a launch filesystem in place, moving
-devices from minfs to Fxfs once Fxfs was proven, which is the staged shape here. nife differs in
-where the store runs: the FS server is a confined userspace component behind `filesystem_contract`,
-so the swap replaces one program, not a kernel subsystem.
-
-A concrete example. Today a composed image boots with its writable store on RedoxFS. Once milestone
-981 is done, the image carries a UFS2 volume holding `activation/1` and `activation/current`;
-`jig install` writes `activation/2` and the package's files through the UFS2 server, and CI runs
-`fsck_ffs -n` on the image and requires exit 0. Then milestone 982 deletes `vendor/redoxfs/`.
-
-## RedoxFS, while it holds the role
-
-The RedoxFS decision dates from 2026-07-29 (UTC), with the conditions attached so the label and
-its caveats land together. It is not the *root* filesystem, and §34.3 below is why that is a separate piece of
-work rather than a relabelling.
+Prior art: Redox OS roots on RedoxFS. SerenityOS roots on an ext2 implementation it wrote itself.
+Fuchsia moved devices from minfs to Fxfs in place once Fxfs had proven itself, the shape an ext4 swap
+would take here. A concrete example: `jig install` writes `activation/current.next` and renames it
+over `current` in one RedoxFS transaction, and milestone 37's injector cuts power inside exactly
+that kind of commit.
 
 ## Why this commitment is cheaper here than the words suggest
 
@@ -170,8 +138,7 @@ format.** The layer is crash-atomic (a file write and its attribute write share 
 commit), keys on the node rather than the path so a rename carries attributes for free, and keeps
 the pin's two-import divergence patch. `fs_proto` hides where an attribute lives, so the choice is
 reversible. The reasons, the three ways to get it subtly wrong and the refused format extension are
-in [`xattr-layer.md`](0034-redoxfs-primary/xattr-layer.md). UFS2 stores extended attributes
-natively, so this layer stays with RedoxFS.
+in [`xattr-layer.md`](0034-redoxfs-primary/xattr-layer.md).
 
 ## Amendment (2026-07-30): ZFS and XFS, and why RedoxFS is better-shaped than its size suggests
 
