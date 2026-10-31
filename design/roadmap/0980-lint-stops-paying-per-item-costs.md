@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: lint-stops-paying-per-item-costs
 raised: 2026-10-29
 milestone_dependencies: none
@@ -84,6 +84,9 @@ Each part is one lane, ordered by seconds saved per hour of work.
    file, and replace the character-by-character scan with a compiled pattern. About 4 s.
 4. One interpreter in the dead-code section. Read the `.rs` files in Python instead of spawning `awk`
    per file. About 3 s.
+   Built: `helpers/dead_code_suppression.py` reads the tracked `.rs` files in one process and keeps
+   the awk's rules. Its selftest plants a blanket allow, a split attribute and the one exemption. The
+   section went from 10 s to under 1 s on a loaded Linux host.
 5. One shared corpus index. A small helper that lists the tracked files, their text and their hashes
    once per run, so the text gates read it rather than each walking the tree. An estimate of 10 to
    15 s. This is the largest piece and the one to design carefully.

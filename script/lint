@@ -1015,36 +1015,20 @@ PYEOF
 # rather than line-matched because `rustfmt` splits a long `cfg_attr` across lines, and the crate-wide
 # riscv one would have been split the moment it grew a second condition.
 echo "==> module-wide dead-code suppression"
-found=""
-rs_seen=0
-for f in $(git ls-files '*.rs' | grep -v '^vendor/' | grep -v '^patches/'); do
-    rs_seen=$((rs_seen + 1))
-    hit=$(awk '
-        /^[[:space:]]*#!\[/ { collecting = 1; buf = ""; ln = FNR; opens = 0; closes = 0 }
-        collecting {
-            buf = buf " " $0
-            opens += gsub(/\(/, "(")
-            closes += gsub(/\)/, ")")
-            if (opens <= closes) {
-                # One exemption, and it is not dead code: `unused_crate_dependencies` is about the
-                # manifest, fires per target, and a bin target can only silence it crate-wide.
-                # `kernel/src/main.rs` is a link line that names none of the package`s dependencies
-                # (milestone 609 (the system tests leave the kernel crate)). Only an attribute whose
-                # whole list is that one lint passes; anything more in it is still caught.
-                if (buf ~ /dead_code|unused/ && buf !~ /^[[:space:]]*#!\[allow\(unused_crate_dependencies\)\][[:space:]]*$/) { gsub(/^[[:space:]]+/, "", buf); print ln ": " buf }
-                collecting = 0
-            }
-        }
-    ' "$f")
-    [ -n "$hit" ] && found="$found
-$f:$hit"
-done
-if [ "$rs_seen" -eq 0 ]; then
+# One interpreter reads every tracked .rs file (helpers/dead_code_suppression.py; it had been one
+# awk per file). It exits 1 with the hits, 3 when it read no .rs files at all, and carries the
+# exemption for an attribute whose whole list is `unused_crate_dependencies`: that lint is about the
+# manifest, fires per target, and a bin target can only silence it crate-wide (milestone 609 (the
+# system tests leave the kernel crate)).
+python3 helpers/dead_code_suppression.py --selftest >/dev/null
+status=0
+found=$(python3 helpers/dead_code_suppression.py) || status=$?
+if [ "$status" -eq 3 ]; then
     echo "lint: the dead-code sweep read no .rs files at all, so it judged nothing" >&2
     echo "(milestone 401). Either the filters above are wrong or this is not the repository." >&2
     exit 1
 fi
-if [ -n "$found" ]; then
+if [ "$status" -ne 0 ]; then
     echo "lint: module-wide dead-code suppression (an inner attribute blindfolds the whole module):" >&2
     echo "$found" >&2
     echo "" >&2
