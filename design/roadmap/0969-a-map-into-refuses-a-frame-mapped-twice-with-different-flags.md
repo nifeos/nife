@@ -27,9 +27,10 @@ falsification, and the replayable patch sits beside
 
 The fix: `address_space_map_into`, or the mapping hold beneath it, refuses a second mapping of a
 frame the space already maps when the flags would differ. The check covers every path that
-installs a leaf only if it lives in the mapping hold (`map_physical_held`). In the dispatcher it
-covers `MAP_INTO` alone, and `PageFrame::MAP`, `MemoryRegion::MAP` and the kernel's loader stay
-open. Either way it sees one address space at a time. All three ISAs share the code, so the
+installs a leaf only if it lives in the mapping hold. The one function every path reaches is
+`MappingHold::record_mapping`, not `map_physical_held`, which `PageFrame::MAP` and
+`MemoryRegion::MAP` do not call. In the dispatcher it covers `MAP_INTO` alone, and
+`PageFrame::MAP`, `MemoryRegion::MAP` and the kernel's loader stay open. Either way it sees one address space at a time. All three ISAs share the code, so the
 riscv64 and x86_64 instances come with it. The witness drops its opt-in and joins the default
 suite green on all three architectures.
 
@@ -42,7 +43,10 @@ every mapping of a frame in any space, so a check there could see it.
 An architect rules three things before the lane starts. The first is the refusal's shape: any flag
 difference, or only the writable-and-executable pair. The second is the check's home, the dispatcher
 or the hold. The third is whether claim 11 covers the cross-space alias, and if so what the fix
-refuses there.
+refuses there. Each question, with its background, options, prior art, costs and an example on the
+tenth pass's reproduction, is in
+[`the-rulings-the-alias-refusal-waits-on`](proposals/the-rulings-the-alias-refusal-waits-on.md).
+The status stays NOT-STARTED until an architect rules.
 
 ## Index row
 
