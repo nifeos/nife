@@ -28,7 +28,7 @@ publish = false
 # outline point would fail the regenerate gate, and the pin says which version made the tables.
 # Default features off but `std`: the autohinter's shaping is unused, since outlines are drawn
 # unhinted.
-skrifa = { version = "=0.44.0", default-features = false, features = ["std"] }
+skrifa = { version = "=0.49.0", default-features = false, features = ["std"] }
 # The rasteriser. **Pinned exactly at 0.1.10**: 0.1.4 through 0.1.8 panic on some outlines, and a
 # patch bump (0.1.5) has already changed raw coverage. The checked-in table is what is gated, so a
 # bump that moves one pixel fails `cargo test` here rather than changing a screen in silence.
