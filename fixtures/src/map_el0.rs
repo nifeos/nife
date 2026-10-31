@@ -32,7 +32,8 @@
 //! - A production-shell row competes with the console, `net_stack` and the shell for the core; it
 //!   is recorded, never gated (milestone 961 (the kernel's special boots become commands typed at the production shell), decision D6).
 //!
-//! Name: recorded (the row's own name since milestone 21 (performance measurement: benchmarks with teeth), `bench/baseline-*.txt`).
+//! Name: provisional (2026-10-31 UTC, lane/961-step-1-bench-commands). The row's own name in
+//! `bench/baseline-*.txt`.
 
 #![no_std]
 // Program entry points, not the crates/ library surface the missing-docs ratchet tracks: each

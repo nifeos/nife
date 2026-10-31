@@ -10,6 +10,7 @@ home = { repo = "contracts", status = "provisional" }
 interfaces = [
     "abi",
     "byte_sink_contract",
+    "primitive_benchmark_contract",
     "capability_witness_contract",
     "clock_contract",
     "confined_syscall_fuzzer_contract",

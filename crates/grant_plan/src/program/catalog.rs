@@ -429,7 +429,8 @@ programs! {
         /// ten pages (measured; see `primitive_benchmark_contract::MAP_BUDGET_PAGES`). No other
         /// authority.
         ///
-        /// Name: recorded (the row's own name since milestone 21 (performance measurement: benchmarks with teeth)).
+        /// Name: provisional (2026-10-31 UTC, lane/961-step-1-bench-commands): the row's own name in
+        /// `bench/baseline-*.txt`.
         MapEl0 { id: 27, name: "map_el0" },
     }
 }
