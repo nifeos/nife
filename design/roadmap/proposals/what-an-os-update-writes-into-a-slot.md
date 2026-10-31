@@ -16,8 +16,8 @@ slot, needs one first: what the slot holds. This file asks that one question and
 questions behind it, which wait their turn.
 
 Reuse: the slot format and chooser of milestone 525 (a bad upgrade cannot brick the machine: two
-boot slots, tries and priority), the confirmation of milestone 554 (a good upgrade sticks), and
-milestone 909 (basalt composes the bootable image from its packages)'s composer. No new
+boot slots, tries and priority), and the confirmation of milestone 554 (a good upgrade sticks). The
+composer is milestone 909 (basalt composes the bootable image from its packages)'s. No new
 dependency.
 
 ## The background, plainly
@@ -79,23 +79,23 @@ block stops after part 3 and records the wait on item 6.
 
 ## How others solved it, and where nife differs
 
-- **Android A/B** (`update_engine`, the `boot_control` HAL). An update payload carries partition
+- Android A/B (`update_engine`, the `boot_control` HAL). An update payload carries partition
   images, often as deltas; the engine writes the inactive slot's partitions, marks it active, and
   `markBootSuccessful` confirms it from userspace. The unit is a partition image. Nife's
   confirmation follows this, and its unit does not.
-- **ChromeOS** (`update_engine`, depthcharge). The same GPT attribute bits nife uses (priority,
+- ChromeOS (`update_engine`, depthcharge). The same GPT attribute bits nife uses (priority,
   tries, successful); the payload writes a whole kernel partition and a whole root partition.
   Firmware selects; on generic UEFI nife's chooser does instead.
-- **Fuchsia** (`system-updater`, the paver). An update package lists images and packages by
+- Fuchsia (`system-updater`, the paver). An update package lists images and packages by
   Merkle root. The paver writes the kernel image (ZBI) into an A/B/R slot, and the packages go
   to one shared content store, `blobfs`. That shared store is U2, which §235 refused.
-- **OSTree.** One content-addressed repository, with each deployment a hard-linked tree. Shared
+- OSTree. One content-addressed repository, with each deployment a hard-linked tree. Shared
   storage again, so a collection error reaches both deployments.
-- **RAUC.** A signed bundle carries one image per slot class; the installer writes each whole into
+- RAUC. A signed bundle carries one image per slot class; the installer writes each whole into
   the inactive slot group. The unit is the image, as in option A.
-- **Mender.** A/B root file systems, an artifact that is a whole image or a delta, and a commit
+- Mender. A/B root file systems, an artifact that is a whole image or a delta, and a commit
   after the new system boots. Again option A's unit.
-- **Nix generations.** The store holds every package once; a generation is a profile of links into
+- Nix generations. The store holds every package once; a generation is a profile of links into
   it, and the bootloader lists one entry per generation. A package is the download unit, and the
   store is shared.
 

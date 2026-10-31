@@ -51,17 +51,17 @@ fills a service's role without changing the base list. This proposal touches the
 An update is one manifest and the packages it names, copied into the inactive slot, then a
 confirmation that keeps it or a failure that reverts to the running one.
 
-1. **The manifest gets its own name and file.** Today "manifest" means two things: a program's ask
+1. The manifest gets its own name and file. Today "manifest" means two things: a program's ask
    in its ELF note (milestone 597 (a program carries its manifest in an ELF note)) and the list of
    packages an image holds (U4). This proposal gives the second its own name, provisionally the
    system manifest, and a file basalt writes beside the packages. It lists each package with its
    digest and names the progenitor, the same three facts that §235's T4 makes the trust root read.
-2. **The updater fetches and stages.** A program, provisionally `update`, reads a system manifest,
+2. The updater fetches and stages. A program, provisionally `update`, reads a system manifest,
    checks each package's digest against it, and copies each into the inactive slot. U4 allows a
    shortcut: for a package whose digest matches the running slot's copy, the updater copies the
    local file instead of fetching it. It wipes the staging slot whole first, so no stale file
    survives.
-3. **The kernel reads the new manifest through the loader.** The loader passes the inactive slot's
+3. The kernel reads the new manifest through the loader. The loader passes the inactive slot's
    manifest digest, and the progenitor checks the base set against it before anything runs. A
    manifest the packages do not match draws a refusal naming the package, the same check the
    composed image already runs at build time.
@@ -101,7 +101,7 @@ slot. Every new name here is provisional.
 
 ## Follow-on
 
-- **Done. Part 1: the composed base image carries `system_installer`.** The kernel's trial-boot
+- **Done.** Part 1: the composed base image carries `system_installer`. The kernel's trial-boot
   confirmation enters it by name (`kernel/src/user/install_service.rs`), and
   `packages/base-image.toml` left it out. A composed image in a slot would have booted, printed
   that it cannot confirm, and rolled back once its tries ran out. The definition now lists it, the
@@ -110,25 +110,24 @@ slot. Every new name here is provisional.
   program that file names. Checked: the test fails with the program removed and passes with it,
   and `cargo xtask base-image x86_64 --test --boot` composes it from its package and reaches the
   prompt.
-- **Outstanding. Part 2: the composer writes the file a slot holds.** On x86_64, `base-image`
+- **Outstanding.** Part 2: the composer writes the file a slot holds. On x86_64, `base-image`
   wraps the composed kernel and archive in `uefi_loader`, as `uefi_stage` does for the tree's own
-  image, so a composed image can enter a slot. Check: `script/boot-file-size-check` on the
-  composed file, and an OVMF boot of it. Mechanical; no new format.
-- **Outstanding. Part 3: a gate that updates through a slot.** Provisionally `cargo xtask
-  update-boot`: install the tree's image, stage part 2's composed file into slot 1 with
-  `rollback::stage_an_upgrade`, and boot three times. Boot 2 must confirm slot 1 and boot 3 must
-  choose it with no tries left, as `confirm-boot` asserts, and the transcript must show the composed
-  catalog. Mechanical; host-staged, so it proves the slot path and not a device updater.
-- **Outstanding, waits on a ruling. Part 4: what the inactive slot receives.** One composed UEFI
+  image. Check: `script/boot-file-size-check` on the composed file, and an OVMF boot of it. Part 3
+  is a gate that updates through a slot, provisionally `cargo xtask update-boot`. It installs the
+  tree's image, stages part 2's file into slot 1 with `rollback::stage_an_upgrade`, and boots three
+  times. Boot 2 must confirm slot 1, boot 3 must choose it with no tries left, as `confirm-boot`
+  asserts, and the transcript must show the composed catalog. Both parts are mechanical and add no
+  format; part 3 is host-staged, so it proves the slot path and not a device updater.
+- **Proposed.** Part 4, which waits on a ruling: what the inactive slot receives. One composed UEFI
   program (today's format), a version 2 slot of named members a device assembles from packages, or
   nothing on the device until item 6. The proposal
   `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md` asks it, recommendation
   first, with the prior art.
-- **Outstanding, after part 4. Part 5: the device updater**, steps 2 and 4 above, writing
-  whatever part 4 rules. Part 6, the system manifest's name and format (step 1), and part 7, who
-  may start a base update and what bounds an unattended one under milestone 911's approval file,
-  each come to an architect after part 4, one at a time.
-- **Outstanding, not this block's. Step 3**, the loader's two digests, is milestone 607 item 6.
+- **Outstanding.** After part 4, part 5 is the device updater, steps 2 and 4 above, writing
+  whatever part 4 rules. Part 6 is the system manifest's name and format (step 1). Part 7 is who may
+  start a base update, and what bounds an unattended one under milestone 911's approval file. Each
+  comes to an architect after part 4, one at a time. Step 3, the loader's two digests, is milestone
+  607's item 6 and not this block's.
 
 ## Index row
 
