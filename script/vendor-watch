@@ -56,6 +56,7 @@ ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 
 exec python3 - "$ROOT" "${1:-}" <<'PY'
 import glob
+import datetime
 import json
 import os
 import re
@@ -310,6 +311,7 @@ def held_dependency(pin, releases):
         return None
     name, _, version = held.partition(" ")
     out = {"name": name, "version": version.strip(), "release": None}
+    out["lag"] = lag_note(pin, out)
     for r in releases or []:
         data = get_json(
             f"https://crates.io/api/v1/crates/{pin['name']}/{r['version']}/dependencies",
@@ -320,6 +322,29 @@ def held_dependency(pin, releases):
             out["release"] = r["version"]
             break
     return out
+
+
+def lag_note(pin, held):
+    """One line of lag: how long the held dependency's release has been out against the age of the
+    package's newest release. A package that stops taking its own dependencies' releases is a
+    reliability signal the architect weighs (keep, replace or fork); this reports it and fails
+    nothing. Offline, or on any error, it says so and the report goes on."""
+    try:
+        def published(crate, version=None):
+            data = get_json(f"https://crates.io/api/v1/crates/{crate}", f"crates.io/{crate}")
+            rows = [v for v in data.get("versions", []) if not v.get("yanked")
+                    and (v["num"] == version if version else not is_prerelease(v["num"]))]
+            rows.sort(key=lambda v: v.get("created_at", ""), reverse=True)
+            return rows[0]["num"], datetime.date.fromisoformat(rows[0]["created_at"][:10])
+        today = datetime.datetime.now(datetime.timezone.utc).date()
+        _, held_date = published(held["name"], held["version"])
+        newest, newest_date = published(pin["name"])
+        return (f"**Lag (a signal, not a failure):** {held['name']} {held['version']} was published "
+                f"{held_date}, {(today - held_date).days} days ago; {pin['name']} has not released "
+                f"to take it, and its newest release, {newest}, is {(today - newest_date).days} "
+                f"days old ({newest_date}).\n")
+    except (Unreachable, KeyError, IndexError, ValueError) as e:
+        return f"**Lag: not checked** ({e}).\n"
 
 
 # --- the report -----------------------------------------------------------------------------------
@@ -492,6 +517,10 @@ for pin_path in pins:
         print(f"  {e.kind}: {e}", file=sys.stderr)
         failures.append(e)
         held = None
+    if held:
+        # On stderr, not in the status file: day counts change daily, and the file carries no
+        # timestamp on purpose so an unchanged upstream regenerates it byte for byte.
+        print("  " + held["lag"].strip().replace("**", ""), file=sys.stderr)
     if held and held["release"]:
         behind = True
         print(f"  behind: {pin['name']} {held['release']} allows the held {held['name']} "

@@ -346,6 +346,11 @@ fails by construction, so the bump is held with an `ignore` in `.github/dependab
 lifts** when a published release newer than the pin asks for a range that allows the held version,
 and the run exits 1 (behind). Then:
 
+Lag is a signal. While a bump is held, the run prints (to stderr, never the status file, which carries no dates) how many days the held version has
+been out and how old the package's newest release is. It fails nothing; the architect weighs it
+when deciding to keep, replace or fork a dependency, because a package that stops taking its own
+dependencies' releases is less reliable. Offline, the report says the lag was not checked.
+
 1. Take the release as in "Bumping a pin": raise `version`, `url` and `sha256` in the pin and the
    `vcs` sha, and re-vendor the package.
 2. Re-apply `vendor/talc.divergence.patch`, or drop it if the release carries #57, and regenerate it
