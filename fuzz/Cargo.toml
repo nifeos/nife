@@ -130,6 +130,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "file_allocation_table_writer"
+path = "fuzz_targets/file_allocation_table_writer.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "domain_name_system_reply"
 path = "fuzz_targets/domain_name_system_reply.rs"
 test = false

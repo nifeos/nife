@@ -8,7 +8,10 @@
 # A section is a cargo section when a line that is not a comment invokes cargo: a shell command
 # whose first word is `cargo` (after optional VAR="..." assignments and `if !`), a Python argv list
 # opening `["cargo"`, or `command -v cargo`. Prose that merely mentions cargo does not match. A
-# cargo section is dropped from `--no-cargo`. Because the rule reads the section, a new check lands
+# cargo section is dropped from `--no-cargo`. So is a section that runs a command through
+# `helpers/clippy_record.py`, which starts cargo for it, and a section that carries a comment line
+# `# needs-cargo-output: <why>`: it runs no cargo itself but reads what the cargo sections saved
+# (the lint ratchet reads the clippy sections' JSON), so without them it could only fail. Because the rule reads the section, a new check lands
 # in exactly one bucket by construction, and one that runs cargo is dropped unless it opts in.
 #
 # **Opting in** is for a section that is mostly text and has one cargo-backed part: put a comment
@@ -22,14 +25,32 @@
 #   emit  prints the script to run (preamble plus the kept sections).
 #   list  prints one `run`/`skip` line per section, for a person asking what the mode covers.
 #   split writes the preamble to <dir>/preamble, each section to <dir>/<NNN>, and one
-#         `NNN<tab>keep<tab>name` line per section to <dir>/index, keep being 1 where `emit` would
-#         keep it. helpers/lint-sections.sh runs them one at a time.
+#         `NNN<tab>keep<tab>lane<tab>waits<tab>quick<tab>target<tab>name` line per section to <dir>/index, keep being
+#         1 where `emit` would keep it. helpers/lint-sections.sh runs them. `lane`, `waits`, `quick`
+#         and `target` come from four optional comment lines in the section, `-` when absent (`quick`
+#         is 0 or 1):
+#           # lint-lane: NAME        sections in one lane run in order, one at a time; lanes run side
+#                                    by side. A cargo section defaults to lane `main`, because cargo
+#                                    holds one build directory lock, and every other section to no
+#                                    lane, which runs in the shared pool.
+#           # lint-waits-for: A,B    do not start before every earlier section in lanes A and B ended
+#                                    (a section that reads what another wrote names that lane).
+#           # lint-quick             `script/lint --quick` runs this section.
+#           # lint-target-dir: NAME  when the run has four or more jobs, cargo in this section builds
+#                                    into target/lint-lanes/NAME instead of target/, so lanes that
+#                                    would queue on cargo's one build directory lock run side by
+#                                    side. A section that names a path under target/ must read
+#                                    ${CARGO_TARGET_DIR:-$PWD/target}.
+#         Only the scheduler reads them; a wrong lane costs time, never a verdict, because every
+#         section still runs and a section that reads another's output must name it with
+#         lint-waits-for.
 
 function is_cargo(line) {
     if (line ~ /^[ \t]*#/) return 0
     if (line ~ /^[ \t]*([A-Za-z_]+="[^"]*" )*(if ! |! )?cargo[ \t]/) return 1
     if (line ~ /\[[\x27"]cargo[\x27"]/) return 1
     if (line ~ /command -v cargo/) return 1
+    if (line ~ /helpers\/clippy_record\.py[ \t]/) return 1
     return 0
 }
 
@@ -40,14 +61,18 @@ function close_block(   keep, file) {
         if (mode == "split") { printf "%s", body > (dir "/preamble"); close(dir "/preamble") }
         return
     }
+    if (lane == "") lane = (cargo && !okmark) ? "main" : "-"
+    if (waits == "") waits = "-"
+    if (tdir == "") tdir = "-"
     if (okmark && !cargo) { print "lint --no-cargo: \"" name "\" carries a no-cargo-ok marker but runs no cargo; delete the marker" > "/dev/stderr"; bad = 1 }
     if (okmark && !guarded) { print "lint --no-cargo: \"" name "\" carries a no-cargo-ok marker but never reads LINT_NO_CARGO, so it would run cargo in the mode that forbids it" > "/dev/stderr"; bad = 1 }
     keep = (!cargo || okmark)
     if (mode == "list") print (keep ? "run   " : "skip  ") name
+    else if (mode == "quicklist") { if (quick && keep) print name }
     else if (mode == "split") {
         file = sprintf("%03d", ++sections)
         printf "%s", body > (dir "/" file); close(dir "/" file)
-        printf "%s\t%d\t%s\n", file, keep, substr(name, 5) > (dir "/index")
+        printf "%s\t%d\t%s\t%s\t%d\t%s\t%s\n", file, keep, lane, waits, quick, tdir, substr(name, 5) > (dir "/index")
     }
     else if (keep) out = out body
 }
@@ -55,18 +80,23 @@ function close_block(   keep, file) {
 /^echo "==> / {
     close_block()
     name = substr($0, 7, length($0) - 7); body = $0 "\n"
-    cargo = 0; okmark = 0; guarded = 0
+    cargo = 0; okmark = 0; guarded = 0; lane = ""; waits = ""; quick = 0; tdir = ""
     next
 }
 {
     body = body $0 "\n"
     if (is_cargo($0)) cargo = 1
     if ($0 ~ /^[ \t]*#[ \t]*no-cargo-ok:/) okmark = 1
+    if ($0 ~ /^[ \t]*#[ \t]*needs-cargo-output:/) cargo = 1
+    if ($0 ~ /^[ \t]*#[ \t]*lint-lane:[ \t]*[A-Za-z0-9_-]+[ \t]*$/) { lane = $0; sub(/^[ \t]*#[ \t]*lint-lane:[ \t]*/, "", lane); sub(/[ \t]*$/, "", lane) }
+    if ($0 ~ /^[ \t]*#[ \t]*lint-waits-for:[ \t]*[A-Za-z0-9_,-]+[ \t]*$/) { waits = $0; sub(/^[ \t]*#[ \t]*lint-waits-for:[ \t]*/, "", waits); sub(/[ \t]*$/, "", waits) }
+    if ($0 ~ /^[ \t]*#[ \t]*lint-quick[ \t]*$/) quick = 1
+    if ($0 ~ /^[ \t]*#[ \t]*lint-target-dir:[ \t]*[A-Za-z0-9_-]+[ \t]*$/) { tdir = $0; sub(/^[ \t]*#[ \t]*lint-target-dir:[ \t]*/, "", tdir); sub(/[ \t]*$/, "", tdir) }
     if ($0 !~ /^[ \t]*#/ && $0 ~ /LINT_NO_CARGO/) guarded = 1
 }
 END {
     close_block()
     if (bad) exit 1
     if (mode == "split") close(dir "/index")
-    else if (mode != "list") printf "%s", out
+    else if (mode != "list" && mode != "quicklist") printf "%s", out
 }

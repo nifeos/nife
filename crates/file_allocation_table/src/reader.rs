@@ -5,6 +5,7 @@
 //! Name: ratified 2026-10-26 (UTC), on #2760. The module that reads through a device, beside
 //! `volume`, which lays one out.
 
+use crate::allocation::WriterState;
 use crate::boot_sector::{BootSector, ReadError};
 use crate::directory::Directory;
 use crate::named_entry::Entries;
@@ -80,10 +81,12 @@ pub enum ChainError<E> {
 /// reader.
 #[derive(Debug)]
 pub struct Volume<D> {
-    device: D,
-    boot: BootSector,
-    cached: Option<u32>,
-    buffer: [u8; SectorSize::MAX],
+    pub(crate) device: D,
+    pub(crate) boot: BootSector,
+    pub(crate) cached: Option<u32>,
+    pub(crate) buffer: [u8; SectorSize::MAX],
+    /// What the writer keeps between calls; a reader never touches it.
+    pub(crate) writer: WriterState,
 }
 
 impl<D: SectorDevice> Volume<D> {
@@ -100,6 +103,7 @@ impl<D: SectorDevice> Volume<D> {
             boot,
             cached: None,
             buffer: [0; SectorSize::MAX],
+            writer: WriterState::new(),
         })
     }
 
@@ -131,7 +135,7 @@ impl<D: SectorDevice> Volume<D> {
     }
 
     /// Make the cache hold table sector `sector`.
-    fn load(&mut self, sector: u32) -> Result<(), ChainError<D::Error>> {
+    pub(crate) fn load(&mut self, sector: u32) -> Result<(), ChainError<D::Error>> {
         if self.cached != Some(sector) {
             self.cached = None;
             let size = self.boot.sector_size().bytes();
@@ -151,8 +155,25 @@ impl<D: SectorDevice> Volume<D> {
     /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `entry` (it reads a file allocation table
     /// entry, and the crate has three other kinds of entry). Reads one `TableEntry`.
     pub fn table_entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
-        let (sector, within) = table::entry_position(&self.boot, cluster)
+        self.boot
+            .cluster_first_sector(cluster)
             .ok_or(ChainError::NotADataCluster(cluster))?;
+        let raw = self.read_raw_entry(cluster)?;
+        Ok(TableEntry::decode(
+            self.boot.file_allocation_table_type(),
+            raw,
+        ))
+    }
+
+    /// The raw value of table entry `index`, for an index below `clusters() + 2`: the two reserved
+    /// entries are readable here and not through [`Volume::table_entry`].
+    pub(crate) fn read_raw_entry(&mut self, index: u32) -> Result<u32, ChainError<D::Error>> {
+        let (sector, within) = table::raw_position_in(
+            &self.boot,
+            index,
+            self.boot.active_table().unwrap_or_default(),
+        )
+        .ok_or(ChainError::NotADataCluster(index))?;
         let file_allocation_table_type = self.boot.file_allocation_table_type();
         let size = self.boot.sector_size().bytes();
         let mut bytes = [0u8; 4];
@@ -165,8 +186,7 @@ impl<D: SectorDevice> Volume<D> {
             self.load(sector + 1)?;
             bytes[here..wanted].copy_from_slice(&self.buffer[..wanted - here]);
         }
-        let raw = table::assemble(file_allocation_table_type, cluster, bytes);
-        Ok(TableEntry::decode(file_allocation_table_type, raw))
+        Ok(table::assemble(file_allocation_table_type, index, bytes))
     }
 
     /// **The chain that starts at `first`**, cluster by cluster.
@@ -247,7 +267,7 @@ impl<D: SectorDevice> Links for Volume<D> {
 
 /// Whether `cluster` is one of `clusters` data clusters, the same test
 /// [`BootSector::cluster_first_sector`] makes.
-const fn is_data(clusters: u32, cluster: u32) -> bool {
+pub(crate) const fn is_data(clusters: u32, cluster: u32) -> bool {
     cluster >= 2 && cluster - 2 < clusters
 }
 

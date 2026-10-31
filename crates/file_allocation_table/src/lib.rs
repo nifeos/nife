@@ -1,5 +1,5 @@
 #![no_std]
-//! **A FAT12, FAT16 and FAT32 filesystem, sans I/O, growing in stages.** Two halves exist today.
+//! **A FAT12, FAT16 and FAT32 filesystem, sans I/O, growing in stages.** Three parts exist today.
 //!
 //! The reader opens a volume through [`SectorDevice`], a trait the caller implements over any
 //! device that reads whole sectors. [`BootSector::read`] reads and checks the boot sector and its
@@ -22,17 +22,43 @@
 //! [`MasterBootRecord`]: [`Partition::device`] shows one partition as a device of its own, and
 //! [`Volume::open`] opens the volume inside it.
 //!
-//! The writer is a `mkfs` for one shape: a FAT32 EFI system partition holding one boot file at
-//! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT
-//! long-name entries ahead of a `~1` alias (see `long_name.rs`). A volume below
-//! [`FAT32_MINIMUM_CLUSTERS`] is refused, because the specification types a volume by its data
-//! clusters, and the data area is rounded up to start on a cluster boundary.
+//! The table is writable through [`WritableSectorDevice`]. [`Volume::allocate_cluster`],
+//! [`Volume::truncate_chain`] and [`Volume::free_chain`] take and give back clusters, each writing
+//! every live copy of the table so a crash leaks a cluster and never shares one. The FAT32 `FSInfo`
+//! hints ([`FsInfo`]) follow in memory and [`Volume::sync`] writes them. The first change clears the
+//! clean-shutdown bit (FAT16 and FAT32) and the sync sets it back ([`Volume::is_clean`]).
+//!
+//! [`Volume::create_file`] makes an empty file (a name that is not 8.3 gets long-name slots and a
+//! numbered alias), [`Volume::open_file_writer`] opens a [`FileWriter`] that writes, extends and
+//! sets a length, and [`Volume::remove_file`] deletes. [`Volume::make_directory`],
+//! [`Volume::remove_directory`] and [`Volume::rename`] change the tree. A full directory grows by a
+//! cluster, except the fixed root of FAT12 and FAT16. Each returns a [`WriteError`].
+//!
+//! [`Format`] lays out an empty FAT12, FAT16 or FAT32 volume of any size, as sectors a caller
+//! writes. [`VolumeLayout`] lays out one shape through the same sizing and boot sector: a FAT32
+//! EFI system partition holding one boot file at `\EFI\BOOT\<name>`, with VFAT long-name entries
+//! ahead of a `~1` alias when the name is not 8.3. A volume below [`FAT32_MINIMUM_CLUSTERS`] is
+//! refused, because the specification types a volume by its data clusters.
 
 //! # BUGS
 //!
-//! - A long name's alias is always `~1`, right only while the volume holds one file.
+//! - The `mkfs` numbers its alias `~1`, right only while the volume holds one file.
 //! - Every timestamp is zero: a `mkfs` with no clock capability writes 1970 rather than inventing one.
-//! - The `FSInfo` free-cluster count is written once, which the specification lets a driver tolerate.
+//! - The `mkfs` writes the `FSInfo` free-cluster count once. After that only [`Volume::sync`] keeps
+//!   it; a volume dropped without a sync leaves a stale hint, which the specification lets a driver
+//!   tolerate and `fsck.fat` reports.
+//! - The backup `FSInfo` copy in the backup boot area is never updated, as with Linux's driver.
+//! - A newly allocated cluster holds whatever the device held; a caller that needs zeros writes them.
+//! - A write has no barrier: the crate orders its writes and the device decides when each reaches the
+//!   medium. A failure between the writes of one table entry's copies leaves the copies unequal.
+//! - A name with a character outside the Basic Multilingual Plane is refused, and a lower-case 8.3
+//!   name is stored as a long name, since the crate writes no lower-case flag.
+//! - A directory slot is found by walking from the directory's first cluster each time, so creating
+//!   in a directory of n clusters costs n chain steps per slot read.
+//! - Timestamps are zero and a writer sets only the archive attribute, and a writer does not refuse a
+//!   read-only file.
+//! - The 65,536-entry ceiling of a directory (`grow_directory`'s limit) is untested: reaching it
+//!   needs a volume and a test of that size.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
 //!   backwards seek walks the chain again from its start.
 //! - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table, and
@@ -54,11 +80,17 @@
 //! Name: ratified 2026-10-07 (#1806). FAT spelled out, as the acronym test asks; permanent once
 //! published.
 
+mod allocation;
 mod boot_sector;
 mod directory;
+mod directory_write;
 #[doc(alias = "extensible firmware interface system partition")]
 pub mod efi_system_partition;
 mod file;
+mod file_write;
+mod file_writer;
+mod format;
+mod fs_info;
 mod long_name;
 mod long_name_assembly;
 mod lookup;
@@ -69,9 +101,14 @@ mod sector;
 mod table;
 mod volume;
 
+pub use allocation::AllocationError;
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
 pub use file::{FileReadError, FileReader, NotAFile};
+pub use file_write::WriteError;
+pub use file_writer::FileWriter;
+pub use format::{Format, FormatError, FormatOptions};
+pub use fs_info::{FsInfo, FsInfoError};
 pub use long_name_assembly::{LongFileName, LongNameError};
 pub use lookup::LookupError;
 pub use master_boot_record::{
@@ -80,7 +117,7 @@ pub use master_boot_record::{
 };
 pub use named_entry::{Entries, NamedEntry};
 pub use reader::{Chain, ChainError, Volume};
-pub use sector::{SectorDevice, SectorSize};
+pub use sector::{SectorDevice, SectorSize, WritableSectorDevice};
 pub use table::TableEntry;
 pub use volume::{
     CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MINIMUM_CLUSTERS, LayoutError, RESERVED_SECTORS,

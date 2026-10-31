@@ -44,7 +44,7 @@ programs; reclaiming the region alone would only make the NTP test server spin o
 - The file service's granted clients. `start_granted_dir`, `start_granted` and
   `start_granted_set` retype the caretaker's two endpoints and the client's report from one region
   of `GRANT_ENDPOINT_PAGES` and return `(report, Holding)`. `start_granted_dir` is built on
-  `narrow_dir_held`, which `rmle_service::start` and the provisioning test now use too.
+  `narrow_dir_held`, which the provisioning test now uses too.
   `spawn_fs_client` takes its report from the caller. The shared-frame witness returns a holding
   for its two clients and three endpoints.
 - The file sink and source (`start_file_sink`, `start_file_source`) retype from the caller's

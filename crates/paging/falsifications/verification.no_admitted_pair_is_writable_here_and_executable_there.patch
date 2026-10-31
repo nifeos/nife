@@ -1,0 +1,29 @@
+Falsifies `paging::verification::no_admitted_pair_is_writable_here_and_executable_there`.
+
+The defect: `Flags::makes_writable_executable_pair` asks only one direction, whether the
+existing mapping is writable and the new one executable. That is the order the tenth outsider
+pass reproduced (`MAP_RW`, then `MAP_CODE`), and it is the natural shortcut for whoever writes
+the check against that witness. The reverse order, code first and then a writable mapping, is
+then admitted: the mapping hold sees no pair and one page becomes writable at one address and
+executable at another.
+
+Expected to fail: `assert!(!(writes(a) && executes(b)) && !(writes(b) && executes(a)))`, for any
+`a` executable and `b` writable.
+
+Replayed on 2026-10-31 (UTC) with `cargo kani --harness
+no_admitted_pair_is_writable_here_and_executable_there` in `crates/paging`: one failure at that
+assertion. The host test `only_writable_beside_executable_makes_the_pair` fails under it too.
+
+diff --git a/crates/paging/src/flags.rs b/crates/paging/src/flags.rs
+index 66104f9f4..9ca9fcea6 100644
+--- a/crates/paging/src/flags.rs
++++ b/crates/paging/src/flags.rs
+@@ -183,7 +183,7 @@ impl Flags {
+     pub const fn makes_writable_executable_pair(self, other: Flags) -> bool {
+         let self_executable = self.is_user_executable() || self.is_kernel_executable();
+         let other_executable = other.is_user_executable() || other.is_kernel_executable();
+-        (self.is_writable() && other_executable) || (other.is_writable() && self_executable)
++        self.is_writable() && other_executable
+     }
+ 
+     /// Whether user mode may access this mapping at all.

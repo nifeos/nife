@@ -34,8 +34,8 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   the destination and does not flip that status. §201 (one roadmap until a citation has to cross),
   amended the same day, rules the citation identity across repositories. Ruled 2026-10-28: the
   home's grain, one repository per package (§316 (one repository per package leaves the tree)), and
-  the names, ratified the same day on the naming review
-  (design/roadmap/proposals/first-cut-names.md, pull request #2870). Still open, and not blocking
+  the names, ratified the same day on the naming review, now milestone 978 (the first cut's names),
+  `design/roadmap/0978-first-cut-names.md` and pull request #2870. Still open, and not blocking
   until this block starts: the citation identity the first crossing writes (§201), and the SDK's
   place in milestone 691 (packages move out of this repository, one per pull request)'s order.
 - Sequenced 2026-10-28 (UTC): the update path goes first, milestones 911 (scripted installs grant

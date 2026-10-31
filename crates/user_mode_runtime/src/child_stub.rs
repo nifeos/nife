@@ -29,7 +29,8 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
     0xD400_0001,
 ];
 
-/// RISC-V: a0=slot 0, a1=SEND, a2=1, a3=a4=0, a7=SYS_INVOKE, ecall; then a7=SYS_EXIT, ecall.
+/// RISC-V: a0=slot 0, a1=`SEND`, a2=1, a3=a4=0, a7=`SYS_INVOKE`, `ecall`; then a7=`SYS_EXIT`,
+/// `ecall`.
 /// Each `li aN, imm` is `addi aN, x0, imm` = `(imm << 20) | (reg << 7) | 0x13`; `ecall` is 0x73.
 #[cfg(target_arch = "riscv64")]
 pub const SEND_THEN_EXIT: [u32; 9] = [

@@ -82,6 +82,12 @@ _ACTS = ("acts and reports whether it worked, which design/naming.md exempts fro
 KEPT = {
     "crates/designware_ethernet/src/management_data_input_output.rs::PA_SHIFT":
         ({"spelled-out"}, "DesignWare's `PA` field, the PHY address, not a physical address"),
+    # The loader's three acts that report whether they worked, carried into `process_builder` by
+    # DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3's split. Each takes an effect (unmap a page, destroy a region, start a
+    # child) and answers whether the kernel allowed it, which is the exemption `_ACTS` names.
+    "crates/process_builder/src/lib.rs::give_up_own_page": ({"question-shape"}, _ACTS),
+    "crates/process_builder/src/lib.rs::memory_region_destroy": ({"question-shape"}, _ACTS),
+    "crates/process_builder/src/lib.rs::start_child": ({"question-shape"}, _ACTS),
     "crates/designware_ethernet/src/registers.rs::CONFIG_LM":
         ({"spelled-out"},
          "Linux's `GMAC_CONFIG_LM` (`dwmac4.h`), copied strictly under Decision 37c"),
@@ -98,6 +104,8 @@ KEPT = {
     "kernel/src/arch/riscv64/timer.rs::within_raise_bound": ({"question-shape"}, _ACTS),
     "kernel/src/arch/x86_64/mmu/shootdown.rs::serve_shootdown_nmi": ({"question-shape"}, _ACTS),
     "kernel/src/sched/inspection.rs::kill_thread": ({"question-shape"}, _ACTS),
+    # Waits, then reports whether the property arrived before its budget ran out.
+    "kernel/src/testing.rs::wait_on_every_core": ({"question-shape"}, _ACTS),
     "kernel/src/sched/inspection.rs::hold_on_its_core": ({"question-shape"}, _ACTS),
     "kernel/src/sched/switch.rs::mark_current_fp_live": ({"question-shape"}, _ACTS),
     "kernel/src/user/fs_service/std_start.rs::release": ({"question-shape"}, _ACTS),

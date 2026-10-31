@@ -505,6 +505,12 @@ mod child_thread_tests;
 #[cfg(test)]
 mod force_kill_tests;
 
+/// **Whether the shell gets a `--mem` grant back after the job built from it**: a sub-region left
+/// behind refuses `DESTROY` for good, and a process left running refuses it once. Cross-ISA for
+/// `force_kill_tests`' reason: the only per-architecture part is the spin instruction.
+#[cfg(test)]
+mod memory_grant_reclaim_tests;
+
 /// **A first process that gives its authority away, and a supervision tree that outlives it** (milestone 22
 /// phase B.2).
 ///
@@ -927,12 +933,6 @@ mod terminal_quiesce_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod terminal_swap_tests;
 
-/// **`rmle` itself**: open a file, move a cursor, insert and delete characters, save. Driven with
-/// real keystrokes over the raw-keystroke primitive, and the saved file verified independently of
-/// `rmle`'s own report. See the module's own doc for why that independence matters.
-#[cfg(all(test, initial_ramdisk))]
-mod rmle_tests;
-
 /// **No test may leak a runnable thread.** A one-shot driver that spins forever stays runnable for
 /// the rest of the boot, and enough of them on one core starve a later heavy test past the 60 s
 /// watchdog. It quiesces, then asserts only the idle threads and this probe are runnable, so a leak
@@ -992,6 +992,15 @@ mod map_revocation_window_tests;
 /// (DECISIONS §19).
 #[cfg(test)]
 mod syscall_fuzzer_tests;
+
+/// **The fuzz drivers' wait counts ticks on every core** (lane
+/// fuzz-deadlines-count-guest-progress, provisional). A core that takes no ticks holds the wait
+/// open, a running machine that does not finish ends it, and a backstop bounds it. See
+/// notes/kernel-test-harness.md.
+///
+/// Cross-ISA: one portable body over every architecture's per-core tick count (DECISIONS §19).
+#[cfg(test)]
+mod every_core_tick_budget_tests;
 
 /// **A confined EL0 process fuzzes the syscall surface under a conductor** (milestone 779 (fuzz
 /// the surface a confined process can reach), part (b), provisional). The sibling of

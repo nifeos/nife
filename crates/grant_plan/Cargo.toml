@@ -29,3 +29,4 @@ program_argument_contract = { version = "0.1.0", path = "../program_argument_con
 # safe rather than a drift waiting to happen.
 [dev-dependencies]
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+primitive_benchmark_contract = { version = "0.1.0", path = "../primitive_benchmark_contract" }

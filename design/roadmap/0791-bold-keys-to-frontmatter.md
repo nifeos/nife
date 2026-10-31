@@ -54,7 +54,7 @@ says what the reader does when it is missing.
 | `script/roadmap:259` | `**Reuse:**` (optional: plain `Reuse:` also matches) | 12 | Nothing. The bold is not needed. |
 | `script/roadmap:891`, `helpers/roadmap_proposals.py:41,44`, `helpers/roadmap_migrate.py:152,153,304` | Index-row `**Built:**`; proposal `**Status: PROPOSED d.**` and `**Gate:**`; one-shot migrator | 0 live | Migrator and old-proposal readers only. |
 | `script/stranger-test:369` | `**A run is due every N days.**` | 1 note | Lint fails ("exactly one must match"). |
-| `script/journeys:163` | line starting `**RETIRED` | 1 journey | Silent: the journey is listed as live work again. |
+| `script/journeys` | none: no bold marker | 0 | Nothing. A journey's status is its frontmatter's `status` key, with `retired` beside it, and `script/journeys --check` holds the file to that schema. |
 | `helpers/name_provenance.py:368,473` | `**Provisional name`; a bold `**Name:` header is a stray | 9 (briefs, notes) | Removing a stray `**Name:` bold clears a defect. Removing `**Provisional name` hides an ad hoc opener the gate wants to see. |
 | `script/decisions:309`, `script/roadmap:666` | bans on `**Status:` and restated statuses | 0 | Not keys. |
 | `script/citations:293,331`; `script/fatal-risks:387,393` | emphasis optional around a citation or a status word | many | Nothing. The pattern tolerates bold and does not need it. |
@@ -101,7 +101,7 @@ nesting, and a value may not contain `: ` or ` #`. That shape decides most of th
 | `Experiment status: WORD, date` | Move | It is metadata about the document and the nine documents are the whole population. The metrics workflow already prefers frontmatter for the color and cross-checks it against this line. |
 | `Reuse:` | Drop the bold | The parser accepts it plain. Done 2026-10-07, by which time the template had spread it to 35 files. |
 | `**A run is due every N days.**` | Stay | One sentence a reader acts on. |
-| `**RETIRED` | Optional | One journey and journeys have no frontmatter. Exempt either way. |
+| `**RETIRED` | Gone | A journey's retirement is `status: RETIRED` and its `retired` date in frontmatter; no script reads a bold marker. |
 | `**Lane:**` | Stay | PR bodies, not documents. |
 
 The one migration worth doing is the nine experiment-status lines. The proposed keys, provisional:

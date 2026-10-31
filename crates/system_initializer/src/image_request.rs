@@ -13,7 +13,7 @@ use super::*;
 /// Where the progenitor maps the file service's client-window pool to read and write the
 /// installed-programs table. Mapped once, on first use, with page tables from its own budget.
 /// Clear of every other window this process maps (`PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS`, the
-/// peek pages below it, and `supervision_contract::SCRATCH_WINDOW` at `0x1000_0000`).
+/// peek pages below it, and `process_builder::SCRATCH_WINDOW` at `0x1000_0000`).
 pub(super) const ACTIVATION_FS_VA: u64 = address_space_map::pair_page(0x0f40_0000);
 
 /// **Where the progenitor maps the second mounted tree's client-window pool**, to zero a window
@@ -46,7 +46,7 @@ const _: () = assert!(
 pub(super) fn receive_args(spawn: &mut SpawnEndpoint, own_ut: u64) -> Option<u64> {
     let frame = opt_capability(spawn.receive_capability().1)?;
     // Revoked when the shell reclaims its frame; the scratch window reuses the page on a later lap.
-    let theirs = supervision_contract::map_scratch(frame, false, own_ut).ok();
+    let theirs = process_builder::map_scratch(frame, false, own_ut).ok();
     capability_delete(frame);
     theirs
 }
@@ -65,7 +65,7 @@ pub(super) fn copy_args(
 ) -> Option<u64> {
     let page = retype_page_frame(region).ok()?;
     // Fresh from the child's region, so reaping the child takes this mapping back.
-    let Ok(ours) = supervision_contract::map_scratch(page, true, own_ut) else {
+    let Ok(ours) = process_builder::map_scratch(page, true, own_ut) else {
         capability_delete(page);
         return None;
     };
@@ -84,7 +84,7 @@ pub(super) fn copy_args(
     let same_verb = agrees(copied);
     // Written, and the child's from here: give our window onto it up (milestone 95, §249). Without
     // a capability to our own space this does nothing, and the region's reap takes it back as before.
-    supervision_contract::give_up_own_page(ours);
+    process_builder::give_up_own_page(ours);
     if !same_verb {
         capability_delete(page);
         return None;
@@ -484,18 +484,18 @@ pub(super) struct Frames {
 }
 
 /// Where [`take_frames`] mapped each frame, for [`stage_frames`] to copy from: the page's index in
-/// `supervision_contract::SCRATCH_WINDOW`, one entry per page of the largest image. The progenitor
+/// `process_builder::SCRATCH_WINDOW`, one entry per page of the largest image. The progenitor
 /// has one thread, so `Relaxed` is all the ordering there is. An index, not an address, to keep
 /// this `.bss` at two bytes an entry: the kernel suite's frame ledger counts every progenitor.
 static FRAME_VIEWS: [AtomicU16; spawnproto::IMAGE_MAXIMUM_PAGES as usize] =
     [const { AtomicU16::new(0) }; spawnproto::IMAGE_MAXIMUM_PAGES as usize];
 
 // Every page of the scratch window has an index that fits.
-const _: () = assert!(supervision_contract::SCRATCH_WINDOW_PAGES <= u16::MAX as u64 + 1);
+const _: () = assert!(process_builder::SCRATCH_WINDOW_PAGES <= u16::MAX as u64 + 1);
 
 /// The scratch page with index `i`.
 fn scratch_page(i: u16) -> u64 {
-    supervision_contract::SCRATCH_WINDOW.start + u64::from(i) * supervision_contract::PAGE
+    process_builder::SCRATCH_WINDOW.start + u64::from(i) * process_builder::PAGE
 }
 
 /// **Take an image request's frames off the spawn endpoint**, mapping each read-only in the
@@ -518,10 +518,9 @@ pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> F
             continue;
         };
         if f.ok {
-            match supervision_contract::map_scratch(frame, false, own_ut) {
+            match process_builder::map_scratch(frame, false, own_ut) {
                 Ok(va) => {
-                    let i = (va - supervision_contract::SCRATCH_WINDOW.start)
-                        / supervision_contract::PAGE;
+                    let i = (va - process_builder::SCRATCH_WINDOW.start) / process_builder::PAGE;
                     FRAME_VIEWS[f.views as usize].store(i as u16, Relaxed);
                     f.views += 1;
                 }
@@ -578,12 +577,12 @@ pub(super) fn stage_frames(
                 }
             }
         }
-        supervision_contract::give_up_own_page(theirs);
+        process_builder::give_up_own_page(theirs);
     }
     match (staging, ok) {
         (Some(st), true) => Some(st),
         (Some(st), false) => {
-            supervision_contract::memory_region_destroy(st);
+            process_builder::memory_region_destroy(st);
             capability_delete(st);
             None
         }
@@ -701,6 +700,24 @@ pub(super) fn endowed_image(
         Ok(Some(d)) => Some(capability_manifest_note::decode(d).ok()?),
         Err(_) => return None,
     };
+    // **The syscall ABI the bytes were built against** (milestone 956 (the linked interfaces carry
+    // checkable versions), step 3): a program that declares an ABI version other than the one this
+    // kernel serves is refused, and so is a list that does not decode, as a manifest is. The ABI
+    // never dual-serves, so the comparison is equality. Bytes with no list declare nothing and run
+    // as before. The refusal's two numbers (`Refusal`) stop here: the spawn reply carries a status
+    // and no text, so the person sees the refusal and not the versions.
+    match elf.note(
+        capability_manifest_note::OWNER,
+        capability_manifest_note::INTERFACES,
+    ) {
+        Ok(None) => {}
+        Ok(Some(d)) => {
+            let list = capability_manifest_note::decode_interfaces(d).ok()?;
+            list.check_served(abi::INTERFACE_ID, abi::ABI_VERSION)
+                .ok()?;
+        }
+        Err(_) => return None,
+    }
     // Installed bytes carrying a verb table are refused: endowing from the manifest alone would
     // hand every line every verb's grants. The image's own `jig` narrows by `grant_plan`'s table.
     if !matches!(

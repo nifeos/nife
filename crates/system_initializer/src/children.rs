@@ -131,7 +131,7 @@ pub(super) fn build_caretaker(
 /// take the prompt down over one command's memory. See notes/system-initializer/children.md.
 pub(super) fn reclaim(region: u64) {
     for _ in 0..RECLAIM_ATTEMPTS {
-        if supervision_contract::memory_region_destroy(region) {
+        if process_builder::memory_region_destroy(region) {
             return;
         }
         user_mode_runtime::yield_now();
@@ -167,7 +167,7 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
         )
     };
     // Read; the rings are `net_stack`'s from here, so our view of them goes (milestone 95).
-    supervision_contract::give_up_own_page(NET_DMA_PEEK_VA);
+    process_builder::give_up_own_page(NET_DMA_PEEK_VA);
     let stack = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
     let report = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
     let budget = must(memory_region_split(ut, NET_STACK_BUDGET_PAGES));
@@ -830,5 +830,5 @@ pub(super) fn build_terminal(
 }
 
 pub(super) fn memory_region_split(ut: u64, pages: u64) -> Result<u64, ()> {
-    supervision_contract::memory_region_split(ut, pages).map_err(|_| ())
+    process_builder::memory_region_split(ut, pages).map_err(|_| ())
 }

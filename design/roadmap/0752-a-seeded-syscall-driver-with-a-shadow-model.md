@@ -184,6 +184,21 @@ a second rung. When (A) lands, the driver's model changes in the two receiver-fi
   notification, death messages, `PageFrame::MAP`), in the driver's `BUGS`. A Nth-retype test can
   reuse `Model`, `Stage` and the actor loop by adding an `Obj::Region` and its methods.
 
+## BUGS
+
+- Both seeded drivers, this one and the confined driver of milestone 779 (fuzz the surface a
+  confined process can reach), wait with `testing::wait_on_every_core`: two seconds of ticks on
+  every online core, then a 20 s backstop on the counter. A vCPU the host stops takes no ticks, so
+  it holds a wait open and does not fail it. A host that stops a vCPU for longer than the backstop
+  still fails a run, and the message then reads "(the backstop)" beside a core with few ticks.
+- Side by side under KVM, two-second deadlines on the counter failed up to half of the
+  guests at 8 and 16, and every failing seed passed alone. With the every-core wait, 4 guests ran
+  green 32 of 32 times, beside busy loops too. Nobody has yet run 8 or 16 guests with it, so a run
+  wider than 4 guests may still report false reds. The table is in `notes/fuzzing/rates-on-x86-64-under-kvm.md`.
+- What stops a vCPU on that host is not known. Instrumented runs saw single stalls of up to 1.45 s
+  of the counter that ended without a fault, and four guests pinned to four host CPUs beside eight
+  busy loops saw none, so CPU contention alone is not it.
+
 ## Index row
 
 A seeded driver issues random capability operations through the real syscall layer and predicts

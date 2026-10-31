@@ -245,6 +245,7 @@ dependencies = [
  "non_volatile_memory_express",
  "pgrep",
  "pmap",
+ "process_builder",
  "ps",
  "screen_console",
  "slabtop",
@@ -535,6 +536,7 @@ dependencies = [
  "grant_plan",
  "graphics_contract",
  "hot_swap_contract",
+ "hot_swap_server",
  "job_mix",
  "line_editor",
  "loaded_image_check",
@@ -542,6 +544,8 @@ dependencies = [
  "memory_region_heap",
  "network_time_protocol",
  "nifefs",
+ "primitive_benchmark_contract",
+ "process_builder",
  "soak_page",
  "socket_contract",
  "supervision_contract",
@@ -606,6 +610,7 @@ version = "0.1.0"
 dependencies = [
  "filesystem_contract",
  "glob",
+ "primitive_benchmark_contract",
  "program_argument_contract",
 ]
 
@@ -645,9 +650,15 @@ dependencies = [
 name = "hot_swap_contract"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_map",
  "capability_plan",
+]
+
+[[package]]
+name = "hot_swap_server"
+version = "0.1.0"
+dependencies = [
+ "hot_swap_contract",
  "user_mode_runtime",
 ]
 
@@ -709,6 +720,7 @@ version = "0.1.0"
 [[package]]
 name = "jh7110_entropy"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=535f79c91eaa61a3ed8f589b71bce537a42b3b52#535f79c91eaa61a3ed8f589b71bce537a42b3b52"
 
 [[package]]
 name = "jh7110_watchdog"
@@ -779,6 +791,7 @@ dependencies = [
  "paging",
  "pci",
  "periodic_deadline",
+ "primitive_benchmark_contract",
  "screen_console",
  "soak_page",
  "socket_contract",
@@ -1045,12 +1058,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "primitive_benchmark_contract"
+version = "0.1.0"
+dependencies = [
+ "byte_sink_contract",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "process_builder"
+version = "0.1.0"
+dependencies = [
+ "abi",
+ "address_space_map",
+ "counter_frequency_contract",
+ "elf",
+ "supervision_contract",
+ "user_mode_runtime",
 ]
 
 [[package]]
@@ -1312,11 +1344,7 @@ dependencies = [
 name = "supervision_contract"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_map",
- "counter_frequency_contract",
- "elf",
- "user_mode_runtime",
 ]
 
 [[package]]
@@ -1377,6 +1405,7 @@ dependencies = [
  "nifefs",
  "package_archive",
  "package_index",
+ "process_builder",
  "program_asks",
  "socket_contract",
  "std_runtime_contract",
@@ -1786,6 +1815,7 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "approval_file",
  "boot_ladder",
  "boot_slot",
  "c_program_fixture",
@@ -1798,11 +1828,13 @@ dependencies = [
  "glyph_atlas",
  "grant_plan",
  "graphics_contract",
+ "installed_programs",
  "measured_boot",
  "nifefs",
  "object",
  "package_archive",
  "package_index",
+ "program_asks",
  "screen_console",
  "sealed_pair",
  "serial_console",

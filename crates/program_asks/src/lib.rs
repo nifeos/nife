@@ -1,12 +1,9 @@
 //! **`program_asks`**: what a packaged program's manifest note asks the owner for, as the grant
 //! record's vocabulary ([`installed_programs::Granted`]): the network, then the service ask of
-//! note version 3, then each resolver zone. Two readers of one note must agree on what it asks,
-//! because the answer they check it against is one approval file and one record encoding, so the
-//! reading is a crate and not a copy (AGENTS.md rule 7): the progenitor's install
-//! ([`crate::asked_grants`] keyed on the program's digest, for the record;
-//! [`crate::asked_grants_of`] for the subset test) and basalt's composition (milestone 909 (basalt
-//! composes the bootable image from its packages), checking every package against the image's
-//! approval file) both call this one.
+//! note version 3, then each resolver zone. Two readers check these asks against one approval
+//! file, so the reading is a crate and not a copy (AGENTS.md rule 7): the progenitor's install
+//! (`system_initializer`) and `cargo xtask base-image`'s composition (milestone 909 (basalt
+//! composes the bootable image from its packages) item 3) both call this one.
 //!
 //! Nothing for a program whose bytes or note cannot be read, which runs with none of them either:
 //! the same rule `endowed_image` applies at spawn. The asks are exactly what `jig install` lists

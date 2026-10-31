@@ -111,10 +111,9 @@ fn release(h: Held) {
         give_back(job_fr, h.job_ut);
     }
     if h.budget != 0 {
-        destroy_memory_region(h.budget);
-        capability_delete(h.budget);
+        release_budget(h.budget);
     }
-    supervision_contract::forget_thread_control_block(h.tcb);
+    process_builder::forget_thread_control_block(h.tcb);
 }
 
 /// Delete this shell's slots for a job's frame and region, on every path that ends with them.
@@ -429,16 +428,21 @@ const RECLAIM_PATIENCE_NS: u64 = 1_000_000_000;
 /// `interrupt_ignorer` teardowns printed "teardown refused", and each refusal also leaked the job's
 /// pages from this shell's budget, which ran out on the seventh job.
 pub(super) fn reclaim(job_ut: u64) -> bool {
-    let start = monotonic_ns();
-    loop {
-        if destroy_memory_region(job_ut) == 0 {
-            return true;
-        }
-        if monotonic_ns().wrapping_sub(start) > RECLAIM_PATIENCE_NS {
-            return false;
-        }
-        yield_now();
-    }
+    swish::is_reclaimed_within(
+        RECLAIM_PATIENCE_NS,
+        || destroy_memory_region(job_ut),
+        monotonic_ns,
+        yield_now,
+    )
+}
+
+/// **Give a held job's `--mem` budget back to this shell's budget, then delete the slot.** The
+/// job may have left a process running in the grant, which the first `DESTROY` refuses while it
+/// arms the kill, so this retries as [`reclaim`] does. A sub-region the job split from its grant
+/// is refused for good and the pages stay spent; the wait for it is the patience bound.
+pub(super) fn release_budget(slot: u64) {
+    reclaim(slot);
+    capability_delete(slot);
 }
 
 /// RETYPE one page of our budget into a `PageFrame` capability we hold. `None` when the budget is spent.

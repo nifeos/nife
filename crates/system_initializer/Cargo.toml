@@ -42,9 +42,10 @@ installed_programs = { version = "0.1.0", path = "../installed_programs" }
 # `package install` (milestone 198 rung 3a's installer): the progenitor checks a package against
 # the image's catalogue and takes its program member out. Pure logic, bringing only `measured_boot`.
 package_archive = { version = "0.1.0", path = "../package_archive" }
-# What a packaged program's note asks for, as the record's vocabulary (milestone 911): the one
-# reading of the note, shared with basalt's composition, which checks the same asks against the
-# same approval file host-side (milestone 909).
+# What a packaged program's note asks for, as the record's vocabulary (milestone 911 (scripted
+# installs grant only what the owner's approval file allows)): the one reading of the note, shared
+# with basalt's composition, which checks the same asks against the same approval file host-side
+# (milestone 909 (basalt composes the bootable image from its packages)).
 program_asks = { version = "0.1.0", path = "../program_asks" }
 # The distribution's index (milestone 801 (packages over the internet)): the name of the image's
 # index sources entry, and the reader of the index copy `jig` writes, which the installer consults
@@ -57,6 +58,9 @@ byte_sink_contract = { version = "0.1.0", path = "../byte_sink_contract" }
 # The userspace ELF loader, and the fault slot that makes a child born supervised. One loader in the
 # tree since milestone 96; this crate is one of its two callers.
 supervision_contract = { version = "0.1.0", path = "../supervision_contract" }
+# The userspace ELF loader and the builder's scratch window (DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3 split the loader out
+# of the contract so the contract carries no runtime edge).
+process_builder = { version = "0.1.0", path = "../process_builder" }
 # The std runtime contract (milestone 595 (provisional)): the slots and pages the spawn service
 # places a `std` child's capabilities at. Constants only, no dependencies.
 std_runtime_contract = { version = "0.1.0", path = "../std_runtime_contract" }

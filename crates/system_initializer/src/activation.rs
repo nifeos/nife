@@ -387,7 +387,7 @@ pub(super) fn copy_text(own_ut: u64, region: u64, catalog: &str) -> Option<u64> 
         return None;
     }
     let page = retype_page_frame(region).ok()?;
-    let Ok(ours) = supervision_contract::map_scratch(page, true, own_ut) else {
+    let Ok(ours) = process_builder::map_scratch(page, true, own_ut) else {
         capability_delete(page);
         return None;
     };
@@ -396,7 +396,7 @@ pub(super) fn copy_text(own_ut: u64, region: u64, catalog: &str) -> Option<u64> 
     unsafe {
         core::ptr::copy_nonoverlapping(catalog.as_ptr(), ours as *mut u8, catalog.len());
     }
-    supervision_contract::give_up_own_page(ours);
+    process_builder::give_up_own_page(ours);
     Some(page)
 }
 
@@ -533,7 +533,7 @@ pub(super) fn activate(
 
     // The staged package goes back to the image pool, whose most recent carve it is.
     if let Some((st, _)) = staging {
-        supervision_contract::memory_region_destroy(st);
+        process_builder::memory_region_destroy(st);
         capability_delete(st);
     }
     outcome
@@ -833,6 +833,82 @@ fn vouch(
     (S::Done, m)
 }
 
+/// **The approval gate of an install**: `None` when nothing in the approvals stops the package,
+/// else the refusal to answer with. The delegated check applies when the request carries the
+/// image's approval file; the owner's own `--approved` install is checked against the store.
+fn approval_gate(
+    cx: &EditContext,
+    got: &package_archive::Installable<'_>,
+    store: Option<&mut [u8; PAGE_BYTES]>,
+) -> Option<Answer> {
+    use spawnproto::ActivationStatus as S;
+    let files = cx.files;
+    let act = cx.act;
+    let live = cx.live;
+    let table = cx.table;
+    let package = got.package();
+    // **The delegated check** (milestone 911 (scripted installs grant only what the owner's
+    // approval file allows)), before anything is placed or written: every program's asks within
+    // the package's entry, and the entry's `update` answer when the package is installed
+    // already. A package no entry bounds receives nothing.
+    if let Some(allowed) = cx.allowed {
+        let installed = installed_programs::entries(table)
+            .flatten()
+            .any(|e| e.package == package.name());
+        let entry = match allowed.entry(package.name()) {
+            Ok(Some(entry)) => entry,
+            Ok(None) => return Some(refused_not_approved(cx, package.name()).into()),
+            Err(_) => return Some(Answer::from((S::StoreFailed, live))),
+        };
+        if installed && !entry.update {
+            return Some(refused_not_approved(cx, package.name()).into());
+        }
+        for p in got.programs() {
+            let outside =
+                program_asks::asked_grants_of(&p).any(|ask| entry.covers(ask) != Ok(true));
+            if outside {
+                return Some(refused_not_approved(cx, package.name()).into());
+            }
+        }
+    } else if let (Some(text), installed_programs::Answered::Approval(name, digest)) =
+        (store, cx.answered)
+    {
+        // **The owner's own `--approved` install is checked in the installer too** (milestone
+        // 911): the trailer names the approval and the digest the records bind, and the store's
+        // records are what is in force. A name not stored, or stored at another digest, is
+        // answered `Revoked`; an ask the stored entry does not cover is refused with the ask
+        // named, which the owner may read. The `update` answer is not enforced here: the owner
+        // is acting, and their console's own `jig install` reinstalls without it.
+        let Some(stored) = approval_document(files, act, name.as_bytes(), text) else {
+            return Some(Answer::from((S::Revoked, live)));
+        };
+        if stored.digest() != *digest {
+            return Some(Answer::from((S::Revoked, live)));
+        }
+        let entry = match stored.entry(package.name()) {
+            Ok(Some(entry)) => entry,
+            Ok(None) => {
+                // No entry bounds the package, so its first ask is the one that fails.
+                if let Some(p) = got.programs().next()
+                    && let Some(ask) = program_asks::asked_grants_of(&p).next()
+                {
+                    return Some(refused_with_ask(cx, package.name(), ask).into());
+                }
+                return Some(refused_not_approved(cx, package.name()).into());
+            }
+            Err(_) => return Some(Answer::from((S::StoreFailed, live))),
+        };
+        for p in got.programs() {
+            let outside =
+                program_asks::asked_grants_of(&p).find(|ask| entry.covers(*ask) != Ok(true));
+            if let Some(ask) = outside {
+                return Some(refused_with_ask(cx, package.name(), ask).into());
+            }
+        }
+    }
+    None
+}
+
 /// **Install**: check the staged package against the image's catalog, place every program it
 /// carries under `packages/`, and write one new generation recording each program's digest
 /// (milestone 919 (a package carries several programs)).
@@ -895,64 +971,8 @@ fn install(
     // network and a resolver); the service ask is milestone 911's, note version 3). `jig
     // install` lists these asks and sends nothing without the owner's yes.
     let granted = || got.programs().flat_map(|p| program_asks::asked_grants(&p));
-    // **The delegated check** (milestone 911 (scripted installs grant only what the owner's
-    // approval file allows)), before anything is placed or written: every program's asks within
-    // the package's entry, and the entry's `update` answer when the package is installed
-    // already. A package no entry bounds receives nothing.
-    if let Some(allowed) = cx.allowed {
-        let installed = installed_programs::entries(table)
-            .flatten()
-            .any(|e| e.package == package.name());
-        let entry = match allowed.entry(package.name()) {
-            Ok(Some(entry)) => entry,
-            Ok(None) => return refused_not_approved(cx, package.name()).into(),
-            Err(_) => return Answer::from((S::StoreFailed, live)),
-        };
-        if installed && !entry.update {
-            return refused_not_approved(cx, package.name()).into();
-        }
-        for p in got.programs() {
-            let outside =
-                program_asks::asked_grants_of(&p).any(|ask| entry.covers(ask) != Ok(true));
-            if outside {
-                return refused_not_approved(cx, package.name()).into();
-            }
-        }
-    } else if let (Some(text), installed_programs::Answered::Approval(name, digest)) =
-        (store, cx.answered)
-    {
-        // **The owner's own `--approved` install is checked in the installer too** (milestone
-        // 911): the trailer names the approval and the digest the records bind, and the store's
-        // records are what is in force. A name not stored, or stored at another digest, is
-        // answered `Revoked`; an ask the stored entry does not cover is refused with the ask
-        // named, which the owner may read. The `update` answer is not enforced here: the owner
-        // is acting, and their console's own `jig install` reinstalls without it.
-        let Some(stored) = approval_document(files, act, name.as_bytes(), text) else {
-            return Answer::from((S::Revoked, live));
-        };
-        if stored.digest() != *digest {
-            return Answer::from((S::Revoked, live));
-        }
-        let entry = match stored.entry(package.name()) {
-            Ok(Some(entry)) => entry,
-            Ok(None) => {
-                // No entry bounds the package, so its first ask is the one that fails.
-                if let Some(p) = got.programs().next()
-                    && let Some(ask) = program_asks::asked_grants_of(&p).next()
-                {
-                    return refused_with_ask(cx, package.name(), ask).into();
-                }
-                return refused_not_approved(cx, package.name()).into();
-            }
-            Err(_) => return Answer::from((S::StoreFailed, live)),
-        };
-        for p in got.programs() {
-            let outside =
-                program_asks::asked_grants_of(&p).find(|ask| entry.covers(*ask) != Ok(true));
-            if let Some(ask) = outside {
-                return refused_with_ask(cx, package.name(), ask).into();
-            }
-        }
+    if let Some(refusal) = approval_gate(cx, &got, store) {
+        return refusal;
     }
     let answered = cx.answered_of();
     let n = match installed_programs::with_entries_granting(

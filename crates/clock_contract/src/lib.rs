@@ -141,6 +141,14 @@ pub mod state {
 /// somebody else's page. ASCII `CLOCKv01`, big-endian in the source so it reads in a hex dump.
 pub const MAGIC: u64 = 0x434c_4f43_4b76_3031;
 
+/// The clock page layout's version, the digits [`MAGIC`] carries. A reader's check is the magic
+/// itself: a reader built against one generation reads a page of another as no clock page at all,
+/// and a break bumps this and re-mints the magic's digits in one change, with the dated ledger
+/// entry the interface-stability discipline owes.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// The words the clock page uses. The rest of the frame is reserved and must read as zero: a
 /// future field is a new index here, and an old reader that never learned about it is unaffected.
 pub const WORDS: usize = 4;

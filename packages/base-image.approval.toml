@@ -1,0 +1,97 @@
+# base-image: the approval file a nife base image is checked against.
+#
+# Milestone 909 (basalt composes the bootable image from its packages) item 3 and milestone 911
+# (scripted installs grant only what the owner's approval file allows). `cargo xtask base-image`
+# reads each package's manifest note and runs 911's subset test against this file, refusing and
+# naming every extra grant when a package asks for more than its entry allows. The definition names
+# this file with an `approval` key (`packages/base-image.toml`); until that key is set, the
+# composition checks nothing.
+#
+# **First cut, 2026-10-30 (UTC), for calef to tighten.** The grants here are the smallest set that
+# lets the tree's own base programs through. `jig` is the one base program that carries a manifest
+# note, and it asks for the network (`grant_plan::Program::Jig`, with `indexes` forbidden); no base
+# program asks for a resolver zone or the service grant, so no entry allows one. `update` and
+# `remove` are false for every base package: the base image is replaced whole through the boot slot,
+# not updated or removed by a scripted install (milestone 525 (A bad upgrade cannot brick the
+# machine: two boot slots, tries and priority) and milestone 607 (nife is built and updated from
+# packages, and the repository divides along what releases together) item 5).
+#
+# The check catches a package that asks for more than its entry allows. It cannot catch an entry
+# that allows more than any package asks, so over-allowance is the review's to remove. Add a zone or
+# a directory only when a base package's note asks for it, in the words
+# `design/roadmap/0911-scripted-installs-grant-only-what-an-approval-file-allows/an-example-file.md`
+# spells.
+#
+# Name: provisional, minted 2026-10-30 (UTC) by lane
+# milestone/909-item-3-composition-checks-the-approval.
+
+approval = "base-image"
+
+[package.core-tools]
+update = false
+remove = false
+
+[package.disk-tools]
+update = false
+remove = false
+
+[package.display]
+update = false
+remove = false
+
+[package.drivers]
+update = false
+remove = false
+
+[package.entropy]
+update = false
+remove = false
+
+[package.filesystem]
+update = false
+remove = false
+
+[package.init]
+update = false
+remove = false
+
+[package.jig]
+network = true
+update = false
+remove = false
+
+[package.login]
+update = false
+remove = false
+
+[package.mdr]
+update = false
+remove = false
+
+[package.network]
+update = false
+remove = false
+
+[package.process-tools]
+update = false
+remove = false
+
+[package.redoxfs]
+update = false
+remove = false
+
+[package.swish]
+update = false
+remove = false
+
+[package.terminal]
+update = false
+remove = false
+
+[package.time]
+update = false
+remove = false
+
+[package.timetable]
+update = false
+remove = false

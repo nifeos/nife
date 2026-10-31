@@ -7,15 +7,18 @@ dependency) is what lets the pin carry a patch and keeps the build hermetic.
 One directory here is not a pin: `relibc/`, a seed nife owns and does not track (below). It lives
 here because it is somebody else's code in shape, and every gate already treats `vendor/` that way.
 
-## redoxfs 0.9.1
+## redoxfs, at upstream commit db847d87c680
 
 The on-disk engine for milestone 32's FS server (design/roadmap/0032-redoxfs-fs-server.md; the audit that chose
 and priced it is notes/redoxfs-audit.md).
 
-- **Source:** the published crates.io package `redoxfs-0.9.1.crate`,
-  sha256 `a66d0c043a5768739851a7e5775192a70fdffdbf3418c22fd7927415d41a87c3`,
-  upstream git sha `473b4baeb041ebe14504f30693393b1cae52558c` (see `.cargo_vcs_info.json`).
-- **Divergence from the published package, exhaustively:**
+- **Source:** gitlab's archive of upstream commit `db847d87c68052618d1427537c7277293a626a18` (master,
+  2026-10-29), which no release carries: the manifest says 0.9.1, the newest published version, and
+  the pin's `source = git` says this is a commit rather than a package. The pin's sha256 is of the
+  archive's uncompressed tar stream, `89a904ebc1b917643458295b202146fd543d3e254223b5be494ba73092f1bbf5`.
+  The tree is that archive's files, so it has no `Cargo.toml.orig` or `.cargo_vcs_info.json`, which
+  only a published package carries.
+- **Divergence from upstream, exhaustively:**
   1. `src/filesystem.rs`, `src/record.rs`: the two `use alloc::vec::Vec` imports that fix the
      bit-rotted no_std build (three E0425 sites). The same fix as
      `patches/redoxfs-no-std-vec-import.patch` (written against upstream master); each site is
@@ -68,7 +71,7 @@ and priced it is notes/redoxfs-audit.md).
 
      Ages like divergence 3 (re-applied forever, can conflict on a pin bump), and is the one most
      worth upstreaming: `patches/redoxfs-no-std-create-uuid.patch` is the submission, and it applies
-     to the published 0.9.1 with zero fuzz. Approved by calef 2026-08-03.
+     to upstream 0.9.1 with zero fuzz. Approved by calef 2026-08-03.
   5. `src/lib.rs`, `src/record.rs`, `src/htree.rs`, `src/node.rs`: **the record level is lowered to
      1, and the constant is split in two.** Milestone 138 step 1, 2026-08-18. `RECORD_LEVEL` (the
      level a new file is *created* at) goes from 5 to 1, so a record is 8 KiB rather than 128 KiB;
@@ -125,11 +128,32 @@ and priced it is notes/redoxfs-audit.md).
      **At the next bump:** read `NodeLevel::new` first. If upstream changed the constant to 8 (or
      restructured the function), drop this divergence and its test with it; otherwise re-apply the
      one-line change and keep the test. Ages like divergences 3 to 5 if upstream never fixes it.
+  7. `src/transaction.rs`: `err` is renamed `_err` in the lz4 decompression failure path, so the
+     build without the `log` feature has no unused-variable warning. Drops the day upstream writes
+     it that way.
+  8. `src/disk/mod.rs`: `use alloc::boxed::Box;`, because `impl Disk for Box<dyn Disk>` names `Box`
+     and the `no_std` build has no `Box` in scope (E0425 on every bare target). Drops when upstream
+     imports it.
+  9. `Cargo.toml`, `Cargo.lock`: the two git dependencies under `cfg(target_os = "redox")`
+     (`redox-rings` and `redox-buffer-pool`, both on gitlab.redox-os.org) are removed, and the
+     lockfile is the one cargo writes without them. Cargo resolves every target's dependencies into
+     a lockfile, so a git source in this manifest would put a non-nifeos git dependency into every
+     workspace that builds the engine, which `deny.toml` refuses (DECISIONS §305) and which would
+     make those builds need the network. Only `src/disk/ring.rs` and the Redox scheme use them, and
+     those compile only for `target_os = "redox"`, which nife does not build. If a Redox target is
+     ever built, this divergence is where to look first. It is the one place the vendored lockfile
+     is not upstream's.
+  10. `fuzz/`: upstream's cargo-fuzz crate is deleted (four files). It is a separate workspace that
+     needs the `fuse` feature and a fuzzing toolchain, nothing here builds or runs it (our fuzz
+     target is `fuzz/` at the repository root), and `helpers/packages.py` requires every crate in
+     the tree to belong to a package. The patch deletes it with `+++ /dev/null` headers, which is
+     why `script/vendor-verify` applies patches with `-E`.
 
-- Everything else is byte-identical to the published package, including files we do not use
-  (`Makefile`, `test.sh`, upstream CI configs) and `Cargo.lock`.
-- **Proved rather than asserted, since 2026-07-30:** `script/vendor-verify` fetches the published
-  tarball, checks its sha256 against `redoxfs.pin`, applies `redoxfs.divergence.patch`, and requires
+- Everything else is byte-identical to the pinned archive, including files we do not use
+  (`Makefile`, `test.sh`, upstream CI configs) and, outside divergence 9,
+  `Cargo.lock`.
+- **Proved rather than asserted, since 2026-07-30:** `script/vendor-verify` fetches the pinned
+  archive, checks its sha256 against `redoxfs.pin`, applies `redoxfs.divergence.patch`, and requires
   the result to be byte-for-byte the tracked contents of this directory. The two items above **are**
   that patch. After a deliberate change, regenerate with `script/vendor-verify --write-patch` and
   extend the list here; anything else is drift.
@@ -296,9 +320,10 @@ upstream moved" but "is this tree what we say it is".
 When the watch says upstream has moved and somebody decides to follow it, this is the job. **None of
 it is mechanical**, which is why nothing automates past the first step:
 
-1. Raise `version`, `url` and `sha256` in the pin. (`script/vendor-watch --write` does this much,
-   and stops there.)
-2. Re-apply the divergences. talc's one drops when a release carries it. RedoxFS's numbers 1, 2 and 6 above drop the day upstream ships them; 3, 4 and 5 are
+1. Raise `version`, `url` and `sha256` in the pin. (`script/vendor-watch --write` does this much
+   for a published release, and stops there.) A pin with `source = git` names a commit instead:
+   put the full sha in `vcs` and in the archive `url`, and hash the archive's uncompressed tar.
+2. Re-apply the divergences. talc's one drops when a release carries it. RedoxFS's numbers 1, 2, 6, 7 and 8 above drop the day upstream ships them; 3, 4, 5 and 9 are
    re-applied forever and are where the work is.
 3. Regenerate the patch: `script/vendor-verify --write-patch`.
 4. Extend this file's divergence list, which claims to be exhaustive and has been wrong once.
@@ -307,6 +332,35 @@ it is mechanical**, which is why nothing automates past the first step:
 6. For RedoxFS, make the `ignore` list in `.github/dependabot.yml` match the new manifest's direct
    dependencies, since it exists only to keep Dependabot from rewriting this vendored manifest.
 
+## Taking a held bump
+
+A dependency of a vendored package can be ahead of the range the package asks for. We adopt the
+vendored upstream as it stands and take the upgrade when upstream makes it; we do not rewrite its
+manifest to move its dependencies for it (architect ruling, 2026-10-31 UTC, on #2958). Dependabot
+follows a path dependency into the vendored `Cargo.toml` and edits it, which `script/vendor-verify`
+fails by construction, so the bump is held with an `ignore` in `.github/dependabot.yml` (EXCEPTION
+(§81)). The only hold today is `lock_api` 0.5 for talc, named by `held_dependency` in
+`vendor/talc.pin`.
+
+`script/vendor-watch` reports the day the hold can lift: its status file says **Held dependency:
+lifts** when a published release newer than the pin asks for a range that allows the held version,
+and the run exits 1 (behind). Then:
+
+Lag is a signal. While a bump is held, the run prints (to stderr, never the status file, which carries no dates) how many days the held version has
+been out and how old the package's newest release is. It fails nothing; the architect weighs it
+when deciding to keep, replace or fork a dependency, because a package that stops taking its own
+dependencies' releases is less reliable. Offline, the report says the lag was not checked.
+
+1. Take the release as in "Bumping a pin": raise `version`, `url` and `sha256` in the pin and the
+   `vcs` sha, and re-vendor the package.
+2. Re-apply `vendor/talc.divergence.patch`, or drop it if the release carries #57, and regenerate it
+   with `script/vendor-verify --write-patch`.
+3. Remove the `lock_api` entries from `ignore` in `.github/dependabot.yml` (the root, the ten
+   workspaces and the three RedoxFS ones) and the pin's `held_dependency` line.
+4. Take the `lock_api` bump in each lockfile that holds it (`cargo update -p lock_api` in the root,
+   `jig`, `fuzz`, `redoxfs_server` and `tools/redoxfs_host`), then run `script/test` and
+   `script/supply-chain`.
+
 ### BUGS
 
 - **A bump is allowed to fail, and that is a result rather than a defect.** Divergences 3, 4 and 5
@@ -314,18 +368,8 @@ it is mechanical**, which is why nothing automates past the first step:
   decision rather than a fix: take the new version and rewrite the divergences, stay put and record
   why, or fork permanently and stop pretending the pin tracks upstream. Which of the three is right
   is calef's call, not a lane's, so a lane that meets this writes it up and stops.
-- **The divergence list above is not exhaustive, and it says it is.** Found 2026-08-31 by milestone
-  203's lane, which had to read the patch to report which files upstream had also touched.
-  `redoxfs.divergence.patch` modifies eight files; the five numbered divergences account for seven.
-  The eighth is `src/transaction.rs`, where `err` is renamed `_err` in the lz4 decompression failure
-  path so the no-`log` build has no unused-variable warning. It is small and it ages like
-  divergence 1 (it drops the day upstream writes it that way), but an "exhaustive" list with an
-  entry missing is the same defect this file already recorded once about the lockfile: nobody
-  edited the filesystem, and nobody could prove it either. Whoever takes the next bump should
-  number it and say where it came from; this lane did not, because inventing provenance for a
-  change it did not make would be worse than naming the gap.
 - **Should RedoxFS become its own repository? Not yet** (calef asked 2026-10-04 UTC; the
-  maintainer's answer). Six divergences, about 140 changed lines, fixes that land atomically with
+  maintainer's answer). Ten divergences, about 300 changed lines, fixes that land atomically with
   their callers and one CI is cheaper than a second repo. Revisit at about ten divergences, at a
   pin bump that conflicts badly, or when another project wants the fork; because upstream refuses
   LLM-generated contributions, the divergences are likely to grow rather than drop.

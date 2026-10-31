@@ -36,6 +36,15 @@ use uuid::Uuid;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MINIMUM_BLOCK_SIZE: usize = 512;
 
+/// The format's version: the generation of this crate's reading and writing of the two on-disk
+/// tables it implements, the GUID partition table and the MBR. The tables' own identities are the
+/// specifications' (`header::REVISION`, the `EFI PART` and `0x55AA` signatures); this constant is
+/// the declaration of milestone 956 (the linked interfaces carry checkable versions), so assembly
+/// can check what a package was built against after the split. Nothing checks it at run time.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// The largest logical block this crate handles. 4096 is what a native-4K drive reports, and the
 /// header still occupies exactly one block, so the only thing that changes is the LBA arithmetic.
 ///

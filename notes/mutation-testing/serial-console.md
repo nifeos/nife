@@ -178,3 +178,17 @@ the `Err` that `watch` returns.
 
 No defect in shipped behavior was found. Every survivor here was a missing test, or one of the two
 documented, measured equivalences above.
+
+### `screen.rs`: six census timeouts closed (milestone 954 (a survivor accepted once is not accepted forever), part 5, 2026-10-31)
+
+Re-derived from main with `script/mutation -p serial_console`: 479 mutants, 6 missed and 6 timeouts.
+The six missed are the ones above, each with a row in
+`notes/project-metrics/mutation-triage.csv` (five `gap` rows homed in `BUGS`, one `algebraic`
+equivalent). The six timeouts were all in `parse_pixmap`, which had no row: `+=` becoming `*=` or
+`-=` on a header-skipping cursor, and a flipped comparison that stops a skip from moving, each a
+loop that never ends. No test could fail faster than the timeout.
+
+Closed by deleting the loops, as the lesson above advises. Both header skips now count a run of
+bytes with one iterator pass and add the count once, so no cursor increment exists to lose.
+`the_header_cursor_lands_exactly_where_each_token_ends` pins where each token and comment stops. A
+diff-scoped run over `parse_pixmap` now reports 33 mutants, 33 caught, none timed out.

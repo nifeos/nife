@@ -60,6 +60,17 @@ session to read, rather than two.
 - Its first run, a manual dispatch (37227933655), died with `jq: Argument list too long`: the
   check runs were passed as `--argjson`, and one argument may not pass 128 KiB on Linux. They now go
   in on stdin, and the selftest runs the whole pass over 10,000 check runs against a stubbed `gh`.
+- Fixed 2026-10-31 (UTC): the pass died with `helpers/ci-failing.sh: 98: echo: echo: I/O error` on
+  scheduled runs, exit 5. The script runs under `/bin/sh` (dash on Ubuntu), whose `echo` turns the two
+  characters `\n` inside a check run's JSON into a real newline; jq then rejected the control
+  character and `echo` reported the broken pipe. JSON now goes through `printf '%s\n'`, and the
+  selftest feeds a failing run whose text holds backslash escapes. This was a defect, not the audit
+  being due: the pass crashed before it could judge the rest of the pull requests.
+  The same sweep fixed `script/ci-log-baseline`, which passed CI log text through `echo` and so
+  could split or cut an attribution row (`helpers/ci-log-baseline-selftest.sh`), and the failure
+  diagnostics in `script/lint`. Left as they are, on purpose: the `title` in this script's FAILING
+  and CLEARED lines reaches `echo` through `@tsv`, which doubles each backslash, and dash's `echo`
+  undoes exactly that.
 - The comment is once per SHA, forever. A pull request that fails, is fixed by rerunning, and
   fails again on the same SHA gets the label again and no second comment. That is the rule asked for;
   the label is the live signal.

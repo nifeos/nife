@@ -61,7 +61,7 @@ fn elf_image(whole_note: &[u8]) -> Vec<u8> {
     ph[48..56].copy_from_slice(&4u64.to_le_bytes());
     v.extend_from_slice(&ph);
     v.extend_from_slice(&code);
-    v.extend_from_slice(&segment);
+    v.extend_from_slice(segment);
     v
 }
 
@@ -139,7 +139,7 @@ fn a_serviced_note_yields_the_network_the_service_and_each_zone() {
 fn a_program_without_a_readable_note_asks_for_nothing() {
     // Not an ELF at all, and an ELF with no PT_NOTE: the loader's bytes, no manifest. Both run
     // with no grants, which is the same rule `endowed_image` applies at spawn.
-    let mut bare_elf = vec![0u8; 64];
+    let mut bare_elf = [0u8; 64];
     bare_elf[0..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
     bare_elf[4] = 2;
     bare_elf[5] = 1;

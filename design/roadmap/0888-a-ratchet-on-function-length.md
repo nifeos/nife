@@ -99,16 +99,22 @@ as file splits became their own blocks after milestone 841.
 
 ## Where it stands, 2026-10-11 (UTC)
 
-Criteria 1, 2, 3 and 5 are built. Criterion 4 was held, and calef ruled on 2026-10-12 (UTC) that
-milestone 876 completes it. It did, on 2026-10-12 (UTC): `kernel_main` is 59 code lines in
-`kernel/src/boot.rs`, and its row is gone from the baseline.
+The milestone built all five criteria. Criterion 4 waited, and calef ruled on 2026-10-12 (UTC) that
+milestone 876 completes it. It did, on 2026-10-12 (UTC): `kernel_main` is 51 code lines in
+`kernel/src/boot.rs` as of 2026-10-31 (UTC), and its row is gone from the baseline. Once the gate
+held the measure at zero, calef retired criteria 3 and 5, the dashboard row and the chart, on
+2026-10-14 (UTC).
 
 - The lint ratchet is `helpers/lint_ratchet.py`, built to the panic proposal's specification so the
-  other lint proposals register a lint rather than write a gate. `script/lint` runs one more clippy
-  pass per census configuration at `-W`, in about 20 seconds. One lint is registered.
+  other lint proposals register a lint rather than write a gate. The clippy sections of
+  `script/lint` add the lint as `--force-warn` and save their diagnostics, and the ratchet reads
+  those; it runs no clippy of its own (milestone 980 (script/lint stops paying per-item costs),
+  part 6). One lint is registered.
 - The row value is `helpers/function_length.py`'s text replica of `too_many_lines`, which also
-  reaches files no clippy pass compiles. At a threshold of 0 it matched clippy on all 5,181
-  functions both saw. The gate fails on any difference.
+  reaches files no clippy pass compiles. At a threshold of 0 it matched clippy on 11,209 of the
+  11,217 functions clippy reported (2026-10-13 UTC; the register's appendix holds the count and the
+  8 others are under BUGS). The gate compares them on every function clippy reports over 100 and
+  fails on any difference.
 - The scope is every tracked `.rs` file outside `vendor/`, test code included (§283, calef,
   2026-10-13 UTC). `in_scope` in `helpers/function_length.py` is the one scope function.
 - The baseline, `design/lint-baseline.tsv`, holds no rows: no function in scope is over 100.
@@ -151,8 +157,8 @@ lines with no seam. It ranks fifth of the five.
 
 - **Done.** Criterion 4, the `kernel_main` split, landed with milestone 876 (the kernel crate root
   is split along its seams), built from `lane/888-kernel-main-split-held` (calef, 2026-10-12 UTC).
-  `kernel_main` is 59 code lines in `kernel/src/boot.rs`; its row is removed from
-  `design/lint-baseline.tsv`, and `kernel/src/lib.rs` is an index with no §266 row.
+  `kernel_main` is 51 code lines in `kernel/src/boot.rs` as of 2026-10-31 (UTC); its row is
+  removed from `design/lint-baseline.tsv`, and `kernel/src/lib.rs` is an index with no §266 row.
 - **Recorded.** The unit, the nesting lint and one baseline file were ruled "A" by calef on
   2026-10-12 (UTC), as recommended: code lines, no nesting measure, one file. §283 (a function is
   held to 100 code lines by a lint ratchet) records it,

@@ -114,7 +114,7 @@ take the same Reply; after the first answers, the client may call an unrelated s
 second thread's copy is delivered as that server's answer. A compromised server can do this on
 purpose, and `notes/suspend-and-resume.md` names stale-Reply forgery as a class the kernel rules
 out. Proposed as
-[a reply is consumed and delivered under one hold](../roadmap/proposals/a-reply-is-consumed-and-delivered-under-one-hold.md).
+[a reply is consumed and delivered under one hold](../roadmap/0959-a-reply-is-consumed-and-delivered-under-one-hold.md).
 It is not fixed here because the path is the IPC fast path, and a change there records its
 footprint. It bears on fatal risk 7 (confinement); the integrator cites it at merge.
 
@@ -126,7 +126,7 @@ between, and a reused frame then takes four zero bytes it does not belong to. `W
 same walk, and `notes/futex.md` recorded only the load, as a one-bit observation. Not shown
 reachable: the audit did not confirm that a destroyed region's frames can be reused inside the
 window. Proposed as
-[a futex word is walked and touched under the revocation lock](../roadmap/proposals/a-futex-word-is-walked-and-touched-under-the-revocation-lock.md),
+[a futex word is walked and touched under the revocation lock](../roadmap/0958-a-futex-word-is-walked-and-touched-under-the-revocation-lock.md),
 and `notes/futex.md`'s `BUGS` now names the store. It bears on fatal risk 7 if it is reachable.
 
 ### 4. MINTED: the xHCI driver is mapped the USB Legacy Support capability
@@ -135,7 +135,7 @@ The kernel performs the firmware handoff itself because that relationship is one
 hold", but the driver's window withholds only the MSI-X table and pending-bit array. Where
 `USBLEGSUP` and `USBLEGCTLSTS` share a page with nothing withheld, the driver can re-arm the SMI
 enables or the BIOS-owned semaphore, and the IOMMU does not bound a register write. Proposed as
-[the xHCI driver is not mapped the legacy support capability](../roadmap/proposals/the-xhci-driver-is-not-mapped-the-legacy-support-capability.md),
+[the xHCI driver is not mapped the legacy support capability](../roadmap/0960-the-xhci-driver-is-not-mapped-the-legacy-support-capability.md),
 which needs a reading of where xenon's controller puts the capability before the refusal can land.
 `notes/usb.md`'s `BUGS` now says so.
 

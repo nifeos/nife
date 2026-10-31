@@ -206,7 +206,7 @@ fn child_blocked_on(
 /// `user::holding::Holding` runs it, and say whether it ever reclaimed. Time-bounded rather than
 /// spin-count-bounded for DECISIONS §28's reason: the resident may be on another core, and only
 /// that core's own tick moves it.
-fn reclaim_within_two_seconds(region: u64) -> bool {
+fn is_reclaimed_within_two_seconds(region: u64) -> bool {
     let deadline = crate::arch::timer::now() + 2 * crate::arch::timer::frequency();
     while crate::arch::timer::now() < deadline {
         if sched::reclaim_region(region).is_ok() {
@@ -328,7 +328,7 @@ fn destroy_reclaims_a_region_whose_resident_blocks_on_a_rendezvous_it_does_not_o
     );
 
     assert!(
-        reclaim_within_two_seconds(region),
+        is_reclaimed_within_two_seconds(region),
         "a region whose resident is blocked on a rendezvous it does not own never reclaimed: the \
          arm can never be spent on a thread that never runs again, so that memory is gone for the \
          life of the boot",
@@ -391,7 +391,7 @@ fn tearing_down_a_reply_parked_caller_sweeps_the_reply_capability() {
     );
 
     assert!(
-        reclaim_within_two_seconds(region),
+        is_reclaimed_within_two_seconds(region),
         "a region whose resident is reply-parked never reclaimed",
     );
 

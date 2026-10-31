@@ -245,24 +245,11 @@ there is nothing for them to be at parity *with*.
 
 ## Reproducing it
 
-The harness is in the tree, behind the `tsc_probe` cargo feature, which is off by default and in no
-gate. It is `kernel/src/arch/x86_64/tsc_probe.rs`, plus a call site at the end of `x86_64`'s
-`arch::timer::initialize_frequency` that halts the boot when the measurement is done. It is an
-instrument rather than a test, the same shape `bench` and `icount` are, because the question it
-answers takes thirty-five seconds of wall clock and has no pass/fail. This note is its owner, and
-the calibration fix proposed above is what it exists to be measured against.
-
-```sh
-cargo build -p kernel --features tsc_probe --target x86_64-unknown-none
-./helpers/qemu-bounded.sh 55 ./helpers/qemu-runner-x86_64.sh \
-    target/x86_64-unknown-none/debug/kernel            # plain TCG, as the suite runs it
-./helpers/qemu-bounded.sh 75 ./helpers/qemu-runner-x86_64.sh \
-    target/x86_64-unknown-none/debug/kernel -icount shift=0,sleep=off   # as bench runs it
-```
-
-The boot prints one `tscprobe:` line per window and a summary. To vary the host, saturate it with
-more spinning processes than it has cores while the run is in flight, or start a second guest from
-the same command.
+The harness that took the 32-second measurements is no longer in the tree (step 7 of milestone 961 (the
+kernel's special boots become commands typed at the production shell), decision D4). It was a cargo feature in no gate, and the question it answered is answered here.
+Git history holds it: `git log --diff-filter=D -- kernel/src/arch/x86_64/tsc_probe.rs` finds the
+commit that removed it, and its parent has the file. A check of the calibration on real x86 hardware
+belongs to a gate on milestone 571, not to a revived probe.
 
 The calibration sweep, the finding that matters most, needs no harness: boot any x86 kernel and read the `clocks      :` line, twenty times, once with
 the host loaded.

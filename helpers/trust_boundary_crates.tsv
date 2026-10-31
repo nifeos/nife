@@ -94,6 +94,7 @@ graphics_proto	shared	retired
 graphics_protocol	shared	retired
 heap	kernel	retired
 hot_swap_contract	userspace	components,fixtures
+hot_swap_server	userspace	fixtures
 http_response	userspace	components,jig,pinned_tls_client
 installed_programs	shared	components,fixtures,jig,kernel
 inter_process_communication	kernel	kernel
@@ -103,7 +104,7 @@ ipc	kernel	retired
 isa	kernel	retired
 jh7110_clock_and_reset	shared	components,kernel,uefi_loader
 jh7110_crg	kernel	retired
-jh7110_entropy	shared	components,kernel,uefi_loader
+jh7110_entropy	shared	retired
 jh7110_entropy_source	shared	retired
 jh7110_trng	shared	retired
 jh7110_watchdog	kernel	kernel
@@ -142,7 +143,10 @@ periodic_deadline	shared	components,fixtures,kernel
 pgrep	userspace	components
 pmap	userspace	components
 portable_executable	host	retired
+primitive_benchmark_contract	shared	fixtures,kernel
+process_builder	userspace	components,fixtures
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
+program_asks	userspace	components,fixtures
 ps	userspace	components
 regions	kernel	retired
 screen_console	shared	components,kernel,uefi_loader

@@ -12,6 +12,27 @@
 
 #![no_std]
 
+/// The syscall ABI's version: the generation of the syscall numbers, the method numbers and the
+/// error codes a program was built against, all one surface. One constant for the whole surface,
+/// module-scoped constants refused (calef's ruling of 2026-10-29 UTC, PR #2852, question 1: the
+/// scope is the syscall surface a program matches). The check is at spawn, not at run time: the
+/// progenitor compares the manifest note's declared version against this and refuses a mismatch
+/// naming both (milestone 956 (the linked interfaces carry checkable versions)); the ABI never
+/// dual-serves.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const ABI_VERSION: u32 = 1;
+
+/// This interface's identity in a program's `INTERFACES` note: 1, naming the syscall surface. The number
+/// is the crate's to keep across a rename and no other interface ever reuses it; `script/lint`
+/// holds the ids of every crate apart. A program declares the pair of this id and [`ABI_VERSION`]
+/// (milestone 956 (the linked interfaces carry checkable versions)).
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+// Index exception (2026-10-31): the identity stays beside `ABI_VERSION`, the pair a program declares
+// in its `INTERFACES` note; one line, and every consumer reads the two together.
+pub const INTERFACE_ID: u64 = 1;
+
 /// `exit(code)`: end the calling thread's process and every thread in it. Needs no capability,
 /// because it acts on the caller itself.
 pub const SYS_EXIT: u64 = 0;
@@ -283,11 +304,14 @@ pub enum Error {
     /// You hold the capability, but not with those rights. Rights only ever narrow on
     /// delegation, so somebody upstream chose this.
     ///
-    /// **Or the object refuses the operation whatever the rights.** The one case today: a
+    /// **Or the object refuses the operation whatever the rights.** Two cases. A
     /// [`rendezvous::SEND`], [`rendezvous::SEND_CAPABILITY`] or [`rendezvous::CALL`] naming an endpoint
     /// that carries a hardware interrupt, which takes no message from any program (DECISIONS §101
     /// (notification objects), ruling B, 2026-09-26). Nothing is delivered, queued or delegated,
-    /// and the caller does not block.
+    /// and the caller does not block. And a mapping ([`address_space::MAP_INTO`],
+    /// [`page_frame::MAP`]) that would leave one page writable through one mapping and executable
+    /// through another in the same address space (milestone 969 (no frame is writable and
+    /// executable in one address space)). Nothing is mapped.
     NotPermitted = -3,
 
     /// The pointer you passed is not memory **you** could have touched yourself.

@@ -22,6 +22,7 @@ beside `name_provenance.py` and `name_rules.py`; `boundaries` was considered and
 `packages.py`'s package boundaries, which are nife packages and not Cargo's. calef has not named it.
 """
 
+import functools
 import os
 import re
 import sys
@@ -105,20 +106,30 @@ def is_pub(lines, header, what):
 
 _RAW = re.compile(r'(?:b|c)?r(#*)"')
 _CHAR = re.compile(r"'(?:\\(?:x[0-9a-fA-F]{2}|u\{[0-9a-fA-F_]+\}|.)|[^\\'\n])'")
+# Text that cannot open a comment or a literal: anything but `/`, a quote or `b`/`r`/`c`, and those
+# three letters too unless they could begin a raw or byte string (a word start followed by `"`, `#`
+# or `r`). `strip` jumps over it in one match instead of one step per character.
+_PLAIN = re.compile(r"(?:[^/\"'bcr]|(?<=\w)[bcr]|[bcr](?![\"#r]))*")
+_ATTRIBUTE = re.compile(r"#!?\[")
+_VISIBILITY = re.compile(r"^(?:pub(?:\s*\([^)]*\))?\s+)?(?:unsafe\s+)?")
+_MOD = re.compile(r"mod\s+(\w+)")
+_BLOCK_EDGE = re.compile(r"[{};\n]")
 _WORD = re.compile(r"[A-Za-z_]\w*")
 _IMPL = re.compile(r"impl\b(?:\s*<.*?>(?=\s*[\w&(]))?\s*(?:!?\s*[\w:]+(?:<.*>)?\s+for\s+)?"
                    r"(?:&\s*(?:'\w+\s+)?(?:mut\s+)?)?(?:dyn\s+)?([\w:]+)", re.S)
 
 
+@functools.lru_cache(maxsize=None)
 def strip(text):
     """`text` with comments and literals blanked to spaces, newlines kept, so lines still line up.
 
-    A word in a comment or a string is not a read, and a brace in one is not a block.
+    A word in a comment or a string is not a read, and a brace in one is not a block. The result is
+    kept per text, so a file read by every census in one run is lexed once.
     """
     out, i, n = [], 0, len(text)
 
     def blank(a, b):
-        out.append(re.sub(r"[^\n]", " ", text[a:b]))
+        out.append("\n".join(" " * len(part) for part in text[a:b].split("\n")))
 
     def word_start(k):
         return k == 0 or not (text[k - 1].isalnum() or text[k - 1] == "_")
@@ -162,18 +173,17 @@ def strip(text):
             blank(i + 1, m.end())
             i = m.end()
         else:
-            j = i + 1
-            while j < n and text[j] not in "/\"'brc":
-                j += 1
+            j = _PLAIN.match(text, i + 1).end()
             out.append(text[i:j])
             i = j
     return "".join(out)
 
 
+@functools.lru_cache(maxsize=None)
 def _without_attributes(header):
     """A block header with its `#[...]` and `#![...]` attributes removed, brackets nested."""
     while True:
-        m = re.search(r"#!?\[", header)
+        m = _ATTRIBUTE.search(header)
         if not m:
             return header.strip()
         depth, j = 0, m.end() - 1
@@ -185,13 +195,18 @@ def _without_attributes(header):
         header = header[:m.start()] + " " + header[j:]
 
 
+@functools.lru_cache(maxsize=None)
 def encloser(header):
-    """`("impl", type)`, `("mod", name)`, `("extern", None)` or `("body", None)` for a block's header."""
-    h = re.sub(r"^(?:pub(?:\s*\([^)]*\))?\s+)?(?:unsafe\s+)?", "", _without_attributes(header))
+    """`("impl", type)`, `("mod", name)`, `("extern", None)` or `("body", None)` for a block's header.
+
+    The same header text recurs across a tree (`impl Default for X`, a bare `{`), so the answer is
+    kept per header.
+    """
+    h = _VISIBILITY.sub("", _without_attributes(header))
     if h.startswith("impl"):
         m = _IMPL.match(h)
         return "impl", (m.group(1).split("::")[-1] if m else None)
-    m = re.fullmatch(r"mod\s+(\w+)", h)
+    m = _MOD.fullmatch(h)
     if m:
         return "mod", m.group(1)
     if h.startswith("extern"):
@@ -204,16 +219,19 @@ def encloser(header):
 def enclosers(stripped):
     """`{1-based line: (encloser, ...)}`: every block open at the start of each line, outermost first."""
     stack, stmt, line, out = [], 0, 1, {1: ()}
-    for m in re.finditer(r"[{};\n]", stripped):
+    current = ()    # the tuple for the blocks now open, rebuilt only when a block opens or closes
+    for m in _BLOCK_EDGE.finditer(stripped):
         ch = m.group(0)
         if ch == "\n":
             line += 1
-            out[line] = tuple(encloser(h) for h in stack)
+            out[line] = current
             continue
         if ch == "{":
-            stack.append(" ".join(stripped[stmt:m.start()].split()))
+            stack.append(encloser(" ".join(stripped[stmt:m.start()].split())))
+            current = tuple(stack)
         elif ch == "}" and stack:
             stack.pop()
+            current = tuple(stack)
         stmt = m.end()
     return out
 
@@ -400,6 +418,32 @@ def _selftest():
     host = {"net_stack": '#[path = "socket_table.rs"]\nmod socket_table;\n', "socket_table": ""}
     assert includer_of("socket_table", host) == "net_stack"
     assert includer_of("net_stack", host) is None
+
+    # The lexer and the block stack, held to what the character-at-a-time scan returned. Each case
+    # is a way the jump over plain text could swallow a delimiter: a `b`, `r` or `c` that opens a
+    # literal and one inside a word, a lifetime beside a char literal, a nested comment, a comment
+    # that spans lines. Line counts must survive, since callers index by line.
+    lexed = [
+        ('let a = "x { y"; // c { \nfn b() {}\n', 'let a = "      ;        \nfn b() {}\n'),
+        ('let r = r#"a "q" {"#; let s = br"b{"; let t = c"z"; /* a /* nested { */ { */ let u = 1;\n',
+         'let r = "           ; let s = "     ; let t = "   ;                          let u = 1;\n'),
+        ("fn f<'a>(x: &'a str) { let c = '{'; let d = '\\''; let e = b'x'; }\n",
+         "fn f<'a>(x: &'a str) { let c = '  ; let d = '   ; let e = b'  ; }\n"),
+        ('abc rbc crab bar "s" cr"raw" b"bytes" xr"notraw"\n',
+         'abc rbc crab bar "   "       "        xr"       \n'),
+        ('/* multi\nline\ncomment */ pub fn k() {}\n', '        \n    \n           pub fn k() {}\n'),
+    ]
+    for source, want in lexed:
+        assert strip(source) == want, (source, strip(source))
+        assert strip(source) is strip(source), "the lexed text is kept per file"
+        assert strip(source).count("\n") == source.count("\n")
+    nest = strip("pub mod m {\n    impl Foo {\n        fn f() {\n        }\n    }\n}\nimpl Bar for Baz {\n}\n")
+    assert enclosers(nest) == {
+        1: (), 2: (("mod", "m"),), 3: (("mod", "m"), ("impl", "Foo")),
+        4: (("mod", "m"), ("impl", "Foo"), ("body", None)), 5: (("mod", "m"), ("impl", "Foo")),
+        6: (("mod", "m"),), 7: (), 8: (("impl", "Baz"),), 9: ()}, enclosers(nest)
+    assert encloser("#[cfg(test)] #[derive(Debug)] mod tests") == ("mod", "tests")
+    assert encloser("pub(crate) unsafe impl Send for X") == ("impl", "X")
     print("name_crossings: selftest ok")
 
 

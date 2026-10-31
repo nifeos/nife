@@ -30,7 +30,7 @@
 
 use entropy_contract as proto;
 use jh7110_entropy::{
-    CTRL_EXEC_RANDRESEED, CTRL_GENE_RANDNUM, GenerationOutcome, ISTAT_ALL, ISTAT_RAND_RDY,
+    CTRL_COMMAND_GENERATE, CTRL_COMMAND_RESEED, GenerationOutcome, ISTAT_ALL, ISTAT_RAND_RDY,
     ISTAT_SEED_DONE, MODE_R256, Pool, generation_outcome,
 };
 use tock_registers::interfaces::{Readable, Writeable};
@@ -157,7 +157,7 @@ fn initialize() -> u32 {
 /// acknowledged on both sides; an unacked one makes every later reseed appear to complete at once.
 fn reseed_and_wait() -> bool {
     ack(ISTAT_SEED_DONE);
-    regs().CTRL.set(CTRL_EXEC_RANDRESEED);
+    regs().CTRL.set(CTRL_COMMAND_RESEED);
     for _ in 0..POLL_TRIES {
         if regs().ISTAT.get() & ISTAT_SEED_DONE != 0 {
             ack(ISTAT_SEED_DONE);
@@ -178,7 +178,7 @@ fn reseed_and_wait() -> bool {
 fn generate() -> Option<[u8; 32]> {
     for _ in 0..=LOCKUP_RETRIES {
         ack(ISTAT_RAND_RDY);
-        regs().CTRL.set(CTRL_GENE_RANDNUM);
+        regs().CTRL.set(CTRL_COMMAND_GENERATE);
         for _ in 0..POLL_TRIES {
             match generation_outcome(regs().STAT.get(), regs().ISTAT.get(), rand_words()) {
                 GenerationOutcome::Ready(bytes) => {

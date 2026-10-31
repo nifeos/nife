@@ -143,6 +143,15 @@ domain, so it does not change this; a viewer of both domains would need a second
   after delegating, and nothing destroys the untyped, so each such job costs its pages for the
   boot. A hundred held `job_sleeper --mem 4` jobs leaked 4 pages each until the shell kept the
   budget and destroyed it with the job's region; the pool path still has the leak.
+- A held job's `--mem` budget comes back through `release_budget` in `components/src/swish/jobs.rs`,
+  which retries the `DESTROY` as `reclaim` does, for up to a second. A job that built a process
+  there and exited with it running gets its pages back once the kill lands. A job that split its
+  budget leaves a sub-region nobody names, and the `DESTROY` refuses for good (`HasChildren`): the
+  pages stay spent for the boot, and the shell waits out the bound on that job. Curing it needs a
+  recursive teardown or a rule that a job may not leave children in its budget.
+  `system_tests/src/user/memory_grant_reclaim_tests.rs` shows both refusals, and
+  `crates/swish/src/reclaim/tests.rs` the retry. No program the shell runs builds from its budget
+  today, so it is latent for all of them.
 - Background jobs finishing out of order leave a hole in the shell's budget until the later ones
   go, the carve order's cost (`notes/object-revocation.md`).
 - A held `ps` does not list a pipeline's stages, and the reverse (above).

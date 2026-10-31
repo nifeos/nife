@@ -34,6 +34,13 @@ use core::sync::atomic::{AtomicU64, Ordering};
 /// The test `the_magic_is_the_one_published_programs_compare` holds it.
 pub const MAGIC: [u8; 8] = *b"CURRCPU1";
 
+/// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
+/// a break bumps this and re-mints the magic in one change, with the dated ledger entry the
+/// interface-stability discipline owes.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// What the CPU word holds before the kernel has ever switched this thread in. Not zero, because
 /// zero is a valid CPU id, and "a wrong number is worse than no number" (calef, 2026-09-21).
 ///

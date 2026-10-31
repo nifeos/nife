@@ -214,7 +214,7 @@ pub mod credential_service;
 /// `components/src/login.rs`'s own choices rather than a privileged shortcut.
 ///
 /// Not arch-gated, for `credential_service`'s own reason: `nifefs`, `elf`, and
-/// `supervision_contract::build_child` are portable, and a login service that mints capabilities on
+/// `process_builder::build_child` are portable, and a login service that mints capabilities on
 /// one instruction set and not another is not the claim this milestone makes.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // the milestone-49 login tests are its callers
@@ -246,10 +246,3 @@ pub mod memory_region_service;
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // the milestone-169 raw-mode tests are its only caller
 pub mod raw_mode_service;
-
-/// **`rmle`'s wiring** (milestone 169): a real terminal ([`raw_mode_service`]'s own shape) and a
-/// real filesystem ([`fs_service::narrow_dir`]'s shape) composed for the one program in this tree
-/// that needs both at once.
-#[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-// the milestone-169 rmle tests are its only caller
-pub mod rmle_service;

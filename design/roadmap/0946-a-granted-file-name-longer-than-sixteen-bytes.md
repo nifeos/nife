@@ -117,8 +117,9 @@ by the program it was granted to, and an installed `least_authority_demo` runs b
 - **Outstanding.** The exit's second half, an installed `least_authority_demo` run by its package
   path, checked 2026-10-24 (UTC): `jig install demos` is still refused, because every image packs
   the program. It waits on milestone 909.
-- **Proposed.** A package name longer than sixteen bytes installs and is removed:
-  `design/roadmap/proposals/a-package-name-longer-than-sixteen-bytes-installs-and-is-removed.md`.
+- **Milestone 963.** `jig install` takes a package name longer than sixteen bytes, and `jig remove`
+  takes it off again, promoted to milestone 963 (a package name longer than sixteen bytes installs
+  and is removed): `design/roadmap/0963-a-package-name-longer-than-sixteen-bytes-installs-and-is-removed.md`.
 - **Milestone 909.** Taking the demos out of the shipped image is what lets an installed
   `least_authority_demo` run by its package path.
 - **Recorded.** A directory name over 16 bytes, in BUGS above.

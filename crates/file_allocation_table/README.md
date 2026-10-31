@@ -1,7 +1,7 @@
 # file_allocation_table
 
 A FAT12, FAT16 and FAT32 filesystem as pure computation, growing in stages. It does no I/O and
-needs no allocator (`no_std`). Two halves exist.
+needs no allocator (`no_std`). Three parts exist.
 
 The reader opens a volume through `SectorDevice`, a trait you implement over anything that reads
 whole sectors. It checks the boot sector, decodes the file allocation table, walks cluster chains
@@ -12,7 +12,15 @@ names or read a file's bytes.
 The writer creates an EFI system partition holding one boot file. You give it a partition size, a
 file length and a file name; it tells you what every metadata sector must contain, and you write
 those sectors and then the file's bytes. It writes VFAT long-name entries for a name that is not
-8.3, such as `BOOTRISCV64.EFI`. Extending, deleting, renaming and a general format are planned.
+8.3, such as `BOOTRISCV64.EFI`. 
+The table is writable through `WritableSectorDevice`. `Volume::allocate_cluster` takes a free
+cluster and links it after a chain's last, `Volume::truncate_chain` and `Volume::free_chain` give
+clusters back, and each writes every live copy of the table in an order that leaves a crash at
+worst a leaked cluster. `Volume::sync` writes the FAT32 `FSInfo` hints those calls maintain.
+`Volume::create_file`, `open_file_writer` and `remove_file` make, write, resize and delete files. A name that is not 8.3 gets long-name slots and a numbered alias. `make_directory`,
+`remove_directory` and `rename` change the tree, and the first change clears the clean-shutdown
+bit until `sync`. `Format` lays out an empty FAT12, FAT16 or FAT32 volume of any size and sector size:
+`Format::new(FormatOptions::new(size, sectors))`, then `write_to` your device.
 
 ## What is proven
 
@@ -39,6 +47,27 @@ Three cover the long-name writer:
   name.
 - `every_alias_is_a_legal_short_name`: every generated `~1` alias is either refused or a legal
   11-byte short name.
+
+Seven cover the table writes and allocation:
+
+- `a_stored_entry_reads_back_and_disturbs_nothing_else` and `encoding_inverts_decoding`: a stored
+  entry reads back for every type and cluster, keeps its neighbor's nibble and FAT32's reserved
+  bits, and encoding is decoding's inverse.
+- `allocation_takes_one_free_cluster_and_nothing_else`, `a_release_frees_only_its_own_chain` and
+  `a_cut_keeps_exactly_the_head_of_the_chain`: over a model table of one to four clusters with
+  every entry chosen by the solver, allocation changes one free entry to end-of-chain, a release
+  frees only links and end markers and never a bad or reserved cluster, and a cut leaves exactly
+  the head of the chain.
+- `every_sector_parses_to_hints_inside_the_volume` and `a_store_changes_only_the_two_hints`: the
+  `FSInfo` parse believes only hints that could be true, and a store changes only the two hints.
+
+Two more cover directories: `every_numbered_alias_carries_its_number` (every alias from `~1` to
+`~999999` is a legal short name that reads back as its number) and
+`the_run_finder_returns_the_first_run_of_free_slots` (the slots a new entry takes are the first run
+of free ones).
+
+`a_geometry_parses_back_to_itself` proves the format: for every device size, type and cluster
+size, the boot sector it writes parses to the same type, clusters, table size and data start.
 
 Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
@@ -78,11 +107,11 @@ that does not fit.
 
 ## Limitations
 
-- One file per volume. A long name's alias is always `~1`, which is right only because no other
-  name can collide with it.
+- The `mkfs` writes one file, with a `~1` alias.
 - The writer writes 512-byte sectors and 4096-byte clusters, and nothing else.
 - Every timestamp is zero.
-- The `FSInfo` free-cluster count is written once.
+- The `mkfs` writes the `FSInfo` free-cluster count once; only `Volume::sync` keeps it after that.
+- A write has no barrier. Every timestamp is zero, and a name outside the Basic Multilingual Plane is refused.
 - Not crash-atomic, and there is no journal, since FAT has none.
 - The reader stops at directory slots: it reports long-name pieces as stored, without assembling
   them or checking their checksum, and reads no file's bytes.

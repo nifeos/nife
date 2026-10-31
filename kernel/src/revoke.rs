@@ -183,18 +183,17 @@ mod chain {
             }
         }
 
-        /// Link a fresh page from `region` as the new head, holding `entry`. `false` when the
-        /// region is spent: the caller unmaps, and the process pays for its own limit.
+        /// Link a fresh page from `region` as the new head, holding `entry`, and return its
+        /// physical address. `None` when the region is spent: the caller refuses the mapping, and
+        /// the process pays for its own limit.
         ///
         /// The only writer of `head` and of any page's `next`: every address on the chain is a page
         /// `retype_page` handed this log, and the chain is acyclic because a page is prepended
         /// once.
         ///
         /// Context: under the `SPACES` borrow this chain lives in; takes `MEMORY_REGION` to retype.
-        pub(super) fn grow(&mut self, region: u64, entry: LogEntry) -> bool {
-            let Some(fresh) = crate::memory_region::retype_page(region) else {
-                return false;
-            };
+        pub(super) fn grow(&mut self, region: u64, entry: LogEntry) -> Option<u64> {
+            let fresh = crate::memory_region::retype_page(region)?;
             let older = self.head;
             self.head = fresh;
             // Retyped zeroed, so `used` and `next` start at 0 and the walk stops at the fresh page.
@@ -204,7 +203,7 @@ mod chain {
             page.next = older;
             page.entries[0] = entry;
             page.used = 1;
-            true
+            Some(fresh)
         }
     }
 
@@ -330,6 +329,19 @@ pub(crate) fn forget_root(root: u64) {
     spaces.release(root);
 }
 
+/// Where [`MappingHold::record_mapping`] filed one record: the log page and the slot in it. The
+/// leaf goes in after the record, and a leaf that fails hands this to
+/// [`MappingHold::forget_recorded`], which tombstones exactly that slot. Not `Clone`, so one record
+/// is taken back at most once.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane
+/// milestone/969-no-frame-is-writable-and-executable-in-one-space.
+#[must_use = "a leaf that fails to go in must hand its record back to `forget_recorded`"]
+pub(crate) struct Recorded {
+    page: u64,
+    index: usize,
+}
+
 /// The mapping registry, held: the one critical section a mapping is read, made and recorded in
 /// (name provisional). A capability's frame is mapped and recorded under the hold its capability
 /// was read under ([`MappingHold::current_capability`]); a sweep deletes capabilities before it takes this
@@ -367,22 +379,32 @@ impl MappingHold {
         crate::sched::current_capability(slot)
     }
 
-    /// Record that the space rooted at `root` maps `phys` at `va` under `under`, paid for by that
-    /// space's own region. `under` has no default, so a caller must say which capability made the
-    /// mapping ([`PageMapSource`]).
+    /// Record that the space rooted at `root` is about to map `phys` at `va` with `flags` under
+    /// `under`, paid for by that space's own region, and refuse the mapping if it would leave the
+    /// page writable through one mapping and executable through another in that space (claim 11).
+    /// `under` has no default, so a caller must say which capability made the mapping
+    /// ([`PageMapSource`]).
     ///
-    /// Returns `false` if the space is unknown or its budget is exhausted. The caller must then
-    /// unmap what it just mapped: an unrecorded mapping is invisible to revocation.
+    /// Every user mapping files here before its leaf goes in, as [`Self::retype_table`] does for
+    /// tables, and hands the [`Recorded`] back to [`Self::forget_recorded`] if the leaf then fails.
+    /// So no path installs a recorded leaf without the check, and no other core can fetch through a
+    /// leaf the check would have refused.
+    ///
+    /// Returns `MapError::WritableAndExecutable` when the space already maps `phys` with flags that
+    /// make the pair with `flags` (`Flags::makes_writable_executable_pair`), and
+    /// `MapError::OutOfPageFrames` if the space is unknown or its budget is exhausted. Nothing is
+    /// filed on either refusal. See notes/mapping-log.md, "No frame is writable and executable in one
+    /// space".
     ///
     /// Context: `SPACES` held; may take `MEMORY_REGION` to retype a log page.
-    #[must_use]
     pub(crate) fn record_mapping(
         &mut self,
         phys: u64,
         root: u64,
         va: u64,
+        flags: paging::Flags,
         under: PageMapSource,
-    ) -> bool {
+    ) -> Result<Recorded, paging::MapError> {
         let object = under.object(phys);
         // The enum stops a caller swapping the two arguments; this catches a wrongly computed base,
         // which would scope the record to a family it does not belong to.
@@ -390,7 +412,66 @@ impl MappingHold {
             object <= phys && (phys - object).is_multiple_of(page_frames::FRAME_SIZE),
             "a mapping of {phys:#x} recorded under an object at {object:#x}: not a page of that run",
         );
+        if self.would_make_writable_executable_pair(root, phys, flags) {
+            return Err(paging::MapError::WritableAndExecutable);
+        }
         self.file(root, LogEntry { phys, va, object })
+            .ok_or(paging::MapError::OutOfPageFrames)
+    }
+
+    /// Whether the space rooted at `root` already maps `phys` with flags that, beside `flags`, make
+    /// the page writable through one mapping and executable through another. A read-only, never
+    /// executable `flags` cannot complete the pair, so it skips the scan.
+    ///
+    /// The log stores no permissions, so each record of `phys` is checked against its leaf
+    /// (`mmu::translate_at`). A record whose leaf is gone or names another page is not a mapping
+    /// of `phys` and does not refuse.
+    ///
+    /// Context: `SPACES` held.
+    fn would_make_writable_executable_pair(
+        &mut self,
+        root: u64,
+        phys: u64,
+        flags: paging::Flags,
+    ) -> bool {
+        if !flags.is_writable() && !flags.is_user_executable() && !flags.is_kernel_executable() {
+            return false;
+        }
+        let Some(space) = self.spaces.live_mut().find(|s| s.root == root) else {
+            return false;
+        };
+        for (_, page) in space.log.pages_mut() {
+            for e in page.used_mut() {
+                if !e.is_mapping() || e.phys != phys {
+                    continue;
+                }
+                if let Some((leaf_phys, leaf_flags)) = mmu::translate_at(root, e.va)
+                    && leaf_phys == phys
+                    && leaf_flags.makes_writable_executable_pair(flags)
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Take back one record [`Self::record_mapping`] filed, because the leaf it was filed for did
+    /// not go in. Exactly that slot, not the first record that matches: a space can already hold a
+    /// record of the same page at the same address under another capability, and the leaf that
+    /// failed with `AlreadyMapped` is that record's. Silent when the space is gone.
+    ///
+    /// Context: `SPACES` held.
+    pub(crate) fn forget_recorded(&mut self, root: u64, recorded: Recorded) {
+        let Some(space) = self.spaces.live_mut().find(|s| s.root == root) else {
+            return;
+        };
+        for (page_phys, page) in space.log.pages_mut() {
+            if page_phys == recorded.page {
+                page.entries[recorded.index].phys = 0; // tombstone, exactly as a revoke leaves it
+                return;
+            }
+        }
     }
 
     /// Retype a page table out of `region` for the space rooted at `root`, and record it as a
@@ -412,33 +493,38 @@ impl MappingHold {
                 object: TABLE,
             },
         )
-        .then_some(table)
+        .map(|_| table)
     }
 
     /// File `entry` in `root`'s log, paid for by that space's own region: an existing free slot, or
-    /// a fresh log page retyped from the region. `false` if the space is unknown or its budget is
-    /// exhausted.
+    /// a fresh log page retyped from the region. Returns where it went, or `None` if the space is
+    /// unknown or its budget is exhausted.
     ///
     /// Context: `SPACES` held; may take `MEMORY_REGION`.
-    fn file(&mut self, root: u64, entry: LogEntry) -> bool {
-        let Some(space) = self.spaces.live_mut().find(|s| s.root == root) else {
-            return false;
-        };
+    fn file(&mut self, root: u64, entry: LogEntry) -> Option<Recorded> {
+        let space = self.spaces.live_mut().find(|s| s.root == root)?;
 
-        for (_, page) in space.log.pages_mut() {
-            if let Some(e) = page.used_mut().iter_mut().find(|e| e.phys == 0) {
-                *e = entry;
-                return true;
+        for (page_phys, page) in space.log.pages_mut() {
+            if let Some(index) = page.used_mut().iter().position(|e| e.phys == 0) {
+                page.entries[index] = entry;
+                return Some(Recorded {
+                    page: page_phys,
+                    index,
+                });
             }
             let used = page.used as usize;
             if used < LOG_ENTRIES {
                 page.entries[used] = entry;
                 page.used += 1;
-                return true;
+                return Some(Recorded {
+                    page: page_phys,
+                    index: used,
+                });
             }
         }
 
-        space.log.grow(space.region, entry)
+        let page = space.log.grow(space.region, entry)?;
+        Some(Recorded { page, index: 0 })
     }
 
     /// Undo one [`Self::record_mapping`]: tombstone the record that `root` maps `phys` at `va`, and

@@ -199,6 +199,13 @@ pub(super) fn release_argv(a: Argv, unsent: bool) {
     release_region(a.staging);
 }
 
+/// Give a region this shell split back to its budget with one `DESTROY`, then delete the slot.
+/// A held job's `--mem` budget goes back through [`jobs::release_budget`] instead, which retries.
+///
+/// # BUGS
+///
+/// - The `DESTROY`'s answer is not read. A staging page holds no process, so one `DESTROY` is
+///   enough; a region a job built in would not be.
 fn release_region(region: u64) {
     user_mode_runtime::destroy_memory_region(region);
     capability_delete(region);
@@ -1384,7 +1391,7 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
         // it was to spend is still this shell's, and goes back above the region's pages.
         capability_delete(held.region);
         if let Some(slot) = budget {
-            release_region(slot);
+            jobs::release_budget(slot);
         }
         if e.program.manifest().output.is_byte_stream() {
             drain_text_with(&mut || Some((answer, 0, 0)));
@@ -1400,9 +1407,9 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
             foreground_held(e, label);
             held::collect(held.region, label);
             if let Some(slot) = budget {
-                release_region(slot);
+                jobs::release_budget(slot);
             }
-            supervision_contract::forget_thread_control_block(tcb);
+            process_builder::forget_thread_control_block(tcb);
         }
     }
 }

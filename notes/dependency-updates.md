@@ -6,7 +6,7 @@ job a reader arrives with.*
 This page says what to do with a pull request that moves a dependency: a Dependabot bump, a
 toolchain or Kani bump, or a vendored pin raised by `script/vendor-watch`. The rules here took
 effect on 2026-10-25 (UTC).
-[A proposal](../design/roadmap/proposals/every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits.md)
+[Milestone 967 (every pin has a watcher)](../design/roadmap/0967-every-pin-has-a-watcher-and-a-bump-carries-evidence-for-where-it-sits.md)
 holds the design behind them and the parts still to build. §81 (a dependency stays upgradable) is the rule they serve, and §46 (thin primitives or whole
 subsystems) decides what we take in the first place.
 

@@ -74,7 +74,7 @@ owns what it compiles. What the token adds is commits on `main` beyond the build
 person reads.
 
 The 2026-09-24 audit recorded that the App token "is never written to a file"; for a checkout given
-the token, that is not so. Proposed as [a nightly builds where no write token can be read](../roadmap/proposals/a-nightly-builds-where-no-write-token-can-be-read.md):
+the token, that is not so. Proposed as [a nightly builds where no write token can be read](../roadmap/0968-a-nightly-builds-where-no-write-token-can-be-read.md):
 build in a job with no token, and push from a job that builds nothing. This lane does not fix it because the job runs only on `main`, so no pull request can prove a split, and a broken bump job is
 the silence the 2026-08-01 fix in that file exists to prevent.
 

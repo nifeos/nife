@@ -8,9 +8,7 @@
 //! notes/benchmarks/kernel-bench-harness.md for how each row is built.
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-use crate::capability_object::{
-    Rights, address_space_capability, page_frame_capability, rendezvous_capability,
-};
+use crate::capability_object::{Rights, rendezvous_capability};
 use crate::{println, sched};
 
 // The index of children (§282 (when a file is split, the parent becomes an index)). Each takes

@@ -268,6 +268,30 @@ bench = false
 # The EL0 microbenchmark program (primitive suite): self-times syscall/IPC primitives from EL0, the
 # lmbench way, so the numbers include the trap the kernel-side benchmarks skip. Run by the bench boot.
 [[bin]]
+name = "map_el0"
+path = "src/map_el0.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "null_syscall"
+path = "src/null_syscall.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "sink_consumer"
+path = "src/sink_consumer.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "sink_producer"
+path = "src/sink_producer.rs"
+test = false
+bench = false
+
+[[bin]]
 name = "os_primitives_benchmarker"
 path = "src/os_primitives_benchmarker.rs"
 test = false
@@ -611,6 +635,7 @@ confined_syscall_fuzzer_contract = { version = "0.1.0", path = "../crates/confin
 loaded_image_check = { version = "0.1.0", path = "../crates/loaded_image_check" }
 c_seam = { version = "0.1.0", path = "../crates/c_seam" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
+process_builder = { version = "0.1.0", path = "../crates/process_builder" }
 # The interactive system, built once (milestone 96). Both inits are a table of the slot numbers
 # their own kernel granted plus a call into this.
 system_initializer = { version = "0.1.0", path = "../crates/system_initializer" }
@@ -619,6 +644,8 @@ system_initializer = { version = "0.1.0", path = "../crates/system_initializer" 
 # own slot numbers from the declarations they are built against.
 capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
+# The serving loop both swappable programs run; the wire format stays in `hot_swap_contract`.
+hot_swap_server = { version = "0.1.0", path = "../crates/hot_swap_server" }
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The soak workload's shared page (milestone 219). The kernel reads what the soaker writes, so the
 # layout and the reply transform live in one crate rather than in two copies.
@@ -644,6 +671,7 @@ filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" 
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 line_editor = { version = "0.1.0", path = "../crates/line_editor" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
+primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122 (the on-disk schedule
 # store) and §125 (which identities have pending work)): the schedule file's name, which
 # `login_test_client.rs` writes and `login.rs` reads back.

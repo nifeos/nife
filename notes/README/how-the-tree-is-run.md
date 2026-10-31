@@ -13,6 +13,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [A mechanism says how many things it examined](../denominators.md): workflow steps that swallow a failure, and what each published ratio is of. Name provisional.
 - [What to do when `main` goes red](../main-is-red.md). Names provisional.
 - [The merge queue, and the three things that watch it](../merge-queue.md): the scripts that land, watch, and flag queue work. Names provisional.
+- [Why `empty diff` fails: 609 failures in 14 days, sorted](../empty-diff-failures-2026-10-31.md): 95% are claim drafts failing by design; 5% cost a ready pull request time. Name provisional.
 - [A ready pull request failing a required check says so](../ci-failing.md): the scheduled flag that labels and comments once per head. Names provisional.
 - [A push to a queued branch is refused by the pre-push hook](../push-while-queued.md): what GitHub does to a queued pull request on a push, the check, its override and its gaps. Names provisional.
 - [A merge-queue ejection, caught before the queue and recovered after it](../queue-ejection.md): the ready check, the text checks of lint in the pre-push hook, the `needs-maintainer` label on an ejected pull request, and the drain's hold on an ejected head. Names provisional.
@@ -32,6 +33,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The lint census, 2026-10-09](../lint-census-2026-10-09.md): panics, casts, `static mut`, suppressions and function length in the non-test Rust that runs on nife, counted for five proposals. Name provisional.
 - [The Actions cache budget, 2026-10-07](../actions-cache-budget-2026-10-07.md): which caches earn their bytes against GitHub's 10 GB limit, why merge groups save nothing now, and the forks left. Name provisional.
 - [What script/lint costs a lane, 2026-10-18](../lint-cost-2026-10-18.md): per-section time locally and in CI, which sections stop the run, reruns per lane on one evening, the pre-push hook, and fixes ranked by time saved. Name provisional.
+- [A shared corpus index for the text gates](../lint-corpus-index.md): what twelve text gates cost, why reading is cheap and deriving is not, and a cache of derived facts keyed by blob hash. A design note for review. Name provisional.
 - [CI's toolchain download, 2026-10-19](../ci-toolchain-download.md): how often the rust-lang CDN failed CI, the retry that answers it, and what caching the toolchain would cost and buy. Name provisional.
 - [Counted claims](../counted-claims.md): numbers in prose that a gate re-derives. Name provisional.
 - [The register of measures](../register-of-measures.md): the numbers this kernel holds itself to. Name provisional.

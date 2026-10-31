@@ -59,6 +59,18 @@ steps per input keeps a hostile volume that claims millions of clusters from tur
 a timeout. `fuzz/seeds/file_allocation_table_boot_sector/small-tree.img`, a 6 KiB FAT12 volume
 `fuzz/seeds/make-fat12-tree.py` writes, seeds the walk, since the boot sectors hold no tree.
 
+## `file_allocation_table_writer`
+
+The reader target holds the parser to what a stranger's stick can say. This one holds the writer to
+what it promises on any volume. Operations decoded from the input (create a file, write, set a
+length, seek and write, remove, make and remove a directory, rename) run against either a hostile
+128 KiB image or an empty volume the crate formats. Names come from a small alphabet, so they
+collide, nest and need long-name slots. Nothing may panic or write outside the image. On the
+formatted volume, after `sync`, the root still lists, holds no more entries than the writer made,
+and the shutdown bit reads clean. `fuzz/seeds/file_allocation_table_writer`
+holds one seed of each kind: the reader's small tree behind the hostile-image byte, and a short
+script of operations behind the formatted byte.
+
 ## `domain_name_system_reply`
 
 The real captures in `crates/domain_name_system/tests/fixtures` seed the target unmodified, and

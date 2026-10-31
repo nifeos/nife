@@ -14,6 +14,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use super::interrupt_controller;
 use super::port::{in8, out8};
+use crate::cpu::{self, MAXIMUM_CPUS};
 
 /// Ticks per second the scheduler asks for. The same 100 Hz both other architectures use.
 ///
@@ -106,8 +107,9 @@ static CALIBRATION_SAMPLES: [AtomicU64; CALIBRATION_WINDOW_CAP] =
 /// yet".
 static CALIBRATION_TAKEN: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
-/// Scheduler ticks taken since the timer was armed.
-static TICKS: AtomicU64 = AtomicU64::new(0);
+/// Scheduler ticks taken since the timer was armed, per core: each core has its own local APIC
+/// timer, as each aarch64 and riscv64 core has its own. See §11 (SMP: per-CPU run queues).
+static TICKS: [AtomicU64; MAXIMUM_CPUS] = [const { AtomicU64::new(0) }; MAXIMUM_CPUS];
 
 /// Read the time-stamp counter.
 ///
@@ -278,16 +280,6 @@ pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
         calibration.worst() / 1_000_000,
         apic_timer_frequency() / 1_000_000,
     );
-
-    // The TSC-vs-RTC measurement instrument, off unless the `tsc_probe` feature is on. Here
-    // because the rate it checks was measured a line ago and nothing else in the boot matters to
-    // it; it halts when it is done, the same shape `bench` and `icount` take. See
-    // notes/tsc-under-tcg.md.
-    #[cfg(feature = "tsc_probe")]
-    {
-        super::tsc_probe::probe();
-        crate::arch::halt(crate::arch::HaltReason::measurement_boot());
-    }
 }
 
 /// Start PIT channel 0 pulsing its interrupt line at about `hz`, and return the rate programmed.
@@ -468,15 +460,15 @@ pub(crate) fn set_cycle_counter_grant(_granted: bool) {}
 /// because a missed EOI is a hang rather than an error and one place is easier to be sure about
 /// than one per handler.
 pub(crate) fn tick() {
-    TICKS.fetch_add(1, Ordering::Relaxed);
+    TICKS[cpu::id()].fetch_add(1, Ordering::Relaxed);
     // In a test build, feed the hang watchdogs, as the other two architectures' ticks do.
     #[cfg(any(test, feature = "system_tests"))]
     crate::testing::watchdog_tick();
 }
 
-/// Scheduler ticks taken so far.
+/// This core's ticks since its timer was armed.
 pub fn ticks() -> u64 {
-    TICKS.load(Ordering::Relaxed)
+    ticks_on(cpu::id())
 }
 
 /// **Is this CPU's tick raised and waiting?** The local APIC timer's bit in the IRR.
@@ -501,14 +493,10 @@ pub fn spin_for(counter_ticks: u64) {
     }
 }
 
-/// Scheduler ticks taken on `cpu`.
-///
-/// # BUGS
-/// This ignores its argument and reports the global count; the other two architectures keep a
-/// per-CPU array. It blinds `sched::dump_threads`'s per-core `ticks` column, which tells a core
-/// wedged with interrupts masked from an idle one: here every core prints the same number.
-#[allow(dead_code)]
+/// Ticks since boot on a **named** core, which is what a test needs when the thread doing the
+/// measuring can move between the two reads (§28 (SMP placement)). See
+/// notes/load-sensitive-assertions.md.
+#[allow(dead_code)] // the bench build, the hang dump and the system tests read it; a plain build does not
 pub(crate) fn ticks_on(cpu: usize) -> u64 {
-    let _ = cpu;
-    ticks()
+    TICKS[cpu].load(Ordering::Relaxed)
 }

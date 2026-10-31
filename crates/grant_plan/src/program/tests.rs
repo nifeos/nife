@@ -176,3 +176,15 @@ fn only_jig_has_a_resolver_zone_and_it_is_the_root() {
         assert_eq!(p.resolver_zone(), expected, "{}", p.name());
     }
 }
+
+#[test]
+fn map_el0_declares_the_budget_the_bench_contract_measured() {
+    // The manifest cannot depend on the contract crate, so this holds the two numbers together.
+    let MemoryGrantDeclaration::Required { minimum, maximum } =
+        Program::MapEl0.manifest().memory_grant
+    else {
+        panic!("map_el0 must require a memory grant");
+    };
+    assert_eq!(minimum, primitive_benchmark_contract::MAP_BUDGET_PAGES);
+    assert!(maximum >= minimum);
+}

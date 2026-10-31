@@ -8,46 +8,48 @@ Sorted by breaking changes in the last four weeks (2026W41 to 2026W44), then by 
 
 | crate | breaking, 4 weeks | additions, 4 weeks | breaking | additions | commits | crossing another division |
 |---|---:|---:|---:|---:|---:|---:|
-| `filesystem_contract` | 263 | 28 | 305 | 478 | 143 | 127 (89%) |
+| `filesystem_contract` | 263 | 30 | 305 | 480 | 145 | 129 (89%) |
 | `grant_plan` | 227 | 358 | 312 | 1181 | 253 | 195 (77%) |
-| `globally_unique_identifier_partition_table` | 75 | 7 | 103 | 285 | 58 | 46 (79%) |
+| `globally_unique_identifier_partition_table` | 75 | 8 | 103 | 286 | 59 | 47 (80%) |
 | `installed_programs` | 75 | 122 | 78 | 175 | 44 | 34 (77%) |
+| `hot_swap_contract` | 27 | 10 | 38 | 126 | 73 | 66 (90%) |
 | `login_contract` | 23 | 15 | 32 | 93 | 50 | 48 (96%) |
-| `hot_swap_contract` | 19 | 11 | 30 | 127 | 71 | 64 (90%) |
+| `supervision_contract` | 21 | 1 | 21 | 1 | 9 | 9 (100%) |
 | `package_archive` | 19 | 30 | 20 | 130 | 36 | 28 (78%) |
 | `capability_plan` | 18 | 15 | 18 | 15 | 15 | 14 (93%) |
-| `abi` | 13 | 62 | 47 | 190 | 138 | 128 (93%) |
+| `abi` | 13 | 63 | 47 | 191 | 142 | 131 (92%) |
 | `component_plan` | 13 | 12 | 16 | 138 | 36 | 30 (83%) |
 | `line_editor` | 10 | 27 | 22 | 145 | 66 | 55 (83%) |
 | `compositor` | 10 | 3 | 21 | 101 | 47 | 39 (83%) |
 | `credential_contract` | 9 | 6 | 39 | 73 | 49 | 41 (84%) |
 | `graphics_contract` | 8 | 0 | 19 | 33 | 36 | 35 (97%) |
 | `capability_manifest_note` | 8 | 49 | 8 | 89 | 46 | 32 (70%) |
-| `environment_contract` | 7 | 6 | 8 | 50 | 22 | 20 (91%) |
-| `socket_contract` | 6 | 23 | 21 | 81 | 49 | 43 (88%) |
-| `clock_contract` | 6 | 7 | 11 | 61 | 45 | 41 (91%) |
-| `current_cpu_contract` | 6 | 6 | 6 | 19 | 25 | 13 (52%) |
+| `environment_contract` | 7 | 7 | 8 | 51 | 23 | 21 (91%) |
+| `socket_contract` | 6 | 24 | 21 | 82 | 51 | 45 (88%) |
+| `clock_contract` | 6 | 8 | 11 | 62 | 46 | 42 (91%) |
+| `current_cpu_contract` | 6 | 7 | 6 | 20 | 26 | 14 (54%) |
+| `calendar` | 5 | 6 | 5 | 6 | 10 | 10 (100%) |
 | `std_runtime_contract` | 4 | 12 | 4 | 29 | 28 | 25 (89%) |
 | `nifefs` | 3 | 1 | 10 | 42 | 55 | 42 (76%) |
-| `counter_frequency_contract` | 3 | 2 | 4 | 17 | 26 | 22 (85%) |
+| `counter_frequency_contract` | 3 | 3 | 4 | 18 | 27 | 23 (85%) |
 | `boot_slot` | 3 | 7 | 3 | 55 | 22 | 17 (77%) |
-| `supervision_contract` | 3 | 1 | 3 | 1 | 7 | 7 (100%) |
-| `byte_sink_contract` | 2 | 1 | 8 | 49 | 39 | 38 (97%) |
-| `entropy_contract` | 2 | 2 | 5 | 19 | 32 | 29 (91%) |
+| `byte_sink_contract` | 2 | 2 | 8 | 50 | 41 | 40 (98%) |
+| `entropy_contract` | 2 | 3 | 5 | 20 | 34 | 31 (91%) |
 | `measured_boot` | 2 | 24 | 2 | 65 | 32 | 23 (72%) |
-| `address_space_map` | 1 | 1 | 1 | 43 | 0 | 0 |
+| `address_space_map` | 1 | 2 | 1 | 44 | 0 | 0 |
+| `block_roster` | 1 | 1 | 1 | 1 | 2 | 2 (100%) |
 | `capability_witness_contract` | 1 | 11 | 1 | 14 | 23 | 19 (83%) |
-| `program_argument_contract` | 1 | 0 | 1 | 29 | 0 | 0 |
+| `program_argument_contract` | 1 | 1 | 1 | 30 | 0 | 0 |
 | `supervision_protocol` | 0 | 6 | 22 | 70 | 65 | 56 (86%) |
 | `elf` | 0 | 0 | 3 | 82 | 53 | 42 (79%) |
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
 | `allocation_cache` | 0 | 20 | 0 | 20 | 0 | 0 |
-| `glob` | 0 | 0 | 0 | 0 | 0 | 0 |
-| `machine_statistics_contract` | 0 | 0 | 0 | 0 | 1 | 1 (100%) |
+| `glob` | 0 | 1 | 0 | 1 | 1 | 1 (100%) |
+| `machine_statistics_contract` | 0 | 2 | 0 | 2 | 3 | 2 (67%) |
 
 ## What broke in 2026W44
 
-Read at `338d2334847d` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `0e37a3228721` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `abi`: removed `CapSlot`
 > - `abi`: syscall renamed, number kept (syscall), now `SYS_CAPABILITY_DELETE` `SYS_CAP_DELETE`
@@ -56,10 +58,16 @@ Read at `338d2334847d` against the week before. Each line is one removed or chan
 > - `abi`: syscall renamed, number kept (method or encoding), now `rendezvous::SEND_CAPABILITY` `rendezvous::SEND_CAP`
 > - `abi`: syscall renamed, number kept (method or encoding), now `thread_control_block::CAPABILITY_INSERT` `thread_control_block::CAP_INSERT`
 > - `address_space_map`: removed `MAX_STACK_PAGES`
+> - `block_roster`: format bump `MAGIC`
 > - `boot_slot`: removed `MAX_NIBBLE`
 > - `boot_slot`: removed `cmdline::MAX_LEN`
 > - `boot_slot`: removed `medium::MAX_LEN`
 > - `byte_sink_contract`: removed `INLINE_MAX`
+> - `calendar`: removed `MAX_TIMESTAMP`
+> - `calendar`: removed `MAX_YEAR`
+> - `calendar`: removed `MIN_TIMESTAMP`
+> - `calendar`: removed `MIN_YEAR`
+> - `calendar`: removed `SECS_PER_DAY`
 > - `capability_manifest_note`: removed `MAX_VERBS`
 > - `capability_manifest_note`: removed `MAX_ZONES`
 > - `capability_manifest_note`: removed `ZONE_MAX`
@@ -154,6 +162,14 @@ Read at `338d2334847d` against the week before. Each line is one removed or chan
 > - `hot_swap_contract`: changed `CLIENT`
 > - `hot_swap_contract`: changed `CONSOLE`
 > - `hot_swap_contract`: changed `STATEFUL_BACKEND`
+> - `hot_swap_contract`: removed `broker_wants_down`
+> - `hot_swap_contract`: removed `fail`
+> - `hot_swap_contract`: removed `log_get`
+> - `hot_swap_contract`: removed `log_put`
+> - `hot_swap_contract`: removed `probe_device`
+> - `hot_swap_contract`: removed `serve`
+> - `hot_swap_contract`: removed `serve_with_state`
+> - `hot_swap_contract`: removed `start`
 > - `hot_swap_contract`: removed `try_receive_cap`
 > - `installed_programs`: changed `Granted`
 > - `line_editor`: removed `LINE_MAX`
@@ -170,6 +186,24 @@ Read at `338d2334847d` against the week before. Each line is one removed or chan
 > - `supervision_contract`: crate renamed `supervision_protocol -> supervision_contract`
 > - `supervision_contract`: changed `ChildEndowment`
 > - `supervision_contract`: removed `ChildEndowment::caps`
+> - `supervision_contract`: removed `PAGE`
+> - `supervision_contract`: removed `SCRATCH_TABLE_PAGES`
+> - `supervision_contract`: removed `SCRATCH_WINDOW`
+> - `supervision_contract`: removed `SCRATCH_WINDOW_PAGES`
+> - `supervision_contract`: removed `build_child`
+> - `supervision_contract`: removed `build_child_space`
+> - `supervision_contract`: removed `configure_child`
+> - `supervision_contract`: removed `fail`
+> - `supervision_contract`: removed `forget_thread_control_block`
+> - `supervision_contract`: removed `give_up_own_page`
+> - `supervision_contract`: removed `give_up_scratch_through`
+> - `supervision_contract`: removed `hand_to_requester`
+> - `supervision_contract`: removed `map_scratch`
+> - `supervision_contract`: removed `memory_region_destroy`
+> - `supervision_contract`: removed `memory_region_split`
+> - `supervision_contract`: removed `retype_obj_from`
+> - `supervision_contract`: removed `retype_page_frame_from`
+> - `supervision_contract`: removed `start_child`
 
 ## Co-change per package
 
@@ -177,22 +211,22 @@ Every package in `packages/`, 2026W29 to 2026W44, by the method of the contracts
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|
-| `kernel` | 1982 | 1074 (54%) | 877 (44%) | 50% | `contracts` (329) |
-| `contracts` | 1176 | 798 (68%) | 734 (62%) | 62% | `kernel` (329) |
-| `host-tools` | 872 | 618 (71%) | 516 (59%) | 66% | `kernel` (240) |
-| `system-tests` | 516 | 301 (58%) | 291 (56%) | 51% | `kernel` (120) |
-| `init` | 464 | 396 (85%) | 390 (84%) | 81% | `contracts` (138) |
-| `fixtures` | 392 | 315 (80%) | 304 (78%) | 71% | `contracts` (74) |
-| `runtime` | 299 | 248 (83%) | 226 (76%) | 76% | `kernel` (62) |
+| `kernel` | 1984 | 1075 (54%) | 878 (44%) | 50% | `contracts` (329) |
+| `contracts` | 1191 | 804 (68%) | 738 (62%) | 62% | `kernel` (329) |
+| `host-tools` | 875 | 620 (71%) | 517 (59%) | 66% | `kernel` (240) |
+| `system-tests` | 519 | 304 (59%) | 294 (57%) | 51% | `kernel` (120) |
+| `init` | 467 | 399 (85%) | 393 (84%) | 81% | `contracts` (139) |
+| `fixtures` | 393 | 316 (80%) | 305 (78%) | 71% | `contracts` (74) |
+| `runtime` | 305 | 251 (82%) | 229 (75%) | 74% | `kernel` (62) |
 | `drivers` | 295 | 210 (71%) | 195 (66%) | 63% | `kernel` (80) |
 | `boot` | 229 | 165 (72%) | 151 (66%) | 61% | `host-tools` (50) |
 | `display` | 227 | 161 (71%) | 152 (67%) | 60% | `kernel` (43) |
 | `swish` | 167 | 152 (91%) | 147 (88%) | 87% | `contracts` (66) |
 | `redoxfs` | 134 | 97 (72%) | 92 (69%) | 53% | `contracts` (20) |
 | `network` | 125 | 104 (83%) | 101 (81%) | 75% | `init` (28) |
-| `terminal` | 123 | 105 (85%) | 103 (84%) | 76% | `init` (31) |
-| `login` | 116 | 96 (83%) | 94 (81%) | 64% | `contracts` (17) |
-| `timetable` | 112 | 82 (73%) | 78 (70%) | 55% | `contracts` (15) |
+| `terminal` | 124 | 106 (85%) | 104 (84%) | 76% | `init` (31) |
+| `login` | 117 | 97 (83%) | 95 (81%) | 64% | `contracts` (17) |
+| `timetable` | 113 | 83 (73%) | 79 (70%) | 55% | `contracts` (15) |
 | `process-tools` | 99 | 81 (82%) | 77 (78%) | 65% | `kernel` (11) |
 | `time` | 75 | 71 (95%) | 69 (92%) | 87% | `init` (10) |
 | `filesystem` | 53 | 48 (91%) | 47 (89%) | 80% | `contracts` (11) |
@@ -213,7 +247,7 @@ Each crate a per-crate release milestone names (`helpers/crate_release.py`), on 
 
 | crate | commits | crossing | touching another | crossing, mass excluded |
 |---|---:|---:|---:|---:|
-| `file_allocation_table` | 50 | 29 (58%) | 24 (48%) | 46% |
+| `file_allocation_table` | 56 | 29 (52%) | 24 (43%) | 40% |
 | `designware_mobile_storage` | 70 | 37 (53%) | 34 (49%) | 49% |
 | `e1000e` | 47 | 28 (60%) | 26 (55%) | 50% |
 | `extensible_host_controller_interface` | 32 | 24 (75%) | 24 (75%) | 60% |

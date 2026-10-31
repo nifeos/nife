@@ -1,0 +1,15 @@
+[package]
+name = "hot_swap_server"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# The wire format, the capability layout and the state blob this crate serves. The contract never
+# depends on this crate (DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3).
+hot_swap_contract = { version = "0.1.0", path = "../hot_swap_contract" }
+user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }
