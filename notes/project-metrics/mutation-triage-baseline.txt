@@ -1,4 +1,4 @@
 # The triage file's two legacy counts. They only fall: `python3 helpers/mutation_survivor_rows.py bank`
 # lowers them after a lane improves the tree, and `lint` fails a count above its line.
-unclassified=317
-homeless_gap=6
+unclassified=259
+homeless_gap=3

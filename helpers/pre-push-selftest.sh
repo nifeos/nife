@@ -78,3 +78,82 @@ if ! grep -q 'nife.fleet is set but helpers/pre-push-fleet.sh is missing' "$tmp/
 fi
 
 echo "pre-push selftest: no gh call without nife.fleet; the opt-in without its helper says so"
+# The fleet half runs beside the text checks and is joined after them (2026-10-31). A stub helper
+# answers `queued` with success and `after` as the files in $tmp/fleet say: `started` is touched
+# when it begins, `exit` holds its exit status, `hold` holds seconds to wait before it ends.
+mkdir -p "$repo/helpers" "$tmp/fleet"
+cat >"$repo/helpers/pre-push-fleet.sh" <<'STUB'
+#!/bin/sh
+cat >/dev/null
+[ "$1" = after ] || exit 0
+: >"$FLEET_DIR/started"
+sleep "$(cat "$FLEET_DIR/hold" 2>/dev/null || echo 0)"
+echo "fleet stub: ran"
+if [ "$(cat "$FLEET_DIR/exit" 2>/dev/null || echo 0)" != 0 ]; then
+	echo "fleet stub: failed on purpose" >&2
+	exit 1
+fi
+STUB
+chmod +x "$repo/helpers/pre-push-fleet.sh"
+FLEET_DIR="$tmp/fleet"
+export FLEET_DIR
+# The lint stub proves overlap: it waits (at most 5 s) for the fleet stub to have started, which an
+# in-order hook never lets happen, and then passes or fails as $FLEET_DIR/lint says.
+cat >"$repo/script/lint" <<'STUB'
+#!/bin/sh
+n=0
+while [ ! -f "$FLEET_DIR/started" ] && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+[ -f "$FLEET_DIR/started" ] || { echo "lint stub: the fleet half had not started" >&2; exit 2; }
+if [ "$(cat "$FLEET_DIR/lint" 2>/dev/null || echo 0)" != 0 ]; then
+	echo "lint stub: failed on purpose" >&2
+	exit 1
+fi
+STUB
+chmod +x "$repo/script/lint"
+g add -A
+g commit -q -m stubs
+after="$(g rev-parse HEAD)"
+reset_fleet() { rm -f "$FLEET_DIR"/*; }
+
+reset_fleet
+if ! push >"$tmp/out" 2>&1; then
+	echo "$me: with both halves passing the hook refused the push, or the fleet half did not start before the text checks ended:" >&2
+	sed 's/^/  | /' "$tmp/out" >&2
+	exit 1
+fi
+grep -q 'fleet stub: ran' "$tmp/out" || { echo "$me: the passing fleet half's output was dropped" >&2; exit 1; }
+
+reset_fleet
+echo 1 >"$FLEET_DIR/exit"
+if push >"$tmp/out" 2>&1; then
+	echo "$me: a failing fleet half did not fail the push" >&2
+	exit 1
+fi
+grep -q 'fleet stub: failed on purpose' "$tmp/out" || { echo "$me: the failing fleet half's message was not shown" >&2; exit 1; }
+
+reset_fleet
+echo 1 >"$FLEET_DIR/lint"
+echo 1 >"$FLEET_DIR/exit"
+if push >"$tmp/out" 2>&1; then
+	echo "$me: a failing text check did not fail the push" >&2
+	exit 1
+fi
+grep -q 'lint stub: failed on purpose' "$tmp/out" || { echo "$me: the failing text check was not reported" >&2; exit 1; }
+if grep -q 'fleet stub: failed on purpose' "$tmp/out"; then
+	echo "$me: with both failing, the fleet half was reported before the text checks" >&2
+	exit 1
+fi
+
+# A text-check failure does not wait out a slow fleet half.
+reset_fleet
+echo 1 >"$FLEET_DIR/lint"
+echo 12 >"$FLEET_DIR/hold"
+t0=$(date +%s)
+push >"$tmp/out" 2>&1 || true
+if [ $(($(date +%s) - t0)) -ge 10 ]; then
+	echo "$me: a failed text check waited for the fleet half" >&2
+	exit 1
+fi
+
+echo "pre-push selftest: the fleet half runs beside the text checks, is joined after them, and never outlasts a text failure"
+
