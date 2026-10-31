@@ -1438,21 +1438,11 @@ impl<'a> Interfaces<'a> {
     }
 
     /// The version declared for `id`, or `None` when the program declares nothing about it. A
-    /// binary search, since the ids ascend.
+    /// linear walk: a list holds at most 64 records.
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
     pub fn version_of(&self, id: u64) -> Option<u32> {
-        let (mut lo, mut hi) = (0, self.len());
-        while lo < hi {
-            let mid = lo + (hi - lo) / 2;
-            let found = record(&self.records[mid * INTERFACE_RECORD..(mid + 1) * INTERFACE_RECORD]);
-            match found.id.cmp(&id) {
-                core::cmp::Ordering::Equal => return Some(found.version),
-                core::cmp::Ordering::Less => lo = mid + 1,
-                core::cmp::Ordering::Greater => hi = mid,
-            }
-        }
-        None
+        self.iter().find(|d| d.id == id).map(|d| d.version)
     }
 }
 
@@ -1841,6 +1831,32 @@ mod interface_tests {
         let list = decode_interfaces(&bytes).unwrap();
         assert!(list.is_empty());
         assert_eq!(list.version_of(1), None);
+        let one: [u8; interfaces_len(1)] = encode_interfaces(&[Declared { id: 9, version: 2 }]);
+        assert!(!decode_interfaces(&one).unwrap().is_empty());
+    }
+
+    /// **The largest list decodes and is searched whole**, and one more record is refused: the
+    /// bound is on the count, `MAXIMUM_INTERFACES` itself being allowed.
+    #[test]
+    fn a_list_of_exactly_the_maximum_round_trips() {
+        let mut list = [Declared { id: 0, version: 0 }; MAXIMUM_INTERFACES];
+        for (i, entry) in list.iter_mut().enumerate() {
+            *entry = Declared {
+                id: i as u64 + 1,
+                version: i as u32 + 100,
+            };
+        }
+        let bytes: [u8; interfaces_len(MAXIMUM_INTERFACES)] = encode_interfaces(&list);
+        let decoded = decode_interfaces(&bytes).unwrap();
+        assert_eq!(decoded.len(), MAXIMUM_INTERFACES);
+        assert_eq!(decoded.version_of(1), Some(100));
+        assert_eq!(decoded.version_of(64), Some(163));
+        assert_eq!(decoded.version_of(65), None);
+        let mut over = [0u8; interfaces_len(MAXIMUM_INTERFACES + 1)];
+        over[..bytes.len()].copy_from_slice(&bytes);
+        over[0..4].copy_from_slice(&INTERFACES_VERSION.to_le_bytes());
+        over[4..8].copy_from_slice(&(MAXIMUM_INTERFACES as u32 + 1).to_le_bytes());
+        assert_eq!(decode_interfaces(&over), Err(Error::BadField(4)));
     }
 
     /// **One list, one encoding**: each byte the layout fixes is checked, and so is the order.
