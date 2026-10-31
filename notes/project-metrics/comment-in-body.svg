@@ -79,12 +79,12 @@
 <path class="seg s4" d="M568.5,324.0 V268.7 Q568.5,265.9 571.3,265.9 H571.3 Q574.0,265.9 574.0,268.7 V324.0 Z"><title>2026W43, xtask/: 1746</title></path>
 <path class="seg s5" d="M575.0,324.0 V254.8 Q575.0,252.1 577.7,252.1 H577.7 Q580.4,252.1 580.4,254.8 V324.0 Z"><title>2026W43, every other directory: 2163</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<path class="seg s0" d="M601.4,324.0 V232.1 Q601.4,229.3 604.1,229.3 H604.1 Q606.8,229.3 606.8,232.1 V324.0 Z"><title>2026W44, kernel/: 2847</title></path>
-<path class="seg s1" d="M607.8,324.0 V175.9 Q607.8,173.2 610.5,173.2 H610.5 Q613.3,173.2 613.3,175.9 V324.0 Z"><title>2026W44, crates/: 4535</title></path>
+<path class="seg s0" d="M601.4,324.0 V232.5 Q601.4,229.7 604.1,229.7 H604.1 Q606.8,229.7 606.8,232.5 V324.0 Z"><title>2026W44, kernel/: 2835</title></path>
+<path class="seg s1" d="M607.8,324.0 V175.4 Q607.8,172.7 610.5,172.7 H610.5 Q613.3,172.7 613.3,175.4 V324.0 Z"><title>2026W44, crates/: 4550</title></path>
 <path class="seg s2" d="M614.3,324.0 V255.5 Q614.3,252.8 617.0,252.8 H617.0 Q619.7,252.8 619.7,255.5 V324.0 Z"><title>2026W44, components/: 2142</title></path>
-<path class="seg s3" d="M620.7,324.0 V260.0 Q620.7,257.3 623.4,257.3 H623.4 Q626.1,257.3 626.1,260.0 V324.0 Z"><title>2026W44, system_tests/: 2007</title></path>
+<path class="seg s3" d="M620.7,324.0 V259.8 Q620.7,257.0 623.4,257.0 H623.4 Q626.1,257.0 626.1,259.8 V324.0 Z"><title>2026W44, system_tests/: 2014</title></path>
 <path class="seg s4" d="M627.1,324.0 V266.0 Q627.1,263.3 629.9,263.3 H629.9 Q632.6,263.3 632.6,266.0 V324.0 Z"><title>2026W44, xtask/: 1827</title></path>
-<path class="seg s5" d="M633.6,324.0 V253.6 Q633.6,250.8 636.3,250.8 H636.3 Q639.0,250.8 639.0,253.6 V324.0 Z"><title>2026W44, every other directory: 2200</title></path>
+<path class="seg s5" d="M633.6,324.0 V253.5 Q633.6,250.8 636.3,250.8 H636.3 Q639.0,250.8 639.0,253.5 V324.0 Z"><title>2026W44, every other directory: 2203</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
 <line class="tr" x1="562.1" y1="148.1" x2="620.7" y2="148.1" stroke-width="2"/>
 <circle class="trd" cx="562.1" cy="148.1" r="3"><title>2026W43, kernel/ ceiling: 5289</title></circle>
