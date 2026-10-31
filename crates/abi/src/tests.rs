@@ -158,3 +158,159 @@ fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
     // unaligned and traps, which is why the kernel's driver has the same guard.
     assert!(!RegisterShape::new(0, 4).is_word_access());
 }
+
+/// **Every public number the syscall surface spells is pinned as a literal** (milestone 956 step 7,
+/// the enforcement calef ruled 2026-10-29 UTC, PR #2852, question 5: a pinned-values test now, the
+/// rustdoc diff when a consumer outside the tree exists). A program built against one generation of
+/// this crate carries these numbers in its binary, so a renumber is a break that bumps
+/// [`ABI_VERSION`](crate::ABI_VERSION). Changing a line below is the deliberate act a renumber
+/// should be: skipping it fails CI, and changing it without bumping the version is what
+/// `script/lint`'s "format values move with their constants" check catches.
+///
+/// A new public number joins this list in the change that defines it. The list is exhaustive
+/// over every `pub const` of type `u64` in this crate's modules; the enums and the object
+/// modules that are types rather than numbers are pinned beside them
+/// (`every_error_is_pinned_to_its_number`, `cycle_counter`'s own tests).
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+#[test]
+fn every_public_number_is_pinned_as_a_literal() {
+    macro_rules! pinned {
+        ($($path:path => $expected:expr,)*) => {
+            $(assert_eq!($path, $expected, stringify!($path));)*
+        };
+    }
+    use crate::{
+        address_space, console, fault, futex, interrupt, memory_region, notification, objtype,
+        page_frame, port_range, process, reboot, rendezvous, reply, rights, survey,
+        thread_control_block, timer, usage, virtio,
+    };
+    assert_eq!(crate::ABI_VERSION, 1);
+    pinned! {
+        crate::SYS_EXIT => 0,
+        crate::SYS_YIELD => 1,
+        crate::SYS_INVOKE => 2,
+        crate::SYS_CAPABILITY_DELETE => 3,
+        crate::SYS_EXIT_THREAD => 4,
+        crate::CAPABILITY_TABLE_SLOTS => 64,
+        address_space::MAP_INTO => 0,
+        address_space::MAP_RO => 0,
+        address_space::MAP_RW => 1,
+        address_space::MAP_CODE => 2,
+        address_space::LIST => 1,
+        address_space::UNMAP => 2,
+        address_space::WAIT => 3,
+        address_space::WAKE => 4,
+        console::WRITE => 0,
+        fault::FAULT_EP_SLOT => 63,
+        fault::EVENT_FAULT => 1,
+        fault::EVENT_EXIT => 2,
+        futex::SIZE_U8 => 0,
+        futex::SIZE_U16 => 1,
+        futex::SIZE_U32 => 2,
+        futex::SIZE_U64 => 3,
+        futex::SIZE_MASK => 3,
+        futex::PRIVATE => 128,
+        interrupt::WAIT => 0,
+        interrupt::ACK => 1,
+        memory_region::MAP => 0,
+        memory_region::RETYPE => 1,
+        memory_region::RETYPE_OBJ => 2,
+        memory_region::SPLIT => 3,
+        memory_region::DESTROY => 4,
+        memory_region::USAGE => 5,
+        notification::SIGNAL => 0,
+        notification::WAIT => 1,
+        notification::POLL => 2,
+        notification::BIND => 3,
+        notification::BOUND => 2,
+        objtype::RENDEZVOUS => 1,
+        objtype::ADDRESS_SPACE => 2,
+        objtype::THREAD_CONTROL_BLOCK => 3,
+        objtype::NOTIFICATION => 4,
+        objtype::TIMER => 5,
+        objtype::PROCESS => 6,
+        page_frame::MAP => 0,
+        page_frame::REVOKE => 1,
+        page_frame::SLICE => 2,
+        port_range::REVOKE => 1,
+        process::DESTROY => 0,
+        reboot::REBOOT => 0,
+        rendezvous::SEND => 0,
+        rendezvous::RECEIVE => 1,
+        rendezvous::SEND_CAPABILITY => 2,
+        rendezvous::RECEIVE_CAPABILITY => 3,
+        rendezvous::CALL => 4,
+        rendezvous::REAP => 5,
+        rendezvous::SURVEY => 6,
+        rendezvous::BADGE => 7,
+        rendezvous::NO_CAPABILITY => 0xFFFF_FFFF_FFFF_FFFF,
+        rendezvous::REPLY_DELIVERED => 1,
+        reply::REPLY => 0,
+        reply::REPLY_CAPABILITY => 1,
+        rights::READ => 1,
+        rights::WRITE => 2,
+        rights::GRANT => 4,
+        rights::ENUMERATE => 8,
+        rights::BIND => 16,
+        rights::ALL => 31,
+        rights::SPEND_ONLY => 27,
+        survey::DONE => 0,
+        survey::READY => 1,
+        survey::RUNNING => 2,
+        survey::BLOCKED => 3,
+        survey::DEAD => 4,
+        survey::record::STATE => 0,
+        survey::record::PLACEMENT => 1,
+        survey::record::NO_CPU => 0xFFFF_FFFF_FFFF_FFFF,
+        survey::record::CPU_TIME => 2,
+        survey::record::PROCESS => 3,
+        thread_control_block::CONFIGURE => 0,
+        thread_control_block::CAPABILITY_INSERT => 1,
+        thread_control_block::START => 2,
+        thread_control_block::SET_THREAD_POINTER => 3,
+        thread_control_block::SUSPEND => 4,
+        thread_control_block::RESUME => 5,
+        timer::ARM => 0,
+        timer::CANCEL => 1,
+        usage::SIZE => 0,
+        usage::COMMITTED => 1,
+        usage::FRAMES => 2,
+        usage::RENDEZVOUS => 3,
+        usage::ADDRESS_SPACES => 4,
+        usage::THREADS => 5,
+        usage::CHILDREN => 6,
+        virtio::READ_REGISTER => 0,
+        virtio::WRITE_REGISTER => 1,
+        virtio::SETUP_QUEUE => 2,
+        virtio::NOTIFY => 3,
+        virtio::DMA_PHYS_OFFSET => 4088,
+    }
+}
+
+/// **Every error code is pinned to its number**, and the decode agrees. A program matches these
+/// negative values after every syscall, so a renumber is an ABI break (milestone 956 step 7).
+#[test]
+fn every_error_is_pinned_to_its_number() {
+    let all = [
+        (Error::NoSuchSlot, -1),
+        (Error::WrongObject, -2),
+        (Error::NotPermitted, -3),
+        (Error::BadPointer, -4),
+        (Error::BadMethod, -5),
+        (Error::BadSyscall, -6),
+        (Error::OutOfMemory, -7),
+        (Error::DeviceRefused, -8),
+        (Error::StillAlive, -9),
+        (Error::NotSupervised, -10),
+        (Error::Gone, -11),
+        (Error::NoResetMechanism, -12),
+        (Error::ResetNotSupported, -13),
+        (Error::ResetDenied, -14),
+        (Error::ResetDidNotHappen, -15),
+    ];
+    for (error, number) in all {
+        assert_eq!(error as i64, number, "{error:?}");
+        assert_eq!(Error::from_ret(number), Some(error), "{error:?}");
+    }
+}
