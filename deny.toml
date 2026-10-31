@@ -159,6 +159,29 @@ allow = ["NCSA"]
 [[licenses.exceptions]]
 crate = "unicode-ident"
 allow = ["Unicode-3.0"]
+
+# **Unicode-3.0 for four more crates, each its own exception, ruled 2026-10-31 (UTC).** `yoke`,
+# `yoke-derive`, `zerofrom` and `zerofrom-derive` (the ICU4X project's zero-copy crates) arrive
+# beneath `read-fonts` 0.46, which `skrifa` 0.49.0 takes in `tools/glyph_atlas_generator`'s own
+# workspace (§46 (thin primitives or whole subsystems), §166 (the rasteriser dependency, and
+# whether the glyph atlas ships one face or four)). Each declares `license = "Unicode-3.0"` only,
+# checked in the published manifests of yoke 0.8.4, yoke-derive 0.8.4, zerofrom 0.1.8 and
+# zerofrom-derive 0.1.8. The reasoning for `unicode-ident` above applies unchanged: the licence is
+# permissive with attribution and no copyleft, the crates run in a host-only build tool, and
+# nothing that ships links them. A per-crate row keeps the list failing closed: a fifth crate under
+# Unicode-3.0 is refused until somebody decides about that crate.
+[[licenses.exceptions]]
+crate = "yoke"
+allow = ["Unicode-3.0"]
+[[licenses.exceptions]]
+crate = "yoke-derive"
+allow = ["Unicode-3.0"]
+[[licenses.exceptions]]
+crate = "zerofrom"
+allow = ["Unicode-3.0"]
+[[licenses.exceptions]]
+crate = "zerofrom-derive"
+allow = ["Unicode-3.0"]
 # NOT allowed, and the reason is worth stating rather than leaving as an absence: anything copyleft.
 # `r-efi` offers `MIT OR Apache-2.0 OR LGPL-2.1-or-later` and resolves cleanly because MIT is on the
 # list; a crate offering LGPL *only* would fail here, which is the intended behaviour for a kernel
