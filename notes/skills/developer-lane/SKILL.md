@@ -44,6 +44,14 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
   2026-10-10 UTC). `--debt-paydown` is for work that meets the definition in
   [notes/debt-paydown.md](../../debt-paydown.md), and it puts the `debt-paydown` label on the draft.
   Everything else is `--new-work`. A brief says which one, so the lane doesn't have to guess.
+- **Push the real commits, confirm the remote head, and only then mark the pull request ready.**
+  Push with `script/push`, which reads the branch back from origin. Then confirm the head is the
+  commit you mean: `git ls-remote origin refs/heads/<branch>` prints the same commit as
+  `git rev-parse HEAD`, and `gh pr view <number> --json headRefOid --jq .headRefOid` agrees. Run
+  `gh pr ready <number>` and `gh pr merge <number> --auto` after that and not before. The
+  `empty diff` check has no draft skip, so marking ready before the commits arrive makes it run on
+  the claim-only head and fail. The failure is accurate and clears on the next push, but a pull
+  request that is already waiting loses minutes to hours before the check passes again.
 - A developer works in a lane, and the lane is the isolation rather than the person: its own
   worktree, its own branch, one milestone, no visibility into the others. Two developers in one lane
   is forbidden; it is the merge problem this vocabulary exists to prevent.
