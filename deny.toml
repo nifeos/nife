@@ -200,6 +200,11 @@ deny = [
 ]
 
 skip = [
+    # `entropy_backend` deliberately depends on getrandom 0.2 as well as 0.4 (its Cargo.toml says why:
+    # the two versions select a custom backend by different mechanisms), so any consumer of it holds
+    # both. The RedoxFS pin used to share this skip; the pin bump removed that half and this one stays.
+    # Host-side only.
+    { crate = "getrandom@0.2.17", reason = "entropy_backend carries both getrandom 0.2 and 0.4 on purpose; see its Cargo.toml" },
     # smoltcp 0.14 is built on bitflags 1, and pulldown-cmark (`documentation`'s parser, ruled
     # 2026-10-20 UTC for milestone 784 (reuse what the tree wrote) item (f2)) on bitflags 2. Both
     # are in `components`. Neither version is ours to choose, and bitflags is macros over an
