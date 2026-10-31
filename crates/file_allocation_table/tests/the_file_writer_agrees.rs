@@ -469,3 +469,102 @@ fn files_in_a_subdirectory_write_and_the_subdirectory_grows() {
         check_with_fsck(&image.bytes, &format!("subdir-{fat_type:?}"));
     }
 }
+
+/// A FAT16 root filled to its 512 entries holds every one of them, in the sectors the region has.
+#[test]
+fn a_full_fixed_root_reads_back_every_entry() {
+    let mut volume = Volume::open(formatted(32, FatType::Fat16, 512)).unwrap();
+    for i in 0..512 {
+        let entry = volume.create_file(0, &format!("R{i}.TXT")).unwrap();
+        volume
+            .open_file_writer(&entry)
+            .unwrap()
+            .write(format!("{i}").as_bytes())
+            .unwrap();
+    }
+    volume.sync().unwrap();
+    let image = volume.into_device();
+    let files = oracle_files(&image.bytes);
+    assert_eq!(files.len(), 512);
+    assert!(files.iter().all(|(name, bytes)| {
+        name.strip_prefix('R')
+            .and_then(|n| n.strip_suffix(".TXT"))
+            .is_some_and(|n| n.as_bytes() == &bytes[..])
+    }));
+    check_with_fsck(&image.bytes, "fixed-root-full");
+}
+
+/// A FAT32 volume with four-sector clusters over stale data: the root grows into a cluster whose
+/// later sectors must come back zeroed, and a directory slot lands in each of a cluster's sectors.
+#[test]
+fn a_directory_that_grows_into_a_multi_sector_cluster_zeroes_all_of_it() {
+    // FAT32 needs 65,525 clusters, which at 2048 bytes each is 134 MB.
+    let mut image = Memory {
+        bytes: vec![0u8; 150 << 20],
+        size: SectorSize::Bytes512,
+    };
+    let mut cursor = Cursor::new(&mut image.bytes);
+    lamfat::format_volume(
+        &mut lamfat::StdIoWrapper::from(&mut cursor),
+        lamfat::FormatVolumeOptions::new()
+            .fat_type(FatType::Fat32)
+            .bytes_per_cluster(2048),
+    )
+    .unwrap();
+    let probe = Volume::open(Memory {
+        bytes: image.bytes.clone(),
+        size: image.size,
+    })
+    .unwrap();
+    let boot = *probe.boot_sector();
+    assert_eq!(boot.sectors_per_cluster(), 4);
+    let data = boot.first_data_sector() as usize * 512;
+    // Everything after the root's first cluster is stale.
+    image.bytes[data + 2048..].fill(0xAA);
+    let mut volume = Volume::open(image).unwrap();
+    let slots = 2048 / 32;
+    for i in 0..slots + 40 {
+        volume.create_file(0, &format!("G{i}.TXT")).unwrap();
+    }
+    volume.sync().unwrap();
+    let image = volume.into_device();
+    assert_eq!(oracle_files(&image.bytes).len(), slots + 40);
+    check_with_fsck(&image.bytes, "multi-sector-cluster");
+}
+
+/// A file whose first cluster is above 65535 needs the high half of the cluster number, which
+/// only FAT32 stores in a directory entry.
+#[test]
+fn a_fat32_file_beyond_cluster_65535_keeps_its_high_cluster_bits() {
+    let mut image = formatted(64, FatType::Fat32, 512);
+    let mut cursor = Cursor::new(&mut image.bytes);
+    lamfat::format_volume(
+        &mut lamfat::StdIoWrapper::from(&mut cursor),
+        lamfat::FormatVolumeOptions::new()
+            .fat_type(FatType::Fat32)
+            .bytes_per_cluster(512),
+    )
+    .unwrap();
+    let mut volume = Volume::open(image).unwrap();
+    let filler = vec![0x5Au8; 1 << 20];
+    let entry = volume.create_file(0, "FILL.BIN").unwrap();
+    let mut writer = volume.open_file_writer(&entry).unwrap();
+    for _ in 0..34 {
+        writer.write(&filler).unwrap();
+    }
+    let late = volume.create_file(0, "LATE.TXT").unwrap();
+    volume
+        .open_file_writer(&late)
+        .unwrap()
+        .write(b"late")
+        .unwrap();
+    assert!(volume.lookup("LATE.TXT").unwrap().first_cluster() > 65_535);
+    volume.sync().unwrap();
+    let image = volume.into_device();
+    let files = oracle_files(&image.bytes);
+    assert_eq!(
+        files.iter().find(|(n, _)| n == "LATE.TXT").unwrap().1,
+        b"late"
+    );
+    check_with_fsck(&image.bytes, "high-cluster");
+}

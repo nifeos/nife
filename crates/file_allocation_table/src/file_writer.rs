@@ -196,17 +196,24 @@ impl<D: WritableSectorDevice> Volume<D> {
             }
         }
         let mut index = 0;
-        let slot = loop {
+        let mut found = None;
+        // Each pass either moves to the next slot or grows the directory by a cluster, and the
+        // directory cannot pass `MOST_SLOTS`, so twice that many passes end the search.
+        for _ in 0..2 * MOST_SLOTS {
             if index >= MOST_SLOTS {
-                return Err(WriteError::DirectoryFull);
+                break;
             }
             match self.read_slot(directory, index)? {
-                Some(slot) if matches!(slot[0], 0 | FREE) => break slot,
+                Some(slot) if matches!(slot[0], 0 | FREE) => {
+                    found = Some(slot);
+                    break;
+                }
                 Some(_) => index += 1,
                 None if self.grow_directory(directory)? => {}
-                None => return Err(WriteError::DirectoryFull),
+                None => break,
             }
-        };
+        }
+        let slot = found.ok_or(WriteError::DirectoryFull)?;
         let was_end = slot[0] == 0;
         let mut bytes = [0u8; SLOT_BYTES];
         bytes[..11].copy_from_slice(&short);
@@ -412,20 +419,26 @@ impl<D: WritableSectorDevice> FileWriter<'_, D> {
             let mut scratch = [0u8; SectorSize::MAX];
             self.volume.begin_change()?;
             self.state.seek(u32::MAX);
-            let outcome = loop {
+            let passes = (length - self.state.size) as usize / zeros.len() + 2;
+            let mut outcome = Err(WriteError::VolumeFull);
+            for _ in 0..passes {
                 let step = ((length - self.state.size) as usize).min(zeros.len());
                 if step == 0 {
-                    break Ok(());
+                    outcome = Ok(());
+                    break;
                 }
                 match self
                     .state
                     .write(self.volume, &boot, &zeros[..step], &mut scratch)
                 {
-                    Ok(0) => break Err(WriteError::VolumeFull),
+                    Ok(0) => break,
                     Ok(_) => {}
-                    Err(error) => break Err(error),
+                    Err(error) => {
+                        outcome = Err(error);
+                        break;
+                    }
                 }
-            };
+            }
             let settled = self.settle(before);
             outcome?;
             settled?;

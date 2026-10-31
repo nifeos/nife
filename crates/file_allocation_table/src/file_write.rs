@@ -204,7 +204,14 @@ impl WriteState {
             return Err(WriteError::FileTooLarge);
         }
         let mut done = 0;
+        let mut passes = 0usize;
         while done < want {
+            // Every pass writes at least one byte, so a pass count past `want` is a stuck loop.
+            passes += 1;
+            debug_assert!(
+                passes <= want && done < want,
+                "a write pass made no progress"
+            );
             let Some(cluster) = self.reach(medium, boot, self.position / per_cluster)? else {
                 if done > 0 {
                     break;

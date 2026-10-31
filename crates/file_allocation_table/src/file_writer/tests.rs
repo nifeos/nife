@@ -351,3 +351,110 @@ fn an_entry_that_no_longer_matches_its_slot_is_stale_for_every_operation() {
     // The live entry was not touched.
     assert_eq!(volume.lookup("NEW.BIN").unwrap().size_bytes(), 0);
 }
+
+#[test]
+fn a_shrink_to_a_cluster_boundary_forgets_the_cluster_a_cursor_had_reached() {
+    // Image clusters are one sector. The writer reached chain index 2; shrinking to two sectors
+    // frees that cluster, and the next write at the new end needs a fresh one.
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let entry = volume.create_file(0, "CUT.BIN").unwrap();
+    let mut writer = volume.open_file_writer(&entry).unwrap();
+    writer.write(&[1; 1025]).unwrap();
+    writer.set_len(1024).unwrap();
+    writer.seek(1024);
+    writer.write(&[2]).unwrap();
+    let mut out = [0u8; 1100];
+    assert_eq!(read_back(&mut volume, "CUT.BIN", &mut out), 1025);
+    assert_eq!(out[1024], 2);
+    assert_eq!(out[..1024], [1; 1024]);
+    let entry = volume.lookup("CUT.BIN").unwrap();
+    assert_eq!(volume.chain(entry.first_cluster()).count(), 3);
+    assert_eq!(volume.count_free_clusters().unwrap(), 350 - 3);
+}
+
+#[test]
+fn a_partial_overwrite_inside_the_last_sector_keeps_the_bytes_around_it() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let entry = volume.create_file(0, "MID.BIN").unwrap();
+    let mut writer = volume.open_file_writer(&entry).unwrap();
+    let bytes: [u8; 300] = core::array::from_fn(pattern);
+    writer.write(&bytes).unwrap();
+    writer.seek(200);
+    writer.write(&[0xFF, 0xFE]).unwrap();
+    let mut out = [0u8; 400];
+    assert_eq!(read_back(&mut volume, "MID.BIN", &mut out), 300);
+    let mut expected = bytes;
+    expected[200] = 0xFF;
+    expected[201] = 0xFE;
+    assert_eq!(out[..300], expected);
+}
+
+#[test]
+fn a_root_whose_entry_count_ends_inside_a_sector_stops_there() {
+    let mut image = Image::fat12();
+    // Eight entries: half of the one sector the region occupies.
+    image.bytes[17..19].copy_from_slice(&8u16.to_le_bytes());
+    let mut volume = Volume::open(image).unwrap();
+    for i in 0..8 {
+        volume.create_file(0, &format_name(i)).unwrap();
+    }
+    assert_eq!(
+        volume.create_file(0, "NINTH"),
+        Err(WriteError::DirectoryFull)
+    );
+}
+
+#[test]
+fn a_slot_that_became_a_long_name_piece_is_stale_for_a_write_and_a_remove() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let entry = volume.create_file(0, "LFN.BIN").unwrap();
+    let mut image = volume.into_device();
+    // The root's first slot starts at sector 5; byte 11 is the attribute.
+    image.bytes[5 * 512 + 11] = 0x0F;
+    let mut volume = Volume::open(image).unwrap();
+    let mut writer = volume.open_file_writer(&entry).unwrap();
+    assert_eq!(writer.write(b"x"), Err(WriteError::EntryChanged));
+    assert_eq!(volume.remove_file(&entry), Err(WriteError::EntryChanged));
+}
+
+#[test]
+fn a_write_keeps_the_attributes_the_entry_already_has() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let entry = volume.create_file(0, "RO.BIN").unwrap();
+    let mut image = volume.into_device();
+    image.bytes[5 * 512 + 11] = 0x01;
+    let mut volume = Volume::open(image).unwrap();
+    let readonly = NamedEntry::created(
+        ShortEntry::new(entry.short_name(), 0x01, 0, 0),
+        entry.place(),
+    );
+    volume
+        .open_file_writer(&readonly)
+        .unwrap()
+        .write(b"x")
+        .unwrap();
+    assert_eq!(volume.into_device().bytes[5 * 512 + 11], 0x21);
+}
+
+#[test]
+fn a_reused_free_slot_does_not_end_the_directory_and_stale_bytes_after_the_end_are_ended() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let first = volume.create_file(0, "A.TXT").unwrap();
+    volume.create_file(0, "B.TXT").unwrap();
+    volume.create_file(0, "C.TXT").unwrap();
+    volume.remove_file(&first).unwrap();
+    let reused = volume.create_file(0, "D.TXT").unwrap();
+    assert_eq!(reused.place().short_slot, 0);
+    for name in ["D.TXT", "B.TXT", "C.TXT"] {
+        assert!(volume.lookup(name).is_ok(), "{name}");
+    }
+    // A stale entry sits in the slot after the end marker of an empty directory.
+    let mut image = Image::fat12();
+    image.bytes[5 * 512 + 32..5 * 512 + 43].copy_from_slice(b"GHOST   TXT");
+    let mut volume = Volume::open(image).unwrap();
+    let made = volume.create_file(0, "REAL.TXT").unwrap();
+    assert_eq!(made.place().short_slot, 0);
+    assert!(volume.lookup("REAL.TXT").is_ok());
+    assert!(volume.lookup("GHOST.TXT").is_err());
+    assert_eq!(volume.into_device().bytes[5 * 512 + 32], 0);
+}
