@@ -70,6 +70,9 @@ impl Program {
             Program::StdExerciser => std_exerciser_manifest(),
             Program::Jig => jig_manifest(),
             Program::JobSleeper => job_sleeper_manifest(),
+            Program::NullSyscall | Program::SinkProducer => bench_row_manifest(),
+            Program::SinkConsumer => wc_manifest(),
+            Program::MapEl0 => map_el0_manifest(),
         }
     }
 }
@@ -107,6 +110,51 @@ const fn least_authority_demo_manifest() -> Manifest {
         activation_directory: false,
         console_input: false,
         startup: StartupContract::Native,
+    }
+}
+
+/// The manifest of `null_syscall` and `sink_producer` (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1): a stream of bytes out,
+/// and no argument, memory, file, directory or input. The bench rows a production shell can run
+/// need no authority, so the manifest asks for none.
+const fn bench_row_manifest() -> Manifest {
+    Manifest {
+        program_argument: ProgramArgumentDeclaration::Forbidden,
+        memory_grant: MemoryGrantDeclaration::Forbidden,
+        file: FileGrantDeclaration::Forbidden,
+        directory: DirectoryGrantDeclaration::Forbidden,
+        short_options: NO_SHORT_OPTIONS,
+        output: OutputDeclaration::Bytes,
+        input: InputDeclaration::Forbidden,
+        reports: true,
+        interruptible: false,
+        clock: false,
+        domain: false,
+        configuration: false,
+        entropy: false,
+        network: false,
+        machine: false,
+        share: false,
+        reboot: false,
+        sync: false,
+        installer: false,
+        catalog: false,
+        indexes: IndexStoreDeclaration::Forbidden,
+        activation_directory: false,
+        console_input: false,
+        startup: StartupContract::Native,
+    }
+}
+
+/// The manifest of `map_el0` (milestone 961 step 1): [`bench_row_manifest`] and a memory grant of
+/// ten pages, the budget the program builds its address space, page tables and frame from.
+/// `primitive_benchmark_contract::MAP_BUDGET_PAGES` is that number, and a test holds the two together.
+const fn map_el0_manifest() -> Manifest {
+    Manifest {
+        memory_grant: MemoryGrantDeclaration::Required {
+            minimum: 10,
+            maximum: 16,
+        },
+        ..bench_row_manifest()
     }
 }
 
