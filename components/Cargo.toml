@@ -337,14 +337,6 @@ path = "src/usb_keyboard_driver.rs"
 test = false
 bench = false
 
-# The Rust multi-line editor (milestone 169), on the raw-keystroke primitive
-# (OPERATION_RAWMODE/OPERATION_READRAW) that milestone added to the terminal contract. See components/src/rmle.rs.
-[[bin]]
-name = "rmle"
-path = "src/rmle.rs"
-test = false
-bench = false
-
 # The entropy service (milestone 56, DECISIONS §44): owns a virtio-rng device and is the only thing
 # that can read it; clients hold an endpoint that means "you may obtain randomness". The driver rides
 # in it, the way both RTC drivers ride in the clock service, because a separate driver process would

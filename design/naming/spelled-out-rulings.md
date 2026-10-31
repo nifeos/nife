@@ -166,7 +166,7 @@ Renamed, then ratified under the new name:
   `uptime`, `uefi_loader`'s `device_path.rs`, `machine_discovery`'s `framebuffer.rs` and both
   `boot_slot` modules. `filesystem_contract`'s `MAXIMUM_LEN` is `MAXIMUM_LENGTH_OR_OFFSET`, because
   it bounds a packed field that holds either.
-- `MAXIMUM_COLS` is `MAXIMUM_COLUMNS` in `video_terminal` and in the `rmle` component.
+- `MAXIMUM_COLS` is `MAXIMUM_COLUMNS` in `video_terminal`.
 - Argon2 cost: the fields, parameters and accessors `m_kib`, `t` and `p` are `memory_kib`, `passes`
   and `lanes`, each with `#[doc(alias = "m")]`, `"t"` and `"p"` and RFC 9106's terms in the docs.
   `MAXIMUM_M_KIB` is `MAXIMUM_MEMORY_KIB` and `MINIMUM_M_COST` is `MINIMUM_MEMORY_KIB`.

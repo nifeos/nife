@@ -671,7 +671,6 @@ fn approval_file_text(edited: bool) -> String {
          [package.ioping]\nupdate = true\nremove = true\n\n\
          [package.noteless]\nupdate = true\nremove = true\n\n\
          [package.rg]\nupdate = true\nremove = true\n\n\
-         [package.rmle]\nupdate = true\nremove = true\n\n\
          [package.seeker]\nnetwork = true\nzones = {zones}\nupdate = true\nremove = false\n\n\
          [package.servant]\nservice = true\nupdate = false\nremove = false\n\n\
          [package.sqlite]\nupdate = true\nremove = true\n"

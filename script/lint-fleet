@@ -137,6 +137,9 @@ echo "==> the merge queue's admission predicate"
 #     whose newest run of a required check failed is labelled and commented once per head, and a
 #     failure a later run superseded is not reported. A recorded commit and synthetic cases, no `gh`.
 "$(dirname "$0")/../helpers/ci-failing-selftest.sh"
+#     And the same dash `echo` hazard in script/ci-log-baseline (2026-10-31, after issue 2960): CI log
+#     text keeps its backslashes through the attribution line. Run under /bin/sh, no `gh`.
+"$(dirname "$0")/../helpers/ci-log-baseline-selftest.sh"
 #     And who took a dequeue, for milestone 642 (the record should say whether a person or the
 #     machinery took a step): helpers/session_steps.py credits a `calef`-account event to the
 #     session whose `gh` call came before it, never after. Fixtures only, no `gh`.

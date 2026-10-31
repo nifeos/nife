@@ -36,6 +36,15 @@ pub enum MapError {
     /// exists because refusing such a region is what stops the page enumeration from wrapping into
     /// addresses *outside* the grant. See notes/paging.md, "DMA domains".
     BadRegion,
+    /// **The address space already maps this frame with flags that, beside these, would make the
+    /// page writable through one mapping and executable through the other**
+    /// ([`Flags::makes_writable_executable_pair`]). Nothing in this crate raises it: the kernel's
+    /// mapping hold does, because only it knows what else a space maps (notes/mapping-log.md, "No
+    /// frame is writable and executable in one space").
+    ///
+    /// Name: provisional, minted 2026-10-31 (UTC) by lane
+    /// milestone/969-no-frame-is-writable-and-executable-in-one-space.
+    WritableAndExecutable,
 }
 
 /// Builds page tables, for any [`PageFormat`].

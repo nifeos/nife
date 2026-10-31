@@ -1,0 +1,28 @@
+Falsifies `system_tests::user::tenth_pass_map_gate_tests::the_pair_is_refused_through_page_frame_map_in_either_order` (claim 11).
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect: `PageFrame::MAP` records each page as read-only, whatever it maps, so the mapping
+hold skips the check for it. That is a check that lives in `MAP_INTO`'s path alone: a page mapped
+as code through `MAP_INTO` can then be mapped writable through `PageFrame::MAP`, and the page is
+writable and executable in one space. The reverse order is still refused, because `MAP_INTO`'s
+record reads the writable leaf `PageFrame::MAP` left.
+
+Expected to fail: the assertion that `PageFrame::MAP` answers `NotPermitted`, reporting
+`PageFrame::MAP mapped writable a frame the space maps as code`.
+
+Replayed on 2026-10-31 (UTC) on aarch64 with `cargo xtask test --arch aarch64 --test
+the_pair_is_refused_through_page_frame_map_in_either_order`: red at exactly that assertion.
+
+diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
+--- a/kernel/src/syscall/page_frame.rs
++++ b/kernel/src/syscall/page_frame.rs
+@@ -79,7 +79,7 @@
+             page_phys,
+             root,
+             page_va,
+-            flags,
++            paging::Flags::user_rodata(),
+             crate::revoke::PageMapSource::Capability(phys),
+         ) {
+             Ok(recorded) => recorded,

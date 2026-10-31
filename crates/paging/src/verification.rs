@@ -68,3 +68,22 @@ fn the_chosen_leaf_is_the_largest_that_fits() {
         "a fitting larger leaf was passed over"
     );
 }
+
+/// **No pair of mappings the kernel admits beside each other is writable through one and
+/// executable through the other**, over every access word either side can carry: the predicate
+/// `MappingHold::record_mapping` refuses by answers true for every such pair, in either order.
+///
+/// Stated in raw bits written as literals (write is bit 0, user execute bit 2, kernel execute bit
+/// 3), never through `is_writable` or the access constants: a predicate that drifted with its own
+/// helpers would otherwise prove itself.
+/// Falsification: replayable `crates/paging/falsifications/verification.no_admitted_pair_is_writable_here_and_executable_there.patch`
+#[kani::proof]
+fn no_admitted_pair_is_writable_here_and_executable_there() {
+    let a = Flags::from_access(kani::any());
+    let b = Flags::from_access(kani::any());
+    let writes = |f: Flags| f.bits() & 0b1 != 0;
+    let executes = |f: Flags| f.bits() & 0b1100 != 0;
+    if !a.makes_writable_executable_pair(b) {
+        assert!(!(writes(a) && executes(b)) && !(writes(b) && executes(a)));
+    }
+}

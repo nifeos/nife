@@ -9,7 +9,8 @@ milestone's gate stays HARDWARE.
 
 - binding: Linux's `starfive,jh7110-trng.yaml`, mainline as of 2026-08-24. It gives the
   compatible string, the `reg` window, two clocks (`hclk`, `ahb`), one reset and one interrupt.
-  Its example is the fixture's model: `rng@1600C000 { reg = <0x1600C000 0x4000>; interrupts = <30>; }`.
+  Its example node, `rng@1600C000` with a 0x4000-byte `reg` window and interrupt 30, is the
+  fixture's model.
 - driver: Linux's `drivers/char/hw_random/jh7110-trng.c`, mainline as of 2026-08-24. The
   register offsets and bit positions are transcribed from its `#define`s.
 - ds: the *JH7110 Datasheet*, v1.67 (2025-02-14), section 2.8.2 "TRNG". The whole section
@@ -37,20 +38,12 @@ milestone's gate stays HARDWARE.
 
 The tree nife is handed on the VisionFive 2 is the vendor U-Boot's control DTB (U-Boot 2021.10,
 per `crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-manual-boot.log`). StarFive's
-fork spells the node this way (uboot-dtsi):
+fork spells the node as follows (uboot-dtsi).
 
-```text
-trng: trng@1600C000 {
-    compatible = "starfive,trng";
-    reg = <0x0 0x1600C000 0x0 0x4000>;
-    clocks = <&clkgen JH7110_SEC_HCLK>,
-         <&clkgen JH7110_SEC_MISCAHB_CLK>;
-    clock-names = "hclk", "miscahb_clk";
-    resets = <&rstgen RSTN_U0_SEC_TOP_HRESETN>;
-    interrupts = <30>;
-    status = "disabled";
-};
-```
+The node is `trng@1600C000` (upper-case C) in `arch/riscv/dts/jh7110.dtsi` of StarFive's U-Boot
+fork, branch JH7110_VisionFive2_devel, commit `bfbdce9b86a2`, fetched 2026-09-03. It carries the
+compatible string `starfive,trng`, a four-cell `reg` window of 0x4000 bytes at 0x1600C000,
+interrupt 30, two clocks (`hclk` and `miscahb_clk`), one reset, and `status` set to `disabled`.
 
 It is the same device, window and interrupt under a different string: a stale fork, not different
 silicon. Accepting `starfive,trng` is a claim about the register layout, and the vendor Linux driver

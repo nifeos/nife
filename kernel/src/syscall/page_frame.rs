@@ -3,13 +3,15 @@
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.
 
-use super::address_space::{run_end_va, unmap_run_prefix};
+use super::address_space::{map_refusal, run_end_va, unmap_run_prefix};
 use super::*;
 use crate::arch::mmu;
 
 /// `PageFrame::MAP`: map the whole run the frame in `slot` names at consecutive pages from `va` in
 /// the caller's own space, read/write if `writable` is nonzero, with page tables retyped from the
-/// region in `ut_slot`. `page_frame_revoke` is the other half. Maps the run or none of it.
+/// region in `ut_slot`. `page_frame_revoke` is the other half. Maps the run or none of it, and
+/// answers `NotPermitted` for a writable run when the space already maps one of its pages as code
+/// ([`map_refusal`]).
 ///
 /// It takes the slot, not the capability `invoke` read, and reads it again under the
 /// [`MappingHold`](crate::revoke::MappingHold), which has the argument. A slot that no longer holds
@@ -69,35 +71,32 @@ pub(super) fn page_frame_map(
     let mut batch = mmu::UserMapBatch::new();
     for k in 0..count {
         let (page_phys, page_va) = (phys + k * paging::PAGE_SIZE, va + k * paging::PAGE_SIZE);
-        // Each table is recorded as it is retyped: its region need not be this space's, and its
-        // `DESTROY` must find the table to cut it out of this walk (`revoke::revoke_region`).
-        match batch.map(page_va, page_phys, flags, || {
-            hold.retype_table(region, root, page_va)
-        }) {
-            Ok(()) => {
-                // Unrecordable means unmappable (§13 (capability revocation and untyped
-                // reclamation)). The source is `phys`, the run's base, which a `REVOKE` scopes by
-                // (DECISIONS §132 (what `PageFrame::REVOKE` owes an overlapping run)).
-                if !hold.record_mapping(
-                    page_phys,
-                    root,
-                    page_va,
-                    crate::revoke::PageMapSource::Capability(phys),
-                ) {
-                    mmu::unmap_user_at(root, page_va);
-                    unmap_run_prefix(&mut hold, root, phys, va, k);
-                    return Err(Error::OutOfMemory);
-                }
-            }
-            // All or nothing, as `MAP_INTO`.
+        // Recorded before the leaf, and refused there when the space already maps the page
+        // executable: unrecordable means unmappable (§13 (capability revocation and untyped
+        // reclamation)). The source is `phys`, the run's base, which a `REVOKE` scopes by
+        // (DECISIONS §132 (what `PageFrame::REVOKE` owes an overlapping run)).
+        let recorded = match hold.record_mapping(
+            page_phys,
+            root,
+            page_va,
+            flags,
+            crate::revoke::PageMapSource::Capability(phys),
+        ) {
+            Ok(recorded) => recorded,
             Err(e) => {
                 unmap_run_prefix(&mut hold, root, phys, va, k);
-                return Err(match e {
-                    paging::MapError::OutOfPageFrames => Error::OutOfMemory,
-                    // misaligned, already mapped, or wrong half
-                    _ => Error::BadPointer,
-                });
+                return Err(map_refusal(e));
             }
+        };
+        // Each table is recorded as it is retyped: its region need not be this space's, and its
+        // `DESTROY` must find the table to cut it out of this walk (`revoke::revoke_region`).
+        if let Err(e) = batch.map(page_va, page_phys, flags, || {
+            hold.retype_table(region, root, page_va)
+        }) {
+            // All or nothing, as `MAP_INTO`.
+            hold.forget_recorded(root, recorded);
+            unmap_run_prefix(&mut hold, root, phys, va, k);
+            return Err(map_refusal(e));
         }
     }
     Ok(0)

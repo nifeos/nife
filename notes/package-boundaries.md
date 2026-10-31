@@ -100,7 +100,6 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `demos` | optional | programs: `least_authority_demo` | interfaces only | `demos` (provisional) |
 | `display` | optional | crates: `compositor*`, `extensible_host_controller_interface*`, `glyph_atlas*`, `glyph_atlas_generator`, `usb`, `video_terminal*`; programs: `compositor`, `display_terminal`, `framebuffer_driver`, `glyph_atlas_generator`, `gpu_driver`, `graphical_terminal`, `keyboard_driver`, `usb_keyboard_driver`; paths: `vendor/dejavu/` | interfaces only | `display` (provisional) |
 | `redoxfs` | optional | crates: `redoxfs`, `redoxfs_host`, `redoxfs_server`; programs: `mkfs`, `redoxfs`, `redoxfs-ar`, `redoxfs-clone`, `redoxfs-mkfs`, `redoxfs-resize`, `redoxfs_host`, `redoxfs_server`, `second_mount`; paths: `vendor/redoxfs.divergence.patch`, `vendor/redoxfs.pin` | interfaces only | `redoxfs` (provisional) |
-| `rmle` | optional | programs: `rmle` | interfaces only | `rmle` (provisional) |
 | `system_installer` | optional | programs: `system_installer` | interfaces only | `system_installer` (provisional) |
 | `contracts` | sdk | crates: `abi*`, `address_space_map*`, `approval_file*`, `block_roster*`, `boot_ladder*`, `boot_slot*`, `byte_sink_contract*`, `c_program_fixture*`, `capability_manifest_note*`, `capability_plan*`, `capability_witness_contract*`, `clock_contract*`, `confined_syscall_fuzzer_contract*`, `counter_frequency_contract*`, `credential_contract*`, `current_cpu_contract*`, `device_tree_blob*`, `documentation*`, `driver_process_contract*`, `elf*`, `entropy_contract*`, `environment_contract*`, `file_allocation_table*`, `filesystem_contract*`, `glob*`, `globally_unique_identifier_partition_table*`, `grant_plan*`, `graphics_contract*`, `hot_swap_contract*`, `installed_programs*`, `login_contract*`, `machine_discovery*`, `machine_statistics_contract*`, `measured_boot*`, `nifefs*`, `package_archive*`, `package_index*`, `primitive_benchmark_contract*`, `program_argument_contract*`, `program_asks*`, `socket_contract*`, `std_runtime_contract*`, `supervision_contract*`, `system_log_contract*`, `test_times*` | interfaces only | `contracts` (provisional) |
 | `cryptography` | sdk | crates: `cryptography_provider*`, `pinned_tls_client*` | `network` | `cryptography` (provisional) |
@@ -125,7 +124,7 @@ Where Linux has the tool, the distros' grouping was taken. `process-tools` holds
 `pmap`, `top` and `uptime`, Debian's `procps` set, after milestone 126 (the `procps` package).
 `core-tools` holds `date`, `printenv`, `rm`, `wc` and `uuid` (uuidgen). `disk-tools` holds
 `disk_surveyor` (lsblk) and `disk_partitioner` (fdisk). Each shell and each editor is its own
-package in Debian, so `swish` and `rmle` are too. `timetable` is the `cron` slot, and `mdr` the
+package in Debian, so `swish` is too. `timetable` is the `cron` slot, and `mdr` the
 `man-db` one.
 
 Grouping is borrowed and names are not. On 2026-10-06 (UTC) calef ruled three package names, each

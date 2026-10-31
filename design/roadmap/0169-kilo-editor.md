@@ -5,16 +5,11 @@ built: 2026-08-27
 ---
 # 169. `kilo`: the smallest real text editor, as the forcing function for raw terminal input
 
-Built, 2026-08-27, as `rmle` rather than a literal `kilo.c` port. The raw-keystroke
-primitive (`OP_RAWMODE`/`OP_READRAW`, `crates/line_editor`) is built and proven. The editor itself
-is a Rust reimplementation of `kilo`'s spirit and scope (`components/src/rmle.rs`), not a port.
-DECISIONS §31's foreign-language seam as actually built is a one-shot call. It cannot support
-`kilo`'s own blocking event loop without new seam infrastructure (that infrastructure is
-[milestone 181](0181-persistent-foreign-component.md), raised separately). **Named `rmle`, not
-`kilo`**, calef, 2026-08-27, specifically to avoid two things being called `kilo` once a real
-`kilo.c` port exists, built against the C library as milestone 170's first stage; see `rmle.rs`'s own module doc for the
-full naming note. This milestone's own primary deliverable, the raw-keystroke primitive, is
-unaffected by the naming question either way.
+Built, 2026-08-27: the raw-keystroke primitive (`OP_RAWMODE`/`OP_READRAW`, `crates/line_editor`) is
+built and proven by the raw-mode tests. No editor program ships in this tree. DECISIONS §31's
+foreign-language seam as built is a one-shot call. It cannot support `kilo`'s own blocking event
+loop without new seam infrastructure (that infrastructure is
+[milestone 181](0181-persistent-foreign-component.md), raised separately).
 
 A dependency review of Emacs, nano and vim, for a lightweight first text editor, found the same wall
 under all three. [DECISIONS §31 (the foreign-language
@@ -91,19 +86,14 @@ for whoever picks this up, informed by how the raw-input primitive actually gets
   needs the identical terminal capability at roughly 25x the code size, plus the skippable
   subprocess dependency for spell-check and external filtering that `kilo` never has to answer.
 - **Milestone 170.** A real `kilo.c` port, compiled unmodified against §265 (a C library started
-  from relibc) as the first stage of milestone 170 (`nano`, a real, full-featured screen editor). DECISIONS §31's foreign-language seam as built is a one-shot call
-  and cannot carry `kilo`'s own blocking event loop, which is why this milestone shipped a Rust
-  reimplementation named `rmle` instead, deliberately leaving the name `kilo` free.
-- **Recorded.** `components/src/rmle.rs`, in the module doc a reader meets first: no `SIGWINCH`-equivalent
-  resize notification, no syntax highlighting and no incremental search, so a resized terminal is
-  not noticed until something else forces a redraw.
+  from relibc) as the first stage of milestone 170 (`nano`, a real, full-featured screen editor).
+  DECISIONS §31's foreign-language seam as built is a one-shot call and cannot carry `kilo`'s own
+  blocking event loop.
 
 ## Index row
 
 A dependency review of Emacs, nano and vim for a possible nife port found the same wall under all
 three (DECISIONS §31's C-syscall seam), and one real, reusable gap behind it. Nife's terminal
-contract is a line discipline with no raw-keystroke input. Built as `rmle`, a Rust
-reimplementation of `kilo`'s spirit and scope rather than a literal port (the seam as built cannot
-support an interactive event loop; that gap is milestone 181 (the foreign-language seam,
-extended)). The raw-keystroke primitive itself
-(`OP_RAWMODE`/`OP_READRAW`) is the milestone's own real deliverable.
+contract is a line discipline with no raw-keystroke input. The raw-keystroke primitive
+(`OP_RAWMODE`/`OP_READRAW`) is the milestone's own real deliverable; the seam as built cannot
+support an interactive event loop (milestone 181 (the foreign-language seam, extended)).

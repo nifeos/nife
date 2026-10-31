@@ -26,7 +26,7 @@ in an ELF note).
 
 Its supervisor exists, its state fits a page, and §209 (state handoff is an opaque blob over a
 granted frame, and it is optional) is built (notes/state-handoff.md). The terminal contract is a
-wire format eleven programs speak (`swish`, `rmle`, `mdr`, `window`, `input`, `keyboard_driver`,
+wire format ten programs speak (`swish`, `mdr`, `window`, `input`, `keyboard_driver`,
 `console`, `display_terminal`, `compositor`, `terminal_sink_caretaker` and `line_editor` itself),
 so its two changes were calef's. He ruled them on 2026-09-26, and on 2026-09-27 option A of
 milestone 661 (a terminal supervisor holds the line editor):
@@ -128,8 +128,8 @@ the harness.
   finishes the move. Same-image refusal is what the host round trip in `video_terminal::handoff`
   is there to rule out.
 - A hung `line_editor`'s state is lost, and its callers are told `Gone`. Only the incumbent can
-  write the blob, so the half-typed line, the history and any queued lines are gone. `swish` and
-  `rmle` handle `FLAG_RETRY` but not `Gone`, and the terminal contract does not say which of its
+  write the blob, so the half-typed line, the history and any queued lines are gone. `swish`
+  handles `FLAG_RETRY` but not `Gone`, and the terminal contract does not say which of its
   requests may be repeated, so on a real boot the shell would read a hang as a failed read. That is
   a contract question for an architect; only the kernel's test typist asks again today.
 - A hang caused by the sink can answer the replacement late. In console mode a `line_editor`
