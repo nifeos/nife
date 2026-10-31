@@ -30,11 +30,66 @@
 //! `milestone/607-item-3-contracts-drop-the-runtime`. calef names it.
 
 use hot_swap_contract::{
-    BAD_REQUEST, NOTE, NOTE_ABSORBED, NOTE_NOT_ABSORBED, NOTE_SWAP_NOW, OPERATION_PUT,
-    OPERATION_QUIESCE, PAGE, POKE, POKE_PROBE, POKE_RESUME, PUT_REFUSED, QUIESCED, RPT,
-    RPT_PROBE_SURVIVED, RPT_QUIESCED, RPT_UP, START_ABSORB, START_FRESH, STATE_VA, SVC,
-    SWAP_TRIGGER, V1, absorb, log_put, probe_device, state_blob, tag,
+    BAD_REQUEST, DEV_VA, LOG_BYTES, LOG_VA, NOTE, NOTE_ABSORBED, NOTE_NOT_ABSORBED, NOTE_SWAP_NOW,
+    OPERATION_PUT, OPERATION_QUIESCE, PAGE, POKE, POKE_PROBE, POKE_RESUME, PUT_REFUSED, QUIESCED,
+    RPT, RPT_PROBE_SURVIVED, RPT_QUIESCED, RPT_UP, START_ABSORB, START_FRESH, STATE_VA, SVC,
+    SWAP_TRIGGER, V1, absorb, state_blob, tag,
 };
+
+/// **Read one register of the UART we were given.** A read, never a write, on purpose: this runs
+/// inside a kernel test whose own output goes out of the same UART, and a component that printed
+/// would garble the harness it is being judged by. A read proves the mapping is live, and after the
+/// operator's revoke it faults exactly as a write would.
+///
+/// The register layout is the one architecture-specific fact a UART driver is *for*: aarch64's
+/// `virt` has a PL011 (32-bit registers, the flag register at 0x18), RISC-V's has an NS16550 (byte
+/// registers, the line status register at 0x05).
+#[cfg(target_arch = "aarch64")]
+fn probe_device() -> u64 {
+    // SAFETY: DEV_VA is our device mapping of the PL011, handed to us at build time. After the
+    // operator revokes it this read faults, which is the point of the call site that does it last.
+    unsafe { core::ptr::read_volatile((DEV_VA + 0x18) as *const u32) as u64 }
+}
+
+/// The NS16550 twin (RISC-V): byte registers, the line status register at 0x05.
+#[cfg(target_arch = "riscv64")]
+fn probe_device() -> u64 {
+    // SAFETY: as the aarch64 arm.
+    unsafe { core::ptr::read_volatile((DEV_VA + 0x05) as *const u8) as u64 }
+}
+
+/// **`x86_64` has no device page to probe** (milestone 161), and this arm exists so the crate
+/// compiles for the third architecture rather than because there is something here to read.
+///
+/// COM1 is at I/O ports `0x3f8..0x400`, with no page tables in front of them, so
+/// `user::UART_PHYS` is **zero**, the marker for DECISIONS §121 (what a device capability is when
+/// the device has no page: x86 port I/O), PROPOSED. `system_tests/src/user/live_swap_tests.rs`
+/// `skip!()`s here: reading `DEV_VA` anyway would map physical page zero, read an IVT byte and
+/// still fault on revoke, a green test about nothing. The value is never observed, and is not `0`
+/// because a quiet line status register could return that.
+#[cfg(target_arch = "x86_64")]
+fn probe_device() -> u64 {
+    u64::MAX
+}
+
+/// Write the version byte to the log page at `seq`, or refuse an offset outside it. Volatile
+/// because two address spaces write the page and one reads it.
+///
+/// `seq` comes from a client's request word, so it is bounded here and not trusted: the log
+/// capability grants one page, and an unbounded offset let a client holding only `WRITE` on the
+/// endpoint make the server write into the device page mapped after it, a confused deputy found by
+/// milestone 633's third outsider pass and pinned by
+/// `live_swap_tests::a_confined_client_drives_the_server_to_write_past_its_log`. Returns whether
+/// the byte was written.
+fn log_put(seq: u64, version: u64) -> bool {
+    if seq >= LOG_BYTES {
+        return false;
+    }
+    // SAFETY: the log page is mapped read/write at LOG_VA in every process that calls this, and
+    // `seq < LOG_BYTES` keeps the write inside that one page.
+    unsafe { core::ptr::write_volatile((LOG_VA as *mut u8).add(seq as usize), version as u8) };
+    true
+}
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
 /// `hot_swap_contract` with the split, and calef names it.
@@ -134,7 +189,7 @@ pub fn serve_with_state(
     }
 }
 
-/// The handoff page's two words, read volatile for [`log_get`]'s reason: another address space wrote
+/// The handoff page's two words, read volatile for [`log_put`]'s reason: another address space wrote
 /// them, and the read is ordered after the write by the IPC that started this instance.
 fn read_state() -> [u64; 2] {
     // SAFETY: the handoff page is mapped read/write at STATE_VA in every instance of STATEFUL_BACKEND, by the

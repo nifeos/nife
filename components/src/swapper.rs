@@ -1424,6 +1424,15 @@ fn page_frame(stage: u64) -> u64 {
     }
 }
 
+/// Read back the version byte the server wrote to the log page at `seq`. Volatile because another
+/// address space wrote it, and the read is ordered against the write by IPC.
+fn log_get(seq: u64) -> u64 {
+    // SAFETY: the log page is mapped read-only at `LOG_VA` in every process that reads it.
+    unsafe {
+        core::ptr::read_volatile((hot_swap_contract::LOG_VA as *const u8).add(seq as usize)) as u64
+    }
+}
+
 /// **The operator's verdict**, read out of the log page byte by byte.
 fn verdict_from_log(base: u64, revoke_enforced: bool) -> u64 {
     let mut bits = lc::NO_GAP | lc::MONOTONE;
@@ -1431,7 +1440,7 @@ fn verdict_from_log(base: u64, revoke_enforced: bool) -> u64 {
     let mut seen_v2 = false;
     let mut last = 0u64;
     for seq in 0..hot_swap_contract::REQUESTS {
-        let v = hot_swap_contract::log_get(base + seq);
+        let v = log_get(base + seq);
         if v == 0 {
             bits &= !lc::NO_GAP; // a request nobody served: lost in the down window
         }
@@ -1460,7 +1469,7 @@ fn verdict_from_log(base: u64, revoke_enforced: bool) -> u64 {
 fn changed_at(base: u64) -> u64 {
     let mut last = 0u64;
     for seq in 0..hot_swap_contract::REQUESTS {
-        let v = hot_swap_contract::log_get(base + seq);
+        let v = log_get(base + seq);
         if last != 0 && v != last {
             return seq;
         }

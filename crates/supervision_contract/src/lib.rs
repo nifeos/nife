@@ -255,3 +255,24 @@ pub struct Child {
     /// What the builder declared it keeps once the child runs.
     pub retention: Retention,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The nothing-endowment states exactly that: no capabilities, no placements, no mappings, no
+    /// blobs, no supervision, the default stack, and the retention the caller declared. Every
+    /// struct literal spreads it (`..ChildEndowment::new(Retention::Nothing)`), so a field that
+    /// defaulted to something would hand a child authority nobody wrote down.
+    #[test]
+    fn the_nothing_endowment_grants_nothing_and_keeps_what_it_says() {
+        let endow = ChildEndowment::new(Retention::Nothing);
+        assert!(endow.capabilities.is_empty());
+        assert!(endow.placed.is_empty());
+        assert!(endow.maps.is_empty());
+        assert!(endow.blobs.is_empty());
+        assert_eq!(endow.fault, None);
+        assert_eq!(endow.stack_pages, CHILD_STACK_PAGES);
+        assert_eq!(endow.retention, Retention::Nothing);
+    }
+}

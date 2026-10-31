@@ -76,13 +76,6 @@ pub const WANT_DOWN: u64 = 1;
 /// The backend is back (the page's initial zero): drain the backlog in order, then pass through.
 pub const WANT_UP: u64 = 0;
 
-/// What the operator last wrote on the broker's warning page.
-pub fn broker_wants_down() -> bool {
-    // SAFETY: `BROKER` declares the warning page read-only at BROKER_WARN_VA, so every broker has it
-    // mapped; the operator writes it before it signals.
-    unsafe { core::ptr::read_volatile(BROKER_WARN_VA as *const u64) == WANT_DOWN }
-}
-
 /// The broker took custody of an item instead of answering it. `w1` = the queue depth after it.
 pub const ACCEPTED: u64 = 0x4143_4350; // "ACCP"
 /// The broker's buffer is full. The producer's request is refused rather than silently dropped:
@@ -732,68 +725,8 @@ pub const fn tag_seq(w: u64) -> u64 {
 }
 
 // ===========================================================================================
-// The device probe.
-// ===========================================================================================
-
-/// **Read one register of the UART we were given.** A read, never a write, on purpose: this runs
-/// inside a kernel test whose own output goes out of the same UART, and a component that printed
-/// would garble the harness it is being judged by. A read proves the mapping is live, and after the
-/// operator's revoke it faults exactly as a write would.
-///
-/// The register layout is the one architecture-specific fact a UART driver is *for*: aarch64's
-/// `virt` has a PL011 (32-bit registers, the flag register at 0x18), RISC-V's has an NS16550 (byte
-/// registers, the line status register at 0x05).
-#[cfg(target_arch = "aarch64")]
-pub fn probe_device() -> u64 {
-    // SAFETY: DEV_VA is our device mapping of the PL011, handed to us at build time. After the
-    // operator revokes it this read faults, which is the point of the call site that does it last.
-    unsafe { core::ptr::read_volatile((DEV_VA + 0x18) as *const u32) as u64 }
-}
-
-/// The NS16550 twin (RISC-V): byte registers, the line status register at 0x05.
-#[cfg(target_arch = "riscv64")]
-pub fn probe_device() -> u64 {
-    // SAFETY: as the aarch64 arm.
-    unsafe { core::ptr::read_volatile((DEV_VA + 0x05) as *const u8) as u64 }
-}
-
-/// **`x86_64` has no device page to probe** (milestone 161), and this arm exists so the crate
-/// compiles for the third architecture rather than because there is something here to read.
-///
-/// COM1 is at I/O ports `0x3f8..0x400`, with no page tables in front of them, so
-/// `user::UART_PHYS` is **zero**, the marker for DECISIONS §121 (what a device capability is when
-/// the device has no page: x86 port I/O), PROPOSED. `system_tests/src/user/live_swap_tests.rs`
-/// `skip!()`s here: reading `DEV_VA` anyway would map physical page zero, read an IVT byte and
-/// still fault on revoke, a green test about nothing. The value is never observed, and is not `0`
-/// because a quiet line status register could return that.
-#[cfg(target_arch = "x86_64")]
-pub fn probe_device() -> u64 {
-    u64::MAX
-}
-
-// ===========================================================================================
 // The shared page, as bytes.
 // ===========================================================================================
-
-/// The log page, as a slice. Volatile accessors rather than a plain slice because two address
-/// spaces write it and one reads it, and the reads are ordered against the writes by IPC (the
-/// operator only ever reads after a message from the writer has come through the kernel).
-///
-/// `seq` comes from a client's request word, so it is bounded here and not trusted: the log
-/// capability grants one page, and an unbounded offset let a client holding only `WRITE` on the
-/// endpoint make the server write into the device page mapped after it, a confused deputy found by
-/// milestone 633's third outsider pass and pinned by
-/// `live_swap_tests::a_confined_client_drives_the_server_to_write_past_its_log`. Returns whether
-/// the byte was written.
-pub fn log_put(seq: u64, version: u64) -> bool {
-    if seq >= LOG_BYTES {
-        return false;
-    }
-    // SAFETY: the log page is mapped read/write at LOG_VA in every process that calls this, and
-    // `seq < LOG_BYTES` keeps the write inside that one page.
-    unsafe { core::ptr::write_volatile((LOG_VA as *mut u8).add(seq as usize), version as u8) };
-    true
-}
 
 /// The log page's size: the whole of what the log capability grants.
 pub const LOG_BYTES: u64 = PAGE;
@@ -801,12 +734,6 @@ pub const LOG_BYTES: u64 = PAGE;
 /// What a server answers in both words to an `OPERATION_PUT` whose offset falls outside the log
 /// page. Name provisional (milestone 633).
 pub const PUT_REFUSED: u64 = u64::MAX;
-
-/// Read back the version byte [`log_put`] wrote at `seq`.
-pub fn log_get(seq: u64) -> u64 {
-    // SAFETY: as `log_put`.
-    unsafe { core::ptr::read_volatile((LOG_VA as *const u8).add(seq as usize)) as u64 }
-}
 
 // ===========================================================================================
 // The component itself: one serving loop, two implementations of one function.
@@ -952,5 +879,44 @@ mod tests {
         let p = capability_plan::plan(&STATEFUL_BACKEND, &with).unwrap();
         assert_eq!(p.state_handoff().map(|h| h.va), Some(STATE_VA));
         assert!(p.devices().is_empty());
+    }
+
+    /// The survey word packs four byte counts and each reader takes one out. A reader that took
+    /// the wrong byte would report another state's count, a monitor lying quietly.
+    #[test]
+    fn the_survey_word_round_trips_each_count() {
+        let word = survey_counts(1, 2, 3, 4);
+        assert_eq!(survey_ready(word), 1);
+        assert_eq!(survey_running(word), 2);
+        assert_eq!(survey_blocked(word), 3);
+        assert_eq!(survey_dead(word), 4);
+    }
+
+    /// A count wider than its byte saturates rather than wrapping into the next state's count.
+    #[test]
+    fn a_survey_count_wider_than_a_byte_saturates() {
+        let word = survey_counts(300, 0, 0, 0);
+        assert_eq!(survey_ready(word), 255);
+        assert_eq!(survey_running(word), 0);
+    }
+
+    /// **The digest is the arithmetic a C instance and a Rust one must agree on bit for bit**, so
+    /// the test pins the value rather than checking the function against itself.
+    #[test]
+    fn the_digest_is_the_value_both_implementations_agree_on() {
+        assert_eq!(digest(0), 0xa8c7_f832_281a_39c5);
+        assert_eq!(digest(7), 0x4bd7_a317_074c_5b62);
+        assert_eq!(digest(8), 0xa09e_307a_7f94_8acd);
+    }
+
+    /// The reply's second word carries the answering version above the request it answered.
+    #[test]
+    fn the_tag_word_carries_the_version_and_the_sequence() {
+        let word = tag(2, 7);
+        assert_eq!(tag_version(word), 2);
+        assert_eq!(tag_seq(word), 7);
+        let wide = tag(u64::MAX, u64::MAX);
+        assert_eq!(tag_version(wide), u64::MAX >> 32);
+        assert_eq!(tag_seq(wide), 0xffff_ffff);
     }
 }
