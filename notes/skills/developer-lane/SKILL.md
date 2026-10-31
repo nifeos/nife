@@ -89,7 +89,7 @@ can tell an intention from an observation in prose, and it does not touch the `B
 
 Ruled 2026-10-31 (UTC). A lane brief answers one question before a lane starts, and the review of
 the lane's pull request asks it again: what drives this work now, and what does it save? The answer
-is a sentence, such as "milestone 976's updater calls it" or "it cuts a kernel download by under
+is a sentence, such as "the updater in milestone 976 (an OS update is a set of packages that lands through a slot) calls it" or "it cuts a kernel download by under
 1 MB per update". "Nothing drives it yet" is an allowed answer. It is a reason to hold the work for
 its driver, not a failure, because a program that waits for its users is not waste. There is no
 field for it and no lint check. `helpers/consumer_census.py` counts delivered work nothing uses,
