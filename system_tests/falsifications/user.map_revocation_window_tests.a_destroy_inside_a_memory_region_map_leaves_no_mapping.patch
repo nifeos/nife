@@ -39,17 +39,21 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
      let mut hold = crate::revoke::hold();
      let root = mmu::current_user_root();
      // The leaf's page, then its record, then the tables, each table recorded as it is retyped:
-@@ -88,20 +86,26 @@
+@@ -88,25 +86,31 @@
      // revocation and untyped reclamation)). No capability names the page, and it is fresh, so the
      // record's writable-and-executable check finds nothing to refuse.
      let flags = paging::Flags::user_data();
 -    let recorded = hold
--        .record_mapping(phys, root, va, flags, crate::revoke::PageMapSource::NoCapability)
+-        .record_mapping(
+-            phys,
+-            root,
+-            va,
+-            flags,
+-            crate::revoke::PageMapSource::NoCapability,
+-        )
 -        .map_err(|_| Error::OutOfMemory)?;
--    match mmu::map_current_user_page_frame(va, phys, flags, || {
-+    let mapped = mmu::map_current_user_page_frame(va, phys, flags, || {
-         hold.retype_table(region, root, va)
--    }) {
+-    match mmu::map_current_user_page_frame(va, phys, flags, || hold.retype_table(region, root, va))
+-    {
 -        Ok(()) => Ok(0),
 -        Err(e) => {
 -            hold.forget_recorded(root, recorded);
@@ -57,7 +61,8 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 -                paging::MapError::OutOfPageFrames => Error::OutOfMemory,
 -                _ => Error::BadPointer, // misaligned, already mapped, or wrong half
 -            })
-+    });
++    let mapped =
++        mmu::map_current_user_page_frame(va, phys, flags, || hold.retype_table(region, root, va));
 +    drop(hold);
 +    #[cfg(feature = "system_tests")]
 +    crate::delegation_pause::here(); // no lock held
@@ -65,7 +70,13 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 +    match mapped {
 +        Ok(()) => {
 +            if hold
-+                .record_mapping(phys, root, va, flags, crate::revoke::PageMapSource::NoCapability)
++                .record_mapping(
++                    phys,
++                    root,
++                    va,
++                    flags,
++                    crate::revoke::PageMapSource::NoCapability,
++                )
 +                .is_err()
 +            {
 +                mmu::unmap_user_at(root, va);
