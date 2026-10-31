@@ -755,6 +755,7 @@ impl core::fmt::Display for EveryCoreTickBudget {
 ///
 /// Name: provisional (lane/fuzz-deadlines-count-guest-progress, 2026-10-31 UTC).
 #[cfg(any(test, feature = "system_tests"))]
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; the kernel's own do not
 pub fn wait_on_every_core(mut done: impl FnMut() -> bool) -> Result<(), EveryCoreTickBudget> {
     let mut budget = EveryCoreTickBudget::new(
         WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HZ,
