@@ -119,7 +119,7 @@ item (h); see Follow-on.
 
 9. Editor: the tree ships none. `kibi` (MIT/Apache, a Rust editor inspired by `kilo`) needs `libc`
 termios and raw stdin, which the PAL does not bind. GNU `nano` is the GPL-as-package path
-(milestone 170), and either arrives as an `optional` package without touching base.
+(milestone 170 (`nano`: a real, full-featured screen editor)), and either arrives as an `optional` package without touching base.
 
 9a. BUILT: `mdr` is a std program parsing with `pulldown-cmark`, item (f2); see Follow-on.
 
