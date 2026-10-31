@@ -382,8 +382,14 @@ fn the_pair_is_refused_through_page_frame_map_in_either_order() {
         let base = 0x40_0000;
 
         // Code through MAP_INTO, then writable through PageFrame::MAP.
-        call(own, abi::address_space::MAP_INTO, base, f1, abi::address_space::MAP_CODE)
-            .expect("MAP_INTO refused the code mapping");
+        call(
+            own,
+            abi::address_space::MAP_INTO,
+            base,
+            f1,
+            abi::address_space::MAP_CODE,
+        )
+        .expect("MAP_INTO refused the code mapping");
         WRITABLE_AFTER_CODE.store(
             encode(call(f1, abi::page_frame::MAP, base + page, 1, tables_slot)),
             Ordering::SeqCst,
@@ -485,13 +491,55 @@ fn the_narrow_rule_admits_every_other_pair_and_every_other_space() {
     let page = paging::PAGE_SIZE;
     let base = 0x40_0000;
     let admitted = [
-        (here, read_only, base, abi::address_space::MAP_RO, "read-only"),
-        (here, read_only, base + page, abi::address_space::MAP_RO, "read-only twice"),
-        (here, read_only, base + 2 * page, abi::address_space::MAP_RW, "writable beside read-only"),
-        (here, shared, base + 3 * page, abi::address_space::MAP_CODE, "code"),
-        (here, shared, base + 4 * page, abi::address_space::MAP_RO, "read-only beside code"),
-        (there, shared, base, abi::address_space::MAP_RW, "writable in another space"),
-        (there, shared, base + page, abi::address_space::MAP_RW, "writable twice there"),
+        (
+            here,
+            read_only,
+            base,
+            abi::address_space::MAP_RO,
+            "read-only",
+        ),
+        (
+            here,
+            read_only,
+            base + page,
+            abi::address_space::MAP_RO,
+            "read-only twice",
+        ),
+        (
+            here,
+            read_only,
+            base + 2 * page,
+            abi::address_space::MAP_RW,
+            "writable beside read-only",
+        ),
+        (
+            here,
+            shared,
+            base + 3 * page,
+            abi::address_space::MAP_CODE,
+            "code",
+        ),
+        (
+            here,
+            shared,
+            base + 4 * page,
+            abi::address_space::MAP_RO,
+            "read-only beside code",
+        ),
+        (
+            there,
+            shared,
+            base,
+            abi::address_space::MAP_RW,
+            "writable in another space",
+        ),
+        (
+            there,
+            shared,
+            base + page,
+            abi::address_space::MAP_RW,
+            "writable twice there",
+        ),
     ];
     for (space, frame, va, shape, what) in admitted {
         assert_eq!(

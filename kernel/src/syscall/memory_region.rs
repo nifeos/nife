@@ -89,11 +89,16 @@ pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
     // record's writable-and-executable check finds nothing to refuse.
     let flags = paging::Flags::user_data();
     let recorded = hold
-        .record_mapping(phys, root, va, flags, crate::revoke::PageMapSource::NoCapability)
+        .record_mapping(
+            phys,
+            root,
+            va,
+            flags,
+            crate::revoke::PageMapSource::NoCapability,
+        )
         .map_err(|_| Error::OutOfMemory)?;
-    match mmu::map_current_user_page_frame(va, phys, flags, || {
-        hold.retype_table(region, root, va)
-    }) {
+    match mmu::map_current_user_page_frame(va, phys, flags, || hold.retype_table(region, root, va))
+    {
         Ok(()) => Ok(0),
         Err(e) => {
             hold.forget_recorded(root, recorded);
