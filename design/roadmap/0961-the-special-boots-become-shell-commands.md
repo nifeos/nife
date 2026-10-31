@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: the-special-boots-become-shell-commands
 raised: 2026-10-21
 milestone_dependencies: 890
@@ -184,7 +184,13 @@ there yet. QEMU and xenon can start sooner.
 5. `network_bench` on xenon, after the bench boot proves the I219. Then the feature is deleted.
 6. `job_mix`, as milestone 523. Its five forks come to the architect here, placement visibility
    first. 523 waits behind the partial milestones and starts after them.
-7. Delete `tsc_probe`. It has no precondition, so it may land before any step above.
+7. Delete `tsc_probe`. It has no precondition, so it may land before any step above. LANDED
+   (pull request #2921): the feature, its module, its call in the x86_64 timer init and its
+   baseline row are gone; it was in no `script/lint` row, `script/board-image` flag or xtask build.
+
+## Done when
+
+Every step above has landed and the end state below holds. Landed so far: step 7.
 
 ## End state
 

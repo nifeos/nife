@@ -4433,7 +4433,6 @@ kernel/src/arch/x86_64/timer.rs::now
 kernel/src/arch/x86_64/timer.rs::spin_for
 kernel/src/arch/x86_64/timer.rs::ticks
 kernel/src/arch/x86_64/timer_calibration_tests.rs
-kernel/src/arch/x86_64/tsc_probe.rs
 kernel/src/bench.rs
 kernel/src/bench/sequence.rs::run
 kernel/src/boot.rs::DTB
