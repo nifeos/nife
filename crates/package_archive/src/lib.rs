@@ -77,12 +77,13 @@ pub const MEMBER_ALIGN: usize = 8;
 /// The most members a package may hold.
 ///
 /// **A ceiling exists so that a header claiming four billion members is refused before anything is
-/// multiplied by it**, which is the arithmetic a hostile file reaches for first. 64 is a judgment:
-/// the largest thing anyone has proposed packaging is one program, its license, its manifest and
-/// its documentation bundle, which is four. Raising it costs nothing but the bound in this line.
+/// multiplied by it**, which is the arithmetic a hostile file reaches for first. 128 is a judgment:
+/// the `fixtures` package carries every test program in one archive and had reached the earlier
+/// bound of 64, while a program-sized package has four members. Raising it costs nothing but the
+/// bound in this line.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_MEMBERS: usize = 64;
+pub const MAXIMUM_MEMBERS: usize = 128;
 
 /// What a package says about itself: the identity §197 rules it is named by, plus the architecture,
 /// because "per-architecture output is the normal case" (§197) and three triples means three files.

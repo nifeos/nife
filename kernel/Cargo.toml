@@ -129,6 +129,7 @@ coremark = { version = "0.1.0", path = "../crates/coremark", optional = true }
 # with. Only `bench` uses it; the system tests have their own copy of the dependency (milestone 609
 # (the system tests leave the kernel crate)).
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract", optional = true }
+primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract", optional = true }
 # The kernel's ring layout and the F3 record (milestone 342 (the kernel and the `console` server
 # drive one UART from two address spaces)): the kernel writes what the log service reads, so both
 # link one definition. no_std, no dependencies.
@@ -285,7 +286,7 @@ board_th1520 = ["board"]
 # `filesystem_fixture` joins it optional (milestone 886 (the filesystem test fixture moves to its
 # own crate)): the filesystem bench speaks the
 # throughput benchmark's shape, which is test data, so the booting kernel never links it.
-bench = ["dep:coremark", "dep:byte_sink_contract", "dep:filesystem_fixture"]
+bench = ["dep:coremark", "dep:byte_sink_contract", "dep:primitive_benchmark_contract", "dep:filesystem_fixture"]
 # The instruction-count instrument (milestone 78): boot under `-icount shift=0,sleep=off`, where
 # virtual time is a deterministic function of instructions retired, and assert the two timing claims
 # no wall-clock test can make. See script/icount and kernel/src/icount.rs. Name provisional.

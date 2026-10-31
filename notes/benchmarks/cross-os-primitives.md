@@ -223,3 +223,17 @@ fastest; a Mach port would likely beat the pipe. *(Later, 2026-07-29: the mailbo
 words, milestone 22 (trusted init) §26 (the fault endpoint); see [the per-core refresh](per-core-and-multi-hart.md).)* The host context
 switch still wants lmbench's ring method to isolate cleanly. `sel4bench`, the one peer that would
 say how close to the state of the art these numbers are, is the remaining comparison.
+
+## Three of the EL0 rows run at the production shell
+
+`null_syscall`, `sink_producer | sink_consumer` (the `sink_throughput` row) and `map_el0 --mem 10`
+are programs of their own, so a person types them at the prompt of the kernel that ships. Each
+prints one row of ticks, never converted time, under `bench-production:`. The bench boot spawns the
+same programs and its rows read `bench:`. `primitive_benchmark_contract` holds the loop counts and
+the row spelling, so both runs time the same thing. A production row competes with the console,
+`net_stack` and the shell for the core, which makes it a different measure from the quiet boot's.
+Record it in `bench/` beside the quiet boot's rows; no gate reads it (milestone 961 (the kernel's
+special boots become commands typed at the production shell), decision D6). Quote the boot log's
+counter-frequency line beside the ticks to convert them. `ctx_switch`, `ipc_rtt_el0` and
+`spawn_el0` need a peer process or process construction, so they stay in the bench boot. The first
+production rows are in `bench/qemu-2026-10-31/`.

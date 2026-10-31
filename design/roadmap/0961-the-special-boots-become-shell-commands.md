@@ -49,7 +49,7 @@ names what a program cannot learn through any capability that exists.
 | `job_mix` | jobs per minute against task count | tasks EL0; supervisor in the kernel | placement census; counter frequency | moves, after 523 |
 | `lock_wait` | kernel lock contention under the job mix | kernel counters on every `invoke` | all of it | stays |
 | `tsc_probe` | TSC rate against CMOS second edges | kernel, ring 0 | the CMOS ports themselves | deleted |
-| `bench`, EL0 rows | `null_syscall`, `ctx_switch`, `ipc_rtt_el0`, `sink_throughput`, `map_el0`, `spawn_el0`, the `fs_*` rows, `rg_search` | `os_primitives_benchmarker` and the fs clients, EL0 | none; the kernel only spawns and grants | also runs from the shell |
+| `bench`, EL0 rows | `null_syscall`, `ctx_switch`, `ipc_rtt_el0`, `sink_throughput`, `map_el0`, `spawn_el0`, the `fs_*` rows, `rg_search` | `os_primitives_benchmarker` and the fs clients, EL0 | none; the kernel only spawns and grants | `null_syscall`, `sink_throughput` and `map_el0` also run from the shell |
 | `bench`, kernel rows | `yield_switch`, `ipc_rtt`, `relay_rtt`, `call_reply`, `broker_rtt`, `spawn_reap`, `map_new`, `rfence_self`, `tss_iomap_*`, `ipc_scale_*`, `appdisp_*`, `smp_*`, `coremark` | kernel threads and kernel calls | the cost of the kernel path itself | stays |
 | `icount` | timer arrival, handler bound, missed ticks | the kernel's timer interrupt path | all of it, under `-icount` | stays |
 | `soak_test` and its four variants | cross-core IPC under saturation | `soaker` workers EL0; detection and tick route in the kernel | wake refusals; the `on_tick` route | stays |
@@ -141,10 +141,13 @@ These already measure a userspace program: `os_primitives_benchmarker` self-time
 boot stays. The same program also becomes a command, so a board on the production kernel gives the
 same rows.
 
-Two rows need more than a shell child holds. `spawn_el0` builds a process and endows it, which
-needs `GRANT` on its budget, and a `--mem` grant carries none (523's blocker 1). `map_el0` may need
-a region larger than the `--mem` ceiling its manifest would declare. The rest fit what the shell grants. The fs rows need the filesystem client page,
-which the shell already endows.
+Three rows run as commands: `null_syscall`, `sink_throughput` (`sink_producer | sink_consumer`) and
+`map_el0`. The last builds its own address space and frame from a ten-page `--mem`, which the first
+`USAGE` reading of the bench boot's `map_el0` sized (8 pages committed by 508 maps). The bench boot
+spawns the same programs, with the loop counts in `primitive_benchmark_contract`. `ctx_switch` and
+`ipc_rtt_el0` need a peer process and `spawn_el0` builds and destroys processes, which needs `GRANT` on a budget
+and a `--mem` grant carries none (523's blocker 1), so those three stay in the bench boot. The fs rows need the filesystem client page, which the shell already
+endows, and are not moved here.
 
 The baseline does not move (D6). `script/bench --check` gates against `bench/baseline-*.txt`, taken
 on a quiet machine under `-icount`. A production boot has the console, `net_stack` and the shell
@@ -174,8 +177,9 @@ its input works under milestone 890 (riscv64 and x86_64 join the shared boot pat
 prompt echoes the first keystroke and no later one (pull request #2485), so nothing can be typed
 there yet. QEMU and xenon can start sooner.
 
-1. The `bench` EL0 rows as a command. The program exists; it needs a catalog entry or a jig
-   package and a manifest. It proves the shape on every architecture.
+1. The `bench` EL0 rows as a command. LANDED for `null_syscall`, `sink_throughput` and `map_el0`
+   (ruled 2026-10-31). Each is a program of its own with a catalog entry. Its manifest asks for no
+   authority (`map_el0` asks for a ten-page `--mem`), and the bench boot spawns the same programs. `ctx_switch`, `ipc_rtt_el0` and `spawn_el0` stay in the bench boot.
 2. `network_bench` on radon, with the production kernel printing D1's lines at bring-up. No new
    authority, and radon's production boot has the network.
 3. The raw-disk grant, then `disk_throughput` through it. xenon and the OVMF rehearsal.
@@ -190,7 +194,7 @@ there yet. QEMU and xenon can start sooner.
 
 ## Done when
 
-Every step above has landed and the end state below holds. Landed so far: step 7.
+Every step above has landed and the end state below holds. Landed so far: steps 1 and 7.
 
 ## End state
 
@@ -275,12 +279,16 @@ The quiet-machine baseline stays the tripwire.
 
 - **Done.** Step 7, the deletion of `tsc_probe`, landed in pull request #2921. Checked by
   `grep -rn tsc_probe kernel script xtask .github`, which finds nothing.
-- **Outstanding.** Step 1, the `bench` EL0 rows as a command. Only `null_syscall` and the
-  `sink_throughput` pair can run as shell children today. The other rows need a peer process that
-  shares an endpoint, a target address space or a budget they can lend from. A shell child cannot
-  spawn a peer by name, and cannot endow what it builds from a `--mem` grant, which carries no
-  `GRANT` (milestone 523's blocker one). It is a question for the architect, raised in the lane report. Checked by reading the roles
-  in `fixtures/src/os_primitives_benchmarker.rs` against `kernel/src/bench/el0.rs`.
+- **Done.** Step 1: `null_syscall`, `sink_producer | sink_consumer` and `map_el0 --mem 10` run
+  at the production shell and print `bench-production:` rows, and the bench boot spawns the same
+  programs (pull request #2933). Checked by `script/swish-check --arch aarch64` and
+  `script/bench --check` on aarch64 and x86_64. CI runs the riscv64 leg.
+- **Refused.** `ctx_switch`, `ipc_rtt_el0` and `spawn_el0` as commands (calef, ruled 2026-10-31):
+  each needs a peer process or a process construction the shell does not hand a child, so they
+  stay rows of the bench boot.
+- **Recorded.** The first production rows are in `bench/qemu-2026-10-31/`, beside the quiet boot's.
+  The names of the four programs and of `primitive_benchmark_contract` are provisional until
+  ratified.
 - **Outstanding.** Steps 2 through 5 wait on the inputs the Order section names. None has started.
 - **Milestone 523.** Step 6 is milestone 523 (moving the job-mix supervisor into userspace).
 
