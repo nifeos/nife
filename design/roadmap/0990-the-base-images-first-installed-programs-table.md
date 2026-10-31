@@ -136,7 +136,7 @@ volume.
 - No signing or pinning of the launch volume. That is milestone 917 (basalt's packages build
   reproducibly) and 607's item 6.
 - No new filesystem server. RedoxFS is the launch store (decision 34), and this milestone uses the
-  server and the host tool that already exist. It starts once milestone 911 lands.
+  server and the host tool that already exist. It starts once milestone 911 (scripted installs grant only what the owner's approval file allows) lands.
 
 The launch volume's attach point, its measurement and the step that writes `activation/1`
 are provisional names until the implementing lane names them. `compose` keeps the check seam, so
