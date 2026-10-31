@@ -1,18 +1,219 @@
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -221,15 +221,6 @@
+ ]
+ 
+ [[package]]
+-name = "guard-trait"
+-version = "0.4.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7747cdd4eb681330c039e570a9aafee12e9f85e1e2d61c32d9781cce47a4adf4"
+-dependencies = [
+- "stable_deref_trait",
+-]
+-
+-[[package]]
+ name = "humansize"
+ version = "2.1.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -268,16 +259,7 @@
+  "bitflags",
+  "libc",
+  "plain",
+- "redox_syscall 0.9.5",
+-]
+-
+-[[package]]
+-name = "lock_api"
+-version = "0.4.14"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
+-dependencies = [
+- "scopeguard",
++ "redox_syscall",
+ ]
+ 
+ [[package]]
+@@ -327,29 +309,6 @@
+ ]
+ 
+ [[package]]
+-name = "parking_lot"
+-version = "0.12.5"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "93857453250e3077bd71ff98b6a65ea6621a19bb0f559a85248955ac12c45a1a"
+-dependencies = [
+- "lock_api",
+- "parking_lot_core",
+-]
+-
+-[[package]]
+-name = "parking_lot_core"
+-version = "0.9.12"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2621685985a2ebf1c516881c026032ac7deafcda1a2c9b7850dc81e3dfcb64c1"
+-dependencies = [
+- "cfg-if",
+- "libc",
+- "redox_syscall 0.5.18",
+- "smallvec",
+- "windows-link",
+-]
+-
+-[[package]]
+ name = "parse-size"
+ version = "1.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -419,50 +378,19 @@
+ checksum = "25360c805d5f69f6bc20297c3657a24e75c989da1de208a8168240b1f92816e4"
+ 
+ [[package]]
+-name = "redox-buffer-pool"
+-version = "0.6.0"
+-source = "git+https://gitlab.redox-os.org/redox-os/redox-buffer-pool.git#259719734304f6d2138b8b910fbdac663ebe6ff0"
+-dependencies = [
+- "guard-trait",
+- "log",
+- "parking_lot",
+- "spinning",
+-]
+-
+-[[package]]
+ name = "redox-path"
+ version = "0.4.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "083c57139a99303d842a4cfe1f0fd6483d77d81eda1442be84bcb1a0f737ed96"
+ 
+ [[package]]
+-name = "redox-rings"
+-version = "0.1.0"
+-source = "git+https://gitlab.redox-os.org/redox-os/redox-rings.git#c56099c15a30636e7a528a6b37676daa7d9b6788"
+-dependencies = [
+- "bitflags",
+- "libredox",
+- "redox_syscall 0.9.5",
+- "zerocopy",
+-]
+-
+-[[package]]
+ name = "redox-scheme"
+ version = "0.12.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "19c965a2cf25eaf2bab12a7aa83165b018b880293ce1005ab76eb9ab795cc89c"
+ dependencies = [
+  "libredox",
+- "redox_syscall 0.9.5",
+-]
+-
+-[[package]]
+-name = "redox_syscall"
+-version = "0.5.18"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
+-dependencies = [
+- "bitflags",
++ "redox_syscall",
+ ]
+ 
+ [[package]]
+@@ -494,11 +422,9 @@
+  "lz4_flex",
+  "parse-size",
+  "range-tree",
+- "redox-buffer-pool",
+  "redox-path",
+- "redox-rings",
+  "redox-scheme",
+- "redox_syscall 0.9.5",
++ "redox_syscall",
+  "seahash",
+  "smallvec",
+  "termion",
+@@ -537,12 +463,6 @@
+ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+ 
+ [[package]]
+-name = "scopeguard"
+-version = "1.2.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+-
+-[[package]]
+ name = "seahash"
+ version = "4.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -575,21 +495,6 @@
+ checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
+ 
+ [[package]]
+-name = "spinning"
+-version = "0.1.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2d4f0e86297cad2658d92a707320d87bf4e6ae1050287f51d19b67ef3f153a7b"
+-dependencies = [
+- "lock_api",
+-]
+-
+-[[package]]
+-name = "stable_deref_trait"
+-version = "1.2.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+-
+-[[package]]
+ name = "subtle"
+ version = "2.6.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -681,12 +586,6 @@
+ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+ 
+ [[package]]
+-name = "windows-link"
+-version = "0.2.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
+-
+-[[package]]
+ name = "xts-mode"
+ version = "0.5.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -8,6 +8,12 @@
- # If you are reading this file be aware that the original Cargo.toml
- # will likely look very different (and much more reasonable).
- # See Cargo.toml.orig for the original contents.
-+
+@@ -1,3 +1,9 @@
 +# cricker-os pin divergence: an empty [workspace] table marks this vendored crate as its own
 +# workspace root, so the outer cricker-os workspace treats it as an external path dependency, not a
 +# member. That is what keeps our `-D warnings` clippy gate and our `cargo fmt` gate off code we do
 +# not own, while it still builds normally as redoxfs_host's dependency. See vendor/README.md.
 +[workspace]
- 
++
  [package]
- edition = "2021"
+ name = "redoxfs"
+ description = "The Redox Filesystem"
+@@ -88,11 +94,15 @@
+ fuser = { version = "0.16", optional = true }
+ 
+ [target.'cfg(target_os = "redox")'.dependencies]
+-redox-rings = { git = "https://gitlab.redox-os.org/redox-os/redox-rings.git", features = ["userspace", "sync"] }
++# cricker-os pin divergence: the two git dependencies that were here (redox-rings and
++# redox-buffer-pool, both on gitlab.redox-os.org) are removed. Cargo resolves every target's
++# dependencies into the lockfile, so a git source here would put a non-nifeos git dependency into
++# every workspace that builds this engine, which deny.toml refuses (DECISIONS §305) and which would
++# make the build need the network. Only `src/disk/ring.rs` and the Redox scheme use them, and both
++# are compiled only for `target_os = "redox"`, which nife never builds. See vendor/README.md.
+ libredox = { version = "0.1.20", optional = true }
+ redox-path = "0.4.1"
+ redox-scheme = { version = "0.12", optional = true }
+-redox-buffer-pool = { git = "https://gitlab.redox-os.org/redox-os/redox-buffer-pool.git" }
+ 
+ [lints.rust]
+ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
+--- a/src/disk/mod.rs
++++ b/src/disk/mod.rs
+@@ -1,3 +1,4 @@
++use alloc::boxed::Box; // cricker-os pin divergence: the no_std build has no Box in scope
+ use syscall::error::Result;
+ 
+ #[cfg(feature = "std")]
 --- a/src/filesystem.rs
 +++ b/src/filesystem.rs
 @@ -2,15 +2,19 @@
@@ -285,7 +486,7 @@
              RecordRaw::empty(level).unwrap().len(),
 --- a/src/transaction.rs
 +++ b/src/transaction.rs
-@@ -417,9 +417,9 @@
+@@ -424,9 +424,9 @@
              };
              let comp_len = record.data()[0] as usize | ((record.data()[1] as usize) << 8);
              let total_len = comp_len + 2;

@@ -200,12 +200,6 @@ deny = [
 ]
 
 skip = [
-    # RedoxFS 0.9.1 depends on getrandom 0.2 directly while its uuid 1.x pulls getrandom 0.4. Both
-    # are host-side only: the bare-metal redoxfs_server builds the engine `--no-default-features`, where
-    # neither is present (creation APIs are std-gated, roadmap §32 port plan item 4). Nothing we
-    # wrote chose either version, and moving off it means advancing the vendored pin, which is a
-    # deliberate re-vendor (vendor/README.md) rather than a config change. Drops when the pin does.
-    { crate = "getrandom@0.2.17", reason = "redoxfs 0.9.1's direct dep; uuid pulls 0.4. Host-side only; goes away with the next redoxfs pin" },
     # smoltcp 0.14 is built on bitflags 1, and pulldown-cmark (`documentation`'s parser, ruled
     # 2026-10-20 UTC for milestone 784 (reuse what the tree wrote) item (f2)) on bitflags 2. Both
     # are in `components`. Neither version is ours to choose, and bitflags is macros over an
