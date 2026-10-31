@@ -473,7 +473,10 @@ pub(in crate::swish_check) static SWISH_CHECK_AFTER_REBOOT: LazyLock<Vec<Line>> 
 );
 
 /// What `jig install` asks before it installs a package that asks for grants (milestone 892).
-pub(in crate::swish_check) const OWNERS_QUESTION: &str = "grant these and install? [y/N]";
+/// **Through the prompt's closing space**: std's stdout sends 16 bytes a message, so the space is
+/// a message of its own, and a reply typed on `]` is echoed ahead of it (`[y/N]y `, run
+/// 41228876966).
+pub(in crate::swish_check) const OWNERS_QUESTION: &str = "grant these and install? [y/N] ";
 
 /// The lines that install and run `reach`, skipped where `std_exerciser` was not built, since its
 /// package is built from that workspace (`package::Source::StdProgram`).

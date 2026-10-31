@@ -63,6 +63,9 @@ fn a_question_is_emitted_whole_although_its_space_could_start_a_gauge() {
     // by an answer that waits for it.
     let (out, _) = filtered(&["  grant these and install? [y/N]", " "]);
     assert!(out.ends_with("[y/N] "), "{out:?}");
+    // Cut inside `[y/N]`, as std's 16-byte messages cut `approve these delegations? [y/N] `.
+    let (out, _) = filtered(&["  approve these delegations? [y/", "N] "]);
+    assert!(out.ends_with("[y/N] "), "{out:?}");
     // A gauge spliced in after the prompt is still taken out, by its own two spaces.
     let (out, gauges) = filtered(&["  ask? [y/N] ", "  progenitor stack: 1 of 2 bytes at peak\n", "y\n"]);
     assert_eq!(out, "  ask? [y/N] y\n");
