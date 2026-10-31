@@ -44,6 +44,20 @@
 //! it could not fetch, succeeds, and skips every line and test of basalt's programs. In CI (`CI`
 //! set) a failed fetch fails the row.
 
+//! # BUGS
+//!
+//! - **A wire-format break in a program basalt delivers cannot land in one nife pull request.**
+//!   nife's gate consumes basalt's prebuilt archive, and basalt pins a merged nife commit and
+//!   refuses a branch, so a nife change that rebuilds the program's peer has nowhere to publish the
+//!   rebuilt program first. `program_argument_contract`'s argv magic is the worked example: minting
+//!   its version digits in-tree made the rebuilt shell write an argv page the pinned `rg` refuses,
+//!   and the `rg-threads` and `swish-check` rows failed until the digits went back out. Nothing
+//!   breaks today because basalt has no consumers yet, so nife may still break and re-pin in one
+//!   move. A fix needs one of two things: a gate that builds the program from the candidate tree
+//!   instead of fetching it, or a written break-and-repin procedure that moves the basalt pin and
+//!   the contract together. Until then, a change here that breaks a delivered program's wire format
+//!   waits for basalt's archive rebuild.
+
 use std::path::{Path, PathBuf};
 
 use crate::host::workspace_root;

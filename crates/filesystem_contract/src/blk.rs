@@ -1,5 +1,15 @@
 use super::PAGE;
 
+/// The block protocol's version, one for this operation set and its reply shapes. Module-scoped,
+/// not per crate: the file protocol moves on its own version (calef's ruling of 2026-10-29 UTC,
+/// PR #2852, question 1). A break bumps this and owes the dated ledger entry the
+/// interface-stability discipline records; an addition (a new opcode) owes no bump. The check
+/// lives at bind (milestone 956 (the linked interfaces carry checkable versions)): a client
+/// `CALL`s `OPERATION_VERSION` and binds only when its own version is in the served set.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// Read [`req_blocks`] filesystem blocks starting at `w1` from the disk into the shared
 /// region. Reply `r0` = 0 on success, or [`super::reply_err`] on failure; the bytes land at the
 /// start of the shared region, block `w1` first.

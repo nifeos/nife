@@ -4,6 +4,17 @@
 /// at 1. See notes/dir-capability.md, "Handle 0 is the bound directory".
 pub const ROOT: u64 = 0;
 
+/// The file protocol's version, one for this operation set and its reply shapes. Module-scoped,
+/// not per crate: the block protocol moves on its own version (calef's ruling of 2026-10-29 UTC,
+/// PR #2852, question 1). A break bumps this and owes the dated ledger entry the
+/// interface-stability discipline records; an addition (a new verb, an optional field) owes no
+/// bump. The check lives at bind (milestone 956 (the linked interfaces carry checkable
+/// versions)): a client `CALL`s `OPERATION_VERSION` and binds only when its own version is in
+/// the served set.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// Open the name in the shared page ([`req_len`] bytes) under the directory handle in
 /// [`req_handle`] ([`ROOT`] for the bound directory). Reply `r0` = a handle or an error, and `r1` =
 /// the file's size at the open, or 0 for "not given": a hint for sizing a buffer, never an answer

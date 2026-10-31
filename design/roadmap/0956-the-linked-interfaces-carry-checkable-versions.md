@@ -39,8 +39,13 @@ provisional.
    `ABI_VERSION` at the crate root; `address_space_map` and `glob` each carry `VERSION`;
    `machine_statistics_contract` gains a version word beside its `MACHSTA1` magic, a new index in
    the crate's `word` module. One constant per wire format, module-scoped where a crate holds
-   several, as ruled (question 1). Proves: the constants are public, and 610's `FORMAT_CONST`
-   pattern reads them, so the next weekly series counts them.
+   several, as ruled (question 1). A format whose magic predates the version digits mints them in
+   the same change where no reader outside the tree holds an old one, so block_roster's `blkrostr`
+   gains its digits here. program_argument_contract's `nifeargv` stays unnumbered: basalt's
+   published `rg` reads an argv page from the prebuilt archive the gates fetch, so its digits move
+   with that rebuild and not before. The ruling of 2026-10-30 (UTC) covers this step's constants and
+   block_roster's re-mint, so the step owes no separate decision. Proves: the constants are public,
+   and 610's `FORMAT_CONST` pattern reads them, so the next weekly series counts them.
 
 2. The bind check becomes set membership, in each message contract. The sketch from the shape
    proposal: `member(own: u32, served: &[u32]) -> Result<u32, Mismatch>`, with `Mismatch` carrying
@@ -70,8 +75,12 @@ provisional.
    carve-outs hold: shared pages stay single-version, and a page-format break rides the update
    path (§235's U4 coherent set). Stateful services ride the update path. Hot swap carries a
    version change only on an N-1 contract, only for a stateless component. The operator verifies
-   that the new instance serves every bound client's version. Proves: a contract crate's tests
-   hold a dual-serving server and a single-generation one, per the carve-outs.
+   that the new instance serves every bound client's version. Ruled 2026-10-30 (UTC): the argv
+   magic's digits are re-minted in the window where basalt rebuilds `rg` and every other foreign
+   program that reads argv, coordinated so the basalt pin and the contract move together. Basalt
+   has no consumers yet, so that break needs no dual path and owes none of this step's N-1 shim.
+   Proves: a contract crate's tests hold a dual-serving server and a single-generation one, per the
+   carve-outs.
 
 6. Retiring the legacy generation is itself a version event, never silent. It bumps the contract
    version, owes the dated ledger entry naming the migration, and rides the update path, so
