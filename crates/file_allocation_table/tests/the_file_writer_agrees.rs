@@ -402,7 +402,7 @@ fn a_full_volume_writes_what_fits_then_refuses_and_deleting_restores_the_space()
 fn a_volume_found_dirty_stays_dirty_after_a_sync() {
     for (mebibytes, fat_type, at, bit) in [
         (32, FatType::Fat16, 2usize, 0x80u8),
-        (64, FatType::Fat32, 4 * 1, 0x08),
+        (64, FatType::Fat32, 4, 0x08),
     ] {
         let mut image = formatted(mebibytes, fat_type, 512);
         // Table entry 1 is at byte 2 (FAT16) or 4 (FAT32) of the first table; clear its clean bit.
