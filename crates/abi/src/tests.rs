@@ -193,6 +193,7 @@ fn every_public_number_is_pinned_as_a_literal() {
         crate::SYS_CAPABILITY_DELETE => 3,
         crate::SYS_EXIT_THREAD => 4,
         crate::CAPABILITY_TABLE_SLOTS => 64,
+        crate::INTERFACE_ID => 1,
         address_space::MAP_INTO => 0,
         address_space::MAP_RO => 0,
         address_space::MAP_RW => 1,

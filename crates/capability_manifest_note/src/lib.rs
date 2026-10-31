@@ -92,10 +92,15 @@
 
 #![no_std]
 
+mod interfaces;
 use grant_plan::{
     DIAGNOSTICS_SLOT, DirectoryGrantDeclaration, FileGrantDeclaration, IndexStoreDeclaration,
     InputDeclaration, MAXIMUM_DECLARED_SHORT_OPTIONS, Manifest, MemoryGrantDeclaration,
     OutputDeclaration, ProgramArgumentDeclaration, ShortOptions, StartupContract, WordGrant,
+};
+pub use interfaces::{
+    Declared, INTERFACE_RECORD, INTERFACES, INTERFACES_VERSION, Interfaces, InterfacesNote,
+    MAXIMUM_INTERFACES, decode_interfaces, encode_interfaces, interfaces_len, interfaces_note_len,
 };
 
 /// The note's owner string, without its NUL: the project's name, lowercase as

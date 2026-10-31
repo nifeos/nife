@@ -23,6 +23,14 @@
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const ABI_VERSION: u32 = 1;
 
+/// This interface's identity in a program's `INTERFACES` note: 1, naming the syscall surface. The number
+/// is the crate's to keep across a rename and no other interface ever reuses it; `script/lint`
+/// holds the ids of every crate apart. A program declares the pair of this id and [`ABI_VERSION`]
+/// (milestone 956 (the linked interfaces carry checkable versions)).
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const INTERFACE_ID: u64 = 1;
+
 /// `exit(code)`: end the calling thread's process and every thread in it. Needs no capability,
 /// because it acts on the caller itself.
 pub const SYS_EXIT: u64 = 0;
