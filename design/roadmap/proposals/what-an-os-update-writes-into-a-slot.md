@@ -12,8 +12,8 @@ needs_person: no
 Raised 2026-10-31 (UTC) by the lane `milestone/976-an-os-update-through-a-slot`, while it broke
 milestone 976 (an OS update is a set of packages that lands through a slot) into parts. Parts 1 to
 3 of that block need no ruling. Part 4, the program on a running machine that writes the spare
-slot, needs one first: what the slot holds. This file asks that one question and lists the
-questions behind it, which wait their turn.
+slot, needed one first: what the slot holds. The architect ruled it on 2026-10-31 (UTC): option B.
+This file states the ruling, what it covers, and the questions behind it, which wait their turn.
 
 Reuse: the slot format and chooser of milestone 525 (a bad upgrade cannot brick the machine: two
 boot slots, tries and priority), and the confirmation of milestone 554 (a good upgrade sticks). The
@@ -45,21 +45,24 @@ all (milestone 909's `BUGS`: the kernel is built, not packaged).
 
 ## The decision: what the inactive slot receives
 
-**Recommendation: B.** The slot keeps its header and becomes a small set of named members: the
+**Ruled 2026-10-31 (UTC): B.** Milestone 607 item 6 (milestones 695 and 697) is launched in parallel,
+and the interim kernel package is deleted when it lands. The slot keeps its header and becomes a small set of named members: the
 kernel, the composed archive, and the system manifest that lists each package by digest. The
 chooser loads the kernel and the archive itself, as `uefi_loader` already does for the files it
 embeds. The device fetches packages from basalt's index, checks each digest, takes unchanged
 packages from the running slot, writes the archive with the composer's own code, and writes the
-slot. Basalt publishes the kernel as a package, built against the base it vouches for, until item
-6 makes it independent.
+slot. Basalt publishes the kernel as a package, built against the base it vouches for. That kernel
+package is interim: milestones 695 (the kernel trusts two digests handed to it by the loader) and
+697 (the trust root leaves the kernel binary) end the kernel's dependence on the base, and the
+package is deleted when they land.
 
 | option | what the slot holds | what the device downloads | what it costs |
 |---|---|---|---|
-| A. One boot file (interim) | today's format, one UEFI program | basalt's composed boot file, about 4.6 MB, whole | U1 in practice, which §235 did not take; a second migration when item 6 lands |
-| B. Named members (recommended) | header version 2: kernel, archive, system manifest | each changed package, and the kernel package while item 6 is open | a slot format version and a chooser change; the composer's archive writer becomes a crate the device links |
-| C. Hold the device side | today's format | nothing yet | no update on a running machine until item 6, and B's work waits behind it |
+| A. One boot file (not taken) | today's format, one UEFI program | basalt's composed boot file, about 4.6 MB, whole | U1 in practice, which §235 did not take; a second migration when item 6 lands |
+| B. Named members (ruled) | header version 2: kernel, archive, system manifest | each changed package, and the kernel package while item 6 is open | a slot format version and a chooser change; the composer's archive writer becomes a crate the device links |
+| C. Hold the device side (not taken) | today's format | nothing yet | no update on a running machine until item 6, and B's work waits behind it |
 
-Why B. It is the format U4 describes, and it does not depend on item 6: item 6 only stops the
+Why B, as it was put to the architect. It is the format U4 describes, and it does not depend on item 6: item 6 only stops the
 kernel package changing with every base change. A would ship the refused unit first and migrate
 every installed disk later. C loses nothing in format but serializes two independent lanes. Would
 I still choose B if A cost the same? Yes; A is smaller only because it reuses a file format, which
@@ -74,9 +77,8 @@ What B touches that two programs agree on, and therefore what the ruling covers:
 - The kernel package: `packages/kernel.package.toml` declares crates and no programs, and gains a
   member that is the built kernel.
 
-What happens if the answer is no. Under A, part 4 writes basalt's composed boot file through the
-existing `rollback::stage_an_upgrade` path, and a later block migrates the format. Under C, the
-block stops after part 3 and records the wait on item 6.
+Options A and C are not taken. Part 4 therefore writes version 2 slots, not basalt's composed
+boot file, and does not wait on item 6.
 
 ## How others solved it, and where nife differs
 
@@ -125,7 +127,7 @@ lands, it downloads one.
 
 ## The questions behind this one
 
-Each waits for the ruling above, and each will come as its own question:
+The ruling above does not answer these. Each stays open and will come as its own question:
 
 1. The system manifest's name and format. 976 calls it the system manifest, provisionally; basalt
    writes it and the updater and the progenitor read it.
@@ -135,11 +137,12 @@ Each waits for the ruling above, and each will come as its own question:
    machines update themselves) wants an unattended trigger, so the approval file needs a
    base-update entry or a separate grant.
 3. What a failed boot does. Milestones 525 and 554 already answer this (tries, then the other
-   slot; confirmation once the disk mounts). This proposal changes none of it, and lists it so
-   nobody reopens it by accident.
+   slot; confirmation once the disk mounts). This proposal changes none of it, so it is not
+   open.
 
 ## Index row
 
-The update's unit is the package, and each slot holds a full copy. What the slot holds is the open
-question: today's single UEFI program, or a version 2 slot of named members (kernel, archive,
-system manifest) that a device can assemble from packages it fetched and packages it already has.
+The update's unit is the package, and each slot holds a full copy. A slot holds named members in a
+version 2 header (kernel, archive, system manifest), which a device assembles from packages it
+fetched and packages it already has (ruled 2026-10-31 UTC). The interim kernel package goes when
+milestones 695 and 697 land.

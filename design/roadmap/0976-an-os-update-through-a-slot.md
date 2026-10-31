@@ -118,13 +118,17 @@ slot. Every new name here is provisional.
   times. Boot 2 must confirm slot 1, boot 3 must choose it with no tries left, as `confirm-boot`
   asserts, and the transcript must show the composed catalog. Both parts are mechanical and add no
   format; part 3 is host-staged, so it proves the slot path and not a device updater.
-- **Proposed.** Part 4, which waits on a ruling: what the inactive slot receives. One composed UEFI
-  program (today's format), a version 2 slot of named members a device assembles from packages, or
-  nothing on the device until item 6. The proposal
-  `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md` asks it, recommendation
-  first, with the prior art.
+- **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
+  composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
+  readable). The chooser loads the kernel and archive itself, and the archive writer moves from
+  `xtask/src/archive.rs` into a crate that the host composer and the device updater share. Basalt
+  publishes the kernel as a package, which is interim: milestones 695 (the kernel trusts two digests
+  handed to it by the loader) and 697 (the trust root leaves the kernel binary), launched in
+  parallel as milestone 607 item 6, end the kernel's dependence on the base, and the package is
+  deleted when they land. The reasoning and the prior art are in
+  `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md`.
 - **Outstanding.** After part 4, part 5 is the device updater, steps 2 and 4 above, writing
-  whatever part 4 rules. Part 6 is the system manifest's name and format (step 1). Part 7 is who may
+  part 4's version 2 slot. Part 6 is the system manifest's name and format (step 1). Part 7 is who may
   start a base update, and what bounds an unattended one under the approval file of milestone 911 (scripted installs grant only
   what the owner's approval file allows). Each
   comes to an architect after part 4, one at a time. Step 3, the loader's two digests, is milestone
