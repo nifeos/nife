@@ -10,12 +10,12 @@ needs_person: no
 ---
 # 981. UFS2, read and write: a Rust server with FreeBSD's tools as the oracle
 
-Raised 2026-10-30 (UTC) by lane `lane/filesystem-candidates-survey`, which wrote
-[the launch filesystem's candidates](../../notes/launch-filesystem-candidates.md) on pull request
-#2899. UFS2 is nife's launch filesystem (§34 (UFS2 is the launch filesystem, and RedoxFS stays primary
-until UFS2 meets the bar), ruled 2026-10-31 UTC). This milestone builds the server that makes
-the ruling true. Milestone 982 (Retire RedoxFS once a launch store proves itself) removes RedoxFS
-once this one meets the bar below, and not before.
+Raised 2026-10-30 (UTC) by lane `lane/filesystem-candidates-survey`, which wrote [the launch
+filesystem's candidates](../../notes/launch-filesystem-candidates.md) on pull request #2899. UFS2 is
+nife's launch filesystem (§34 (UFS2 is the launch filesystem, and RedoxFS stays primary until UFS2
+meets the bar), ruled 2026-10-31 UTC). This milestone builds the server that makes the ruling true.
+Once phases 2 and 3 meet the removal bar below, milestone 982 (Retire RedoxFS once a launch store
+proves itself) removes RedoxFS. Phase 4, the crash claim, comes after the removal.
 
 The shape follows milestone 190 (ext4, read and write: a Rust implementation with libext2fs as the
 host-side oracle): a Rust implementation on the target, C on the host as the judge. Phase 1 needs
@@ -103,6 +103,11 @@ Then the injector from milestone 37 runs against the server. RedoxFS's numbers a
 lying-device cases, 112 recovered, 74 refused, 0 silently wrong. A launch store that cannot match the
 zero is not done, whatever else it does.
 
+Phase 4 runs after milestone 982 removes RedoxFS, by design (ruled 2026-10-31 UTC). Between the
+removal and this phase, the launch store has weaker crash evidence than RedoxFS had. The floor in
+that window is `fsck_ffs` on mount: the server runs it before it mounts a volume read-write, and a
+volume it cannot repair does not mount. Phase 3 builds that floor, so it exists before the removal.
+
 ## The oracle
 
 `fsck_ffs` judges every image the server writes, in CI, the way `fsck_msdos` judges the FAT work.
@@ -125,17 +130,22 @@ The ordering cost: a composed image carries a table only once this arc reads and
 volume, so milestone 909 (basalt composes the bootable image from its packages)'s table half lands
 with phase 2. The check half of 909's item 3 does not wait on this arc.
 
-## Done when
+## The removal bar
 
-UFS2 meets the bar that retires RedoxFS, on aarch64, riscv64 and x86_64 under QEMU:
+Phases 2 and 3 end at the bar that retires RedoxFS, on aarch64, riscv64 and x86_64 under QEMU:
 
 - the composed image boots from a UFS2 launch volume,
-- `jig install` writes a package onto it,
-- it holds the installed-programs table the progenitor reads, and
-- milestone 37's injector reports 0 silently wrong cases, and the note that records the run states
-  the consistency grade (soft updates, SUJ, or `fsck` on mount).
+- `jig install` writes a package onto it, and
+- it holds the installed-programs table the progenitor reads.
 
-`fsck_ffs` passes on every image the gate writes. Milestone 982 starts when every line above holds.
+`fsck_ffs` passes on every image the gate writes, and the server runs `fsck` on mount. Milestone 982
+starts when every line above holds, and this block's status is then `PARTIAL`.
+
+## Done when
+
+The removal bar holds, and phase 4's gate passes after it. Milestone 37's injector reports 0
+silently wrong cases against the UFS2 server, and the note that records the run states the
+consistency grade (soft updates, SUJ, or `fsck` on mount).
 
 ## What stays
 
@@ -153,14 +163,17 @@ which is a different requirement from the launch store; this arc reorders neithe
   day or a week.
 - No Rust implementation of soft updates or SUJ exists. Until phase 4 adds one, a crash claim on
   UFS2 is `fsck`-repaired rather than consistent, and the record must say which.
+- From milestone 982's removal until phase 4 passes, the launch store's crash evidence is weaker
+  than RedoxFS's was: `fsck` on mount, with no injector numbers. That is an accepted risk (ruled
+  2026-10-31 UTC). The tell is this block still at `PARTIAL` with 982 `BUILT`.
 - HAMMER2's size and the FreeBSD port's completeness come from lookup, so the survey's second place
   rests on weaker evidence than its first.
 
 ## Index row
 
-UFS2 is nife's launch filesystem (§34). A Rust FS server, built from `ufs-core` and `rufs` and judged
-by FreeBSD's `newfs`, `makefs` and `fsck_ffs`, in four phases: builds, a read-only server and image
-writer, the write path, then a crash claim measured by milestone 37's injector. The launch volume
-carries the first installed-programs table as files under `activation/`. Done when UFS2 boots the
-composed image, takes `jig` installs, holds the table and matches RedoxFS's zero silently wrong, which
-is the bar that starts milestone 982.
+UFS2 is nife's launch filesystem (§34). A Rust FS server, built from `ufs-core` and `rufs` and
+judged by FreeBSD's `newfs`, `makefs` and `fsck_ffs`, in four phases: builds, a read-only server and
+image writer, the write path, then a crash claim measured by milestone 37's injector. The launch
+volume carries the first installed-programs table as files under `activation/`. Once UFS2 boots the
+composed image, takes `jig` installs and holds the table, milestone 982 removes RedoxFS; phase 4
+then proves the crash claim, RedoxFS's zero silently wrong.

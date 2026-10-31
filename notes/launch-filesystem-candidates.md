@@ -9,11 +9,13 @@ candidate.*
 
 UFS2 is nife's launch filesystem (§34 (UFS2 is the launch filesystem, and RedoxFS stays primary
 until UFS2 meets the bar), ruled 2026-10-31 UTC). The replacement is staged. RedoxFS stays the
-launch store until UFS2 boots the composed image, takes `jig` installs, holds the installed-programs
-table and matches RedoxFS's crash claim. Milestone 981 (UFS2, read and write: a Rust server with
-FreeBSD's tools as the oracle) builds UFS2 to that bar, and milestone 982 (Retire RedoxFS once a
-launch store proves itself) then removes RedoxFS from the tree. BSD-2-Clause sits on `deny.toml`'s
-allow-list for UFS2's FreeBSD half. The rest of this note is the evidence.
+launch store until UFS2 boots the composed image, takes `jig` installs and holds the
+installed-programs table. Milestone 981 (UFS2, read and write: a Rust server with FreeBSD's tools as
+the oracle) builds UFS2 to that bar, and milestone 982 (Retire RedoxFS once a launch store proves
+itself) then removes RedoxFS from the tree. Milestone 981's last phase proves UFS2's crash claim
+after the removal; until it does, `fsck` on mount is the floor, and the crash evidence is weaker
+than RedoxFS's. BSD-2-Clause sits on `deny.toml`'s allow-list for UFS2's FreeBSD half. The rest of
+this note is the evidence.
 
 ## Why the question opened
 
@@ -145,7 +147,8 @@ Rust implementation. None is a launch candidate.
    extended attributes. A project of its own, not a launch filesystem this year.
 3. **RedoxFS.** The incumbent, and the launch store until UFS2 meets milestone 981's bar; then
    milestone 982 removes it. Its crash-consistency measurement (186 lying-device cases, 112
-   recovered, 74 refused, 0 silently wrong) is the standard UFS2 must meet.
+   recovered, 74 refused, 0 silently wrong) is the standard UFS2 must meet in 981's last phase,
+   after the removal.
 4. **btrfs and OpenZFS.** Refused for the launch store on the 2026-10-07 measurements and the
    licenses. btrfs stays a read-only candidate for milestone 140 (Mount a drive this system did not
    create); OpenZFS stays a candidate for after 812 and a CDDL ruling.
@@ -154,10 +157,11 @@ Rust implementation. None is a launch candidate.
 
 Milestone 981 carries the work in four phases. It builds `ufs-core` and `rufs` for the three targets
 and records each patch. It makes images with `makefs` and `newfs` and judges them with `fsck_ffs`.
-It adds the write path. Then it chooses the consistency grade (soft updates, SUJ, or `fsck` on
-mount) and runs the injector of milestone 37 (Prove RedoxFS's crash consistency) against the server.
-The launch volume carries the first installed-programs table as files under `activation/` (ruled
-2026-10-30 UTC, on #2894). Milestone 982 holds the inventory of what leaves the tree with RedoxFS.
+It adds the write path. After milestone 982 removes RedoxFS, it chooses the consistency grade (soft
+updates, SUJ, or `fsck` on mount) and runs the injector of milestone 37 (Prove RedoxFS's crash
+consistency) against the server. The launch volume carries the first installed-programs table as
+files under `activation/` (ruled 2026-10-30 UTC, on #2894). Milestone 982 holds the inventory of
+what leaves the tree with RedoxFS.
 
 ## BUGS
 

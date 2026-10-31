@@ -17,14 +17,12 @@ Until UFS2 meets the bar, RedoxFS is the primary filesystem, on three conditions
 this page records. UFS2 meets the bar when, on aarch64, riscv64 and x86_64, it:
 
 1. boots the composed image from a UFS2 launch volume,
-2. takes `jig` installs onto that volume,
-3. holds the installed-programs table the progenitor reads, and
-4. matches RedoxFS's crash claim: milestone 37 (Prove RedoxFS's crash consistency)'s injector
-   reports 0 silently wrong cases against the UFS2 server.
+2. takes `jig` installs onto that volume, and
+3. holds the installed-programs table the progenitor reads.
 
 Milestone 981 (UFS2, read and write: a Rust server with FreeBSD's tools as the oracle) builds the
 server and owns the bar. Milestone 982 (Retire RedoxFS once a launch store proves itself) removes
-RedoxFS once all four hold, and not before. BSD-2-Clause sits on `deny.toml`'s allow-list for
+RedoxFS once all three hold, and not before. BSD-2-Clause sits on `deny.toml`'s allow-list for
 UFS2's FreeBSD half (ruled the same day).
 
 ## Why UFS2
@@ -38,9 +36,12 @@ attributes natively, where RedoxFS needs the attribute layer below. Two Rust imp
 to start from. And FreeBSD's `newfs`, `makefs` and `fsck_ffs` give it the strongest oracle of any
 candidate.
 
-What it costs, stated plainly: UFS2 has no copy-on-write and no block checksums. Its crash claim comes
-from soft updates, their journal (SUJ) or `fsck` on mount, and no Rust implementation has either
-ordering mechanism yet. That is why the fourth line of the bar exists.
+What it costs, stated plainly: UFS2 has no copy-on-write and no block checksums. Its crash claim
+comes from soft updates, their journal (SUJ) or `fsck` on mount, and no Rust implementation has
+either ordering mechanism yet. The crash claim is not part of the bar. Milestone 981 proves it after
+the removal, with the injector of milestone 37 (Prove RedoxFS's crash consistency), against
+RedoxFS's standard of 0 silently wrong. Until then the launch store has weaker crash evidence than
+RedoxFS had, and `fsck` on mount is its floor: an accepted risk.
 
 Refused: HAMMER2, with no implementation to reuse and no extended attributes; ext4, whose Rust
 writers cannot handle `metadata_csum`; and keeping RedoxFS for good. btrfs and OpenZFS lack a Rust

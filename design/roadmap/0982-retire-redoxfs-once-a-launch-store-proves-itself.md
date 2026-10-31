@@ -2,7 +2,7 @@
 status: NOT-STARTED
 promoted_from: retire-redoxfs-once-a-launch-store-proves-itself
 raised: 2026-10-30
-milestone_dependencies: 981, 32, 37
+milestone_dependencies: 32, 37
 decision_dependencies: 34
 machine_requirements: none
 specific_machine: none
@@ -17,19 +17,24 @@ RedoxFS as the launch filesystem, and RedoxFS then leaves the tree rather than s
 2026-10-31 UTC). This milestone is the removal. It starts only when milestone 981 (UFS2, read and
 write: a Rust server with FreeBSD's tools as the oracle) meets the bar below.
 
+An exception, and a foot gun: `milestone_dependencies` does not name 981. The field resolves only
+when 981 is `BUILT`, and this milestone must run while 981 is `PARTIAL`, after its phase 3 and
+before its phase 4. So `script/roadmap --ready` offers this block before its bar holds. A lane that
+takes it checks the bar below first, and stops if any line fails.
+
 Reuse: nothing. This removes code and takes no dependency. Every piece it names already exists.
 
 ## The bar
 
-RedoxFS leaves only when UFS2 does all four of these in the tree, on aarch64, riscv64 and x86_64:
+RedoxFS leaves only when UFS2 does all three of these in the tree, on aarch64, riscv64 and x86_64:
 
 - boots the composed image from a UFS2 launch volume,
-- takes `jig` installs onto it,
-- holds the installed-programs table the progenitor reads, and
-- matches RedoxFS's crash claim: milestone 37 (Prove RedoxFS's crash consistency)'s injector, 186
-  lying-device cases, reports 0 silently wrong against the UFS2 server.
+- takes `jig` installs onto it, and
+- holds the installed-programs table the progenitor reads.
 
-These are milestone 981's `Done when` lines. Until all four hold, RedoxFS stays the launch store
+These are milestone 981's removal bar, the end of its phase 3. The crash claim is not on this list
+(ruled 2026-10-31 UTC). Milestone 981's phase 4 proves it with milestone 37 (Prove RedoxFS's crash
+consistency)'s injector after RedoxFS is gone. Until all three hold, RedoxFS stays the launch store
 and the lane deletes nothing below. RedoxFS is MIT and its upstream is slow rather than dead, so the
 removal is about the launch decision and the maintenance a second store costs, not about a license.
 
@@ -55,7 +60,8 @@ its falsification patch, and the workspace members in `Cargo.toml` that name `ve
 The build and gate helpers in `xtask/src/disk.rs` and its siblings: `mkredoxfs`, `mkredoxfs_crash`,
 `redoxfs_server_build`, `redoxfs_check_after_run` and `redoxfs_crash_check_after_run` bind the
 image path, the crash harness and the disk checks to the RedoxFS engine. Each gets a UFS2 twin from
-milestone 981 or goes.
+milestone 981 or goes, except the crash harness, which must get its UFS2 twin: phase 4 of 981 runs
+on it.
 
 The prose: `notes/redoxfs-audit.md`, `notes/fs-server.md`, `notes/README/storage.md`,
 `design/backup-server-ladder.md`, §176 (Offering the RedoxFS patches upstream) and §129 (Whether
@@ -81,15 +87,15 @@ its own base, and that search, not this list, is the inventory.
 
 The `filesystem_contract` crate and the FS-server capability shape carry to UFS2 unchanged; they are
 what make the swap one component rather than a kernel change. Milestone 37's crash injector stays.
-`nifefs` (the read-only initial-ramdisk filesystem) has nothing to do with this and stays, as do `boot_slot`, the
-partition GUID work and `installed_programs`.
+`nifefs` (the read-only initial-ramdisk filesystem) has nothing to do with this and stays, as do
+`boot_slot`, the partition GUID work and `installed_programs`.
 
 ## The order
 
-One lane, after milestone 981 lands. It points the server path and the disk helpers at UFS2,
-deletes the vendored tree and its tooling, sweeps the prose and sets the roadmap dispositions. Each
-commit stands alone for a reviewer. The gate stays green at every commit, because the UFS2
-paths exist before the RedoxFS ones go.
+One lane, after milestone 981 meets the removal bar. It points the server path and the disk helpers
+at UFS2, deletes the vendored tree and its tooling, sweeps the prose and sets the roadmap
+dispositions. Each commit stands alone for a reviewer. The gate stays green at every commit, because
+the UFS2 paths exist before the RedoxFS ones go.
 
 ## Done when
 
@@ -101,15 +107,17 @@ every gate passes on all three architectures with no RedoxFS code built.
 
 - The inventory above rests on a search of the tree, not on a build, so it is a floor: the lane will
   find more.
-- Deleting the vendored engine removes the store whose crash evidence the tree holds. That is why
-  the bar requires UFS2 to publish its own injector numbers first; a lane that deletes RedoxFS
-  before milestone 981 meets its bar has broken this milestone.
+- Deleting the vendored engine removes the only store with injector numbers, and UFS2 has none
+  until milestone 981's phase 4. In that window the launch store's crash evidence is weaker than
+  RedoxFS's was, and its floor is `fsck` on mount. That is an accepted risk (ruled 2026-10-31 UTC).
+  Milestone 37's injector stays, ported to UFS2, so the window closes rather than becoming the
+  standard. The tell is this block `BUILT` with 981 still `PARTIAL`.
 - Whether milestone 37 keeps its number stays open on purpose.
 
 ## Index row
 
 RedoxFS leaves the tree once UFS2 (milestone 981) boots the composed image, takes `jig` installs,
-holds the installed-programs table and matches milestone 37's zero silently wrong. One lane deletes
+and holds the installed-programs table; the crash claim follows in 981's phase 4. One lane deletes
 the vendored engine, its server, its host tool, package, fuzz target and disk helpers, sweeps the
 prose, marks milestone 32 `REMOVED` and re-points 346, 687 and 140's backup row. `filesystem_contract`
 and the crash injector carry over unchanged.
