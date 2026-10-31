@@ -76,8 +76,8 @@ conditions above. Re-derived from the tree and the workflow logs at `9f62334f5`:
   driver's 2026-10-26 sweep was clean, 2,450 seeds at 40 seeds/s. At the weekly rate, 801 seeds a
   week is about 42,000 a year.
 - Criterion (c)'s count of clean outsider passes is zero: the tenth pass booted an escape on claim
-  11 on 2026-10-27 (UTC), and its fix, milestone 969 (a `MAP_INTO` refuses a frame mapped twice
-  with different flags), is NOT-STARTED.
+  11 on 2026-10-27 (UTC), and its fix, milestone 969 (no frame is writable and executable in one address
+  space), is NOT-STARTED.
 
 ## What the fuzzers do, in plain words
 
