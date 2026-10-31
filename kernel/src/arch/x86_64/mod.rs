@@ -52,9 +52,6 @@ pub mod timer;
 /// why they run under QEMU rather than on the host.
 #[cfg(test)]
 mod timer_calibration_tests;
-/// The TSC-vs-RTC measurement instrument. Off by default; see notes/tsc-under-tcg.md.
-#[cfg(feature = "tsc_probe")]
-pub mod tsc_probe;
 
 // The saved thread context and how a new one is faked (the Rust half of context.s). Re-exported
 // flat so `crate::arch::{Context, switch_to}` names them regardless of architecture.

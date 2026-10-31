@@ -140,7 +140,7 @@ not a live design fork here.
 
 ### Three programs refuse rather than pretend
 
-`console::uart_put`, `input`'s `uart` module and `hot_swap_contract::probe_device` cannot reach a device
+`console::uart_put`, `input`'s `uart` module and `hot_swap_server::probe_device` cannot reach a device
 from ring 3. Their x86 arms `trap()` rather than no-op. A silent no-op is a console that
 acknowledges every byte and prints none.
 

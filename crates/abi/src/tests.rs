@@ -159,6 +159,12 @@ fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
     assert!(!RegisterShape::new(0, 4).is_word_access());
 }
 
+macro_rules! pinned {
+    ($($path:path => $expected:expr,)*) => {
+        $(assert_eq!($path, $expected, stringify!($path));)*
+    };
+}
+
 /// **Every public number the syscall surface spells is pinned as a literal** (milestone 956 (the linked interfaces carry checkable versions) step 4,
 /// the enforcement calef ruled 2026-10-29 UTC, PR #2852, question 5: a pinned-values test now, the
 /// rustdoc diff when a consumer outside the tree exists). A program built against one generation of
@@ -174,17 +180,7 @@ fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 #[test]
-fn every_public_number_is_pinned_as_a_literal() {
-    macro_rules! pinned {
-        ($($path:path => $expected:expr,)*) => {
-            $(assert_eq!($path, $expected, stringify!($path));)*
-        };
-    }
-    use crate::{
-        address_space, console, fault, futex, interrupt, memory_region, notification, objtype,
-        page_frame, port_range, process, reboot, rendezvous, reply, rights, survey,
-        thread_control_block, timer, usage, virtio,
-    };
+fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
     assert_eq!(crate::ABI_VERSION, 1);
     pinned! {
         crate::SYS_EXIT => 0,
@@ -194,103 +190,117 @@ fn every_public_number_is_pinned_as_a_literal() {
         crate::SYS_EXIT_THREAD => 4,
         crate::CAPABILITY_TABLE_SLOTS => 64,
         crate::INTERFACE_ID => 1,
-        address_space::MAP_INTO => 0,
-        address_space::MAP_RO => 0,
-        address_space::MAP_RW => 1,
-        address_space::MAP_CODE => 2,
-        address_space::LIST => 1,
-        address_space::UNMAP => 2,
-        address_space::WAIT => 3,
-        address_space::WAKE => 4,
-        console::WRITE => 0,
-        fault::FAULT_EP_SLOT => 63,
-        fault::EVENT_FAULT => 1,
-        fault::EVENT_EXIT => 2,
-        futex::SIZE_U8 => 0,
-        futex::SIZE_U16 => 1,
-        futex::SIZE_U32 => 2,
-        futex::SIZE_U64 => 3,
-        futex::SIZE_MASK => 3,
-        futex::PRIVATE => 128,
-        interrupt::WAIT => 0,
-        interrupt::ACK => 1,
-        memory_region::MAP => 0,
-        memory_region::RETYPE => 1,
-        memory_region::RETYPE_OBJ => 2,
-        memory_region::SPLIT => 3,
-        memory_region::DESTROY => 4,
-        memory_region::USAGE => 5,
-        notification::SIGNAL => 0,
-        notification::WAIT => 1,
-        notification::POLL => 2,
-        notification::BIND => 3,
-        notification::BOUND => 2,
-        objtype::RENDEZVOUS => 1,
-        objtype::ADDRESS_SPACE => 2,
-        objtype::THREAD_CONTROL_BLOCK => 3,
-        objtype::NOTIFICATION => 4,
-        objtype::TIMER => 5,
-        objtype::PROCESS => 6,
-        page_frame::MAP => 0,
-        page_frame::REVOKE => 1,
-        page_frame::SLICE => 2,
-        port_range::REVOKE => 1,
-        process::DESTROY => 0,
-        reboot::REBOOT => 0,
-        rendezvous::SEND => 0,
-        rendezvous::RECEIVE => 1,
-        rendezvous::SEND_CAPABILITY => 2,
-        rendezvous::RECEIVE_CAPABILITY => 3,
-        rendezvous::CALL => 4,
-        rendezvous::REAP => 5,
-        rendezvous::SURVEY => 6,
-        rendezvous::BADGE => 7,
-        rendezvous::NO_CAPABILITY => 0xFFFF_FFFF_FFFF_FFFF,
-        rendezvous::REPLY_DELIVERED => 1,
-        reply::REPLY => 0,
-        reply::REPLY_CAPABILITY => 1,
-        rights::READ => 1,
-        rights::WRITE => 2,
-        rights::GRANT => 4,
-        rights::ENUMERATE => 8,
-        rights::BIND => 16,
-        rights::ALL => 31,
-        rights::SPEND_ONLY => 27,
-        survey::DONE => 0,
-        survey::READY => 1,
-        survey::RUNNING => 2,
-        survey::BLOCKED => 3,
-        survey::DEAD => 4,
-        survey::record::STATE => 0,
-        survey::record::PLACEMENT => 1,
-        survey::record::NO_CPU => 0xFFFF_FFFF_FFFF_FFFF,
-        survey::record::CPU_TIME => 2,
-        survey::record::PROCESS => 3,
-        thread_control_block::CONFIGURE => 0,
-        thread_control_block::CAPABILITY_INSERT => 1,
-        thread_control_block::START => 2,
-        thread_control_block::SET_THREAD_POINTER => 3,
-        thread_control_block::SUSPEND => 4,
-        thread_control_block::RESUME => 5,
-        timer::ARM => 0,
-        timer::CANCEL => 1,
-        usage::SIZE => 0,
-        usage::COMMITTED => 1,
-        usage::FRAMES => 2,
-        usage::RENDEZVOUS => 3,
-        usage::ADDRESS_SPACES => 4,
-        usage::THREADS => 5,
-        usage::CHILDREN => 6,
-        virtio::READ_REGISTER => 0,
-        virtio::WRITE_REGISTER => 1,
-        virtio::SETUP_QUEUE => 2,
-        virtio::NOTIFY => 3,
-        virtio::DMA_PHYS_OFFSET => 4088,
+        crate::address_space::MAP_INTO => 0,
+        crate::address_space::MAP_RO => 0,
+        crate::address_space::MAP_RW => 1,
+        crate::address_space::MAP_CODE => 2,
+        crate::address_space::LIST => 1,
+        crate::address_space::UNMAP => 2,
+        crate::address_space::WAIT => 3,
+        crate::address_space::WAKE => 4,
+        crate::console::WRITE => 0,
+        crate::fault::FAULT_EP_SLOT => 63,
+        crate::fault::EVENT_FAULT => 1,
+        crate::fault::EVENT_EXIT => 2,
+        crate::futex::SIZE_U8 => 0,
+        crate::futex::SIZE_U16 => 1,
+        crate::futex::SIZE_U32 => 2,
+        crate::futex::SIZE_U64 => 3,
+        crate::futex::SIZE_MASK => 3,
+        crate::futex::PRIVATE => 128,
+        crate::interrupt::WAIT => 0,
+        crate::interrupt::ACK => 1,
+        crate::memory_region::MAP => 0,
+        crate::memory_region::RETYPE => 1,
+        crate::memory_region::RETYPE_OBJ => 2,
+        crate::memory_region::SPLIT => 3,
+        crate::memory_region::DESTROY => 4,
+        crate::memory_region::USAGE => 5,
+    }
+}
+
+/// The next third of the list above (milestone 956 (the linked interfaces carry checkable versions) step 4).
+#[test]
+fn the_middle_object_modules_are_pinned() {
+    pinned! {
+        crate::notification::SIGNAL => 0,
+        crate::notification::WAIT => 1,
+        crate::notification::POLL => 2,
+        crate::notification::BIND => 3,
+        crate::notification::BOUND => 2,
+        crate::objtype::RENDEZVOUS => 1,
+        crate::objtype::ADDRESS_SPACE => 2,
+        crate::objtype::THREAD_CONTROL_BLOCK => 3,
+        crate::objtype::NOTIFICATION => 4,
+        crate::objtype::TIMER => 5,
+        crate::objtype::PROCESS => 6,
+        crate::page_frame::MAP => 0,
+        crate::page_frame::REVOKE => 1,
+        crate::page_frame::SLICE => 2,
+        crate::port_range::REVOKE => 1,
+        crate::process::DESTROY => 0,
+        crate::reboot::REBOOT => 0,
+        crate::rendezvous::SEND => 0,
+        crate::rendezvous::RECEIVE => 1,
+        crate::rendezvous::SEND_CAPABILITY => 2,
+        crate::rendezvous::RECEIVE_CAPABILITY => 3,
+        crate::rendezvous::CALL => 4,
+        crate::rendezvous::REAP => 5,
+        crate::rendezvous::SURVEY => 6,
+        crate::rendezvous::BADGE => 7,
+        crate::rendezvous::NO_CAPABILITY => 0xFFFF_FFFF_FFFF_FFFF,
+        crate::rendezvous::REPLY_DELIVERED => 1,
+        crate::reply::REPLY => 0,
+        crate::reply::REPLY_CAPABILITY => 1,
+        crate::rights::READ => 1,
+        crate::rights::WRITE => 2,
+        crate::rights::GRANT => 4,
+    }
+}
+
+/// The next third of the list above (milestone 956 (the linked interfaces carry checkable versions) step 4).
+#[test]
+fn the_last_object_modules_are_pinned() {
+    pinned! {
+        crate::rights::ENUMERATE => 8,
+        crate::rights::BIND => 16,
+        crate::rights::ALL => 31,
+        crate::rights::SPEND_ONLY => 27,
+        crate::survey::DONE => 0,
+        crate::survey::READY => 1,
+        crate::survey::RUNNING => 2,
+        crate::survey::BLOCKED => 3,
+        crate::survey::DEAD => 4,
+        crate::survey::record::STATE => 0,
+        crate::survey::record::PLACEMENT => 1,
+        crate::survey::record::NO_CPU => 0xFFFF_FFFF_FFFF_FFFF,
+        crate::survey::record::CPU_TIME => 2,
+        crate::survey::record::PROCESS => 3,
+        crate::thread_control_block::CONFIGURE => 0,
+        crate::thread_control_block::CAPABILITY_INSERT => 1,
+        crate::thread_control_block::START => 2,
+        crate::thread_control_block::SET_THREAD_POINTER => 3,
+        crate::thread_control_block::SUSPEND => 4,
+        crate::thread_control_block::RESUME => 5,
+        crate::timer::ARM => 0,
+        crate::timer::CANCEL => 1,
+        crate::usage::SIZE => 0,
+        crate::usage::COMMITTED => 1,
+        crate::usage::FRAMES => 2,
+        crate::usage::RENDEZVOUS => 3,
+        crate::usage::ADDRESS_SPACES => 4,
+        crate::usage::THREADS => 5,
+        crate::usage::CHILDREN => 6,
+        crate::virtio::READ_REGISTER => 0,
+        crate::virtio::WRITE_REGISTER => 1,
+        crate::virtio::SETUP_QUEUE => 2,
+        crate::virtio::NOTIFY => 3,
+        crate::virtio::DMA_PHYS_OFFSET => 4088,
     }
 }
 
 /// **Every error code is pinned to its number**, and the decode agrees. A program matches these
-/// negative values after every syscall, so a renumber is an ABI break (milestone 956 (the linked interfaces carry checkable versions) step 4).
+/// negative values after every syscall, so a renumber is an ABI break (milestone 956 step 7).
 #[test]
 fn every_error_is_pinned_to_its_number() {
     let all = [

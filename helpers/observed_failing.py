@@ -141,16 +141,68 @@ def judge(name, text, predates):
     return out
 
 
-def predates(path):
-    """Whether the file's first commit, following renames, is an ancestor of CUTOFF_COMMIT."""
+def oldest_commits(paths, cwd=None):
+    """Map each path to the oldest commit that touches it, following renames, or None.
+
+    One `git log` over all history replaces a `git log --follow` per path. Commits come newest
+    first, so walking them in order and keeping the last one seen for a path is the same answer as
+    `--follow`'s last line: an `A` entry (the path appears) records the commit and a rename entry
+    moves the path being tracked to its old name and records the commit. Only `A` and `R` entries
+    are asked for, which is why the pass costs one process and not one per workflow.
+
+    A path whose trail does not end in an `A` entry (a rename made inside a merge commit, which a
+    plain `git log` does not show) falls back to `git log --follow` for that path alone, so the
+    answer never differs from the per-path one.
+    """
+    out = subprocess.run(
+        ["git", "-c", "core.quotepath=off", "log", "-M", "--diff-filter=AR", "--name-status",
+         "--format=%x00%H"],
+        capture_output=True, text=True, check=True, cwd=cwd,
+    ).stdout
+    tracked = {p: p for p in paths}  # path -> the name it had at the commit being read
+    oldest = {p: None for p in paths}
+    complete = set()  # paths whose trail ended in an `A` entry
+    for chunk in out.split("\0")[1:]:
+        sha, _, body = chunk.partition("\n")
+        for line in body.splitlines():
+            fields = line.split("\t")
+            if fields[0] == "A":
+                new = fields[1]
+                old = None
+            elif fields[0].startswith("R") and len(fields) == 3:
+                old, new = fields[1], fields[2]
+            else:
+                continue
+            for p, name in tracked.items():
+                if name == new:
+                    oldest[p] = sha
+                    if old is None:
+                        complete.add(p)
+                    else:
+                        tracked[p] = old
+                        complete.discard(p)
+    for p in paths:
+        if p not in complete:
+            oldest[p] = follow_oldest(p, cwd)
+    return oldest
+
+
+def follow_oldest(path, cwd=None):
+    """The oldest commit touching `path`, following renames, by `git log --follow`; None if none."""
     out = subprocess.run(
         ["git", "log", "--follow", "--format=%H", "--", path],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, check=True, cwd=cwd,
     ).stdout.split()
-    if not out:
-        return False  # uncommitted: new by definition
+    return out[-1] if out else None
+
+
+def predates(commit, cutoff=None, cwd=None):
+    """Whether a file's oldest commit (None: uncommitted, so new) is an ancestor of the cutoff."""
+    if commit is None:
+        return False
     return subprocess.run(
-        ["git", "merge-base", "--is-ancestor", out[-1], CUTOFF_COMMIT], capture_output=True
+        ["git", "merge-base", "--is-ancestor", commit, cutoff or CUTOFF_COMMIT],
+        capture_output=True, cwd=cwd,
     ).returncode == 0
 
 
@@ -182,11 +234,12 @@ def lint():
               file=sys.stderr)
         return 1
     failures, seen, unwatched = [], 0, 0
+    oldest = oldest_commits(paths)
     for p in paths:
         with open(p) as f:
             text = f.read()
         observed, never, _ = parse(text)
-        old = predates(p)
+        old = predates(oldest[p])
         seen += bool(observed)
         unwatched += bool(never and not observed and old)
         failures += judge(p, text, old)
@@ -235,6 +288,61 @@ def verify_runs():
     return 1 if bad else 0
 
 
+def history_fixture():
+    """Build a throwaway repository and return (failures, case count) for the one-pass history.
+
+    The cutoff is the commit made after `old.yml`, `gone.yml` and `moved.yml` exist. The pass must
+    agree with `git log --follow` on every path, and the verdict must follow: a workflow renamed
+    after the cutoff keeps the age of its origin, and one added after it is new.
+    """
+    import tempfile
+
+    env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.org",
+               GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.org")
+
+    def git(cwd, *args):
+        return subprocess.run(["git", *args], cwd=cwd, env=env, capture_output=True, text=True,
+                              check=True).stdout.strip()
+
+    def write(cwd, name, text):
+        with open(os.path.join(cwd, name), "w") as f:
+            f.write(text)
+
+    with tempfile.TemporaryDirectory() as d:
+        git(d, "init", "-q")
+        os.makedirs(os.path.join(d, WORKFLOW_DIR))
+        for n in ("old", "gone", "moved"):
+            write(d, f"{WORKFLOW_DIR}/{n}.yml", f"name: {n}\non: push\njobs: {{}}\n# {n * 40}\n")
+        git(d, "add", "-A")
+        git(d, "commit", "-qm", "before the cutoff")
+        git(d, "rm", "-q", f"{WORKFLOW_DIR}/gone.yml")
+        git(d, "commit", "-qm", "gone is deleted")
+        cutoff = git(d, "rev-parse", "HEAD")
+        write(d, f"{WORKFLOW_DIR}/gone.yml", "name: back\non: push\njobs: {}\n")
+        write(d, f"{WORKFLOW_DIR}/new.yml", "name: new\non: push\njobs: {}\n# " + "n" * 40 + "\n")
+        git(d, "add", "-A")
+        git(d, "commit", "-qm", "gone returns, new arrives")
+        git(d, "mv", f"{WORKFLOW_DIR}/moved.yml", f"{WORKFLOW_DIR}/renamed.yml")
+        git(d, "mv", f"{WORKFLOW_DIR}/new.yml", f"{WORKFLOW_DIR}/newer.yml")
+        git(d, "commit", "-qm", "two renames")
+        write(d, f"{WORKFLOW_DIR}/draft.yml", "name: draft\n")
+        paths = [f"{WORKFLOW_DIR}/{n}.yml" for n in
+                 ("old", "gone", "renamed", "newer", "draft", "moved", "absent")]
+        fast = oldest_commits(paths, cwd=d)
+        failures = []
+        for p in paths:
+            if fast[p] != follow_oldest(p, cwd=d):
+                failures.append(f"history of {p}: one pass and --follow disagree")
+        # (path, predates the cutoff). `moved.yml` is gone from the tree but its history stays.
+        want = {"old": True, "gone": True, "renamed": True, "newer": False, "draft": False,
+                "moved": True, "absent": False}
+        for n, expect in want.items():
+            got = predates(fast[f"{WORKFLOW_DIR}/{n}.yml"], cutoff, cwd=d)
+            if got != expect:
+                failures.append(f"{n}.yml: predates the cutoff is {got}, expected {expect}")
+        return failures, len(paths) + len(want)
+
+
 def selftest():
     old, new = True, False
     run = "# Observed failing: 2026-10-04, run 123: went red on a stale record.\n"
@@ -256,7 +364,12 @@ def selftest():
     if wrong:
         print(f"observed-failing selftest: wrong verdict on {wrong}", file=sys.stderr)
         return 1
-    print(f"observed-failing selftest: {len(cases)} fixtures, each judged as expected")
+    failures, count = history_fixture()
+    if failures:
+        print("observed-failing selftest: " + "; ".join(failures), file=sys.stderr)
+        return 1
+    print(f"observed-failing selftest: {len(cases)} fixtures, each judged as expected; "
+          f"{count} history checks agree with git log --follow")
     return 0
 
 

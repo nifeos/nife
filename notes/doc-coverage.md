@@ -37,8 +37,7 @@ from `missing_docs` output.
 
 ## Doc examples: closed, and how each crate was treated
 
-Every crate under `crates/` now has at least one worked example. Three treatments, and the third is a
-recorded limitation rather than a pass:
+Every crate under `crates/` has at least one worked example, in one of two treatments:
 
 1. An executing doctest (28 crates). Preferred always: a doctest that runs is a test, and this
    project's whole method is pure logic in host-testable crates. Each example was written to carry
@@ -48,25 +47,30 @@ recorded limitation rather than a pass:
    mount, and `network_time_protocol` shows an
    off-path spoof failing the origin check before any of the packet is believed.
 
-2. **`no_run`, with the reason stated in the prose** (`user_mode_runtime`, `virtio`, `system_initializer`).
-   These have nothing to assert: every entry point is a syscall from EL0 or returns `!`. `svc` on a
-   machine with no nife kernel under it is a fault, not a syscall. The examples are type-checked
-   against the real signatures and executed by the QEMU boot and `script/swish-check`.
+2. **`no_run`, with the reason stated in the prose** (`user_mode_runtime`, `virtio`, `system_initializer`,
+   `process_builder`, `hot_swap_server`). These have nothing to assert: every entry point is a
+   syscall from EL0 or returns `!`. `svc` on a machine with no nife kernel under it is a fault, not
+   a syscall. The examples are type-checked against the real signatures and executed by the QEMU
+   boot and `script/swish-check`.
 
-3. An executing doctest that the gate does not run (`hot_swap_contract`, `supervision_contract`, and the
-   two above that are not `no_run`). See BUGS below; this is the one honest gap.
+No crate under `crates/` has an executing doctest that the gate skips. `script/test`'s host pass
+excludes every crate in the second treatment, because each carries a `user_mode_runtime` edge, so
+nothing in CI compiles their `no_run` examples. That is the one honest gap, and it is the first
+BUGS entry below.
 
 ## BUGS
 
-- **Five crates' doctests are never run by `script/test`.** `user_mode_runtime`, `hot_swap_contract`, `virtio`,
-  `supervision_contract` and `system_initializer` take unconditional `user_mode_runtime` dependencies, so the host
-  test selection excludes them (the list is in `xtask/src/suite.rs`, derived and checked by
-  `script/lint`). Their examples run under `cargo test --doc -p <crate>` on an aarch64 host and
-  are checked by nothing in CI. On an x86_64 host they do not even compile, which is a property of the
-  packages and not of the examples. The fix is to split each crate's pure half out from its syscall
-  half. That is a lane of its own, and is what would let the arithmetic in `hot_swap_contract::digest`
-  and
-  the constants in `supervision_contract` be gate-checked like every other wire contract.
+- **`script/test` never runs five runtime crates' doctests.** `user_mode_runtime`, `virtio`,
+  `system_initializer`, `process_builder` and `hot_swap_server` take unconditional
+  `user_mode_runtime` dependencies, so the host test selection excludes them
+  (`xtask/src/suite.rs` derives and checks the list). Their examples run under
+  `cargo test --doc -p <crate>` on an aarch64 host, and nothing in CI checks them. On an x86_64
+  host they do not even compile, which is a property of the packages and not of the examples. Every
+  one is `no_run`, so it checks a call against a real signature rather than claiming anything about
+  a running system, and the QEMU boot and `script/swish-check` exercise the syscall loop it types
+  against. A crate leaves this list by splitting its pure half out from its syscall half
+  (§235 (The OS is built and updated from packages, and the tree divides by what releases together)
+  P3).
 
 - **`rustdoc --show-coverage` undercounts.** See the section above. It is still the right tool for
   "does this crate have any example at all", which is what the examples half is about.

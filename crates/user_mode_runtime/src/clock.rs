@@ -83,7 +83,7 @@ pub fn cntfrq_checked() -> Option<u64> {
     // SAFETY: every path that builds a riscv64 process maps a page (real, or zeroed when the rate
     // was never learned) read-only at `counter_frequency_contract::PAGE_VA` before it runs:
     // `kernel::user::load`, `kernel::user::map_timebase_page`, and
-    // `supervision_contract::build_child_space`. See that crate's `BUGS` section for the one shape
+    // `process_builder::build_child_space`. See that crate's `BUGS` section for the one shape
     // that does not, which faults here on purpose.
     let page = unsafe {
         counter_frequency_contract::TimebasePage::new(counter_frequency_contract::PAGE_VA)
