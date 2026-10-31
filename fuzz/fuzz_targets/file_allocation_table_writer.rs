@@ -35,8 +35,15 @@ impl SectorDevice for Image {
 
     fn read_sector(&mut self, index: u64, buffer: &mut [u8]) -> Result<(), ()> {
         assert_eq!(buffer.len(), 512);
-        let start = usize::try_from(index).map_err(|_| ())?.checked_mul(512).ok_or(())?;
-        buffer.copy_from_slice(self.bytes.get(start..start.checked_add(512).ok_or(())?).ok_or(())?);
+        let start = usize::try_from(index)
+            .map_err(|_| ())?
+            .checked_mul(512)
+            .ok_or(())?;
+        buffer.copy_from_slice(
+            self.bytes
+                .get(start..start.checked_add(512).ok_or(())?)
+                .ok_or(())?,
+        );
         Ok(())
     }
 }
@@ -44,9 +51,15 @@ impl SectorDevice for Image {
 impl WritableSectorDevice for Image {
     fn write_sector(&mut self, index: u64, buffer: &[u8]) -> Result<(), ()> {
         assert_eq!(buffer.len(), 512);
-        let start = usize::try_from(index).map_err(|_| ())?.checked_mul(512).ok_or(())?;
+        let start = usize::try_from(index)
+            .map_err(|_| ())?
+            .checked_mul(512)
+            .ok_or(())?;
         let end = start.checked_add(512).ok_or(())?;
-        self.bytes.get_mut(start..end).ok_or(())?.copy_from_slice(buffer);
+        self.bytes
+            .get_mut(start..end)
+            .ok_or(())?
+            .copy_from_slice(buffer);
         Ok(())
     }
 }
@@ -57,7 +70,9 @@ fn name(bytes: &[u8]) -> String {
     const ALPHABET: &[u8] = b"AaBb.. _~1";
     let len = 1 + usize::from(bytes.first().copied().unwrap_or(0)) % 12;
     (0..len)
-        .map(|i| ALPHABET[usize::from(bytes.get(i + 1).copied().unwrap_or(0)) % ALPHABET.len()] as char)
+        .map(|i| {
+            ALPHABET[usize::from(bytes.get(i + 1).copied().unwrap_or(0)) % ALPHABET.len()] as char
+        })
         .collect()
 }
 
@@ -74,7 +89,9 @@ fuzz_target!(|data: &[u8]| {
         let Ok(format) = Format::new(options) else {
             return;
         };
-        format.write_to(&mut image).expect("a format fits its own image");
+        format
+            .write_to(&mut image)
+            .expect("a format fits its own image");
         rest
     } else {
         let kept = rest.len().min(IMAGE);
@@ -150,7 +167,10 @@ fuzz_target!(|data: &[u8]| {
             entry.expect("a volume the writer changed still lists");
             listed += 1;
         }
-        assert!(listed <= made.len() + 1, "more entries than the writer made");
+        assert!(
+            listed <= made.len() + 1,
+            "more entries than the writer made"
+        );
         // FAT12 keeps no such bit; FAT16 and FAT32 must read clean after the sync.
         assert_ne!(volume.is_clean().expect("the table reads"), Some(false));
     }
