@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-07
 milestone_dependencies: 887
 decision_dependencies: none
@@ -28,7 +28,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 
 ## What exists, checked 2026-10-07 (UTC)
 
-- `crates/jh7110_entropy`: 516 code lines (1,247 with comments), written by milestone 159 (a real
+- `nifeos/jh7110_entropy` (moved from `crates/jh7110_entropy`; see *The soak* below): 516 code lines (1,247 with comments), written by milestone 159 (a real
   hardware entropy source: the JH7110's TRNG), which is BUILT. It holds the StarFive JH7110 true
   random number generator's register layout, the decision whether a generation attempt succeeded,
   failed or is still running, and the device-tree query that finds it.
@@ -136,6 +136,22 @@ on all four targets, and the only citations left sit in `Name:` blocks, which st
 ratification pass. With Kani, the four harnesses prove and each falsification patch fails its
 harness.
 
+## The soak, started 2026-10-31 (UTC)
+
+- The crate moved to `nifeos/jh7110_entropy` on the shared template at `nifeos/crate-workflows`
+  release v7 (`ce603f5`), after `script/apply-settings` ran against it: both rulesets, the
+  `crates-io` environment with calef as reviewer, the labels and the team. The manifest keeps
+  `publish = false`; the caller sets `allow-unpublished` for the soak.
+- `crates/jh7110_entropy` no longer exists here. `kernel`, `components` and `machine_discovery`
+  depend on `nifeos/jh7110_entropy` by `rev` `1827d43` (§305), the first commit on its `main`. The
+  verify table, the Kani reach list and the trust-boundary table no longer list it; the repository's
+  own `proofs / kani` and `proofs / falsify` jobs prove the four harnesses.
+- End condition 1 holds once this pull request merges and the repository's `main` is green. The
+  other four wait: 2 on the first weekly run, 3 on a release dry run, 4 on a recorded stranger run
+  (`docs/stranger-test.md` there says `Last run: none`), 5 on a period that is not yet set.
+- A bump of the pin is a separate pull request citing the landed commit as
+  `nifeos/jh7110_entropy@<sha>`.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
@@ -196,6 +212,10 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## BUGS
 
+- An organization owner has to install the `nife-smelter` app on `nifeos/jh7110_entropy`;
+  `script/apply-settings` could not (the API wants an owner). The release workflow's tag job needs
+  it, so a dry run past the gate waits on calef installing the app. The weekly drift job reads the
+  organization's `SETTINGS_TOKEN` secret.
 - Steps 5 and 6 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team,
   and on milestone 610's per-package co-change column.
@@ -207,6 +227,16 @@ names until the ratification pass, so this section keeps the links it carried.
   trees. Their licenses were not checked here; record each before `cargo package` ships them.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
+
+## Follow-on
+
+- **Outstanding.** The soak's end conditions 2 to 5 and release steps 7 to 9. Checked 2026-10-31
+  (UTC): `nifeos/jh7110_entropy` has no weekly run, no dry run, no recorded stranger run and no
+  semver period yet, and `crates/jh7110_entropy` is gone from this tree.
+- **Recorded.** Ruled 2026-10-31 UTC: until `jh7110_entropy` reaches crates.io, nife depends on
+  `nifeos/jh7110_entropy` at one git commit (`rev = "1827d439237b1708a6236f68fc0b807388755949"`).
+  A crates.io version replaces the pin after the soak release dry run.
+- **Recorded.** An organization owner installs the `nife-smelter` app; see *BUGS* above.
 
 ## Index row
 

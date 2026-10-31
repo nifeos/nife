@@ -463,7 +463,6 @@ credential_contract	2	no request word reads outside the page; nothing but MATCH 
 capability_plan	14	no wiring grants a right its declaration did not ask for
 periodic_deadline	5	the next deadline on a beat: strictly forward, minimal, and a stall costs one fire
 timetable	44	the scheduler's calendar arithmetic: a time of day, a month day and a range
-jh7110_entropy	5	the board TRNG's status decode, and that a lockup bit is never overridden
 designware_mobile_storage	4	the SD write test never lands in a partition, the FIFO is never overrun, no admitted block wraps its address
 driver_process_contract::designware_mobile_storage	1	no block the SD card server translates leaves the window the kernel chose
 driver_process_contract::e1000e	3	the e1000e spawn handoff round-trips, and accepts only a page-aligned base and a unicast MAC
