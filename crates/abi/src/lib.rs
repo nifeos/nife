@@ -29,6 +29,8 @@ pub const ABI_VERSION: u32 = 1;
 /// (milestone 956 (the linked interfaces carry checkable versions)).
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+// Index exception (2026-10-31): the identity stays beside `ABI_VERSION`, the pair a program declares
+// in its `INTERFACES` note; one line, and every consumer reads the two together.
 pub const INTERFACE_ID: u64 = 1;
 
 /// `exit(code)`: end the calling thread's process and every thread in it. Needs no capability,
