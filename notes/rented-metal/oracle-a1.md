@@ -139,7 +139,7 @@ ioping-1.3-aarch64 from ... over TLS`, `fetched and installed; generation N is l
 NIC is `virtio-net-pci`, and the loader describes no PCI host bridge, and the booted system claims
 only an MMIO virtio-net. The instance also has no entropy source nife reads, no disk it mounts and
 no clock in the written tree. The proposal
-[an aarch64 cloud instance drives its PCIe devices](../../design/roadmap/proposals/an-aarch64-cloud-instance-drives-its-pcie-devices.md)
+[an aarch64 cloud instance drives its PCIe devices](../../design/roadmap/0964-an-aarch64-cloud-instance-drives-its-pcie-devices.md)
 is that work. Type the commands anyway: the refusal is one line of evidence and costs a minute.
 
 Two more captures make the session pay for that proposal:

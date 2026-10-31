@@ -70,8 +70,8 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
 4. A third party builds `greeting` with no clone of this repository (S2 and the ABI revision's note field ruled; waits on nothing).
 5. An OS update is a set of packages that lands through a slot (U4 ruled). Item 1
    (milestone 909 (basalt composes the bootable image from its packages)) landed 2026-10-28 UTC,
-   and the proposal is `design/roadmap/proposals/an-os-update-through-a-slot.md` (raised
-   2026-10-28 UTC).
+   and the block is milestone 976 (an OS update is a set of packages that lands through a slot),
+   `design/roadmap/0976-an-os-update-through-a-slot.md` (raised 2026-10-28 UTC).
 6. The loader hands over two digests and the progenitor checks the base set (ruled; waits on item 2).
 7. Package boundaries drawn in-tree and checked by lint, each with a required `home` (decided; in
    the lane `milestone/611-package-boundaries`).

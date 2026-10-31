@@ -1,10 +1,9 @@
 //! **`cargo xtask base-image`**: compose an architecture's bootable image from packages.
 //!
 //! Milestone 909 (basalt composes the bootable image from its packages). The image is the kernel
-//! plus the initial ramdisk the kernel hands the progenitor. nife's own build has packed that
-//! ramdisk from the tree since milestone 19f (run a real workload); this composes it instead from
-//! `.nifepkg` archives, each checked against the catalog that vouches for it, so a binary no
-//! package carries cannot reach the image.
+//! plus the initial ramdisk the kernel hands the progenitor. nife's own build packs that ramdisk
+//! from the tree; this composes it instead from `.nifepkg` archives, each checked against the
+//! catalog that vouches for it, so a binary no package carries cannot reach the image.
 //!
 //! `packages/base-image.toml` lists the programs the image carries (milestone 611 (every program
 //! and crate belongs to a package) owns the other direction: which package a program belongs to).
@@ -32,6 +31,7 @@
 //! - **The kernel is built here, not taken from a package.** It is firmware's entry, never an
 //!   archive entry, and the `kernel` package declares crates and no programs, so this builds it
 //!   from those crates. The binary claim is about the ramdisk, which is 909's "Done when".
+//! - **The base image names no approval file yet**: the definition sets no `approval` key, so the check runs only when one names it.
 //! - **The catalog lists only the packages the image used.** `jig` needs the fetched index for
 //!   anything else, which is what `SOURCES_ENTRY` is for.
 //! - **A package's digest is checked against the catalog it was handed.** That catalog's trust is
@@ -58,13 +58,17 @@ const CATALOG: &str = "catalog";
 const TEST_PACKAGE: &str = "fixtures";
 
 /// What `packages/base-image.toml` says.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Definition {
     /// The version every base package is built at (provisional: one version for the base, because
     /// the packages release and are installed together).
     version: String,
     /// The archive entries the image carries, by program name.
     programs: Vec<String>,
+    /// The image's approval file, when the definition names one: a path under the tree root that
+    /// [`compose`] checks every package against. `None` composes the image without the check, which
+    /// is the state until the base image's approval policy is written (909 item 3's BUGS).
+    approval: Option<String>,
 }
 
 /// `cargo xtask base-image`, its arguments parsed.
@@ -91,27 +95,38 @@ struct Plan {
     out: PathBuf,
 }
 
+/// **The definition a test image carries**: `packages/base-image.toml`'s programs plus the
+/// `fixtures` package's, which no definition lists. The kernel's boot self-test runs two of them
+/// and the shell's check types at the others, and a release image carries none.
+///
+/// `test` false returns the definition unchanged. A refusal says what could not be read; the
+/// caller puts its verb in front of it.
+fn with_test_programs(mut definition: Definition, test: bool) -> Result<Definition, String> {
+    if test {
+        definition
+            .programs
+            .extend(crate::archive::fixture_programs()?);
+    }
+    Ok(definition)
+}
+
 /// **Read the definition and locate the packages**, adding the fixtures package's programs to a
 /// test image. `None` when a step refused, having said why.
 fn plan(arguments: &Arguments, arch: &str, root: &Path) -> Option<Plan> {
-    let mut definition = match read_definition(root) {
+    let definition = match read_definition(root) {
         Ok(definition) => definition,
         Err(complaint) => {
             eprintln!("base-image: {complaint}");
             return None;
         }
     };
-    // A test image carries the fixtures package's programs as well: the kernel's boot self-test
-    // runs two of them and the shell's check types at the others, and a release image carries none.
-    if arguments.test {
-        match crate::archive::fixture_programs() {
-            Ok(programs) => definition.programs.extend(programs),
-            Err(complaint) => {
-                eprintln!("base-image: {complaint}");
-                return None;
-            }
+    let definition = match with_test_programs(definition, arguments.test) {
+        Ok(definition) => definition,
+        Err(complaint) => {
+            eprintln!("base-image: {complaint}");
+            return None;
         }
-    }
+    };
 
     // The packages: built here from the tree, or named by the caller.
     let packages = match arguments.from.as_deref() {
@@ -239,10 +254,18 @@ pub(crate) fn base_image() -> bool {
 /// **`cargo xtask base-packages`**: build every base package the image needs from this tree, into
 /// `target/packages` with its catalog. The half of `base-image` a builder that composes elsewhere
 /// runs first (milestone 909); it builds no image and no kernel.
+///
+/// `--test` adds the `fixtures` package, the one the composed test image's boot self-test runs and
+/// no release image carries. A builder that composes with `--test` asks for the same set here; the
+/// two flags are one decision, which is why [`with_test_programs`] is their one reader.
 pub(crate) fn base_packages() -> bool {
-    let Some(arch) = std::env::args().nth(2) else {
-        eprintln!("usage: cargo xtask base-packages <aarch64|riscv64|x86_64>");
-        return false;
+    let (arch, test) = match parse_base_packages_arguments(std::env::args().skip(2).collect()) {
+        Ok(arguments) => arguments,
+        Err(complaint) => {
+            eprintln!("base-packages: {complaint}");
+            eprintln!("usage: cargo xtask base-packages <aarch64|riscv64|x86_64> [--test]");
+            return false;
+        }
     };
     let root = workspace_root();
     let definition = match read_definition(&root) {
@@ -252,11 +275,46 @@ pub(crate) fn base_packages() -> bool {
             return false;
         }
     };
-    if !build_packages(&root, &arch, &definition, false) {
+    let definition = match with_test_programs(definition, test) {
+        Ok(definition) => definition,
+        Err(complaint) => {
+            eprintln!("base-packages: {complaint}");
+            return false;
+        }
+    };
+    if !build_packages(&root, &arch, &definition, test) {
         return false;
     }
-    println!("base-packages: every package in {DEFINITION} for {arch} is in target/packages");
+    println!(
+        "base-packages: every package in {DEFINITION}{} for {arch} is in target/packages",
+        if test {
+            " and the test image's `fixtures`"
+        } else {
+            ""
+        }
+    );
     true
+}
+
+/// **`cargo xtask base-packages`, its arguments**: one architecture, and whether the packages are
+/// for a test image. A pure function over the words, so the refusals are host-testable.
+fn parse_base_packages_arguments(args: Vec<String>) -> Result<(String, bool), String> {
+    let mut arch = None;
+    let mut test = false;
+    for word in args {
+        match word.as_str() {
+            "--test" => test = true,
+            other if other.starts_with('-') => return Err(format!("unknown argument {other}")),
+            other => {
+                if arch.is_some() {
+                    return Err(format!("one architecture only, not also {other}"));
+                }
+                arch = Some(other.to_string());
+            }
+        }
+    }
+    arch.map(|arch| (arch, test))
+        .ok_or_else(|| "no architecture".to_string())
 }
 
 /// Parse the verb's arguments. A pure function over the words, so the refusals are host-testable.
@@ -301,7 +359,7 @@ fn parse_definition(text: &str) -> Result<Definition, String> {
         .parse()
         .map_err(|e: toml::de::Error| e.message().to_string())?;
     for key in table.keys() {
-        if !["version", "programs"].contains(&key.as_str()) {
+        if !["version", "programs", "approval"].contains(&key.as_str()) {
             return Err(format!("unknown key {key}"));
         }
     }
@@ -324,6 +382,11 @@ fn parse_definition(text: &str) -> Result<Definition, String> {
         Some(_) => return Err("programs is an array of non-empty names".to_string()),
         None => return Err("no programs".to_string()),
     };
+    let approval = match table.get("approval") {
+        Some(toml::Value::String(value)) if !value.is_empty() => Some(value.clone()),
+        Some(_) => return Err("approval is a non-empty path".to_string()),
+        None => None,
+    };
     if programs.is_empty() {
         return Err("programs is empty; an image carries at least a progenitor".to_string());
     }
@@ -332,7 +395,11 @@ fn parse_definition(text: &str) -> Result<Definition, String> {
     if let Some(pair) = sorted.windows(2).find(|pair| pair[0] == pair[1]) {
         return Err(format!("`{}` is listed twice", pair[0]));
     }
-    Ok(Definition { version, programs })
+    Ok(Definition {
+        version,
+        programs,
+        approval,
+    })
 }
 
 /// **Which package each program belongs to**, read from `packages/*.package.toml`.
@@ -536,6 +603,11 @@ struct Composed {
 
 /// **Compose the archive's entries from packages**: for every program the definition names, the
 /// member `bin/<program>` of the package that owns it, checked against the catalog.
+/// **Compose one architecture's archive from the packages the definition names.** Each program
+/// comes from its package's archive, checked against the catalog; when the definition names an
+/// approval file, each package's manifest note is checked against it, and a package asking for more
+/// than its entry allows refuses the composition, naming every extra grant (milestone 911 (scripted
+/// installs grant only what the owner's approval file allows), 909 item 3).
 fn compose(
     root: &Path,
     arch: &str,
@@ -551,7 +623,32 @@ fn compose(
     let catalog =
         parse_catalog(&catalog_text).map_err(|e| format!("{}: {e}", catalog_path.display()))?;
 
+    // The image's approval file, when the definition names one. Read and parsed before anything is
+    // taken from an archive, so a file that does not parse refuses the composition rather than
+    // leaving the check half-done.
+    let approval_text = match &definition.approval {
+        Some(relative) => {
+            let path = root.join(relative);
+            let text = std::fs::read_to_string(&path).map_err(|e| {
+                format!(
+                    "could not read the image's approval file {}: {e}",
+                    path.display()
+                )
+            })?;
+            Some((path, text))
+        }
+        None => None,
+    };
+    let approval = match &approval_text {
+        Some((path, text)) => Some((
+            path.as_path(),
+            approval_file::File::parse(text).map_err(|e| format!("{}: {e:?}", path.display()))?,
+        )),
+        None => None,
+    };
+
     let mut blobs = Vec::new();
+    let mut asked: BTreeMap<String, Vec<Ask>> = BTreeMap::new();
     let mut used: BTreeMap<String, String> = BTreeMap::new();
     let mut order: Vec<String> = Vec::new();
     for program in &definition.programs {
@@ -597,9 +694,17 @@ fn compose(
                 )
             })?;
         blobs.push((program.clone(), content.to_vec()));
+        asked
+            .entry(owner.clone())
+            .or_default()
+            .extend(asks_of(content));
         if used.insert(stem.clone(), archive.digest.clone()).is_none() {
             order.push(stem);
         }
+    }
+
+    if let Some((path, approval)) = &approval {
+        check_approval(path, approval, &asked)?;
     }
 
     let mut text = String::new();
@@ -617,6 +722,119 @@ fn compose(
             })
             .collect(),
     })
+}
+
+/// **What one package asked for**, as an owned mirror of [`installed_programs::Granted`], so the
+/// asks outlive the program bytes [`asks_of`] read them from.
+#[derive(Debug, PartialEq, Eq)]
+enum Ask {
+    Network,
+    Zone(String),
+    Service,
+}
+
+/// **The asks one program's manifest note carries**: the network, each resolver zone, and the
+/// service ask (milestone 911). Empty for a program with no note, which asks for none, the same
+/// reading `system_initializer::asked_grants_of` gives at boot.
+fn asks_of(program: &[u8]) -> Vec<Ask> {
+    let Some(descriptor) = manifest_descriptor(program) else {
+        return Vec::new();
+    };
+    let Ok(manifest) = capability_manifest_note::decode(descriptor) else {
+        return Vec::new();
+    };
+    let mut asks = Vec::new();
+    if manifest.network {
+        asks.push(Ask::Network);
+    }
+    if capability_manifest_note::service(descriptor).unwrap_or(false) {
+        asks.push(Ask::Service);
+    }
+    if let Ok(zones) = capability_manifest_note::zones(descriptor) {
+        for zone in zones.iter() {
+            if let Ok(text) = core::str::from_utf8(zone) {
+                asks.push(Ask::Zone(text.to_string()));
+            }
+        }
+    }
+    asks
+}
+
+/// **A manifest note's descriptor inside an ELF's bytes**, found by its header and owner the way
+/// [`crate::disk`]'s note rewriting finds one, or `None` when there is none. The note is the
+/// authoritative record of a program's asks, so the check reads it rather than a static table that
+/// a program's own build could disagree with.
+fn manifest_descriptor(bytes: &[u8]) -> Option<&[u8]> {
+    const HEADER: usize = 12;
+    const NAME_FIELD: usize = 8;
+    let name_length = (capability_manifest_note::OWNER.len() + 1) as u32;
+    let last = bytes.len().checked_sub(HEADER + NAME_FIELD)?;
+    for at in 0..=last {
+        let header = &bytes[at..at + HEADER];
+        if u32::from_le_bytes(header[0..4].try_into().unwrap()) != name_length
+            || u32::from_le_bytes(header[8..12].try_into().unwrap())
+                != capability_manifest_note::MANIFEST
+        {
+            continue;
+        }
+        let name = &bytes[at + HEADER..at + HEADER + capability_manifest_note::OWNER.len()];
+        if name != capability_manifest_note::OWNER {
+            continue;
+        }
+        let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
+        let start = at + HEADER + NAME_FIELD;
+        return bytes.get(start..start.checked_add(length)?);
+    }
+    None
+}
+
+/// **Refuse the composition when a package asks for a grant the image's approval file does not
+/// allow**, naming every extra (milestone 911 (scripted installs grant only what the owner's
+/// approval file allows)'s subset test, called once per package; milestone 909 (basalt composes the
+/// bootable image from its packages) item 3).
+fn check_approval(
+    path: &Path,
+    approval: &approval_file::File<'_>,
+    asked: &BTreeMap<String, Vec<Ask>>,
+) -> Result<(), String> {
+    for (package, asks) in asked {
+        let granted: Vec<installed_programs::Granted<'_>> = asks
+            .iter()
+            .map(|ask| match ask {
+                Ask::Network => installed_programs::Granted::Network,
+                Ask::Service => installed_programs::Granted::Service,
+                Ask::Zone(zone) => installed_programs::Granted::Zone(zone.as_str()),
+            })
+            .collect();
+        let extras = approval
+            .check(package, &granted)
+            .map_err(|e| format!("{}: {e:?}", path.display()))?;
+        let mut named: Vec<String> = extras.iter().map(granted_name).collect();
+        named.sort();
+        named.dedup();
+        if !named.is_empty() {
+            return Err(format!(
+                "package `{package}` asks for {}, which the image's approval file ({}) does not \
+                 allow",
+                named.join(", "),
+                path.display()
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Name a grant the way a refusal should read it.
+fn granted_name(grant: &installed_programs::Granted<'_>) -> String {
+    use installed_programs::Granted;
+    match grant {
+        Granted::Network => "network".to_string(),
+        Granted::Service => "service".to_string(),
+        Granted::Installer => "the installer endpoint".to_string(),
+        Granted::Zone("") => "zone \".\" (the root)".to_string(),
+        Granted::Zone(zone) => format!("zone \"{zone}\""),
+        Granted::Directory(name, rights) => format!("directory \"{name}\" ({})", rights.spell()),
+    }
 }
 
 /// **Build every base package the image needs from this tree's own build**, then leave them in
@@ -749,6 +967,101 @@ programs = ["progenitor", "swish", "jig"]
     }
 
     #[test]
+    fn the_image_definition_may_name_an_approval_file() {
+        let named = parse_definition(
+            "version = \"0.1.0\"\nprograms = [\"swish\"]\n\
+             approval = \"packages/base-image.approval.toml\"",
+        )
+        .unwrap();
+        assert_eq!(
+            named.approval.as_deref(),
+            Some("packages/base-image.approval.toml")
+        );
+        assert_eq!(
+            parse_definition("version = \"0.1.0\"\nprograms = [\"swish\"]")
+                .unwrap()
+                .approval,
+            None
+        );
+        assert_eq!(
+            parse_definition("version = \"0.1.0\"\nprograms = [\"swish\"]\napproval = 3")
+                .unwrap_err(),
+            "approval is a non-empty path"
+        );
+    }
+
+    #[test]
+    fn a_programs_note_names_its_asks() {
+        let network =
+            capability_manifest_note::Note::of(&grant_plan::Program::NetworkEchoClient.manifest());
+        assert_eq!(asks_of(&network.0), [Ask::Network]);
+
+        const LEN: usize = capability_manifest_note::serviced_len(&["example.net"]);
+        const NOTE: usize = capability_manifest_note::serviced_note_len(&["example.net"]);
+        let serviced: capability_manifest_note::ServicedNote<NOTE> =
+            capability_manifest_note::ServicedNote::<NOTE>::of::<LEN>(
+                &grant_plan::Program::NetworkEchoClient.manifest(),
+                &["example.net"],
+                true,
+            );
+        let asks = asks_of(&serviced.0);
+        assert!(asks.contains(&Ask::Service));
+        assert!(asks.contains(&Ask::Zone("example.net".to_string())));
+
+        // A program with no note asks for nothing, the reading the boot path gives it.
+        assert_eq!(asks_of(b"\x7fELF not really"), []);
+    }
+
+    #[test]
+    fn a_package_asking_past_its_entry_is_refused() {
+        let asked = BTreeMap::from([(
+            "core-tools".to_string(),
+            vec![Ask::Network, Ask::Zone("example.net".to_string())],
+        )]);
+        let nothing = approval_file::File::parse(
+            "approval = \"test\"\n\n[package.core-tools]\nupdate = false\nremove = false\n",
+        )
+        .unwrap();
+        let refusal = check_approval(Path::new("approval.toml"), &nothing, &asked).unwrap_err();
+        assert!(
+            refusal.contains("package `core-tools` asks for"),
+            "{refusal}"
+        );
+        assert!(refusal.contains("network"), "{refusal}");
+        assert!(refusal.contains("zone \"example.net\""), "{refusal}");
+
+        let allowed = approval_file::File::parse(
+            "approval = \"test\"\n\n[package.core-tools]\n\
+             network = true\nzones = [\"example.net\"]\nupdate = false\nremove = false\n",
+        )
+        .unwrap();
+        assert_eq!(
+            check_approval(Path::new("approval.toml"), &allowed, &asked),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn the_base_images_approval_file_parses() {
+        // The first cut lives in the tree, so it is held to the grammar it will be read with. It is
+        // not yet wired into `packages/base-image.toml`, so this is the only reader it has.
+        let path = workspace_root().join("packages/base-image.approval.toml");
+        let text = std::fs::read_to_string(&path).unwrap();
+        let file = approval_file::File::parse(&text).unwrap();
+        assert_eq!(file.name(), "base-image");
+        assert!(file.entry("jig").is_some(), "jig is a base package");
+        let definition = read_definition(&workspace_root()).unwrap();
+        let owners = program_owners(&workspace_root(), false).unwrap();
+        for program in &definition.programs {
+            let package = owners.get(program).unwrap();
+            assert!(
+                file.entry(package).is_some(),
+                "every base package needs an entry: {package} (for {program})"
+            );
+        }
+    }
+
+    #[test]
     fn a_catalog_is_checked_line_by_line() {
         let catalog = parse_catalog(
             "# a comment\n\nuptime-0.1.0-aarch64 sha256:\
@@ -810,6 +1123,47 @@ programs = ["progenitor", "swish", "jig"]
             parse_arguments(vec!["aarch64".into(), "--nonsense".into()]).unwrap_err(),
             "unknown argument --nonsense"
         );
+    }
+
+    #[test]
+    fn base_packages_arguments_read_as_an_architecture_and_a_test_flag() {
+        assert_eq!(
+            parse_base_packages_arguments(vec!["aarch64".into()]).unwrap(),
+            ("aarch64".into(), false)
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec!["x86_64".into(), "--test".into()]).unwrap(),
+            ("x86_64".into(), true)
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec!["--test".into(), "riscv64".into()]).unwrap(),
+            ("riscv64".into(), true)
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec![]).unwrap_err(),
+            "no architecture"
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec!["aarch64".into(), "--from".into()]).unwrap_err(),
+            "unknown argument --from"
+        );
+        assert_eq!(
+            parse_base_packages_arguments(vec!["aarch64".into(), "riscv64".into()]).unwrap_err(),
+            "one architecture only, not also riscv64"
+        );
+    }
+
+    #[test]
+    fn a_test_definition_carries_the_fixtures_package() {
+        // `base-packages --test` and `base-image --test` ask for one set, so both read it here.
+        let definition = parse_definition(DEFINITION).unwrap();
+        assert_eq!(
+            with_test_programs(definition.clone(), false).unwrap(),
+            definition
+        );
+        let test = with_test_programs(definition, true).unwrap();
+        assert!(test.programs.contains(&"progenitor".to_string()));
+        assert!(test.programs.contains(&"kernel_test_subject".to_string()));
     }
 
     #[test]

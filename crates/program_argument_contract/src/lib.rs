@@ -51,6 +51,14 @@ pub const CAPACITY: usize = PAGE_BYTES - HEADER_BYTES;
 /// The first eight bytes of an assembled page. Provisional, with the rest of the layout.
 pub const MAGIC: [u8; 8] = *b"nifeargv";
 
+/// The page layout's version. The magic stays unnumbered because basalt's published programs read
+/// an argv page before this tree builds them: a break mints the digits into [`MAGIC`] only when
+/// basalt's archive rebuilds, in the same coordinated change, so this constant records the version
+/// the layout now carries rather than a digit string a reader can see.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// Why [`PageBuilder::push`] refused an argument.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refused {

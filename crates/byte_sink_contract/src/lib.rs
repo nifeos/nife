@@ -16,6 +16,16 @@
 /// `line_editor::proto` put theirs. One spelling for "the wire contract" across the tree.
 pub const OPERATION_SHIFT: u32 = 56;
 
+/// The framing's version, one for the message set and the inline packing together (calef's ruling
+/// of 2026-10-29 UTC, PR #2852, question 1: one constant per wire format). A break bumps this and
+/// owes the dated ledger entry the interface-stability discipline records; an addition owes no
+/// bump. A reader of a sink checks the version at bind (milestone 956 (the linked interfaces
+/// carry checkable versions)): a writer `CALL`s `OPERATION_VERSION` and binds only when its own
+/// version is in the served set.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// **Bytes.** The low 32 bits are the count (1 to [`INLINE_MAXIMUM`]); the bytes themselves are in
 /// the second and third words, little-endian, low word first.
 ///

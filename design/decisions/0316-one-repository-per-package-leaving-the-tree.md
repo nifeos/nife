@@ -42,8 +42,8 @@ follows from what the piece is, not from its size.
 ## The names
 
 Ruled 2026-10-28 (UTC), on the naming review this section held open
-([design/roadmap/proposals/first-cut-names.md](../roadmap/proposals/first-cut-names.md), relayed by
-the maintainer on pull request #2870): `process-tools`, `core-tools` and `disk-tools` stand as the
+([milestone 978 (the first cut's names)](../roadmap/0978-first-cut-names.md), relayed by
+the maintainer on pull request #2870). `process-tools`, `core-tools` and `disk-tools` stand as the
 package names and as the repository names of the first cut. The repositories do not exist yet, so
 ratifying a name and ratifying a home stay two events, per the rule above. milestone 756
 (process-tools, core-tools and disk-tools are the first code to leave this repository)'s

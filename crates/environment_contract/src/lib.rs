@@ -109,6 +109,13 @@ pub mod domain {
 /// straight in a hex dump the way `clock_contract::MAGIC` does.
 pub const MAGIC: [u8; 8] = *b"ENVCONF1";
 
+/// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
+/// a break bumps this and re-mints the magic in one change, with the dated ledger entry the
+/// interface-stability discipline owes.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// The most bytes a `TZ` value may occupy. Longer than every entry in [`domain::KNOWN_TIME_ZONES`]
 /// today (the longest IANA identifiers, like `America/Argentina/ComodRivadavia`, run to about
 /// 33 bytes), so a curated list can grow toward the real database's longer names without a

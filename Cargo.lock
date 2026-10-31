@@ -1774,6 +1774,7 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "approval_file",
  "boot_ladder",
  "boot_slot",
  "c_program_fixture",
@@ -1786,6 +1787,7 @@ dependencies = [
  "glyph_atlas",
  "grant_plan",
  "graphics_contract",
+ "installed_programs",
  "measured_boot",
  "nifefs",
  "object",

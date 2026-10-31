@@ -82,6 +82,12 @@ CONTRACTS = (
     'elf', 'measured_boot', 'package_archive', 'installed_programs', 'boot_slot', 'nifefs', 'glob',
     'globally_unique_identifier_partition_table', 'grant_plan', 'capability_plan', 'compositor',
     'line_editor', 'capability_manifest_note',
+    # Two more of the formats the first cut links, added 2026-10-29 (UTC) by
+    # milestone/956-checkable-interface-versions when it re-derived the linked set and found these
+    # two outside the census: block_roster is the roster page the kernel writes once and a
+    # surveyor reads, calendar the date formatting several programs share.
+    'block_roster',
+    'calendar',
 )
 
 # The std ABI is every crate `cargo xtask std-src` copies into the standard library's platform

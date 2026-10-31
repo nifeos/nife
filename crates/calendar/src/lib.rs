@@ -12,6 +12,14 @@
 
 #![no_std]
 
+/// The library's version: the calendar's generation, as the formatting's behavior defines it. A
+/// library with no peer and no wire, `glob`'s kind (calef's ruling of 2026-10-29 UTC, PR #2852,
+/// question 1): nothing checks it at run time; the declaration of milestone 956 (the linked
+/// interfaces carry checkable versions) names it, and assembly checks the record after the split.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// The lowest supported year, 0000. See the module docs for why the range is what it is.
 ///
 /// Name: ratified 2026-10-27 (#2797).

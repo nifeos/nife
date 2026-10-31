@@ -130,7 +130,7 @@ checks that gate a pull request)); the measurements are 2026-09-03's.*
 | `repeat-under-load` | `script/runner-container`, which nothing calls | no | unknown |
 | `soak-test` | **nothing** | no | unknown |
 | `rule-violations --check` | the `rule-violations` `local` row of `script/ci-build`, run as a step of the `lint` job (milestone 341 (give the three instruments nothing runs a caller)) | yes | green (2 open strikes, threshold 3), 0.07 seconds (2026-10-27) |
-| `journeys` | **nothing** | no | report only, cannot fail |
+| `journeys --check` | `script/lint` | yes | green |
 | `apropos`, `catch-up` | **nothing** | no | tools, no verdict |
 
 `script/lint` is one required check carrying 42 sub-checks (ten clippy passes and 32 others;

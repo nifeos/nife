@@ -27,7 +27,9 @@ package releases together and an image carries what it boots. It lists the `driv
 programs because the kernel's filesystem service panics without `block_driver`: an image that left
 the drivers out boots to the progenitor and stops there. `cargo xtask package --package <name>
 --arch <arch> [--version <v>]` packs one package from its milestone 611 (every program and crate
-belongs to a package) definition, and `cargo xtask base-packages <arch>` builds the base set.
+belongs to a package) definition, and `cargo xtask base-packages <arch> [--test]` builds the base
+set. `--test` adds the `fixtures` package, the one the composed test image's boot self-test runs
+and no release image carries.
 
 `cargo xtask base-image <arch> [--from <dir>] [--catalog <path>] [--out <dir>] [--test] [--boot]`
 composes the image. It takes every program's `bin/<program>` member out of the archive of the
@@ -43,9 +45,12 @@ so a composed image without them boots with two self-test checks red.
 
 basalt builds the same set through its own entry point. `recipes/base.toml` (provisional) names
 no program: it points at the pinned checkout's image definition, so membership stays nife's.
-`helpers/packages.py base <nife> <repository> [--triples <t>]` stages the pin, runs that commit's
-`cargo xtask base-packages` per architecture, copies the packages into the repository layout `jig`
-reads, and writes each package's source archive.
+`helpers/packages.py base <nife> <repository> [--triples <t>] [--test]` stages the pin, runs that
+commit's `cargo xtask base-packages` per architecture, copies the packages into the repository
+layout `jig` reads, and writes each package's source archive. `base --test` asks the pin for the
+`fixtures` package and lays it, and the index naming it, in a `test` channel beside `rolling`,
+which `publish` never serves: a fixtures archive cannot reach a published index while the composer
+still reads it.
 
 Reused rather than written twice: milestone 611's package definitions and `helpers/packages.py
 --check` as the format's reader, `cargo xtask package`'s one producer (`build`, `write_out`), the
@@ -90,11 +95,13 @@ and basalt's existing repository, source-archive and publish path.
    file before it takes the program out of the archive, and 911's grant record is the one encoding
    in `crates/installed_programs` that the interactive install and `jig install --approved` already
    write.
-4. basalt's gate boots the composed image rather than the one nife's tree built. Open, and it
-   waits on the pin bump. The legs are `helpers/packages.py base` and `cargo xtask base-image
-   <arch> --from <repository> --catalog <index> --boot`, one per architecture, beside the `jig
-   install` legs that already run at the pin. Until that bump, the pin's nife has no composer for a
-   job to call, and the gate's `nife` job keeps running `script/ci-build test` on the tree image.
+4. basalt's gate boots the composed image rather than the one nife's tree built. A job of its own
+   runs `helpers/packages.py base` and then `cargo xtask base-image <arch> --from <repository>
+   --catalog <index> --test --boot` once per architecture, beside the `jig install` legs. It boots
+   an image composed from the base packages the pin's builder packed, and that image reaches the
+   prompt; the kernel still comes from the `kernel` package's crates, the gap the block's `BUGS`
+   entry records. Both composed rows are two of the seven check names basalt's ruleset requires, so
+   a composed image that stops booting holds a merge.
 5. nife's own image build stays for nife's tests, composed from the same package definitions, so a
    nife change can be tested before basalt pins it. `cargo xtask image` still packs the tree's
    image for every existing check, and `cargo xtask base-image` composes the same membership from
@@ -113,9 +120,7 @@ than replaced.
 
 - **Milestone 911.** Item 3's host-side check lands with 911's approval-file gate, which is in a
   lane now. The composition leaves the seam at `compose` and does not invent a second check.
-- **Outstanding.** Item 4 needs the pin bump that carries `base-image` and `base-packages` into
-  basalt's pin. Until then `packages.yml` has no job that can call them, and the gate keeps booting
-  the tree image.
+- **Done.** `nifeos/basalt#50` carried item 4, the composed boot, into basalt's `packages.yml`.
 - **Outstanding.** `script/swish-check`'s rows have not run against a composed image. They are the
   next piece after item 4, and until then a composed image proves it boots to the prompt only.
 
@@ -131,9 +136,6 @@ than replaced.
   `reproduce` job compares two independent builds. Nothing yet compares a base package's bytes
   against a reviewed line, so a byte that moves without changing the index passes. Home: 917
   (basalt's packages build reproducibly), or a recipe table shaped for a set rather than a package.
-- **The gate still boots nife's tree image.** Until the pin bump that carries `base-image` and
-  `base-packages` into the pin, `packages.yml` has no job that can call them and the gate's `nife`
-  job runs `script/ci-build test` on the tree image. That is the pin's limit, not a missing piece.
 - **`script/swish-check`'s rows have not run against a composed image.** `--test` composes the
   base plus the `fixtures` package, which is what the kernel's boot self-test and the shell's check
   run; the rows' own claims on that image are the next piece. Until they run, a composed image

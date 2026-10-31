@@ -27,6 +27,13 @@
 /// unpadded, the same shape `clock_contract::MAGIC` and `environment_contract::MAGIC` use.
 pub const MAGIC: [u8; 8] = *b"TIMEBAS1";
 
+/// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
+/// a break bumps this and re-mints the magic in one change, with the dated ledger entry the
+/// interface-stability discipline owes.
+///
+/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const VERSION: u32 = 1;
+
 /// **The slowest counter this tree will believe**, 100 kHz. Far below anything real, because a
 /// false refusal on somebody's silicon turns a machine that would have run into one that will not
 /// boot: radon's 4 MHz `time` CSR is the slowest counter here, and 100 kHz sits above the 32.768

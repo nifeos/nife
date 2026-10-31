@@ -47,7 +47,7 @@ Sorted by breaking changes in the last four weeks (2026W41 to 2026W44), then by 
 
 ## What broke in 2026W44
 
-Read at `fc5b83da8c85` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `942328b8b032` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `abi`: removed `CapSlot`
 > - `abi`: syscall renamed, number kept (syscall), now `SYS_CAPABILITY_DELETE` `SYS_CAP_DELETE`
@@ -179,7 +179,7 @@ Every package in `packages/`, 2026W29 to 2026W44, by the method of the contracts
 |---|---:|---:|---:|---:|---|
 | `kernel` | 1982 | 1074 (54%) | 877 (44%) | 50% | `contracts` (329) |
 | `contracts` | 1176 | 798 (68%) | 734 (62%) | 62% | `kernel` (329) |
-| `host-tools` | 872 | 618 (71%) | 516 (59%) | 66% | `kernel` (240) |
+| `host-tools` | 873 | 618 (71%) | 516 (59%) | 65% | `kernel` (240) |
 | `system-tests` | 516 | 301 (58%) | 291 (56%) | 51% | `kernel` (120) |
 | `init` | 464 | 396 (85%) | 390 (84%) | 81% | `contracts` (138) |
 | `fixtures` | 392 | 315 (80%) | 304 (78%) | 71% | `contracts` (74) |
