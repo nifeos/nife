@@ -39,14 +39,14 @@ pull request's commits, and the pull request's draft and ready events.
 | class | runs | pull requests |
 |---|---|---|
 | fails by design: claim-only head, pull request was a draft | 577 | 573 |
-| claim-only head, pull request was already marked ready | 28 | 26 |
+| claim-only head, pull request already ready | 28 | 26 |
 | real empty diff | 4 | 3 |
 | cancelled by a label change | 0 | 0 |
 | infrastructure | 0 | 0 |
 | other | 0 | 0 |
 
 The four real empty diffs come from three pull requests. Draft #2420 is the falsification: an empty
-commit without a `claim:` subject, kept to show the check fires. Draft #2719 merged `main` and left
+commit without a `claim:` subject, which shows the check fires. Draft #2719 merged `main` and left
 its tree equal to its base. Ready #2618 failed twice because its work had already landed on `main`,
 and it closed unmerged.
 
@@ -90,7 +90,7 @@ first ready event, which sets these drafts aside.
 
 Skip the job on drafts, and only there. In `.github/workflows/empty-diff.yml`, give the job
 `if: github.event_name != 'pull_request' || !github.event.pull_request.draft`. A job that its
-own `if` skips reports as skipped, and GitHub counts a skipped required check as satisfied.
+own `if` skips shows as skipped, and GitHub treats a skipped required check as satisfied.
 
 This does not hide what milestone 627 exists to show. The check still runs on `ready_for_review`,
 when a pull request stops being a draft, and on `merge_group`, the authoritative half. A claim-only
