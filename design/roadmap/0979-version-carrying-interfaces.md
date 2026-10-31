@@ -294,6 +294,8 @@ the tree), the N-1 rule's event-triggered revisit, and the interface ids' ratifi
 - The 610 series reads the new constants as additions in their first week; that is true, not a
   defect.
 - One recollection stands unverified in the prior art, and the appendix marks it.
+- "The implementing milestone" section says milestone 956 holds an eight-step plan, and 956's block
+  holds four steps. Correct the count to what 956 holds once 956 lands.
 
 ## Index row
 

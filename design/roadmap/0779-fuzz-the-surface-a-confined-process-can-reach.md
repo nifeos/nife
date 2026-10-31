@@ -97,6 +97,20 @@ comment block is at its ceiling under §267 (a comment states the constraint as 
   and space lifetimes the day before and are candidates only; nothing ties them to this failure.
   The panic now prints the fuzzer's tid, the seed, `live`, its disposition and GO's
   waiting-receiver count read at the moment of failure, so a recurrence names which case it is.
+- **Both in-guest drivers fail on wall-clock deadlines when guests run side by side, and the
+  failures are the harness's, not escapes.** Measured 2026-10-31 (UTC) on x86_64 under KVM, on a
+  dedicated x86_64 virtual machine, one 60-second run per guest count. The kernel-thread driver
+  (milestone 752) failed 1 of 4 guests at 4, 4 of 8 at 8 and 6 of 16 at 16; the confined driver
+  failed 0 of 4, 1 of 8 and 6 of 16. At 1 and 2 guests neither failed. The messages name a
+  deadline, not a property: "actor N neither finished nor parked within the deadline", "it stayed
+  parked", "fuzzer N never came back" and "never parked on its conductor channel". Each failing
+  seed run alone was green (kernel-thread seed 900018424, confined seed 900006449), so a loaded host
+  starves a guest past a fixed wall-clock bound and the oracle never ran. The consumer is any
+  unattended or concurrent fuzzer run, such as the budget run that risk 7's criterion (d) asks for:
+  until the deadlines count guest progress (seeds or calls completed) rather than host seconds,
+  such a run reports false reds, and a red that cannot be told from an escape costs a triage each.
+  Concurrency is a throughput lever only once this is fixed; the rates are in
+  `notes/fuzzing/rates-on-x86-64-under-kvm.md`. Milestone 752 records the same limit.
 
 ## (a) Host fuzz targets for the services' request handlers
 

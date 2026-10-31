@@ -122,6 +122,10 @@ first one.
   lane only if the tree's scheduled dailies multiply.
 - **Recorded.** The per-workflow runs endpoint is this block's answer to the 100-run listing cap.
   `script/cadence-check`'s own BUGS still owes that fix for its 15-day threshold (#1511).
+- **Outstanding.** Issue #2960 (the `ci-failing` row) was opened by this mechanism on 2026-10-31
+  (UTC) when `helpers/ci-failing.sh` died on `echo` escapes; #2964 fixed that crash. The issue
+  closes only when the audit lane's report pull request lands with `Closes #2960`, and that audit
+  report is still to be run. The consumer is the audit lane that picks up the row.
 - **Refused.** Making the row a gate, closing the issue by editing the index, and reading the row
   from an audit lane's gates. The reasons stand in `script/cadence-check`'s header, the audit
   workflow's own, and the ruling recorded on this milestone's pull request.
