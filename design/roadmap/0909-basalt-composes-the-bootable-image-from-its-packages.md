@@ -1,7 +1,7 @@
 ---
 status: PARTIAL
 raised: 2026-10-12
-milestone_dependencies: 755, 607, 611, 810, 911, 919
+milestone_dependencies: 755, 607, 611, 810, 911, 919, 990
 decision_dependencies: 297, 235, 241, 250
 machine_requirements: none
 specific_machine: none
@@ -95,11 +95,10 @@ and basalt's existing repository, source-archive and publish path.
      `compose` reads each carried program's asks with `program_asks`, the reading the progenitor's
      install uses. It tests them against the package's entry with `approval_file::File::check`, and
      refuses the composition naming every extra grant of the package.
-   - **The table waits on the UFS2 arc's phase 2** (`ufs2-read-and-write-against-freebsds-tools`).
-     The first table lives as files under `activation/` on the UFS2 launch volume, with no separate
-     seed image (ruled 2026-10-30 UTC on #2894, and 2026-10-31 UTC for UFS2 as the launch
-     filesystem). Phase 2 writes that volume. What the first generation holds, and what measured
-     boot needs from it, are in
+   - **The table waits on milestone 990** (the base image's first installed-programs table). The
+     first table lives as files under `activation/` on the launch volume, currently RedoxFS, with no
+     separate seed image (ruled 2026-10-30 UTC on #2894). What the first generation holds, and what
+     measured boot needs from it, are in
      [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md).
 4. basalt's gate boots the composed image rather than the one nife's tree built. A job of its own
    runs `helpers/packages.py base` and then `cargo xtask base-image <arch> --from <repository>
@@ -124,8 +123,9 @@ than replaced.
 
 ## Follow-on
 
-- **Outstanding.** Item 3's table half lands with phase 2 of the UFS2 arc
-  (`ufs2-read-and-write-against-freebsds-tools`), which makes the launch volume the table lives on.
+- **Milestone 990.** Item 3's table half, where a composed image keeps its first generation, waits
+  on milestone 990 (the base image's first installed-programs table), which sits on the launch
+  volume, currently RedoxFS.
 - **Done.** `nifeos/basalt#50` carried item 4, the composed boot, into basalt's `packages.yml`.
 - **Outstanding.** `script/swish-check`'s rows have not run against a composed image. They are the
   next piece after item 4, and until then a composed image proves it boots to the prompt only.

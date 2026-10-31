@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::allocation::verification::allocation_takes_one_free_cluster_and_nothing_else`.
+
+The defect: the search treats a reserved entry as free, so it hands out a cluster the specification keeps out of every chain.
+
+Expected to fail: the harness's `assert_eq!(before[taken], TableEntry::Free)`.
+
+diff --git a/crates/file_allocation_table/src/allocation.rs b/crates/file_allocation_table/src/allocation.rs
+--- a/crates/file_allocation_table/src/allocation.rs
++++ b/crates/file_allocation_table/src/allocation.rs
+@@ -70,7 +70,7 @@ pub(crate) fn allocate<L: LinksMut>(
+     for step in 0..clusters {
+         // `start < clusters` and `step < clusters`, so the sum cannot reach 2 * clusters + 2.
+         let cluster = 2 + (start + step) % clusters;
+-        if links.table_entry(cluster)? == TableEntry::Free {
++        if matches!(links.table_entry(cluster)?, TableEntry::Free | TableEntry::Reserved) {
+             links.set_table_entry(cluster, TableEntry::EndOfChain)?;
+             return Ok(Some(cluster));
+         }

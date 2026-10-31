@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: the-special-boots-become-shell-commands
 raised: 2026-10-21
 milestone_dependencies: 890
@@ -184,7 +184,13 @@ there yet. QEMU and xenon can start sooner.
 5. `network_bench` on xenon, after the bench boot proves the I219. Then the feature is deleted.
 6. `job_mix`, as milestone 523. Its five forks come to the architect here, placement visibility
    first. 523 waits behind the partial milestones and starts after them.
-7. Delete `tsc_probe`. It has no precondition, so it may land before any step above.
+7. Delete `tsc_probe`. It has no precondition, so it may land before any step above. LANDED
+   (pull request #2921): the feature, its module, its call in the x86_64 timer init and its
+   baseline row are gone; it was in no `script/lint` row, `script/board-image` flag or xtask build.
+
+## Done when
+
+Every step above has landed and the end state below holds. Landed so far: step 7.
 
 ## End state
 
@@ -264,6 +270,19 @@ hook exists in a production build.
 
 They print under their own prefix and are recorded in `bench/` beside the quiet boot's numbers.
 The quiet-machine baseline stays the tripwire.
+
+## Follow-on
+
+- **Done.** Step 7, the deletion of `tsc_probe`, landed in pull request #2921. Checked by
+  `grep -rn tsc_probe kernel script xtask .github`, which finds nothing.
+- **Outstanding.** Step 1, the `bench` EL0 rows as a command. Only `null_syscall` and the
+  `sink_throughput` pair can run as shell children today. The other rows need a peer process, a
+  target address space or an untyped region built for them, which is the process construction
+  authority `crates/grant_plan` withholds from everything the shell spawns (milestone 523's blocker
+  one). It is a question for the architect, raised in the lane report. Checked by reading the roles
+  in `fixtures/src/os_primitives_benchmarker.rs` against `kernel/src/bench/el0.rs`.
+- **Outstanding.** Steps 2 through 5 wait on the inputs the Order section names. None has started.
+- **Milestone 523.** Step 6 is milestone 523 (moving the job-mix supervisor into userspace).
 
 ## Index row
 

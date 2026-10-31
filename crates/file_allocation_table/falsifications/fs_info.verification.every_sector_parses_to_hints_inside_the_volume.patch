@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::fs_info::verification::every_sector_parses_to_hints_inside_the_volume`.
+
+The defect: the parse believes a free count above the volume's cluster count, so a stranger's stick can make the allocator think it has room it does not.
+
+Expected to fail: the harness's `assert!(free <= clusters)`.
+
+diff --git a/crates/file_allocation_table/src/fs_info.rs b/crates/file_allocation_table/src/fs_info.rs
+--- a/crates/file_allocation_table/src/fs_info.rs
++++ b/crates/file_allocation_table/src/fs_info.rs
+@@ -81,7 +81,7 @@ impl FsInfo {
+         let free = word(sector, FREE_COUNT_AT)?;
+         let next = word(sector, NEXT_FREE_AT)?;
+         Ok(FsInfo {
+-            free_clusters: (free != UNKNOWN && free <= clusters).then_some(free),
++            free_clusters: (free != UNKNOWN).then_some(free),
+             next_free: (next >= 2 && next - 2 < clusters).then_some(next),
+         })
+     }

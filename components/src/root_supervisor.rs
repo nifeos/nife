@@ -65,21 +65,19 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
     // The channels. The spawner serves `req` and answers on `rep`; `childfault` is where the
     // sub-server's deaths go (sub_server_supervisor receives them); `rootfault` is where OUR children's deaths go.
-    let Ok(req) = supervision_contract::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
+    let Ok(req) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
         bail(5)
     };
-    let Ok(rep) = supervision_contract::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
+    let Ok(rep) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
         bail(6)
     };
-    let Ok(childfault) = supervision_contract::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS)
-    else {
+    let Ok(childfault) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
         bail(7)
     };
-    let Ok(rootfault) = supervision_contract::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS)
-    else {
+    let Ok(rootfault) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
         bail(8)
     };
-    let Ok(sp_ut) = supervision_contract::memory_region_split(ROOT_UT, SPAWNER_BUDGET_PAGES) else {
+    let Ok(sp_ut) = process_builder::memory_region_split(ROOT_UT, SPAWNER_BUDGET_PAGES) else {
         bail(9)
     };
 
@@ -88,7 +86,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     //    budget lacks) anything it retypes from it), the request pair, a grantable report endpoint so it can endow the children it
     //    builds, a grantable view of the child fault endpoint so children are born supervised, and
     //    the one program image. It cannot build anything else, because it has nothing else to build.
-    let Ok(child) = supervision_contract::build_child(
+    let Ok(child) = process_builder::build_child(
         ROOT_UT,
         ROOT_UT,
         &spawner,
@@ -108,14 +106,14 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     ) else {
         bail(10)
     };
-    if !supervision_contract::start_child(child, 0, first_attempt_crasher.len() as u64, 0) {
+    if !process_builder::start_child(child, 0, first_attempt_crasher.len() as u64, 0) {
         bail(11)
     }
 
     // 2. The supervisor. **It holds no memory at all**: a request channel, a death channel, and a way
     //    to report. Its restart policy is code, not authority, so a compromised sub_server_supervisor can ask for
     //    rebuilds of one program and nothing more.
-    let Ok(child) = supervision_contract::build_child(
+    let Ok(child) = process_builder::build_child(
         ROOT_UT,
         ROOT_UT,
         &sub_server_supervisor,
@@ -134,7 +132,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     ) else {
         bail(12)
     };
-    if !supervision_contract::start_child(child, 0, 0, 0) {
+    if !process_builder::start_child(child, 0, 0, 0) {
         bail(13)
     }
 
@@ -173,7 +171,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 /// code turns "nothing happened" into a legible failure.
 fn bail(stage: u64) -> ! {
     send(REPORT, REPORT_FAILED, stage, 0);
-    supervision_contract::fail()
+    process_builder::fail()
 }
 
 user_mode_runtime::panic_handler!();

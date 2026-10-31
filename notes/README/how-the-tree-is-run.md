@@ -32,6 +32,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The lint census, 2026-10-09](../lint-census-2026-10-09.md): panics, casts, `static mut`, suppressions and function length in the non-test Rust that runs on nife, counted for five proposals. Name provisional.
 - [The Actions cache budget, 2026-10-07](../actions-cache-budget-2026-10-07.md): which caches earn their bytes against GitHub's 10 GB limit, why merge groups save nothing now, and the forks left. Name provisional.
 - [What script/lint costs a lane, 2026-10-18](../lint-cost-2026-10-18.md): per-section time locally and in CI, which sections stop the run, reruns per lane on one evening, the pre-push hook, and fixes ranked by time saved. Name provisional.
+- [A shared corpus index for the text gates](../lint-corpus-index.md): what twelve text gates cost, why reading is cheap and deriving is not, and a cache of derived facts keyed by blob hash. A design note for review. Name provisional.
 - [CI's toolchain download, 2026-10-19](../ci-toolchain-download.md): how often the rust-lang CDN failed CI, the retry that answers it, and what caching the toolchain would cost and buy. Name provisional.
 - [Counted claims](../counted-claims.md): numbers in prose that a gate re-derives. Name provisional.
 - [The register of measures](../register-of-measures.md): the numbers this kernel holds itself to. Name provisional.

@@ -58,6 +58,9 @@ byte_sink_contract = { version = "0.1.0", path = "../byte_sink_contract" }
 # The userspace ELF loader, and the fault slot that makes a child born supervised. One loader in the
 # tree since milestone 96; this crate is one of its two callers.
 supervision_contract = { version = "0.1.0", path = "../supervision_contract" }
+# The userspace ELF loader and the builder's scratch window (DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3 split the loader out
+# of the contract so the contract carries no runtime edge).
+process_builder = { version = "0.1.0", path = "../process_builder" }
 # The std runtime contract (milestone 595 (provisional)): the slots and pages the spawn service
 # places a `std` child's capabilities at. Constants only, no dependencies.
 std_runtime_contract = { version = "0.1.0", path = "../std_runtime_contract" }

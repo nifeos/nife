@@ -88,7 +88,7 @@ had no claim, into milestone 767 (AMD-Vi hardening before the first AMD boot). T
 attack only when it booted, ran the suite on all three ISAs, and found the kernel's confinement held.
 It booted one escape at the application boundary: a client holding only `WRITE` on the swap
 demonstrator's endpoint made the server write into a device page the client was never granted,
-because the server trusted an offset in the request word. Fixed in `hot_swap_contract::log_put` with a
+because the server trusted an offset in the request word. Fixed in `hot_swap_server::log_put` with a
 replayable falsification, red on aarch64. The open gap most likely to be a real escape in a shipped
 boot is claim 24's file-server window reuse, read by two passes and not booted; its fix is milestone
 685 (a job is finished when its memory is back). All three passes were one vendor's models, so this

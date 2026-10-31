@@ -387,7 +387,7 @@ pub(super) fn copy_text(own_ut: u64, region: u64, catalog: &str) -> Option<u64> 
         return None;
     }
     let page = retype_page_frame(region).ok()?;
-    let Ok(ours) = supervision_contract::map_scratch(page, true, own_ut) else {
+    let Ok(ours) = process_builder::map_scratch(page, true, own_ut) else {
         capability_delete(page);
         return None;
     };
@@ -396,7 +396,7 @@ pub(super) fn copy_text(own_ut: u64, region: u64, catalog: &str) -> Option<u64> 
     unsafe {
         core::ptr::copy_nonoverlapping(catalog.as_ptr(), ours as *mut u8, catalog.len());
     }
-    supervision_contract::give_up_own_page(ours);
+    process_builder::give_up_own_page(ours);
     Some(page)
 }
 
@@ -533,7 +533,7 @@ pub(super) fn activate(
 
     // The staged package goes back to the image pool, whose most recent carve it is.
     if let Some((st, _)) = staging {
-        supervision_contract::memory_region_destroy(st);
+        process_builder::memory_region_destroy(st);
         capability_delete(st);
     }
     outcome

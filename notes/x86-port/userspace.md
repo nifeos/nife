@@ -22,7 +22,7 @@ What the userspace still lacks is on the [main page](../x86-port.md), under BUGS
 words because x86 instructions are not a fixed width. One `copy_nonoverlapping` over
 `size_of_val` now serves all three element types.
 
-`console::uart_put`, `input`'s `uart` module and `hot_swap_contract::probe_device` cannot reach a device
+`console::uart_put`, `input`'s `uart` module and `hot_swap_server::probe_device` cannot reach a device
 from ring 3 at all. Their x86 arms `trap()` (or return a sentinel that nothing observes) rather than
 no-op, and that is the whole point. A silent no-op compiles into a console that acknowledges every
 byte and prints none. That is a lie told in the one place an operator is looking. `xtask` packs

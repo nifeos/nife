@@ -5,15 +5,15 @@
 Milestone 909 (basalt composes the bootable image from its packages) item 3 has two halves. The
 composer checks every package against the image's approval file, and `cargo xtask base-image`
 already does that. The other half writes the grant records that check approves into the
-image's first installed-programs table. That table lives as files under `activation/` on the UFS2
-launch volume (ruled 2026-10-30 UTC on #2894, and 2026-10-31 UTC for UFS2 as the launch
-filesystem), so it waits on phase 2 of the UFS2 arc, `ufs2-read-and-write-against-freebsds-tools`.
+image's first installed-programs table. That table lives as files under `activation/` on the launch
+volume, currently RedoxFS (ruled 2026-10-30 UTC on #2894 for the files and the absence of a seed
+image), so it waits on milestone 990 (the base image's first installed-programs table).
 The fork and its options are in
 [the proposal the ruling answered](../design/roadmap/proposals/the-base-images-first-installed-programs-table.md).
 
 A lane built the option the ruling replaced, a nife-native container beside the initial ramdisk,
 before the ruling landed. Nothing of it merged. This note keeps what that build found, for the lane
-that writes `activation/1` onto the launch volume.
+that writes `activation/1` onto the launch volume (milestone 990).
 
 ## What the first generation holds
 
@@ -50,7 +50,7 @@ spawns a program. A table read after that point would already have granted what 
 
 The launch volume inherits the question in a harder form. A digest fixed at build time vouches for
 generation 1 and for nothing an install writes after it, and an install writes the same volume. So
-the measurement cannot cover the whole volume. The phase 2 lane has to decide what it covers: the
+the measurement cannot cover the whole volume. The lane that builds milestone 990 has to decide what it covers: the
 seed generation by its own digest, the volume until its first write, or the approval file alone,
 with each later generation checked against it as the install already does.
 
