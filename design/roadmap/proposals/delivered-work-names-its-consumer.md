@@ -46,10 +46,10 @@ with nothing that starts it, and a contract can carry one side. Each still reads
 
 That gap has a cost beyond dead code. Work that nothing calls has met no real requirement, so its
 interface is a guess. When a consumer finally arrives, it either bends to the guess or rewrites the
-producer. The tree has paid this cost and recorded it. Milestone 945 found that `serial_driver`
-shipped in the drivers package with nothing to start it; its last starter had gone with a tour step,
-and the replacement driver beat it on every axis anyway. §311 (a contract is code, not prose) and
-lint check 5's count of `#[path]` consumers are two narrower answers to the same failure.
+producer. The tree has paid this cost and recorded it. Milestone 945 (`serial_driver` ships with
+nothing to start it) is the case on record. Its last starter went with a tour step, and the driver
+the progenitor did start beat it on every axis. §311 (a contract is code, not prose) and lint check
+5's count of `#[path]` consumers are two narrower answers to the same failure.
 
 The rule asks three things of a block and one of the tree. The block names who will use the work
 before anyone builds it. It does not claim `BUILT` until that user has called it. A large producer
@@ -83,8 +83,9 @@ The key is `consumer`, and its value is one of four forms:
 | `none (<reason>)` | `consumer: none (a document split; its reader is a person)` | a reason of three words or more |
 
 A block that carries neither a consumer nor `none` with a reason fails. A value names one consumer
-or a comma-separated list of them, in the schema's flat form. `milestone N, part 4` names a part, and
-§207's rule applies: a dependency on part of a milestone means that milestone wants splitting.
+or a comma-separated list of them, in the schema's flat form. `milestone N, part 4` names a part. Under
+§207 (the roadmap is a graph, and the block says so in fields a script can walk), a dependency on
+part of a milestone means that milestone wants splitting.
 
 ### 2. BUILT cites first use
 
