@@ -38,7 +38,7 @@ are candidates, not findings:
 
 - `components/src/compositor.rs` and `components/src/console.rs`.
 - `components/src/keyboard_driver.rs` and `components/src/usb_keyboard_driver.rs`.
-- The swap demonstrator in `crates/hot_swap_contract`. Its `log_put` offset is bounded since milestone
+- The swap demonstrator in `crates/hot_swap_server`. Its `log_put` offset is bounded since milestone
   633's third pass, which is not the same as scoped.
 - `components/src/login.rs` mentions both windows and badges, and wants a read.
 

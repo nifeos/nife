@@ -241,7 +241,7 @@ fn announce_outcomes(
     // nothing below writes (milestone 95 (an unmap primitive), §249 (a running address space stays
     // nameable)): given up before the shell starts, so this process cannot read what the shell
     // prints or write into it.
-    supervision_contract::give_up_own_page(PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS);
+    process_builder::give_up_own_page(PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS);
 }
 
 /// Print the generated login credential, once, before the prompt.

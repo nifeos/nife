@@ -959,7 +959,7 @@ impl Service<'_> {
         // `build_child` copied every segment out of staging, and destroying it now returns its
         // pages, since it is the pool's top carve.
         if let Some(st) = staging {
-            supervision_contract::memory_region_destroy(st);
+            process_builder::memory_region_destroy(st);
             capability_delete(st);
         }
         let tcb = built

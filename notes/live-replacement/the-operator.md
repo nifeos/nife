@@ -106,7 +106,7 @@ The handoff role differs from the direct one in five ways, each a sentence of §
 is an opaque blob over a granted frame, and it is optional):
 
 - It has no device. The state is the point, and a device would put it behind the same `x86_64` gap
-  as the other systems (`hot_swap_contract::probe_device`'s x86 arm), so it runs on all three
+  as the other systems (`hot_swap_server::probe_device`'s x86 arm), so it runs on all three
   architectures.
 - One frame is routed to every instance under the handoff role at build time. The operator never
   maps it and never reads it; the bytes are the component's.

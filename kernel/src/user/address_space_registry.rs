@@ -155,7 +155,7 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
         thread_pages_in_use: 0,
     };
 
-    // No timebase page either: the userspace loader (`supervision_contract::build_child_space`)
+    // No timebase page either: the userspace loader (`process_builder::build_child_space`)
     // maps one from its parent's rate, and most callers build nothing like an ELF process.
     let name = USER_SPACES
         .lock()

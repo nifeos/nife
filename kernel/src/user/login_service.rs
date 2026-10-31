@@ -16,7 +16,7 @@ const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
 const CLIENT_SCRATCH_UT_PAGES: u64 = 5;
 
 /// Stack pages beyond the one page `run` maps. `login` parses an ELF and builds a child address
-/// space (`supervision_contract::build_child`), deeper than `root_supervisor`'s 8-page stack
+/// space (`process_builder::build_child`), deeper than `root_supervisor`'s 8-page stack
 /// covers; sixteen is the size `credentialer.rs`'s Argon2id loop needed.
 const LOGIN_STACK_PAGES: u64 = 16;
 
