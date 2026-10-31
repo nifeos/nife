@@ -2,10 +2,10 @@
 
 Appendix to [813. `file_allocation_table`](../0813-a-proven-fat-crate-released-on-its-own.md). It
 records what stage 6 built, the evidence, and the one design choice an architect may want to
-revisit before the crate publishes. Stage 6 lands in two pull requests; this page describes the
-first, which changes the table and nothing above it.
+revisit before the crate publishes. Stage 6 landed in two pull requests: the first changed the table and
+nothing above it, and the second wrote files.
 
-## What the first pull request built
+## The first pull request: the table
 
 - `WritableSectorDevice`, the write half of the sector interface. It extends `SectorDevice` with
   `write_sector(index, buffer)`, where `buffer` is always one sector. A device that cannot write
@@ -73,3 +73,36 @@ Every name in this stage is provisional, with a `Name: provisional` block in its
   and `sync`.
 - `FsInfo` (`parse`, `free_clusters`, `next_free`) and `FsInfoError` (`TooShort`, `BadSignature`).
 - The modules `allocation` and `fs_info`.
+
+## The second pull request: files
+
+- `Volume::create_file(directory, name)` makes an empty file with an 8.3 name (upper-case letters,
+  digits and the 8.3 punctuation) in the first free slot of a directory, and returns its
+  `NamedEntry`. It refuses an illegal name, a name the directory holds, and a full fixed root. A
+  chain directory that fills grows by a zeroed cluster. The slot after an end marker gets an end
+  marker of its own, so stale bytes there stay invisible.
+- `Volume::open_file_writer(&entry)` returns a `FileWriter` with `write`, `seek`, `position`,
+  `size_bytes` and `set_len`. A write extends the chain and the size, rewrites a partial sector
+  with the slack past the old end zeroed, and rewrites the directory entry when the size or first
+  cluster changed. A volume that fills part way returns the bytes that fit and then `VolumeFull`.
+  `set_len` grows with zeros or shrinks by freeing the clusters past the new end, entry first.
+  An error ends the writer.
+- `Volume::remove_file(&entry)` marks every slot of the entry free, then frees its chain. A stale
+  entry (the slot no longer holds that name) returns `EntryChanged`.
+- `NamedEntry` now knows its place: the directory, the first slot of its long-name run and its
+  short slot. `Volume::is_clean` reads the clean-shutdown bit of table entry 1 (FAT16 and FAT32).
+  The first change after open or sync clears it and `sync` sets it again, but only if it was set
+  before: a volume found dirty stays dirty.
+- `WriteError` is the one error of create, write, resize and remove.
+
+| check | result |
+|---|---|
+| Kani, one new harness | `written_bytes_read_back_and_the_chain_is_as_long_as_the_size` runs the real write path and the real read cursor over a model of three one-sector clusters holding stale bytes: a zero-fill to 508 to 516 bytes, then four symbolic bytes at any position. They read back at the position, everything else reads zero, the size is the larger end, and the chain has one cluster per 512 bytes with no other cluster in use. The model cannot show the device's sector I/O |
+| falsification | a patch that stops zeroing the slack of a partial sector turns the harness red at its read-back assertion |
+| unit tests | odd chunk sizes, overwrite with slack, clamped seek, grow and shrink, remove and slot reuse, directory entries as files, a full fixed root, a refused write, a damaged chain |
+| oracle tests | on FAT12, FAT16 (512 and 4096-byte sectors) and FAT32 volumes rust-fatfs formatted, the test writes ten files of sizes around the sector and cluster boundaries in odd chunks. rust-fatfs lists and reads the same names and bytes, counts the same free clusters, and `fsck.fat -n` accepts the volume after the create, after an overwrite across a cluster boundary, an append, a shrink, a grow and a delete, and after every file is deleted. The clean bit reads dirty mid-change and clean after `sync`. A FAT32 root grows past a cluster, and a FAT16 root refuses the 513th file |
+
+## Names minted in the second pull request
+
+All provisional: `WriteError`, `FileWriter`, `Volume::create_file`, `open_file_writer`,
+`remove_file` and `is_clean`, and the modules `file_write` and `file_writer`.

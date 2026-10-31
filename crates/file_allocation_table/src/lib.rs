@@ -27,7 +27,14 @@
 //! [`Volume::truncate_chain`] and [`Volume::free_chain`] give clusters back, and every one writes
 //! each live copy of the table in an order that leaves a crash at worst a leaked cluster, never a
 //! shared one. The FAT32 `FSInfo` hints ([`FsInfo`]) follow those changes in memory and
-//! [`Volume::sync`] writes them. Nothing yet changes a file or a directory.
+//! [`Volume::sync`] writes them. The first change after open clears the volume's clean-shutdown bit
+//! (FAT16 and FAT32) and [`Volume::sync`] sets it back, so a volume dropped mid-change stays marked
+//! dirty ([`Volume::is_clean`]).
+//!
+//! [`Volume::create_file`] makes an empty file with an 8.3 name, [`Volume::open_file_writer`] opens a
+//! [`FileWriter`] that writes, extends and sets a length, and [`Volume::remove_file`] deletes. A
+//! directory that fills grows by a cluster, except the fixed root of FAT12 and FAT16. Every
+//! operation returns a [`WriteError`].
 //!
 //! The `mkfs` lays out one shape: a FAT32 EFI system partition holding one boot file at
 //! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT
@@ -46,7 +53,10 @@
 //! - A newly allocated cluster holds whatever the device held; a caller that needs zeros writes them.
 //! - A write has no barrier: the crate orders its writes and the device decides when each reaches the
 //!   medium. A failure between the writes of one table entry's copies leaves the copies unequal.
-//! - Nothing marks the volume dirty while it changes.
+//! - A file's name is an 8.3 short name; long names, directories and renames are not written yet.
+//! - A directory slot is found by walking from the directory's first cluster each time, so creating
+//!   in a directory of n clusters costs n chain steps per slot read.
+//! - Timestamps are zero and a writer sets only the archive attribute.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
 //!   backwards seek walks the chain again from its start.
 //! - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table, and
@@ -74,6 +84,8 @@ mod directory;
 #[doc(alias = "extensible firmware interface system partition")]
 pub mod efi_system_partition;
 mod file;
+mod file_write;
+mod file_writer;
 mod fs_info;
 mod long_name;
 mod long_name_assembly;
@@ -89,6 +101,8 @@ pub use allocation::AllocationError;
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
 pub use file::{FileReadError, FileReader, NotAFile};
+pub use file_write::WriteError;
+pub use file_writer::FileWriter;
 pub use fs_info::{FsInfo, FsInfoError};
 pub use long_name_assembly::{LongFileName, LongNameError};
 pub use lookup::LookupError;
