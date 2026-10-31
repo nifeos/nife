@@ -70,6 +70,30 @@ const SW_DEVICE: u64 = 1 << 10;
 /// and bit 63 is XD, so the mask must not be widened without checking both ends.
 const ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 
+/// **An IA-32e entry's fields share no bit**: the address field, P, RW, US, PWT, PCD, A, D, PS, G,
+/// the two software bits and XD. Every `|` in `Ia32e::attrs`, `table_entry`, `leaf_entry` and
+/// `block_entry` joins words from this list, so each is its own `^`, and the mutation exclusions
+/// for them name this constant: the compiler checks what no test can.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
+pub const THE_ENTRY_FIELDS_SHARE_NO_BIT: () = {
+    assert_share_no_bit!(
+        ADDR_MASK,
+        P,
+        RW,
+        US,
+        PWT,
+        PCD,
+        A,
+        D,
+        PS,
+        G,
+        SW_KERNEL_EXEC,
+        SW_DEVICE,
+        XD
+    );
+};
+
 /// The `x86_64` four-level (IA-32e) page-table format. Named for Intel's own term, "IA-32e
 /// paging" (SDM volume 3, chapter 4), since `X86_64` is not camel case. Name provisional.
 pub struct Ia32e;
@@ -211,6 +235,15 @@ const VTD_W: u64 = 1 << 1;
 /// it (`kernel/src/arch/x86_64/iommu.rs`'s BUGS says why).
 const VTD_ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 
+/// **A VT-d entry's fields share no bit**: the address field, R and W. The `|` in `is_present`,
+/// `table_entry` and `leaf_entry` joins two of these, so each is its own `^`, and the mutation
+/// exclusions for them name this constant: the compiler checks what no test can.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
+pub const THE_VTD_ENTRY_FIELDS_SHARE_NO_BIT: () = {
+    assert_share_no_bit!(VTD_ADDR_MASK, VTD_R, VTD_W);
+};
+
 /// **Every bit a VT-d second-level entry may carry**: R (bit 0), W (bit 1) and the address field
 /// (bits 51:12), per QEMU's `VTD_SPTE_PAGE_L1_RSVD_MASK`; any other bit faults the transaction.
 ///
@@ -308,6 +341,28 @@ const AMD_VI_IW: u64 = 1 << 62;
 /// Bits 51:12, the next table's or the page's physical address.
 const AMD_VI_ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 
+/// **An AMD-Vi page entry's fields share no bit**: the address field, PR, the `NextLevel` field
+/// (bits 11:9), FC, IR and IW. Every `|` in `table_entry` and `leaf_entry` joins words from this
+/// list, so each is its own `^`, and the mutation exclusions for them name this constant: the
+/// compiler checks what no test can. `table_entry` shifts a level of at most 3
+/// (`LEVELS - 1 - level`, for a `level` the walk keeps below `LEVELS`) into `NextLevel`, and 3
+/// fits the field, asserted below; an out-of-range `level` is a caller fault the subtraction
+/// would already catch in a debug build.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
+pub const THE_AMD_VI_ENTRY_FIELDS_SHARE_NO_BIT: () = {
+    assert_share_no_bit!(
+        AMD_VI_ADDR_MASK,
+        AMD_VI_PR,
+        AMD_VI_NEXT_LEVEL_MASK,
+        AMD_VI_FC,
+        AMD_VI_IR,
+        AMD_VI_IW
+    );
+    // 0x600 is 3 << 9, the largest `next` (`LEVELS - 1`) in its field.
+    assert!(0x600 & !AMD_VI_NEXT_LEVEL_MASK == 0);
+};
+
 /// **Every bit an AMD-Vi leaf this format writes may carry**: `PR`, the address, `FC`, `IR`, `IW`.
 /// `NextLevel` is zero in a 4 KiB leaf, and bits 58:52 are reserved and fault the walk with
 /// `IO_PAGE_FAULT` (Table 17). Spelled as a literal for the reason [`VTD_PERMITTED_BITS`] gives:
@@ -395,6 +450,26 @@ const DTE_MODE_4_LEVEL: u64 = 4 << 9;
 /// `IR` (bit 61) and `IW` (bit 62): the device may read and write, as far as the table allows.
 const DTE_IR: u64 = 1 << 61;
 const DTE_IW: u64 = 1 << 62;
+
+/// **A device table entry's first qword is built from fields that share no bit**: V, TV, the
+/// four-level mode, the root pointer, IR and IW. The root is the one operand that is not a
+/// constant: both constructors return `None` for a root with a bit outside `AMD_VI_ADDR_MASK`,
+/// so the root that reaches the `|` lies inside that mask, and the mask is asserted disjoint from
+/// the rest here. Every `|` in `device_table_entry` and `blocked_device_table_entry` is then its
+/// own `^`, and the mutation exclusions for them name this constant: the compiler checks what no
+/// test can.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
+pub const THE_DEVICE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT: () = {
+    assert_share_no_bit!(
+        DTE_V,
+        DTE_TV,
+        DTE_MODE_4_LEVEL,
+        AMD_VI_ADDR_MASK,
+        DTE_IR,
+        DTE_IW
+    );
+};
 
 /// **Every bit of a device table entry's first qword this crate may set**: `V`, `TV`, `Mode`, the
 /// page table root pointer (51:12), `IR` and `IW`. Bits 8:2, 54:52 and 63 are reserved and reported

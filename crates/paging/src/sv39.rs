@@ -33,6 +33,19 @@ const SW_DEVICE: u64 = 1 << 8;
 const PPN_SHIFT: u32 = 10;
 const PPN_MASK: u64 = (1 << 44) - 1;
 
+/// **A PTE's fields share no bit**: the PPN field (bits 53 to 10, written as its mask because the
+/// encoder shifts a masked address into it), V, and each of R, W, X, U, G, A, D and the software
+/// device bit. Every `|` in `Sv39::attrs`, `table_entry`, `leaf_entry` and `is_block` joins words
+/// from this list, so each is its own `^`, and the mutation exclusions for them name this
+/// constant: the compiler checks what no test can.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
+pub const THE_PAGE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT: () = {
+    assert_share_no_bit!(0x003f_ffff_ffff_fc00, V, R, W, X, U, G, A, D, SW_DEVICE);
+    // The literal above is the PPN field the encoder shifts into.
+    assert!(PPN_MASK << PPN_SHIFT == 0x003f_ffff_ffff_fc00);
+};
+
 /// The RISC-V Sv39 three-level page-table format.
 pub struct Sv39;
 
@@ -147,6 +160,24 @@ const MAE_B: u64 = 1 << 61;
 const MAE_SH: u64 = 1 << 60;
 /// All five memory-type bits, which a decoder must mask and a pointer must never set.
 const MAE_MASK: u64 = 0b11111 << 59;
+
+/// **The memory-type bits share no bit with each other or with anything a standard Sv39 leaf
+/// carries** (bits 53 and below: the PPN field, V, R, W, X, U, G, A, D, the software device bit).
+/// So the `|` joins in `memory_type` and the one that adds the type to `Sv39`'s leaf and block
+/// words are each their own `^`, and the mutation exclusions for them name this constant: the
+/// compiler checks what no test can. The highest Sv39 bit is the PPN field's bit 53, asserted
+/// below bit 59.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
+pub const THE_MEMORY_TYPE_BITS_SHARE_NO_BIT: () = {
+    assert_share_no_bit!(MAE_SO, MAE_C, MAE_B, MAE_SH);
+    // Everything Sv39 writes sits below bit 54, and the type bits start at bit 60.
+    assert!(MAE_MASK & 0x003f_ffff_ffff_ffff == 0);
+    assert!(MAE_SO & 0x003f_ffff_ffff_ffff == 0);
+    assert!(MAE_C & 0x003f_ffff_ffff_ffff == 0);
+    assert!(MAE_B & 0x003f_ffff_ffff_ffff == 0);
+    assert!(MAE_SH & 0x003f_ffff_ffff_ffff == 0);
+};
 
 impl Sv39Mae {
     /// The memory type for a leaf with `flags`. The RSW device bit [`Sv39`] already keeps is what
