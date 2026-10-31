@@ -148,35 +148,60 @@ fn write_in_chunks(volume: &mut Volume<Memory>, name: &str, bytes: &[u8], chunk:
     assert_eq!(writer.size_bytes() as usize, bytes.len());
 }
 
-fn the_writer_agrees(label: &str, mebibytes: usize, fat_type: FatType, sector: u16) {
-    let image = formatted(mebibytes, fat_type, sector);
-    let mut volume = Volume::open(image).unwrap();
-    let total = volume.count_free_clusters().unwrap();
-    let cluster_bytes = volume.boot_sector().bytes_per_cluster() as usize;
-    let sizes = [
-        0,
-        1,
-        511,
-        512,
-        513,
-        cluster_bytes - 1,
-        cluster_bytes,
-        cluster_bytes + 1,
-        3 * cluster_bytes + 17,
-        100_000,
-    ];
-    let mut expected: Vec<(String, Vec<u8>)> = Vec::new();
+/// What a stage of the test shares: the files the volume must hold, and the sizes the cluster
+/// arithmetic needs.
+struct Plan {
+    label: String,
+    expected: Vec<(String, Vec<u8>)>,
+    total: u32,
+    cluster_bytes: usize,
+}
+
+impl Plan {
+    /// rust-fatfs lists these files, counts the free clusters they leave, and `fsck` accepts it.
+    fn check(&mut self, image: &Memory, stage: &str) {
+        self.expected.sort();
+        assert_eq!(
+            oracle_files(&image.bytes),
+            self.expected,
+            "{}: {stage}",
+            self.label
+        );
+        check_with_fsck(&image.bytes, &format!("{}-{stage}", self.label));
+        let used: usize = self
+            .expected
+            .iter()
+            .map(|(_, b)| b.len().div_ceil(self.cluster_bytes))
+            .sum();
+        assert_eq!(
+            oracle_free_clusters(&image.bytes) as usize,
+            self.total as usize - used,
+            "{}: {stage}",
+            self.label
+        );
+    }
+
+    fn bytes_of(&mut self, name: &str) -> &mut Vec<u8> {
+        &mut self.expected.iter_mut().find(|(n, _)| n == name).unwrap().1
+    }
+}
+
+/// Create ten files of sizes around the sector and cluster boundaries.
+fn create_files(volume: &mut Volume<Memory>, plan: &mut Plan, fat_type: FatType) {
+    let c = plan.cluster_bytes;
+    let sizes = [0, 1, 511, 512, 513, c - 1, c, c + 1, 3 * c + 17, 100_000];
     for (i, size) in sizes.iter().enumerate() {
         let name = format!("FILE{i}.BIN");
         let bytes = pattern(i as u8, *size);
-        write_in_chunks(&mut volume, &name, &bytes, 1 + i * 97);
-        expected.push((name, bytes));
+        write_in_chunks(volume, &name, &bytes, 1 + i * 97);
+        plan.expected.push((name, bytes));
     }
     if fat_type != FatType::Fat12 {
         assert_eq!(
             volume.is_clean().unwrap(),
             Some(false),
-            "{label}: dirty while changing"
+            "{}: dirty",
+            plan.label
         );
     }
     volume.sync().unwrap();
@@ -184,122 +209,82 @@ fn the_writer_agrees(label: &str, mebibytes: usize, fat_type: FatType, sector: u
         assert_eq!(
             volume.is_clean().unwrap(),
             Some(true),
-            "{label}: clean after sync"
+            "{}: clean",
+            plan.label
         );
     }
-    let image = volume.into_device();
-    expected.sort();
-    assert_eq!(
-        oracle_files(&image.bytes),
-        expected,
-        "{label}: created files"
-    );
-    check_with_fsck(&image.bytes, &format!("{label}-created"));
-    let used: usize = expected
-        .iter()
-        .map(|(_, b)| b.len().div_ceil(cluster_bytes))
-        .sum();
-    assert_eq!(
-        oracle_free_clusters(&image.bytes) as usize,
-        total as usize - used,
-        "{label}"
-    );
+}
 
-    // Overwrite across a cluster boundary, append, shrink, grow, and delete.
-    let mut volume = Volume::open(image).unwrap();
+/// Overwrite across a cluster boundary, append, shrink, grow, empty and delete.
+fn change_files(volume: &mut Volume<Memory>, plan: &mut Plan) {
+    let c = plan.cluster_bytes;
     let entry = volume.lookup("FILE9.BIN").unwrap();
     {
         let mut writer = volume.open_file_writer(&entry).unwrap();
-        writer.seek(cluster_bytes as u32 - 3);
+        writer.seek(c as u32 - 3);
         writer.write(b"SEAM-OVER-BOUNDARY").unwrap();
         writer.seek(u32::MAX);
         writer.write(b"appended").unwrap();
     }
-    let nine = &mut expected
-        .iter_mut()
-        .find(|(n, _)| n == "FILE9.BIN")
-        .unwrap()
-        .1;
-    nine[cluster_bytes - 3..cluster_bytes + 15].copy_from_slice(b"SEAM-OVER-BOUNDARY");
+    let nine = plan.bytes_of("FILE9.BIN");
+    nine[c - 3..c + 15].copy_from_slice(b"SEAM-OVER-BOUNDARY");
     nine.extend_from_slice(b"appended");
-    let entry = volume.lookup("FILE8.BIN").unwrap();
-    volume
-        .open_file_writer(&entry)
-        .unwrap()
-        .set_len(cluster_bytes as u32 + 5)
-        .unwrap();
-    expected
-        .iter_mut()
-        .find(|(n, _)| n == "FILE8.BIN")
-        .unwrap()
-        .1
-        .truncate(cluster_bytes + 5);
-    let entry = volume.lookup("FILE1.BIN").unwrap();
-    volume
-        .open_file_writer(&entry)
-        .unwrap()
-        .set_len(2 * cluster_bytes as u32 + 9)
-        .unwrap();
-    expected
-        .iter_mut()
-        .find(|(n, _)| n == "FILE1.BIN")
-        .unwrap()
-        .1
-        .resize(2 * cluster_bytes + 9, 0);
-    let entry = volume.lookup("FILE5.BIN").unwrap();
-    volume.open_file_writer(&entry).unwrap().set_len(0).unwrap();
-    expected
-        .iter_mut()
-        .find(|(n, _)| n == "FILE5.BIN")
-        .unwrap()
-        .1
-        .clear();
+    for (name, length) in [
+        ("FILE8.BIN", c + 5),
+        ("FILE1.BIN", 2 * c + 9),
+        ("FILE5.BIN", 0),
+    ] {
+        let entry = volume.lookup(name).unwrap();
+        volume
+            .open_file_writer(&entry)
+            .unwrap()
+            .set_len(length as u32)
+            .unwrap();
+        plan.bytes_of(name).resize(length, 0);
+    }
     let entry = volume.lookup("FILE7.BIN").unwrap();
     volume.remove_file(&entry).unwrap();
-    expected.retain(|(n, _)| n != "FILE7.BIN");
+    plan.expected.retain(|(n, _)| n != "FILE7.BIN");
     assert!(volume.lookup("FILE7.BIN").is_err());
     volume.sync().unwrap();
-    let image = volume.into_device();
-    assert_eq!(
-        oracle_files(&image.bytes),
-        expected,
-        "{label}: changed files"
-    );
-    check_with_fsck(&image.bytes, &format!("{label}-changed"));
-    let used: usize = expected
-        .iter()
-        .map(|(_, b)| b.len().div_ceil(cluster_bytes))
-        .sum();
-    assert_eq!(
-        oracle_free_clusters(&image.bytes) as usize,
-        total as usize - used,
-        "{label}"
-    );
+}
 
-    // Our own reader agrees with rust-fatfs's bytes.
-    let mut volume = Volume::open(image).unwrap();
-    for (name, bytes) in &expected {
+/// Read every file back through this crate's reader.
+fn read_files(volume: &mut Volume<Memory>, plan: &Plan) {
+    for (name, bytes) in &plan.expected {
         let entry = volume.lookup(name).unwrap();
         let mut reader = volume.open_file(&entry).unwrap();
         let mut read = vec![0u8; bytes.len() + 1];
-        assert_eq!(
-            reader.read(&mut read).unwrap(),
-            bytes.len(),
-            "{label}: {name}"
-        );
-        assert_eq!(&read[..bytes.len()], &bytes[..], "{label}: {name}");
+        assert_eq!(reader.read(&mut read).unwrap(), bytes.len(), "{name}");
+        assert_eq!(&read[..bytes.len()], &bytes[..], "{name}");
     }
+}
 
-    // Delete everything: the volume is empty again and fsck accepts it.
-    for (name, _) in &expected {
-        let entry = volume.lookup(name).unwrap();
+fn the_writer_agrees(label: &str, mebibytes: usize, fat_type: FatType, sector: u16) {
+    let mut volume = Volume::open(formatted(mebibytes, fat_type, sector)).unwrap();
+    let mut plan = Plan {
+        label: label.to_string(),
+        expected: Vec::new(),
+        total: volume.count_free_clusters().unwrap(),
+        cluster_bytes: volume.boot_sector().bytes_per_cluster() as usize,
+    };
+    create_files(&mut volume, &mut plan, fat_type);
+    let image = volume.into_device();
+    plan.check(&image, "created");
+
+    let mut volume = Volume::open(image).unwrap();
+    change_files(&mut volume, &mut plan);
+    let image = volume.into_device();
+    plan.check(&image, "changed");
+
+    let mut volume = Volume::open(image).unwrap();
+    read_files(&mut volume, &plan);
+    for (name, _) in std::mem::take(&mut plan.expected) {
+        let entry = volume.lookup(&name).unwrap();
         volume.remove_file(&entry).unwrap();
     }
     volume.sync().unwrap();
-    let image = volume.into_device();
-    assert!(oracle_files(&image.bytes).is_empty());
-    assert_eq!(oracle_free_clusters(&image.bytes), total, "{label}");
-    check_with_fsck(&image.bytes, &format!("{label}-emptied"));
+    plan.check(&volume.into_device(), "emptied");
 }
 
 #[test]
