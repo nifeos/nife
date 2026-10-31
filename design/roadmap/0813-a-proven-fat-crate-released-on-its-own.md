@@ -292,6 +292,7 @@ names until the ratification pass, so this section keeps the links it carried.
 - Steps 4 and 5 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team.
 - The "about 5,000 lines" figure is the probed crates' size, not an estimate of this one.
+- No test reaches the 65,536-entry ceiling of a directory; it needs a directory that large.
 
 ## Index row
 
