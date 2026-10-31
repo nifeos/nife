@@ -94,13 +94,13 @@
 <path class="seg s7" d="M576.6,324.0 V269.9 Q576.6,268.0 578.5,268.0 H578.5 Q580.4,268.0 580.4,269.9 V324.0 Z"><title>2026W43, boot-check: 8.4</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
 <path class="seg s0" d="M601.4,324.0 V323.8 Q601.4,323.6 601.6,323.6 H605.0 Q605.2,323.6 605.2,323.8 V324.0 Z"><title>2026W44, falsify (verify): 0.1</title></path>
-<path class="seg s1" d="M606.2,324.0 V233.6 Q606.2,231.7 608.1,231.7 H608.1 Q610.0,231.7 610.0,233.6 V324.0 Z"><title>2026W44, prove (verify): 13.9</title></path>
-<path class="seg s2" d="M611.0,324.0 V240.9 Q611.0,239.0 612.9,239.0 H612.9 Q614.9,239.0 614.9,240.9 V324.0 Z"><title>2026W44, test: 12.8</title></path>
-<path class="seg s3" d="M615.9,324.0 V233.7 Q615.9,231.8 617.8,231.8 H617.8 Q619.7,231.8 619.7,233.7 V324.0 Z"><title>2026W44, cpu-matrix: 13.9</title></path>
+<path class="seg s1" d="M606.2,324.0 V233.4 Q606.2,231.5 608.1,231.5 H608.1 Q610.0,231.5 610.0,233.4 V324.0 Z"><title>2026W44, prove (verify): 13.9</title></path>
+<path class="seg s2" d="M611.0,324.0 V240.6 Q611.0,238.7 612.9,238.7 H612.9 Q614.9,238.7 614.9,240.6 V324.0 Z"><title>2026W44, test: 12.8</title></path>
+<path class="seg s3" d="M615.9,324.0 V233.5 Q615.9,231.6 617.8,231.6 H617.8 Q619.7,231.6 619.7,233.5 V324.0 Z"><title>2026W44, cpu-matrix: 13.9</title></path>
 <path class="seg s4" d="M620.7,324.0 V239.7 Q620.7,237.8 622.6,237.8 H622.6 Q624.5,237.8 624.5,239.7 V324.0 Z"><title>2026W44, fuzz: 13.0</title></path>
-<path class="seg s5" d="M625.5,324.0 V252.3 Q625.5,250.4 627.5,250.4 H627.5 Q629.4,250.4 629.4,252.3 V324.0 Z"><title>2026W44, swish-check: 11.1</title></path>
-<path class="seg s6" d="M630.4,324.0 V253.7 Q630.4,251.7 632.3,251.7 H632.3 Q634.2,251.7 634.2,253.7 V324.0 Z"><title>2026W44, bench: 10.9</title></path>
-<path class="seg s7" d="M635.2,324.0 V258.3 Q635.2,256.4 637.1,256.4 H637.1 Q639.0,256.4 639.0,258.3 V324.0 Z"><title>2026W44, boot-check: 10.2</title></path>
+<path class="seg s5" d="M625.5,324.0 V251.1 Q625.5,249.2 627.5,249.2 H627.5 Q629.4,249.2 629.4,251.1 V324.0 Z"><title>2026W44, swish-check: 11.2</title></path>
+<path class="seg s6" d="M630.4,324.0 V253.4 Q630.4,251.5 632.3,251.5 H632.3 Q634.2,251.5 634.2,253.4 V324.0 Z"><title>2026W44, bench: 10.9</title></path>
+<path class="seg s7" d="M635.2,324.0 V258.2 Q635.2,256.3 637.1,256.3 H637.1 Q639.0,256.3 639.0,258.2 V324.0 Z"><title>2026W44, boot-check: 10.2</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
 <line class="tr" x1="93.3" y1="240.2" x2="151.9" y2="232.9" stroke-width="2"/>
 <line class="tr" x1="151.9" y1="232.9" x2="210.5" y2="201.6" stroke-width="2"/>
