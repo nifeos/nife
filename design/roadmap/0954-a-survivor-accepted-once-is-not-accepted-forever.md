@@ -203,9 +203,11 @@ where one of these fits.
   and the `unclassified` ratchet baseline, 406 rows.
 - **Outstanding.** Part 6, the remaining crates in batches ordered by real holes. Checked against
   the classification page's per-crate real-hole counts.
-- **Outstanding.** A weekly step regenerates the shape-sites file, so the per-site verdicts keep
-  pace with each census without a lane re-running the checker by hand. Checked by its absence: the
-  committed file names the 2026-10-26 census, and nothing regenerates it.
+- **Done.** The shape-sites file keeps pace with the census (#2946). The weekly record job in
+  `mutation.yml` runs `helpers/mutation_shape_sites.py check` over the census's own shards at its
+  own commit, and the record pull request carries the file beside the census rows. The file's first
+  line names the census it came from, and `script/lint` fails when it trails the census record by
+  more than one census. The first regeneration is the next scheduled census, not yet watched.
 
 ## Names
 
