@@ -155,9 +155,9 @@ Rust implementation. None is a launch candidate.
 Milestone 981 carries the work in four phases. It builds `ufs-core` and `rufs` for the three targets
 and records each patch. It makes images with `makefs` and `newfs` and judges them with `fsck_ffs`.
 It adds the write path. Then it chooses the consistency grade (soft updates, SUJ, or `fsck` on
-mount) and runs milestone 37's injector against the server. The launch volume carries the first installed-programs
-table as files under `activation/` (ruled 2026-10-30 UTC, on #2894). Milestone 982 holds the
-inventory of what leaves the tree with RedoxFS.
+mount) and runs the injector of milestone 37 (Prove RedoxFS's crash consistency) against the server.
+The launch volume carries the first installed-programs table as files under `activation/` (ruled
+2026-10-30 UTC, on #2894). Milestone 982 holds the inventory of what leaves the tree with RedoxFS.
 
 ## BUGS
 

@@ -67,7 +67,8 @@ carries `libc` and FUSE. The fork here: does the server run as a `std` program, 
 single-threaded with `panic = abort`, so the lane measures against `targets/*-unknown-nife.json`.
 Record both crates as shipped and with the patch, the way
 [filesystem-crates-2026-10-07.md](../../notes/filesystem-crates-2026-10-07.md) recorded the btrfs and
-ext4 crates. Each new dependency still goes to an architect under §46.
+ext4 crates. Each new dependency still goes to an architect under §46 (thin primitives
+or whole subsystems).
 
 ### Phase 2: make, judge and read
 
@@ -121,8 +122,8 @@ pointer, and `approval_file` owns the check. UFS2 owns the container only. No be
 no seed image exist: one store, one format and one writer.
 
 The ordering cost: a composed image carries a table only once this arc reads and writes a UFS2
-volume, so milestone 909's table half lands with phase 2. The check half of 909's item 3 does not wait
-on this arc.
+volume, so milestone 909 (basalt composes the bootable image from its packages)'s table half lands
+with phase 2. The check half of 909's item 3 does not wait on this arc.
 
 ## Done when
 

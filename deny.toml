@@ -98,8 +98,9 @@ allow = [
     # **Approved by calef on 2026-09-20**, with the reasoning above put to him: permissive,
     # no copyleft, and strictly easier than the Apache half of the pair this tree publishes under.
     "ISC",
-    # **BSD-2-Clause, arriving with UFS2.** UFS2 is the launch filesystem (DECISIONS §34), and its
-    # FreeBSD half carries this license: `rufs`, the read/write Rust implementation, and the oracle
+    # **BSD-2-Clause, arriving with UFS2.** UFS2 is the launch filesystem (DECISIONS §34 (UFS2 is
+    # the launch filesystem, and RedoxFS stays primary until UFS2 meets the bar)), and its FreeBSD
+    # half carries this license: `rufs`, the read/write Rust implementation, and the oracle
     # the server is judged by (`newfs`, `makefs`, `fsck_ffs`), with soft updates and their journal.
     # BSD-2-Clause is BSD-3-Clause above minus the no-endorsement clause: permissive, attribution,
     # no copyleft, and strictly easier than a license this list already holds.

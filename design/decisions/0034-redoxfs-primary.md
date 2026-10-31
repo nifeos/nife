@@ -44,8 +44,8 @@ ordering mechanism yet. That is why the fourth line of the bar exists.
 
 Refused: HAMMER2, with no implementation to reuse and no extended attributes; ext4, whose Rust
 writers cannot handle `metadata_csum`; and keeping RedoxFS for good. btrfs and OpenZFS lack a Rust
-writer, and GPL-2.0 and CDDL-1.0 bar a linked write path; §135 keeps them reachable as confined
-programs.
+writer, and GPL-2.0 and CDDL-1.0 bar a linked write path; §135 (running GPL software is aggregation)
+keeps them reachable as confined programs.
 
 ## Prior art
 

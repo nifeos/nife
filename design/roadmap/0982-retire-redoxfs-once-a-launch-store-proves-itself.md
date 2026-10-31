@@ -93,9 +93,9 @@ paths exist before the RedoxFS ones go.
 
 ## Done when
 
-`git grep -i redoxfs` returns only dated records (bench logs, measurements, decisions that keep their
-history under §298) and the dispositions above, and every gate passes on all three architectures with
-no RedoxFS code built.
+`git grep -i redoxfs` returns only dated records (bench logs, measurements, decisions that keep
+their history under §298 (a document states what is in force now)) and the dispositions above, and
+every gate passes on all three architectures with no RedoxFS code built.
 
 ## BUGS
 
