@@ -213,10 +213,10 @@ Nothing is left to build. The family was §104's (2026-08-20) and the face count
   proportional type, embedded images, or anything a terminal is not, the right answer is rung three.
 
 - The text of `design/decisions/0166-the-rasteriser-and-how-many-faces.md` names `skrifa` 0.44.0 and
-  `read-fonts` 0.41.0, the versions it ruled on; the generator's pin in
-  `tools/glyph_atlas_generator/Cargo.toml` is the authority on versions, and the dependency bump in
-  #2959 moves it past them. The ruling is unchanged; its text is stale on the versions. The architect or `script/record-ruling`
-  refreshes it; a lane does not edit `design/decisions/`.
+  `read-fonts` 0.41.0. The pin in `tools/glyph_atlas_generator/Cargo.toml` decides the versions in
+  force, and the dependency bump in #2959 moves it past them. The ruling stands and its text is
+  stale on the versions. The architect or `script/record-ruling` refreshes it; a lane does not edit
+  `design/decisions/`.
 
 ## Follow-on
 

@@ -2,18 +2,20 @@
 
 *Name: provisional.*
 
-An appendix to [`notes/fuzzing.md`](../fuzzing.md). It records rates, so that a budget in seeds can
-be turned into hours. The consumer is the fuzz-budget proposal for risk 7's criterion (d), pull
-request 2955 (`design/roadmap/proposals/the-fuzz-budget-that-counts-for-risk-7.md`), which sizes a
-run in seeds and CPU-hours. That proposal's measurements section does not carry these figures yet
-because its pull request was open and waiting on an architect when they were taken; a follow-up
-links this page from it. Every date is 2026-10-31 (UTC).
+An appendix to [`notes/fuzzing.md`](../fuzzing.md). It records rates, so that a budget in seeds
+turns into hours. The consumer is the fuzz-budget proposal for risk 7's criterion (d), which sizes a run
+in seeds and CPU-hours. It sits in pull request 2955 as
+`design/roadmap/proposals/the-fuzz-budget-that-counts-for-risk-7.md`. That proposal's measurements section does not carry these figures, because its
+pull request was open and waiting on an architect when they came in. A follow-up links this page
+from it. Every date is 2026-10-31 (UTC).
 
-## What was run
+## What ran
 
-The kernel-thread driver (milestone 752, a seeded syscall driver with a shadow model) and the user-mode confinement driver (milestone 779, fuzz the surface a confined process can reach), each
-for 60 seconds per guest, with 1, 2, 4, 8 and 16 guests at once, on x86_64 under KVM, on a dedicated
-x86_64 virtual machine. The host target `redoxfs_server_session` ran on the same machine.
+The kernel-thread driver (milestone 752, a seeded syscall driver with a shadow model) and the
+user-mode confinement driver (milestone 779, fuzz the surface a confined process can reach) each ran
+60 seconds per guest. The runs used 1, 2, 4, 8 and 16 guests at once. The host was a dedicated x86_64 virtual
+machine, and the guests ran x86_64 under KVM. The host target `redoxfs_server_session` ran on the
+same machine.
 
 ## Rates, per guest
 
@@ -34,18 +36,18 @@ about 360 to 450 seeds/s.
 ## What it means for a budget of 300,000 seeds
 
 At one guest, 300,000 seeds take about 12 minutes on the kernel-thread driver and about 21 minutes
-on the user-mode driver. KVM is therefore roughly twenty times faster than TCG for the first and
+on the user-mode driver. KVM runs roughly twenty times faster than TCG for the first driver and
 roughly thirty times for the second.
 
-## What was not measured
+## What nobody measured
 
-aarch64 and riscv64 under KVM: the host has TCG only for them, so their rates here are unknown. The
-TCG rows say nothing about a hosted runner, which has its own figures in the proposal.
+aarch64 and riscv64 under KVM. The host has TCG only for them, so their rates are unknown. The TCG
+rows say nothing about a hosted runner, which has its own figures in the proposal.
 
 ## Why concurrency is not yet a lever
 
-Both drivers fail on wall-clock deadlines when guests run side by side (1 of 4 guests at 4 for the
-kernel-thread driver, 4 of 8 at 8, 6 of 16 at 16; user-mode 0 of 4, 1 of 8, 6 of 16). A seed
-that failed under load was green when replayed alone, so the failures are the harness's. The entry
-that tracks the fix is in milestone 779's `BUGS`; until it is fixed, a concurrent run can report
-false reds, so the 1-guest rows are the ones to size from.
+Both drivers fail on wall-clock deadlines when guests run side by side. The kernel-thread driver
+failed 1 of 4 guests at 4, 4 of 8 at 8 and 6 of 16 at 16. The user-mode driver failed 0 of 4, 1 of
+8 and 6 of 16. A seed that failed under load passed when replayed alone, so the harness failed and
+the kernel did not. Milestone 752's `BUGS` tracks the fix. Until it lands, a concurrent run can
+report false reds, so size from the one-guest rows.

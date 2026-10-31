@@ -151,13 +151,14 @@ than replaced.
 - **One version number for the whole base** (`0.1.0`, provisional). The base packages release
   together, so a split version per package buys nothing yet, and the image refuses a package whose
   archive carries another version.
-- **A branch holds four unmerged commits for item 3.** `milestone/909-item-3-composition-checks-the-approval`,
-  head `e1646aedd`, pushed to the remote, is four commits ahead of `main`: the `activation_store`
-  crate (the composed image's first installed-programs table as one container), the `program_asks`
-  crate (one reading of what a packaged program's note asks), a work-in-progress commit wiring the
-  seed store into the kernel's trust code and the base-image composer, and a format commit. Its
-  lane went stale. Its fate, to merge, rework or delete, awaits the architect; the branch is
-  neither merged nor deleted until then, and it is the only place that code exists.
+
+- A branch holds four unmerged commits for item 3: `milestone/909-item-3-composition-checks-the-approval`,
+  head `e1646aedd`, on the remote. It carries the `activation_store` crate, which holds the composed
+  image's first installed-programs table as one container, and the `program_asks` crate, which reads
+  what a packaged program's note asks one way. It also carries a work-in-progress commit that wires
+  the seed store into the kernel's trust code and the composer, and a format commit. Its lane went
+  stale. Whether to merge, rework or delete it waits on the architect. Nobody has merged or deleted
+  it, and no other copy of that code exists.
 
 ## Index row
 
