@@ -143,9 +143,14 @@ and priced it is notes/redoxfs-audit.md).
      those compile only for `target_os = "redox"`, which nife does not build. If a Redox target is
      ever built, this divergence is where to look first. It is the one place the vendored lockfile
      is not upstream's.
+  10. `fuzz/`: upstream's cargo-fuzz crate is deleted (four files). It is a separate workspace that
+     needs the `fuse` feature and a fuzzing toolchain, nothing here builds or runs it (our fuzz
+     target is `fuzz/` at the repository root), and `helpers/packages.py` requires every crate in
+     the tree to belong to a package. The patch deletes it with `+++ /dev/null` headers, which is
+     why `script/vendor-verify` applies patches with `-E`.
 
 - Everything else is byte-identical to the pinned archive, including files we do not use
-  (`Makefile`, `test.sh`, upstream CI configs, its `fuzz/` crate) and, outside divergence 9,
+  (`Makefile`, `test.sh`, upstream CI configs) and, outside divergence 9,
   `Cargo.lock`.
 - **Proved rather than asserted, since 2026-07-30:** `script/vendor-verify` fetches the pinned
   archive, checks its sha256 against `redoxfs.pin`, applies `redoxfs.divergence.patch`, and requires
@@ -335,7 +340,7 @@ it is mechanical**, which is why nothing automates past the first step:
   why, or fork permanently and stop pretending the pin tracks upstream. Which of the three is right
   is calef's call, not a lane's, so a lane that meets this writes it up and stops.
 - **Should RedoxFS become its own repository? Not yet** (calef asked 2026-10-04 UTC; the
-  maintainer's answer). Nine divergences, about 250 changed lines, fixes that land atomically with
+  maintainer's answer). Ten divergences, about 300 changed lines, fixes that land atomically with
   their callers and one CI is cheaper than a second repo. Revisit at about ten divergences, at a
   pin bump that conflicts badly, or when another project wants the fork; because upstream refuses
   LLM-generated contributions, the divergences are likely to grow rather than drop.

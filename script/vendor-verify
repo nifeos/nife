@@ -167,7 +167,7 @@ def unified(upstream, ours):
         out.extend(difflib.unified_diff(
             before.decode().splitlines(keepends=True),
             after.decode().splitlines(keepends=True),
-            fromfile="a/" + name, tofile="b/" + name,
+            fromfile="a/" + name, tofile="b/" + name if name in ours else "/dev/null",
         ))
     return "".join(out)
 
@@ -207,10 +207,11 @@ for pin_path in pins:
 
         patch_text = open(patch_path).read()
         if patch_text.strip():
+            # -E: a file the patch empties is removed (a divergence may delete an upstream file).
             # -F0: no fuzz. A hunk that only applies with fuzz means the context moved, which is
             # exactly the drift we want to hear about rather than absorb.
             applied = subprocess.run(
-                ["patch", "-p1", "-F0", "-s"],
+                ["patch", "-p1", "-F0", "-E", "-s"],
                 cwd=tree, input=patch_text, capture_output=True, text=True,
             )
             if applied.returncode != 0:
