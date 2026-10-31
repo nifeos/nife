@@ -12,8 +12,8 @@ needs_person: no
 
 Raised 2026-10-30 (UTC) by lane `lane/filesystem-candidates-survey`, which wrote
 [the launch filesystem's candidates](../../notes/launch-filesystem-candidates.md) on pull request
-#2899. UFS2 is nife's launch filesystem (§34 (UFS2 is the launch filesystem, and RedoxFS holds the
-role until UFS2 meets the bar), ruled 2026-10-31 UTC). This milestone builds the server that makes
+#2899. UFS2 is nife's launch filesystem (§34 (UFS2 is the launch filesystem, and RedoxFS stays primary
+until UFS2 meets the bar), ruled 2026-10-31 UTC). This milestone builds the server that makes
 the ruling true. Milestone 982 (Retire RedoxFS once a launch store proves itself) removes RedoxFS
 once this one meets the bar below, and not before.
 
