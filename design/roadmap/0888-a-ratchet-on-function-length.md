@@ -102,7 +102,8 @@ as file splits became their own blocks after milestone 841.
 The milestone built all five criteria. Criterion 4 waited, and calef ruled on 2026-10-12 (UTC) that
 milestone 876 completes it. It did, on 2026-10-12 (UTC): `kernel_main` is 51 code lines in
 `kernel/src/boot.rs` as of 2026-10-31 (UTC), and its row is gone from the baseline. Once the gate
-held the measure at zero, calef retired criteria 3 and 5, the dashboard row and the chart, on 2026-10-14 (UTC).
+held the measure at zero, calef retired criteria 3 and 5, the dashboard row and the chart, on
+2026-10-14 (UTC).
 
 - The lint ratchet is `helpers/lint_ratchet.py`, built to the panic proposal's specification so the
   other lint proposals register a lint rather than write a gate. The clippy sections of
