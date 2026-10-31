@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # The index serves its second address
 
-Raised 2026-10-30 (UTC) by the session that landed milestone 956 step 1. §250 clause 6 ruled the index at up to two addresses on different registrable domains. The first, `basalt.nifeos.org`, serves. The second, `basalt.crickertech.com`, does not: basalt's `backup` job exits 1 because `BACKUP_DEPLOY_KEY` is unset.
+Raised 2026-10-30 (UTC) by the session that landed step 1 of milestone 956 (the linked interfaces carry checkable versions). §250 (an image names its distribution's package index, at `basalt.nifeos.org`) clause 6 ruled the index at up to two addresses on different registrable domains. The first, `basalt.nifeos.org`, serves. The second, `basalt.crickertech.com`, does not: basalt's `backup` job exits 1 because `BACKUP_DEPLOY_KEY` is unset.
 
 Reuse: basalt's `backup` job already downloads `publish`'s artifact, writes a `CNAME`, and force-pushes one orphan commit to `nifeos/basalt-backup`'s `pages` branch. This proposal writes no code. The steps live in basalt's README under "What calef must do for the second address".
 
