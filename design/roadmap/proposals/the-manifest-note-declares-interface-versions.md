@@ -9,9 +9,9 @@ needs_person: no
 ---
 # The manifest note declares the interface versions: a separate note type
 
-Ruled 2026-10-31 (UTC): option 1, a fourth note type, `INTERFACES = 4`, on the pattern of `SUBTREE_GRANTS` and `VERBS`. Milestone 956's steps 3 and 4 execute it. The progenitor's policy for a program with no such note stays accept, as today. The crate name `interface_version` (step 2) is still open.
+Ruled 2026-10-31 (UTC): option 1, a fourth note type, `INTERFACES = 4`, on the pattern of `SUBTREE_GRANTS` and `VERBS`. Milestone 956's steps 2 and 3 execute it. The progenitor's policy for a program with no such note stays accept, as today.
 
-Raised 2026-10-31 (UTC) by the lane `milestone/956-checkable-interface-versions`, at steps 3 and 4 of milestone 956 (the linked interfaces carry checkable versions). The lane stopped here. The plan names a wire format that the tree has already spent, and a wire format is an architect's call. Every name below is provisional.
+Raised 2026-10-31 (UTC) by the lane `milestone/956-checkable-interface-versions`, at the manifest-note step of milestone 956 (the linked interfaces carry checkable versions). The lane stopped here. The plan names a wire format that the tree has already spent, and a wire format is an architect's call. Every name below is provisional.
 
 Reuse: the proposal reuses the note machinery of milestone 597 (a program carries its manifest in an ELF note): the one-encoding decode, the Kani property, and the separate note types that `SUBTREE_GRANTS` and `VERBS` already use. No new dependency.
 
@@ -48,8 +48,4 @@ Would we choose option 1 if both cost the same? Yes. A second note costs a reade
 
 ## What this unblocks
 
-On a yes: step 4 lands the note type, the encode and decode, and the Kani property, and the `INTERFACE_ID` constants. Step 3 then lands the spawn-time comparison. Steps 5, 6 and 8 wait on step 2's bind check, whose open point is next.
-
-## A second, smaller point: where step 2's check lives
-
-Step 2 puts `member(own, served)` and `Mismatch` "in each message contract". The first cut links no message contract. Its interfaces are a syscall surface, layout constants, a library and two shared pages (`abi`, `address_space_map`, `glob`, `machine_statistics_contract` and `block_roster`). Step 2 therefore serves the contracts the plan lists later. `filesystem_contract` stays out of scope while RedoxFS is replaced. Two homes are possible. One copy per contract crate repeats a ten-line function a dozen times, against rule 7's one definition. One small shared crate (provisionally `interface_version`, a new name) holds the function and the error once, and each contract depends on it. The lane recommends the shared crate and starts step 2 on a yes to the name, since a new crate name is the architect's call.
+On a yes: step 2 of milestone 956 lands the note type, the encode and decode, the Kani property and the `INTERFACE_ID` constants. Step 3 then lands the spawn-time comparison.

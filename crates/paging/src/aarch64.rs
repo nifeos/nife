@@ -64,6 +64,30 @@ const UXN: u64 = 1 << 54;
 /// Physical address bits of a descriptor: [47:12].
 const ADDR_MASK: u64 = 0x0000_ffff_ffff_f000;
 
+/// **The descriptor's fields share no bit**: the address field, the valid and table-or-page bits,
+/// and every field `attrs` writes (the access flag, the shareability field, the three-bit
+/// attribute index at \[4:2\], the two-bit access permission at \[7:6\], not-global, and the two
+/// execute-never bits). Every `|` in `table_entry`, `leaf_entry` and `block_entry` joins words
+/// from this list, so each is its own `^`, and the mutation exclusions for those three functions
+/// name this constant: the compiler checks what no test can. The index and permission fields are
+/// written as their masks because `attr_index` and the `AP_*` words only ever fill them.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
+pub const THE_DESCRIPTOR_FIELDS_SHARE_NO_BIT: () = {
+    assert_share_no_bit!(
+        ADDR_MASK,
+        VALID,
+        TABLE_OR_PAGE,
+        AF,
+        SH_INNER,
+        0b1_1100,
+        0b1100_0000,
+        NG,
+        PXN,
+        UXN
+    );
+};
+
 /// Which `MAIR_EL1` slot describes what. Set up in the kernel; the numbers must agree. Kept public
 /// because the kernel's `mmu::initialize` programs `MAIR_EL1` from these and a test cross-checks the UART.
 pub mod mair {

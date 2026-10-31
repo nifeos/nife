@@ -125,6 +125,26 @@ fi
 # a person running `script/lint` gets, so clearing the hook's git environment is the whole fix.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_CONFIG_PARAMETERS
 
+# **The fleet's checks start now and are joined after the text checks** (2026-10-31): the two share
+# nothing, each takes 20 seconds or more, and run back to back they were the longest part of a push.
+# The fleet half's output waits in a file and is shown only if it fails, in the order it always
+# was: the text checks' failure is reported first, the fleet's second. A text-check failure stops
+# the fleet half by its own pid. helpers/pre-push-fleet.sh says what the half runs.
+fleet_out=
+fleet_pid=
+if [ -n "$fleet" ]; then
+    fleet_out="$(mktemp "${TMPDIR:-/tmp}/nife-pre-push-fleet-out.XXXXXX")"
+    printf '%s\n' "$refs" | "$root/helpers/pre-push-fleet.sh" after >"$fleet_out" 2>&1 &
+    fleet_pid=$!
+fi
+stop_fleet() {
+    if [ -n "$fleet_pid" ]; then
+        kill "$fleet_pid" 2>/dev/null
+        wait "$fleet_pid" 2>/dev/null
+    fi
+    [ -z "$fleet_out" ] || rm -f "$fleet_out"
+}
+
 # **The text checks run once per tree, not once per push.** helpers/pre-push-lint-cache.sh keys a
 # machine-local marker on every input the checks read and keeps it outside every worktree (an
 # in-tree marker would feed the next tree hash, and a hook must not drop files into the tree).
@@ -141,6 +161,7 @@ else
         echo "  Fix:    script/lint --no-cargo   (read its output, fix, commit, push again)" >&2
         echo "  Bypass: git push --no-verify" >&2
         rm -f "$out"
+        stop_fleet
         exit 1
     fi
     rm -f "$out"
@@ -152,7 +173,15 @@ else
     fi
 fi
 
-# The fleet's checks: its own lint, and the ready-status check. helpers/pre-push-fleet.sh.
-if [ -n "$fleet" ]; then
-    printf '%s\n' "$refs" | "$root/helpers/pre-push-fleet.sh" after || exit 1
+# The fleet's checks: its own lint, and the ready-status check. helpers/pre-push-fleet.sh. They have
+# been running since before the text checks; their own messages are shown here.
+if [ -n "$fleet_pid" ]; then
+    if wait "$fleet_pid"; then
+        cat "$fleet_out"
+        rm -f "$fleet_out"
+    else
+        cat "$fleet_out" >&2
+        rm -f "$fleet_out"
+        exit 1
+    fi
 fi

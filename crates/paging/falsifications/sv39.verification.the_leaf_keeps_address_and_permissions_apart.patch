@@ -20,10 +20,10 @@ carry the same rewrite for the same reason; this crate's `no_vtd_entry_ever_sets
 was already written this way.
 
 diff --git a/crates/paging/src/sv39.rs b/crates/paging/src/sv39.rs
-index 08331902..6de8498e 100644
+index 92dfec7f1..641aea96f 100644
 --- a/crates/paging/src/sv39.rs
 +++ b/crates/paging/src/sv39.rs
-@@ -34,7 +34,7 @@ const D: u64 = 1 << 7; // Dirty
+@@ -30,7 +30,7 @@ const D: u64 = 1 << 7; // Dirty
  const SW_DEVICE: u64 = 1 << 8;
  
  /// The PPN occupies bits [53:10] of a PTE: 44 bits.
@@ -31,4 +31,4 @@ index 08331902..6de8498e 100644
 +const PPN_SHIFT: u32 = 12;
  const PPN_MASK: u64 = (1 << 44) - 1;
  
- /// The RISC-V Sv39 three-level page-table format.
+ /// **A PTE's fields share no bit**: the PPN field (bits 53 to 10, written as a literal mask

@@ -282,7 +282,11 @@ def render(pin, releases, git, overlap, fix=None):
     """
     out = [f"## {pin['name']}\n"]
 
-    out.append(f"Pinned at **{pin['version']}**, upstream git sha `{pin['vcs'][:12]}`.\n")
+    if pin.get("source") == "git":
+        out.append(f"Pinned at upstream git commit `{pin['vcs'][:12]}`, which no release carries; "
+                   f"its manifest says **{pin['version']}**.\n")
+    else:
+        out.append(f"Pinned at **{pin['version']}**, upstream git sha `{pin['vcs'][:12]}`.\n")
 
     if releases is None:
         out.append("**Releases: could not be checked.** See the run log.\n")
@@ -437,6 +441,7 @@ if write:
             continue
         text = open(pin_path).read()
         text = re.sub(r"^version = .*$", f"version = {newest['version']}", text, flags=re.M)
+        text = re.sub(r"^source = .*\n\n?", "", text, flags=re.M)  # a release is a crates.io pin
         text = re.sub(r"^url = .*$",
                       f"url = https://static.crates.io/crates/{pin['name']}/"
                       f"{pin['name']}-{newest['version']}.crate", text, flags=re.M)
