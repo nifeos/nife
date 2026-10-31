@@ -62,7 +62,7 @@ provisional.
    never dual-serves; the refusal is the hard edge. Proves: the progenitor refuses a program whose
    note declares a version the kernel does not serve, and accepts one it does.
 
-4. The manifest note gains descriptor version 3 (question 3): version 1's 56 bytes unchanged, then
+4. The manifest note declares the interfaces (question 3; the container awaits the ruling named under Dependencies and order): version 1's 56 bytes unchanged, then
    a counted (interface, version) list. Each interface crate carries `INTERFACE_ID: u64` beside
    its version constant, values never reused. The stamp is mechanical at package build, derived
    from the dependency graph. Versions 1 and 2 stay untouched. Proves: the encode, decode and
@@ -103,8 +103,11 @@ provisional.
 
 ## Dependencies and order
 
-Steps 1 through 3 stand on their own and land first. Step 4 depends on step 1, the constants the
-stamp reads, and on 597's note machinery, which exists. Steps 5 and 6 depend on steps 1 and 2.
+Steps 1, 2 and 7 stand on their own. Step 3 depends on step 4, because no version of the manifest note
+carries an ABI version to compare. Step 4 depends on step 1, the constants the stamp reads, on 597's
+note machinery, which exists, and on a ruling for where the list lives: descriptor version 3 is
+taken by the service ask, and [the proposal](proposals/the-manifest-note-declares-interface-versions.md)
+recommends a separate note type. Steps 5 and 6 depend on steps 1 and 2.
 Step 7 depends on step 1. Step 8 depends on steps 2, 5 and 6. The milestone follows 610's series,
 so the first week of constants reads as additions, a shape the series already records.
 
