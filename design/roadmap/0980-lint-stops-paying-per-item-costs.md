@@ -98,7 +98,15 @@ Each part is one lane, ordered by seconds saved per hour of work.
    measurement that moves the saving from the text to what gates derive from it.
 6. The cargo half. The lint ratchet is the one cost there that does not move with build state, so
    decide whether it can share the clippy sections' work and whether rustdoc's four invocations
-   collapse into one. The builds are not worth touching.
+   collapse into one. The builds are not worth touching. Built, for the lint ratchet (calef ruled
+   option (a), 2026-10-31 UTC; PR #2936): the clippy sections run through `helpers/clippy_record.py`,
+   which adds the ratcheted lint as `--force-warn` and saves clippy's JSON and a sidecar under
+   `target/lint-clippy/`, and the ratchet reads those files instead of running clippy. It exits
+   non-zero, naming the file, for a file that is missing, unreadable, altered, from a failed section,
+   made with other flags or another selection, or older than the newest compiled file in the tree.
+   The one configuration no section linted, the kernel's default build on riscv64, became a
+   `-D warnings` section. The section fell from 30 s to 14 s wall on a warm tree (user CPU 29.8-31.0 s
+   to 13.4-15.2 s, three runs each). Rustdoc's four invocations are untouched.
 
 Parts 1 through 4 change no verdict and can land alone. Part 5 needs a design note for the shared
 index. Part 6 needs a decision about whether the lint ratchet can read the clippy sections' output.
@@ -139,8 +147,8 @@ fits.
   character at a time.
 - **Outstanding.** Part 4, one interpreter in the dead-code section; it still spawns one `awk` per
   file.
-- **Outstanding.** Parts 5 and 6, the shared corpus index (its design note is in review) and the
-  cargo half, which waits for an architect.
+- **Outstanding.** Part 5, the shared corpus index (its design note is in review), and part 6's
+  rustdoc half, whether its four invocations collapse into one, which is measure-first.
 - **Recorded.** `helpers/trust_boundary.py --check` fails in a checkout whose `fs_server/` holds only
   a stale `target/` directory: it looks for `fs_server/Cargo.toml`, and the crate is `redoxfs_server`
   since `0c0ef2367`. A leftover local directory turns a gate red and says nothing true. This is a
