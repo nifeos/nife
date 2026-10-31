@@ -7,39 +7,50 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# The fuzz budget that counts for risk 7's criterion (d)
+# Continuous fuzzing for risk 7's criterion (d)
 
 Raised by lane/confined-fuzz-budget on 2026-10-31 (UTC), asked to set the bar that criterion (d)
-of risk 7 (the confinement claim is false) names and nobody has set. It holds three questions for an
-architect, one at a time, and a short measurement. It rules nothing and runs nothing at scale.
+of risk 7 (the confinement claim is false) names and nobody has set. An architect ruled on
+2026-10-31 (UTC), and this document was rewritten around the ruling. Part of it is now in force;
+five questions remain open, and I ask them one at a time. The file name keeps its first form so that
+links to it hold.
 
-Reuse: the budget run reuses the three fuzzers and the weekly sweep jobs as they stand. Milestone
-779's proposal considered syzkaller and lost it for a crash-only oracle.
+Reuse: the continuous run reuses the three fuzzers and the weekly sweep jobs as they stand. Milestone
+779's proposal considered syzkaller and lost it for a crash-only oracle; this document adopts its
+service's standards, not its code.
+
+## What is in force
+
+- nife adopts the same standards as OSS-Fuzz and syzbot (syzkaller's continuous service) for the
+  confinement fuzzers. Decided 2026-10-31 (UTC).
+- That replaces the earlier idea of a fixed seed count or a fixed number of CPU-hours. The fuzzers
+  run continuously, and those two projects' standards, set out below, bound what they claim.
+- Nothing else is in force. Criterion (d)'s wording, the triage rules, the coverage measure, the
+  machine and the clock are the open questions. Until an architect rules them, risk 7 stays AMBER and no run
+  counts toward (d).
 
 ## Where criterion (d) stands
 
-Risk 7 is AMBER. The architect agreed the four criteria for green on 2026-10-06 (UTC). Criterion (d) reads:
-milestone 779 (fuzz the surface a confined process can reach), "run to a set
-budget with no escape." Re-derived from the tree and the workflow logs at `9f62334f5`:
+Risk 7 is AMBER. The architect agreed the four criteria for green on 2026-10-06 (UTC). Criterion (d)
+reads: milestone 779 (fuzz the surface a confined process can reach), "run to a set budget with no
+escape." Re-derived from the tree and the workflow logs at `9f62334f5`:
 
-- Milestone 779 reads BUILT, and it holds three fuzzers, not one. Part (a) is three host
-  `cargo-fuzz` targets over service request handlers (milestone 751 (fuzz the services' request handlers): `redoxfs_server_session`,
-  `system_log_session`, `compositor_session`). Part (b) is two in-guest drivers: the kernel-thread
-  driver of milestone 752 (a seeded syscall driver with a shadow model) and the EL0 driver of milestone 779 itself
-  (`fixtures/src/confined_syscall_fuzzer.rs`, judged by `confined_fuzzer_tests`).
-- No budget exists. Nothing in `design/`, `notes/` or the workflows names a count, a time or a
-  stopping rule for (d).
-- No run counts toward it yet. The suite runs 34 fixed seeds of the EL0 driver on every merge.
-  The weekly `falsifications.yml` sweep runs each driver for 60 s of guest time on one hosted
-  aarch64 runner. Its last three EL0 sweeps: 2026-10-12 red (seed `202642000408`, step 80) and
-  2026-10-19 red (seed `202643000066`, step 34), both on the oracle's missing `SLICE` arm, which the
-  kernel was right about; 2026-10-26 clean, 801 seeds at 13 seeds/s. The kernel-thread driver's
-  2026-10-26 sweep was clean, 2,450 seeds at 40 seeds/s.
-- At the weekly rate, any meaningful budget takes years. 801 seeds a week is about 42,000 a
-  year.
-- Criterion (d) does not bind today. Criterion (c)'s count of clean outsider passes is zero:
-  the tenth pass booted an escape on claim 11 on 2026-10-27 (UTC), and its fix, milestone 969 (a `MAP_INTO` refuses a frame mapped twice with different flags), is
-  NOT-STARTED. But (d) needs its bar before (c) completes, or green waits on a question nobody asked.
+- Milestone 779 reads BUILT, and it holds three fuzzers. Part (a) is three host `cargo-fuzz`
+  targets over service request handlers (milestone 751 (fuzz the services' request handlers):
+  `redoxfs_server_session`, `system_log_session`, `compositor_session`). Part (b) is two in-guest
+  drivers: the kernel-thread driver of milestone 752 (a seeded syscall driver with a shadow model)
+  and the user-mode driver of milestone 779 itself (`fixtures/src/confined_syscall_fuzzer.rs`,
+  judged by `confined_fuzzer_tests`).
+- No budget exists. The suite runs 34 fixed seeds of the user-mode driver on every merge. The
+  weekly `falsifications.yml` sweep runs each driver for 60 s of guest time on one hosted aarch64
+  runner. Its last three user-mode sweeps: 2026-10-12 red (seed `202642000408`, step 80) and
+  2026-10-19 red (seed `202643000066`, step 34), both on the referee's missing `SLICE` arm, which
+  the kernel was right about; 2026-10-26 clean, 801 seeds at 13 seeds/s. The kernel-thread
+  driver's 2026-10-26 sweep was clean, 2,450 seeds at 40 seeds/s. At the weekly rate, 801 seeds a
+  week is about 42,000 a year.
+- Criterion (c)'s count of clean outsider passes is zero: the tenth pass booted an escape on claim
+  11 on 2026-10-27 (UTC), and its fix, milestone 969 (a `MAP_INTO` refuses a frame mapped twice
+  with different flags), is NOT-STARTED.
 
 ## What the fuzzers do, in plain words
 
@@ -48,219 +59,223 @@ capabilities: this mailbox, that page of memory, nothing else. The confinement c
 sequence of system calls lets it reach anything outside that set. The 36 rows of
 [`notes/confinement-claims.md`](../../../notes/confinement-claims.md) each state one such rule.
 
-The EL0 driver tests the claim by brute force. It starts three small user programs, two with a
-handful of capabilities and one, the witness, with none it may use. A random number generator,
-started from a number called the seed, picks each program's next system call: which capability,
-which operation, which arguments. After every call a referee in the kernel checks four things.
-Every new entry in a program's capability table came from a call allowed to grant it. No page
-table maps a page the program never received. Every badge and register the kernel handed back
-tells the truth. And the kernel refused the witness every time. One seed is 96 calls. The same seed
-always replays the same calls, so a failure names its seed, and anyone can rerun it.
+The user-mode driver tests the claim by brute force. It starts three small user programs, two with
+a handful of capabilities and one, the witness, with none it may use. A random number generator,
+started from a number called the seed, picks each program's next system call. After every call a
+referee in the kernel checks four things. Every new entry in a program's capability table came from
+a call allowed to grant it. No page table maps a page the program never received. Every badge and
+register the kernel handed back tells the truth. And the kernel refused the witness every time. One
+seed is 96 calls. The same seed always replays the same calls, so a failure names its seed.
 
 The kernel-thread driver is the same idea one layer in: kernel threads stand in for programs, and a
 model predicts the exact answer to every call. The host targets are classic coverage-guided
-fuzzing of a server's message handling, millions of inputs a minute on an ordinary machine.
+fuzzing of a server's message handling.
 
-The point that shapes every decision below: the in-guest drivers are **coverage-blind**. They
-cannot tell which kernel code a seed reached, so they never learn, and "run until coverage stops
-growing" has nothing to read. Each seed is an independent random draw. That makes the drivers
-weaker than a coverage-guided fuzzer at finding deep bugs, and it makes their clean runs easy to
-reason about statistically.
+The in-guest drivers are coverage-blind: they cannot tell which kernel code a seed reached, so they
+never learn, and each seed is an independent random draw.
 
-## Measured today
+## The two standards, as read
 
-Run by this lane on 2026-10-31 (UTC), one QEMU at a time, on a shared many-core x86_64 build host
-under TCG (full emulation, no hardware acceleration for aarch64), with other lanes' load on it.
-Not a census.
+Read on 2026-10-31 (UTC) from the projects' own documentation. I mark anything I did not read
+unverified.
 
-| what | inputs | wall time | rate | result |
-|---|---|---|---|---|
-| EL0 driver, aarch64, seeds `900000000..900000277` | 278 seeds | 60,047 ms | 4 seeds/s | clean |
-| Kernel-thread driver, aarch64, seeds from `900000000` | 542 seeds, 24,066 calls | 60,043 ms | 9 seeds/s | clean |
-| EL0 driver, seed `202642000408` (the 2026-10-12 red) | 1 seed | 444 ms | | green |
-| `redoxfs_server_session`, empty corpus | 103,159 sessions | 180 s | 569/s | no crash |
+### OSS-Fuzz
 
-For comparison, the hosted runner's 2026-10-26 sweeps ran the same two drivers at 13 and 40
-seeds/s, three to four times faster. This lane did not establish why. A cold build took 8 min 9 s for 60 s of fuzzing.
+Read from google.github.io/oss-fuzz.
 
-The replayed seed matters. The 2026-10-12 red never entered the corpus, and nothing recorded
-whether the `SLICE` fix also covered it. It does, so both weekly reds were the referee's, and the
-EL0 driver's record holds no open red.
+- Acceptance. A project must have a significant user base or be critical to global IT
+  infrastructure, must be open source, and its primary contact must be an established committer
+  (checked against version-control logs). Read.
+- Integration, the "ideal integration" page. Fuzz targets live in the project's own repository and
+  are easy to find. Each target is also run regularly "not necessarily fuzzed" as a regression test
+  over its seed corpus, with sanitizers. The project keeps the seed corpus in revision control and regularly
+  extends it with inputs that triggered bugs or reached new code, ideally a minimal set with maximal
+  coverage. Targets must have good coverage, be fast and be memory-efficient. Read.
+- Disclosure and fix deadline. OSS-Fuzz opens a reported issue to the public in 90 days, or after the fix ships, whichever is earlier. A deadline that falls on a weekend moves to the next work
+  day. If the project says before the deadline that a patch lands within 14 days after it,
+  disclosure waits for the patch. Read. The page says nothing of a 30-day period after a fix.
+- Reproducers. Each report carries the bytes the fuzzer fed to the target. Rerunning that input checks a fix; after the fix lands, ClusterFuzz reruns the input and closes the issue,
+  stated as "in < 1 day." Read.
+- Coverage reports. Produced with Clang source-based coverage by running the targets over the
+  corpus OSS-Fuzz has aggregated; the pages call coverage reports public. The page does not state how often OSS-Fuzz
+  publishes them on the page read. Partly read.
+- Corpus. Kept in cloud storage with daily zipped backups. Pruning is not described on the page
+  read. Read, with that gap.
+- CIFuzz. Runs on each pull request for 600 s by default, which "should be at minimum 600 seconds
+  and scale with project size." It uses 30-day-old public regressions and corpora from OSS-Fuzz.
+  A crash fails the check only if it reproduces on the pull request's build and does not occur on
+  older OSS-Fuzz builds, so a pull request is not blamed for an older bug. Read.
+- Fuzz Introspector. Reports reachability and coverage per fuzzer and in aggregate, flags blockers
+  that limit what a fuzzer can reach, and suggests new targets. The service generates and uploads reports
+  automatically. Read.
+- Timeouts and out-of-memory. One bug of each kind is open per target at a time. Read.
+- Unverified: how ClusterFuzz deduplicates crashes, how it finds the range of commits that
+  introduced a crash, and any reminder or auto-close schedule for stale issues.
 
-The host target's coverage, in libFuzzer edges: 772 at start, 2,024 after 8,192 sessions, 2,453
-after 32,768, 2,660 after 65,536, and 2,785 at the end. It gained about 5% per doubling of inputs
-near the end, so three minutes reach no plateau.
+### syzbot and syzkaller
 
-Nobody can measure coverage growth for the drivers today: neither carries a coverage counter, and adding
-one is a code change, out of this lane's scope. The host targets do carry one (libFuzzer's edge
-count), reported above.
+Read from the syzkaller repository's `docs/syzbot.md`, `docs/coverage.md` and
+`docs/syzbot_assets.md`, and from the syzbot dashboard page.
 
-## Decision 1: what budget makes a clean run count, and on how many architectures
+- Dashboard. Shows open, fixed and invalid bug counts, a per-manager table (uptime, corpus size,
+  coverage, crashes, executions, kernel build, freshness), and coverage views for the total, a
+  repository heat map and a subsystem heat map. Each bug shows the reproducer type, cause and fix
+  bisection status, crash count, time since the last crash and time since the report. Read from
+  the first part of the page only; the rest of the page was not read.
+- Reproducers. The aim is a stand-alone C reproducer for every reported bug; some have only the
+  syzkaller program, which converts to C. Bugs without a reproducer first wait in a moderation
+  queue. Read.
+- Bisection. syzbot bisects bugs with a reproducer to the commit that introduced them; one crash
+  marks a revision bad. A separate fix bisection runs only when the bug has not occurred for at
+  least 30 days. Read.
+- Fix tracking. A person attaches a fix by naming the exact commit title; syzbot closes the bug
+  only when the commit reaches all tracked builds, and a similar crash after that opens a new bug.
+  While a bug is open, similar crashes merge into it. A person marks a one-off report invalid, and a
+  recurrence creates a new report. Read.
+- Retention. syzbot keeps build assets until 30 days after the bug becomes fixed or invalid. Read.
+- Coverage. Collected by KCOV, in basic blocks or edges, with the warning that coverage "may poorly
+  relate to the source code"; the web report colors lines as hit, partly hit, uncovered in a run
+  function, or in a function that never ran. Read.
+- Unverified: how syzbot ages open bugs, whether syzbot closes a bug with no crash for a long period
+  automatically (the pages read do not say), where syzbot publishes the corpus, and what syzbot claims
+  after a long quiet stretch. The pages read make no such claim.
 
-**Recommendation: a fixed count of fresh seeds per driver per architecture, 300,000 for each
-in-guest driver on each of aarch64, riscv64 and x86_64, plus 24 CPU-hours per host target with no
-new coverage edge in its last quarter.** Read through the rule of three, 300,000 clean independent
-seeds bound the chance that one random seed escapes below 1 in 100,000, at 95% confidence.
+## What nife already meets, and what it lacks
 
-Background. A budget can take four forms. CPU hours depend on the machine: the same 60 s gives
-13 seeds/s on a hosted runner and 4 on the build host this lane used, so an hour means
-different things on different days. A coverage plateau needs coverage, which the drivers lack. A
-per-claim corpus (so many seeds that reach each row) needs a map from seed to claim that does not
-exist. A seed count is the one unit that is machine-independent, replayable and already printed by
-every run.
+| standard | nife today |
+|---|---|
+| Replayable inputs | Met. A seed replays the same calls; a failure names its seed. |
+| Determinism across accelerators | Met. The same seed gives the same verdict under hardware acceleration and under emulation. |
+| An oracle beyond a crash | Met, and stronger than the sanitizers the others rely on. The referee reports capability, badge and oracle violations. |
+| Targets in the project's own tree | Met. |
+| Targets run regularly as regression | Partly met. 34 fixed seeds run on every merge. Nothing keeps a failing seed as a named regression test. |
+| Coverage measure | Missing for the two in-guest drivers, which carry no coverage counter. The host targets have libFuzzer's edge count. |
+| A usable verdict under concurrency | Missing. Several guests at once produce false reds (see the appendix). |
+| A corpus kept across runs | Missing. No corpus of seeds or inputs survives a run. |
+| Reproducer to regression test | Missing. A failing seed is not turned into a standing test by any step. |
+| A triage clock | Missing. No rule gives the time allowed to examine a finding or the age at which an open escape becomes a failure. |
+| A dashboard | Missing. Counts, rates and open findings are not collected anywhere. |
+| Bisection and fix tracking | Missing. A finding is not tied to an introducing or a fixing commit. |
+| Introspection of what is unreachable | Missing. |
 
-For a generator that draws independent seeds, the count has a clean meaning. If N seeds all pass,
-the 95% upper bound on the per-seed failure rate is about 3/N (the rule of three, `-ln 0.05 ≈ 3`).
-The deepest planted defect either driver has found took seed 559 (milestone 752, revocation in
-flight); the EL0 driver's deepest took seed 52. 300,000 is more than 500 times the deepest known
-plant. It bounds only what the generator can draw: the EL0 driver's `BUGS` lists what it never
-draws (its `GO` channel, threads, timers, the exits), and two arrival orders it cannot stage.
+## Scope note (§19)
 
-The options:
+x86_64 only for now. A dedicated x86_64 virtual machine of about 4 vCPUs and 8 GB runs x86_64
+comfortably under hardware acceleration. aarch64 and riscv64 run only under full emulation (TCG)
+and I have not measured them for continuous work. §19 (architectural parity is a tenet) makes parity a gate,
+so this is a scoped exception for the fuzzers only, and it names its end: the fuzzers on the other
+two architectures wait on hardware that runs them at a useful rate. The escapes of record split by
+architecture (§12 (call/reply IPC: a one-shot reply capability) was false only on x86_64; claim
+11's alias was on all three), so the exception costs coverage of the claim, and the record must say
+so rather than imply parity.
 
-- (A) Seeds per driver per architecture, all three ISAs. Recommended. Parity is a gate in this
-  tree (§19 (architectural parity is a tenet)). The escapes of record split by architecture. §12
-  (call/reply IPC: a one-shot reply capability) was false only on x86_64, and so was the read-only
-  port range; claim 11's alias was on all three.
-- (B) The same count on aarch64 only, with the 34 suite seeds on the others. A third of the cost.
-  The weekly sweep's own comment argues this: all three share one dispatcher, so breadth is about seeds,
-  not ISA. Lost because the defects that were ISA-specific sat below the dispatcher, in exactly the
-  code a shared-dispatcher argument does not cover.
-- (C) CPU hours. Lost: the unit moves with the machine, and no run compares with the next.
-- (D) Coverage plateau for the drivers. Lost for now: it needs coverage, which is a separate
-  build (QEMU's TCG plugins or a kernel counter). Worth a milestone if a clean budget run ever
-  must show that it reached a code path.
+## The questions that remain
 
-For the host targets, coverage exists and the convention outside is time: 24 hours a trial in
-Klees et al. Rule: 24 CPU-hours each, counted clean if no crash and no new edge in the last six
-hours.
+I ask them one at a time, in this order, each after an architect rules on the one before. The first sits on the pull
+request. This list keeps the rest, and each returns in full when its turn comes.
 
-Prior art. OSS-Fuzz never stops: ClusterFuzz fuzzes every target continuously, and its pull
-request check, CIFuzz, defaults to 600 s and says the time "should be at minimum 600 seconds and
-scale with project size" (read 2026-10-31). syzkaller also has no stopping rule; syzbot runs
-continuously on each tree, and a run's value is its coverage and reproducers (from memory, not
-read for this proposal). Its Fuchsia port's documentation calls it incomplete, with "coverage feedback is
-not supported" (read). seL4 has no syscall fuzzer that a search found; its assurance is the proof.
-Klees et al., "Evaluating Fuzz Testing" (CCS 2018), recommend 24-hour runs and repeated trials
-(read in summary). Böhme's species-discovery work bounds residual risk by the share of behaviors seen
-exactly once (Good-Turing), and his 2021 paper finds that bound optimistic for greybox fuzzers because they
-adapt (read in summary). That adaptation bias does not apply to a coverage-blind driver, which is
-why the rule of three fits here and would not fit libFuzzer.
+1. What criterion (d) of risk 7 becomes under continuous fuzzing, and what the 14-day idea becomes
+   (an idea raised in conversation and not recorded elsewhere in the tree).
+2. The coverage measure the in-guest drivers need, and what it costs.
+3. Whether the false-red fix is the first work.
+4. Where the fuzzers run and who operates them.
+5. The triage clock.
 
-Where nife differs. Every system above fuzzes forever and treats a bug as the output. Criterion
-(d) asks the opposite question: when has enough clean fuzzing happened to support a claim? That is
-a stopping rule, and only the coverage-blind, seed-replayable shape of the drivers lets it carry a
-number. The rule of three is not prior art from a kernel; it is plain statistics, and this proposal
-recommends it because the drivers already satisfy its one assumption, independent draws.
+### Question 1: what criterion (d) becomes
 
-Example. The EL0 driver at `<commit>` runs seeds `G..G+300,000` on each ISA, where `G` is a
-published base. All 900,000 pass. The record states: no escape in 300,000 seeds per ISA, so the
-per-seed escape rate is below 1 in 100,000 at 95% confidence, for what this generator draws.
+Recommendation: criterion (d) lists four conditions. The confinement fuzzers run continuously at a pinned
+configuration. A person triages every finding within a stated time. No confirmed escape stays open
+longer than a stated age. Each driver's coverage has plateaued. The stated time and age are
+question 5's. The plateau needs question 2's measure; until it exists, (d) lists the plateau as
+unmet and says so.
 
-## Decision 2: what counts as an escape, a clean result, and a reset
+Background. The plan behind criterion (d) was to run to a fixed budget and call the
+result clean. Both standards above refuse that shape. OSS-Fuzz and syzbot fuzz without stopping and
+treat a finding as the output. What they claim is a state: this many bugs are open, the oldest is
+this old, coverage is this much. A quiet period supports no claim of its own in what I read. The
+equivalent for nife is a set of conditions that hold at a date, each one checkable, with a dashboard
+keeping the numbers.
 
-**Recommendation: only a referee verdict confirmed as the kernel's fault is an escape. A kernel
-panic, hang or unexplained failure makes the run not clean until triage explains it. A wrong referee
-pauses the run without resetting it.**
+Options:
 
-Background. A run can go red for three different reasons, and the record already has each. On
-2026-10-06 the EL0 driver crashed the kernel (`AddressSpace::LIST` followed a caller's pointer): a
-crash, and one that could have been a read of kernel memory. On 2026-10-12 and 2026-10-19 it
-reported escapes that were the referee's own missing rule. And on 2026-10-11 a fuzzer had no
-address space after parking, cause unknown (milestone 779's `BUGS`). Each needs a different
-answer.
+- (A) Conditions at a date, as recommended: continuous operation, a triage time, a maximum age for
+  an open escape, a coverage plateau.
+- (B) Conditions without the plateau, until the coverage measure exists. It meets sooner and
+  claims less about depth; the record says so.
+- (C) A fixed continuous period, for example 14 days with no escape, then green. Closest to the
+  earlier idea. It is a stopping rule, which neither standard has, and it would claim more after a
+  quiet fortnight than syzbot or OSS-Fuzz claim after years. What it keeps: a short run is a
+  cheap smoke test, so it could stay as the gate on a release, not as the meaning of (d).
 
-The rule recommended:
+Prior art. OSS-Fuzz measures a project by open findings against the 90-day clock and by coverage
+reports. syzbot measures by open and fixed counts, the age of each open bug, and the coverage
+total. Neither declares a project clean.
 
-1. Escape. The referee reports a reach beyond the grant, and triage shows the kernel at fault.
-   The count resets to zero for every driver, and (d) needs the full budget again after the fix.
-2. A crash or hang reached from user mode. Not clean. It is a denial of service at least, and the
-   `LIST` case shows a crash can sit one argument away from a read. It resets the count unless
-   triage shows the fault was in the test scaffolding, not the kernel.
-3. A wrong referee. The kernel was right, and the referee lacked a rule (the `SLICE` case). The
-   run pauses while a lane fixes the referee. A fix that only admits more keeps every earlier seed, since
-   none of them failed the stricter rule. A fix that rejects more re-runs the seeds it could change.
-4. Unexplained. Treated as (2) until explained. The 2026-10-11 failure is the template.
+Where nife differs. nife's claim is a security claim (no escape), where the others report bugs of
+every kind. That is why (d) keeps a maximum age for an escape in particular, shorter than 90 days
+(question 5), and why a stopping rule was attractive. The drivers' statistical shape would still
+bound a per-seed rate over a clean stretch, and a record may state that bound as a fact about a
+run, not as the criterion.
 
-What does not reset: an ordinary kernel change. Main moves daily, and a count that reset on
-every commit would never finish. The budget runs at one pinned commit, like an outsider pass. It
-reruns in full when the syscall surface changes (a new method or syscall, which already needs a
-`design/decisions/` section), and the weekly sweep keeps running afterward, where any escape reopens
-(d).
+Example. On a given date the dashboard shows: the user-mode driver and the kernel-thread driver
+have run for 60 days at commit `C`; 41 findings, 41 triaged within the stated time; 3 confirmed
+escapes, all fixed, none open; user-mode coverage flat for the last 14 days. Criterion (d)
+holds on that date, and the record cites those numbers.
 
-A clean run speaks only for the rules the referee checks. The tenth pass's escape, a page mapped
-writable at one address and executable at another, is invisible to it: both mappings use a frame
-the program holds. A budget record should list which claims rows the referee judges.
+## Appendix: measurements, 2026-10-31 (UTC)
 
-Options: (A) as above, recommended. (B) Count only referee escapes and ignore crashes. Lost, for
-the `LIST` reason. (C) Reset on any kernel change in `kernel/src/syscall.rs` or `sched.rs`. Lost:
-those files change most weeks, so (d) would rarely hold.
+One run by this lane on a many-core x86_64 build host, with other lanes' load on it, one QEMU
+guest per process. Not a census. The per-guest logs stay off-tree; the text cites figures only.
 
-Prior art. OSS-Fuzz deduplicates crashes by stack and checks daily whether each still reproduces,
-closing it when it does not (from memory). syzbot closes a bug when a commit naming it lands and the
-crash stops, and treats a crash with no reproducer differently from one with (from memory). Both
-count crashes, because their oracles are sanitizers and panics. nife's drivers have a semantic
-oracle, so nife needs the referee-defect category the others do not.
+Rate per guest, x86_64 under hardware acceleration (KVM):
 
-Example. A sweep reports seed `S` step 34 filling a slot with a `PageFrame`. Triage finds `SLICE`
-legal. Category 3: the referee gains its arm, seeds before `S` keep their verdicts, and the sweep
-resumes at `S`.
+| guests at once | kernel-thread driver (milestone 752), seeds/s | user-mode driver (milestone 779), seeds/s |
+|---|---|---|
+| 1 | about 420 | about 230 |
+| 2 to 8 | 440 to 460 | about 220 |
 
-## Decision 3: where and when it runs, and the cost
+Baseline under full emulation (TCG): 20 seeds/s for the kernel-thread driver and 8 for the
+user-mode driver. Hardware acceleration is about 20 times faster for the first and about 28 times
+for the second. These are also many times the hosted aarch64 sweep rates quoted above (40 and 13),
+which run under emulation.
 
-**Recommendation: on GitHub's hosted aarch64 runners, dispatched by hand once per budget, at
-most six jobs at a time, over two consecutive 08:00 to 13:00 UTC windows.**
+Memory: about 100 MB per guest.
 
-Background. Two kinds of machine could run it. Hosted Actions minutes cost this public
-repository nothing (§214 (the Team plan buys runner concurrency)). But every job takes one of the 60
-slots the merge queue also uses. An owned build host has idle cores. §299 (the build machine is bought) leaves open whether any workflow runs on it, and a job there needs a self-hosted runner. The drivers run under full
-emulation on an x86_64 host and under emulation for riscv64 and x86_64 on an aarch64 runner too.
+Host target `redoxfs_server_session`: 794 runs/s on one process and about 5,470 runs/s on eight
+workers.
 
-The cost, sized from the hosted rates, since that is the machine recommended. At 13 seeds/s, the
-EL0 driver's 300,000 seeds take 6.4 runner-hours on aarch64; the kernel-thread driver's take 2.1 at
-40 seeds/s. No sweep has ever run riscv64 or x86_64 on a hosted runner, so nobody has measured those
-rates. If the suite's 2026-10-06 ratios hold there (21 and 36 seeds/s against 32 on
-aarch64), riscv64 takes about 9.8 hours and x86_64 about 5.7 for the EL0 driver. That is an
-estimate, and the first job of the budget run measures it. The drivers total about 30
-runner-hours, and the three host targets add 18 more on a four-core runner (core count from
-memory). About 48 runner-hours, at $0 cash. A hosted job stops at six hours (from memory), so
-each driver shards at about 50,000 seeds a job. Six jobs at a time is 10% of the pool, for about
-eight hours: two night windows, when the queue is quietest.
+False reds, guests that reported a failure that did not reproduce:
 
-Options: (A) hosted runners, recommended: free, already wired, and the budget is a one-off of a
-few runner-days. (B) The owned build host, at low concurrency in the night window. It needs §299's
-open runner question answered first, and a self-hosted runner never takes a fork's pull request.
-(C) Raise the weekly sweep's cap until the budget accrues. Lost: it needs months, and a budget that
-spans many commits answers Decision 2's pinning poorly.
+| guests at once | kernel-thread driver | user-mode driver |
+|---|---|---|
+| 4 | 1 of 4 | 0 of 4 |
+| 8 | 4 of 8 | 1 of 8 |
+| 16 | 6 of 16 | 6 of 16 |
 
-Prior art. ClusterFuzz runs on a pool sized to its project count, and syzbot runs a fixed set of VMs
-per kernel tree (from memory). Neither has a window; nife's matters because the merge queue shares
-its pool by day.
+Replays of failing seeds were green. The failures were the harness's deadlines expiring under load,
+not escapes. Until a fix lands, more concurrency buys false reds faster than it buys seeds, which
+is why question 3 exists.
 
-Example. A maintainer dispatches the budget at a pinned commit at 08:00 UTC. The first window runs
-aarch64 and x86_64 for both drivers, six shards at a time. The second runs riscv64 and the host
-targets. The record lands on the risk 7 page as a dated fact: the commit, each seed range, each
-rate, and the verdict.
+Earlier measurement in the same lane, under emulation of aarch64 on the same host (2026-10-31):
+user-mode driver 4 seeds/s, kernel-thread driver 9 seeds/s, `redoxfs_server_session` 569 runs/s
+from an empty corpus, which reached 2,785 libFuzzer edges in three minutes and had not plateaued.
 
 ## The seven questions
 
-1. Considered and lost: above, per decision.
-2. In this tree: the outsider passes pin a commit and a floor of booted rows; this copies the pin.
-   The sweeps print seeds and rates.
-3. Prior art: above. Read where marked; the rest says from memory.
-4. The premise holds: nothing sets a budget, and no run against (d) exists.
-5. Cost: measured above.
-6. Reversible: a budget is a record, not a contract, and nobody has acted on one. Changing it
-   later moves the bar, which is the architect's call.
-7. At equal cost, this proposal would still choose three ISAs. It recommends the hosted runner
-   partly because it costs nothing; that part is about cost, and says so.
+1. Considered and lost: question 1's options above. The earlier fixed-budget forms (a seed count by
+   the rule of three, CPU-hours, a per-claim corpus) lost under the ruling.
+2. In this tree: the outsider passes pin a commit; the sweeps print seeds and rates.
+3. Prior art: above, with what was not read marked.
+4. The premise holds: nothing sets the bar, and no run counts against (d).
+5. Cost: measured in the appendix. Operating cost depends on question 4.
+6. Reversible: criterion (d) is a record, not a contract, and nobody has acted on one.
+7. At equal cost this would still choose conditions at a date over a fixed run; the recommendation
+   is not about effort.
 
 ## What waits on this
 
-Criterion (d), and so risk 7's green, until an architect answers Decision 1. A lane then writes the budget
-into the risk 7 page and runs it.
+Criterion (d), and so risk 7's green, until an architect rules on questions 1 to 5. No scoped work can start on the ruling alone; question 3 is the candidate.
 
 ## What I need from you
 
-Decision 1 first, since its answer sizes 2 and 3. If the answer is no to seeds, the lane needs the
-unit chosen instead; (d) stays unmeasurable until then.
+Question 1 only. The others wait.
