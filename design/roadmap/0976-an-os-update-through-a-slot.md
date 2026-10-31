@@ -125,7 +125,8 @@ slot. Every new name here is provisional.
   first, with the prior art.
 - **Outstanding.** After part 4, part 5 is the device updater, steps 2 and 4 above, writing
   whatever part 4 rules. Part 6 is the system manifest's name and format (step 1). Part 7 is who may
-  start a base update, and what bounds an unattended one under milestone 911's approval file. Each
+  start a base update, and what bounds an unattended one under the approval file of milestone 911 (scripted installs grant only
+  what the owner's approval file allows). Each
   comes to an architect after part 4, one at a time. Step 3, the loader's two digests, is milestone
   607's item 6 and not this block's.
 

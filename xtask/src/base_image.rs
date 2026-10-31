@@ -1016,7 +1016,8 @@ programs = ["progenitor", "swish", "jig"]
         // `kernel/src/user/install_service.rs` enters these by name on a stick's install and on
         // every boot a chooser started (the trial boot's confirmation). A composed image missing
         // one installs nothing or confirms nothing, and the second fails silently: the update
-        // boots, then rolls back once its tries run out (milestone 976).
+        // boots, then rolls back once its tries run out (milestone 976 (an OS update is a set of packages that
+        // lands through a slot)).
         let source =
             std::fs::read_to_string(workspace_root().join("kernel/src/user/install_service.rs"))
                 .unwrap();
