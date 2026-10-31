@@ -53,8 +53,6 @@ crates/hot_swap_contract/src/lib.rs::DEV_VA spelled-out
 crates/hot_swap_contract/src/lib.rs::IMAGE_VA spelled-out
 crates/hot_swap_contract/src/lib.rs::LOG_VA spelled-out
 crates/hot_swap_contract/src/lib.rs::STATE_VA spelled-out
-crates/hot_swap_contract/src/lib.rs::broker_wants_down question-shape
-crates/hot_swap_contract/src/lib.rs::log_put question-shape
 crates/inter_process_communication/src/rendezvous.rs::one_queue_invariant question-shape
 crates/line_editor/src/component.rs::ELF_VA spelled-out
 crates/line_editor/src/component.rs::HANDOFF_VA spelled-out
@@ -90,9 +88,6 @@ crates/std_runtime_contract/src/lib.rs::CONFIG_PAGE spelled-out
 crates/std_runtime_contract/src/lib.rs::CONFIG_SLOT spelled-out
 crates/std_runtime_contract/src/lib.rs::FS_DIR_SLOT spelled-out
 crates/supervision_contract/src/lib.rs::CHILD_STACK_VA spelled-out
-crates/supervision_contract/src/lib.rs::give_up_own_page question-shape
-crates/supervision_contract/src/lib.rs::memory_region_destroy question-shape
-crates/supervision_contract/src/lib.rs::start_child question-shape
 crates/system_log_contract/src/lib.rs::WINDOW_VA spelled-out
 crates/system_log_contract/src/lib.rs::at_line_start question-shape
 crates/timetable/src/admission.rs::schedulable question-shape

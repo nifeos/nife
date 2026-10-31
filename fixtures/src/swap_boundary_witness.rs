@@ -218,9 +218,17 @@ fn produce() -> ! {
     user_mode_runtime::exit()
 }
 
+/// A raw `RECEIVE_CAPABILITY`, returning the kernel's answer rather than a message. The attacker
+/// uses it: `user_mode_runtime::receive_capability` is written for a caller that is allowed to
+/// receive, and the whole question here is what happens to one that is not.
+fn try_receive_capability(slot: u64) -> i64 {
+    // SAFETY: a plain syscall. If it succeeds we have stolen a request, which is the failure.
+    unsafe { user_mode_runtime::invoke(slot, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) }
+}
+
 /// **The attacker.** It tries to become the server on the endpoint it is a client of.
 fn usurp() -> ! {
-    let r = hot_swap_contract::try_receive_capability(SVC);
+    let r = try_receive_capability(SVC);
     // A success here is the catastrophe: it means the attacker is now parked in the queue the real
     // component receives on, and the next client request goes to it. Report the code either way and
     // let the test decide; a program that judged its own attack would be judging itself.
@@ -261,7 +269,7 @@ fn plant() -> ! {
 fn confused_deputy() -> ! {
     // First the honest refusal, so the report stream shows this program holds only `WRITE` and could
     // not simply receive, exactly as `usurp` does.
-    let r = hot_swap_contract::try_receive_capability(SVC);
+    let r = try_receive_capability(SVC);
     send(
         RPT,
         hot_swap_contract::RPT_ATTACK,

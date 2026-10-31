@@ -2,7 +2,7 @@ Falsifies `system_tests::user::live_swap_tests::a_confined_client_drives_the_ser
 
 Architecture: aarch64
 
-The defect is the tree as it stood until the third outsider pass of milestone 633 (an outside agent attacks the confinement claim). The patch deletes the bound in `hot_swap_contract::log_put`, so the
+The defect is the tree as it stood until the third outsider pass of milestone 633 (an outside agent attacks the confinement claim). The patch deletes the bound in `hot_swap_server::log_put`, so the
 server writes a byte at `LOG_VA + log_base + arg` for any `arg` a client sends. A `WRITE`-only
 client's `OPERATION_PUT` at `DEPUTY_PROBE` (`DEV_VA - LOG_VA`) then lands in the device register
 page the server holds and the client does not, and the server answers as for an ordinary PUT.
@@ -12,14 +12,13 @@ made the swap server serve OPERATION_PUT at offset 0x100000". Replayed on 2026-1
 milestone 633 lane: red at exactly that assertion on aarch64 (tag 0x100100000); green with the
 bound on aarch64 and riscv64. x86_64 skips the test, having no device page.
 
-diff --git a/crates/hot_swap_contract/src/lib.rs b/crates/hot_swap_contract/src/lib.rs
-index 07e0aa2c8..296b92d92 100644
---- a/crates/hot_swap_contract/src/lib.rs
-+++ b/crates/hot_swap_contract/src/lib.rs
-@@ -833,9 +833,6 @@ pub fn probe_device() -> u64 {
+diff --git a/crates/hot_swap_server/src/lib.rs b/crates/hot_swap_server/src/lib.rs
+--- a/crates/hot_swap_server/src/lib.rs
++++ b/crates/hot_swap_server/src/lib.rs
+@@ -82,9 +82,6 @@
  /// `live_swap_tests::a_confined_client_drives_the_server_to_write_past_its_log`. Returns whether
  /// the byte was written.
- pub fn log_put(seq: u64, version: u64) -> bool {
+ fn log_put(seq: u64, version: u64) -> bool {
 -    if seq >= LOG_BYTES {
 -        return false;
 -    }

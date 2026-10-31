@@ -169,7 +169,7 @@ pub(super) fn open_archive(
 
     // Before anything is built, so no boot server's page is ever left mapped here.
     if is_granted(g.own_space) {
-        supervision_contract::give_up_scratch_through(g.own_space);
+        process_builder::give_up_scratch_through(g.own_space);
     }
 
     // Bytes that are not UTF-8 are the empty table, which vouches for nothing.
@@ -393,7 +393,7 @@ fn start_virtio_entropy(
                 )
             };
             // Read; the page is entropy's from here, so our view of it goes (milestone 95).
-            supervision_contract::give_up_own_page(RNG_DMA_PEEK_VA);
+            process_builder::give_up_own_page(RNG_DMA_PEEK_VA);
             let request = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
             let ready = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
             let entropy = must(build_child(
@@ -1125,7 +1125,7 @@ fn start_identity_provisioner(
     let (g, ut) = (w.g, w.ut);
     let idp_report = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
     let idp_program = p.idp_elf.as_ref().expect("have_login_stack checked this");
-    let (idp_child, idp_aspace) = must(supervision_contract::build_child_space(
+    let (idp_child, idp_aspace) = must(process_builder::build_child_space(
         ut,
         ut,
         idp_program,
@@ -1149,7 +1149,7 @@ fn start_identity_provisioner(
         address_space_map_into(idp_aspace, IDP_FS_VA, idp_page, abi::address_space::MAP_RW) == 0;
     capability_delete(idp_page);
     must(mapped.then_some(()).ok_or(()));
-    must(supervision_contract::configure_child(
+    must(process_builder::configure_child(
         idp_child.tcb,
         idp_aspace,
         idp_program.entry(),

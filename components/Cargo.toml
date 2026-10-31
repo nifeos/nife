@@ -639,6 +639,7 @@ designware_mobile_storage = { version = "0.1.0", path = "../crates/designware_mo
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
 abi = { version = "0.1.0", path = "../crates/abi" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
+process_builder = { version = "0.1.0", path = "../crates/process_builder" }
 # The interactive system, built once (milestone 96). Both inits are a table of the slot numbers
 # their own kernel granted plus a call into this.
 system_initializer = { version = "0.1.0", path = "../crates/system_initializer" }
