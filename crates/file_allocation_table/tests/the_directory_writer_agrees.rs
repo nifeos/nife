@@ -347,21 +347,25 @@ fn directories_above_cluster_65535_keep_their_high_bits_through_a_move() {
         .unwrap();
     assert_eq!(moved.first_cluster(), b.first_cluster());
     put(&mut volume, moved.first_cluster(), "second.txt", b"2");
-    // The moved directory's `..` leads back to High C, high half included: moving High C below it
-    // is a cycle only if that link reads right.
+    // High C sat under the root (its `..` is 0); moving it under High A gives it a `..` that needs
+    // its high half, and High A is then an ancestor of everything below.
+    let c_moved = volume
+        .rename(&c, a.first_cluster(), "High C Moved")
+        .unwrap();
     assert_eq!(
-        volume.rename(&c, moved.first_cluster(), "x"),
+        volume.rename(&a, moved.first_cluster(), "y"),
         Err(WriteError::MovedIntoItself)
     );
+    let _ = c_moved;
     volume.sync().unwrap();
     let image = volume.into_device();
     let tree = oracle_tree(&image.bytes);
     for (path, directory) in [
         ("/High A", true),
-        ("/High C", true),
-        ("/High C/High B Moved", true),
-        ("/High C/High B Moved/inside b.txt", false),
-        ("/High C/High B Moved/second.txt", false),
+        ("/High A/High C Moved", true),
+        ("/High A/High C Moved/High B Moved", true),
+        ("/High A/High C Moved/High B Moved/inside b.txt", false),
+        ("/High A/High C Moved/High B Moved/second.txt", false),
     ] {
         assert!(
             tree.iter().any(|(p, d, _)| p == path && *d == directory),
