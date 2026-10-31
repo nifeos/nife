@@ -5,9 +5,19 @@
 on, given how little RedoxFS is progressing, and whether UFS, OpenZFS or btrfs is the better
 candidate.*
 
-## Why the question is open again
+## What this survey decided
 
-§34 (RedoxFS is the primary filesystem, on three conditions) chose RedoxFS for four reasons: a real
+UFS2 is nife's launch filesystem (§34 (UFS2 is the launch filesystem, and RedoxFS stays primary
+until UFS2 meets the bar), ruled 2026-10-31 UTC). The replacement is staged. RedoxFS stays the
+launch store until UFS2 boots the composed image, takes `jig` installs, holds the installed-programs
+table and matches RedoxFS's crash claim. Milestone 981 (UFS2, read and write: a Rust server with
+FreeBSD's tools as the oracle) builds UFS2 to that bar, and milestone 982 (Retire RedoxFS once a
+launch store proves itself) then removes RedoxFS from the tree. BSD-2-Clause sits on `deny.toml`'s
+allow-list for UFS2's FreeBSD half. The rest of this note is the evidence.
+
+## Why the question opened
+
+§34 chose RedoxFS for four reasons: a real
 system already roots on it, copy-on-write with checksums, Rust with no `std` on both bare targets,
 and maintenance upstream. The fourth reason is the one that has moved.
 
@@ -18,7 +28,7 @@ of those commits are Redox OS integration: `redox-rings`, a writer pipe, `libred
 divergence patch touches, `Cargo.toml` and `src/transaction.rs`, are both edited upstream, so the
 next bump conflicts.
 
-The first three reasons still hold. This note does not reopen them. It asks whether another
+The first three reasons still hold, and this note does not reopen them. It asks whether another
 filesystem is a better bet for the *launch* store: the writable filesystem the image boots into,
 that `jig` installs packages onto, and that holds the installed-programs table.
 
@@ -39,13 +49,14 @@ crash test would cost. Then the oracle, then the writer, then crash consistency.
 
 ## The license pass
 
-`deny.toml` allows MIT, Apache-2.0, Apache-2.0 WITH LLVM-exception, BSD-3-Clause, 0BSD and ISC. The
-list is an allow-list on purpose: the failure it catches is a license nobody read.
+`deny.toml` allows MIT, Apache-2.0, Apache-2.0 WITH LLVM-exception, BSD-3-Clause, 0BSD, ISC,
+BSD-2-Clause and Zlib. The list is an allow-list on purpose: the failure it catches is a license
+nobody read.
 
 | candidate | implementation and license | on the allow-list? | verdict |
 |---|---|---|---|
 | RedoxFS | the vendored engine, MIT | yes | the incumbent |
-| UFS2 (FFS) | FreeBSD `sys/ufs`, BSD-2-Clause; `rufs` 0.6.0, BSD-2-Clause; `ufs-core` 0.1.5, Apache-2.0; `go-filesystems/ufs`, BSD-3-Clause | `ufs-core` yes; BSD-2 no, but strictly easier than the BSD-3 already allowed | one ruling from calef |
+| UFS2 (FFS) | FreeBSD `sys/ufs`, BSD-2-Clause; `rufs` 0.6.0, BSD-2-Clause; `ufs-core` 0.1.5, Apache-2.0; `go-filesystems/ufs`, BSD-3-Clause | yes; BSD-2-Clause joined for UFS2 | allowed, and the launch filesystem |
 | HAMMER2 | DragonFly's `sys/vfs/hammer2`, BSD-3-Clause | yes | allowed, and measured below |
 | btrfs | Linux's `fs/btrfs` and `btrfs-progs`, GPL-2.0; `lambutter`, `btrfs-core`, `rust-fs-btrfs`, `btrfs-transaction`, MIT or Apache-2.0 | the Rust readers yes; the kernel and progs only as a confined program under §135 (running GPL software is aggregation, and the capability boundary is what makes it so) | read-only Rust survives |
 | OpenZFS | `openzfs`, CDDL-1.0 file by file | no | needs a copyleft reading |
@@ -54,10 +65,9 @@ list is an allow-list on purpose: the failure it catches is a license nobody rea
 
 Two findings decide the shape of the rest of the survey.
 
-**UFS2 is the only candidate whose license is both permissive and nearly allowed.** BSD-2-Clause is
-not on the list, but it is BSD-3-Clause minus the no-endorsement clause, so it is strictly easier.
-Adding it is one line and one ruling, the way ISC entered the list on 2026-09-20. `ufs-core` is already
-Apache-2.0. Nothing about UFS2 needs a copyleft reading.
+**UFS2's license needs no copyleft reading.** BSD-2-Clause is BSD-3-Clause minus the
+no-endorsement clause, so it is strictly easier than an entry the list already held, and it joined
+the list for UFS2. `ufs-core` is Apache-2.0.
 
 **OpenZFS and btrfs both survive only as confined programs or read-only libraries.** Their licenses
 put the write path out of reach as linked code: CDDL for OpenZFS, GPL-2.0 for btrfs. §135 lets a
@@ -126,37 +136,28 @@ ext4's Rust readers are permissive and read-only; no Rust writer handles `metada
 would produce metadata Linux flags as corrupt. F2FS, XFS, bcachefs and nilfs2 are GPL-2.0 with no
 Rust implementation. None is a launch candidate.
 
-## The ranking the license pass leaves
+## The ranking
 
 1. **UFS2.** Permissive, nearly allowed, documented, small, two Rust implementations, the best
    oracle, and a journaling design that is BSD-2-Clause. It is the only candidate that can be a
    nife server rather than a port of a kernel subsystem.
 2. **HAMMER2.** The closest feature match and already allowed, but no implementation to reuse and no
    extended attributes. A project of its own, not a launch filesystem this year.
-3. **RedoxFS.** Keep it until a replacement proves itself. Its crash-consistency measurement (186
-   lying-device cases, 112 recovered, 74 refused, 0 silently wrong) is the standard any replacement
-   must meet, and its upstream is slow rather than dead.
+3. **RedoxFS.** The incumbent, and the launch store until UFS2 meets milestone 981's bar; then
+   milestone 982 removes it. Its crash-consistency measurement (186 lying-device cases, 112
+   recovered, 74 refused, 0 silently wrong) is the standard UFS2 must meet.
 4. **btrfs and OpenZFS.** Refused for the launch store on the 2026-10-07 measurements and the
    licenses. btrfs stays a read-only candidate for milestone 140 (Mount a drive this system did not
    create); OpenZFS stays a candidate for after 812 and a CDDL ruling.
 
-## What to measure next
+## What comes next
 
-The license pass is the first increment. The next one is:
-
-1. The BSD-2-Clause ruling. Add it to `deny.toml`'s allow-list, or refuse UFS2's FreeBSD half and
-   keep only the Apache-2.0 reader.
-2. Build the two Rust implementations for the three targets. `ufs-core` needs `no_std` and an
-   `alloc` import; `rufs` needs a `no_std` port or a decision that the server is a `std` program.
-   Record both as shipped and with the patch, the way the 2026-10-07 note does.
-3. Make and judge images. `makefs` and `newfs` on a host, read and written by `rufs`, then
-   `fsck_ffs` on the result. Two images: one FreeBSD-made, one nife-made.
-4. Run the crash injector. The harness of milestone 37 (Prove RedoxFS's crash consistency) already
-   injects power cuts, torn writes and a lying device. Run it against a UFS2 server and record the
-   same three numbers RedoxFS has.
-5. Decide the consistency grade. Soft updates, SUJ, or `fsck` on mount. The first nife server
-   can ship without either ordering mechanism, but then its crash claim is `fsck`-repaired rather
-   than consistent, and the note that records it must say so.
+Milestone 981 carries the work in four phases. It builds `ufs-core` and `rufs` for the three targets
+and records each patch. It makes images with `makefs` and `newfs` and judges them with `fsck_ffs`.
+It adds the write path. Then it chooses the consistency grade (soft updates, SUJ, or `fsck` on
+mount) and runs milestone 37's injector against the server. The launch volume carries the first installed-programs
+table as files under `activation/` (ruled 2026-10-30 UTC, on #2894). Milestone 982 holds the
+inventory of what leaves the tree with RedoxFS.
 
 ## BUGS
 
@@ -166,5 +167,3 @@ The license pass is the first increment. The next one is:
   uses are the named blockers; nobody has measured whether the patch takes a day or a week.
 - HAMMER2's size, and the FreeBSD port's completeness, come from lookup rather than measurement.
 - A person qualified to give OpenZFS's CDDL reading owes it. This note does not give it.
-- The launch store's exact requirement is not settled here. #2894 asks where the first
-  installed-programs table lives, and the answer depends on the filesystem this survey recommends.
