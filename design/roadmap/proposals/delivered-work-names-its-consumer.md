@@ -41,9 +41,9 @@ Ruled 2026-10-31 (UTC): a question, a report and a trigger. No new field and no 
 ## Why this much and no more
 
 - **Most delivered work has a user.** The survey of 2026-10-31 found 46 of 57 base-image programs
-  reached from code outside the tests, 91 `BUILT` blocks listed as a dependency of another block,
-  and no crate that is an orphan (the one finding, `allocation_cache`, reaches `std` through
-  generated source). The tree does not have a delivered-work problem that a new rule would fix.
+  reached from code outside the tests and 91 `BUILT` blocks listed as a dependency of another
+  block. It found no orphan crate. The one finding, `allocation_cache`, reaches `std` through
+  generated source. The tree does not have a delivered-work problem that a new rule would fix.
 - **A count of unused things cannot tell "not yet consumed" from "built with no reason".** A
   program waiting for its users is not waste. `pmap` is the example the census cannot decide: no
   code starts it, the shell catalog does not list it, and `crates/pmap`'s `BUGS` section says
