@@ -1,5 +1,5 @@
 #![no_std]
-//! **A FAT12, FAT16 and FAT32 filesystem, sans I/O, growing in stages.** Three halves exist today.
+//! **A FAT12, FAT16 and FAT32 filesystem, sans I/O, growing in stages.** Three parts exist today.
 //!
 //! The reader opens a volume through [`SectorDevice`], a trait the caller implements over any
 //! device that reads whole sectors. [`BootSector::read`] reads and checks the boot sector and its

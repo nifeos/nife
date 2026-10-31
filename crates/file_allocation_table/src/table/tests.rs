@@ -142,7 +142,7 @@ fn encode_is_decodes_inverse_for_every_kind_of_entry() {
 }
 
 #[test]
-fn a_fat32_store_keeps_the_reserved_top_bits_and_a_fat12_store_keeps_the_neighbour() {
+fn a_fat32_store_keeps_the_reserved_top_bits_and_a_fat12_store_keeps_the_neighbor() {
     let mut bytes = [0xAB, 0xCD, 0xEF, 0xF1];
     store(FileAllocationTableType::Fat32, 9, &mut bytes, 0x0123_4567);
     assert_eq!(bytes, [0x67, 0x45, 0x23, 0xF1]);

@@ -5,7 +5,7 @@
 //! The operations read and write the table through [`LinksMut`], so the harnesses hand them a
 //! model that asserts every access lies on a data cluster and every write is one a table may
 //! hold. That each write lands in every live copy of the table, and that a FAT12 entry keeps its
-//! neighbour, are `table::verification`'s proof and the unit tests'. The bound is the unrolling
+//! neighbor, are `table::verification`'s proof and the unit tests'. The bound is the unrolling
 //! Kani needs: the operations' own loops are bounded by the cluster count whatever it is, and the
 //! oracle tests run them over volumes of tens of thousands.
 //!

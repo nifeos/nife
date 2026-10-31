@@ -154,7 +154,7 @@ pub(crate) fn assemble(
 
 /// **Put `value` into the entry's bytes**, the inverse of [`assemble`]: `bytes` holds the entry's
 /// window as read (the first byte in `bytes[0]`), and only the bits that belong to the entry
-/// change. A FAT12 entry shares a byte with its neighbour, so the neighbour's nibble is kept; a
+/// change. A FAT12 entry shares a byte with its neighbor, so the neighbor's nibble is kept; a
 /// FAT32 entry keeps its reserved top four bits, which the specification says a writer preserves.
 pub(crate) fn store(
     file_allocation_table_type: FileAllocationTableType,

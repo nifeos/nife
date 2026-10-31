@@ -1,7 +1,7 @@
 # file_allocation_table
 
 A FAT12, FAT16 and FAT32 filesystem as pure computation, growing in stages. It does no I/O and
-needs no allocator (`no_std`). Three halves exist.
+needs no allocator (`no_std`). Three parts exist.
 
 The reader opens a volume through `SectorDevice`, a trait you implement over anything that reads
 whole sectors. It checks the boot sector, decodes the file allocation table, walks cluster chains
@@ -48,7 +48,7 @@ Three cover the long-name writer:
 Seven cover the table writes and allocation:
 
 - `a_stored_entry_reads_back_and_disturbs_nothing_else` and `encoding_inverts_decoding`: a stored
-  entry reads back for every type and cluster, keeps its neighbour's nibble and FAT32's reserved
+  entry reads back for every type and cluster, keeps its neighbor's nibble and FAT32's reserved
   bits, and encoding is decoding's inverse.
 - `allocation_takes_one_free_cluster_and_nothing_else`, `a_release_frees_only_its_own_chain` and
   `a_cut_keeps_exactly_the_head_of_the_chain`: over a model table of one to four clusters with

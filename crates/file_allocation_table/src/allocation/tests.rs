@@ -92,7 +92,7 @@ fn a_bad_or_reserved_cluster_is_never_allocated() {
 }
 
 #[test]
-fn every_entry_stores_without_disturbing_its_neighbours_across_the_table() {
+fn every_entry_stores_without_disturbing_its_neighbors_across_the_table() {
     let mut volume = Volume::open(Image::fat12()).unwrap();
     for cluster in 2..CLUSTERS + 2 {
         let entry = TableEntry::Next(2 + (cluster * 7) % CLUSTERS);

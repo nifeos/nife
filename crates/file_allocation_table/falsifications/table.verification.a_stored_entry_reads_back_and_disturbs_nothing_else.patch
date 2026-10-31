@@ -1,6 +1,6 @@
 Falsifies `file_allocation_table::table::verification::a_stored_entry_reads_back_and_disturbs_nothing_else`.
 
-The defect: a FAT12 store into an odd cluster drops the low bit of the neighbour's nibble that shares its first byte, so storing one entry corrupts the entry before it.
+The defect: a FAT12 store into an odd cluster drops the low bit of the neighbor's nibble that shares its first byte, so storing one entry corrupts the entry before it.
 
 Expected to fail: the harness's `assert_eq!(after[0] & 0x0F, before[0] & 0x0F)`.
 

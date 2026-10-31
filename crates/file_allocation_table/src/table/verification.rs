@@ -86,7 +86,7 @@ fn any_type() -> (FileAllocationTableType, u32, u32) {
 
 /// **A stored entry reads back, and nothing else in its bytes changes.** For every type, cluster,
 /// window of table bytes and value: [`assemble`] over the stored window returns the value's low
-/// bits; a FAT12 entry leaves its neighbour's nibble alone, a FAT32 entry leaves its reserved top
+/// bits; a FAT12 entry leaves its neighbor's nibble alone, a FAT32 entry leaves its reserved top
 /// four bits alone, and the bytes past the entry's width are untouched.
 /// Falsification: replayable `crates/file_allocation_table/falsifications/table.verification.a_stored_entry_reads_back_and_disturbs_nothing_else.patch`
 #[kani::proof]
