@@ -1335,9 +1335,6 @@ design/roadmap/0875-the-acpi-table-parser-is-split-along-its-seams.md	9
 design/roadmap/0876-the-kernel-crate-root-is-split-along-its-seams.md	13
 design/roadmap/0877-the-timetable-crate-root-is-split-along-its-seams.md	6
 design/roadmap/0878-the-line-editors-inline-modules-move-to-their-own-files.md	6
-design/roadmap/0879-the-kernels-file-service-wiring-is-split-along-its-seams.md	9
-design/roadmap/0880-the-x86-64-mmu-file-is-split-along-its-seams.md	15
-design/roadmap/0881-the-kernel-benchmark-file-is-split-along-its-seams.md	11
 design/roadmap/0882-the-component-plan-crate-root-moves-its-proofs-out.md	11
 design/roadmap/0883-the-three-longest-scripts-are-split-and-a-ruling-says-whether-scripts-have-a-ceiling.md	10
 design/roadmap/0884-the-shell-logic-crate-is-split-along-its-seams.md	11
@@ -1358,10 +1355,8 @@ design/roadmap/0897-sqlite-is-packaged-in-basalt.md	6
 design/roadmap/0898-swish-check-boot-is-decomposed.md	2
 design/roadmap/0899-the-progenitors-boot-is-split-by-phase.md	10
 design/roadmap/0900-the-swish-check-script-splits-by-topic-before-it-crosses-the-ceiling.md	3
-design/roadmap/0901-the-ten-longest-notes-become-a-page-and-its-appendices.md	15
 design/roadmap/0902-tooling-sorted-by-who-needs-it.md	15
 design/roadmap/0903-a-seventh-outsider-pass-attacks-the-confinement-claim.md	2
-design/roadmap/0904-the-rest-of-the-prose-budget-backlog-is-paid-down.md	8
 design/roadmap/0905-monit-is-packaged-in-basalt-and-restarts-a-nife-service.md	25
 design/roadmap/0905-monit-is-packaged-in-basalt-and-restarts-a-nife-service/monit-source.md	6
 design/roadmap/0906-ioping-is-packaged-in-basalt.md	10

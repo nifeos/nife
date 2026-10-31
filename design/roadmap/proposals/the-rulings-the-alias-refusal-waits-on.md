@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # The three rulings the writable-and-executable alias refusal waits on
 
-The lane for milestone 969 (a `MAP_INTO` refuses a frame mapped twice with different flags) wrote
+The lane for milestone 969 (no frame is writable and executable in one address space) wrote
 this on 2026-10-31 (UTC). Milestone 969 cannot start until an architect rules three things. This file sets each one out in the block's order. Each gets its background, the recommendation
 and the other options, prior art, where nife differs, an example on the tenth pass's reproduction,
 the cost, and what the ruling does to 969 and to claim 11. Once an architect rules, an integrator

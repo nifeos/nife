@@ -207,10 +207,10 @@ attribute_job() {
         FAIL:*)
             errf=${res#FAIL:}
             errtxt=$(tr '\n' ' ' < "$errf" 2>/dev/null)
-            if echo "$errtxt" | grep -qi "expired\|410"; then
-                printf 'UNATTRIBUTABLE\tlog expired at both the job endpoint and the run archive (%s)\n' "$(echo "$errtxt" | cut -c1-140)"
+            if printf '%s\n' "$errtxt" | grep -qi "expired\|410"; then
+                printf 'UNATTRIBUTABLE\tlog expired at both the job endpoint and the run archive (%s)\n' "$(printf '%s\n' "$errtxt" | cut -c1-140)"
             else
-                printf 'UNATTRIBUTABLE\tlog unavailable at both the job endpoint and the run archive (%s)\n' "$(echo "$errtxt" | cut -c1-140)"
+                printf 'UNATTRIBUTABLE\tlog unavailable at both the job endpoint and the run archive (%s)\n' "$(printf '%s\n' "$errtxt" | cut -c1-140)"
             fi
             return
             ;;
@@ -263,15 +263,15 @@ format_attribution() {
     # $1 = job_name, $2 = status, $3.. = detail
     jname=$1; status=$2; shift 2; detail=$*
     case "$status" in
-        MARKER) echo "$detail" ;;
-        PREFLIGHT) echo "cpu-matrix preflight: $detail" ;;
+        MARKER) printf '%s\n' "$detail" ;;
+        PREFLIGHT) printf '%s%s\n' "cpu-matrix preflight: " "$detail" ;;
         MODELS)
-            m=$(echo "$detail" | sed -E 's/.*failed on:[ ]*//')
-            echo "cpu matrix: model(s) $m"
+            m=$(printf '%s\n' "$detail" | sed -E 's/.*failed on:[ ]*//')
+            printf '%s%s\n' "cpu matrix: model(s) " "$m"
             ;;
-        TRIPWIRE) echo "icount tripwire: benchmark: $detail" ;;
-        UNATTRIBUTABLE) echo "unattributable: $detail" ;;
-        *) echo "unattributable: $status $detail" ;;
+        TRIPWIRE) printf '%s%s\n' "icount tripwire: benchmark: " "$detail" ;;
+        UNATTRIBUTABLE) printf '%s%s\n' "unattributable: " "$detail" ;;
+        *) printf '%s\n' "unattributable: $status $detail" ;;
     esac
 }
 
@@ -330,10 +330,10 @@ cmd_update() {
                 "verify (Kani proofs)")
                     if grep -qxF "$jid" "$have" 2>/dev/null; then continue; fi
                     result=$(attribute_job "$jname" "$jid" "$rid")
-                    status=$(echo "$result" | cut -f1)
-                    detail=$(echo "$result" | cut -f2-)
+                    status=$(printf '%s\n' "$result" | cut -f1)
+                    detail=$(printf '%s\n' "$result" | cut -f2-)
                     line=$(format_attribution "$jname" "$status" "$detail")
-                    printf '%s,%s,%s,%s,%s,"%s",%s\n' "$rid" "$jid" "$date" "$wf" "$jname" "$(echo "$line" | sed 's/"/""/g')" "$branch" >> "$tmp_rows"
+                    printf '%s,%s,%s,%s,%s,"%s",%s\n' "$rid" "$jid" "$date" "$wf" "$jname" "$(printf '%s\n' "$line" | sed 's/"/""/g')" "$branch" >> "$tmp_rows"
                     ;;
             esac
         done
@@ -375,10 +375,10 @@ PY
         echo "  committed: $committed"
         rm -f "$CACHE/$jid.log" "$CACHE/$jid.err"
         result=$(attribute_job "$jname" "$jid" "$rid")
-        status=$(echo "$result" | cut -f1)
-        detail=$(echo "$result" | cut -f2-)
+        status=$(printf '%s\n' "$result" | cut -f1)
+        detail=$(printf '%s\n' "$result" | cut -f2-)
         live=$(format_attribution "$jname" "$status" "$detail")
-        echo "  live:      $live"
+        printf '  live:      %s\n' "$live"
         [ "$committed" = "$live" ] && echo "  MATCH" || echo "  MISMATCH"
     done < "$sample"
     rm -f "$sample"

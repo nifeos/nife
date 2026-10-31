@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # A confined component holding its own space can load code
 
-The lane for milestone 969 (a `MAP_INTO` refuses a frame mapped twice with different flags) raised
+The lane for milestone 969 (no frame is writable and executable in one address space) raised
 this on 2026-10-31 (UTC) while it read the mapping paths for
 [`the-rulings-the-alias-refusal-waits-on`](the-rulings-the-alias-refusal-waits-on.md). The lane read it and did not boot it.
 

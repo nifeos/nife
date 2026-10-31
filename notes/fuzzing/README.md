@@ -12,6 +12,8 @@ These files carry the evidence its prose budget has no room for.
   showed the job is a sweep.
 - [`elf-seeds.md`](elf-seeds.md): why there is one ELF seed per machine, and what a seed buys.
 - [`targets.md`](targets.md): the longer reasons behind each parser target.
+- [`rates-on-x86-64-under-kvm.md`](rates-on-x86-64-under-kvm.md): the two in-guest drivers' seeds
+  per second at 1 to 16 guests, for sizing a budget.
 - [`the-syscall-driver.md`](the-syscall-driver.md): the seeded syscall driver's oracle, its corpus
   as measured, and its `BUGS` in full.
 
