@@ -37,18 +37,46 @@ miss. The check sees one address space at a time. All three ISAs share the code,
 riscv64 and x86_64 instances come with it. The witness drops its opt-in and joins the default
 suite green on all three architectures.
 
-A check inside one space leaves a second alias open: the same frame writable in the builder's own
-space, or in any other space, and executable in the child. Loading already works this way. A loader
-writes code through a writable mapping in its scratch, then maps the frame as code into the child.
-What is open is whether the writable side may outlive the child's start. The mapping log records
-every mapping of a frame in any space, so a check there could see it.
+Claim 11 covers one address space (ruled 2026-10-31 UTC). The lane rewrites row 11 of
+`notes/confinement-claims.md` to say so, with its limit beside it: a holder of `WRITE` on a frame
+can change code that another space runs, and the capability decides who that is. Loading relies on
+exactly that: a builder writes code through its own writable view, then maps the frame as code into
+the child. Claim 11's falsification stays the same-space witness and its replayable patch, re-cut to
+remove the check. Whether a global rule replaces the limit waits on a price, proposed below.
 
-One ruling remains before the lane starts: whether claim 11 covers the cross-space alias, and if
-so what the fix refuses there. An architect has ruled the check's home (the mapping hold) and the
-refusal's width (the writable-and-executable pair only). Each question, with its background, options, prior art, costs and an example on the
-tenth pass's reproduction, is in
+An architect ruled all three questions on 2026-10-31 (UTC): the check's home (the mapping hold),
+its width (the writable-and-executable pair only) and its scope (one address space). Each
+question, with its background, options, prior art, costs and an example on the tenth pass's
+reproduction, is in
 [`the-rulings-the-alias-refusal-waits-on`](proposals/the-rulings-the-alias-refusal-waits-on.md).
-The status stays NOT-STARTED until an architect rules it.
+Nothing blocks the lane now.
+
+## BUGS
+
+- The per-space limit has a cross-space route: a component holding `READ` on a frame a less trusted
+  peer writes, and `WRITE` on its own address space, can map that frame as code and run the peer's
+  bytes. `MAP_CODE` needs only `READ` on the frame. Read on 2026-10-31 (UTC), not booted, these hold
+  both:
+  - `net_stack`, built by `system_initializer::children` with its own space at
+    `socket_contract::stack_slots::OWN_SPACE`, and by the kernel's `run_with_own_space` spawns in
+    `virtio_service`, `e1000e_service` and `designware_ethernet_service`. `socket_table::attach`
+    receives each client's socket page as a frame capability and holds it until it maps it and
+    deletes it.
+  - `domain_name_resolver`, own space at `endowment::OWN_SPACE_SLOT`. `attach_client` keeps each
+    client's frame capability in `state.attached` for the life of the grant.
+  - The progenitor (`system_initializer`), own space at slot 28. It holds frames its children write,
+    such as the network DMA page and the shell's output page.
+  - No fixture. `scratch_release_witness` holds its own space but no peer's frame, and the two
+    fixtures that alias a writable code page into children (`os_primitives_benchmarker`,
+    `job_mix_task`) hold no capability to their own space.
+
+## Follow-on
+
+- **Proposed.** What a global rule would cost, measured, before an architect decides it.
+  `design/roadmap/proposals/price-the-global-writable-and-executable-rule.md` has it.
+- **Proposed.** Whether introducing code becomes a right of its own, which would also close the
+  route in `BUGS`. `design/roadmap/proposals/a-confined-component-holding-its-own-space-can-load-code.md`
+  has it.
 
 ## Index row
 
