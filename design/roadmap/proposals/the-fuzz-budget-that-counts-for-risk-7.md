@@ -81,8 +81,7 @@ Not a census.
 | `redoxfs_server_session`, empty corpus | 103,159 sessions | 180 s | 569/s | no crash |
 
 For comparison, the hosted runner's 2026-10-26 sweeps ran the same two drivers at 13 and 40
-seeds/s, three to four times faster. This lane did not establish why. The first run's cold build
-took 8 min 9 s of wall time for 60 s of fuzzing.
+seeds/s, three to four times faster. This lane did not establish why. A cold build took 8 min 9 s for 60 s of fuzzing.
 
 The replayed seed matters. The 2026-10-12 red never entered the corpus, and nothing recorded
 whether the `SLICE` fix also covered it. It does, so both weekly reds were the referee's, and the
@@ -120,8 +119,9 @@ draws (its `GO` channel, threads, timers, the exits), and two arrival orders it 
 The options:
 
 - (A) Seeds per driver per architecture, all three ISAs. Recommended. Parity is a gate in this
-  tree (§19), and the escapes of record split by architecture: §12's consumed capability was false
-  only on x86_64; the read-only port range was x86_64 only; claim 11's alias was on all three.
+  tree (§19, architectural parity is a tenet). The escapes of record split by architecture. §12
+  (call/reply IPC: a one-shot reply capability) was false only on x86_64, and so was the read-only
+  port range; claim 11's alias was on all three.
 - (B) The same count on aarch64 only, with the 34 suite seeds on the others. A third of the cost.
   The weekly sweep's own comment argues this: all three share one dispatcher, so breadth is about seeds,
   not ISA. Lost because the defects that were ISA-specific sat below the dispatcher, in exactly the
@@ -142,8 +142,8 @@ continuously on each tree, and a run's value is its coverage and reproducers (fr
 read for this proposal). Its Fuchsia port's documentation calls it incomplete, with "coverage feedback is
 not supported" (read). seL4 has no syscall fuzzer that a search found; its assurance is the proof.
 Klees et al., "Evaluating Fuzz Testing" (CCS 2018), recommend 24-hour runs and repeated trials
-(read in summary). Böhme's STADS work bounds residual risk by the share of behaviors seen exactly
-once (Good-Turing), and his 2021 paper finds that bound optimistic for greybox fuzzers because they
+(read in summary). Böhme's species-discovery work bounds residual risk by the share of behaviors seen
+exactly once (Good-Turing), and his 2021 paper finds that bound optimistic for greybox fuzzers because they
 adapt (read in summary). That adaptation bias does not apply to a coverage-blind driver, which is
 why the rule of three fits here and would not fit libFuzzer.
 
@@ -211,10 +211,10 @@ resumes at `S`.
 **Recommendation: on GitHub's hosted aarch64 runners, dispatched by hand once per budget, at
 most six jobs at a time, over two consecutive 08:00 to 13:00 UTC windows.**
 
-Background. Two kinds of machine could run it. Hosted Actions minutes cost this repository
-nothing (§214: public repository, discounted to $0), but every job takes a slot from the 60 that
-the merge queue also uses. An owned build host has idle cores, but §299 leaves open whether any
-workflow runs on it, and a scheduled job there is a self-hosted runner. The drivers run under full
+Background. Two kinds of machine could run it. Hosted Actions minutes cost this public
+repository nothing (§214, the Team plan buys runner concurrency). But every job takes one of the 60
+slots the merge queue also uses. An owned build host has idle cores. §299 (the build machine,
+owned) leaves open whether any workflow runs on it, and a job there needs a self-hosted runner. The drivers run under full
 emulation on an x86_64 host and under emulation for riscv64 and x86_64 on an aarch64 runner too.
 
 The cost, sized from the hosted rates, since that is the machine recommended. At 13 seeds/s, the
@@ -247,10 +247,10 @@ rate, and the verdict.
 
 1. Considered and lost: above, per decision.
 2. In this tree: the outsider passes pin a commit and a floor of booted rows; this copies the pin.
-   The weekly sweeps already print seeds and rates.
+   The sweeps print seeds and rates.
 3. Prior art: above. Read where marked; the rest says from memory.
 4. The premise holds: nothing sets a budget, and no run against (d) exists.
-5. Cost: measured above, from today's run and the hosted sweeps' logs.
+5. Cost: measured above.
 6. Reversible: a budget is a record, not a contract, and nobody has acted on one. Changing it
    later moves the bar, which is the architect's call.
 7. At equal cost, this proposal would still choose three ISAs. It recommends the hosted runner
@@ -259,7 +259,7 @@ rate, and the verdict.
 ## What waits on this
 
 Criterion (d), and so risk 7's green, until an architect answers Decision 1. A lane then writes the budget
-into the risk 7 page and runs it. Nothing else waits on this.
+into the risk 7 page and runs it.
 
 ## What I need from you
 
