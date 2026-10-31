@@ -169,6 +169,23 @@ impl Flags {
         self.0 & ACCESS_USER_EXEC != 0
     }
 
+    /// Whether one page mapped with `self` through one leaf and `other` through another would be
+    /// writable through one and executable, by either privilege, through the other.
+    ///
+    /// The kernel refuses a second mapping of a frame in one address space when this holds for it
+    /// and any mapping the space already has of that frame (`MappingHold::record_mapping`). Every
+    /// other difference passes: read-only beside read-write, read-only beside code, and two
+    /// mappings with the same flags. Symmetric, and false for two read-only mappings. See
+    /// notes/mapping-log.md, "No frame is writable and executable in one space".
+    ///
+    /// Name: provisional, minted 2026-10-31 (UTC) by lane
+    /// milestone/969-no-frame-is-writable-and-executable-in-one-space.
+    pub const fn makes_writable_executable_pair(self, other: Flags) -> bool {
+        let self_executable = self.is_user_executable() || self.is_kernel_executable();
+        let other_executable = other.is_user_executable() || other.is_kernel_executable();
+        (self.is_writable() && other_executable) || (other.is_writable() && self_executable)
+    }
+
     /// Whether user mode may access this mapping at all.
     pub const fn is_user_accessible(self) -> bool {
         self.0 & ACCESS_USER != 0
