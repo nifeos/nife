@@ -1012,6 +1012,34 @@ programs = ["progenitor", "swish", "jig"]
     }
 
     #[test]
+    fn the_base_image_carries_every_program_the_install_path_enters() {
+        // `kernel/src/user/install_service.rs` enters these by name on a stick's install and on
+        // every boot a chooser started (the trial boot's confirmation). A composed image missing
+        // one installs nothing or confirms nothing, and the second fails silently: the update
+        // boots, then rolls back once its tries run out (milestone 976).
+        let source =
+            std::fs::read_to_string(workspace_root().join("kernel/src/user/install_service.rs"))
+                .unwrap();
+        let named: BTreeSet<&str> = source
+            .split("program(\"")
+            .skip(1)
+            .filter_map(|rest| rest.split_once("\")").map(|(name, _)| name))
+            .collect();
+        assert!(
+            named.contains("system_installer"),
+            "the install path no longer names system_installer; update this test's reading"
+        );
+        let definition = read_definition(&workspace_root()).unwrap();
+        for program in named {
+            assert!(
+                definition.programs.iter().any(|p| p == program),
+                "packages/base-image.toml must carry `{program}`, which the kernel's install \
+                 path enters by name"
+            );
+        }
+    }
+
+    #[test]
     fn a_catalog_is_checked_line_by_line() {
         let catalog = parse_catalog(
             "# a comment\n\nuptime-0.1.0-aarch64 sha256:\
