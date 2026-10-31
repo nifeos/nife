@@ -55,7 +55,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     for child in &mut children {
         if !build(child.attempt, child.label) {
             send(REPORT, REPORT_FAILED, 20, 0);
-            supervision_contract::fail()
+            process_builder::fail()
         }
         child.running = true;
     }
@@ -70,7 +70,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         // say so. Reaping a finished child matters as much as reaping a crashed one.
         if !reap(tid) {
             send(REPORT, REPORT_FAILED, 22, 0);
-            supervision_contract::fail()
+            process_builder::fail()
         }
 
         // **Which child died is the label, and nothing else** (milestone 105). A label we did not
@@ -78,7 +78,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         // restart policy applies, so we stop rather than guess.
         let Some(child) = children.iter_mut().find(|c| c.running && c.label == label) else {
             send(REPORT, REPORT_FAILED, 23, label);
-            supervision_contract::fail()
+            process_builder::fail()
         };
         child.running = false;
 

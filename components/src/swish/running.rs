@@ -1402,7 +1402,7 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
             if let Some(slot) = budget {
                 release_region(slot);
             }
-            supervision_contract::forget_thread_control_block(tcb);
+            process_builder::forget_thread_control_block(tcb);
         }
     }
 }

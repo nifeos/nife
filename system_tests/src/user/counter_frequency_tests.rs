@@ -7,7 +7,7 @@ use super::*;
 /// aarch64, `/cpus/timebase-frequency` on riscv64, `CPUID` leaf `0x15` or PIT calibration on
 /// `x86_64`), because a test that compares against a constant cannot catch a constant. `coremark`
 /// carries it because it reports its own `cntfrq` over IPC and is built by `coremark_builder`
-/// through `supervision_contract::build_child_space`, so the number crosses the userspace ELF loader
+/// through `process_builder::build_child_space`, so the number crosses the userspace ELF loader
 /// as well as the kernel's mapping. See notes/pmu.md, "What the userspace counter tests assert".
 #[test_case]
 fn a_userspace_program_reads_the_frequency_the_kernel_measured() {

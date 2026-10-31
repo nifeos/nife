@@ -4,7 +4,7 @@
 //! Holds a memory region to build children from (slot 0), a report endpoint (slot 1), and a second,
 //! 48-page region that pays for its own page tables (slot 2). It forges a `ripgrep`-sized ELF, 668
 //! pages of image, the span milestone 121 (ripgrep on nife) measured, and builds a child from it
-//! with `supervision_contract::build_child_space` [`BUILDS`] times, each out of a region of its own
+//! with `process_builder::build_child_space` [`BUILDS`] times, each out of a region of its own
 //! that it destroys before the next. It never starts a child: what is under test is the builder's
 //! own address space, not the child's.
 
@@ -39,10 +39,10 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use supervision_contract::{
-    ChildEndowment, Retention, SCRATCH_WINDOW_PAGES, build_child_space, memory_region_destroy,
-    memory_region_split,
+use process_builder::{
+    SCRATCH_WINDOW_PAGES, build_child_space, memory_region_destroy, memory_region_split,
 };
+use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{capability_delete, exit, send};
 
 const MEMORY_REGION: u64 = 0;

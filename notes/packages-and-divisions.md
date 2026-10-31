@@ -50,7 +50,7 @@ Normal and build dependencies only, counted per package pair, dependent first.
 | kernel to services | 9 | not intended: `ps`, `pgrep`, `pmap`, `video_terminal`, `network_time_protocol`, `block_roster`, `non_volatile_memory_express`, `calendar`, `jh7110_entropy` |
 | kernel to fixtures | 3 | not intended: `coremark`, `job_mix`, `soak_page` |
 | fixtures to services | 3 | `system_initializer`, `schedule_store`, `network_time_protocol` |
-| contracts to runtime | 2 | `supervision_contract` and `hot_swap_contract` link `user_mode_runtime` |
+| contracts to runtime | 0 | `process_builder` and `hot_swap_server` hold the two runtime halves instead |
 | boot to kernel | 3 | `device_tree_blob`, `machine_discovery`: leaf libraries, not the kernel |
 | boot to fixtures | 1 | `serial_console` links `job_mix` |
 
