@@ -39,7 +39,7 @@ No nife type appears in a public signature.
 ## The choice an architect may revisit
 
 The write half could have been a `write_sector` method on `SectorDevice`, or a second trait. This
-stage takes the second. It keeps the read-only paths (milestone 140's read-only stratum, the
+stage takes the second. It keeps the read-only paths (milestone 140 (mount a drive this system did not create), whose read-only stratum, the
 fuzz targets, the macOS image tests) from needing a method they cannot honestly implement, and a
 read-only device never has to return an error for a call that should not exist.
 
