@@ -86,15 +86,16 @@ The mechanism withholds three things:
    `GRANT` on what it inserts. So a child built from `--mem` receives nothing its builder made, and
    item 3's grant sets cannot be given. The exception: a program whose manifest declares the network
    gets every right on its grant (`native_endowment`), today `network_echo_client`, at 16 pages.
-2. Spawning by name. The spawn endpoint is the shell's (`grant_plan::spawnproto`); `jig`'s
-   installer endpoint runs nothing (DECISIONS §270). A builder needs the ELF, blocker two.
+2. Spawning by name. The spawn endpoint is the shell's (`grant_plan::spawnproto`), and §270 (a
+   package manager holds an installer endpoint, not the spawn endpoint) keeps it from `jig`. A
+   builder needs the ELF, blocker two.
 3. Pages beyond the shell's budget, which is blocker three.
 
 A supervisor endows 34 processes built from `job_mix_task`, so it needs all three, and each changes
 the manifest, a published contract between the shell and the progenitor.
 
 What would close it: a manifest field that asks for `GRANT` on the memory grant, as the network
-declaration already gets for its own reason. Or the progenitor endows this one program at boot
+declaration gets. Or the progenitor endows this one program at boot
 rather than the shell. Both are an architect's. The second brings blocker 1b: a boot-built
 supervisor needs a wire protocol for the shell to ask it to run, *anything two programs agree on*.
 
