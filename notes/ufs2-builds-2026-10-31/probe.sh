@@ -22,8 +22,11 @@
 # [patch.crates-io], so the patch size in the note is the diff a reader can apply.
 #
 # `check` fetches rufs's own FreeBSD-made test image at a pinned commit, checks its hash, and runs
-# probes/rufs-host.rs twice: against rufs as shipped, with std, and against the no_std port with
-# std off. It prints both outputs' hashes and their diff, which is empty when the port is faithful.
+# probes/rufs-host.rs twice: against rufs as shipped and against rufs with patches/rufs-nife.patch.
+# It prints both outputs' hashes and their diff, which is empty when the patch keeps rufs's behavior.
+#
+# The tree keeps no no_std patch for rufs (the server is a std program, ruled 2026-10-31 UTC on
+# #2917), so `bare patched` skips it.
 #
 # BUGS: `bare` and `nife` build and link only; nothing here runs a probe under nife, and every probe image is zeroes.
 # Needs the network for the first fetch.
@@ -69,7 +72,6 @@ registry_copy() {
 
 probe_src() {
     case "$MODE-$VARIANT-$1" in
-    bare-patched-rufs) echo rufs-bare-port.rs ;;
     bare-*) echo "$1-bare.rs" ;;
     *) echo "$1.rs" ;;
     esac
@@ -97,35 +99,32 @@ if [ "$MODE" = check ]; then
     fi
     got_sha=$(sha256sum "$img/ufs-little.img" 2>/dev/null || shasum -a 256 "$img/ufs-little.img")
     [ "${got_sha%% *}" = "$want_sha" ] || { echo "probe.sh: image hash ${got_sha%% *}, want $want_sha" >&2; exit 1; }
-    MODE=bare; VARIANT=patched
-    port=$WORK/.patched/check/rufs
-    rm -rf "$port" && mkdir -p "$WORK/.patched/check"
-    cp -R "$(registry_copy rufs 0.6.0)" "$port"
-    (cd "$port" && patch -s -p1 <"$(patch_of rufs)")
-    for v in shipped port; do
+    MODE=nife; VARIANT=patched
+    patched_rufs=$WORK/.patched/check/rufs
+    rm -rf "$patched_rufs" && mkdir -p "$WORK/.patched/check"
+    cp -R "$(registry_copy rufs 0.6.0)" "$patched_rufs"
+    (cd "$patched_rufs" && patch -s -p1 <"$(patch_of rufs)")
+    for v in shipped patched; do
         dir="$WORK/check-$v"
         rm -rf "$dir" && mkdir -p "$dir/src"
         {
             printf '[package]\nname = "rufs-host"\nversion = "0.1.0"\nedition = "2024"\nlicense = "MIT OR Apache-2.0"\n[workspace]\n'
-            printf '[features]\nport = []\n[dependencies]\n'
+            printf '[dependencies]\n'
             echo 'ufs = { package = "ufs-core", version = "=0.1.5" }'
-            if [ "$v" = port ]; then
-                printf 'rufs = { path = "%s", default-features = false }\n' "$port"
+            if [ "$v" = patched ]; then
+                printf 'rufs = { path = "%s" }\n' "$patched_rufs"
             else
                 echo 'rufs = "=0.6.0"'
             fi
         } >"$dir/Cargo.toml"
         cp "$HERE/probes/rufs-host.rs" "$dir/src/main.rs"
-        feat=""
-        [ "$v" = port ] && feat="--features port"
-        # shellcheck disable=SC2086
-        (cd "$dir" && CARGO_TARGET_DIR="$WORK/.target-check-$v" cargo +"$TOOLCHAIN" run -q --release $feat -- "$img/ufs-little.img") >"$WORK/check-$v.out" 2>&1 ||
+        (cd "$dir" && CARGO_TARGET_DIR="$WORK/.target-check-$v" cargo +"$TOOLCHAIN" run -q --release -- "$img/ufs-little.img") >"$WORK/check-$v.out" 2>&1 ||
             echo "probe.sh: $v run failed, see $WORK/check-$v.out" >&2
     done
-    for v in shipped port; do
+    for v in shipped patched; do
         echo "$v $(grep -c '' "$WORK/check-$v.out") lines $(cksum <"$WORK/check-$v.out")"
     done
-    if diff "$WORK/check-shipped.out" "$WORK/check-port.out"; then echo "check: identical"; else echo "check: DIFFER"; fi
+    if diff "$WORK/check-shipped.out" "$WORK/check-patched.out"; then echo "check: identical"; else echo "check: DIFFER"; fi
     exit 0
 fi
 
@@ -170,6 +169,10 @@ report() {
 want="$*"
 [ -n "$want" ] || want=$all
 for p in $want; do
+    if [ "$MODE-$VARIANT-$p" = bare-patched-rufs ]; then
+        echo "bare patched rufs SKIP: no no_std patch is kept (the server is a std program)"
+        continue
+    fi
     write_probe "$p"
     dir="$WORK/$MODE-$VARIANT/$p"
     case "$MODE" in

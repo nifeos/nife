@@ -1,14 +1,8 @@
-// The host round trip for rufs, built twice by `probe.sh check`: once against rufs as shipped
-// (std) and once against the no_std port with its `std` feature off (`--features port`). Both
-// read a FreeBSD-made image, print every name, size, content hash, symlink target and attribute
-// list, check each regular file's bytes against ufs-core (an independent reader), then make the
-// same writes and print the tree again. The port is faithful when the two outputs are identical.
-#[cfg(feature = "port")]
-use rufs::{
-    ffi::OsStr,
-    io::{self, Read, Seek, SeekFrom, Write},
-};
-#[cfg(not(feature = "port"))]
+// The host round trip for rufs, built twice by `probe.sh check`: once against rufs as shipped and
+// once against rufs with patches/rufs-nife.patch. Both read a FreeBSD-made image, print every
+// name, size, content hash, symlink target and attribute list, check each regular file's bytes
+// against ufs-core (an independent reader), then make the same writes and print the tree again.
+// The patch keeps rufs's behavior when the two outputs are identical.
 use std::{
     ffi::OsStr,
     io::{self, Read, Seek, SeekFrom, Write},
