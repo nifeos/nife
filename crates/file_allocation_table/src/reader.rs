@@ -5,6 +5,7 @@
 //! Name: ratified 2026-10-26 (UTC), on #2760. The module that reads through a device, beside
 //! `volume`, which lays one out.
 
+use crate::allocation::WriterState;
 use crate::boot_sector::{BootSector, ReadError};
 use crate::directory::Directory;
 use crate::named_entry::Entries;
@@ -80,10 +81,12 @@ pub enum ChainError<E> {
 /// reader.
 #[derive(Debug)]
 pub struct Volume<D> {
-    device: D,
-    boot: BootSector,
-    cached: Option<u32>,
-    buffer: [u8; SectorSize::MAX],
+    pub(crate) device: D,
+    pub(crate) boot: BootSector,
+    pub(crate) cached: Option<u32>,
+    pub(crate) buffer: [u8; SectorSize::MAX],
+    /// What the writer keeps between calls; a reader never touches it.
+    pub(crate) writer: WriterState,
 }
 
 impl<D: SectorDevice> Volume<D> {
@@ -100,6 +103,7 @@ impl<D: SectorDevice> Volume<D> {
             boot,
             cached: None,
             buffer: [0; SectorSize::MAX],
+            writer: WriterState::new(),
         })
     }
 
@@ -131,7 +135,7 @@ impl<D: SectorDevice> Volume<D> {
     }
 
     /// Make the cache hold table sector `sector`.
-    fn load(&mut self, sector: u32) -> Result<(), ChainError<D::Error>> {
+    pub(crate) fn load(&mut self, sector: u32) -> Result<(), ChainError<D::Error>> {
         if self.cached != Some(sector) {
             self.cached = None;
             let size = self.boot.sector_size().bytes();
@@ -247,7 +251,7 @@ impl<D: SectorDevice> Links for Volume<D> {
 
 /// Whether `cluster` is one of `clusters` data clusters, the same test
 /// [`BootSector::cluster_first_sector`] makes.
-const fn is_data(clusters: u32, cluster: u32) -> bool {
+pub(crate) const fn is_data(clusters: u32, cluster: u32) -> bool {
     cluster >= 2 && cluster - 2 < clusters
 }
 

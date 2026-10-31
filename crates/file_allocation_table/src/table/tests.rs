@@ -103,3 +103,56 @@ fn entries_lie_at_their_widths_offsets() {
     assert_eq!(entry_bytes(FileAllocationTableType::Fat16), 2);
     assert_eq!(entry_bytes(FileAllocationTableType::Fat32), 4);
 }
+
+#[test]
+fn encode_is_decodes_inverse_for_every_kind_of_entry() {
+    for file_allocation_table_type in [
+        FileAllocationTableType::Fat12,
+        FileAllocationTableType::Fat16,
+        FileAllocationTableType::Fat32,
+    ] {
+        for entry in [
+            TableEntry::Free,
+            TableEntry::Reserved,
+            TableEntry::Next(2),
+            TableEntry::Next(0x123),
+            TableEntry::Bad,
+            TableEntry::EndOfChain,
+        ] {
+            let raw = entry.encode(file_allocation_table_type);
+            assert_eq!(TableEntry::decode(file_allocation_table_type, raw), entry);
+        }
+    }
+    assert_eq!(
+        TableEntry::EndOfChain.encode(FileAllocationTableType::Fat12),
+        0xFFF
+    );
+    assert_eq!(
+        TableEntry::EndOfChain.encode(FileAllocationTableType::Fat16),
+        0xFFFF
+    );
+    assert_eq!(
+        TableEntry::EndOfChain.encode(FileAllocationTableType::Fat32),
+        0x0FFF_FFFF
+    );
+    assert_eq!(
+        TableEntry::Bad.encode(FileAllocationTableType::Fat16),
+        0xFFF7
+    );
+}
+
+#[test]
+fn a_fat32_store_keeps_the_reserved_top_bits_and_a_fat12_store_keeps_the_neighbour() {
+    let mut bytes = [0xAB, 0xCD, 0xEF, 0xF1];
+    store(FileAllocationTableType::Fat32, 9, &mut bytes, 0x0123_4567);
+    assert_eq!(bytes, [0x67, 0x45, 0x23, 0xF1]);
+    let mut bytes = [0x34, 0xA2, 0, 0];
+    store(FileAllocationTableType::Fat12, 4, &mut bytes, 0xFFF);
+    assert_eq!(bytes[..2], [0xFF, 0xAF]);
+    let mut bytes = [0x34, 0xA2, 0, 0];
+    store(FileAllocationTableType::Fat12, 5, &mut bytes, 0x123);
+    assert_eq!(bytes[..2], [0x34, 0x12]);
+    let mut bytes = [0xFF, 0xFF, 7, 7];
+    store(FileAllocationTableType::Fat16, 2, &mut bytes, 0x1234);
+    assert_eq!(bytes, [0x34, 0x12, 7, 7]);
+}

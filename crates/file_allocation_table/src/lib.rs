@@ -54,11 +54,13 @@
 //! Name: ratified 2026-10-07 (#1806). FAT spelled out, as the acronym test asks; permanent once
 //! published.
 
+mod allocation;
 mod boot_sector;
 mod directory;
 #[doc(alias = "extensible firmware interface system partition")]
 pub mod efi_system_partition;
 mod file;
+mod fs_info;
 mod long_name;
 mod long_name_assembly;
 mod lookup;
@@ -69,9 +71,11 @@ mod sector;
 mod table;
 mod volume;
 
+pub use allocation::AllocationError;
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
 pub use file::{FileReadError, FileReader, NotAFile};
+pub use fs_info::{FsInfo, FsInfoError};
 pub use long_name_assembly::{LongFileName, LongNameError};
 pub use lookup::LookupError;
 pub use master_boot_record::{
@@ -80,7 +84,7 @@ pub use master_boot_record::{
 };
 pub use named_entry::{Entries, NamedEntry};
 pub use reader::{Chain, ChainError, Volume};
-pub use sector::{SectorDevice, SectorSize};
+pub use sector::{SectorDevice, SectorSize, WritableSectorDevice};
 pub use table::TableEntry;
 pub use volume::{
     CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MINIMUM_CLUSTERS, LayoutError, RESERVED_SECTORS,

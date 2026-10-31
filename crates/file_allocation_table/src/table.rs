@@ -76,6 +76,28 @@ impl TableEntry {
     }
 }
 
+impl TableEntry {
+    /// **The raw value a table of `file_allocation_table_type` stores for this entry**, the inverse
+    /// of [`TableEntry::decode`]. A [`TableEntry::Next`] keeps the low bits its width holds, so a
+    /// caller passes only clusters the volume has.
+    ///
+    /// Name: provisional. Beside `decode`: the same conversion, the other way.
+    pub const fn encode(self, file_allocation_table_type: FileAllocationTableType) -> u32 {
+        let (mask, bad) = match file_allocation_table_type {
+            FileAllocationTableType::Fat12 => (0xFFF, 0xFF7),
+            FileAllocationTableType::Fat16 => (0xFFFF, 0xFFF7),
+            FileAllocationTableType::Fat32 => (0x0FFF_FFFF, 0x0FFF_FFF7),
+        };
+        match self {
+            TableEntry::Free => 0,
+            TableEntry::Reserved => 1,
+            TableEntry::Next(next) => next & mask,
+            TableEntry::Bad => bad,
+            TableEntry::EndOfChain => mask,
+        }
+    }
+}
+
 /// **Where cluster `cluster`'s entry starts**: the volume-relative sector, and the byte offset
 /// inside it. `None` when `cluster` is not a data cluster of the volume.
 ///
@@ -83,8 +105,17 @@ impl TableEntry {
 /// entry starting at the last byte of a sector ends in the next one, which also lies inside the
 /// table: `BootSector::parse` refuses a table too short to hold an entry for every cluster.
 pub(crate) fn entry_position(boot: &BootSector, cluster: u32) -> Option<(u32, usize)> {
+    entry_position_in(boot, cluster, boot.active_table().unwrap_or_default())
+}
+
+/// Where cluster `cluster`'s entry starts in table copy `table`, as [`entry_position`] does for the
+/// table a read uses. `None` when `cluster` is not a data cluster or the volume has no such table.
+pub(crate) fn entry_position_in(
+    boot: &BootSector,
+    cluster: u32,
+    table: u8,
+) -> Option<(u32, usize)> {
     boot.cluster_first_sector(cluster)?;
-    let table = boot.active_table().unwrap_or_default();
     let first = boot.table_first_sector(table)?;
     let cluster = u64::from(cluster);
     let offset = match boot.file_allocation_table_type() {
@@ -118,6 +149,38 @@ pub(crate) fn assemble(
         }
         FileAllocationTableType::Fat16 => u32::from(u16::from_le_bytes([bytes[0], bytes[1]])),
         FileAllocationTableType::Fat32 => u32::from_le_bytes(bytes),
+    }
+}
+
+/// **Put `value` into the entry's bytes**, the inverse of [`assemble`]: `bytes` holds the entry's
+/// window as read (the first byte in `bytes[0]`), and only the bits that belong to the entry
+/// change. A FAT12 entry shares a byte with its neighbour, so the neighbour's nibble is kept; a
+/// FAT32 entry keeps its reserved top four bits, which the specification says a writer preserves.
+pub(crate) fn store(
+    file_allocation_table_type: FileAllocationTableType,
+    cluster: u32,
+    bytes: &mut [u8; 4],
+    value: u32,
+) {
+    match file_allocation_table_type {
+        FileAllocationTableType::Fat12 => {
+            let value = (value & 0xFFF) as u16;
+            let old = u16::from_le_bytes([bytes[0], bytes[1]]);
+            let new = if cluster & 1 == 1 {
+                (old & 0x000F) | (value << 4)
+            } else {
+                (old & 0xF000) | value
+            };
+            bytes[..2].copy_from_slice(&new.to_le_bytes());
+        }
+        FileAllocationTableType::Fat16 => {
+            bytes[..2].copy_from_slice(&(value as u16).to_le_bytes());
+        }
+        FileAllocationTableType::Fat32 => {
+            let old = u32::from_le_bytes(*bytes);
+            let new = (old & 0xF000_0000) | (value & 0x0FFF_FFFF);
+            *bytes = new.to_le_bytes();
+        }
     }
 }
 
