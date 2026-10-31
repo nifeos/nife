@@ -139,7 +139,7 @@ harness.
 ## The soak, started 2026-10-31 (UTC)
 
 - The crate moved to `nifeos/jh7110_entropy` on the shared template at `nifeos/crate-workflows`
-  release v7 (`ce603f5`), with `script/apply-settings` run against it: both rulesets, the
+  release v7 (`ce603f5`), after `script/apply-settings` ran against it: both rulesets, the
   `crates-io` environment with calef as reviewer, the labels and the team. The manifest keeps
   `publish = false`; the caller sets `allow-unpublished` for the soak.
 - `crates/jh7110_entropy` no longer exists here. `kernel`, `components` and `machine_discovery`
@@ -212,10 +212,10 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## BUGS
 
-- The `nife-smelter` app is not installed on `nifeos/jh7110_entropy` (`script/apply-settings`
-  refused it: the API wants an organization owner). The release workflow's tag job needs it, so a
-  dry run past the gate waits on calef installing the app, and the repository's `SETTINGS_TOKEN`
-  secret for the weekly drift job is organization state.
+- An organization owner has to install the `nife-smelter` app on `nifeos/jh7110_entropy`;
+  `script/apply-settings` could not (the API wants an owner). The release workflow's tag job needs
+  it, so a dry run past the gate waits on calef installing the app. The weekly drift job reads the
+  organization's `SETTINGS_TOKEN` secret.
 - Steps 5 and 6 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team,
   and on milestone 610's per-package co-change column.
@@ -233,8 +233,7 @@ names until the ratification pass, so this section keeps the links it carried.
 - **Outstanding.** The soak's end conditions 2 to 5 and release steps 7 to 9. Checked 2026-10-31
   (UTC): `nifeos/jh7110_entropy` has no weekly run, no dry run, no recorded stranger run and no
   semver period yet, and `crates/jh7110_entropy` is gone from this tree.
-- **Recorded.** The `nife-smelter` installation and the `SETTINGS_TOKEN` secret are owed by an
-  organization owner; see *BUGS* above.
+- **Recorded.** An organization owner installs the `nife-smelter` app; see *BUGS* above.
 
 ## Index row
 
