@@ -499,4 +499,66 @@ exclude_re = [
     # the mutation and the function name.
     "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in .*control::word$",
     "^crates/system_log_contract/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in .*kernel_ring::meta$",
+
+    # **paging's descriptor words** (milestone 954 (a survivor accepted once is not accepted
+    # forever), part 4, 2026-10-31 UTC). One entry per function whose OR-to-XOR swaps are no-ops
+    # because the operands share no bit, each naming the `const` beside the code whose assertions
+    # make the compiler check that (`THE_*_SHARE_NO_BIT`, built on share_no_bit.rs's `assert_share_no_bit!`),
+    # and one per file for the constant-level shifts, which are the `1 << 0` and `0b00 << 6`
+    # identities. The killed mutants an entry sweeps are the same shapes in the same scope, and the
+    # tests that killed them stay. The limit: a future `|` over overlapping bits added inside an
+    # excluded function generates no mutant for it, which the assertion narrows and does not close.
+    #
+    # aarch64: the descriptor's address field, the valid and table-or-page bits, and every field
+    # `attrs` writes, per THE_DESCRIPTOR_FIELDS_SHARE_NO_BIT.
+    "^crates/paging/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::table_entry$",
+    "^crates/paging/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::leaf_entry$",
+    "^crates/paging/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::block_entry$",
+    # The shifts are `VALID = 1 << 0` and `AP_RW_EL1 = 0b00 << 6`: a shift of one by zero and of
+    # zero by six, equal to their reverse shifts for every value.
+    "^crates/paging/src/aarch64\\.rs:\\d+:\\d+: replace << with >>$",
+    # Flags: the seven access bits are distinct single bits, per THE_ACCESS_BITS_SHARE_NO_BIT.
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::kernel_code$",
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::kernel_data$",
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::device$",
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::write_combining$",
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_code$",
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_data$",
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_device$",
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace \\| with \\^ in Flags::user_write_combining$",
+    # ACCESS_WRITE is `1 << 0`, the identity.
+    "^crates/paging/src/flags\\.rs:\\d+:\\d+: replace << with >>$",
+    # sv39: the PTE's PPN field, V, R, W, X, U, G, A, D and the software device bit, per
+    # THE_PAGE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT; and the memory-type bits against each other and
+    # against everything below bit 54, per THE_MEMORY_TYPE_BITS_SHARE_NO_BIT.
+    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in Sv39::attrs$",
+    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::table_entry$",
+    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::leaf_entry$",
+    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::is_block$",
+    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in Sv39Mae::memory_type$",
+    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39Mae>::leaf_entry$",
+    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39Mae>::block_entry$",
+    # V is `1 << 0`, the identity.
+    "^crates/paging/src/sv39\\.rs:\\d+:\\d+: replace << with >>$",
+    # x86_64: Ia32e's address field, P, RW, US, PWT, PCD, A, D, PS, G, the two software bits and
+    # XD, per THE_ENTRY_FIELDS_SHARE_NO_BIT; Vtd's address field, R and W, per
+    # THE_VTD_ENTRY_FIELDS_SHARE_NO_BIT; AmdVi's page entry fields, per
+    # THE_AMD_VI_ENTRY_FIELDS_SHARE_NO_BIT; and the device table entry's first qword, per
+    # THE_DEVICE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT (the root is held inside the address mask by the
+    # `None` guard above the `|`).
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in Ia32e::attrs$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::table_entry$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::leaf_entry$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::block_entry$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::is_present$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::table_entry$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Vtd>::leaf_entry$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for AmdVi>::table_entry$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for AmdVi>::leaf_entry$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in AmdVi::device_table_entry$",
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in AmdVi::blocked_device_table_entry$",
+    # P, VTD_R, AMD_VI_PR and DTE_V are each `1 << 0`, the identity. (`pat::VALUE`'s one
+    # constant-level `|` is not excluded: its argument is a cleared byte, which an assertion
+    # cannot state without a `!` the tool would also mutate, so its row stays, as algebraic.)
+    "^crates/paging/src/x86_64\\.rs:\\d+:\\d+: replace << with >>$",
 ]

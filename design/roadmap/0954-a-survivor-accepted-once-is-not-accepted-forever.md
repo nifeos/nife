@@ -196,7 +196,7 @@ where one of these fits.
   carried list still name the 2026-10-26 census, so they keep counting these until the next
   census regenerates them.
 - **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first.
-  `paging` is #2924 and `designware_mobile_storage` landed with #2849. `designware_ethernet`
+  `paging` is #2924 (a per-crate run on 2026-10-31 (UTC) leaves one survivor, `pat::VALUE`'s `|`, whose row stays as `algebraic`) and `designware_mobile_storage` landed with #2849. `designware_ethernet`
   already carried its compiled arguments and scoped exclusions from #2867; a re-derivation on
   2026-10-31 (UTC) found 5 missed mutants, every one rowed, and one noise-shaped site without a
   compiled argument, `link_from_registers`, which #2937 covers. `modify_extended`'s swap stays a
