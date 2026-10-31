@@ -228,8 +228,7 @@ shows the finding closed on 2026-11-13. With no fix by 2026-11-17, condition 3 f
 
 ## Appendix: measurements, 2026-10-31 (UTC)
 
-Runs on a shared multi-core build host, with other lanes' load on it, one QEMU
-guest per process. Not a census.
+Runs on a shared multi-core build host with other lanes' load, one QEMU guest per process.
 
 Rate per guest, x86_64 under hardware acceleration (KVM):
 
@@ -257,9 +256,8 @@ False reds, guests that reported a failure that did not reproduce:
 | 8 | 4 of 8 | 1 of 8 |
 | 16 | 6 of 16 | 6 of 16 |
 
-Replays of failing seeds were green. The failures were the harness's deadlines expiring under load,
-not escapes. Until a fix lands, more concurrency buys false reds faster than it buys seeds, which
-is why question 3 exists.
+Replays of failing seeds were green. The harness's deadlines expired under load; no escape
+occurred. Until a fix lands, more concurrency buys false reds faster than seeds.
 
 ## The seven questions
 
