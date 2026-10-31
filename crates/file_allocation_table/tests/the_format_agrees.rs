@@ -112,7 +112,7 @@ fn oracle_free_clusters(image: &[u8]) -> u32 {
 }
 
 /// Format `sectors` sectors of `size` with `options`, in memory.
-fn formatted_by_us(
+fn formatted_by_this_crate(
     size: SectorSize,
     sectors: u32,
     build: impl Fn(FormatOptions) -> FormatOptions,
@@ -241,7 +241,7 @@ fn every_type_at_every_sector_size_formats_to_a_volume_the_oracles_accept() {
         ("fat32-auto", SectorSize::Bytes512, 200 * 1024, None, None),
     ];
     for (label, size, sectors, kind, cluster) in cases {
-        let (format, image) = formatted_by_us(size, sectors, |o| {
+        let (format, image) = formatted_by_this_crate(size, sectors, |o| {
             let o = kind.map_or(o, |k| o.with_type(k));
             let o = cluster.map_or(o, |c| o.with_cluster_sectors(c));
             o.with_volume_id(0xC0FF_EE11)

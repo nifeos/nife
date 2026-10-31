@@ -65,7 +65,7 @@ pub struct FormatOptions {
     cluster_sectors: Option<u32>,
     volume_id: u32,
     label: [u8; 11],
-    labelled: bool,
+    has_label: bool,
     hidden_sectors: u32,
 }
 
@@ -82,7 +82,7 @@ impl FormatOptions {
             cluster_sectors: None,
             volume_id: 0,
             label: *b"NO NAME    ",
-            labelled: false,
+            has_label: false,
             hidden_sectors: 0,
         }
     }
@@ -134,7 +134,7 @@ impl FormatOptions {
         }
         self.label = [b' '; 11];
         self.label[..bytes.len()].copy_from_slice(bytes);
-        self.labelled = true;
+        self.has_label = true;
         Ok(self)
     }
 }
@@ -340,7 +340,7 @@ pub struct Format {
     geometry: Geometry,
     volume_id: u32,
     label: [u8; 11],
-    labelled: bool,
+    has_label: bool,
     hidden_sectors: u32,
 }
 
@@ -392,7 +392,7 @@ impl Format {
             geometry,
             volume_id: options.volume_id,
             label: options.label,
-            labelled: options.labelled,
+            has_label: options.has_label,
             hidden_sectors: options.hidden_sectors,
         })
     }
@@ -458,10 +458,10 @@ impl Format {
         } else if fat32 && (index == 1 || index == 7) {
             write_fs_info(g.clusters - 1, ROOT_CLUSTER + 1, out);
         } else if tables.contains(&index) {
-            if (index - g.reserved_sectors) % g.table_sectors == 0 {
+            if index == g.reserved_sectors || index == g.reserved_sectors + g.table_sectors {
                 self.first_table_sector(out);
             }
-        } else if index == g.reserved_sectors + 2 * g.table_sectors && self.labelled {
+        } else if index == g.reserved_sectors + 2 * g.table_sectors && self.has_label {
             // The first sector of the root directory, FAT12 and FAT16's region or FAT32's cluster.
             out[..11].copy_from_slice(&self.label);
             out[11] = ATTR_VOLUME_ID;
