@@ -60,6 +60,8 @@ fn a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks() {
 /// after two seconds of running on every core.
 ///
 /// Name: provisional (lane/fuzz-deadlines-count-guest-progress, 2026-10-31 UTC).
+///
+/// Falsification: replayable `system_tests/falsifications/user.every_core_tick_budget_tests.a_wait_on_every_core_gives_up_on_work_that_never_finishes.patch`
 #[test_case]
 fn a_wait_on_every_core_gives_up_on_work_that_never_finishes() {
     let Err(budget) = wait_on_every_core(|| false) else {
@@ -76,6 +78,8 @@ fn a_wait_on_every_core_gives_up_on_work_that_never_finishes() {
 /// the backstop while that core is still silent.
 ///
 /// Name: provisional (lane/fuzz-deadlines-count-guest-progress, 2026-10-31 UTC).
+///
+/// Falsification: replayable `system_tests/falsifications/user.every_core_tick_budget_tests.the_backstop_bounds_a_wait_on_a_core_that_never_ticks.patch`
 #[test_case]
 fn the_backstop_bounds_a_wait_on_a_core_that_never_ticks() {
     if stop_another_core_for(2).is_none() {

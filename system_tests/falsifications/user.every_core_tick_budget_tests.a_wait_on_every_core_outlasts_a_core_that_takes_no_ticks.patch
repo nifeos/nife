@@ -12,19 +12,19 @@ Expected to fail: `panic!("the wait gave up while a core took no ticks: {budget}
 2000 ms of the counter and one core showing far fewer ticks than the other. Confirmed red on
 2026-10-31 (UTC) on x86_64 at two cores with `cargo xtask test --arch x86_64 --test
 a_wait_on_every_core_outlasts`: "2000 ms of the counter; ticks taken of 200 on each core: core 0
-198 core 1 0".
+198 core 1 0". Replayed red again after the counts became `u32`: "core 0 199 core 1 0".
 
 diff --git a/kernel/src/testing.rs b/kernel/src/testing.rs
-index f778dc7a0..7973fe827 100644
+index d756010c0..380ce22fa 100644
 --- a/kernel/src/testing.rs
 +++ b/kernel/src/testing.rs
-@@ -716,7 +716,9 @@ impl EveryCoreTickBudget {
-             self.taken[c] = crate::arch::timer::ticks_on(c).wrapping_sub(self.start[c]);
+@@ -717,7 +717,9 @@ impl EveryCoreTickBudget {
+             self.taken[c] = Self::ticks_on(c).wrapping_sub(self.start[c]);
              every_core &= self.taken[c] >= self.ticks;
          }
 -        every_core || self.is_past_backstop()
 +        let _ = every_core;
-+        self.elapsed >= self.ticks / crate::arch::timer::TICK_HZ * crate::arch::timer::frequency()
++        self.elapsed >= u64::from(self.ticks) / crate::arch::timer::TICK_HZ * crate::arch::timer::frequency()
 +            || self.is_past_backstop()
      }
  
