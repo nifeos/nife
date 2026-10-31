@@ -190,9 +190,13 @@ where one of these fits.
 - **Outstanding.** Part 3, the 94 with no row or a stale one, one lane per driver crate. Checked
   against the classes CSV's `unrowed` and `stale killed` columns and the carried list
   `notes/project-metrics/mutation-rowless-survivors.csv`, 50 keys.
-- **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first. Checked
-  against `notes/project-metrics/mutation-shape-sites.csv`: 516 noise-shape sites, 148 the lines
-  prove, 368 a lane must read.
+- **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first. Done
+  for `designware_ethernet`, `e1000e`, `designware_mobile_storage`, the seven crates of #2867 and
+  `paging` (a per-crate run on 2026-10-31 (UTC) leaves one survivor, `pat::VALUE`'s `|`, whose
+  row stays as `algebraic`). Checked against `notes/project-metrics/mutation-shape-sites.csv`,
+  which still counts the 2026-10-26 census: 516 noise-shape sites, 148 the lines prove, 368 a
+  lane must read. Left: `video_terminal`, `filesystem_contract`, `machine_discovery`,
+  `compositor`, `filesystem_fixture` and the smaller crates, in the order the sites file gives.
 - **Outstanding.** Part 5, the eight crates' remaining survivors, one lane each, and the
   `unclassified` rows behind them. Checked against the classification page's real-hole column (32)
   and the `unclassified` ratchet baseline, 406 rows.
