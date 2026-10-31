@@ -70,7 +70,7 @@ row above moves to.
 ### Test and bench only
 
 `credential_service`, `compositor_service`, `disk_service`, `identity_provisioner_service`,
-`login_service`, `ntp_service`, `raw_mode_service`, `rmle_service`, `keyboard_service::start`, the
+`login_service`, `ntp_service`, `raw_mode_service`, `keyboard_service::start`, the
 rest of `display_service` and `fs_service`, and `holding`. Their module declarations in
 `kernel/src/user.rs`, which is the index now, carry `allow(dead_code)` outside `system_tests`. The bench boots
 reach `e1000e_service` (`network_bench.rs:48`), `designware_ethernet_service`

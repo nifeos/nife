@@ -82,7 +82,6 @@ Not kernel, not proved, not protocol: the candidates. Surprise: the kernel lists
 | `portable_executable` | 778 | our own ELF | host (`xtask`) | `object` 0.40.0 `write::pe::Writer` | MIT/Apache | 640M, 2026-08 | none |
 | `serial_console` `port.rs` | part of 3,418 | none | host | `rustix` or `libc` termios | MIT/Apache | *(from memory)* very wide | none checked |
 | `coreutils` programs `wc`, `rm`, `printenv`, `date` | 87 + 199 + 110 + 145 | user | base | uutils `uu_*` 0.12.0 | MIT, std | 130k each, 2026-09 | none |
-| `rmle` editor | 460 | user files | optional | `kibi` 0.3.3, or GNU `nano` as GPL-as-package, milestone 170 (`nano`: a real, full-featured screen editor) | MIT/Apache; std, no threads or async, but `libc` termios and raw stdin, which the PAL does not bind | 12k, 2026-02 | none |
 | `file_allocation_table` (writer) | 512 | none (writes our own) | base | `fatfs` 0.3.6 | MIT; std builds with no threads or async, `no_std` only through `core_io`; `system_installer` is a `no_std` program today | 1.6M, 2023-01 | none |
 | `documentation` markdown renderer (used by `mdr`) | 802 of 2,587 | shipped docs | base | `pulldown-cmark` 0.13.4 | MIT; std (`lib.rs` uses `std::fmt`), no threads, no async, deps `bitflags`, `memchr`, `unicase`; `mdr` is `no_std` today and could be a std program | 166M, 2026-05 | none |
 | xHCI, unbuilt (milestone 242 (USB host and HID)) | 0 | device | base | rust-osdev `xhci` 0.9.2 | MIT/Apache | 107k, 2023-07, last push 2024-09 | none |
@@ -118,10 +117,9 @@ Loss: none proved; two widely used crates (`arrayvec`, `memchr`) in the base gra
 8. REFUSED for base: the `coreutils` programs stay ours, and uutils is a basalt package candidate,
 item (h); see Follow-on.
 
-9. Editor: `rmle` stays until one of two takes it. `kibi` (MIT/Apache, a Rust editor inspired by
-the same `kilo` `rmle` is modeled on) needs `libc` termios and raw stdin, which the PAL does not
-bind. GNU `nano` is the GPL-as-package path (milestone 170). `rmle` is `optional`, so either can
-replace it without touching base.
+9. Editor: the tree ships none. `kibi` (MIT/Apache, a Rust editor inspired by `kilo`) needs `libc`
+termios and raw stdin, which the PAL does not bind. GNU `nano` is the GPL-as-package path
+(milestone 170), and either arrives as an `optional` package without touching base.
 
 9a. BUILT: `mdr` is a std program parsing with `pulldown-cmark`, item (f2); see Follow-on.
 
@@ -155,7 +153,6 @@ Rechecked under this rule, reading each crate's source for threads and runtimes:
 |---|---|---|---|---|
 | `pulldown-cmark` 0.13.4 | `mdr` | `no_std` program, could be std | none | unblocked: candidate 9a |
 | `fatfs` 0.3.6 | `system_installer` | base `no_std` program | none | measured in [an appendix](0784-reuse-what-the-tree-wrote/fat-crates-measured.md), with [the options](0784-reuse-what-the-tree-wrote/fat-adopt-or-build.md); ruled 2026-10-22 (UTC) on #2580: build our own, and `fatfs` stays the test oracle outside the base graph |
-| `kibi` 0.3.3 | `rmle` | `optional` program | no threads; needs `libc` termios and raw stdin | blocked on the PAL, not on std |
 | `rustyline` 18.0.0 | `line_editor` | engine used by the terminal service | no threads; `libc` and `nix` termios | blocked on the PAL, and the engine sits under the console |
 | uutils `uucore` 0.12.0 | `coreutils` | base programs, could be std | `std::thread` in test modules only; `libc` in its feature modules | unchanged: survey which `uu_*` build |
 | `gptman` 3.1.1 | GPT | proved crate | not the issue | unchanged: kept for its 9 Kani harnesses |

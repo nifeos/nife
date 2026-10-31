@@ -15,7 +15,7 @@ milestone 433's drain of the proposal pile. **Premise re-read against the tree o
 argument is unchanged and two of its numbers are not**, both moved by work that landed the same day
 this was filed. `watch` was cut by milestone 281, on calef's *"We can cut `ps` with the `watch` and simplify."*,
 and `doc` was ratified as `mdr` in the same afternoon's worklist. So the list below is
-fifteen non-service programs rather than sixteen, and nine of them are typeable at the
+fourteen non-service programs rather than sixteen, and nine of them are typeable at the
 prompt rather than ten: `grant_plan::Program::from_name` resolves `date`, `rm`, `wc`, `mdr`, `ps`,
 `pgrep`, `uptime`, `printenv` and `uuid`. `components/Cargo.toml` now carries 47 `[[bin]]` entries
 and `fixtures/Cargo.toml` 40. Two entries in the table below are stale as written and are left as
@@ -43,7 +43,7 @@ and it works: no program was genuinely hard to place under it.
 |---|---|
 | `date`, `printenv`, `uptime`, `uuid` | read one thing, print it, exit |
 | `ps`, `pgrep`, `pmap`, `watch` | look at the running system |
-| `wc`, `rm`, `doc`, `rmle` | operate on what the command line designates |
+| `wc`, `rm`, `doc` | operate on what the command line designates |
 | `disk_surveyor`, `disk_partitioner`, `identity_provisioner`, `swapper` | operator tools, run once on purpose |
 
 Ten of the sixteen are already typeable at the prompt: `grant_plan::Program::from_name` resolves
@@ -102,9 +102,9 @@ separate strain and 175 explicitly refused to fold it in).
 Milestone 175 split 74 programs into `components/` and `fixtures/` on one question, *would a
 distribution ship this because somebody wants its function*, and asked in its own block whether a
 third directory would be more honest than forcing a fit. This is that answer written down instead of
-taken. Fifteen of the components are not services. Four that read one thing and print it (`date`,
-`printenv`, `uptime`, `uuid`), three that look at the running system (`ps`, `pgrep`, `pmap`), and four
-that operate on what the command line designates (`wc`, `rm`, `mdr`, `rmle`). Four operator tools
+taken. Fourteen of the components are not services. Four that read one thing and print it (`date`,
+`printenv`, `uptime`, `uuid`), three that look at the running system (`ps`, `pgrep`, `pmap`), and three
+that operate on what the command line designates (`wc`, `rm`, `mdr`). Four operator tools
 run once on purpose (`disk_surveyor`, `disk_partitioner`, `identity_provisioner`, `swapper`). Nine of
 them are already typeable at the prompt through `grant_plan::Program::from_name`, which is the
 closest thing this tree has to a `/bin`. The honest case against is that the two-way split is not a

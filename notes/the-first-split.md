@@ -116,7 +116,7 @@ What the table says, read rather than summarized:
   `capability_manifest_note`. Its interfaces are the least settled ones: `filesystem_contract` 10 breaking
   changes in four weeks, the partition table 27, `entropy_contract` 3. Every QEMU runner starts it,
   which is the 254 path references.
-- **Programs in `components` cannot move at all yet.** `rmle`, `mdr`, `demos`, `core-tools`,
+- **Programs in `components` cannot move at all yet.** `mdr`, `demos`, `core-tools`,
   `disk-tools`, `entropy`, `installer`, and the programs of `process-tools`, `login`, `init`, `terminal`
   and seven more are `[[bin]]` targets of one crate. The `rmle` + `mdr` + `demos` row has no crate of its own at all.
 
