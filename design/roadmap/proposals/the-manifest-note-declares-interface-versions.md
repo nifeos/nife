@@ -9,6 +9,8 @@ needs_person: no
 ---
 # The manifest note declares the interface versions: a separate note type
 
+Ruled 2026-10-31 (UTC): option 1, a fourth note type, `INTERFACES = 4`, on the pattern of `SUBTREE_GRANTS` and `VERBS`. Milestone 956's steps 3 and 4 execute it. The progenitor's policy for a program with no such note stays accept, as today. The crate name `interface_version` (step 2) is still open.
+
 Raised 2026-10-31 (UTC) by the lane `milestone/956-checkable-interface-versions`, at steps 3 and 4 of milestone 956 (the linked interfaces carry checkable versions). The lane stopped here. The plan names a wire format that the tree has already spent, and a wire format is an architect's call. Every name below is provisional.
 
 Reuse: the proposal reuses the note machinery of milestone 597 (a program carries its manifest in an ELF note): the one-encoding decode, the Kani property, and the separate note types that `SUBTREE_GRANTS` and `VERBS` already use. No new dependency.
