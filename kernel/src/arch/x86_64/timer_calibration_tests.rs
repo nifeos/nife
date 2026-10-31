@@ -5,7 +5,7 @@
 //! design/roadmap/0571-the-x86-boot-calibrates-once-and-can-be-wrong-by-4x.md.
 //!
 //! # BUGS
-//! - These prove the estimator, not accuracy; that needs `tsc_probe` (notes/tsc-under-tcg.md).
+//! - These prove the estimator, not accuracy; an independent clock does (notes/tsc-under-tcg.md).
 //! - A machine reporting `CPUID` leaf 0x15 passes the boot tests by skipping; none does under TCG.
 
 #[cfg(any(test, feature = "system_tests"))]
