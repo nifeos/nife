@@ -16,6 +16,24 @@ pub(crate) const ACCESS_DEVICE: u64 = 1 << 5;
 
 pub(crate) const ACCESS_WRITE_COMBINE: u64 = 1 << 6;
 
+/// **The seven access bits are distinct single bits**, so every `|` in a `Flags` constructor
+/// joins words that share no bit and is its own `^`. The mutation exclusions for those
+/// constructors name this constant: the compiler checks what no test can.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
+#[allow(dead_code)] // a compile-time check; nothing refers to it by name
+pub(crate) const THE_ACCESS_BITS_SHARE_NO_BIT: () = {
+    assert_share_no_bit!(
+        ACCESS_WRITE,
+        ACCESS_USER,
+        ACCESS_USER_EXEC,
+        ACCESS_KERNEL_EXEC,
+        ACCESS_GLOBAL,
+        ACCESS_DEVICE,
+        ACCESS_WRITE_COMBINE
+    );
+};
+
 /// What access a mapping grants: readable always, plus write / execute / user / global / device as
 /// set. **Format-neutral.** There is deliberately no constructor that is both writable and
 /// executable (W^X): a page that is both is how a buffer overflow becomes code execution.

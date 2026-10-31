@@ -17,7 +17,9 @@ The table is writable through `WritableSectorDevice`. `Volume::allocate_cluster`
 cluster and links it after a chain's last, `Volume::truncate_chain` and `Volume::free_chain` give
 clusters back, and each writes every live copy of the table in an order that leaves a crash at
 worst a leaked cluster. `Volume::sync` writes the FAT32 `FSInfo` hints those calls maintain.
-Writing files, deleting, renaming and a general format are planned.
+`Volume::create_file`, `open_file_writer` and `remove_file` make, write, resize and delete files
+with 8.3 names; the first change clears the clean-shutdown bit and `sync` sets it again.
+Directories, long names, renaming and a general format are planned.
 
 ## What is proven
 
@@ -101,7 +103,7 @@ that does not fit.
 - The writer writes 512-byte sectors and 4096-byte clusters, and nothing else.
 - Every timestamp is zero.
 - The `mkfs` writes the `FSInfo` free-cluster count once; only `Volume::sync` keeps it after that.
-- Nothing marks the volume dirty while it changes, and a write has no barrier.
+- A write has no barrier. File names are 8.3 only, and every timestamp is zero.
 - Not crash-atomic, and there is no journal, since FAT has none.
 - The reader stops at directory slots: it reports long-name pieces as stored, without assembling
   them or checking their checksum, and reads no file's bytes.

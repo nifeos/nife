@@ -14,6 +14,9 @@
 
 use core::marker::PhantomData;
 
+#[macro_use]
+mod share_no_bit;
+
 pub mod aarch64;
 pub mod domain;
 pub mod sv39;

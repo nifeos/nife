@@ -165,7 +165,7 @@ macro_rules! pinned {
     };
 }
 
-/// **Every public number the syscall surface spells is pinned as a literal** (milestone 956 (the linked interfaces carry checkable versions) step 7,
+/// **Every public number the syscall surface spells is pinned as a literal** (milestone 956 (the linked interfaces carry checkable versions) step 4,
 /// the enforcement calef ruled 2026-10-29 UTC, PR #2852, question 5: a pinned-values test now, the
 /// rustdoc diff when a consumer outside the tree exists). A program built against one generation of
 /// this crate carries these numbers in its binary, so a renumber is a break that bumps
@@ -189,6 +189,7 @@ fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
         crate::SYS_CAPABILITY_DELETE => 3,
         crate::SYS_EXIT_THREAD => 4,
         crate::CAPABILITY_TABLE_SLOTS => 64,
+        crate::INTERFACE_ID => 1,
         crate::address_space::MAP_INTO => 0,
         crate::address_space::MAP_RO => 0,
         crate::address_space::MAP_RW => 1,
@@ -299,7 +300,7 @@ fn the_last_object_modules_are_pinned() {
 }
 
 /// **Every error code is pinned to its number**, and the decode agrees. A program matches these
-/// negative values after every syscall, so a renumber is an ABI break (milestone 956 step 7).
+/// negative values after every syscall, so a renumber is an ABI break (milestone 956 (the linked interfaces carry checkable versions) step 4).
 #[test]
 fn every_error_is_pinned_to_its_number() {
     let all = [
