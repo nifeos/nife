@@ -470,7 +470,17 @@ def attack(record, harness, box, prompt, scratch):
     record['status'] = 'attacking'
     write_record(record_path, record)
     print('launch-pass: session %s on %s; sending the brief. Record: %s' % (session, model, record_path))
-    status, seen = harness.send(session, model, prompt, box, os.path.join(scratch, 'attack.log'))
+    try:
+        status, seen = harness.send(session, model, prompt, box, os.path.join(scratch, 'attack.log'))
+    except BaseException as error:
+        # Whatever stopped the send (a harness that raised, a signal), the record must not stay at
+        # `attacking`: the session may be finished, and nothing else would ever say so.
+        record.update(status='stopped: the launcher died after the brief went out (%s: %s); the '
+                      'session may have finished, see attack.log' % (type(error).__name__, error),
+                      finished=now())
+        write_record(record_path, record)
+        print('launch-pass: %s. Record: %s' % (record['status'], record_path), file=sys.stderr)
+        raise
     record.update(status='reported' if status == 0 else 'harness exited %d' % status,
                   models_seen=sorted(seen), finished=now())
     if seen.problem:
@@ -737,6 +747,36 @@ def selftest_refusals(tree, tmp, commit):
     assert launch(args) == 0 and os.path.getsize(os.environ['FAKE_PODMAN_CALLS']) == 0
 
 
+def selftest_send_dies(tmp):
+    """A send that raises leaves a terminal record with the reason, never `attacking`."""
+    class Dies:
+        name = 'dies'
+
+        def probe(self, model, box, log):
+            return 'session-1', Seen([model])
+
+        def send(self, session, model, message, box, log):
+            raise ValueError('export cut off')
+
+    class Quiet(Box):
+        def run(self, inner, log):
+            return 0, ''
+
+    scratch = os.path.join(tmp, 'send-dies')
+    os.makedirs(scratch)
+    record = {'model_pinned': 'm'}
+    try:
+        attack(record, Dies(), Quiet(scratch, 'K', 'img'), 'prompt', scratch)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('the failure was swallowed')
+    with open(os.path.join(scratch, 'launch.json')) as source:
+        written = json.load(source)
+    assert written['status'].startswith('stopped') and 'export cut off' in written['status'], written
+    assert written['status'] != 'attacking' and 'finished' in written, written
+
+
 def selftest_clean_record(tree, tmp, commit):
     """The record of a launch whose exports all work."""
     return selftest_launch(tree, tmp, 'glm', 'zai-coding-plan/glm-5.3', commit, '-clean')[1]
@@ -748,6 +788,7 @@ def selftest():
     with tempfile.TemporaryDirectory() as tmp:
         tree, commit = selftest_tree(tmp, real_tree)
         selftest_refusals(tree, tmp, commit)
+        selftest_send_dies(tmp)
         for reviewer, wrong in (('fable', 'claude-opus-4-8'), ('glm', 'zai-coding-plan/glm-4.7')):
             status, record, calls, _ = selftest_launch(tree, tmp, reviewer, wrong, commit)
             assert status == 1 and record['status'].startswith('stopped'), record

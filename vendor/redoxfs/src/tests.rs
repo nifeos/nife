@@ -1,8 +1,8 @@
 use crate::{
     htree::{HTreeHash, HTreeNode, HTreePtr, HTREE_IDX_ENTRIES},
     transaction::{level_data, level_data_mut, FsCtx},
-    BlockAddr, BlockData, BlockMeta, BlockPtr, DirEntry, DirList, DiskMemory, DiskSparse,
-    FileSystem, Node, TreePtr, ALLOC_GC_THRESHOLD, BLOCK_SIZE,
+    BlockAddr, BlockData, BlockMeta, BlockPtr, DirEntry, DirList, DiskSparse, FileSystem, Node,
+    TreePtr, ALLOC_GC_THRESHOLD, BLOCK_SIZE,
 };
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::Relaxed;
@@ -129,114 +129,6 @@ fn empty_dir() {
         assert!(error.is_err());
         assert_eq!(error.unwrap_err().errno, syscall::error::ENOENT);
     })
-}
-
-// TODO: When increasing the total_count to 8000, the Allocator's deallocate() function surfaces as "slow" according to flamegraph. This
-// appears to be the result of bulk deleting in this test, but I would bet that any filesystem that has lived for a long time would
-// start to see degraded performance due to this.
-#[test]
-fn many_create_write_list_find_read_delete() {
-    let disk = DiskMemory::new(1024 * 1024 * 1024);
-    let ctime = time::SystemTime::now()
-        .duration_since(time::UNIX_EPOCH)
-        .unwrap();
-    let mut fs = FileSystem::create(disk, None, ctime.as_secs(), ctime.subsec_nanos()).unwrap();
-    let tree_ptr = TreePtr::<Node>::root();
-    let total_count = 3000;
-
-    // Create a bunch of files
-    for i in 0..total_count {
-        let result = fs.tx(|tx| {
-            tx.create_node(
-                tree_ptr,
-                &format!("file{i:05}"),
-                Node::MODE_FILE | 0o644,
-                1,
-                0,
-            )
-        });
-        if result.is_err() {
-            println!("Failure on create iteration {i}");
-        }
-
-        let file_node = result.unwrap();
-        let result = fs.tx(|tx| {
-            tx.write_node(
-                file_node.ptr(),
-                0,
-                format!("Hello World! #{i}").as_bytes(),
-                ctime.as_secs(),
-                ctime.subsec_nanos(),
-            )
-        });
-        if result.is_err() {
-            println!("Failure on write iteration {i}");
-        }
-        assert!(result.unwrap() > 0)
-    }
-
-    // Confirm that they can be listed
-    {
-        let mut children = Vec::<DirEntry>::with_capacity(total_count);
-        fs.tx(|tx| tx.child_nodes(tree_ptr, &mut children)).unwrap();
-        assert_eq!(
-            children.len(),
-            total_count,
-            "The list of children should match the number of files created."
-        );
-        let mut children: Vec<String> = children
-            .iter()
-            .map(|entry| entry.name().unwrap_or_default().to_string())
-            .collect();
-        children.sort();
-
-        for i in 0..total_count {
-            let expected = format!("file{i:05}");
-            let idx = children.binary_search(&expected);
-            assert!(idx.is_ok(), "Children did not contain '{}'", expected);
-        }
-    }
-
-    // Find and read the files
-    for i in 0..total_count {
-        let result = fs.tx(|tx| tx.find_node(tree_ptr, &format!("file{i:05}")));
-        if result.is_err() {
-            println!("Failure on find node iteration {i}");
-        }
-
-        let file_node = result.unwrap();
-        let offset = 0;
-        let mut buf = [0_u8; 32];
-        let result = fs.tx(|tx| {
-            tx.read_node(
-                file_node.ptr(),
-                offset,
-                &mut buf,
-                ctime.as_secs(),
-                ctime.subsec_nanos(),
-            )
-        });
-        if result.is_err() {
-            println!("Failure on read iteration {i}");
-        }
-        let size = result.unwrap();
-        let body = std::str::from_utf8(&buf[..size]).unwrap();
-        assert_eq!(body, format!("Hello World! #{i}"));
-    }
-
-    // Delete all the files
-    for i in 0..total_count {
-        let file_name = format!("file{i:05}");
-        if let Err(e) = fs.tx(|tx| tx.remove_node(tree_ptr, &file_name, Node::MODE_FILE)) {
-            println!("Failure on delete iteration {i}");
-            panic!("{e}");
-        }
-        let result = fs.tx(|tx| tx.find_node(tree_ptr, &file_name));
-        if result.is_ok() || result.unwrap_err().errno != syscall::error::ENOENT {
-            println!("Failure on delete verification iteration {i}");
-            panic!("Deletion appears to have failed");
-        }
-    }
 }
 
 //

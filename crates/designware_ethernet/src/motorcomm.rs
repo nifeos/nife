@@ -197,6 +197,14 @@ pub(crate) const fn link_from_registers(
     Some(Link { speed, full_duplex })
 }
 
+/// The 100BASE-T4 and 100BASE-TX partner abilities share no bit, so the one `|` in
+/// [`link_from_registers`] is its `^`, which the compiler checks here; the mutation exclusion for
+/// `link_from_registers` names this constant.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-designware-ethernet-noise.
+pub const THE_PARTNER_HUNDRED_MEGABIT_ABILITIES_SHARE_NO_BIT: () =
+    assert!(management_data_input_output::ANLPAR_T4 & management_data_input_output::ANLPAR_TX == 0);
+
 /// A pad drive strength, as a tree states it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Drive {
