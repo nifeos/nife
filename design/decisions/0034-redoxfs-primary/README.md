@@ -8,6 +8,8 @@ here. These files hold the evidence its prose budget has no room for.
   fault-injection table, its controls and the on-device run, and the extended-attribute atomicity
   check.
 - [`zfs-and-xfs.md`](zfs-and-xfs.md): the 2026-07-30 comparison with ZFS and XFS.
+- [`xattr-layer.md`](xattr-layer.md): the extended-attribute layer's reasons and its three ways to
+  go wrong.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default. calef names
 directories.*
@@ -16,3 +18,5 @@ directories.*
   files.
 - `zfs-and-xfs` Name: provisional. For the parent's "Amendment (2026-07-30): ZFS and XFS". calef
   names files.
+- `xattr-layer` Name: provisional. For the parent's "Amendment (2026-07-31): the xattr fork is
+  closed". calef names files.

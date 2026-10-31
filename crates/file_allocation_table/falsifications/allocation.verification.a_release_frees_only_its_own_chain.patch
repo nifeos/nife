@@ -1,0 +1,23 @@
+Falsifies `file_allocation_table::allocation::verification::a_release_frees_only_its_own_chain`.
+
+The defect: the release frees a cluster before it looks at the entry, so a chain that runs into a bad or reserved cluster erases the marker that keeps it out of use.
+
+Expected to fail: the harness's `assert!(matches!(before[at], TableEntry::Next(_) | TableEntry::EndOfChain))`.
+
+diff --git a/crates/file_allocation_table/src/allocation.rs b/crates/file_allocation_table/src/allocation.rs
+--- a/crates/file_allocation_table/src/allocation.rs
++++ b/crates/file_allocation_table/src/allocation.rs
+@@ -95,12 +95,12 @@ pub(crate) fn free_chain<L: LinksMut>(
+     let mut freed = 0;
+     loop {
+         let entry = links.table_entry(cluster)?;
++        links.set_table_entry(cluster, TableEntry::Free)?;
+         let next = match entry {
+             TableEntry::EndOfChain => None,
+             TableEntry::Next(next) if is_data(clusters, next) => Some(next),
+             entry => return Err(ChainError::Broken { cluster, entry }),
+         };
+-        links.set_table_entry(cluster, TableEntry::Free)?;
+         freed += 1;
+         let Some(next) = next else {
+             return Ok(freed);

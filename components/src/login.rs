@@ -34,10 +34,11 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use supervision_contract::{
-    ChildEndowment, Retention, build_child, memory_region_destroy, memory_region_split,
-    retype_obj_from as retype_obj, retype_page_frame_from, start_child,
+use process_builder::{
+    build_child, memory_region_destroy, memory_region_split, retype_obj_from as retype_obj,
+    retype_page_frame_from, start_child,
 };
+use supervision_contract::{ChildEndowment, Retention};
 use timetable::registration;
 use user_mode_runtime::{
     call, capability_delete, map_page_frame, receive, send, send_capability, yield_now,
@@ -1547,7 +1548,7 @@ fn wipe_page(va: u64) {
 
 fn fail(step: u64) -> ! {
     send(AUDIT, 0xDEAD_0000_0000_0000 | step, 0, 0);
-    supervision_contract::fail()
+    process_builder::fail()
 }
 
 user_mode_runtime::panic_handler!();

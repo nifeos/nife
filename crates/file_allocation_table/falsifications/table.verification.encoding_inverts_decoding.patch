@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::table::verification::encoding_inverts_decoding`.
+
+The defect: a bad-cluster entry encodes one past the marker, so the table stores an end-of-chain value and a bad cluster reads back as the end of a file.
+
+Expected to fail: the harness's `assert_eq!(TableEntry::decode(file_allocation_table_type, raw), entry)`.
+
+diff --git a/crates/file_allocation_table/src/table.rs b/crates/file_allocation_table/src/table.rs
+--- a/crates/file_allocation_table/src/table.rs
++++ b/crates/file_allocation_table/src/table.rs
+@@ -92,7 +92,7 @@ impl TableEntry {
+             TableEntry::Free => 0,
+             TableEntry::Reserved => 1,
+             TableEntry::Next(next) => next & mask,
+-            TableEntry::Bad => bad,
++            TableEntry::Bad => bad + 1,
+             TableEntry::EndOfChain => mask,
+         }
+     }

@@ -56,13 +56,13 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
     // The three pages the whole proof rests on. All from our own budget, all ours to start with; the
     // C component's process will see two of them and never the third.
-    let Ok(grant) = supervision_contract::retype_page_frame_from(ROOT_UT) else {
+    let Ok(grant) = process_builder::retype_page_frame_from(ROOT_UT) else {
         bail(3)
     };
-    let Ok(wit_ro) = supervision_contract::retype_page_frame_from(ROOT_UT) else {
+    let Ok(wit_ro) = process_builder::retype_page_frame_from(ROOT_UT) else {
         bail(4)
     };
-    let Ok(wit_far) = supervision_contract::retype_page_frame_from(ROOT_UT) else {
+    let Ok(wit_far) = process_builder::retype_page_frame_from(ROOT_UT) else {
         bail(5)
     };
 
@@ -85,8 +85,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
     // Our children's deaths arrive here. We are the only holder with READ, and the kernel is the only
     // sender (§26.5), so both the tid and the fault address are trustworthy without a badge.
-    let Ok(faultep) = supervision_contract::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS)
-    else {
+    let Ok(faultep) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
         bail(7)
     };
 
@@ -99,10 +98,10 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         g.fill(0);
         g[c_seam::IN_OFF..c_seam::IN_OFF + c_seam::INPUT.len()].copy_from_slice(c_seam::INPUT);
 
-        let Ok(region) = supervision_contract::memory_region_split(ROOT_UT, INSTANCE_PAGES) else {
+        let Ok(region) = process_builder::memory_region_split(ROOT_UT, INSTANCE_PAGES) else {
             bail(10)
         };
-        let Ok(child) = supervision_contract::build_child(
+        let Ok(child) = process_builder::build_child(
             ROOT_UT,
             region,
             &shim,
@@ -134,7 +133,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         // capability is not the reap: the corpse is collected through the supervision endpoint. So we
         // hold nothing that reaches a live instance's memory, and the child keeps the narrowed copy of
         // the region it was endowed with, which is what `malloc` spends.
-        if !supervision_contract::start_child(child, 0, attempt, 0) {
+        if !process_builder::start_child(child, 0, attempt, 0) {
             bail(12)
         }
         capability_delete(region);
@@ -280,7 +279,7 @@ fn witness_far() -> &'static mut [u8] {
 /// stage code turns "nothing happened" into a legible failure.
 fn bail(stage: u64) -> ! {
     send(REPORT, c_seam::RPT_FAILED, stage, 0);
-    supervision_contract::fail()
+    process_builder::fail()
 }
 
 user_mode_runtime::panic_handler!();

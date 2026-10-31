@@ -22,7 +22,7 @@
 #![no_main]
 
 // This is its own binary. What it shares with the other hot-swap programs comes from the
-// `hot_swap_contract` crate.
+// `hot_swap_server` crate, whose wire format is `hot_swap_contract`.
 // Shared code was a `#[path]` module compiled into each binary until rule 7 (2026-08-01) made it
 // a crate, so this file needs no dead-code allow under §38 (a suppression is scoped to an item
 // and carries a reason).
@@ -46,7 +46,7 @@ fn digest_in_c(seq: u64) -> u64 {
 user_mode_runtime::program_entry!(start);
 
 fn start(a0: u64, log_base: u64, a2: u64) -> ! {
-    hot_swap_contract::start(hot_swap_contract::V2, digest_in_c, a0, log_base, a2)
+    hot_swap_server::start(hot_swap_contract::V2, digest_in_c, a0, log_base, a2)
 }
 
 user_mode_runtime::panic_handler!();

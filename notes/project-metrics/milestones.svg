@@ -103,10 +103,11 @@
 <rect class="seg s0" x="601.4" y="304.3" width="38.7" height="19.7"><title>2026W44, Closed (removed, superseded or refused): 74</title></rect>
 <rect class="seg s1" x="601.4" y="173.2" width="38.7" height="131.1"><title>2026W44, Built: 493</title></rect>
 <rect class="seg s2" x="601.4" y="163.3" width="38.7" height="9.8"><title>2026W44, Partial: 37</title></rect>
-<rect class="seg s3" x="601.4" y="71.3" width="38.7" height="92.0"><title>2026W44, Not started: 346</title></rect>
-<path class="seg s4" d="M601.4,71.3 V71.0 Q601.4,70.8 601.6,70.8 H639.8 Q640.0,70.8 640.0,71.0 V71.3 Z"><title>2026W44, Optional: 2</title></path>
+<rect class="seg s3" x="601.4" y="71.0" width="38.7" height="92.3"><title>2026W44, Not started: 347</title></rect>
+<rect class="seg s4" x="601.4" y="70.5" width="38.7" height="0.5"><title>2026W44, Optional: 2</title></rect>
+<path class="seg s6" d="M601.4,70.5 V70.2 Q601.4,70.0 601.6,70.0 H639.8 Q640.0,70.0 640.0,70.2 V70.5 Z"><title>2026W44, Proposal, no number yet: 2</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="620.7" y="65.8" font-size="10" text-anchor="middle">952</text>
+<text class="fg val" x="620.7" y="65.0" font-size="10" text-anchor="middle">955</text>
 <rect class="s6" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">Proposal, no number</tspan><tspan x="689" dy="13">yet</tspan></text>
 <rect class="s5" x="672" y="96" width="11" height="11" rx="2"/>

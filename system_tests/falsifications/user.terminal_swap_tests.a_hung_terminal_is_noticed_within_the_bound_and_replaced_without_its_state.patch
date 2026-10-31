@@ -14,10 +14,10 @@ diff --git a/components/src/terminal_supervisor.rs b/components/src/terminal_sup
 index 4f0852d2a..ec9fd4d9e 100644
 --- a/components/src/terminal_supervisor.rs
 +++ b/components/src/terminal_supervisor.rs
-@@ -369,7 +369,7 @@ impl Supervisor<'_> {
+@@ -671,7 +671,7 @@ impl Supervisor<'_> {
          let bound = cntfrq() * s::QUIESCE_BOUND_MS / 1000;
          let started = now();
-         if !supervision_contract::start_child(child, MODE_STAND_IN, 0, 0)
+         if !process_builder::start_child(child, MODE_STAND_IN, 0, 0)
 -            || timer_arm(d.timer, started + bound, d.wake, DEADLINE) < 0
 +            || timer_arm(d.timer, started + 4 * bound, d.wake, DEADLINE) < 0
          {
