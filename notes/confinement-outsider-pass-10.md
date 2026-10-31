@@ -44,7 +44,7 @@ shared dispatcher, so one fix covers every ISA.
 The falsification patch is
 `system_tests/falsifications/user.tenth_pass_map_gate_tests.one_physical_page_is_never_writable_here_and_executable_there.patch`.
 At the pass's head the patch turned the witness's opt-in on and replayed the escape as it stood,
-red at the witness assertion on all three architectures, so the witness was the failing test
+red at the witness assertion on all three architectures. The witness was the failing test
 committed before any fix, as the block's Done-means asks. With the fix in, the witness runs in the
 default suite and the patch removes the fix.
 
