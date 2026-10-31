@@ -450,6 +450,11 @@ fn files_in_a_subdirectory_write_and_the_subdirectory_grows() {
             let mut writer = volume.open_file_writer(&entry).unwrap();
             writer.write(format!("file number {i}").as_bytes()).unwrap();
         }
+        // Entries found by path carry their directory: shrink one, delete another.
+        let found = volume.lookup("Sub Directory/F3.DAT").unwrap();
+        volume.open_file_writer(&found).unwrap().set_len(4).unwrap();
+        let doomed = volume.lookup("Sub Directory/F4.DAT").unwrap();
+        volume.remove_file(&doomed).unwrap();
         volume.sync().unwrap();
         let image = volume.into_device();
         let fs = lamfat::FileSystem::new(
@@ -467,11 +472,15 @@ fn files_in_a_subdirectory_write_and_the_subdirectory_grows() {
                 let number: usize = entry.file_name()[1..entry.file_name().len() - 4]
                     .parse()
                     .unwrap();
-                assert_eq!(text, format!("file number {number}"));
+                if number == 3 {
+                    assert_eq!(text, "file");
+                } else {
+                    assert_eq!(text, format!("file number {number}"));
+                }
                 seen += 1;
             }
         }
-        assert_eq!(seen, count, "{fat_type:?}");
+        assert_eq!(seen, count - 1, "{fat_type:?}");
         check_with_fsck(&image.bytes, &format!("subdir-{fat_type:?}"));
     }
 }
