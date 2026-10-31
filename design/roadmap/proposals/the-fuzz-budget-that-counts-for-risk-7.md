@@ -22,16 +22,22 @@ syzkaller's service standards, not its code.
 
 - nife adopts the same standards as OSS-Fuzz and syzbot (syzkaller's continuous service) for the
   confinement fuzzers. Decided 2026-10-31 (UTC).
-- That replaces the earlier idea of a fixed seed count or a fixed number of CPU-hours. The fuzzers
-  run continuously, and those two projects' standards, set out below, bound what they claim.
+- The fuzzers run continuously instead of to a fixed seed count or number of CPU-hours, and those
+  two projects' standards, set out below, bound what they claim.
 - Criterion (d) of risk 7 is the four conditions below, all of which must hold on a date. Decided
   2026-10-31 (UTC).
-  1. The fuzzer runs now, on the architectures claimed.
+  1. The fuzzer runs now, on the architectures claimed. A heartbeat measures it.
   2. A measure of its coverage exists, and coverage has stopped growing or the growth has an explanation.
   3. Every finding has a fix or sits inside the triage clock, and none is older.
   4. The corpus and the findings live where others can see them.
-- The rating follows what is true on that date, and it can rise again if a condition lapses.
-- A 14-day run is at most a release smoke test. It does not count toward the rating.
+- The heartbeat is the newest daily report. Green: it is under 2 days old and shows more seeds run
+  than the previous report. Amber: no report for 2 days, or a report whose seed count did not rise.
+  Decided 2026-10-31 (UTC).
+- Amber means criterion (d) is not met that day. It does not by itself lower the risk 7 rating. The
+  rating falls only when condition 3 fails, that is, when a finding passes its limit, and it rises
+  again when that condition holds. The report carries the counters that conditions 2 to 4 read:
+  coverage, findings and the public corpus.
+- A 14-day run is at most a release smoke test and does not count toward the rating.
 - Both in-guest drivers get compiler-inserted coverage counters (LLVM sanitizer-coverage inline
   8-bit counters on the kernel code). The kernel supplies a counter region and a way for the driver
   to read it after each seed. One option serves all three architectures and runs under KVM. The
@@ -114,9 +120,6 @@ Read from google.github.io/oss-fuzz.
   disclosure waits for the patch. Read. The page says nothing of a 30-day period after a fix.
 - Reproducers. Each report carries the bytes the fuzzer fed to the target. Rerunning that input checks a fix; after the fix lands, ClusterFuzz reruns the input and closes the issue,
   stated as "in < 1 day." Read.
-- Coverage reports. Produced with Clang source-based coverage by running the targets over the
-  corpus OSS-Fuzz has aggregated; the pages call coverage reports public. The page does not state how often OSS-Fuzz
-  publishes them on the page read. Partly read.
 - Corpus. Kept in cloud storage with daily zipped backups. Pruning is not described on the page
   read. Read, with that gap.
 - CIFuzz. Runs on each pull request for 600 s by default, which "should be at minimum 600 seconds
@@ -128,8 +131,7 @@ Read from google.github.io/oss-fuzz.
 
 ### syzbot and syzkaller
 
-Read from the syzkaller repository's `docs/syzbot.md`, `docs/coverage.md` and
-`docs/syzbot_assets.md`, and from the syzbot dashboard page.
+Read from the syzkaller repository's `docs/syzbot.md` and the syzbot dashboard page.
 
 - Dashboard. Shows open, fixed and invalid bug counts, a per-manager table (uptime, corpus size,
   coverage, crashes, executions, kernel build, freshness), and coverage views for the total, a
@@ -146,10 +148,6 @@ Read from the syzkaller repository's `docs/syzbot.md`, `docs/coverage.md` and
   only when the commit reaches all tracked builds, and a similar crash after that opens a new bug.
   While a bug is open, similar crashes merge into it. A person marks a one-off report invalid, and a
   recurrence creates a new report. Read.
-- Retention. syzbot keeps build assets until 30 days after the bug becomes fixed or invalid. Read.
-- Coverage. Collected by KCOV, in basic blocks or edges, with the warning that coverage "may poorly
-  relate to the source code"; the web report colors lines as hit, partly hit, uncovered in a run
-  function, or in a function that never ran. Read.
 - Unverified: how syzbot ages open bugs, whether syzbot closes a bug with no crash for a long period
   automatically (the pages read do not say), where syzbot publishes the corpus, and what syzbot claims
   after a long quiet stretch. The pages read make no such claim.
