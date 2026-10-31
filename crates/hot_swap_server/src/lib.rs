@@ -29,8 +29,12 @@
 //! Name: provisional, minted 2026-10-29 (UTC) by lane
 //! `milestone/607-item-3-contracts-drop-the-runtime`. calef names it.
 
+/// The device page the two UART arms read from. Only those two use it: the x86_64 arm has no page
+/// to probe (see below), so importing it there would be an unused import.
+#[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
+use hot_swap_contract::DEV_VA;
 use hot_swap_contract::{
-    BAD_REQUEST, DEV_VA, LOG_BYTES, LOG_VA, NOTE, NOTE_ABSORBED, NOTE_NOT_ABSORBED, NOTE_SWAP_NOW,
+    BAD_REQUEST, LOG_BYTES, LOG_VA, NOTE, NOTE_ABSORBED, NOTE_NOT_ABSORBED, NOTE_SWAP_NOW,
     OPERATION_PUT, OPERATION_QUIESCE, PAGE, POKE, POKE_PROBE, POKE_RESUME, PUT_REFUSED, QUIESCED,
     RPT, RPT_PROBE_SURVIVED, RPT_QUIESCED, RPT_UP, START_ABSORB, START_FRESH, STATE_VA, SVC,
     SWAP_TRIGGER, V1, absorb, state_blob, tag,
