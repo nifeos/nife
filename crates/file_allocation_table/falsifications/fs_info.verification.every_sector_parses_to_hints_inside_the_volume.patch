@@ -7,9 +7,9 @@ Expected to fail: the harness's `assert!(free <= clusters)`.
 diff --git a/crates/file_allocation_table/src/fs_info.rs b/crates/file_allocation_table/src/fs_info.rs
 --- a/crates/file_allocation_table/src/fs_info.rs
 +++ b/crates/file_allocation_table/src/fs_info.rs
-@@ -71,7 +71,7 @@ impl FsInfo {
-         let free = word(FREE_COUNT_AT)?;
-         let next = word(NEXT_FREE_AT)?;
+@@ -81,7 +81,7 @@ impl FsInfo {
+         let free = word(sector, FREE_COUNT_AT)?;
+         let next = word(sector, NEXT_FREE_AT)?;
          Ok(FsInfo {
 -            free_clusters: (free != UNKNOWN && free <= clusters).then_some(free),
 +            free_clusters: (free != UNKNOWN).then_some(free),
