@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: lint-stops-paying-per-item-costs
 raised: 2026-10-29
 milestone_dependencies: none
@@ -82,6 +82,10 @@ Each part is one lane, ordered by seconds saved per hour of work.
    assertions need. About 8 s.
 3. One lexer pass in `name_crossings.py`. Memoize `strip`, `_without_attributes` and `encloser` per
    file, and replace the character-by-character scan with a compiled pattern. About 4 s.
+   Built: `strip`, `_without_attributes` and `encloser` are kept per input, `enclosers` builds each
+   line's tuple only when a block opens or closes, and `strip` jumps over plain text with a compiled
+   pattern. The output matches the old scan on all 1,633 tracked `.rs` files. The naming section
+   went from 12 to 13 s to 9 to 10 s on a loaded Linux host.
 4. One interpreter in the dead-code section. Read the `.rs` files in Python instead of spawning `awk`
    per file. About 3 s.
 5. One shared corpus index. A small helper that lists the tracked files, their text and their hashes
