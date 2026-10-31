@@ -43,9 +43,10 @@ fi
 #
 # The host-excluded half of the selection is DERIVED, not carried: helpers/host-excluded-crates.sh
 # asks cargo's dependency graph for every workspace crate that reaches `crates/user_mode_runtime`,
-# and those are exactly the crates with no host logic to measure. `user_mode_runtime` is aarch64-only
-# inline asm (the user-mode syscall runtime); `supervision_contract` and `hot_swap_contract` are thin
-# wrappers over its syscalls (build a child, quiesce a component); `system_initializer` spends a
+# and those are the crates that cannot run on the host. `user_mode_runtime` is aarch64-only
+# inline asm (the user-mode syscall runtime); `process_builder` and `hot_swap_server` are the runtime
+# halves of the two contracts (they build a child and serve a swap), and the contracts themselves
+# stay pure and measured; `system_initializer` spends a
 # capability through one on every line (retype an object, build a child, delegate, delete);
 # `virtio`'s seven entry points each orchestrate a live device. The exclusions are deliberate and
 # narrow, not a way to keep the number green.

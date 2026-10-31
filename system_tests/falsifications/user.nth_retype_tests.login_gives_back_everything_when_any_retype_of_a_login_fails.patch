@@ -12,11 +12,11 @@ Expected to fail: retype 10, the caretaker's first frame, reported as `failing l
 10 (verdict 0x2) changed what login holds`, with `slot 18: AddressSpace(..)` in the table dump.
 Replayed red on aarch64 on 2026-10-04 (UTC) by the lane for milestone 757.
 
-diff --git a/crates/supervision_contract/src/lib.rs b/crates/supervision_contract/src/lib.rs
+diff --git a/crates/process_builder/src/lib.rs b/crates/process_builder/src/lib.rs
 index de5379aa5..911ed186b 100644
---- a/crates/supervision_contract/src/lib.rs
-+++ b/crates/supervision_contract/src/lib.rs
-@@ -481,10 +481,7 @@ pub fn build_child_space(
+--- a/crates/process_builder/src/lib.rs
++++ b/crates/process_builder/src/lib.rs
+@@ -257,10 +257,7 @@ pub fn build_child_space(
              },
              aspace,
          )),

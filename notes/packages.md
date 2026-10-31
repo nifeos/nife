@@ -162,7 +162,7 @@ carries as an ELF note, or `uptime`'s if it has none: milestone 597 (a program c
 in an ELF note). It opens the file and sends `spawnproto::request(len, ..)` with `IMAGE_BIT` set: word 0 is the byte length, then
 one `SEND_CAPABILITY` per page narrowed to `READ`, then the grants as today, holding one frame at a time.
 
-The progenitor maps each frame through the loader's scratch window (`supervision_contract::map_scratch`), copies it into a
+The progenitor maps each frame through the loader's scratch window (`process_builder::map_scratch`), copies it into a
 page of its own, and deletes the capability before taking the next. It copies because the caller could change its frames between a hash and a build. It hashes the copy,
 reads `activation/current` and then that generation through the file service it already held, and
 looks the digest up (`installed_programs::lookup_digest`). A hit is built from the copy and endowed from

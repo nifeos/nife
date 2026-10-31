@@ -21,9 +21,8 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use supervision_contract::{
-    ChildEndowment, Retention, build_child, retype_obj_from, retype_page_frame_from, start_child,
-};
+use process_builder::{build_child, retype_obj_from, retype_page_frame_from, start_child};
+use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{exit, map_page_frame, receive, require, send};
 
 const MEMORY_REGION: u64 = 0;

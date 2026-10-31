@@ -137,6 +137,30 @@ impl<D: SectorDevice + ?Sized> SectorDevice for &mut D {
     }
 }
 
+/// **A device that also writes whole sectors by index**: what a caller implements, beside
+/// [`SectorDevice`], so this crate can change a volume.
+///
+/// The crate writes a sector only after it has read the volume's boot sector, and only at indices
+/// that boot sector places inside the volume. It writes one whole sector per call, with no ordering
+/// promise beyond the order of the calls: the device decides when a write reaches the medium, and
+/// a caller that needs a barrier makes it when the crate returns.
+///
+/// Name: provisional. The write half of the sector interface, named for what it adds to
+/// `SectorDevice`; a device that cannot write simply does not implement it.
+pub trait WritableSectorDevice: SectorDevice {
+    /// Write `buffer` to sector `index`.
+    ///
+    /// `buffer` is always exactly [`SectorDevice::sector_size`] bytes. A write the device cannot
+    /// complete is an error the implementation reports; the crate hands it back unchanged.
+    fn write_sector(&mut self, index: u64, buffer: &[u8]) -> Result<(), Self::Error>;
+}
+
+impl<D: WritableSectorDevice + ?Sized> WritableSectorDevice for &mut D {
+    fn write_sector(&mut self, index: u64, buffer: &[u8]) -> Result<(), Self::Error> {
+        (**self).write_sector(index, buffer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

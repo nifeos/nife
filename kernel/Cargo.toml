@@ -303,13 +303,6 @@ bench = ["dep:coremark", "dep:byte_sink_contract", "dep:filesystem_fixture"]
 # untouched either way, which is the property that actually mattered: a baseline forced to be
 # re-saved by an unrelated instrument is a tripwire that just lost its history.
 icount = ["bench"]
-# The TSC-vs-RTC measurement (the `tscdrift` lane, 2026-09-21): boot, measure the time-stamp
-# counter against the CMOS RTC for half a minute, print the implied rate and halt. Off by default
-# and in no gate. It is an instrument rather than a test, for the same reason `bench` is: the
-# question it answers takes thirty-five seconds of wall clock and has no pass/fail. Its owner and
-# its results are notes/tsc-under-tcg.md; the calibration fix that note proposes is what it exists
-# to be measured against. Name provisional. See kernel/src/arch/x86_64/tsc_probe.rs.
-tsc_probe = []
 # The xHCI port probe (lane maintainer/xenon-usb-no-ports, 2026-10-21): print every root port's
 # `PORTSC` before the firmware handoff, and on a five-second timeline after the USB keyboard
 # driver's scan, as `xhci-probe:` lines. An instrument, off by default and in no gate, for the

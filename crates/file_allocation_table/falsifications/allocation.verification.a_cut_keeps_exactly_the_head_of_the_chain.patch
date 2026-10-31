@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::allocation::verification::a_cut_keeps_exactly_the_head_of_the_chain`.
+
+The defect: the cut walks one cluster too far, so it ends the chain one cluster late and the file keeps a cluster its size does not cover.
+
+Expected to fail: the harness's `assert_eq!(length(&mut model, first), Some(kept))`.
+
+diff --git a/crates/file_allocation_table/src/allocation.rs b/crates/file_allocation_table/src/allocation.rs
+--- a/crates/file_allocation_table/src/allocation.rs
++++ b/crates/file_allocation_table/src/allocation.rs
+@@ -125,7 +125,7 @@ pub(crate) fn truncate_chain<L: LinksMut>(
+     }
+     let mut walk = Walk::new(first);
+     let mut last = first;
+-    for _ in 0..keep {
++    for _ in 0..=keep {
+         match walk.step(links) {
+             Some(cluster) => last = cluster?,
+             None => return Ok(0),

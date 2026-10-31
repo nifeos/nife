@@ -104,7 +104,7 @@ stack's base at 0x7f000000; an image may be at most 496 MiB
 ```
 
 An image linked for the old layout at `0x40_0000` is refused as outside the band, naming the
-base to relink at. `supervision_contract`'s loader makes the same check, but it reports every failure
+base to relink at. `process_builder`'s loader makes the same check, but it reports every failure
 as `Err(())`, so there the check only makes the failure early and clean.
 
 ## What changed with it

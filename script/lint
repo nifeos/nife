@@ -181,7 +181,8 @@ echo "==> script/verify --parallel forks the shards, joins their verdicts, and k
 # waiting for the slot its parent holds) is proved against a one-slot fixture under a deadline,
 # because a deadlock never returns on its own.
 python3 helpers/verify_parallel.py --selftest >/dev/null
-helpers/verify-parallel-selftest.sh >/dev/null
+# helpers/verify-parallel-selftest.sh proves the shards, the join and the one slot; the heavy-job
+# slots section above runs it, so it is not run twice.
 
 echo "==> script/push believes origin's ref, not git's exit status"
 # A push that never landed has exited 141 and exited 0 alike (#2478), and no CI run pushes, so this

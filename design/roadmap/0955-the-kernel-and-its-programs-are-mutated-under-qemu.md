@@ -215,13 +215,12 @@ one piece written new is the workflow that feeds the first into the second.
   `.github/workflows/kernel-mutants-cost.yml`; the numbers sit under Cost above.
 - **Done.** Part 2, the kernel's exclusions: the kernel section of `.cargo/mutants.toml`, PR
   #2846, 1,281 mutants measured out on 2026-10-28 (UTC).
-- **Outstanding.** Part 3, the diff-scoped check: advisory, sharded so each job stays under 20
-  minutes, on every kernel and `components` pull request. Not started, checked on this branch:
-  `.github/workflows/` holds no workflow for it (`kernel-mutants-cost.yml` is the cost
-  measurement only), and `script/falsifications --mutants` still lists with `--no-config`.
-- **Outstanding.** Part 4, the rolling census: one workflow, the slice list under How the work
-  splits, two jobs a night in the window above. Not started, checked the same way: no census
-  workflow or slice list exists in `.github/workflows/`.
+- **Done.** Part 3, the diff-scoped check: `.github/workflows/kernel-mutants-diff.yml` and
+  `helpers/mutation_kernel_diff.py`, advisory and sharded under 20 minutes a job, hosted runners
+  only, PR #2850.
+- **Done.** Part 4, the rolling census: `.github/workflows/kernel-mutants-census.yml` and
+  `helpers/mutation_kernel_census.py`, PR #2869, with the rotation check in
+  `script/cadence-check`, PR #2923.
 - **Outstanding.** Part 5, triage, one lane per slice as each lands, under the companion
   proposals' rules for accepted and hanging survivors. Not started, checked by searching the
   triage record and `.cargo/mutants-baseline.txt`, which name no kernel row.

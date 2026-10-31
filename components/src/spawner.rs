@@ -44,7 +44,7 @@ fn start(_a0: u64, image_len: u64, _a2: u64) -> ! {
     // SAFETY: root_supervisor mapped `image_len` bytes of program image read-only at IMAGE_VA.
     let image = unsafe { core::slice::from_raw_parts(IMAGE_VA as *const u8, image_len as usize) };
     let Ok(elf) = elf::Elf::parse(image) else {
-        supervision_contract::fail()
+        process_builder::fail()
     };
 
     loop {
@@ -83,10 +83,10 @@ fn build(elf: &elf::Elf, attempt: u64, label: u64) -> bool {
 
 /// [`build`] with the labelled supervision capability already minted in slot `fault`.
 fn build_labelled(elf: &elf::Elf, attempt: u64, fault: u64) -> bool {
-    let Ok(region) = supervision_contract::memory_region_split(BUDGET, INSTANCE_PAGES) else {
+    let Ok(region) = process_builder::memory_region_split(BUDGET, INSTANCE_PAGES) else {
         return false;
     };
-    let Ok(child) = supervision_contract::build_child(
+    let Ok(child) = process_builder::build_child(
         BUDGET,
         region,
         elf,
@@ -100,7 +100,7 @@ fn build_labelled(elf: &elf::Elf, attempt: u64, fault: u64) -> bool {
     ) else {
         return false;
     };
-    if !supervision_contract::start_child(child, 0, attempt, 0) {
+    if !process_builder::start_child(child, 0, attempt, 0) {
         return false;
     }
     capability_delete(region);

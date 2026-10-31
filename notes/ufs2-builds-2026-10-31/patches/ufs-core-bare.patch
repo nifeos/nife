@@ -1,0 +1,43 @@
+diff -rN -U1 -x target -x Cargo.lock ufs-core/Cargo.toml ../pb/ufs-core/Cargo.toml
+--- ufs-core/Cargo.toml
++++ ufs-core/Cargo.toml
+@@ -62,2 +62,3 @@
+ version = "2"
++default-features = false
+ 
+diff -rN -U1 -x target -x Cargo.lock ufs-core/src/dir.rs ../pb/ufs-core/src/dir.rs
+--- ufs-core/src/dir.rs
++++ ufs-core/src/dir.rs
+@@ -34,2 +34,4 @@
+ 
++use alloc::vec::Vec;
++
+ use crate::bytes::Endian;
+diff -rN -U1 -x target -x Cargo.lock ufs-core/src/file.rs ../pb/ufs-core/src/file.rs
+--- ufs-core/src/file.rs
++++ ufs-core/src/file.rs
+@@ -28,2 +28,4 @@
+ 
++use alloc::{vec, vec::Vec};
++
+ use crate::dir::{read_block, read_by_path};
+diff -rN -U1 -x target -x Cargo.lock ufs-core/src/inode.rs ../pb/ufs-core/src/inode.rs
+--- ufs-core/src/inode.rs
++++ ufs-core/src/inode.rs
+@@ -20,2 +20,4 @@
+ 
++use alloc::vec::Vec;
++
+ use crate::bytes::Endian;
+diff -rN -U1 -x target -x Cargo.lock ufs-core/src/lib.rs ../pb/ufs-core/src/lib.rs
+--- ufs-core/src/lib.rs
++++ ufs-core/src/lib.rs
+@@ -25,2 +25,3 @@
+ 
++#![cfg_attr(not(any(test, feature = "vfs")), no_std)]
+ #![forbid(unsafe_code)]
+@@ -28,2 +29,4 @@
+ 
++extern crate alloc;
++
+ pub mod bytes;
