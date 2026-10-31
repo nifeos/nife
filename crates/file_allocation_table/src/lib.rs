@@ -81,6 +81,7 @@
 mod allocation;
 mod boot_sector;
 mod directory;
+mod directory_write;
 #[doc(alias = "extensible firmware interface system partition")]
 pub mod efi_system_partition;
 mod file;

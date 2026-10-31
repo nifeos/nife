@@ -35,7 +35,8 @@ pub(crate) struct EntryPlace {
 }
 
 impl NamedEntry {
-    /// An entry just written at `place`, with no long name.
+    /// An entry at `place` with no long name, for the writer's tests.
+    #[cfg(test)]
     pub(crate) const fn created(short: ShortEntry, place: EntryPlace) -> NamedEntry {
         NamedEntry {
             short,

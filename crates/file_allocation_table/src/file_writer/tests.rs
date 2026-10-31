@@ -5,6 +5,8 @@
 //! Name: provisional.
 
 use super::*;
+use crate::directory::ShortEntry;
+use crate::named_entry::NamedEntry;
 use crate::reader::tests::Image;
 
 /// A byte that tells its file offset.
@@ -311,13 +313,18 @@ fn the_longest_and_shortest_short_names_are_legal_and_the_next_longer_is_not() {
     for good in ["A", "ABCDEFGH", "A.B", "ABCDEFGH.XYZ", "$A-B_C~1.!#&"] {
         volume.create_file(0, good).expect(good);
     }
-    for bad in ["ABCDEFGHI", "ABCDEFGH.XYZW"] {
+    for bad in ["", "A/B", "ENDS.", "has*star", "tab	here"] {
         assert_eq!(
             volume.create_file(0, bad),
             Err(WriteError::InvalidName),
             "{bad}"
         );
     }
+    // One unit more than 8.3 allows makes a long name with an alias, not a refusal.
+    assert_eq!(
+        volume.create_file(0, "ABCDEFGHI").unwrap().short_name(),
+        *b"ABCDEF~1   "
+    );
     assert_eq!(
         volume.lookup("ABCDEFGH.XYZ").unwrap().short_name(),
         *b"ABCDEFGHXYZ"
