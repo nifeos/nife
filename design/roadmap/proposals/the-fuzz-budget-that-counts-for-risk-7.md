@@ -175,13 +175,11 @@ Read from the syzkaller repository's `docs/syzbot.md`, `docs/coverage.md` and
 ## Scope note (§19)
 
 x86_64 only for now. A dedicated x86_64 virtual machine of about 4 vCPUs and 8 GB runs x86_64
-comfortably under hardware acceleration. aarch64 and riscv64 run only under full emulation (TCG)
-and I have not measured them for continuous work. §19 (architectural parity is a tenet) makes parity a gate,
+comfortably under hardware acceleration. aarch64 and riscv64 run only under full emulation (TCG), at 6 to 20 seeds/s per guest. §19 (architectural parity is a tenet) makes parity a gate,
 so this is a scoped exception for the fuzzers only. It ends when hardware
 runs the fuzzers on the other two architectures at a useful rate. The escapes of record split by
 architecture. §12 (call/reply IPC: a one-shot reply capability) was false only on x86_64, and claim
-11's alias was on all three. So the exception costs coverage of the claim, and the record must say
-so rather than imply parity.
+11's alias was on all three. So the record must not imply parity.
 
 ## The questions that remain
 
@@ -230,8 +228,8 @@ shows the finding closed on 2026-11-13. With no fix by 2026-11-17, condition 3 f
 
 ## Appendix: measurements, 2026-10-31 (UTC)
 
-One run by this lane on a many-core x86_64 build host, with other lanes' load on it, one QEMU
-guest per process. Not a census. The per-guest logs stay off-tree; the text cites figures only.
+Runs on a shared multi-core build host, with other lanes' load on it, one QEMU
+guest per process. Not a census.
 
 Rate per guest, x86_64 under hardware acceleration (KVM):
 
@@ -240,11 +238,13 @@ Rate per guest, x86_64 under hardware acceleration (KVM):
 | 1 | about 420 | about 230 |
 | 2 to 8 | 440 to 460 | about 220 |
 
-Baseline under full emulation (TCG): 20 seeds/s for the kernel-thread driver and 8 for the
-user-mode driver. Hardware acceleration is about 20 times faster for the first and about 28 times
-for the second.
+Under full emulation (TCG), per guest, flat from 1 to 16 guests within noise: aarch64 17 to 20
+(kernel-thread) and 9 (user-mode); riscv64 9 to 11 and 6 to 7; x86_64 15 to 18 and 9 to 10. KVM is
+about 25 times faster on x86_64. An emulated guest uses about 1.2 host cores and 126 MB
+(kernel-thread) or 264 to 375 MB (user-mode), and 62 guest-runs showed no false red. The
+emulation note in `notes/fuzzing/` holds the table.
 
-Memory: about 100 MB per guest.
+Memory under KVM: about 100 MB per guest.
 
 Host target `redoxfs_server_session`: 794 runs/s on one process and about 5,470 runs/s on eight
 workers.

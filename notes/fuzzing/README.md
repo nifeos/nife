@@ -16,8 +16,8 @@ These files carry the evidence its prose budget has no room for.
   per second at 1 to 16 guests, for sizing a budget.
 - [`the-syscall-driver.md`](the-syscall-driver.md): the seeded syscall driver's oracle, its corpus
   as measured, and its `BUGS` in full.
-- [`rates-on-aarch64-under-emulation.md`](rates-on-aarch64-under-emulation.md): the first rates
-  measured for both in-guest drivers and one host target under full emulation.
+- [`rates-on-aarch64-and-riscv64-under-emulation.md`](rates-on-aarch64-and-riscv64-under-emulation.md):
+  the two in-guest drivers' rates at 1 to 16 guests under full emulation, and a host target's rate.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*
