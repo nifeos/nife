@@ -947,7 +947,8 @@ fn install(
             Err(_) => return Answer::from((S::StoreFailed, live)),
         };
         for p in got.programs() {
-            let outside = program_asks::asked_grants_of(&p).find(|ask| entry.covers(*ask) != Ok(true));
+            let outside =
+                program_asks::asked_grants_of(&p).find(|ask| entry.covers(*ask) != Ok(true));
             if let Some(ask) = outside {
                 return refused_with_ask(cx, package.name(), ask).into();
             }

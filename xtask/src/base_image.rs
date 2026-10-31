@@ -225,7 +225,10 @@ pub(crate) fn base_image() -> bool {
     // table the composition wrote, measured by the kernel this build is about to make.
     let store = out.join("activation-store.img");
     if let Err(e) = std::fs::write(&store, &composed.seed) {
-        eprintln!("base-image ({arch}): could not write {}: {e}", store.display());
+        eprintln!(
+            "base-image ({arch}): could not write {}: {e}",
+            store.display()
+        );
         return false;
     }
     println!("wrote {}", store.display());
@@ -598,13 +601,8 @@ fn compose(
             approval_path.display()
         )
     })?;
-    let approval = approval_file::File::parse(&approval_text).map_err(|e| {
-        format!(
-            "{}: line {}: {e:?}",
-            approval_path.display(),
-            e.at
-        )
-    })?;
+    let approval = approval_file::File::parse(&approval_text)
+        .map_err(|e| format!("{}: line {}: {e:?}", approval_path.display(), e.at))?;
     let approval_digest = measured_boot::sha256(&approval_bytes);
 
     let mut blobs = Vec::new();

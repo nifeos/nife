@@ -169,8 +169,7 @@ fn a_body_laid_out_other_than_the_writer_lays_it_out_is_refused() {
     let mut bytes = assembled(2, 1, 0, &[&first, &second]);
     let second_descriptor = HEADER_LEN + DESCRIPTOR_LEN;
     let first_offset = u32le(&bytes, HEADER_LEN);
-    bytes[second_descriptor..second_descriptor + 4]
-        .copy_from_slice(&first_offset.to_le_bytes());
+    bytes[second_descriptor..second_descriptor + 4].copy_from_slice(&first_offset.to_le_bytes());
     assert_eq!(refused(&bytes), Error::BadLayout);
 }
 
@@ -187,7 +186,10 @@ fn a_generation_is_unchanged_when_the_next_one_is_added() {
     assert_eq!(one.generation(1), two.generation(1));
     // And the write is a function of its inputs alone, which is what a digest over the seed,
     // recorded in a measurement manifest, rests on.
-    assert_eq!(written(&[&first, &second], 2), written(&[&first, &second], 2));
+    assert_eq!(
+        written(&[&first, &second], 2),
+        written(&[&first, &second], 2)
+    );
 }
 
 #[test]

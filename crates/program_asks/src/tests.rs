@@ -103,9 +103,11 @@ fn a_note_asking_the_network_and_one_zone_yields_both_in_record_order() {
 fn a_service_ask_yields_the_service_grant() {
     const DESC: capability_manifest_note::ServicedNote<
         { capability_manifest_note::serviced_note_len(&[]) },
-    > = capability_manifest_note::ServicedNote::of::<
-        { capability_manifest_note::serviced_len(&[]) },
-    >(&MANIFEST_PLAIN, &[], true);
+    > = capability_manifest_note::ServicedNote::of::<{ capability_manifest_note::serviced_len(&[]) }>(
+        &MANIFEST_PLAIN,
+        &[],
+        true,
+    );
     let p = program(&DESC.0);
     let asks: Vec<Granted<'_>> = asked_grants_of(&p).collect();
     assert_eq!(asks, [Granted::Service]);
