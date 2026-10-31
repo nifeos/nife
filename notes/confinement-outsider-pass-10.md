@@ -19,7 +19,7 @@ accepts the shipped-path reading. The facts he ruled on sit below: the mechanism
 through ordinary capabilities, and the lane's independent reproduction on all three ISAs.
 
 The lane proposed the fix milestone in
-[`design/roadmap/0969-a-map-into-refuses-a-frame-mapped-twice-with-different-flags.md`](../design/roadmap/0969-a-map-into-refuses-a-frame-mapped-twice-with-different-flags.md);
+[`design/roadmap/0969-no-frame-is-writable-and-executable-in-one-space.md`](../design/roadmap/0969-no-frame-is-writable-and-executable-in-one-space.md);
 the integrator mints its number, and the refusal's exact shape waits for calef. Until the fix
 lands, row 11 of [`notes/confinement-claims.md`](confinement-claims.md) reads falsified a fourth
 time, with the replayable patch beside the witness.
