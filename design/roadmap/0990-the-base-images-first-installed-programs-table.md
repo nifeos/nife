@@ -2,8 +2,8 @@
 status: NOT-STARTED
 raised: 2026-10-29
 promoted_from: the-base-images-first-installed-programs-table
-milestone_dependencies: 911
-decision_dependencies: 208, 235
+milestone_dependencies: 911, 981
+decision_dependencies: 34, 208, 235
 machine_requirements: none
 specific_machine: none
 needs_person: no
@@ -23,8 +23,8 @@ replaces RedoxFS as the launch filesystem (ruled 2026-10-31 UTC), so the launch 
 volume every installed program lives on, not a store beside it.
 
 Reuse: the table and its grammar (`crates/installed_programs`), the approval file and its check
-(`crates/approval_file`), and the launch filesystem the table lives on, UFS2 through the server the
-UFS2 arc (the proposal `ufs2-read-and-write-against-freebsds-tools`) builds. Nothing here proposes a
+(`crates/approval_file`), and the launch filesystem the table lives on, UFS2 through the server milestone
+981 (UFS2, read and write against FreeBSD's tools) builds. Nothing here proposes a
 second table, a second grammar or a second approval format.
 
 ## The failure
@@ -132,9 +132,8 @@ volume.
   the composition checks every package against it.
 - No signing or pinning of the launch volume. That is milestone 917 (basalt's packages build
   reproducibly) and 607's item 6.
-- No UFS2 server. The UFS2 arc (`ufs2-read-and-write-against-freebsds-tools`) builds it, and its
-  phase 2 (make, judge, read) is what a launch volume needs. This milestone starts once that phase
-  lands.
+- No UFS2 server. Milestone 981 builds it, and its phase 2 (make, judge, read) is what a launch
+  volume needs. This milestone waits for 981 phase 2 and starts once that phase lands.
 
 The launch volume's attach point, its measurement and the `mkfs` step that writes `activation/1`
 are provisional names until the implementing lane names them. `compose` keeps the check seam, so
