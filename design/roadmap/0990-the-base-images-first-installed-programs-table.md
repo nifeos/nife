@@ -132,8 +132,9 @@ volume.
   the composition checks every package against it.
 - No signing or pinning of the launch volume. That is milestone 917 (basalt's packages build
   reproducibly) and 607's item 6.
-- No UFS2 server. Milestone 981 builds it, and its phase 2 (make, judge, read) is what a launch
-  volume needs. This milestone waits for 981 phase 2 and starts once that phase lands.
+- No UFS2 server. Milestone 981 (UFS2, read and write: a Rust server with FreeBSD's tools as the
+  oracle) builds it, and its phase 2 (make, judge, read) is what a launch volume needs. This
+  milestone waits for 981 phase 2 and starts once that phase lands.
 
 The launch volume's attach point, its measurement and the `mkfs` step that writes `activation/1`
 are provisional names until the implementing lane names them. `compose` keeps the check seam, so
