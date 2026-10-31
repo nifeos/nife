@@ -129,7 +129,7 @@ reason.
 
 ## How the work splits
 
-Parts 1 and 2 have shipped: the measurement and the mechanism. The remaining four parts are one
+Parts 1, 2 and 3 have shipped: the measurement, the mechanism and the rows. The remaining parts are one
 lane each. Each crate lane re-derives its survivors with `script/mutation -p <crate>` on
 its own worktree. The largest crate here, `grant_plan`, has 1,312 mutants, about 50 minutes at the
 census's measured 2.35 seconds per mutant. A crate lane changes one crate per pull request, so the
@@ -150,7 +150,7 @@ cap.
    as above. The gate stops accepting a row its own pull request did not add or re-verify for a
    survivor on a line that pull request changed. Before switching that rule on, the lane replays
    it over the last 100 merged pull requests and reports how many it would have stopped.
-3. The 94 with no row or a stale one, one lane per driver crate: `designware_ethernet`, `e1000e`,
+3. Shipped. The 94 with no row or a stale one, one lane per driver crate: `designware_ethernet`, `e1000e`,
    `designware_mobile_storage`, then one lane for the remaining five crates together. The first
    question in each is whether rows exist under a key the helper does not match.
 4. The noise, one pull request per crate, largest first. Each adds the `const` assertions and the
@@ -187,9 +187,14 @@ where one of these fits.
 
 ## Follow-on
 
-- **Outstanding.** Part 3, the 94 with no row or a stale one, one lane per driver crate. Checked
-  against the classes CSV's `unrowed` and `stale killed` columns and the carried list
-  `notes/project-metrics/mutation-rowless-survivors.csv`, 50 keys.
+- **Done.** Part 3, the survivors with no row or a stale one. The four crate lanes landed as
+  #2847 (`designware_ethernet`), #2848 (`e1000e`), #2849 (`designware_mobile_storage`) and #2867
+  (the remaining crates). The first question resolved most of it: the rows existed under names a
+  function rename had moved, which the helper cannot cross. Checked on 2026-10-31 (UTC) by a
+  per-crate `script/mutation` run of each of the three big crates: every survivor (2, 16 and 33)
+  has a live `equivalent` or `gap` row, and none has a `killed` one. The classes CSV and the
+  carried list still name the 2026-10-26 census, so they keep counting these until the next
+  census regenerates them.
 - **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first. Checked
   against `notes/project-metrics/mutation-shape-sites.csv`: 516 noise-shape sites, 148 the lines
   prove, 368 a lane must read.

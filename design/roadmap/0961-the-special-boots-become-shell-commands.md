@@ -145,8 +145,8 @@ Three rows run as commands: `null_syscall`, `sink_throughput` (`sink_producer | 
 `map_el0`. The last builds its own address space and frame from a ten-page `--mem`, which the first
 `USAGE` reading of the bench boot's `map_el0` sized (8 pages committed by 508 maps). The bench boot
 spawns the same programs, with the loop counts in `primitive_benchmark_contract`. `ctx_switch` and
-`ipc_rtt_el0` need a peer process and `spawn_el0` builds and destroys processes, so those three
-stay in the bench boot. The fs rows need the filesystem client page, which the shell already
+`ipc_rtt_el0` need a peer process and `spawn_el0` builds and destroys processes, which needs `GRANT` on a budget
+and a `--mem` grant carries none (523's blocker 1), so those three stay in the bench boot. The fs rows need the filesystem client page, which the shell already
 endows, and are not moved here.
 
 The baseline does not move (D6). `script/bench --check` gates against `bench/baseline-*.txt`, taken

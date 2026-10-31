@@ -36,6 +36,7 @@ interfaces = [
     "package_index",
     "installed_programs",
     "approval_file",
+    "program_asks",
     "boot_slot",
     "nifefs",
     "globally_unique_identifier_partition_table",

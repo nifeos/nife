@@ -146,6 +146,7 @@ portable_executable	host	retired
 primitive_benchmark_contract	shared	fixtures,kernel
 process_builder	userspace	components,fixtures
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
+program_asks	userspace	components,fixtures
 ps	userspace	components
 regions	kernel	retired
 screen_console	shared	components,kernel,uefi_loader

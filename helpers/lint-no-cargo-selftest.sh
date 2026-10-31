@@ -7,6 +7,8 @@
 #
 # Each case is a property the pre-push hook would lose silently if it broke:
 #   1. a section that invokes cargo is dropped, in shell and in a Python argv;
+#   1b. a section that starts cargo through the clippy recorder, or says it needs the cargo
+#       sections' saved output, is dropped too (milestone 980 (script/lint stops paying per-item costs), part 6);
 #   2. prose that only mentions cargo is kept (a false drop shrinks the hook without a signal);
 #   3. a section that opts in with the marker and the guard is kept;
 #   4. a marker on a section with no cargo, and a marker with no guard, fail;
@@ -31,6 +33,11 @@ python3 - <<'PY'
 import subprocess
 subprocess.run(["cargo", "metadata"])
 PY
+echo "==> recorded clippy"
+python3 helpers/clippy_record.py host cargo clippy --workspace
+echo "==> reads what the cargo sections saved"
+# needs-cargo-output: this one runs no cargo but judges what the sections above saved
+python3 helpers/lint_ratchet.py --check target/lint-clippy
 echo "==> prose only"
 # cargo clippy is only named in this comment
 echo "the word cargo appears here"
@@ -40,7 +47,7 @@ if [ -n "$LINT_NO_CARGO" ]; then exit 0; fi
 cargo metadata
 FIXTURE
 got="$(run list "$dir/ok.sh" | tr -s ' ' | tr '\n' ';')"
-want="skip ==> shell cargo;skip ==> python cargo;run ==> prose only;run ==> opted in;"
+want="skip ==> shell cargo;skip ==> python cargo;skip ==> recorded clippy;skip ==> reads what the cargo sections saved;run ==> prose only;run ==> opted in;"
 [ "$got" = "$want" ] || fail "partition was '$got', wanted '$want'"
 run emit "$dir/ok.sh" | grep -q 'cargo clippy --workspace' && fail "emit kept a cargo section"
 run emit "$dir/ok.sh" | grep -q 'the word cargo appears' || fail "emit dropped a prose-only section"

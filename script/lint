@@ -203,7 +203,7 @@ bare_excludes=""
 for c in $bare_crates; do
     bare_excludes="$bare_excludes --exclude $c"
 done
-cargo clippy --workspace --exclude kernel --exclude system_tests $bare_excludes \
+python3 helpers/clippy_record.py host cargo clippy --workspace --exclude kernel --exclude system_tests $bare_excludes \
     --all-targets -- -D warnings
 
 # The RedoxFS host tool (tools/redoxfs_host) is its own workspace, outside ours on purpose (it wraps
@@ -211,20 +211,23 @@ cargo clippy --workspace --exclude kernel --exclude system_tests $bare_excludes 
 # code there is still held to -D warnings. The engine it depends on is external to its workspace too,
 # so clippy does not lint upstream redoxfs, only our tool.
 echo "==> clippy: redoxfs_host (its own workspace)"
-cargo clippy --manifest-path tools/redoxfs_host/Cargo.toml --all-targets -- -D warnings
+python3 helpers/clippy_record.py tools/redoxfs_host/clippy cargo clippy \
+    --manifest-path tools/redoxfs_host/Cargo.toml --all-targets -- -D warnings
 
 # The atlas generator is its own workspace so the font parser and the rasteriser stay out of the
 # graph any shipped program is built from (milestone 142 (a text display good enough that people use
 # it instead of a GUI)); lint it on its own for the same reason.
 echo "==> clippy: glyph_atlas_generator (its own workspace)"
-cargo clippy --manifest-path tools/glyph_atlas_generator/Cargo.toml --all-targets -- -D warnings
+python3 helpers/clippy_record.py tools/glyph_atlas_generator/clippy cargo clippy \
+    --manifest-path tools/glyph_atlas_generator/Cargo.toml --all-targets -- -D warnings
 
 # redoxfs_server is its own workspace too (it wraps the vendored RedoxFS engine, which we keep out of our
 # gates). Only the rustdoc pass reached it before milestone 41, so its own code was never clippy'd,
 # and there was a real `deref_addrof` sitting in `second_mount` when this line was added. `-D warnings`
 # applies to local crates only, so the vendored engine's own warnings do not fail the run.
 echo "==> clippy: redoxfs_server (its own workspace)"
-cargo clippy --manifest-path redoxfs_server/Cargo.toml --all-targets -- -D warnings
+python3 helpers/clippy_record.py redoxfs_server/clippy cargo clippy \
+    --manifest-path redoxfs_server/Cargo.toml --all-targets -- -D warnings
 
 # The fuzz workspace (milestone 42), a fourth. `cargo clippy` is `cargo check` semantics, so this
 # does NOT link libFuzzer or need a sanitizer; it type-checks four fuzz targets and the four crates
@@ -232,7 +235,8 @@ cargo clippy --manifest-path redoxfs_server/Cargo.toml --all-targets -- -D warni
 # else compiles, which makes it exactly the kind of code that rots: it is the one place in the tree
 # where a crate's API can change and nothing notices until somebody goes looking for a bug.
 echo "==> clippy: fuzz targets (its own workspace)"
-cargo clippy --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
+python3 helpers/clippy_record.py fuzz/clippy cargo clippy \
+    --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
 
 # The proofs' own code, which nothing else in this file compiles (milestone 113).
 #
@@ -298,7 +302,8 @@ cargo clippy --workspace --exclude kernel --exclude system_tests $bare_excludes 
     --cfg kani --extern "kani=$shim/libkani.rlib" -L "$shim" -D warnings
 
 echo "==> clippy: kernel + user + user_mode_runtime (aarch64)"
-cargo clippy -p kernel -p components -p fixtures -p user_mode_runtime --target aarch64-unknown-none-softfloat --all-targets -- -D warnings
+python3 helpers/clippy_record.py aarch64 cargo clippy -p kernel -p components -p fixtures \
+    -p user_mode_runtime --target aarch64-unknown-none-softfloat --all-targets -- -D warnings
 
 # The system-test image (milestone 609 (the system tests leave the kernel crate)), in its own
 # invocation and never beside `-p kernel`: it turns on the kernel's `system_tests` feature, cargo
@@ -306,7 +311,8 @@ cargo clippy -p kernel -p components -p fixtures -p user_mode_runtime --target a
 # shared run would quietly lint the kernel with its dead-code check off. `--all-targets` is what
 # reaches the suite, which is `cfg(test)`.
 echo "==> clippy: system_tests (aarch64)"
-cargo clippy -p system_tests --target aarch64-unknown-none-softfloat --all-targets -- -D warnings
+python3 helpers/clippy_record.py system_tests cargo clippy -p system_tests \
+    --target aarch64-unknown-none-softfloat --all-targets -- -D warnings
 
 # The confinement tests' attacker roles (milestone 261 (the NVMe driver leaves the kernel)'s
 # DMA-escape test), compiled only under `components/confinement_attackers`. Nothing above reaches
@@ -360,8 +366,15 @@ cargo clippy -p components --features confinement_attackers --target aarch64-unk
 # What it does cover is every line of `arch/x86_64/` and every portable file compiled with
 # `target_arch = "x86_64"`, held to the same `-D warnings` as the other two.
 echo "==> clippy: kernel (x86_64, the binary only; see the note above)"
-cargo clippy -p kernel --target x86_64-unknown-none -- \
+python3 helpers/clippy_record.py x86_64 cargo clippy -p kernel --target x86_64-unknown-none -- \
     -D warnings -A dead_code -A clippy::reversed_empty_ranges
+
+# The kernel's default build on riscv64, the one configuration of the lint ratchet's that no
+# pass above linted (milestone 980, part 6): the feature loop below builds it with a feature on,
+# and the ratchet used to run its own clippy for this case. It runs here at `-D warnings` so the
+# ratchet reads its diagnostics, and it was clean when it was added.
+echo "==> clippy: kernel (riscv64)"
+python3 helpers/clippy_record.py riscv64 cargo clippy -p kernel --target riscv64imac-unknown-none-elf -- -D warnings
 
 # `bench` on x86_64, same flags, same reasoning: see the note above this block.
 #
@@ -1016,36 +1029,20 @@ PYEOF
 # rather than line-matched because `rustfmt` splits a long `cfg_attr` across lines, and the crate-wide
 # riscv one would have been split the moment it grew a second condition.
 echo "==> module-wide dead-code suppression"
-found=""
-rs_seen=0
-for f in $(git ls-files '*.rs' | grep -v '^vendor/' | grep -v '^patches/'); do
-    rs_seen=$((rs_seen + 1))
-    hit=$(awk '
-        /^[[:space:]]*#!\[/ { collecting = 1; buf = ""; ln = FNR; opens = 0; closes = 0 }
-        collecting {
-            buf = buf " " $0
-            opens += gsub(/\(/, "(")
-            closes += gsub(/\)/, ")")
-            if (opens <= closes) {
-                # One exemption, and it is not dead code: `unused_crate_dependencies` is about the
-                # manifest, fires per target, and a bin target can only silence it crate-wide.
-                # `kernel/src/main.rs` is a link line that names none of the package`s dependencies
-                # (milestone 609 (the system tests leave the kernel crate)). Only an attribute whose
-                # whole list is that one lint passes; anything more in it is still caught.
-                if (buf ~ /dead_code|unused/ && buf !~ /^[[:space:]]*#!\[allow\(unused_crate_dependencies\)\][[:space:]]*$/) { gsub(/^[[:space:]]+/, "", buf); print ln ": " buf }
-                collecting = 0
-            }
-        }
-    ' "$f")
-    [ -n "$hit" ] && found="$found
-$f:$hit"
-done
-if [ "$rs_seen" -eq 0 ]; then
+# One interpreter reads every tracked .rs file (helpers/dead_code_suppression.py; it had been one
+# awk per file). It exits 1 with the hits, 3 when it read no .rs files at all, and carries the
+# exemption for an attribute whose whole list is `unused_crate_dependencies`: that lint is about the
+# manifest, fires per target, and a bin target can only silence it crate-wide (milestone 609 (the
+# system tests leave the kernel crate)).
+python3 helpers/dead_code_suppression.py --selftest >/dev/null
+status=0
+found=$(python3 helpers/dead_code_suppression.py) || status=$?
+if [ "$status" -eq 3 ]; then
     echo "lint: the dead-code sweep read no .rs files at all, so it judged nothing" >&2
     echo "(milestone 401). Either the filters above are wrong or this is not the repository." >&2
     exit 1
 fi
-if [ -n "$found" ]; then
+if [ "$status" -ne 0 ]; then
     echo "lint: module-wide dead-code suppression (an inner attribute blindfolds the whole module):" >&2
     echo "$found" >&2
     echo "" >&2
@@ -3455,53 +3452,32 @@ echo "==> the lint ratchet's selftest (clippy lints counted against a baseline t
 # messages live in helpers/lint_ratchet.py, whose header is the manual. The selftest is fixtures
 # only, so it runs in the pre-push mode; the check needs clippy and runs in the next section.
 python3 helpers/lint_ratchet.py --selftest
-echo "==> the lint ratchet (clippy at -W, one more pass per configuration)"
+echo "==> the lint ratchet (the clippy sections' saved diagnostics, judged; no clippy of its own)"
 # The panic proposal's mechanism (design/roadmap/0896-panics-in-the-kernel-and-the-parsers-are-
 # counted-and-fall.md), built by milestone 888 with one lint registered: `too_many_lines` at 100
 # code lines (calef, 2026-10-09 UTC), one row per function in design/lint-baseline.tsv, over every
 # tracked .rs file outside vendor/ (§283 (a function is held to 100 code lines by a lint ratchet)).
-# The text measure decides every row; these passes are the clippy cross-check on each function they
-# compile. They are the lint census's five configurations (notes/lint-census-2026-10-09.md), with
-# --all-targets where this script's own passes above build test code, plus system_tests and the two
-# host-only workspaces. Each reuses the dependency builds of the -D warnings pass above it, so only
-# workspace members are re-checked. A nested workspace writes its JSON at its own path under the
-# directory, which is how the helper puts its workspace-relative paths back under the repository
-# root.
-lint_ratchet_dir="$(mktemp -d "${TMPDIR:-/tmp}/lint-ratchet.XXXXXX")"
-mkdir -p "$lint_ratchet_dir/redoxfs_server" "$lint_ratchet_dir/tools/redoxfs_host" \
-    "$lint_ratchet_dir/tools/glyph_atlas_generator" "$lint_ratchet_dir/fuzz"
-lint_ratchet_flags="$(python3 helpers/lint_ratchet.py --flags)"
-# The host pass's exclusions are derived (helpers/host-excluded-crates.sh), as in the two passes
-# above; `components` and `fixtures` are this pass's own judgment, named after the derived flags.
-bare_crates=$(helpers/host-excluded-crates.sh) || exit 1
-bare_excludes=""
-for c in $bare_crates; do
-    bare_excludes="$bare_excludes --exclude $c"
-done
-# shellcheck disable=SC2086
-cargo clippy --message-format=json --workspace --exclude kernel --exclude system_tests $bare_excludes \
-    --exclude components --exclude fixtures --all-targets \
-    -- $lint_ratchet_flags > "$lint_ratchet_dir/host.json" 2>/dev/null
-# shellcheck disable=SC2086
-cargo clippy --message-format=json -p kernel -p components -p fixtures -p user_mode_runtime \
-    --target aarch64-unknown-none-softfloat --all-targets \
-    -- $lint_ratchet_flags > "$lint_ratchet_dir/aarch64.json" 2>/dev/null
-# shellcheck disable=SC2086
-cargo clippy --message-format=json -p system_tests --target aarch64-unknown-none-softfloat \
-    --all-targets -- $lint_ratchet_flags > "$lint_ratchet_dir/system_tests.json" 2>/dev/null
-# shellcheck disable=SC2086
-cargo clippy --message-format=json -p kernel --target riscv64imac-unknown-none-elf \
-    -- $lint_ratchet_flags > "$lint_ratchet_dir/riscv64.json" 2>/dev/null
-# shellcheck disable=SC2086
-cargo clippy --message-format=json -p kernel --target x86_64-unknown-none \
-    -- $lint_ratchet_flags -A dead_code > "$lint_ratchet_dir/x86_64.json" 2>/dev/null
-for ws in redoxfs_server tools/redoxfs_host tools/glyph_atlas_generator fuzz; do
-    # shellcheck disable=SC2086
-    cargo clippy --message-format=json --manifest-path "$ws/Cargo.toml" --all-targets \
-        -- $lint_ratchet_flags > "$lint_ratchet_dir/$ws/clippy.json" 2>/dev/null
-done
-python3 helpers/lint_ratchet.py --check "$lint_ratchet_dir"
-rm -rf "$lint_ratchet_dir"
+# The text measure decides every row; the clippy diagnostics are the cross-check on each function
+# the passes compile.
+#
+# Milestone 980 (script/lint stops paying per-item costs), part 6: this section used to run clippy
+# a second time over every configuration, 23 to 26 seconds. It now reads what the clippy sections
+# above saved. Each of them runs through helpers/clippy_record.py, which adds the ratcheted lints
+# as `--force-warn` (a `-D warnings` leaves that a warning) and writes clippy's JSON and a sidecar
+# under target/lint-clippy/. The configurations are the lint census's five
+# (notes/lint-census-2026-10-09.md), with --all-targets where the passes above build test code,
+# plus system_tests and the host-only workspaces; helpers/lint_ratchet.py's CONFIGURATIONS names
+# each one and the arguments its section must have run with.
+#
+# **Order, and what stops it.** The saved files exist only after the clippy sections have run, so
+# this section comes after all of them (and after the `--clippy` cut above, which stops before it,
+# as it always did). A file that is missing, unreadable, altered, older than the tree, made with
+# other flags, or made by a section that failed is a non-zero exit that names the file; the
+# freshness rule is in helpers/lint_ratchet.py's header. `--no-cargo` runs no clippy section and so
+# skips this one, as it skipped the pass it replaces, and the marker below is what tells
+# helpers/lint-no-cargo.awk that: this section starts no cargo itself.
+# needs-cargo-output: judges target/lint-clippy, which the clippy sections above write
+python3 helpers/lint_ratchet.py --check target/lint-clippy
 echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07; per-directory caps and in-body ceilings, milestone 929)"
 # Milestone 860 (comments state the constraint as it is now). calef ruled the ruling on 2026-10-07
 # (UTC), deciding fork (c) of notes/comment-cost-2026-10-07.md (PR #1800), recorded as §267 (a
@@ -3734,6 +3710,13 @@ python3 helpers/mutation_kernel_census.py --selftest >/dev/null
 # that exact shape, cheap enough (one `git init`, five commits) to run on every invocation here.
 echo "==> the shared scope/architect-label merge-base resolution"
 helpers/scope-merge-base-selftest.sh >/dev/null
+
+# A magic or a public ABI number that moves owes its version constant in the same change (milestone
+# 956 step 7, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules
+# as fixtures and a scratch repository; the check reads this branch's diff against the merge base.
+echo "==> format values move with their version constants"
+python3 helpers/format_values_check.py --selftest
+python3 helpers/format_values_check.py
 
 echo "==> em-dashes"
 # calef's standing style rule (CLAUDE.md): no em-dashes, use commas, periods, semicolons or
