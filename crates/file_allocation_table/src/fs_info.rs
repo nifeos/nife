@@ -6,11 +6,11 @@
 //! plain wrong on a volume a stranger wrote. So the parse reports a value only when it could be
 //! true of this volume, and nothing in the crate depends on one for correctness. The layout is
 //! that of Microsoft's "FAT: General Overview of On-Disk Format", version 1.03, section 5, "FAT32
-//! FSInfo Sector Structure and Backup Boot Sector".
+//! `FSInfo` Sector Structure and Backup Boot Sector".
 //!
 //! Name: provisional. The module for the sector `BootSector::fs_info_sector` points at.
 
-/// `FSI_LeadSig`, "RRaA", at byte 0.
+/// `FSI_LeadSig`, "`RRaA`", at byte 0.
 const LEAD_SIGNATURE: u32 = 0x4161_5252;
 /// `FSI_StrucSig`, "rrAa", at byte 484.
 const STRUCTURE_SIGNATURE: u32 = 0x6141_7272;
@@ -41,7 +41,7 @@ pub enum FsInfoError {
 
 /// **The two `FSInfo` hints**, each present only when it could be true of the volume.
 ///
-/// Name: provisional. The specification's "FSInfo", spelled as the crate spells it
+/// Name: provisional. The specification's "`FSInfo`", spelled as the crate spells it
 /// (`BootSector::fs_info_sector`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[doc(alias = "FSInfo")]

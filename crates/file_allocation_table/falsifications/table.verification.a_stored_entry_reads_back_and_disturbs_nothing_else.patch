@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::table::verification::a_stored_entry_reads_back_and_disturbs_nothing_else`.
+
+The defect: a FAT12 store into an odd cluster keeps the whole low byte of the pair instead of its low nibble, so bits of the neighbour's old value leak into the new entry's low bits.
+
+Expected to fail: the harness's `assert_eq!` that the stored entry reads back as the value's low bits.
+
+diff --git a/crates/file_allocation_table/src/table.rs b/crates/file_allocation_table/src/table.rs
+--- a/crates/file_allocation_table/src/table.rs
++++ b/crates/file_allocation_table/src/table.rs
+@@ -167,7 +167,7 @@ pub(crate) fn store(
+             let value = (value & 0xFFF) as u16;
+             let old = u16::from_le_bytes([bytes[0], bytes[1]]);
+             let new = if cluster & 1 == 1 {
+-                (old & 0x000F) | (value << 4)
++                (old & 0x00FF) | (value << 4)
+             } else {
+                 (old & 0xF000) | value
+             };

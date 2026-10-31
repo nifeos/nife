@@ -200,18 +200,6 @@ impl<D: WritableSectorDevice> Volume<D> {
             .map_err(ChainError::Device)
     }
 
-    /// Write volume-relative `sector` from `bytes`, which is one sector long.
-    pub(crate) fn write_sector(
-        &mut self,
-        sector: u32,
-        bytes: &[u8],
-    ) -> Result<(), ChainError<D::Error>> {
-        self.cached = None;
-        self.device
-            .write_sector(u64::from(sector), bytes)
-            .map_err(ChainError::Device)
-    }
-
     /// Store `entry` for `cluster` in every live copy of the table, read-modify-write one sector
     /// at a time. A FAT12 entry that straddles two sectors rewrites both, the later one first.
     pub(crate) fn write_table_entry(
@@ -292,13 +280,13 @@ impl<D: WritableSectorDevice> Volume<D> {
         let clusters = self.boot.clusters();
         let hint = self.writer.next_free;
         let cluster = allocate(self, hint)?.ok_or(AllocationError::VolumeFull)?;
-        if let Some(last) = extending {
-            if let Err(error) = self.write_table_entry(last, TableEntry::Next(cluster)) {
-                // Give the cluster back, so a failed link does not leak it. If this write fails
-                // too, the cluster stays marked and the error that matters is the first.
-                let _ = self.write_table_entry(cluster, TableEntry::Free);
-                return Err(error.into());
-            }
+        if let Some(last) = extending
+            && let Err(error) = self.write_table_entry(last, TableEntry::Next(cluster))
+        {
+            // Give the cluster back, so a failed link does not leak it. If this write fails too,
+            // the cluster stays marked and the error that matters is the first.
+            let _ = self.write_table_entry(cluster, TableEntry::Free);
+            return Err(error.into());
         }
         self.writer.next_free = if cluster - 2 + 1 < clusters {
             cluster + 1
