@@ -15,6 +15,8 @@ fn run(refusals: u32, patience_ns: u64) -> (bool, u32) {
         patience_ns,
         || {
             asks.set(asks.get() + 1);
+            // A retry that ignores its bound fails here instead of hanging the run.
+            assert!(asks.get() < 1_000, "the retry never stopped asking");
             if asks.get() > refusals { 0 } else { -1 }
         },
         || clock.get(),
