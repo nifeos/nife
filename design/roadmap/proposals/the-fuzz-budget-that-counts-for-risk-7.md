@@ -11,8 +11,8 @@ needs_person: yes
 
 Raised by lane/confined-fuzz-budget on 2026-10-31 (UTC), asked to set the bar that criterion (d)
 of risk 7 (the confinement claim is false) names and nobody has set. An architect ruled on
-2026-10-31 (UTC), and this document was rewritten around the ruling. Part of it is now in force;
-five questions remain open, and I ask them one at a time. The file name keeps its first form so that
+2026-10-31 (UTC) on the standard and on question 1, and this document states those rulings. Four
+questions remain open, and I ask them one at a time. The file name keeps its first form so that
 links to it hold.
 
 Reuse: the continuous run reuses the three fuzzers and the weekly sweep jobs as they stand. Milestone
@@ -25,15 +25,23 @@ service's standards, not its code.
   confinement fuzzers. Decided 2026-10-31 (UTC).
 - That replaces the earlier idea of a fixed seed count or a fixed number of CPU-hours. The fuzzers
   run continuously, and those two projects' standards, set out below, bound what they claim.
-- Nothing else is in force. Criterion (d)'s wording, the triage rules, the coverage measure, the
-  machine and the clock are the open questions. Until an architect rules them, risk 7 stays AMBER and no run
-  counts toward (d).
+- Criterion (d) of risk 7 is the four conditions below, all of which must hold on a date. Decided
+  2026-10-31 (UTC).
+  1. The fuzzer runs now, on the architectures claimed.
+  2. A measure of its coverage exists, and coverage has stopped growing or the growth has an explanation.
+  3. Every finding has a fix or sits inside the triage clock, and none is older.
+  4. The corpus and the findings live where others can see them.
+- The rating follows what is true on that date, and it can rise again if a condition lapses.
+- A 14-day run is at most a release smoke test. It does not count toward the rating.
+- Not yet in force: the coverage measure (question 2), the false-red fix as first work (question 3),
+  the host and operator (question 4), and the triage clock's length (question 5). Until an architect rules on those, nothing can satisfy conditions 1 to 4, so risk 7 stays AMBER and no
+  run counts toward (d).
 
 ## Where criterion (d) stands
 
 Risk 7 is AMBER. The architect agreed the four criteria for green on 2026-10-06 (UTC). Criterion (d)
-reads: milestone 779 (fuzz the surface a confined process can reach), "run to a set budget with no
-escape." Re-derived from the tree and the workflow logs at `9f62334f5`:
+names milestone 779 (fuzz the surface a confined process can reach) and now reads as the four
+conditions above. Re-derived from the tree and the workflow logs at `9f62334f5`:
 
 - Milestone 779 reads BUILT, and it holds three fuzzers. Part (a) is three host `cargo-fuzz`
   targets over service request handlers (milestone 751 (fuzz the services' request handlers):
@@ -171,56 +179,55 @@ so rather than imply parity.
 
 ## The questions that remain
 
-I ask them one at a time, in this order, each after an architect rules on the one before. The first sits on the pull
-request. This list keeps the rest, and each returns in full when its turn comes.
+I ask them one at a time, in this order, each after an architect rules on the one before. An architect has ruled on question 1;
+question 2 sits on the pull request. This list keeps the rest, and each returns in full when
+its turn comes.
 
-1. What criterion (d) of risk 7 becomes under continuous fuzzing, and what the 14-day idea becomes
-   (an idea raised in conversation and not recorded elsewhere in the tree).
+1. An architect ruled on 2026-10-31 (UTC): what criterion (d) becomes, and the 14-day run. See "What is in force".
 2. The coverage measure the in-guest drivers need, and what it costs.
 3. Whether the false-red fix is the first work.
 4. Where the fuzzers run and who operates them.
-5. The triage clock.
+5. The triage clock, which condition 3 names.
 
-### Question 1: what criterion (d) becomes
+### Question 2: the coverage measure the in-guest drivers need
 
-Recommendation: criterion (d) lists four conditions. The confinement fuzzers run continuously at a pinned
-configuration. A person triages every finding within a stated time. No confirmed escape stays open
-longer than a stated age. Each driver's coverage has plateaued. The stated time and age are
-question 5's. The plateau needs question 2's measure; until it exists, (d) lists the plateau as
-unmet and says so.
+Recommendation: (A) compile the fuzz build of the kernel with edge-coverage instrumentation, as
+Linux does with KCOV, and have the driver read a coverage bitmap from the guest at the end of each
+seed. It works under hardware acceleration, so it works at the 200 to 450 seeds/s the appendix
+measures. The cost is a kernel build variant plus a read-out path, and a slowdown that nobody has
+measured. The first piece of work measures that slowdown.
 
-Background. The plan behind criterion (d) was to run to a fixed budget and call the
-result clean. Both standards above refuse that shape. OSS-Fuzz and syzbot fuzz without stopping and
-treat a finding as the output. What they claim is a state: this many bugs are open, the oldest is
-this old, coverage is this much. A quiet period supports no claim of its own in what I read. The
-equivalent for nife is a set of conditions that hold at a date, each one checkable, with a dashboard
-keeping the numbers.
+Background. Condition 2 needs a number that says which kernel code the fuzzers have reached, so
+that "has stopped growing" has something to read. The host targets have one (libFuzzer's edge
+count). The two in-guest drivers have none: each seed is an independent random draw, and no run
+can say whether seed 300,000 reached anything seed 1 did not. The same measure would also let a
+driver learn from what it reached, which it cannot today.
 
 Options:
 
-- (A) Conditions at a date, as recommended: continuous operation, a triage time, a maximum age for
-  an open escape, a coverage plateau.
-- (B) Conditions without the plateau, until the coverage measure exists. It meets sooner and
-  claims less about depth; the record says so.
-- (C) A fixed continuous period, for example 14 days with no escape, then green. Closest to the
-  earlier idea. It is a stopping rule, which neither standard has, and it would claim more after a
-  quiet fortnight than syzbot or OSS-Fuzz claim after years. What it keeps: a short run is a
-  cheap smoke test, so it could stay as the gate on a release, not as the meaning of (d).
+- (A) Compiler instrumentation in the fuzz build, a bitmap in the guest, read at the end of a
+  seed. Recommended. Works under KVM and under emulation. Adds a build variant to keep honest.
+- (B) A QEMU TCG plugin that counts translated blocks. It needs no kernel change, but it runs only
+  under full emulation, which the appendix measures at 20 and 8 seeds/s, 20 to 28 times slower
+  than KVM. It cannot measure the runs that matter.
+- (C) A counter in the referee that records which claims rows each seed exercised. Cheap and
+  already meaningful, but it measures rows touched, not code reached, so condition 2 would read
+  against the claims table and not against the kernel.
 
-Prior art. OSS-Fuzz measures a project by open findings against the 90-day clock and by coverage
-reports. syzbot measures by open and fixed counts, the age of each open bug, and the coverage
-total. Neither declares a project clean.
+Prior art. syzkaller collects coverage with KCOV, compiler-inserted points that are basic blocks
+or edges, and syzbot reports it as totals and heat maps by repository and subsystem (read). The
+documentation warns that coverage may poorly relate to the source (read). OSS-Fuzz uses Clang
+source-based coverage over the aggregated corpus and Fuzz Introspector to explain plateaus (read).
+Rust's nightly compiler has a sanitizer-coverage flag for this (from memory, not checked here).
 
-Where nife differs. nife's claim is a security claim (no escape), where the others report bugs of
-every kind. That is why (d) keeps a maximum age for an escape in particular, shorter than 90 days
-(question 5), and why a stopping rule was attractive. The drivers' statistical shape would still
-bound a per-seed rate over a clean stretch, and a record may state that bound as a fact about a
-run, not as the criterion.
+Where nife differs. The kernel runs the instrumented code in a guest with no operating system
+under it, so the bitmap needs shared memory that the driver reads back, as KCOV does with a mapped
+buffer. nife also has a second oracle, the referee, so the dashboard can report a coverage plateau and a rows-touched
+count side by side.
 
-Example. On a given date the dashboard shows the following. The user-mode driver and the kernel-thread driver
-have run for 60 days at commit `C`. It lists 41 findings, all triaged within the stated time. Three confirmed
-escapes are fixed and none is open. User-mode coverage has stayed flat for 14 days. Criterion (d)
-holds on that date, and the record cites those numbers.
+Example. The user-mode driver runs 10,000 seeds. The bitmap shows 14,200 edges reached, and the
+last 4,000 seeds added 12. The dashboard reports 14,200 edges with growth of 12 per 4,000 seeds,
+and condition 2 reads that as stopped growing.
 
 ## Appendix: measurements, 2026-10-31 (UTC)
 
@@ -262,20 +269,20 @@ from an empty corpus, which reached 2,785 libFuzzer edges in three minutes and h
 
 ## The seven questions
 
-1. Considered and lost: question 1's options above. The earlier fixed-budget forms (a seed count by
-   the rule of three, CPU-hours, a per-claim corpus) lost under the ruling.
+1. Considered and lost: question 2's options above. The earlier fixed-budget forms (a seed count
+   by the rule of three, CPU-hours, a per-claim corpus) lost under the ruling.
 2. In this tree: the outsider passes pin a commit; the sweeps print seeds and rates.
-3. Prior art: above, with what was not read marked.
-4. The premise holds: nothing sets the bar, and no run counts against (d).
-5. Cost: measured in the appendix. Operating cost depends on question 4.
-6. Reversible: criterion (d) is a record, not a contract, and nobody has acted on one.
-7. At equal cost this would still choose conditions at a date over a fixed run; the recommendation
-   is not about effort.
+3. Prior art: above, with what I did not read marked.
+4. The premise holds: no coverage measure exists for the in-guest drivers.
+5. Cost: the appendix measures run rates; nobody has measured the instrumentation slowdown.
+6. Reversible: a build variant and a record change cheaply, and nobody has acted on either.
+7. At equal cost this would still choose (A); the recommendation is not about effort.
 
 ## What waits on this
 
-Criterion (d), and so risk 7's green, until an architect rules on questions 1 to 5. No scoped work can start on the ruling alone; question 3 is the candidate.
+Conditions 1 to 4 of criterion (d), and so risk 7's green, until an architect rules on questions 2
+to 5. No scoped work can start on the rulings alone; question 3 is the candidate.
 
 ## What I need from you
 
-Question 1 only. The others wait.
+Question 2 only. The others wait.
