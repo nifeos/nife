@@ -40,7 +40,8 @@ the same flags. The pure predicate is `paging::Flags::makes_writable_executable_
 stores no permissions, so the check walks the leaf of each record that names the same frame. A
 read-only mapping cannot complete the pair, so it skips the scan, which leaves `map_el0`'s
 read-only loop out of the cost. A caller sees `NotPermitted`, the error's second case, "the object
-refuses the operation whatever the rights". Inside the kernel the refusal is
+refuses the operation whatever the rights", with no new error code and no wire-format change
+(ruled 2026-10-31 UTC, #2965). Inside the kernel the refusal is
 `paging::MapError::WritableAndExecutable`.
 
 The check sees one address space at a time (ruled 2026-10-31 UTC). The same frame writable in one
