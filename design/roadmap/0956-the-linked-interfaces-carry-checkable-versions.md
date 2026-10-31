@@ -16,8 +16,8 @@ calef ruled the shape that day in PR #2852's comment, and ruled on 2026-10-31 (U
 covers condition 4 of milestone 756 and nothing more. The shape proposal holds the questions, the
 options and the ruling; this block holds the plan.
 
-The gate the plan serves is condition 4 of milestone 756, which moves `process-tools`, `core-tools`
-and `disk-tools` out first. Each interface the first cut links
+The gate the plan serves is condition 4 of milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the first
+code to leave this repository). Each interface the first cut links
 carries a checkable version, and the moved package declares what it links.
 
 Reuse: the plan reuses machinery that exists, per AGENTS.md rule 6. It takes the `abi` crate's
