@@ -1,4 +1,5 @@
-# Transcribed by hand from linux-fio-read.jpg and linux-fio-write.jpg (photographs of xenon's screen).
+# Transcribed by hand from linux-fio-read.jpg and linux-fio-write.jpg (photographs of xenon's screen), kept in git at
+# https://github.com/nifeos/nife/tree/cd8fefa3c68fd170e9e92f2747276ab47e9ddacf/bench/xenon-2026-10-04
 # Run by calef on xenon, 2026-10-04, evening (bench clock 23:12, zone not recorded).
 # System: Fedora 44 Workstation Live USB, fio-3.40. Both runs were one pass, queue depth 1.
 # Commands are step 5 of notes/risk-6-bench-evening.md, with the same window nife used:
@@ -16,7 +17,7 @@ write:  IOPS=77.6k, BW=303MiB/s (318MB/s), 64.0MiB in 211 ms
 
 # Runs B and C, same evening, same window and shape. The nvme module was reloaded with
 # poll_queues=1 first, and /sys/block/nvme0n1/queue/io_poll printed 1.
-# Photographs: linux-fio-pvsync2-{read,write}.jpg and linux-fio-io_uring-{write,read}.jpg.
+# Photographs: linux-fio-pvsync2-{read,write}.jpg and linux-fio-io_uring-{write,read}.jpg, at https://github.com/nifeos/nife/tree/cd8fefa3c68fd170e9e92f2747276ab47e9ddacf/bench/xenon-2026-10-04
 
 # Run B (bench clock about 23:20): --ioengine=pvsync2 --hipri, read then write.
 # Polling did NOT engage: ctx=16384 on read, 16385 on write (one switch per I/O).
