@@ -15,7 +15,7 @@ device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
 designware_ethernet = { version = "0.1.0", path = "../designware_ethernet" }
 designware_mobile_storage = { version = "0.1.0", path = "../designware_mobile_storage" }
 jh7110_clock_and_reset = { version = "0.1.0", path = "../jh7110_clock_and_reset" }
-jh7110_entropy = { git = "https://github.com/nifeos/jh7110_entropy", rev = "1827d439237b1708a6236f68fc0b807388755949" }
+jh7110_entropy = { version = "0.1.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "1827d439237b1708a6236f68fc0b807388755949" }
 
 [lints]
 workspace = true
