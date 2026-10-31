@@ -1,8 +1,10 @@
 # The composed image's first installed-programs table
 
+*Name: provisional, minted 2026-10-31 (UTC) by lane milestone/909-item-3-one-reading-of-a-programs-asks.*
+
 Milestone 909 (basalt composes the bootable image from its packages) item 3 has two halves. The
-composer checks every package against the image's approval file, and that half is built in
-`cargo xtask base-image`. The other half writes the grant records that check approves into the
+composer checks every package against the image's approval file, and `cargo xtask base-image`
+already does that. The other half writes the grant records that check approves into the
 image's first installed-programs table. That table lives as files under `activation/` on the UFS2
 launch volume (ruled 2026-10-30 UTC on #2894, and 2026-10-31 UTC for UFS2 as the launch
 filesystem), so it waits on phase 2 of the UFS2 arc, `ufs2-read-and-write-against-freebsds-tools`.
@@ -33,15 +35,15 @@ The build settled the generation's contents, and none of it depends on the conta
 
 ## What measured boot needs from any carrier outside the archive
 
-The measurement table inside the `nifefs` archive vouches for archive entries only. Bytes that ride
-beside the archive are vouched for by nothing unless the kernel's trust root names them. The
+The measurement table inside the `nifefs` archive vouches for archive entries only. Nothing vouches
+for bytes that ride beside the archive unless the kernel's trust root names them. The
 container build added that name (one manifest line beside the program measurements) and two
 refusals in the kernel's hand-over to the progenitor:
 
 1. A kernel built against a table refuses to hand over when the table is absent.
 2. A kernel built without one refuses to hand over when unnamed bytes are present.
 
-Both refusals are needed. The first stops an image booting with its grants stripped; the second
+The boot needs both refusals. The first stops an image booting with its grants stripped; the second
 stops an attacker adding grants to an image that had none. The check runs before the progenitor
 starts, because the progenitor grants the network and resolver zones from this table when it
 spawns a program. A table read after that point would already have granted what it says.
@@ -52,7 +54,7 @@ the measurement cannot cover the whole volume. The phase 2 lane has to decide wh
 seed generation by its own digest, the volume until its first write, or the approval file alone,
 with each later generation checked against it as the install already does.
 
-## Why the container was set aside
+## Why the ruling set the container aside
 
 A second store would have owed a migration onto the launch filesystem, and two stores raise a
 question no reader should have to answer: which one `current` names when both exist. One volume, one

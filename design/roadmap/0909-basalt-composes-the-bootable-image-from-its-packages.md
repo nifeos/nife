@@ -91,10 +91,10 @@ and basalt's existing repository, source-archive and publish path.
 3. Each package in the image passes 911's host-side check against the image's approval file, and
    the image's first installed-programs table holds the resulting grant records. A package whose
    manifest asks for more than the file allows fails the build, naming the extra grant.
-   - **The check is built.** When the image's definition names an approval file, `compose` reads
-     each carried program's asks with `program_asks`, the reading the progenitor's install uses,
-     tests them against the package's entry with `approval_file::File::check`, and refuses the
-     composition naming every extra grant of the package.
+   - **The composer runs the check.** When the image's definition names an approval file,
+     `compose` reads each carried program's asks with `program_asks`, the reading the progenitor's
+     install uses. It tests them against the package's entry with `approval_file::File::check`, and
+     refuses the composition naming every extra grant of the package.
    - **The table waits on the UFS2 arc's phase 2** (`ufs2-read-and-write-against-freebsds-tools`).
      The first table lives as files under `activation/` on the UFS2 launch volume, with no separate
      seed image (ruled 2026-10-30 UTC on #2894, and 2026-10-31 UTC for UFS2 as the launch
