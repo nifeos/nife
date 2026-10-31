@@ -911,7 +911,7 @@ impl Conductor {
     fn step_and_settle(&mut self, x: usize) {
         self.go_send(x, proto::GO_STEP);
         let mut budget = EveryCoreTickBudget::new(
-            crate::testing::WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HZ,
+            (crate::testing::WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HZ) as u32,
             crate::testing::WAIT_ON_EVERY_CORE_BACKSTOP_SECONDS,
         );
         loop {

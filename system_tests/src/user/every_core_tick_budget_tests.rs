@@ -81,7 +81,7 @@ fn the_backstop_bounds_a_wait_on_a_core_that_never_ticks() {
     if stop_another_core_for(2).is_none() {
         crate::testing::skip!("one core online: no other core to stop");
     }
-    let mut budget = EveryCoreTickBudget::new(2 * crate::arch::timer::TICK_HZ, 1);
+    let mut budget = EveryCoreTickBudget::new((2 * crate::arch::timer::TICK_HZ) as u32, 1);
     while !budget.is_expired() {
         sched::yield_now();
     }

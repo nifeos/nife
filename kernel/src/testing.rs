@@ -660,16 +660,13 @@ impl TickBudget {
     }
 }
 
-/// **A budget in timer ticks delivered to every online core, for a wait on work that another core
-/// may be holding.**
+/// **A budget in timer ticks delivered to every online core, for a wait on another core's work.**
 ///
-/// [`TickBudget`] counts this core's ticks, which is enough when the awaited work runs here. When
-/// it may run on another core, the host can deschedule that core's vCPU while this one keeps
-/// ticking, and a budget of this core's ticks runs out over a stall the guest never caused. This
-/// one runs out only once every online core has taken `ticks` since it began, so each has had that
-/// long to run. A core that takes no ticks (a vCPU the host is not running, or a core wedged with
-/// interrupts masked) holds it open until `backstop_seconds` of the counter have passed, so a wait
-/// is still bounded. See notes/kernel-test-harness.md.
+/// It runs out once every online core has taken `ticks` since it began, so a vCPU the host stops
+/// holds it open where a [`TickBudget`] of this core's ticks would run out. A core that takes no
+/// ticks (stopped, or wedged with interrupts masked) holds it open until `backstop_seconds` of the
+/// counter pass. Ticks are kept as `u32`, wrapping, for a small `Err`. See
+/// notes/kernel-test-harness.md.
 ///
 /// Name: provisional (lane/fuzz-deadlines-count-guest-progress, 2026-10-31 UTC).
 ///
@@ -677,7 +674,7 @@ impl TickBudget {
 ///
 /// ```ignore
 /// // Two seconds of running on every core, and at most twenty seconds of the counter.
-/// let mut budget = EveryCoreTickBudget::new(2 * crate::arch::timer::TICK_HZ, 20);
+/// let mut budget = EveryCoreTickBudget::new(200, 20);
 /// while !done() {
 ///     assert!(!budget.is_expired(), "the actor never answered: {budget}");
 ///     crate::sched::yield_now();
@@ -685,9 +682,9 @@ impl TickBudget {
 /// ```
 #[cfg(any(test, feature = "system_tests"))]
 pub struct EveryCoreTickBudget {
-    ticks: u64,
-    start: [u64; crate::cpu::MAXIMUM_CPUS],
-    taken: [u64; crate::cpu::MAXIMUM_CPUS],
+    ticks: u32,
+    start: [u32; crate::cpu::MAXIMUM_CPUS],
+    taken: [u32; crate::cpu::MAXIMUM_CPUS],
     started_at: u64,
     elapsed: u64,
     backstop: u64,
@@ -698,10 +695,10 @@ impl EveryCoreTickBudget {
     /// Start a budget of `ticks` on every online core, bounded by `backstop_seconds` of the counter.
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
-    pub fn new(ticks: u64, backstop_seconds: u64) -> Self {
+    pub fn new(ticks: u32, backstop_seconds: u64) -> Self {
         Self {
             ticks,
-            start: core::array::from_fn(crate::arch::timer::ticks_on),
+            start: core::array::from_fn(Self::ticks_on),
             taken: [0; crate::cpu::MAXIMUM_CPUS],
             started_at: crate::arch::timer::now(),
             elapsed: 0,
@@ -717,7 +714,7 @@ impl EveryCoreTickBudget {
         self.elapsed = crate::arch::timer::now().wrapping_sub(self.started_at);
         let mut every_core = true;
         for c in crate::smp::online_cpus() {
-            self.taken[c] = crate::arch::timer::ticks_on(c).wrapping_sub(self.start[c]);
+            self.taken[c] = Self::ticks_on(c).wrapping_sub(self.start[c]);
             every_core &= self.taken[c] >= self.ticks;
         }
         every_core || self.is_past_backstop()
@@ -729,6 +726,12 @@ impl EveryCoreTickBudget {
     /// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
     pub fn is_past_backstop(&self) -> bool {
         self.elapsed >= self.backstop
+    }
+
+    /// Core `cpu`'s ticks, the low 32 bits: a difference of two stays exact while it is under
+    /// 2^32 ticks, about 497 days at 100 Hz.
+    fn ticks_on(cpu: usize) -> u32 {
+        crate::arch::timer::ticks_on(cpu) as u32
     }
 }
 
@@ -764,7 +767,7 @@ impl core::fmt::Display for EveryCoreTickBudget {
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; the kernel's own do not
 pub fn wait_on_every_core(mut done: impl FnMut() -> bool) -> Result<(), EveryCoreTickBudget> {
     let mut budget = EveryCoreTickBudget::new(
-        WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HZ,
+        (WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HZ) as u32,
         WAIT_ON_EVERY_CORE_BACKSTOP_SECONDS,
     );
     loop {
