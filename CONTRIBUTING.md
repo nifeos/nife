@@ -162,6 +162,8 @@ unarmed for 30 minutes, ejected from the queue, or conflicting with `main` is la
 waits for a maintainer: its workflows need an approving click. The `needs-architect` label holds a pull request for an architect's decision, and a
 correction-of-error pull request gets that label automatically. If an agent writes a pull request,
 its body opens with the `**Lane:**` line AGENTS.md describes, so a reader can tell who is speaking.
+That rule is about the maintainer's account. If you are not on the project, use any tools you like;
+you do not need to say which.
 
 **One purpose per commit, and the message explains why rather than what** (the diff already shows
 what). If a commit records a correction or a surprise, say so in the message: those are the most
