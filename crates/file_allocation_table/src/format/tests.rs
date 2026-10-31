@@ -219,3 +219,33 @@ fn a_table_that_microsofts_formula_undersizes_grows_by_a_sector() {
     assert_eq!(g.table_sectors, 33);
     assert!(u64::from(g.table_sectors) * 256 >= u64::from(g.clusters) + 2);
 }
+
+#[test]
+fn fat32_stops_at_the_last_cluster_it_addresses() {
+    // With eight-sector clusters the count crosses FAT32's ceiling before a device's 2^32 sectors
+    // run out. Find the largest device that still formats, by bisection (the count only grows).
+    let (mut low, mut high) = (65_536u32 * 8, u32::MAX);
+    while high - low > 1 {
+        let middle = low + (high - low) / 2;
+        match Geometry::new(
+            FileAllocationTableType::Fat32,
+            SectorSize::Bytes512,
+            8,
+            middle,
+        ) {
+            Ok(_) => low = middle,
+            Err(_) => high = middle,
+        }
+    }
+    let last = Geometry::new(FileAllocationTableType::Fat32, SectorSize::Bytes512, 8, low).unwrap();
+    assert_eq!(last.clusters, 0x0FFF_FFF3);
+    assert!(matches!(
+        Geometry::new(
+            FileAllocationTableType::Fat32,
+            SectorSize::Bytes512,
+            8,
+            high
+        ),
+        Err(GeometryError::WrongType(_))
+    ));
+}
