@@ -22,7 +22,7 @@ set -eu
 cd "$(dirname "$0")/.."
 work="$(mktemp -d "${TMPDIR:-/tmp}/lint-sections-selftest.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
-fail() { echo "lint-sections-selftest: $1" >&2; exit 1; }
+fail() { echo "lint-sections-selftest: (jobs ${NIFE_LINT_JOBS:-default}) $1" >&2; exit 1; }
 
 mkdir "$work/bin"
 printf '#!/bin/sh\n[ -z "${PLANT_D:-}" ]\n' >"$work/bin/cargo"
@@ -45,11 +45,13 @@ echo "==> b reads the preamble"
 [ "$shared" = from-the-preamble ]
 [ -z "${PLANT_B:-}" ] || exit 3
 echo "==> c writes a file"
+# lint-lane: writer
 echo built >"$OUT/built"
 if [ -n "${PLANT_C:-}" ]; then false; fi
 echo "==> d, the cargo one"
 cargo clippy
 echo "==> e reads what c wrote"
+# lint-waits-for: writer
 [ -f "$OUT/built" ]
 echo "e ran"
 FIXTURE
@@ -57,7 +59,14 @@ FIXTURE
 # What `script/lint --no-cargo` ran before the helper: the kept sections as one script.
 awk -v mode=emit -f helpers/lint-no-cargo.awk "$work/lint" >"$work/lint-no-cargo"
 
-for combo in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+# Every combination at one job, which is the old fail-fast comparison; three at four jobs, none, all
+# and a mixed one, since the verdict does not depend on the order and the polling makes a run slower.
+for jobs in 1 4; do
+NIFE_LINT_JOBS=$jobs
+export NIFE_LINT_JOBS
+combos="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"
+[ "$jobs" = 1 ] || combos="0 6 15"
+for combo in $combos; do
     unset PLANT_A PLANT_B PLANT_C PLANT_D
     planted=""
     [ $((combo & 1)) -eq 0 ] || { PLANT_A=1; export PLANT_A; planted="$planted a"; }
@@ -132,6 +141,8 @@ for combo in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
     done
 done
 
+done
+
 # The CSV rows are a measurement, never a gate: point the file at a parent that is a plain file,
 # so its directory cannot be created, and hold the verdict and the output to what they were.
 unset PLANT_A PLANT_B PLANT_C PLANT_D
@@ -145,4 +156,90 @@ printf '%s\n' "$out" | grep -q '^lint: all 5 sections passed$' \
 if printf '%s\n' "$out" | grep -qiE 'mkdir|permission|denied|no such'; then
     fail "an unwritable CSV file was not skipped silently"
 fi
+
+# Side by side, the part the combinations above cannot show. Five pool sections each hold half a second to a second.
+# At most $jobs may be inside their second at once (counted by + and - lines, which a small append
+# keeps whole), more than one must be inside it at once when jobs is above one, and the output must
+# still come back in plan order with each section's lines under its own header, the slowest section
+# first in the plan and the fastest last.
+cat >"$work/lint-pool" <<'FIXTURE'
+set -e
+echo "==> p1"
+echo "p1 body"
+echo + >>"$OUT/conc"; sleep 0.6; echo - >>"$OUT/conc"
+echo "==> p2"
+echo "p2 body"
+echo + >>"$OUT/conc"; sleep 0.3; echo - >>"$OUT/conc"
+echo "==> p3"
+echo "p3 body"
+echo + >>"$OUT/conc"; sleep 0.3; echo - >>"$OUT/conc"
+echo "==> p4"
+echo "p4 body"
+echo + >>"$OUT/conc"; sleep 0.3; echo - >>"$OUT/conc"
+echo "==> p5"
+echo "p5 body"
+echo + >>"$OUT/conc"; sleep 0.3; echo - >>"$OUT/conc"
+echo "==> p6"
+echo "p6 body"
+FIXTURE
+jobs=3
+NIFE_LINT_JOBS=$jobs
+export NIFE_LINT_JOBS
+rm -rf "$OUT"; mkdir "$OUT"
+out="$(sh helpers/lint-sections.sh "$work/lint-pool" all 2>&1)" || fail "the pool fixture failed: $out"
+order="$(printf '%s\n' "$out" | grep -E '^(==> p|p[0-9] body)' | tr '\n' ' ')"
+[ "$order" = "==> p1 p1 body ==> p2 p2 body ==> p3 p3 body ==> p4 p4 body ==> p5 p5 body ==> p6 p6 body " ] \
+    || fail "the output is out of plan order or mixed: $order"
+peak="$(awk '$1 == "+" { n++; if (n > m) m = n } $1 == "-" { n-- } END { print m + 0 }' "$OUT/conc")"
+[ "$peak" -le "$jobs" ] || fail "$peak sections ran at once with $jobs jobs"
+if [ "$jobs" -gt 1 ] && [ "$peak" -lt 2 ]; then fail "nothing overlapped with $jobs jobs"; fi
+printf '%s\n' "$out" | grep -q '^lint: all 6 sections passed$' || fail "the pool fixture did not pass whole: $out"
+printf '%s\n' "$out" | grep -q '^lint-section-cpu: p1 [0-9][0-9]*\.[0-9]$' || fail "no CPU line for p1: $out"
+printf '%s\n' "$out" | grep -q '^lint: [0-9]* s wall, [0-9]* s of sections added up' || fail "no wall-clock total: $out"
+
+# Lanes and waits. Lane x holds x1 then x2 (x2 reads what x1 wrote); lane y holds y1, which waits for
+# lane x and must see x2's file; z has no lane and runs in the pool. Run at every job count, and a
+# lane's order must hold even when the pool is wide.
+cat >"$work/lint-lanes" <<'FIXTURE'
+set -e
+echo "==> x1"
+# lint-lane: x
+sleep 0.3; echo 1 >"$OUT/x1"
+echo "==> x2"
+# lint-lane: x
+[ -f "$OUT/x1" ]; echo 2 >"$OUT/x2"
+echo "==> y1"
+# lint-lane: y
+# lint-waits-for: x
+[ -f "$OUT/x2" ]
+echo "==> z"
+true
+FIXTURE
+jobs=2
+NIFE_LINT_JOBS=$jobs
+export NIFE_LINT_JOBS
+rm -rf "$OUT"; mkdir "$OUT"
+out="$(sh helpers/lint-sections.sh "$work/lint-lanes" all 2>&1)" || fail "the lane fixture failed at $jobs jobs: $out"
+# A section that waits for a lane the mode drops does not wait forever (quick and no-cargo drop
+# sections), and --quick runs exactly the marked ones.
+cat >"$work/lint-quick" <<'FIXTURE'
+set -e
+echo "==> q1, marked"
+# lint-quick
+echo q1 ran
+echo "==> q2, not marked"
+echo q2 ran
+echo "==> q3, marked and waits for q2's lane"
+# lint-quick
+# lint-waits-for: nosuch
+echo q3 ran
+FIXTURE
+for jobs in 1 4; do
+    NIFE_LINT_JOBS=$jobs
+    export NIFE_LINT_JOBS
+    out="$(sh helpers/lint-sections.sh "$work/lint-quick" quick 2>&1)" || fail "the quick fixture failed: $out"
+    ran_q="$(printf '%s\n' "$out" | grep '^q[0-9] ran$' | tr '\n' ' ')"
+    [ "$ran_q" = "q1 ran q3 ran " ] || fail "quick mode did not run exactly the marked sections: $out"
+    printf '%s\n' "$out" | grep -q '^lint: all 2 sections passed$' || fail "quick mode ran another number of sections: $out"
+done
 echo "lint-sections-selftest: ok"

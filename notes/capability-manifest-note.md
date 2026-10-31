@@ -42,3 +42,16 @@ The descriptor is a version word, a count word, and exactly that many records, e
 zero-padded to `grant_plan::MAXIMUM_VERB` bytes, then the grants' bits little-endian, then two zero
 bytes. Its length varies, as calef ruled on #1903 (2026-10-10 UTC). One table still has one
 encoding, because the records are sorted ascending by their words' bytes and each verb appears once.
+
+## The interface list, note type 4
+
+`INTERFACES` (milestone 956 (the linked interfaces carry checkable versions), step 2) declares the
+interface versions a program links against. calef ruled on 2026-10-31 (UTC) that it is a note of
+its own, as the verb table is. It is not a descriptor version, so versions 1 to 3 of `MANIFEST`
+stay as they are. A program with no list declares nothing.
+
+The descriptor is a version word, a count word and that many records. Each record holds an
+interface id (`INTERFACE_ID`, a `u64` that one interface crate owns) and a version `u32`. The ids
+ascend and none repeats, so one list has one encoding. A program carries the list with
+`carry_interfaces!`, which reads each version from its crate's constant. The progenitor compares
+the syscall ABI entry with the kernel's `ABI_VERSION` when it spawns the program.
