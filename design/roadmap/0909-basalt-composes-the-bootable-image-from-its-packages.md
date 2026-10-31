@@ -95,6 +95,10 @@ and basalt's existing repository, source-archive and publish path.
      `compose` reads each carried program's asks with `program_asks`, the reading the progenitor's
      install uses. It tests them against the package's entry with `approval_file::File::check`, and
      refuses the composition naming every extra grant of the package.
+   - **The base image names no approval file.** The check reads manifest notes, and the base's
+     programs take their grants from the progenitor's own table instead (see `BUGS`), so a file
+     named today would pass any base. What the check should read for those programs waits on an
+     architect, on #2981.
    - **The table waits on milestone 990** (the base image's first installed-programs table). The
      first table lives as files under `activation/` on the RedoxFS launch volume, with no
      separate seed image (ruled 2026-10-30 UTC on #2894). What the first generation holds, and what
@@ -152,13 +156,17 @@ than replaced.
   together, so a split version per package buys nothing yet, and the image refuses a package whose
   archive carries another version.
 
-- A branch holds four unmerged commits for item 3: `milestone/909-item-3-composition-checks-the-approval`,
-  head `e1646aedd`, on the remote. It carries the `activation_store` crate, which holds the composed
-  image's first installed-programs table as one container, and the `program_asks` crate, which reads
-  what a packaged program's note asks one way. It also carries a work-in-progress commit that wires
-  the seed store into the kernel's trust code and the composer, and a format commit. Its lane went
-  stale. Whether to merge, rework or delete it waits on the architect. Nobody has merged or deleted
-  it, and no other copy of that code exists.
+- The approval check reads notes, and the base's programs hold grants from a compiled table.
+  `program_asks` reads what a program's manifest note asks. A program the archive carries runs by
+  name, and the progenitor endows it from `grant_plan`'s compiled table, not from its note. Of the
+  programs `packages/base-image.toml` lists, only `jig` carries a note, and that note asks for
+  nothing, because the compiled table already gives the image's `jig` the network, the installer
+  endpoint and the catalog. So the check passes the base against any approval file, and a first
+  table written from the same reading (milestone 990 (the base image's first installed-programs
+  table)) would record no grant the base actually holds. Measured 2026-10-31 (UTC): an aarch64
+  `--test` composition against a file holding only its `approval` line passed, because the
+  fixtures whose notes ask (`dialer`, `servant`, `seeker`) are `packaged_only` and no archive
+  carries them. Home: the question on #2981.
 
 ## Index row
 

@@ -24,7 +24,10 @@ The build settled the generation's contents, and none of it depends on the conta
   default and no generation before it.
 - The grants are `program_asks::asked_grants` over each carried program, the reading the
   progenitor's install uses, so the composed table and an installed one cannot disagree about what a
-  program asked for.
+  program asked for. For the base this reads almost nothing: an archive program's grants come
+  from `grant_plan`'s compiled table. Of the base programs only `jig` carries a note, and it asks
+  for nothing while the table gives `jig` the network and the installer endpoint. Which
+  reading the first table records waits on an architect, on #2981 (milestone 909's `BUGS`).
 - The `answered` line is `Answered::Approval` with the approval file's name and the SHA-256 of its
   bytes, and the image carries those bytes too. The build never settled the entry's name, and its
   last uncommitted state referred to one no crate defines. A later update is then checked against
