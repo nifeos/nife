@@ -1,0 +1,14 @@
+# Name: provisional (milestone 961 step 1). The provenance block, with the refusals, lives in
+# src/lib.rs, which is where the naming gate reads it and where a reader meets the crate.
+[package]
+name = "primitive_benchmark_contract"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+byte_sink_contract = { version = "0.1.0", path = "../byte_sink_contract" }

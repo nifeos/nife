@@ -397,5 +397,30 @@ programs! {
         ///
         /// Name: provisional (milestone 933's lane, 2026-10-27 UTC).
         JobSleeper { id: 23, name: "job_sleeper" },
+        /// **Time a null system call from EL0** (milestone 961 step 1,
+        /// `fixtures/src/null_syscall.rs`): one row of ticks and iterations under the
+        /// `bench-production:` prefix.
+        ///
+        /// A stream out and nothing else. It needs no peer process, no memory beyond its own and no
+        /// authority, which is why it is one of the rows of the bench boot that a production shell
+        /// can run. The rows that build a peer stay in the bench boot.
+        ///
+        /// Name: provisional (milestone 961 step 1, 2026-10-31 UTC).
+        NullSyscall { id: 24, name: "null_syscall" },
+        /// **The writing half of the pipe throughput benchmark** (milestone 961 step 1,
+        /// `fixtures/src/sink_producer.rs`): `sink_producer | sink_consumer`.
+        ///
+        /// The same manifest as [`Program::NullSyscall`]: a stream out and nothing else.
+        ///
+        /// Name: provisional (milestone 961 step 1, 2026-10-31 UTC).
+        SinkProducer { id: 25, name: "sink_producer" },
+        /// **The reading half of the pipe throughput benchmark, self-timed** (milestone 961 step 1,
+        /// `fixtures/src/sink_consumer.rs`).
+        ///
+        /// The same manifest as [`Program::Wc`]: a stream in, a stream out, and the row printed at
+        /// end of stream.
+        ///
+        /// Name: provisional (milestone 961 step 1, 2026-10-31 UTC).
+        SinkConsumer { id: 26, name: "sink_consumer" },
     }
 }

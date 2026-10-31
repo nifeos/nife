@@ -8,15 +8,12 @@ use super::*;
 
 // Roles for the `os_primitives_benchmarker` EL0 program, chosen through `arg0`; they must match
 // fixtures/src/os_primitives_benchmarker.rs.
-const EL_NULL_SYSCALL: u64 = 0;
 const EL_YIELDER: u64 = 1;
 const EL_CTX_SWITCH: u64 = 2;
 const EL_IPC_SERVER: u64 = 3;
 const EL_IPC_CLIENT: u64 = 4;
 const EL_MAP: u64 = 5;
 const EL_SPAWN: u64 = 6;
-const EL_SINK_PRODUCER: u64 = 7;
-const EL_SINK_CONSUMER: u64 = 8;
 
 /// `arg1` for the IPC client when it holds the cycle-counter grant: it reads the counter across its
 /// timed loop and sends a second report. It must equal `IPC_CLIENT_READS_CYCLES` in
@@ -60,23 +57,69 @@ fn spawn_os_primitives_benchmarker(role: u64, report: sched::RendezvousId) -> bo
 /// Null syscall latency, measured from EL0: the program self-times the cheapest `svc` and reports
 /// `[ticks, iters]`. This is what lmbench measures. See
 /// `fixtures/src/os_primitives_benchmarker.rs`.
+/// Spawn one of the programs a production shell also runs (`null_syscall`, `sink_producer`,
+/// `sink_consumer`), with the quiet-boot startup word so its row reads `bench: ...`. Slot 0 is its
+/// output (`WRITE`) and slot 1, when `input` is given, its input (`READ`), the layout the shell
+/// builds for a stage of a pipeline. `None` when the initial ramdisk lacks the program.
+fn spawn_shell_runnable_program(
+    name: &'static str,
+    output: sched::RendezvousId,
+    input: Option<sched::RendezvousId>,
+) -> Option<()> {
+    let image = crate::trust::require_program(name)?;
+    sched::spawn(move || {
+        let output = rendezvous_capability(output, Rights::WRITE);
+        let both = input.map(|input| [output, rendezvous_capability(input, Rights::READ)]);
+        let only_output = [output];
+        crate::user::run(
+            image,
+            crate::user::Spawn {
+                arg0: primitive_benchmark_contract::QUIET_BOOT_STARTUP_WORD,
+                arg1: 0,
+                arg2: 0,
+                grants: match &both {
+                    Some(both) => both,
+                    None => &only_output,
+                },
+                maps: &[],
+            },
+        )
+    })
+    .expect("bench: could not spawn a shell-runnable bench program");
+    Some(())
+}
+
+/// Print the sink-contract text a bench program writes on `report` until its end of stream.
+///
+/// The program formats its own row (`bench: null_syscall <ticks> <iters>`); the kernel only
+/// relays the bytes, so the row and the line a person gets at the shell cannot differ.
+fn relay_row(report: sched::RendezvousId) {
+    loop {
+        let [w0, w1, w2, ..] = sched::ipc_receive(report);
+        let mut bytes = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        match byte_sink_contract::unpack(w0, w1, w2, &mut bytes) {
+            byte_sink_contract::Msg::Bytes(n) => {
+                for &b in &bytes[..n] {
+                    crate::print!("{}", b as char);
+                }
+            }
+            byte_sink_contract::Msg::Eof | byte_sink_contract::Msg::Malformed => return,
+        }
+    }
+}
+
 pub(super) fn null_syscall_el0() {
     let report = sched::create_rendezvous();
     let window = TickWindow::open("null_syscall");
-    if !spawn_os_primitives_benchmarker(EL_NULL_SYSCALL, report) {
+    if spawn_shell_runnable_program("null_syscall", report, None).is_none() {
         window.close();
-        println!(
-            "bench: null_syscall skipped (no os_primitives_benchmarker in the initial ramdisk)"
-        );
+        println!("bench: null_syscall skipped (no null_syscall in the initial ramdisk)");
         return;
     }
-    let [ticks, iters, ..] = sched::ipc_receive(report);
+    relay_row(report);
     window.close();
-    println!("bench: null_syscall {ticks} {iters}");
 }
 
-/// Context switch latency, measured from EL0 (lmbench's `lat_ctx`): a timer process yields to a
-/// yielder peer and back, two address-space switches per iteration, while the boot thread blocks.
 pub(super) fn ctx_switch_el0() {
     let report = sched::create_rendezvous();
     // The peer first, so the timer always has something to switch to.
@@ -249,59 +292,24 @@ fn print_ipc_rtt_el0_cycles(cycles: u64, meaning: u64, ticks: u64, iters: u64) {
 ///
 /// See notes/pipes.md, and notes/benchmarks/kernel-bench-harness.md for the Unix comparison.
 pub(super) fn sink_throughput() {
-    let Some(image) = crate::trust::require_program("os_primitives_benchmarker") else {
-        println!(
-            "bench: sink_throughput skipped (no os_primitives_benchmarker in the initial ramdisk)"
-        );
-        return;
-    };
     let pipe = sched::create_rendezvous();
     let report = sched::create_rendezvous();
 
-    // The producer first, so the consumer's timed loop starts with the pipe already hot.
     let window = TickWindow::open("sink_throughput");
-    sched::spawn(move || {
-        crate::user::run(
-            image,
-            crate::user::Spawn {
-                arg0: EL_SINK_PRODUCER,
-                arg1: 0,
-                arg2: 0,
-                grants: &[rendezvous_capability(pipe, Rights::WRITE)],
-                maps: &[],
-            },
-        )
-    })
-    .expect("bench: could not spawn the sink producer");
-
-    sched::spawn(move || {
-        crate::user::run(
-            image,
-            crate::user::Spawn {
-                arg0: EL_SINK_CONSUMER,
-                arg1: 0,
-                arg2: 0,
-                grants: &[
-                    rendezvous_capability(report, Rights::WRITE), // slot 0: report the result
-                    rendezvous_capability(pipe, Rights::READ),    // slot 1: the pipe's read end
-                ],
-                maps: &[],
-            },
-        )
-    })
-    .expect("bench: could not spawn the sink consumer");
-
-    let [ticks, bytes, ..] = sched::ipc_receive(report);
+    if spawn_shell_runnable_program("sink_producer", pipe, None).is_none() {
+        window.close();
+        println!("bench: sink_throughput skipped (no sink_producer in the initial ramdisk)");
+        return;
+    }
+    if spawn_shell_runnable_program("sink_consumer", report, Some(pipe)).is_none() {
+        window.close();
+        println!("bench: sink_throughput skipped (no sink_consumer in the initial ramdisk)");
+        return;
+    }
+    relay_row(report);
     window.close();
-    println!("bench: sink_throughput {ticks} {bytes}");
 }
 
-/// Map latency, measured from EL0 (lmbench's `lat_mmap`): the program times `MAP_INTO` of one frame
-/// at a fresh address each iteration, into a separate registry address space built here.
-///
-/// The program gets a WRITE capability on the space and a READ capability on the frame. The space
-/// is not its own, because a `run()`-adopted space is not in the registry `MAP_INTO` resolves; the
-/// map path costs the same whoever owns it. See `fixtures/src/os_primitives_benchmarker.rs`.
 pub(super) fn map_el0() {
     let Some(image) = crate::trust::require_program("os_primitives_benchmarker") else {
         println!("bench: map_el0 skipped (no os_primitives_benchmarker in the initial ramdisk)");

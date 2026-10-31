@@ -268,6 +268,24 @@ bench = false
 # The EL0 microbenchmark program (primitive suite): self-times syscall/IPC primitives from EL0, the
 # lmbench way, so the numbers include the trap the kernel-side benchmarks skip. Run by the bench boot.
 [[bin]]
+name = "null_syscall"
+path = "src/null_syscall.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "sink_consumer"
+path = "src/sink_consumer.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "sink_producer"
+path = "src/sink_producer.rs"
+test = false
+bench = false
+
+[[bin]]
 name = "os_primitives_benchmarker"
 path = "src/os_primitives_benchmarker.rs"
 test = false
@@ -647,6 +665,7 @@ filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" 
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 line_editor = { version = "0.1.0", path = "../crates/line_editor" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
+primitive_benchmark_contract = { version = "0.1.0", path = "../crates/primitive_benchmark_contract" }
 # The durable schedule store's shared names (milestone 152, DECISIONS §122 (the on-disk schedule
 # store) and §125 (which identities have pending work)): the schedule file's name, which
 # `login_test_client.rs` writes and `login.rs` reads back.
