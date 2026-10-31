@@ -10,10 +10,11 @@ candidate.*
 RedoxFS stays nife's launch store (§34 (RedoxFS is the primary filesystem, on three conditions),
 ruled 2026-10-31 UTC on #2927): the writable filesystem the image boots into, that `jig` installs
 packages onto, and that holds the installed-programs table. nife does not build a UFS2 server
-(§34 refuses milestone 981, and milestone 982, the removal that would have followed, with it). The
-next measurement is ext4 through `rsext4` under milestone 37's injector, carried by the proposal
+(§34 refuses milestone 981 (UFS2, read and write), and milestone 982 (Retire RedoxFS once a launch
+store proves itself) with it). The next measurement is ext4 through `rsext4` under the injector of
+milestone 37 (Prove RedoxFS's crash consistency), carried by the proposal
 `ext4-through-rsext4-under-the-crash-injector`. If it passes, one ext4 server may become both the
-launch store and milestone 190's reader of Linux drives; if it fails, RedoxFS stays. The rest of
+launch store and the reader of Linux drives that milestone 190 (ext4, read and write) wants; if it fails, RedoxFS stays. The rest of
 this note is the evidence: the license pass, each candidate, and the four routes compared.
 
 ## Why the question opened

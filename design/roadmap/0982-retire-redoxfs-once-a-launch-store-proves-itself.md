@@ -8,13 +8,13 @@ refused_by: §34
 
 Refused 2026-10-31 (UTC) on #2927, by §34 (RedoxFS is the primary filesystem, on three conditions):
 RedoxFS stays the launch store. This block was the removal that would follow a UFS2 server
-(milestone 981), and §34 refuses milestone 981 the same day. The inventory below stays because a
+(milestone 981 (UFS2, read and write)), and §34 refuses it the same day. The inventory below stays because a
 later removal would start from it.
 
 ## Revisit
 
 - **Condition.** The ext4 measurement through `rsext4` (the proposal
-  `ext4-through-rsext4-under-the-crash-injector`) passes milestone 37's injector, and an ext4 server
+  `ext4-through-rsext4-under-the-crash-injector`) passes the injector of milestone 37 (Prove RedoxFS's crash consistency), and an ext4 server
   then boots the composed image, takes `jig` installs and holds the installed-programs table on
   aarch64, riscv64 and x86_64. That removal would be a milestone of its own, minted from this
   inventory.

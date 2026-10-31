@@ -22,7 +22,7 @@ If it passes, one ext4 server may become both the launch store and the reader of
 milestone 190 (ext4, read and write) wants, and RedoxFS then leaves through a milestone of its own.
 If it fails, RedoxFS stays.
 
-nife does not build a UFS2 server (milestone 981, refused). UFS2 would need a writer, an `fsck` and
+nife does not build a UFS2 server (milestone 981 (UFS2, read and write), refused). UFS2 would need a writer, an `fsck` and
 a crash mechanism nife does not have, and it reads few drives other systems made. The measurement
 lives in [`ufs2-builds-2026-10-31.md`](../../notes/ufs2-builds-2026-10-31.md), and the four routes
 compared are in [the launch filesystem's candidates](../../notes/launch-filesystem-candidates.md).
