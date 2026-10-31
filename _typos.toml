@@ -171,10 +171,6 @@ mke2fs = "mke2fs"
 # test feeds `parse(b"hlep")` to prove an unknown word becomes a Run command rather than a builtin.
 # Correcting it would delete the test's subject.
 hlep = "hlep"
-# Also on purpose: milestone 169's rmle_tests.rs types "helo", arrows left twice, and inserts the
-# missing "l" to prove mid-word cursor insertion works. Fixing the spelling would delete the test's
-# subject the same way `hlep` above would.
-helo = "helo"
 # Deliberate wordplay in a `globally_unique_identifier_partition_table` test comment: "it is just
 # what everybody does, and here are two everybodies".
 everybodies = "everybodies"

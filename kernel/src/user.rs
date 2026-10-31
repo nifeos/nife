@@ -247,9 +247,3 @@ pub mod memory_region_service;
 // the milestone-169 raw-mode tests are its only caller
 pub mod raw_mode_service;
 
-/// **`rmle`'s wiring** (milestone 169): a real terminal ([`raw_mode_service`]'s own shape) and a
-/// real filesystem ([`fs_service::narrow_dir`]'s shape) composed for the one program in this tree
-/// that needs both at once.
-#[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-// the milestone-169 rmle tests are its only caller
-pub mod rmle_service;
