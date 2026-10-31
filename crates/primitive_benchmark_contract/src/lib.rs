@@ -275,6 +275,6 @@ mod tests {
 
     #[test]
     fn a_pipe_carries_more_than_a_unix_pipe_buffers() {
-        assert!(SINK_MESSAGES * 16 > 64 * 1024);
+        const { assert!(SINK_MESSAGES * 16 > 64 * 1024) };
     }
 }
