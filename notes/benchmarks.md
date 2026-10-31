@@ -83,6 +83,20 @@ numbers.
 Also: `sink_throughput` (a byte stream), `rfence_self` (riscv64's SBI fence), `tss_iomap_*` (x86_64's
 I/O bitmap), and on `--smp` only, `smp_*` and `fs_*`.
 
+### Three of the EL0 rows run at the production shell
+
+`null_syscall`, `sink_producer | sink_consumer` (the `sink_throughput` row) and `map_el0 --mem 10`
+are programs of their own, so a person types them at the prompt of the kernel that ships. Each
+prints one row of ticks, never converted time, under `bench-production:`; the bench boot spawns the
+same programs and its rows read `bench:`. The loop counts and the row spelling are in
+`primitive_benchmark_contract`, so the two runs time the same thing. A production row competes
+with the console, `net_stack` and the shell for the core, so it is a different measure from the
+quiet boot's. It is recorded in `bench/` beside the quiet boot's rows and no gate reads it
+(milestone 961 (the kernel's special boots become commands typed at the production shell),
+decision D6). Quote the boot log's counter-frequency line beside the ticks to convert them.
+`ctx_switch`, `ipc_rtt_el0` and `spawn_el0` need a peer process or process construction, so they
+stay in the bench boot.
+
 ## The current numbers
 
 ### Against Linux and macOS, on one core (HVF, release)
