@@ -35,7 +35,7 @@ changes the object. One word therefore matches a capability and all of its deriv
 Each address space's records live in log pages retyped from that space's own region. A fixed
 registry of live spaces (root, region, TLB tag, log head) finds them. A process that maps a
 thousand shared pages spends its own budget recording them. A process that cannot afford a record
-cannot make the mapping, and the mapper unmaps what it just mapped.
+cannot make the mapping: the record is refused before any leaf goes in.
 
 Teardown needs nothing extra. The log pages are region pages, so `memory_region::destroy` reclaims
 them with the process, and forgetting a space is one registry slot going empty.
@@ -87,12 +87,14 @@ The registry carries one past its highest live slot, so a walk costs the occupie
 `spawn_el0` 138,584 ticks through this file, with `forget_root` the worst site. See
 [the benchmarks note](benchmarks.md).
 
-## One critical section: read, map, record
+## One critical section: read, record, map
 
 Every sweep runs two passes in one order: capabilities first, under `IPC_TABLES` and each table's
 lock, then the unmap pass, which takes the mapping registry and unmaps what the log holds when it
 scans. A `MAP` that read its capability, then mapped and recorded in separate critical sections,
-would let a sweep run wholly in between. That is the use-after-free again.
+would let a sweep run wholly in between. That is the use-after-free again. Every path files the
+record first and then writes the leaf, and a leaf that fails takes its record back
+(`MappingHold::forget_recorded`, by the slot the record went into).
 
 `MappingHold` is the registry held across the whole operation, which is seL4's answer: a
 mapping-database lock. `MappingHold::current_capability` reads the running thread's capability under the
@@ -113,6 +115,23 @@ receive only the slot, which is the same defense `sched::Delegation` uses.
 A page table is recorded before the mapper links it, under the same hold. `revoke_region`'s cut
 pass takes the same registry, so it runs either before the retype, when the region is claimed and
 the retype fails, or after the link, when the record finds the table.
+
+## No frame is writable and executable in one space
+
+`MappingHold::record_mapping` holds claim 11 of `notes/confinement-claims.md`. Before it files a
+writable or executable mapping, it scans the space's log for records of the same frame and reads
+each one's leaf with `mmu::translate_at`, because the log stores no permissions. If any leaf and the
+new flags make the pair (`paging::Flags::makes_writable_executable_pair`), it refuses with
+`MapError::WritableAndExecutable`, which `MAP_INTO` and `PageFrame::MAP` answer as `NotPermitted`.
+A read-only mapping cannot complete the pair and skips the scan. Because the record goes in before
+the leaf, under the hold, no path installs a recorded leaf the check has not seen, and no other core
+can fetch through one it would refuse.
+
+The check reads one space's log. The same frame writable in one space and code in another maps, by
+the ruling of 2026-10-31 (UTC); milestone 969 (no frame is writable and executable in one address
+space) has the limit and the components it leaves a route to. A page `AddressSpace::map_new` maps
+has no record, and no capability names it, so nothing can map it twice.
+`system_tests::user::tenth_pass_map_gate_tests` drives every path.
 
 ## Unmapping under the registry
 

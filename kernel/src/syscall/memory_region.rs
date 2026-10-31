@@ -78,25 +78,30 @@ pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
     crate::delegation_pause::here(); // no lock held
     let mut hold = crate::revoke::hold();
     let root = mmu::current_user_root();
-    // The leaf, then the tables, each table recorded as it is retyped: `DESTROY` must find the
-    // tables to cut them out of this walk before the pages go back (`revoke::revoke_region`).
+    // The leaf's page, then its record, then the tables, each table recorded as it is retyped:
+    // `DESTROY` must find the tables to cut them out of this walk before the pages go back
+    // (`revoke::revoke_region`).
     let Some(phys) = crate::memory_region::retype_page(region) else {
         return Err(Error::OutOfMemory);
     };
-    match mmu::map_current_user_page_frame(va, phys, paging::Flags::user_data(), || {
+    // Recorded before the leaf, as every mapping is: no record, no mapping (§13 (capability
+    // revocation and untyped reclamation)). No capability names the page, and it is fresh, so the
+    // record's writable-and-executable check finds nothing to refuse.
+    let flags = paging::Flags::user_data();
+    let recorded = hold
+        .record_mapping(phys, root, va, flags, crate::revoke::PageMapSource::NoCapability)
+        .map_err(|_| Error::OutOfMemory)?;
+    match mmu::map_current_user_page_frame(va, phys, flags, || {
         hold.retype_table(region, root, va)
     }) {
-        Ok(()) => {
-            // No record, no mapping: an unrecorded mapping is invisible to revocation (§13
-            // (capability revocation and untyped reclamation)). No capability names the page.
-            if !hold.record_mapping(phys, root, va, crate::revoke::PageMapSource::NoCapability) {
-                mmu::unmap_user_at(root, va);
-                return Err(Error::OutOfMemory);
-            }
-            Ok(0)
+        Ok(()) => Ok(0),
+        Err(e) => {
+            hold.forget_recorded(root, recorded);
+            Err(match e {
+                paging::MapError::OutOfPageFrames => Error::OutOfMemory,
+                _ => Error::BadPointer, // misaligned, already mapped, or wrong half
+            })
         }
-        Err(paging::MapError::OutOfPageFrames) => Err(Error::OutOfMemory),
-        Err(_) => Err(Error::BadPointer), // misaligned, already mapped, or wrong half
     }
 }
 

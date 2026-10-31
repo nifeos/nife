@@ -2,7 +2,9 @@
 /// caller's own address space. `writable` != 0 maps it read/write (needs `WRITE` on the frame); `0`
 /// maps it read-only (needs `READ`). Page tables to reach `va` come from the untyped named by
 /// `memory_region_slot`, so the kernel allocates nothing. `BadPointer` for a misaligned or high
-/// `va`, `OutOfMemory` when that untyped is exhausted.
+/// `va`, `OutOfMemory` when that untyped is exhausted, and `NotPermitted` for a writable mapping of
+/// a page this space already maps as code (claim 11: no page is writable through one mapping and
+/// executable through another in one address space).
 ///
 /// The tables belong to that untyped, so its `DESTROY` cuts them out of this address space,
 /// and every page mapped beneath them stops translating, this frame's included. A mapping
