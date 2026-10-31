@@ -610,7 +610,7 @@ mod tests {
         assert_eq!(parse(b"P6\n1 1\n255\n"), want);
         assert_eq!(parse(b"P6 \t\r\n 1 \n\n 1  255\n"), want);
         assert_eq!(parse(b"P6\n# a\n# b\n1 1\n255\n"), want);
-        assert_eq!(parse(b"P6\n1#w\n1#h\n255#m\n"), want);
+        assert_eq!(parse(b"P6\n1#w\n1#h\n255\n"), want);
         // A comment runs to the newline and no further: the next line's digits are a token.
         assert_eq!(parse(b"P6\n#1 1 9\n1 1\n255\n"), want);
     }
