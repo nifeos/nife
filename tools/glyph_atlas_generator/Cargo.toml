@@ -20,15 +20,18 @@ publish = false
 # four)'s ruling, and the block's determinism appendix
 # (design/roadmap/0142-a-text-display-worth-living-in/determinism.md) is why each pin is what it is.
 [dependencies]
-# The outline parser: Google's fontations `skrifa` (with `read-fonts` and `font-types`, and
-# `bytemuck` and `bytemuck_derive` beneath them), MIT OR Apache-2.0, ruled by calef on 2026-10-20
-# (UTC) after `ttf-parser` was flagged unmaintained; §166 (the rasteriser dependency, and whether
-# the glyph atlas ships one face or four). A TrueType parser is a subsystem this tree would never
-# write (§46 (thin primitives or whole subsystems)). Pinned exactly: a parser bump that changed one
-# outline point would fail the regenerate gate, and the pin says which version made the tables.
-# Default features off but `std`: the autohinter's shaping is unused, since outlines are drawn
-# unhinted.
-skrifa = { version = "=0.44.0", default-features = false, features = ["std"] }
+# The outline parser: Google's fontations `skrifa` 0.49.0, MIT OR Apache-2.0, ruled by calef on
+# 2026-10-20 (UTC) after `ttf-parser` was flagged unmaintained; §166 (the rasteriser dependency, and
+# whether the glyph atlas ships one face or four). A TrueType parser is a subsystem this tree would
+# never write (§46 (thin primitives or whole subsystems)). Beneath it are `read-fonts` 0.46.0,
+# `font-types`, `bytemuck` and `bytemuck_derive`, and since 2026-10-31 (UTC) eight more crates that
+# `read-fonts` takes: `foldhash` (Zlib), `smallvec` and `stable_deref_trait` (MIT OR Apache-2.0),
+# `synstructure` (MIT), and `yoke`, `yoke-derive`, `zerofrom` and `zerofrom-derive` (Unicode-3.0,
+# each an exception in deny.toml). None reaches a shipped graph; this workspace is host-only. Pinned
+# exactly: a parser bump that changed one outline point would fail the regenerate gate, and the pin
+# says which version made the tables; 0.49.0 regenerates all four tables byte for byte. Default
+# features off but `std`: the autohinter's shaping is unused, since outlines are drawn unhinted.
+skrifa = { version = "=0.49.0", default-features = false, features = ["std"] }
 # The rasteriser. **Pinned exactly at 0.1.10**: 0.1.4 through 0.1.8 panic on some outlines, and a
 # patch bump (0.1.5) has already changed raw coverage. The checked-in table is what is gated, so a
 # bump that moves one pixel fails `cargo test` here rather than changing a screen in silence.
