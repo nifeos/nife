@@ -544,6 +544,7 @@ dependencies = [
  "memory_region_heap",
  "network_time_protocol",
  "nifefs",
+ "primitive_benchmark_contract",
  "process_builder",
  "soak_page",
  "socket_contract",
@@ -609,6 +610,7 @@ version = "0.1.0"
 dependencies = [
  "filesystem_contract",
  "glob",
+ "primitive_benchmark_contract",
  "program_argument_contract",
 ]
 
@@ -789,6 +791,7 @@ dependencies = [
  "paging",
  "pci",
  "periodic_deadline",
+ "primitive_benchmark_contract",
  "screen_console",
  "soak_page",
  "socket_contract",
@@ -1052,6 +1055,13 @@ name = "pmap"
 version = "0.1.0"
 dependencies = [
  "abi",
+]
+
+[[package]]
+name = "primitive_benchmark_contract"
+version = "0.1.0"
+dependencies = [
+ "byte_sink_contract",
 ]
 
 [[package]]
