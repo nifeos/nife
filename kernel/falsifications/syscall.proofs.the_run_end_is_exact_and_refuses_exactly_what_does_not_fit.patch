@@ -23,7 +23,7 @@ whose two ends are already given, so it never calls this function.
 diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
 --- a/kernel/src/syscall/address_space.rs
 +++ b/kernel/src/syscall/address_space.rs
-@@ -191,7 +191,7 @@
+@@ -189,7 +189,7 @@
  /// fit in a `u64`, or `count` is zero. The multiply is checked as well as the add. Both mapping
  /// paths guard on it, and `syscall::proofs` proves it exact.
  pub(super) fn run_end_va(va: u64, count: u64) -> Option<u64> {
@@ -31,4 +31,4 @@ diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_sp
 +    va.checked_add(count.wrapping_sub(1).wrapping_mul(paging::PAGE_SIZE))
  }
  
- /// Undo the first `mapped` pages of a failed run-map in the space rooted at `root`: unmap each
+ /// The error a mapping method answers for a page it could not map: `NotPermitted` when the space

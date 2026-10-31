@@ -84,7 +84,7 @@ if [ "$required" = "[]" ]; then
 fi
 
 if [ -n "$dry" ]; then
-	echo "$ME: $(echo "$required" | jq length) required checks"
+	echo "$ME: $(printf '%s\n' "$required" | jq length) required checks"
 fi
 
 gh pr list --repo "$REPO" --state open --limit 200 --json number,isDraft,headRefOid,labels,title |
@@ -95,10 +95,10 @@ gh pr list --repo "$REPO" --state open --limit 200 --json number,isDraft,headRef
 		# The runs go in on stdin. `--argjson runs` put the whole check-run list in one argv entry,
 		# which Linux caps at 128 KiB, and run 37227933655 died there ("Argument list too long")
 		# before judging any pull request. `required` stays an argument: it is a few hundred bytes.
-		bad=$(echo "$runs" | jq -c --argjson required "$required" "$(cat "$JQ") failing(\$required)")
-		n=$(echo "$bad" | jq length)
+		bad=$(printf '%s\n' "$runs" | jq -c --argjson required "$required" "$(cat "$JQ") failing(\$required)")
+		n=$(printf '%s\n' "$bad" | jq length)
 		if [ "$n" -gt 0 ]; then
-			echo "$ME: FAILING #$num at $(echo "$sha" | cut -c1-9): $(echo "$bad" | jq -r 'map(.name) | join("; ")') ($title)"
+			echo "$ME: FAILING #$num at $(printf '%s\n' "$sha" | cut -c1-9): $(printf '%s\n' "$bad" | jq -r 'map(.name) | join("; ")') ($title)"
 			if [ "$labelled" != "true" ]; then
 				w gh label create "$LABEL" --repo "$REPO" --color B60205 \
 					--description "a required check is failing on the head commit" --force
@@ -109,9 +109,9 @@ gh pr list --repo "$REPO" --state open --limit 200 --json number,isDraft,headRef
 			if [ "${seen:-0}" = "0" ]; then
 				body="**Lane:** nife-smelter, posted by a scheduled workflow; nife-smelter[bot] is the author GitHub shows.
 
-\`$ME\`: required checks failing on \`$(echo "$sha" | cut -c1-9)\`, most recent run of each:
+\`$ME\`: required checks failing on \`$(printf '%s\n' "$sha" | cut -c1-9)\`, most recent run of each:
 
-$(echo "$bad" | jq -r '.[] | "- \(.name): \(.url)"')
+$(printf '%s\n' "$bad" | jq -r '.[] | "- \(.name): \(.url)"')
 
 This comment is posted once per commit. The \`$LABEL\` label comes off when every required check that has run is green on the head. Owner: a maintainer session. If it is still red in 30 minutes the merge drain adds \`needs-maintainer\`, which is where a session looks.
 
@@ -119,7 +119,7 @@ $marker"
 				w gh pr comment "$num" --repo "$REPO" --body "$body"
 			fi
 		elif [ "$labelled" = "true" ]; then
-			echo "$ME: CLEARED #$num at $(echo "$sha" | cut -c1-9) ($title)"
+			echo "$ME: CLEARED #$num at $(printf '%s\n' "$sha" | cut -c1-9) ($title)"
 			w gh pr edit "$num" --repo "$REPO" --remove-label "$LABEL"
 		fi
 	done

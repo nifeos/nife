@@ -55,6 +55,10 @@ is the proposal's fallback made the rule. Each row cites the CI run it was read 
 - A faster or slower runner pool moves every row. The failure message says to measure and add a row.
 - The check runs inside the boot, so a leg that fails it reports a cost defect and stops the rest of
   that boot's transcript checks. That is deliberate, since a cost fault needs no further evidence.
+- An echo assertion failed once on the riscv64 leg and passed on a fresh run. It happened on #2945
+  on 2026-10-31 (UTC). GitHub refused a rerun, so nobody reproduced it. It may match the echo-wait
+  signature that `notes/swish-check-flake.md` measures, or it may differ; nothing ties it to either.
+  No consumer waits on this. It stands here so a second sighting counts against the first.
 
 ## Follow-on
 

@@ -113,3 +113,39 @@ fn every_alias_is_a_legal_short_name() {
         .map_or(11, |i| 8 + i);
     assert!(alias[ext_end..].iter().all(|b| *b == b' '));
 }
+
+/// **Every numbered alias is a legal short name that carries its number.** For every name up to
+/// [`ALIAS_UNITS`] units and every number from 1 to 999,999: the alias is eleven bytes a short
+/// entry admits, the base before the last `~` is one to six bytes, the digits after it read back as
+/// the number, and the base and tail fill no more than eight bytes.
+/// Falsification: replayable `crates/file_allocation_table/falsifications/long_name.verification.every_numbered_alias_carries_its_number.patch`
+#[kani::proof]
+#[kani::unwind(16)]
+fn every_numbered_alias_carries_its_number() {
+    let len: usize = kani::any();
+    kani::assume((1..=ALIAS_UNITS).contains(&len));
+    let mut units = [0u16; MAXIMUM_CODE_UNITS];
+    let chosen: [u16; ALIAS_UNITS] = kani::any();
+    units[..ALIAS_UNITS].copy_from_slice(&chosen);
+    let name = LongName { units, len };
+    let number: u32 = kani::any();
+    let Some(alias) = name.alias_numbered(number) else {
+        return;
+    };
+    assert!((1..=999_999).contains(&number));
+    assert!(alias.iter().all(|b| is_short_byte(*b)));
+    let tilde = alias[..8]
+        .iter()
+        .rposition(|b| *b == b'~')
+        .expect("a numeric tail");
+    assert!((1..=6).contains(&tilde));
+    assert!(alias[..tilde].iter().all(|b| *b != b' '));
+    let mut read = 0u32;
+    let mut at = tilde + 1;
+    while at < 8 && alias[at].is_ascii_digit() {
+        read = read * 10 + u32::from(alias[at] - b'0');
+        at += 1;
+    }
+    assert_eq!(read, number);
+    assert!(alias[at..8].iter().all(|b| *b == b' '));
+}

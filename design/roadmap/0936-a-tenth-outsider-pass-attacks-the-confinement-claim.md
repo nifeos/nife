@@ -49,10 +49,9 @@ outsider pass attacks the confinement claim), was by GLM 5.3 and did not count.
 
 ## Follow-on
 
-- **Milestone 969.** The mandatory fix for the claim 11 alias escape, promoted to milestone 969 (a
-  `MAP_INTO` refuses a frame mapped twice with different flags):
-  `design/roadmap/0969-a-map-into-refuses-a-frame-mapped-twice-with-different-flags.md`. It waits
-  for the refusal rule.
+- **Milestone 969.** The mandatory fix for the claim 11 alias escape, promoted to milestone 969 (no
+  frame is writable and executable in one address space):
+  `design/roadmap/0969-no-frame-is-writable-and-executable-in-one-space.md`.
 - **Recorded.** `notes/scripts/outsider-passes.md`: the launcher's `models()` dies on truncated
   `session export` output; a maintainer lane teaches it the exit status and fail soft.
 

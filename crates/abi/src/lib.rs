@@ -304,11 +304,14 @@ pub enum Error {
     /// You hold the capability, but not with those rights. Rights only ever narrow on
     /// delegation, so somebody upstream chose this.
     ///
-    /// **Or the object refuses the operation whatever the rights.** The one case today: a
+    /// **Or the object refuses the operation whatever the rights.** Two cases. A
     /// [`rendezvous::SEND`], [`rendezvous::SEND_CAPABILITY`] or [`rendezvous::CALL`] naming an endpoint
     /// that carries a hardware interrupt, which takes no message from any program (DECISIONS §101
     /// (notification objects), ruling B, 2026-09-26). Nothing is delivered, queued or delegated,
-    /// and the caller does not block.
+    /// and the caller does not block. And a mapping ([`address_space::MAP_INTO`],
+    /// [`page_frame::MAP`]) that would leave one page writable through one mapping and executable
+    /// through another in the same address space (milestone 969 (no frame is writable and
+    /// executable in one address space)). Nothing is mapped.
     NotPermitted = -3,
 
     /// The pointer you passed is not memory **you** could have touched yourself.

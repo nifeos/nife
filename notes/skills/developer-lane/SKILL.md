@@ -85,6 +85,18 @@ The merge checklist grows one line: every piece of identified work in the lane's
 prune and the relink. Two things this deliberately does not do: it does not gate, because no check
 can tell an intention from an observation in prose, and it does not touch the `BUGS` convention.
 
+## What drives the work
+
+Ruled 2026-10-31 (UTC). A lane brief answers one question before a lane starts, and the review of
+the lane's pull request asks it again: what drives this work now, and what does it save? The answer
+is a sentence, such as "the updater in milestone 976 (an OS update is a set of packages that lands through a slot) calls it" or "it cuts a kernel download by under
+1 MB per update". "Nothing drives it yet" is an allowed answer. It is a reason to hold the work for
+its driver, not a failure, because a program that waits for its users is not waste. There is no
+field for it and no lint check. `helpers/consumer_census.py` counts delivered work nothing uses,
+report-only, and the maintainer runs it monthly; its counts cannot tell work not yet consumed from
+work built with no reason, so a person asks. The reasoning is in
+[the proposal](../../../design/roadmap/proposals/delivered-work-names-its-consumer.md).
+
 ## Shared state: the tree's, and the machine's
 
 Anything global to the tree is assigned by the integrator at merge, never claimed by a lane.

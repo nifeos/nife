@@ -1,0 +1,27 @@
+Falsifies `system_tests::user::tenth_pass_map_gate_tests::the_narrow_rule_admits_every_other_pair_and_every_other_space` (claim 11's width).
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect: the mapping hold refuses any second mapping of a frame whose flags differ from one the
+space already has, the wider rule the ruling of 2026-10-31 (UTC) declined. It still holds claim 11,
+and it refuses a read-only view beside a writable buffer, which no W^X rule asks for and a program
+can want.
+
+Expected to fail: the assertion that the writable mapping beside a read-only one maps, reporting
+`the narrow rule refused writable beside read-only`.
+
+Replayed on 2026-10-31 (UTC) on aarch64 with `cargo xtask test --arch aarch64 --test
+the_narrow_rule_admits_every_other_pair_and_every_other_space`: red at exactly that assertion.
+
+diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
+--- a/kernel/src/revoke.rs
++++ b/kernel/src/revoke.rs
+@@ -447,7 +447,7 @@
+                 }
+                 if let Some((leaf_phys, leaf_flags)) = mmu::translate_at(root, e.va)
+                     && leaf_phys == phys
+-                    && leaf_flags.makes_writable_executable_pair(flags)
++                    && leaf_flags != flags
+                 {
+                     return true;
+                 }

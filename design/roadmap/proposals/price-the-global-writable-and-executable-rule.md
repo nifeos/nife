@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # Price the global writable-and-executable rule before anyone rules on it
 
-The lane for milestone 969 (a `MAP_INTO` refuses a frame mapped twice with different flags) raised
+The lane for milestone 969 (no frame is writable and executable in one address space) raised
 this on 2026-10-31 (UTC), when an architect ruled that claim 11 covers one address space for now.
 The ruling left a global rule open: no frame writable in any space while it is executable in
 another. The architect decides it once it has a price. This milestone produces that price and
