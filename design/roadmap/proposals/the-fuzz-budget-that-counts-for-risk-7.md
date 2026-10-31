@@ -19,13 +19,13 @@ Reuse: the budget run reuses the three fuzzers and the weekly sweep jobs as they
 ## Where criterion (d) stands
 
 Risk 7 is AMBER. The architect agreed the four criteria for green on 2026-10-06 (UTC). Criterion (d) reads:
-the milestone that fuzzes the surface a confined process can reach, milestone 779, "run to a set
+milestone 779 (fuzz the surface a confined process can reach), "run to a set
 budget with no escape." Re-derived from the tree and the workflow logs at `9f62334f5`:
 
 - Milestone 779 reads BUILT, and it holds three fuzzers, not one. Part (a) is three host
-  `cargo-fuzz` targets over service request handlers (milestone 751: `redoxfs_server_session`,
+  `cargo-fuzz` targets over service request handlers (milestone 751 (fuzz the services' request handlers): `redoxfs_server_session`,
   `system_log_session`, `compositor_session`). Part (b) is two in-guest drivers: the kernel-thread
-  driver of milestone 752 (`syscall_fuzzer_tests`) and the EL0 driver of milestone 779 itself
+  driver of milestone 752 (a seeded syscall driver with a shadow model) and the EL0 driver of milestone 779 itself
   (`fixtures/src/confined_syscall_fuzzer.rs`, judged by `confined_fuzzer_tests`).
 - No budget exists. Nothing in `design/`, `notes/` or the workflows names a count, a time or a
   stopping rule for (d).
@@ -38,7 +38,7 @@ budget with no escape." Re-derived from the tree and the workflow logs at `9f623
 - At the weekly rate, any meaningful budget takes years. 801 seeds a week is about 42,000 a
   year.
 - Criterion (d) does not bind today. Criterion (c)'s count of clean outsider passes is zero:
-  the tenth pass booted an escape on claim 11 on 2026-10-27 (UTC), and its fix, milestone 969, is
+  the tenth pass booted an escape on claim 11 on 2026-10-27 (UTC), and its fix, milestone 969 (a `MAP_INTO` refuses a frame mapped twice with different flags), is
   NOT-STARTED. But (d) needs its bar before (c) completes, or green waits on a question nobody asked.
 
 ## What the fuzzers do, in plain words
@@ -119,7 +119,7 @@ draws (its `GO` channel, threads, timers, the exits), and two arrival orders it 
 The options:
 
 - (A) Seeds per driver per architecture, all three ISAs. Recommended. Parity is a gate in this
-  tree (§19, architectural parity is a tenet). The escapes of record split by architecture. §12
+  tree (§19 (architectural parity is a tenet)). The escapes of record split by architecture. §12
   (call/reply IPC: a one-shot reply capability) was false only on x86_64, and so was the read-only
   port range; claim 11's alias was on all three.
 - (B) The same count on aarch64 only, with the 34 suite seeds on the others. A third of the cost.
@@ -212,9 +212,8 @@ resumes at `S`.
 most six jobs at a time, over two consecutive 08:00 to 13:00 UTC windows.**
 
 Background. Two kinds of machine could run it. Hosted Actions minutes cost this public
-repository nothing (§214, the Team plan buys runner concurrency). But every job takes one of the 60
-slots the merge queue also uses. An owned build host has idle cores. §299 (the build machine,
-owned) leaves open whether any workflow runs on it, and a job there needs a self-hosted runner. The drivers run under full
+repository nothing (§214 (the Team plan buys runner concurrency)). But every job takes one of the 60
+slots the merge queue also uses. An owned build host has idle cores. §299 (the build machine is bought) leaves open whether any workflow runs on it, and a job there needs a self-hosted runner. The drivers run under full
 emulation on an x86_64 host and under emulation for riscv64 and x86_64 on an aarch64 runner too.
 
 The cost, sized from the hosted rates, since that is the machine recommended. At 13 seeds/s, the
