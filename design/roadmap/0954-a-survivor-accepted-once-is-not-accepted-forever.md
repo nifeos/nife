@@ -195,7 +195,13 @@ where one of these fits.
   has a live `equivalent` or `gap` row, and none has a `killed` one. The classes CSV and the
   carried list still name the 2026-10-26 census, so they keep counting these until the next
   census regenerates them.
-- **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first. Checked
+- **Partly done.** Part 4, the noise exclusions, one pull request per crate, largest first.
+  `paging` is #2924 and `designware_mobile_storage` landed with #2849. `designware_ethernet`
+  already carried its compiled arguments and scoped exclusions from #2867; a re-derivation on
+  2026-10-31 (UTC) found 5 missed mutants, every one rowed, and one noise-shaped site without a
+  compiled argument, `link_from_registers`, which #2937 covers. `modify_extended`'s swap stays a
+  `caller` row, since its two operands are runtime values. The counts below name the 2026-10-26
+  census. Checked
   against `notes/project-metrics/mutation-shape-sites.csv`: 516 noise-shape sites, 148 the lines
   prove, 368 a lane must read.
 - **Outstanding.** Part 5, the eight crates' remaining survivors, one lane each, and the
