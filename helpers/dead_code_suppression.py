@@ -13,11 +13,11 @@ decision about an item. The attribute is read bracket-matched, because `rustfmt`
 
 One exemption, and it is not dead code: an attribute whose whole list is
 `allow(unused_crate_dependencies)`. That lint is about the manifest and fires per target, and a bin
-target can only silence it crate-wide (milestone 609, the system tests leave the kernel crate).
+target can only silence it crate-wide (milestone 609 (the system tests leave the kernel crate)).
 
 Exit 0 when nothing is found, 1 with one `path:line: attribute` per hit on stdout, 3 when no .rs
-file was read at all (a wrong filter must not read as a pass; milestone 401, a gate that selects the set it judges can pass by
-checking nothing).
+file was read at all (a wrong filter must not read as a pass; milestone 401 (a gate that selects the set it judges can pass by
+checking nothing)).
 
 Milestone 980 (script/lint stops paying per-item costs), part 4. This replaces one `awk` process per
 file (1,631 of them) and keeps its verdict: the same start rule, the same parenthesis count (every
