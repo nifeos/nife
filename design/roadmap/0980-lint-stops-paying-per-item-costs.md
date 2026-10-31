@@ -99,14 +99,14 @@ Each part is one lane, ordered by seconds saved per hour of work.
 6. The cargo half. The lint ratchet is the one cost there that does not move with build state, so
    decide whether it can share the clippy sections' work and whether rustdoc's four invocations
    collapse into one. The builds are not worth touching. Built, for the lint ratchet (calef ruled
-   option (a), 2026-10-31 UTC; PR #2936): the clippy sections run through `helpers/clippy_record.py`,
-   which adds the ratcheted lint as `--force-warn` and saves clippy's JSON and a sidecar under
-   `target/lint-clippy/`, and the ratchet reads those files instead of running clippy. It exits
-   non-zero, naming the file, for a file that is missing, unreadable, altered, from a failed section,
-   made with other flags or another selection, or older than the newest compiled file in the tree.
-   The one configuration no section linted, the kernel's default build on riscv64, became a
-   `-D warnings` section. The section fell from 30 s to 14 s wall on a warm tree (user CPU 29.8-31.0 s
-   to 13.4-15.2 s, three runs each). Rustdoc's four invocations are untouched.
+   option (a), 2026-10-31 UTC; PR #2936): the clippy sections run through `helpers/clippy_record.py`.
+   It adds the ratcheted lint as `--force-warn` and saves clippy's JSON and a sidecar under
+   `target/lint-clippy/`. The ratchet reads those files instead of running clippy, and exits
+   non-zero, naming the file, for a file that is missing, unreadable, altered or from a failed
+   section. It does the same for one made with other flags or another selection, or older than the
+   newest compiled file in the tree. The one configuration no section linted, the kernel's default build on riscv64, became a
+   `-D warnings` section. The section fell from 30 s to 14 s wall on a warm tree, and its user CPU from
+   29.8-31.0 s to 13.4-15.2 s, over three runs each. Rustdoc's four invocations are untouched.
 
 Parts 1 through 4 change no verdict and can land alone. Part 5 needs a design note for the shared
 index. Part 6 needs a decision about whether the lint ratchet can read the clippy sections' output.

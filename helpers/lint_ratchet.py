@@ -22,7 +22,7 @@ day it lands. A lint with hundreds of hits can only be adopted as a count that f
 sections of `script/lint` run through `helpers/clippy_record.py`, which adds the ratcheted lints as
 `--force-warn` (a `-D warnings` does not turn that into an error, and a source `allow` cannot hide
 a site from it) and saves clippy's JSON under `target/lint-clippy/`, so the ratchet reads what
-those sections already linted and runs no clippy of its own (milestone 980, part 6; it ran a second
+those sections already linted and runs no clippy of its own (milestone 980 (script/lint stops paying per-item costs), part 6; it ran a second
 pass over every configuration, 23 to 26 seconds). The configurations are the lint census's five
 (`notes/lint-census-2026-10-09.md`) with `--all-targets` where `script/lint`'s own passes build test
 code, plus `system_tests` and the host-only workspaces; `CONFIGURATIONS` names each and the cargo

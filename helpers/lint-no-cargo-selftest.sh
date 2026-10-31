@@ -8,7 +8,7 @@
 # Each case is a property the pre-push hook would lose silently if it broke:
 #   1. a section that invokes cargo is dropped, in shell and in a Python argv;
 #   1b. a section that starts cargo through the clippy recorder, or says it needs the cargo
-#       sections' saved output, is dropped too (milestone 980, part 6);
+#       sections' saved output, is dropped too (milestone 980 (script/lint stops paying per-item costs), part 6);
 #   2. prose that only mentions cargo is kept (a false drop shrinks the hook without a signal);
 #   3. a section that opts in with the marker and the guard is kept;
 #   4. a marker on a section with no cargo, and a marker with no guard, fail;
