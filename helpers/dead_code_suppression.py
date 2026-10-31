@@ -4,7 +4,8 @@
     helpers/dead_code_suppression.py            # every tracked .rs file outside vendor/ and patches/
     helpers/dead_code_suppression.py --selftest
 
-Milestone 41 (DECISIONS §38) is the rule and script/lint's section "module-wide dead-code
+Milestone 41 (dead code: triage the suppressions, and un-blindfold the gate) and §38 (a suppression
+is scoped to an item and carries a reason, or it does not ship) are the rule and script/lint's section "module-wide dead-code
 suppression" is where it is explained. An inner attribute (`#![...]`) applies to the whole enclosing
 module or crate, so one that names `dead_code` or any `unused` lint is a blanket and never a
 decision about an item. The attribute is read bracket-matched, because `rustfmt` splits a long
@@ -12,10 +13,11 @@ decision about an item. The attribute is read bracket-matched, because `rustfmt`
 
 One exemption, and it is not dead code: an attribute whose whole list is
 `allow(unused_crate_dependencies)`. That lint is about the manifest and fires per target, and a bin
-target can only silence it crate-wide (milestone 609).
+target can only silence it crate-wide (milestone 609, the system tests leave the kernel crate).
 
 Exit 0 when nothing is found, 1 with one `path:line: attribute` per hit on stdout, 3 when no .rs
-file was read at all (a wrong filter must not read as a pass; milestone 401).
+file was read at all (a wrong filter must not read as a pass; milestone 401, a gate that selects the set it judges can pass by
+checking nothing).
 
 Milestone 980 (script/lint stops paying per-item costs), part 4. This replaces one `awk` process per
 file (1,631 of them) and keeps its verdict: the same start rule, the same parenthesis count (every
