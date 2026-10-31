@@ -601,6 +601,48 @@ struct Composed {
     packages: Vec<(String, String)>,
 }
 
+/// **The catalog's word on one package**: it must list the stem, and at exactly these bytes.
+fn check_vouched(
+    catalog_path: &Path,
+    catalog: &BTreeMap<String, String>,
+    stem: &str,
+    digest: &str,
+) -> Result<(), String> {
+    let vouched = catalog.get(stem).ok_or_else(|| {
+        format!(
+            "{} lists no `{stem}`; a package the catalog does not vouch for cannot enter the \
+             image",
+            catalog_path.display()
+        )
+    })?;
+    if vouched != digest {
+        return Err(format!(
+            "{stem}: the catalog records {vouched}, these bytes are {digest}"
+        ));
+    }
+    Ok(())
+}
+
+/// **The image's approval file text**, when the definition names one, with its path.
+fn read_approval_text(
+    root: &Path,
+    definition: &Definition,
+) -> Result<Option<(PathBuf, String)>, String> {
+    match &definition.approval {
+        Some(relative) => {
+            let path = root.join(relative);
+            let text = std::fs::read_to_string(&path).map_err(|e| {
+                format!(
+                    "could not read the image's approval file {}: {e}",
+                    path.display()
+                )
+            })?;
+            Ok(Some((path, text)))
+        }
+        None => Ok(None),
+    }
+}
+
 /// **Compose the archive's entries from packages**: for every program the definition names, the
 /// member `bin/<program>` of the package that owns it, checked against the catalog.
 /// **Compose one architecture's archive from the packages the definition names.** Each program
@@ -626,19 +668,7 @@ fn compose(
     // The image's approval file, when the definition names one. Read and parsed before anything is
     // taken from an archive, so a file that does not parse refuses the composition rather than
     // leaving the check half-done.
-    let approval_text = match &definition.approval {
-        Some(relative) => {
-            let path = root.join(relative);
-            let text = std::fs::read_to_string(&path).map_err(|e| {
-                format!(
-                    "could not read the image's approval file {}: {e}",
-                    path.display()
-                )
-            })?;
-            Some((path, text))
-        }
-        None => None,
-    };
+    let approval_text = read_approval_text(root, definition)?;
     let approval = match &approval_text {
         Some((path, text)) => Some((
             path.as_path(),
@@ -665,19 +695,7 @@ fn compose(
                 archive.version, definition.version
             ));
         }
-        let vouched = catalog.get(&stem).ok_or_else(|| {
-            format!(
-                "{} lists no `{stem}`; a package the catalog does not vouch for cannot enter the \
-                 image",
-                catalog_path.display()
-            )
-        })?;
-        if *vouched != archive.digest {
-            return Err(format!(
-                "{stem}: the catalog records {vouched}, these bytes are {}",
-                archive.digest
-            ));
-        }
+        check_vouched(catalog_path, &catalog, &stem, &archive.digest)?;
         let path = dir.join(format!("{stem}.nifepkg"));
         let bytes =
             std::fs::read(&path).map_err(|e| format!("could not read {}: {e}", path.display()))?;
