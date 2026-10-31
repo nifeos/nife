@@ -99,16 +99,16 @@ as file splits became their own blocks after milestone 841.
 
 ## Where it stands, 2026-10-11 (UTC)
 
-All five criteria were built. Criterion 4 was held, and calef ruled on 2026-10-12 (UTC) that
+The milestone built all five criteria. Criterion 4 waited, and calef ruled on 2026-10-12 (UTC) that
 milestone 876 completes it. It did, on 2026-10-12 (UTC): `kernel_main` is 51 code lines in
-`kernel/src/boot.rs` as of 2026-10-31 (UTC), and its row is gone from the baseline. Criteria 3 and
-5, the dashboard row and the chart, were retired on 2026-10-14 (UTC) once the gate held the measure
-at zero.
+`kernel/src/boot.rs` as of 2026-10-31 (UTC), and its row is gone from the baseline. Once the gate
+held the measure at zero, calef retired criteria 3 and 5, the dashboard row and the chart, on 2026-10-14 (UTC).
 
 - The lint ratchet is `helpers/lint_ratchet.py`, built to the panic proposal's specification so the
   other lint proposals register a lint rather than write a gate. The clippy sections of
   `script/lint` add the lint as `--force-warn` and save their diagnostics, and the ratchet reads
-  those; it runs no clippy of its own (milestone 980, part 6). One lint is registered.
+  those; it runs no clippy of its own (milestone 980 (script/lint stops paying per-item costs),
+  part 6). One lint is registered.
 - The row value is `helpers/function_length.py`'s text replica of `too_many_lines`, which also
   reaches files no clippy pass compiles. At a threshold of 0 it matched clippy on 11,209 of the
   11,217 functions clippy reported (2026-10-13 UTC; the register's appendix holds the count and the
