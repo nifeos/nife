@@ -3,8 +3,11 @@ status: BUILT
 raised: 2026-10-27
 built: 2026-10-31
 promoted_from: a-map-into-refuses-a-frame-mapped-twice-with-different-flags
+milestone_dependencies: none
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
+needs_person: no
 ---
 # 969. No frame is writable and executable in one address space
 

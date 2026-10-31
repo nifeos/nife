@@ -35,7 +35,7 @@ changes the object. One word therefore matches a capability and all of its deriv
 Each address space's records live in log pages retyped from that space's own region. A fixed
 registry of live spaces (root, region, TLB tag, log head) finds them. A process that maps a
 thousand shared pages spends its own budget recording them. A process that cannot afford a record
-cannot make the mapping: the record is refused before any leaf goes in.
+cannot make the mapping: the hold refuses the record before any leaf goes in.
 
 Teardown needs nothing extra. The log pages are region pages, so `memory_region::destroy` reclaims
 them with the process, and forgetting a space is one registry slot going empty.
@@ -127,8 +127,8 @@ A read-only mapping cannot complete the pair and skips the scan. Because the rec
 the leaf, under the hold, no path installs a recorded leaf the check has not seen, and no other core
 can fetch through one it would refuse.
 
-The check reads one space's log. The same frame writable in one space and code in another maps, by
-the ruling of 2026-10-31 (UTC); milestone 969 (no frame is writable and executable in one address
+The check reads one space's log, by the ruling of 2026-10-31 (UTC): the same frame writable in one
+space and code in another maps. Milestone 969 (no frame is writable and executable in one address
 space) has the limit and the components it leaves a route to. A page `AddressSpace::map_new` maps
 has no record, and no capability names it, so nothing can map it twice.
 `system_tests::user::tenth_pass_map_gate_tests` drives every path.
