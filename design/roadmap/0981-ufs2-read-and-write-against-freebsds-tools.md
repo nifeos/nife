@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: ufs2-read-and-write-against-freebsds-tools
 raised: 2026-10-30
 milestone_dependencies: 37
@@ -58,17 +58,16 @@ asks for it.
 
 ### Phase 1: the builds
 
-Build `ufs-core` and `rufs` for the three bare targets and record what stops each one.
+Done. [ufs2-builds-2026-10-31.md](../../notes/ufs2-builds-2026-10-31.md) records `ufs-core` and
+`rufs` on the three bare targets and on `targets/*-unknown-nife.json`, as shipped and patched.
+`ufs-core` needs 6 lines for `no_std` and none for nife's `std`. `rufs` needs 49 lines to build as a
+nife `std` program.
 
-Both stop today at `can't find crate for 'std'`. `ufs-core` needs `no_std` plus an `alloc` import;
-its blockers are `thiserror` and `Vec`, not the format logic. `rufs` runs `std` by design because it
-carries `libc` and FUSE. The fork here: does the server run as a `std` program, or does `rufs` gain a
-`no_std` port? §34's 2026-09-20 amendment allows a userspace filesystem `std`, and nife's `std` is
-single-threaded with `panic = abort`, so the lane measures against `targets/*-unknown-nife.json`.
-Record both crates as shipped and with the patch, the way
-[filesystem-crates-2026-10-07.md](../../notes/filesystem-crates-2026-10-07.md) recorded the btrfs and
-ext4 crates. Each new dependency still goes to an architect under §46 (thin primitives
-or whole subsystems).
+The UFS2 server is a `std` program, as `jig` is (ruled 2026-10-31 UTC, on #2917). It vendors `rufs`
+with the nife-`std` patch, and whoever starts it grants it the clock slot, because `rufs` reads the
+time for every new inode. A `no_std` port of `rufs` was measured and not taken. Each new dependency
+still goes to an architect under §46 (thin primitives or whole subsystems), and `rufs`'s is open:
+see BUGS.
 
 ### Phase 2: make, judge and read
 
@@ -155,12 +154,25 @@ capability boundary is what makes it so, and packages are how it arrives) stays,
 and OpenZFS reachable as confined programs. Milestone 190 reads and writes ext4 for drives Linux made,
 which is a different requirement from the launch store; this arc reorders neither 140 nor 190.
 
+## Follow-on
+
+- **Outstanding.** Phase 2, the read-only server, waits on the architect's ruling on `rufs` and
+  `bincode` (BUGS). The oracle tools' build recipe does not wait on it. Checked 2026-10-31 (UTC):
+  no server crate and no recipe exist in the tree.
+- **Outstanding.** Phase 3, the write path, with the three `rufs` gaps in BUGS. Checked
+  2026-10-31 (UTC): nothing in the tree writes UFS2.
+- **Outstanding.** Phase 4, the crash claim. Checked 2026-10-31 (UTC): milestone 37's injector has
+  no UFS2 target.
+
 ## BUGS
 
-- No UFS2 server exists, and no image has gone through nife. The survey is desk work plus two
-  failed builds.
-- The `no_std` cost is one build error, not a measured patch. Nobody knows whether closing it takes a
-  day or a week.
+- No UFS2 server exists, and no image has gone through nife. Phase 1 built both crates for all three
+  targets, and only a host has run them.
+- `rufs` depends on `bincode` 2.0.1, which RUSTSEC-2025-0141 marks unmaintained, and `deny.toml`
+  refuses it. Whether `rufs` enters the tree with it, with it replaced, or not at all is an
+  architect's open question, and phase 2's server waits on it.
+- `rufs` 0.6.0 has no call for a hard link or an extended-attribute write, and its `rename` without
+  replace refuses every destination with `EEXIST`. Phase 3 owns all three.
 - No Rust implementation of soft updates or SUJ exists. Until phase 4 adds one, a crash claim on
   UFS2 is `fsck`-repaired rather than consistent, and the record must say which.
 - From milestone 982's removal until phase 4 passes, the launch store's crash evidence is weaker
