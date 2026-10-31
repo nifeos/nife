@@ -444,6 +444,12 @@ jobs:
           script/mutation-census --add "$CENSUS" "$GITHUB_RUN_ID" "${dirs[@]}"
           mkdir -p notes/project-metrics/mutation-survivors
           cp "inflow/$CENSUS.csv.gz" notes/project-metrics/mutation-survivors/
+          # The per-site verdicts of the noise-shape survivors, read at this run's own commit
+          # (the checkout above), so the file keeps pace with the census it names (milestone 954 (a survivor accepted once is not accepted forever)).
+          # Reuses the checker; helpers/mutation_shape_sites.py stale is the lint that notices a miss.
+          mapfile -t missed < <(find shards -name missed.txt -exec dirname {} \; | sort)
+          python3 helpers/mutation_shape_sites.py check --census "$CENSUS" --run "$GITHUB_RUN_ID" \
+            --sha "$GITHUB_SHA" --out notes/project-metrics/mutation-shape-sites.csv "${missed[@]}"
           if git diff --quiet -- notes/project-metrics && [ -z "$(git ls-files --others --exclude-standard notes/project-metrics)" ]; then
             echo "Nothing to record."
             exit 0
@@ -460,7 +466,7 @@ jobs:
           git push --force origin "$branch"
           body="**Lane:** $branch, opened by a scheduled workflow; $PR_AUTHOR is the author GitHub shows.
 
-          Records the $CENSUS mutation census ([run $GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)): one row per crate in \`mutation-census.csv\` and the survivor list \`mutation-survivors/$CENSUS.csv.gz\`. Append-only; nothing from a past census changes."
+          Records the $CENSUS mutation census ([run $GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)): one row per crate in \`mutation-census.csv\`, the survivor list \`mutation-survivors/$CENSUS.csv.gz\` and the regenerated \`mutation-shape-sites.csv\`. Append-only; nothing from a past census changes."
           # No App token: push only, and leave the pull request to a person (calef's ruling on
           # #2442, 2026-10-20 UTC). `github.token` may not open one, and the repository setting
           # that would let it stays off. The summary carries the compare link, title and body.
