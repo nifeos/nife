@@ -76,7 +76,11 @@ Each part is one lane, ordered by seconds saved per hour of work.
 
 1. One history pass in `observed_failing.py`. Replace the 29 `git log --follow` calls with one
    `git log --diff-filter=A --name-only` pass over all history, and reuse it for every workflow. About
-   15 s. No change to what the check refuses.
+   15 s. No change to what the check refuses. Built: `oldest_commits` reads all history once, and
+   `git log --follow` runs only for a path whose trail does not end in an add (a rename made inside a
+   merge). Its selftest builds a repository with a rename, a delete and a re-add, and holds the pass
+   to `--follow`'s answer on each path. The section fell from 7 s to 2 s on a 29-workflow tree
+   (user CPU 6.0 s to 1.6 s).
 2. Stop running a selftest twice. Delete the duplicate `verify-parallel-selftest.sh` call from the
    `script/verify --parallel` section, and cut the fixed `sleep 4.5` in the slot selftest to what its
    assertions need. About 8 s. Built: the second call is gone. The slot selftest's scratch copy of `heavy_slot.py` polls every
@@ -127,6 +131,14 @@ fits.
 
 ## Follow-on
 
+- **Outstanding.** Part 2, the duplicate `verify-parallel-selftest.sh` call and the fixed `sleep 4.5`;
+  checked against `script/lint` and `helpers/heavy-slot-selftest.sh`, where both remain.
+- **Outstanding.** Part 3, one lexer pass in `helpers/name_crossings.py`; its `strip` still scans a
+  character at a time.
+- **Outstanding.** Part 4, one interpreter in the dead-code section; it still spawns one `awk` per
+  file.
+- **Outstanding.** Parts 5 and 6, the shared corpus index (its design note is in review) and the
+  cargo half, which waits for an architect.
 - **Recorded.** `helpers/trust_boundary.py --check` fails in a checkout whose `fs_server/` holds only
   a stale `target/` directory: it looks for `fs_server/Cargo.toml`, and the crate is `redoxfs_server`
   since `0c0ef2367`. A leftover local directory turns a gate red and says nothing true. This is a
