@@ -2,7 +2,7 @@
 
 *Name: provisional, minted 2026-10-31 (UTC) by lane maintainer/empty-diff-failures-sorted.*
 
-Part of [how the tree is run](README/how-the-tree-is-run.md). This note answers the question in the
+Part of the notes on [running the tree](README/how-the-tree-is-run.md). This note answers the question in the
 proposal `find-why-the-empty-diff-job-fails-first` (pull request #2968). It changes no workflow. The
 job is `.github/workflows/empty-diff.yml` and the script it runs is `helpers/empty-diff-check.sh`,
 both from milestone 627 (a pull request that changes nothing does not merge).
@@ -13,7 +13,7 @@ The hypothesis holds. Almost every failure is a draft that carries only its `cla
 job fails it as designed. Of 609 failed runs, 577 (95%) are that case on a draft. Nobody waits on
 one. A person or a lane paid time on about 30 runs (5%), and most of those cost two to three minutes.
 
-## What was collected
+## What the collection covers
 
 Every run of the `empty diff` workflow on the `pull_request` event from 2026-10-17 through
 2026-10-31 (UTC). The API stops at 1,000 results per query, so the list came one day at a time.
@@ -54,7 +54,7 @@ No failure was a label-change cancellation. The workflow starts on opened, reope
 and ready for review, so a label never starts it, and its concurrency group never cancels a run in
 progress. The two cancelled runs were on branches `comments/929-kernel-syscall-selftest` and
 `comments/929-crates-09`. They ran 52 seconds and 5 minutes, so neither is a zero-second
-cancellation. They are not failures and are left out of the 609.
+cancellation. They are not failures, so the 609 exclude them.
 
 ## What cost anyone time
 
@@ -81,8 +81,8 @@ reading, and the four long cases supply most of that.
 
 The 53-of-83 figure in the proposal holds up: here 574 of 697 pull requests (82%) failed `empty
 diff` first. It overstates a problem, because those are claim drafts, and the check is right to
-fail them. They sit before the first real commit, not before the merge queue. A ready pull
-request was held in 28 of 2,552 runs (1%) by a claim-only head and in 2 by an empty diff. This job
+fail them. They sit before the first real commit, not before the merge queue. In 28 of 2,552 runs (1%) a claim-only head held a ready pull
+request, and in 2 an empty diff did. This job
 is not where the 25-minute pre-queue median goes. Measure the pre-queue median from the
 first ready event, which sets these drafts aside.
 
