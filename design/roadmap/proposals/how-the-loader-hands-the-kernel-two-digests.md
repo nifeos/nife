@@ -43,7 +43,8 @@ The build ties it in three places. `kernel/build.rs` reads the measurement file.
 the archive before it builds the kernel (`uefi_kernel`, `base_image`'s kernel step). And
 `uefi_loader/build.rs` refuses to embed a kernel and archive that `sealed_pair` finds unsealed.
 
-What that costs an update under milestone 976's option B, ruled 2026-10-31 (UTC). The base packages
+What that costs an update under option B of milestone 976 (an OS update is a set of packages that
+lands through a slot), ruled 2026-10-31 (UTC). The base packages
 that milestone 976's lane built on 2026-10-31 (x86_64, the debug profile `base-packages` builds
 today) total 10,478,152 bytes in eighteen packages, 2,864,673 under `gzip -9`. While the kernel
 vouches for the base, every base update carries the kernel package too:
@@ -73,12 +74,12 @@ nife writes the x86_64 command line already: the slot the chooser picked (`boot-
 medium and the screen, each a word the kernel parses through a shared crate. The kernel reads no
 command line on the device-tree path today.
 
-Under §235's T4 with T2, two more facts travel: the progenitor's SHA-256 digest, and the digest of
+Under T4 with T2, from §235 (the OS is built and updated from packages), two more facts travel: the progenitor's SHA-256 digest, and the digest of
 the base manifest. The kernel checks the progenitor against the first before entering it, and hands
 the second to the progenitor, which checks the archive's table against it and every program
 against the table. Three loaders must write the facts: `uefi_loader` on all three architectures,
 QEMU's direct boot that `script/test` uses (`-kernel`, `-initrd`, `-append`), and U-Boot's boot
-script on the VisionFive 2 card. Milestone 525 records that a device tree has one initrd slot, so
+script on the VisionFive 2 card. Milestone 525 (a bad upgrade cannot brick the machine) records that a device tree has one initrd slot, so
 the facts cannot ride in a second boot module there.
 
 This is a wire format between the loader and the kernel. Installed disks will carry loaders that
@@ -157,7 +158,7 @@ starts QEMU directly. The board's card writer (`cargo xtask board`) writes U-Boo
 
 The slot header today is 32 bytes inside a 4,096-byte reserve, with a CRC-32 over the header and
 one over the image. A CRC catches a copy that died halfway; it does not stop a deliberate swap. §235
-accepted that under T2: trust moves to the loader, protected only by Secure Boot (milestone 500) or
+accepted that under T2: trust moves to the loader, protected only by Secure Boot (milestone 500 (a stick that boots with Secure Boot on)) or
 the slot checksum.
 
 ### The question
