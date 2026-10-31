@@ -22,9 +22,33 @@ use crate::sector::SectorDevice;
 pub struct NamedEntry {
     short: ShortEntry,
     long_name: Result<Option<LongFileName>, LongNameError>,
+    place: EntryPlace,
+}
+
+/// **Where an entry sits**: its directory's first cluster (0 for the root), the index of the
+/// first slot of its long-name run, and the index of its short slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct EntryPlace {
+    pub(crate) directory: u32,
+    pub(crate) first_slot: u32,
+    pub(crate) short_slot: u32,
 }
 
 impl NamedEntry {
+    /// An entry just written at `place`, with no long name.
+    pub(crate) const fn created(short: ShortEntry, place: EntryPlace) -> NamedEntry {
+        NamedEntry {
+            short,
+            long_name: Ok(None),
+            place,
+        }
+    }
+
+    /// Where the entry sits in its directory.
+    pub(crate) const fn place(&self) -> EntryPlace {
+        self.place
+    }
+
     /// The short entry as stored.
     ///
     /// Name: provisional. The `ShortEntry` inside.
@@ -120,6 +144,8 @@ impl NamedEntry {
 pub struct Entries<'v, D> {
     directory: Directory<'v, D>,
     assembler: LongNameAssembler,
+    /// The index of the first long-name piece since the last short entry.
+    run_start: Option<u32>,
 }
 
 impl<'v, D> Entries<'v, D> {
@@ -128,6 +154,7 @@ impl<'v, D> Entries<'v, D> {
         Entries {
             directory,
             assembler: LongNameAssembler::new(),
+            run_start: None,
         }
     }
 }
@@ -137,12 +164,24 @@ impl<D: SectorDevice> Iterator for Entries<'_, D> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            match self.directory.next()? {
+            match self.directory.advance_indexed()? {
                 Err(error) => return Some(Err(error)),
-                Ok(DirectoryEntry::LongName(piece)) => self.assembler.push(&piece),
-                Ok(DirectoryEntry::Short(short)) => {
+                Ok((index, DirectoryEntry::LongName(piece))) => {
+                    self.run_start.get_or_insert(index);
+                    self.assembler.push(&piece);
+                }
+                Ok((index, DirectoryEntry::Short(short))) => {
                     let long_name = self.assembler.finish(&short.name());
-                    return Some(Ok(NamedEntry { short, long_name }));
+                    let place = EntryPlace {
+                        directory: self.directory.first_cluster(),
+                        first_slot: self.run_start.take().unwrap_or(index),
+                        short_slot: index,
+                    };
+                    return Some(Ok(NamedEntry {
+                        short,
+                        long_name,
+                        place,
+                    }));
                 }
             }
         }

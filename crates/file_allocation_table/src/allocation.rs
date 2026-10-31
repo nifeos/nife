@@ -17,6 +17,7 @@
 //!
 //! Name: provisional. The module that finds free clusters and owns the table's writes.
 
+use crate::boot_sector::FileAllocationTableType;
 use crate::fs_info::FsInfo;
 use crate::reader::{ChainError, Links, Volume, Walk, is_data};
 use crate::sector::WritableSectorDevice;
@@ -56,6 +57,10 @@ pub(crate) trait LinksMut: Links {
         cluster: u32,
         entry: TableEntry,
     ) -> Result<(), ChainError<Self::Error>>;
+
+    /// Take a free cluster for the end of a chain: linked after `last` when given, else the first
+    /// of a new chain. `Ok(None)` means the volume has no free cluster.
+    fn append(&mut self, last: Option<u32>) -> Result<Option<u32>, ChainError<Self::Error>>;
 }
 
 /// **Find a free cluster, mark it end-of-chain and return it.** The search starts at `hint`
@@ -157,6 +162,10 @@ pub(crate) struct WriterState {
     loaded: bool,
     /// Whether the hints differ from what the device holds.
     pub(crate) hints_changed: bool,
+    /// Whether this volume cleared the clean-shutdown bit and has not set it back.
+    marked_dirty: bool,
+    /// Whether the clean-shutdown bit was set before this volume cleared it.
+    was_clean: bool,
 }
 
 impl WriterState {
@@ -166,6 +175,8 @@ impl WriterState {
             free_clusters: None,
             loaded: false,
             hints_changed: false,
+            marked_dirty: false,
+            was_clean: false,
         }
     }
 }
@@ -177,6 +188,18 @@ impl<D: WritableSectorDevice> LinksMut for Volume<D> {
         entry: TableEntry,
     ) -> Result<(), ChainError<D::Error>> {
         self.write_table_entry(cluster, entry)
+    }
+
+    fn append(&mut self, last: Option<u32>) -> Result<Option<u32>, ChainError<D::Error>> {
+        match self.allocate_cluster(last) {
+            Ok(cluster) => Ok(Some(cluster)),
+            Err(AllocationError::VolumeFull) => Ok(None),
+            Err(AllocationError::Chain(error)) => Err(error),
+            Err(AllocationError::NotTheEndOfAChain(cluster)) => Err(ChainError::Broken {
+                cluster,
+                entry: TableEntry::Reserved,
+            }),
+        }
     }
 }
 
@@ -207,9 +230,17 @@ impl<D: WritableSectorDevice> Volume<D> {
         cluster: u32,
         entry: TableEntry,
     ) -> Result<(), ChainError<D::Error>> {
+        self.boot
+            .cluster_first_sector(cluster)
+            .ok_or(ChainError::NotADataCluster(cluster))?;
+        let raw = entry.encode(self.boot.file_allocation_table_type());
+        self.write_raw_entry(cluster, raw)
+    }
+
+    /// Store `raw` as table entry `cluster` (any index below `clusters() + 2`) in every live copy.
+    fn write_raw_entry(&mut self, cluster: u32, raw: u32) -> Result<(), ChainError<D::Error>> {
         let boot = self.boot;
         let file_allocation_table_type = boot.file_allocation_table_type();
-        let raw = entry.encode(file_allocation_table_type);
         let wanted = table::entry_bytes(file_allocation_table_type);
         let size = boot.sector_size().bytes();
         let live = match boot.active_table() {
@@ -217,7 +248,7 @@ impl<D: WritableSectorDevice> Volume<D> {
             None => 0..boot.table_count(),
         };
         for copy in live {
-            let (sector, within) = table::entry_position_in(&boot, cluster, copy)
+            let (sector, within) = table::raw_position_in(&boot, cluster, copy)
                 .ok_or(ChainError::NotADataCluster(cluster))?;
             let here = wanted.min(size - within);
             let mut bytes = [0u8; 4];
@@ -236,6 +267,45 @@ impl<D: WritableSectorDevice> Volume<D> {
             self.buffer[within..within + here].copy_from_slice(&bytes[..here]);
             self.write_buffer(sector)?;
         }
+        Ok(())
+    }
+
+    /// The clean-shutdown bit of table entry 1, or `None` for FAT12, which has none.
+    fn clean_bit(&self) -> Option<u32> {
+        match self.boot.file_allocation_table_type() {
+            FileAllocationTableType::Fat12 => None,
+            FileAllocationTableType::Fat16 => Some(0x8000),
+            FileAllocationTableType::Fat32 => Some(0x0800_0000),
+        }
+    }
+
+    /// **Whether the volume was shut down cleanly**, from the bit in table entry 1: `Ok(None)` on
+    /// FAT12, which keeps no such bit. A volume this crate is changing reads as not clean until
+    /// [`Volume::sync`].
+    ///
+    /// Name: provisional. The specification's `ClnShutBitMask`, asked as a question.
+    pub fn is_clean(&mut self) -> Result<Option<bool>, ChainError<D::Error>> {
+        let Some(bit) = self.clean_bit() else {
+            return Ok(None);
+        };
+        Ok(Some(self.read_raw_entry(1)? & bit != 0))
+    }
+
+    /// Clear the clean-shutdown bit before the first change after open or after a sync, and
+    /// remember whether it was set. A volume found dirty stays dirty at the next sync, since this
+    /// crate cannot know the earlier writer left it consistent.
+    pub(crate) fn begin_change(&mut self) -> Result<(), ChainError<D::Error>> {
+        if self.writer.marked_dirty {
+            return Ok(());
+        }
+        if let Some(bit) = self.clean_bit() {
+            let entry = self.read_raw_entry(1)?;
+            self.writer.was_clean = entry & bit != 0;
+            if self.writer.was_clean {
+                self.write_raw_entry(1, entry & !bit)?;
+            }
+        }
+        self.writer.marked_dirty = true;
         Ok(())
     }
 
@@ -270,6 +340,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         &mut self,
         extending: Option<u32>,
     ) -> Result<u32, AllocationError<D::Error>> {
+        self.begin_change()?;
         self.load_hints()?;
         if let Some(last) = extending {
             let entry = self.table_entry(last)?;
@@ -302,6 +373,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     ///
     /// Name: provisional. Beside `allocate_cluster`.
     pub fn free_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
+        self.begin_change()?;
         self.load_hints()?;
         let result = free_chain(self, first);
         self.note_released(&result);
@@ -317,6 +389,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         first: u32,
         keep: u32,
     ) -> Result<u32, AllocationError<D::Error>> {
+        self.begin_change()?;
         self.load_hints()?;
         let result = truncate_chain(self, first, keep);
         self.note_released(&result);
@@ -346,9 +419,21 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// Name: provisional. The verb of the standard library's `Write::flush`, for the volume's own
     /// state.
     pub fn sync(&mut self) -> Result<(), ChainError<D::Error>> {
-        if !self.writer.hints_changed {
-            return Ok(());
+        if self.writer.hints_changed {
+            self.write_hints()?;
         }
+        if self.writer.marked_dirty {
+            if let (Some(bit), true) = (self.clean_bit(), self.writer.was_clean) {
+                let entry = self.read_raw_entry(1)?;
+                self.write_raw_entry(1, entry + bit)?;
+            }
+            self.writer.marked_dirty = false;
+        }
+        Ok(())
+    }
+
+    /// Write the `FSInfo` hints.
+    fn write_hints(&mut self) -> Result<(), ChainError<D::Error>> {
         if let Some(sector) = self.boot.fs_info_sector() {
             self.read_into_buffer(u32::from(sector))?;
             let size = self.boot.sector_size().bytes();
@@ -397,7 +482,7 @@ impl<D: crate::sector::SectorDevice> Volume<D> {
 }
 
 #[cfg(kani)]
-mod verification;
+pub(crate) mod verification;
 
 #[cfg(test)]
 mod tests;

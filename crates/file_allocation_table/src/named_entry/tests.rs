@@ -165,3 +165,24 @@ fn a_subdirectory_lists_by_its_cluster() {
     assert_eq!(&child.short_name(), b"CHILD   TXT");
     assert_eq!(volume.entries(0).count(), 0);
 }
+
+#[test]
+fn a_listing_yields_nothing_after_an_error_however_often_it_is_asked() {
+    use crate::reader::tests::Image;
+    let mut image = Image::fat12();
+    // A directory chain that loops through clusters whose sectors the image does not store.
+    image.set(40, 41);
+    image.set(41, 40);
+    image.bytes[(6 + 40 - 2) * 512..(6 + 41 - 2) * 512].fill(0xE5);
+    image.refuse = Some(6 + 41 - 2);
+    let mut volume = crate::Volume::open(image).unwrap();
+    let mut entries = volume.entries(40);
+    let mut errors = 0;
+    for _ in 0..20 {
+        if let Some(Err(_)) = entries.next() {
+            errors += 1;
+        }
+    }
+    assert_eq!(errors, 1);
+    assert!(entries.next().is_none());
+}
