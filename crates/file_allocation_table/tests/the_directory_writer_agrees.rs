@@ -347,6 +347,12 @@ fn directories_above_cluster_65535_keep_their_high_bits_through_a_move() {
         .unwrap();
     assert_eq!(moved.first_cluster(), b.first_cluster());
     put(&mut volume, moved.first_cluster(), "second.txt", b"2");
+    // The moved directory's `..` leads back to High C, high half included: moving High C below it
+    // is a cycle only if that link reads right.
+    assert_eq!(
+        volume.rename(&c, moved.first_cluster(), "x"),
+        Err(WriteError::MovedIntoItself)
+    );
     volume.sync().unwrap();
     let image = volume.into_device();
     let tree = oracle_tree(&image.bytes);

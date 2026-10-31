@@ -63,7 +63,9 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
    round-trip harness. Built in two pull requests:
    [stage-6-allocation-and-write.md](0813-a-proven-fat-crate-released-on-its-own/stage-6-allocation-and-write.md)
    has what landed.
-7. Make and remove directories, rename, and long-name creation with alias numbering.
+7. Make and remove directories, rename, and long-name creation with alias numbering. Built:
+   [stage-7-directories-and-long-names.md](0813-a-proven-fat-crate-released-on-its-own/stage-7-directories-and-long-names.md)
+   has what landed.
 8. The general format for FAT12, FAT16 and FAT32, folding the `mkfs` in, with FAT12 and FAT16
    oracle images.
 9. Timestamps, attributes and the label, then `script/crate-standalone` and the README for release.
@@ -152,7 +154,7 @@ carries a machine-replayable falsification record) and `script/falsifications` r
 | Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | `reader::verification::no_chain_walk_outlasts_the_volume`, on volumes of one to eight clusters; file reads: `file::verification::a_file_read_stays_inside_its_size_and_its_clusters`; partitions: `master_boot_record::verification::a_partition_device_reads_only_its_partition` |
 | A table write changes only its entry, allocation takes one free cluster, a release never frees a bad or reserved cluster, a cut keeps exactly the head of the chain, and an `FSInfo` store changes only its two hints | `table::verification::a_stored_entry_reads_back_and_disturbs_nothing_else`, `encoding_inverts_decoding`; `allocation::verification::allocation_takes_one_free_cluster_and_nothing_else`, `a_release_frees_only_its_own_chain`, `a_cut_keeps_exactly_the_head_of_the_chain`; `fs_info::verification::a_store_changes_only_the_two_hints` |
 | Write then read round-trips on a small symbolic volume, byte for byte, with the chain as long as the size needs; the directory entry is the oracle tests' | `file_write::verification::a_partial_sector_write_keeps_the_head_and_zeroes_the_slack`, `a_write_extends_the_chain_to_the_size_and_stays_inside_it` |
-| Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`; reader: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed` |
+| Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, every numbered alias carries its number, the run finder is first-fit, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`, `every_numbered_alias_carries_its_number`; `directory_write::verification::the_run_finder_returns_the_first_run_of_free_slots`; reader: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed` |
 
 Kani bounds its inputs, so whole-image coverage comes from composing per-sector proofs, with
 `script/fuzz` over whole images as the backstop. The block states that bound rather than claiming
@@ -212,7 +214,7 @@ tree's build, so nothing about it can work on one target and not another.
 `script/crate-standalone file_allocation_table` found, at base `ae6b91e79`, a manifest that
 inherits `license` and `lints` from nife's workspace, with no `rust-version`, README or license
 files. It found 14 lines that cite this tree, and a test that reads `../../target/` through
-`CARGO_MANIFEST_DIR`, which a stranger's checkout lacks. All nine crates share the manifest gaps.
+`CARGO_MANIFEST_DIR`, which a stranger's checkout lacks.
 
 `script/names` reports the name `file_allocation_table` ratified (checked 2026-10-25).
 
@@ -284,15 +286,15 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** Stages 7 to 9. Checked 2026-10-31 (UTC): the crate reads, writes files with
-  8.3 names, and holds the `mkfs`; it writes no directory or long name yet.
+- **Outstanding.** Stages 8 and 9. Checked 2026-10-31 (UTC): the crate reads and writes files,
+  directories and long names, and holds the `mkfs` apart from the general format.
 
 ## BUGS
 
 - Steps 4 and 5 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team.
 - The "about 5,000 lines" figure is the probed crates' size, not an estimate of this one.
-- No test reaches the 65,536-entry ceiling of a directory; it needs a directory that large.
+- No test reaches a directory's 65,536-entry ceiling.
 
 ## Index row
 

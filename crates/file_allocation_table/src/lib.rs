@@ -28,10 +28,11 @@
 //! hints ([`FsInfo`]) follow in memory and [`Volume::sync`] writes them. The first change clears the
 //! clean-shutdown bit (FAT16 and FAT32) and the sync sets it back ([`Volume::is_clean`]).
 //!
-//! [`Volume::create_file`] makes an empty file with an 8.3 name, [`Volume::open_file_writer`] opens
-//! a [`FileWriter`] that writes, extends and sets a length, and [`Volume::remove_file`] deletes. A
-//! full directory grows by a cluster, except the fixed root of FAT12 and FAT16. Each operation
-//! returns a [`WriteError`].
+//! [`Volume::create_file`] makes an empty file (a name that is not 8.3 gets long-name slots and a
+//! numbered alias), [`Volume::open_file_writer`] opens a [`FileWriter`] that writes, extends and
+//! sets a length, and [`Volume::remove_file`] deletes. [`Volume::make_directory`],
+//! [`Volume::remove_directory`] and [`Volume::rename`] change the tree. A full directory grows by a
+//! cluster, except the fixed root of FAT12 and FAT16. Each returns a [`WriteError`].
 //!
 //! The `mkfs` lays out one shape: a FAT32 EFI system partition holding one boot file at
 //! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT
@@ -41,7 +42,7 @@
 
 //! # BUGS
 //!
-//! - A long name's alias is always `~1`, right only while the volume holds one file.
+//! - The `mkfs` numbers its alias `~1`, right only while the volume holds one file.
 //! - Every timestamp is zero: a `mkfs` with no clock capability writes 1970 rather than inventing one.
 //! - The `mkfs` writes the `FSInfo` free-cluster count once. After that only [`Volume::sync`] keeps
 //!   it; a volume dropped without a sync leaves a stale hint, which the specification lets a driver
@@ -50,7 +51,8 @@
 //! - A newly allocated cluster holds whatever the device held; a caller that needs zeros writes them.
 //! - A write has no barrier: the crate orders its writes and the device decides when each reaches the
 //!   medium. A failure between the writes of one table entry's copies leaves the copies unequal.
-//! - A file's name is an 8.3 short name; long names, directories and renames are not written yet.
+//! - A name with a character outside the Basic Multilingual Plane is refused, and a lower-case 8.3
+//!   name is stored as a long name, since the crate writes no lower-case flag.
 //! - A directory slot is found by walking from the directory's first cluster each time, so creating
 //!   in a directory of n clusters costs n chain steps per slot read.
 //! - Timestamps are zero and a writer sets only the archive attribute, and a writer does not refuse a
