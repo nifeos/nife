@@ -7,7 +7,7 @@ composer checks every package against the image's approval file, and `cargo xtas
 already does that. The other half writes the grant records that check approves into the
 image's first installed-programs table. That table lives as files under `activation/` on the launch
 volume, currently RedoxFS. The files and the absence of a seed image were ruled on 2026-10-30 UTC on
-#2894. The table therefore waits on milestone 990. The fork and its options are in
+#2894. The table therefore waits on milestone 990 (the base image's first installed-programs table). The fork and its options are in
 [milestone 990's block](../design/roadmap/0990-the-base-images-first-installed-programs-table.md).
 
 A lane built the option the ruling replaced, a nife-native container beside the initial ramdisk,
