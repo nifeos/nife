@@ -176,22 +176,6 @@ impl<'a> Fs<'a> {
         self.count
     }
 
-    /// **The image's own length in bytes**, what [`write_image`] wrote and [`image_size`] sized,
-    /// computed from the directory the same way the writer counts blocks. A reader that takes
-    /// bytes beyond it (a composed image's activation store rides behind the archive, milestone
-    /// 909 item 3) slices them from here, and what it finds is the store's and not the archive's.
-    ///
-    /// Name: provisional, minted 2026-10-29 (UTC) by lane
-    /// milestone/909-item-3-composition-checks-the-approval. calef names public items.
-    pub fn image_len(&self) -> usize {
-        let mut blocks = DIR_BLOCKS;
-        for i in 0..self.count {
-            let entry = Self::entry_at(self.image, i);
-            blocks += (entry.len as usize).div_ceil(BLOCK).max(1);
-        }
-        blocks * BLOCK
-    }
-
     /// Whether the directory holds no files.
     pub fn is_empty(&self) -> bool {
         self.count == 0
@@ -340,23 +324,6 @@ mod tests {
         assert_eq!(fs.read("motd"), Some(&b"welcome to nife\n"[..]));
         assert_eq!(fs.read("empty"), Some(&b""[..]));
         assert_eq!(fs.read("nope"), None);
-    }
-
-    /// The length a parsed image reports is the length the writer wrote, over unaligned and empty
-    /// files, so a reader slicing past it (the composed image's activation store) starts exactly
-    /// where the archive ends.
-    #[test]
-    fn image_len_is_what_the_writer_wrote() {
-        let files: [(&str, &[u8]); 3] = [
-            ("motd", b"welcome to nife\n"),
-            ("empty", b""),
-            ("block-and-a-bit", &[7u8; 600]),
-        ];
-        let mut img = vec![0u8; image_size(&files)];
-        write_image(&files, &mut img).unwrap();
-        let fs = Fs::parse(&img).unwrap();
-        assert_eq!(fs.image_len(), img.len());
-        assert_eq!(fs.image_len(), image_size(&files));
     }
 
     /// A file longer than one block pushes the next file to a later block.

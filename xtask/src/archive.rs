@@ -659,14 +659,13 @@ fn write_archive(
             return None;
         }
     };
-    write_archive_with(label, arch, path, what, blobs, &catalog, &sources, None)
+    write_archive_with(label, arch, path, what, blobs, &catalog, &sources)
 }
 
 /// **Pack an image whose catalog and index sources are given** (milestone 909 (basalt composes
 /// the bootable image from its packages)): the one packer both builders reach, so an image composed
 /// from packages carries the same catalog entry, index sources, measurement table and boot-program
-/// checks as one built in this tree. `seed` is the composed image's activation store, which rides
-/// beside the archive and is named in the measurement manifest the kernel build reads.
+/// checks as one built in this tree.
 pub(crate) fn write_archive_with<N: AsRef<str>>(
     label: &str,
     arch: &str,
@@ -675,7 +674,6 @@ pub(crate) fn write_archive_with<N: AsRef<str>>(
     blobs: &[(N, Vec<u8>)],
     catalog: &str,
     sources: &str,
-    seed: Option<&[u8]>,
 ) -> Option<(usize, usize)> {
     let mut files: Vec<(&str, &[u8])> = blobs
         .iter()
@@ -715,7 +713,7 @@ pub(crate) fn write_archive_with<N: AsRef<str>>(
         eprintln!("{label}: could not write {path}: {e}");
         return None;
     }
-    write_measure_manifest(arch, &img, seed).then_some((size, files.len()))
+    write_measure_manifest(arch, &img).then_some((size, files.len()))
 }
 
 /// **Every program in an archive fits the address-space map's image band** (milestone 206 (a

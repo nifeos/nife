@@ -7,13 +7,6 @@ name = "abi"
 version = "0.1.0"
 
 [[package]]
-name = "activation_store"
-version = "0.1.0"
-dependencies = [
- "installed_programs",
-]
-
-[[package]]
 name = "address_space_identifier"
 version = "0.1.0"
 
@@ -1792,9 +1785,7 @@ dependencies = [
 name = "xtask"
 version = "0.1.0"
 dependencies = [
- "activation_store",
  "address_space_map",
- "approval_file",
  "boot_ladder",
  "boot_slot",
  "c_program_fixture",
@@ -1807,13 +1798,11 @@ dependencies = [
  "glyph_atlas",
  "grant_plan",
  "graphics_contract",
- "installed_programs",
  "measured_boot",
  "nifefs",
  "object",
  "package_archive",
  "package_index",
- "program_asks",
  "screen_console",
  "sealed_pair",
  "serial_console",

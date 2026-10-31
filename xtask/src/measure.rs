@@ -68,12 +68,7 @@ pub(crate) fn measurement_table(files: &[(&str, &[u8])]) -> String {
 /// what must be measured is the bytes **the kernel will read out of the archive**, not the bytes we
 /// meant to put in. If packing ever mangled an entry, this measures the mangling and the boot fails,
 /// which is the correct direction to be wrong in.
-///
-/// `seed` is the composed image's activation store, which rides beside the archive rather than in
-/// it (milestone 909 item 3, the ruling of 2026-10-29 (UTC)): its line joins the manifest the same
-/// way a boot program's does, so the kernel the build makes refuses to hand over without exactly
-/// those bytes, and a kernel built without a store refuses bytes it has no measurement for.
-pub(crate) fn write_measure_manifest(arch: &str, image: &[u8], seed: Option<&[u8]>) -> bool {
+pub(crate) fn write_measure_manifest(arch: &str, image: &[u8]) -> bool {
     let fs = match nifefs::Fs::parse(image) {
         Ok(fs) => fs,
         Err(e) => {
@@ -105,12 +100,6 @@ pub(crate) fn write_measure_manifest(arch: &str, image: &[u8], seed: Option<&[u8
         let hex = measured_boot::digest_text(&digest);
         let hex = std::str::from_utf8(&hex).expect("a digest's text is ascii");
         text.push_str(&format!("{name} {hex}\n"));
-    }
-    if let Some(seed) = seed {
-        let digest = measured_boot::sha256(seed);
-        let hex = measured_boot::digest_text(&digest);
-        let hex = std::str::from_utf8(&hex).expect("a digest's text is ascii");
-        text.push_str(&format!("{} {hex}\n", measured_boot::ACTIVATION_STORE));
     }
     let path = measure_manifest_path(arch);
     // Write only on change, so an unchanged userspace does not make build.rs relink the kernel.

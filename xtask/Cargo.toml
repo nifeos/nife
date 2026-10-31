@@ -105,18 +105,6 @@ capability_manifest_note = { version = "0.1.0", path = "../crates/capability_man
 # reads one with, and reads its own output back before writing it to disk, so a producer that
 # emitted a file its consumer refuses could not get past the gate.
 package_archive = { version = "0.1.0", path = "../crates/package_archive" }
-# What a packaged program's note asks for (milestone 911): the one reading of the note, shared
-# with the progenitor, that the composition checks against the image's approval file.
-program_asks = { version = "0.1.0", path = "../crates/program_asks" }
-# The owner's approval file, parsed and checked (milestone 911): `File::check` is the subset test
-# the composition runs per package, the same call a delegated install's progenitor makes.
-approval_file = { version = "0.1.0", path = "../crates/approval_file" }
-# The installed-programs table (DECISIONS §208): the one writer an install writes the grant
-# records with, which the composition's first generation is written with.
-installed_programs = { version = "0.1.0", path = "../crates/installed_programs" }
-# The composed image's activation store (milestone 909 item 3): the container the first
-# installed-programs table is written into, beside the archive.
-activation_store = { version = "0.1.0", path = "../crates/activation_store" }
 # The image's index sources (milestone 801 (packages over the internet)): the entry's name and the
 # reader the archive build checks its own text with.
 package_index = { version = "0.1.0", path = "../crates/package_index" }
