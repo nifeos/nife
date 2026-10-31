@@ -19,7 +19,8 @@ clusters back, and each writes every live copy of the table in an order that lea
 worst a leaked cluster. `Volume::sync` writes the FAT32 `FSInfo` hints those calls maintain.
 `Volume::create_file`, `open_file_writer` and `remove_file` make, write, resize and delete files. A name that is not 8.3 gets long-name slots and a numbered alias. `make_directory`,
 `remove_directory` and `rename` change the tree, and the first change clears the clean-shutdown
-bit until `sync`. A general format is planned.
+bit until `sync`. `Format` lays out an empty FAT12, FAT16 or FAT32 volume of any size and sector size:
+`Format::new(FormatOptions::new(size, sectors))`, then `write_to` your device.
 
 ## What is proven
 
@@ -64,6 +65,9 @@ Two more cover directories: `every_numbered_alias_carries_its_number` (every ali
 `~999999` is a legal short name that reads back as its number) and
 `the_run_finder_returns_the_first_run_of_free_slots` (the slots a new entry takes are the first run
 of free ones).
+
+`a_geometry_parses_back_to_itself` proves the format: for every device size, type and cluster
+size, the boot sector it writes parses to the same type, clusters, table size and data start.
 
 Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root

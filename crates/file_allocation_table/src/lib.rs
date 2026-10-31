@@ -34,6 +34,9 @@
 //! [`Volume::remove_directory`] and [`Volume::rename`] change the tree. A full directory grows by a
 //! cluster, except the fixed root of FAT12 and FAT16. Each returns a [`WriteError`].
 //!
+//! [`Format`] lays out an empty FAT12, FAT16 or FAT32 volume of any size and sector size, as sectors
+//! a caller writes. The EFI volume below sizes itself and writes its BPB through the same code.
+//!
 //! The `mkfs` lays out one shape: a FAT32 EFI system partition holding one boot file at
 //! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT
 //! long-name entries ahead of a `~1` alias (see `long_name.rs`). A volume below
@@ -89,6 +92,7 @@ pub mod efi_system_partition;
 mod file;
 mod file_write;
 mod file_writer;
+mod format;
 mod fs_info;
 mod long_name;
 mod long_name_assembly;
@@ -106,6 +110,7 @@ pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortE
 pub use file::{FileReadError, FileReader, NotAFile};
 pub use file_write::WriteError;
 pub use file_writer::FileWriter;
+pub use format::{Format, FormatError, FormatOptions};
 pub use fs_info::{FsInfo, FsInfoError};
 pub use long_name_assembly::{LongFileName, LongNameError};
 pub use lookup::LookupError;
