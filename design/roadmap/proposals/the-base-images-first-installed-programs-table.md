@@ -1,7 +1,7 @@
 ---
 status: PROPOSED
 raised: 2026-10-29
-milestone_dependencies: 909, 911, 981
+milestone_dependencies: 909, 911
 decision_dependencies: 34, 208, 235
 machine_requirements: none
 specific_machine: none
@@ -20,10 +20,9 @@ Ruled 2026-10-30 (UTC) by calef, on #2894: the first table lives on the UFS2 lau
 seed image is not a separate artifact. The options below are the fork that ruling answered.
 
 Reuse: the table and its grammar (`crates/installed_programs`), the approval file and its check
-(`crates/approval_file`), and the
-launch filesystem the table lives on: UFS2, through milestone 981 (UFS2, read and write: a Rust
-server with FreeBSD's tools as the oracle). Nothing
-here proposes a second table, a second grammar or a second approval format.
+(`crates/approval_file`), and the launch filesystem the table lives on, UFS2 through the server the
+launch-filesystem survey proposes. Nothing here proposes a second table, a second grammar or a
+second approval format.
 
 ## The failure
 
@@ -120,5 +119,5 @@ It writes no code and mints no name. The launch volume's attach point, its measu
 keeps the check seam, so the ruling changes where the records go and not how the composition checks
 them.
 
-The UFS2 server this waits on is milestone 981, whose phase 2 (make, judge, read) is what a launch
-volume needs. That milestone carries the store as one of its deliverables.
+The UFS2 server this waits on is the launch-filesystem survey's arc, whose phase 2 (make, judge,
+read) is what a launch volume needs. That arc carries the store as one of its deliverables.
