@@ -26,4 +26,4 @@ The host target's coverage, in libFuzzer edges: 772 at start, 2,024 after 8,192 
 after 32,768, 2,660 after 65,536 and 2,785 at the end. It gained about 5% per doubling of inputs
 near the end, so three minutes reach no plateau.
 
-For the same drivers under KVM, see the neighbouring note on rates on x86_64.
+For the same drivers under KVM, see the neighboring note on rates on x86_64.
