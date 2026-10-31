@@ -167,9 +167,9 @@ pub(crate) fn store(
             let value = (value & 0xFFF) as u16;
             let old = u16::from_le_bytes([bytes[0], bytes[1]]);
             let new = if cluster & 1 == 1 {
-                (old & 0x000F) | (value << 4)
+                (old & 0x000F) + (value << 4)
             } else {
-                (old & 0xF000) | value
+                (old & 0xF000) + value
             };
             bytes[..2].copy_from_slice(&new.to_le_bytes());
         }
@@ -178,7 +178,7 @@ pub(crate) fn store(
         }
         FileAllocationTableType::Fat32 => {
             let old = u32::from_le_bytes(*bytes);
-            let new = (old & 0xF000_0000) | (value & 0x0FFF_FFFF);
+            let new = (old & 0xF000_0000) + (value & 0x0FFF_FFFF);
             *bytes = new.to_le_bytes();
         }
     }

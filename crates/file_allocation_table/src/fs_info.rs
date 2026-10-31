@@ -23,6 +23,25 @@ const NEXT_FREE_AT: usize = 492;
 /// The value that means "not known" in both fields.
 const UNKNOWN: u32 = 0xFFFF_FFFF;
 
+/// The little-endian word at `at`, or `TooShort` when the sector ends first.
+fn word(sector: &[u8], at: usize) -> Result<u32, FsInfoError> {
+    match sector.get(at..at + 4) {
+        Some(b) => Ok(u32::from_le_bytes([b[0], b[1], b[2], b[3]])),
+        None => Err(FsInfoError::TooShort),
+    }
+}
+
+/// Whether `sector` is long enough and carries all three signatures.
+fn check_signatures(sector: &[u8]) -> Result<(), FsInfoError> {
+    let lead = word(sector, 0)?;
+    let structure = word(sector, 484)?;
+    let trail = word(sector, 508)?;
+    if lead != LEAD_SIGNATURE || structure != STRUCTURE_SIGNATURE || trail != TRAIL_SIGNATURE {
+        return Err(FsInfoError::BadSignature);
+    }
+    Ok(())
+}
+
 /// **Why a sector is not an `FSInfo` sector.**
 ///
 /// Name: provisional. Beside `ParseError`, which says the same of a boot sector.
@@ -58,18 +77,9 @@ impl FsInfo {
     ///
     /// Name: provisional. The verb `BootSector::parse` uses for hostile bytes.
     pub fn parse(sector: &[u8], clusters: u32) -> Result<FsInfo, FsInfoError> {
-        let word = |at: usize| match sector.get(at..at + 4) {
-            Some(b) => Ok(u32::from_le_bytes([b[0], b[1], b[2], b[3]])),
-            None => Err(FsInfoError::TooShort),
-        };
-        let lead = word(0)?;
-        let structure = word(484)?;
-        let trail = word(508)?;
-        if lead != LEAD_SIGNATURE || structure != STRUCTURE_SIGNATURE || trail != TRAIL_SIGNATURE {
-            return Err(FsInfoError::BadSignature);
-        }
-        let free = word(FREE_COUNT_AT)?;
-        let next = word(NEXT_FREE_AT)?;
+        check_signatures(sector)?;
+        let free = word(sector, FREE_COUNT_AT)?;
+        let next = word(sector, NEXT_FREE_AT)?;
         Ok(FsInfo {
             free_clusters: (free != UNKNOWN && free <= clusters).then_some(free),
             next_free: (next >= 2 && next - 2 < clusters).then_some(next),
@@ -99,7 +109,7 @@ impl FsInfo {
         free_clusters: Option<u32>,
         next_free: Option<u32>,
     ) -> bool {
-        if FsInfo::parse(sector, u32::MAX - 1).is_err() {
+        if check_signatures(sector).is_err() {
             return false;
         }
         sector[FREE_COUNT_AT..FREE_COUNT_AT + 4]

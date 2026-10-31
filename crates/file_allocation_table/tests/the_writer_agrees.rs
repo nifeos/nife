@@ -249,3 +249,36 @@ fn a_full_volume_is_refused_and_every_cluster_comes_back() {
     volume.sync().unwrap();
     assert_eq!(metadata(&volume.into_device()), original);
 }
+
+/// A FAT12 entry can straddle two sectors for an even cluster when the sector is 1024 bytes or
+/// more: its top nibble then belongs to the next cluster, which lives in the next sector. Freeing
+/// such a cluster must leave that neighbour's link alone.
+#[test]
+fn freeing_a_cluster_whose_entry_straddles_sectors_keeps_its_neighbours_link() {
+    let image = formatted(2, FatType::Fat12, 1024);
+    let original = metadata(&image);
+    let mut volume = Volume::open(image).unwrap();
+    // Cluster 682's entry starts at byte 1023 of the first table sector.
+    let mut last = None;
+    let mut first = 0;
+    for _ in 2..=682 {
+        let cluster = volume.allocate_cluster(last).unwrap();
+        first = if last.is_none() { cluster } else { first };
+        last = Some(cluster);
+    }
+    assert_eq!(last, Some(682));
+    let second = volume.allocate_cluster(None).unwrap();
+    assert_eq!(second, 683);
+    let mut tail = second;
+    for _ in 0..4 {
+        tail = volume.allocate_cluster(Some(tail)).unwrap();
+    }
+    assert_eq!(volume.truncate_chain(first, 400).unwrap(), 281);
+    let walked: Vec<u32> = volume.chain(second).map(Result::unwrap).collect();
+    assert_eq!(walked, [683, 684, 685, 686, 687]);
+    assert_eq!(volume.chain(first).count(), 400);
+    volume.free_chain(first).unwrap();
+    volume.free_chain(second).unwrap();
+    volume.sync().unwrap();
+    assert_eq!(metadata(&volume.into_device()), original);
+}

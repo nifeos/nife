@@ -248,3 +248,49 @@ fn the_hints_follow_allocation_and_release() {
     // A volume with no FSInfo has nowhere to write them, and a sync is still clean.
     assert_eq!(volume.sync(), Ok(()));
 }
+
+#[test]
+fn a_chain_that_links_outside_the_volume_is_broken_and_left_alone() {
+    let mut image = Image::fat12();
+    // 400 is a legal 12-bit link and not one of the volume's 350 clusters.
+    image.set(5, 400);
+    let mut volume = Volume::open(image).unwrap();
+    let broken = AllocationError::Chain(ChainError::Broken {
+        cluster: 5,
+        entry: TableEntry::Next(400),
+    });
+    assert_eq!(volume.free_chain(5), Err(broken));
+    assert_eq!(volume.truncate_chain(5, 1), Err(broken));
+    assert_eq!(volume.table_entry(5), Ok(TableEntry::Next(400)));
+}
+
+#[test]
+fn the_hint_wraps_to_the_first_cluster_only_after_the_last() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    volume.writer.next_free = CLUSTERS;
+    assert_eq!(volume.allocate_cluster(None), Ok(CLUSTERS));
+    assert_eq!(volume.writer.next_free, CLUSTERS + 1);
+    assert_eq!(volume.allocate_cluster(None), Ok(CLUSTERS + 1));
+    assert_eq!(volume.writer.next_free, 2);
+}
+
+#[test]
+fn a_release_that_frees_nothing_leaves_the_hints_unchanged() {
+    let mut image = Image::fat12();
+    image.link(&[5, 9]);
+    let mut volume = Volume::open(image).unwrap();
+    assert_eq!(volume.truncate_chain(5, 2), Ok(0));
+    assert!(!volume.writer.hints_changed);
+    assert_eq!(volume.truncate_chain(5, 1), Ok(1));
+    assert!(volume.writer.hints_changed);
+}
+
+#[test]
+fn a_volume_over_a_borrowed_device_writes_through_it() {
+    let mut image = Image::fat12();
+    {
+        let mut volume = Volume::open(&mut image).unwrap();
+        assert_eq!(volume.allocate_cluster(None), Ok(2));
+    }
+    assert_eq!(raw(&image, 0, 2), 0xFFF);
+}
