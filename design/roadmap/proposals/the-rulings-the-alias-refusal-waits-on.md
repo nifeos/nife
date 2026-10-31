@@ -145,13 +145,13 @@ but not of `PageFrame::MAP`, which installs through `mmu::UserMapBatch::map` and
 nor of `MemoryRegion::MAP`. The one point all four reach is `record_mapping`, and today it runs after
 the leaf is live.
 
-### Recommendation: (b) the hold, with the record filed before the leaf
+### Ruled 2026-10-31 (UTC): (b) the hold, with the record filed before the leaf
 
 `MappingHold::record_mapping` gains the check and moves ahead of the leaf, the order
 `MappingHold::retype_table` already uses for page tables. Every path records, then maps, then
 forgets the record if the map fails. A path cannot install a recorded leaf without passing the check.
 
-- (b) The hold. Recommended, because the dispatcher alone leaves a reachable hole (the example below).
+- (b) The hold. Ruled, because the dispatcher alone leaves a reachable hole (the example below).
 - (a) The dispatcher, in `address_space_map_into`. One call site. It sees every mapping already in
   the log, however made, so it catches writable-then-code. It misses code-then-writable when the
   writable half comes through `PageFrame::MAP`.
