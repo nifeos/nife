@@ -39,7 +39,7 @@
 //!
 //! Name: provisional, minted 2026-10-28 (UTC) by lane milestone/909-basalt-composes-the-image.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use package_archive::Package;
@@ -648,7 +648,7 @@ fn compose(
     };
 
     let mut blobs = Vec::new();
-    let mut asked: BTreeMap<String, Vec<Ask>> = BTreeMap::new();
+    let mut extras: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut used: BTreeMap<String, String> = BTreeMap::new();
     let mut order: Vec<String> = Vec::new();
     for program in &definition.programs {
@@ -684,27 +684,38 @@ fn compose(
         let package = Package::parse(&bytes)
             .map_err(|e| format!("{}: not a package: {e:?}", path.display()))?;
         let member = format!("bin/{program}");
-        let content = (0..package.len())
+        let carried = (0..package.len())
             .find(|index| package.member_name(*index) == Some(member.as_str()))
-            .and_then(|index| package.member(index))
+            .and_then(|index| {
+                Some(package_archive::Program {
+                    name: program,
+                    bytes: package.member(index)?,
+                    digest: package.member_digest(index)?,
+                    member: index,
+                })
+            })
             .ok_or_else(|| {
                 format!(
                     "{stem} carries no `{member}`, so package `{owner}` does not own `{program}` \
                      as its definition says"
                 )
             })?;
-        blobs.push((program.clone(), content.to_vec()));
-        asked
-            .entry(owner.clone())
-            .or_default()
-            .extend(asks_of(content));
+        if let Some((path, approval)) = &approval {
+            let asks: Vec<installed_programs::Granted<'_>> =
+                program_asks::asked_grants_of(&carried).collect();
+            extras
+                .entry(owner.clone())
+                .or_default()
+                .extend(extra_asks(path, approval, owner, &asks)?);
+        }
+        blobs.push((program.clone(), carried.bytes.to_vec()));
         if used.insert(stem.clone(), archive.digest.clone()).is_none() {
             order.push(stem);
         }
     }
 
-    if let Some((path, approval)) = &approval {
-        check_approval(path, approval, &asked)?;
+    if let Some((path, _)) = &approval {
+        check_approval(path, &extras)?;
     }
 
     let mut text = String::new();
@@ -724,95 +735,32 @@ fn compose(
     })
 }
 
-/// **What one package asked for**, as an owned mirror of [`installed_programs::Granted`], so the
-/// asks outlive the program bytes [`asks_of`] read them from.
-#[derive(Debug, PartialEq, Eq)]
-enum Ask {
-    Network,
-    Zone(String),
-    Service,
-}
-
-/// **The asks one program's manifest note carries**: the network, each resolver zone, and the
-/// service ask (milestone 911). Empty for a program with no note, which asks for none, the same
-/// reading `system_initializer::asked_grants_of` gives at boot.
-fn asks_of(program: &[u8]) -> Vec<Ask> {
-    let Some(descriptor) = manifest_descriptor(program) else {
-        return Vec::new();
-    };
-    let Ok(manifest) = capability_manifest_note::decode(descriptor) else {
-        return Vec::new();
-    };
-    let mut asks = Vec::new();
-    if manifest.network {
-        asks.push(Ask::Network);
-    }
-    if capability_manifest_note::service(descriptor).unwrap_or(false) {
-        asks.push(Ask::Service);
-    }
-    if let Ok(zones) = capability_manifest_note::zones(descriptor) {
-        for zone in zones.iter() {
-            if let Ok(text) = core::str::from_utf8(zone) {
-                asks.push(Ask::Zone(text.to_string()));
-            }
-        }
-    }
-    asks
-}
-
-/// **A manifest note's descriptor inside an ELF's bytes**, found by its header and owner the way
-/// [`crate::disk`]'s note rewriting finds one, or `None` when there is none. The note is the
-/// authoritative record of a program's asks, so the check reads it rather than a static table that
-/// a program's own build could disagree with.
-fn manifest_descriptor(bytes: &[u8]) -> Option<&[u8]> {
-    const HEADER: usize = 12;
-    const NAME_FIELD: usize = 8;
-    let name_length = (capability_manifest_note::OWNER.len() + 1) as u32;
-    let last = bytes.len().checked_sub(HEADER + NAME_FIELD)?;
-    for at in 0..=last {
-        let header = &bytes[at..at + HEADER];
-        if u32::from_le_bytes(header[0..4].try_into().unwrap()) != name_length
-            || u32::from_le_bytes(header[8..12].try_into().unwrap())
-                != capability_manifest_note::MANIFEST
-        {
-            continue;
-        }
-        let name = &bytes[at + HEADER..at + HEADER + capability_manifest_note::OWNER.len()];
-        if name != capability_manifest_note::OWNER {
-            continue;
-        }
-        let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
-        let start = at + HEADER + NAME_FIELD;
-        return bytes.get(start..start.checked_add(length)?);
-    }
-    None
+/// **The grants one program asks for that its package's entry in the image's approval file does
+/// not allow**, spelled the way a refusal reads them. `asks` is
+/// [`program_asks::asked_grants_of`]'s reading of the program's note, the same reading the
+/// progenitor's install checks at boot, so the composition and the install cannot disagree on what
+/// a program asks (milestone 911 (scripted installs grant only what the owner's approval file
+/// allows)'s subset test; milestone 909 (basalt composes the bootable image from its packages) item
+/// 3). Errs only when the file cannot answer for `package`.
+fn extra_asks(
+    path: &Path,
+    approval: &approval_file::File<'_>,
+    package: &str,
+    asks: &[installed_programs::Granted<'_>],
+) -> Result<Vec<String>, String> {
+    let extras = approval
+        .check(package, asks)
+        .map_err(|e| format!("{}: {e:?}", path.display()))?;
+    Ok(extras.iter().map(granted_name).collect())
 }
 
 /// **Refuse the composition when a package asks for a grant the image's approval file does not
-/// allow**, naming every extra (milestone 911 (scripted installs grant only what the owner's
-/// approval file allows)'s subset test, called once per package; milestone 909 (basalt composes the
-/// bootable image from its packages) item 3).
-fn check_approval(
-    path: &Path,
-    approval: &approval_file::File<'_>,
-    asked: &BTreeMap<String, Vec<Ask>>,
-) -> Result<(), String> {
-    for (package, asks) in asked {
-        let granted: Vec<installed_programs::Granted<'_>> = asks
-            .iter()
-            .map(|ask| match ask {
-                Ask::Network => installed_programs::Granted::Network,
-                Ask::Service => installed_programs::Granted::Service,
-                Ask::Zone(zone) => installed_programs::Granted::Zone(zone.as_str()),
-            })
-            .collect();
-        let extras = approval
-            .check(package, &granted)
-            .map_err(|e| format!("{}: {e:?}", path.display()))?;
-        let mut named: Vec<String> = extras.iter().map(granted_name).collect();
-        named.sort();
-        named.dedup();
+/// allow**, naming every extra of the first such package. `extras` holds, per package, what
+/// [`extra_asks`] found across all of its programs in the image.
+fn check_approval(path: &Path, extras: &BTreeMap<String, BTreeSet<String>>) -> Result<(), String> {
+    for (package, named) in extras {
         if !named.is_empty() {
+            let named: Vec<&str> = named.iter().map(String::as_str).collect();
             return Err(format!(
                 "package `{package}` asks for {}, which the image's approval file ({}) does not \
                  allow",
@@ -991,38 +939,22 @@ programs = ["progenitor", "swish", "jig"]
     }
 
     #[test]
-    fn a_programs_note_names_its_asks() {
-        let network =
-            capability_manifest_note::Note::of(&grant_plan::Program::NetworkEchoClient.manifest());
-        assert_eq!(asks_of(&network.0), [Ask::Network]);
-
-        const LEN: usize = capability_manifest_note::serviced_len(&["example.net"]);
-        const NOTE: usize = capability_manifest_note::serviced_note_len(&["example.net"]);
-        let serviced: capability_manifest_note::ServicedNote<NOTE> =
-            capability_manifest_note::ServicedNote::<NOTE>::of::<LEN>(
-                &grant_plan::Program::NetworkEchoClient.manifest(),
-                &["example.net"],
-                true,
-            );
-        let asks = asks_of(&serviced.0);
-        assert!(asks.contains(&Ask::Service));
-        assert!(asks.contains(&Ask::Zone("example.net".to_string())));
-
-        // A program with no note asks for nothing, the reading the boot path gives it.
-        assert_eq!(asks_of(b"\x7fELF not really"), []);
-    }
-
-    #[test]
     fn a_package_asking_past_its_entry_is_refused() {
-        let asked = BTreeMap::from([(
-            "core-tools".to_string(),
-            vec![Ask::Network, Ask::Zone("example.net".to_string())],
-        )]);
+        use installed_programs::Granted;
+        let path = Path::new("approval.toml");
+        let asks = [Granted::Network, Granted::Zone("example.net")];
         let nothing = approval_file::File::parse(
             "approval = \"test\"\n\n[package.core-tools]\nupdate = false\nremove = false\n",
         )
         .unwrap();
-        let refusal = check_approval(Path::new("approval.toml"), &nothing, &asked).unwrap_err();
+        let extras = BTreeMap::from([(
+            "core-tools".to_string(),
+            extra_asks(path, &nothing, "core-tools", &asks)
+                .unwrap()
+                .into_iter()
+                .collect::<BTreeSet<_>>(),
+        )]);
+        let refusal = check_approval(path, &extras).unwrap_err();
         assert!(
             refusal.contains("package `core-tools` asks for"),
             "{refusal}"
@@ -1035,10 +967,10 @@ programs = ["progenitor", "swish", "jig"]
              network = true\nzones = [\"example.net\"]\nupdate = false\nremove = false\n",
         )
         .unwrap();
-        assert_eq!(
-            check_approval(Path::new("approval.toml"), &allowed, &asked),
-            Ok(())
-        );
+        let none = extra_asks(path, &allowed, "core-tools", &asks).unwrap();
+        assert!(none.is_empty(), "{none:?}");
+        let extras = BTreeMap::from([("core-tools".to_string(), BTreeSet::new())]);
+        assert_eq!(check_approval(path, &extras), Ok(()));
     }
 
     #[test]

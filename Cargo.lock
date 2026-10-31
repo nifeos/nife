@@ -1805,6 +1805,7 @@ dependencies = [
  "object",
  "package_archive",
  "package_index",
+ "program_asks",
  "screen_console",
  "sealed_pair",
  "serial_console",
