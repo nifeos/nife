@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::long_name::verification::every_numbered_alias_carries_its_number`.
+
+The defect: the digits of the number go into the tail in reverse, so the twelfth collision writes ~21 and the alias no longer says which number it is, and two names can share one.
+
+Expected to fail: the harness's `assert_eq!(read, number)`.
+
+diff --git a/crates/file_allocation_table/src/long_name.rs b/crates/file_allocation_table/src/long_name.rs
+--- a/crates/file_allocation_table/src/long_name.rs
++++ b/crates/file_allocation_table/src/long_name.rs
+@@ -142,7 +142,7 @@ impl LongName {
+             rest /= 10;
+         }
+         rest = number;
+-        for at in (1..=digits).rev() {
++        for at in 1..=digits {
+             tail[at] = b'0' + (rest % 10) as u8;
+             rest /= 10;
+         }
