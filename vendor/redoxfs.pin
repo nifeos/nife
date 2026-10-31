@@ -13,24 +13,27 @@
 name = redoxfs
 version = 0.9.1
 
-# The published package, not a git checkout. A .crate tarball is immutable once published (crates.io
-# refuses to overwrite a version), so its sha256 is a genuine pin; a git tag is not, because a tag
-# can move.
-url = https://static.crates.io/crates/redoxfs/redoxfs-0.9.1.crate
-sha256 = a66d0c043a5768739851a7e5775192a70fdffdbf3418c22fd7927415d41a87c3
+# `git` means the pinned source is an archive of an upstream commit that no published version
+# carries (0.9.1 is still the newest release and `Cargo.toml` still says 0.9.1). Without this line a
+# pin is a crates.io package. script/vendor-verify says what each form hashes.
+source = git
 
-# Upstream's own record of which commit produced the package (vendor/redoxfs/.cargo_vcs_info.json).
-# Informational: we verify against the tarball, not against gitlab.
-vcs = 473b4baeb041ebe14504f30693393b1cae52558c
+# Gitlab's archive of the pinned commit. The commit sha in the url cannot move. The sha256 is of the
+# archive's uncompressed tar stream, which is what `git archive db847d8` produces byte for byte
+# (compression is the forge's choice and may change without the commit changing).
+url = https://gitlab.redox-os.org/redox-os/redoxfs/-/archive/db847d87c68052618d1427537c7277293a626a18/redoxfs-db847d87c68052618d1427537c7277293a626a18.tar.gz
+sha256 = 89a904ebc1b917643458295b202146fd543d3e254223b5be494ba73092f1bbf5
 
-# Every byte of difference from the tarball, in `patch -p1` form. Regenerate with
+# The upstream commit the archive above is of (master, 2026-10-29). Checked against the url by
+# script/vendor-verify, and the point script/vendor-watch counts new commits from.
+vcs = db847d87c68052618d1427537c7277293a626a18
+
+# Every byte of difference from the archive, in `patch -p1` form. Regenerate with
 # `script/vendor-verify --write-patch` after a deliberate change, and expect to explain the diff.
 divergence = vendor/redoxfs.divergence.patch
 
 # Upstream's source repository, read by script/vendor-watch (milestone 203) and by nothing else.
-# `vcs` above is the commit that produced the published tarball; these two say where to go and
-# ask what has landed since. The git half is checked as well as the published version because
-# releases here are months apart, so a correctness fix can sit on master long before anybody
-# publishes it, and that is the case the watch exists for.
+# The git half is checked as well as the published version because releases here are months apart,
+# so a correctness fix can sit on master long before anybody publishes it.
 vcs_url = https://gitlab.redox-os.org/redox-os/redoxfs
 vcs_branch = master
