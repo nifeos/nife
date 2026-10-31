@@ -701,6 +701,24 @@ pub(super) fn endowed_image(
         Ok(Some(d)) => Some(capability_manifest_note::decode(d).ok()?),
         Err(_) => return None,
     };
+    // **The syscall ABI the bytes were built against** (milestone 956 (the linked interfaces carry
+    // checkable versions), step 3): a program that declares an ABI version other than the one this
+    // kernel serves is refused, and so is a list that does not decode, as a manifest is. The ABI
+    // never dual-serves, so the comparison is equality. Bytes with no list declare nothing and run
+    // as before. The refusal's two numbers (`Refusal`) stop here: the spawn reply carries a status
+    // and no text, so the person sees the refusal and not the versions.
+    match elf.note(
+        capability_manifest_note::OWNER,
+        capability_manifest_note::INTERFACES,
+    ) {
+        Ok(None) => {}
+        Ok(Some(d)) => {
+            let list = capability_manifest_note::decode_interfaces(d).ok()?;
+            list.check_served(abi::INTERFACE_ID, abi::ABI_VERSION)
+                .ok()?;
+        }
+        Err(_) => return None,
+    }
     // Installed bytes carrying a verb table are refused: endowing from the manifest alone would
     // hand every line every verb's grants. The image's own `jig` narrows by `grant_plan`'s table.
     if !matches!(

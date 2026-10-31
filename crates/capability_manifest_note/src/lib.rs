@@ -1493,6 +1493,41 @@ pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {
     Ok(Interfaces { records: &d[8..] })
 }
 
+/// **A program was built against a version of an interface that its host does not serve**, with
+/// both sides: what the program declared and what the host serves. What the progenitor refuses a
+/// spawn with (milestone 956 step 3), so the refusal names both.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Refusal {
+    /// The interface's `INTERFACE_ID`.
+    pub interface: u64,
+    /// The version the program declared.
+    pub declared: u32,
+    /// The version the host serves.
+    pub served: u32,
+}
+
+impl Interfaces<'_> {
+    /// **Whether this list's entry for `interface` is the version the host serves.** `Ok` when the
+    /// entry equals `served`, and also when the program declares nothing about `interface`: a
+    /// program without the entry runs as every program did before the note existed, and refusing it
+    /// waits on packages carrying the stamp. A different version is a [`Refusal`] naming both. This
+    /// is equality, not set membership: the syscall ABI never dual-serves.
+    ///
+    /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+    pub fn check_served(&self, interface: u64, served: u32) -> Result<(), Refusal> {
+        match self.version_of(interface) {
+            Some(declared) if declared != served => Err(Refusal {
+                interface,
+                declared,
+                served,
+            }),
+            _ => Ok(()),
+        }
+    }
+}
+
 /// How long a whole [`INTERFACES`] note is for `count` records: header, owner and descriptor. Every
 /// part is a multiple of four, so there is no trailing pad.
 ///
@@ -1899,6 +1934,44 @@ mod interface_tests {
         assert_eq!(&b[16..20], &[0, 0, 0, 0]);
         assert_eq!(b.len(), 20 + interfaces_len(3));
         assert_eq!(decode_interfaces(&b[20..]).unwrap().version_of(4), Some(7));
+    }
+
+    /// **The spawn-time check** (milestone 956 step 3): a program that declares the version the
+    /// host serves is accepted, one that declares another is refused with both numbers, and one
+    /// that says nothing about the interface is accepted. Either side of the served version
+    /// refuses, so an older program is not read as compatible with a newer host.
+    #[test]
+    fn a_declared_version_must_be_the_one_served() {
+        let bytes: [u8; interfaces_len(3)] = encode_interfaces(&LIST);
+        let list = decode_interfaces(&bytes).unwrap();
+        assert_eq!(list.check_served(4, 7), Ok(()));
+        let refused = |served| list.check_served(4, served);
+        assert_eq!(
+            refused(8),
+            Err(Refusal {
+                interface: 4,
+                declared: 7,
+                served: 8
+            })
+        );
+        assert_eq!(
+            refused(6),
+            Err(Refusal {
+                interface: 4,
+                declared: 7,
+                served: 6
+            })
+        );
+        assert_eq!(
+            list.check_served(2, 99),
+            Ok(()),
+            "no entry, nothing to refuse"
+        );
+        let empty: [u8; interfaces_len(0)] = encode_interfaces(&[]);
+        assert_eq!(
+            decode_interfaces(&empty).unwrap().check_served(1, 1),
+            Ok(())
+        );
     }
 }
 
