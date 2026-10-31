@@ -33,9 +33,17 @@ service's standards, not its code.
   4. The corpus and the findings live where others can see them.
 - The rating follows what is true on that date, and it can rise again if a condition lapses.
 - A 14-day run is at most a release smoke test. It does not count toward the rating.
-- Not yet in force: the coverage measure (question 2), the false-red fix as first work (question 3),
-  the host and operator (question 4), and the triage clock's length (question 5). Until an architect rules on those, nothing can satisfy conditions 1 to 4, so risk 7 stays AMBER and no
-  run counts toward (d).
+- Both in-guest drivers get compiler-inserted coverage counters (LLVM sanitizer-coverage inline
+  8-bit counters on the kernel code). The kernel supplies a counter region and a way for the driver
+  to read it after each seed. One option serves all three architectures and runs under KVM. The
+  counters measure coverage first and may later steer the fuzzer. Decided 2026-10-31 (UTC).
+  Not chosen: QEMU-side block tracing, which needs full emulation and runs 20 to 29 times slower,
+  and hand-placed counters.
+- The first piece of work is a build for one architecture that measures the speed cost under KVM
+  in the nife kernel. Nobody has measured that cost.
+- Not yet in force: the false-red fix as first work (question 3), the host and operator
+  (question 4), and the triage clock's length (question 5). Until an architect rules on those,
+  nothing can satisfy conditions 1 to 4, so risk 7 stays AMBER and no run counts toward (d).
 
 ## Where criterion (d) stands
 
@@ -91,9 +99,6 @@ unverified.
 
 Read from google.github.io/oss-fuzz.
 
-- Acceptance. A project must have a significant user base or be critical to global IT
-  infrastructure, must be open source, and its primary contact must be an established committer
-  (checked against version-control logs). Read.
 - Integration, the "ideal integration" page. Fuzz targets live in the project's own repository and
   are easy to find. Each target is also run regularly "not necessarily fuzzed" as a regression test
   over its seed corpus, with sanitizers. The project keeps the seed corpus in revision control and regularly
@@ -178,55 +183,50 @@ so rather than imply parity.
 
 ## The questions that remain
 
-I ask them one at a time, in this order, each after an architect rules on the one before. An architect has ruled on question 1;
-question 2 sits on the pull request. This list keeps the rest, and each returns in full when
-its turn comes.
+I ask them one at a time, in this order, each after an architect rules on the one before. An
+architect has ruled on questions 1 and 2; question 3 sits on the pull request. This list keeps the
+rest, and each returns in full when its turn comes.
 
-1. An architect ruled on 2026-10-31 (UTC): what criterion (d) becomes, and the 14-day run. See "What is in force".
-2. The coverage measure the in-guest drivers need, and what it costs.
+1. An architect ruled on 2026-10-31 (UTC): what criterion (d) becomes, and the 14-day run.
+2. An architect ruled on 2026-10-31 (UTC): the coverage measure. See "What is in force".
 3. Whether the false-red fix is the first work.
 4. Where the fuzzers run and who operates them.
 5. The triage clock, which condition 3 names.
 
-### Question 2: the coverage measure the in-guest drivers need
+### Question 3: whether the false-red fix is the first work
 
-Recommendation: (A) compile the fuzz build of the kernel with edge-coverage instrumentation, as
-Linux does with KCOV, and have the driver read a coverage bitmap from the guest at the end of each
-seed. It works under hardware acceleration, so it works at the 200 to 450 seeds/s the appendix
-measures. The cost is a kernel build variant plus a read-out path, and a slowdown that nobody has
-measured. The first piece of work measures that slowdown.
+Recommendation: (A) yes. Before any long or wide run, fix the harness so a guest under load stops
+reporting failures that a replay does not reproduce. Then measure the coverage build on one
+architecture.
 
-Background. Condition 2 needs a number that says which kernel code the fuzzers have reached, so
-that "has stopped growing" has something to read. The host targets have one (libFuzzer's edge
-count). The two in-guest drivers have none: each seed is an independent random draw, and no run
-can say whether seed 300,000 reached anything seed 1 did not. The same measure would also let a
-driver learn from what it reached, which it cannot today.
+Background. A false red is a guest that reports a failure although the kernel did nothing wrong.
+The 2026-10-31 run (see the appendix) showed them once guests shared a machine: the kernel-thread
+driver failed 4 of 8 guests at 8 and 6 of 16 at 16, and the user-mode driver 6 of 16 at 16. Every
+failing seed replayed green. The cause is the harness deadlines expiring under load, not an escape.
+Continuous fuzzing needs several guests at once, and condition 3 counts every finding against a
+triage clock. A false red costs triage time and proves nothing, so at 16 guests a real escape
+could hide in the noise.
 
 Options:
 
-- (A) Compiler instrumentation in the fuzz build, a bitmap in the guest, read at the end of a
-  seed. Recommended. Works under KVM and under emulation. Adds a build variant to keep honest.
-- (B) A QEMU TCG plugin that counts translated blocks. It needs no kernel change, but it runs only
-  under full emulation, which the appendix measures at 20 and 8 seeds/s, 20 to 28 times slower
-  than KVM. It cannot measure the runs that matter.
-- (C) A counter in the referee that records which claims rows each seed exercised. Cheap and
-  already meaningful, but it measures rows touched, not code reached, so condition 2 would read
-  against the claims table and not against the kernel.
+- (A) Fix the false reds first, then the one-architecture coverage build. Recommended.
+- (B) Build the coverage measure first and live with the false reds at low concurrency, 1 to 4
+  guests, where the rate is 0 to 1 in 4. It starts sooner.
+- (C) Keep the deadlines and discard any failure that a replay clears. Cheap, but it also
+  discards a real failure that depends on timing.
 
-Prior art. syzkaller collects coverage with KCOV, compiler-inserted points that are basic blocks
-or edges, and syzbot reports it as totals and heat maps by repository and subsystem (read). The
-documentation warns that coverage may poorly relate to the source (read). OSS-Fuzz uses Clang
-source-based coverage over the aggregated corpus and Fuzz Introspector to explain plateaus (read).
-Rust's nightly compiler has a sanitizer-coverage flag for this (from memory, not checked here).
+Prior art. OSS-Fuzz reports a crash only if it reproduces, and CIFuzz fails a pull request only
+for a crash that reproduces on the pull request build and not on older builds (read). syzbot keeps
+a bug without a reproducer in a moderation queue before it reaches anyone (read). Both filter
+before a human looks.
 
-Where nife differs. The kernel runs the instrumented code in a guest with no operating system
-under it, so the bitmap needs shared memory that the driver reads back, as KCOV does with a mapped
-buffer. nife also has a second oracle, the referee, so the dashboard can report a coverage plateau and a rows-touched
-count side by side.
+Where nife differs. The replay is exact: a seed names every call, so nife can rerun a failure and
+get the same verdict, which neither project can promise. That makes (C) tempting, but a rerun
+filter hides the cause, and a fix should change what the harness waits for.
 
-Example. The user-mode driver runs 10,000 seeds. The bitmap shows 14,200 edges reached, and the
-last 4,000 seeds added 12. The dashboard reports 14,200 edges with growth of 12 per 4,000 seeds,
-and condition 2 reads that as stopped growing.
+Example. At 16 guests the user-mode driver reports 6 failures in one hour. Today a person replays
+6 seeds and finds 6 greens. After the fix the harness reports 0 or 1, and the one it reports
+replays red.
 
 ## Appendix: measurements, 2026-10-31 (UTC)
 
@@ -264,20 +264,20 @@ is why question 3 exists.
 
 ## The seven questions
 
-1. Considered and lost: question 2's options above. The earlier fixed-budget forms (a seed count
-   by the rule of three, CPU-hours, a per-claim corpus) lost under the ruling.
+1. Considered and lost: question 3's options above, and the earlier fixed-budget forms (a seed
+   count by the rule of three, CPU-hours, a per-claim corpus).
 2. In this tree: the outsider passes pin a commit; the sweeps print seeds and rates.
 3. Prior art: above, with what I did not read marked.
-4. The premise holds: no coverage measure exists for the in-guest drivers.
-5. Cost: the appendix measures run rates; nobody has measured the instrumentation slowdown.
-6. Reversible: a build variant and a record change cheaply, and nobody has acted on either.
+4. The premise holds: the appendix gives the false-red rates.
+5. Cost: unmeasured work; the appendix gives the cost of waiting.
+6. Reversible: a harness change is a code change, and nobody has acted on it.
 7. At equal cost this would still choose (A); the recommendation is not about effort.
 
 ## What waits on this
 
-Conditions 1 to 4 of criterion (d), and so risk 7's green, until an architect rules on questions 2
-to 5. No scoped work can start on the rulings alone; question 3 is the candidate.
+Conditions 1 to 4 of criterion (d), and so risk 7's green, until an architect rules on questions 3
+to 5. The coverage build for one architecture can start now.
 
 ## What I need from you
 
-Question 2 only. The others wait.
+Question 3 only. The others wait.
