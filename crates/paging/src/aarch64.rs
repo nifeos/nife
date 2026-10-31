@@ -66,7 +66,7 @@ const ADDR_MASK: u64 = 0x0000_ffff_ffff_f000;
 
 /// **The descriptor's fields share no bit**: the address field, the valid and table-or-page bits,
 /// and every field `attrs` writes (the access flag, the shareability field, the three-bit
-/// attribute index at [4:2], the two-bit access permission at [7:6], not-global, and the two
+/// attribute index at \[4:2\], the two-bit access permission at \[7:6\], not-global, and the two
 /// execute-never bits). Every `|` in `table_entry`, `leaf_entry` and `block_entry` joins words
 /// from this list, so each is its own `^`, and the mutation exclusions for those three functions
 /// name this constant: the compiler checks what no test can. The index and permission fields are
