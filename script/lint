@@ -3735,7 +3735,7 @@ echo "==> the shared scope/architect-label merge-base resolution"
 helpers/scope-merge-base-selftest.sh >/dev/null
 
 # A magic or a public ABI number that moves owes its version constant in the same change (milestone
-# 956 step 7, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules
+# 956 step 4, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules
 # as fixtures and a scratch repository; the check reads this branch's diff against the merge base.
 echo "==> format values move with their version constants"
 python3 helpers/format_values_check.py --selftest

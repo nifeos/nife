@@ -10,116 +10,86 @@ needs_person: no
 ---
 # 956. The linked interfaces carry checkable versions
 
-Raised 2026-10-29 (UTC) by the lane `proposal/version-carrying-interfaces`, as the implementing
+Raised 2026-10-29 (UTC) by the lane `proposal/version-carrying-interfaces`, the implementing
 block behind [milestone 979 (interfaces a peer can check)](0979-version-carrying-interfaces.md).
-calef ruled the shape that day in PR #2852's comment; this block re-aims the eight-step plan at the
-ruled shape.
-The shape proposal holds the questions, the options and the ruling; this one holds the plan, and
-an integrator minted its number on 2026-10-28 (UTC) so condition 4 of milestone 756 has a block to
-point at.
+calef ruled the shape that day in PR #2852's comment, and ruled on 2026-10-31 (UTC) that this block
+covers condition 4 of milestone 756 and nothing more. The shape proposal holds the questions, the
+options and the ruling; this block holds the plan.
 
-The gate the plan serves is condition 4 of milestone 756 (`process-tools`, `core-tools` and
-`disk-tools` are the first code to leave this repository), re-aimed on 2026-10-28. The gate reads:
-each interface the first cut links carries a checkable version, and the moved package declares
-what it links.
+The gate the plan serves is condition 4 of milestone 756, which moves `process-tools`, `core-tools`
+and `disk-tools` out first. Each interface the first cut links
+carries a checkable version, and the moved package declares what it links.
 
 Reuse: the plan reuses machinery that exists, per AGENTS.md rule 6. It takes the `abi` crate's
-pinned-values test, and milestone 597 (a program carries its manifest in an ELF note), the manifest-note encode
-and decode with its one-encoding Kani property. It takes the `log_checks` assertions in
-`hot_swap_contract`, and milestone 610 (the interface's stability is measured weekly), whose
-`FORMAT_CONST` pattern sits in `helpers/interface_stability.py`. No new dependency; `cargo-semver-checks`
-and `cargo-public-api` stay refused as milestone 610 records.
+tests, and milestone 597 (a program carries its manifest in an ELF note), the manifest-note encode
+and decode with its one-encoding Kani property. It takes the `FORMAT_CONST` pattern in `helpers/interface_stability.py`. No new
+dependency. The weekly series refused `cargo-semver-checks` and `cargo-public-api`, and they stay refused.
 
-## The plan, eight steps
+## The plan, four steps
 
-Each step lands a provable piece and names the ruled part it executes. Every new name is
-provisional.
+Each step lands a provable piece. Every new name is provisional.
 
-1. The version constants land in the four interfaces the first cut links. `abi` carries
+1. The version constants land beside the wire formats the first cut links. `abi` carries
    `ABI_VERSION` at the crate root; `address_space_map` and `glob` each carry `VERSION`;
-   `machine_statistics_contract` gains a version word beside its `MACHSTA1` magic, a new index in
-   the crate's `word` module. One constant per wire format, module-scoped where a crate holds
-   several, as ruled (question 1). A format whose magic predates the version digits mints them in
-   the same change where no reader outside the tree holds an old one, so block_roster's `blkrostr`
-   gains its digits here. program_argument_contract's `nifeargv` stays unnumbered: basalt's
-   published `rg` reads an argv page from the prebuilt archive the gates fetch, so its digits move
-   with that rebuild and not before. The ruling of 2026-10-30 (UTC) covers this step's constants and
-   block_roster's re-mint, so the step owes no separate decision. Proves: the constants are public,
-   and 610's `FORMAT_CONST` pattern reads them, so the next weekly series counts them.
+   `machine_statistics_contract` carries a version word beside its `MACHSTA1` magic, an index in the
+   crate's `word` module; `block_roster` carries `VERSION` in the digits of its magic. One constant
+   per wire format, as ruled (question 1). `program_argument_contract`'s `nifeargv` stays
+   unnumbered: basalt's published `rg` reads an argv page from the prebuilt archive the gates
+   fetch, so its digits move with that rebuild. Proves: the constants are public, and the
+   `FORMAT_CONST` pattern reads them.
 
-2. The bind check becomes set membership, in each message contract. The sketch from the shape
-   proposal: `member(own: u32, served: &[u32]) -> Result<u32, Mismatch>`, with `Mismatch` carrying
-   both versions (question 2). Each server gains the reserved operation, provisionally
-   `OPERATION_VERSION` at opcode 0 where the protocol leaves it free, returning its served set. A
-   client binds only when its declared version is in the set; a refusal names both sides. The
-   kernel routes these words without reading opcodes; the check belongs to the two endpoints.
-   Proves: the contract crate's tests bind a matching set and refuse a mismatched one, naming both
-   versions.
+2. A package declares what it links in a new manifest-note type, `INTERFACES = 4`, on the pattern
+   of `SUBTREE_GRANTS` and `VERBS` (calef, 2026-10-31 UTC; descriptor versions 1 to 3 stay
+   untouched). Its descriptor is a version word, a count, then that many records of
+   `INTERFACE_ID: u64` and a version `u32`, in id order with no duplicates. Each interface crate
+   carries `INTERFACE_ID: u64` beside its version constant, and no value repeats. A program carries
+   the note through a macro that reads the constants, so a declaration cannot drift from them. Proves: the encode, decode and one-encoding Kani property carry over from 597's gate,
+   and no two crates share an id.
 
 3. The syscall ABI check runs at spawn. The progenitor reads the ABI entry of a program's
-   `INTERFACES` note (step 4) and compares it with the kernel's `ABI_VERSION` (§235 (the OS is built
-   and updated from packages, and the tree divides by what releases together)). It refuses a
-   mismatch, naming both. A program with no `INTERFACES` note declares nothing and runs as it does
-   today; refusing it waits on packages carrying the stamp. The ABI never dual-serves; the refusal
-   is the hard edge. Proves: the progenitor refuses a program whose note declares a version the
-   kernel does not serve, and accepts one it does.
+   `INTERFACES` note and compares it with the kernel's `ABI_VERSION` (§235 (the OS is built and
+   updated from packages, and the tree divides by what releases together)). It refuses a mismatch,
+   naming both. A program with no `INTERFACES` note declares nothing and runs as it does today;
+   refusing it waits on packages carrying the stamp. The ABI never dual-serves, so the refusal is
+   the hard edge. Proves: the progenitor refuses a program whose note declares a version the kernel
+   does not serve, and accepts one it does.
 
-4. The manifest note gains a new note type, `INTERFACES = 4`, on the pattern of `SUBTREE_GRANTS` and
-   `VERBS` (calef ruled this on 2026-10-31 (UTC); it is not a descriptor version, and versions 1
-   to 3 stay untouched). Its descriptor is a version word, a count, then that many records of
-   `INTERFACE_ID: u64` and a version `u32`, in id order with no duplicates. Each interface crate
-   carries `INTERFACE_ID: u64` beside its version constant, values never reused. A program carries
-   the note by a macro that reads the constants, so a declared version cannot drift from its
-   constant. Proves: the encode, decode and one-encoding Kani property carry over from 597's
-   gate, and no two crates share an id.
-
-5. The message-contract servers owe the current generation and the last (N-1, the compatibility
-   ruling). A break bumps the version, owes the dated ledger entry naming the migration, and
-   carries a one-generation dual path; shipping the next generation closes the window. The
-   carve-outs hold: shared pages stay single-version, and a page-format break rides the update
-   path (§235's U4 coherent set). Stateful services ride the update path. Hot swap carries a
-   version change only on an N-1 contract, only for a stateless component. The operator verifies
-   that the new instance serves every bound client's version. Ruled 2026-10-30 (UTC): the argv
-   magic's digits are re-minted in the window where basalt rebuilds `rg` and every other foreign
-   program that reads argv, coordinated so the basalt pin and the contract move together. Basalt
-   has no consumers yet, so that break needs no dual path and owes none of this step's N-1 shim.
-   Proves: a contract crate's tests hold a dual-serving server and a single-generation one, per the
-   carve-outs.
-
-6. Retiring the legacy generation is itself a version event, never silent. It bumps the contract
-   version, owes the dated ledger entry naming the migration, and rides the update path, so
-   in-tree v1 clients move in the same release while the compiler proves the move. The refusal
-   then fires on a stale client binding, naming both versions. The ledger records whether any client
-   exercised the N-1 shim, the recorded evidence for revisiting the N-1 rule. Proves: the retirement
-   lands in one release with its ledger entry, and the stale-client refusal fires.
-
-7. The enforcement lands now (question 5): the `abi` test spells every public number as an
-   expected literal, and `script/lint` gains the diff-grep check that fails a pull request which
-   changes a magic or version value without its constant. The rustdoc diff waits for a consumer
-   outside the tree. Proves: a renumber without the test's edit fails CI, and the lint fires on a
+4. The enforcement lands now (question 5). The `abi` test spells every public number as an expected
+   literal. `script/lint` gains the diff-grep check that fails a pull request which moves a magic
+   or a public ABI number without its version constant. The rustdoc diff waits for a consumer
+   outside the tree. Proves: a renumber without the test's edit fails CI, and the check fires on a
    synthetic pull request that moves a value.
 
-8. The swap test's two invariants generalize into the contract crates' tests: the version per
-   sequence number never goes backwards (`log_checks::MONOTONE`), and both versions appear
-   (`log_checks::BOTH_VERSIONS`). A dual-serving contract's test asserts both across its own swap.
-   Proves: `script/lint` green, the contract crates' tests green, the Kani property green, and
-   610's next series reads the new constants; 756's condition 4 is checkable by command.
+## Order
 
-## Dependencies and order
+Step 2 depends on step 1, the constants the note reads, and on 597's note machinery. Step 3 depends
+on step 2. Step 4 depends on step 1. The milestone follows the weekly series, so the first week of
+constants reads as additions, a shape the series already records.
 
-Steps 1, 2 and 7 stand on their own. Step 3 depends on step 4, because the `INTERFACES` note is
-where a program declares its ABI version. Step 4 depends on step 1, the constants the note reads, and
-on 597's note machinery, which exists. Steps 5 and 6 depend on steps 1 and 2. Step 7 depends on step 1. Step 8 depends on steps 2, 5 and 6. The milestone follows 610's series,
-so the first week of constants reads as additions, a shape the series already records.
+## Done when
+
+All of these hold, each checkable by a command:
+
+- `abi`, `address_space_map`, `glob`, `machine_statistics_contract` and `block_roster` each export
+  a version constant and an `INTERFACE_ID`, and the id check finds no duplicate.
+- `capability_manifest_note`'s tests and its Kani property for the `INTERFACES` note pass.
+- The progenitor's tests refuse a program whose ABI entry differs from `ABI_VERSION` and accept one
+  that matches.
+- `script/lint` runs the pinned-values test and the format-values check, and the check's selftest
+  passes.
+
+Milestone 756's condition 4 then holds.
 
 ## What this block does not do
 
-This block writes no code. §311 (a contract is code, not prose) reserves the checks for an
-implementing lane; the sketches above are the shape proposal's, restated as the plan's content.
-The implementing lane writes and proves them.
+The bind-time check in message contracts, the one-generation dual path, retiring the legacy
+generation and the swap-test invariants are a separate proposal,
+[the message contracts carry bind-time version checks](proposals/message-contracts-carry-bind-time-version-checks.md).
+The first cut links no message contract, so condition 4 does not need them. The macro takes its interface list by hand. Deriving the list from the dependency graph at package
+build waits for the first package that leaves the tree.
 
 ## Index row
 
-Every interface the first cut links carries a checkable version, so a peer can refuse a mismatch
-naming both sides and the moved package declares what it links. That is condition 4 of milestone
-756's first cut, and the check the weekly series in milestone 610 counts.
+Every interface the first cut links carries a checkable version, and the moved package declares
+what it links through an `INTERFACES` manifest note. That is condition 4 of milestone 756's first
+cut, and the check the weekly series counts.

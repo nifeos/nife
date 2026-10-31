@@ -5,7 +5,7 @@
     python3 helpers/format_values_check.py --selftest # the rules, as fixtures plus a scratch repo
 
 The enforcement of the shape calef ruled on 2026-10-29 (UTC, PR #2852, question 5), built by
-milestone 956 (the linked interfaces carry checkable versions) step 7. The pinned-values test in
+milestone 956 (the linked interfaces carry checkable versions) step 4. The pinned-values test in
 `crates/abi` catches a renumber that skips the test; this catches the other half, a value that
 moves with its test edited and its version constant left alone. It reads the pull request's
 changed lines (the merge base against the tree) and fails in two cases:
