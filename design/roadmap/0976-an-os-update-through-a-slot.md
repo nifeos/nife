@@ -122,10 +122,10 @@ slot. Every new name here is provisional.
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself, and the archive writer moves from
   `xtask/src/archive.rs` into a crate that the host composer and the device updater share. Basalt
-  publishes the kernel as a package, which is interim: milestones 695 (the kernel trusts two digests
-  handed to it by the loader) and 697 (the trust root leaves the kernel binary), launched in
-  parallel as milestone 607 item 6, end the kernel's dependence on the base, and the package is
-  deleted when they land. The reasoning and the prior art are in
+  publishes the kernel as a package, which is interim. Milestones 695 (the kernel takes two digests
+  from the loader) and 697 (the trust root leaves the kernel binary) are milestone 607 item 6,
+  launched in parallel. They end the kernel's dependence on the base, and the package goes when
+  they land. The reasoning and the prior art are in
   `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md`.
 - **Outstanding.** After part 4, part 5 is the device updater, steps 2 and 4 above, writing
   part 4's version 2 slot. Part 6 is the system manifest's name and format (step 1). Part 7 is who may

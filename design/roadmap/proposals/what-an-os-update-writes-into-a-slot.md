@@ -45,24 +45,24 @@ all (milestone 909's `BUGS`: the kernel is built, not packaged).
 
 ## The decision: what the inactive slot receives
 
-**Ruled 2026-10-31 (UTC): B.** Milestone 607 item 6 (milestones 695 and 697) is launched in parallel,
-and the interim kernel package is deleted when it lands. The slot keeps its header and becomes a small set of named members: the
-kernel, the composed archive, and the system manifest that lists each package by digest. The
+**Ruled 2026-10-31 (UTC): B.** The architect launches milestone 607 item 6 (milestones 695 and 697) in
+parallel, and the interim kernel package goes when it lands. The slot keeps its header and becomes
+a small set of named members: the kernel, the composed archive, and the system manifest that lists each package by digest. The
 chooser loads the kernel and the archive itself, as `uefi_loader` already does for the files it
 embeds. The device fetches packages from basalt's index, checks each digest, takes unchanged
 packages from the running slot, writes the archive with the composer's own code, and writes the
 slot. Basalt publishes the kernel as a package, built against the base it vouches for. That kernel
-package is interim: milestones 695 (the kernel trusts two digests handed to it by the loader) and
-697 (the trust root leaves the kernel binary) end the kernel's dependence on the base, and the
-package is deleted when they land.
+package is interim. Milestones 695 (the kernel takes two digests from the loader) and 697 (the
+trust root leaves the kernel binary) end the kernel's dependence on the base. The package goes when
+they land.
 
 | option | what the slot holds | what the device downloads | what it costs |
 |---|---|---|---|
-| A. One boot file (not taken) | today's format, one UEFI program | basalt's composed boot file, about 4.6 MB, whole | U1 in practice, which §235 did not take; a second migration when item 6 lands |
-| B. Named members (ruled) | header version 2: kernel, archive, system manifest | each changed package, and the kernel package while item 6 is open | a slot format version and a chooser change; the composer's archive writer becomes a crate the device links |
-| C. Hold the device side (not taken) | today's format | nothing yet | no update on a running machine until item 6, and B's work waits behind it |
+| A. One boot file (not chosen) | today's format, one UEFI program | basalt's composed boot file, about 4.6 MB, whole | U1 in practice, which §235 did not take; a second migration when item 6 lands |
+| B. Named members (chosen) | header version 2: kernel, archive, system manifest | each changed package, and the kernel package while item 6 is open | a slot format version and a chooser change; the composer's archive writer becomes a crate the device links |
+| C. Hold the device side (not chosen) | today's format | nothing yet | no update on a running machine until item 6, and B's work waits behind it |
 
-Why B, as it was put to the architect. It is the format U4 describes, and it does not depend on item 6: item 6 only stops the
+Why B. It is the format U4 describes, and it does not depend on item 6: item 6 only stops the
 kernel package changing with every base change. A would ship the refused unit first and migrate
 every installed disk later. C loses nothing in format but serializes two independent lanes. Would
 I still choose B if A cost the same? Yes; A is smaller only because it reuses a file format, which
@@ -77,7 +77,7 @@ What B touches that two programs agree on, and therefore what the ruling covers:
 - The kernel package: `packages/kernel.package.toml` declares crates and no programs, and gains a
   member that is the built kernel.
 
-Options A and C are not taken. Part 4 therefore writes version 2 slots, not basalt's composed
+The ruling chooses neither A nor C. Part 4 therefore writes version 2 slots, not basalt's composed
 boot file, and does not wait on item 6.
 
 ## How others solved it, and where nife differs
