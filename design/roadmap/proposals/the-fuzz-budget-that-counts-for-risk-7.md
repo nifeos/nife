@@ -44,7 +44,12 @@ service's standards, not its code.
   (UTC). Not chosen: coverage first at 1 to 4 guests, and discarding failures that a replay clears.
 - The second work is a build for one architecture that measures the speed cost of the coverage
   counters under KVM in the nife kernel. Nobody has measured that cost.
-- Not yet in force: the host and operator (question 4), and the triage clock's length (question 5). Until an architect rules on those,
+- A dedicated x86_64 virtual machine, which the architect creates, runs the fuzzer continuously
+  (both drivers). A lane operates it through the repository's scripts, and a daily job publishes
+  counter totals, the corpus and findings where others can read them. Decided 2026-10-31 (UTC).
+  Not chosen: scheduled hosted jobs, and the shared build host at night. The maintainers keep the
+  machine's specification off-tree.
+- Not yet in force: the triage clock's length (question 5). Until an architect rules on those,
   nothing can satisfy conditions 1 to 4, so risk 7 stays AMBER and no run counts toward (d).
 
 ## Where criterion (d) stands
@@ -120,9 +125,6 @@ Read from google.github.io/oss-fuzz.
   and scale with project size." It uses 30-day-old public regressions and corpora from OSS-Fuzz.
   A crash fails the check only if it reproduces on the pull request's build and does not occur on
   older OSS-Fuzz builds, so a pull request is not blamed for an older bug. Read.
-- Fuzz Introspector. Reports reachability and coverage per fuzzer and in aggregate, flags blockers
-  that limit what a fuzzer can reach, and suggests new targets. The service generates and uploads reports
-  automatically. Read.
 - Unverified: how ClusterFuzz deduplicates crashes, how it finds the range of commits that
   introduced a crash, and any reminder or auto-close schedule for stale issues.
 
@@ -186,46 +188,47 @@ so rather than imply parity.
 ## The questions that remain
 
 I ask them one at a time, in this order, each after an architect rules on the one before. An
-architect has ruled on questions 1 to 3; question 4 sits on the pull request. This list keeps the
+architect has ruled on questions 1 to 4; question 5 sits on the pull request. This list keeps the
 rest, and each returns in full when its turn comes.
 
 1. An architect ruled on 2026-10-31 (UTC): what criterion (d) becomes, and the 14-day run.
 2. An architect ruled on 2026-10-31 (UTC): the coverage measure. See "What is in force".
 3. An architect ruled on 2026-10-31 (UTC): the false-red fix is the first work.
-4. Where the fuzzers run and who operates them.
+4. An architect ruled on 2026-10-31 (UTC): a dedicated x86_64 virtual machine runs the fuzzers.
 5. The triage clock, which condition 3 names.
 
-### Question 4: who runs the fuzzer
+### Question 5: the triage clock
 
-Recommendation: (A) a dedicated x86_64 virtual machine that the architect creates, which runs the
-fuzzers continuously under a systemd unit, with the corpus and findings published to a place
-others can read. A lane operates it through the repository's scripts, and the architect owns the
-machine.
+Recommendation: (A) a finding gets a first look within 2 days. An escape, or a crash or hang
+reached from user mode, gets its fix within 14 days. Any other finding gets its fix within 90 days. A
+finding past its limit makes condition 3 fail, and the rating falls until it closes.
 
-Background. Condition 1 says the fuzzer runs now, and condition 4 says the corpus and findings
-live where others can see them. Something has to host both, around the clock. The appendix shows a
-virtual machine of about 4 vCPUs and 8 GB runs the x86_64 drivers comfortably under KVM, at about
-100 MB per guest. Hosted Actions runners cap a job at six hours (from memory), share the merge
-queue's 60 slots. They offer no operator who owns a corpus.
+Background. Condition 3 says every finding has a fix or sits inside the triage clock, and none is older.
+The clock needs three limits: how soon someone must look, how soon the worst findings need a fix,
+and how soon the rest do. The limit for escapes matters most, because an open escape is the claim
+being false. An unexplained finding counts as a crash until someone explains it.
 
 Options:
 
-- (A) A dedicated x86_64 virtual machine. Recommended.
-- (B) Scheduled hosted jobs that resume from a corpus in an artifact store. Free, but never
-  continuous, and it competes with the merge queue by day.
-- (C) The shared build host, at low concurrency in the night window. It has idle cores, but other
-  lanes' load caused the slow rates in the appendix, and a self-hosted runner never takes a fork's
-  pull request.
+- (A) 2 days to triage, 14 days to fix an escape or crash, 90 days for the rest. Recommended.
+- (B) 90 days for every kind, as OSS-Fuzz does. Simple, but it lets an open escape wait three
+  months.
+- (C) 7 days for an escape or crash. Tighter, but one large fix could outlast it.
 
-Prior art. OSS-Fuzz runs on ClusterFuzz, a scalable fuzzing infrastructure built for it (read); its pool
-size is unverified. syzbot runs named managers, listed with uptime and freshness on its dashboard (read).
+Prior art. OSS-Fuzz discloses an issue to the public 90 days after it notifies the project, or
+after the fix ships, and moves a weekend deadline to the next work day. A project that tells
+OSS-Fuzz a patch lands within 14 days after the deadline gets the disclosure delayed until the patch
+(read). syzbot publishes each bug's age since the report and since the last crash, and closes a
+bug only when the fixing commit reaches all tracked builds (read). I could not verify whether syzbot sets a fix
+deadline or closes a bug after a quiet period.
 
-Where nife differs. One machine, one architecture for now (the §19 scope note), and an owner who
-is also its architect.
+Where nife differs. The 90 days are a disclosure clock for outsiders, and nife's findings are public
+from the start. The clock here protects the rating, which is why an escape gets the shorter limit.
 
-Example. The virtual machine runs both drivers at 4 guests, 24 hours a day. A daily job copies the
-counter totals, the new corpus and any findings to the published place. On a given date the
-dashboard shows the fuzzer up for 61 days, which meets condition 1.
+Example. A sweep reports an escape on 2026-11-03. A lane triages it on 2026-11-04, inside 2 days,
+and confirms it. The fix is due 2026-11-17. The fix merges on 2026-11-12, and the daily job
+shows the finding closed on 2026-11-13. With no fix by 2026-11-17, condition 3 fails on
+2026-11-18 and the rating falls until a fix merges.
 
 ## Appendix: measurements, 2026-10-31 (UTC)
 
@@ -241,8 +244,7 @@ Rate per guest, x86_64 under hardware acceleration (KVM):
 
 Baseline under full emulation (TCG): 20 seeds/s for the kernel-thread driver and 8 for the
 user-mode driver. Hardware acceleration is about 20 times faster for the first and about 28 times
-for the second. These are also many times the hosted aarch64 sweep rates quoted above (40 and 13),
-which run under emulation.
+for the second.
 
 Memory: about 100 MB per guest.
 
@@ -263,19 +265,18 @@ is why question 3 exists.
 
 ## The seven questions
 
-1. Considered and lost: question 4's options above.
-2. In this tree: the weekly sweeps run on hosted runners; no machine runs the fuzzers continuously.
-3. Prior art: above, with what I did not read marked.
-4. The premise holds: condition 1 needs a host.
-5. Cost: one virtual machine, about 4 vCPUs and 8 GB, and its operator's time.
-6. Reversible: a machine can move; the published place is the lasting part.
+1. Considered and lost: question 5's options above.
+2. In this tree: no finding has a clock today.
+3. Prior art: above, with what I did not verify marked.
+4. The premise holds: condition 3 names the clock and no number exists.
+5. Cost: lane time to fix inside the limit.
+6. Reversible: the numbers are a record, and nobody has acted on them.
 7. At equal cost this would still choose (A); the recommendation is not about effort.
 
 ## What waits on this
 
-Conditions 1 to 4 of criterion (d), and so risk 7's green, until an architect rules on questions 4
-and 5. The coverage build for one architecture can start now.
+Conditions 1 to 4 of criterion (d), and so risk 7's green, until an architect rules on question 5. The false-red fix can start now.
 
 ## What I need from you
 
-Question 4 only. Question 5 waits.
+Question 5 only.
