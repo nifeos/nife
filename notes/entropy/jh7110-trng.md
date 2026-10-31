@@ -78,10 +78,10 @@ step relies on a reset value nobody documented.
 3. Write `MODE_R256`. Without it, eight assembled words may claim 32 bytes from a block that
    answered 16.
 4. Enable interrupts, or deliberately leave `IE` at zero to poll. `ISTAT` latches either way.
-5. Write `CTRL_EXEC_RANDRESEED`, wait for `SEED_DONE` and acknowledge it. Until then
+5. Write `CTRL_COMMAND_RESEED`, wait for `SEED_DONE` and acknowledge it. Until then
    `STAT.SEEDED` is clear and every poll answers unseeded.
 
-Then, per generation: acknowledge any stale `RAND_RDY`, write `CTRL_GENE_RANDNUM`, poll
+Then, per generation: acknowledge any stale `RAND_RDY`, write `CTRL_COMMAND_GENERATE`, poll
 `(STAT, ISTAT)`, and acknowledge `RAND_RDY` once the words are read.
 
 ## Health testing
