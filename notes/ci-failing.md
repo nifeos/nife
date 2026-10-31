@@ -66,6 +66,11 @@ session to read, rather than two.
   character and `echo` reported the broken pipe. JSON now goes through `printf '%s\n'`, and the
   selftest feeds a failing run whose text holds backslash escapes. This was a defect, not the audit
   being due: the pass crashed before it could judge the rest of the pull requests.
+  The same sweep fixed `script/ci-log-baseline`, which passed CI log text through `echo` and so
+  could split or cut an attribution row (`helpers/ci-log-baseline-selftest.sh`), and the failure
+  diagnostics in `script/lint`. Left as they are, on purpose: the `title` in this script's FAILING
+  and CLEARED lines reaches `echo` through `@tsv`, which doubles each backslash, and dash's `echo`
+  undoes exactly that.
 - The comment is once per SHA, forever. A pull request that fails, is fixed by rerunning, and
   fails again on the same SHA gets the label again and no second comment. That is the rule asked for;
   the label is the live signal.

@@ -1103,7 +1103,7 @@ if [ "$status" -eq 3 ]; then
 fi
 if [ "$status" -ne 0 ]; then
     echo "lint: module-wide dead-code suppression (an inner attribute blindfolds the whole module):" >&2
-    echo "$found" >&2
+    printf '%s\n' "$found" >&2
     echo "" >&2
     echo "Put the allow on the ITEM, with a comment saying which configuration has no caller." >&2
     echo "See DECISIONS §38." >&2
@@ -1175,7 +1175,7 @@ unpinned="$(git grep -nE '^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]' ${LINT_
     | grep -vE 'uses:[[:space:]]+[^@[:space:]]+@[0-9a-f]{40}([[:space:]]|$)' || true)"
 if [ -n "$unpinned" ]; then
     echo "lint: a workflow action is not pinned to a 40-hex commit SHA:" >&2
-    echo "$unpinned" >&2
+    printf '%s\n' "$unpinned" >&2
     echo "lint: resolve it with 'gh api repos/<owner>/<repo>/commits/<tag> --jq .sha' and write" >&2
     echo "lint: 'uses: <owner>/<repo>@<sha> # <tag>'." >&2
     exit 1
@@ -1220,7 +1220,7 @@ todo_bad=$(git grep -nE '(TODO|FIXME|XXX|HACK)[[:blank:]]*[(:]' -- \
     grep -vE '(TODO|FIXME|XXX|HACK)[[:blank:]]*\(milestone [0-9]+\)' || true)
 if [ -n "$todo_bad" ]; then
     echo "lint: TODO/FIXME markers that do not name the milestone that owns them:" >&2
-    echo "$todo_bad" | sed 's/^/  /' >&2
+    printf '%s\n' "$todo_bad" | sed 's/^/  /' >&2
     echo "" >&2
     echo "Spell it TODO(milestone N): and add the block under design/roadmap/, or take the note out" >&2
     echo "of the marker form and record the limitation next to the feature (the BUGS convention)." >&2
@@ -3914,7 +3914,7 @@ $f:$hit"
 done
 if [ -n "$upward" ]; then
     echo "lint: a crate under crates/ depends on a binary, which takes it out of host tests and Kani:" >&2
-    echo "$upward" >&2
+    printf '%s\n' "$upward" >&2
     echo "" >&2
     echo "Move the shared definition INTO crates/ and depend on it from both sides (Rule 7)." >&2
     exit 1
@@ -4525,7 +4525,7 @@ esac
 kani_stray="$(git grep -n 'cargo install[^#]*kani-verifier' -- ':!script/kani-install' ':!script/kani-bump' ':!design' ':!notes' ':!script/lint' | grep -v '^[^:]*:[0-9]*:[[:space:]]*#' || true)"
 if [ -n "$kani_stray" ]; then
     echo "lint: a Kani install bypasses script/kani-install (and so .kani-version):" >&2
-    echo "$kani_stray" | sed 's/^/  /' >&2
+    printf '%s\n' "$kani_stray" | sed 's/^/  /' >&2
     exit 1
 fi
 if ! grep -q -- '--version "=\$pin"' script/kani-install; then
