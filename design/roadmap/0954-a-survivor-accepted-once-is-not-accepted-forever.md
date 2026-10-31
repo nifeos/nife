@@ -200,8 +200,10 @@ where one of these fits.
   already carried its compiled arguments and scoped exclusions from #2867; a re-derivation on
   2026-10-31 (UTC) found 5 missed mutants, every one rowed, and one noise-shaped site without a
   compiled argument, `link_from_registers`, which #2937 covers. `modify_extended`'s swap stays a
-  `caller` row, since its two operands are runtime values. The counts below name the 2026-10-26
-  census. Checked
+  `caller` row, since its two operands are runtime values. `e1000e` needs no change: its 16 missed
+  and 4 timed-out mutants all have rows, its provable sites already carry assertions and
+  exclusions, and the 8 noise-shaped swaps left rest on a runtime value or on hardware behavior.
+  The counts below name the 2026-10-26 census. Checked
   against `notes/project-metrics/mutation-shape-sites.csv`: 516 noise-shape sites, 148 the lines
   prove, 368 a lane must read.
 - **Outstanding.** Part 5, the eight crates' remaining survivors, one lane each, and the
