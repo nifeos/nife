@@ -11,7 +11,7 @@ links this page from it. Every date is 2026-10-31 (UTC).
 
 ## What was run
 
-The kernel-thread driver (milestone 752) and the user-mode confinement driver (milestone 779), each
+The kernel-thread driver (milestone 752, a seeded syscall driver with a shadow model) and the user-mode confinement driver (milestone 779, fuzz the surface a confined process can reach), each
 for 60 seconds per guest, with 1, 2, 4, 8 and 16 guests at once, on x86_64 under KVM, on a dedicated
 x86_64 virtual machine. The host target `redoxfs_server_session` ran on the same machine.
 

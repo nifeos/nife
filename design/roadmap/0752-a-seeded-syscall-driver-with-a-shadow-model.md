@@ -185,7 +185,7 @@ a second rung. When (A) lands, the driver's model changes in the two receiver-fi
   reuse `Model`, `Stage` and the actor loop by adding an `Obj::Region` and its methods.
 - **Recorded.** The driver's wall-clock deadlines fail falsely when guests run concurrently on one
   host (1 of 4 guests at 4, 4 of 8 at 8, 6 of 16 at 16, x86_64 under KVM, 2026-10-31 UTC); the
-  entry and its consumer are in milestone 779's `BUGS`.
+  entry and its consumer are in milestone 779 (fuzz the surface a confined process can reach)'s `BUGS`.
 
 ## Index row
 

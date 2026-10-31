@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # Where the provenance of an extracted crate's names lives
 
-The lane for milestone 818 (the `jh7110_entropy` crate, released on its own) raised this on
+The lane for milestone 818 (the jh7110_entropy crate released on its own) raised this on
 2026-10-31 (UTC). The consumer is every crate that leaves for its own repository after it, starting
 with the next of the release-track set in milestone 857 (crates released on their own).
 
@@ -20,7 +20,7 @@ Reuse: none exists; the proposal is about where a record goes, and `script/names
 
 Until now a name's provenance sat in a `Name:` block beside the item in source: who ratified it,
 when, and why. `script/crate-standalone` requires a block on every module and `pub` item before a
-crate may leave, and requires each to read ratified. The shared template of milestone 887 does the
+crate may leave, and requires each to read ratified. The shared template of milestone 887 (crate repositories share one CI template) does the
 opposite once the crate is in its own repository: it refuses a `Name:` block, because a stranger's
 repository carries no record of nife's rulings. So the lane for `jh7110_entropy` removed the blocks
 from the crate's source in its move. The date and reason each name was ratified now live only in

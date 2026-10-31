@@ -15,7 +15,7 @@ runner), whose decision depends on where a pull request's time goes; this findin
 not in runner pickup. This milestone investigates one number and builds nothing until the
 investigation says what to change.
 
-Reuse: `.github/workflows/empty-diff.yml` and `helpers/empty-diff-check.sh` (milestone 627),
+Reuse: `.github/workflows/empty-diff.yml` and `helpers/empty-diff-check.sh` (milestone 627, a pull request that changes nothing does not merge),
 `script/ci-log-baseline` for per-job conclusions, and `gh run list` for the run data. No new
 dependency.
 
