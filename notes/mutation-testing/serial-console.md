@@ -179,7 +179,7 @@ the `Err` that `watch` returns.
 No defect in shipped behavior was found. Every survivor here was a missing test, or one of the two
 documented, measured equivalences above.
 
-### `screen.rs`: six census timeouts closed (milestone 954, part 5, 2026-10-31)
+### `screen.rs`: six census timeouts closed (milestone 954 (a survivor accepted once is not accepted forever), part 5, 2026-10-31)
 
 Re-derived from main with `script/mutation -p serial_console`: 479 mutants, 6 missed and 6 timeouts.
 The six missed are the ones above, each with a row in
