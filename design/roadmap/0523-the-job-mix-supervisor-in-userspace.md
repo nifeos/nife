@@ -128,8 +128,8 @@ A supervisor needs, roughly: 34 children at about 40 pages each for segments, st
 a TCB; 32 task budgets at `job_mix::TASK_BUDGET_PAGES` (25); and 67 rendezvous pages. That is about
 2,200 pages, call it 3,072 with headroom, 12 MiB. The progenitor's own root region is 12,288
 pages (`boot_progenitor`), and the shell, the jobs pool and the image pool take 4,928 of them, so
-the memory exists. What does not exist is a route from it to a shell-spawned program, and widening
-the shell's 128-page share twenty-fourfold for one benchmark is a cost every interactive boot pays.
+the memory exists, but no route takes it to a shell-spawned program. Widening the shell's 128-page
+share twenty-fourfold for one benchmark is a cost every interactive boot pays.
 
 What would close it: a source for the pages outside the shell's budget, sized by the manifest that
 asks, or the boot-endowed route of blocker 1.
