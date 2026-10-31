@@ -195,7 +195,7 @@ where one of these fits.
   has a live `equivalent` or `gap` row, and none has a `killed` one. The classes CSV and the
   carried list still name the 2026-10-26 census, so they keep counting these until the next
   census regenerates them.
-- **Partly done.** Part 4, the noise exclusions, one pull request per crate, largest first.
+- **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first.
   `paging` is #2924 and `designware_mobile_storage` landed with #2849. `designware_ethernet`
   already carried its compiled arguments and scoped exclusions from #2867; a re-derivation on
   2026-10-31 (UTC) found 5 missed mutants, every one rowed, and one noise-shaped site without a
