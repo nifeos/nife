@@ -332,6 +332,30 @@ it is mechanical**, which is why nothing automates past the first step:
 6. For RedoxFS, make the `ignore` list in `.github/dependabot.yml` match the new manifest's direct
    dependencies, since it exists only to keep Dependabot from rewriting this vendored manifest.
 
+## Taking a held bump
+
+A dependency of a vendored package can be ahead of the range the package asks for. We adopt the
+vendored upstream as it stands and take the upgrade when upstream makes it; we do not rewrite its
+manifest to move its dependencies for it (architect ruling, 2026-10-31 UTC, on #2958). Dependabot
+follows a path dependency into the vendored `Cargo.toml` and edits it, which `script/vendor-verify`
+fails by construction, so the bump is held with an `ignore` in `.github/dependabot.yml` (EXCEPTION
+(§81)). The only hold today is `lock_api` 0.5 for talc, named by `held_dependency` in
+`vendor/talc.pin`.
+
+`script/vendor-watch` reports the day the hold can lift: its status file says **Held dependency:
+lifts** when a published release newer than the pin asks for a range that allows the held version,
+and the run exits 1 (behind). Then:
+
+1. Take the release as in "Bumping a pin": raise `version`, `url` and `sha256` in the pin and the
+   `vcs` sha, and re-vendor the package.
+2. Re-apply `vendor/talc.divergence.patch`, or drop it if the release carries #57, and regenerate it
+   with `script/vendor-verify --write-patch`.
+3. Remove the `lock_api` entries from `ignore` in `.github/dependabot.yml` (the root, the ten
+   workspaces and the three RedoxFS ones) and the pin's `held_dependency` line.
+4. Take the `lock_api` bump in each lockfile that holds it (`cargo update -p lock_api` in the root,
+   `jig`, `fuzz`, `redoxfs_server` and `tools/redoxfs_host`), then run `script/test` and
+   `script/supply-chain`.
+
 ### BUGS
 
 - **A bump is allowed to fail, and that is a result rather than a defect.** Divergences 3, 4 and 5
