@@ -25,7 +25,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/bench` | icount microbenchmarks; `--check` fails on drift from the baseline. |
 | `script/icount` | Boot a `--features icount` kernel and assert the two timing claims a wall clock cannot make. |
 | `script/fmt` | Format with the pinned rustfmt; `--check` is the CI gate. |
-| `script/lint` | Clippy on every ISA and feature build, plus the non-clippy checks sharing its job. It names every failing section. |
+| `script/lint` | Clippy on every ISA and feature build, plus the non-clippy checks sharing its job. It names every failing section. `--quick` runs the cheap ones first. |
 | `script/coverage` | Host-crate coverage, gated at 80% per file. |
 | `script/ci-build` | The one list of checks a pull request must pass. CI runs its rows. |
 | `script/qemu-check` | Is the QEMU on PATH the pinned one, with the devices the suite needs? |

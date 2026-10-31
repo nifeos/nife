@@ -39,6 +39,11 @@ environment-variable marker would not.
 The default N is one slot per 8 GiB of physical memory, at least 1, so a 16 GiB machine runs two.
 NIFE_HEAVY_SLOTS overrides it. Two processes given different N each count only the slots they know.
 
+BUGS: the ancestor walk includes pid 1, which `script/test` is when it is a container's first
+process. Two containers that share one slot directory and each run a heavy script as pid 1 cannot
+tell their pid 1s apart, so one can run inside the other's slot. Give each container its own
+NIFE_HEAVY_SLOT_DIR.
+
 BUGS: waiters are not served in order. Each polls every POLL_SECONDS and the first to find a free
 slot takes it, so a run can be overtaken by one that started later.
 """
@@ -72,20 +77,34 @@ def slot_dir():
     return path
 
 
-def ancestors():
-    """This process's ancestor pids, from one `ps` listing (no /proc on macOS)."""
+def parent_table():
+    """{pid: ppid} for every process, from one `ps` listing (no /proc on macOS)."""
     out = subprocess.run(["ps", "-A", "-o", "pid=,ppid="], capture_output=True, text=True).stdout
     parent = {}
     for line in out.split("\n"):
         fields = line.split()
         if len(fields) == 2:
             parent[int(fields[0])] = int(fields[1])
-    seen = set()
-    pid = os.getppid()
-    while pid > 1 and pid not in seen:
-        seen.add(pid)
+    return parent
+
+
+def chain(parent, pid):
+    """The pids from `pid` up to the root of `parent`, `pid` first. Pid 1 is included.
+
+    Pid 1 is a real ancestor: when `script/test` is a container's first process, the holder the
+    slot records is pid 1, and a walk that stopped before it never found the holder in its own
+    family, so the script waited for its own lock for ever.
+    """
+    seen = []
+    while pid > 0 and pid not in seen:
+        seen.append(pid)
         pid = parent.get(pid, 0)
     return seen
+
+
+def ancestors():
+    """This process's ancestor pids (its parent first, pid 1 included)."""
+    return set(chain(parent_table(), os.getppid()))
 
 
 def read_holder(fd):

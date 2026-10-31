@@ -26,6 +26,51 @@
 # `no-cargo` runs only the sections `--no-cargo` keeps, with LINT_NO_CARGO=1. `clippy` stops after
 # the section that carries the `--clippy` cut, which is where `script/lint --clippy` stopped.
 #
+# `quick` runs only the sections that carry a `# lint-quick` comment line, with LINT_NO_CARGO=1 (so
+# none of them may run cargo). It is the pre-flight `script/lint --quick` names: the cheap checks a
+# lane's first run fails most often, run before the full run. It covers fewer sections than any
+# other mode and never stands in for one.
+#
+# # Running sections side by side
+#
+# **At most NIFE_LINT_JOBS sections run at once.** The default is a quarter of the machine's cores,
+# at least 1 and at most 8, so a 4-core CI runner and a laptop with a few cores run them one at a
+# time exactly as before, and an 80-core workstation runs eight. `NIFE_LINT_JOBS=1` is the old
+# loop, byte for byte: in order, each section's output straight to the terminal. Above 1:
+#
+# - **Output is replayed in plan order.** Each section writes to a file of its own, and this script
+#   prints the files in order, each section's lines together under its own `==>` line. The head of
+#   the plan has its `==>` line printed the moment it starts, so a run that hangs still ends on the
+#   `==>` line of the section it hangs in, which is what script/ci-log-baseline reads. A section's
+#   stderr is merged into its stdout in the replay; the failure summary still goes to stderr.
+# - **Lanes.** A section may carry `# lint-lane: NAME`. Sections of one lane run in order, one at a
+#   time; lanes and the sections in no lane (the pool) run side by side. A cargo section is in lane
+#   `main` unless it says otherwise, because cargo holds one lock on its build directory and two
+#   cargo sections in a directory only queue. script/lint declares them: one per target triple's
+#   clippy passes, one for rustdoc, one for the uefi_loader builds and one for each workspace that
+#   has a target directory of its own.
+# - **Build directories.** At 4 or more jobs a section that carries `# lint-target-dir: NAME`
+#   builds into target/lint-lanes/NAME, so lanes that would have queued on cargo's lock do not. The
+#   saved clippy diagnostics stay in target/lint-clippy, so the lint ratchet reads the same files.
+#   Below 4 jobs every section shares target/, as it always did. A section that names a file under
+#   target/ reads ${CARGO_TARGET_DIR:-$PWD/target}.
+# - **Waits.** `# lint-waits-for: LANE[,LANE]` holds a section back until every earlier section of
+#   those lanes has ended. The lint ratchet reads what the clippy lanes saved, so it waits for them.
+#   A section that reads another's output and does not say so fails here, loudly, in every run
+#   that overlaps them, which is the same rule as for shell variables.
+# - **The verdict does not move.** Every planned section runs whatever fails, and the run passes
+#   exactly when every section passes, in any order and at any job count. The selftest holds the
+#   verdict to fail-fast's under 1 and 4 jobs. A wrong lane costs time, never a verdict.
+# - **CPU time.** Each section's user plus system seconds, from `times` in a subshell that ran only
+#   that section, print as `lint-section-cpu: NAME SECONDS` and in the table's second column. A
+#   check that spreads over every core (`git grep`) shows a CPU figure far above its wall figure.
+#
+# **A passing run leaves the pre-push hook's marker.** `all` and `no-cargo` runs of this tree's own
+# script/lint that pass whole, on a tree that did not move during the run, write the marker
+# helpers/pre-push-lint-cache.sh keys, so a push that follows skips the run it would repeat. The
+# `all` run's sections are a superset of the hook's, so the marker's claim is true. A fixture lint
+# script (the selftests') never writes one.
+#
 # This script times each section in whole seconds around its `sh -c`. As a section completes, one
 # line names it and its seconds, so the cost appears where the run's own output already flows:
 #
@@ -62,15 +107,32 @@ lint_self=$1
 mode=$2
 root="$(cd "$(dirname "$0")/.." && pwd)"
 dir="$(mktemp -d "${TMPDIR:-/tmp}/lint-sections.XXXXXX")" || exit 1
-trap 'rm -rf "$dir"' EXIT HUP INT TERM
+lane_pids=""
+cleanup() {
+    # Only the lane subshells this script started, by their own pids.
+    for p in $lane_pids; do kill "$p" 2>/dev/null || :; done
+    rm -rf "$dir"
+}
+trap cleanup EXIT HUP INT TERM
 awk -v mode=split -v dir="$dir" -f "$root/helpers/lint-no-cargo.awk" "$lint_self" || exit 1
 
-if [ "$mode" = no-cargo ]; then
+if [ "$mode" = no-cargo ] || [ "$mode" = quick ]; then
     LINT_NO_CARGO=1
     export LINT_NO_CARGO
 fi
 LINT_SECTION=1
 export LINT_SECTION
+
+# How many sections may run at once. See "Running sections side by side" in the header.
+jobs=${NIFE_LINT_JOBS:-}
+if [ -z "$jobs" ]; then
+    cpus=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
+    jobs=$((cpus / 4))
+    [ "$jobs" -le 8 ] || jobs=8
+fi
+case $jobs in
+'' | *[!0-9]* | 0) jobs=1 ;;
+esac
 
 # Where the per-section rows go (see the header). The directory is created once, here: a failed
 # creation empties the file name, and every per-section write then skips, so the loop below never
@@ -82,44 +144,198 @@ if ! mkdir -p "$(dirname "$lint_times_file")" 2>/dev/null; then
 fi
 
 tab="$(printf '\t')"
-ran=0
-failed=""
-times=""
-# The index is read on fd 3 so that a section reading stdin cannot eat it.
-while IFS="$tab" read -r id keep name <&3; do
-    if [ "$mode" = no-cargo ] && [ "$keep" = 0 ]; then
+
+# The plan: the sections this run covers, in order, one `id lane waits name` line each. `no-cargo`
+# drops the cargo sections, `quick` keeps the sections that carry a lint-quick marker, and `clippy`
+# stops after the section that carries the `--clippy` cut, which is where `script/lint --clippy`
+# stopped.
+: >"$dir/plan"
+while IFS="$tab" read -r id keep lane waits quick tdir name <&3; do
+    if { [ "$mode" = no-cargo ] || [ "$mode" = quick ]; } && [ "$keep" = 0 ]; then
         continue
     fi
-    cat "$dir/preamble" "$dir/$id" >"$dir/run"
-    ran=$((ran + 1))
-    start=$(date +%s)
-    sh -c 'lint_tmp=$1; shift; . "$lint_tmp"' "$lint_self" "$dir/run"
-    status=$?
-    if [ "$status" -ne 0 ]; then
-        failed="$failed  $name (exit $status)
-"
+    if [ "$mode" = quick ] && [ "$quick" != 1 ]; then
+        continue
     fi
-    secs=$(($(date +%s) - start))
-    echo "lint-section-time: $name $secs"
-    times="$times$secs$tab$name
-"
-    if [ -n "$lint_times_file" ]; then
-        # The subshell keeps a redirect failure (a full disk, a file that lost its permission)
-        # inside its own stderr: the row is skipped silently, and the verdict carries on.
-        (printf '%s,%s,%s,"%s",%s,%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            "$(hostname)" "$mode" \
-            "$(printf '%s' "$name" | sed 's/"/""/g')" "$secs" "$status" \
-            >>"$lint_times_file") 2>/dev/null || :
-    fi
+    printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$lane" "$waits" "$tdir" "$name" >>"$dir/plan"
     if [ "$mode" = clippy ] && grep -q '"--clippy"' "$dir/$id"; then
-        echo "==> clippy-only mode: the rest of lint still runs before any report or merge"
         break
     fi
 done 3<"$dir/index"
 
+# Run one section in a fresh shell and record how it ended in $dir/done.<id>: exit status, whole
+# seconds of wall time, CPU seconds the section's processes used (user plus system, from `times`
+# in a subshell that has run nothing else), and the UTC time it ended. The file appears whole or
+# not at all, so a reader that sees it sees all of it.
+run_section() {
+    id=$1  # $2: the section's own build directory name, or -
+    cat "$dir/preamble" "$dir/$id" >"$dir/run.$id"
+    start=$(date +%s)
+    (
+        # A section with its own build directory gets it when the run has the cores for several
+        # cargo builds at once (see the header); otherwise every section shares target/.
+        if [ "$jobs" -ge 4 ] && [ "$2" != - ]; then
+            CARGO_TARGET_DIR="$root/target/lint-lanes/$2"
+            export CARGO_TARGET_DIR
+        fi
+        sh -c 'lint_tmp=$1; shift; . "$lint_tmp"' "$lint_self" "$dir/run.$id" 4>&-
+        status=$?
+        times >"$dir/times.$id" 2>/dev/null || :
+        exit "$status"
+    )
+    status=$?
+    secs=$(($(date +%s) - start))
+    cpu=$(sed -n 2p "$dir/times.$id" 2>/dev/null | awk '{
+        for (i = 1; i <= 2; i++) { split($i, a, "m"); t += a[1] * 60 + a[2] }
+        printf "%.1f", t }')
+    printf '%s %s %s %s\n' "$status" "$secs" "${cpu:-0.0}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        >"$dir/done.$id.tmp"
+    mv "$dir/done.$id.tmp" "$dir/done.$id"
+}
+
+ran=0
+failed=""
+times=""
+wall_start=$(date +%s)
+
+# The pass marker the pre-push hook reads (helpers/pre-push-lint-cache.sh), keyed before the first
+# section starts, in the background so the key costs the run nothing. A run of every section, or of
+# the no-cargo sections, that passes whole on a tree that did not move leaves the marker, so a push
+# that follows skips a run it would repeat. `quick` and `clippy` cover fewer sections than the hook
+# does and leave none.
+marker_key_before=""
+# Only for this tree's own script/lint: a fixture lint script (the selftests') passing says nothing
+# about the tree and must never leave a marker.
+key_pid=""
+case "$mode" in
+all | no-cargo)
+    if [ "$lint_self" = "$root/script/lint" ]; then
+        "$root/helpers/pre-push-lint-cache.sh" key >"$dir/key.before" 2>/dev/null &
+        key_pid=$!
+    fi
+    ;;
+esac
+
+# What a finished section adds to the run: the time lines, the CSV row, the failure list.
+account() {
+    id=$1
+    name=$2
+    read -r status secs cpu stamp <"$dir/done.$id"
+    ran=$((ran + 1))
+    if [ "$status" -ne 0 ]; then
+        failed="$failed  $name (exit $status)
+"
+    fi
+    echo "lint-section-time: $name $secs"
+    echo "lint-section-cpu: $name $cpu"
+    times="$times$secs$tab$cpu$tab$name
+"
+    if [ -n "$lint_times_file" ]; then
+        # The subshell keeps a redirect failure (a full disk, a file that lost its permission)
+        # inside its own stderr: the row is skipped silently, and the verdict carries on.
+        (printf '%s,%s,%s,"%s",%s,%s\n' "$stamp" \
+            "$(hostname)" "$mode" \
+            "$(printf '%s' "$name" | sed 's/"/""/g')" "$secs" "$status" \
+            >>"$lint_times_file") 2>/dev/null || :
+    fi
+}
+
+if [ "$jobs" -le 1 ]; then
+    # One at a time, in order, each section's output straight to the terminal: exactly what this
+    # script did before sections could overlap.
+    while IFS="$tab" read -r id lane waits tdir name <&3; do
+        run_section "$id" "$tdir"
+        account "$id" "$name"
+    done 3<"$dir/plan"
+else
+    # Side by side. Lanes run side by side and each runs its own sections in order; sections in no
+    # lane are the pool and start in plan order. At most $jobs sections run at any moment, counted
+    # by tokens in a FIFO. Output goes to a file per section and is replayed below in plan order,
+    # so a log reads as it always has, with each section's lines together under its `==>` line.
+    mkfifo "$dir/tokens"
+    exec 4<>"$dir/tokens"
+    n=0
+    while [ "$n" -lt "$jobs" ]; do
+        echo >&4
+        n=$((n + 1))
+    done
+
+    # Wait for every earlier section of the lanes named in $1 (comma separated, or `-`).
+    wait_for() {
+        for lane_name in $(printf '%s' "$1" | tr , ' '); do
+            [ "$lane_name" != - ] || continue
+            [ -f "$dir/lane.$lane_name" ] || continue
+            while read -r dep <&6; do
+                [ "$dep" -lt "$2" ] || break
+                while [ ! -e "$dir/done.$dep" ]; do sleep 0.1; done
+            done 6<"$dir/lane.$lane_name"
+        done
+    }
+    run_into_file() {
+        wait_for "$2" "$1"
+        run_section "$1" "$3" >"$dir/out.$1" 2>&1 </dev/null
+    }
+
+    : >"$dir/lane.-"
+    while IFS="$tab" read -r id lane waits tdir name <&3; do
+        printf '%s\n' "$id" >>"$dir/lane.$lane"
+    done 3<"$dir/plan"
+
+    # Each named lane, in the order its first section appears, so the lane that starts first
+    # (the cargo sections, which hold the build lock and take longest) gets the first tokens.
+    for lane_name in $(awk -F"$tab" '$2 != "-" && !seen[$2]++ { print $2 }' "$dir/plan"); do
+        (
+            while read -r id <&5; do
+                waits=$(awk -F"$tab" -v id="$id" '$1 == id { print $3 }' "$dir/plan")
+                tdir=$(awk -F"$tab" -v id="$id" '$1 == id { print $4 }' "$dir/plan")
+                read -r _ <&4
+                run_into_file "$id" "$waits" "$tdir"
+                echo >&4
+            done 5<"$dir/lane.$lane_name"
+        ) &
+        lane_pids="$lane_pids $!"
+    done
+    (
+        while read -r id <&5; do
+            waits=$(awk -F"$tab" -v id="$id" '$1 == id { print $3 }' "$dir/plan")
+            tdir=$(awk -F"$tab" -v id="$id" '$1 == id { print $4 }' "$dir/plan")
+            read -r _ <&4
+            (
+                run_into_file "$id" "$waits" "$tdir"
+                echo >&4
+            ) &
+        done 5<"$dir/lane.-"
+        wait
+    ) &
+    lane_pids="$lane_pids $!"
+
+    # Replay. The section at the head of the plan has its `==>` line printed as soon as it has
+    # one, so a run that hangs still names the section it hangs in, as the log readers expect
+    # (script/ci-log-baseline takes the last `==>` line).
+    while IFS="$tab" read -r id lane waits tdir name <&3; do
+        while [ ! -s "$dir/out.$id" ] && [ ! -e "$dir/done.$id" ]; do sleep 0.1; done
+        if [ -s "$dir/out.$id" ]; then
+            head -n 1 "$dir/out.$id"
+        fi
+        while [ ! -e "$dir/done.$id" ]; do sleep 0.1; done
+        tail -n +2 "$dir/out.$id"
+        account "$id" "$name"
+    done 3<"$dir/plan"
+    wait
+fi
+wall=$(($(date +%s) - wall_start))
+
+if [ "$mode" = clippy ] && [ "$ran" -gt 0 ]; then
+    echo "==> clippy-only mode: the rest of lint still runs before any report or merge"
+fi
+
 if [ "$ran" -gt 0 ]; then
-    echo "lint: seconds per section, slowest first ($ran sections)"
-    printf '%s' "$times" | sort -rn | awk -F"$tab" '{ printf "%6d  %s\n", $1, $2 }'
+    echo "lint: seconds per section, slowest first ($ran sections; wall seconds, then CPU seconds)"
+    printf '%s' "$times" | sort -rn | awk -F"$tab" '{ printf "%6d %7s  %s\n", $1, $2, $3 }'
+    printf '%s' "$times" | awk -F"$tab" -v wall="$wall" -v jobs="$jobs" '
+        { s += $1; c += $2 }
+        END { printf "lint: %d s wall, %d s of sections added up, %.0f s CPU, up to %d at once\n",
+              wall, s, c, jobs }'
 fi
 
 if [ -n "$failed" ]; then
@@ -130,3 +346,12 @@ if [ -n "$failed" ]; then
     exit 1
 fi
 echo "lint: all $ran sections passed"
+# Reached only when every section passed. Any failure to key or to write skips the marker.
+if [ -n "$key_pid" ]; then
+    wait "$key_pid" 2>/dev/null || :
+    marker_key_before=$(cat "$dir/key.before" 2>/dev/null) || marker_key_before=""
+    marker_key_after=$("$root/helpers/pre-push-lint-cache.sh" key 2>/dev/null) || marker_key_after=""
+    if [ -n "$marker_key_before" ] && [ "$marker_key_before" = "$marker_key_after" ]; then
+        "$root/helpers/pre-push-lint-cache.sh" write "$marker_key_after" >/dev/null 2>&1 || :
+    fi
+fi

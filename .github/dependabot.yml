@@ -177,11 +177,15 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "seahash"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "smallvec"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "termion"
         update-types: ["version-update:semver-major"]
       - dependency-name: "uuid"
         update-types: ["version-update:semver-major"]
       - dependency-name: "xts-mode"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zerocopy"
         update-types: ["version-update:semver-major"]
       - dependency-name: "assert_cmd"
         update-types: ["version-update:semver-major"]

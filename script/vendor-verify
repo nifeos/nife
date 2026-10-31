@@ -13,6 +13,11 @@
 # **What is proved, and how.** For each `vendor/*.pin`:
 #   1. The published .crate tarball hashes to the sha256 in the pin. A crates.io version is
 #      immutable once published, so this is a real pin; a git tag would not be, because a tag moves.
+#      A pin with `source = git` names an upstream commit that no release carries. Its `url` is a
+#      forge archive of that exact commit (it must contain the pin's full `vcs` sha, so it cannot
+#      move), and its sha256 is of the archive's UNCOMPRESSED tar stream: the compression is the
+#      forge's choice and can change without the commit changing, while the tar `git archive` makes
+#      for a commit is fixed.
 #   2. The pin's divergence patch applies to that tarball with ZERO fuzz.
 #   3. The patched tree is then byte-for-byte the tracked contents of the vendored directory.
 #
@@ -47,6 +52,7 @@ ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 
 exec python3 - "$ROOT" "${1:-}" <<'PY'
 import glob
+import gzip
 import hashlib
 import os
 import shutil
@@ -78,6 +84,11 @@ def read_pin(path):
     missing = {"name", "version", "url", "sha256", "divergence"} - set(fields)
     if missing:
         sys.exit(f"{path}: missing field(s): {', '.join(sorted(missing))}")
+    source = fields.get("source", "crates.io")
+    if source not in ("crates.io", "git"):
+        sys.exit(f"{path}: source must be crates.io or git, not {source!r}")
+    if source == "git" and (not fields.get("vcs") or fields["vcs"] not in fields["url"]):
+        sys.exit(f"{path}: a git source needs a vcs sha, and the url must contain it in full")
     return fields
 
 
@@ -85,7 +96,9 @@ def fetch(pin):
     """The tarball for this pin, hash-verified. Cached; a cache entry that fails the hash is
     discarded and refetched once, because a corrupt download should not need a human."""
     os.makedirs(cache, exist_ok=True)
-    path = os.path.join(cache, f"{pin['name']}-{pin['version']}.crate")
+    git = pin.get("source") == "git"
+    path = os.path.join(cache, f"{pin['name']}-{pin['vcs'][:12]}.tar" if git
+                        else f"{pin['name']}-{pin['version']}.crate")
     for attempt in range(2):
         if os.path.exists(path):
             digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
@@ -100,8 +113,12 @@ def fetch(pin):
             print(f"  cached tarball failed the hash, refetching")
             os.unlink(path)
         print(f"  fetching {pin['url']}")
-        with urllib.request.urlopen(pin["url"], timeout=120) as response:
+        # A named agent: gitlab's front door answers urllib's default one with 403.
+        request = urllib.request.Request(pin["url"], headers={"User-Agent": "nife-vendor-verify"})
+        with urllib.request.urlopen(request, timeout=120) as response:
             body = response.read()
+        if git:
+            body = gzip.decompress(body)
         with open(path, "wb") as f:
             f.write(body)
     raise AssertionError("unreachable")
@@ -150,7 +167,7 @@ def unified(upstream, ours):
         out.extend(difflib.unified_diff(
             before.decode().splitlines(keepends=True),
             after.decode().splitlines(keepends=True),
-            fromfile="a/" + name, tofile="b/" + name,
+            fromfile="a/" + name, tofile="b/" + name if name in ours else "/dev/null",
         ))
     return "".join(out)
 
@@ -184,18 +201,22 @@ for pin_path in pins:
     try:
         with tarfile.open(tarball) as tf:
             tf.extractall(work, filter="data")
-        tree = os.path.join(work, f"{pin['name']}-{pin['version']}")
+        with tarfile.open(tarball) as tf:
+            top = tf.getnames()[0].split("/", 1)[0]
+        tree = os.path.join(work, top)
 
         patch_text = open(patch_path).read()
         if patch_text.strip():
+            # -E: a file the patch empties is removed (a divergence may delete an upstream file).
             # -F0: no fuzz. A hunk that only applies with fuzz means the context moved, which is
             # exactly the drift we want to hear about rather than absorb.
             applied = subprocess.run(
-                ["patch", "-p1", "-F0", "-s"],
+                ["patch", "-p1", "-F0", "-E", "-s"],
                 cwd=tree, input=patch_text, capture_output=True, text=True,
             )
             if applied.returncode != 0:
-                print(f"  FAIL: {pin['divergence']} does not apply to the published {pin['version']}")
+                print(f"  FAIL: {pin['divergence']} does not apply to the pinned upstream "
+                      f"{pin['version']}")
                 print((applied.stdout + applied.stderr).rstrip())
                 failed = True
                 continue
@@ -217,7 +238,7 @@ for pin_path in pins:
                 problems.append(f"differs from upstream+patches: {name}")
 
         if problems:
-            print(f"  FAIL: vendor/{pin['name']} is not the published {pin['version']} plus "
+            print(f"  FAIL: vendor/{pin['name']} is not the pinned upstream {pin['version']} plus "
                   f"{pin['divergence']}")
             for problem in problems:
                 print(f"    - {problem}")
@@ -225,7 +246,7 @@ for pin_path in pins:
             print("  --write-patch) or something edited a vendored tree without saying so.")
             failed = True
         else:
-            print(f"  ok: {len(ours)} tracked files are the published tarball "
+            print(f"  ok: {len(ours)} tracked files are the pinned upstream archive "
                   f"(sha256 {pin['sha256'][:12]}...) plus {pin['divergence']}")
     finally:
         shutil.rmtree(work, ignore_errors=True)

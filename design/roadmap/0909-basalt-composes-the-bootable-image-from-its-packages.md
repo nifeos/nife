@@ -96,7 +96,7 @@ and basalt's existing repository, source-archive and publish path.
      install uses. It tests them against the package's entry with `approval_file::File::check`, and
      refuses the composition naming every extra grant of the package.
    - **The table waits on milestone 990** (the base image's first installed-programs table). The
-     first table lives as files under `activation/` on the launch volume, currently RedoxFS, with no
+     first table lives as files under `activation/` on the RedoxFS launch volume, with no
      separate seed image (ruled 2026-10-30 UTC on #2894). What the first generation holds, and what
      measured boot needs from it, are in
      [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md).
@@ -125,7 +125,7 @@ than replaced.
 
 - **Milestone 990.** Item 3's table half, where a composed image keeps its first generation, waits
   on milestone 990 (the base image's first installed-programs table), which sits on the launch
-  volume, currently RedoxFS.
+  RedoxFS launch volume.
 - **Done.** `nifeos/basalt#50` carried item 4, the composed boot, into basalt's `packages.yml`.
 - **Outstanding.** `script/swish-check`'s rows have not run against a composed image. They are the
   next piece after item 4, and until then a composed image proves it boots to the prompt only.

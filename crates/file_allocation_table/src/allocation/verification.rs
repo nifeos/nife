@@ -17,9 +17,9 @@ use super::*;
 const MOST: usize = 4;
 
 /// A table of `clusters` data clusters held as entries.
-struct Model {
-    clusters: u32,
-    entries: [TableEntry; MOST],
+pub(crate) struct Model {
+    pub(crate) clusters: u32,
+    pub(crate) entries: [TableEntry; MOST],
 }
 
 impl Links for Model {
@@ -44,6 +44,16 @@ impl LinksMut for Model {
         );
         self.entries[(cluster - 2) as usize] = entry;
         Ok(())
+    }
+
+    fn append(&mut self, last: Option<u32>) -> Result<Option<u32>, ChainError<()>> {
+        let Some(cluster) = allocate(self, 2)? else {
+            return Ok(None);
+        };
+        if let Some(last) = last {
+            self.set_table_entry(last, TableEntry::Next(cluster))?;
+        }
+        Ok(Some(cluster))
     }
 }
 
@@ -179,5 +189,14 @@ fn a_cut_keeps_exactly_the_head_of_the_chain() {
         let kept = whole.min(keep);
         assert_eq!(freed, whole - kept);
         assert_eq!(length(&mut model, first), Some(kept));
+    }
+}
+
+/// A model of `clusters` clusters that are all free.
+pub(crate) fn free_model(clusters: u32) -> Model {
+    assert!(clusters as usize <= MOST);
+    Model {
+        clusters,
+        entries: [TableEntry::Free; MOST],
     }
 }
