@@ -3,8 +3,11 @@
 //!
 //! Name: ratified 2026-10-25 (#2720).
 
+use crate::boot_sector::FileAllocationTableType;
 use crate::efi_system_partition::{BOOT_CLUSTER, EFI_CLUSTER, FILE_CLUSTER};
+use crate::format::{Geometry, GeometryError, put16, put32, write_fs_info};
 use crate::long_name::{self, LongName};
+use crate::sector::SectorSize;
 
 /// A FAT sector, and the unit every one of this crate's outputs is measured in.
 ///
@@ -133,6 +136,7 @@ pub struct VolumeLayout {
     clusters: u32,
     file_len: u32,
     file_clusters: u32,
+    geometry: Geometry,
     volume_id: u32,
     name: [u8; 11],
     /// The long name written ahead of `name`, which is then its alias; `None` for an 8.3 name.
@@ -171,34 +175,19 @@ impl VolumeLayout {
         };
         let total_sectors = total_sectors as u32;
 
-        // Microsoft's own sizing arithmetic (`fatgen103`, "Determining FAT type"), which over-sizes
-        // the table slightly rather than solving the circular dependency exactly. Writing it the
-        // spec's way rather than a tighter way of our own is deliberate: the number it produces is
-        // the number every other tool produces.
-        let after_reserved = total_sectors
-            .checked_sub(RESERVED_SECTORS)
-            .ok_or(LayoutError::NotFat32)?;
-        let per_fat_sector = (256 * CLUSTER_SECTORS + TABLE_COUNT) / 2;
-        // **Rounded up until the data area starts on a cluster boundary**, as every modern
-        // `mkfs.vfat` does: the installer writes whole 4096-byte `filesystem_contract::blk`
-        // blocks, so a cluster can only start where a block does, and the specification's sizing
-        // leaves that to chance (`32 + 2 * 1023` is not a multiple of eight). Unaligned, a 512 MiB
-        // volume put its file six sectors early on disk.
-        // `the_data_area_begins_on_a_cluster_boundary` checks it.
-        let fat_sectors = after_reserved
-            .div_ceil(per_fat_sector)
-            .next_multiple_of(CLUSTER_SECTORS / TABLE_COUNT);
-
-        let data_sectors = after_reserved
-            .checked_sub(TABLE_COUNT * fat_sectors)
-            .ok_or(LayoutError::NotFat32)?;
-        let clusters = data_sectors / CLUSTER_SECTORS;
-        if clusters < FAT32_MINIMUM_CLUSTERS {
-            return Err(LayoutError::NotFat32);
-        }
-        if clusters > MAXIMUM_CLUSTER - 2 {
-            return Err(LayoutError::TooLarge);
-        }
+        let geometry = Geometry::new(
+            FileAllocationTableType::Fat32,
+            SectorSize::Bytes512,
+            CLUSTER_SECTORS,
+            total_sectors,
+        )
+        .map_err(|error| match error {
+            GeometryError::WrongType(clusters) if clusters > MAXIMUM_CLUSTER - 2 => {
+                LayoutError::TooLarge
+            }
+            _ => LayoutError::NotFat32,
+        })?;
+        let (fat_sectors, clusters) = (geometry.table_sectors, geometry.clusters);
 
         if file_len > u32::MAX as u64 {
             return Err(LayoutError::FileTooBig);
@@ -217,6 +206,7 @@ impl VolumeLayout {
             clusters,
             file_len,
             file_clusters,
+            geometry,
             volume_id,
             name,
             long_name,
@@ -330,50 +320,17 @@ impl VolumeLayout {
         true
     }
 
-    /// The BPB and the boot signature. Offsets are the specification's, in its order.
+    /// The BPB and the boot signature, written by the general format's builder.
     fn boot_sector(&self, out: &mut [u8]) {
-        // A jump every FAT driver expects to find, over the BPB. Not executed by anything here:
-        // this volume is started by the firmware through its own filesystem driver, never by a
-        // legacy BIOS reading sector 0.
-        out[0..3].copy_from_slice(&[0xEB, 0x58, 0x90]);
-        out[3..11].copy_from_slice(b"MSWIN4.1"); // BS_OEMName; the spec's own recommendation
-        put16(out, 11, SECTOR_BYTES as u16); // BPB_BytsPerSec
-        out[13] = CLUSTER_SECTORS as u8; // BPB_SecPerClus
-        put16(out, 14, RESERVED_SECTORS as u16); // BPB_RsvdSecCnt
-        out[16] = TABLE_COUNT as u8; // BPB_NumFATs
-        put16(out, 17, 0); // BPB_RootEntCnt, zero on FAT32
-        put16(out, 19, 0); // BPB_TotSec16, zero when the 32-bit field is used
-        out[21] = 0xF8; // BPB_Media, "fixed disk"
-        put16(out, 22, 0); // BPB_FATSz16, zero on FAT32
-        put16(out, 24, 63); // BPB_SecPerTrk, a geometry nothing has had since 2005
-        put16(out, 26, 255); // BPB_NumHeads, likewise
-        put32(out, 28, self.hidden_sectors); // BPB_HiddSec
-        put32(out, 32, self.total_sectors); // BPB_TotSec32
-        put32(out, 36, self.fat_sectors); // BPB_FATSz32
-        put16(out, 40, 0); // BPB_ExtFlags: both FATs live, mirrored
-        put16(out, 42, 0); // BPB_FSVer
-        put32(out, 44, ROOT_CLUSTER); // BPB_RootClus
-        put16(out, 48, 1); // BPB_FSInfo
-        put16(out, 50, 6); // BPB_BkBootSec
-        // 52..64 reserved, zero.
-        out[64] = 0x80; // BS_DrvNum
-        out[66] = 0x29; // BS_BootSig, which is what makes the three fields below meaningful
-        put32(out, 67, self.volume_id); // BS_VolID
-        out[71..82].copy_from_slice(b"NIFE       "); // BS_VolLab
-        out[82..90].copy_from_slice(b"FAT32   "); // BS_FilSysType, informational and still checked
-        out[510] = 0x55;
-        out[511] = 0xAA;
+        self.geometry
+            .write_boot_sector(self.volume_id, b"NIFE       ", self.hidden_sectors, out);
     }
 
     /// `FSInfo`, whose two counts are hints a driver is allowed to ignore or disbelieve.
     fn fs_info(&self, out: &mut [u8]) {
-        put32(out, 0, 0x4161_5252); // FSI_LeadSig, "RRaA"
-        put32(out, 484, 0x6141_7272); // `FSI_StrucSig`, "rrAa"
         // Three directories and the file. Written once; see this crate's BUGS.
         let used = (FILE_CLUSTER - ROOT_CLUSTER) + self.file_clusters;
-        put32(out, 488, self.clusters - used); // FSI_Free_Count
-        put32(out, 492, FILE_CLUSTER + self.file_clusters); // FSI_Nxt_Free
-        put32(out, 508, 0xAA55_0000); // FSI_TrailSig
+        write_fs_info(self.clusters - used, FILE_CLUSTER + self.file_clusters, out);
     }
 
     /// One sector of the table, `within` sectors into a copy of it.
@@ -492,16 +449,6 @@ fn short_name(name: &str) -> Option<[u8; 11]> {
     out[..base.len()].copy_from_slice(base);
     out[8..8 + ext.len()].copy_from_slice(ext);
     Some(out)
-}
-
-/// A little-endian `u16` at `at`.
-fn put16(out: &mut [u8], at: usize, value: u16) {
-    out[at..at + 2].copy_from_slice(&value.to_le_bytes());
-}
-
-/// A little-endian `u32` at `at`.
-fn put32(out: &mut [u8], at: usize, value: u32) {
-    out[at..at + 4].copy_from_slice(&value.to_le_bytes());
 }
 
 #[cfg(test)]

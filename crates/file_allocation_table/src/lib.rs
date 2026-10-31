@@ -34,11 +34,11 @@
 //! [`Volume::remove_directory`] and [`Volume::rename`] change the tree. A full directory grows by a
 //! cluster, except the fixed root of FAT12 and FAT16. Each returns a [`WriteError`].
 //!
-//! The `mkfs` lays out one shape: a FAT32 EFI system partition holding one boot file at
-//! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT
-//! long-name entries ahead of a `~1` alias (see `long_name.rs`). A volume below
-//! [`FAT32_MINIMUM_CLUSTERS`] is refused, because the specification types a volume by its data
-//! clusters, and the data area is rounded up to start on a cluster boundary.
+//! [`Format`] lays out an empty FAT12, FAT16 or FAT32 volume of any size, as sectors a caller
+//! writes. [`VolumeLayout`] lays out one shape through the same sizing and boot sector: a FAT32
+//! EFI system partition holding one boot file at `\EFI\BOOT\<name>`, with VFAT long-name entries
+//! ahead of a `~1` alias when the name is not 8.3. A volume below [`FAT32_MINIMUM_CLUSTERS`] is
+//! refused, because the specification types a volume by its data clusters.
 
 //! # BUGS
 //!
@@ -89,6 +89,7 @@ pub mod efi_system_partition;
 mod file;
 mod file_write;
 mod file_writer;
+mod format;
 mod fs_info;
 mod long_name;
 mod long_name_assembly;
@@ -106,6 +107,7 @@ pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortE
 pub use file::{FileReadError, FileReader, NotAFile};
 pub use file_write::WriteError;
 pub use file_writer::FileWriter;
+pub use format::{Format, FormatError, FormatOptions};
 pub use fs_info::{FsInfo, FsInfoError};
 pub use long_name_assembly::{LongFileName, LongNameError};
 pub use lookup::LookupError;

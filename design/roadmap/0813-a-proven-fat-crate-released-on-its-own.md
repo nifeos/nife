@@ -64,10 +64,10 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
    [stage-6-allocation-and-write.md](0813-a-proven-fat-crate-released-on-its-own/stage-6-allocation-and-write.md)
    has what landed.
 7. Make and remove directories, rename, and long-name creation with alias numbering. Built:
-   [stage-7-directories-and-long-names.md](0813-a-proven-fat-crate-released-on-its-own/stage-7-directories-and-long-names.md)
-   has what landed.
+   [stage-7-directories-and-long-names.md](0813-a-proven-fat-crate-released-on-its-own/stage-7-directories-and-long-names.md).
 8. The general format for FAT12, FAT16 and FAT32, folding the `mkfs` in, with FAT12 and FAT16
-   oracle images.
+   oracle images. Built:
+   [stage-8-the-general-format.md](0813-a-proven-fat-crate-released-on-its-own/stage-8-the-general-format.md).
 9. Timestamps, attributes and the label, then `script/crate-standalone` and the README for release.
 
 ## What exists, checked 2026-10-07 (UTC)
@@ -153,8 +153,9 @@ carries a machine-replayable falsification record) and `script/falsifications` r
 | No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run, partition table) takes a symbolic sector and returns a value or an error | boot sector and BPB: `boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`, `the_fat_type_is_the_cluster_counts`, `the_table_has_an_entry_for_every_cluster`, `only_a_data_cluster_has_sectors`; FAT entry: `table::verification::every_entry_lies_inside_the_table`, `an_entry_decodes_by_its_markers`; directory entry: `directory::verification::every_slot_parses_as_its_bytes_say`, `a_directory_reads_only_its_own_sectors`; long-name run: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed`; partition table: `master_boot_record::verification::every_sector_parses_to_a_sound_table_or_an_error`; FSInfo: `fs_info::verification::every_sector_parses_to_hints_inside_the_volume` |
 | Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | `reader::verification::no_chain_walk_outlasts_the_volume`, on volumes of one to eight clusters; file reads: `file::verification::a_file_read_stays_inside_its_size_and_its_clusters`; partitions: `master_boot_record::verification::a_partition_device_reads_only_its_partition` |
 | A table write changes only its entry, allocation takes one free cluster, a release never frees a bad or reserved cluster, a cut keeps exactly the head of the chain, and an `FSInfo` store changes only its two hints | `table::verification::a_stored_entry_reads_back_and_disturbs_nothing_else`, `encoding_inverts_decoding`; `allocation::verification::allocation_takes_one_free_cluster_and_nothing_else`, `a_release_frees_only_its_own_chain`, `a_cut_keeps_exactly_the_head_of_the_chain`; `fs_info::verification::a_store_changes_only_the_two_hints` |
+| A format reads back as itself: its boot sector parses to the same type, clusters, table size and data start | `format::verification::a_geometry_parses_back_to_itself` |
 | Write then read round-trips on a small symbolic volume, byte for byte, with the chain as long as the size needs; the directory entry is the oracle tests' | `file_write::verification::a_partial_sector_write_keeps_the_head_and_zeroes_the_slack`, `a_write_extends_the_chain_to_the_size_and_stays_inside_it` |
-| Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, every numbered alias carries its number, the run finder is first-fit, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`, `every_numbered_alias_carries_its_number`; `directory_write::verification::the_run_finder_returns_the_first_run_of_free_slots`; reader: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed` |
+| Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, every alias carries its number, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`, `every_numbered_alias_carries_its_number`; `directory_write::verification::the_run_finder_returns_the_first_run_of_free_slots`; reader: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed` |
 
 Kani bounds its inputs, so whole-image coverage comes from composing per-sector proofs, with
 `script/fuzz` over whole images as the backstop. The block states that bound rather than claiming
@@ -226,7 +227,7 @@ falsification patch fails its harness.
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn
   handoff or nife error enum in a public signature. A reviewer judges this; no script can.
-  The sector interfaces take a sector size and an index.
+ 
 
 ## Exit
 
@@ -286,8 +287,8 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** Stages 8 and 9. Checked 2026-10-31 (UTC): the crate reads and writes files,
-  directories and long names, and holds the `mkfs` apart from the general format.
+- **Outstanding.** Stage 9. Checked 2026-10-31 (UTC): the crate reads, writes and formats; it
+  stamps no time and sets no attribute.
 
 ## BUGS
 
