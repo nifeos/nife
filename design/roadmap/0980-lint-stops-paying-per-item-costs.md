@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: lint-stops-paying-per-item-costs
 raised: 2026-10-29
 milestone_dependencies: none
@@ -79,7 +79,10 @@ Each part is one lane, ordered by seconds saved per hour of work.
    15 s. No change to what the check refuses.
 2. Stop running a selftest twice. Delete the duplicate `verify-parallel-selftest.sh` call from the
    `script/verify --parallel` section, and cut the fixed `sleep 4.5` in the slot selftest to what its
-   assertions need. About 8 s.
+   assertions need. About 8 s. Built: the second call is gone. The slot selftest's scratch copy of `heavy_slot.py` polls every
+   0.2 s instead of 2 s, and a check fails if the source stops spelling the constant that way. The
+   stage then waits for the waiting message and four polls. The two sections went from 16 s and 8 to
+   9 s to 11 s and 0 s on a loaded Linux host.
 3. One lexer pass in `name_crossings.py`. Memoize `strip`, `_without_attributes` and `encloser` per
    file, and replace the character-by-character scan with a compiled pattern. About 4 s.
 4. One interpreter in the dead-code section. Read the `.rs` files in Python instead of spawning `awk`
