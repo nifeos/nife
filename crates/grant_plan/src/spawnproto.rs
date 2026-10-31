@@ -711,6 +711,20 @@ pub const fn stored_messages(len: u64) -> u64 {
     len.div_ceil(24)
 }
 
+/// **Put one message of the stored records back into `records`** (milestone 911): the inverse of
+/// [`stored_words`]. The words land at `at`, little-endian, and whatever lies past the end of
+/// `records` is the tail's zero padding and is dropped. A message whose later words start wholly
+/// past the end (a 460-byte record, second word at 464) therefore writes nothing for them.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by maintainer/remove-rmle.
+pub fn put_stored_words(records: &mut [u8], at: usize, words: (u64, u64, u64)) {
+    for (k, word) in [words.0, words.1, words.2].into_iter().enumerate() {
+        let end = (at + 8 * k + 8).min(records.len());
+        let start = (at + 8 * k).min(end);
+        records[start..end].copy_from_slice(&word.to_le_bytes()[..end - start]);
+    }
+}
+
 /// **One message of the stored records an `Approve`'s reply carries back** (milestone 911): the
 /// bytes at `at` of `records`, little-endian words, zero-padded at the tail. The console's
 /// re-approval diffs its file against these, which is why they travel: the store is the
@@ -1370,6 +1384,21 @@ mod tests {
         assert_eq!(stored_messages(1), 1);
         assert_eq!(stored_messages(24), 1);
         assert_eq!(stored_messages(25), 2);
+    }
+
+    /// **A stored record comes back whole at any length** (milestone 911): 460 bytes ends four
+    /// bytes into a message, so the second and third words start past the end, which once
+    /// panicked `jig`; 456 is an exact multiple of the 24-byte message; the rest are the edges.
+    #[test]
+    fn stored_records_come_back_at_every_length() {
+        for len in [0usize, 1, 7, 8, 9, 23, 24, 25, 32, 48, 455, 456, 457, 460, 463, 464, 480] {
+            let records: alloc::vec::Vec<u8> = (0..len).map(|i| (i % 251) as u8 + 1).collect();
+            let mut back = alloc::vec![0u8; len];
+            for m in 0..stored_messages(len as u64) as usize {
+                put_stored_words(&mut back, m * 24, stored_words(&records, m * 24));
+            }
+            assert_eq!(back, records, "length {len}");
+        }
     }
 
     #[test]
