@@ -18,11 +18,10 @@ The fork put to him offered shipped path or coverage gap, with both readings sta
 accepts the shipped-path reading. The facts he ruled on sit below: the mechanism, its reachability
 through ordinary capabilities, and the lane's independent reproduction on all three ISAs.
 
-The lane proposed the fix milestone in
-[`design/roadmap/0969-no-frame-is-writable-and-executable-in-one-space.md`](../design/roadmap/0969-no-frame-is-writable-and-executable-in-one-space.md);
-the integrator mints its number, and the refusal's exact shape waits for calef. Until the fix
-lands, row 11 of [`notes/confinement-claims.md`](confinement-claims.md) reads falsified a fourth
-time, with the replayable patch beside the witness.
+The fix is milestone 969 (no frame is writable and executable in one address space),
+[`design/roadmap/0969-no-frame-is-writable-and-executable-in-one-space.md`](../design/roadmap/0969-no-frame-is-writable-and-executable-in-one-space.md).
+Row 11 of [`notes/confinement-claims.md`](confinement-claims.md) states what holds with the fix,
+and its limit.
 
 ## The escape, stated first
 
@@ -36,7 +35,7 @@ row cites survive; the claim as published, "no page is both writable and executa
 The reviewer's witness is
 `system_tests::user::tenth_pass_map_gate_tests::one_physical_page_is_never_writable_here_and_executable_there`,
 committed in `system_tests/src/user/tenth_pass_map_gate_tests.rs` beside its two boundary tests,
-and opt-in under `NIFE_ESCAPE_WITNESS=1` so the red test stays out of the default suite. The
+and opt-in at the pass's head so the red test stayed out of the default suite. The
 reviewer booted it red on aarch64 at its head. The lane replayed it red the same day on all three
 architectures: aarch64 (writable at 0xffffffffe000, executable at 0xfffffffff000), riscv64
 (0x3fffffe000, 0x3ffffff000), and x86_64 (0x7fffffffe000, 0x7ffffffff000). The alias lives in the
@@ -44,10 +43,10 @@ shared dispatcher, so one fix covers every ISA.
 
 The falsification patch is
 `system_tests/falsifications/user.tenth_pass_map_gate_tests.one_physical_page_is_never_writable_here_and_executable_there.patch`.
-The defect is in the kernel already, so the patch introduces none: it turns the witness's opt-in
-on, and the sweep replays the escape as it stands, red at the witness assertion on all three
-architectures. No fix exists yet, so the witness stands as the failing test committed before any
-fix, as the block's Done-means asks.
+At the pass's head the patch turned the witness's opt-in on and replayed the escape as it stood,
+red at the witness assertion on all three architectures, so the witness was the failing test
+committed before any fix, as the block's Done-means asks. With the fix in, the witness runs in the
+default suite and the patch removes the fix.
 
 ## The launch, and the key ruling
 
