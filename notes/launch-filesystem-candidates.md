@@ -141,7 +141,7 @@ ext4 has a permissive Rust writer. On 2026-10-31 (UTC), `rsext4` 0.9.2 (Starry-O
 `no_std`) built unchanged for the three nife targets. Every write it made on `mkfs.ext4` images
 with `metadata_csum` on passed `e2fsck -fn`: a file, a directory, a symlink, a hard link, a rename
 and an extended attribute. `rust-fs-ext4` 0.8.0 passed on ext4 too, and `ext4_rs` 1.3.3 failed. The
-kernel's ext4 and e2fsprogs stay GPL-2.0 and LGPL-2.1, so they serve as the oracle under §136. F2FS,
+kernel's ext4 and e2fsprogs stay GPL-2.0 and LGPL-2.1, so they serve as the oracle under §136 (a mature foreign implementation earns its place as an oracle, not as a dependency). F2FS,
 XFS, bcachefs and nilfs2 are GPL-2.0 with no Rust implementation, and none is a launch candidate.
 
 ## The four routes, compared
