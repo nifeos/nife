@@ -346,26 +346,37 @@ fn cell(
 /// byte after the maximum value belongs to the header rather than to the pixels. Getting that one
 /// byte wrong shifts the whole image by a third of a pixel, which looks like a font bug.
 fn parse_pixmap(ppm: &[u8]) -> Result<(usize, usize, &[u8]), ReadError> {
-    // Every skip below counts a run with an iterator and adds the count once, so no loop here
-    // carries a cursor increment that a mutant could break into a hang (notes/mutation-testing.md,
-    // "delete the loop").
-    let run = |from: usize, keep: &dyn Fn(u8) -> bool| -> usize {
+    // Both skips count a run of bytes with one pass of an iterator and add the count once, so no
+    // loop here carries a cursor that a mutant could stop moving and turn into a hang
+    // (notes/mutation-testing.md, "delete the loop"). The first skips whitespace and `#` comments
+    // together: a comment runs to the next newline.
+    let blank_run = |from: usize| -> usize {
+        let mut in_comment = false;
         ppm.get(from..)
             .unwrap_or(&[])
             .iter()
-            .take_while(|b| keep(**b))
+            .take_while(|&&b| {
+                if in_comment {
+                    in_comment = b != b'\n';
+                    true
+                } else if b == b'#' {
+                    in_comment = true;
+                    true
+                } else {
+                    b.is_ascii_whitespace()
+                }
+            })
             .count()
     };
     let token = |at: &mut usize| -> Option<usize> {
-        loop {
-            *at += run(*at, &|b| b.is_ascii_whitespace());
-            if ppm.get(*at) != Some(&b'#') {
-                break;
-            }
-            *at += run(*at, &|b| b != b'\n');
-        }
+        *at += blank_run(*at);
         let start = *at;
-        *at += run(*at, &|b| !b.is_ascii_whitespace() && b != b'#');
+        *at += ppm
+            .get(start..)
+            .unwrap_or(&[])
+            .iter()
+            .take_while(|&&b| !b.is_ascii_whitespace() && b != b'#')
+            .count();
         (start != *at).then_some(start)?;
         std::str::from_utf8(&ppm[start..*at]).ok()?.parse().ok()
     };
