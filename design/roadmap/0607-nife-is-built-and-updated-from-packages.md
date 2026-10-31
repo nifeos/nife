@@ -66,7 +66,8 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
    package `jig` installs from basalt's index, the kernel included).
 2. The kernel crate stops carrying the userspace bring-up and the system tests (decided; in the
    lane `milestone/609-system-tests-leave-the-kernel`).
-3. A contract never links the runtime: `supervision_contract` and `hot_swap_contract` (waits on nothing).
+3. A contract never links the runtime: `supervision_contract` and `hot_swap_contract` (landed
+   2026-10-29 UTC; the runtime halves are `crates/process_builder` and `crates/hot_swap_server`).
 4. A third party builds `greeting` with no clone of this repository (S2 and the ABI revision's note field ruled; waits on nothing).
 5. An OS update is a set of packages that lands through a slot (U4 ruled). Item 1
    (milestone 909 (basalt composes the bootable image from its packages)) landed 2026-10-28 UTC,

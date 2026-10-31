@@ -11,9 +11,7 @@ workspace = true
 [dependencies]
 # The user address-space map (milestone 206 (a program image has under 896 KiB)): every fixed window here is checked against its band.
 address_space_map = { version = "0.1.0", path = "../address_space_map" }
-abi = { version = "0.1.0", path = "../abi" }
 # The capability half of this contract (milestone 23). A `*_proto` crate declares what two
 # programs agree on; what a component must HOLD is the other half of that agreement, and it lives
 # beside the wire format rather than in whichever operator happens to start one.
 capability_plan = { version = "0.1.0", path = "../capability_plan" }
-user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }
