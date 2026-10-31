@@ -11,7 +11,7 @@
 //! # The layout
 //! ```text
 //!   offset  size  field
-//!   0       8     MAGIC, b"nifargv1"
+//!   0       8     MAGIC, b"nifeargv"
 //!   8       4     count, little-endian u32: how many arguments
 //!   12      4     total, little-endian u32: how many bytes of records follow
 //!   16      ...   count records, each a little-endian u32 length and then that many bytes
@@ -49,21 +49,12 @@ pub const HEADER_BYTES: usize = 16;
 pub const CAPACITY: usize = PAGE_BYTES - HEADER_BYTES;
 
 /// The first eight bytes of an assembled page. Provisional, with the rest of the layout.
-/// The digits are the page layout's version ([`VERSION`]), by the shared-page convention the
-/// numbered magics here already follow (`CLOCKv01`, `MACHSTA1`); a bump re-mints both in one
-/// change. Amended in place 2026-10-29 (UTC): the unnumbered `"nifeargv"` gained its version
-/// digits when milestone 956 (the linked interfaces carry checkable versions) put a version beside
-/// every format the first cut links. Nothing outside this tree had read an argv page; the writer
-/// (the shell) and every reader rebuilt together.
-///
-/// # Amendments
-///
-/// - 2026-10-29: the magic gained the version digits, `"nifeargv"` to `"nifargv1"`, version 1;
-///   layout unchanged. No migration: every reader and writer is in this tree.
-pub const MAGIC: [u8; 8] = *b"nifargv1";
+pub const MAGIC: [u8; 8] = *b"nifeargv";
 
-/// The page layout's version, the digits [`MAGIC`] carries. A break bumps this and re-mints the
-/// magic in the same change, with a dated amendment above.
+/// The page layout's version. The magic stays unnumbered because basalt's published programs read
+/// an argv page before this tree builds them: a break mints the digits into [`MAGIC`] only when
+/// basalt's archive rebuilds, in the same coordinated change, so this constant records the version
+/// the layout now carries rather than a digit string a reader can see.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
