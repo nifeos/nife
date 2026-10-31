@@ -27,6 +27,14 @@
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
+/// This interface's identity in a program's `INTERFACES` note: 2, naming the address-space layout constants. The number
+/// is the crate's to keep across a rename and no other interface ever reuses it; `script/lint`
+/// holds the ids of every crate apart. A program declares the pair of this id and [`VERSION`]
+/// (milestone 956 (the linked interfaces carry checkable versions)).
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+pub const INTERFACE_ID: u64 = 2;
+
 /// The page size every loader maps in, on all three architectures.
 pub const PAGE: u64 = 4096;
 
