@@ -66,13 +66,13 @@ read-only at one address and read-write at another is how a program keeps a read
 own buffer. A frame mapped twice with the same permissions is how a ring buffer makes its end wrap
 to its start.
 
-### Recommendation: (a) refuse only the writable-and-executable pair
+### Ruled 2026-10-31 (UTC): (a) refuse only the writable-and-executable pair
 
 The kernel refuses a new writable mapping when the space maps the frame executable anywhere,
 and a new executable mapping when the space maps it writable anywhere. "Writable" means what
 `Flags::is_writable` says, which covers `user_data`, `user_device` and `user_write_combining`.
 
-- (a) The W and X pair only. Recommended. It refuses exactly what the claim forbids and nothing a
+- (a) The W and X pair only. Ruled. It refuses exactly what the claim forbids and nothing a
   program could want.
 - (b) Any difference in flags, the rule the block's title states. It refuses read-only beside
   read-write, and read-only beside code, neither of which defeats W^X. Its one real argument is the mismatched memory types Arm warns against. That cannot arise here: a `DeviceFrame` and a

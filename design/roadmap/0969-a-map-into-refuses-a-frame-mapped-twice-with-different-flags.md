@@ -25,9 +25,9 @@ Kani proofs the row cites survive; the claim as published does not. The pass's n
 falsification, and the replayable patch sits beside
 `system_tests/src/user/tenth_pass_map_gate_tests.rs`.
 
-The fix lives in the mapping hold, in `MappingHold::record_mapping` (ruled 2026-10-31 UTC). It
-refuses a second mapping of a frame the space already maps when the flags would complete a
-writable-and-executable pair, or differ at all if question 1 rules that way. `record_mapping` is
+The fix lives in the mapping hold, in `MappingHold::record_mapping` (ruled 2026-10-31 UTC). It refuses a second mapping of a frame the space already maps only when the frame would be
+writable through one mapping and executable through another (ruled 2026-10-31 UTC). Other
+differences in flags, such as read-only beside read-write, pass. `record_mapping` is
 the one function every path reaches: `MAP_INTO`, `PageFrame::MAP`, `MemoryRegion::MAP` and the
 kernel's loaders. Every path files its record before the page-table entry goes in, as
 `MappingHold::retype_table` already does, and forgets the record if the map fails, so no path
@@ -43,18 +43,18 @@ writes code through a writable mapping in its scratch, then maps the frame as co
 What is open is whether the writable side may outlive the child's start. The mapping log records
 every mapping of a frame in any space, so a check there could see it.
 
-Two rulings remain before the lane starts. The first is the refusal's shape: any flag difference,
-or only the writable-and-executable pair. The second is whether claim 11 covers the cross-space
-alias, and if so what the fix refuses there. An architect has ruled the check's home: the mapping hold. Each question, with its background, options, prior art, costs and an example on the
+One ruling remains before the lane starts: whether claim 11 covers the cross-space alias, and if
+so what the fix refuses there. An architect has ruled the check's home (the mapping hold) and the
+refusal's width (the writable-and-executable pair only). Each question, with its background, options, prior art, costs and an example on the
 tenth pass's reproduction, is in
 [`the-rulings-the-alias-refusal-waits-on`](proposals/the-rulings-the-alias-refusal-waits-on.md).
-The status stays NOT-STARTED until an architect rules both.
+The status stays NOT-STARTED until an architect rules it.
 
 ## Index row
 
 `MAP_INTO` never refuses a frame the space already maps. `MAP_RW` at one `va` and `MAP_CODE` at
 another leave every page-table leaf honest while the physical page is both writable and executable.
-That defeats W^X by alias on a shipped path. The fix refuses a second mapping of a frame the space
-already maps when the flags would differ, in `MappingHold::record_mapping`, which every mapping
+That defeats W^X by alias on a shipped path. The fix refuses a second mapping that would leave a frame writable through one mapping and
+executable through another, in `MappingHold::record_mapping`, which every mapping
 path reaches. It also lets the pass's witness
 join the default suite on all three architectures.
