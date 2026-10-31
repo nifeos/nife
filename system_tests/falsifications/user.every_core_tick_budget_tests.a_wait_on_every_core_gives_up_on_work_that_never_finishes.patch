@@ -1,0 +1,28 @@
+Falsifies `system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect is `EveryCoreTickBudget::is_expired` ignoring the ticks, so a wait ends only on its
+backstop. A real hang on a machine whose cores all run would then be reported after 20 s of the
+counter instead of two seconds of ticks on every core, and the report would blame the host.
+
+Expected to fail: `assert!(!budget.is_past_backstop(), "every core was running, so the ticks
+should have ended the wait: {budget}")`, with about 20000 ms of the counter and "(the backstop)".
+Confirmed red on 2026-10-31 (UTC) on x86_64 at two cores with `cargo xtask test --arch x86_64
+--test a_wait_on_every_core_gives_up`: "20000 ms of the counter (the backstop); ticks taken of 200
+on each core: core 0 1996 core 1 1935".
+
+diff --git a/kernel/src/testing.rs b/kernel/src/testing.rs
+index d756010c0..ba13a5425 100644
+--- a/kernel/src/testing.rs
++++ b/kernel/src/testing.rs
+@@ -717,7 +717,8 @@ impl EveryCoreTickBudget {
+             self.taken[c] = Self::ticks_on(c).wrapping_sub(self.start[c]);
+             every_core &= self.taken[c] >= self.ticks;
+         }
+-        every_core || self.is_past_backstop()
++        let _ = every_core;
++        self.is_past_backstop()
+     }
+ 
+     /// Did the last [`is_expired`](Self::is_expired) sample find the backstop passed? A wait that

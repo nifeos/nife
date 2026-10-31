@@ -32,11 +32,18 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use abi::Error;
 
-use super::wait_for;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Capability, Object, Rights};
 use crate::sched::{self, RendezvousId};
+use crate::testing::wait_on_every_core;
 use crate::thread::{State, ThreadId, Wait, WaitRole};
+
+/// [`wait_on_every_core`] for a site whose message has nothing to add to it. An actor's work may sit
+/// on another core, which the host can deschedule while this one runs. See
+/// notes/kernel-test-harness.md.
+fn wait_for(done: impl FnMut() -> bool) -> bool {
+    wait_on_every_core(done).is_ok()
+}
 
 const SLOTS: usize = abi::CAPABILITY_TABLE_SLOTS as usize;
 /// Six actors that are endowed, and the witness.
@@ -924,10 +931,9 @@ impl Stage {
     /// Run `cmd` on idle actor `a` and wait for it to finish (`Some`) or park (`None`).
     fn run(&mut self, a: usize, cmd: Cmd) -> Option<Answer> {
         let seq = self.post(a, cmd);
-        assert!(
-            wait_for(|| Self::finished(a, seq) || self.parked(a)),
-            "actor {a} neither finished nor parked within the deadline"
-        );
+        if let Err(budget) = wait_on_every_core(|| Self::finished(a, seq) || self.parked(a)) {
+            panic!("actor {a} neither finished nor parked within the budget: {budget}");
+        }
         Self::finished(a, seq).then(|| Self::answer(a))
     }
 }
@@ -1022,10 +1028,10 @@ impl Run<'_> {
         for (b, want) in woken.iter().enumerate() {
             let Some(want) = want else { continue };
             let seq = MAIL[b].lock().seq;
-            if !wait_for(|| Stage::finished(b, seq)) {
+            if let Err(budget) = wait_on_every_core(|| Stage::finished(b, seq)) {
                 mismatch!(
                     self,
-                    "{what:?} should have woken actor {b} with {want:?}; it stayed parked"
+                    "{what:?} should have woken actor {b} with {want:?}; it stayed parked ({budget})"
                 );
             }
             let got = Stage::answer(b);
@@ -1152,8 +1158,11 @@ impl Run<'_> {
         for (b, want) in woken.iter().enumerate() {
             let Some(want) = want else { continue };
             let seq = MAIL[b].lock().seq;
-            if !wait_for(|| Stage::finished(b, seq)) {
-                mismatch!(self, "teardown should have woken actor {b} with {want:?}");
+            if let Err(budget) = wait_on_every_core(|| Stage::finished(b, seq)) {
+                mismatch!(
+                    self,
+                    "teardown should have woken actor {b} with {want:?} ({budget})"
+                );
             }
             let got = Stage::answer(b);
             if !want.matches(&got) {

@@ -33,7 +33,15 @@ use crate::capability_object::{
     rendezvous_capability_badged,
 };
 use crate::sched::{self, RendezvousId, current_capability, delete_current_capability};
+use crate::testing::{EveryCoreTickBudget, wait_on_every_core};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
+
+/// [`wait_on_every_core`] for a site whose message has nothing to add to it. A fuzzer may run on
+/// another core, which the host can deschedule while this one runs. See
+/// notes/kernel-test-harness.md.
+fn wait_for(done: impl FnMut() -> bool) -> bool {
+    wait_on_every_core(done).is_ok()
+}
 
 const SLOTS: usize = abi::CAPABILITY_TABLE_SLOTS as usize;
 /// Fuzzer A, fuzzer B, and the witness.
@@ -902,7 +910,10 @@ impl Conductor {
     /// finding, named by the report page.
     fn step_and_settle(&mut self, x: usize) {
         self.go_send(x, proto::GO_STEP);
-        let deadline = crate::arch::timer::now() + 2 * crate::arch::timer::frequency();
+        let mut budget = EveryCoreTickBudget::new(
+            (crate::testing::WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HZ) as u32,
+            crate::testing::WAIT_ON_EVERY_CORE_BACKSTOP_SECONDS,
+        );
         loop {
             for y in 0..FUZZERS {
                 if completed(self, y) {
@@ -932,11 +943,11 @@ impl Conductor {
                 self.serve(x);
             }
             sched::yield_now();
-            if crate::arch::timer::now() > deadline {
+            if budget.is_expired() {
                 let call = read_call(self, x);
                 escape!(
                     self,
-                    "fuzzer {x} never came back: syscall {} words {:?} rets {:?}, now {:?}",
+                    "fuzzer {x} never came back: syscall {} words {:?} rets {:?}, now {:?}, after {budget}",
                     call.number,
                     call.words,
                     call.rets,
@@ -1249,8 +1260,9 @@ fn park_and_take_baselines(c: &mut Conductor) {
     // Everyone parks on its conductor channel before the first step; the baseline (image,
     // stack, report) is what the page oracle admits forever after.
     for x in 0..FUZZERS {
-        let parked = wait_for(|| parked_on_go(c, x));
-        assert!(parked, "fuzzer {x} never parked on its conductor channel");
+        if let Err(budget) = wait_on_every_core(|| parked_on_go(c, x)) {
+            panic!("fuzzer {x} never parked on its conductor channel: {budget}");
+        }
         // A failure here is not yet understood; the `BUGS` of milestone 779 (fuzz the surface a
         // confined process can reach)'s block
         // (design/roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md) holds the two

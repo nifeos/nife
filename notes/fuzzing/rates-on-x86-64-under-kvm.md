@@ -54,10 +54,22 @@ for the kernel-thread driver would be about 12 against the 34 seeds/s quiet-host
 aarch64 and riscv64 under KVM. The host has TCG only for them, so their rates are unknown. The TCG
 rows say nothing about a hosted runner, which has its own figures in the proposal.
 
-## Why concurrency is not yet a lever
+## False reds when guests run side by side
 
-Both drivers fail on wall-clock deadlines when guests run side by side. The kernel-thread driver
-failed 1 of 4 guests at 4, 4 of 8 at 8 and 6 of 16 at 16. The user-mode driver failed 0 of 4, 1 of
-8 and 6 of 16. A seed that failed under load passed when replayed alone, so the harness failed and
-the kernel did not. Milestone 752's `BUGS` tracks the fix. Until it lands, a concurrent run can
-report false reds, so size from the one-guest rows.
+Each guest ran 60 seconds of seeds. A red here is a run that failed and whose seed passed alone.
+The first and third columns are a two-second deadline on the counter; the second and fourth are
+`testing::wait_on_every_core`, two seconds of ticks on every core (notes/kernel-test-harness.md).
+Every figure is from 2026-10-31 (UTC).
+
+| guests | kernel-thread, counter | kernel-thread, every core | user-mode, counter | user-mode, every core |
+|---:|---|---|---|---|
+| 1 | 0 of 1 | not run | 0 of 1 | not run |
+| 2 | 0 of 2 | not run | 0 of 2 | not run |
+| 4 | 1 of 4 | 0 of 16 | 0 of 4 | 0 of 16 |
+| 8 | 4 of 8 | not run | 1 of 8 | not run |
+| 16 | 6 of 16 | not run | 6 of 16 | not run |
+
+The every-core column at 4 is four runs of four guests, two of them beside 40 busy loops at the
+same priority, which cut the rate by a third. At 4 guests the counter deadline rarely fails either,
+so that row does not tell the two apart. 8 and 16 guests would, and nobody has run them yet; until
+someone does, size a concurrent run at 4 guests or fewer.
