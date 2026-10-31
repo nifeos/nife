@@ -9,13 +9,15 @@ needs_person: yes
 ---
 # Ratify the three names that block the NVMe crate's move
 
+Reuse: none exists; the names are this crate's own, and the prior art below shows how Linux and SPDK spell the same words.
+
 Raised 2026-10-31 (UTC) by the lane for milestone 814 (`non_volatile_memory_express`, released on its own). The lane re-derived the state and found one blocker ahead of every later stage: the crate cannot leave for its own repository while three of its names are provisional.
 
 ## Background
 
-A crate that moves to its own repository must carry only ratified names, because a name is permanent on first publication. `script/crate-standalone non_volatile_memory_express` checks this first, and it fails today on exactly three names: the type `Namespace`, and its two methods `holds_block` and `transfer_command`. All three were minted on 2026-10-26 (UTC) when `namespace_holds_block` and the free function `transfer_command` became methods (ratified in their free-function form on #2749). A lane may not ratify a name, so the move waits for calef.
+A crate that moves to its own repository must carry only ratified names, because a name stays for good once published. `script/crate-standalone non_volatile_memory_express` checks this first, and it fails today on exactly three names: the type `Namespace`, and its two methods `holds_block` and `transfer_command`. A lane minted all three on 2026-10-26 (UTC) when `namespace_holds_block` and the free function `transfer_command` became methods; calef ratified the free-function forms on #2749. A lane may not ratify a name, so the move waits for calef.
 
-The crate had five provisional names that morning. This lane removed two without renaming anything: `THE_CONTROLLER_CONFIGURATION_FIELDS_SHARE_NO_BIT` and `THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT` are compile-time assertions that two bit fields do not overlap. Nothing outside the crate uses them, and a stranger's API listing gains nothing from them, so they are now private. A private item is not part of the published names.
+The crate had five provisional names that morning. This lane removed two without renaming anything: `THE_CONTROLLER_CONFIGURATION_FIELDS_SHARE_NO_BIT` and `THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT` are compile-time assertions that two bit fields do not overlap. Nothing outside the crate uses them, and a stranger's API listing gains nothing from them, so this lane made them private. A private item is no part of the published names.
 
 ## Recommendation
 
@@ -27,7 +29,7 @@ Ratify all three as they stand:
 | `Namespace::holds_block` | method | is this whole block inside the namespace |
 | `Namespace::transfer_command` | method | the read or write command for one whole block, or `None` |
 
-The type is the NVMe specification's own word. Nothing in it is abbreviated. The methods keep the verbs calef ratified for the free functions on #2749, with the namespace now the receiver.
+The type is the NVMe specification's own word, and it abbreviates nothing. The methods keep the verbs calef ratified for the free functions on #2749, with the namespace now the receiver.
 
 One loose end for the same sitting: the struct's field is `size_bytes`, while `IdentifyNamespace` calls the same quantity `capacity_bytes` (ratified 2026-10-25, #2720). Recommend renaming the field to `capacity_bytes`, so one quantity has one word. The cost is a rename in the crate and its callers, before anything is published; after publication it would be a breaking change.
 
@@ -57,7 +59,7 @@ assert!(command.is_some());
 
 ## What a yes unlocks
 
-The ratifying pull request carries the table `python3 helpers/name_release.py --draft non_volatile_memory_express` prints and sets the three blocks to `ratified <date> (#PR)`. Then `script/crate-standalone non_volatile_memory_express` exits 0, which is the milestone's precondition for the move. Creating `nifeos/non_volatile_memory_express` is a separate step that also needs calef, and so is every publication.
+The ratifying pull request carries the table `python3 helpers/name_release.py --draft non_volatile_memory_express` prints and sets each of the three blocks to `ratified <date> (#PR)`. Then `script/crate-standalone non_volatile_memory_express` exits 0, which is the milestone's precondition for the move. Creating `nifeos/non_volatile_memory_express` needs calef too, as does every publication.
 
 ## Alternatives
 
