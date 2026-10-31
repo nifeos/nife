@@ -25,10 +25,18 @@ same machine.
 | kernel-thread driver, 2 to 8 guests | about 440 to 460 seeds/s |
 | user-mode driver, 1 guest | about 230 seeds/s |
 | user-mode driver, 2 to 8 guests | about 220 seeds/s |
-| kernel-thread driver under TCG | about 20 seeds/s |
-| user-mode driver under TCG | about 8 seeds/s |
+| kernel-thread driver under TCG, 1 guest (second measurement) | 15 to 18 seeds/s |
+| user-mode driver under TCG, 1 guest (second measurement) | 9 to 10 seeds/s |
 | `redoxfs_server_session`, 1 process | 794 runs/s |
 | `redoxfs_server_session`, 8 workers | about 5,470 runs/s in all |
+
+The KVM rows and the redoxfs rows come from the first measurement. The two TCG rows come from a
+second measurement, corrected on 2026-10-31 (UTC). Those were hand runs of x86_64 guests under TCG,
+one guest at a time and two runs per driver. They used QEMU 11.1.2, 256 MiB of guest RAM and 2
+vCPUs, on a shared multi-core build host with a load average of 25 to 30. The kernel-thread runs gave 17.6 and
+15.4 seeds/s and the user-mode runs gave 9.9 and 8.8. One earlier TCG run of the kernel-thread
+driver, on a quiet host inside the suite, gave about 34 seeds/s. Nobody explained the gap, so treat
+the TCG rows as a floor measured under load.
 
 Resident memory is about 100 MB per guest. At 16 guests the kernel-thread rate per guest falls to
 about 360 to 450 seeds/s.
@@ -36,8 +44,10 @@ about 360 to 450 seeds/s.
 ## What it means for a budget of 300,000 seeds
 
 At one guest, 300,000 seeds take about 12 minutes on the kernel-thread driver and about 21 minutes
-on the user-mode driver. KVM runs roughly twenty times faster than TCG for the first driver and
-roughly thirty times for the second.
+on the user-mode driver. Against the second measurement's TCG rows, KVM at one guest runs about 24 to 27 times faster
+for the kernel-thread driver, which is about 420 against 15 to 18 seeds/s. For the user-mode driver
+it runs about 22 to 25 times faster, which is about 220 against 9 to 10 seeds/s. The ratio
+for the kernel-thread driver would be about 12 against the 34 seeds/s quiet-host run.
 
 ## What nobody measured
 
