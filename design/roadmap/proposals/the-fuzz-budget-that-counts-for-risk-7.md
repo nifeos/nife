@@ -5,14 +5,13 @@ milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # Continuous fuzzing for risk 7's criterion (d)
 
 Raised by lane/confined-fuzz-budget on 2026-10-31 (UTC), asked to set the bar that criterion (d)
 of risk 7 (the confinement claim is false) names and nobody has set. An architect ruled on
-2026-10-31 (UTC) on the standard and on question 1, and this document states those rulings. Four
-questions remain open, and I ask them one at a time. The file name keeps its first form so that
+2026-10-31 (UTC) on every question it raised, and this document states those rulings. The file name keeps its first form so that
 links to it hold.
 
 Reuse: the continuous run reuses the three fuzzers and the weekly sweep jobs as they stand. It adopts
@@ -29,7 +28,8 @@ syzkaller's service standards, not its code.
   1. The fuzzer runs now, on the architectures claimed. A heartbeat measures it.
   2. A measure of its coverage exists, and coverage has stopped growing or the growth has an explanation.
   3. Every finding has a fix or sits inside the triage clock, and none is older.
-  4. The corpus and the findings live where others can see them.
+  4. The corpus and the findings are public after the fix, except findings sorted as public at
+     triage.
 - The heartbeat is the newest daily report. Green: it is under 2 days old and shows more seeds run
   than the previous report. Amber: no report for 2 days, or a report whose seed count did not rise.
   Decided 2026-10-31 (UTC).
@@ -53,8 +53,28 @@ syzkaller's service standards, not its code.
   counter totals, the corpus and findings where others can read them. Decided 2026-10-31 (UTC).
   Not chosen: scheduled hosted jobs, and the shared build host at night. The maintainers keep the
   machine's specification off-tree.
-- Not yet in force: the triage clock's length (question 5). Until an architect rules on those,
-  nothing can satisfy conditions 1 to 4, so risk 7 stays AMBER and no run counts toward (d).
+- The triage clock (condition 3). A new finding gets triage within 3 days of the report. An
+  escape, or a crash or hang reached from user mode, gets its fix within 7 days of triage. Any
+  other finding gets its fix within 90 days of triage. A finding past its limit fails condition 3,
+  and the risk 7 rating falls until a fix merges. A limit that lands on a weekend moves to the next
+  work day. Decided 2026-10-31 (UTC). The OSS-Fuzz deadline is 90 days with a 14-day grace; nife
+  sets a shorter limit for escapes because an open escape is the claim being false.
+- Disclosure. Every finding starts private, in a private security advisory on nifeos/nife, never a
+  public issue or branch. Triage sorts it. The held class is an escape, a crash or hang reached
+  from user mode, and any finding not yet triaged. A held finding stays private until its fix
+  merges, then turns public. Every other finding, for example a kernel-thread crash that user code
+  cannot reach, goes to the public tracker at triage. Decided 2026-10-31 (UTC).
+- The outer cap. A held finding that has no fix 90 days after the report turns public anyway, unless
+  an architect says otherwise. The cap is a disclosure rule and extends no fix limit: a held
+  finding fails condition 3 at 7 days after triage, long before the cap. The 90-day fix limit
+  covers the findings that go public at triage, so the cap never applies to them.
+- Consequences. The public corpus leaves out the reproducing inputs of held findings until the fix
+  merges, and the daily job keeps them apart. The daily public report shows only the count and
+  age of held findings (for example, "2 held, oldest 4 days"), so condition 3 stays checkable. The
+  fuzzer machine's findings credential must be able to create private advisories, and nifeos/nife
+  must have private advisories on, which is calef's step.
+- Until the work below runs, nothing satisfies conditions 1 to 4, so risk 7 stays AMBER and no run
+  counts toward (d).
 
 ## Where criterion (d) stands
 
@@ -179,50 +199,13 @@ runs the fuzzers on the other two architectures at a useful rate. The escapes of
 architecture. §12 (call/reply IPC: a one-shot reply capability) was false only on x86_64, and claim
 11's alias was on all three. So the record must not imply parity.
 
-## The questions that remain
+## The clock, with dates
 
-I ask them one at a time, in this order, each after an architect rules on the one before. An
-architect has ruled on questions 1 to 4; question 5 sits on the pull request. This list keeps the
-rest, and each returns in full when its turn comes.
-
-1. An architect ruled on 2026-10-31 (UTC): what criterion (d) becomes, and the 14-day run.
-2. An architect ruled on 2026-10-31 (UTC): the coverage measure. See "What is in force".
-3. An architect ruled on 2026-10-31 (UTC): the false-red fix is the first work.
-4. An architect ruled on 2026-10-31 (UTC): a dedicated x86_64 virtual machine runs the fuzzers.
-5. The triage clock, which condition 3 names.
-
-### Question 5: the triage clock
-
-Recommendation: (A) a finding gets a first look within 2 days. An escape, or a crash or hang
-reached from user mode, gets its fix within 14 days. Any other finding gets its fix within 90 days. A
-finding past its limit makes condition 3 fail, and the rating falls until it closes.
-
-Background. Condition 3 says every finding has a fix or sits inside the triage clock, and none is older.
-The clock needs three limits: how soon someone must look, how soon the worst findings need a fix,
-and how soon the rest do. The limit for escapes matters most, because an open escape is the claim
-being false. An unexplained finding counts as a crash until someone explains it.
-
-Options:
-
-- (A) 2 days to triage, 14 days to fix an escape or crash, 90 days for the rest. Recommended.
-- (B) 90 days for every kind, as OSS-Fuzz does. Simple, but it lets an open escape wait three
-  months.
-- (C) 7 days for an escape or crash. Tighter, but one large fix could outlast it.
-
-Prior art. OSS-Fuzz discloses an issue to the public 90 days after it notifies the project, or
-after the fix ships, and moves a weekend deadline to the next work day. A project that tells
-OSS-Fuzz a patch lands within 14 days after the deadline gets the disclosure delayed until the patch
-(read). syzbot publishes each bug's age since the report and since the last crash, and closes a
-bug only when the fixing commit reaches all tracked builds (read). I could not verify whether syzbot sets a fix
-deadline or closes a bug after a quiet period.
-
-Where nife differs. The 90 days are a disclosure clock for outsiders, and nife's findings are public
-from the start. The clock here protects the rating, which is why an escape gets the shorter limit.
-
-Example. A sweep reports an escape on 2026-11-03. A lane triages it on 2026-11-04, inside 2 days,
-and confirms it. The fix is due 2026-11-17. The fix merges on 2026-11-12, and the daily job
-shows the finding closed on 2026-11-13. With no fix by 2026-11-17, condition 3 fails on
-2026-11-18 and the rating falls until a fix merges.
+A sweep reports an escape on Tuesday 2026-11-03. Triage is due by Friday 2026-11-06. A lane triages
+it on Thursday 2026-11-05 and confirms it, so the fix is due 7 days later, on Thursday 2026-11-12.
+The public report shows "1 held, oldest 2 days" while the finding stays private. The fix merges on
+2026-11-11, the daily job shows the finding closed on 2026-11-12, and the finding turns public. With
+no fix by 2026-11-12, condition 3 fails on 2026-11-13 and the rating falls until a fix merges.
 
 ## Appendix: measurements, 2026-10-31 (UTC)
 
@@ -257,20 +240,8 @@ False reds, guests that reported a failure that did not reproduce:
 Replays of failing seeds were green. The harness's deadlines expired under load; no escape
 occurred. Until a fix lands, more concurrency buys false reds faster than seeds.
 
-## The seven questions
-
-1. Considered and lost: question 5's options above.
-2. In this tree: no finding has a clock today.
-3. Prior art: above, with what I did not verify marked.
-4. The premise holds: condition 3 names the clock and no number exists.
-5. Cost: lane time to fix inside the limit.
-6. Reversible: the numbers are a record, and nobody has acted on them.
-7. At equal cost this would still choose (A); the recommendation is not about effort.
-
 ## What waits on this
 
-Conditions 1 to 4 of criterion (d), and so risk 7's green, until an architect rules on question 5. The false-red fix can start now.
-
-## What I need from you
-
-Question 5 only.
+Risk 7's green waits on the work, in this order: the harness false-red fix, the coverage build for
+one architecture that measures its cost, the virtual machine with its daily job and report, and
+private advisories switched on for nifeos/nife with a findings credential that can create them.
