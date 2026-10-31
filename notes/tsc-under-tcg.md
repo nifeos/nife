@@ -245,8 +245,8 @@ there is nothing for them to be at parity *with*.
 
 ## Reproducing it
 
-The harness that took the 32-second measurements is no longer in the tree (milestone 961 step 7,
-decision D4). It was a cargo feature in no gate, and the question it answered is answered here.
+The harness that took the 32-second measurements is no longer in the tree (step 7 of milestone 961 (the
+kernel's special boots become commands typed at the production shell), decision D4). It was a cargo feature in no gate, and the question it answered is answered here.
 Git history holds it: `git log --diff-filter=D -- kernel/src/arch/x86_64/tsc_probe.rs` finds the
 commit that removed it, and its parent has the file. A check of the calibration on real x86 hardware
 belongs to a gate on milestone 571, not to a revived probe.

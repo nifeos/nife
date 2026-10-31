@@ -271,6 +271,19 @@ hook exists in a production build.
 They print under their own prefix and are recorded in `bench/` beside the quiet boot's numbers.
 The quiet-machine baseline stays the tripwire.
 
+## Follow-on
+
+- **Done.** Step 7, the deletion of `tsc_probe`, landed in pull request #2921. Checked by
+  `grep -rn tsc_probe kernel script xtask .github`, which finds nothing.
+- **Outstanding.** Step 1, the `bench` EL0 rows as a command. Only `null_syscall` and the
+  `sink_throughput` pair can run as shell children today. The other rows need a peer process, a
+  target address space or an untyped region built for them, which is the process construction
+  authority `crates/grant_plan` withholds from everything the shell spawns (milestone 523's blocker
+  one). It is a question for the architect, raised in the lane report. Checked by reading the roles
+  in `fixtures/src/os_primitives_benchmarker.rs` against `kernel/src/bench/el0.rs`.
+- **Outstanding.** Steps 2 through 5 wait on the inputs the Order section names. None has started.
+- **Milestone 523.** Step 6 is milestone 523 (moving the job-mix supervisor into userspace).
+
 ## Index row
 
 A special boot is a cargo feature that changes what the kernel does after it boots. The kernel
