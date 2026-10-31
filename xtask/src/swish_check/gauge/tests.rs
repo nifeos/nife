@@ -57,6 +57,19 @@ fn a_bare_prompt_is_emitted_whole_although_its_space_could_start_a_gauge() {
 }
 
 #[test]
+fn a_question_is_emitted_whole_although_its_space_could_start_a_gauge() {
+    // `jig`'s owner prompt reaches the UART in 16-byte messages, the last one the space alone,
+    // and the gate answers once it reads the whole prompt. A held space would never be released
+    // by an answer that waits for it.
+    let (out, _) = filtered(&["  grant these and install? [y/N]", " "]);
+    assert!(out.ends_with("[y/N] "), "{out:?}");
+    // A gauge spliced in after the prompt is still taken out, by its own two spaces.
+    let (out, gauges) = filtered(&["  ask? [y/N] ", "  progenitor stack: 1 of 2 bytes at peak\n", "y\n"]);
+    assert_eq!(out, "  ask? [y/N] y\n");
+    assert_eq!(gauges.len(), 1);
+}
+
+#[test]
 fn degauge_takes_the_kernels_newline_with_a_spliced_gauge() {
     // #1377's riscv64 swish-check of 2026-10-03, verbatim: the stack gauge landed inside the
     // echo of the first line and its newline split the echo.
