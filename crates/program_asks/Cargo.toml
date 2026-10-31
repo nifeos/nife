@@ -1,0 +1,27 @@
+[package]
+name = "program_asks"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# The record's vocabulary: the asks come out as `Granted`s, the same values the approval file's
+# entries hold and the installed-programs table's `grant` lines spell.
+installed_programs = { version = "0.1.0", path = "../installed_programs" }
+# The note a program carries its manifest in (milestone 597 (a program carries its manifest in an
+# ELF note)): `decode`, `zones` and `service` are this crate's whole read of it.
+capability_manifest_note = { version = "0.1.0", path = "../capability_manifest_note" }
+# The ELF parser that finds the note inside the program's bytes.
+elf = { version = "0.1.0", path = "../elf" }
+# The packaged program the asks are a property of: the callers hold one, and its `digest` is what
+# keys the grant record.
+package_archive = { version = "0.1.0", path = "../package_archive" }
+
+[dev-dependencies]
+# The `Manifest` the test manifests start from, and the program manifests that name them. A test
+# dependency: no shipped binary reads a manifest through this crate's tests.
+grant_plan = { version = "0.1.0", path = "../grant_plan" }
