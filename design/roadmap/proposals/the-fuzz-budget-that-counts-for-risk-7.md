@@ -242,6 +242,7 @@ occurred. Until a fix lands, more concurrency buys false reds faster than seeds.
 
 ## What waits on this
 
-Risk 7's green waits on the work, in this order: the harness false-red fix, the coverage build for
-one architecture that measures its cost, the virtual machine with its daily job and report, and
-private advisories switched on for nifeos/nife with a findings credential that can create them.
+Risk 7's green waits on four pieces of work, in this order. First, the harness false-red fix.
+Second, the coverage build for one architecture, which measures its cost. Third, the virtual
+machine with its daily job and report. Fourth, private advisories switched on for nifeos/nife,
+with a findings credential that can create them.
