@@ -445,7 +445,7 @@ jobs:
           mkdir -p notes/project-metrics/mutation-survivors
           cp "inflow/$CENSUS.csv.gz" notes/project-metrics/mutation-survivors/
           # The per-site verdicts of the noise-shape survivors, read at this run's own commit
-          # (the checkout above), so the file keeps pace with the census it names (milestone 954).
+          # (the checkout above), so the file keeps pace with the census it names (milestone 954 (a survivor accepted once is not accepted forever)).
           # Reuses the checker; helpers/mutation_shape_sites.py stale is the lint that notices a miss.
           mapfile -t missed < <(find shards -name missed.txt -exec dirname {} \; | sort)
           python3 helpers/mutation_shape_sites.py check --census "$CENSUS" --run "$GITHUB_RUN_ID" \
