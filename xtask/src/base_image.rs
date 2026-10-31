@@ -65,6 +65,11 @@ struct Definition {
     version: String,
     /// The archive entries the image carries, by program name.
     programs: Vec<String>,
+    /// The approval file the composition checks every package against, as a path from the
+    /// workspace root (milestone 911 (scripted installs grant only what an approval file
+    /// allows); provisional key name). The image carries the same file as a measured archive
+    /// entry, so an unattended update on the booted system reads what the composition checked.
+    approval: String,
 }
 
 /// `cargo xtask base-image`, its arguments parsed.
@@ -205,6 +210,7 @@ pub(crate) fn base_image() -> bool {
         &composed.blobs,
         &composed.catalog,
         &sources,
+        Some(&composed.seed),
     ) else {
         return false;
     };
@@ -215,6 +221,14 @@ pub(crate) fn base_image() -> bool {
         composed.packages.len()
     );
     println!("wrote {}", archive.display());
+    // The image's activation store, written beside the archive: the first installed-programs
+    // table the composition wrote, measured by the kernel this build is about to make.
+    let store = out.join("activation-store.img");
+    if let Err(e) = std::fs::write(&store, &composed.seed) {
+        eprintln!("base-image ({arch}): could not write {}: {e}", store.display());
+        return false;
+    }
+    println!("wrote {}", store.display());
     for (stem, digest) in &composed.packages {
         println!("  {stem} {digest}");
     }
@@ -229,7 +243,7 @@ pub(crate) fn base_image() -> bool {
         let Some(runner) = runner(arch) else {
             return false;
         };
-        if !crate::boot_check::boot_image(arch, runner, &kernel, &archive) {
+        if !crate::boot_check::boot_image(arch, runner, &kernel, &archive, Some(&store)) {
             return false;
         }
     }
@@ -238,12 +252,19 @@ pub(crate) fn base_image() -> bool {
 
 /// **`cargo xtask base-packages`**: build every base package the image needs from this tree, into
 /// `target/packages` with its catalog. The half of `base-image` a builder that composes elsewhere
-/// runs first (milestone 909); it builds no image and no kernel.
+/// runs first (milestone 909); it builds no image and no kernel. `--test` packs the `fixtures`
+/// package too, which the base definition's packages do not name, so a caller can compose a test
+/// image from the packages it just built (`base-image --test --from` refuses an archive the
+/// packages directory does not carry); the published repository carries no `fixtures` package,
+/// which no release image boots.
 pub(crate) fn base_packages() -> bool {
-    let Some(arch) = std::env::args().nth(2) else {
-        eprintln!("usage: cargo xtask base-packages <aarch64|riscv64|x86_64>");
+    let arguments: Vec<String> = std::env::args().skip(2).collect();
+    let test = arguments.iter().any(|word| word == "--test");
+    let Some(arch) = arguments.iter().find(|word| !word.starts_with('-')) else {
+        eprintln!("usage: cargo xtask base-packages <aarch64|riscv64|x86_64> [--test]");
         return false;
     };
+    let arch = arch.clone();
     let root = workspace_root();
     let definition = match read_definition(&root) {
         Ok(definition) => definition,
@@ -252,10 +273,11 @@ pub(crate) fn base_packages() -> bool {
             return false;
         }
     };
-    if !build_packages(&root, &arch, &definition, false) {
+    if !build_packages(&root, &arch, &definition, test) {
         return false;
     }
-    println!("base-packages: every package in {DEFINITION} for {arch} is in target/packages");
+    let what = if test { " and fixtures" } else { "" };
+    println!("base-packages: every package in {DEFINITION}{what} for {arch} is in target/packages");
     true
 }
 
@@ -301,7 +323,7 @@ fn parse_definition(text: &str) -> Result<Definition, String> {
         .parse()
         .map_err(|e: toml::de::Error| e.message().to_string())?;
     for key in table.keys() {
-        if !["version", "programs"].contains(&key.as_str()) {
+        if !["version", "programs", "approval"].contains(&key.as_str()) {
             return Err(format!("unknown key {key}"));
         }
     }
@@ -309,6 +331,11 @@ fn parse_definition(text: &str) -> Result<Definition, String> {
         Some(toml::Value::String(value)) if !value.is_empty() => value.clone(),
         Some(_) => return Err("version is a non-empty string".to_string()),
         None => return Err("no version".to_string()),
+    };
+    let approval = match table.get("approval") {
+        Some(toml::Value::String(value)) if !value.is_empty() => value.clone(),
+        Some(_) => return Err("approval is a non-empty string".to_string()),
+        None => return Err("no approval".to_string()),
     };
     let programs = match table.get("programs") {
         Some(toml::Value::Array(entries)) => entries
@@ -332,7 +359,11 @@ fn parse_definition(text: &str) -> Result<Definition, String> {
     if let Some(pair) = sorted.windows(2).find(|pair| pair[0] == pair[1]) {
         return Err(format!("`{}` is listed twice", pair[0]));
     }
-    Ok(Definition { version, programs })
+    Ok(Definition {
+        version,
+        programs,
+        approval,
+    })
 }
 
 /// **Which package each program belongs to**, read from `packages/*.package.toml`.
@@ -532,10 +563,15 @@ struct Composed {
     catalog: String,
     /// `(stem, digest)` for each package the image used.
     packages: Vec<(String, String)>,
+    /// The image's activation store, the first installed-programs table the composition wrote,
+    /// whose bytes the kernel's measurement manifest names.
+    seed: Vec<u8>,
 }
 
 /// **Compose the archive's entries from packages**: for every program the definition names, the
-/// member `bin/<program>` of the package that owns it, checked against the catalog.
+/// member `bin/<program>` of the package that owns it, checked against the catalog; and every
+/// package's asks checked against the image's approval file (milestone 911's check, host-side).
+/// The grant records the checks pass become the image's first installed-programs table.
 fn compose(
     root: &Path,
     arch: &str,
@@ -550,10 +586,36 @@ fn compose(
         .map_err(|e| format!("could not read {}: {e}", catalog_path.display()))?;
     let catalog =
         parse_catalog(&catalog_text).map_err(|e| format!("{}: {e}", catalog_path.display()))?;
+    // The image's approval file (milestone 911 (scripted installs grant only what an approval
+    // file allows)): every package's asks are checked against it, the file rides the image as a
+    // measured archive entry, and its name and digest are the `answered` line's.
+    let approval_path = root.join(&definition.approval);
+    let approval_bytes = std::fs::read(&approval_path)
+        .map_err(|e| format!("could not read {}: {e}", approval_path.display()))?;
+    let approval_text = String::from_utf8(approval_bytes.clone()).map_err(|_| {
+        format!(
+            "{} is not UTF-8, and an approval file is text",
+            approval_path.display()
+        )
+    })?;
+    let approval = approval_file::File::parse(&approval_text).map_err(|e| {
+        format!(
+            "{}: line {}: {e:?}",
+            approval_path.display(),
+            e.at
+        )
+    })?;
+    let approval_digest = measured_boot::sha256(&approval_bytes);
 
     let mut blobs = Vec::new();
     let mut used: BTreeMap<String, String> = BTreeMap::new();
     let mut order: Vec<String> = Vec::new();
+    // The packages' bytes, read once per package and alive through the generation's write: the
+    // grant record's zone names point into a note inside these bytes.
+    let mut package_bytes: BTreeMap<String, Vec<u8>> = BTreeMap::new();
+    let mut rows: Vec<installed_programs::Entry<'_>> = Vec::new();
+    let mut grants: Vec<installed_programs::Grant<'_>> = Vec::new();
+    let mut refusals: Vec<String> = Vec::new();
     for program in &definition.programs {
         let owner = owners.get(program).ok_or_else(|| {
             format!(
@@ -582,25 +644,84 @@ fn compose(
             ));
         }
         let path = dir.join(format!("{stem}.nifepkg"));
-        let bytes =
-            std::fs::read(&path).map_err(|e| format!("could not read {}: {e}", path.display()))?;
-        let package = Package::parse(&bytes)
+        let bytes = match package_bytes.get(stem.as_str()) {
+            Some(bytes) => bytes,
+            None => {
+                let read = std::fs::read(&path)
+                    .map_err(|e| format!("could not read {}: {e}", path.display()))?;
+                package_bytes.insert(stem.clone(), read);
+                package_bytes.get(stem.as_str()).unwrap()
+            }
+        };
+        let package = Package::parse(bytes)
             .map_err(|e| format!("{}: not a package: {e:?}", path.display()))?;
         let member = format!("bin/{program}");
-        let content = (0..package.len())
-            .find(|index| package.member_name(*index) == Some(member.as_str()))
-            .and_then(|index| package.member(index))
+        let index = (0..package.len())
+            .find(|at| package.member_name(*at) == Some(member.as_str()))
             .ok_or_else(|| {
                 format!(
                     "{stem} carries no `{member}`, so package `{owner}` does not own `{program}` \
                      as its definition says"
                 )
             })?;
+        let content = package.member(index).ok_or_else(|| {
+            format!("{stem}: member {index} has no bytes, which its parse should have refused")
+        })?;
+        let digest = package.member_digest(index).ok_or_else(|| {
+            format!("{stem}: member {index} has no digest, which its parse should have refused")
+        })?;
+        // The asks the program's note declares, checked against the package's entry in the
+        // image's approval file, before the program enters the image (milestone 911, item 6;
+        // milestone 909, item 3). Every extra grant is named, so one edit to the file answers
+        // every refusal at once.
+        let carried = package_archive::Program {
+            name: program,
+            bytes: content,
+            digest,
+            member: index,
+        };
+        let asks: Vec<installed_programs::Granted<'_>> =
+            program_asks::asked_grants_of(&carried).collect();
+        check_asks(
+            &approval,
+            approval.name(),
+            owner,
+            program,
+            &asks,
+            &mut refusals,
+        );
+        rows.push(installed_programs::Entry {
+            program,
+            version: &definition.version,
+            package: owner,
+            digest,
+            manager: installed_programs::OWNER,
+        });
+        grants.extend(program_asks::asked_grants(&carried));
         blobs.push((program.clone(), content.to_vec()));
         if used.insert(stem.clone(), archive.digest.clone()).is_none() {
             order.push(stem);
         }
     }
+    if !refusals.is_empty() {
+        return Err(format!(
+            "the image's approval file {} does not allow what its packages ask:\n  {}",
+            definition.approval,
+            refusals.join("\n  ")
+        ));
+    }
+    // The image's first installed-programs table, as the composition's answer to the checks that
+    // just passed: the records an interactive install would write for the same grants, with the
+    // approval's name and digest in the answered line.
+    let answered = installed_programs::Answered::Approval(approval.name(), approval_digest);
+    let generation = seed_generation(&rows, &grants, &answered)?;
+    let mut seed = vec![0u8; activation_store::write_size(&[generation.len()])];
+    activation_store::write(&[&generation], 1, &mut seed)
+        .map_err(|e| format!("the image's activation store: {e:?}"))?;
+    blobs.push((
+        approval_file::IMAGE_ENTRY.to_string(),
+        approval_bytes.clone(),
+    ));
 
     let mut text = String::new();
     for stem in &order {
@@ -616,7 +737,84 @@ fn compose(
                 (stem, digest)
             })
             .collect(),
+        seed,
     })
+}
+
+/// **One program's asks against its package's entry** (milestone 911's subset test,
+/// `approval_file::File::check`): every grant the entry does not allow is named, with the package
+/// and the program that asked, into `refusals`. The composition refuses once, at the end, so one
+/// edit to the file answers every refusal at once.
+fn check_asks(
+    file: &approval_file::File<'_>,
+    approval_name: &str,
+    package: &str,
+    program: &str,
+    asks: &[installed_programs::Granted<'_>],
+    refusals: &mut Vec<String>,
+) {
+    for extra in file.check(package, asks).unwrap_or_default() {
+        refusals.push(format!(
+            "refused: package `{package}` program `{program}` asks for {}, which \
+             `{approval_name}` does not allow",
+            spell_grant(&extra),
+        ));
+    }
+}
+
+/// One `Granted` in the words the approval file's keys spell, which is what an owner reads when
+/// the refusal says what to allow.
+fn spell_grant(what: &installed_programs::Granted<'_>) -> String {
+    match what {
+        installed_programs::Granted::Network => "the network".to_string(),
+        installed_programs::Granted::Service => "the service (runs at every boot)".to_string(),
+        installed_programs::Granted::Installer => "the installer".to_string(),
+        installed_programs::Granted::Zone(zone) if zone.is_empty() => "the root zone".to_string(),
+        installed_programs::Granted::Zone(zone) => format!("zone {zone}"),
+        installed_programs::Granted::Directory(name, rights) => {
+            format!("directory {name} ({})", rights.spell())
+        }
+    }
+}
+
+/// **The image's first installed-programs table**: one generation holding every program the image
+/// carries as a row of the package it came from, the owner's grants beside them, and the
+/// approval's answered line. The one writer an install writes records with
+/// ([`installed_programs::with_entries_granting`]) writes it, so a composition's record is
+/// byte-identical to a console's for the same grants; `image_carries` is false because these rows
+/// ARE the image's programs, which no installer is taking a name from (DECISIONS §229 bounds a
+/// package install, not the image's own first table).
+fn seed_generation(
+    rows: &[installed_programs::Entry<'_>],
+    grants: &[installed_programs::Grant<'_>],
+    answered: &installed_programs::Answered<'_>,
+) -> Result<Vec<u8>, String> {
+    let mut out = vec![0u8; 65536];
+    loop {
+        match installed_programs::with_entries_granting(
+            "",
+            || rows.iter().copied(),
+            |_| false,
+            || grants.iter().copied(),
+            Some(answered),
+            &mut out,
+        ) {
+            Ok(n) => {
+                out.truncate(n);
+                return Ok(out);
+            }
+            Err(refused) => {
+                if refused.error == installed_programs::Error::TooSmall && out.len() < 1 << 20 {
+                    out.resize(out.len() * 2, 0);
+                    continue;
+                }
+                return Err(format!(
+                    "the image's first installed-programs table: {:?}",
+                    refused.error
+                ));
+            }
+        }
+    }
 }
 
 /// **Build every base package the image needs from this tree's own build**, then leave them in

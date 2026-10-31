@@ -159,6 +159,10 @@ fn measured_progenitor(archive: &'static [u8]) -> Result<Elf<'static>, LoadError
     // And the table it measures every program it loads against (milestone 104 (the measurement
     // continues past init)).
     crate::trust::require_program_measurements(&fs);
+    // A composed image's activation store rides behind the archive in the same load (milestone
+    // 909 item 3); the boot refuses to hand over without exactly the bytes the trust root names,
+    // and refuses bytes behind the archive that nothing names.
+    crate::trust::require_activation_store(archive, &fs);
     Elf::parse(progenitor_bytes).map_err(LoadError::NotLoadable)
 }
 

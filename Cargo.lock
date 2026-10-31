@@ -7,6 +7,13 @@ name = "abi"
 version = "0.1.0"
 
 [[package]]
+name = "activation_store"
+version = "0.1.0"
+dependencies = [
+ "installed_programs",
+]
+
+[[package]]
 name = "address_space_identifier"
 version = "0.1.0"
 
@@ -1058,6 +1065,17 @@ name = "program_argument_contract"
 version = "0.1.0"
 
 [[package]]
+name = "program_asks"
+version = "0.1.0"
+dependencies = [
+ "capability_manifest_note",
+ "elf",
+ "grant_plan",
+ "installed_programs",
+ "package_archive",
+]
+
+[[package]]
 name = "ps"
 version = "0.1.0"
 dependencies = [
@@ -1366,6 +1384,7 @@ dependencies = [
  "nifefs",
  "package_archive",
  "package_index",
+ "program_asks",
  "socket_contract",
  "std_runtime_contract",
  "supervision_contract",
@@ -1773,7 +1792,9 @@ dependencies = [
 name = "xtask"
 version = "0.1.0"
 dependencies = [
+ "activation_store",
  "address_space_map",
+ "approval_file",
  "boot_ladder",
  "boot_slot",
  "c_program_fixture",
@@ -1786,11 +1807,13 @@ dependencies = [
  "glyph_atlas",
  "grant_plan",
  "graphics_contract",
+ "installed_programs",
  "measured_boot",
  "nifefs",
  "object",
  "package_archive",
  "package_index",
+ "program_asks",
  "screen_console",
  "sealed_pair",
  "serial_console",

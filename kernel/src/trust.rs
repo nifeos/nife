@@ -85,6 +85,45 @@ pub(crate) fn require_program_measurements(fs: &nifefs::Fs<'_>) {
     }
 }
 
+/// Vouch for the composed image's activation store, the artifact the boot carried behind the
+/// archive (milestone 909 item 3, the ruling of 2026-10-29 (UTC)). A kernel built against a
+/// composed image names the store in its trust root and refuses to hand over without exactly those
+/// bytes; a kernel built without one refuses bytes it has no measurement for, so no boot artifact
+/// rides unvouched. `archive` is the whole region the bootloader loaded and `fs` the archive
+/// parsed out of its front; the store is what follows the archive's own length.
+pub(crate) fn require_activation_store(archive: &[u8], fs: &nifefs::Fs<'_>) {
+    let demanded = measured_boot::expected(TRUST_ROOT, measured_boot::ACTIVATION_STORE).is_some();
+    let store = &archive[fs.image_len()..];
+    if store.is_empty() {
+        if demanded {
+            crate::println!();
+            crate::println!(
+                "  MEASURED BOOT REFUSED: the composed image's activation store is missing"
+            );
+            crate::println!(
+                "    this kernel image was built against one, and its first installed-programs"
+            );
+            crate::println!("    table rides in that file; without it the image vouches for a");
+            crate::println!("    system whose grants nothing recorded.");
+            crate::println!("  halting rather than handing over an image without its store.");
+            crate::sched::exit();
+        }
+        return;
+    }
+    if !demanded {
+        crate::println!();
+        crate::println!(
+            "  MEASURED BOOT REFUSED: {} bytes ride behind the archive, and this kernel image",
+            store.len()
+        );
+        crate::println!("    vouches for none of them: it was built without a measurement for");
+        crate::println!("    the composed image's activation store.");
+        crate::println!("  halting rather than carrying an unmeasured boot artifact.");
+        crate::sched::exit();
+    }
+    require(measured_boot::ACTIVATION_STORE, store);
+}
+
 /// Load one archive program the way the progenitor would: only if the chain vouches for it. A boot
 /// that replaces the hand-over with its own workload (soak, job mix, bench, disk throughput) runs
 /// the ordinary chain, two links long: the table against this kernel image, then `name` against the

@@ -370,6 +370,19 @@ fn parse_digest_bytes(text: &[u8]) -> Result<Digest, DigestTextError> {
 /// spelling the parse reads) reserved for the crate's one block.
 pub const PROGRAM_MEASUREMENTS: &str = "program_measurements";
 
+/// The composed image's activation store (milestone 909 item 3, the ruling of 2026-10-29 (UTC)):
+/// the file that carries the image's first installed-programs table, written beside the archive
+/// and carried into the boot behind it. The kernel's trust root names it when the kernel was built
+/// against a composed image, and the hand-over refuses to hand the archive over without exactly
+/// those bytes; a kernel built without a store refuses bytes it has no measurement for, so no boot
+/// artifact rides unvouched.
+///
+/// The name is provisional and is not an archive entry name, so `nifefs`'s `NAME_LEN` does not
+/// bound it. A string two programs agree on sits outside `script/names`' four surfaces, so this
+/// paragraph is its whole record; it does not wear the `Name:` spelling, which milestone 283 (one
+/// provenance block per file, in the spelling the parse reads) reserved for the crate's one block.
+pub const ACTIVATION_STORE: &str = "activation-store";
+
 /// A manifest line [`manifest_entries`] could not read, and why.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BadLine<'a> {
