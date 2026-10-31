@@ -152,6 +152,14 @@ than replaced.
   together, so a split version per package buys nothing yet, and the image refuses a package whose
   archive carries another version.
 
+- A branch holds four unmerged commits for item 3: `milestone/909-item-3-composition-checks-the-approval`,
+  head `e1646aedd`, on the remote. It carries the `activation_store` crate, which holds the composed
+  image's first installed-programs table as one container, and the `program_asks` crate, which reads
+  what a packaged program's note asks one way. It also carries a work-in-progress commit that wires
+  the seed store into the kernel's trust code and the composer, and a format commit. Its lane went
+  stale. Whether to merge, rework or delete it waits on the architect. Nobody has merged or deleted
+  it, and no other copy of that code exists.
+
 ## Index row
 
 basalt composes the bootable image from the packages it builds, so the kernel and the base reach a

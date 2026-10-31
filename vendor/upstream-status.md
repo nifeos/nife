@@ -21,7 +21,24 @@ Pinned at upstream git commit `db847d87c680`, which no release carries; its mani
 
 **Releases: current.** 0.9.1 is still the newest published version that is neither yanked nor a prerelease.
 
-**Upstream git: current.** No commits on the tracked branch since the pinned sha.
+**Upstream git: 3 non-merge commits** since the pinned sha (plus 1 merge commits, dropped), head `5ba45a688737`.
+
+Full comparison: https://gitlab.redox-os.org/redox-os/redoxfs/-/compare/db847d87c68052618d1427537c7277293a626a18...5ba45a6887374ab425326656a276bb3b62eba7dc
+
+- 2026-10-31 `01140853` Avoid leaking a handle for each bound unix sockets
+- 2026-10-31 `5251b59b` Switch to the 2024 edition
+- 2026-10-31 `1134c94f` Directly provide socket entrypoint fd to the user
+
+**Upstream has edited files our divergence patch also touches**, so a bump is likely to conflict there:
+
+- `Cargo.toml`
+- `src/disk/mod.rs`
+- `src/filesystem.rs`
+- `src/header.rs`
+- `src/htree.rs`
+- `src/lib.rs`
+- `src/node.rs`
+- `src/transaction.rs`
 
 ## talc
 
@@ -38,3 +55,5 @@ Full comparison: https://github.com/SFBdragon/talc/compare/15b2758a45388f8a5c9ef
 Upstream has not touched any file our divergence patch touches.
 
 **Upstream fix: still open**: https://github.com/SFBdragon/talc/pull/57 (Fix fit check overflows).
+
+**Held dependency: stays held.** No published talc newer than 5.1.1 allows lock_api 0.5.0, so the `lock_api` ignore in .github/dependabot.yml stays.

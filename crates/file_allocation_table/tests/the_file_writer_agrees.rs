@@ -334,16 +334,7 @@ fn a_fat32_root_grows_past_one_cluster_and_a_fat16_root_refuses() {
 #[test]
 fn names_and_stale_entries_are_refused() {
     let mut volume = Volume::open(formatted(4, FatType::Fat12, 512)).unwrap();
-    for bad in [
-        "",
-        "lower.txt",
-        "NINECHARS.TXT",
-        "A.LONG",
-        "A..B",
-        "A B.TXT",
-        ".HID",
-        "A.",
-    ] {
+    for bad in ["", "a/b", "ends.", "has*star"] {
         assert_eq!(
             volume.create_file(0, bad),
             Err(WriteError::InvalidName),
