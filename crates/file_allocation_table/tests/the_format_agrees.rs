@@ -13,7 +13,6 @@ use file_allocation_table::{
     BootSector, FileAllocationTableType, Format, FormatError, FormatOptions, SectorDevice,
     SectorSize, Volume, WritableSectorDevice,
 };
-use lamfat::FatType;
 
 /// A volume held in memory, read and written one sector at a time.
 struct Memory {
@@ -45,22 +44,6 @@ impl WritableSectorDevice for Memory {
             .ok_or(index)?;
         bytes.copy_from_slice(buffer);
         Ok(())
-    }
-}
-
-/// An empty volume of `mebibytes` that rust-fatfs formatted as `fat_type`.
-fn formatted(mebibytes: usize, fat_type: lamfat::FatType, sector: u16) -> Memory {
-    let mut image = vec![0u8; mebibytes << 20];
-    lamfat::format_volume(
-        &mut lamfat::StdIoWrapper::from(Cursor::new(&mut image)),
-        lamfat::FormatVolumeOptions::new()
-            .fat_type(fat_type)
-            .bytes_per_sector(sector),
-    )
-    .expect("rust-fatfs formats the volume");
-    Memory {
-        bytes: image,
-        size: SectorSize::from_bytes(sector).expect("a permitted sector size"),
     }
 }
 
@@ -184,16 +167,19 @@ fn check(label: &str, format: &Format, image: Memory) {
     check_with_fsck(&image.bytes, &format!("{label}-filled"));
 }
 
+/// A case: its label, sector size, sector count, the type to demand and the cluster size to demand.
+type Case = (
+    &'static str,
+    SectorSize,
+    u32,
+    Option<FileAllocationTableType>,
+    Option<u32>,
+);
+
 #[test]
 fn every_type_at_every_sector_size_formats_to_a_volume_the_oracles_accept() {
     use FileAllocationTableType::{Fat12, Fat16, Fat32};
-    let cases: [(
-        &str,
-        SectorSize,
-        u32,
-        Option<FileAllocationTableType>,
-        Option<u32>,
-    ); 9] = [
+    let cases: [Case; 9] = [
         ("fat12-1m", SectorSize::Bytes512, 2 * 1024, None, None),
         (
             "fat12-4m",
