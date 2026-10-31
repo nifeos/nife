@@ -1391,7 +1391,9 @@ mod tests {
     /// panicked `jig`; 456 is an exact multiple of the 24-byte message; the rest are the edges.
     #[test]
     fn stored_records_come_back_at_every_length() {
-        for len in [0usize, 1, 7, 8, 9, 23, 24, 25, 32, 48, 455, 456, 457, 460, 463, 464, 480] {
+        for len in [
+            0usize, 1, 7, 8, 9, 23, 24, 25, 32, 48, 455, 456, 457, 460, 463, 464, 480,
+        ] {
             let records: alloc::vec::Vec<u8> = (0..len).map(|i| (i % 251) as u8 + 1).collect();
             let mut back = alloc::vec![0u8; len];
             for m in 0..stored_messages(len as u64) as usize {

@@ -246,4 +246,3 @@ pub mod memory_region_service;
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // the milestone-169 raw-mode tests are its only caller
 pub mod raw_mode_service;
-
