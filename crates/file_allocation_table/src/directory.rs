@@ -400,12 +400,20 @@ impl<'v, D: SectorDevice> Directory<'v, D> {
         Ok(true)
     }
 
-    fn advance(&mut self) -> Option<Result<DirectoryEntry, ChainError<D::Error>>> {
-        Some(self.advance_indexed()?.map(|(_, entry)| entry))
+    /// The next used slot with its index from the directory's start, counting free slots. After
+    /// the end or an error it returns `None`, whichever way it is called.
+    pub(crate) fn advance_indexed(&mut self) -> Option<Indexed<D::Error>> {
+        if self.done {
+            return None;
+        }
+        let result = self.scan();
+        if !matches!(result, Some(Ok(_))) {
+            self.done = true;
+        }
+        result
     }
 
-    /// The next used slot with its index from the directory's start, counting free slots.
-    pub(crate) fn advance_indexed(&mut self) -> Option<Indexed<D::Error>> {
+    fn scan(&mut self) -> Option<Indexed<D::Error>> {
         let size = self.volume.boot_sector().sector_size().bytes();
         let file_allocation_table_type = self.volume.boot_sector().file_allocation_table_type();
         loop {
@@ -434,14 +442,7 @@ impl<D: SectorDevice> Iterator for Directory<'_, D> {
     type Item = Result<DirectoryEntry, ChainError<D::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.done {
-            return None;
-        }
-        let result = self.advance();
-        if !matches!(result, Some(Ok(_))) {
-            self.done = true;
-        }
-        result
+        Some(self.advance_indexed()?.map(|(_, entry)| entry))
     }
 }
 
