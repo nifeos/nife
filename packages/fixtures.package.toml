@@ -19,6 +19,7 @@ crates = [
     # data out of the wire-protocol crate; it is test
     # data, not a contract, so it is here and not in `contracts`.
     "coremark",
+    "primitive_benchmark_contract",
     "job_mix",
     "soak_page",
     "c_seam",

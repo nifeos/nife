@@ -1,5 +1,5 @@
 //! **`null_syscall`: the cost of crossing into the kernel and back**, measured from EL0 the lmbench
-//! way (`lat_syscall null`), as a command (milestone 961 step 1).
+//! way (`lat_syscall null`), as a command (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1).
 //!
 //! It makes [`primitive_benchmark_contract::NULL_SYSCALL_ITERATIONS`] traps with an unrecognized
 //! syscall number, which the kernel rejects at once (`Err(BadSyscall)`: no scheduler, no object
@@ -35,9 +35,9 @@
 //! lmbench reader looks for; the order of a ratified calef name is not claimed.
 
 #![no_std]
-// Program entry points, not the crates/ library surface milestone 68's ratchet tracks
-// (DECISIONS §107): each `[[bin]]` is its own crate root with one `_start`, and 58 of them
-// documenting an OS-facing ABI entry point is not what the lint is for.
+// Program entry points, not the crates/ library surface the missing-docs ratchet tracks: each
+// `[[bin]]` is its own crate root with one `_start`, and documenting an OS-facing ABI entry point
+// on every one is not what the lint is for.
 #![allow(missing_docs)]
 #![no_main]
 
@@ -56,12 +56,7 @@ fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
     }
     let ticks = now().wrapping_sub(start);
     write_row(
-        |w0, w1, w2| {
-            matches!(
-                byte_sink_contract::classify(send(OUTPUT, w0, w1, w2)),
-                byte_sink_contract::Sent::Ok
-            )
-        },
+        |w0, w1, w2| byte_sink_contract::classify(send(OUTPUT, w0, w1, w2)),
         Prefix::from_startup_word(startup_word),
         "null_syscall",
         ticks,

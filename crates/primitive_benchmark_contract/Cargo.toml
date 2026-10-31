@@ -1,4 +1,4 @@
-# Name: provisional (milestone 961 step 1). The provenance block, with the refusals, lives in
+# Name: provisional (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1). The provenance block, with the refusals, lives in
 # src/lib.rs, which is where the naming gate reads it and where a reader meets the crate.
 [package]
 name = "primitive_benchmark_contract"

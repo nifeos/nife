@@ -30,14 +30,14 @@
 //!   `map_el0` mapped into one the kernel built. The mapping path is the same, and the quiet row
 //!   moved 2.1% under the baseline's, inside `script/bench --check`'s tolerance.
 //! - A production-shell row competes with the console, `net_stack` and the shell for the core; it
-//!   is recorded, never gated (milestone 961, decision D6).
+//!   is recorded, never gated (milestone 961 (the kernel's special boots become commands typed at the production shell), decision D6).
 //!
-//! Name: recorded (the row's own name since milestone 21, `bench/baseline-*.txt`).
+//! Name: recorded (the row's own name since milestone 21 (performance measurement: benchmarks with teeth), `bench/baseline-*.txt`).
 
 #![no_std]
-// Program entry points, not the crates/ library surface milestone 68's ratchet tracks
-// (DECISIONS §107): each `[[bin]]` is its own crate root with one `_start`, and 58 of them
-// documenting an OS-facing ABI entry point is not what the lint is for.
+// Program entry points, not the crates/ library surface the missing-docs ratchet tracks: each
+// `[[bin]]` is its own crate root with one `_start`, and documenting an OS-facing ABI entry point
+// on every one is not what the lint is for.
 #![allow(missing_docs)]
 #![no_main]
 
@@ -90,11 +90,8 @@ fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
     exit();
 }
 
-fn sink(w0: u64, w1: u64, w2: u64) -> bool {
-    matches!(
-        byte_sink_contract::classify(send(OUTPUT, w0, w1, w2)),
-        byte_sink_contract::Sent::Ok
-    )
+fn sink(w0: u64, w1: u64, w2: u64) -> byte_sink_contract::Sent {
+    byte_sink_contract::classify(send(OUTPUT, w0, w1, w2))
 }
 
 /// One `MAP_INTO`: map `frame` read-only into `space` at `va`. Read-only needs only `READ` on the

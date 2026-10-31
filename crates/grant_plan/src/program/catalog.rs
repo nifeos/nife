@@ -397,7 +397,7 @@ programs! {
         ///
         /// Name: provisional (milestone 933's lane, 2026-10-27 UTC).
         JobSleeper { id: 23, name: "job_sleeper" },
-        /// **Time a null system call from EL0** (milestone 961 step 1,
+        /// **Time a null system call from EL0** (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1,
         /// `fixtures/src/null_syscall.rs`): one row of ticks and iterations under the
         /// `bench-production:` prefix.
         ///
@@ -429,7 +429,7 @@ programs! {
         /// ten pages (measured; see `primitive_benchmark_contract::MAP_BUDGET_PAGES`). No other
         /// authority.
         ///
-        /// Name: recorded (the row's own name since milestone 21).
+        /// Name: recorded (the row's own name since milestone 21 (performance measurement: benchmarks with teeth)).
         MapEl0 { id: 27, name: "map_el0" },
     }
 }

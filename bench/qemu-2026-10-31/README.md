@@ -1,6 +1,6 @@
 # Production-shell rows under QEMU, 2026-10-31 (UTC)
 
-First rows typed at the prompt of the default kernel (milestone 961 step 1), aarch64 under QEMU TCG
+First rows typed at the prompt of the default kernel (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1), aarch64 under QEMU TCG
 with four cores and no `-icount`, taken by `script/swish-check --arch aarch64`. `production-rows-aarch64.log`
 holds the transcript and the boot log's counter-frequency line that converts the ticks.
 

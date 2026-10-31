@@ -1,5 +1,5 @@
 //! **`sink_producer`: the writing half of `sink_producer | sink_consumer`**, the pipe throughput
-//! benchmark as a command (milestone 961 step 1).
+//! benchmark as a command (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1).
 //!
 //! It packs sixteen bytes into the sink contract's three words and `SEND`s them,
 //! [`primitive_benchmark_contract::SINK_MESSAGES`] plus the warmup count of times, then ends the
@@ -30,9 +30,9 @@
 //! contract they speak (`sink_`) and their side of it.
 
 #![no_std]
-// Program entry points, not the crates/ library surface milestone 68's ratchet tracks
-// (DECISIONS §107): each `[[bin]]` is its own crate root with one `_start`, and 58 of them
-// documenting an OS-facing ABI entry point is not what the lint is for.
+// Program entry points, not the crates/ library surface the missing-docs ratchet tracks: each
+// `[[bin]]` is its own crate root with one `_start`, and documenting an OS-facing ABI entry point
+// on every one is not what the lint is for.
 #![allow(missing_docs)]
 #![no_main]
 

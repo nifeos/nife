@@ -1,5 +1,5 @@
 //! **`sink_consumer`: the reading half of `sink_producer | sink_consumer`, self-timed**
-//! (milestone 961 step 1).
+//! (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1).
 //!
 //! It discards [`primitive_benchmark_contract::SINK_WARMUP_MESSAGES`] messages, times the next
 //! [`primitive_benchmark_contract::SINK_MESSAGES`] with `user_mode_runtime::now`, drains the stream
@@ -38,9 +38,9 @@
 //! Name: provisional (milestone 961 step 1, 2026-10-31 UTC), the partner of `sink_producer`.
 
 #![no_std]
-// Program entry points, not the crates/ library surface milestone 68's ratchet tracks
-// (DECISIONS §107): each `[[bin]]` is its own crate root with one `_start`, and 58 of them
-// documenting an OS-facing ABI entry point is not what the lint is for.
+// Program entry points, not the crates/ library surface the missing-docs ratchet tracks: each
+// `[[bin]]` is its own crate root with one `_start`, and documenting an OS-facing ABI entry point
+// on every one is not what the lint is for.
 #![allow(missing_docs)]
 #![no_main]
 
@@ -78,12 +78,7 @@ fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
         }
     }
     write_row(
-        |w0, w1, w2| {
-            matches!(
-                byte_sink_contract::classify(send(OUTPUT, w0, w1, w2)),
-                byte_sink_contract::Sent::Ok
-            )
-        },
+        |w0, w1, w2| byte_sink_contract::classify(send(OUTPUT, w0, w1, w2)),
         Prefix::from_startup_word(startup_word),
         "sink_throughput",
         ticks,

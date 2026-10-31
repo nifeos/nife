@@ -178,9 +178,8 @@ prompt echoes the first keystroke and no later one (pull request #2485), so noth
 there yet. QEMU and xenon can start sooner.
 
 1. The `bench` EL0 rows as a command. LANDED for `null_syscall`, `sink_throughput` and `map_el0`
-   (ruled 2026-10-31): each is a program of its own with a catalog entry and a manifest that asks
-   for no authority (`map_el0` asks for a ten-page `--mem`), and the bench boot spawns the same
-   programs. `ctx_switch`, `ipc_rtt_el0` and `spawn_el0` stay in the bench boot.
+   (ruled 2026-10-31). Each is a program of its own with a catalog entry. Its manifest asks for no
+   authority (`map_el0` asks for a ten-page `--mem`), and the bench boot spawns the same programs. `ctx_switch`, `ipc_rtt_el0` and `spawn_el0` stay in the bench boot.
 2. `network_bench` on radon, with the production kernel printing D1's lines at bring-up. No new
    authority, and radon's production boot has the network.
 3. The raw-disk grant, then `disk_throughput` through it. xenon and the OVMF rehearsal.
