@@ -30,7 +30,7 @@ re-cut, at the headline assertion.
 diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_region.rs
 --- a/kernel/src/syscall/memory_region.rs
 +++ b/kernel/src/syscall/memory_region.rs
-@@ -73,8 +73,6 @@
+@@ -74,8 +74,6 @@
      if !paging::is_user_page_va::<crate::arch::mmu::Format>(va) {
          return Err(Error::BadPointer);
      }
@@ -38,21 +38,43 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 -    crate::delegation_pause::here(); // no lock held
      let mut hold = crate::revoke::hold();
      let root = mmu::current_user_root();
-     // The leaf, then the tables, each table recorded as it is retyped: `DESTROY` must find the
-@@ -82,9 +80,14 @@
-     let Some(phys) = crate::memory_region::retype_page(region) else {
-         return Err(Error::OutOfMemory);
-     };
--    match mmu::map_current_user_page_frame(va, phys, paging::Flags::user_data(), || {
-+    let mapped = mmu::map_current_user_page_frame(va, phys, paging::Flags::user_data(), || {
+     // The leaf's page, then its record, then the tables, each table recorded as it is retyped:
+@@ -88,20 +86,26 @@
+     // revocation and untyped reclamation)). No capability names the page, and it is fresh, so the
+     // record's writable-and-executable check finds nothing to refuse.
+     let flags = paging::Flags::user_data();
+-    let recorded = hold
+-        .record_mapping(phys, root, va, flags, crate::revoke::PageMapSource::NoCapability)
+-        .map_err(|_| Error::OutOfMemory)?;
+-    match mmu::map_current_user_page_frame(va, phys, flags, || {
++    let mapped = mmu::map_current_user_page_frame(va, phys, flags, || {
          hold.retype_table(region, root, va)
 -    }) {
+-        Ok(()) => Ok(0),
+-        Err(e) => {
+-            hold.forget_recorded(root, recorded);
+-            Err(match e {
+-                paging::MapError::OutOfPageFrames => Error::OutOfMemory,
+-                _ => Error::BadPointer, // misaligned, already mapped, or wrong half
+-            })
 +    });
 +    drop(hold);
 +    #[cfg(feature = "system_tests")]
 +    crate::delegation_pause::here(); // no lock held
 +    let mut hold = crate::revoke::hold();
 +    match mapped {
-         Ok(()) => {
-             // No record, no mapping: an unrecorded mapping is invisible to revocation (§13
-             // (capability revocation and untyped reclamation)). No capability names the page.
++        Ok(()) => {
++            if hold
++                .record_mapping(phys, root, va, flags, crate::revoke::PageMapSource::NoCapability)
++                .is_err()
++            {
++                mmu::unmap_user_at(root, va);
++                return Err(Error::OutOfMemory);
++            }
++            Ok(0)
+         }
++        Err(paging::MapError::OutOfPageFrames) => Err(Error::OutOfMemory),
++        Err(_) => Err(Error::BadPointer), // misaligned, already mapped, or wrong half
+     }
+ }
+ 
