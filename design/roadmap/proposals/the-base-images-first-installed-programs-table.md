@@ -20,8 +20,9 @@ Ruled 2026-10-30 (UTC) by calef, on #2894: the first table lives on the UFS2 lau
 seed image is not a separate artifact. The options below are the fork that ruling answered.
 
 Reuse: the table and its grammar (`crates/installed_programs`), the approval file and its check
-(`crates/approval_file`), and the launch filesystem the table lives on, UFS2 through the server of
-milestone 981 (UFS2, read and write: a Rust server with FreeBSD's tools as the oracle). Nothing
+(`crates/approval_file`), and the
+launch filesystem the table lives on: UFS2, through milestone 981 (UFS2, read and write: a Rust
+server with FreeBSD's tools as the oracle). Nothing
 here proposes a second table, a second grammar or a second approval format.
 
 ## The failure
