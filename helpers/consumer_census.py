@@ -1,12 +1,12 @@
 """Report what the tree delivered that nothing yet uses. Read-only, and it never fails.
 
 **Why this exists.** The proposal `design/roadmap/proposals/delivered-work-names-its-consumer.md`
-asks that each milestone name its consumer, that BUILT wait for a cited first use, and that a
-periodic audit list delivered work with no dependents. Before an architect rules on that, the tree
-needs numbers: how many blocks are BUILT, how many already name something a consumer could be read
-from, how many crates nothing depends on, and how many base-image programs nothing starts or uses.
-This prints them. It is the report-only mode the proposal's plan names, and it is wired into no
-gate: it exits 0 whatever it finds.
+records the architect's ruling of 2026-10-31 (UTC): a lane brief and a review ask what drives the
+work and what it saves, and this census runs report-only, by hand, monthly, to count how many
+blocks are BUILT, how many already name something a consumer could be read from, how many crates
+nothing depends on, and how many base-image programs nothing starts or uses. It is wired into no
+gate and exits 0 whatever it finds. A count of unused things cannot tell work not yet consumed from
+work built with no reason, so a finding is a question for a person.
 
     python3 helpers/consumer_census.py           # the counts
     python3 helpers/consumer_census.py --list    # the counts, then every item behind each count
