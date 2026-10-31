@@ -135,13 +135,9 @@ impl LongName {
             None => (units, &[][..]),
         };
         let mut tail = [b'~'; 7];
-        let mut digits = 0;
+        // `number` is 1 or more here, so `ilog10` is defined and the digit count has no loop.
+        let digits = number.ilog10() as usize + 1;
         let mut rest = number;
-        while rest > 0 {
-            digits += 1;
-            rest /= 10;
-        }
-        rest = number;
         for at in (1..=digits).rev() {
             tail[at] = b'0' + (rest % 10) as u8;
             rest /= 10;

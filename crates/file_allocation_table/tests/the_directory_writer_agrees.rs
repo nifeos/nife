@@ -9,7 +9,9 @@ use std::io::{Cursor, Read};
 use std::path::Path;
 use std::process::Command;
 
-use file_allocation_table::{SectorDevice, SectorSize, Volume, WritableSectorDevice, WriteError};
+use file_allocation_table::{
+    RootDirectory, SectorDevice, SectorSize, Volume, WritableSectorDevice, WriteError,
+};
 use lamfat::FatType;
 
 /// A volume held in memory, read and written one sector at a time.
@@ -297,4 +299,100 @@ fn directories_long_names_and_renames_agree_on_fat16() {
 #[test]
 fn directories_long_names_and_renames_agree_on_fat32() {
     scenario("dirs-fat32", 64, FatType::Fat32);
+}
+
+/// A FAT32 volume with 512-byte clusters and enough fill that every new cluster number is above
+/// 65535: directories made there need the high half of the cluster number in their entry, in
+/// their `.`, and in a child's `..`.
+fn high_volume() -> Volume<Memory> {
+    let mut image = formatted(64, FatType::Fat32, 512);
+    let mut cursor = Cursor::new(&mut image.bytes);
+    lamfat::format_volume(
+        &mut lamfat::StdIoWrapper::from(&mut cursor),
+        lamfat::FormatVolumeOptions::new()
+            .fat_type(FatType::Fat32)
+            .bytes_per_cluster(512),
+    )
+    .unwrap();
+    let mut volume = Volume::open(image).unwrap();
+    let filler = vec![0x5Au8; 1 << 20];
+    let entry = volume.create_file(0, "FILL.BIN").unwrap();
+    let mut writer = volume.open_file_writer(&entry).unwrap();
+    for _ in 0..34 {
+        writer.write(&filler).unwrap();
+    }
+    volume
+}
+
+#[test]
+fn directories_above_cluster_65535_keep_their_high_bits_through_a_move() {
+    let mut volume = high_volume();
+    let RootDirectory::Cluster(root_cluster) = volume.boot_sector().root_directory() else {
+        panic!("FAT32 keeps its root in a chain");
+    };
+    // The root named by its cluster number is the root.
+    let a = volume.make_directory(root_cluster, "High A").unwrap();
+    assert!(a.first_cluster() > 65_535);
+    let b = volume.make_directory(a.first_cluster(), "High B").unwrap();
+    let c = volume.make_directory(0, "High C").unwrap();
+    put(&mut volume, b.first_cluster(), "inside b.txt", b"b");
+    // A move below itself is refused even when every `..` on the way needs its high half.
+    assert_eq!(
+        volume.rename(&a, b.first_cluster(), "x"),
+        Err(WriteError::MovedIntoItself)
+    );
+    // And a move to a high parent rewrites `..` with its high half.
+    let moved = volume
+        .rename(&b, c.first_cluster(), "High B Moved")
+        .unwrap();
+    assert_eq!(moved.first_cluster(), b.first_cluster());
+    put(&mut volume, moved.first_cluster(), "second.txt", b"2");
+    volume.sync().unwrap();
+    let image = volume.into_device();
+    let tree = oracle_tree(&image.bytes);
+    for (path, directory) in [
+        ("/High A", true),
+        ("/High C", true),
+        ("/High C/High B Moved", true),
+        ("/High C/High B Moved/inside b.txt", false),
+        ("/High C/High B Moved/second.txt", false),
+    ] {
+        assert!(
+            tree.iter().any(|(p, d, _)| p == path && *d == directory),
+            "{path}"
+        );
+    }
+    check_with_fsck(&image.bytes, "high-directories");
+}
+
+#[test]
+fn a_new_directory_in_a_multi_sector_cluster_is_zeroed_past_its_dots() {
+    // FAT32 needs 65,525 clusters, which at 2048 bytes each is 134 MB.
+    let mut image = Memory {
+        bytes: vec![0u8; 150 << 20],
+        size: SectorSize::Bytes512,
+    };
+    let mut cursor = Cursor::new(&mut image.bytes);
+    lamfat::format_volume(
+        &mut lamfat::StdIoWrapper::from(&mut cursor),
+        lamfat::FormatVolumeOptions::new()
+            .fat_type(FatType::Fat32)
+            .bytes_per_cluster(2048),
+    )
+    .unwrap();
+    let boot = *Volume::open(Memory {
+        bytes: image.bytes.clone(),
+        size: image.size,
+    })
+    .unwrap()
+    .boot_sector();
+    let data = boot.first_data_sector() as usize * 512;
+    image.bytes[data + 2048..].fill(0xAA);
+    let mut volume = Volume::open(image).unwrap();
+    volume.make_directory(0, "Fresh").unwrap();
+    volume.sync().unwrap();
+    let image = volume.into_device();
+    let tree = oracle_tree(&image.bytes);
+    assert_eq!(tree, tree_of(&[("/Fresh", true, b"")]));
+    check_with_fsck(&image.bytes, "fresh-dir");
 }

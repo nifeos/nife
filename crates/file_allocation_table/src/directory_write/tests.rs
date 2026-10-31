@@ -142,6 +142,12 @@ fn a_rename_keeps_the_data_and_a_moved_directory_gets_a_new_dotdot() {
     );
     assert!(volume.lookup("A/data.bin").is_err());
     assert!(volume.lookup("B/data renamed.BIN").is_ok());
+    // The moved file's bytes are untouched (a move rewrites entries, never clusters).
+    let entry = volume.lookup("B/data renamed.BIN").unwrap();
+    let mut reader = volume.open_file(&entry).unwrap();
+    let mut out = [0u8; 700];
+    assert_eq!(reader.read(&mut out).unwrap(), 600);
+    assert!(out[..600].iter().all(|b| *b == 7));
     let a = volume.lookup("A").unwrap();
     volume.rename(&a, b.first_cluster(), "A Inside B").unwrap();
     let dotdot = volume.read_slot(a.first_cluster(), 1).unwrap().unwrap();
@@ -200,4 +206,36 @@ fn a_rename_that_only_changes_case_keeps_one_entry() {
         .filter(|e| !e.is_volume_label())
         .count();
     assert_eq!(listed, 1);
+}
+
+#[test]
+fn a_stale_entry_is_refused_by_a_directory_remove_and_a_rename() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let dir = volume.make_directory(0, "D").unwrap();
+    let file = volume.create_file(0, "F.TXT").unwrap();
+    // The directory's slot becomes a long-name piece; the file's slot is freed and reused.
+    let slot = dir.place().short_slot as usize;
+    volume.remove_file(&file).unwrap();
+    assert_eq!(
+        volume.rename(&file, 0, "G.TXT"),
+        Err(WriteError::EntryChanged)
+    );
+    let mut image = volume.into_device();
+    image.bytes[5 * 512 + slot * 32 + 11] = 0x0F;
+    let mut volume = Volume::open(image).unwrap();
+    assert_eq!(volume.remove_directory(&dir), Err(WriteError::EntryChanged));
+    assert_eq!(volume.rename(&dir, 0, "E"), Err(WriteError::EntryChanged));
+}
+
+#[test]
+fn a_volume_label_cannot_be_renamed() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let file = volume.create_file(0, "L.TXT").unwrap();
+    let mut image = volume.into_device();
+    image.bytes[5 * 512 + 11] = 0x08;
+    let mut volume = Volume::open(image).unwrap();
+    let label = volume.root_entries().map(|e| e.unwrap()).next().unwrap();
+    assert!(label.is_volume_label());
+    assert_eq!(volume.rename(&label, 0, "NEW"), Err(WriteError::NotAFile));
+    let _ = file;
 }
