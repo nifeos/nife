@@ -696,6 +696,8 @@ pub struct EveryCoreTickBudget {
 #[cfg(any(test, feature = "system_tests"))]
 impl EveryCoreTickBudget {
     /// Start a budget of `ticks` on every online core, bounded by `backstop_seconds` of the counter.
+    ///
+    /// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
     pub fn new(ticks: u64, backstop_seconds: u64) -> Self {
         Self {
             ticks,
@@ -709,6 +711,8 @@ impl EveryCoreTickBudget {
 
     /// Has every online core taken its ticks, or has the backstop passed? Each call samples once
     /// and keeps the sample, so a message printed after a `true` shows what decided it.
+    ///
+    /// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
     pub fn is_expired(&mut self) -> bool {
         self.elapsed = crate::arch::timer::now().wrapping_sub(self.started_at);
         let mut every_core = true;
@@ -721,6 +725,8 @@ impl EveryCoreTickBudget {
 
     /// Did the last [`is_expired`](Self::is_expired) sample find the backstop passed? A wait that
     /// ends here ended on the counter, not on the guest's running time.
+    ///
+    /// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
     pub fn is_past_backstop(&self) -> bool {
         self.elapsed >= self.backstop
     }
@@ -773,14 +779,17 @@ pub fn wait_on_every_core(mut done: impl FnMut() -> bool) -> Result<(), EveryCor
     }
 }
 
-/// Seconds of ticks every online core must take before [`wait_on_every_core`] gives up: the two
-/// seconds the fuzz drivers' wall-clock deadlines were.
+/// Seconds of ticks every online core must take before [`wait_on_every_core`] gives up.
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
 #[cfg(any(test, feature = "system_tests"))]
 pub const WAIT_ON_EVERY_CORE_SECONDS: u64 = 2;
 
 /// Seconds of the counter after which [`wait_on_every_core`] gives up whatever the ticks say.
 /// Under the 60 s hang watchdog and the 90 s per-test budget, and more than ten times the longest
 /// stall measured on a loaded host (notes/kernel-test-harness.md).
+///
+/// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
 #[cfg(any(test, feature = "system_tests"))]
 pub const WAIT_ON_EVERY_CORE_BACKSTOP_SECONDS: u64 = 20;
 

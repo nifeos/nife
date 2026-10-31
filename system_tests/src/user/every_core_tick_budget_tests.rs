@@ -5,6 +5,8 @@
 //! A host that stops running one vCPU looks, from inside the guest, like a core that takes no ticks
 //! while the counter runs on. A core spinning with its interrupts masked gives the guest the same
 //! observation, so these tests stand one in for the other.
+//!
+//! Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
 
 use core::sync::atomic::{AtomicU32, Ordering};
 

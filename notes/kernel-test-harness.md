@@ -129,8 +129,9 @@ ticks at all, stopped by the host or wedged with interrupts masked, holds the bu
 backstop on the counter. `wait_on_every_core` gives two seconds of ticks on every core and a 20 s
 backstop, and the seeded fuzz drivers wait with it. On a dedicated x86_64 virtual machine under
 KVM, each of four guests running side by side stalled once for 1.45 s of the counter on
-2026-10-31 (UTC), and every stall ended without a fault: two seconds of the counter alone is no
-margin. Milestone 752's `BUGS` has the false reds such stalls caused.
+2026-10-31 (UTC). Every stall ended without a fault, so two seconds of the counter alone is no
+margin. The `BUGS` of milestone 752 (a seeded syscall driver with a shadow model) has the false reds
+such stalls caused.
 
 ## The preemption window tests
 
