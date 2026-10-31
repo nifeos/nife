@@ -245,6 +245,7 @@ dependencies = [
  "non_volatile_memory_express",
  "pgrep",
  "pmap",
+ "process_builder",
  "ps",
  "screen_console",
  "slabtop",
@@ -535,6 +536,7 @@ dependencies = [
  "grant_plan",
  "graphics_contract",
  "hot_swap_contract",
+ "hot_swap_server",
  "job_mix",
  "line_editor",
  "loaded_image_check",
@@ -542,6 +544,7 @@ dependencies = [
  "memory_region_heap",
  "network_time_protocol",
  "nifefs",
+ "process_builder",
  "soak_page",
  "socket_contract",
  "supervision_contract",
@@ -645,9 +648,15 @@ dependencies = [
 name = "hot_swap_contract"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_map",
  "capability_plan",
+]
+
+[[package]]
+name = "hot_swap_server"
+version = "0.1.0"
+dependencies = [
+ "hot_swap_contract",
  "user_mode_runtime",
 ]
 
@@ -1054,8 +1063,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "process_builder"
+version = "0.1.0"
+dependencies = [
+ "abi",
+ "address_space_map",
+ "counter_frequency_contract",
+ "elf",
+ "supervision_contract",
+ "user_mode_runtime",
+]
+
+[[package]]
 name = "program_argument_contract"
 version = "0.1.0"
+
+[[package]]
+name = "program_asks"
+version = "0.1.0"
+dependencies = [
+ "capability_manifest_note",
+ "elf",
+ "grant_plan",
+ "installed_programs",
+ "package_archive",
+]
 
 [[package]]
 name = "ps"
@@ -1301,11 +1333,7 @@ dependencies = [
 name = "supervision_contract"
 version = "0.1.0"
 dependencies = [
- "abi",
  "address_space_map",
- "counter_frequency_contract",
- "elf",
- "user_mode_runtime",
 ]
 
 [[package]]
@@ -1366,6 +1394,8 @@ dependencies = [
  "nifefs",
  "package_archive",
  "package_index",
+ "process_builder",
+ "program_asks",
  "socket_contract",
  "std_runtime_contract",
  "supervision_contract",
@@ -1793,6 +1823,7 @@ dependencies = [
  "object",
  "package_archive",
  "package_index",
+ "program_asks",
  "screen_console",
  "sealed_pair",
  "serial_console",

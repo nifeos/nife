@@ -94,7 +94,12 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         // request that arrives first finds the page already written, and a signal we never see
         // costs latency and nothing else.
         let got = user_mode_runtime::receive_request_bound(FRONT);
-        let wants_down = hot_swap_contract::broker_wants_down();
+        // SAFETY: `BROKER` declares the warning page read-only at `BROKER_WARN_VA`, so every broker
+        // has it mapped; the operator writes it before it signals.
+        let wants_down = unsafe {
+            core::ptr::read_volatile(hot_swap_contract::BROKER_WARN_VA as *const u64)
+                == hot_swap_contract::WANT_DOWN
+        };
         if wants_down && up {
             up = false;
         } else if !wants_down && !up {

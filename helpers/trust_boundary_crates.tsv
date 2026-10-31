@@ -94,6 +94,7 @@ graphics_proto	shared	retired
 graphics_protocol	shared	retired
 heap	kernel	retired
 hot_swap_contract	userspace	components,fixtures
+hot_swap_server	userspace	fixtures
 http_response	userspace	components,jig,pinned_tls_client
 installed_programs	shared	components,fixtures,jig,kernel
 inter_process_communication	kernel	kernel
@@ -142,7 +143,9 @@ periodic_deadline	shared	components,fixtures,kernel
 pgrep	userspace	components
 pmap	userspace	components
 portable_executable	host	retired
+process_builder	userspace	components,fixtures
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
+program_asks	userspace	components,fixtures
 ps	userspace	components
 regions	kernel	retired
 screen_console	shared	components,kernel,uefi_loader

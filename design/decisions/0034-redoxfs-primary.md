@@ -7,9 +7,36 @@ ratified_by: calef
 
 # 34. RedoxFS is the primary filesystem, on three conditions
 
-**Decided 2026-07-29 (calef), with the conditions attached deliberately so the label and its caveats
-land together.** RedoxFS is the primary on-disk filesystem. It is not yet the *root* filesystem, and
-§34.3 below is why that is a separate piece of work rather than a relabelling.
+**Decided 2026-07-29 (UTC); its launch-store role reaffirmed 2026-10-31 (UTC), on #2927.** RedoxFS
+is the primary on-disk filesystem and the launch store: the writable volume the image boots into,
+that `jig` installs packages onto, and that holds the installed-programs table under `activation/`.
+It is not yet the *root* filesystem, and §34.3 below is why that is a separate piece of work rather
+than a relabelling.
+
+## What could replace it, and what will not
+
+The next measurement is ext4 through `rsext4` (Starry-OS, Apache-2.0, `no_std`, two dependencies),
+under the injector of milestone 37 (Prove RedoxFS's crash consistency), judged by `e2fsck -fn` after
+Linux replays the journal. The proposal `ext4-through-rsext4-under-the-crash-injector` carries it.
+If it passes, one ext4 server may become both the launch store and the reader of Linux drives that
+milestone 190 (ext4, read and write) wants, and RedoxFS then leaves through a milestone of its own.
+If it fails, RedoxFS stays.
+
+nife does not build a UFS2 server (milestone 981 (UFS2, read and write), refused). UFS2 would need a writer, an `fsck` and
+a crash mechanism nife does not have, and it reads few drives other systems made. The measurement
+lives in [`ufs2-builds-2026-10-31.md`](../../notes/ufs2-builds-2026-10-31.md), and the four routes
+compared are in [the launch filesystem's candidates](../../notes/launch-filesystem-candidates.md).
+
+Two measurements from 2026-10-31 (UTC) stand behind this. nife's whole divergence from RedoxFS
+0.9.1 applies to upstream's head without a conflict, and that head needs one more import to build
+`no_std`. And two Rust ext4 writers, `rsext4` and `rust-fs-ext4`, write images that pass `e2fsck -fn`
+with `metadata_csum` on.
+
+Prior art: Redox OS roots on RedoxFS. SerenityOS roots on an ext2 implementation it wrote itself.
+Fuchsia moved devices from minfs to Fxfs in place once Fxfs had proven itself, the shape an ext4 swap
+would take here. A concrete example: `jig install` writes `activation/current.next` and renames it
+over `current` in one RedoxFS transaction, and milestone 37's injector cuts power inside exactly
+that kind of commit.
 
 ## Why this commitment is cheaper here than the words suggest
 
@@ -106,51 +133,12 @@ The extended-attribute atomicity check and the rename finding are in
 
 ## Amendment (2026-07-31): the xattr fork is closed, the layer, and it is reversible
 
-The amendment above left the mechanism open. **Decided: extended attributes are implemented as a
-layer in the FS server, not as an extension to RedoxFS's on-disk format.**
-
-The argument that decides it is reversibility, and it outranks the others. `fs_proto` is the
-contract; whether an attribute lives in a node's on-disk structure or in a store the server manages is
-invisible above that boundary. So choosing the layer does not foreclose the format extension, if
-attributes later prove central enough to justify diverging from a pinned upstream, or if the change is
-accepted upstream, the implementation moves and no client changes. That makes this a low-regret
-decision rather than a bet, which is the right shape for a mechanism nobody has exercised yet.
-
-The supporting reasons, in order:
-
-1. It is crash-atomic, and that was measured rather than assumed. `fs.tx(|tx| …)` groups arbitrary
-   mutations into one commit, so a file write and its attribute write land together, and a delete
-   removes both or neither. This was the check that had to pass before the layer was viable at all.
-2. **Attributes key on `TreePtr<Node>`, not on a path**, because that is what the FS server already
-   works in (`handles: Vec<Option<TreePtr<Node>>>`). Rename is therefore free and correct: a
-   rename changes a directory entry, not the node, so attributes follow the file without any code
-   knowing that a rename happened. AppleDouble sidecars get exactly this wrong, and so would any
-   path-keyed store. This correctness property is only available inside the FS server, which is an
-   argument for the layer rather than merely a consolation for not forking the format.
-3. It decouples the requirement from the filesystem choice. A layer works over any backing
-   filesystem, so if RedoxFS is ever replaced the attributes come along.
-4. It preserves §34's upstream reason. The pin stays at 0.9.1 with a two-import divergence patch
-   rather than a format fork every future bump would pay for.
-5. Nothing can bypass it, because all access goes through `fs_proto`. On Linux this style of layer
-   is worthless (anything can open the file directly), and here it is authoritative. A capability
-   property doing real work.
-
-Three things to get right when building it, recorded now because each is a way to get it subtly
-wrong:
-
-- The attribute store must be invisible to enumeration. A directory listing must not show it, or
-  it becomes part of the namespace clients can name.
-- Deletion must be in the same transaction as the file's, or a deleted file leaks its attributes
-  and a later node reusing that pointer inherits them. That is a correctness bug wearing a
-  housekeeping costume.
-- Recovery sees it. `redoxfs_host extract` and upstream's FUSE mount will show the store as
-  ordinary data. That is acceptable and arguably good (the attributes come out with the backup), but
-  it must be a decision rather than a surprise, and `notes/host-recovery.md` should say so.
-
-What was rejected: extending the on-disk format. Correct, and atomic by construction, and it costs
-two of §34's four reasons: RedoxFS would stop being the filesystem Redox actually runs, and every pin
-bump would pay for the divergence. Reversibility makes that cost avoidable rather than merely
-deferred. calef's objection to "patching it in" was right, and the answer is not to patch it in.
+**Decided: extended attributes are a layer in the FS server, not an extension to RedoxFS's on-disk
+format.** The layer is crash-atomic (a file write and its attribute write share one `fs.tx`
+commit), keys on the node rather than the path so a rename carries attributes for free, and keeps
+the pin's two-import divergence patch. `fs_proto` hides where an attribute lives, so the choice is
+reversible. The reasons, the three ways to get it subtly wrong and the refused format extension are
+in [`xattr-layer.md`](0034-redoxfs-primary/xattr-layer.md).
 
 ## Amendment (2026-07-30): ZFS and XFS, and why RedoxFS is better-shaped than its size suggests
 

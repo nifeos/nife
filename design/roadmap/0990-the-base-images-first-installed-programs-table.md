@@ -1,13 +1,14 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
 raised: 2026-10-29
-milestone_dependencies: 909, 911
-decision_dependencies: 34, 208, 235
+promoted_from: the-base-images-first-installed-programs-table
+milestone_dependencies: 911
+decision_dependencies: 208, 235
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The base image's first installed-programs table
+# 990. The base image's first installed-programs table
 
 Raised 2026-10-29 (UTC) by lane `milestone/909-item-3-composition-checks-the-approval`, while
 implementing item 3 of milestone 909 (basalt composes the bootable image from its packages). Item 3
@@ -17,12 +18,14 @@ host-callable and needs no new format. The second half needs a place to put a ge
 composed image has no such place.
 
 Ruled 2026-10-30 (UTC) by calef, on #2894: the first table lives on the UFS2 launch volume, and a
-seed image is not a separate artifact. The options below are the fork that ruling answered.
+seed image is not a separate artifact. The options below are the fork that ruling answered. UFS2
+replaces RedoxFS as the launch filesystem (ruled 2026-10-31 UTC), so the launch volume is the
+volume every installed program lives on, not a store beside it.
 
 Reuse: the table and its grammar (`crates/installed_programs`), the approval file and its check
 (`crates/approval_file`), and the launch filesystem the table lives on, UFS2 through the server the
-launch-filesystem survey proposes. Nothing here proposes a second table, a second grammar or a
-second approval format.
+UFS2 arc (the proposal `ufs2-read-and-write-against-freebsds-tools`) builds. Nothing here proposes a
+second table, a second grammar or a second approval format.
 
 ## The failure
 
@@ -102,7 +105,25 @@ The choice is not the cheaper one. A bespoke nife-native store could land today,
 volume waits for a UFS2 server that does not exist. It wins because it leaves one store, one format
 and one writer, and because a second store would owe a migration to the launch filesystem later.
 
-## What is not proposed
+## The work
+
+1. `cargo xtask base-image` writes a UFS2 launch volume beside the kernel and the initial ramdisk.
+   Generation 1 under `activation/` holds the grant records `compose` produced, one per package,
+   and `activation/current` names it.
+2. `boot_check::boot_image` attaches the volume on all three architectures, and the progenitor's
+   `with_live_table` reads generation 1 from it with no change to its read path.
+3. The image's measurement covers the volume, so the first table carries the same measurement as
+   every other boot artifact.
+4. Milestone 909's item 3 closes on this: the composed image's first table holds the records its
+   approval file allowed.
+
+## Done when
+
+A composed image boots on all three architectures with its launch volume attached, the progenitor
+reads generation 1 from it, and a `jig install` on that boot writes generation 2 to the same
+volume.
+
+## What this milestone does not do
 
 - No change to `installed_programs`, `approval_file` or the `answered` line. The records the
   composition writes are the bytes an interactive install writes, and the approval's name and
@@ -111,13 +132,15 @@ and one writer, and because a second store would owe a migration to the launch f
   the composition checks every package against it.
 - No signing or pinning of the launch volume. That is milestone 917 (basalt's packages build
   reproducibly) and 607's item 6.
+- No UFS2 server. The UFS2 arc (`ufs2-read-and-write-against-freebsds-tools`) builds it, and its
+  phase 2 (make, judge, read) is what a launch volume needs. This milestone starts once that phase
+  lands.
 
-## What this proposal does not do
+The launch volume's attach point, its measurement and the `mkfs` step that writes `activation/1`
+are provisional names until the implementing lane names them. `compose` keeps the check seam, so
+the ruling changes where the records go and not how the composition checks them.
 
-It writes no code and mints no name. The launch volume's attach point, its measurement and the
-`mkfs` that writes `activation/1` are provisional until an implementing lane names them. `compose`
-keeps the check seam, so the ruling changes where the records go and not how the composition checks
-them.
+## Index row
 
-The UFS2 server this waits on is the launch-filesystem survey's arc, whose phase 2 (make, judge,
-read) is what a launch volume needs. That arc carries the store as one of its deliverables.
+The composed base image carries its first installed-programs table on the launch volume, so the
+first boot already holds the grants its approval file allowed.

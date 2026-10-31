@@ -1,7 +1,7 @@
 ---
 status: PARTIAL
 raised: 2026-10-12
-milestone_dependencies: 755, 607, 611, 810, 911, 919
+milestone_dependencies: 755, 607, 611, 810, 911, 919, 990
 decision_dependencies: 297, 235, 241, 250
 machine_requirements: none
 specific_machine: none
@@ -90,11 +90,16 @@ and basalt's existing repository, source-archive and publish path.
    carries that catalog plus `SOURCES_ENTRY` for the index it names.
 3. Each package in the image passes 911's host-side check against the image's approval file, and
    the image's first installed-programs table holds the resulting grant records. A package whose
-   manifest asks for more than the file allows fails the build, naming the extra grant. Open, and
-   it waits on 911 landing. The seam is `compose`, one call per package with the image's approval
-   file before it takes the program out of the archive, and 911's grant record is the one encoding
-   in `crates/installed_programs` that the interactive install and `jig install --approved` already
-   write.
+   manifest asks for more than the file allows fails the build, naming the extra grant.
+   - **The composer runs the check.** When the image's definition names an approval file,
+     `compose` reads each carried program's asks with `program_asks`, the reading the progenitor's
+     install uses. It tests them against the package's entry with `approval_file::File::check`, and
+     refuses the composition naming every extra grant of the package.
+   - **The table waits on milestone 990** (the base image's first installed-programs table). The
+     first table lives as files under `activation/` on the launch volume, currently RedoxFS, with no
+     separate seed image (ruled 2026-10-30 UTC on #2894). What the first generation holds, and what
+     measured boot needs from it, are in
+     [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md).
 4. basalt's gate boots the composed image rather than the one nife's tree built. A job of its own
    runs `helpers/packages.py base` and then `cargo xtask base-image <arch> --from <repository>
    --catalog <index> --test --boot` once per architecture, beside the `jig install` legs. It boots
@@ -118,8 +123,9 @@ than replaced.
 
 ## Follow-on
 
-- **Milestone 911.** Item 3's host-side check lands with 911's approval-file gate, which is in a
-  lane now. The composition leaves the seam at `compose` and does not invent a second check.
+- **Milestone 990.** Item 3's table half, where a composed image keeps its first generation, waits
+  on milestone 990 (the base image's first installed-programs table), which sits on the launch
+  volume, currently RedoxFS.
 - **Done.** `nifeos/basalt#50` carried item 4, the composed boot, into basalt's `packages.yml`.
 - **Outstanding.** `script/swish-check`'s rows have not run against a composed image. They are the
   next piece after item 4, and until then a composed image proves it boots to the prompt only.

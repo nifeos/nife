@@ -74,3 +74,73 @@ fn an_entry_decodes_by_its_markers() {
         expected
     );
 }
+
+/// The type under test and its mask and bad-cluster marker, chosen by the solver.
+fn any_type() -> (FileAllocationTableType, u32, u32) {
+    match kani::any::<u8>() % 3 {
+        0 => (FileAllocationTableType::Fat12, 0x0FFF, 0x0FF7),
+        1 => (FileAllocationTableType::Fat16, 0xFFFF, 0xFFF7),
+        _ => (FileAllocationTableType::Fat32, 0x0FFF_FFFF, 0x0FFF_FFF7),
+    }
+}
+
+/// **A stored entry reads back, and nothing else in its bytes changes.** For every type, cluster,
+/// window of table bytes and value: [`assemble`] over the stored window returns the value's low
+/// bits; a FAT12 entry leaves its neighbor's nibble alone, a FAT32 entry leaves its reserved top
+/// four bits alone, and the bytes past the entry's width are untouched.
+/// Falsification: replayable `crates/file_allocation_table/falsifications/table.verification.a_stored_entry_reads_back_and_disturbs_nothing_else.patch`
+#[kani::proof]
+fn a_stored_entry_reads_back_and_disturbs_nothing_else() {
+    let (file_allocation_table_type, mask, _) = any_type();
+    let cluster: u32 = kani::any();
+    let before: [u8; 4] = kani::any();
+    let value: u32 = kani::any();
+    let mut after = before;
+    store(file_allocation_table_type, cluster, &mut after, value);
+    // `decode` drops FAT32's reserved top bits, so the comparison drops them too.
+    assert_eq!(
+        assemble(file_allocation_table_type, cluster, after) & mask,
+        value & mask
+    );
+    match file_allocation_table_type {
+        FileAllocationTableType::Fat12 => {
+            assert_eq!(after[2..], before[2..]);
+            if cluster & 1 == 1 {
+                assert_eq!(after[0] & 0x0F, before[0] & 0x0F);
+                assert_eq!(after[1], (value >> 4) as u8);
+            } else {
+                assert_eq!(after[0], value as u8);
+                assert_eq!(after[1] & 0xF0, before[1] & 0xF0);
+            }
+        }
+        FileAllocationTableType::Fat16 => assert_eq!(after[2..], before[2..]),
+        FileAllocationTableType::Fat32 => assert_eq!(after[3] & 0xF0, before[3] & 0xF0),
+    }
+}
+
+/// **Encoding inverts decoding.** For every type, every kind of entry and every cluster number a
+/// chain may name, `decode(encode(entry))` is the entry, and `encode` of a free, reserved, bad or
+/// end-of-chain entry is the specification's literal.
+/// Falsification: replayable `crates/file_allocation_table/falsifications/table.verification.encoding_inverts_decoding.patch`
+#[kani::proof]
+fn encoding_inverts_decoding() {
+    let (file_allocation_table_type, mask, bad) = any_type();
+    let next: u32 = kani::any();
+    kani::assume(next >= 2 && next < bad);
+    let entry = match kani::any::<u8>() % 5 {
+        0 => TableEntry::Free,
+        1 => TableEntry::Reserved,
+        2 => TableEntry::Next(next),
+        3 => TableEntry::Bad,
+        _ => TableEntry::EndOfChain,
+    };
+    let raw = entry.encode(file_allocation_table_type);
+    assert_eq!(TableEntry::decode(file_allocation_table_type, raw), entry);
+    match entry {
+        TableEntry::Free => assert_eq!(raw, 0),
+        TableEntry::Reserved => assert_eq!(raw, 1),
+        TableEntry::Next(n) => assert_eq!(raw, n),
+        TableEntry::Bad => assert_eq!(raw, bad),
+        TableEntry::EndOfChain => assert_eq!(raw, mask),
+    }
+}

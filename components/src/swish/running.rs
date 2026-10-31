@@ -199,6 +199,12 @@ pub(super) fn release_argv(a: Argv, unsent: bool) {
     release_region(a.staging);
 }
 
+/// Give a region this shell split back to its budget with one `DESTROY`, then delete the slot.
+///
+/// # BUGS
+///
+/// - The `DESTROY`'s answer is not read. A held job's `--mem` budget it split, or holding a process
+///   it left running, refuses, and its pages stay spent for the boot (milestone 933's BUGS).
 fn release_region(region: u64) {
     user_mode_runtime::destroy_memory_region(region);
     capability_delete(region);
@@ -1402,7 +1408,7 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
             if let Some(slot) = budget {
                 release_region(slot);
             }
-            supervision_contract::forget_thread_control_block(tcb);
+            process_builder::forget_thread_control_block(tcb);
         }
     }
 }

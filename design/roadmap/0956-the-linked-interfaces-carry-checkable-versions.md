@@ -56,18 +56,22 @@ provisional.
    Proves: the contract crate's tests bind a matching set and refuse a mismatched one, naming both
    versions.
 
-3. The syscall ABI check runs at spawn. The progenitor compares the manifest note's declared ABI
-   version against the kernel's `ABI_VERSION` (§235 (the OS is built and updated from packages,
-   and the tree divides by what releases together)), and refuses a mismatch naming both. The ABI
-   never dual-serves; the refusal is the hard edge. Proves: the progenitor refuses a program whose
-   note declares a version the kernel does not serve, and accepts one it does.
+3. The syscall ABI check runs at spawn. The progenitor reads the ABI entry of a program's
+   `INTERFACES` note (step 4) and compares it with the kernel's `ABI_VERSION` (§235 (the OS is built
+   and updated from packages, and the tree divides by what releases together)). It refuses a
+   mismatch, naming both. A program with no `INTERFACES` note declares nothing and runs as it does
+   today; refusing it waits on packages carrying the stamp. The ABI never dual-serves; the refusal
+   is the hard edge. Proves: the progenitor refuses a program whose note declares a version the
+   kernel does not serve, and accepts one it does.
 
-4. The manifest note gains descriptor version 3 (question 3): version 1's 56 bytes unchanged, then
-   a counted (interface, version) list. Each interface crate carries `INTERFACE_ID: u64` beside
-   its version constant, values never reused. The stamp is mechanical at package build, derived
-   from the dependency graph. Versions 1 and 2 stay untouched. Proves: the encode, decode and
-   one-encoding Kani property carry over from 597's gate, and a built package's note decodes to
-   the interfaces its link graph names.
+4. The manifest note gains a new note type, `INTERFACES = 4`, on the pattern of `SUBTREE_GRANTS` and
+   `VERBS` (calef ruled this on 2026-10-31 (UTC); it is not a descriptor version, and versions 1
+   to 3 stay untouched). Its descriptor is a version word, a count, then that many records of
+   `INTERFACE_ID: u64` and a version `u32`, in id order with no duplicates. Each interface crate
+   carries `INTERFACE_ID: u64` beside its version constant, values never reused. A program carries
+   the note by a macro that reads the constants, so a declared version cannot drift from its
+   constant. Proves: the encode, decode and one-encoding Kani property carry over from 597's
+   gate, and no two crates share an id.
 
 5. The message-contract servers owe the current generation and the last (N-1, the compatibility
    ruling). A break bumps the version, owes the dated ledger entry naming the migration, and
@@ -103,9 +107,9 @@ provisional.
 
 ## Dependencies and order
 
-Steps 1 through 3 stand on their own and land first. Step 4 depends on step 1, the constants the
-stamp reads, and on 597's note machinery, which exists. Steps 5 and 6 depend on steps 1 and 2.
-Step 7 depends on step 1. Step 8 depends on steps 2, 5 and 6. The milestone follows 610's series,
+Steps 1, 2 and 7 stand on their own. Step 3 depends on step 4, because the `INTERFACES` note is
+where a program declares its ABI version. Step 4 depends on step 1, the constants the note reads, and
+on 597's note machinery, which exists. Steps 5 and 6 depend on steps 1 and 2. Step 7 depends on step 1. Step 8 depends on steps 2, 5 and 6. The milestone follows 610's series,
 so the first week of constants reads as additions, a shape the series already records.
 
 ## What this block does not do

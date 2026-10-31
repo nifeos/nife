@@ -93,7 +93,7 @@ use crate::user::UART_PHYS;
 ///
 /// The strongest assertion is that the outgoing instance faults inside [`DEV_VA`] after the revoke.
 /// Lending physical page zero instead would still pass (a real-mode interrupt-vector byte, then a
-/// fault): a passing test about nothing. `hot_swap_contract::probe_device`'s x86 arm refuses for
+/// fault): a passing test about nothing. `hot_swap_server::probe_device`'s x86 arm refuses for
 /// the same reason; `user::machine_has_no_device_page_for_the_console` is the one definition.
 use crate::user::{NO_UART_PAGE, machine_has_no_device_page_for_the_console};
 
@@ -495,7 +495,7 @@ fn a_client_of_the_stable_rendezvous_cannot_become_its_server() {
 ///
 /// Claim 26's other half: the server's `OPERATION_PUT` writes at `LOG_VA + log_base + arg`, `arg`
 /// being the client's word, so an unbounded `arg` reaches the device page the server holds, a
-/// confused deputy rather than a kernel gate. `hot_swap_contract::log_put` refuses an offset
+/// confused deputy rather than a kernel gate. `hot_swap_server::log_put` refuses an offset
 /// outside the log page, and the server answers `PUT_REFUSED`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.live_swap_tests.a_confined_client_drives_the_server_to_write_past_its_log.patch`

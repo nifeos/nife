@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: lint-stops-paying-per-item-costs
 raised: 2026-10-29
 milestone_dependencies: none
@@ -76,20 +76,44 @@ Each part is one lane, ordered by seconds saved per hour of work.
 
 1. One history pass in `observed_failing.py`. Replace the 29 `git log --follow` calls with one
    `git log --diff-filter=A --name-only` pass over all history, and reuse it for every workflow. About
-   15 s. No change to what the check refuses.
+   15 s. No change to what the check refuses. Built: `oldest_commits` reads all history once, and
+   `git log --follow` runs only for a path whose trail does not end in an add (a rename made inside a
+   merge). Its selftest builds a repository with a rename, a delete and a re-add, and holds the pass
+   to `--follow`'s answer on each path. The section fell from 7 s to 2 s on a 29-workflow tree
+   (user CPU 6.0 s to 1.6 s).
 2. Stop running a selftest twice. Delete the duplicate `verify-parallel-selftest.sh` call from the
    `script/verify --parallel` section, and cut the fixed `sleep 4.5` in the slot selftest to what its
-   assertions need. About 8 s.
+   assertions need. About 8 s. Built: the second call is gone. The slot selftest's scratch copy of `heavy_slot.py` polls every
+   0.2 s instead of 2 s, and a check fails if the source stops spelling the constant that way. The
+   stage then waits for the waiting message and four polls. The two sections went from 16 s and 8 to
+   9 s to 11 s and 0 s on a loaded Linux host.
 3. One lexer pass in `name_crossings.py`. Memoize `strip`, `_without_attributes` and `encloser` per
    file, and replace the character-by-character scan with a compiled pattern. About 4 s.
+   Built: `strip`, `_without_attributes` and `encloser` are kept per input, `enclosers` builds each
+   line's tuple only when a block opens or closes, and `strip` jumps over plain text with a compiled
+   pattern. The output matches the old scan on all 1,633 tracked `.rs` files. The naming section
+   went from 12 to 13 s to 9 to 10 s on a loaded Linux host.
 4. One interpreter in the dead-code section. Read the `.rs` files in Python instead of spawning `awk`
    per file. About 3 s.
+   Built: `helpers/dead_code_suppression.py` reads the tracked `.rs` files in one process and keeps
+   the awk's rules. Its selftest plants a blanket allow, a split attribute and the one exemption. The
+   section went from 10 s to under 1 s on a loaded Linux host.
 5. One shared corpus index. A small helper that lists the tracked files, their text and their hashes
    once per run, so the text gates read it rather than each walking the tree. An estimate of 10 to
    15 s. This is the largest piece and the one to design carefully.
+   [notes/lint-corpus-index.md](../../notes/lint-corpus-index.md) is the design note, with the
+   measurement that moves the saving from the text to what gates derive from it.
 6. The cargo half. The lint ratchet is the one cost there that does not move with build state, so
    decide whether it can share the clippy sections' work and whether rustdoc's four invocations
-   collapse into one. The builds are not worth touching.
+   collapse into one. The builds are not worth touching. Built, for the lint ratchet (calef ruled
+   option (a), 2026-10-31 UTC; PR #2936): the clippy sections run through `helpers/clippy_record.py`.
+   It adds the ratcheted lint as `--force-warn` and saves clippy's JSON and a sidecar under
+   `target/lint-clippy/`. The ratchet reads those files instead of running clippy, and exits
+   non-zero, naming the file, for a file that is missing, unreadable, altered or from a failed
+   section. It does the same for one made with other flags or another selection, or older than the
+   newest compiled file in the tree. The one configuration no section linted, the kernel's default build on riscv64, became a
+   `-D warnings` section. The section fell from 30 s to 14 s wall on a warm tree, and its user CPU from
+   29.8-31.0 s to 13.4-15.2 s, over three runs each. Rustdoc's four invocations are untouched.
 
 Parts 1 through 4 change no verdict and can land alone. Part 5 needs a design note for the shared
 index. Part 6 needs a decision about whether the lint ratchet can read the clippy sections' output.
@@ -124,6 +148,14 @@ fits.
 
 ## Follow-on
 
+- **Outstanding.** Part 2, the duplicate `verify-parallel-selftest.sh` call and the fixed `sleep 4.5`;
+  checked against `script/lint` and `helpers/heavy-slot-selftest.sh`, where both remain.
+- **Outstanding.** Part 3, one lexer pass in `helpers/name_crossings.py`; its `strip` still scans a
+  character at a time.
+- **Outstanding.** Part 4, one interpreter in the dead-code section; it still spawns one `awk` per
+  file.
+- **Outstanding.** Part 5, the shared corpus index (its design note is in review), and part 6's
+  rustdoc half, whether its four invocations collapse into one, which is measure-first.
 - **Recorded.** `helpers/trust_boundary.py --check` fails in a checkout whose `fs_server/` holds only
   a stale `target/` directory: it looks for `fs_server/Cargo.toml`, and the crate is `redoxfs_server`
   since `0c0ef2367`. A leftover local directory turns a gate red and says nothing true. This is a

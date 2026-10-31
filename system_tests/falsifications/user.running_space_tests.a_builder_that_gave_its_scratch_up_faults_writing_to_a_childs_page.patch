@@ -10,10 +10,10 @@ onto every boot server.
 Expected to fail: in the run with its own space, the assertion that no second report arrives,
 because the write landed and the witness said so.
 
-diff --git a/crates/supervision_contract/src/lib.rs b/crates/supervision_contract/src/lib.rs
---- a/crates/supervision_contract/src/lib.rs
-+++ b/crates/supervision_contract/src/lib.rs
-@@ -790,7 +790,7 @@
+diff --git a/crates/process_builder/src/lib.rs b/crates/process_builder/src/lib.rs
+--- a/crates/process_builder/src/lib.rs
++++ b/crates/process_builder/src/lib.rs
+@@ -487,7 +487,7 @@
      // The page is written and in the child (or the build failed): either way this builder is done
      // with its own window onto it. Given up here, one page at a time, rather than after the child
      // is built, so the window is never wider than the page being filled.

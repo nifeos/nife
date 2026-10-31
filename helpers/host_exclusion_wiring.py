@@ -48,7 +48,7 @@ MIN_SCANNED = 500
 # The marker for script/lint's `cargo clippy --workspace` passes: the judgment excludes, then the
 # derived flags. Assembled so a count over script/lint does not see this file.
 CLIPPY_MARKER = " ".join([FLAG, "kernel", FLAG, "system_tests", "$bare_excludes"])
-CLIPPY_PASSES = 3  # the two -D warnings passes and the lint-ratchet pass
+CLIPPY_PASSES = 2  # the two -D warnings passes (the lint ratchet reads the first one's output)
 
 
 def strip_comments(text, line_prefix, quotes):
@@ -103,9 +103,8 @@ def wiring_problems(files):
     marker = lint.count(CLIPPY_MARKER)
     if marker != CLIPPY_PASSES:
         bad.append(f"script/lint: {marker} cargo clippy --workspace pass(es) build their {FLAG} flags "
-                   f"from $bare_excludes, want {CLIPPY_PASSES} (the two -D warnings passes and the "
-                   f"lint-ratchet pass); each must follow `{FLAG} kernel {FLAG} system_tests "
-                   "$bare_excludes`")
+                   f"from $bare_excludes, want {CLIPPY_PASSES} (the two -D warnings passes); "
+                   f"each must follow `{FLAG} kernel {FLAG} system_tests $bare_excludes`")
     need("script/lint", "bare_crates=$(...) derivations", re.escape("bare_crates=") + CALL_NAMES,
          lint, CLIPPY_PASSES)
     cov = sh_code(files["script/coverage"])

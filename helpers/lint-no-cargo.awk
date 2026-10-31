@@ -8,7 +8,10 @@
 # A section is a cargo section when a line that is not a comment invokes cargo: a shell command
 # whose first word is `cargo` (after optional VAR="..." assignments and `if !`), a Python argv list
 # opening `["cargo"`, or `command -v cargo`. Prose that merely mentions cargo does not match. A
-# cargo section is dropped from `--no-cargo`. Because the rule reads the section, a new check lands
+# cargo section is dropped from `--no-cargo`. So is a section that runs a command through
+# `helpers/clippy_record.py`, which starts cargo for it, and a section that carries a comment line
+# `# needs-cargo-output: <why>`: it runs no cargo itself but reads what the cargo sections saved
+# (the lint ratchet reads the clippy sections' JSON), so without them it could only fail. Because the rule reads the section, a new check lands
 # in exactly one bucket by construction, and one that runs cargo is dropped unless it opts in.
 #
 # **Opting in** is for a section that is mostly text and has one cargo-backed part: put a comment
@@ -30,6 +33,7 @@ function is_cargo(line) {
     if (line ~ /^[ \t]*([A-Za-z_]+="[^"]*" )*(if ! |! )?cargo[ \t]/) return 1
     if (line ~ /\[[\x27"]cargo[\x27"]/) return 1
     if (line ~ /command -v cargo/) return 1
+    if (line ~ /helpers\/clippy_record\.py[ \t]/) return 1
     return 0
 }
 
@@ -62,6 +66,7 @@ function close_block(   keep, file) {
     body = body $0 "\n"
     if (is_cargo($0)) cargo = 1
     if ($0 ~ /^[ \t]*#[ \t]*no-cargo-ok:/) okmark = 1
+    if ($0 ~ /^[ \t]*#[ \t]*needs-cargo-output:/) cargo = 1
     if ($0 !~ /^[ \t]*#/ && $0 ~ /LINT_NO_CARGO/) guarded = 1
 }
 END {

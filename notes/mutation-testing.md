@@ -193,7 +193,7 @@ These recur across the appendices.
 This is the note's `BUGS` section.
 
 - **Scope is the main workspace's host crates**, minus the exclusions above. The bare-metal crates
-  cannot compile for the host. `supervision_contract`, `hot_swap_contract` and `virtio` compile but
+  cannot compile for the host. `hot_swap_contract`, `hot_swap_server` and `virtio` compile but
   cannot run a line without a kernel. `xtask` is the build system, whose tests are the gates it
   runs.
 - `redoxfs_server` and `tools/redoxfs_host` are not mutated. Each is its own workspace, kept apart

@@ -226,7 +226,7 @@ fn a_sweep_inside_a_page_frame_map_leaves_no_mapping() {
 /// A sweep that lands inside an `AddressSpace::MAP_INTO` must not leave the mapping in place.
 ///
 /// The loader-side twin of the test above: a builder maps a frame it holds into a space under
-/// construction, the way `supervision_contract::build_child_space` does. It is held after the
+/// construction, the way `process_builder::build_child_space` does. It is held after the
 /// frame is read; the sweep runs whole; then the space's own tables are read at `VA`.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.map_revocation_window_tests.a_sweep_inside_a_map_into_leaves_no_mapping.patch`

@@ -219,6 +219,26 @@ for file in $scheduled; do
 	esac
 done
 
+# The kernel census (milestone 955 (mutation testing reaches the kernel and its programs under QEMU), part 4) keeps a per-slice record, and a slice whose newest row
+# is older than one rotation is as dead as a workflow with no recent success, though the workflow
+# itself may be green: a night that stops at 13:00 UTC and never reaches a slice succeeds too.
+# The helper owns the rotation length and the slice list; a failure to ask is exit 2, as above.
+if command -v python3 >/dev/null 2>&1; then
+	rot=0
+	rot_out=$(python3 helpers/mutation_kernel_census.py rotation) || rot=$?
+	case "$rot" in
+	0) [ -n "$quiet" ] || printf '%-32s %-24s %s\n' "kernel-census-rotation" "-" "live" ;;
+	1)
+		printf '%s\n' "$rot_out"
+		dead=$((dead + $(printf '%s\n' "$rot_out" | wc -l)))
+		;;
+	*)
+		echo "script/cadence-check: could not read the kernel census record" >&2
+		exit 2
+		;;
+	esac
+fi
+
 if [ "$dead" -gt 0 ]; then
 	[ -n "$quiet" ] || echo
 	echo "$dead cadence(s) have produced no result. Nobody is assigned to this."
