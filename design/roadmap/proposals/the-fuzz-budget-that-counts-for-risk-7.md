@@ -206,7 +206,7 @@ Background. Condition 1 says the fuzzer runs now, and condition 4 says the corpu
 live where others can see them. Something has to host both, around the clock. The appendix shows a
 virtual machine of about 4 vCPUs and 8 GB runs the x86_64 drivers comfortably under KVM, at about
 100 MB per guest. Hosted Actions runners cap a job at six hours (from memory), share the merge
-queue's 60 slots,. They offer no operator who owns a corpus.
+queue's 60 slots. They offer no operator who owns a corpus.
 
 Options:
 
