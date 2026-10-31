@@ -163,10 +163,10 @@ Read from the syzkaller repository's `docs/syzbot.md`, `docs/coverage.md` and
 x86_64 only for now. A dedicated x86_64 virtual machine of about 4 vCPUs and 8 GB runs x86_64
 comfortably under hardware acceleration. aarch64 and riscv64 run only under full emulation (TCG)
 and I have not measured them for continuous work. §19 (architectural parity is a tenet) makes parity a gate,
-so this is a scoped exception for the fuzzers only, and it names its end: the fuzzers on the other
-two architectures wait on hardware that runs them at a useful rate. The escapes of record split by
-architecture (§12 (call/reply IPC: a one-shot reply capability) was false only on x86_64; claim
-11's alias was on all three), so the exception costs coverage of the claim, and the record must say
+so this is a scoped exception for the fuzzers only. It ends when hardware
+runs the fuzzers on the other two architectures at a useful rate. The escapes of record split by
+architecture. §12 (call/reply IPC: a one-shot reply capability) was false only on x86_64, and claim
+11's alias was on all three. So the exception costs coverage of the claim, and the record must say
 so rather than imply parity.
 
 ## The questions that remain
@@ -217,9 +217,9 @@ every kind. That is why (d) keeps a maximum age for an escape in particular, sho
 bound a per-seed rate over a clean stretch, and a record may state that bound as a fact about a
 run, not as the criterion.
 
-Example. On a given date the dashboard shows: the user-mode driver and the kernel-thread driver
-have run for 60 days at commit `C`; 41 findings, 41 triaged within the stated time; 3 confirmed
-escapes, all fixed, none open; user-mode coverage flat for the last 14 days. Criterion (d)
+Example. On a given date the dashboard shows the following. The user-mode driver and the kernel-thread driver
+have run for 60 days at commit `C`. It lists 41 findings, all triaged within the stated time. Three confirmed
+escapes are fixed and none is open. User-mode coverage has stayed flat for 14 days. Criterion (d)
 holds on that date, and the record cites those numbers.
 
 ## Appendix: measurements, 2026-10-31 (UTC)
@@ -256,7 +256,7 @@ Replays of failing seeds were green. The failures were the harness's deadlines e
 not escapes. Until a fix lands, more concurrency buys false reds faster than it buys seeds, which
 is why question 3 exists.
 
-Earlier measurement in the same lane, under emulation of aarch64 on the same host (2026-10-31):
+The same lane also measured aarch64 under emulation on the same host (2026-10-31):
 user-mode driver 4 seeds/s, kernel-thread driver 9 seeds/s, `redoxfs_server_session` 569 runs/s
 from an empty corpus, which reached 2,785 libFuzzer edges in three minutes and had not plateaued.
 
