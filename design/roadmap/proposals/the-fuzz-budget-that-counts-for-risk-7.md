@@ -15,9 +15,8 @@ of risk 7 (the confinement claim is false) names and nobody has set. An architec
 questions remain open, and I ask them one at a time. The file name keeps its first form so that
 links to it hold.
 
-Reuse: the continuous run reuses the three fuzzers and the weekly sweep jobs as they stand. Milestone
-779's proposal considered syzkaller and lost it for a crash-only oracle; this document adopts its
-service's standards, not its code.
+Reuse: the continuous run reuses the three fuzzers and the weekly sweep jobs as they stand. It adopts
+syzkaller's service standards, not its code.
 
 ## What is in force
 
@@ -37,8 +36,7 @@ service's standards, not its code.
   8-bit counters on the kernel code). The kernel supplies a counter region and a way for the driver
   to read it after each seed. One option serves all three architectures and runs under KVM. The
   counters measure coverage first and may later steer the fuzzer. Decided 2026-10-31 (UTC).
-  Not chosen: QEMU-side block tracing, which needs full emulation and runs 20 to 29 times slower,
-  and hand-placed counters.
+  Not chosen: QEMU-side block tracing (20 to 29 times slower) and hand-placed counters.
 - The first work fixes the harness false reds: guests that fail on harness deadlines under load,
   where every failing seed replays green. It comes before any long or wide run. Decided 2026-10-31
   (UTC). Not chosen: coverage first at 1 to 4 guests, and discarding failures that a replay clears.
