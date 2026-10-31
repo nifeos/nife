@@ -27,22 +27,22 @@ patch adds the one thing the fix took away, a walk that starts wherever its call
 diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 --- a/kernel/src/revoke.rs
 +++ b/kernel/src/revoke.rs
-@@ -180,6 +180,14 @@ mod chain {
-             }
-         }
- 
-+        /// A walk that starts wherever the caller says, chain or not.
-+        pub(super) fn pages_from(&mut self, phys: u64) -> Pages<'_> {
-+            Pages {
-+                next: phys,
+@@ -179,6 +179,14 @@
+         pub(super) fn pages_mut(&mut self) -> Pages<'_> {
+             Pages {
+                 next: self.head,
 +                _chain: core::marker::PhantomData,
 +            }
 +        }
 +
-         /// Link a fresh page from `region` as the new head, holding `entry`. `false` when the
-         /// region is spent: the caller unmaps, and the process pays for its own limit.
-         ///
-@@ -506,19 +514,12 @@ pub fn list_mapping(root: u64, cursor: u64) -> Listing {
++        /// A walk that starts wherever the caller says, chain or not.
++        pub(super) fn pages_from(&mut self, phys: u64) -> Pages<'_> {
++            Pages {
++                next: phys,
+                 _chain: core::marker::PhantomData,
+             }
+         }
+@@ -602,19 +610,12 @@
      };
  
      const PAGE_MASK: u64 = !(page_frames::FRAME_SIZE - 1);

@@ -45,7 +45,7 @@ and the I/O (freeing frames, un-bumping the parent) stay in the kernel around it
 
 ## `crates/paging`
 
-37 across `crates/paging` <!--count:paging-harnesses-->, in `src/verification.rs` and one
+38 across `crates/paging` <!--count:paging-harnesses-->, in `src/verification.rs` and one
 module per architecture (`aarch64.rs`, `sv39.rs`, `x86_64.rs`, `domain.rs`); the per-architecture
 parity series those modules hold is the arch gate's record, not this appendix's. The eight below
 are the originals this appendix adjudicated, in `src/lib.rs` at the writing: the address arithmetic
