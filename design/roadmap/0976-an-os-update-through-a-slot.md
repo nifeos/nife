@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: an-os-update-through-a-slot
 raised: 2026-10-28
 milestone_dependencies: 525, 909
@@ -89,10 +89,46 @@ reads. Step 3 depends on the loader's handoff, §235's T4 with T2, which milesto
 initrd slot on the device-tree path; the x86_64 path already has the loader's own file. Steps 4 and
 5 depend on step 3.
 
-## What this proposal does not do
+## Where it stands
 
-It writes no code. §311 (a contract is code, not prose) reserves the checks for an implementing
-lane, and every new name here is provisional.
+Partial. The lane `milestone/976-an-os-update-through-a-slot` broke the work into the parts below,
+each landable and checkable alone, re-derived from the tree on 2026-10-31 (UTC) rather than from
+the steps above. Two facts of the tree shape the order. A slot holds one UEFI program that embeds
+the kernel and the archive, behind the header §244 (the installed disk has four partitions, and a
+boot slot is 64 MiB) ratified. And the kernel compiles every base program's digest into its trust
+root, so until milestone 607 item 6 lands, only a host that builds the kernel can make a bootable
+slot. Every new name here is provisional.
+
+## Follow-on
+
+- **Done. Part 1: the composed base image carries `system_installer`.** The kernel's trial-boot
+  confirmation enters it by name (`kernel/src/user/install_service.rs`), and
+  `packages/base-image.toml` left it out. A composed image in a slot would have booted, printed
+  that it cannot confirm, and rolled back once its tries ran out. The definition now lists it, the
+  approval file has its entry, and `base-image`'s test
+  `the_base_image_carries_every_program_the_install_path_enters` holds the definition to every
+  program that file names. Checked: the test fails with the program removed and passes with it,
+  and `cargo xtask base-image x86_64 --test --boot` composes it from its package and reaches the
+  prompt.
+- **Outstanding. Part 2: the composer writes the file a slot holds.** On x86_64, `base-image`
+  wraps the composed kernel and archive in `uefi_loader`, as `uefi_stage` does for the tree's own
+  image, so a composed image can enter a slot. Check: `script/boot-file-size-check` on the
+  composed file, and an OVMF boot of it. Mechanical; no new format.
+- **Outstanding. Part 3: a gate that updates through a slot.** Provisionally `cargo xtask
+  update-boot`: install the tree's image, stage part 2's composed file into slot 1 with
+  `rollback::stage_an_upgrade`, and boot three times. Boot 2 must confirm slot 1 and boot 3 must
+  choose it with no tries left, as `confirm-boot` asserts, and the transcript must show the composed
+  catalog. Mechanical; host-staged, so it proves the slot path and not a device updater.
+- **Outstanding, waits on a ruling. Part 4: what the inactive slot receives.** One composed UEFI
+  program (today's format), a version 2 slot of named members a device assembles from packages, or
+  nothing on the device until item 6. The proposal
+  `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md` asks it, recommendation
+  first, with the prior art.
+- **Outstanding, after part 4. Part 5: the device updater**, steps 2 and 4 above, writing
+  whatever part 4 rules. Part 6, the system manifest's name and format (step 1), and part 7, who
+  may start a base update and what bounds an unattended one under milestone 911's approval file,
+  each come to an architect after part 4, one at a time.
+- **Outstanding, not this block's. Step 3**, the loader's two digests, is milestone 607 item 6.
 
 ## Index row
 
