@@ -223,4 +223,5 @@ pub(super) const LINES: &[Line] = &[
 
 /// What `jig approve` asks before it stores (milestone 911): one yes covers every grant the file
 /// contains, the way one confirmation covers an install's.
-const APPROVERS_QUESTION: &str = "approve these delegations? [y/N]";
+/// Through the closing space, for the reason [`OWNERS_QUESTION`] gives.
+const APPROVERS_QUESTION: &str = "approve these delegations? [y/N] ";
