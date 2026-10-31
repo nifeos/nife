@@ -194,8 +194,12 @@ mod tests {
         let mut bytes = [0u8; 96];
         let mut length = 0;
         let mut ended = false;
+        let mut sent = 0;
         write_row(
             |w0, w1, w2| {
+                // Bounded, so a loop that never ends fails here instead of hanging the run.
+                sent += 1;
+                assert!(sent <= 8, "write_row did not stop");
                 let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
                 match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
                     byte_sink_contract::Msg::Bytes(n) => {
@@ -214,6 +218,34 @@ mod tests {
         );
         assert_eq!(&bytes[..length], b"bench: null_syscall 9 20000\n");
         assert!(ended);
+    }
+
+    #[test]
+    fn a_row_sends_exactly_its_bytes_then_one_eof_and_never_an_empty_message() {
+        // A loop that ran once more at the end would pack an empty slice, take zero bytes and never
+        // finish, which a mutation run reports as a timeout rather than a failure. The panic past
+        // the bound turns that hang into a failure in microseconds.
+        let mut sent = 0;
+        let mut empty = 0;
+        write_row(
+            |w0, w1, w2| {
+                sent += 1;
+                assert!(sent <= 8, "write_row did not stop");
+                let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+                if let byte_sink_contract::Msg::Bytes(0) =
+                    byte_sink_contract::unpack(w0, w1, w2, &mut buf)
+                {
+                    empty += 1;
+                }
+                byte_sink_contract::Sent::Ok
+            },
+            Prefix::QuietBoot,
+            "null_syscall",
+            9,
+            20_000,
+        );
+        // "bench: null_syscall 9 20000\n" is 28 bytes: two bytes messages and the end of stream.
+        assert_eq!((sent, empty), (3, 0));
     }
 
     #[test]
