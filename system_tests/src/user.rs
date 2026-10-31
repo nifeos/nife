@@ -999,6 +999,15 @@ mod map_revocation_window_tests;
 #[cfg(test)]
 mod syscall_fuzzer_tests;
 
+/// **The fuzz drivers' wait counts ticks on every core** (lane
+/// fuzz-deadlines-count-guest-progress, provisional). A core that takes no ticks holds the wait
+/// open, a running machine that does not finish ends it, and a backstop bounds it. See
+/// notes/kernel-test-harness.md.
+///
+/// Cross-ISA: one portable body over every architecture's per-core tick count (DECISIONS §19).
+#[cfg(test)]
+mod every_core_tick_budget_tests;
+
 /// **A confined EL0 process fuzzes the syscall surface under a conductor** (milestone 779 (fuzz
 /// the surface a confined process can reach), part (b), provisional). The sibling of
 /// [`syscall_fuzzer_tests`] one level down: real EL0 programs through the real trap entry, one

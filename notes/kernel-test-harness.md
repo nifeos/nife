@@ -122,6 +122,16 @@ ticks arrive over the same stretch, and a tick budget stretches under exactly th
 arithmetic. Ticks are per core, so a change of core re-anchors the budget. A thread that migrates
 repeatedly could stretch it without bound, which is why the per-test ceiling is the last line.
 
+A wait on work another core holds needs `EveryCoreTickBudget`, which runs out only once every
+online core has taken its ticks. The host can stop one vCPU while the waiter's keeps ticking, and a
+budget of the waiter's ticks then fails over a stall the guest never caused. A core that takes no
+ticks at all, stopped by the host or wedged with interrupts masked, holds the budget open until a
+backstop on the counter. `wait_on_every_core` gives two seconds of ticks on every core and a 20 s
+backstop, and the seeded fuzz drivers wait with it. On a dedicated x86_64 virtual machine under
+KVM, each of four guests running side by side stalled once for 1.45 s of the counter on
+2026-10-31 (UTC), and every stall ended without a fault: two seconds of the counter alone is no
+margin. Milestone 752's `BUGS` has the false reds such stalls caused.
+
 ## The preemption window tests
 
 `bench/spawn_map.rs`'s `map_new` masks interrupts across a timed window of about 250 µs against a

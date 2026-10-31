@@ -660,6 +660,129 @@ impl TickBudget {
     }
 }
 
+/// **A budget in timer ticks delivered to every online core, for a wait on work that another core
+/// may be holding.**
+///
+/// [`TickBudget`] counts this core's ticks, which is enough when the awaited work runs here. When
+/// it may run on another core, the host can deschedule that core's vCPU while this one keeps
+/// ticking, and a budget of this core's ticks runs out over a stall the guest never caused. This
+/// one runs out only once every online core has taken `ticks` since it began, so each has had that
+/// long to run. A core that takes no ticks (a vCPU the host is not running, or a core wedged with
+/// interrupts masked) holds it open until `backstop_seconds` of the counter have passed, so a wait
+/// is still bounded. See notes/kernel-test-harness.md.
+///
+/// Name: provisional (lane/fuzz-deadlines-count-guest-progress, 2026-10-31 UTC).
+///
+/// # EXAMPLES
+///
+/// ```ignore
+/// // Two seconds of running on every core, and at most twenty seconds of the counter.
+/// let mut budget = EveryCoreTickBudget::new(2 * crate::arch::timer::TICK_HZ, 20);
+/// while !done() {
+///     assert!(!budget.is_expired(), "the actor never answered: {budget}");
+///     crate::sched::yield_now();
+/// }
+/// ```
+#[cfg(any(test, feature = "system_tests"))]
+pub struct EveryCoreTickBudget {
+    ticks: u64,
+    start: [u64; crate::cpu::MAXIMUM_CPUS],
+    taken: [u64; crate::cpu::MAXIMUM_CPUS],
+    started_at: u64,
+    elapsed: u64,
+    backstop: u64,
+}
+
+#[cfg(any(test, feature = "system_tests"))]
+impl EveryCoreTickBudget {
+    /// Start a budget of `ticks` on every online core, bounded by `backstop_seconds` of the counter.
+    pub fn new(ticks: u64, backstop_seconds: u64) -> Self {
+        Self {
+            ticks,
+            start: core::array::from_fn(crate::arch::timer::ticks_on),
+            taken: [0; crate::cpu::MAXIMUM_CPUS],
+            started_at: crate::arch::timer::now(),
+            elapsed: 0,
+            backstop: backstop_seconds * crate::arch::timer::frequency(),
+        }
+    }
+
+    /// Has every online core taken its ticks, or has the backstop passed? Each call samples once
+    /// and keeps the sample, so a message printed after a `true` shows what decided it.
+    pub fn is_expired(&mut self) -> bool {
+        self.elapsed = crate::arch::timer::now().wrapping_sub(self.started_at);
+        let mut every_core = true;
+        for c in crate::smp::online_cpus() {
+            self.taken[c] = crate::arch::timer::ticks_on(c).wrapping_sub(self.start[c]);
+            every_core &= self.taken[c] >= self.ticks;
+        }
+        every_core || self.is_past_backstop()
+    }
+
+    /// Did the last [`is_expired`](Self::is_expired) sample find the backstop passed? A wait that
+    /// ends here ended on the counter, not on the guest's running time.
+    pub fn is_past_backstop(&self) -> bool {
+        self.elapsed >= self.backstop
+    }
+}
+
+/// The last sample: the counter's milliseconds and each online core's ticks against the budget.
+#[cfg(any(test, feature = "system_tests"))]
+impl core::fmt::Display for EveryCoreTickBudget {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "{} ms of the counter{}; ticks taken of {} on each core:",
+            self.elapsed * 1000 / crate::arch::timer::frequency(),
+            if self.is_past_backstop() {
+                " (the backstop)"
+            } else {
+                ""
+            },
+            self.ticks
+        )?;
+        for c in crate::smp::online_cpus() {
+            write!(f, " core {c} {}", self.taken[c])?;
+        }
+        Ok(())
+    }
+}
+
+/// Yield until `done()`, or until an [`EveryCoreTickBudget`] of two seconds' ticks on every online
+/// core, bounded by twenty seconds of the counter, runs out. `Err` carries the budget, whose
+/// `Display` is the observation it decided on. The seeded fuzz drivers wait with this
+/// (notes/kernel-test-harness.md).
+///
+/// Name: provisional (lane/fuzz-deadlines-count-guest-progress, 2026-10-31 UTC).
+#[cfg(any(test, feature = "system_tests"))]
+pub fn wait_on_every_core(mut done: impl FnMut() -> bool) -> Result<(), EveryCoreTickBudget> {
+    let mut budget = EveryCoreTickBudget::new(
+        WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HZ,
+        WAIT_ON_EVERY_CORE_BACKSTOP_SECONDS,
+    );
+    loop {
+        if done() {
+            return Ok(());
+        }
+        if budget.is_expired() {
+            // One more look, as `wait_for` takes: the property may have landed during the sample.
+            return if done() { Ok(()) } else { Err(budget) };
+        }
+        crate::sched::yield_now();
+    }
+}
+
+/// Seconds of ticks every online core must take before [`wait_on_every_core`] gives up: the two
+/// seconds the fuzz drivers' wall-clock deadlines were.
+#[cfg(any(test, feature = "system_tests"))]
+pub const WAIT_ON_EVERY_CORE_SECONDS: u64 = 2;
+
+/// Seconds of the counter after which [`wait_on_every_core`] gives up whatever the ticks say.
+/// Under the 60 s hang watchdog and the 90 s per-test budget, and more than ten times the longest
+/// stall measured on a loaded host (notes/kernel-test-harness.md).
+#[cfg(any(test, feature = "system_tests"))]
+pub const WAIT_ON_EVERY_CORE_BACKSTOP_SECONDS: u64 = 20;
+
 /// Lets us print a test's name before running it. `core::any::type_name` gives us
 /// the full path of the function, which is close enough to a test name.
 pub trait Testable {
