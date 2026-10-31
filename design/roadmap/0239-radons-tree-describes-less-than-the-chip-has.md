@@ -37,26 +37,13 @@ radon hands us does describe the TRNG. It describes it under a different node na
 `fdt addr ${fdtcontroladdr}` hands nife the vendor U-Boot's own control device tree: U-Boot 2021.10,
 `Build: jenkins-VF2_515_Branch_SDK_Release-24`, dated `Feb 12 2023`, from the board's own banner in
 `crates/serial_console/tests/fixtures/captured/vf2-2026-09-01-manual-boot.log`. That tree is
-compiled from `arch/riscv/dts/jh7110.dtsi` in StarFive's U-Boot fork, and that file says:
-
-```
-trng: trng@1600C000 {
-	compatible = "starfive,trng";
-	reg = <0x0 0x1600C000 0x0 0x4000>;
-	clocks = <&clkgen JH7110_SEC_HCLK>,
-		 <&clkgen JH7110_SEC_MISCAHB_CLK>;
-	clock-names = "hclk", "miscahb_clk";
-	resets = <&rstgen RSTN_U0_SEC_TOP_HRESETN>;
-	interrupts = <30>;
-	status = "disabled";
-};
-```
-
-Read at commit `bfbdce9b86a2` (2023-01-06), the last change to that file before the flashed
-firmware's build date, and unchanged at that branch's head:
-<https://github.com/starfive-tech/u-boot/blob/bfbdce9b86a2/arch/riscv/dts/jh7110.dtsi>. Mainline
-Linux spells the same device `rng@1600c000`, `compatible = "starfive,jh7110-trng"`, and that is what
-`crates/jh7110_entropy` was written against.
+compiled from `arch/riscv/dts/jh7110.dtsi` in StarFive's U-Boot fork (starfive-tech/u-boot, branch
+JH7110_VisionFive2_devel, commit `bfbdce9b86a2`, 2023-01-06, the last change to that file before the
+flashed firmware's build date, read 2026-09-03; unchanged at that branch's head). The file declares
+the node as `trng@1600C000` (upper-case C), with `compatible = "starfive,trng"`, a four-cell `reg`
+window of 0x4000 bytes at 0x1600C000, interrupt 30, two clocks named `hclk` and `miscahb_clk`, one
+reset, and `status` set to `disabled`. Mainline Linux spells the same device `rng@1600c000`,
+`compatible = "starfive,jh7110-trng"`, and that is what `crates/jh7110_entropy` was written against.
 
 Every observation from the bench holds, and none of them meant what it was read to mean.
 
