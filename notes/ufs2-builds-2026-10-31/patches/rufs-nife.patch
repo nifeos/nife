@@ -1,0 +1,111 @@
+diff -rN -U0 -x target -x Cargo.lock rufs/src/blockreader.rs ../pb/rufs/src/blockreader.rs
+--- rufs/src/blockreader.rs
++++ rufs/src/blockreader.rs
+@@ -4 +3,0 @@
+-	os::unix::fs::MetadataExt,
+@@ -26 +25 @@
+-		let bs = file.metadata()?.blksize() as usize;
++		let bs = crate::errno::blksize(&file.metadata()?);
+@@ -172 +171 @@
+-					Err(io::Error::from_raw_os_error(libc::EINVAL))
++					Err(io::Error::from_raw_os_error(crate::errno::EINVAL))
+diff -rN -U0 -x target -x Cargo.lock rufs/src/errno.rs ../pb/rufs/src/errno.rs
+--- rufs/src/errno.rs
++++ rufs/src/errno.rs
+@@ -0,0 +1,39 @@
++//! The errno values rufs reports, by name. On a unix host they are the host's own, so a FUSE
++//! driver hands them to the kernel unchanged. Elsewhere (nife's std, whose `os` is "nife" and
++//! where libc defines none) they are Linux's numbers; a caller there maps them by name.
++
++#[cfg(unix)]
++pub use libc::{EEXIST, EFAULT, EINVAL, EIO, ENOENT, ENOSPC, ENOTDIR, ENOTEMPTY, EROFS};
++
++#[cfg(any(target_os = "freebsd", target_os = "openbsd", target_os = "macos"))]
++pub const ENOATTR: i32 = libc::ENOATTR;
++#[cfg(target_os = "linux")]
++pub const ENOATTR: i32 = libc::ENODATA;
++
++#[cfg(not(unix))]
++mod portable {
++	pub const EIO: i32 = 5;
++	pub const EFAULT: i32 = 14;
++	pub const EEXIST: i32 = 17;
++	pub const ENOTDIR: i32 = 20;
++	pub const EINVAL: i32 = 22;
++	pub const ENOSPC: i32 = 28;
++	pub const EROFS: i32 = 30;
++	pub const ENOTEMPTY: i32 = 39;
++	pub const ENOENT: i32 = 2;
++	pub const ENOATTR: i32 = 61;
++}
++#[cfg(not(unix))]
++pub use portable::*;
++
++/// The preferred I/O size of an open file: the host's `st_blksize` on unix, 4096 elsewhere.
++#[cfg(unix)]
++pub fn blksize(m: &std::fs::Metadata) -> usize {
++	use std::os::unix::fs::MetadataExt;
++	m.blksize() as usize
++}
++
++#[cfg(not(unix))]
++pub fn blksize(_: &std::fs::Metadata) -> usize {
++	4096
++}
+diff -rN -U0 -x target -x Cargo.lock rufs/src/inode.rs ../pb/rufs/src/inode.rs
+--- rufs/src/inode.rs
++++ rufs/src/inode.rs
+@@ -123 +123 @@
+-			Err(Error::from_raw_os_error(libc::ENOTDIR))
++			Err(Error::from_raw_os_error(crate::errno::ENOTDIR))
+diff -rN -U0 -x target -x Cargo.lock rufs/src/lib.rs ../pb/rufs/src/lib.rs
+--- rufs/src/lib.rs
++++ rufs/src/lib.rs
+@@ -9,4 +9,3 @@
+-#[cfg(any(target_os = "freebsd", target_os = "openbsd", target_os = "macos"))]
+-pub const ENOATTR: i32 = libc::ENOATTR;
+-#[cfg(target_os = "linux")]
+-pub const ENOATTR: i32 = libc::ENODATA;
++mod errno;
++
++pub use crate::errno::ENOATTR;
+diff -rN -U0 -x target -x Cargo.lock rufs/src/ufs/dir.rs ../pb/rufs/src/ufs/dir.rs
+--- rufs/src/ufs/dir.rs
++++ rufs/src/ufs/dir.rs
+@@ -19 +19 @@
+-		name[0..dname.len()].copy_from_slice(dname.as_bytes());
++		name[0..dname.len()].copy_from_slice(dname.as_encoded_bytes());
+@@ -383 +383 @@
+-				Err(e) if e.kind() == ErrorKind::NotFound => {}
++				Err(e) if e.raw_os_error() == Some(crate::errno::ENOENT) => {}
+@@ -393 +393 @@
+-					Err(e) if e.kind() == ErrorKind::NotFound => { },
++					Err(e) if e.raw_os_error() == Some(crate::errno::ENOENT) => { },
+diff -rN -U0 -x target -x Cargo.lock rufs/src/ufs/mod.rs ../pb/rufs/src/ufs/mod.rs
+--- rufs/src/ufs/mod.rs
++++ rufs/src/ufs/mod.rs
+@@ -7 +6,0 @@
+-	os::unix::ffi::{OsStrExt, OsStringExt},
+@@ -28 +27 @@
+-		IoError::from_raw_os_error(libc::$name)
++		IoError::from_raw_os_error($crate::errno::$name)
+@@ -153 +152 @@
+-					return Err(IoError::from_raw_os_error(libc::EIO));
++					return Err(IoError::from_raw_os_error(crate::errno::EIO));
+diff -rN -U0 -x target -x Cargo.lock rufs/src/ufs/symlink.rs ../pb/rufs/src/ufs/symlink.rs
+--- rufs/src/ufs/symlink.rs
++++ rufs/src/ufs/symlink.rs
+@@ -44 +44 @@
+-			data[0..len].copy_from_slice(link.as_bytes());
++			data[0..len].copy_from_slice(link.as_encoded_bytes());
+diff -rN -U0 -x target -x Cargo.lock rufs/src/ufs/xattr.rs ../pb/rufs/src/ufs/xattr.rs
+--- rufs/src/ufs/xattr.rs
++++ rufs/src/ufs/xattr.rs
+@@ -57 +57,3 @@
+-			let name = OsStr::from_bytes(&name[0..namelen]);
++			let name = // SAFETY: OsStr holds any bytes a name record carries on every
++			// platform rufs builds for, as dir.rs already relies on.
++			unsafe { OsStr::from_encoded_bytes_unchecked(&name[0..namelen]) };
+@@ -102 +104 @@
+-		Ok(data.into_vec())
++		Ok(data.into_encoded_bytes())

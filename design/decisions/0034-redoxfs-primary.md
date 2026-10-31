@@ -25,6 +25,9 @@ server and owns the bar. Milestone 982 (Retire RedoxFS once a launch store prove
 RedoxFS once all three hold, and not before. BSD-2-Clause sits on `deny.toml`'s allow-list for
 UFS2's FreeBSD half (ruled the same day).
 
+The UFS2 server is a `std` program, granted the clock slot by its starter (ruled 2026-10-31 UTC,
+on #2917).
+
 ## Why UFS2
 
 [The launch filesystem's candidates](../../notes/launch-filesystem-candidates.md) holds the survey.

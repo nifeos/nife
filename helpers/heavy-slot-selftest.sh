@@ -32,7 +32,13 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 mkdir -p "$work/helpers" "$work/script" "$work/slots"
-cp "$here/heavy-slot.sh" "$here/heavy_slot.py" "$work/helpers/"
+cp "$here/heavy-slot.sh" "$work/helpers/"
+# The scratch copy polls five times faster than the real one (POLL_SECONDS is 2), so the stages that
+# wait for a poll to notice something take a fraction of a second. Nothing but the interval differs;
+# a source that no longer spells the constant this way fails here rather than testing at 2 s.
+sed 's/^POLL_SECONDS = 2$/POLL_SECONDS = 0.2/' "$here/heavy_slot.py" >"$work/helpers/heavy_slot.py"
+grep -q '^POLL_SECONDS = 0.2$' "$work/helpers/heavy_slot.py" \
+    || { echo "heavy-slot-selftest: helpers/heavy_slot.py no longer spells POLL_SECONDS = 2" >&2; exit 1; }
 NIFE_HEAVY_SLOT_DIR="$work/slots"
 NIFE_HEAVY_SLOTS=1
 export NIFE_HEAVY_SLOT_DIR NIFE_HEAVY_SLOTS
@@ -80,9 +86,16 @@ appears "$work/held" 10 || fail "the holder never started"
 
 "$work/script/run" "$work/second-ran" 2>"$work/second.err" &
 second=$!
-# Three polls' worth: long enough that a second job not held back would have run, and that a
-# waiting message printed per poll would have printed more than once.
-sleep 4.5
+# The message appears at the first poll. Then four more polls (0.2 s each): long enough that a
+# second job not held back would have run, and that a waiting message printed per poll would have
+# printed more than once.
+i=0
+until grep -q 'is waiting' "$work/second.err" 2>/dev/null; do
+    i=$((i + 1))
+    [ "$i" -le 100 ] || fail "the second job never said it was waiting"
+    sleep 0.1
+done
+sleep 0.8
 [ ! -e "$work/second-ran" ] || fail "a second job ran while the only slot was held"
 grep -q "pid=$holder job=hold" "$work/second.err" \
     || fail "the waiting job did not name the holder; it printed: $(cat "$work/second.err")"

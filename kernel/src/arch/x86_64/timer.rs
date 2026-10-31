@@ -278,16 +278,6 @@ pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
         calibration.worst() / 1_000_000,
         apic_timer_frequency() / 1_000_000,
     );
-
-    // The TSC-vs-RTC measurement instrument, off unless the `tsc_probe` feature is on. Here
-    // because the rate it checks was measured a line ago and nothing else in the boot matters to
-    // it; it halts when it is done, the same shape `bench` and `icount` take. See
-    // notes/tsc-under-tcg.md.
-    #[cfg(feature = "tsc_probe")]
-    {
-        super::tsc_probe::probe();
-        crate::arch::halt(crate::arch::HaltReason::measurement_boot());
-    }
 }
 
 /// Start PIT channel 0 pulsing its interrupt line at about `hz`, and return the rate programmed.

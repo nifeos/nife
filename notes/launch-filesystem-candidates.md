@@ -167,7 +167,8 @@ what leaves the tree with RedoxFS.
 
 - No UFS2 server exists, and no image went through nife for this note. The license pass is desk
   work plus two failed builds.
-- The `no_std` cost is one build error, not a measured patch. `ufs-core`'s `thiserror` and `Vec`
-  uses are the named blockers; nobody has measured whether the patch takes a day or a week.
+- The survey priced the builds from one error each. Milestone 981 measured them in
+  [ufs2-builds-2026-10-31.md](ufs2-builds-2026-10-31.md): 6 lines for `ufs-core`, 49 for `rufs` as a
+  nife `std` program.
 - HAMMER2's size, and the FreeBSD port's completeness, come from lookup rather than measurement.
 - A person qualified to give OpenZFS's CDDL reading owes it. This note does not give it.
