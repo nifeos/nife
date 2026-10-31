@@ -17,8 +17,8 @@ one. A person or a lane paid time on about 30 runs (5%), and most of those cost 
 
 Every run of the `empty diff` workflow on the `pull_request` event from 2026-10-17 through
 2026-10-31 (UTC). The API stops at 1,000 results per query, so the list came one day at a time.
-There are 2,552 runs on 697 pull requests. Of these, 1,939 succeeded, 609 failed, 2 were cancelled
-and 2 still ran when the list was taken. For each failed run the collection fetched its job, its
+There are 2,552 runs on 697 pull requests. Of these, 1,939 passed, 609 failed, 2 ended cancelled
+and 2 still ran when the list came. For each failed run the collection fetched its job, its
 pull request's commits, and the pull request's draft and ready events.
 
 - Every failed job failed at the one step that compares trees, after 6 to 53 seconds (median 9).
@@ -45,10 +45,10 @@ pull request's commits, and the pull request's draft and ready events.
 | infrastructure | 0 | 0 |
 | other | 0 | 0 |
 
-The four real empty diffs are the falsification draft #2420 (an empty commit without a `claim:`
-subject, kept to show the check fires), a draft whose merge of `main` left its tree equal to its
-base (#2719), and two runs on #2618, a ready pull request whose work had already landed on `main`.
-#2618 closed unmerged.
+The four real empty diffs come from three pull requests. Draft #2420 is the falsification: an empty
+commit without a `claim:` subject, kept to show the check fires. Draft #2719 merged `main` and left
+its tree equal to its base. Ready #2618 failed twice because its work had already landed on `main`,
+and it closed unmerged.
 
 No failure was a label-change cancellation. The workflow starts on opened, reopened, synchronize
 and ready for review, so a label never starts it, and its concurrency group never cancels a run in
