@@ -233,9 +233,9 @@ names until the ratification pass, so this section keeps the links it carried.
 - **Outstanding.** The soak's end conditions 2 to 5 and release steps 7 to 9. Checked 2026-10-31
   (UTC): `nifeos/jh7110_entropy` has no weekly run, no dry run, no recorded stranger run and no
   semver period yet, and `crates/jh7110_entropy` is gone from this tree.
-- **Recorded (ruled 2026-10-31 UTC).** While `jh7110_entropy` is unpublished, nife depends on
-  `nifeos/jh7110_entropy` as a pinned git commit (`rev = "1827d439237b1708a6236f68fc0b807388755949"`).
-  The pin is replaced by a crates.io version after the soak release dry run.
+- **Recorded.** Ruled 2026-10-31 UTC: until `jh7110_entropy` reaches crates.io, nife depends on
+  `nifeos/jh7110_entropy` at one git commit (`rev = "1827d439237b1708a6236f68fc0b807388755949"`).
+  A crates.io version replaces the pin after the soak release dry run.
 - **Recorded.** An organization owner installs the `nife-smelter` app; see *BUGS* above.
 
 ## Index row
