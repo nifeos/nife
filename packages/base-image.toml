@@ -77,6 +77,12 @@ programs = [
     "redoxfs_server",
     "mkfs",
 
+    # system_installer: the kernel enters it on a boot a chooser started, to confirm the slot
+    # (milestone 554 (a good upgrade sticks)), and on a stick, to install. An image without it
+    # cannot confirm a trial boot, so an update that comes up still rolls back once its tries run
+    # out. `base-image`'s tests hold this list to every program the kernel's install path names.
+    "system_installer",
+
     # drivers and display: what the kernel and the progenitor enter on a machine with a disk and a
     # screen. `block_driver` is not optional: the kernel's filesystem service panics without it, so
     # an image that leaves it out boots to the progenitor and stops there.
