@@ -25,7 +25,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/bench` | icount microbenchmarks; `--check` fails on drift from the baseline. |
 | `script/icount` | Boot a `--features icount` kernel and assert the two timing claims a wall clock cannot make. |
 | `script/fmt` | Format with the pinned rustfmt; `--check` is the CI gate. |
-| `script/lint` | Clippy on every ISA and feature build, plus the non-clippy checks sharing its job. It names every failing section. |
+| `script/lint` | Clippy on every ISA and feature build, plus the non-clippy checks sharing its job. It names every failing section. `--quick` runs the cheap sections that fail most often, as a pre-flight; sections run side by side, up to `NIFE_LINT_JOBS` at once. |
 | `script/coverage` | Host-crate coverage, gated at 80% per file. |
 | `script/ci-build` | The one list of checks a pull request must pass. CI runs its rows. |
 | `script/qemu-check` | Is the QEMU on PATH the pinned one, with the devices the suite needs? |
@@ -197,9 +197,11 @@ covers every worktree at once, the case that motivated the first hook.
   the queue rather than a rule about what may exist on a branch.
 - It then runs `script/lint --no-cargo` (every check that does not invoke cargo; clippy stays in
   CI). A push that changes no files, a claim, skips both. See
-  [queue-ejection.md](queue-ejection.md).
+  [queue-ejection.md](queue-ejection.md). It skips the run when this machine's marker says the same
+  checks already passed on the same tree, and a full `script/lint` that passes leaves that marker.
 - With `nife.fleet` set (by `script/claim`) it runs `helpers/pre-push-fleet.sh`. Without it, no
-  `gh` or network.
+  `gh` or network. The fleet checks start before the text checks and are joined after them, so
+  the two run side by side.
 
 An existing clone installs it by rerunning `script/setup`, or by hand with the config line above.
 

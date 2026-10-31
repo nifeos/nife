@@ -26,6 +26,51 @@
 # `no-cargo` runs only the sections `--no-cargo` keeps, with LINT_NO_CARGO=1. `clippy` stops after
 # the section that carries the `--clippy` cut, which is where `script/lint --clippy` stopped.
 #
+# `quick` runs only the sections that carry a `# lint-quick` comment line, with LINT_NO_CARGO=1 (so
+# none of them may run cargo). It is the pre-flight `script/lint --quick` names: the cheap checks a
+# lane's first run fails most often, run before the full run. It covers fewer sections than any
+# other mode and never stands in for one.
+#
+# # Running sections side by side
+#
+# **At most NIFE_LINT_JOBS sections run at once.** The default is a quarter of the machine's cores,
+# at least 1 and at most 8, so a 4-core CI runner and a laptop with a few cores run them one at a
+# time exactly as before, and an 80-core workstation runs eight. `NIFE_LINT_JOBS=1` is the old
+# loop, byte for byte: in order, each section's output straight to the terminal. Above 1:
+#
+# - **Output is replayed in plan order.** Each section writes to a file of its own, and this script
+#   prints the files in order, each section's lines together under its own `==>` line. The head of
+#   the plan has its `==>` line printed the moment it starts, so a run that hangs still ends on the
+#   `==>` line of the section it hangs in, which is what script/ci-log-baseline reads. A section's
+#   stderr is merged into its stdout in the replay; the failure summary still goes to stderr.
+# - **Lanes.** A section may carry `# lint-lane: NAME`. Sections of one lane run in order, one at a
+#   time; lanes and the sections in no lane (the pool) run side by side. A cargo section is in lane
+#   `main` unless it says otherwise, because cargo holds one lock on its build directory and two
+#   cargo sections in a directory only queue. script/lint declares them: one per target triple's
+#   clippy passes, one for rustdoc, one for the uefi_loader builds and one for each workspace that
+#   has a target directory of its own.
+# - **Build directories.** At 4 or more jobs a section that carries `# lint-target-dir: NAME`
+#   builds into target/lint-lanes/NAME, so lanes that would have queued on cargo's lock do not. The
+#   saved clippy diagnostics stay in target/lint-clippy, so the lint ratchet reads the same files.
+#   Below 4 jobs every section shares target/, as it always did. A section that names a file under
+#   target/ reads ${CARGO_TARGET_DIR:-$PWD/target}.
+# - **Waits.** `# lint-waits-for: LANE[,LANE]` holds a section back until every earlier section of
+#   those lanes has ended. The lint ratchet reads what the clippy lanes saved, so it waits for them.
+#   A section that reads another's output and does not say so fails here, loudly, in every run
+#   that overlaps them, which is the same rule as for shell variables.
+# - **The verdict does not move.** Every planned section runs whatever fails, and the run passes
+#   exactly when every section passes, in any order and at any job count. The selftest holds the
+#   verdict to fail-fast's under 1 and 4 jobs. A wrong lane costs time, never a verdict.
+# - **CPU time.** Each section's user plus system seconds, from `times` in a subshell that ran only
+#   that section, print as `lint-section-cpu: NAME SECONDS` and in the table's second column. A
+#   check that spreads over every core (`git grep`) shows a CPU figure far above its wall figure.
+#
+# **A passing run leaves the pre-push hook's marker.** `all` and `no-cargo` runs of this tree's own
+# script/lint that pass whole, on a tree that did not move during the run, write the marker
+# helpers/pre-push-lint-cache.sh keys, so a push that follows skips the run it would repeat. The
+# `all` run's sections are a superset of the hook's, so the marker's claim is true. A fixture lint
+# script (the selftests') never writes one.
+#
 # This script times each section in whole seconds around its `sh -c`. As a section completes, one
 # line names it and its seconds, so the cost appears where the run's own output already flows:
 #

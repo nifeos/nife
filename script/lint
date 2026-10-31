@@ -10,6 +10,15 @@
 # separately, because each compiles different code and a warning can hide in a configuration the
 # default build never compiles. See notes/scripts.md.
 #
+# Modes, and how long they take. `script/lint` runs every section; `script/lint --quick` runs the
+# cheap ones that fail a lane's first run most often (`--quick --list` names them), so run it
+# first; `script/lint --no-cargo` is the pre-push hook's set; `script/lint --clippy` stops after
+# the last clippy section. Sections run side by side, up to NIFE_LINT_JOBS at once (a quarter of
+# the cores, at most 8; 1 gives the old one-at-a-time loop). A section opts into the scheduler
+# with comment lines (`# lint-lane:`, `# lint-waits-for:`, `# lint-target-dir:`, `# lint-quick`)
+# that helpers/lint-no-cargo.awk reads and helpers/lint-sections.sh's header explains. Every
+# section runs and the verdict is the same at any job count.
+#
 # Name: recorded (AGENTS.md's naming section, "standard terms a reader already knows from
 # outside"; and DECISIONS §134 for the verb half). Introduced 2026-07-22 with the Scripts to Rule
 # Them All adoption, though it is not one of that convention's canonical names. "Lint" is the

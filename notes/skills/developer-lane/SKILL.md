@@ -47,6 +47,15 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
 - A developer works in a lane, and the lane is the isolation rather than the person: its own
   worktree, its own branch, one milestone, no visibility into the others. Two developers in one lane
   is forbidden; it is the merge problem this vocabulary exists to prevent.
+- **Run `script/lint --quick` before the full lint, and again before each push.** It runs the
+  cheap sections that fail a lane's first run most often (citations and their glosses, roadmap
+  status, the prose, module-block and parent-index ratchets, em-dashes, package boundaries;
+  `script/lint --quick --list` names them) in a fraction of the full run's time, so a missing gloss
+  costs seconds and not a rerun. Commit first: the citations sections judge the committed tip and
+  refuse uncommitted edits. It covers fewer sections than the full run, which still gates the push
+  and CI, so it never replaces `script/lint`. Run the full lint once when the work is done, read
+  every failure it names (it runs all sections and lists them all at the end), and fix them
+  together.
 
 A developer's final report ends by handing off: what its work unblocked, and what it found that
 wants a lane of its own.
