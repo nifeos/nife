@@ -282,3 +282,40 @@ fn freeing_a_cluster_whose_entry_straddles_sectors_keeps_its_neighbours_link() {
     volume.sync().unwrap();
     assert_eq!(metadata(&volume.into_device()), original);
 }
+
+/// The raw 32-bit entry of `cluster` in table copy `copy` of `image`.
+fn raw_fat32_entry(image: &Memory, copy: u8, cluster: u32) -> u32 {
+    let boot = Volume::open(Memory {
+        bytes: image.bytes.clone(),
+        size: image.size,
+        writes: 0,
+    })
+    .unwrap()
+    .boot_sector()
+    .to_owned();
+    let sector = boot.sector_size().bytes();
+    let at = boot.table_first_sector(copy).unwrap() as usize * sector + cluster as usize * 4;
+    let bytes = &image.bytes[at..at + 4];
+    u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+}
+
+/// With `BPB_ExtFlags` turning mirroring off, only the table it names is live: the other copy
+/// must not be written.
+#[test]
+fn only_the_live_table_is_written_when_mirroring_is_off() {
+    for live in [0u8, 1] {
+        let mut image = formatted(64, FatType::Fat32, 512);
+        image.bytes[40] = 0x80 | live;
+        image.bytes[41] = 0;
+        let mut volume = Volume::open(image).unwrap();
+        assert_eq!(volume.boot_sector().active_table(), Some(live));
+        let cluster = volume.allocate_cluster(None).unwrap();
+        let image = volume.into_device();
+        assert_eq!(raw_fat32_entry(&image, live, cluster), 0x0FFF_FFFF);
+        assert_eq!(raw_fat32_entry(&image, 1 - live, cluster), 0);
+        let mut volume = Volume::open(image).unwrap();
+        assert_eq!(volume.free_chain(cluster).unwrap(), 1);
+        let image = volume.into_device();
+        assert_eq!(raw_fat32_entry(&image, live, cluster), 0);
+    }
+}

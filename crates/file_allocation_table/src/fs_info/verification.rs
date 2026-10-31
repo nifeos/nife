@@ -49,7 +49,7 @@ fn a_store_changes_only_the_two_hints() {
     }
     let mut at = 0;
     while at < 512 {
-        if at < 488 || at >= 496 {
+        if !(488..496).contains(&at) {
             assert_eq!(after[at], before[at]);
         }
         at += 1;
