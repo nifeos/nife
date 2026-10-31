@@ -22,6 +22,8 @@ const STORED: usize = 48;
 pub(crate) struct Image {
     pub(crate) bytes: [u8; STORED * 512],
     pub(crate) refuse: Option<u64>,
+    /// The one sector index whose writes (not reads) the device refuses, if any.
+    pub(crate) refuse_write: Option<u64>,
 }
 
 impl SectorDevice for Image {
@@ -40,6 +42,17 @@ impl SectorDevice for Image {
             Some(bytes) => buffer.copy_from_slice(bytes),
             None => buffer.fill(0),
         }
+        Ok(())
+    }
+}
+
+impl crate::sector::WritableSectorDevice for Image {
+    fn write_sector(&mut self, index: u64, buffer: &[u8]) -> Result<(), u64> {
+        let start = index as usize * 512;
+        if self.refuse_write == Some(index) || index >= STORED as u64 {
+            return Err(index);
+        }
+        self.bytes[start..start + 512].copy_from_slice(buffer);
         Ok(())
     }
 }
@@ -63,6 +76,7 @@ impl Image {
         let mut image = Image {
             bytes,
             refuse: None,
+            refuse_write: None,
         };
         image.set(0, 0xFF8);
         image.set(1, 0xFFF);
