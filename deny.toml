@@ -166,7 +166,7 @@ allow = ["Unicode-3.0"]
 # workspace (§46 (thin primitives or whole subsystems), §166 (the rasteriser dependency, and
 # whether the glyph atlas ships one face or four)). Each declares `license = "Unicode-3.0"` only,
 # checked in the published manifests of yoke 0.8.4, yoke-derive 0.8.4, zerofrom 0.1.8 and
-# zerofrom-derive 0.1.8. The reasoning for `unicode-ident` above applies unchanged: the licence is
+# zerofrom-derive 0.1.8. The reasoning for `unicode-ident` above applies unchanged: the license is
 # permissive with attribution and no copyleft, the crates run in a host-only build tool, and
 # nothing that ships links them. A per-crate row keeps the list failing closed: a fifth crate under
 # Unicode-3.0 is refused until somebody decides about that crate.
