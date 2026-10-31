@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # Where the provenance of an extracted crate's names lives
 
-The lane for milestone 818 (the jh7110_entropy crate released on its own) raised this on 2026-10-31
+The lane for milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic, released on its own) raised this on 2026-10-31
 (UTC). The consumer is every crate that leaves for its own repository after it, starting with the
 next of the release-track set in milestone 857 (crates released on their own).
 

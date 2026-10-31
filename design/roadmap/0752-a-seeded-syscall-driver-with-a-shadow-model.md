@@ -189,7 +189,7 @@ a second rung. When (A) lands, the driver's model changes in the two receiver-fi
 - Concurrent guests make the driver fail its wall-clock deadlines, and the failures are not
   escapes. Measured on 2026-10-31 (UTC) on x86_64 under KVM, on a dedicated x86_64 virtual machine,
   60 seconds per run. This driver failed 1 of 4 guests at 4 guests, 4 of 8 at 8 and 6 of 16 at 16.
-  The confined driver of milestone 779 failed 0 of 4, 1 of 8 and 6 of 16. One and two guests passed.
+  The confined driver of milestone 779 (fuzz the surface a confined process can reach) failed 0 of 4, 1 of 8 and 6 of 16. One and two guests passed.
 - The messages name a deadline and no property: "actor N neither finished nor parked within the
   deadline", "it stayed parked", "fuzzer N never came back" and "never parked on its conductor
   channel". Replaying a failing seed alone passed (this driver's seed 900018424, the confined
