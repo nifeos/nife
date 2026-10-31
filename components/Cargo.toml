@@ -696,7 +696,7 @@ elf = { version = "0.1.0", path = "../crates/elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 # The JH7110 TRNG's register logic, DTB discovery and byte pool (milestone 159), host-tested in
 # the crate itself; jh7110_entropy.rs is the volatile shell of register writes over it.
-jh7110_entropy = { version = "0.1.0", path = "../crates/jh7110_entropy" }
+jh7110_entropy = { version = "0.1.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "1827d439237b1708a6236f68fc0b807388755949" }
 # login's own measured-boot consultation before it will build a caretaker from an archive entry
 # (milestone 49's BUGS, resolved): the same crate `crates/system_initializer` already depends on.
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
