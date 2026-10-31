@@ -720,7 +720,7 @@ version = "0.1.0"
 [[package]]
 name = "jh7110_entropy"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=1827d439237b1708a6236f68fc0b807388755949#1827d439237b1708a6236f68fc0b807388755949"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=535f79c91eaa61a3ed8f589b71bce537a42b3b52#535f79c91eaa61a3ed8f589b71bce537a42b3b52"
 
 [[package]]
 name = "jh7110_watchdog"

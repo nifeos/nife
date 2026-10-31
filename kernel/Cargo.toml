@@ -151,7 +151,7 @@ entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 # thing only: `discover`, the device-tree query that says whether this machine has a TRNG at all,
 # so `entropy_service` can wire the userspace driver for it (`components/src/jh7110_entropy.rs`) instead of
 # keeping a second copy of the `compatible` string and the `reg` decode.
-jh7110_entropy = { version = "0.1.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "1827d439237b1708a6236f68fc0b807388755949" }
+jh7110_entropy = { version = "0.1.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "535f79c91eaa61a3ed8f589b71bce537a42b3b52" }
 
 # The JH7110's clock and reset generator (milestone 220), for `drivers::jh7110_clock_and_reset` and for
 # `memory::initialize`'s discovery of the controller's window. Pure logic; the volatile half is the
