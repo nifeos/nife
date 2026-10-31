@@ -100,16 +100,6 @@ fn check_with_fsck(image: &[u8], label: &str) {
     );
 }
 
-/// What rust-fatfs counts as free clusters on `image`.
-fn oracle_free_clusters(image: &[u8]) -> u32 {
-    let fs = lamfat::FileSystem::new(
-        lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
-        lamfat::FsOptions::new(),
-    )
-    .expect("rust-fatfs mounts the volume");
-    fs.stats().unwrap().free_clusters()
-}
-
 /// Every entry under `dir` according to rust-fatfs: (path, is directory, bytes of a file).
 fn walk(
     dir: &lamfat::Dir<
