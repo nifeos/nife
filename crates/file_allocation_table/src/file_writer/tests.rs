@@ -456,5 +456,54 @@ fn a_reused_free_slot_does_not_end_the_directory_and_stale_bytes_after_the_end_a
     assert_eq!(made.place().short_slot, 0);
     assert!(volume.lookup("REAL.TXT").is_ok());
     assert!(volume.lookup("GHOST.TXT").is_err());
-    assert_eq!(volume.into_device().bytes[5 * 512 + 32], 0);
+    let image = volume.into_device();
+    assert_eq!(image.bytes[5 * 512 + 32], 0);
+    assert_eq!(image.bytes[5 * 512 + 33..5 * 512 + 43], *b"HOST   TXT");
+}
+
+#[test]
+fn an_overwrite_in_a_later_sector_zeroes_stale_bytes_past_the_end_of_the_file() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let entry = volume.create_file(0, "TAIL.BIN").unwrap();
+    volume
+        .open_file_writer(&entry)
+        .unwrap()
+        .write(&[1; 600])
+        .unwrap();
+    let first = volume.lookup("TAIL.BIN").unwrap().first_cluster();
+    let second = volume.chain(first).nth(1).unwrap().unwrap();
+    let mut image = volume.into_device();
+    // Cluster `second`'s sector holds file bytes 512 to 599; byte 200 of it is past the end.
+    image.bytes[(6 + second as usize - 2) * 512 + 200] = 0xEE;
+    let mut volume = Volume::open(image).unwrap();
+    let entry = volume.lookup("TAIL.BIN").unwrap();
+    let mut writer = volume.open_file_writer(&entry).unwrap();
+    writer.seek(520);
+    writer.write(&[9]).unwrap();
+    let image = volume.into_device();
+    assert_eq!(image.bytes[(6 + second as usize - 2) * 512 + 200], 0);
+}
+
+#[test]
+fn growing_by_several_buffers_from_empty_and_by_exactly_two_works() {
+    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let entry = volume.create_file(0, "GROW.BIN").unwrap();
+    volume
+        .open_file_writer(&entry)
+        .unwrap()
+        .set_len(8192)
+        .unwrap();
+    let mut out = [1u8; 9000];
+    assert_eq!(read_back(&mut volume, "GROW.BIN", &mut out), 8192);
+    assert!(out[..8192].iter().all(|b| *b == 0));
+    let entry = volume.lookup("GROW.BIN").unwrap();
+    volume
+        .open_file_writer(&entry)
+        .unwrap()
+        .set_len(8192 + 4096 + 1)
+        .unwrap();
+    assert_eq!(
+        volume.lookup("GROW.BIN").unwrap().size_bytes(),
+        8192 + 4096 + 1
+    );
 }

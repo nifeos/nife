@@ -157,8 +157,15 @@ impl<D: WritableSectorDevice> Volume<D> {
             (other, _) => other,
         };
         let mut last = first;
+        let mut clusters = 0u64;
         for cluster in self.chain(first) {
             last = cluster?;
+            clusters += 1;
+        }
+        // A directory holds at most `MOST_SLOTS` entries, so it never needs more than this.
+        let slots_per_cluster = u64::from(self.boot.bytes_per_cluster()) / SLOT_BYTES as u64;
+        if clusters * slots_per_cluster >= u64::from(MOST_SLOTS) {
+            return Ok(false);
         }
         self.begin_change()?;
         let Some(new) = self.append(Some(last))? else {
