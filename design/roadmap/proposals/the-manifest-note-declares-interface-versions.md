@@ -15,7 +15,7 @@ Reuse: the proposal reuses the note machinery of milestone 597 (a program carrie
 
 ## What the tree does today
 
-The plan says the manifest note gains "descriptor version 3": version 1's 56 bytes unchanged, then a counted (interface, version) list. Descriptor version 3 exists. `SERVICED_VERSION = 3` (milestone 911) is version 2's layout plus a service byte. The next free descriptor version is 4.
+The plan says the manifest note gains "descriptor version 3": version 1's 56 bytes unchanged, then a counted (interface, version) list. Descriptor version 3 exists. `SERVICED_VERSION = 3` (milestone 911, scripted installs grant only what the owner's approval file allows) is version 2's layout plus a service byte. The next free descriptor version is 4.
 
 Two further facts bear on the plan:
 

@@ -20,7 +20,7 @@ changed lines (the merge base against the tree) and fails in two cases:
 It is the diff-grep the ruling names, not the rustdoc diff, which waits for a consumer outside the
 tree. It sees what a line says: a constant whose value moves through another constant it names is
 read by its text, and a semantic change behind an unchanged number is a break this cannot see (the
-blind spot milestone 610 records for the weekly series, too). A test module's constants are not a
+blind spot milestone 610 (the interface's stability is measured weekly) records for the weekly series, too). A test module's constants are not a
 format and are skipped, as is any file under a `tests` path.
 
 Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions. A

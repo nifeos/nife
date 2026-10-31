@@ -159,7 +159,7 @@ fn the_jh7110_shape_survives_the_start_word_and_puts_lsr_at_0x14() {
     assert!(!RegisterShape::new(0, 4).is_word_access());
 }
 
-/// **Every public number the syscall surface spells is pinned as a literal** (milestone 956 step 7,
+/// **Every public number the syscall surface spells is pinned as a literal** (milestone 956 (the linked interfaces carry checkable versions) step 7,
 /// the enforcement calef ruled 2026-10-29 UTC, PR #2852, question 5: a pinned-values test now, the
 /// rustdoc diff when a consumer outside the tree exists). A program built against one generation of
 /// this crate carries these numbers in its binary, so a renumber is a break that bumps
