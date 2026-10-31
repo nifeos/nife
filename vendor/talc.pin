@@ -24,3 +24,8 @@ vcs_path = talc
 # The upstream pull request the divergence is. script/vendor-watch reports its state, so the day
 # it merges, and the day a release carries it, is a line in vendor/upstream-status.md.
 upstream_fix = https://github.com/SFBdragon/talc/pull/57
+
+# A dependency Dependabot is told to leave alone (the `ignore` in .github/dependabot.yml) because
+# this package's manifest asks for an older range than the newest release: `<name> <version>`.
+# script/vendor-watch says when a talc release allows that version, which is when the ignore lifts.
+held_dependency = lock_api 0.5.0

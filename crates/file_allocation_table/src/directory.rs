@@ -152,7 +152,8 @@ impl Slot {
 }
 
 impl ShortEntry {
-    /// A short entry from its parts, as a writer lays one down.
+    /// A short entry from its parts, for the writer's tests.
+    #[cfg(test)]
     pub(crate) const fn new(
         name: [u8; 11],
         attributes: u8,

@@ -294,6 +294,7 @@ the tree), the N-1 rule's event-triggered revisit, and the interface ids' ratifi
 - The 610 series reads the new constants as additions in their first week; that is true, not a
   defect.
 - One recollection stands unverified in the prior art, and the appendix marks it.
+- "The implementing milestone" says eight steps; milestone 956 holds four. Correct it once 956 lands.
 
 ## Index row
 

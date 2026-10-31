@@ -10,7 +10,7 @@
 
 use crate::allocation::{AllocationError, LinksMut};
 use crate::boot_sector::RootDirectory;
-use crate::directory::{SLOT_BYTES, ShortEntry};
+use crate::directory::SLOT_BYTES;
 use crate::file::NotAFile;
 use crate::file_write::{Medium, WriteError, WriteState};
 use crate::long_name::is_short_byte;
@@ -19,11 +19,11 @@ use crate::reader::{ChainError, Volume, Walk};
 use crate::sector::{SectorSize, WritableSectorDevice};
 
 /// `DIR_Attr`'s archive bit: set on a file a writer has changed.
-const ARCHIVE: u8 = 0x20;
+pub(crate) const ARCHIVE: u8 = 0x20;
 /// A FAT directory holds at most this many entries.
-const MOST_SLOTS: u32 = 65_536;
+pub(crate) const MOST_SLOTS: u32 = 65_536;
 /// The first name byte of a free slot.
-const FREE: u8 = 0xE5;
+pub(crate) const FREE: u8 = 0xE5;
 
 impl<D: WritableSectorDevice> Medium for Volume<D> {
     fn read_data(&mut self, sector: u32, out: &mut [u8]) -> Result<(), ChainError<D::Error>> {
@@ -41,7 +41,7 @@ impl<D: WritableSectorDevice> Medium for Volume<D> {
 /// The 11 bytes of the short name `name` spells, or `None` when it is not a legal one: one to
 /// eight base characters, then optionally a dot and one to three extension characters, each an
 /// upper-case letter, a digit or the punctuation a short name admits.
-fn short_name_bytes(name: &str) -> Option<[u8; 11]> {
+pub(crate) fn short_name_bytes(name: &str) -> Option<[u8; 11]> {
     let (base, extension) = match name.split_once('.') {
         Some((base, extension)) if !extension.is_empty() => (base, extension),
         Some(_) => return None,
@@ -66,7 +66,7 @@ fn short_name_bytes(name: &str) -> Option<[u8; 11]> {
 impl<D: WritableSectorDevice> Volume<D> {
     /// The volume-relative sector and byte offset of slot `index` of directory `directory` (0 for
     /// the root), or `None` when the directory has no such slot.
-    fn slot_location(
+    pub(crate) fn slot_location(
         &mut self,
         directory: u32,
         index: u32,
@@ -113,7 +113,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     }
 
     /// Slot `index` of `directory`, or `None` past its end.
-    fn read_slot(
+    pub(crate) fn read_slot(
         &mut self,
         directory: u32,
         index: u32,
@@ -131,7 +131,7 @@ impl<D: WritableSectorDevice> Volume<D> {
 
     /// Replace slot `index` of `directory` with `slot`, leaving the rest of its sector. Returns
     /// `false` when the directory has no such slot.
-    fn write_slot(
+    pub(crate) fn write_slot(
         &mut self,
         directory: u32,
         index: u32,
@@ -150,7 +150,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     }
 
     /// Add a zeroed cluster to a chain directory. `false` for the fixed root region.
-    fn grow_directory(&mut self, directory: u32) -> Result<bool, WriteError<D::Error>> {
+    pub(crate) fn grow_directory(&mut self, directory: u32) -> Result<bool, WriteError<D::Error>> {
         let first = match (directory, self.boot.root_directory()) {
             (0, RootDirectory::Region { .. }) => return Ok(false),
             (0, RootDirectory::Cluster(root)) => root,
@@ -182,76 +182,9 @@ impl<D: WritableSectorDevice> Volume<D> {
         Ok(true)
     }
 
-    /// **Create an empty file called `name` in the directory whose first cluster is `directory`**
-    /// (0 for the root), and return its entry.
-    ///
-    /// `name` is a short name: one to eight characters, optionally a dot and one to three more,
-    /// upper-case letters, digits and the punctuation 8.3 admits. The entry has the archive
-    /// attribute, no clusters, size 0 and zero timestamps. A directory that is full grows by a
-    /// cluster unless it is the fixed root of a FAT12 or FAT16 volume.
-    ///
-    /// Name: provisional. What a caller asks of a volume to make a file.
-    pub fn create_file(
-        &mut self,
-        directory: u32,
-        name: &str,
-    ) -> Result<NamedEntry, WriteError<D::Error>> {
-        let short = short_name_bytes(name).ok_or(WriteError::InvalidName)?;
-        for entry in self.entries(directory) {
-            if entry?.short_name() == short {
-                return Err(WriteError::AlreadyExists);
-            }
-        }
-        let mut index = 0;
-        let mut found = None;
-        let mut grown_at = None;
-        // Each pass either moves to the next slot or grows the directory by a cluster, and the
-        // directory cannot pass `MOST_SLOTS`, so twice that many passes end the search.
-        for _ in 0..2 * MOST_SLOTS {
-            if index >= MOST_SLOTS {
-                break;
-            }
-            match self.read_slot(directory, index)? {
-                Some(slot) if matches!(slot[0], 0 | FREE) => {
-                    found = Some(slot);
-                    break;
-                }
-                Some(_) => index += 1,
-                // A directory that grew and still has no slot at `index` is damaged.
-                None if grown_at != Some(index) && self.grow_directory(directory)? => {
-                    grown_at = Some(index);
-                }
-                None => break,
-            }
-        }
-        let slot = found.ok_or(WriteError::DirectoryFull)?;
-        let was_end = slot[0] == 0;
-        let mut bytes = [0u8; SLOT_BYTES];
-        bytes[..11].copy_from_slice(&short);
-        bytes[11] = ARCHIVE;
-        self.write_slot(directory, index, &bytes)?;
-        if was_end
-            && let Some(next) = self.read_slot(directory, index + 1)?
-            && next[0] != 0
-        {
-            // Slots after the end marker may hold stale bytes; end the directory after the new one.
-            let mut end = next;
-            end[0] = 0;
-            self.write_slot(directory, index + 1, &end)?;
-        }
-        Ok(NamedEntry::created(
-            ShortEntry::new(short, ARCHIVE, 0, 0),
-            EntryPlace {
-                directory,
-                first_slot: index,
-                short_slot: index,
-            },
-        ))
-    }
-
     /// Rewrite the first cluster and size of the short entry `name` at `place`, after checking
     /// that the slot still holds that entry.
-    fn update_entry(
+    pub(crate) fn update_entry(
         &mut self,
         place: EntryPlace,
         name: [u8; 11],

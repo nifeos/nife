@@ -1,0 +1,18 @@
+# The removed-files index: files taken out of the tree on purpose, so a reader can find them in git.
+# One row per file: the path it had, the date it was removed (UTC), the last commit that held it
+# (read it back with `git show <sha>:<path>`), and the reason. A row names a path that is absent
+# and a sha that exists; helpers/removed_index.py checks both in script/lint. A removed roadmap
+# block keeps its number retired: the same script refuses a new block that takes it.
+# measure: 1
+path	removed	last_commit	reason
+bench/xenon-2026-10-04/linux-fio-read.jpg	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	a photograph named only by a comment in bench/xenon-2026-10-04/linux-fio.log, which points at this commit
+bench/xenon-2026-10-04/linux-fio-write.jpg	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	a photograph named only by a comment in bench/xenon-2026-10-04/linux-fio.log, which points at this commit
+bench/xenon-2026-10-04/linux-fio-pvsync2-read.jpg	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	a photograph named only by a comment in bench/xenon-2026-10-04/linux-fio.log, which points at this commit
+bench/xenon-2026-10-04/linux-fio-pvsync2-write.jpg	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	a photograph named only by a comment in bench/xenon-2026-10-04/linux-fio.log, which points at this commit
+bench/xenon-2026-10-04/linux-fio-io_uring-read.jpg	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	a photograph named only by a comment in bench/xenon-2026-10-04/linux-fio.log, which points at this commit
+bench/xenon-2026-10-04/linux-fio-io_uring-write.jpg	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	a photograph named only by a comment in bench/xenon-2026-10-04/linux-fio.log, which points at this commit
+design/roadmap/0879-the-kernels-file-service-wiring-is-split-along-its-seams.md	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	BUILT and uncited
+design/roadmap/0880-the-x86-64-mmu-file-is-split-along-its-seams.md	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	BUILT and uncited
+design/roadmap/0881-the-kernel-benchmark-file-is-split-along-its-seams.md	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	BUILT and uncited
+design/roadmap/0901-the-ten-longest-notes-become-a-page-and-its-appendices.md	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	BUILT and uncited
+design/roadmap/0904-the-rest-of-the-prose-budget-backlog-is-paid-down.md	2026-10-31	cd8fefa3c68fd170e9e92f2747276ab47e9ddacf	BUILT and uncited

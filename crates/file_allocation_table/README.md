@@ -17,9 +17,9 @@ The table is writable through `WritableSectorDevice`. `Volume::allocate_cluster`
 cluster and links it after a chain's last, `Volume::truncate_chain` and `Volume::free_chain` give
 clusters back, and each writes every live copy of the table in an order that leaves a crash at
 worst a leaked cluster. `Volume::sync` writes the FAT32 `FSInfo` hints those calls maintain.
-`Volume::create_file`, `open_file_writer` and `remove_file` make, write, resize and delete files
-with 8.3 names; the first change clears the clean-shutdown bit and `sync` sets it again.
-Directories, long names, renaming and a general format are planned.
+`Volume::create_file`, `open_file_writer` and `remove_file` make, write, resize and delete files. A name that is not 8.3 gets long-name slots and a numbered alias. `make_directory`,
+`remove_directory` and `rename` change the tree, and the first change clears the clean-shutdown
+bit until `sync`. A general format is planned.
 
 ## What is proven
 
@@ -60,6 +60,11 @@ Seven cover the table writes and allocation:
 - `every_sector_parses_to_hints_inside_the_volume` and `a_store_changes_only_the_two_hints`: the
   `FSInfo` parse believes only hints that could be true, and a store changes only the two hints.
 
+Two more cover directories: `every_numbered_alias_carries_its_number` (every alias from `~1` to
+`~999999` is a legal short name that reads back as its number) and
+`the_run_finder_returns_the_first_run_of_free_slots` (the slots a new entry takes are the first run
+of free ones).
+
 Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
 makes that harness fail at its own assertion, which shows the proof checks something.
@@ -98,12 +103,11 @@ that does not fit.
 
 ## Limitations
 
-- One file per volume. A long name's alias is always `~1`, which is right only because no other
-  name can collide with it.
+- The `mkfs` writes one file, with a `~1` alias.
 - The writer writes 512-byte sectors and 4096-byte clusters, and nothing else.
 - Every timestamp is zero.
 - The `mkfs` writes the `FSInfo` free-cluster count once; only `Volume::sync` keeps it after that.
-- A write has no barrier. File names are 8.3 only, and every timestamp is zero.
+- A write has no barrier. Every timestamp is zero, and a name outside the Basic Multilingual Plane is refused.
 - Not crash-atomic, and there is no journal, since FAT has none.
 - The reader stops at directory slots: it reports long-name pieces as stored, without assembling
   them or checking their checksum, and reads no file's bytes.
