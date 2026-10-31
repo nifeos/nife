@@ -228,6 +228,14 @@ names until the ratification pass, so this section keeps the links it carried.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
 
+## Follow-on
+
+- **Outstanding.** The soak's end conditions 2 to 5 and release steps 7 to 9. Checked 2026-10-31
+  (UTC): `nifeos/jh7110_entropy` has no weekly run, no dry run, no recorded stranger run and no
+  semver period yet, and `crates/jh7110_entropy` is gone from this tree.
+- **Recorded.** The `nife-smelter` installation and the `SETTINGS_TOKEN` secret are owed by an
+  organization owner; see *BUGS* above.
+
 ## Index row
 
 nife's StarFive JH7110 true random number generator logic, with four Kani proofs and their
