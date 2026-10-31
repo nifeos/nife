@@ -39,10 +39,12 @@ service's standards, not its code.
   counters measure coverage first and may later steer the fuzzer. Decided 2026-10-31 (UTC).
   Not chosen: QEMU-side block tracing, which needs full emulation and runs 20 to 29 times slower,
   and hand-placed counters.
-- The first piece of work is a build for one architecture that measures the speed cost under KVM
-  in the nife kernel. Nobody has measured that cost.
-- Not yet in force: the false-red fix as first work (question 3), the host and operator
-  (question 4), and the triage clock's length (question 5). Until an architect rules on those,
+- The first work fixes the harness false reds: guests that fail on harness deadlines under load,
+  where every failing seed replays green. It comes before any long or wide run. Decided 2026-10-31
+  (UTC). Not chosen: coverage first at 1 to 4 guests, and discarding failures that a replay clears.
+- The second work is a build for one architecture that measures the speed cost of the coverage
+  counters under KVM in the nife kernel. Nobody has measured that cost.
+- Not yet in force: the host and operator (question 4), and the triage clock's length (question 5). Until an architect rules on those,
   nothing can satisfy conditions 1 to 4, so risk 7 stays AMBER and no run counts toward (d).
 
 ## Where criterion (d) stands
@@ -184,49 +186,46 @@ so rather than imply parity.
 ## The questions that remain
 
 I ask them one at a time, in this order, each after an architect rules on the one before. An
-architect has ruled on questions 1 and 2; question 3 sits on the pull request. This list keeps the
+architect has ruled on questions 1 to 3; question 4 sits on the pull request. This list keeps the
 rest, and each returns in full when its turn comes.
 
 1. An architect ruled on 2026-10-31 (UTC): what criterion (d) becomes, and the 14-day run.
 2. An architect ruled on 2026-10-31 (UTC): the coverage measure. See "What is in force".
-3. Whether the false-red fix is the first work.
+3. An architect ruled on 2026-10-31 (UTC): the false-red fix is the first work.
 4. Where the fuzzers run and who operates them.
 5. The triage clock, which condition 3 names.
 
-### Question 3: whether the false-red fix is the first work
+### Question 4: who runs the fuzzer
 
-Recommendation: (A) yes. Before any long or wide run, fix the harness so a guest under load stops
-reporting failures that a replay does not reproduce. Then measure the coverage build on one
-architecture.
+Recommendation: (A) a dedicated x86_64 virtual machine that the architect creates, which runs the
+fuzzers continuously under a systemd unit, with the corpus and findings published to a place
+others can read. A lane operates it through the repository's scripts, and the architect owns the
+machine.
 
-Background. A false red is a guest that reports a failure although the kernel did nothing wrong.
-The 2026-10-31 run (see the appendix) showed them once guests shared a machine: the kernel-thread
-driver failed 4 of 8 guests at 8 and 6 of 16 at 16, and the user-mode driver 6 of 16 at 16. Every
-failing seed replayed green. The cause is the harness deadlines expiring under load, not an escape.
-Continuous fuzzing needs several guests at once, and condition 3 counts every finding against a
-triage clock. A false red costs triage time and proves nothing, so at 16 guests a real escape
-could hide in the noise.
+Background. Condition 1 says the fuzzer runs now, and condition 4 says the corpus and findings
+live where others can see them. Something has to host both, around the clock. The appendix shows a
+virtual machine of about 4 vCPUs and 8 GB runs the x86_64 drivers comfortably under KVM, at about
+100 MB per guest. Hosted Actions runners cap a job at six hours (from memory), share the merge
+queue's 60 slots,. They offer no operator who owns a corpus.
 
 Options:
 
-- (A) Fix the false reds first, then the one-architecture coverage build. Recommended.
-- (B) Build the coverage measure first and live with the false reds at low concurrency, 1 to 4
-  guests, where the rate is 0 to 1 in 4. It starts sooner.
-- (C) Keep the deadlines and discard any failure that a replay clears. Cheap, but it also
-  discards a real failure that depends on timing.
+- (A) A dedicated x86_64 virtual machine. Recommended.
+- (B) Scheduled hosted jobs that resume from a corpus in an artifact store. Free, but never
+  continuous, and it competes with the merge queue by day.
+- (C) The shared build host, at low concurrency in the night window. It has idle cores, but other
+  lanes' load caused the slow rates in the appendix, and a self-hosted runner never takes a fork's
+  pull request.
 
-Prior art. OSS-Fuzz reports a crash only if it reproduces, and CIFuzz fails a pull request only
-for a crash that reproduces on the pull request build and not on older builds (read). syzbot keeps
-a bug without a reproducer in a moderation queue before it reaches anyone (read). Both filter
-before a human looks.
+Prior art. OSS-Fuzz runs on ClusterFuzz, a scalable fuzzing infrastructure built for it (read); its pool
+size is unverified. syzbot runs named managers, listed with uptime and freshness on its dashboard (read).
 
-Where nife differs. The replay is exact: a seed names every call, so nife can rerun a failure and
-get the same verdict, which neither project can promise. That makes (C) tempting, but a rerun
-filter hides the cause, and a fix should change what the harness waits for.
+Where nife differs. One machine, one architecture for now (the §19 scope note), and an owner who
+is also its architect.
 
-Example. At 16 guests the user-mode driver reports 6 failures in one hour. Today a person replays
-6 seeds and finds 6 greens. After the fix the harness reports 0 or 1, and the one it reports
-replays red.
+Example. The virtual machine runs both drivers at 4 guests, 24 hours a day. A daily job copies the
+counter totals, the new corpus and any findings to the published place. On a given date the
+dashboard shows the fuzzer up for 61 days, which meets condition 1.
 
 ## Appendix: measurements, 2026-10-31 (UTC)
 
@@ -264,20 +263,19 @@ is why question 3 exists.
 
 ## The seven questions
 
-1. Considered and lost: question 3's options above, and the earlier fixed-budget forms (a seed
-   count by the rule of three, CPU-hours, a per-claim corpus).
-2. In this tree: the outsider passes pin a commit; the sweeps print seeds and rates.
+1. Considered and lost: question 4's options above.
+2. In this tree: the weekly sweeps run on hosted runners; no machine runs the fuzzers continuously.
 3. Prior art: above, with what I did not read marked.
-4. The premise holds: the appendix gives the false-red rates.
-5. Cost: unmeasured work; the appendix gives the cost of waiting.
-6. Reversible: a harness change is a code change, and nobody has acted on it.
+4. The premise holds: condition 1 needs a host.
+5. Cost: one virtual machine, about 4 vCPUs and 8 GB, and its operator's time.
+6. Reversible: a machine can move; the published place is the lasting part.
 7. At equal cost this would still choose (A); the recommendation is not about effort.
 
 ## What waits on this
 
-Conditions 1 to 4 of criterion (d), and so risk 7's green, until an architect rules on questions 3
-to 5. The coverage build for one architecture can start now.
+Conditions 1 to 4 of criterion (d), and so risk 7's green, until an architect rules on questions 4
+and 5. The coverage build for one architecture can start now.
 
 ## What I need from you
 
-Question 3 only. The others wait.
+Question 4 only. Question 5 waits.
