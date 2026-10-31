@@ -5,7 +5,7 @@
 An appendix to [`notes/fuzzing.md`](../fuzzing.md). It keeps the first rates measured for the
 confinement fuzzers, on 2026-10-31 (UTC), ahead of the x86_64 runs under KVM.
 
-What was measured. One QEMU guest at a time, on a shared many-core x86_64 build host with other
+The setup. One QEMU guest at a time, on a shared many-core x86_64 build host with other
 lanes' load on it, under full emulation (TCG) of aarch64. Not a census.
 
 | What | Inputs | Wall time | Rate | Result |
