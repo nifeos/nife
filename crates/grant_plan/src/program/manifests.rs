@@ -72,6 +72,7 @@ impl Program {
             Program::JobSleeper => job_sleeper_manifest(),
             Program::NullSyscall | Program::SinkProducer => bench_row_manifest(),
             Program::SinkConsumer => wc_manifest(),
+            Program::MapEl0 => map_el0_manifest(),
         }
     }
 }
@@ -141,6 +142,19 @@ const fn bench_row_manifest() -> Manifest {
         activation_directory: false,
         console_input: false,
         startup: StartupContract::Native,
+    }
+}
+
+/// The manifest of `map_el0` (milestone 961 step 1): [`bench_row_manifest`] and a memory grant of
+/// ten pages, the budget the program builds its address space, page tables and frame from.
+/// `primitive_benchmark_contract::MAP_BUDGET_PAGES` is that number, and a test holds the two together.
+const fn map_el0_manifest() -> Manifest {
+    Manifest {
+        memory_grant: MemoryGrantDeclaration::Required {
+            minimum: 10,
+            maximum: 16,
+        },
+        ..bench_row_manifest()
     }
 }
 

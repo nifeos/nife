@@ -422,5 +422,14 @@ programs! {
         ///
         /// Name: provisional (milestone 961 step 1, 2026-10-31 UTC).
         SinkConsumer { id: 26, name: "sink_consumer" },
+        /// **Time a page map from EL0** (milestone 961 step 1, `fixtures/src/map_el0.rs`): one row
+        /// of ticks and iterations under the `bench-production:` prefix.
+        ///
+        /// It builds its own target address space and frame out of the `--mem` budget it declares,
+        /// ten pages (measured; see `primitive_benchmark_contract::MAP_BUDGET_PAGES`). No other
+        /// authority.
+        ///
+        /// Name: recorded (the row's own name since milestone 21).
+        MapEl0 { id: 27, name: "map_el0" },
     }
 }

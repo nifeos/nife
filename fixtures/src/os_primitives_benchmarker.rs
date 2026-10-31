@@ -5,9 +5,9 @@
 //! Spawned by the bench boot, it times each primitive with `user_mode_runtime::now` (the virtual
 //! counter, EL0-readable since milestone 19e (run a real workload)) and SENDs `[ticks, iters]` on
 //! slot 0, so the icount baseline gates it and `--real` gives its magnitude. Four primitives: context
-//! switch, IPC round trip, page map, and spawn, which reclaims each child's region
-//! (`MemoryRegion::DESTROY`). The null syscall and the pipe throughput are programs of their own
-//! (`null_syscall`, `sink_producer`, `sink_consumer`), because a person can type them at the
+//! switch, IPC round trip and spawn, which reclaims each child's region
+//! (`MemoryRegion::DESTROY`). The null syscall, the pipe throughput and the page map are programs of
+//! their own (`null_syscall`, `sink_producer`, `sink_consumer`, `map_el0`), because a person can type them at the
 //! production shell; they need no peer this program would have to build. See notes/benchmarks/cross-os-primitives.md.
 //!
 
@@ -42,7 +42,6 @@ const ROLE_YIELDER: u64 = 1;
 const ROLE_CTX_SWITCH: u64 = 2;
 const ROLE_IPC_SERVER: u64 = 3;
 const ROLE_IPC_CLIENT: u64 = 4;
-const ROLE_MAP: u64 = 5;
 const ROLE_SPAWN: u64 = 6;
 
 // Spawn-benchmark slots. slot 0 REPORT (the final result home to the bench boot), slot 1 MEMORY_REGION
@@ -52,11 +51,6 @@ const ROLE_SPAWN: u64 = 6;
 const SP_REPORT: u64 = 0;
 const SP_UNTYPED: u64 = 1;
 const SP_CHILD_DONE: u64 = 2;
-
-// Map-benchmark slots (slot 0 is always REPORT). The bench boot grants a WRITE cap on a target
-// address space and a READ cap on one frame; we map that frame at a fresh VA each iteration.
-const MAP_ADDRESS_SPACE: u64 = 1;
-const MAP_PAGE_FRAME: u64 = 2;
 
 // IPC round-trip slots. The server holds two endpoints; the client holds three (report first, so
 // slot 0 stays "the endpoint I report on" across every reporting role).
@@ -81,22 +75,6 @@ const IPC_ITERS: u64 = 5_000;
 /// separate process). Fewer than the null loop: a switch is much heavier under TCG.
 const CTX_ITERS: u64 = 5_000;
 
-/// Iterations for the map loop. Unlike the loops above, each `MAP_INTO` **consumes** budget: a fresh
-/// leaf VA needs a page-table entry (and, cold, an intermediate table) plus a revocation record, all
-/// paid from the target space's region. So the count is bounded by that region, not free to grow, and
-/// the bench boot sizes the region for `MAP_WARMUP + MAP_ITERS` (it must be kept in step with the
-/// `MAP_EL0_ITERS` mirror there). 500 fits inside a single L3 table (512 entries from the timed base),
-/// so the loop stays one table's worth of walks, and it is enough samples for the HVF median to
-/// settle (64 was too few: the per-map counter delta was in the noise). Under icount it is exact.
-const MAP_ITERS: u64 = 500;
-/// Untimed warmup maps, so the first cold page-table allocation lands outside the window. They use a
-/// disjoint VA range from the timed maps; both are paid from the same region (which is sized for the
-/// sum). The page size is fixed (aarch64 4 KiB), and the VA bases are arbitrary aligned user pages.
-const MAP_WARMUP: u64 = 8;
-const PAGE: u64 = 4096;
-const MAP_WARM_BASE: u64 = address_space_map::pair_page(0x20_0000);
-const MAP_TIMED_BASE: u64 = address_space_map::pair_page(0x40_0000);
-
 user_mode_runtime::program_entry!(start);
 
 fn start(role: u64, x1: u64, _x2: u64) -> ! {
@@ -105,7 +83,6 @@ fn start(role: u64, x1: u64, _x2: u64) -> ! {
         ROLE_CTX_SWITCH => ctx_switch_bench(),
         ROLE_IPC_SERVER => ipc_server(),
         ROLE_IPC_CLIENT => ipc_client(x1 == IPC_CLIENT_READS_CYCLES),
-        ROLE_MAP => map_bench(),
         ROLE_SPAWN => spawn_bench(),
         _ => exit(),
     }
@@ -184,40 +161,6 @@ fn ipc_client(reads_cycles: bool) -> ! {
         );
     }
     exit();
-}
-
-/// **Map latency, measured from EL0 (the primitive suite).** lmbench's `lat_mmap`, in the shape our
-/// surface allows: `invoke(address space, MAP_INTO, va, frame_slot, MAP_RO)` maps the one granted frame at a
-/// fresh VA. We alias a single frame across every VA, so no data memory is consumed per iteration,
-/// only the page-table entry and the revocation record the map path must write anyway, which is
-/// exactly what we are timing. There is no unmap in the surface yet, so the loop is bounded (each VA
-/// is used once); the bench boot provisions the target region for the warmup plus timed counts. The
-/// gap between this and the kernel-side `map_new` is roughly the EL0<->EL1 trap on each `svc`.
-fn map_bench() -> ! {
-    // Warm the cold page-table allocations at a disjoint VA range, untimed.
-    for i in 0..MAP_WARMUP {
-        map_one(MAP_WARM_BASE + i * PAGE);
-    }
-    let start = now();
-    for i in 0..MAP_ITERS {
-        map_one(MAP_TIMED_BASE + i * PAGE);
-    }
-    let ticks = now().wrapping_sub(start);
-    send(REPORT, ticks, MAP_ITERS, 0);
-    exit();
-}
-
-/// One `MAP_INTO`: map the granted frame (slot `MAP_PAGE_FRAME`) read-only into the granted space (slot
-/// `MAP_ADDRESS_SPACE`) at `va`. Read-only needs only READ on the frame cap, which is all we were granted.
-/// Returns the syscall result: 0 on success, a negative error otherwise.
-#[inline(never)]
-fn map_one(va: u64) -> i64 {
-    address_space_map_into(
-        MAP_ADDRESS_SPACE,
-        va,
-        MAP_PAGE_FRAME,
-        abi::address_space::MAP_RO,
-    )
 }
 
 /// Spawn benchmark tuning. Each iteration builds a whole child from EL0 and reclaims it, so the

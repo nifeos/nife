@@ -41,6 +41,22 @@ pub const SINK_MESSAGES: u64 = 5_000;
 /// consumer's own start land outside the window. The producer sends this many extra.
 pub const SINK_WARMUP_MESSAGES: u64 = 64;
 
+/// Timed `MAP_INTO` calls in `map_el0`. Each maps the one frame at a fresh address, so the count is
+/// bounded by the page-table pages and revocation records the target space can hold. 500 fits one
+/// L3 table (512 entries from the timed base), so the loop stays one table's worth of walks.
+pub const MAP_ITERATIONS: u64 = 500;
+
+/// Untimed `MAP_INTO` calls before the timed ones, at a disjoint range, so the first cold
+/// page-table allocation lands outside the window.
+pub const MAP_WARMUP: u64 = 8;
+
+/// Pages of budget `map_el0` needs: its address space, the page tables and records the
+/// [`MAP_WARMUP`] plus [`MAP_ITERATIONS`] maps commit, and the one frame it maps. Measured with
+/// `MemoryRegion::USAGE` on 2026-10-31 (UTC): the address space and its tables committed 8 of the
+/// region's pages, the frame is a ninth, and one page of margin makes ten. The shell's `--mem`
+/// minimum for `map_el0` is this number (a test in `grant_plan` holds the two together).
+pub const MAP_BUDGET_PAGES: u64 = 10;
+
 /// The startup word (`x0`) the bench boot passes. The shell passes 0, so a program typed at the
 /// prompt prints under [`Prefix::Production`].
 pub const QUIET_BOOT_STARTUP_WORD: u64 = 1;

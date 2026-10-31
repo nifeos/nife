@@ -610,6 +610,7 @@ version = "0.1.0"
 dependencies = [
  "filesystem_contract",
  "glob",
+ "primitive_benchmark_contract",
  "program_argument_contract",
 ]
 
