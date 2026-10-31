@@ -166,6 +166,11 @@ RECORD_PATH = "notes/project-metrics/kernel-mutation-census.csv"
 RECORD_HEADER = "date,run,rotation,slice,arch,mutants,survived,caught,unviable,stale,timeout\n"
 
 
+# One rotation: the time one pass of the whole corpus takes at 60 runner-hours a week. The block's
+# cost table prices a full rotation at 562 runner-hours, about 9.5 weeks, so 67 days.
+ROTATION_DAYS = 67
+
+
 def per_mutant(arch, cost):
     """Seconds one mutant of this slice costs: part 1's measured number, plus the block's system
     estimate for a slice the kernel tier cannot see."""
@@ -550,6 +555,40 @@ def cmd_record(args):
     return 0
 
 
+def cmd_rotation(args):
+    """Report each slice whose newest record row is older than one rotation, for
+    script/cadence-check. Exit 1 when one is, 0 otherwise, 2 when the record cannot be read.
+
+    A slice with no row is not yet due until the record's oldest row is itself a rotation old: the
+    census works its slices in order, so a late slice legitimately waits for its turn. An empty
+    record means the census has not begun, which is not a finding."""
+    try:
+        lines = pathlib.Path(args.csv).read_text().splitlines()
+        today = datetime.strptime(args.today, "%Y-%m-%d") if args.today else datetime.now(timezone.utc).replace(tzinfo=None)
+        rows = [l.split(",") for l in lines[1:] if l.strip()]
+        newest = {}
+        oldest = None
+        for r in rows:
+            d = datetime.strptime(r[0], "%Y-%m-%d")
+            newest[r[3]] = max(d, newest.get(r[3], d))
+            oldest = d if oldest is None else min(oldest, d)
+    except (OSError, ValueError, IndexError) as e:
+        print(f"mutation_kernel_census: {e}", file=sys.stderr)
+        return 2
+    late = []
+    for name in SLICE_ORDER:
+        d = newest.get(name)
+        if d is not None:
+            age = (today - d).days
+            if age > ROTATION_DAYS:
+                late.append(f"{name}: last worked {d:%Y-%m-%d}, {age} days ago")
+        elif oldest is not None and (today - oldest).days > ROTATION_DAYS:
+            late.append(f"{name}: never worked in {(today - oldest).days} days of record")
+    for l in late:
+        print(f"DEAD: kernel census slice {l} (a rotation is {ROTATION_DAYS} days)")
+    return 1 if late else 0
+
+
 def selftest():
     def listing(*blocks):
         return "\n".join("\n".join((f"{f}:{l}:5: {n}", f"--- {f}", f"+++ {n}", "@@ -1,2 +1,2 @@",
@@ -828,6 +867,20 @@ def selftest():
             csv=str(csv), summary=None))
         assert code == 0 and csv.read_text() == body
 
+        # The rotation check: a young record is quiet, a stale slice or a never-worked slice
+        # once the record is a rotation old is reported, a current record is quiet.
+        rec = root / "rot.csv"
+        rec.write_text(RECORD_HEADER)
+        ns = lambda today: argparse.Namespace(csv=str(rec), today=today)
+        assert _capture_code(cmd_rotation, ns("2027-01-01"))[0] == 0
+        rec.write_text(RECORD_HEADER + "2026-10-29,1,1,syscall,aarch64,4,1,1,1,0,1\n")
+        assert _capture_code(cmd_rotation, ns("2026-12-01"))[0] == 0
+        code, text = _capture_code(cmd_rotation, ns("2027-01-10"))
+        assert code == 1 and "syscall: last worked 2026-10-29" in text and "revoke: never worked" in text, text
+        rec.write_text(RECORD_HEADER + "".join(f"2026-12-30,{i},2,{n},aarch64,1,0,1,0,0,0\n" for i, n in enumerate(SLICE_ORDER)))
+        assert _capture_code(cmd_rotation, ns("2027-01-10"))[0] == 0
+        assert _capture_code(cmd_rotation, argparse.Namespace(csv=str(root / "none.csv"), today=None))[0] == 2
+
     print("mutation_kernel_census selftest: ok")
     return 0
 
@@ -902,8 +955,11 @@ def main(argv):
     r.add_argument("--run", required=True)
     r.add_argument("--csv", required=True)
     r.add_argument("--summary")
+    o = sub.add_parser("rotation", help="report a slice older than one rotation (cadence-check)")
+    o.add_argument("--csv", default=RECORD_PATH)
+    o.add_argument("--today", help="YYYY-MM-DD; the clock, unless staged")
     args = ap.parse_args(argv)
-    return {"plan": cmd_plan, "verdict": cmd_verdict, "window": cmd_window,
+    return {"rotation": cmd_rotation, "plan": cmd_plan, "verdict": cmd_verdict, "window": cmd_window,
             "state": cmd_state, "record": cmd_record}[args.cmd](args)
 
 
