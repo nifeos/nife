@@ -2,10 +2,10 @@
 //!
 //! A program the shell starts with `--mem N` holds the grant as `SPEND_ONLY`, and every spending
 //! method asks for `WRITE` alone, so the program may `SPLIT` it and build a process in it. When the
-//! job ends, the shell gives the grant back with one `DESTROY` and deletes its slot
-//! (`release_region` in `components/src/swish/running.rs`, `release` in `jobs.rs`), whatever that
-//! `DESTROY` answers. These tests take the kernel's side of that sequence: what the one `DESTROY`
-//! answers when the job left a sub-region behind, and when it left a process running.
+//! job ends, the shell gives the grant back with `release_budget` in `components/src/swish/jobs.rs`,
+//! which retries the `DESTROY` for up to a second (`swish::is_reclaimed_within`) and then deletes its
+//! slot. These tests take the kernel's side of that sequence: what the `DESTROY` answers when the
+//! job left a sub-region behind, and when it left a process running.
 //!
 //! Each test stands in for the job with kernel calls on a region split from a stand-in for the
 //! shell's budget, and makes the shell's `DESTROY` through the real dispatcher.
@@ -118,8 +118,8 @@ fn a_memory_grant_the_job_split_is_refused_to_the_shell_for_good() {
 /// **A grant holding a process the job left running is refused once, then given back.**
 ///
 /// The job built a process in its grant and exited with it still running. The shell's first
-/// `DESTROY` arms the process's kill and refuses, and `release_region` makes no second one. A retry once the kill lands succeeds, as `jobs::reclaim` retries a job's
-/// own region, and the shell's budget comes back whole.
+/// `DESTROY` arms the process's kill and refuses. A retry once the kill lands succeeds, which is
+/// why `release_budget` retries as `jobs::reclaim` does, and the shell's budget comes back whole.
 ///
 /// Falsification: unfalsified. Treating a `Running` resident as reapable in `region_reap_verdict`
 /// should fail the first assertion; no patch replays it yet.
