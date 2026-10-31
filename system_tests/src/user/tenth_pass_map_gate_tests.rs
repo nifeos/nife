@@ -555,32 +555,30 @@ fn the_narrow_rule_admits_every_other_pair_and_every_other_space() {
         "the cross-space pair did not land as code here and writable there",
     );
 
-    for (space, va) in [
-        (here, base),
-        (here, base + page),
-        (here, base + 2 * page),
-        (here, base + 3 * page),
-        (here, base + 4 * page),
-        (there, base),
-        (there, base + page),
-    ] {
+    for (space, _, va, _, _) in admitted {
         assert_eq!(
             call(space, abi::address_space::UNMAP, va, 0, 0),
             Ok(0),
             "UNMAP refused a page this test mapped",
         );
     }
-    for slot in [shared, read_only, budget, here, there] {
+    let [here_region, there_region] = space_regions;
+    give_back(
+        &[shared, read_only, budget, here, there],
+        &[frame_region, here_region, there_region],
+    );
+}
+
+/// Delete each capability in `slots`, then require each region in `regions` to come back: the
+/// teardown that shows a test left nothing mapped or held behind it.
+fn give_back(slots: &[u64], regions: &[u64]) {
+    for &slot in slots {
         let _ = sched::delete_current_capability(slot);
     }
-    assert!(
-        sched::reclaim_region(frame_region).is_ok(),
-        "the frame region did not come back",
-    );
-    for region in space_regions {
+    for &region in regions {
         assert!(
             sched::reclaim_region(region).is_ok(),
-            "a space region did not come back",
+            "region {region:#x} did not come back",
         );
     }
 }
