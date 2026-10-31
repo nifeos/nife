@@ -219,7 +219,7 @@ for file in $scheduled; do
 	esac
 done
 
-# The kernel census (milestone 955, part 4) keeps a per-slice record, and a slice whose newest row
+# The kernel census (milestone 955 (mutation testing reaches the kernel and its programs under QEMU), part 4) keeps a per-slice record, and a slice whose newest row
 # is older than one rotation is as dead as a workflow with no recent success, though the workflow
 # itself may be green: a night that stops at 13:00 UTC and never reaches a slice succeeds too.
 # The helper owns the rotation length and the slice list; a failure to ask is exit 2, as above.
