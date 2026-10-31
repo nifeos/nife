@@ -20,7 +20,7 @@ fi
 program="$(cat "$here/ci-failing.jq")"
 # decide <runs JSON> <required JSON>: the failing names, joined.
 decide() {
-	echo "$1" | jq -r --argjson required "$2" "$program"' failing($required) | map(.name) | join(";")'
+	printf '%s\n' "$1" | jq -r --argjson required "$2" "$program"' failing($required) | map(.name) | join(";")'
 }
 expect() {
 	if [ "$2" != "$3" ]; then
@@ -91,6 +91,25 @@ case "$out" in
 *"FAILING #7"*clippy*) ;;
 *)
 	echo "$me: the large head's failing clippy was not reported:" >&2
+	echo "$out" >&2
+	exit 1
+	;;
+esac
+# 5. Escapes inside the JSON. A check run's `output.summary` holds "\n" as two characters, and
+#    dash's `echo` turns them into a real newline, which is a control character inside a JSON
+#    string: jq died with "Invalid string: control characters" and echo then reported
+#    "I/O error" (scheduled runs of ci-failing from 2026-10-31, issue 2960). The script passes
+#    JSON with `printf '%s\n'`, which never interprets backslashes. A red head must still be reported.
+printf '%s\n' '{"id":1,"name":"clippy","status":"completed","conclusion":"failure","html_url":"https://x/1","output":{"summary":"line one\nline two\ttab \\ slash"}}' >"$stub/runs"
+out="$(PATH="$stub:$PATH" CI_FAILING_INSTANCE=selftest "$here/ci-failing.sh" --dry-run 2>&1)" || {
+	echo "$me: ci-failing.sh failed on check runs whose JSON holds backslash escapes:" >&2
+	echo "$out" >&2
+	exit 1
+}
+case "$out" in
+*"FAILING #7"*clippy*) ;;
+*)
+	echo "$me: a failing head with backslash escapes in its check runs was not reported:" >&2
 	echo "$out" >&2
 	exit 1
 	;;
