@@ -9,7 +9,7 @@ pub const ROOT: u64 = 0;
 /// PR #2852, question 1). A break bumps this and owes the dated ledger entry the
 /// interface-stability discipline records; an addition (a new verb, an optional field) owes no
 /// bump. The check lives at bind (milestone 956 (the linked interfaces carry checkable
-/// versions)): a client `CALL`s [`OPERATION_VERSION`] and binds only when its own version is in
+/// versions)): a client `CALL`s `OPERATION_VERSION` and binds only when its own version is in
 /// the served set.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.

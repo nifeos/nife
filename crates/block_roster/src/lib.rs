@@ -354,7 +354,7 @@ mod tests {
     fn the_magic_is_the_bytes_it_says_it_is() {
         let mut page = [0u8; 4096];
         write(&mut page, &[]).unwrap();
-        assert_eq!(&page[..8], b"blkrostr");
+        assert_eq!(&page[..8], b"blkrosv1");
     }
 
     /// A page of exactly `HEADER_BYTES` is the smallest roster there is: room for the header,
