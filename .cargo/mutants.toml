@@ -500,7 +500,7 @@ exclude_re = [
     # **paging's descriptor words** (milestone 954 (a survivor accepted once is not accepted
     # forever), part 4, 2026-10-31 UTC). One entry per function whose OR-to-XOR swaps are no-ops
     # because the operands share no bit, each naming the `const` beside the code whose assertions
-    # make the compiler check that (`THE_*_SHARE_NO_BIT`, built on lib.rs's `assert_share_no_bit!`),
+    # make the compiler check that (`THE_*_SHARE_NO_BIT`, built on share_no_bit.rs's `assert_share_no_bit!`),
     # and one per file for the constant-level shifts, which are the `1 << 0` and `0b00 << 6`
     # identities. The killed mutants an entry sweeps are the same shapes in the same scope, and the
     # tests that killed them stay. The limit: a future `|` over overlapping bits added inside an

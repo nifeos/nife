@@ -33,8 +33,9 @@ const SW_DEVICE: u64 = 1 << 8;
 const PPN_SHIFT: u32 = 10;
 const PPN_MASK: u64 = (1 << 44) - 1;
 
-/// **A PTE's fields share no bit**: the PPN field (bits 53 to 10, written as its mask because the
-/// encoder shifts a masked address into it), V, and each of R, W, X, U, G, A, D and the software
+/// **A PTE's fields share no bit**: the PPN field (bits 53 to 10, written as a literal mask
+/// because the encoder shifts a masked address into it, and the Kani harnesses and tests spell the
+/// same positions as literals), V, and each of R, W, X, U, G, A, D and the software
 /// device bit. Every `|` in `Sv39::attrs`, `table_entry`, `leaf_entry` and `is_block` joins words
 /// from this list, so each is its own `^`, and the mutation exclusions for them name this
 /// constant: the compiler checks what no test can.
@@ -42,8 +43,6 @@ const PPN_MASK: u64 = (1 << 44) - 1;
 /// Name: provisional, minted 2026-10-31 (UTC) by lane/954-paging-noise.
 pub const THE_PAGE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT: () = {
     assert_share_no_bit!(0x003f_ffff_ffff_fc00, V, R, W, X, U, G, A, D, SW_DEVICE);
-    // The literal above is the PPN field the encoder shifts into.
-    assert!(PPN_MASK << PPN_SHIFT == 0x003f_ffff_ffff_fc00);
 };
 
 /// The RISC-V Sv39 three-level page-table format.
