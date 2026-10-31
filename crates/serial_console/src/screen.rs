@@ -346,26 +346,26 @@ fn cell(
 /// byte after the maximum value belongs to the header rather than to the pixels. Getting that one
 /// byte wrong shifts the whole image by a third of a pixel, which looks like a font bug.
 fn parse_pixmap(ppm: &[u8]) -> Result<(usize, usize, &[u8]), ReadError> {
+    // Every skip below counts a run with an iterator and adds the count once, so no loop here
+    // carries a cursor increment that a mutant could break into a hang (notes/mutation-testing.md,
+    // "delete the loop").
+    let run = |from: usize, keep: &dyn Fn(u8) -> bool| -> usize {
+        ppm.get(from..)
+            .unwrap_or(&[])
+            .iter()
+            .take_while(|b| keep(**b))
+            .count()
+    };
     let token = |at: &mut usize| -> Option<usize> {
         loop {
-            while ppm.get(*at).is_some_and(|b| b.is_ascii_whitespace()) {
-                *at += 1;
+            *at += run(*at, &|b| b.is_ascii_whitespace());
+            if ppm.get(*at) != Some(&b'#') {
+                break;
             }
-            if ppm.get(*at) == Some(&b'#') {
-                while ppm.get(*at).is_some_and(|b| *b != b'\n') {
-                    *at += 1;
-                }
-                continue;
-            }
-            break;
+            *at += run(*at, &|b| b != b'\n');
         }
         let start = *at;
-        while ppm
-            .get(*at)
-            .is_some_and(|b| !b.is_ascii_whitespace() && *b != b'#')
-        {
-            *at += 1;
-        }
+        *at += run(*at, &|b| !b.is_ascii_whitespace() && b != b'#');
         (start != *at).then_some(start)?;
         std::str::from_utf8(&ppm[start..*at]).ok()?.parse().ok()
     };
@@ -592,6 +592,27 @@ mod tests {
         let mut ppm = b"P6\n# written by something else\n7 8\n255\n".to_vec();
         ppm.extend(std::iter::repeat_n(PAPER, 7 * 8).flatten());
         assert_eq!(read(&ppm).expect("readable"), "\n");
+    }
+
+    /// **The header parser's cursor lands exactly where each token and comment ends**: runs of
+    /// mixed whitespace, two comments in a row and a token that
+    /// ends at a `#` rather than at a space. Each is read through `parse_pixmap` itself, so a
+    /// cursor that stops, overshoots or moves a byte too few shows in the returned pixels.
+    #[test]
+    fn the_header_cursor_lands_exactly_where_each_token_ends() {
+        let pixels = [1u8, 2, 3];
+        let parse = |head: &[u8]| {
+            let mut ppm = head.to_vec();
+            ppm.extend_from_slice(&pixels);
+            super::parse_pixmap(&ppm).map(|(w, h, p)| (w, h, p.to_vec()))
+        };
+        let want = Ok((1, 1, pixels.to_vec()));
+        assert_eq!(parse(b"P6\n1 1\n255\n"), want);
+        assert_eq!(parse(b"P6 \t\r\n 1 \n\n 1  255\n"), want);
+        assert_eq!(parse(b"P6\n# a\n# b\n1 1\n255\n"), want);
+        assert_eq!(parse(b"P6\n1#w\n1#h\n255#m\n"), want);
+        // A comment runs to the newline and no further: the next line's digits are a token.
+        assert_eq!(parse(b"P6\n#1 1 9\n1 1\n255\n"), want);
     }
 
     /// [`ReadError`]'s `Display`, which nothing else in the suite reads: the other error test
