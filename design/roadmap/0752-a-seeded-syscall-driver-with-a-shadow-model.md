@@ -186,19 +186,18 @@ a second rung. When (A) lands, the driver's model changes in the two receiver-fi
 
 ## BUGS
 
-- Concurrent guests make the driver fail its wall-clock deadlines, and the failures are not
-  escapes. Measured on 2026-10-31 (UTC) on x86_64 under KVM, on a dedicated x86_64 virtual machine,
-  60 seconds per run. This driver failed 1 of 4 guests at 4 guests, 4 of 8 at 8 and 6 of 16 at 16.
-  The confined driver of milestone 779 (fuzz the surface a confined process can reach) failed 0 of 4, 1 of 8 and 6 of 16. One and two guests passed.
-- The messages name a deadline and no property: "actor N neither finished nor parked within the
-  deadline", "it stayed parked", "fuzzer N never came back" and "never parked on its conductor
-  channel". Replaying a failing seed alone passed (this driver's seed 900018424, the confined
-  driver's seed 900006449), so a loaded host starves a guest past a fixed bound and the oracle never
-  runs.
-- The consumer is any unattended or concurrent fuzzer run, such as the budget run that risk 7's
-  criterion (d) asks for. Until the deadlines count guest progress (seeds or calls finished) and not
-  host seconds, such a run reports false reds that look like escapes and cost a triage each. Fix it
-  before any unattended fuzzer. The rates are in `notes/fuzzing/rates-on-x86-64-under-kvm.md`.
+- Both seeded drivers, this one and the confined driver of milestone 779 (fuzz the surface a
+  confined process can reach), wait with `testing::wait_on_every_core`: two seconds of ticks on
+  every online core, then a 20 s backstop on the counter. A vCPU the host stops takes no ticks, so
+  it holds a wait open and does not fail it. A host that stops a vCPU for longer than the backstop
+  still fails a run, and the message then reads "(the backstop)" beside a core with few ticks.
+- Side by side under KVM, two-second deadlines on the counter failed up to half of the
+  guests at 8 and 16, and every failing seed passed alone. With the every-core wait, 4 guests ran
+  green 32 of 32 times, beside busy loops too; 8 and 16 guests are unmeasured, so a run wider than
+  4 guests may still report false reds. The table is in `notes/fuzzing/rates-on-x86-64-under-kvm.md`.
+- What stops a vCPU on that host is not known. Instrumented runs saw single stalls of up to 1.45 s
+  of the counter that ended without a fault, and four guests pinned to four host CPUs beside eight
+  busy loops saw none, so CPU contention alone is not it.
 
 ## Index row
 

@@ -97,7 +97,7 @@ comment block is at its ceiling under §267 (a comment states the constraint as 
   and space lifetimes the day before and are candidates only; nothing ties them to this failure.
   The panic now prints the fuzzer's tid, the seed, `live`, its disposition and GO's
   waiting-receiver count read at the moment of failure, so a recurrence names which case it is.
-- Concurrent guests fail this driver's wall-clock deadlines without any escape; milestone 752's `BUGS` has the figures.
+- This driver waits on ticks every core took, and side by side it is measured green only up to 4 guests; milestone 752's `BUGS` has the figures.
 
 ## (a) Host fuzz targets for the services' request handlers
 
