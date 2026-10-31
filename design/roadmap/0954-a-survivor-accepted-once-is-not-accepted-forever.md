@@ -187,7 +187,7 @@ where one of these fits.
 
 ## Follow-on
 
-- **Shipped.** Part 3, the survivors with no row or a stale one. The four crate lanes landed as
+- **Done.** Part 3, the survivors with no row or a stale one. The four crate lanes landed as
   #2847 (`designware_ethernet`), #2848 (`e1000e`), #2849 (`designware_mobile_storage`) and #2867
   (the remaining crates). The first question resolved most of it: the rows existed under names a
   function rename had moved, which the helper cannot cross. Checked on 2026-10-31 (UTC) by a
