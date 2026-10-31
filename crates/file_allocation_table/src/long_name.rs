@@ -108,15 +108,24 @@ impl LongName {
         self.len.div_ceil(UNITS_PER_ENTRY)
     }
 
-    /// **The short alias written after the run**, as the eleven bytes of a short entry, or `None`
-    /// when nothing would come before the dot.
-    ///
-    /// The specification's basis-name steps with a fixed numeric tail: drop leading periods and
-    /// every space, upper-case ASCII, write `_` for any unit a short name cannot carry, keep six
-    /// units before the last period and three after, and end the base with `~1`. The tail is
-    /// always `~1` because the volume is created holding this one file, so no other alias can
-    /// collide with it.
+    /// **The short alias written after the run**, numbered 1: what `mkfs` writes, where the volume
+    /// holds this one file and no other alias can collide. See [`LongName::alias_numbered`].
     pub(crate) fn alias(&self) -> Option<[u8; 11]> {
+        self.alias_numbered(1)
+    }
+
+    /// **The short alias numbered `number`**, as the eleven bytes of a short entry, or `None` when
+    /// nothing would come before the dot or `number` is not 1 to 999,999.
+    ///
+    /// The specification's basis-name steps: drop leading periods and every space, upper-case
+    /// ASCII, write `_` for any unit a short name cannot carry, keep up to six units before the last
+    /// period (fewer when the tail needs the room: the base and `~number` share eight bytes) and
+    /// three after, and end the base with `~number`. A writer raises `number` until the alias is
+    /// free in the directory it writes into.
+    pub(crate) fn alias_numbered(&self, number: u32) -> Option<[u8; 11]> {
+        if !(1..=999_999).contains(&number) {
+            return None;
+        }
         let units = &self.units[..self.len];
         let start = units.iter().position(|u| *u != 0x2E).unwrap_or(units.len());
         let units = &units[start..];
@@ -125,12 +134,21 @@ impl LongName {
             Some(i) => (&units[..i], &units[i + 1..]),
             None => (units, &[][..]),
         };
+        let mut tail = [b'~'; 7];
+        // `number` is 1 or more here, so `ilog10` is defined and the digit count has no loop.
+        let digits = number.ilog10() as usize + 1;
+        let mut rest = number;
+        for at in (1..=digits).rev() {
+            tail[at] = b'0' + (rest % 10) as u8;
+            rest /= 10;
+        }
+        let tail_len = digits + 1;
         let mut out = [b' '; 11];
-        let base_len = fold(base, &mut out[..6]);
+        let base_len = fold(base, &mut out[..(8 - tail_len).min(6)]);
         if base_len == 0 {
             return None;
         }
-        out[base_len..base_len + 2].copy_from_slice(b"~1");
+        out[base_len..base_len + tail_len].copy_from_slice(&tail[..tail_len]);
         fold(ext, &mut out[8..]);
         Some(out)
     }

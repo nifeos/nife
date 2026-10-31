@@ -212,6 +212,12 @@ Nothing is left to build. The family was §104's (2026-08-20) and the face count
 - "Rich text" is read here as terminal attributes, not as a document model. If calef meant
   proportional type, embedded images, or anything a terminal is not, the right answer is rung three.
 
+- The text of `design/decisions/0166-the-rasteriser-and-how-many-faces.md` names `skrifa` 0.44.0 and
+  `read-fonts` 0.41.0. The pin in `tools/glyph_atlas_generator/Cargo.toml` decides the versions in
+  force, and the dependency bump in #2959 moves it past them. The ruling stands and its text is
+  stale on the versions. The architect or `script/record-ruling` refreshes it; a lane does not edit
+  `design/decisions/`.
+
 ## Follow-on
 
 - **Decision.** The font family was chosen on 2026-08-20:

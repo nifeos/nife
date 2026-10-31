@@ -40,6 +40,17 @@ updates:
     # nothing here *chooses* them; see crates/ntlm/Cargo.toml). That is an argument about `md-5` and
     # `md4`, not about `digest` and `hmac`, which are generic trait crates that legitimately evolve
     # and are pinned here only by their coupling to the other two.
+    # EXCEPTION (§81): `lock_api` semver-major is ignored here, held because vendor/talc asks for
+    # `^0.4` and is upstream's published manifest plus one divergence patch, which
+    # `script/vendor-verify` enforces. Dependabot follows the path dependency into that manifest and
+    # rewrites it, so a `lock_api` 0.5 bump (#2958) fails supply-chain and verify scope by
+    # construction. We adopt the vendored upstream as it stands and take the upgrade when upstream
+    # makes it, so the ignore lifts when `script/vendor-watch` reports that a talc release allows
+    # `lock_api` 0.5 (vendor/README.md, "Taking a held bump"). The same hold is in the entries below
+    # for the workspaces whose graph holds talc.
+    ignore:
+      - dependency-name: "lock_api"
+        update-types: ["version-update:semver-major"]
     groups:
       # Ordered before the catch-all: a dependency lands in the first group it matches, and the
       # update-types are disjoint, so minor/patch bumps of these four still ride the group below.
@@ -88,6 +99,17 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
+    # EXCEPTION (§81): `lock_api` semver-major is ignored here, held because vendor/talc asks for
+    # `^0.4` and is upstream's published manifest plus one divergence patch, which
+    # `script/vendor-verify` enforces. Dependabot follows the path dependency into that manifest and
+    # rewrites it, so a `lock_api` 0.5 bump (#2958) fails supply-chain and verify scope by
+    # construction. We adopt the vendored upstream as it stands and take the upgrade when upstream
+    # makes it, so the ignore lifts when `script/vendor-watch` reports that a talc release allows
+    # `lock_api` 0.5 (vendor/README.md, "Taking a held bump"). The same hold is in the entries below
+    # for the workspaces whose graph holds talc.
+    ignore:
+      - dependency-name: "lock_api"
+        update-types: ["version-update:semver-major"]
     groups:
       # Minor and patch bumps across all ten workspaces, one pull request a week.
       workspaces-minor-patch:
@@ -146,7 +168,11 @@ updates:
         patterns: ["*"]
         update-types: ["major"]
         group-by: dependency-name
+    # `lock_api` is held for vendor/talc as in the root entry above (EXCEPTION (§81), same
+    # condition: `script/vendor-watch` says when a talc release allows 0.5).
     ignore:
+      - dependency-name: "lock_api"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "aes"
         update-types: ["version-update:semver-major"]
       - dependency-name: "argon2"
