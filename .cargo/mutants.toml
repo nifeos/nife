@@ -363,6 +363,9 @@ exclude_re = [
     # THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT, beside configure, asserts the delay and drive
     # fields pairwise disjoint.
     "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    # ANLPAR_T4 and ANLPAR_TX are asserted disjoint by
+    # THE_PARTNER_HUNDRED_MEGABIT_ABILITIES_SHARE_NO_BIT, beside link_from_registers.
+    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in link_from_registers$",
     # The transmit delay select is zero (THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT asserts
     # it), so those two shifts are the identity; the same entry covers the function's
     # shift-by-nonzero sites, which

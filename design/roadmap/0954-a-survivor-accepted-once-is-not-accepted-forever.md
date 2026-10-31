@@ -195,21 +195,27 @@ where one of these fits.
   has a live `equivalent` or `gap` row, and none has a `killed` one. The classes CSV and the
   carried list still name the 2026-10-26 census, so they keep counting these until the next
   census regenerates them.
-- **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first. Done
-  for `designware_ethernet`, `e1000e`, `designware_mobile_storage`, the seven crates of #2867 and
-  `paging` (a per-crate run on 2026-10-31 (UTC) leaves one survivor, `pat::VALUE`'s `|`, whose
-  row stays as `algebraic`). Checked against `notes/project-metrics/mutation-shape-sites.csv`,
-  which still counts the 2026-10-26 census: 516 noise-shape sites, 148 the lines prove, 368 a
-  lane must read. Left: `video_terminal`, `filesystem_contract`, `machine_discovery`,
-  `compositor`, `filesystem_fixture` and the smaller crates, in the order the sites file gives.
+- **Outstanding.** Part 4, the noise exclusions, one pull request per crate, largest first.
+  `paging` is #2924 (a per-crate run on 2026-10-31 (UTC) leaves one survivor, `pat::VALUE`'s `|`, whose row stays as `algebraic`) and `designware_mobile_storage` landed with #2849. `designware_ethernet`
+  already carried its compiled arguments and scoped exclusions from #2867; a re-derivation on
+  2026-10-31 (UTC) found 5 missed mutants, every one rowed, and one noise-shaped site without a
+  compiled argument, `link_from_registers`, which #2937 covers. `modify_extended`'s swap stays a
+  `caller` row, since its two operands are runtime values. `e1000e` needs no change: its 16 missed
+  and 4 timed-out mutants all have rows, its provable sites already carry assertions and
+  exclusions, and the 8 noise-shaped swaps left rest on a runtime value or on hardware behavior.
+  The counts below name the 2026-10-26 census. Checked
+  against `notes/project-metrics/mutation-shape-sites.csv`: 516 noise-shape sites, 148 the lines
+  prove, 368 a lane must read.
 - **Outstanding.** Part 5, the eight crates' remaining survivors, one lane each, and the
   `unclassified` rows behind them. Checked against the classification page's real-hole column (32)
   and the `unclassified` ratchet baseline, 406 rows.
 - **Outstanding.** Part 6, the remaining crates in batches ordered by real holes. Checked against
   the classification page's per-crate real-hole counts.
-- **Outstanding.** A weekly step regenerates the shape-sites file, so the per-site verdicts keep
-  pace with each census without a lane re-running the checker by hand. Checked by its absence: the
-  committed file names the 2026-10-26 census, and nothing regenerates it.
+- **Done.** The shape-sites file keeps pace with the census (#2946). The weekly record job in
+  `mutation.yml` runs `helpers/mutation_shape_sites.py check` over the census's own shards at its
+  own commit, and the record pull request carries the file beside the census rows. The file's first
+  line names the census it came from, and `script/lint` fails when it trails the census record by
+  more than one census. The first regeneration is the next scheduled census, not yet watched.
 
 ## Names
 
