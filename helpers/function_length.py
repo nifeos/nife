@@ -1,6 +1,6 @@
 """Function length in code lines, read from source text the way clippy's `too_many_lines` reads it.
 
-Milestone 888 (a ratchet on function length). `script/lint`'s lint ratchet runs clippy, which is
+Milestone 888 (a ratchet on function length). `script/lint`'s lint ratchet reads clippy's saved diagnostics, which are
 the authority, but no clippy pass here compiles every file in scope: `patches/`, `c_library/`, the
 UEFI loader and others build only for nife's std targets or in a separate step. This module is the
 text derivation that reaches them, and `helpers/lint_ratchet.py` compares it with clippy on every

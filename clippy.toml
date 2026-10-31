@@ -75,8 +75,8 @@ doc-valid-idents = [
     "NxN",
 ]
 
-# `too_many_lines` is pedantic, so no `-D warnings` pass enables it. The lint ratchet's own pass
-# does, at `-W`, and holds every function over this many code lines to design/lint-baseline.tsv
+# `too_many_lines` is pedantic, so no `-D warnings` pass enables it. The clippy sections of
+# script/lint add it as `--force-warn` (helpers/clippy_record.py), and the lint ratchet holds every function over this many code lines to design/lint-baseline.tsv
 # (milestone 888 (a ratchet on function length); calef ruled 100 on 2026-10-09 UTC). This is clippy's default, written here so the
 # number lives in the tree: helpers/lint_ratchet.py fails if it and helpers/function_length.py's
 # THRESHOLD part.
