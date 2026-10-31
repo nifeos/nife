@@ -116,7 +116,6 @@ Read from google.github.io/oss-fuzz.
 - Fuzz Introspector. Reports reachability and coverage per fuzzer and in aggregate, flags blockers
   that limit what a fuzzer can reach, and suggests new targets. The service generates and uploads reports
   automatically. Read.
-- Timeouts and out-of-memory. One bug of each kind is open per target at a time. Read.
 - Unverified: how ClusterFuzz deduplicates crashes, how it finds the range of commits that
   introduced a crash, and any reminder or auto-close schedule for stale issues.
 
@@ -262,10 +261,6 @@ False reds, guests that reported a failure that did not reproduce:
 Replays of failing seeds were green. The failures were the harness's deadlines expiring under load,
 not escapes. Until a fix lands, more concurrency buys false reds faster than it buys seeds, which
 is why question 3 exists.
-
-The same lane also measured aarch64 under emulation on the same host (2026-10-31):
-user-mode driver 4 seeds/s, kernel-thread driver 9 seeds/s, `redoxfs_server_session` 569 runs/s
-from an empty corpus, which reached 2,785 libFuzzer edges in three minutes and had not plateaued.
 
 ## The seven questions
 
