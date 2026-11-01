@@ -36,7 +36,7 @@ number.
 ## A job may not leave a child region in its budget when it exits
 
 A program that holds a `--mem N` grant may `SPLIT` it and build in the pieces. Before it exits, it
-must `DESTROY` every sub-region it split. This contract binds the program's author (ruled
+must `DESTROY` every sub-region it split. This contract binds the program's author (ruling of
 2026-11-01 UTC, milestone 933 (every job is built the way a supervised job is)). Nothing enforces
 it at exit, because the kernel cannot refuse a thread's exit.
 
@@ -47,5 +47,5 @@ The shell reports it: after a refusal it reads `USAGE`'s `CHILDREN` record and, 
 prints one sentence naming the job and the pages, without waiting out the retry bound. A refusal
 for a process still running in the grant retries as before.
 
-A recursive teardown would relax the rule later without breaking any program written to it.
+A recursive teardown would relax the rule later without breaking a program that follows it.
 Tightening it later would break programs. No program the shell runs splits its grant today.
