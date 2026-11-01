@@ -82,7 +82,7 @@ and this block land. The boot gates then run on the composed image: `confirm-boo
   It lands with 695's part 3, and question 1 of the proposal (the bytes of the handoff) is still
   open; checked against the proposal file on 2026-11-01 (UTC).
 - **Outstanding.** Part 3, `sealed_pair` and `uefi_loader/build.rs` check the loader's copy of
-  the digests. Question 2 is decided (option A); the code waits on part 2's format.
+  the digests. Question 2 has its answer (option A); the code waits on part 2's format.
 - **Outstanding.** Part 4, basalt stops rebuilding the kernel package on a base change, after parts
   2 and 3 land.
 - **Outstanding.** 976 part 4's measured kernel download cost, which justifies parts 2 to 4; not in
@@ -91,5 +91,5 @@ and this block land. The boot gates then run on the composed image: `confirm-boo
 ## Index row
 
 A kernel binary carries 64 bytes of base-set digests compiled in, the progenitor's and the
-`program_measurements` table's; test programs are measured through the table. The build half of
+`program_measurements` table's; the kernel checks test programs against the table. The build half of
 607's item 6; its first consumer is 976 part 4, whose measured kernel download cost is still owed.
