@@ -270,13 +270,16 @@ Asked one at a time, in this order, with the background in the questions appendi
 4. basalt refuses an image with two revisions of one contract.
 5. basalt may run a trial on unmerged commits, writing no pin.
 
+## The review packet
+
+`script/crate-review-packet <crate>...` writes one packet per crate to
+`target/crate-review-packets/<crate>.md`, never committed: the facts a reading needs, and a checklist
+for the judgments. The API comes from rustdoc JSON, since `cargo public-api` is not installed. The
+name is a provisional maintainer decision.
+
 ## BUGS
 
-- Nothing prepares the architect's reading of a crate. A lane may assemble a review packet per
-  crate without reviewing for the architect: the path list, the public items, the tests, the
-  license notices, the dependency list and the `cargo-semver-checks --baseline-rev` output.
-  Proposed milestone, provisional: `script/crate-review-packet <crate>` prints it. Until then the
-  architect asks a lane for each packet by hand.
+- The packet omits the test list, the license notices and the `cargo-semver-checks` output.
 
 ## Index row
 
