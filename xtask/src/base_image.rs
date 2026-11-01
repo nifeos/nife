@@ -998,12 +998,22 @@ fn write_launch_volume(arch: &str, out: &Path, first_generation: &str) -> Option
     Some(volume)
 }
 
-/// **What one carried program's note asks for**, for the composition to check. Stage one of the
-/// change: still the lenient reading.
+/// **What one carried program's note asks for**, for the composition to check. A program with no
+/// note asks for nothing; one whose bytes or note cannot be read refuses the composition and is
+/// named, since "unreadable" is not "asks for nothing" (ruled 2026-11-01 (UTC)). The note is read
+/// from an ELF of any machine, so an image for another machine than the host's is checked the same.
 fn asks_of_carried<'b>(
     program: &package_archive::Program<'b>,
 ) -> Result<Vec<installed_programs::Granted<'b>>, String> {
-    Ok(program_asks::asked_grants_of(program).collect())
+    program_asks::checked_asked_grants_of(program)
+        .map(Iterator::collect)
+        .map_err(|e| {
+            format!(
+                "program `{}`: its manifest note cannot be read ({e:?}), so what it asks for is \
+                 unknown",
+                program.name
+            )
+        })
 }
 
 /// **The grants one program asks for that its package's entry in the image's approval file does
@@ -1359,7 +1369,11 @@ programs = ["progenitor", "swish", "jig"]
 
     /// A machine that is not the host's, so the parser that checks the machine refuses it.
     fn foreign_machine() -> u16 {
-        if cfg!(target_arch = "aarch64") { 0x3e } else { 0xb7 }
+        if cfg!(target_arch = "aarch64") {
+            0x3e
+        } else {
+            0xb7
+        }
     }
 
     fn network_note() -> Vec<u8> {
