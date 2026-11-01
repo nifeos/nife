@@ -122,7 +122,7 @@ pub(crate) fn redoxfs_disk_path() -> String {
 }
 
 /// Drive the `redoxfs_host` tool (its own workspace) by `--manifest-path`, quietly. Returns success.
-fn redoxfs_host(args: &[&str]) -> bool {
+pub(crate) fn redoxfs_host(args: &[&str]) -> bool {
     let mut v = vec![
         "run",
         "--quiet",
