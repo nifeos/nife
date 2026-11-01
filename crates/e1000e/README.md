@@ -71,10 +71,11 @@ The minimum supported Rust version is 1.88.
 Offsets, bits, descriptor layouts and device ids were read, not recalled, on 2026-10-04 (UTC). The
 sources were Linux's `drivers/net/ethernet/intel/e1000e/regs.h`, `defines.h` and `hw.h`. They were
 cross-checked the same day against FreeBSD's BSD-licensed `sys/dev/e1000/`: `e1000_regs.h`, and
-`e1000_api.c`'s SPT class, which is exactly the I219 rows of `DEVICE_IDS`. No Linux code was
-copied.
+`e1000_api.c`'s SPT class, which holds every I219 row of `DEVICE_IDS` and two Comet Lake ids
+(`0x0d53`, `0x0d55`) the crate does not claim. No Linux code was copied.
 
-QEMU's `hw/net/e1000e_core.c` says what the emulated 82574L does with them. It uses legacy
+QEMU's `hw/net/e1000e_core.c` and `hw/net/e1000x_common.c` say what the emulated 82574L does with
+them. QEMU uses legacy
 descriptors unless `RFCTL.EXTEN` is set, and it receives only with `RCTL.EN`, link up and bus
 mastering.
 

@@ -219,6 +219,9 @@ impl<D: WritableSectorDevice> Volume<D> {
             volume: self,
             place: entry.place(),
             name: entry.short_name(),
+            read_only: entry
+                .file_attributes()
+                .contains(crate::Attributes::READ_ONLY),
             state: WriteState::new(entry.first_cluster(), entry.size_bytes()),
             failed: false,
         })
@@ -231,6 +234,12 @@ impl<D: WritableSectorDevice> Volume<D> {
     pub fn remove_file(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
         if entry.is_directory() || entry.is_volume_label() {
             return Err(WriteError::NotAFile);
+        }
+        if entry
+            .file_attributes()
+            .contains(crate::Attributes::READ_ONLY)
+        {
+            return Err(WriteError::ReadOnly);
         }
         let place = entry.place();
         let slot = self
@@ -271,6 +280,7 @@ pub struct FileWriter<'v, D> {
     volume: &'v mut Volume<D>,
     place: EntryPlace,
     name: [u8; 11],
+    read_only: bool,
     state: WriteState,
     failed: bool,
 }
@@ -300,6 +310,8 @@ impl<D: WritableSectorDevice> FileWriter<'_, D> {
     fn check(&self) -> Result<(), WriteError<D::Error>> {
         if self.failed {
             Err(WriteError::AfterAFailure)
+        } else if self.read_only {
+            Err(WriteError::ReadOnly)
         } else {
             Ok(())
         }

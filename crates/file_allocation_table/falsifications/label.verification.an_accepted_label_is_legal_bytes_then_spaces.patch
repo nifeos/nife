@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::label::verification::an_accepted_label_is_legal_bytes_then_spaces`.
+
+The defect: the length check allows twelve bytes, so a twelve-byte label is accepted and the eleven-byte field would overflow.
+
+Expected to fail: the harness's `assert!(legal)`.
+
+diff --git a/crates/file_allocation_table/src/format.rs b/crates/file_allocation_table/src/format.rs
+--- a/crates/file_allocation_table/src/format.rs
++++ b/crates/file_allocation_table/src/format.rs
+@@ -142,7 +142,7 @@ pub(crate) fn label_bytes(label: &str) -> Option<[u8; 11]> {
+ 
+ /// [`label_bytes`] over the text's bytes, which the proof reaches without a text to validate.
+ pub(crate) fn label_from_bytes(bytes: &[u8]) -> Option<[u8; 11]> {
+-    if bytes.is_empty() || bytes.len() > 11 || !bytes.iter().all(|b| is_short_byte(*b)) {
++    if bytes.is_empty() || bytes.len() > 12 || !bytes.iter().all(|b| is_short_byte(*b)) {
+         return None;
+     }
+     let mut out = [b' '; 11];

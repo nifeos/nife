@@ -186,7 +186,7 @@ fn a_device_this_run_actually_started_is_not_reported_as_already_up() {
 
 #[test]
 fn the_trng_plan_enables_both_clocks_before_it_touches_the_reset() {
-    // [mainline-rst]'s own comment is the reason this order is a test rather than a comment:
+    // [mainline-rst-common]'s comment is the reason this order is a test rather than a comment:
     // "if the associated clock is gated, deasserting might otherwise hang forever". A plan
     // that deasserted first would wedge the boot on hardware and pass every host test.
     let reset_at = ENTROPY_BRING_UP

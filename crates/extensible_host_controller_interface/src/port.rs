@@ -172,7 +172,8 @@ pub type Connections = [u32; 8];
 
 /// USB 2.0's `TATTDB` (section 7.1.7.3), a connection's debounce interval, and Linux's
 /// `HUB_DEBOUNCE_STABLE`. It also covers USB 2.0's `TSIGATT` (a device attaches within 100 ms of
-/// power) and is Linux's floor on a root hub's power-on-to-good time.
+/// power), and is the floor Linux puts on an external hub's power-on-to-good time (a root hub has
+/// none).
 ///
 /// Name: ratified 2026-10-25 (#2720).
 pub const DEBOUNCE_STABLE_MS: u64 = 100;

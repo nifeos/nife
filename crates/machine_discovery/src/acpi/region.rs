@@ -156,8 +156,8 @@ impl<'a> DirectMapRegion<'a> {
         })
     }
 
-    /// Find the ACPI root pointer: where the loader said (PVH has a field, which QEMU leaves
-    /// zero), then the first kilobyte of the EBDA, then the BIOS area. The last two scan for an
+    /// Find the ACPI root pointer: where the loader said (PVH has a field, which QEMU's PVH
+    /// option ROM fills from its own scan), then the first kilobyte of the EBDA, then the BIOS area. The last two scan for an
     /// eight-byte string, so [`parse_rsdp`]'s checksum is all that separates a hit from chance.
     /// Returns the RSDP's physical address and its decoding.
     ///

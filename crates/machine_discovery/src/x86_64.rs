@@ -43,8 +43,8 @@ pub enum BootInfoError {
 pub struct BootInfo {
     /// The structure version. 0 has no memory map; 1 and later do.
     pub version: u32,
-    /// Loader-defined flags. Xen defines bit 0 (`SecureBoot`) and bit 1 (`SecureBootEnabled`); QEMU
-    /// sets neither.
+    /// Loader-defined flags, Xen's `SIF_*`: bit 0 is `SIF_PRIVILEGED` and bit 1 `SIF_INITDOMAIN`;
+    /// QEMU sets neither.
     pub flags: u32,
     /// How many modules (initial ramdisk images) were loaded.
     pub module_count: u32,

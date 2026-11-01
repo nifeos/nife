@@ -126,10 +126,10 @@ is the PLIC, and each `cpu@` node has a `riscv,cpu-intc` child. How the kernel d
 is in [interrupts.md](interrupts.md). The binding allows several redistributor regions
 (`#redistributor-regions`) for machines whose frames are not contiguous; QEMU `virt` needs a second
 only past 123 cores, and the kernel's `cpu::MAXIMUM_CPUS` is eight, so the decoder refuses more than
-one. The GICv2 binding list stops at the three strings an aarch64 GICv2 carries (`arm,gic-400`,
-`arm,cortex-a15-gic`, `arm,cortex-a7-gic`), checked against Linux's `IRQCHIP_DECLARE` table in
-`drivers/irqchip/irq-gic.c` at v6.16; the version-1 parts it also lists exist only on 32-bit
-machines.
+one. The GICv2 binding list holds three strings (`arm,gic-400`, `arm,cortex-a15-gic`,
+`arm,cortex-a7-gic`) of the nine in Linux's `IRQCHIP_DECLARE` table in `drivers/irqchip/irq-gic.c`
+at v6.16. It leaves out `qcom,msm-qgic2`, which arm64 trees such as Qualcomm's `msm8916.dtsi`
+carry.
 
 ## The screen token
 
@@ -268,8 +268,8 @@ A DMAR's ANDD names an ACPI-namespace device, such as an I2C or serial controlle
 identity, that can issue DMA. The IVRS's type F0h entries are the same thing on AMD. This kernel
 drives no such device, so none is confined. A machine where one matters needs ANDD and the type-5
 scope decoded on Intel, and F0h on AMD. Linux treats an exclusion-range IVMD as a read-write unity
-map too ("treat per-device exclusion ranges as r/w unity-mapped regions", recalled rather than
-re-read), and `amd_vi::set_up` clears the exclusion registers. A read-only IVMD is mapped
+map too ("treat per-device exclusion ranges as r/w unity-mapped regions", Linux v6.17
+`drivers/iommu/amd/init.c`), and `amd_vi::set_up` clears the exclusion registers. A read-only IVMD is mapped
 read-only. QEMU writes no IVMD, so that path has run only in the host tests.
 
 The DMAR decoder skips IOAPIC, HPET and ACPI-namespace device scopes, and does not decode the ATSR,
