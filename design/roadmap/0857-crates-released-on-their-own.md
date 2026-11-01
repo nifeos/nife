@@ -100,9 +100,12 @@ No per-crate milestone is minted by this block. They come from the reviews below
   project name stays with the whole. Publish-ours
   crates publish; contract crates move and carry versions whether or not they publish. Milestone
   818 (proven JH7110 TRNG logic, released on its own) is the leaf pilot; pull request #3026
-  proposes the second pilot and the contract crates' order. Until a moved crate publishes, nife
-  depends on a git release tag stating the version requirement, which becomes a plain version
-  requirement at publication.
+  proposes the second pilot and the contract crates' order. A crate nife does not publish, or
+  has not yet, is a git dependency pinned by `rev` with its version requirement stated. The
+  revision is the commit of a tagged release whose manifest carries that version; the tag is a
+  label and the semver baseline, never what Cargo follows. At first publication the line becomes a
+  plain version requirement, and each publication waits for the architect's review of the exact
+  crate, version and name.
 
 ## What every crate clears before it publishes (calef, 2026-10-11)
 
@@ -276,9 +279,6 @@ machine, so the policy is reversible and each use of it is not.
 - Milestone 39 warned that a published proof is a promise to keep it passing across Kani versions.
   That obligation is real and is not costed here. The falsification workflow is the mechanism that
   notices; no one is assigned to answer it for a stranger.
-- §305 (git dependencies on `nifeos/*` only, pinned to a landed commit) refuses a tag, so the tag
-  form waits on an amendment admitting a tag whose commit has landed on main. `cargo update`
-  follows a moved tag.
 - Whether an outside project's code can be restructured for Kani was not tried. An offer can come
   back as "only if you rewrite our parser", which is §46's first rule seen from the other side.
 
