@@ -78,4 +78,3 @@ fn the_batching_fixture_is_over_the_bound_and_splits_where_the_gate_says() {
         tree::MANY_NAMES[nameset::MAXIMUM_NAMES..].join(" "),
     );
 }
-

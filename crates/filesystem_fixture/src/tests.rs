@@ -412,8 +412,9 @@ fn every_two_trees_flag_is_its_own_single_bit() {
 /// test pass for the wrong reason.
 #[test]
 fn the_subtree_fixture_is_grantable_and_unambiguous() {
-    use crate::tree::*;
     use filesystem_contract::grant;
+
+    use crate::tree::*;
     for name in [
         SUB, INNER, DEEPER, LEAF, OTHER, SECRET, MADE, MADE_DIR, MOVED, NAV_KEPT, NAV_GONE,
         NAV_DIR, NAV_EMPTY, NAV_INSIDE,
@@ -493,9 +494,19 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
     );
     // And a non-zero status is the errno, so the two ends agree about what failed rather than
     // only that something did.
-    assert_eq!(filesystem_contract::rm::status(filesystem_contract::dir::EROFS), filesystem_contract::dir::EROFS as u64);
-    assert_ne!(filesystem_contract::rm::status(filesystem_contract::dir::EROFS), filesystem_contract::rm::OK);
-    assert_eq!(filesystem_contract::rm::OK, 0, "success is zero, as every shell expects");
+    assert_eq!(
+        filesystem_contract::rm::status(filesystem_contract::dir::EROFS),
+        filesystem_contract::dir::EROFS as u64
+    );
+    assert_ne!(
+        filesystem_contract::rm::status(filesystem_contract::dir::EROFS),
+        filesystem_contract::rm::OK
+    );
+    assert_eq!(
+        filesystem_contract::rm::OK,
+        0,
+        "success is zero, as every shell expects"
+    );
 }
 
 // --- Extended attributes ---
@@ -506,8 +517,9 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
 /// something the bits no longer spell.
 #[test]
 fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
-    use crate::attrs::*;
     use filesystem_contract::{grant, xattr};
+
+    use crate::attrs::*;
     let bits = [
         SET_AND_READ_BACK,
         LISTED,
