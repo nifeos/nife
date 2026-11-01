@@ -73,9 +73,12 @@ The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=
 stays disabled until a person installs the credential and sets that variable. `--dry-run` prints the tag
 and the asset list and runs nothing else.
 
-The credential needs Contents: write on a fine-grained token (from memory of GitHub's
-permission model, not verified). That scope also permits a push, so the guarantee that the host never
-pushes a branch rests on the script, which only calls `gh release create`.
+The credential is a one-hour installation token of the `nife-fuzz` GitHub App, minted on the host
+from the App's private key, which only root can read. The App holds Contents write and Repository
+security advisories write on nifeos/nife alone (ruled 2026-11-01 UTC).
+[`the-fuzz-app.md`](the-fuzz-app.md) is the runbook for the person who creates it, and it states
+what the key can do. Main's ruleset requires a pull request and has no bypass actor, so the token
+cannot push to main; the script calls only `gh release create`.
 
 ## Install, for a person with root
 

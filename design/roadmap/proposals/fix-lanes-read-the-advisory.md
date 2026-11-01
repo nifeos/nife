@@ -45,4 +45,5 @@ credential. The gate's selftest feeds it a planted replay line and a clean messa
 Not started. Unverified: how long a fix pull request stays public before it merges. That window runs
 from the push to the merge, and it grows whenever a hold applies (`needs-architect` on a fix that
 touches the syscall surface, or a red trunk). The first fix measures it. The read-only credential's
-form, an App or a fine-grained token, is an open question for an architect.
+form is an open question for an architect: a one-hour installation token expires before most lanes
+finish.

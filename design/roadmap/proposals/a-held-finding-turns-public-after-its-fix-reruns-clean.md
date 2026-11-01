@@ -18,8 +18,8 @@ code calls the API.
 
 ## What it builds
 
-Once a day, after the host has moved to the newest green main, the service replays the seed of every
-advisory it filed that is still a draft, one seed per guest, against the current commit.
+Once a day the service replays the seed of every advisory it filed that is still a draft. It runs
+one seed per guest, against the newest green main the host runs.
 
 - A clean replay publishes the advisory (an update that sets its state to `published`) and moves the
   held log out of the held directory, so the daily report's held count falls.

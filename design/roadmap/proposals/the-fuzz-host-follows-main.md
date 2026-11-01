@@ -43,7 +43,8 @@ unit file writes the journal line and installs nothing.
 Not started. Waits for #3045, which also edits `helpers/continuous-fuzz.sh`. Verified on 2026-11-01
 (UTC): the check runs of a main commit read without a credential (HTTP 200), and the documented
 unauthenticated limit is 60 requests an hour per address. Main's commit carried 125 check runs, so
-one look is two pages and every 5 minutes costs 24 requests an hour. Many runs are watchers or skipped
-jobs (a cancelled merge-drain run is not a red gate), which is why the step reads a named list.
-Unverified: whether every gate on a merge-queue commit appears as a check run on that commit
-once it is main, rather than only on the queue's own ref.
+one look is two pages, and a look every 5 minutes costs 24 requests an hour. Many runs are watchers
+or skipped jobs, and a cancelled merge-drain run is not a red gate. That is why the step reads a
+named list.
+Unverified: whether every gate of a merge-queue commit appears as a check run on that commit once
+it is main.

@@ -13,13 +13,16 @@ Raised by lane/fuzz-findings-without-a-person on 2026-11-01 (UTC), reading
 `helpers/continuous-fuzz.sh` and `helpers/fuzz-daily-publish.sh` against step 5 of the ruling
 recorded in [fuzz-findings-without-a-person](fuzz-findings-without-a-person.md).
 
+Reuse: the existing `awk` filter in `helpers/fuzz-daily-publish.sh` grows one condition; nothing
+else fits.
+
 ## The defect
 
 After a held window with a replay line, the supervisor starts the slot's next window one seed past
 the failing one. The daily table leaves out the held window's own row, but it publishes the next
 window's first seed. That seed, less one, is the held seed. So once the daily publish runs,
-`clean-ranges.tsv` names a reproducer before its fix is on main, which step 5 forbids. Publishing is
-off today, so nothing has leaked.
+`clean-ranges.tsv` names a reproducer before its fix is on main, which step 5 forbids. Nothing has
+leaked, because nobody has switched publishing on.
 
 ## What it builds
 

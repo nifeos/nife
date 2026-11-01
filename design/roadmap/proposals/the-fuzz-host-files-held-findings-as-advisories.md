@@ -23,13 +23,14 @@ window that has none yet. It is a program, not an agent or a language model.
 
 - It reads the held directory, which it alone of the repository's programs may open, and
   `windows.tsv` for the window's driver, first seed, commit and status.
-- It takes the replay seed from the held log's `replay:` line, or for a crash or hang the window's
-  first seed and count, and writes an advisory body holding the class (`held-finding`, `held-crash`,
-  `held-hang`), the driver, the commit, the seed or range, and the one-line replay command.
+- It takes the replay seed from the held log's `replay:` line. For a crash or hang it takes the
+  window's first seed and count instead.
+- The advisory body holds the class (`held-finding`, `held-crash` or `held-hang`), the driver, the
+  commit, the seed or range, and the one-line replay command.
 - It records the advisory id beside the held log, in a file under the held directory, so a second
   run files nothing twice.
-- It mints a one-hour installation token from the filing App's key for each run, narrowed to
-  nifeos/nife and the advisory permission, and keeps it in memory only.
+- It reads the one-hour installation token of the `nife-fuzz` App that the mint helper writes,
+  and never the key.
 - It never writes a seed, input or advisory body to standard output, standard error or the journal.
   Its log lines name the held file's age and the advisory id only.
 
@@ -43,8 +44,8 @@ key file. `script/lint` runs it.
 
 ## Status
 
-Not started. Unverified: whether an App holding only the advisory permission may create an
-advisory, since the API names "a security manager or administrator" as the caller. The first real
-filing settles it, after a person places the key
-([placing the credentials](placing-the-fuzz-advisory-credentials.md)). The App's name and whether it
-is a new App are open questions for an architect.
+Not started. It waits on the mint helper
+([the host mints its tokens](the-fuzz-host-mints-its-tokens-from-the-app-key.md)) for a real run, not
+for its selftest. Unverified: whether an App with the advisory permission may create an advisory. The
+API names "a security manager or administrator" as the caller, and the first real filing settles
+it.
