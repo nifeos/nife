@@ -2,10 +2,11 @@
 //! by its digest. Milestone 976 (an OS update is a set of packages that lands through a slot), part
 //! 6, which executes the ruling of 2026-11-01 (UTC).
 //!
-//! The file is plain text. The first line is [`VERSION_LINE`]. Every later line is
-//! `<stem> sha256:<64 lowercase hex>`, one package per line, sorted by stem, with no blank line and
-//! one newline ending the last, so one content has exactly one encoding. A later column goes in
-//! behind a new version line. [`render`] is the writer (basalt's side), [`SystemManifest::parse`]
+//! The file is plain text. The first line is [`VERSION_LINE`]. The second is the progenitor line,
+//! `progenitor <stem>`, naming the package that carries the progenitor; there is exactly one, and
+//! its stem is one of the package lines. Every later line is `<stem> sha256:<64 lowercase hex>`,
+//! one package per line, sorted by stem, with no blank line and one newline ending the last, so one
+//! content has exactly one encoding. A later column goes in behind a new version line. [`render`] is the writer (basalt's side), [`SystemManifest::parse`]
 //! the reader (the device updater's and the progenitor's), and [`SystemManifest::check`] the
 //! refusal both run against the packages they hold: it names the package.
 //!
@@ -18,8 +19,9 @@
 //! use system_manifest::{Refusal, SystemManifest, render};
 //!
 //! let digest = measured_boot::sha256(b"swish");
-//! let text = render(&[("swish-0.1.0-x86_64", digest)]).unwrap();
+//! let text = render("swish-0.1.0-x86_64", &[("swish-0.1.0-x86_64", digest)]).unwrap();
 //! let manifest = SystemManifest::parse(&text).unwrap();
+//! assert_eq!(manifest.progenitor(), "swish-0.1.0-x86_64");
 //! assert_eq!(manifest.digest_of("swish-0.1.0-x86_64"), Some(digest));
 //! let other = measured_boot::sha256(b"not swish");
 //! assert_eq!(
@@ -30,10 +32,10 @@
 //!
 //! # BUGS
 //!
-//! - **The file does not name the progenitor.** The ruling's line shape has no place for it, and
-//!   the step it comes from says the manifest "names the progenitor". Until that is settled, the
-//!   progenitor is the package that carries it, listed like every other, and a reader asks
-//!   [`SystemManifest::digest_of`] for that package's stem. Provisional; see milestone 976's block.
+//! - **The progenitor line's spelling is provisional.** The ruling of 2026-11-01 (UTC) gives the
+//!   manifest a progenitor line of its own; `progenitor <stem>` as line 2 is this lane's spelling,
+//!   chosen to sit beside `version 1` and `<stem> sha256:<hex>`. The word `progenitor` is reserved:
+//!   no package stem is the bare word. The format version stays 1, since no manifest has shipped.
 //! - **A stem is held only to a character set and a length**, not to the `name-version-architecture`
 //!   shape `package_index` checks. The manifest is read beside the packages, so a stem that no
 //!   package carries is refused by [`SystemManifest::check`] and not by the parse.
@@ -51,6 +53,9 @@ use core::fmt;
 use measured_boot::{DIGEST_TEXT_LEN, Digest, digest_text, parse_digest};
 use package_archive::STEM_LEN;
 
+/// The word that opens the progenitor line, and so the one stem no package may have.
+const PROGENITOR_WORD: &str = "progenitor";
+
 /// The first line of a version 1 file.
 ///
 /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
@@ -62,6 +67,8 @@ pub const VERSION_LINE: &str = "version 1";
 /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SystemManifest<'a> {
+    progenitor: &'a str,
+    /// The package lines only.
     text: &'a str,
 }
 
@@ -112,6 +119,20 @@ pub enum ParseError {
     },
     /// The file lists no package. An update of nothing is not an update.
     Empty,
+    /// The file has no progenitor line. A manifest names its progenitor exactly once.
+    NoProgenitor,
+    /// A second progenitor line. A manifest names its progenitor exactly once.
+    ManyProgenitors {
+        /// The line of the second one, counted from 1.
+        line: usize,
+    },
+    /// The one progenitor line is not line 2, straight after the version line.
+    ProgenitorPlace {
+        /// The line, counted from 1.
+        line: usize,
+    },
+    /// The progenitor line names a stem that no package line carries.
+    ProgenitorUnlisted,
 }
 
 impl fmt::Display for ParseError {
@@ -133,6 +154,19 @@ impl fmt::Display for ParseError {
                 write!(f, "line {line}: the stem is out of order or listed twice")
             }
             ParseError::Empty => write!(f, "the manifest lists no package"),
+            ParseError::NoProgenitor => write!(f, "the manifest has no progenitor line"),
+            ParseError::ManyProgenitors { line } => {
+                write!(
+                    f,
+                    "line {line}: a second progenitor line; there is exactly one"
+                )
+            }
+            ParseError::ProgenitorPlace { line } => {
+                write!(f, "line {line}: the progenitor line is line 2")
+            }
+            ParseError::ProgenitorUnlisted => {
+                write!(f, "the progenitor line names a package no line lists")
+            }
         }
     }
 }
@@ -191,6 +225,8 @@ pub enum RenderError {
     Stem(String),
     /// The stem appears twice, even with the same digest: one package is one line.
     Duplicate(String),
+    /// The progenitor's stem is not one of the packages.
+    ProgenitorUnlisted(String),
 }
 
 impl fmt::Display for RenderError {
@@ -199,12 +235,16 @@ impl fmt::Display for RenderError {
             RenderError::Empty => write!(f, "a system manifest lists at least one package"),
             RenderError::Stem(stem) => write!(f, "`{stem}` is not a package stem"),
             RenderError::Duplicate(stem) => write!(f, "`{stem}` is listed twice"),
+            RenderError::ProgenitorUnlisted(stem) => {
+                write!(f, "the progenitor `{stem}` is not among the packages")
+            }
         }
     }
 }
 
 fn stem_ok(stem: &str) -> bool {
     !stem.is_empty()
+        && stem != PROGENITOR_WORD
         && stem.len() <= STEM_LEN
         && stem.bytes().all(|b| {
             b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'-' | b'_')
@@ -239,7 +279,10 @@ impl<'a> SystemManifest<'a> {
             .and_then(|rest| rest.strip_prefix('\n'))
             .ok_or(ParseError::Version)?;
         let mut previous: Option<&str> = None;
+        let mut progenitor: Option<&str> = None;
+        let mut packages_at: Option<&str> = None;
         let mut count = 0usize;
+        let mut packages = 0usize;
         let mut rest = body;
         while !rest.is_empty() {
             let line = count + 2;
@@ -249,18 +292,52 @@ impl<'a> SystemManifest<'a> {
             if one.is_empty() {
                 return Err(ParseError::Layout { line });
             }
+            if let Some(named) = one
+                .strip_prefix(PROGENITOR_WORD)
+                .and_then(|named| named.strip_prefix(' '))
+            {
+                if progenitor.is_some() {
+                    return Err(ParseError::ManyProgenitors { line });
+                }
+                if count != 0 {
+                    return Err(ParseError::ProgenitorPlace { line });
+                }
+                if !stem_ok(named) {
+                    return Err(ParseError::Stem { line });
+                }
+                progenitor = Some(named);
+                packages_at = Some(after);
+                count += 1;
+                rest = after;
+                continue;
+            }
             let entry = read_line(one, line)?;
             if previous.is_some_and(|before| before >= entry.stem) {
                 return Err(ParseError::Order { line });
             }
             previous = Some(entry.stem);
             count += 1;
+            packages += 1;
             rest = after;
         }
-        if count == 0 {
+        if packages == 0 {
             return Err(ParseError::Empty);
         }
-        Ok(SystemManifest { text: body })
+        let (Some(progenitor), Some(text)) = (progenitor, packages_at) else {
+            return Err(ParseError::NoProgenitor);
+        };
+        let manifest = SystemManifest { progenitor, text };
+        if manifest.digest_of(progenitor).is_none() {
+            return Err(ParseError::ProgenitorUnlisted);
+        }
+        Ok(manifest)
+    }
+
+    /// The stem of the package that carries the progenitor, one of [`SystemManifest::entries`].
+    ///
+    /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
+    pub fn progenitor(&self) -> &'a str {
+        self.progenitor
     }
 
     /// Every package, in file order, which is sorted by stem.
@@ -279,7 +356,8 @@ impl<'a> SystemManifest<'a> {
     }
 
     /// **Hold a set of packages to the manifest**: every listed package present at its listed
-    /// digest, and nothing else. The first failure in manifest order names its package; a held
+    /// digest, and nothing else. The progenitor is one of the listed packages, so a set without it
+    /// is refused as missing it. The first failure in manifest order names its package; a held
     /// package the manifest omits is named after every listed one is satisfied.
     ///
     /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
@@ -303,11 +381,11 @@ impl<'a> SystemManifest<'a> {
     }
 }
 
-/// **The file for a set of packages**, sorted by stem whatever order they come in, so the same set
-/// is always the same bytes.
+/// **The file for a set of packages and the stem of the one that carries the progenitor**, sorted by
+/// stem whatever order they come in, so the same set is always the same bytes.
 ///
 /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
-pub fn render(packages: &[(&str, Digest)]) -> Result<String, RenderError> {
+pub fn render(progenitor: &str, packages: &[(&str, Digest)]) -> Result<String, RenderError> {
     if packages.is_empty() {
         return Err(RenderError::Empty);
     }
@@ -316,7 +394,17 @@ pub fn render(packages: &[(&str, Digest)]) -> Result<String, RenderError> {
     let mut text = String::with_capacity(
         VERSION_LINE.len() + 1 + sorted.len() * (STEM_LEN + 1 + DIGEST_TEXT_LEN + 1),
     );
+    if !stem_ok(progenitor) {
+        return Err(RenderError::Stem(progenitor.into()));
+    }
+    if !sorted.iter().any(|(stem, _)| *stem == progenitor) {
+        return Err(RenderError::ProgenitorUnlisted(progenitor.into()));
+    }
     text.push_str(VERSION_LINE);
+    text.push('\n');
+    text.push_str(PROGENITOR_WORD);
+    text.push(' ');
+    text.push_str(progenitor);
     text.push('\n');
     let mut previous: Option<&str> = None;
     for (stem, digest) in sorted {
@@ -354,7 +442,7 @@ mod tests {
     }
 
     fn file(lines: &[(&str, &[u8])]) -> String {
-        let mut text = String::from("version 1\n");
+        let mut text = format!("version 1\nprogenitor {A}\n");
         for (stem, seed) in lines {
             text.push_str(&format!("{stem} {}\n", hex(seed)));
         }
@@ -363,7 +451,7 @@ mod tests {
 
     #[test]
     fn a_manifest_renders_sorted_and_reads_back() {
-        let text = render(&[(B, d(b"b")), (A, d(b"a"))]).unwrap();
+        let text = render(A, &[(B, d(b"b")), (A, d(b"a"))]).unwrap();
         assert_eq!(text, file(&[(A, b"a"), (B, b"b")]));
         let manifest = SystemManifest::parse(&text).unwrap();
         let entries: Vec<_> = manifest.entries().collect();
@@ -386,21 +474,24 @@ mod tests {
 
     #[test]
     fn the_same_set_in_any_order_is_the_same_bytes() {
-        let one = render(&[(A, d(b"a")), (B, d(b"b"))]).unwrap();
-        let two = render(&[(B, d(b"b")), (A, d(b"a"))]).unwrap();
+        let one = render(A, &[(A, d(b"a")), (B, d(b"b"))]).unwrap();
+        let two = render(A, &[(B, d(b"b")), (A, d(b"a"))]).unwrap();
         assert_eq!(one, two);
     }
 
     #[test]
     fn the_writer_refuses_what_the_reader_would() {
-        assert_eq!(render(&[]), Err(RenderError::Empty));
+        assert_eq!(render(A, &[]), Err(RenderError::Empty));
         assert_eq!(
-            render(&[("Init", d(b"a"))]),
+            render("Init", &[("Init", d(b"a"))]),
             Err(RenderError::Stem("Init".into()))
         );
-        assert_eq!(render(&[("", d(b"a"))]), Err(RenderError::Stem("".into())));
         assert_eq!(
-            render(&[(A, d(b"a")), (A, d(b"a"))]),
+            render("", &[("", d(b"a"))]),
+            Err(RenderError::Stem("".into()))
+        );
+        assert_eq!(
+            render(A, &[(A, d(b"a")), (A, d(b"a"))]),
             Err(RenderError::Duplicate(A.into()))
         );
     }
@@ -438,20 +529,20 @@ mod tests {
         let a = hex(b"a");
         let b = hex(b"b");
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{A} {a}")),
-            Err(ParseError::Layout { line: 2 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{A} {a}")),
+            Err(ParseError::Layout { line: 3 })
         );
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{A} {a}\n\n{B} {b}\n")),
-            Err(ParseError::Layout { line: 3 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{A} {a}\n\n{B} {b}\n")),
+            Err(ParseError::Layout { line: 4 })
         );
         assert_eq!(
             SystemManifest::parse(&format!("version 1\n\n{A} {a}\n")),
             Err(ParseError::Layout { line: 2 })
         );
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{A} {a}\n\n")),
-            Err(ParseError::Layout { line: 3 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{A} {a}\n\n")),
+            Err(ParseError::Layout { line: 4 })
         );
     }
 
@@ -466,14 +557,14 @@ mod tests {
         ];
         for line in cases {
             assert_eq!(
-                SystemManifest::parse(&format!("version 1\n{line}")),
-                Err(ParseError::Shape { line: 2 }),
+                SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{line}")),
+                Err(ParseError::Shape { line: 3 }),
                 "{line:?}"
             );
         }
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{A} {a}\n{B}\n")),
-            Err(ParseError::Shape { line: 3 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{A} {a}\n{B}\n")),
+            Err(ParseError::Shape { line: 4 })
         );
     }
 
@@ -486,28 +577,33 @@ mod tests {
             "in\u{e9}-0.1.0-x",
             "init/0.1.0-x",
         ] {
-            let text = format!("version 1\n{stem} {a}\n");
+            let text = format!("version 1\nprogenitor {A}\n{stem} {a}\n");
             let got = SystemManifest::parse(&text);
             assert!(
                 matches!(
                     got,
-                    Err(ParseError::Stem { line: 2 } | ParseError::Shape { line: 2 })
+                    Err(ParseError::Stem { line: 3 } | ParseError::Shape { line: 3 })
                 ),
                 "{stem:?} {got:?}"
             );
         }
         let long = "a".repeat(STEM_LEN);
-        assert!(SystemManifest::parse(&format!("version 1\n{long} {a}\n")).is_ok());
+        assert!(
+            SystemManifest::parse(&format!("version 1\nprogenitor {long}\n{long} {a}\n")).is_ok()
+        );
         let too_long = "a".repeat(STEM_LEN + 1);
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{too_long} {a}\n")),
-            Err(ParseError::Stem { line: 2 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{too_long} {a}\n")),
+            Err(ParseError::Stem { line: 3 })
         );
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n {a}\n")),
-            Err(ParseError::Stem { line: 2 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n {a}\n")),
+            Err(ParseError::Stem { line: 3 })
         );
-        assert!(SystemManifest::parse(&format!("version 1\nab.c-d_e0 {a}\n")).is_ok());
+        assert!(
+            SystemManifest::parse(&format!("version 1\nprogenitor ab.c-d_e0\nab.c-d_e0 {a}\n"))
+                .is_ok()
+        );
     }
 
     #[test]
@@ -522,15 +618,15 @@ mod tests {
             format!("{a}0"),
             "sha256:".to_string(),
         ] {
-            let text = format!("version 1\n{A} {bad}\n");
+            let text = format!("version 1\nprogenitor {A}\n{A} {bad}\n");
             let got = SystemManifest::parse(&text);
-            assert_eq!(got, Err(ParseError::Digest { line: 2 }), "{bad:?}");
+            assert_eq!(got, Err(ParseError::Digest { line: 3 }), "{bad:?}");
         }
         // Mixed case: only the hex digits are upper.
         let mixed = format!("sha256:{}", a["sha256:".len()..].to_uppercase());
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{A} {mixed}\n")),
-            Err(ParseError::Digest { line: 2 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{A} {mixed}\n")),
+            Err(ParseError::Digest { line: 3 })
         );
     }
 
@@ -539,18 +635,21 @@ mod tests {
         let a = hex(b"a");
         let b = hex(b"b");
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{B} {b}\n{A} {a}\n")),
-            Err(ParseError::Order { line: 3 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{B} {b}\n{A} {a}\n")),
+            Err(ParseError::Order { line: 4 })
         );
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{A} {a}\n{A} {a}\n")),
-            Err(ParseError::Order { line: 3 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{A} {a}\n{A} {a}\n")),
+            Err(ParseError::Order { line: 4 })
         );
         assert_eq!(
-            SystemManifest::parse(&format!("version 1\n{A} {a}\n{A} {b}\n")),
-            Err(ParseError::Order { line: 3 })
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{A} {a}\n{A} {b}\n")),
+            Err(ParseError::Order { line: 4 })
         );
-        assert!(SystemManifest::parse(&format!("version 1\n{A} {a}\n{B} {b}\n")).is_ok());
+        assert!(
+            SystemManifest::parse(&format!("version 1\nprogenitor {A}\n{A} {a}\n{B} {b}\n"))
+                .is_ok()
+        );
     }
 
     #[test]
@@ -598,6 +697,10 @@ mod tests {
             ParseError::Digest { line: 7 },
             ParseError::Order { line: 8 },
             ParseError::Empty,
+            ParseError::NoProgenitor,
+            ParseError::ManyProgenitors { line: 9 },
+            ParseError::ProgenitorPlace { line: 10 },
+            ParseError::ProgenitorUnlisted,
         ];
         let words: Vec<String> = errors.iter().map(|e| e.to_string()).collect();
         for (error, word) in errors.iter().zip(&words) {
@@ -607,7 +710,9 @@ mod tests {
                 | ParseError::Shape { line }
                 | ParseError::Stem { line }
                 | ParseError::Digest { line }
-                | ParseError::Order { line } => Some(line),
+                | ParseError::Order { line }
+                | ParseError::ManyProgenitors { line }
+                | ParseError::ProgenitorPlace { line } => Some(line),
                 _ => None,
             } {
                 assert!(word.contains(&format!("line {n}")), "{word}");
@@ -628,5 +733,97 @@ mod tests {
                 .to_string()
                 .contains("yy")
         );
+    }
+
+    fn with_progenitor(lines: &[&str], rest: &[(&str, &[u8])]) -> String {
+        let mut text = String::from("version 1\n");
+        for line in lines {
+            text.push_str(&format!("progenitor {line}\n"));
+        }
+        for (stem, seed) in rest {
+            text.push_str(&format!("{stem} {}\n", hex(seed)));
+        }
+        text
+    }
+
+    #[test]
+    fn a_manifest_with_no_progenitor_line_is_refused_naming_the_cause() {
+        let text = file(&[(A, b"a"), (B, b"b")]).replacen(&format!("progenitor {A}\n"), "", 1);
+        let got = SystemManifest::parse(&text).unwrap_err();
+        assert_eq!(got, ParseError::NoProgenitor);
+        assert!(got.to_string().contains("progenitor"), "{got}");
+    }
+
+    #[test]
+    fn a_manifest_with_two_progenitor_lines_is_refused_naming_the_cause() {
+        let text = with_progenitor(&[A, B], &[(A, b"a"), (B, b"b")]);
+        let got = SystemManifest::parse(&text).unwrap_err();
+        assert!(got.to_string().contains("progenitor"), "{got}");
+        let twice = with_progenitor(&[A, A], &[(A, b"a")]);
+        let got = SystemManifest::parse(&twice).unwrap_err();
+        assert!(got.to_string().contains("progenitor"), "{got}");
+    }
+
+    #[test]
+    fn a_progenitor_stem_no_package_line_carries_is_refused_naming_the_cause() {
+        let text = with_progenitor(&["absent-0.1.0-x86_64"], &[(A, b"a"), (B, b"b")]);
+        let got = SystemManifest::parse(&text).unwrap_err();
+        let said = got.to_string();
+        assert!(said.contains("progenitor"), "{said}");
+    }
+
+    #[test]
+    fn the_progenitor_line_names_its_cause_by_variant() {
+        let two = with_progenitor(&[A, B], &[(A, b"a"), (B, b"b")]);
+        assert_eq!(
+            SystemManifest::parse(&two),
+            Err(ParseError::ManyProgenitors { line: 3 })
+        );
+        let unknown = with_progenitor(&["absent-0.1.0-x86_64"], &[(A, b"a")]);
+        assert_eq!(
+            SystemManifest::parse(&unknown),
+            Err(ParseError::ProgenitorUnlisted)
+        );
+        // One progenitor line, but after a package line.
+        let late = format!(
+            "{}progenitor {A}\n",
+            file(&[(A, b"a")]).replace("progenitor init-0.1.0-x86_64\n", "")
+        );
+        assert_eq!(
+            SystemManifest::parse(&late),
+            Err(ParseError::ProgenitorPlace { line: 3 })
+        );
+        // The word is reserved, so a package cannot be called it.
+        let reserved = format!(
+            "version 1\nprogenitor progenitor\nprogenitor {}\n",
+            hex(b"a")
+        );
+        assert!(SystemManifest::parse(&reserved).is_err());
+    }
+
+    #[test]
+    fn the_writer_names_the_progenitor_and_refuses_an_unlisted_one() {
+        let text = render(B, &[(A, d(b"a")), (B, d(b"b"))]).unwrap();
+        assert_eq!(SystemManifest::parse(&text).unwrap().progenitor(), B);
+        assert_eq!(
+            render("absent-0.1.0-x86_64", &[(A, d(b"a"))]),
+            Err(RenderError::ProgenitorUnlisted(
+                "absent-0.1.0-x86_64".into()
+            ))
+        );
+        assert!(
+            RenderError::ProgenitorUnlisted("zz".into())
+                .to_string()
+                .contains("progenitor")
+        );
+    }
+
+    #[test]
+    fn a_manifest_with_one_listed_progenitor_line_is_read() {
+        let text = with_progenitor(&[B], &[(A, b"a"), (B, b"b")]);
+        let manifest = SystemManifest::parse(&text).unwrap();
+        assert_eq!(manifest.digest_of(B), Some(d(b"b")));
+        assert_eq!(manifest.entries().count(), 2);
+        assert_eq!(manifest.progenitor(), B);
     }
 }

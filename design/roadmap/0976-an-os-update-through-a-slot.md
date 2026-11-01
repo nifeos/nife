@@ -156,14 +156,16 @@ slot. Every new name here is provisional.
   into a crate. Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
   load the members and print each refusal's phrase, and teaches xtask to write version 2.
 - **Done.** Part 6: the system manifest (ruled 2026-11-01 UTC; step 1). `crates/system_manifest`
-  (provisional) is the format in code: a `version 1` line, then `<stem> sha256:<hex>` per package,
-  sorted, no blank line, one encoding. `render` writes it, `SystemManifest::parse` refuses anything
-  `render` would not write, and `check` holds a package set to it, with a refusal that names the
-  package (mismatch, missing or unlisted). `cargo xtask base-image` writes `system-manifest`
-  (provisional file name) beside `initrd.img`, reads it back through the parser and refuses a
-  composition whose progenitor package is not listed. The file has no progenitor line, because
-  the ruled line shape has none. Until that is settled the progenitor is the package that carries
-  it, found by its stem (provisional; recorded in the crate's `BUGS`).
+  (provisional) is the format in code: a `version 1` line, a `progenitor <stem>` line naming the
+  package that carries the progenitor, then `<stem> sha256:<hex>` per package, sorted, no blank
+  line, one encoding. The ruling of 2026-11-01 UTC gives the progenitor a line of its own and
+  refuses a manifest with no such line, with two or more, or whose named stem is not among the
+  package lines. The spelling of that line is provisional, and the format version stays 1 because
+  no manifest has shipped. `render` writes it, `SystemManifest::parse` refuses anything `render`
+  would not write, and `check` holds a package set to it, with a refusal that names the package
+  (mismatch, missing or unlisted). `cargo xtask base-image` writes `system-manifest` (provisional
+  file name) beside `initrd.img`, reads it back through the parser and refuses a composition whose
+  progenitor package is not listed.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself, and the archive writer moves from

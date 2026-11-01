@@ -648,7 +648,8 @@ const PROGENITOR: &str = "progenitor";
 /// **Write the system manifest beside the composed image**: each package the image used with its
 /// digest, in the encoding `system_manifest::render` fixes. The text is read back through the
 /// reader the device uses and held to the packages it came from, so a file the updater would refuse
-/// is never left on disk, and the progenitor's package must be among the lines.
+/// is never left on disk. The file names the progenitor's package on a line of its own, and that
+/// package must be among the package lines.
 fn write_system_manifest(out: &Path, composed: &Composed) -> Result<PathBuf, String> {
     let text = system_manifest_text(composed)?;
     let path = out.join(SYSTEM_MANIFEST);
@@ -664,15 +665,17 @@ fn system_manifest_text(composed: &Composed) -> Result<String, String> {
             .map_err(|why| format!("{stem}: digest {label} is unreadable ({why:?})"))?;
         held.push((stem.as_str(), digest));
     }
-    let text = system_manifest::render(&held).map_err(|e| format!("system manifest: {e}"))?;
+    let text = system_manifest::render(&composed.progenitor, &held)
+        .map_err(|e| format!("system manifest: {e}"))?;
     let manifest = system_manifest::SystemManifest::parse(&text)
         .map_err(|e| format!("system manifest: wrote a file it cannot read: {e}"))?;
     manifest
         .check(&held)
         .map_err(|e| format!("system manifest: {e}"))?;
-    if manifest.digest_of(&composed.progenitor).is_none() {
+    if manifest.progenitor() != composed.progenitor {
         return Err(format!(
-            "system manifest: the progenitor's package {} is not listed",
+            "system manifest: wrote a progenitor line naming {}, not {}",
+            manifest.progenitor(),
             composed.progenitor
         ));
     }
@@ -1209,7 +1212,9 @@ programs = ["progenitor", "swish", "jig"]
         );
         assert_eq!(
             system_manifest_text(&composed).unwrap(),
-            format!("version 1\ninit-0.1.0-x86_64 {init}\nshell-0.1.0-x86_64 {shell}\n")
+            format!(
+                "version 1\nprogenitor init-0.1.0-x86_64\ninit-0.1.0-x86_64 {init}\nshell-0.1.0-x86_64 {shell}\n"
+            )
         );
     }
 
@@ -1219,7 +1224,7 @@ programs = ["progenitor", "swish", "jig"]
         let composed = composed_of(&[("init-0.1.0-x86_64", &init)], "absent-0.1.0-x86_64");
         assert_eq!(
             system_manifest_text(&composed).unwrap_err(),
-            "system manifest: the progenitor's package absent-0.1.0-x86_64 is not listed"
+            "system manifest: the progenitor `absent-0.1.0-x86_64` is not among the packages"
         );
         let composed = composed_of(&[("init-0.1.0-x86_64", "sha256:zz")], "init-0.1.0-x86_64");
         assert!(
