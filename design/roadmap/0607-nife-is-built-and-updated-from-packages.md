@@ -79,6 +79,11 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
    waits until that part shows what a kernel download costs per update (calef, 2026-10-31 UTC).
    The handoff's bytes and the source of the loader's digests are two questions for calef, in
    `design/roadmap/proposals/how-the-loader-hands-the-kernel-two-digests.md`.
+   Ruled 2026-11-01 (UTC) by the architect: this item also holds the anchor for installed rows
+   and their grant lines in the installed-programs table (milestone 990 (the base image's first
+   installed-programs table)). Candidates are a MAC the progenitor makes with a key the volume
+   cannot supply, and a digest of the live generation in a measured or sealed place. Milestone
+   917 (basalt's packages build reproducibly) holds it with this item.
 7. Package boundaries drawn in-tree and checked by lint, each with a required `home` (decided; in
    the lane `milestone/611-package-boundaries`).
 
