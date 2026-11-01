@@ -158,7 +158,40 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
    of the kernel binary. The approval file may name which of those keys the owner accepts, and it
    never adds one. A new key arrives only through a base update the old key signed. Not chosen:
    the key in the approval file, and the union of both.
-3. What a failed boot does. Milestones 525 and 554 already answer this (tries, then the other
+3. The version 2 slot header's layout. **Ruled 2026-11-01 (UTC): seven points.**
+   1. Each member entry carries an offset, a length and a SHA-256 digest. The header keeps its own
+      CRC-32.
+   2. Each entry starts with an 8-byte ASCII tag from a closed set: KERNEL, ARCHIVE and MANIFEST,
+      zero-padded (the spellings are provisional). The chooser refuses a slot with an unknown, a
+      duplicate or a missing tag.
+   3. Every member starts at a multiple of 4096, in header-table order, with no overlap and
+      nothing past the partition end. The chooser refuses a slot that breaks any of these.
+   4. The header holds exactly three entries and no count field. The layout is the magic (8
+      bytes), the version (4), reserved zero (4), three 56-byte entries (tag 8, offset 8, length
+      8, digest 32) and the CRC-32 (4). That is 188 bytes, and the rest of the 4096-byte block is
+      zero. The chooser refuses nonzero reserved or padding bytes.
+   5. The CRC-32 is the field after the table (bytes 184 to 188) and covers bytes 0 to 184, as in
+      version 1.
+   6. The chooser skips a slot it refuses for that boot, writes nothing to the partition-table
+      bits, and prints a fixed reason phrase for each check (the both-refused case follows).
+   7. The version field alone picks the layout. The chooser reads versions 1 and 2 and refuses any
+      other value, once the magic matches, as an unknown header version. The updater writes only
+      version 2.
+
+   When the chooser refuses both slots, it prints each slot's reason and then boots its own
+   embedded image, as milestone 525 (a bad upgrade cannot brick the machine) rules for two bad
+   slots (ruled 2026-11-01 UTC).
+4. The chooser replaces itself before the first version 2 slot. **Ruled 2026-11-01 (UTC).** The
+   chooser is the same binary as the fallback image in the EFI system partition file, which the
+   installer writes once, so a slot update does not replace it. The updater replaces that file
+   before it writes the first version 2 slot, and only if the new chooser reads version 2. It
+   writes the new chooser under a second name, verifies it by digest, then renames it over the old
+   name, and the rename is the commit. The chooser is also the install-time fallback image, so a
+   torn write never leaves the partition with no file. No milestone covers this work, so the 976
+   block files it as a proposed milestone. Its open questions: room on the EFI system partition
+   for a second copy, whether the FAT rename is atomic enough for a power cut, and the effect on
+   the unattended machines of milestone 858.
+5. What a failed boot does. Milestones 525 and 554 already answer this (tries, then the other
    slot; confirmation once the disk mounts). This proposal changes none of it, so it is not
    open.
 

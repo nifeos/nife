@@ -139,6 +139,27 @@ slot. Every new name here is provisional.
   proposal. Step 3, the loader's two digests, is milestone
   607's item 6 and not this block's.
 
+- **Ruled 2026-11-01 (UTC), part 4's header.** Version 2 is 188 bytes in a 4096-byte block, the rest
+  zero: magic 8, version 4, reserved zero 4, three 56-byte entries (tag 8, offset 8, length 8,
+  SHA-256 digest 32), then a CRC-32 of bytes 0 to 184. The tags are KERNEL, ARCHIVE and MANIFEST
+  (provisional spellings), exactly three, with no count field. Members start at multiples of 4096 in
+  table order, without overlap, inside the partition. The chooser refuses an unknown, duplicate or
+  missing tag, a layout break, nonzero reserved or padding bytes, and an unknown header version
+  (it reads 1 and 2). It skips a refused slot for that boot, writes nothing to the partition-table
+  bits and prints a fixed reason phrase per check. The updater writes only version 2. When
+  both slots are refused, the chooser prints each slot's reason and then boots its own embedded
+  image, as milestone 525 (a bad upgrade cannot brick the machine) rules for two bad slots. The
+  proposal has the full list.
+- **Proposed milestone (provisional), ruled 2026-11-01 (UTC).** The updater replaces the chooser
+  file on the EFI system partition before it writes the first version 2 slot, and only if the new
+  chooser reads version 2. It writes the new chooser under a second name, verifies it by digest,
+  then renames it over the old name; the rename is the commit. The chooser is also the install-time
+  fallback image, so a torn write never leaves no file. No existing milestone updates that file on
+  an installed disk, and part 5 waits on this one for disks already installed. Open questions: room
+  on the EFI system partition for a second copy, whether the FAT rename is atomic enough for a
+  power cut, and the effect on the unattended machines of milestone 858 (lab machines update
+  themselves).
+
 ## Index row
 
 Item 5 of milestone 607 (the repository divides along what releases together) waited on item 1,
