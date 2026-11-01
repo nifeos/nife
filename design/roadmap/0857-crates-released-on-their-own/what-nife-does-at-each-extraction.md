@@ -25,7 +25,7 @@ released on its own), and every later extraction runs the same list.
   (the architect ruled it on 2026-11-01 UTC). No standing approval covers the order table, so a lane
   creates a crate repository only after the architect clears that crate.
 - A person grants the crate's repository the organization secrets `NIFE_SMELTER_APP_ID` and
-  `NIFE_SMELTER_PRIVATE_KEY`, using an `admin:org` token. A lane never takes this step.
+  the smelter App's private key beside it, using an `admin:org` token. A lane never takes this step.
 - The path dependency becomes a crates.io release, pinned with its checksum in `Cargo.lock`
   (Fork 2), and `crates/<name>` is deleted in the same pull request.
 - The proofs, the falsification sweep, the fuzz targets and the coverage floor stop covering that
