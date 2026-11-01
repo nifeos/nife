@@ -14,6 +14,9 @@ Raised 2026-11-01 (UTC) by the lane `lane/contract-crates-move-order`. It answer
 frequent breaking change safe across repositories. It moves no crate and changes no code. Every new
 name below is provisional. The text states each ruling (2026-11-01 UTC).
 
+Reuse: `cargo metadata`, git's rename detection, milestone 610's series, milestone 956's constants,
+the crate template and basalt's gate.
+
 Two directions from the architect, both dated 2026-11-01 (UTC), frame it:
 
 - Crossing repositories is the goal of the split (§151 (the goal of the repository split is
@@ -24,7 +27,8 @@ Two directions from the architect, both dated 2026-11-01 (UTC), frame it:
   dependency graph, before or with every program that links it, and nothing that has left depends
   on a path or a pin into nife. nife may depend on what left.
 
-The second direction inverts the order of 2026-10-04 in milestones 756 and 691. Programs first and
+The second direction inverts the order of 2026-10-04 in milestone 756 (`process-tools`,
+`core-tools` and `disk-tools` are the first code to leave this repository). Programs first and
 the SDK last maximizes references back: each program repository would pin nife.
 
 Appendices: [measurements](the-contract-crates-leave-in-this-order/measurements.md), [prior
@@ -67,8 +71,7 @@ points from nife to the crate, which the direction permits. Beyond those, six re
 | `capability_manifest_note` | a test reads `../../fuzz/seeds/`, and nife's fuzz workspace builds it | its seeds and fuzz target leave with it |
 
 Six more of the 22 have fuzz targets in nife's `fuzz/` workspace. Those point from nife to the
-crate, so they do not block, but a crate's fuzzing belongs with it, the way `jh7110_entropy` took
-its proofs. Between 5 and 36 files in nife name each crate's path.
+crate, so they do not block, but a crate's fuzzing belongs with it. Between 5 and 36 files in nife name each crate's path.
 
 ## The recommended order
 
@@ -80,8 +83,7 @@ with no tag, so milestone 818 tags it first. A crate whose interface still break
 break a new tagged release.
 
 The rule: a crate leaves when every crate it links (normal, build and dev) has left or leaves with
-it, and no file in it names a nife path. Within a layer, the cheapest coordination goes first, so
-a mistake costs little first. Ruled 2026-11-01 (UTC): each
+it, and no file in it names a nife path. Within a layer, the cheapest coordination goes first. Ruled 2026-11-01 (UTC): each
 package leaves as soon as its own crates have left, in the order `disk-tools`, `process-tools`,
 `core-tools`, replacing milestone 756's single cut, and `block_roster` stays the first crate a
 consumer outside nife reads. Ruled the same day: one repository per contract crate, created when
@@ -104,10 +106,9 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 | 9, `redoxfs` | `subtree_scope`, `memory_region_heap`, then `redoxfs` as one repository | after the 10 contract crates it links; ruled 2026-11-01 (UTC) in the questions appendix; `talc` becomes a pinned upstream dependency (below) |
 
 `jh7110_entropy` stays the leaf pilot (milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,
-released on its own)). It proves that a leaf crate builds and proves from its own repository and
-that nife pins it by `rev` with nothing pointing back. It does not prove the contract case: no
+released on its own)). It proves that a leaf crate builds from its own repository and nife pins it by `rev`. It does not prove the contract case: no
 consumer outside nife, so no two pins must agree, and no version check has refused a real mismatch
-across the boundary. The `block_roster` pilot proves both once `disk-tools` leaves.
+across the boundary. `block_roster` proves both once `disk-tools` leaves.
 
 Two findings want lanes of their own:
 
@@ -158,8 +159,8 @@ versions)). Those 14 get one first, and until then their breaks keep the hold.
 ## What the integration gate must test
 
 basalt's gate (milestone 755 (basalt v0 pins nife and runs its gate)) pins one component, nife, by
-commit, runs that commit's `script/ci-build test` on three architectures, builds basalt's recipes
-twice for byte-identical output, and composes and boots an image.
+commit. It runs that commit's `script/ci-build test` on three architectures, builds basalt's
+recipes twice for identical bytes, and boots an image.
 
 It does not hold a second first-party pin. It cannot see two components pinning different revisions
 of one contract. It reads no program's `INTERFACES` note against what the image serves. And it can
@@ -191,7 +192,7 @@ bumps.
 
 By `rev`, as §305 allows. A root `[workspace.dependencies]` entry would pin each contract once for
 every nife crate. nife pins `jh7110_entropy` in three manifests, which pull request #2979 had to
-move together. Working on both sides at once uses a local `[patch]`, which never reaches `main`.
+move together. A local `[patch]` serves work on both sides and never reaches `main`.
 
 The real cost is the second pull request: 53 minutes in the example above. Had all 22 lived
 elsewhere for 30 days, up to 244 changes would have needed one. nife's tools that walk `crates/` also
@@ -239,12 +240,11 @@ ratifying the `INTERFACE_ID` values (milestone 979) comes before the first contr
 
 Decided by the maintainer on 2026-11-01 (UTC), provisional; reversing costs one pull request, since
 nothing depends on it yet. The architect approved the rule that the maintainer decides a two-way
-door and records it as provisional, and this first use. When `redoxfs` leaves, `talc`, patched to
+door, and this first use. When `redoxfs` leaves, `talc`, patched to
 `vendor/talc` today by the engine's and `redoxfs_server`'s manifests, becomes a git dependency of
 `redoxfs` on its upstream, pinned by `rev` with `version`. Any divergence stays a patch file in the
 `redoxfs` repository beside the engine's, naming the upstream revision it applies to. `talc` gets
-no repository of nife's own. Not taken: a fork (needs approval), pinning nife for it (a reference
-back), replacing the allocator.
+no repository of nife's own. Not taken: a fork (needs approval), pinning nife for it, replacing the allocator.
 
 Read-only checks, 2026-11-01 (UTC); the questions appendix has the detail:
 
