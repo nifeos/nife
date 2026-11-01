@@ -788,7 +788,7 @@ fn compose(
         )),
         _ => None,
     };
-    let first_generation = first_generation_of(&definition.version, &blobs, &rows, answered)?;
+    let first_generation = first_generation_of(&blobs, &rows, answered)?;
 
     let mut text = String::new();
     for stem in &order {
@@ -808,12 +808,11 @@ fn compose(
     })
 }
 
-/// **The first generation of the programs [`compose`] took**: `blobs` and `rows` in one order, the
-/// image's `version`, and how the approval answered. Each program's note is read again from the
+/// **The first generation of the programs [`compose`] took**: `blobs` and `rows` in one order, and how
+/// the approval answered. Each program's note is read again from the
 /// bytes the archive carries, with the reading the approval check used, and [`first_generation`]
 /// writes the table.
 fn first_generation_of(
-    version: &str,
     blobs: &[(String, Vec<u8>)],
     rows: &[(String, installed_programs::Digest, usize)],
     answered: Option<installed_programs::Answered<'_>>,
@@ -837,23 +836,34 @@ fn first_generation_of(
     let entries: Vec<installed_programs::Entry<'_>> = carried
         .iter()
         .zip(rows)
-        .map(
-            |(program, (package, digest, _))| installed_programs::Entry {
-                program: program.name,
-                version,
-                package,
-                digest: *digest,
-                manager: installed_programs::OWNER,
-            },
-        )
+        .map(|(program, (_, digest, _))| base_row(program.name, *digest))
         .collect();
     first_generation(&entries, &grants, answered.as_ref())
 }
 
+/// **A base program's row** (milestone 990 (the base image's first installed-programs table);
+/// ruled 2026-11-01 (UTC)): the program's name and digest, the owner's vouch shape, and no
+/// pointer. The image already holds a base program's name, so the row claims no bare word and
+/// section 229's refusal of base names, which governs installed rows, does not govern it. The
+/// pointer is what tells the two apart: an installed row has one, written by the install, and a
+/// base row never does. No version and no package are recorded, and the row ties to no
+/// system manifest (milestone 976).
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane
+/// milestone/990-the-base-images-first-installed-programs-table.
+fn base_row(program: &str, digest: installed_programs::Digest) -> installed_programs::Entry<'_> {
+    installed_programs::Entry {
+        program,
+        version: installed_programs::NO_VERSION,
+        package: installed_programs::OWNER,
+        digest,
+        manager: installed_programs::OWNER,
+    }
+}
+
 /// **Generation 1 of the composed image's installed-programs table** (milestone 990 (the base
-/// image's first installed-programs table)): one row per carried program, at the image's version,
-/// owned by its package and managed by [`installed_programs::OWNER`], with the grants its note asks
-/// for, written by [`installed_programs::with_entries_granting`], the writer an interactive install
+/// image's first installed-programs table)): one [`base_row`] per carried program, with the grants
+/// its note asks for, written by [`installed_programs::with_entries_granting`], the writer an interactive install
 /// calls. `answered` is the image's approval file by name and digest, or `None` when the image names
 /// none.
 ///
@@ -862,7 +872,7 @@ fn first_generation_of(
 /// today (909's `BUGS`), so this refuses no image built from this tree.
 ///
 /// The rows are the image's own, so no row is refused as taking a name the image carries
-/// (`image_carries` answers no). Milestone 990's `BUGS` records what the shell makes of them.
+/// (`image_carries` answers no), and a base row writes no pointer.
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane
 /// milestone/990-the-base-images-first-installed-programs-table.
@@ -883,7 +893,7 @@ fn first_generation(
             granted_name(&grant.what)
         ));
     }
-    // About 170 bytes a row with its pointer, and a few hundred rows at the most.
+    // About 110 bytes a row, and a few hundred rows at the most.
     let mut out = vec![0u8; 1 << 20];
     let n = installed_programs::with_entries_granting(
         "",
@@ -1202,9 +1212,65 @@ programs = ["progenitor", "swish", "jig"]
         [row("swish", "swish", 1), row("jig", "jig", 2)]
     }
 
+    /// The lines of `table` that are default pointers, by program.
+    fn pointers(table: &str) -> Vec<&str> {
+        table
+            .lines()
+            .filter_map(|l| l.strip_prefix("default "))
+            .filter_map(|l| l.split(' ').next())
+            .collect()
+    }
+
+    #[test]
+    fn a_base_row_has_no_pointer_and_an_installed_row_has_one() {
+        let rows = two_rows().map(|r| base_row(r.program, r.digest));
+        let base = first_generation(&rows, &[], None).unwrap();
+        // The base names no bare word: the image already holds its names (section 229).
+        assert_eq!(pointers(&base), Vec::<&str>::new());
+        for row in &rows {
+            assert_eq!(installed_programs::lookup(&base, row.program), Ok(None));
+        }
+        // An installed program on top of the base gains its pointer, and the base rows stay without.
+        let installed = installed_programs::Entry {
+            program: "ripgrep",
+            version: "14.1.0",
+            package: "ripgrep",
+            digest: [7; 32],
+            manager: installed_programs::OWNER,
+        };
+        let mut out = vec![0u8; 4096];
+        let n = installed_programs::with_entry(&base, &installed, false, &mut out).unwrap();
+        let table = std::str::from_utf8(&out[..n]).unwrap();
+        assert_eq!(pointers(table), ["ripgrep"]);
+        // Every row has a pointer exactly when it is an installed row, not a base one.
+        for entry in installed_programs::entries(table).flatten() {
+            let installed_row = entry.package != installed_programs::OWNER;
+            assert_eq!(
+                pointers(table).contains(&entry.program),
+                installed_row,
+                "{}",
+                entry.program
+            );
+            assert_eq!(
+                installed_programs::lookup(table, entry.program)
+                    .unwrap()
+                    .is_some(),
+                installed_row
+            );
+        }
+        // The base rows still vouch by digest.
+        for row in &rows {
+            assert!(
+                installed_programs::lookup_digest(table, &row.digest)
+                    .unwrap()
+                    .is_some()
+            );
+        }
+    }
+
     #[test]
     fn the_first_generation_vouches_for_every_carried_program() {
-        let rows = two_rows();
+        let rows = two_rows().map(|r| base_row(r.program, r.digest));
         let table = first_generation(&rows, &[], None).unwrap();
         for row in &rows {
             let found = installed_programs::lookup_digest(&table, &row.digest)
@@ -1212,7 +1278,12 @@ programs = ["progenitor", "swish", "jig"]
                 .unwrap();
             assert_eq!(
                 (found.program, found.version, found.package, found.manager),
-                (row.program, "0.1.0", row.package, installed_programs::OWNER)
+                (
+                    row.program,
+                    installed_programs::NO_VERSION,
+                    installed_programs::OWNER,
+                    installed_programs::OWNER
+                )
             );
         }
         // No approval file answered it, so the generation records no answer.

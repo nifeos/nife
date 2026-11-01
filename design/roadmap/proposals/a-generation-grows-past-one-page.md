@@ -25,11 +25,12 @@ that way, and so do the installer's read of the old generation in
 all, so it vouches for no image spawn, and the installer cannot read the generation it would
 succeed. `jig` reads the file through std and holds no such limit.
 
-A row with its default pointer takes about 170 bytes, so a page holds about two dozen programs.
+An installed row with its default pointer takes about 170 bytes, so a page holds about two dozen
+installed programs. A base row has no pointer and takes about 100.
 `crates/installed_programs` records that limit in its `BUGS`. Milestone 990 (the base image's
 first installed-programs table) measured the base image's generation 1 on aarch64 on 2026-11-01
-(UTC): 58 rows and 58 default pointers, 11,426 bytes. The test image, which adds the `fixtures`
-package's programs, holds 121 rows in 24,619 bytes.
+(UTC), after the ruling that a base row carries no pointer: 58 rows, 5,691 bytes. The test image,
+which adds the `fixtures` package's programs, holds 121 rows in 12,256 bytes. Neither fits a page.
 
 ## The work
 

@@ -18,8 +18,9 @@ that writes `activation/1` onto the launch volume (milestone 990).
 
 The build settled the generation's contents, and none of it depends on the container:
 
-- One row per program the image carries: the program, the image's version, the owning package, the
-  program member's digest, and `installed_programs::OWNER` as the manager. The writer is
+- One base row per program the image carries: the program and the program member's digest, in the
+  owner's vouch shape, with no default pointer (ruled 2026-11-01 UTC on #3023; §229's refusal of
+  base names governs installed rows and not these). The writer is
   `installed_programs::with_entries_granting`, the same one an interactive install calls, with no
   default and no generation before it.
 - The grants are `program_asks::asked_grants` over each carried program, the reading the

@@ -29,8 +29,14 @@ Partial. Item 1 ships: `cargo xtask base-image` writes `launch.img` beside the k
 `initrd.img`, a RedoxFS volume holding `activation/1` and `activation/current`. Items 2 and 3 do
 not exist yet, and the `BUGS` below say what blocks them.
 
-Generation 1 holds one row per carried program: the program, the image's version, the owning
-package, the program member's digest and `owner` as the manager. `first_generation` in
+Generation 1 holds one base row per carried program: the program name and the program member's
+digest, in the owner's vouch shape (no version, `owner` as package and manager) and with no default
+pointer. Ruled 2026-11-01 (UTC) by calef, on #3023: a base row carries the program name and digest
+and no pointer. Section 229's refusal of base names applies to installed rows as before and does not
+apply to a base row. The row names no pointer target and does not tie to milestone 976's system
+manifest. An installed row always has a pointer and a base row never does, and
+`a_base_row_has_no_pointer_and_an_installed_row_has_one` in `xtask/src/base_image.rs` holds both.
+`first_generation` in
 `xtask/src/base_image.rs` writes it with `installed_programs::with_entries_granting`, the writer
 an interactive install calls, and reads the grants with `program_asks::asked_grants` over the bytes
 the archive carries. The `answered` line names the image's approval file and its SHA-256, and a
@@ -39,9 +45,9 @@ the image names no approval file refuses the composition, because nobody allowed
 `write_launch_volume` stages the two files and drives `tools/redoxfs_host`'s `mkfs` and `import`,
 the tool the swish-check seed uses.
 
-Measured 2026-11-01 (UTC) on aarch64: the base image's generation 1 is 58 rows and 58 default
-pointers, 11,426 bytes, with no grant lines and no `answered` line, and it reads back
-byte-identical from the volume.
+Measured 2026-11-01 (UTC) on aarch64: the base image's generation 1 is 58 base rows and no
+pointers, 5,691 bytes, with no grant lines and no `answered` line, and the test image's is
+12,256 bytes. Both are still over the progenitor's 4,096-byte page.
 
 Reuse: the table and its grammar (`crates/installed_programs`), the approval file and its check
 (`crates/approval_file`), and the launch filesystem the table lives on, RedoxFS, which nife already builds and runs.
@@ -161,7 +167,7 @@ volume.
 - No new filesystem server. RedoxFS is the launch store (decision 34), and this milestone uses the
   server and the host tool that already exist. It starts once milestone 911 (scripted installs grant only what the owner's approval file allows) lands.
 
-Name: provisional. `launch.img`, `first_generation`, `write_launch_volume` and the volume's
+Name: provisional. `launch.img`, `first_generation`, `base_row`, `write_launch_volume` and the volume's
 16 MiB size. Items 2 and 3 name the attach point and the measurement. `compose` keeps the check seam, so
 the ruling changes where the records go and not how the composition checks them.
 
@@ -170,17 +176,14 @@ the ruling changes where the records go and not how the composition checks them.
 - **Nothing attaches the launch volume.** `--boot` boots the kernel and the archive alone, so no
   boot reads generation 1 yet. Four things stand between it and item 2:
   - **The progenitor reads one page of a generation.** It reads the live generation into 4,096
-    bytes, and the base's generation 1 is 11,426. On a boot with this volume attached, the
+    bytes, and the base's generation 1 is 5,691. On a boot with this volume attached, the
     progenitor would vouch for no image spawn and the installer could not read the generation
     it succeeds. Item 2 cannot keep its read path unchanged. Home: the proposal
     [a-generation-grows-past-one-page](proposals/a-generation-grows-past-one-page.md).
-  - **Every row takes a base program's name at the prompt.** `with_entries_granting` writes a
-    default pointer for every row whose package is not `owner`. The shell refuses a bare word
-    that both the image and the live generation name (`swish::bare::resolve`, `Bare::Both`, §229
-    (how a bare name at the prompt reaches an installed program)). With this generation live,
-    `ps` and every other base program would be refused at the prompt. The row also names
-    `packages/<package>/<version>/<program>`, which the volume does not hold. What shape a base
-    program's row takes is an architect's call, asked on this milestone's pull request.
+  - **A base row claims no name at the prompt.** Ruled 2026-11-01 (UTC) by calef, on #3023: a base
+    row carries the program name and digest and no pointer, so the shell's `Bare::Both` refusal
+    (§229 (how a bare name at the prompt reaches an installed program)) never sees a base name in
+    the live generation. Done: `base_row` in `xtask/src/base_image.rs`.
   - **No ruling settles the measurement** (item 3).
     [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md)
     lists the options: the seed generation by its own digest, the volume until its first write,
