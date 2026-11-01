@@ -32,9 +32,8 @@
 //!   archive entry, and the `kernel` package declares crates and no programs, so this builds it
 //!   from those crates. The binary claim is about the ramdisk, which is 909's "Done when".
 //! - **The base image names no approval file** until a base program's note asks (909's `BUGS`).
-//! - **`--boot` attaches no launch volume.** The image writes `launch.img`, a RedoxFS volume
-//!   holding generation 1 of its installed-programs table, and no boot reads it yet: milestone
-//!   990's `BUGS` says what stands in the way.
+//! - **`--boot` attaches no launch volume.** `launch.img` holds generation 1 of the table, and no
+//!   boot reads it yet (milestone 990's `BUGS`).
 //! - **The catalog lists only the packages the image used.** `jig` needs the fetched index for
 //!   anything else, which is what `SOURCES_ENTRY` is for.
 //! - **A package's digest is checked against the catalog it was handed.** That catalog's trust is
@@ -783,22 +782,6 @@ fn compose(
         check_approval(path, &extras)?;
     }
 
-    // The first generation reads each program's note again, from the bytes the archive will carry,
-    // with the reading the check above used.
-    let carried: Vec<package_archive::Program<'_>> = blobs
-        .iter()
-        .zip(&rows)
-        .map(|((name, bytes), (_, digest, member))| package_archive::Program {
-            name,
-            bytes,
-            digest: *digest,
-            member: *member,
-        })
-        .collect();
-    let grants: Vec<installed_programs::Grant<'_>> = carried
-        .iter()
-        .flat_map(program_asks::asked_grants)
-        .collect();
     let answered = match (&approval, &approval_text) {
         (Some((_, file)), Some((_, text))) => Some(installed_programs::Answered::Approval(
             file.name(),
@@ -806,18 +789,7 @@ fn compose(
         )),
         _ => None,
     };
-    let entries: Vec<installed_programs::Entry<'_>> = carried
-        .iter()
-        .zip(&rows)
-        .map(|(program, (package, digest, _))| installed_programs::Entry {
-            program: program.name,
-            version: &definition.version,
-            package,
-            digest: *digest,
-            manager: installed_programs::OWNER,
-        })
-        .collect();
-    let first_generation = first_generation(&entries, &grants, answered.as_ref())?;
+    let first_generation = first_generation_of(&definition.version, &blobs, &rows, answered)?;
 
     let mut text = String::new();
     for stem in &order {
@@ -835,6 +807,44 @@ fn compose(
             .collect(),
         first_generation,
     })
+}
+
+/// **The first generation of the programs [`compose`] took**: `blobs` and `rows` in one order, the
+/// image's `version`, and how the approval answered. Each program's note is read again from the
+/// bytes the archive carries, with the reading the approval check used, and [`first_generation`]
+/// writes the table.
+fn first_generation_of(
+    version: &str,
+    blobs: &[(String, Vec<u8>)],
+    rows: &[(String, installed_programs::Digest, usize)],
+    answered: Option<installed_programs::Answered<'_>>,
+) -> Result<String, String> {
+    let carried: Vec<package_archive::Program<'_>> = blobs
+        .iter()
+        .zip(rows)
+        .map(|((name, bytes), (_, digest, member))| package_archive::Program {
+            name,
+            bytes,
+            digest: *digest,
+            member: *member,
+        })
+        .collect();
+    let grants: Vec<installed_programs::Grant<'_>> = carried
+        .iter()
+        .flat_map(program_asks::asked_grants)
+        .collect();
+    let entries: Vec<installed_programs::Entry<'_>> = carried
+        .iter()
+        .zip(rows)
+        .map(|(program, (package, digest, _))| installed_programs::Entry {
+            program: program.name,
+            version,
+            package,
+            digest: *digest,
+            manager: installed_programs::OWNER,
+        })
+        .collect();
+    first_generation(&entries, &grants, answered.as_ref())
 }
 
 /// **Generation 1 of the composed image's installed-programs table** (milestone 990 (the base
