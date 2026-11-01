@@ -50,9 +50,21 @@ leaves the held window's own range out of the table, so nothing published reprod
 A finding stays private until its fix merges, and starts as a private security advisory. A finding
 sorted as public at triage is the exception.
 
-The architect has not ruled where the output goes. The proposal
-[`where-the-daily-fuzz-output-goes`](../../design/roadmap/proposals/where-the-daily-fuzz-output-goes.md)
-sets out the two options. Until then the script writes local files and publishes nothing.
+With `--publish` it creates one GitHub release per day on nifeos/nife, tagged `fuzz-YYYY-MM-DD` (the
+UTC date), with `report.md` and `clean-ranges.tsv` as its assets: `gh release create fuzz-YYYY-MM-DD
+report.md clean-ranges.tsv`. The newest release's date is the heartbeat. A maintainer can delete an
+old release without touching history, and no clone carries it. An architect ruled this on 2026-11-01
+(UTC) in
+[`where-the-daily-fuzz-output-goes`](../../design/roadmap/proposals/where-the-daily-fuzz-output-goes.md),
+which also records the rejected branch of artifacts.
+
+The publish path refuses unless `NIFE_FUZZ_PUBLISH=1` is set in the host's environment, and the
+timer stays disabled until a person installs the credential and sets it. `--dry-run` prints the tag
+and the asset list and runs nothing else.
+
+The credential needs Contents: write on a fine-grained token (stated from memory of GitHub's
+permission model, not verified). That scope also permits a push, so the guarantee that the host never
+pushes a branch rests on the script, which only calls `gh release create`.
 
 ## Install, for a person with root
 
