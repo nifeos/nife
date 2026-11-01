@@ -159,7 +159,7 @@ the read-only checks of that day:
   Two hunks in `src/base/mod.rs` rewrite the in-place grow fit check and the gap fit check
   (padding below an aligned base) so that wrapped arithmetic cannot pass, and
   `tests/wasm_top_of_memory.rs` is a new 75-line wasm regression test. The patch is
-  SFBdragon/talc pull request 57, open and unmerged, so no upstream revision carries it.
+  SFBdragon/talc pull request 57, open, so no upstream revision carries it.
 - Users: `allocation_cache`, `memory_region_heap` and `redoxfs_server` depend on `talc`. The root
   workspace, `jig`, `fuzz`, `redoxfs_server` and `tools/redoxfs_host` patch it to `vendor/talc`,
   and the `std-nife` heap overlay and the `xtask` farm generator name it. When `redoxfs` leaves,

@@ -144,7 +144,7 @@ together) names. A pin is a git dependency on `nifeos/<crate>` by `rev` with its
 Two checks move with each crate. nife's diff check, which fails a moved magic without its version
 constant (milestone 956's step 4), joins the crate template. The template's `cargo-semver-checks`
 compares against the last published release, but these crates stay unpublished while nife pins them
-by `rev` (§305 (git dependencies on `nifeos/*` only, pinned to a landed commit)), so it never fires:
+by `rev` (§305 (git dependencies on `nifeos/*` only, pinned to a landed commit)), so it never fires.
 `jh7110_entropy`'s pull request #5 renamed five public constants and drew no hold. The fix is to
 compare against the commit whose manifest last changed version (`--baseline-rev`). Inside nife,
 `cargo-semver-checks` stays refused.
