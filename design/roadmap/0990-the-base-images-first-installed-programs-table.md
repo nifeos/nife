@@ -183,8 +183,8 @@ the ruling changes where the records go and not how the composition checks them.
     it succeeds. Item 2 cannot keep its read path unchanged. Home: the proposal
     [a-generation-grows-past-one-page](proposals/a-generation-grows-past-one-page.md).
   - **A base row claims no name at the prompt.** Ruled 2026-11-01 (UTC) by calef, on #3023: a base
-    row carries the program name and digest and no pointer, so the shell's `Bare::Both` refusal
-    (§229 (how a bare name at the prompt reaches an installed program)) never sees a base name in
+    row carries the program name and digest and no pointer. So the shell's `Bare::Both` refusal
+    (§229 (how a bare name at the prompt reaches an installed program)) never meets a base name in
     the live generation. Done: `base_row` in `xtask/src/base_image.rs`.
   - **No ruling settles the measurement** (item 3).
     [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md)
