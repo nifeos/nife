@@ -41,7 +41,7 @@ run() {
 
 run 0
 [ "$calls" -eq 1 ] || fail "install ok: $calls rustup calls, wanted exactly 1 ($out)"
-grep -q '^toolchain install$' "$work/calls" || fail "install ok: wanted \`rustup toolchain install\`, got $(cat "$work/calls")"
+grep -q '^show active-toolchain$' "$work/calls" || fail "install ok: wanted \`rustup show active-toolchain\`, got $(cat "$work/calls")"
 [ "$rc" -ne 0 ] || fail "install ok: exit 0 with no KVM"
 printf '%s' "$out" | grep -q 'KVM is not usable' || fail "install ok: did not go on to the KVM check ($out)"
 

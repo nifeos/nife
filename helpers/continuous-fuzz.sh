@@ -118,14 +118,14 @@ refuse_without_kvm() {
     }
 }
 
-# Install (or confirm) the toolchain the repository pins, once, before any slot starts. With no
-# argument `rustup toolchain install` reads rust-toolchain.toml, so the pin has one home. Four slots
-# that each found the pin missing downloaded it at the same time and collided; the first windows
+# Install (or confirm) the toolchain the repository pins, once, before any slot starts.
+# `rustup show active-toolchain` in the clone installs what rust-toolchain.toml pins on first use, so
+# the pin has one home and a bump needs no unit change. Four slots that each found the pin missing downloaded it at the same time and collided; the first windows
 # were recorded as infrastructure failures three seconds after start. This runs serially in the
 # supervisor, writes no window rows, and a failure stops the supervisor with its own message.
 ensure_toolchain() {
     echo "continuous-fuzz: installing or confirming the pinned toolchain before any slot starts"
-    (cd "$root" && "$root/helpers/rustup-retry.sh" toolchain install) >&2 || {
+    (cd "$root" && "$root/helpers/rustup-retry.sh" show active-toolchain) >&2 || {
         echo "continuous-fuzz: refusing to start: could not install the toolchain that rust-toolchain.toml pins; no slot was started and no window was recorded" >&2
         return 1
     }
