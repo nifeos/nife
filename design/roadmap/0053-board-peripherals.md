@@ -81,7 +81,7 @@ notes/designware-ethernet.md has the split, the evidence and the runbook.
   note's Results row). The booted system brings the port up (`PROVEN_ON_SILICON` is `true`).
   The rate is outstanding, below.
 
-Reuse: OpenBSD's `dwqe` and `ytphy` (ISC), adapted with the notice carried in the crate root,
+Reuse: OpenBSD's `dwqe` and `ytphy` (ISC) and `ukphy_subr.c` (NetBSD Foundation, BSD-2-Clause), adapted with the notices carried in the crate root,
 because its JH7110 glue handles radon's v1.3B transmit clock (`starfive,tx-use-rgmii-clk`).
 FreeBSD's `if_eqos_starfive.c` and `mcommphy.c` (BSD-2-Clause) also support this chip and were
 read as an independent cross-check. Linux stmmac, U-Boot `dwc_eth_qos` and both JH7110 trees are
