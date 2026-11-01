@@ -801,9 +801,8 @@ fn compose(
                      as its definition says"
                 )
             })?;
+        let asks = asks_of_carried(&carried)?;
         if let Some((path, approval)) = &approval {
-            let asks: Vec<installed_programs::Granted<'_>> =
-                program_asks::asked_grants_of(&carried).collect();
             extras
                 .entry(owner.clone())
                 .or_default()
@@ -997,6 +996,14 @@ fn write_launch_volume(arch: &str, out: &Path, first_generation: &str) -> Option
         return None;
     }
     Some(volume)
+}
+
+/// **What one carried program's note asks for**, for the composition to check. Stage one of the
+/// change: still the lenient reading.
+fn asks_of_carried<'b>(
+    program: &package_archive::Program<'b>,
+) -> Result<Vec<installed_programs::Granted<'b>>, String> {
+    Ok(program_asks::asked_grants_of(program).collect())
 }
 
 /// **The grants one program asks for that its package's entry in the image's approval file does
@@ -1327,6 +1334,80 @@ programs = ["progenitor", "swish", "jig"]
             extra_asks(path, &file, "swish", &network).unwrap(),
             ["network"]
         );
+    }
+
+    /// An ELF64 image for `machine` with one `PT_NOTE` holding `note`, which is all the note
+    /// reader needs: no loadable segment, as the composer never runs it.
+    fn image_with_note(machine: u16, note: &[u8]) -> Vec<u8> {
+        let mut v = vec![0u8; 64 + 56];
+        v[0..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
+        v[4] = 2;
+        v[5] = 1;
+        v[6] = 1;
+        v[16..18].copy_from_slice(&2u16.to_le_bytes());
+        v[18..20].copy_from_slice(&machine.to_le_bytes());
+        v[32..40].copy_from_slice(&64u64.to_le_bytes());
+        v[54..56].copy_from_slice(&56u16.to_le_bytes());
+        v[56..58].copy_from_slice(&1u16.to_le_bytes());
+        v[64..68].copy_from_slice(&4u32.to_le_bytes());
+        v[72..80].copy_from_slice(&120u64.to_le_bytes());
+        v[96..104].copy_from_slice(&(note.len() as u64).to_le_bytes());
+        v[112..120].copy_from_slice(&4u64.to_le_bytes());
+        v.extend_from_slice(note);
+        v
+    }
+
+    /// A machine that is not the host's, so the parser that checks the machine refuses it.
+    fn foreign_machine() -> u16 {
+        if cfg!(target_arch = "aarch64") { 0x3e } else { 0xb7 }
+    }
+
+    fn network_note() -> Vec<u8> {
+        let manifest = grant_plan::Manifest {
+            network: true,
+            ..grant_plan::Program::Uptime.manifest()
+        };
+        capability_manifest_note::Note::of(&manifest).0.to_vec()
+    }
+
+    fn carried<'b>(name: &'b str, bytes: &'b [u8]) -> package_archive::Program<'b> {
+        package_archive::Program {
+            name,
+            bytes,
+            digest: [3; 32],
+            member: 0,
+        }
+    }
+
+    #[test]
+    fn a_foreign_machines_program_asking_past_the_approval_is_refused_on_any_host() {
+        let bytes = image_with_note(foreign_machine(), &network_note());
+        let program = carried("seeker", &bytes);
+        let asks = asks_of_carried(&program).unwrap();
+        assert_eq!(asks, [installed_programs::Granted::Network]);
+        let nothing = approval_file::File::parse(
+            "approval = \"test\"\n\n[package.core-tools]\nupdate = false\nremove = false\n",
+        )
+        .unwrap();
+        let extras = extra_asks(Path::new("approval.toml"), &nothing, "core-tools", &asks).unwrap();
+        assert_eq!(extras, ["network"]);
+    }
+
+    #[test]
+    fn a_program_with_a_malformed_note_is_refused_naming_it() {
+        let mut note = network_note();
+        note.truncate(note.len() - 8);
+        let bytes = image_with_note(foreign_machine(), &note);
+        let refusal = asks_of_carried(&carried("seeker", &bytes)).unwrap_err();
+        assert!(refusal.contains("seeker"), "{refusal}");
+        let refusal = asks_of_carried(&carried("plain", b"not an elf")).unwrap_err();
+        assert!(refusal.contains("plain"), "{refusal}");
+    }
+
+    #[test]
+    fn a_program_with_no_note_asks_for_nothing() {
+        let bytes = image_with_note(foreign_machine(), &[]);
+        assert_eq!(asks_of_carried(&carried("bare", &bytes)).unwrap(), []);
     }
 
     #[test]
