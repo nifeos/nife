@@ -40,7 +40,11 @@ Its steps are of two kinds. A publish-ours crate publishes to crates.io, as the 
 out. A contract crate moves to a repository of its own and carries a version whether or not it
 publishes. Every move goes bottom-up: a crate that leaves references nothing back in this tree, so
 the crates a program links leave before it or with it, and step 9's `jh7110_entropy` is the leaf
-pilot of the mechanics. Pull request #3026 proposes the contract-crate steps and their order, and
+pilot of the mechanics. Before each move the architect reads the crate's code by hand and reviews
+it (§247's condition 4, ruled 2026-11-01 (UTC)), initially for every crate. A crate also needs a
+tagged release whose commit carries its Cargo version, and no time-based measure remains. The first
+crate reviewed is the pilot, `jh7110_entropy`, which moved before the ruling and has no tag, so
+tagging it comes first (step 9). Pull request #3026 proposes the contract-crate steps and their order, and
 they join the table when it lands.
 
 | step | milestone | decision | what this step needs |
@@ -53,7 +57,7 @@ they join the table when it lands.
 | 6 | 815 | | `e1000e`: its cut landed 2026-10-25 (#2719) and its four harnesses prove; the step is the move, the soak, the publication and the consumption |
 | 7 | 816 | | `designware_ethernet`: its cut landed 2026-10-25 (#2719), with the walk in `machine_discovery::jh7110`, and its two harnesses prove; the PHY link decode still needs its harness row, then the move, the soak, the publication and the consumption |
 | 8 | 817 | | `designware_mobile_storage`: its cut landed 2026-10-25 (#2719), with `serve` moved to `driver_process_contract`; the MBR parse and the capacity decoders still need their harness rows, then the move, the soak, the publication and the consumption |
-| 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names. nife links it today by git revision, with `publish = false` in the crate, the same interim form with a revision in place of a tag until the crate is tagged |
+| 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names. nife links it today by git revision, with `publish = false` in the crate, the same interim form with a revision in place of a tag until the crate is tagged. Tagging it is a prerequisite of the architect's review, and the first crate reviewed is this one |
 | 10 | 819 | | `jh7110_clock_and_reset`: its cut is done and its name ratified, and it holds no harness yet, so the harnesses and their falsification patches come first; then the move, the soak, the publication and the consumption |
 
 Two orderings govern the program, and they order different events. The soak order sits in the

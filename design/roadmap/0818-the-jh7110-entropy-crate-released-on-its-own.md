@@ -152,6 +152,17 @@ harness.
 - A bump of the pin is a separate pull request citing the landed commit as
   `nifeos/jh7110_entropy@<sha>`.
 
+## The architect's review, and the tag it needs first
+
+Every crate is read by hand by the architect before it leaves (§247's condition 4, ruled 2026-11-01
+(UTC)), and this crate is the first so reviewed, the pilot of the review as it is of the mechanics.
+It moved on 2026-10-31 (UTC), before that ruling, so its review happens against its repository and
+is owed before any contract crate leaves. A tag is a prerequisite: the crate has none, and the
+ruling's second item needs a tagged release whose commit carries the Cargo version, so that
+`cargo-semver-checks --baseline-rev` has a baseline. The steps: tag `v0.1.0` on the commit that
+carries version 0.1.0, state the version requirement beside the revision in nife's three pins, then
+the review.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff

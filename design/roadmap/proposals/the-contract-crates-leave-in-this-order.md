@@ -83,6 +83,14 @@ nife.
 
 ## The recommended order
 
+Every move below is preceded by the architect's review (§247's condition 4, ruled 2026-11-01
+(UTC)): the architect reads the crate's code by hand before it leaves, initially for every crate. A
+crate also needs a tagged release whose commit carries its Cargo version, so that
+`cargo-semver-checks --baseline-rev` has a baseline. The first crate reviewed is the pilot,
+`jh7110_entropy`: it moved on 2026-10-31 (UTC), has no tag, and so must be tagged first (milestone
+818). No time-based measure remains, and a crate whose interface still breaks may leave, each break
+a new version and a new tagged release.
+
 The rule: a crate leaves when every crate it links (normal, build and dev) has left or leaves with
 it, and no file in it names a nife path. Within a layer, the cheapest coordination goes first, so
 the project learns the landing on crates where a mistake costs little. A package leaves when its
@@ -90,10 +98,11 @@ whole linked set has left.
 
 | step | crates | why here |
 |---|---|---|
+| 0, the review pilot | `jh7110_entropy` | tag it, then the architect reads it; the others follow only as each review clears |
 | 1, the contract pilot | `block_roster` | a leaf with no blocking reference; one writer in the kernel, one reader in `disk_surveyor`; its magic carries its version, so a reader refuses a mismatch today |
 | 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `filesystem_contract` with `filesystem_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
 | 3 | `address_space_map`, then `current_cpu_contract`, then `user_mode_runtime` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2 |
-| 4, first package | `disk-tools` | its 12 crates are gone; milestone 756's condition 4 has it carry the `INTERFACES` macro, so it also waits for step 6 unless the note's type first moves to a leaf crate (below) |
+| 4, first package | `disk-tools` | its 12 crates are gone; milestone 756's fourth precondition has it carry the `INTERFACES` macro, so it also waits for step 6 unless the note's type first moves to a leaf crate (below) |
 | 5, leaves for `process-tools` | `byte_sink_contract`, `glob`, `program_argument_contract`, `domain_name_system` | leaves; `program_argument_contract` after the pair test moves to basalt (the proposal the cross-repository pair is tested where the pin is) |
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |
 | 7, second package | `process-tools` | |

@@ -273,6 +273,13 @@ machine, so the policy is reversible and each use of it is not.
 
 ## BUGS
 
+- The architect reads each crate by hand before it leaves (§247, condition 4, ruled 2026-11-01
+  (UTC)), and nothing prepares that reading. A lane may assemble a review packet per crate without
+  reviewing for the architect: the path list, the public items, the tests, the licence notices, the
+  dependency list and the `cargo-semver-checks --baseline-rev` output. Proposed milestone, provisional:
+  `script/crate-review-packet <crate>` prints it. Until it exists, the architect asks a lane for
+  each packet by hand. The review's feedback becomes automated gates over time; the packet's
+  contents are the first candidates.
 - Milestone 39 warned that a published proof is a promise to keep it passing across Kani versions.
   That obligation is real and is not costed here. The falsification workflow is the mechanism that
   notices; no one is assigned to answer it for a stranger.
