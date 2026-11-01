@@ -66,6 +66,12 @@ builders, the production kernel carries no test-program digests, and tests have 
 trust mechanism. Part 1 is safe and gated by the QEMU suite on all three
 architectures. Both still wait on the condition above.
 
+- **End state, ruled 2026-11-01 (UTC).** The composed image, the one basalt builds from packages, is
+  the only image, not one of many. The tree's own image goes away when this milestone and 695 land,
+  because the kernel then no longer compiles every base program's digest into its trust root. The
+  boot gates then run on the composed image, and `update-boot` folds into `confirm-boot` (976's
+  block). Until then both images exist and the kernel still depends on the base.
+
 ## Index row
 
 A kernel binary carries 256 bytes of base-set digests compiled in, and a base update changes at most
