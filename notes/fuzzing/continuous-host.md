@@ -49,7 +49,7 @@ sets out the two options. Until then the script writes local files and publishes
 ## Install, for a person with root
 
 The lane has no root. A person copies the three files in `helpers/systemd/` to
-`/etc/systemd/system/`, runs `daemon-reload`, then `enable --now nife-fuzz.service` and
+`/etc/systemd/system/`, tells systemd to reread its unit files, then `enable --now nife-fuzz.service` and
 `enable --now nife-fuzz-publish.timer`.
 
 ## BUGS
