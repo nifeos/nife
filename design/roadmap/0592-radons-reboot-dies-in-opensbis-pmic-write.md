@@ -74,10 +74,10 @@ Three facts in those files, and the one this lane found that the proposal did no
    clock 154, `JH7110_SYSCLK_UART4_CORE`. I2C5's own gate is never touched. Upstream OpenSBI commit
    `4d8569df7bd7` (2024-02-22) fixes this lookup, which is the proposal's option C.
 4. There is no "core clock" to enable (the correction). The proposal took U-Boot's
-   `u5_dw_i2c_clk_core` to be a second gate. radon's U-Boot registers it as
-   `starfive_clk_fix_factor(..., "u5_dw_i2c_clk_core", "u5_dw_i2c_clk_apb", 1, 1)`
-   (`drivers/clk/starfive/clk-jh7110.c` lines 698 to 700): a divide-by-one child of the APB gate with
-   no register of its own. Its id, 298, is above the vendor's `JH7110_CLK_SYS_REG_END` (190), and
+   `u5_dw_i2c_clk_core` to be a second gate. at `VF2_v2.10.4` radon's U-Boot registers it
+   with `starfive_clk_gate(..., "u5_dw_i2c_clk_core", "osc", SYS_OFFSET(JH7110_I2C5_CLK_CORE))`
+   (`drivers/clk/starfive/clk-jh7110.c` lines 698 to 701), and the vendor branch head
+   (`c4c67bb66ae6`) registers none; no register backs it. Its id, 298, is above the vendor's `JH7110_CLK_SYS_REG_END` (190), and
    mainline's DesignWare node names only `JH7110_SYSCLK_I2C5_APB`. I2C5 has one gate and one
    reset line, and the reset line is the one nothing on radon ever releases.
 

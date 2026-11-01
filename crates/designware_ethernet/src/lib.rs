@@ -5,8 +5,10 @@
 //! controller and PHY up, measures DMA coherence and starts the DMA; a network-stack half fills
 //! descriptors and moves the tail pointers. Adapted from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`,
 //! `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`, whose JH7110 path reads `starfive,tx-use-rgmii-clk`)
-//! and `ytphy` (`sys/dev/mii/ytphy.c`); FreeBSD's `eqos` was a cross-check, and GPL sources gave
-//! hardware facts only, no code.
+//! `ytphy` (`sys/dev/mii/ytphy.c`) and `ukphy_status` (`sys/dev/mii/ukphy_subr.c`); FreeBSD's `eqos`
+//! was a cross-check, and GPL sources gave hardware facts only, no code. Those were Linux's `stmmac`
+//! and `dwmac-starfive.c`, `include/uapi/linux/mii.h`, `include/linux/stmmac.h` and
+//! `drivers/net/phy/motorcomm.c`.
 //!
 //! Name: ratified 2026-10-07 (calef, #1806): Synopsys's name, spelled out per §154 (the acronym
 //! test). The argument its minting lane gave: PROVISIONAL (milestone 53 (the board's own
@@ -32,6 +34,39 @@
 //! WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 //! ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //! OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//! ```
+
+//! `ukphy_subr.c` (`openbsd/src@21ea132db7eac1d478645cd6150c5787dc366ebc`, fetched 2026-11-01 UTC)
+//! adds the NetBSD Foundation's BSD-2-Clause notice, which the ISC notice does not cover:
+//!
+//! ```text
+//! Copyright (c) 1998 The NetBSD Foundation, Inc.
+//! All rights reserved.
+//!
+//! This code is derived from software contributed to The NetBSD Foundation
+//! by Jason R. Thorpe of the Numerical Aerospace Simulation Facility,
+//! NASA Ames Research Center, and by Frank van der Linden.
+//!
+//! Redistribution and use in source and binary forms, with or without
+//! modification, are permitted provided that the following conditions
+//! are met:
+//! 1. Redistributions of source code must retain the above copyright
+//!    notice, this list of conditions and the following disclaimer.
+//! 2. Redistributions in binary form must reproduce the above copyright
+//!    notice, this list of conditions and the following disclaimer in the
+//!    documentation and/or other materials provided with the distribution.
+//!
+//! THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+//! ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+//! TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+//! PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+//! BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//! CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//! SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//! INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//! CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//! ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//! POSSIBILITY OF SUCH DAMAGE.
 //! ```
 
 //! # BUGS

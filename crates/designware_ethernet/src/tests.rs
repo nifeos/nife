@@ -200,7 +200,7 @@ fn the_region_is_two_ring_pages_then_the_buffers() {
     );
 }
 
-/// The descriptor bits as the databook places them, written out: the driver and the simulated
+/// The descriptor bits as OpenBSD's `dwqereg.h` places them, written out: the driver and the simulated
 /// device both read these names, so only a literal tells a misplaced bit from a right one.
 #[test]
 fn the_descriptor_bits_are_where_the_databook_puts_them() {

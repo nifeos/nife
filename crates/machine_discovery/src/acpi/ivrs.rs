@@ -95,8 +95,8 @@ impl DeviceRange {
 
 /// **One IVMD: memory a device keeps DMA-ing into.** AMD's counterpart of an RMRR (section
 /// 5.2.2.2). `first..=last` are the device ids it applies to, all of them for type 20h. `base` is
-/// rounded down and `size` up to 4 KiB, as the table allows ("system software may round up to
-/// 4-Kbyte boundary"). Name: provisional.
+/// rounded down and `size` up to 4 KiB, as the table allows (section 5.2.2.2 lets software round
+/// the range up to a 4 KiB boundary). Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct UnityRegion {
     pub first: u16,
@@ -365,7 +365,7 @@ impl IvrsUnits {
             write: flags & (1 << 2) != 0,
             exclusion: flags & (1 << 3) != 0,
         };
-        // "IR = 0 and IW = 0 ... the memory range is not to be mapped" (section 5.2.2.2): a
+        // Section 5.2.2.2 says a range with neither read nor write permission is not to be mapped: a
         // region firmware forbids rather than reserves. Nothing to map, so nothing to record.
         if !(r.read || r.write || r.exclusion) {
             return;

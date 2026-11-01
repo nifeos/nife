@@ -63,9 +63,9 @@ neither spelling, and `Settings::source` says which happened.
 The sequence in `motorcomm.rs` is OpenBSD's `ytphy_yt8521_init`, `ytphy_yt8531_init` and
 `ytphy_yt8521_update` (`sys/dev/mii/ytphy.c`, revision 1.6 of 2024-03-12, commit `9d7a05f92003`).
 It sets the RGMII delays, the receive pad drive strengths, the clock output, and the transmit clock
-inversion chosen per negotiated speed. Two registers OpenBSD does not touch,
-`EXTREG_SLEEP_CONTROL1_REG` and `CLOCK_GATING_REG`, come from Linux's `drivers/net/phy/motorcomm.c`. They
-were read as facts about the part and not as code, and each constant's comment says why the driver
+inversion chosen per negotiated speed. Two registers, `EXT_SLEEP_CTRL` and `EXT_CLK_GATE`, take OpenBSD's names, which FreeBSD's `mcommphy.c`
+also names. The bits this driver clears in them come from Linux's `drivers/net/phy/motorcomm.c`,
+read as facts about the part and not as code, and each constant's comment says why the driver
 writes it.
 
 ## The receive tail pointer, and the slot that is never the device's

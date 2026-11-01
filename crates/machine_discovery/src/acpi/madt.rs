@@ -332,7 +332,7 @@ impl IsaInterruptRouting {
     /// **What an ISA interrupt is when nothing overrides it**: identity-mapped onto the global
     /// interrupt
     /// space, active high, edge triggered. That is the ISA bus's own convention, which is what the
-    /// `00` ("conforms to the specifications of the bus") encoding in an override's flags means.
+    /// `00` encoding in an override's flags means (ACPI's MADT: the bus's own specification).
     pub const fn isa_default(interrupt_number: u8) -> Self {
         Self {
             gsi: interrupt_number as u32,
