@@ -39,8 +39,7 @@ each crate, material about nife itself, and the planned tutorial on building a R
 system, a class. The record and the site are one repository, not two. A crate's page pulls from that
 crate's own repository at build time and is not copied in. If the record ever has to split from the
 site, the path-filtered extraction measured in the appendix allows it, with history. The ruling
-creates nothing: the repository is created when the move happens, and its creation needs the
-architect's approval under the existing ruling. The ruling carries one condition, step 5 below.
+creates nothing: the move creates the repository, and creating it needs the architect's approval under the existing ruling. The ruling carries one condition, step 5 below.
 
 Why now. If the record stays in `nifeos/nife`, it stays in a repository whose stated role is
 history. Every other move then lands its record edits in a repository that is winding down.
@@ -150,9 +149,7 @@ anyone commits to it. Any of them is a new host-tool dependency, which needs the
 approval.
 
 Hosting, ruled 2026-11-01 (UTC): GitHub Pages, deployed from Actions in the `nifeos.org`
-repository, with nifeos.org as the custom domain. The domain was registered 2026-10-03 at its
-registrar, with name servers there, expires 2027-10-03 and has no web address set. Milestone 565
-once said no domain was registered, and that statement is corrected. The domain is ours, so the host
+repository, with nifeos.org as the custom domain. The domain dates from 2026-10-03, sits with its registrar's name servers, expires 2027-10-03 and has no web address set. Milestone 565 once denied any domain, and its text now carries the date. The domain is ours, so the host
 stays reversible: a later move changes DNS only. Page addresses derive from the record's kind and
 number alone, and nothing in an address names the host. The ruling creates nothing. Enabling Pages,
 setting the custom domain and changing DNS each wait for the architect's approval.
@@ -201,8 +198,7 @@ dependency approval.
    search index size and broken citations.
 4. Sort each record into moves or stays in `packages/homes.toml`, which already gives every path a
    home and counts the notes left undecided.
-5. Measure whether the record's checks can be limited to the record's own directories, so a change
-   to the site's other paths does not run them. The ruling of 2026-11-01 (UTC) makes this a
+5. Measure whether the record's checks can run only on the record's own directories, so a change to the site's other paths does not trigger them. The ruling of 2026-11-01 (UTC) makes this a
    condition of the one-repository shape, and it is not yet verified. Three checks are
    repository-wide today. The `needs-architect` required check of §88 (`needs-architect` as a required check) runs on every pull request and
    merge group (`.github/workflows/architect-hold.yml`) with no path condition. `script/lint` runs
@@ -212,7 +208,7 @@ dependency approval.
    The constraint found so far: `ci.yml` records that a workflow skipped by a path filter leaves its
    required checks Pending and blocks the merge. So the limit has to be a job-level condition that
    reports Success when skipped, as `ci.yml` does for code. Whether that holds for `architect-hold`,
-   whether the `script/lint` sections tagged in step 1 can be selected by directory, and what a
+   whether the `script/lint` sections tagged in step 1 can run by directory, and what a
    mixed queue group runs are the three things to measure. If the limit proves impossible, the
    ruling's condition fails and the shape returns to the architect.
 6. After step 5's measurement and the architect's approval of creation: extract by path, then remove the
@@ -220,8 +216,8 @@ dependency approval.
    with the anchor, and leaves a pointer in the README.
 7. Turn on the new repository's CI: the record checks, limited to the record's directories, the site
    build and the link check.
-8. Deploy from Actions to GitHub Pages. Three tasks belong to a person, because no lane holds the
-   registrar's credentials: setting the DNS records that point nifeos.org at Pages, setting
+8. Deploy from Actions to GitHub Pages. Three tasks belong to a person, since no lane holds the
+   registrar's credentials. They are setting the DNS records that point nifeos.org at Pages, setting
    auto-renew on the registration or a longer term, and confirming the organization's settings
    allow a custom domain on Pages. A lane prepares the workflow and the exact record values and
    stops there.
@@ -267,7 +263,7 @@ One decision each, recommendation first. Ask them one at a time.
 2. Ruled 2026-11-01 (UTC), as recommended: the number stays the identity and the namespace moves
    with the record to `nifeos.org`. Bare code paths mean the anchor commit, and new ones use
    `nifeos/<repo>:<path>` at basalt's pin. The site gives each number a stable address derived from
-   the number alone. §201 section 4 is amended, and its revisit condition stays armed.
+   the number alone. §201 section 4 now says so, and its revisit condition stays armed.
 3. Ruled 2026-11-01 (UTC): GitHub Pages from Actions in `nifeos.org`, with the nifeos.org custom
    domain. Addresses derive from kind and number alone. The Background states the limits, and
    step 8 names the person-only tasks.
@@ -281,4 +277,4 @@ One decision each, recommendation first. Ask them one at a time.
    publishes on the site. Its source could sit in the `nifeos.org` repository or in a repository of
    its own. Not asked yet; it needs background and a recommendation first.
 
-Blocked until question 4 is answered: steps 6 to 8. Nothing in flight waits on this.
+Steps 6 to 8 wait on question 4. Nothing in flight waits on this.
