@@ -36,8 +36,8 @@ session, relayed in comments on pull request #1806. Each fork below keeps its op
 record of what was weighed, and its heading says how it was ruled.
 
 - Fork 1, replacing the recommendation: one repository per crate under `nifeos`. Ruled 2026-11-01
-  (UTC), replacing "created when that crate is first published": the repository is created when
-  the crate moves, and each creation still waits for calef's approval. Publication is a later step
+  (UTC), replacing creation at first publication: a crate gets its repository when it moves, and
+  each creation still waits for calef's approval. Publication is a later step
   that only some crates take. Until it moves, a crate stays in this tree, and milestone 610 (the
   interface's stability is measured weekly) still decides which crates are ready (§235 (the OS is
   built and updated from packages)). Every crate repository uses one shared
