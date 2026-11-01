@@ -130,7 +130,7 @@ kernel=target/x86_64-unknown-none/release/kernel.stripped
 archive=target/initial-ramdisk-x86_64.img
 if [ -n "$composed" ]; then
     # `cargo xtask base-image x86_64 --release` leaves the file a slot would hold, with its kernel
-    # and archive, in one directory (milestone 976, part 2).
+    # and archive, in one directory (milestone 976 (an OS update is a set of packages that lands through a slot), part 2).
     efi=$composed/esp/EFI/BOOT/BOOTX64.EFI
     kernel=$composed/kernel
     archive=$composed/initrd.img
