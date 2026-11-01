@@ -37,7 +37,7 @@ log as the evidence.
 
 A static-file registry: a sparse index that a web server hands out as plain files, which Cargo
 reads through `registry = "<name>"` on the dependency and an index that `.cargo/config.toml`
-names. A version requirement would then resolve without a git pin. What it would take is unmeasured: where the
+names. A version requirement would then resolve without a git pin. Nobody has measured what it would take: where the
 index and the archives live, who signs them, how `deny.toml`'s `allow-registry` admits it, and
 what a crate does about a dependency on another registry once it publishes to crates.io. This file
 recommends nothing about it.
