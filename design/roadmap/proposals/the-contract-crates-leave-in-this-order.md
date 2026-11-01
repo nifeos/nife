@@ -83,7 +83,7 @@ nife.
 
 ## The recommended order
 
-Every move below is preceded by the architect's review (§247's condition 4, ruled 2026-11-01
+Every move below is preceded by the architect's review (§247 (the split begins with basalt holding nife, and `procps` moves first)'s condition 4, ruled 2026-11-01
 (UTC)): the architect reads the crate's code by hand before it leaves, initially for every crate. A
 crate also needs a tagged release whose commit carries its Cargo version, so that
 `cargo-semver-checks --baseline-rev` has a baseline. The first crate reviewed is the pilot,
@@ -270,6 +270,15 @@ Asked one at a time, in this order, with the background in the questions appendi
 3. The architect hold on a semver break applies to wire identity changes only.
 4. basalt refuses an image with two revisions of one contract.
 5. basalt may run a trial on unmerged commits, writing no pin.
+
+## BUGS
+
+- Nothing prepares the architect's reading of a crate. A lane may assemble a review packet per
+  crate without reviewing for the architect: the path list, the public items, the tests, the
+  licence notices, the dependency list and the `cargo-semver-checks --baseline-rev` output.
+  Proposed milestone, provisional: `script/crate-review-packet <crate>` prints it. Until it
+  exists, the architect asks a lane for each packet by hand. The review's feedback becomes automated
+  gates over time, and the packet's contents are the first candidates.
 
 ## Index row
 

@@ -74,14 +74,13 @@ The reasons are in each package's manifest and in
 
 ## Amended 2026-11-01: condition 4 is a mechanism gate and a review
 
-calef replaced condition 4 on 2026-11-01 (UTC), relayed on pull request #3033. The four-week
-stability measure is gone and no time-based measure remains: a crate whose interface is still
-breaking may leave, and each break is a new version and a new tagged release. The review in item 5
-applies to every crate at first, the first crate in particular. Feedback from those reviews is
-generalized into automated gates over time as patterns appear; the ruling does not say when, or
-whether, the manual review ends. The other five conditions and the destination stand. The crates
-now move bottom-up (milestone 756), so the four named in the original wording are among those that
-move and are no longer a precondition of the cut.
+calef replaced condition 4 on 2026-11-01 (UTC), relayed on pull request #3033. No time-based
+measure remains: a crate whose interface still breaks may leave, and each break makes a new version
+and a new tagged release. The review in item 5 covers every crate at first, the first crate in
+particular. The architect generalizes feedback from those reviews into automated gates over time as
+patterns appear; the ruling does not say when, or whether, the manual review ends. The other five
+conditions and the destination stand. The crates now move bottom-up (milestone 756), so the four
+the original wording named are among those that move.
 
 ## BUGS
 

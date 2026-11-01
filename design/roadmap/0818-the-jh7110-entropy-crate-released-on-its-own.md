@@ -154,7 +154,7 @@ harness.
 
 ## The architect's review, and the tag it needs first
 
-Every crate is read by hand by the architect before it leaves (§247's condition 4, ruled 2026-11-01
+Every crate is read by hand by the architect before it leaves (§247 (the split begins with basalt holding nife, and `procps` moves first)'s condition 4, ruled 2026-11-01
 (UTC)), and this crate is the first so reviewed, the pilot of the review as it is of the mechanics.
 It moved on 2026-10-31 (UTC), before that ruling, so its review happens against its repository and
 is owed before any contract crate leaves. A tag is a prerequisite: the crate has none, and the

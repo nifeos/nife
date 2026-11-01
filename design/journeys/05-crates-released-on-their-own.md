@@ -41,7 +41,7 @@ out. A contract crate moves to a repository of its own and carries a version whe
 publishes. Every move goes bottom-up: a crate that leaves references nothing back in this tree, so
 the crates a program links leave before it or with it, and step 9's `jh7110_entropy` is the leaf
 pilot of the mechanics. Before each move the architect reads the crate's code by hand and reviews
-it (§247's condition 4, ruled 2026-11-01 (UTC)), initially for every crate. A crate also needs a
+it (§247 (the split begins with basalt holding nife, and `procps` moves first)'s condition 4, ruled 2026-11-01 (UTC)), initially for every crate. A crate also needs a
 tagged release whose commit carries its Cargo version, and no time-based measure remains. The first
 crate reviewed is the pilot, `jh7110_entropy`, which moved before the ruling and has no tag, so
 tagging it comes first (step 9). Pull request #3026 proposes the contract-crate steps and their order, and
