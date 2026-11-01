@@ -247,8 +247,7 @@ fn a_time_fat_cannot_store_is_refused_and_the_edges_pass_fsck() {
         ("hour-99", at(2000, 1, 1, 99, 0, 0)),
     ] {
         let now = Cell::new(time);
-        let volume =
-            WritableVolume::open(formatted(4, FatType::Fat12, 512), Shared(&now)).unwrap();
+        let volume = WritableVolume::open(formatted(4, FatType::Fat12, 512), Shared(&now)).unwrap();
         let before = volume.into_device();
         let mut volume = WritableVolume::open(
             Memory {
