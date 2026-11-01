@@ -6,7 +6,7 @@
 //! nife builds none of the foreign programs [`PACKAGES`] names (`rg`, `ioping`, `hackbench`,
 //! `speedtest1`); its tests take basalt's published package instead (calef, 2026-10-13 UTC: *"1 is
 //! preferable because that tests jig and basalt's delivery mechanism as well."*). First-party
-//! `rmle` and `demos` are pinned for `jig install`; nife's tests run their own builds (milestone
+//! `demos` is pinned for `jig install`; nife's tests run their own builds (milestone
 //! 909 (basalt composes the bootable image from its packages) item 5).
 
 //! # What is pinned
@@ -68,7 +68,7 @@ use crate::host::workspace_root;
 const PIN: &str = include_str!("../basalt-pin");
 
 /// The packages nife's tests install, by their basalt recipe's file name.
-const PACKAGES: [&str; 6] = ["ripgrep", "ioping", "hackbench", "sqlite", "rmle", "demos"];
+const PACKAGES: [&str; 5] = ["ripgrep", "ioping", "hackbench", "sqlite", "demos"];
 
 /// The architectures every recipe records a digest for.
 const ARCHITECTURES: [&str; 3] = ["aarch64", "riscv64", "x86_64"];

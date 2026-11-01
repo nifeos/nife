@@ -63,12 +63,19 @@ libfuzzer-sys = "0.4"
 # this repository, which git pins harder than semver would (see deny.toml's `allow-wildcard-paths`).
 nifefs = { path = "../crates/nifefs" }
 device_tree_blob = { path = "../crates/device_tree_blob" }
+# An interface of the `boot` package, which is what lets this crate link it (packages/boot.package.toml).
+device_tree_patch = { path = "../crates/device_tree_patch" }
 domain_name_system = { path = "../crates/domain_name_system" }
 elf = { path = "../crates/elf" }
 file_allocation_table = { path = "../crates/file_allocation_table" }
 globally_unique_identifier_partition_table = { path = "../crates/globally_unique_identifier_partition_table" }
 http_response = { path = "../crates/http_response" }
 package_archive = { path = "../crates/package_archive" }
+capability_manifest_note = { path = "../crates/capability_manifest_note" }
+grant_plan = { path = "../crates/grant_plan" }
+domain_name_resolution_contract = { path = "../crates/domain_name_resolution_contract" }
+package_index = { path = "../crates/package_index" }
+video_terminal = { path = "../crates/video_terminal" }
 
 # **The services' request handlers** (proposal #1592 part a, `lane/fuzz-service-handlers`). Path
 # dependencies on servers rather than parsers: each target replays a session of requests against the
@@ -109,6 +116,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "device_tree_patch_initial_ramdisk"
+path = "fuzz_targets/device_tree_patch_initial_ramdisk.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "elf_parse"
 path = "fuzz_targets/elf_parse.rs"
 test = false
@@ -125,6 +139,13 @@ bench = false
 [[bin]]
 name = "file_allocation_table_boot_sector"
 path = "fuzz_targets/file_allocation_table_boot_sector.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "file_allocation_table_writer"
+path = "fuzz_targets/file_allocation_table_writer.rs"
 test = false
 doc = false
 bench = false
@@ -158,6 +179,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "capability_manifest_note_decode"
+path = "fuzz_targets/capability_manifest_note_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "package_index_text"
+path = "fuzz_targets/package_index_text.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "system_log_session"
 path = "fuzz_targets/system_log_session.rs"
 test = false
@@ -174,6 +209,13 @@ bench = false
 [[bin]]
 name = "redoxfs_server_session"
 path = "fuzz_targets/redoxfs_server_session.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "video_terminal_feed"
+path = "fuzz_targets/video_terminal_feed.rs"
 test = false
 doc = false
 bench = false

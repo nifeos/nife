@@ -7,7 +7,9 @@
 name = "boot"
 kind = "base"
 home = { repo = "boot", status = "provisional" }
-interfaces = ["screen_console", "bitmap_font", "sealed_pair"]
+# device_tree_patch is an interface because the fuzz workspace links it to rewrite hostile trees,
+# and that link is the reason it is a crate of its own (ruled 2026-11-01 UTC).
+interfaces = ["screen_console", "bitmap_font", "sealed_pair", "device_tree_patch"]
 crates = ["uefi_loader", "serial_console"]
 
 [[exception]]

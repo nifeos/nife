@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::format::verification::a_geometry_parses_back_to_itself`.
+
+The defect: the table is checked against the clusters alone and not the two reserved entries as well, which is the fault Microsoft's own sizing has when a volume divides it exactly, so the format writes a table one entry short.
+
+Expected to fail: the harness's `.expect("the reader accepts what the format wrote")`.
+
+diff --git a/crates/file_allocation_table/src/format.rs b/crates/file_allocation_table/src/format.rs
+--- a/crates/file_allocation_table/src/format.rs
++++ b/crates/file_allocation_table/src/format.rs
+@@ -210,7 +210,7 @@ impl Geometry {
+                 .ok_or(GeometryError::TooSmall)?;
+             clusters = data_sectors / cluster_sectors;
+             let capacity = u64::from(table_sectors) * u64::from(bytes) * 8 / bits;
+-            if capacity < u64::from(clusters) + 2 {
++            if capacity < u64::from(clusters) {
+                 table_sectors += 1;
+                 continue;
+             }

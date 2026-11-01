@@ -5,7 +5,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 | Where | Gap | Proposed milestone | Size |
 |---|---|---|---|
 |  0525-...:134 and design/roadmap/0554-a-good-upgrade-sticks.md | chooser's table write goes primary-first (window with no parseable copy, no journal) and nothing reads the backup table when the primary fails | Chooser table write is backup-first and readers fall back to the backup | M  |
-|  components/src/entropy.rs, crates/entropy_contract/src/lib.rs | nothing checks a byte after bring-up; continuous TRNG health test is only decision 0137 (proposed), no milestone | Continuous entropy health tests (decision 0137) | M  |
+|  components/src/entropy.rs, crates/entropy_contract/src/lib.rs | nothing checks a byte after bring-up; continuous TRNG health test is decision 0137 (decided 2026-10-28 UTC) with no milestone | Continuous entropy health tests (decision 0137) | M  |
 |  components/src/jh7110_entropy.rs | POLL_TRIES and LOCKUP_RETRIES unmeasured; MODE.R256 never read back on radon | jh7110_entropy: bench-read R256 and size the poll bounds | S  |
 |  components/src/system_installer.rs | disks under ~700 MiB refused but untested; clone keeps source disk/partition GUIDs; no firmware boot entry written | system_installer: small-disk test, re-draw GUIDs on clone | S  |
 |  components/src/usb_keyboard_driver.rs, crates/extensible_host_controller_interface/src/lib.rs | root ports only (no hubs), no key repeat/lock keys/LEDs, events dropped during stall recovery; 0242 lists them as limits, 0618 excludes hubs | USB keyboard: hubs, key repeat, lock LEDs | L  |

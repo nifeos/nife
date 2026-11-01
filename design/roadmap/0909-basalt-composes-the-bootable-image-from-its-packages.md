@@ -95,8 +95,14 @@ and basalt's existing repository, source-archive and publish path.
      `compose` reads each carried program's asks with `program_asks`, the reading the progenitor's
      install uses. It tests them against the package's entry with `approval_file::File::check`, and
      refuses the composition naming every extra grant of the package.
+   - **The base image names no approval file** until a base program carries a note that asks.
+     The check reads manifest notes, and the base's programs take their grants from the
+     progenitor's compiled table (see `BUGS`). Ruled 2026-11-01 (UTC) on #2981: the check and the
+     first table read the base programs' own notes, which a later milestone gives them (the
+     proposal
+     [the-base-programs-carry-their-manifests-in-notes](proposals/the-base-programs-carry-their-manifests-in-notes.md)).
    - **The table waits on milestone 990** (the base image's first installed-programs table). The
-     first table lives as files under `activation/` on the launch volume, currently RedoxFS, with no
+     first table lives as files under `activation/` on the RedoxFS launch volume, with no
      separate seed image (ruled 2026-10-30 UTC on #2894). What the first generation holds, and what
      measured boot needs from it, are in
      [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md).
@@ -125,7 +131,7 @@ than replaced.
 
 - **Milestone 990.** Item 3's table half, where a composed image keeps its first generation, waits
   on milestone 990 (the base image's first installed-programs table), which sits on the launch
-  volume, currently RedoxFS.
+  RedoxFS launch volume.
 - **Done.** `nifeos/basalt#50` carried item 4, the composed boot, into basalt's `packages.yml`.
 - **Outstanding.** `script/swish-check`'s rows have not run against a composed image. They are the
   next piece after item 4, and until then a composed image proves it boots to the prompt only.
@@ -151,6 +157,21 @@ than replaced.
 - **One version number for the whole base** (`0.1.0`, provisional). The base packages release
   together, so a split version per package buys nothing yet, and the image refuses a package whose
   archive carries another version.
+
+- The approval check reads notes, and the base's programs hold grants from a compiled table.
+  `program_asks` reads what a program's manifest note asks. A program the archive carries runs by
+  name, and the progenitor endows it from `grant_plan`'s compiled table, not from its note. Of the
+  programs `packages/base-image.toml` lists, only `jig` carries a note, and that note asks for
+  nothing, because the compiled table already gives the image's `jig` the network, the installer
+  endpoint and the catalog. So the check passes the base against any approval file. Measured
+  2026-10-31 (UTC): an aarch64 `--test` composition against a file holding only its `approval`
+  line passed, because the fixtures whose notes ask (`dialer`, `servant`, `seeker`) are
+  `packaged_only` and no archive carries them. Ruled 2026-11-01 (UTC) on #2981: the base programs
+  carry their real manifests in notes, the progenitor endows archive programs from the note, and
+  the compiled table retires a few programs at a time. Home: the proposal
+  [the-base-programs-carry-their-manifests-in-notes](proposals/the-base-programs-carry-their-manifests-in-notes.md),
+  which follows milestone 697 (the trust root leaves the kernel binary) and holds the open
+  question of what stops an ordinary package asking for a base-only authority.
 
 ## Index row
 

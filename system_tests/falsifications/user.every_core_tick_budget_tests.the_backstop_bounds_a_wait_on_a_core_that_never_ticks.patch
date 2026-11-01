@@ -1,0 +1,29 @@
+Falsifies `system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect is an `EveryCoreTickBudget` with no backstop, so a wait on a core that takes no ticks
+is bounded by nothing but the per-test ceiling. Another core masks its interrupts for two seconds
+against a one-second backstop; without the backstop the budget ends only after that core unmasks
+and takes its ticks.
+
+Expected to fail: `assert!(budget.is_past_backstop() && STAGE.load(Ordering::SeqCst) == 1, "the
+budget should have ended on its backstop with the other core still masked: {budget}")`, with no
+"(the backstop)" in the message. Confirmed red on 2026-10-31 (UTC) on x86_64 at two cores with
+`cargo xtask test --arch x86_64 --test the_backstop_bounds`: "4075 ms of the counter; ticks taken
+of 200 on each core: core 0 407 core 1 200".
+
+diff --git a/kernel/src/testing.rs b/kernel/src/testing.rs
+index d756010c0..31a1f9cc2 100644
+--- a/kernel/src/testing.rs
++++ b/kernel/src/testing.rs
+@@ -725,7 +725,8 @@ impl EveryCoreTickBudget {
+     ///
+     /// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.
+     pub fn is_past_backstop(&self) -> bool {
+-        self.elapsed >= self.backstop
++        let _ = self.backstop;
++        false
+     }
+ 
+     /// Core `cpu`'s ticks, the low 32 bits: a difference of two stays exact while it is under

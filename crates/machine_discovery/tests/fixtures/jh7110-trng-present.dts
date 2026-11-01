@@ -2,21 +2,14 @@
 
 /*
  * A hand-written device tree fragment, NOT a dump from any board, holding only the JH7110 TRNG
- * node from the Linux device-tree binding's own worked example
- * (Documentation/devicetree/bindings/rng/starfive,jh7110-trng.yaml, mainline as of 2026-08-24,
- * fetched via raw.githubusercontent.com):
+ * node as the Linux device-tree binding describes it. Source:
+ * Documentation/devicetree/bindings/rng/starfive,jh7110-trng.yaml in torvalds/linux at commit
+ * db9deec5a345, fetched 2026-10-31. The node carries the compatible string
+ * `starfive,jh7110-trng`, a `reg` window of 0x4000 bytes at 0x1600c000, interrupt 30, two clocks,
+ * one reset, and no `status` property.
  *
- *     rng: rng@1600C000 {
- *         compatible = "starfive,jh7110-trng";
- *         reg = <0x1600C000 0x4000>;
- *         clocks = <&clk 15>, <&clk 16>;
- *         clock-names = "hclk", "ahb";
- *         resets = <&reset 3>;
- *         interrupts = <30>;
- *     };
- *
- * One address cell and one size cell, matching the binding's own example literally (`reg` is two
- * raw numbers, not four): this is a peripheral-bus-scoped fragment, not a dump of the whole SoC
+ * One address cell and one size cell, matching the binding's example (`reg` is two raw numbers,
+ * not four): this is a peripheral-bus-scoped fragment, not a dump of the whole SoC
  * tree (compare crates/machine_discovery/tests/fixtures/jh7110.dts, which is two address cells at
  * the root for the full memory map). The clock and reset phandles are dropped: jh7110_entropy's
  * `discover` reads `reg` and `interrupts` only, and a phandle to a `clk`/`reset` node this fixture

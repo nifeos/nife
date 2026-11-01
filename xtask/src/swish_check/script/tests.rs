@@ -105,6 +105,30 @@ fn no_script_types_a_silent_line_twice_in_a_row() {
     }
 }
 
+/// **A question's cue is the whole prompt, down to its closing space.** `jig` writes
+/// `  {question} [y/N] ` through std's standard output, which sends 16 bytes a message, so the
+/// last message of the 33-byte owner prompt carries the space alone. A cue that stops at `]` is
+/// satisfied one message early, and the reply then races that space: on CI's riscv64 leg (run
+/// 41228876966, 2026-10-31 UTC) the typed `y` was echoed first and the transcript read
+/// `[y/N]y ` where the line wants `[y/N] y`.
+#[test]
+fn every_question_cue_ends_where_the_prompt_ends() {
+    let mut asked = 0;
+    for script in [&**SWISH_CHECK_SCRIPT, &SWISH_CHECK_AFTER_REBOOT] {
+        for line in script {
+            if let Some((cue, _)) = line.asks {
+                asked += 1;
+                assert!(
+                    cue.ends_with("[y/N] "),
+                    "{:?} waits for {cue:?}, which stops before the prompt's last byte",
+                    line.typed
+                );
+            }
+        }
+    }
+    assert!(asked > 0, "no line asks a question, so nothing was checked");
+}
+
 /// **A job count names a program** ([`Line`]'s doc): no line may claim more jobs than it has
 /// stages whose head is something the progenitor can build, a `grant_plan::Program` or an
 /// installed package's path, after the `time` and `xargs` prefixes. A `caps` head is a preview

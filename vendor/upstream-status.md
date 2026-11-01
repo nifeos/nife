@@ -17,61 +17,27 @@ the pins in this directory were taken deliberately. What to do about a gap is in
 
 ## redoxfs
 
-Pinned at **0.9.1**, upstream git sha `473b4baeb041`.
+Pinned at upstream git commit `db847d87c680`, which no release carries; its manifest says **0.9.1**.
 
 **Releases: current.** 0.9.1 is still the newest published version that is neither yanked nor a prerelease.
 
-**Upstream git: 43 non-merge commits** since the pinned sha (plus 18 merge commits, dropped), head `c988cb84008b`.
+**Upstream git: 3 non-merge commits** since the pinned sha (plus 1 merge commits, dropped), head `5ba45a688737`.
 
-Full comparison: https://gitlab.redox-os.org/redox-os/redoxfs/-/compare/473b4baeb041ebe14504f30693393b1cae52558c...c988cb84008bb9dd402c8404331078af47be39af
+Full comparison: https://gitlab.redox-os.org/redox-os/redoxfs/-/compare/db847d87c68052618d1427537c7277293a626a18...5ba45a6887374ab425326656a276bb3b62eba7dc
 
-- 2026-07-05 `57ad275d` Update redox-path
-- 2026-07-07 `d807dd3e` Fix following symlink
-- 2026-07-11 `a03ef49d` feat: Implement DiskRing only for Redox and use it in FileSystem
-- 2026-07-11 `239db0d9` wip: Use pipe for synchronization
-- 2026-07-11 `6f5c99bc` wip: Open writer pipe by openat for ring synchronization
-- 2026-07-11 `667cedbd` wip: Add debug print
-- 2026-07-11 `c446f552` wip: Ignore nvme for file system
-- 2026-07-11 `5194ff60` wip: Set priority as -10
-- 2026-07-11 `fd6d3591` wip: Reimplement disk_op loop to make faster
-- 2026-07-11 `113afaf0` wip: Reimplement disk/ring to support dma
-- 2026-07-11 `8f5a9195` wip: Implement Drop for DiskRing
-- 2026-07-11 `13bc96e4` wip: Change the way of initialize ring disk
-- 2026-07-11 `3e837b73` fix: Fix a typo
-- 2026-07-11 `e48de6ce` wip: Add necessary imports
-- 2026-07-12 `82b0897f` misc: update dependencies
-- 2026-07-17 `249f20e1` wip: Update redox-rings
-- 2026-07-17 `42093156` Fix double canonicalization
-- 2026-07-29 `cce5866c` feat(ring): switch to new rings API
-- 2026-07-30 `851c4420` feat(ring): dynamic buffer pool and batched writes
-- 2026-08-03 `ee38ed95` feat: update `libredox`
-- 2026-08-03 `9c971ce5` ring: use call_wo from libredox instead of syscall
-- 2026-08-03 `faf3e2f1` misc: update `redox-rings`
-- 2026-08-10 `d47351fa` misc: use upstream redox-rings and redox-buffer-pool
-- 2026-08-10 `2935b749` misc(mount): fix typo
-- 2026-08-10 `7984f34a` misc: fix unused import warning
-- 2026-08-10 `f09490ed` fix: do not enable debug logging by default
-- 2026-08-10 `a747d484` fix: do not hardcode # of sectors per block
-- 2026-08-16 `bcb47c4a` chore: update `libredox`
-- 2026-08-18 `06c98db2` Update redox-path
-- 2026-08-18 `b43c765c` Simplify flink and frename
-- 2026-08-20 `5482ecb0` Show error code on mount error
-- 2026-08-20 `70781f74` Improve CI testing
-- 2026-08-20 `e7926214` Implement O_SYMLINK to resolve symlink mid-path
-- 2026-08-20 `e4036ba3` Partially revert breaking O_SYMLINK changes
-- 2026-08-26 `6f9651fb` fuse: Option for sharing mount from root
-- 2026-08-27 `28ea0278` Adapt relibc symlink resolve
-- 2026-08-29 `fa1ca5f9` Bump redox-scheme
-- 2026-08-30 `8ecdf1b0` Restore O_NOFOLLOW returning ELOOP upon symlink
-- 2026-08-31 `f0f1cf90` CI: Actually wait for mount for linux
-- 2026-08-31 `cf3ad1db` Fix rename with scheme path
-- 2026-09-06 `5e279a38` Update getrandom
-- 2026-09-06 `9328a9c0` Reduce env_logger deps
-- 2026-10-22 `a55802b0` refactor: Migrate unlinkat, flink and frename to std_fs_call *at variants
+- 2026-10-31 `01140853` Avoid leaking a handle for each bound unix sockets
+- 2026-10-31 `5251b59b` Switch to the 2024 edition
+- 2026-10-31 `1134c94f` Directly provide socket entrypoint fd to the user
 
 **Upstream has edited files our divergence patch also touches**, so a bump is likely to conflict there:
 
 - `Cargo.toml`
+- `src/disk/mod.rs`
+- `src/filesystem.rs`
+- `src/header.rs`
+- `src/htree.rs`
+- `src/lib.rs`
+- `src/node.rs`
 - `src/transaction.rs`
 
 ## talc
@@ -89,3 +55,5 @@ Full comparison: https://github.com/SFBdragon/talc/compare/15b2758a45388f8a5c9ef
 Upstream has not touched any file our divergence patch touches.
 
 **Upstream fix: still open**: https://github.com/SFBdragon/talc/pull/57 (Fix fit check overflows).
+
+**Held dependency: stays held.** No published talc newer than 5.1.1 allows lock_api 0.5.0, so the `lock_api` ignore in .github/dependabot.yml stays.

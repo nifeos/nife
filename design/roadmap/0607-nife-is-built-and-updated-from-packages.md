@@ -36,11 +36,11 @@ The forks are in [§235 (the OS is built and updated from packages)](../decision
 calef ruled on every fork on 2026-09-27 (UTC), relayed by the maintainer on pull request #1389.
 §235 records them with his words.
 
-- The trust root is T4 with T2: the loader hands over the progenitor and manifest digests, the
+- The trust root is T4 with T2: the loader hands over the progenitor digest and the digest of the archive's `program_measurements` table (ruled 2026-11-01 UTC), the
   kernel checks the progenitor, and the progenitor checks the base set.
 - Packages are the update unit, and each slot holds a full copy (U4), ruled 2026-09-27. The shared
   store (U2) is refused: calef judged its disk saving not worth the risk of a brick.
-- Item 2 below is decided, and `milestone/609-system-tests-leave-the-kernel` is building it.
+- Item 2 below is milestone 609 (the system tests leave the kernel crate), BUILT.
 - The SDK is S2 now, one archive per release with C headers and the prebuilt runtime library, and
   S3 (an upstream Rust target) once `milestone/610-interface-stability` shows the interfaces stable.
   S1 is not planned.
@@ -64,8 +64,8 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
    Since 2026-10-12 (UTC) this is milestone 909 (basalt composes the bootable image from its
    packages): calef ruled that basalt composes it, under §297 (software reaches a nife system as a
    package `jig` installs from basalt's index, the kernel included).
-2. The kernel crate stops carrying the userspace bring-up and the system tests (decided; in the
-   lane `milestone/609-system-tests-leave-the-kernel`).
+2. The kernel crate stops carrying the userspace bring-up and the system tests: milestone 609
+   (the system tests leave the kernel crate), BUILT.
 3. A contract never links the runtime: `supervision_contract` and `hot_swap_contract` (landed
    2026-10-29 UTC; the runtime halves are `crates/process_builder` and `crates/hot_swap_server`).
 4. A third party builds `greeting` with no clone of this repository (S2 and the ABI revision's note field ruled; waits on nothing).
@@ -73,7 +73,12 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
    (milestone 909 (basalt composes the bootable image from its packages)) landed 2026-10-28 UTC,
    and the block is milestone 976 (an OS update is a set of packages that lands through a slot),
    `design/roadmap/0976-an-os-update-through-a-slot.md` (raised 2026-10-28 UTC).
-6. The loader hands over two digests and the progenitor checks the base set (ruled; waits on item 2).
+6. The loader hands over two digests and the progenitor checks the base set (ruled): milestones
+   695 (the kernel trusts two digests handed to it by the loader) and 697 (the trust root leaves
+   the kernel binary). Its first consumer is item 5's updater, milestone 976 part 4, and its code
+   waits until that part shows what a kernel download costs per update (calef, 2026-10-31 UTC).
+   The handoff's bytes and the source of the loader's digests are two questions for calef, in
+   `design/roadmap/proposals/how-the-loader-hands-the-kernel-two-digests.md`.
 7. Package boundaries drawn in-tree and checked by lint, each with a required `home` (decided; in
    the lane `milestone/611-package-boundaries`).
 

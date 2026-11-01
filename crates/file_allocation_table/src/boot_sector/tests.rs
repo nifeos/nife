@@ -4,7 +4,7 @@
 //! Name: ratified 2026-10-25 (#2720).
 
 use super::*;
-use crate::{SECTOR_BYTES, VolumeLayout};
+use crate::{NoClock, SECTOR_BYTES, VolumeLayout};
 
 const FAT12_FLOPPY: &[u8; 512] = include_bytes!("../../tests/fixtures/fat12-floppy.boot");
 const FAT16_32M: &[u8; 512] = include_bytes!("../../tests/fixtures/fat16-32m.boot");
@@ -116,7 +116,7 @@ fn a_floppy_mkfs_fat_formatted_is_fat12_with_its_root_region() {
     assert_eq!(boot.first_data_sector(), 33);
     assert_eq!(boot.volume_id(), Some(0x1234_ABCD));
     assert_eq!(boot.active_table(), None);
-    assert_eq!(boot.fs_info_sector(), None);
+    assert_eq!(boot.file_system_information_sector(), None);
     assert_eq!(boot.backup_boot_sector(), None);
 }
 
@@ -155,7 +155,7 @@ fn a_64_mib_volume_mkfs_fat_formatted_is_fat32_with_its_reserved_pointers() {
     assert_eq!(boot.reserved_sectors(), 32);
     assert_eq!(boot.root_directory(), RootDirectory::Cluster(2));
     assert_eq!(boot.first_data_sector(), 32 + 2 * 1009);
-    assert_eq!(boot.fs_info_sector(), Some(1));
+    assert_eq!(boot.file_system_information_sector(), Some(1));
     assert_eq!(boot.backup_boot_sector(), Some(6));
     assert_eq!(boot.volume_id(), Some(0x1234_ABCD));
     assert_eq!(boot.active_table(), None);
@@ -200,8 +200,15 @@ fn a_fat32_layout_under_the_cluster_floor_is_refused() {
 
 #[test]
 fn what_this_crates_mkfs_writes_parses_to_the_same_geometry() {
-    let volume =
-        VolumeLayout::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI").unwrap();
+    let volume = VolumeLayout::new(
+        1024 * 1024,
+        2048,
+        9_000_000,
+        0x1234_5678,
+        "BOOTX64.EFI",
+        &mut NoClock,
+    )
+    .unwrap();
     let mut sector = [0u8; SECTOR_BYTES];
     for index in [0, 6] {
         assert!(volume.fill_sector(index, &mut sector));
@@ -222,7 +229,7 @@ fn what_this_crates_mkfs_writes_parses_to_the_same_geometry() {
         );
         assert_eq!(boot.hidden_sectors(), 2048);
         assert_eq!(boot.volume_id(), Some(0x1234_5678));
-        assert_eq!(boot.fs_info_sector(), Some(1));
+        assert_eq!(boot.file_system_information_sector(), Some(1));
         assert_eq!(boot.backup_boot_sector(), Some(6));
     }
 }
@@ -473,7 +480,10 @@ fn fat32s_own_fields_are_checked() {
         (1, Some(1)),
     ] {
         let sector = with(&base, 48, &value.to_le_bytes());
-        assert_eq!(parse(&sector).unwrap().fs_info_sector(), expected);
+        assert_eq!(
+            parse(&sector).unwrap().file_system_information_sector(),
+            expected
+        );
         let sector = with(&base, 50, &value.to_le_bytes());
         assert_eq!(parse(&sector).unwrap().backup_boot_sector(), expected);
     }

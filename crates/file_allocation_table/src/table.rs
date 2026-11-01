@@ -81,7 +81,7 @@ impl TableEntry {
     /// of [`TableEntry::decode`]. A [`TableEntry::Next`] keeps the low bits its width holds, so a
     /// caller passes only clusters the volume has.
     ///
-    /// Name: provisional. Beside `decode`: the same conversion, the other way.
+    /// Name: ratified 2026-11-01 (UTC), beside `decode`: the same conversion, the other way.
     pub const fn encode(self, file_allocation_table_type: FileAllocationTableType) -> u32 {
         let (mask, bad) = match file_allocation_table_type {
             FileAllocationTableType::Fat12 => (0xFFF, 0xFF7),
@@ -104,18 +104,16 @@ impl TableEntry {
 /// The table read is the live one when FAT32 turns mirroring off, and the first otherwise. A FAT12
 /// entry starting at the last byte of a sector ends in the next one, which also lies inside the
 /// table: `BootSector::parse` refuses a table too short to hold an entry for every cluster.
+#[cfg(any(kani, test))]
 pub(crate) fn entry_position(boot: &BootSector, cluster: u32) -> Option<(u32, usize)> {
-    entry_position_in(boot, cluster, boot.active_table().unwrap_or_default())
+    boot.cluster_first_sector(cluster)?;
+    raw_position_in(boot, cluster, boot.active_table().unwrap_or_default())
 }
 
-/// Where cluster `cluster`'s entry starts in table copy `table`, as [`entry_position`] does for the
-/// table a read uses. `None` when `cluster` is not a data cluster or the volume has no such table.
-pub(crate) fn entry_position_in(
-    boot: &BootSector,
-    cluster: u32,
-    table: u8,
-) -> Option<(u32, usize)> {
-    boot.cluster_first_sector(cluster)?;
+/// Where table entry `index` starts in table copy `table`, for any index the table holds: the two
+/// reserved entries 0 and 1 as well as the data clusters'. The caller passes only indices below
+/// `clusters() + 2`, which `BootSector::parse` guarantees the table covers.
+pub(crate) fn raw_position_in(boot: &BootSector, cluster: u32, table: u8) -> Option<(u32, usize)> {
     let first = boot.table_first_sector(table)?;
     let cluster = u64::from(cluster);
     let offset = match boot.file_allocation_table_type() {

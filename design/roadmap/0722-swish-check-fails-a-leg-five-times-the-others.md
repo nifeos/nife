@@ -55,6 +55,12 @@ is the proposal's fallback made the rule. Each row cites the CI run it was read 
 - A faster or slower runner pool moves every row. The failure message says to measure and add a row.
 - The check runs inside the boot, so a leg that fails it reports a cost defect and stops the rest of
   that boot's transcript checks. That is deliberate, since a cost fault needs no further evidence.
+- The riscv64 echo assertion on #2945 (2026-10-31 UTC, run 41228876966) came from a prompt cue
+  that stopped one message early. `jig` sends 16-byte stdout messages, so the closing space of
+  `[y/N] ` goes last, and the typed `y` echoed ahead of it. The cues now end with the space
+  (`every_question_cue_ends_where_the_prompt_ends`). That was the one such failure in 44 swish-check
+  jobs of the last 100 CI runs. Six local riscv64 legs passed before the fix. Loaded legs
+  tripped the per-line cost check, never this one.
 
 ## Follow-on
 

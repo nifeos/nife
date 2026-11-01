@@ -247,7 +247,9 @@ impl AddressSpace {
     /// The page is not this space's to free (device registers, or a page shared with another
     /// space), but the mapping is recorded, because one revocation cannot see is the DECISIONS §13
     /// (capability revocation and untyped reclamation) use-after-free; an unrecordable mapping is
-    /// unmapped and refused as `OutOfPageFrames`. See notes/user-address-spaces.md.
+    /// refused as `OutOfPageFrames`. A mapping that would leave the page writable here and
+    /// executable elsewhere in this space is refused as `WritableAndExecutable`
+    /// (`MappingHold::record_mapping`). See notes/user-address-spaces.md.
     ///
     /// # BUGS
     /// [`Self::map_new`] does not record: its frames die with this space's region and no capability
@@ -275,11 +277,11 @@ impl AddressSpace {
         flags: Flags,
         under: crate::revoke::PageMapSource,
     ) -> Result<(), MapError> {
-        self.map_at(va, phys, flags)?;
         let root = self.root.addr();
-        if !hold.record_mapping(phys, root, va, under) {
-            mmu::unmap_user_at(root, va);
-            return Err(MapError::OutOfPageFrames);
+        let recorded = hold.record_mapping(phys, root, va, flags, under)?;
+        if let Err(e) = self.map_at(va, phys, flags) {
+            hold.forget_recorded(root, recorded);
+            return Err(e);
         }
         Ok(())
     }

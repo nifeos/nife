@@ -15,6 +15,11 @@
 #      waits for a second slot, which with one slot is a deadlock, or if it re-executes "$0";
 #   5. under LINT_NO_CARGO a job runs while the slot is held: fails if `script/lint --no-cargo`'s
 #      sections can wait on a slot again, which loses a push after its gates pass (#2478).
+#   6. a holder that is pid 1 is found among its descendants: fails if the ancestor walk stops short
+#      of pid 1. When `script/test` is a container's first process the slot records pid=1, and a
+#      walk that never reached pid 1 left the script waiting for its own lock for ever (found
+#      collecting the tenth pass). Hermetic: a real pid 1 needs a pid namespace, which an
+#      unprivileged host cannot make, so the process table is the one thing stood in for.
 #
 # Name: provisional, minted 2026-10-19 (UTC) by lane/heavy-job-slots.
 set -eu
@@ -118,5 +123,28 @@ appears "$work/inner-ran" 10 \
     || fail "a nested job did not run inside its parent's slot: $(cat "$work/nested.err")"
 wait "$outer" || fail "the nested run failed: $(cat "$work/nested.err")"
 ! grep -q 'is waiting' "$work/nested.err" || fail "a nested job waited: $(cat "$work/nested.err")"
+
+# Stage 6. The slot is locked through one descriptor and records pid=1; this process asks, through
+# another descriptor, whether an ancestor holds a slot, with a process table in which its parent is
+# a child of pid 1. It must say yes, and must still say no for a holder outside its family.
+mkdir -p "$work/pid1-slots"
+NIFE_HEAVY_SLOT_DIR="$work/pid1-slots" python3 - "$work/helpers" <<'PY' || fail "the pid 1 stage failed"
+import fcntl, os, sys
+sys.path.insert(0, sys.argv[1])
+import heavy_slot
+directory = os.environ["NIFE_HEAVY_SLOT_DIR"]
+fd = os.open(os.path.join(directory, "slot-0"), os.O_RDWR | os.O_CREAT, 0o644)
+fcntl.flock(fd, fcntl.LOCK_EX)
+def write(pid):
+    os.ftruncate(fd, 0)
+    os.lseek(fd, 0, os.SEEK_SET)
+    os.write(fd, ("pid=%d job=test worktree=/x started=now\n" % pid).encode())
+heavy_slot.parent_table = lambda: {os.getppid(): 1, 1: 0}
+write(1)
+assert 1 in heavy_slot.ancestors(), "the ancestor walk stopped before pid 1"
+assert heavy_slot.held_by_ancestor(1, directory), "a pid 1 holder was not found in the family"
+write(4194000)
+assert not heavy_slot.held_by_ancestor(1, directory), "a holder outside the family passed"
+PY
 
 echo "heavy-slot-selftest: ok"

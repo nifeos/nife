@@ -5,9 +5,10 @@
 //!
 //! This never dereferences a pointer, so it is host-testable and Kani-reachable; the volatile
 //! stores are the caller's. Every number is transcribed from Linux mainline ([mainline-dts],
-//! [mainline-trng], [mainline-ids], [mainline-clk], [mainline-rst]) and the vendor U-Boot
-//! ([vendor-dts], [vendor-ids]), which agree. One word per clock at `base + 4 * idx` with enable
-//! bit 31; a set reset-status bit means out of reset ([`is_deasserted`]).
+//! [mainline-trng], [mainline-ids], [mainline-clock-ids], [mainline-clk], [mainline-clk-header],
+//! [mainline-rst], [mainline-rst-common]) and the vendor U-Boot ([vendor-dts], [vendor-ids]), which
+//! agree. One word per clock at `base + 4 * idx` with enable bit 31; a set reset-status bit means
+//! out of reset ([`is_deasserted`]).
 //!
 //! # The two device trees
 //!
@@ -20,18 +21,26 @@
 //! [`PowerManagementChipBus::from_nodes`] and [`DevicePlan::from_specifiers`] turn a node's
 //! `clocks` and `resets` into steps, asking the caller to look each phandle up.
 //!
-//! [mainline-dts]: https://github.com/torvalds/linux/blob/master/arch/riscv/boot/dts/starfive/jh7110.dtsi
-//! [mainline-trng]: https://github.com/torvalds/linux/blob/master/drivers/char/hw_random/jh7110-trng.c
-//! [mainline-ids]: https://github.com/torvalds/linux/blob/master/include/dt-bindings/reset/starfive%2Cjh7110-crg.h
-//! [mainline-clk]: https://github.com/torvalds/linux/blob/master/drivers/clk/starfive/clk-starfive-jh71x0.c
-//! [mainline-rst]: https://github.com/torvalds/linux/blob/master/drivers/reset/starfive/reset-starfive-jh7110.c
-//! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
-//! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/include/dt-bindings/clock/starfive-jh7110-clkgen.h
+//! Mainline links are pinned to `torvalds/linux` commit `cbbddb6b08cc`; vendor links to
+//! `starfive-tech/u-boot` tag `VF2_v2.10.4`, commit `1ae835c25e3d`. All were fetched 2026-11-01
+//! (UTC). The vendor branch `JH7110_VisionFive2_devel` was also read at commit `c4c67bb66ae6`, and
+//! where the two differ the item says so.
+//!
+//! [mainline-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110.dtsi
+//! [mainline-trng]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/char/hw_random/jh7110-trng.c
+//! [mainline-ids]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/include/dt-bindings/reset/starfive%2Cjh7110-crg.h
+//! [mainline-clock-ids]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/include/dt-bindings/clock/starfive%2Cjh7110-crg.h
+//! [mainline-clk]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/clk/starfive/clk-starfive-jh71x0.c
+//! [mainline-clk-header]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/clk/starfive/clk-starfive-jh71x0.h
+//! [mainline-rst]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/reset/starfive/reset-starfive-jh7110.c
+//! [mainline-rst-common]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/reset/starfive/reset-starfive-jh71x0.c
+//! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/jh7110.dtsi
+//! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/include/dt-bindings/clock/starfive-jh7110-clkgen.h
 //!
 //! Name: ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806).
 
 /// The bit that turns a clock on, in every one of this controller's per-clock words
-/// (\[mainline-clk\], `#define JH71X0_CLK_ENABLE BIT(31)`).
+/// (\[mainline-clk-header\], `#define JH71X0_CLK_ENABLE BIT(31)`).
 ///
 /// Name: ratified 2026-10-26 (UTC).
 pub const CLOCK_ENABLE: u32 = 1 << 31;
@@ -39,10 +48,11 @@ pub const CLOCK_ENABLE: u32 = 1 << 31;
 /// A single step of a device's bring-up sequence, in the order it must be taken.
 ///
 /// Deliberately a plan rather than a pair of methods on a driver: the order is the load-bearing
-/// part (\[mainline-trng\] enables both clocks *before* deasserting, and \[mainline-rst\]'s own
-/// comment says why: *"if the associated clock is gated, deasserting might otherwise hang
-/// forever"*), and a plan is the only shape that lets a host test assert on the order without a
-/// device. The kernel driver walks this slice; it does not know which device it is bringing up.
+/// part (\[mainline-trng\] enables both clocks *before* deasserting, and
+/// \[mainline-rst-common\]'s comment says why: *"if the associated clock is gated, deasserting
+/// might otherwise hang forever"*), and a plan is the only shape that lets a host test assert on
+/// the order without a device. The kernel driver walks this slice; it does not know which device
+/// it is bringing up.
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,7 +75,7 @@ pub enum Step {
     },
 }
 
-/// A multiplexed clock's parent field, bits 27:24 of its word (\[mainline-clk\]'s
+/// A multiplexed clock's parent field, bits 27:24 of its word (\[mainline-clk-header\]'s
 /// `JH71X0_CLK_MUX_MASK`, `GENMASK(27, 24)`).
 ///
 /// Name: recorded (mainline's `JH71X0_CLK_MUX_MASK`).
@@ -222,10 +232,11 @@ pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
 ];
 
 /// **`gmac0`'s AON-domain clocks, its transmit clock's parent, and both its resets**, in Linux's
-/// probe order: OpenBSD's `dwqe_fdt_attach` and mainline's `dwmac-starfive.c`
-/// both enable every clock before deasserting either reset. The transmit clock's inverted twin
+/// probe order: mainline's `dwmac-starfive.c` and the stmmac platform code enable every clock
+/// before deasserting either reset. OpenBSD's `dwqe_fdt_attach` differs: it enables `stmmaceth` and
+/// `pclk`, deasserts both resets, then enables `tx` and `gtx`. The transmit clock's inverted twin
 /// (`gmac0_tx_inv`, index 6) and both receive clocks (7, 8) have no gate to enable (they are
-/// \[mainline-clk\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
+/// \[mainline-clk-header\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_AON_BRING_UP` (the domain spelled
 /// out).
@@ -261,7 +272,7 @@ pub struct ResetBit {
 /// as far as a device in this tree needs it. The arithmetic is general, so another domain is a
 /// table entry rather than a rewrite.
 ///
-/// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
+/// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/jh7110.dtsi
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -340,10 +351,12 @@ pub(crate) const SYSTEM_SIZE: u64 = 0x1_0000;
 /// both **143**: the vendor numbers the SYS group first, so no rebase is needed. Word `0x23c`.
 ///
 /// **This is I2C5's only gate.** Radon's U-Boot also names a `u5_dw_i2c_clk_core` (vendor id 298)
-/// and prints it at `Starting kernel`, but its own clock driver registers that as
-/// `starfive_clk_fix_factor(..., "u5_dw_i2c_clk_core", "u5_dw_i2c_clk_apb", 1, 1)`, a
-/// divide-by-one child of this gate with no register of its own, and mainline's `DesignWare` node
-/// names this clock alone. So there is no second gate to turn on, and 298 is not a word to write.
+/// and prints it at `Starting kernel`. At `VF2_v2.10.4` the clock driver
+/// (`drivers/clk/starfive/clk-jh7110.c`) registers it as a gate on `osc` at `SYS_OFFSET(298)`,
+/// byte `0x4a8`, past the last SYS word (id 190, `JH7110_CLK_SYS_REG_END`), so no register backs
+/// it. At the vendor branch head (`c4c67bb66ae6`) that driver registers no clock by this name.
+/// Mainline's `DesignWare` node names this clock alone. So there is no second gate to turn on, and
+/// 298 is not a word to write.
 pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 
 /// `JH7110_SYSRST_I2C5_APB` \[mainline-ids\], and `RSTN_U5_DW_I2C_APB` in the vendor header, both
@@ -372,7 +385,8 @@ pub(crate) const SYSCLK_SDIO0_AHB: u32 = 91;
 /// controller's bus clock. Word `0x170`.
 pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
 /// `JH7110_SYSCLK_SDIO0_SDCARD`, vendor `JH7110_SDIO0_CLK_SDCARD`, both **93**: the eMMC
-/// controller's card clock source, `ciu`, a gated divider both trees assign 50 MHz. Word `0x174`.
+/// controller's card clock source, `ciu`, a gated divider that mainline (`jh7110-common.dtsi`) and the vendor branch head
+/// (`starfive_visionfive2.dts`) assign 50 MHz; `VF2_v2.10.4` assigns none. Word `0x174`.
 pub(crate) const SYSCLK_SDIO0_SDCARD: u32 = 93;
 /// `JH7110_SYSCLK_SDIO1_SDCARD`, vendor `JH7110_SDIO1_CLK_SDCARD`, both **94**: the microSD
 /// controller's `ciu`. Word `0x178`.
@@ -404,7 +418,8 @@ pub const SDIO_BRING_UP: [&[Step]; 2] = [
     ],
 ];
 
-/// The divider field of a JH7110 clock word, bits 23:0 (\[mainline-clk\]'s `JH71X0_CLK_DIV_MASK`).
+/// The divider field of a JH7110 clock word, bits 23:0 (\[mainline-clk-header\]'s
+/// `JH71X0_CLK_DIV_MASK`).
 /// A transcript prints it beside the enable bit so the card clock's source rate is read off the
 /// silicon rather than assumed from `assigned-clock-rates`.
 ///
@@ -414,17 +429,19 @@ pub const fn clock_divider(word: u32) -> u32 {
     word & 0x00ff_ffff
 }
 
-/// The PMIC (power management integrated circuit) as radon's vendor tree spells it (U-Boot SDK
-/// `VF2_v2.10.4`, `starfive_visionfive2.dts`:
-/// `pmic: axp15060_reg@36 { compatible = "stf,axp15060-regulator"; reg = <0x36>; }` under
-/// `&i2c5`). This is also the string radon's OpenSBI matches to find its reset device.
+/// The PMIC (power management integrated circuit) as radon's vendor tree spells it: the
+/// `axp15060_reg@36` node under `&i2c5` in `arch/riscv/dts/starfive_visionfive2.dts` of
+/// `starfive-tech/u-boot` at tag `VF2_v2.10.4` (commit `1ae835c25e3d`, fetched 2026-11-01 UTC). The
+/// node gives this string as its `compatible` and `0x36` as its `reg`. This is also the string
+/// radon's OpenSBI matches to find its reset device.
 ///
 /// Name: provisional. The same reason as `COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE`.
 #[doc(alias = "pmic")]
 pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR: &[u8] = b"stf,axp15060-regulator";
 
-/// The same PMIC in mainline's `jh7110-common.dtsi`: `axp15060: pmic@36 { compatible =
-/// "x-powers,axp15060"; }` under `&i2c5`.
+/// The same PMIC in mainline: the `pmic@36` node under `&i2c5` in
+/// `arch/riscv/boot/dts/starfive/jh7110-common.dtsi` of `torvalds/linux` at commit
+/// `cbbddb6b08cc`, fetched 2026-11-01 (UTC), whose `compatible` is this string.
 ///
 /// Name: provisional. PMIC spelled out as the 2026-10-26 (UTC) ruling spells it for
 /// `POWER_MANAGEMENT_CHIP_COMPATIBLES`; the ruling did not name this constant.
@@ -885,90 +902,92 @@ pub const fn with_divider(word: u32, divider: u32) -> u32 {
     (word & !0x00ff_ffff) | (divider & 0x00ff_ffff)
 }
 
-/// **The 100 kHz standard-mode programming for a `DesignWare` I2C controller**, from the timing
-/// formula in the vendor U-Boot's `DesignWare` I2C driver (`designware_i2c.c`, fetched 2026-10-10)
-/// this board's firmware was built from: counts of the input clock for the standard mode's
-/// minimum high (4000 ns) and low (4700 ns) times, the default rise (1000 ns) and fall (300 ns)
-/// times, no spike count, then the formula's period fill toward `ic_clk / 100_000`. U-Boot's own
-/// init constants give the control word: master mode, restart enable, slave disable, standard speed.
+/// **The 100 kHz standard-mode programming for a `DesignWare` I2C controller**: counts of the
+/// controller's input clock for the I2C standard mode's minimum SCL high time (4000 ns) and
+/// minimum SCL low time (4700 ns), stretched so one SCL period is at least 10 microseconds, and a
+/// 300 ns SDA hold in input-clock counts. The control word is master mode, restart enable, slave
+/// disable, standard speed.
 ///
-/// 100 kHz rather than the fast mode U-Boot defaults to, because the AXP15060's datasheet timing is
-/// met by every standard-mode controller and the failure this answers was OpenSBI trusting a
-/// controller at reset defaults; slower than the spec floor is safe, faster is not.
+/// The limits are the I2C-bus specification's standard-mode figures (the NXP specification and
+/// user manual UM10204, table of timing characteristics: `tHIGH` 4.0 us, `tLOW` 4.7 us, and the
+/// 300 ns internal SDA hold a device must provide to bridge the undefined falling edge of SCL).
+/// The counts treat a phase as lasting at least its count of input-clock periods, which is how the
+/// `DesignWare` databook's `IC_SS_SCL_HCNT` and `IC_SS_SCL_LCNT` registers are described. No
+/// permissively licensed driver that this crate could cite states the equations (OpenBSD's
+/// `dwiic.c` takes the counts from firmware and FreeBSD has no `DesignWare` I2C driver), so they
+/// are derived here from those two sources and from nothing else.
+///
+/// 100 kHz rather than a faster mode, because the AXP15060's datasheet timing is met by every
+/// standard-mode controller and the failure this answers was OpenSBI trusting a controller at
+/// reset defaults; slower than the spec floor is safe, faster is not.
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StandardMode {
-    /// The `IC_CON` word: `IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS`.
+    /// The `IC_CON` word: master mode, restart enable, slave disable and standard speed set.
     pub con: u32,
     /// `IC_SS_SCL_HCNT`.
     pub hcnt: u32,
     /// `IC_SS_SCL_LCNT`.
     pub lcnt: u32,
-    /// `IC_SDA_HOLD`, the default 300 ns hold in input-clock counts.
+    /// `IC_SDA_HOLD`, the 300 ns hold in input-clock counts.
     pub sda_hold: u32,
 }
 
-/// `IC_CON`'s standard-speed field, `0b10` (the vendor header's `IC_CON_SPD_SS`).
-const IC_CON_SPD_SS: u32 = 0b10;
-/// `IC_CON`'s master-mode bit (`IC_CON_MM`).
-const IC_CON_MM: u32 = 1;
-/// `IC_CON`'s restart-enable bit (`IC_CON_RE`).
-const IC_CON_RE: u32 = 1 << 5;
-/// `IC_CON`'s slave-disable bit (`IC_CON_SD`).
-const IC_CON_SD: u32 = 1 << 6;
+/// The `IC_CON` word for a standard-speed master, written as one literal so no operator is left
+/// to mutate (the fields do not overlap, so `|` and `^` would give the same word). Bit 0 is
+/// master mode (`IC_CON_MM`), the speed field in bits 2:1 holds `0b01` for standard speed
+/// (`IC_CON_SPD_SS`, bit 1 set), bit 5 is restart enable (`IC_CON_RE`) and bit 6 is slave disable
+/// (`IC_CON_SD`).
+const STANDARD_MODE_CON: u32 = 0b0110_0011;
+/// Standard mode's minimum SCL high time, in nanoseconds.
+const STANDARD_HIGH_NS: u128 = 4_000;
+/// Standard mode's minimum SCL low time, in nanoseconds.
+const STANDARD_LOW_NS: u128 = 4_700;
+/// The SDA hold a device provides to bridge SCL's undefined falling edge, in nanoseconds.
+const STANDARD_SDA_HOLD_NS: u128 = 300;
+/// The bus rate this module programs, in hertz.
+const STANDARD_BUS_HZ: u128 = 100_000;
 
-/// Count of input-clock ticks that covers `period_ns`, the vendor `calc_counts` (a rounding-up
-/// division: `DIV_ROUND_UP(ic_clk / 1000 * period_ns, NANO_TO_KILO)`).
-const fn counts(clock_frequency: u64, period_ns: u64) -> u64 {
-    (clock_frequency / 1_000 * period_ns).div_ceil(1_000_000)
+/// The smallest count of input-clock periods lasting at least `period_ns`, never below 1 (zero is
+/// not a count a controller can be programmed with) and never above `u32::MAX`.
+const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
+    let ticks = (clock_frequency as u128 * period_ns).div_ceil(1_000_000_000);
+    // The saturation subtracts the excess instead of comparing, so no boundary is left to
+    // mutate: `ticks` minus whatever lies above `u32::MAX` is `min(ticks, u32::MAX)`.
+    let ticks = ticks - ticks.saturating_sub(u32::MAX as u128);
+    if ticks == 0 { 1 } else { ticks as u32 }
 }
 
-/// The formula the vendor driver names `dw_i2c_calc_timing`, standard mode, written as the
-/// four-line derivation its comment carries, with the period fill. `clock_frequency` is the
-/// controller's input clock in hertz, the databook's `ic_clk`. Inputs below the spec minima
-/// clamp to the smallest legal counts rather than wrapping.
+/// The counts for a 100 kHz standard-mode bus. `clock_frequency` is the controller's input clock
+/// in hertz, the databook's `ic_clk`.
+///
+/// Each phase is rounded up to a whole count, so it never falls short of its specification
+/// minimum: the high count covers 4000 ns and the low count covers 4700 ns. Those two alone make a
+/// bus faster than 100 kHz, so the fill is nife's own and as simple as it can be: when the two
+/// minimums add to fewer counts than one 10 microsecond period, the whole shortfall goes to the
+/// low count. A longer low time is always legal (standard mode has no maximum, and a slave may
+/// hold SCL low for longer anyway), and the high count stays at the specification minimum. The
+/// result guarantees that `hcnt + lcnt` counts never span less than 10 microseconds, so the bus
+/// never runs faster than 100 kHz, and that each phase meets its minimum. Rise and fall times on
+/// the wire only add to the period. An input clock below 100 kHz still yields counts of at least 1
+/// and cannot reach 100 kHz; a bench transcript carries the computed input clock, so that case is
+/// visible as one.
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn standard_mode_100k(clock_frequency: u64) -> StandardMode {
-    let rise = counts(clock_frequency, 1_000);
-    let fall = counts(clock_frequency, 300);
-    let thigh = counts(clock_frequency, 4_000);
-    let tlow = counts(clock_frequency, 4_700);
-    let period = if clock_frequency >= 100_000 {
-        clock_frequency / 100_000
-    } else {
-        1
-    };
-
-    let mut hcnt = thigh.saturating_sub(fall + 7);
-    let mut lcnt = tlow
-        .saturating_sub(rise)
-        .saturating_add(fall)
-        .saturating_sub(1);
-
-    let tot = hcnt + lcnt + 7 + rise + 1;
-    if tot < period {
-        let diff = (period - tot) / 2;
-        hcnt += diff;
-        lcnt += diff;
-        let tot = hcnt + lcnt + 7 + rise + 1;
-        lcnt += period.saturating_sub(tot);
-    }
-    // Below a few MHz of input clock the standard-mode minima outrun the period and the
-    // derivation floors at zero; zero is not a count a controller can be programmed with, so it
-    // becomes 1, the slowest legal bus this formula can produce. A bench transcript carries the
-    // computed input clock, so a floored count is visible as one.
-    let hcnt = if hcnt == 0 { 1 } else { hcnt };
-    let lcnt = if lcnt == 0 { 1 } else { lcnt };
-    let sda_hold = counts(clock_frequency, 300);
-    let sda_hold = if sda_hold == 0 { 1 } else { sda_hold };
+    let hcnt = counts(clock_frequency, STANDARD_HIGH_NS);
+    let minimum_lcnt = counts(clock_frequency, STANDARD_LOW_NS);
+    let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HZ);
+    let shortfall = period.saturating_sub(hcnt);
+    // The larger of the two, written as the minimum plus whatever the shortfall exceeds it by.
+    let lcnt = minimum_lcnt + shortfall.saturating_sub(minimum_lcnt);
     StandardMode {
-        con: IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS,
-        hcnt: hcnt as u32,
-        lcnt: lcnt as u32,
-        sda_hold: sda_hold as u32,
+        con: STANDARD_MODE_CON,
+        hcnt,
+        lcnt,
+        sda_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NS),
     }
 }
 

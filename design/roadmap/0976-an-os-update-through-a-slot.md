@@ -32,8 +32,9 @@ shape on 2026-09-27 (UTC), and this proposal executes it rather than reopening i
 - U4, the slot layout. Packages are the download unit, and each slot holds its own full copy of
   the base set. The updater wipes the inactive slot whole before reuse, then fills it from the new
   manifest. The slots share nothing, so no collection rule can delete a blob the other slot needs.
-- T4 with T2, the trust handoff. The loader hands over the progenitor digest and the manifest
-  digest. The kernel checks only the progenitor; the progenitor checks the base set against the
+- T4 with T2, the trust handoff. The loader hands over the progenitor digest and the digest of the
+  archive's `program_measurements` table, not this system manifest, which stays out of the boot path
+  (ruled 2026-11-01 UTC). The kernel checks only the progenitor; the progenitor checks the base set against the
   manifest digest. The kernel therefore stops depending on the base set and still depends on the
   progenitor.
 - 525's slots. Two boot slots, priority, tries and confirmation live in `crates/boot_slot` and the
@@ -61,10 +62,11 @@ confirmation that keeps it or a failure that reverts to the running one.
    shortcut: for a package whose digest matches the running slot's copy, the updater copies the
    local file instead of fetching it. It wipes the staging slot whole first, so no stale file
    survives.
-3. The kernel reads the new manifest through the loader. The loader passes the inactive slot's
-   manifest digest, and the progenitor checks the base set against it before anything runs. A
-   manifest the packages do not match draws a refusal naming the package, the same check the
-   composed image already runs at build time.
+3. **The kernel reads the new manifest through the loader.** The updater verifies the system manifest when it
+   writes the slot, and a manifest the packages do not match draws a refusal naming the package, the
+   same check the composed image already runs at build time. The loader passes the inactive slot's
+   `program_measurements` table digest, and the progenitor checks the base set against it before
+   anything runs.
 4. The chooser tries the slot and the update confirms. `boot_slot` marks the staged slot with
    one try. A boot that reaches the shell confirms it; a boot that exhausts its tries reverts to
    the other slot, as 525 already does.

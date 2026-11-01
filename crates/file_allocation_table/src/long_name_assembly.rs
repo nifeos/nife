@@ -10,7 +10,9 @@
 //! its last piece exactly (Microsoft's "FAT: General Overview of On-Disk Format", version 1.03,
 //! section 7). A run that breaks any of this is refused whole: no part of it becomes a name.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), the assembly of a long file name from its directory pieces, as
+//! the specification's long name directory entries are assembled; the module holds `LongFileName`
+//! and its refusals.
 
 use crate::directory::LongNameEntry;
 use crate::long_name::{MAXIMUM_CODE_UNITS, UNITS_PER_ENTRY, checksum};
@@ -32,8 +34,8 @@ pub(crate) type LongNameAssembler = Assembler<MAXIMUM_UNITS>;
 /// the specification says UCS-2, and a writer such as Windows stores surrogate pairs, so
 /// [`LongFileName::characters`] decodes them and replaces a lone surrogate.
 ///
-/// Name: provisional. The specification's "long file name"; a file name, so not `LongName`, which
-/// is the writer's checked-name type inside the crate.
+/// Name: ratified 2026-11-01 (UTC), the specification's "long file name"; a file name, so not
+/// `LongName`, which is the writer's checked-name type inside the crate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct LongFileName {
     units: [u16; MAXIMUM_CODE_UNITS],
@@ -43,14 +45,14 @@ pub struct LongFileName {
 impl LongFileName {
     /// The name's UTF-16 code units, without the terminator and the padding.
     ///
-    /// Name: provisional. Matches `LongNameEntry::code_units`.
+    /// Name: ratified 2026-11-01 (UTC), matches `LongNameEntry::code_units`.
     pub fn code_units(&self) -> &[u16] {
         &self.units[..self.len]
     }
 
     /// The name's characters, with U+FFFD for a surrogate that has no partner.
     ///
-    /// Name: provisional. The UTF-16 decode of `code_units`.
+    /// Name: ratified 2026-11-01 (UTC), the UTF-16 decode of `code_units`.
     pub fn characters(&self) -> impl Iterator<Item = char> + '_ {
         char::decode_utf16(self.code_units().iter().copied())
             .map(|unit| unit.unwrap_or(char::REPLACEMENT_CHARACTER))
@@ -59,35 +61,36 @@ impl LongFileName {
 
 /// **Why a run of long-name pieces was refused.**
 ///
-/// Name: provisional. The run is refused, not parsed wrongly, so these are reasons.
+/// Name: ratified 2026-11-01 (UTC), renamed from `LongNameError`: the error of a long file name,
+/// beside `LongFileName`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum LongNameError {
+pub enum LongFileNameError {
     /// A piece other than the first arrived with no first piece before it, or the first piece's
     /// ordinal is 0 or above 20.
     ///
-    /// Name: provisional. A run with no valid beginning.
+    /// Name: ratified 2026-11-01 (UTC), a run with no valid beginning.
     BadStart,
     /// A piece's ordinal is not one below the piece before it.
     ///
-    /// Name: provisional. The ordinals are out of sequence.
+    /// Name: ratified 2026-11-01 (UTC), the ordinals are out of sequence.
     OutOfOrder,
     /// The pieces do not carry one checksum.
     ///
-    /// Name: provisional. The pieces disagree with each other.
+    /// Name: ratified 2026-11-01 (UTC), the pieces disagree with each other.
     PiecesDisagree,
     /// The run ends before ordinal 1, so the short entry's nearest piece is missing.
     ///
-    /// Name: provisional. A run that stops early.
+    /// Name: ratified 2026-11-01 (UTC), a run that stops early.
     Incomplete,
     /// The pieces' checksum is not the checksum of the short entry's name, so the run belongs to
     /// another entry or the short name changed after it was written.
     ///
-    /// Name: provisional. The checksum the specification binds the two with.
+    /// Name: ratified 2026-11-01 (UTC), the checksum the specification binds the two with.
     ChecksumMismatch,
     /// The name is empty or over 255 units, a unit follows the terminator that is not `0xFFFF`
     /// padding, or the last piece holds no unit of the name.
     ///
-    /// Name: provisional. A run whose padding is not the specification's.
+    /// Name: ratified 2026-11-01 (UTC), a run whose padding is not the specification's.
     BadPadding,
 }
 
@@ -108,7 +111,7 @@ pub(crate) struct Assembler<const UNITS: usize> {
     /// The first piece's checksum.
     checksum: u8,
     /// The first reason the open run is refused.
-    error: Option<LongNameError>,
+    error: Option<LongFileNameError>,
 }
 
 impl<const UNITS: usize> Assembler<UNITS> {
@@ -135,21 +138,21 @@ impl<const UNITS: usize> Assembler<UNITS> {
         if piece.is_last() {
             *self = Assembler::<UNITS>::new();
             if ordinal == 0 || usize::from(ordinal) > Self::PIECES {
-                self.error = Some(LongNameError::BadStart);
+                self.error = Some(LongFileNameError::BadStart);
                 return;
             }
             self.pieces = ordinal;
             self.checksum = piece.checksum();
         } else if self.pieces == 0 {
-            self.error.get_or_insert(LongNameError::BadStart);
+            self.error.get_or_insert(LongFileNameError::BadStart);
             return;
         } else {
             if ordinal != self.next || ordinal == 0 {
-                self.error.get_or_insert(LongNameError::OutOfOrder);
+                self.error.get_or_insert(LongFileNameError::OutOfOrder);
                 return;
             }
             if piece.checksum() != self.checksum {
-                self.error.get_or_insert(LongNameError::PiecesDisagree);
+                self.error.get_or_insert(LongFileNameError::PiecesDisagree);
                 return;
             }
         }
@@ -169,7 +172,7 @@ impl<const UNITS: usize> Assembler<UNITS> {
     pub(crate) fn finish(
         &mut self,
         short_name: &[u8; 11],
-    ) -> Result<Option<LongFileName>, LongNameError> {
+    ) -> Result<Option<LongFileName>, LongFileNameError> {
         let Some(len) = self.finish_length(short_name)? else {
             return Ok(None);
         };
@@ -181,7 +184,7 @@ impl<const UNITS: usize> Assembler<UNITS> {
     /// **Check the run as `finish` does and report the name's length**, leaving its units in
     /// place for `finish` to copy. The run's state is cleared; the units stay until the next first
     /// piece, which no later piece can reach without opening a run of its own.
-    fn finish_length(&mut self, short_name: &[u8; 11]) -> Result<Option<usize>, LongNameError> {
+    fn finish_length(&mut self, short_name: &[u8; 11]) -> Result<Option<usize>, LongFileNameError> {
         let pieces = self.pieces;
         let next = self.next;
         let run_checksum = self.checksum;
@@ -195,10 +198,10 @@ impl<const UNITS: usize> Assembler<UNITS> {
             return Err(error);
         }
         if next != 0 {
-            return Err(LongNameError::Incomplete);
+            return Err(LongFileNameError::Incomplete);
         }
         if run_checksum != checksum(short_name) {
-            return Err(LongNameError::ChecksumMismatch);
+            return Err(LongFileNameError::ChecksumMismatch);
         }
         let total = usize::from(pieces) * UNITS_PER_ENTRY;
         let len = self.units[..total]
@@ -211,7 +214,7 @@ impl<const UNITS: usize> Assembler<UNITS> {
             .all(|unit| *unit == 0xFFFF);
         let in_last = len > (usize::from(pieces) - 1) * UNITS_PER_ENTRY;
         if !padded || !in_last || len > MAXIMUM_CODE_UNITS {
-            return Err(LongNameError::BadPadding);
+            return Err(LongFileNameError::BadPadding);
         }
         Ok(Some(len))
     }

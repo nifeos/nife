@@ -9,7 +9,7 @@
 //! Kani needs: the operations' own loops are bounded by the cluster count whatever it is, and the
 //! oracle tests run them over volumes of tens of thousands.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 
@@ -17,9 +17,9 @@ use super::*;
 const MOST: usize = 4;
 
 /// A table of `clusters` data clusters held as entries.
-struct Model {
-    clusters: u32,
-    entries: [TableEntry; MOST],
+pub(crate) struct Model {
+    pub(crate) clusters: u32,
+    pub(crate) entries: [TableEntry; MOST],
 }
 
 impl Links for Model {
@@ -44,6 +44,16 @@ impl LinksMut for Model {
         );
         self.entries[(cluster - 2) as usize] = entry;
         Ok(())
+    }
+
+    fn append(&mut self, last: Option<u32>) -> Result<Option<u32>, ChainError<()>> {
+        let Some(cluster) = allocate(self, 2)? else {
+            return Ok(None);
+        };
+        if let Some(last) = last {
+            self.set_table_entry(last, TableEntry::Next(cluster))?;
+        }
+        Ok(Some(cluster))
     }
 }
 
@@ -119,7 +129,7 @@ fn a_release_frees_only_its_own_chain() {
     let before = model.entries;
     let clusters = model.clusters;
     let first: u32 = kani::any();
-    let result = free_chain(&mut model, first);
+    let result = deallocate_chain(&mut model, first);
     let mut changed = 0;
     let mut at = 0;
     while at < clusters as usize {
@@ -179,5 +189,14 @@ fn a_cut_keeps_exactly_the_head_of_the_chain() {
         let kept = whole.min(keep);
         assert_eq!(freed, whole - kept);
         assert_eq!(length(&mut model, first), Some(kept));
+    }
+}
+
+/// A model of `clusters` clusters that are all free.
+pub(crate) fn free_model(clusters: u32) -> Model {
+    assert!(clusters as usize <= MOST);
+    Model {
+        clusters,
+        entries: [TableEntry::Free; MOST],
     }
 }

@@ -88,12 +88,12 @@ impl GaugeFilter {
                     .max()
                     .unwrap_or(0);
                 let before = &self.pending[..self.pending.len() - keep];
-                let after_dollar = if before.is_empty() {
-                    out.ends_with('$')
-                } else {
-                    before.ends_with('$')
-                };
-                if keep > 0 && after_dollar {
+                // The same for a question's `[y/N] `: the gate answers on the whole prompt, and a
+                // space held here is never released by an answer waiting for it. The prompt may
+                // have been cut anywhere in `[y/N]`, so the test reads what was emitted and what
+                // is pending together.
+                let ends_prompt = |t: &str| t.ends_with('$') || t.ends_with("[y/N]");
+                if keep > 0 && ends_prompt(&format!("{out}{before}")) {
                     keep -= 1;
                 }
                 let cut = self.pending.len() - keep;

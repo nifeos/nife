@@ -8,7 +8,7 @@ No instruction, or a first draw of all zeros (`entropy_contract::readiness`), an
 service is refused with a sentence on the console. There is no fallback to `RDRAND` or `RNDR`
 (DRBG output, which `components/src/entropy.rs`'s header refuses) and no software generator. The
 bytes served are the instruction's own, unmixed and not health-tested after the first draw: option
-A of DECISIONS §137 (a hardware TRNG with no published health-test claim), which every other backend here takes. Choosing B or C is calef's.
+A of DECISIONS §137 (a hardware TRNG with no published health-test claim), which every other backend here takes. §137 is `DECIDED` (2026-10-28 UTC): continuous SP 800-90B health tests in the driver, falling back to another source on failure if one is present and refusing loudly otherwise. Those tests are not built yet.
 
 `entropy_service::ensure` hands the readiness report to whoever wired the service first, and on
 `x86_64` that can be the installer earlier in the same boot. The installer does not read the

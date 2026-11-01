@@ -15,8 +15,6 @@ quietly grows to cover everything.
   shared page and then reads the page again, and the client changed it in between. A byte-string
   fuzzer cannot express a concurrent mutation. That is milestone 43's lens, and it needs a different
   tool.
-- `video_terminal`. 63 escape sequences, no proofs, and a byte stream as input, so it looks like
-  a good candidate. It is a candidate, and it is not in this first set because its input comes from a
-  program *this system started*, one rung inside the boundary the other four sit on. Worth adding
-  when the terminal serves output from something we did not build.
+- `video_terminal` has a target now, `video_terminal_feed`. The terminal serves output from
+  packaged software and foreign `std` programs, so the old reason no longer holds.
 - `grant_plan`. Its parser was being rewritten in a concurrent lane while this was built.

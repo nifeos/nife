@@ -72,15 +72,10 @@ podman volume rm "nife-pass-$(basename "$scratch")"
   untried in this container until the first real launch.
 - GLM's key is read from `ZHIPU_API_KEY`, the variable opencode reads for the `zai-coding-plan`
   provider. Confirm it at the first launch; a wrong name shows as a setup turn that reports no model.
-- The heavy-slot wait livelocks when `script/test` runs as a container's pid 1: the slot lock
-  records the holder's pid, and the liveness check then always finds the holder (itself) alive, so
-  the waiter waits on its own lock forever. Run the script under a shell
-  (`sh -c 'script/test ...'`) so it holds a pid other than 1. Found collecting the tenth pass
-  (2026-10-27 (UTC)).
-- `models()` parses `opencode session export` output with no check of its exit status, so a
-  truncated export dies on a `JSONDecodeError` and `launch.json` sticks at `attacking` after the
-  session has finished. Found collecting the tenth pass (2026-10-27 (UTC)); the fix checks the
-  status and fails soft.
+- A session whose send dies in the launcher (an unreadable `session export`, a signal) leaves the
+  record `stopped: the launcher died after the brief went out`, with the reason; `--complete`
+  refuses it. A killed launcher (SIGKILL, a host restart) cannot write that line, so run it
+  detached.
 - The first container run of a pass builds QEMU from source into the pass's volume (about 15
   minutes), and the clone is reached through the VM's file sharing, so its builds are slower than a
   native checkout's.

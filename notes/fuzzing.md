@@ -5,7 +5,7 @@ integrity) ask whether code we did not write is what we think; this one asks whe
 write survives bytes it did not write.
 
 `script/fuzz` runs coverage-guided fuzz targets over the parsers that read data from outside this
-system: eight parsers, plus three service targets that
+system: thirteen parser targets, plus three service targets that
 [fuzzing-the-services.md](fuzzing-the-services.md) covers. It found two bugs on its first day, and a
 third came out of reading the code while designing a target. All three are fixed and pinned by host
 tests.
@@ -19,7 +19,7 @@ cannot.
 
 Kani is exhaustive inside a bound. `kani::any()` is every value at once, the program becomes a
 formula, and `UNSATISFIABLE` means no input breaks the property. That is a stronger claim than any
-fuzzer can make, for the inputs it covers. Its limit is structural rather than incidental. A solver
+fuzzer can make, for the inputs it covers. A solver
 reasons completely about *fixed-size* things, so an unbounded loop over an arbitrarily long input
 has to be unrolled to a limit, and past a certain unrolling the formula stops being solvable in
 useful time. notes/verification.md records those bounds and their justifications.
@@ -43,9 +43,8 @@ The place where they meet is the bound. In this tree the proved leaf and the unp
 `crates/nifefs`'s writer and reader agreeing (a property nobody had written down) are the three
 worked examples, in [fuzzing/kani-and-fuzzing.md](fuzzing/kani-and-fuzzing.md).
 
-The honest summary: a proof says the property holds where it looked, and a fuzzer looks where the
-proof could not. Neither subsumes the other, and the third worked example shows the boundary is not
-even always "bounded versus unbounded": sometimes it is that nobody wrote the property down.
+A proof says the property holds where it looked, and a fuzzer looks where the
+proof could not. Neither subsumes the other.
 
 ## Which parsers, and why those
 
@@ -53,13 +52,15 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Eight parser targets, deliberately fewer than one per crate. A fuzz target that finds nothing
+Thirteen parser targets, deliberately fewer than one per crate; the table holds twelve, and
+[fuzzing/targets.md](fuzzing/targets.md) covers the FAT writer. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
 | Target | Input comes from | Why it earns a target |
 |---|---|---|
 | `device_tree_blob_walk` | firmware (QEMU, OpenSBI, a board's ROM) | parsed before anything else exists, on both ISAs, from a pointer in a register; a panic here is a kernel that cannot boot and cannot say why. Kani reaches the leaf readers and not the walkers. |
+| `device_tree_patch_initial_ramdisk` | UEFI firmware's device tree | the loader's own walker; a wrong `Ok` boots a kernel without its archive. |
 | `elf_parse` | any binary a user asks to run | the only parser that loads what it parses: its output becomes page-table entries. The whole-parse totality proof is recorded as intractable. |
 | `globally_unique_identifier_partition_table` | a disk somebody else formatted | decides which LBA range is a filesystem. Heavily checked already, which is the point: the gap is *combinations* of hostile fields, which neither the proofs nor the single-byte mutation tests can build. |
 | `file_allocation_table_boot_sector` | a USB stick somebody else formatted | every later FAT read indexes by what it says |
@@ -67,14 +68,16 @@ implies coverage the project does not have.
 | `http_response_feed` | a package server, over plain HTTP | network bytes, read in the progenitor **before** the digest check. Asserts read splits never change the answer. |
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
+| `capability_manifest_note_decode` | an ELF note | sets authority |
+| `package_index_text` | package host | address check |
+| `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
 
 ### And the ones deliberately not fuzzed
 
-Naming these matters as much as naming the targets, because "we have fuzzers" quietly grows to cover
+Naming these matters as much as naming the targets: "we have fuzzers" quietly grows to cover
 everything. `Fs::parse` on raw bytes is proved total, so a target there could find nothing. The IPC
 protocols are total by construction, and their real hazard, a double fetch, is a concurrent mutation
-no byte-string fuzzer can express. `video_terminal` and `grant_plan` were left for stated reasons.
-Each is argued in [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md).
+no byte-string fuzzer can express. [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md) argues each, and `grant_plan` too.
 
 ## Why cargo-fuzz
 
@@ -139,16 +142,13 @@ gets.
 Three kinds of input, and they are kept apart because they have different reasons to exist.
 
 Seeds are committed, and they are read-only. A fuzzer starting from `[]` spends its first
-minutes rediscovering that a device tree begins `d0 0d fe ed`. With a sixty-second budget it would
-never get past the magic check. But `fuzz/seeds/` holds one small ELF per machine and nothing else,
-because the seeds this project needs already exist in the tree.
-`crates/device_tree_blob/tests/fixtures/` holds three real device trees dumped from the boards we
-boot, and `crates/globally_unique_identifier_partition_table/tests/fixtures/` holds two real disks
-formatted by `sgdisk` and by Apple's Disk Utility. `script/fuzz` passes those directories to
-libFuzzer as extra corpus arguments. Copying them under `fuzz/` would create a second copy that can
-drift from the first.
+minutes rediscovering that a device tree begins `d0 0d fe ed`, and with a sixty-second budget never
+gets past the magic check. Where the tree already holds real inputs, such as the three device trees
+in `crates/device_tree_blob/tests/fixtures/`, `script/fuzz` passes that directory to libFuzzer as an
+extra corpus; a copy under `fuzz/` would drift from it. [fuzz/seeds/README.md](../fuzz/seeds/README.md)
+lists each target's seeds.
 
-The exception is `fuzz/seeds/elf_parse/minimal_rx_<machine>.elf`, 120 bytes each, because nothing
+The ELF seeds, `fuzz/seeds/elf_parse/minimal_rx_<machine>.elf`, are 120 bytes each, because nothing
 else in the tree is a small ELF (our real binaries are over a megabyte). They are hand-assembled,
 and [fuzz/seeds/README.md](../fuzz/seeds/README.md) carries the generator that produces them.
 

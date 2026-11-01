@@ -29,6 +29,7 @@ mod batching;
 mod endowment;
 mod number;
 mod preview;
+mod reclaim;
 mod routing;
 mod say;
 mod sentences;
@@ -56,6 +57,7 @@ use grant_plan::{
 };
 pub use number::write_num;
 pub use preview::{Vouched, write_capabilities, write_image_capabilities, write_preview};
+pub use reclaim::is_reclaimed_within;
 pub use routing::{Route, route};
 pub use say::{HEAP_MAXIMUM_BYTES, Say, write_say};
 pub use sentences::{

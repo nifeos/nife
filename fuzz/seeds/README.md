@@ -14,9 +14,13 @@ tree**, committed for their own reasons and tested by their own tests:
 | `device_tree_blob_walk` | `crates/device_tree_blob/tests/fixtures/` | three real device trees, dumped from the boards we boot |
 | `globally_unique_identifier_partition_table` | `crates/globally_unique_identifier_partition_table/tests/fixtures/` | two real disks, formatted by `sgdisk` and by Apple's Disk Utility |
 | `file_allocation_table_boot_sector` | `crates/file_allocation_table/tests/fixtures/`, and here | six boot sectors dosfstools' `mkfs.fat` formatted: FAT12, FAT16 and FAT32, at 512 and 4096 bytes; and `small-tree.img`, below |
+| `device_tree_patch_initial_ramdisk` | `crates/device_tree_blob/tests/fixtures/`, and here | the same three device trees; and `no_root_node.dtb`, the input that found a tree accepted with no root node, which `crates/device_tree_patch/tests/fuzz_seed.rs` holds refused |
 | `elf_parse` | here | the three files below, because nothing else in the tree is a small ELF |
 | `domain_name_system_reply` | `crates/domain_name_system/tests/fixtures/` | three real replies captured from 1.1.1.1: two A records, a CNAME chain with compression, and NXDOMAIN |
 | `http_response_feed` | here | two responses, a `200` with a body and a bare `404`; the first byte of each is the read size the target splits at |
+| `capability_manifest_note_decode` | here | fourteen descriptors the crate encodes: version 1, 2 and 3 manifests (up to eight zones, and the longest zone), a scope, and verb tables; `crates/capability_manifest_note/tests/fuzz_seed.rs` holds them to the encoders and regenerates them |
+| `package_index_text` | here | seven small files: valid stand-in indexes (`<stem> sha256:<hex>`, with and without locations and a root name), the rebinding case from the sixth outsider pass with a public and a private resolution after a NUL, private and non-canonical hosts, an image's sources text, and a row of versions |
+| `video_terminal_feed` | here, written by `make-video-terminal-seeds.py` | three header bytes (grid size, two cuts) then a stream: hand-written colors, cursor motion, alternate screen, scroll regions, UTF-8, string sequences and ripgrep-style output, and the output halves of two recordings from `crates/video_terminal/recordings` |
 | `nifefs_roundtrip` | nothing | the input is a *structure*, not bytes; the fuzzer builds file sets from scratch and reaches the interesting shapes immediately |
 
 `script/fuzz` passes those fixture directories to libFuzzer as read-only corpora. Copying them here

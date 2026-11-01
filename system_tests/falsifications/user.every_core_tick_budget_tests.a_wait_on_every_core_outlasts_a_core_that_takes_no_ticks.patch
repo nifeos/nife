@@ -1,0 +1,31 @@
+Falsifies `system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect is `EveryCoreTickBudget::is_expired` deciding on the counter alone, the seeded fuzz
+drivers' two-second wall-clock deadline: the budget runs out once two seconds of the counter have
+passed, whether or not every core took its ticks. Another core spends three seconds of the counter
+with its interrupts masked, a stand-in for a vCPU the host is not running, so the wait gives up a
+second before the work it waits on finishes.
+
+Expected to fail: `panic!("the wait gave up while a core took no ticks: {budget}")`, with about
+2000 ms of the counter and one core showing far fewer ticks than the other. Confirmed red on
+2026-10-31 (UTC) on x86_64 at two cores with `cargo xtask test --arch x86_64 --test
+a_wait_on_every_core_outlasts`: "2000 ms of the counter; ticks taken of 200 on each core: core 0
+198 core 1 0". Replayed red again after the counts became `u32`: "core 0 199 core 1 0".
+
+diff --git a/kernel/src/testing.rs b/kernel/src/testing.rs
+index d756010c0..380ce22fa 100644
+--- a/kernel/src/testing.rs
++++ b/kernel/src/testing.rs
+@@ -717,7 +717,9 @@ impl EveryCoreTickBudget {
+             self.taken[c] = Self::ticks_on(c).wrapping_sub(self.start[c]);
+             every_core &= self.taken[c] >= self.ticks;
+         }
+-        every_core || self.is_past_backstop()
++        let _ = every_core;
++        self.elapsed >= u64::from(self.ticks) / crate::arch::timer::TICK_HZ * crate::arch::timer::frequency()
++            || self.is_past_backstop()
+     }
+ 
+     /// Did the last [`is_expired`](Self::is_expired) sample find the backstop passed? A wait that

@@ -2,38 +2,28 @@ Falsifies `system_tests::user::tenth_pass_map_gate_tests::one_physical_page_is_n
 
 Architecture: aarch64, riscv64, x86_64
 
-The defect is in the tree: `AddressSpace::MAP_INTO` never checks whether the frame it maps is
-already mapped in the same space. `MAP_RW` at one `va` and `MAP_CODE` at another leave every
-page-table leaf honest while the physical page is writable and executable through the two
-aliases. A builder holding `WRITE` on a space and a `READ | WRITE` frame reaches it with ordinary
-capabilities and no defect in the grant chain. The per-leaf proofs the row cites survive; the
-claim as published does not. The pass is milestone 936 (a tenth outsider pass attacks the
-confinement claim); on 2026-10-27 (UTC) the architect ruled that the escape sits on a shipped path
-and that its fix is mandatory.
+The defect: the mapping hold's check compares each existing leaf of the frame with itself instead
+of with the new mapping's flags. No single leaf is writable and executable, so the check never
+fires, every path maps, and the tenth outsider pass's escape comes back: `MAP_RW` at one address
+and `MAP_CODE` of the same frame at the next leave one page writable and executable in one space.
+It is a one-word slip in the one line that names both sides of the pair.
 
-So the patch introduces no defect. It turns the witness's opt-in on, which is what
-`NIFE_ESCAPE_WITNESS=1` does by hand, and the replay boots the escape as it stands. The fix
-milestone re-cuts this patch to undo its fix instead, and drops the opt-in.
+Expected to fail: the assertion that `MAP_INTO` answers the code mapping with `NotPermitted`,
+reporting `MAP_INTO mapped as code a frame the space maps writable at <writable va>`.
 
-Expected to fail: the witness assert, reporting `one physical page is writable at <writable va>
-and executable at <executable va>: every leaf is honest and the page is both, which is W^X defeated
-by alias (claim 11)`.
+Replayed on 2026-10-31 (UTC) on aarch64 with `cargo xtask test --arch aarch64 --test
+one_physical_page_is_never_writable_here_and_executable_there`: red at exactly that assertion,
+writable at 0xffffffffe000.
 
-Replayed on 2026-10-27 (UTC) against this tree, one ISA at a time under QEMU 11.1.2 with
-`cargo xtask test --arch <isa> --test tenth_pass_map_gate`: red at exactly that assertion on all
-three, with the two boundary tests in the module green beside it. aarch64 reported writable at
-0xffffffffe000 and executable at 0xfffffffff000; riscv64, 0x3fffffe000 and 0x3ffffff000; x86_64,
-0x7fffffffe000 and 0x7ffffffff000.
-
-diff --git a/system_tests/src/user/tenth_pass_map_gate_tests.rs b/system_tests/src/user/tenth_pass_map_gate_tests.rs
---- a/system_tests/src/user/tenth_pass_map_gate_tests.rs
-+++ b/system_tests/src/user/tenth_pass_map_gate_tests.rs
-@@ -247,7 +247,7 @@
- /// stays bootable. Export `NIFE_ESCAPE_WITNESS=1` before `script/test` to run it.
- const ESCAPE_WITNESS: bool = match option_env!("NIFE_ESCAPE_WITNESS") {
-     Some(v) => !v.is_empty(),
--    None => false,
-+    None => true,
- };
- 
- /// **One physical page must never be writable through one virtual address and executable through
+diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
+--- a/kernel/src/revoke.rs
++++ b/kernel/src/revoke.rs
+@@ -447,7 +447,7 @@
+                 }
+                 if let Some((leaf_phys, leaf_flags)) = mmu::translate_at(root, e.va)
+                     && leaf_phys == phys
+-                    && leaf_flags.makes_writable_executable_pair(flags)
++                    && leaf_flags.makes_writable_executable_pair(leaf_flags)
+                 {
+                     return true;
+                 }

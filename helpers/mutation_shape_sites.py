@@ -9,6 +9,7 @@ line settles.
 
     python3 helpers/mutation_shape_sites.py check --census DATE --run ID --sha SHA \\
         [--out notes/project-metrics/mutation-shape-sites.csv] SHARD_DIR...
+    python3 helpers/mutation_shape_sites.py stale          # script/lint: more than one census old
     python3 helpers/mutation_shape_sites.py --selftest     # fixtures only; script/lint
 
 The input is the census's own shard output (missed.txt), the same files `script/mutation-census
@@ -360,9 +361,39 @@ def summary(per_crate):
     return out
 
 
+def behind(shape_text, census_text):
+    """How many recorded censuses are newer than the one the shape-sites text was generated from.
+    The first line names it (`# census=DATE ...`); the census record's first column lists the rest.
+    A file with no such line counts as behind every census."""
+    m = re.match(r"# census=(\S+)", shape_text)
+    mine = m.group(1) if m else ""
+    dates = {r.split(",")[0] for r in census_text.splitlines()[1:] if r.strip()}
+    return sum(1 for d in dates if d > mine)
+
+
+def stale(root="."):
+    """Lint: the committed file may trail the census record by the one record pull request that is
+    still open, and no more. Returns an error line, or None."""
+    root = pathlib.Path(root)
+    shape = (root / OUT).read_text()
+    n = behind(shape, (root / "notes/project-metrics/mutation-census.csv").read_text())
+    if n > 1:
+        return (f"{OUT} is {n} censuses behind notes/project-metrics/mutation-census.csv; "
+                f"the record job regenerates it with each census (mutation.yml), so a census "
+                f"record that did not carry it needs `python3 helpers/mutation_shape_sites.py "
+                f"check` on that census's shards")
+    return None
+
+
 def main(argv):
     if argv[:1] == ["--selftest"]:
         return selftest()
+    if argv[:1] == ["stale"]:
+        err = stale()
+        if err:
+            print(f"mutation_shape_sites: {err}", file=sys.stderr)
+            return 1
+        return 0
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check")
@@ -468,6 +499,13 @@ def selftest():
         (shard / "missed.txt").write_text("crates/c/src/gone.rs:1:27: replace | with ^\n")
         per_crate, text = check("2026-10-26", "1", "deadbeef", [shard], root=root, reader=read)
         assert list(csv.DictReader(text.splitlines()[1:]))[0]["verdict"] == "site"
+    # staleness: one census behind is the open record pull request; two is a missed regeneration
+    hdr = "census,run,crate\n"
+    cen = hdr + "2026-10-12,1,a\n2026-10-19,2,a\n2026-10-26,3,a\n2026-10-26,3,b\n"
+    assert behind("# census=2026-10-26 run=3 sha=x\n", cen) == 0
+    assert behind("# census=2026-10-19 run=2 sha=x\n", cen) == 1
+    assert behind("# census=2026-10-12 run=1 sha=x\n", cen) == 2
+    assert behind("crate,function\n", cen) == 3
     print("mutation_shape_sites: selftest ok")
     return 0
 

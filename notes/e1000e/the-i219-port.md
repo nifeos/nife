@@ -15,11 +15,11 @@ that the NVM port is read only.
 ## Why the I219 needs a port at all
 
 The I219 carries workarounds that only field exposure finds, so `pch` adapts FreeBSD's rather than
-writing its own. FreeBSD's Intel shared code (BSD-3-Clause) is the only source this tree reads for
-them. Linux's `e1000e` is GPL and was not consulted for any of it. This follows calef's amendment of
+writing its own. FreeBSD's Intel shared code (BSD-3-Clause) and `if_em.c` and `if_em.h` (BSD-2-Clause) are the only
+sources this tree reads for them. Linux's `e1000e` is GPL and was not consulted for any of it. This follows calef's amendment of
 2026-10-04 to §46 (thin primitives or whole subsystems): outside the kernel and the Kani-proved
 crates, take or adapt first. The constants are facts about the hardware. The sequences are
-FreeBSD's, adapted, and each adapted file carries Intel's license as its first condition requires.
+FreeBSD's, adapted, and each adapted file carries the license of the FreeBSD file it follows, as the first condition requires.
 
 ## The three passes
 
@@ -55,9 +55,9 @@ QEMU gates prove.
 - One read in FreeBSD's `SMBus` unforce is not mirrored. In `e1000_phy_is_accessible_pchlan`, a
   failed read of `CV_SMB_CTRL` leaves the previous register's value in the variable. That value is
   then written back with one bit cleared. This port writes only when the read succeeded.
-- The license's second condition is not met by any binary this tree ships yet. A binary
-  redistribution must reproduce Intel's notice "in the documentation and/or other materials". The
-  source carries it in each adapted file. Nothing that ships an image (the stick, a package)
+- The licenses' second condition is not met by any binary this tree ships yet. A binary
+  redistribution must reproduce Intel's notice and the `if_em.c` notice "in the documentation and/or
+  other materials". The source carries both in `pch/mod.rs`. Nothing that ships an image (the stick, a package)
   carries a third-party notices file, and none exists in the tree. Milestone 494's block records
   it.
 - Legacy descriptors on the I219 are an assumption. The 82574L supports them, and QEMU uses them

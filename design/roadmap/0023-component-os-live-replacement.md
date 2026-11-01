@@ -200,7 +200,7 @@ exposes, and a host test plays the painter.
   hangs a real `line_editor` behind a console that stops acknowledging. It asserts the verdict, a
   wait of at least the bound, `Gone` to the parked reader and the typist, a replacement that serves
   empty, and a budget that reclaims whole. A healthy quiesce took 2 to 8 ms across the three
-  ISAs, so the bound is about thirty times the slowest; the measurements are beside it. That `swish` and `rmle` treat `Gone` as a failed read is the supervisor's `BUGS`: which
+  ISAs, so the bound is about thirty times the slowest; the measurements are beside it. That `swish` treats `Gone` as a failed read is the supervisor's `BUGS`: which
   terminal requests may be repeated is a contract question, and an architect's.
 - **Done.** The advisory warning, 2026-09-27, as ruled in DECISIONS §231 (a swap's warning to a
   dependent is advisory, and the supervisor never waits for it). `broker` reads a warning page on
@@ -212,7 +212,7 @@ exposes, and a host test plays the painter.
 - **Done.** `line_editor` is swapped live, 2026-09-27, by `terminal_supervisor` (name provisional,
   calef's to name), which `system_initializer` now builds in its place. Rulings: DECISIONS §232 (the
   `line_editor` swap contract: a quiesce opcode on the served endpoint, and a retry flag), whose
-  `FLAG_RETRY` `swish` and `rmle` handle, and option A of `design/roadmap/0661-a-terminal-supervisor-holds-the-line-editor.md`
+  `FLAG_RETRY` `swish` handles, and option A of `design/roadmap/0661-a-terminal-supervisor-holds-the-line-editor.md`
   on 2026-09-27. `kernel::user::terminal_swap_tests` swaps it twice under a typist on all three
   architectures, carrying the half-typed line and the history. notes/interactive-stack-swap.md.
 - **Milestone 694.** Milestone 694 (the installer asks the terminal to swap).

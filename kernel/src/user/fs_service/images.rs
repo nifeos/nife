@@ -21,9 +21,8 @@ pub fn fs_server_image() -> Option<&'static [u8]> {
 /// files share one cause and a reader comparing two runs should not have to decide whether two
 /// wordings mean the same thing.
 ///
-/// It names two causes on purpose: most callers reach it from [`fs_server_image`] being `None`,
-/// and `rmle_tests` from `rmle_service::start` returning `None` on a machine with no RedoxFS
-/// disk.
+/// It names two causes on purpose: a caller reaches it from [`fs_server_image`] being `None`, or on a
+/// machine with no RedoxFS disk.
 pub const NO_FS_SERVER: &str = "no RedoxFS service on this boot: either nothing packed a \
                                 redoxfs_server into this archive, or this machine has no RedoxFS \
                                 disk for one to serve";

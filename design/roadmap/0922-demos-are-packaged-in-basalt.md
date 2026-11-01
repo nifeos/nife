@@ -1,7 +1,7 @@
 ---
 status: PARTIAL
 raised: 2026-10-14
-milestone_dependencies: 611, 809, 810, 921
+milestone_dependencies: 611, 809, 810
 decision_dependencies: 297, 195, 197, 250
 machine_requirements: none
 specific_machine: none
@@ -21,14 +21,13 @@ included). The number is provisional until the merge queue lands it; the title a
 drafts.)*
 
 calef approved on 2026-10-13 (UTC) a packaging order for first-party programs after the
-benchmarks: rmle and the demos as the first first-party optional packages, then `core-tools`.
+benchmarks: the demos as the first first-party optional package, then `core-tools`.
 `packages/demos.package.toml` makes `demos` `optional` and gives it one program,
-`least_authority_demo`. This follows milestone 921 (rmle is packaged in basalt, and `jig`
-installs it).
+`least_authority_demo`.
 
 ## The work
 
-1. A basalt recipe, `recipes/demos.toml`, on milestone 921's first-party shape: the `[[bin]]`
+1. A basalt recipe, `recipes/demos.toml`, on the first-party shape: the `[[bin]]`
    `least_authority_demo` of `components`, built at the pinned nife commit for each bare-metal
    target, `MIT OR Apache-2.0`, kind `optional`.
 2. `script/swish-check` types `jig install demos`, and once it installs, runs the installed
@@ -55,7 +54,7 @@ Lane `milestone/922-demos-are-packaged-in-basalt`, with nifeos/basalt#25.
 On aarch64, riscv64 and x86_64: a nife at basalt's pinned commit runs `jig install demos` against
 basalt's index, and the installed `least_authority_demo` squares the integer its line names.
 
-Reuse: milestone 921's first-party build, and milestone 810 (`ripgrep` is packaged in basalt and
+Reuse: milestone 810 (`ripgrep` is packaged in basalt and
 installed with `jig`)'s pins and publishing.
 
 ## BUGS

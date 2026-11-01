@@ -12,7 +12,7 @@
 //! partition table second: bytes 446 and up of a FAT boot sector are boot code, which this parse
 //! refuses or reads as nonsense.
 //!
-//! Name: provisional. The standard name of the structure.
+//! Name: ratified 2026-11-01 (UTC), the standard name of the structure.
 
 use crate::sector::{SectorDevice, SectorSize};
 
@@ -25,40 +25,41 @@ const ENTRIES: usize = 4;
 
 /// **The most partitions an MBR holds.**
 ///
-/// Name: provisional. The count, spelled like `TABLE_COUNT`.
+/// Name: ratified 2026-11-01 (UTC), the count, spelled like `TABLE_COUNT`.
 pub const PARTITION_COUNT: usize = ENTRIES;
 
 /// **Why sector 0 is not a usable partition table.**
 ///
-/// Name: provisional. Why a parse refused, beside `ParseError`.
+/// Name: ratified 2026-11-01 (UTC), why a parse refused, beside `ParseError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MasterBootRecordError {
     /// The sector is shorter than 512 bytes.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     TooShort,
     /// The last two bytes are not `0x55 0xAA`.
     ///
-    /// Name: provisional. The signature the specification requires.
+    /// Name: ratified 2026-11-01 (UTC), the signature the specification requires.
     NoSignature,
     /// Partition `index` has a status byte other than `0x00` and `0x80`, which the convention
     /// reserves.
     ///
-    /// Name: provisional. The status byte's two legal values.
+    /// Name: ratified 2026-11-01 (UTC), the status byte's two legal values.
     BadStatus {
         /// The entry's place in the table, 0 to 3.
         index: usize,
     },
     /// Partition `index` has a type but no sectors.
     ///
-    /// Name: provisional. A used entry with a zero length.
+    /// Name: ratified 2026-11-01 (UTC), a used entry with a zero length.
     EmptyPartition {
         /// The entry's place in the table, 0 to 3.
         index: usize,
     },
     /// Partition `index` ends past sector 2^32.
     ///
-    /// Name: provisional. First sector plus length overflows the 32-bit sector numbers.
+    /// Name: ratified 2026-11-01 (UTC), first sector plus length overflows the 32-bit sector
+    /// numbers.
     PartitionOverflows {
         /// The entry's place in the table, 0 to 3.
         index: usize,
@@ -67,7 +68,7 @@ pub enum MasterBootRecordError {
 
 /// **One used partition table entry.**
 ///
-/// Name: provisional. The standard name.
+/// Name: ratified 2026-11-01 (UTC), the standard name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Partition {
     bootable: bool,
@@ -79,28 +80,30 @@ pub struct Partition {
 impl Partition {
     /// Whether the status byte marks the partition active (`0x80`).
     ///
-    /// Name: provisional. The convention's "active" flag, named for what a firmware does with it.
+    /// Name: ratified 2026-11-01 (UTC), the convention's "active" flag, named for what a firmware
+    /// does with it.
     pub const fn is_bootable(&self) -> bool {
         self.bootable
     }
 
     /// The partition type byte as stored: `0x0B` for FAT32, for example.
     ///
-    /// Name: provisional. The convention's "partition type".
-    pub const fn kind(&self) -> u8 {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `kind`: the convention's "partition type"
+    /// byte.
+    pub const fn partition_type(&self) -> u8 {
         self.kind
     }
 
     /// The partition's first sector, in the device's sectors.
     ///
-    /// Name: provisional. `first_sector` as in `VolumeLayout`.
+    /// Name: ratified 2026-11-01 (UTC), `first_sector` as in `VolumeLayout`.
     pub const fn first_sector(&self) -> u32 {
         self.first_sector
     }
 
     /// The partition's length in sectors; at least 1.
     ///
-    /// Name: provisional. A count of sectors.
+    /// Name: ratified 2026-11-01 (UTC), a count of sectors.
     pub const fn sector_count(&self) -> u32 {
         self.sectors
     }
@@ -111,15 +114,17 @@ impl Partition {
     /// The type is a hint. A volume is a FAT volume if its boot sector says so, and
     /// [`Volume::open`](crate::Volume::open) is what checks that.
     ///
-    /// Name: provisional. Names the file system rather than listing the bytes.
-    pub const fn holds_file_allocation_table(&self) -> bool {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `holds_file_allocation_table`: `has_` before a
+    /// thing held, and it names the type the partition carries and not the table.
+    pub const fn has_file_allocation_table_type(&self) -> bool {
         matches!(self.kind, 0x01 | 0x04 | 0x06 | 0x0B | 0x0C | 0x0E | 0xEF)
     }
 
     /// **The device that shows only this partition**, with sector 0 its first sector.
     ///
-    /// Name: provisional. Wraps `device` for this partition.
-    pub const fn device<D>(self, device: D) -> PartitionDevice<D> {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `device`: it restricts a device to this
+    /// partition and returns a new one.
+    pub const fn restrict_device<D>(self, device: D) -> PartitionDevice<D> {
         PartitionDevice {
             device,
             first_sector: self.first_sector,
@@ -130,7 +135,7 @@ impl Partition {
 
 /// **A partition table read from sector 0.**
 ///
-/// Name: provisional. The standard name.
+/// Name: ratified 2026-11-01 (UTC), the standard name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MasterBootRecord {
     partitions: [Option<Partition>; ENTRIES],
@@ -145,7 +150,7 @@ impl MasterBootRecord {
     /// rest. Partitions that overlap each other, or run past the device, are not detected; the
     /// device refuses a read past its end.
     ///
-    /// Name: provisional. The verb `BootSector::parse` uses for hostile bytes.
+    /// Name: ratified 2026-11-01 (UTC), the verb `BootSector::parse` uses for hostile bytes.
     pub fn parse(sector: &[u8]) -> Result<MasterBootRecord, MasterBootRecordError> {
         if sector.len() < SectorSize::Bytes512.bytes() {
             return Err(MasterBootRecordError::TooShort);
@@ -186,7 +191,7 @@ impl MasterBootRecord {
 
     /// **Read sector 0 of `device` and parse it.**
     ///
-    /// Name: provisional. Beside `BootSector::read`.
+    /// Name: ratified 2026-11-01 (UTC), beside `BootSector::read`.
     pub fn read<D: SectorDevice>(
         device: &mut D,
     ) -> Result<MasterBootRecord, MasterBootRecordReadError<D::Error>> {
@@ -202,7 +207,7 @@ impl MasterBootRecord {
     /// The partition at table position `index` (0 to 3), or `None` for an unused entry and for an
     /// index past the table.
     ///
-    /// Name: provisional. A partition by its place.
+    /// Name: ratified 2026-11-01 (UTC), a partition by its place.
     pub const fn partition(&self, index: usize) -> Option<Partition> {
         if index < ENTRIES {
             self.partitions[index]
@@ -213,7 +218,7 @@ impl MasterBootRecord {
 
     /// Every used partition, in table order.
     ///
-    /// Name: provisional. The used entries.
+    /// Name: ratified 2026-11-01 (UTC), the used entries.
     pub fn partitions(&self) -> impl Iterator<Item = Partition> + '_ {
         self.partitions.iter().flatten().copied()
     }
@@ -221,31 +226,31 @@ impl MasterBootRecord {
 
 /// **Why [`MasterBootRecord::read`] failed.**
 ///
-/// Name: provisional. Beside `ReadError`.
+/// Name: ratified 2026-11-01 (UTC), beside `ReadError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MasterBootRecordReadError<E> {
     /// The device refused to read sector 0; its own error, unchanged.
     ///
-    /// Name: provisional. The same variant `ReadError` has.
+    /// Name: ratified 2026-11-01 (UTC), the same variant `ReadError` has.
     Device(E),
     /// Sector 0 is not a partition table.
     ///
-    /// Name: provisional. The same variant `ReadError` has.
+    /// Name: ratified 2026-11-01 (UTC), the same variant `ReadError` has.
     Parse(MasterBootRecordError),
 }
 
 /// **Why a [`PartitionDevice`] read failed.**
 ///
-/// Name: provisional. Beside `ChainError`.
+/// Name: ratified 2026-11-01 (UTC), beside `ChainError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PartitionError<E> {
     /// The device refused the read; its own error, unchanged.
     ///
-    /// Name: provisional. The same variant `ReadError` has.
+    /// Name: ratified 2026-11-01 (UTC), the same variant `ReadError` has.
     Device(E),
     /// The sector asked for is past the partition's last sector.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     OutsidePartition(u64),
 }
 
@@ -263,8 +268,8 @@ pub enum PartitionError<E> {
 ///
 /// fn open<D: SectorDevice>(mut disk: D) -> Option<()> {
 ///     let table = MasterBootRecord::read(&mut disk).ok()?;
-///     let partition = table.partitions().find(|p| p.holds_file_allocation_table())?;
-///     let volume = Volume::open(partition.device(disk)).ok()?;
+///     let partition = table.partitions().find(|p| p.has_file_allocation_table_type())?;
+///     let volume = Volume::open(partition.restrict_device(disk)).ok()?;
 ///     let _root = volume.boot_sector().root_directory();
 ///     Some(())
 /// }
@@ -277,7 +282,7 @@ pub enum PartitionError<E> {
 /// assert_eq!(open(Empty), None);
 /// ```
 ///
-/// Name: provisional. A device that is one partition.
+/// Name: ratified 2026-11-01 (UTC), a device that is one partition.
 #[derive(Debug, Clone, Copy)]
 pub struct PartitionDevice<D> {
     device: D,
@@ -288,7 +293,7 @@ pub struct PartitionDevice<D> {
 impl<D> PartitionDevice<D> {
     /// Give the underlying device back.
     ///
-    /// Name: provisional. The `into_` convention, as `Volume::into_device`.
+    /// Name: ratified 2026-11-01 (UTC), the `into_` convention, as `Volume::into_device`.
     pub fn into_device(self) -> D {
         self.device
     }

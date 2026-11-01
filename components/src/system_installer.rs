@@ -418,6 +418,8 @@ fn install(boot_file_len: u64) -> ! {
         boot_file_len,
         volume_id,
         BOOT_FILE_NAME,
+        // The installer has no wall clock, so the volume carries the zero timestamp.
+        &mut fat::NoClock,
     ) else {
         send(REPORT, R_DISK_FAILED, 2, boot_file_len);
         user_mode_runtime::exit()

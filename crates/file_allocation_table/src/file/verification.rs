@@ -7,7 +7,7 @@
 //! target reads whole images. What a span's bytes are is the device's: the read copies the span
 //! out of one sector, and that a span lies inside one sector is proved here.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::directory::verification::fat12;
@@ -59,7 +59,7 @@ fn a_file_read_stays_inside_its_size_and_its_clusters() {
             }
             Err(error) => {
                 if failed {
-                    assert_eq!(error, FileReadError::AfterAFailure);
+                    assert_eq!(error, FileReadError::Failed);
                 }
                 failed = true;
             }

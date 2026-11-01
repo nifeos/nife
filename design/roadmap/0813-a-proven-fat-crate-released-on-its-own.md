@@ -60,14 +60,19 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
    [stage-5-reading-files-and-the-partition-table.md](0813-a-proven-fat-crate-released-on-its-own/stage-5-reading-files-and-the-partition-table.md)
    has what landed.
 6. Allocation, write, extend, truncate and delete, with FSInfo and the dirty bit, and the
-   round-trip harness. Two pull requests. The first has landed table writes, allocation, chain
-   release and cut, and the `FSInfo` hints:
-   [stage-6-allocation-and-write.md](0813-a-proven-fat-crate-released-on-its-own/stage-6-allocation-and-write.md).
-   The second takes file writes, the dirty bit and the round-trip harness.
-7. Make and remove directories, rename, and long-name creation with alias numbering.
+   round-trip harness. Built in two pull requests:
+   [stage-6-allocation-and-write.md](0813-a-proven-fat-crate-released-on-its-own/stage-6-allocation-and-write.md)
+   has what landed.
+7. Make and remove directories, rename, and long-name creation with alias numbering. Built:
+   [stage-7-directories-and-long-names.md](0813-a-proven-fat-crate-released-on-its-own/stage-7-directories-and-long-names.md).
 8. The general format for FAT12, FAT16 and FAT32, folding the `mkfs` in, with FAT12 and FAT16
-   oracle images.
+   oracle images. Built:
+   [stage-8-the-general-format.md](0813-a-proven-fat-crate-released-on-its-own/stage-8-the-general-format.md).
 9. Timestamps, attributes and the label, then `script/crate-standalone` and the README for release.
+   Attributes, the label and the README landed
+   ([stage-9](0813-a-proven-fat-crate-released-on-its-own/stage-9-attributes-labels-and-the-release-checks.md)).
+   Timestamps landed (2026-11-01 UTC): a writer supplies a `Clock`, `NoClock` means no time, the
+   crate refuses an unstorable time, and a read takes no clock.
 
 ## What exists, checked 2026-10-07 (UTC)
 
@@ -149,11 +154,12 @@ carries a machine-replayable falsification record) and `script/falsifications` r
 
 | property | harness |
 |---|---|
-| No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run, partition table) takes a symbolic sector and returns a value or an error | boot sector and BPB: `boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`, `the_fat_type_is_the_cluster_counts`, `the_table_has_an_entry_for_every_cluster`, `only_a_data_cluster_has_sectors`; FAT entry: `table::verification::every_entry_lies_inside_the_table`, `an_entry_decodes_by_its_markers`; directory entry: `directory::verification::every_slot_parses_as_its_bytes_say`, `a_directory_reads_only_its_own_sectors`; long-name run: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed`; partition table: `master_boot_record::verification::every_sector_parses_to_a_sound_table_or_an_error`; FSInfo: `fs_info::verification::every_sector_parses_to_hints_inside_the_volume` |
+| No panic and no out-of-bounds read on any image: every parse step (boot sector, BPB, FSInfo, FAT entry, directory entry, long-name run, partition table) takes a symbolic sector and returns a value or an error | boot sector and BPB: `boot_sector::verification::what_the_parse_accepts_lies_inside_the_volume`, `the_fat_type_is_the_cluster_counts`, `the_table_has_an_entry_for_every_cluster`, `only_a_data_cluster_has_sectors`; FAT entry: `table::verification::every_entry_lies_inside_the_table`, `an_entry_decodes_by_its_markers`; directory entry: `directory::verification::every_slot_parses_as_its_bytes_say`, `a_directory_reads_only_its_own_sectors`; long-name run: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed`; partition table: `master_boot_record::verification::every_sector_parses_to_a_sound_table_or_an_error`; FSInfo: `file_system_information::verification::every_sector_parses_to_hints_inside_the_volume` |
 | Cluster chains cannot loop: a walk from any start over any FAT contents ends within the volume's cluster count, at an end-of-chain marker or with an error | `reader::verification::no_chain_walk_outlasts_the_volume`, on volumes of one to eight clusters; file reads: `file::verification::a_file_read_stays_inside_its_size_and_its_clusters`; partitions: `master_boot_record::verification::a_partition_device_reads_only_its_partition` |
-| A table write changes only its entry, allocation takes one free cluster, a release never frees a bad or reserved cluster, a cut keeps exactly the head of the chain, and an `FSInfo` store changes only its two hints | `table::verification::a_stored_entry_reads_back_and_disturbs_nothing_else`, `encoding_inverts_decoding`; `allocation::verification::allocation_takes_one_free_cluster_and_nothing_else`, `a_release_frees_only_its_own_chain`, `a_cut_keeps_exactly_the_head_of_the_chain`; `fs_info::verification::a_store_changes_only_the_two_hints` |
-| Write then read round-trips on a small symbolic volume, byte for byte, with the FAT and directory consistent | none yet |
-| Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`; reader: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed` |
+| A table write changes only its entry, allocation takes one free cluster, a release never frees a bad or reserved cluster, a cut keeps exactly the head of the chain, and an `FSInfo` store changes only its two hints | `table::verification::a_stored_entry_reads_back_and_disturbs_nothing_else`, `encoding_inverts_decoding`; `allocation::verification::allocation_takes_one_free_cluster_and_nothing_else`, `a_release_frees_only_its_own_chain`, `a_cut_keeps_exactly_the_head_of_the_chain`; `file_system_information::verification::a_store_changes_only_the_two_hints` |
+| A format reads back as itself: its boot sector parses to the same type, clusters, table size and data start | `format::verification::a_geometry_parses_back_to_itself` |
+| Write then read round-trips on a small symbolic volume, byte for byte, with the chain as long as the size needs; the directory entry is the oracle tests' | `write_cursor::verification::a_partial_sector_write_keeps_the_head_and_zeroes_the_slack`, `a_write_extends_the_chain_to_the_size_and_stays_inside_it` |
+| Directory entries and long names are well formed: every short name is legal, every long-name run carries the matching checksum and ordinals, every alias carries its number, and the reader refuses a run that does not | writer: `long_name::verification::the_checksum_is_the_specifications_loop`, `every_long_name_run_is_well_formed`, `every_alias_is_a_legal_short_name`, `every_numbered_alias_carries_its_number`; `directory_writer::verification::the_run_finder_returns_the_first_run_of_free_slots`; reader: `long_name_assembly::verification::a_run_is_accepted_only_when_it_is_well_formed` |
 
 Kani bounds its inputs, so whole-image coverage comes from composing per-sector proofs, with
 `script/fuzz` over whole images as the backstop. The block states that bound rather than claiming
@@ -165,7 +171,7 @@ more. Not proven, by design: crash consistency (FAT has none), and the caller's 
 - Write a tree (long names, nested directories, a file spanning many clusters, a delete, a rename)
   and check it two ways: rust-fatfs reads back the same names and bytes, and `fsck_msdos` exits 0.
   Where CI runs Linux, `fsck.fat` from dosfstools stands in, run as a tool and never linked.
-  Until stage 6 writes a tree, `tests/the_oracle_agrees.rs` checks the other direction.
+  `tests/the_oracle_agrees.rs` checks the other direction.
 - FAT12 and FAT16 volumes made by `newfs_msdos` or `mkfs.fat`, since #1803's images are FAT32 only.
   No test image is made by this crate.
 
@@ -210,10 +216,8 @@ tree's build, so nothing about it can work on one target and not another.
 
 ## Standalone, measured 2026-10-11 (UTC)
 
-`script/crate-standalone file_allocation_table` found, at base `ae6b91e79`, a manifest that
-inherits `license` and `lints` from nife's workspace, with no `rust-version`, README or license
-files. It found 14 lines that cite this tree, and a test that reads `../../target/` through
-`CARGO_MANIFEST_DIR`, which a stranger's checkout lacks. All nine crates share the manifest gaps.
+`script/crate-standalone file_allocation_table` found, at base `ae6b91e79`, a workspace-inherited
+manifest, no README or license files, and 14 lines that cite this tree.
 
 `script/names` reports the name `file_allocation_table` ratified (checked 2026-10-25).
 
@@ -225,7 +229,7 @@ falsification patch fails its harness.
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn
   handoff or nife error enum in a public signature. A reviewer judges this; no script can.
-  The sector interfaces take a sector size and an index.
+ 
 
 ## Exit
 
@@ -285,14 +289,14 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** The second pull request of stage 6, then stages 7 to 9. Checked 2026-10-31
-  (UTC): the crate reads, writes the table, and holds the `mkfs`; nothing writes a file or directory yet.
+- **Outstanding.** The crate's names. Checked 2026-11-01 (UTC): the stages have landed.
 
 ## BUGS
 
 - Steps 4 and 5 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team.
 - The "about 5,000 lines" figure is the probed crates' size, not an estimate of this one.
+- No test reaches a directory's 65,536-entry ceiling.
 
 ## Index row
 

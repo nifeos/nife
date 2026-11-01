@@ -4,7 +4,7 @@
 //! This is the reader's half of the property that long names are well formed; the writer's half
 //! is in `long_name/verification.rs`.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::long_name::checksum;

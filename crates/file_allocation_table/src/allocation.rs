@@ -12,32 +12,34 @@
 //! - A chain is freed from its first cluster on, one entry at a time.
 //!
 //! The FAT32 `FSInfo` hints are kept in memory as the operations change them and written by
-//! [`Volume::sync`]. A volume that is dropped without a sync leaves hints the specification
+//! [`crate::WritableVolume::mark_clean`]. A volume that is dropped without `mark_clean` leaves hints the specification
 //! already calls untrustworthy.
 //!
-//! Name: provisional. The module that finds free clusters and owns the table's writes.
+//! Name: ratified 2026-11-01 (UTC), the module that finds free clusters and owns the table's
+//! writes.
 
-use crate::fs_info::FsInfo;
+use crate::boot_sector::FileAllocationTableType;
+use crate::file_system_information::FileSystemInformation;
 use crate::reader::{ChainError, Links, Volume, Walk, is_data};
 use crate::sector::WritableSectorDevice;
 use crate::table::{self, TableEntry};
 
 /// **Why an allocation or a release stopped.**
 ///
-/// Name: provisional. Beside `ChainError`, which it wraps.
+/// Name: ratified 2026-11-01 (UTC), beside `ChainError`, which it wraps.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AllocationError<E> {
     /// The table or a sector could not be read or written; the chain error, unchanged.
     ///
-    /// Name: provisional. The same variant `FileReadError` has.
+    /// Name: ratified 2026-11-01 (UTC), the same variant `FileReadError` has.
     Chain(ChainError<E>),
     /// Every data cluster is in use.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     VolumeFull,
     /// The cluster to extend is not the last of its chain: its entry is not end-of-chain.
     ///
-    /// Name: provisional. The condition, in the table's terms.
+    /// Name: ratified 2026-11-01 (UTC), the condition, in the table's terms.
     NotTheEndOfAChain(u32),
 }
 
@@ -56,6 +58,10 @@ pub(crate) trait LinksMut: Links {
         cluster: u32,
         entry: TableEntry,
     ) -> Result<(), ChainError<Self::Error>>;
+
+    /// Take a free cluster for the end of a chain: linked after `last` when given, else the first
+    /// of a new chain. `Ok(None)` means the volume has no free cluster.
+    fn append(&mut self, last: Option<u32>) -> Result<Option<u32>, ChainError<Self::Error>>;
 }
 
 /// **Find a free cluster, mark it end-of-chain and return it.** The search starts at `hint`
@@ -83,7 +89,7 @@ pub(crate) fn allocate<L: LinksMut>(
 /// Ends at the end-of-chain entry. A broken entry, or a chain with more clusters than the volume
 /// holds, ends it with the error after the clusters before it are free. A chain that loops reaches
 /// a cluster it has already freed, whose entry reads free, so it ends there.
-pub(crate) fn free_chain<L: LinksMut>(
+pub(crate) fn deallocate_chain<L: LinksMut>(
     links: &mut L,
     first: u32,
 ) -> Result<u32, ChainError<L::Error>> {
@@ -121,7 +127,7 @@ pub(crate) fn truncate_chain<L: LinksMut>(
     keep: u32,
 ) -> Result<u32, ChainError<L::Error>> {
     if keep == 0 {
-        return free_chain(links, first);
+        return deallocate_chain(links, first);
     }
     let mut walk = Walk::new(first);
     let mut last = first;
@@ -136,7 +142,7 @@ pub(crate) fn truncate_chain<L: LinksMut>(
         TableEntry::Next(tail) if is_data(links.clusters(), tail) => {
             // The cut goes in before the tail is freed: a crash between the two leaks the tail.
             links.set_table_entry(last, TableEntry::EndOfChain)?;
-            free_chain(links, tail)
+            deallocate_chain(links, tail)
         }
         entry => Err(ChainError::Broken {
             cluster: last,
@@ -157,6 +163,10 @@ pub(crate) struct WriterState {
     loaded: bool,
     /// Whether the hints differ from what the device holds.
     pub(crate) hints_changed: bool,
+    /// Whether this volume cleared the clean-shutdown bit and has not set it back.
+    marked_dirty: bool,
+    /// Whether the clean-shutdown bit was set before this volume cleared it.
+    was_clean: bool,
 }
 
 impl WriterState {
@@ -166,6 +176,8 @@ impl WriterState {
             free_clusters: None,
             loaded: false,
             hints_changed: false,
+            marked_dirty: false,
+            was_clean: false,
         }
     }
 }
@@ -177,6 +189,18 @@ impl<D: WritableSectorDevice> LinksMut for Volume<D> {
         entry: TableEntry,
     ) -> Result<(), ChainError<D::Error>> {
         self.write_table_entry(cluster, entry)
+    }
+
+    fn append(&mut self, last: Option<u32>) -> Result<Option<u32>, ChainError<D::Error>> {
+        match self.allocate_cluster(last) {
+            Ok(cluster) => Ok(Some(cluster)),
+            Err(AllocationError::VolumeFull) => Ok(None),
+            Err(AllocationError::Chain(error)) => Err(error),
+            Err(AllocationError::NotTheEndOfAChain(cluster)) => Err(ChainError::Broken {
+                cluster,
+                entry: TableEntry::Reserved,
+            }),
+        }
     }
 }
 
@@ -207,9 +231,17 @@ impl<D: WritableSectorDevice> Volume<D> {
         cluster: u32,
         entry: TableEntry,
     ) -> Result<(), ChainError<D::Error>> {
+        self.boot
+            .cluster_first_sector(cluster)
+            .ok_or(ChainError::NotADataCluster(cluster))?;
+        let raw = entry.encode(self.boot.file_allocation_table_type());
+        self.write_raw_entry(cluster, raw)
+    }
+
+    /// Store `raw` as table entry `cluster` (any index below `clusters() + 2`) in every live copy.
+    fn write_raw_entry(&mut self, cluster: u32, raw: u32) -> Result<(), ChainError<D::Error>> {
         let boot = self.boot;
         let file_allocation_table_type = boot.file_allocation_table_type();
-        let raw = entry.encode(file_allocation_table_type);
         let wanted = table::entry_bytes(file_allocation_table_type);
         let size = boot.sector_size().bytes();
         let live = match boot.active_table() {
@@ -217,7 +249,7 @@ impl<D: WritableSectorDevice> Volume<D> {
             None => 0..boot.table_count(),
         };
         for copy in live {
-            let (sector, within) = table::entry_position_in(&boot, cluster, copy)
+            let (sector, within) = table::raw_position_in(&boot, cluster, copy)
                 .ok_or(ChainError::NotADataCluster(cluster))?;
             let here = wanted.min(size - within);
             let mut bytes = [0u8; 4];
@@ -239,18 +271,38 @@ impl<D: WritableSectorDevice> Volume<D> {
         Ok(())
     }
 
+    /// Clear the clean-shutdown bit before the first change after open or after `mark_clean`, and
+    /// remember whether it was set. A volume found dirty stays dirty at the next `mark_clean`, since this
+    /// crate cannot know the earlier writer left it consistent.
+    pub(crate) fn begin_change(&mut self) -> Result<(), ChainError<D::Error>> {
+        if self.writer.marked_dirty {
+            return Ok(());
+        }
+        if let Some(bit) = self.clean_bit() {
+            let entry = self.read_raw_entry(1)?;
+            self.writer.was_clean = entry & bit != 0;
+            if self.writer.was_clean {
+                self.write_raw_entry(1, entry & !bit)?;
+            }
+        }
+        self.writer.marked_dirty = true;
+        Ok(())
+    }
+
     /// Read the `FSInfo` hints from the device the first time a change needs them.
     fn load_hints(&mut self) -> Result<(), ChainError<D::Error>> {
         if self.writer.loaded {
             return Ok(());
         }
         self.writer.loaded = true;
-        if let Some(sector) = self.boot.fs_info_sector() {
+        if let Some(sector) = self.boot.file_system_information_sector() {
             self.read_into_buffer(u32::from(sector))?;
             let size = self.boot.sector_size().bytes();
-            if let Ok(info) = FsInfo::parse(&self.buffer[..size], self.boot.clusters()) {
-                self.writer.free_clusters = info.free_clusters();
-                self.writer.next_free = info.next_free().unwrap_or(2);
+            if let Ok(info) =
+                FileSystemInformation::parse(&self.buffer[..size], self.boot.clusters())
+            {
+                self.writer.free_clusters = info.free_cluster_count();
+                self.writer.next_free = info.next_free_cluster().unwrap_or(2);
             }
         }
         Ok(())
@@ -265,11 +317,13 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// `FSInfo`'s hint when the volume has not allocated yet. Refuses an `extending` cluster whose
     /// entry is not end-of-chain, and a full volume.
     ///
-    /// Name: provisional. What a caller asks of a volume that has to grow a file or a directory.
-    pub fn allocate_cluster(
+    /// Name: ratified 2026-11-01 (UTC), what a caller asks of a volume that has to grow a file or a
+    /// directory.
+    pub(crate) fn allocate_cluster(
         &mut self,
         extending: Option<u32>,
     ) -> Result<u32, AllocationError<D::Error>> {
+        self.begin_change()?;
         self.load_hints()?;
         if let Some(last) = extending {
             let entry = self.table_entry(last)?;
@@ -300,10 +354,15 @@ impl<D: WritableSectorDevice> Volume<D> {
 
     /// **Free every cluster of the chain that starts at `first`**, and return how many.
     ///
-    /// Name: provisional. Beside `allocate_cluster`.
-    pub fn free_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `free_chain`: the verb beside
+    /// `allocate_cluster`; `free` also reads as an adjective, as in `count_free_clusters`.
+    pub(crate) fn deallocate_chain(
+        &mut self,
+        first: u32,
+    ) -> Result<u32, AllocationError<D::Error>> {
+        self.begin_change()?;
         self.load_hints()?;
-        let result = free_chain(self, first);
+        let result = deallocate_chain(self, first);
         self.note_released(&result);
         Ok(result?)
     }
@@ -311,12 +370,13 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// **Cut the chain that starts at `first` to its first `keep` clusters**, and return how many
     /// clusters it freed. A `keep` of 0 frees the whole chain.
     ///
-    /// Name: provisional. Beside `free_chain`.
-    pub fn truncate_chain(
+    /// Name: ratified 2026-11-01 (UTC), beside `deallocate_chain`.
+    pub(crate) fn truncate_chain(
         &mut self,
         first: u32,
         keep: u32,
     ) -> Result<u32, AllocationError<D::Error>> {
+        self.begin_change()?;
         self.load_hints()?;
         let result = truncate_chain(self, first, keep);
         self.note_released(&result);
@@ -339,22 +399,36 @@ impl<D: WritableSectorDevice> Volume<D> {
         }
     }
 
-    /// **Write the `FSInfo` hints to the device**, when an operation changed them. FAT12 and FAT16
-    /// volumes have no `FSInfo`, and a FAT32 volume whose `FSInfo` sector is missing or has a bad
-    /// signature is left alone: the crate never makes a sector into `FSInfo`.
+    /// **Mark the volume clean**: set the clean-shutdown bit again if this volume was clean when
+    /// it was opened, and write the `FSInfo` hints to the device when an operation changed them.
+    /// FAT12 and FAT16 volumes have no `FSInfo`, and a FAT32 volume whose `FSInfo` sector is
+    /// missing, or whose three signatures are not all right, is left alone: the crate never makes
+    /// a sector into `FSInfo`.
     ///
-    /// Name: provisional. The verb of the standard library's `Write::flush`, for the volume's own
-    /// state.
-    pub fn sync(&mut self) -> Result<(), ChainError<D::Error>> {
-        if !self.writer.hints_changed {
-            return Ok(());
+    /// Name: ratified 2026-11-01 (UTC), renamed from `sync`: it sets the clean-shutdown bit and
+    /// writes the `FSInfo` hints, which `sync` did not say.
+    pub(crate) fn mark_clean(&mut self) -> Result<(), ChainError<D::Error>> {
+        if self.writer.hints_changed {
+            self.write_hints()?;
         }
-        if let Some(sector) = self.boot.fs_info_sector() {
+        if self.writer.marked_dirty {
+            if let (Some(bit), true) = (self.clean_bit(), self.writer.was_clean) {
+                let entry = self.read_raw_entry(1)?;
+                self.write_raw_entry(1, entry + bit)?;
+            }
+            self.writer.marked_dirty = false;
+        }
+        Ok(())
+    }
+
+    /// Write the `FSInfo` hints.
+    fn write_hints(&mut self) -> Result<(), ChainError<D::Error>> {
+        if let Some(sector) = self.boot.file_system_information_sector() {
             self.read_into_buffer(u32::from(sector))?;
             let size = self.boot.sector_size().bytes();
             let free = self.writer.free_clusters;
             let next = self.writer.next_free;
-            if FsInfo::store(&mut self.buffer[..size], free, Some(next)) {
+            if FileSystemInformation::store(&mut self.buffer[..size], free, Some(next)) {
                 self.write_buffer(u32::from(sector))?;
             }
         }
@@ -364,9 +438,30 @@ impl<D: WritableSectorDevice> Volume<D> {
 }
 
 impl<D: crate::sector::SectorDevice> Volume<D> {
+    /// The clean-shutdown bit of table entry 1, or `None` for FAT12, which has none.
+    fn clean_bit(&self) -> Option<u32> {
+        match self.boot.file_allocation_table_type() {
+            FileAllocationTableType::Fat12 => None,
+            FileAllocationTableType::Fat16 => Some(0x8000),
+            FileAllocationTableType::Fat32 => Some(0x0800_0000),
+        }
+    }
+
+    /// **Whether the volume was shut down cleanly**, from the bit in table entry 1: `Ok(None)` on
+    /// FAT12, which keeps no such bit. A volume this crate is changing reads as not clean until
+    /// [`crate::WritableVolume::mark_clean`] sets the bit again.
+    ///
+    /// Name: ratified 2026-11-01 (UTC), the specification's `ClnShutBitMask`, asked as a question.
+    pub fn is_clean(&mut self) -> Result<Option<bool>, ChainError<D::Error>> {
+        let Some(bit) = self.clean_bit() else {
+            return Ok(None);
+        };
+        Ok(Some(self.read_raw_entry(1)? & bit != 0))
+    }
+
     /// **Count the free clusters** by reading the whole table: exact where `FSInfo` is a hint.
     ///
-    /// Name: provisional. What `FSI_Free_Count` claims, counted.
+    /// Name: ratified 2026-11-01 (UTC), what `FSI_Free_Count` claims, counted.
     pub fn count_free_clusters(&mut self) -> Result<u32, ChainError<D::Error>> {
         let clusters = self.boot.clusters();
         let mut free = 0;
@@ -381,9 +476,12 @@ impl<D: crate::sector::SectorDevice> Volume<D> {
     /// **The `FSInfo` hints the device holds**, or `Ok(None)` for a volume with no `FSInfo` sector
     /// or one whose signatures are wrong.
     ///
-    /// Name: provisional. Reads what `Volume::sync` writes.
-    pub fn fs_info(&mut self) -> Result<Option<FsInfo>, ChainError<D::Error>> {
-        let Some(sector) = self.boot.fs_info_sector() else {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `fs_info`: reads what `Volume::mark_clean`
+    /// writes.
+    pub fn file_system_information(
+        &mut self,
+    ) -> Result<Option<FileSystemInformation>, ChainError<D::Error>> {
+        let Some(sector) = self.boot.file_system_information_sector() else {
             return Ok(None);
         };
         let size = self.boot.sector_size().bytes();
@@ -392,12 +490,12 @@ impl<D: crate::sector::SectorDevice> Volume<D> {
             .read_sector(u64::from(sector), &mut buffer[..size])
             .map_err(ChainError::Device)?;
         self.cached = None;
-        Ok(FsInfo::parse(&buffer[..size], self.boot.clusters()).ok())
+        Ok(FileSystemInformation::parse(&buffer[..size], self.boot.clusters()).ok())
     }
 }
 
 #[cfg(kani)]
-mod verification;
+pub(crate) mod verification;
 
 #[cfg(test)]
 mod tests;

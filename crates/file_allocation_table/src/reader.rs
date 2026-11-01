@@ -8,9 +8,10 @@
 use crate::allocation::WriterState;
 use crate::boot_sector::{BootSector, ReadError};
 use crate::directory::Directory;
-use crate::named_entry::Entries;
+use crate::named_entry::NamedEntries;
 use crate::sector::{SectorDevice, SectorSize};
 use crate::table::{self, TableEntry};
+use crate::time::Stamp;
 
 /// **Why a table read or a chain walk stopped.**
 ///
@@ -53,10 +54,10 @@ pub enum ChainError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{SECTOR_BYTES, SectorDevice, SectorSize, Volume, VolumeLayout};
+/// use file_allocation_table::{SECTOR_BYTES, SectorDevice, SectorSize, Volume, VolumeLayout, NoClock};
 ///
 /// // A volume this crate's writer lays out, held in memory.
-/// let layout = VolumeLayout::new(70_000 * 8 + 2_000, 0, 5_000, 1, "BOOTX64.EFI").unwrap();
+/// let layout = VolumeLayout::new(70_000 * 8 + 2_000, 0, 5_000, 1, "BOOTX64.EFI", &mut NoClock).unwrap();
 /// struct Image(VolumeLayout);
 /// impl SectorDevice for Image {
 ///     type Error = ();
@@ -87,6 +88,8 @@ pub struct Volume<D> {
     pub(crate) buffer: [u8; SectorSize::MAX],
     /// What the writer keeps between calls; a reader never touches it.
     pub(crate) writer: WriterState,
+    /// The time the operation under way stamps: packed from the clock once per operation.
+    pub(crate) stamp: Stamp,
 }
 
 impl<D: SectorDevice> Volume<D> {
@@ -104,6 +107,7 @@ impl<D: SectorDevice> Volume<D> {
             cached: None,
             buffer: [0; SectorSize::MAX],
             writer: WriterState::new(),
+            stamp: Stamp::ZERO,
         })
     }
 
@@ -155,8 +159,25 @@ impl<D: SectorDevice> Volume<D> {
     /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `entry` (it reads a file allocation table
     /// entry, and the crate has three other kinds of entry). Reads one `TableEntry`.
     pub fn table_entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>> {
-        let (sector, within) = table::entry_position(&self.boot, cluster)
+        self.boot
+            .cluster_first_sector(cluster)
             .ok_or(ChainError::NotADataCluster(cluster))?;
+        let raw = self.read_raw_entry(cluster)?;
+        Ok(TableEntry::decode(
+            self.boot.file_allocation_table_type(),
+            raw,
+        ))
+    }
+
+    /// The raw value of table entry `index`, for an index below `clusters() + 2`: the two reserved
+    /// entries are readable here and not through [`Volume::table_entry`].
+    pub(crate) fn read_raw_entry(&mut self, index: u32) -> Result<u32, ChainError<D::Error>> {
+        let (sector, within) = table::raw_position_in(
+            &self.boot,
+            index,
+            self.boot.active_table().unwrap_or_default(),
+        )
+        .ok_or(ChainError::NotADataCluster(index))?;
         let file_allocation_table_type = self.boot.file_allocation_table_type();
         let size = self.boot.sector_size().bytes();
         let mut bytes = [0u8; 4];
@@ -169,8 +190,7 @@ impl<D: SectorDevice> Volume<D> {
             self.load(sector + 1)?;
             bytes[here..wanted].copy_from_slice(&self.buffer[..wanted - here]);
         }
-        let raw = table::assemble(file_allocation_table_type, cluster, bytes);
-        Ok(TableEntry::decode(file_allocation_table_type, raw))
+        Ok(table::assemble(file_allocation_table_type, index, bytes))
     }
 
     /// **The chain that starts at `first`**, cluster by cluster.
@@ -198,16 +218,18 @@ impl<D: SectorDevice> Volume<D> {
 
     /// **The root directory as named entries**: each short entry with its checked long name.
     ///
-    /// Name: provisional. [`Volume::root_directory`] with the names joined.
-    pub fn root_entries(&mut self) -> Entries<'_, D> {
-        Entries::new(self.root_directory())
+    /// Name: ratified 2026-11-01 (UTC), renamed from `root_entries`: `Volume::root_directory` with
+    /// the names joined.
+    pub fn root_named_entries(&mut self) -> NamedEntries<'_, D> {
+        NamedEntries::new(self.root_directory())
     }
 
     /// **The directory whose first cluster is `first`, as named entries.** Cluster 0 is the root.
     ///
-    /// Name: provisional. [`Volume::directory`] with the names joined.
-    pub fn entries(&mut self, first: u32) -> Entries<'_, D> {
-        Entries::new(self.directory(first))
+    /// Name: ratified 2026-11-01 (UTC), renamed from `entries`: `Volume::directory` with the names
+    /// joined.
+    pub fn named_entries(&mut self, first: u32) -> NamedEntries<'_, D> {
+        NamedEntries::new(self.directory(first))
     }
 
     /// **The directory whose first cluster is `first`**, as a short entry's

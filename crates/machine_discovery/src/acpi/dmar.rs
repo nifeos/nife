@@ -221,7 +221,7 @@ pub const SCOPE_PCI_ENDPOINT: u8 = 1;
 pub const SCOPE_PCI_SUBHIERARCHY: u8 = 2;
 
 /// The fixed part of a device-scope entry before its path: type, length, flags, reserved,
-/// enumeration id, start bus. VT-d 3.x section 8.3.1; QEMU's `insert_scope` writes the same six.
+/// enumeration id, start bus. VT-d 4.1 section 8.3.1; QEMU's `insert_scope` writes the same six.
 const SCOPE_FIXED_LEN: usize = 6;
 
 /// An RMRR's fixed part before its scope list: the 4-byte header, two reserved bytes, the segment,
@@ -272,8 +272,8 @@ impl DeviceScope {
 
     /// **Does this entry cover `bus:dev.func`, and how?** An endpoint covers the function it
     /// resolves to; a sub-hierarchy covers its bridge and every bus in the bridge's
-    /// secondary..=subordinate range (VT-d 4.1 section 8.3.1: "the specified bridge device and all
-    /// its downstream devices").
+    /// secondary..=subordinate range (VT-d 4.1 section 8.3.1 says the entry names the bridge and
+    /// every device behind it).
     fn covers(
         &self,
         bus: u8,

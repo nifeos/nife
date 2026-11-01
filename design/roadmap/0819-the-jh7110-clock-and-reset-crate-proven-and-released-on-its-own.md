@@ -62,7 +62,10 @@ and none is taken, because calef ruled this crate "publish ours". The only Rust 
 weathered-steel's `jh71xx-pac` 0.11.1 and `jh71xx-hal` 0.7.2 (Codeberg, 2025-03), are register maps
 under GPL-3.0-only, which nife cannot take under its license. No Rust crate for the clock and reset
 logic was found. Linux's `clk-starfive-jh7110-*` drivers stay the reference and are read, never
-copied. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes only to
+copied. The I2C timing function `standard_mode_100k` takes no text from any driver: its
+counts follow from the I2C specification's standard-mode limits and the `DesignWare` count registers'
+description, and its fill (the whole shortfall to the low count) is nife's own. OpenBSD's `dwiic.c`
+(ISC) states no equations (read 2026-11-01), so no notice rides with the function. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes only to
 projects nife depends on.
 
 ## What is proven
@@ -203,6 +206,11 @@ names until the ratification pass, so this section keeps the links it carried.
 - The device-tree fixtures are excerpts of the mainline and vendor JH7110 trees. They moved to
   `crates/machine_discovery/tests/fixtures/` with the walk, so the crate ships none; their licenses
   were not checked.
+- `standard_mode_100k` has not run on the board since its rewrite. At the board's input clock of
+  49.5 MHz it programs a high count of 198 and a low count of 297, where the earlier version
+  programmed 208 and 229. Both meet the I2C standard-mode minimums by arithmetic, but a PMIC
+  reset on the board must confirm the new counts before anyone calls them proven. The check is a
+  bench item for the maintainers.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
 

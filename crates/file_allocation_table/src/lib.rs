@@ -12,41 +12,48 @@
 //! and reads a directory slot by slot ([`Volume::root_directory`], [`Volume::directory`]). A chain
 //! walk yields at most as many clusters as the volume holds, so no table contents can make it
 //! loop, and every read it makes lies inside the volume the boot sector describes.
-//! [`Volume::root_entries`] and [`Volume::entries`] read a directory as files: each short entry
+//! [`Volume::root_named_entries`] and [`Volume::named_entries`] read a directory as files: each short entry
 //! comes with its long name ([`LongFileName`]), assembled from the pieces ahead of it and accepted
 //! only when their ordinals, padding and checksum are the specification's.
 //!
 //! [`Volume::lookup`] finds an entry by path, without regard to case, by long name or short name.
-//! [`Volume::open_file`] opens one for reading as a [`FileReader`], which reads through the chain
+//! [`Volume::open_file_reader`] opens one for reading as a [`FileReader`], which reads through the chain
 //! and never returns a byte past the entry's size. A whole-disk image opens through
-//! [`MasterBootRecord`]: [`Partition::device`] shows one partition as a device of its own, and
+//! [`MasterBootRecord`]: [`Partition::restrict_device`] shows one partition as a device of its own, and
 //! [`Volume::open`] opens the volume inside it.
 //!
-//! The table is writable through [`WritableSectorDevice`], the write half of the sector interface.
-//! [`Volume::allocate_cluster`] takes a free cluster and links it after a chain's last,
-//! [`Volume::truncate_chain`] and [`Volume::free_chain`] give clusters back, and every one writes
-//! each live copy of the table in an order that leaves a crash at worst a leaked cluster, never a
-//! shared one. The FAT32 `FSInfo` hints ([`FsInfo`]) follow those changes in memory and
-//! [`Volume::sync`] writes them. Nothing yet changes a file or a directory.
+//! Writes go through [`WritableVolume`], a [`Volume`] with the [`Clock`] its writes stamp with;
+//! [`NoClock`] is the explicit "no time". A clock supplies UTC, since FAT stores no time zone (see
+//! [`Clock`]). A read stamps nothing and takes no clock. It orders every
+//! write so a crash leaks a cluster and never shares one ([`WritableVolume::mark_clean`] writes the FAT32
+//! `FSInfo` hints and sets the clean-shutdown bit again, [`Volume::is_clean`]). It makes and
+//! writes files and directories (a name that is not 8.3 gets long-name slots and a numbered alias),
+//! renames, sets attributes and the label, and grows a full directory except FAT12's and FAT16's
+//! fixed root. Each returns a [`WriteError`].
 //!
-//! The `mkfs` lays out one shape: a FAT32 EFI system partition holding one boot file at
-//! `\EFI\BOOT\<name>`, as pure computation (see [`VolumeLayout`]). A name that is not 8.3 gets VFAT
-//! long-name entries ahead of a `~1` alias (see `long_name.rs`). A volume below
-//! [`FAT32_MINIMUM_CLUSTERS`] is refused, because the specification types a volume by its data
-//! clusters, and the data area is rounded up to start on a cluster boundary.
+//! [`FormatPlan`] lays out an empty volume of any size, as sectors a caller writes. [`VolumeLayout`]
+//! lays out one shape through the same sizing and boot sector: a FAT32 EFI system partition holding
+//! one boot file at `\EFI\BOOT\<name>`. A volume below [`FAT32_MINIMUM_CLUSTERS`] is refused.
 
 //! # BUGS
 //!
-//! - A long name's alias is always `~1`, right only while the volume holds one file.
-//! - Every timestamp is zero: a `mkfs` with no clock capability writes 1970 rather than inventing one.
-//! - The `mkfs` writes the `FSInfo` free-cluster count once. After that only [`Volume::sync`] keeps
-//!   it; a volume dropped without a sync leaves a stale hint, which the specification lets a driver
+//! - The `mkfs` numbers its alias `~1`, right only while the volume holds one file.
+//! - The `mkfs` writes the `FSInfo` free-cluster count once. After that only [`WritableVolume::mark_clean`] keeps
+//!   it; a volume dropped without `mark_clean` leaves a stale hint, which the specification lets a driver
 //!   tolerate and `fsck.fat` reports.
 //! - The backup `FSInfo` copy in the backup boot area is never updated, as with Linux's driver.
 //! - A newly allocated cluster holds whatever the device held; a caller that needs zeros writes them.
 //! - A write has no barrier: the crate orders its writes and the device decides when each reaches the
 //!   medium. A failure between the writes of one table entry's copies leaves the copies unequal.
-//! - Nothing marks the volume dirty while it changes.
+//! - A name with a character outside the Basic Multilingual Plane is refused, and a lower-case 8.3
+//!   name is stored as a long name, since the crate writes no lower-case flag.
+//! - A directory slot is found by walking from the directory's first cluster each time, so creating
+//!   in a directory of n clusters costs n chain steps per slot read.
+//! - FAT stores no time zone. In nife the clock supplies UTC (ruled 2026-11-01 UTC); the crate stores
+//!   what its clock reports, cannot check that it is UTC, and refuses a time outside 1980 to 2107.
+//!   A reader that treats FAT times as local time, such as Windows, shows UTC values as local.
+//! - The 65,536-entry ceiling of a directory (`grow_directory`'s limit) is untested: reaching it
+//!   needs a volume and a test of that size.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
 //!   backwards seek walks the chain again from its start.
 //! - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table, and
@@ -69,12 +76,17 @@
 //! published.
 
 mod allocation;
+mod attributes;
 mod boot_sector;
 mod directory;
+mod directory_writer;
 #[doc(alias = "extensible firmware interface system partition")]
 pub mod efi_system_partition;
 mod file;
-mod fs_info;
+mod file_system_information;
+mod file_writer;
+mod format;
+mod label;
 mod long_name;
 mod long_name_assembly;
 mod lookup;
@@ -83,24 +95,34 @@ mod named_entry;
 mod reader;
 mod sector;
 mod table;
+mod time;
 mod volume;
+mod writable_volume;
+mod write_cursor;
 
 pub use allocation::AllocationError;
+pub use attributes::Attributes;
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
-pub use file::{FileReadError, FileReader, NotAFile};
-pub use fs_info::{FsInfo, FsInfoError};
-pub use long_name_assembly::{LongFileName, LongNameError};
+pub use file::{FileOpenError, FileReadError, FileReader};
+pub use file_system_information::{FileSystemInformation, FileSystemInformationError};
+pub use file_writer::FileWriter;
+pub use format::{FormatError, FormatOptions, FormatPlan};
+pub use label::VolumeLabel;
+pub use long_name_assembly::{LongFileName, LongFileNameError};
 pub use lookup::LookupError;
 pub use master_boot_record::{
     MasterBootRecord, MasterBootRecordError, MasterBootRecordReadError, PARTITION_COUNT, Partition,
     PartitionDevice, PartitionError,
 };
-pub use named_entry::{Entries, NamedEntry};
+pub use named_entry::{NamedEntries, NamedEntry};
 pub use reader::{Chain, ChainError, Volume};
 pub use sector::{SectorDevice, SectorSize, WritableSectorDevice};
 pub use table::TableEntry;
+pub use time::{CivilDateTime, Clock, NoClock};
 pub use volume::{
     CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MINIMUM_CLUSTERS, LayoutError, RESERVED_SECTORS,
     ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT, VolumeLayout,
 };
+pub use writable_volume::WritableVolume;
+pub use write_cursor::WriteError;

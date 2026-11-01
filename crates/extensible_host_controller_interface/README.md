@@ -25,9 +25,10 @@ decoding, and the context and port decoders.
 ```rust
 use extensible_host_controller_interface::{Capabilities, ProducerRing, TransferRequestBlock};
 
-// QEMU's qemu-xhci: 0x40 bytes of capability registers, 64 slots, 4 ports, runtime at 0x1000,
-// doorbells at 0x2000. Port 1's status register and the command ring's doorbell:
-let caps = Capabilities::decode(0x0100_0040, 0x0400_0840, 0, 0x0000_7000, 0x2000, 0x1000);
+// QEMU's qemu-xhci: 0x40 bytes of capability registers, 64 slots, 16 interrupters and 8 ports
+// (4 USB 2 and 4 USB 3, the defaults), runtime at 0x1000, doorbells at 0x2000. Port 1's status
+// register and the command ring's doorbell:
+let caps = Capabilities::decode(0x0100_0040, 0x0800_1040, 0, 0x0000_7000, 0x2000, 0x1000);
 assert_eq!((caps.portsc(1), caps.doorbell(0)), (0x440, 0x2000));
 
 // A four-entry command ring: three usable slots, then a link TRB back to the first.
@@ -47,7 +48,7 @@ The caller writes each placed TRB (and the link, when `link` is `Some`) to DMA m
 - No streams, isochronous or bulk transfers: the crate builds the TRBs a boot keyboard needs and
   nothing more.
 
-The reference is the xHCI 1.2 specification, chapters 4 and 6.
+The reference is the xHCI 1.2 specification, chapters 4 to 7.
 
 ## Minimum Rust version
 

@@ -398,6 +398,13 @@ name = "device_tree_blob"
 version = "0.1.0"
 
 [[package]]
+name = "device_tree_patch"
+version = "0.1.0"
+dependencies = [
+ "device_tree_blob",
+]
+
+[[package]]
 name = "digest"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -544,6 +551,7 @@ dependencies = [
  "memory_region_heap",
  "network_time_protocol",
  "nifefs",
+ "primitive_benchmark_contract",
  "process_builder",
  "soak_page",
  "socket_contract",
@@ -609,6 +617,7 @@ version = "0.1.0"
 dependencies = [
  "filesystem_contract",
  "glob",
+ "primitive_benchmark_contract",
  "program_argument_contract",
 ]
 
@@ -718,6 +727,7 @@ version = "0.1.0"
 [[package]]
 name = "jh7110_entropy"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=535f79c91eaa61a3ed8f589b71bce537a42b3b52#535f79c91eaa61a3ed8f589b71bce537a42b3b52"
 
 [[package]]
 name = "jh7110_watchdog"
@@ -788,6 +798,7 @@ dependencies = [
  "paging",
  "pci",
  "periodic_deadline",
+ "primitive_benchmark_contract",
  "screen_console",
  "soak_page",
  "socket_contract",
@@ -1051,6 +1062,13 @@ name = "pmap"
 version = "0.1.0"
 dependencies = [
  "abi",
+]
+
+[[package]]
+name = "primitive_benchmark_contract"
+version = "0.1.0"
+dependencies = [
+ "byte_sink_contract",
 ]
 
 [[package]]
@@ -1651,6 +1669,7 @@ version = "0.1.0"
 dependencies = [
  "boot_slot",
  "device_tree_blob",
+ "device_tree_patch",
  "elf",
  "globally_unique_identifier_partition_table",
  "machine_discovery",

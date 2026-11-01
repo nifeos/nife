@@ -114,6 +114,12 @@ uuid = { version = "1.28.0", default-features = false }
 # and not a new edge in the graph either, since `machine_discovery` above already depends on it.
 device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
 
+# **The rewriter that tells a device-tree kernel where its archive is**: the firmware's tree copied
+# with `/chosen/linux,initrd-{start,end}` set (`src/loading.rs`), and the token writer
+# `src/device_tree_from_acpi.rs` builds a tree with. Ours, in this workspace; its one dependency is
+# `device_tree_blob` above. Not a §46 (thin primitives or whole subsystems) decision.
+device_tree_patch = { version = "0.1.0", path = "../crates/device_tree_patch" }
+
 # **The UEFI bindings: every table, protocol, GUID and constant this loader speaks** (milestone 784
 # (reuse what the tree wrote), item (e)). A §46 (thin primitives or whole subsystems) decision,
 # ruled by calef on 2026-10-20 (UTC): "Yes". `r-efi` is a thin primitive: the specification's

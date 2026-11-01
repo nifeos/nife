@@ -13,7 +13,7 @@ impl Key {
     #[cfg(feature = "std")]
     pub fn new() -> Result<Self, getrandom::Error> {
         let mut bytes = [0; 16];
-        getrandom::getrandom(&mut bytes)?;
+        getrandom::fill(&mut bytes)?;
         Ok(Self(bytes))
     }
 
@@ -51,7 +51,7 @@ impl Salt {
     #[cfg(feature = "std")]
     pub fn new() -> Result<Self, getrandom::Error> {
         let mut bytes = [0; 16];
-        getrandom::getrandom(&mut bytes)?;
+        getrandom::fill(&mut bytes)?;
         Ok(Self(bytes))
     }
 }

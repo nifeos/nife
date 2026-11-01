@@ -35,7 +35,7 @@ compatibility, so this is not already owned.
 Goal. `vim`-class editors, `less` and a repainting `top` draw correctly on the graphical terminal.
 Today none of the three exists on nife.
 
-- The only full-screen program in the tree is `rmle` (milestone 169 (the smallest real text editor, as the forcing function for raw terminal input)).
+- There is no full-screen program in the tree.
 - There is no pager (milestone 334 (color and the pager: the spawn protocol's other two thirds) is NOT-STARTED).
 - `watch` was cut (milestone 281 (`watch` holds exactly what `ps` holds, so it is nothing)), and nife's own `top` prints one table and never repaints.
 
@@ -194,15 +194,15 @@ The serial path has no such gap, because nife does not interpret escapes there.
 `components/src/console.rs` copies the bytes of an `OPERATION_WRITE` to the UART verbatim, and the terminal
 contract says "ANSI from the application reaches the screen intact"
 (`notes/terminal-contract.md`, "What a terminal owes a program, and what it does not"). The user's host terminal (`xterm`, `Terminal.app`, `tmux`)
-is the VT engine, so `vim`-class programs get a complete one for free. `rmle` already does this: it
-emits `ESC[?25l`, `ESC[H`, `ESC[K`, `ESC[7m` and a cursor-position `CSI H` (`components/src/rmle.rs:497-531`) and
+is the VT engine, so `vim`-class programs get a complete one for free. A program that
+emits only plain sequences such as `ESC[?25l`, `ESC[H`, `ESC[K`, `ESC[7m` and a cursor-position `CSI H`
 depends on nothing the display terminal lacks. Replies from the host terminal arrive on the UART
 as input bytes. They reach the program through `OPERATION_READRAW` while raw mode is on
 (`notes/terminal-contract.md`, "The IPC protocol"), so DSR and DA already work in principle on the serial path;
 I did not test it.
 
-The serial path has a different gap. The contract carries no window size, so `rmle` fixes 80x24
-(`rmle.rs` "No terminal size negotiation") and a differently sized host window redraws wrongly
+The serial path has a different gap. The contract carries no window size, so a program cannot learn the
+window size and a differently sized host window redraws wrongly
 (`notes/terminal-contract.md`, its "Terminal size tracking" limit). That is a separate piece of work and is not this proposal.
 
 Where this proposal matters: a screen the user is looking at, with no host terminal in the loop.

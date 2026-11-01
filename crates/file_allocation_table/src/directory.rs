@@ -152,6 +152,22 @@ impl Slot {
 }
 
 impl ShortEntry {
+    /// A short entry from its parts, for the writer's tests.
+    #[cfg(test)]
+    pub(crate) const fn new(
+        name: [u8; 11],
+        attributes: u8,
+        first_cluster: u32,
+        size: u32,
+    ) -> ShortEntry {
+        ShortEntry {
+            name,
+            attributes,
+            first_cluster,
+            size,
+        }
+    }
+
     /// The name as stored: eight bytes of base and three of extension, each padded with spaces,
     /// with a stored `0x05` read back as `0xE5`.
     ///
@@ -241,6 +257,9 @@ impl LongNameEntry {
         self.units
     }
 }
+
+/// A used slot's index and entry, or the error that ended the read.
+pub(crate) type Indexed<E> = Result<(u32, DirectoryEntry), ChainError<E>>;
 
 /// What a directory read walks: the fixed root region, or a chain.
 #[derive(Debug, Clone, Copy)]
@@ -335,28 +354,39 @@ pub struct Directory<'v, D> {
     /// The byte offset of the next slot in `buffer`; one sector or more means a sector is due.
     at: usize,
     done: bool,
+    /// The directory's first cluster, 0 for the root.
+    first: u32,
+    /// The index, from the directory's start, of the slot at `at`.
+    index: u32,
 }
 
 impl<'v, D: SectorDevice> Directory<'v, D> {
     /// The root directory of `volume`.
     pub(crate) fn root(volume: &'v mut Volume<D>) -> Directory<'v, D> {
         let source = Source::root(volume.boot_sector());
-        Directory::new(volume, source)
+        Directory::new(volume, source, 0)
     }
 
     /// The directory whose chain starts at `first`.
     pub(crate) fn chain(volume: &'v mut Volume<D>, first: u32) -> Directory<'v, D> {
-        Directory::new(volume, Source::chain(first))
+        Directory::new(volume, Source::chain(first), first)
     }
 
-    fn new(volume: &'v mut Volume<D>, source: Source) -> Directory<'v, D> {
+    fn new(volume: &'v mut Volume<D>, source: Source, first: u32) -> Directory<'v, D> {
         Directory {
             volume,
             source,
             buffer: [0; SectorSize::MAX],
             at: SectorSize::MAX,
             done: false,
+            first,
+            index: 0,
         }
+    }
+
+    /// The first cluster of the directory being read, 0 for the root.
+    pub(crate) const fn first_cluster(&self) -> u32 {
+        self.first
     }
 
     /// Read the next sector into the buffer: `false` at the end of the directory.
@@ -371,7 +401,20 @@ impl<'v, D: SectorDevice> Directory<'v, D> {
         Ok(true)
     }
 
-    fn advance(&mut self) -> Option<Result<DirectoryEntry, ChainError<D::Error>>> {
+    /// The next used slot with its index from the directory's start, counting free slots. After
+    /// the end or an error it returns `None`, whichever way it is called.
+    pub(crate) fn advance_indexed(&mut self) -> Option<Indexed<D::Error>> {
+        if self.done {
+            return None;
+        }
+        let result = self.scan();
+        if !matches!(result, Some(Ok(_))) {
+            self.done = true;
+        }
+        result
+    }
+
+    fn scan(&mut self) -> Option<Indexed<D::Error>> {
         let size = self.volume.boot_sector().sector_size().bytes();
         let file_allocation_table_type = self.volume.boot_sector().file_allocation_table_type();
         loop {
@@ -385,10 +428,12 @@ impl<'v, D: SectorDevice> Directory<'v, D> {
             let mut slot = [0u8; SLOT_BYTES];
             slot.copy_from_slice(&self.buffer[self.at..self.at + SLOT_BYTES]);
             self.at += SLOT_BYTES;
+            let index = self.index;
+            self.index = self.index.saturating_add(1);
             match Slot::parse(&slot, file_allocation_table_type) {
                 Slot::End => return None,
                 Slot::Free => {}
-                Slot::Used(entry) => return Some(Ok(entry)),
+                Slot::Used(entry) => return Some(Ok((index, entry))),
             }
         }
     }
@@ -398,14 +443,7 @@ impl<D: SectorDevice> Iterator for Directory<'_, D> {
     type Item = Result<DirectoryEntry, ChainError<D::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.done {
-            return None;
-        }
-        let result = self.advance();
-        if !matches!(result, Some(Ok(_))) {
-            self.done = true;
-        }
-        result
+        Some(self.advance_indexed()?.map(|(_, entry)| entry))
     }
 }
 

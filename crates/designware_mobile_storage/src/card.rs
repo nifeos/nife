@@ -1,7 +1,7 @@
 //! **What a card says about itself**: the OCR, the CID, the CSD, the R1 status word and the eMMC
 //! `EXT_CSD`, decoded. Bit positions are the SD Physical Layer Simplified Specification's (version
 //! 9.10, sections 5.1 to 5.3 and 4.10.1) and JEDEC JESD84-B51's for eMMC, in the spec's own
-//! numbering, which is also Linux's `UNSTUFF_BITS` convention: a long response is held as four
+//! numbering, which is also Linux's `unstuff_bits` convention (`drivers/mmc/core/mmc_ops.h`): a long response is held as four
 //! words `[RESP0, RESP1, RESP2, RESP3]`, bit 0 of `RESP0` being the register's bit 0 (the always-one
 //! end bit, with the CRC7 in bits 7:1).
 //!

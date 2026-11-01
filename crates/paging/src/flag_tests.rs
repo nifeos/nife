@@ -90,6 +90,51 @@ fn bits_returns_the_exact_capability_word() {
     assert_eq!(Flags::user_write_combining().bits(), 0b110_0011);
 }
 
+/// **The pair the kernel refuses is exactly writable beside executable**, in either order and for
+/// either privilege's execute bit, over every constructor. The expected sets are written out by
+/// name rather than through the predicates the function reads, so a predicate that drifted would
+/// not drift the answer with it.
+#[test]
+fn only_writable_beside_executable_makes_the_pair() {
+    let every = [
+        Flags::kernel_code(),
+        Flags::kernel_rodata(),
+        Flags::kernel_data(),
+        Flags::device(),
+        Flags::write_combining(),
+        Flags::user_code(),
+        Flags::user_rodata(),
+        Flags::user_data(),
+        Flags::user_device(),
+        Flags::user_write_combining(),
+    ];
+    let writable = [
+        Flags::kernel_data(),
+        Flags::device(),
+        Flags::write_combining(),
+        Flags::user_data(),
+        Flags::user_device(),
+        Flags::user_write_combining(),
+    ];
+    let executable = [Flags::kernel_code(), Flags::user_code()];
+    for a in every {
+        for b in every {
+            let expected = (writable.contains(&a) && executable.contains(&b))
+                || (writable.contains(&b) && executable.contains(&a));
+            assert_eq!(
+                a.makes_writable_executable_pair(b),
+                expected,
+                "{a:?} beside {b:?}",
+            );
+        }
+    }
+    // The cases the narrow rule exists to let through, named.
+    assert!(!Flags::user_rodata().makes_writable_executable_pair(Flags::user_data()));
+    assert!(!Flags::user_rodata().makes_writable_executable_pair(Flags::user_code()));
+    assert!(!Flags::user_data().makes_writable_executable_pair(Flags::user_data()));
+    assert!(!Flags::user_code().makes_writable_executable_pair(Flags::user_code()));
+}
+
 /// A write-combining mapping is still a device mapping: every rule keyed on `is_device` (no
 /// caching, pages rather than blocks, no inner shareability) must keep applying to it.
 #[test]

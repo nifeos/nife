@@ -143,6 +143,13 @@ Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass
 on all four targets, and the only citations left sit in `Name:` blocks, which stay until the
 ratification pass. With Kani, every harness proves and every falsification patch fails its harness.
 
+Measured again on 2026-10-31 (UTC) with `--no-kani`: the build passes on all four targets and the one
+failure left is the name check, on three provisional names (`Namespace`, `Namespace::holds_block`
+and `Namespace::transfer_command`). The two assertion constants `THE_*_SHARE_NO_BIT` are private
+now, so they are not among the crate's names. The ratification waits for calef, in the proposal
+`design/roadmap/proposals/ratify-the-nvme-namespace-names.md`. Until it lands the move cannot start,
+and creating the repository is calef's to approve after that.
+
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff

@@ -2,7 +2,7 @@
 //! directions, a size the chain cannot cover, a chain longer than the size, a loop, and a device
 //! that fails.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::reader::tests::{FIRST_DATA, Image};
@@ -104,15 +104,15 @@ fn seeking_moves_forwards_and_backwards_across_clusters() {
     let mut file = FileReader::new(&mut volume, 9, size);
     let mut byte = [0u8; 1];
     for position in [1500usize, 3, 1024, 2047, 0, 600, 1536, 511, 512, 2047] {
-        file.seek(position as u32);
+        file.set_position(position as u32);
         assert_eq!(file.position(), position as u32);
         assert_eq!(file.read(&mut byte), Ok(1));
         assert_eq!(byte[0], expected(&clusters, position), "at {position}");
     }
-    file.seek(u32::MAX);
+    file.set_position(u32::MAX);
     assert_eq!(file.position(), size);
     assert_eq!(file.read(&mut byte), Ok(0));
-    file.seek(0);
+    file.set_position(0);
     assert_eq!(file.read(&mut byte), Ok(1));
     assert_eq!(byte[0], expected(&clusters, 0));
 }
@@ -136,7 +136,7 @@ fn a_chain_shorter_than_the_size_fails_after_the_bytes_it_has() {
         file.read(&mut buffer),
         Err(FileReadError::ShorterThanItsSize)
     );
-    assert_eq!(file.read(&mut buffer), Err(FileReadError::AfterAFailure));
+    assert_eq!(file.read(&mut buffer), Err(FileReadError::Failed));
 }
 
 #[test]
@@ -191,7 +191,7 @@ fn a_failing_device_ends_the_reader() {
             FIRST_DATA as u64 + 4
         )))
     );
-    assert_eq!(file.read(&mut buffer), Err(FileReadError::AfterAFailure));
+    assert_eq!(file.read(&mut buffer), Err(FileReadError::Failed));
 }
 
 #[test]
@@ -211,15 +211,15 @@ fn open_file_refuses_a_directory_and_the_label_and_opens_a_file() {
     }
     let mut volume = Volume::open(image).unwrap();
     let mut found = [None, None, None];
-    for (slot, entry) in found.iter_mut().zip(volume.root_entries()) {
+    for (slot, entry) in found.iter_mut().zip(volume.root_named_entries()) {
         *slot = Some(entry.unwrap());
     }
     let [Some(file), Some(directory), Some(label)] = found else {
         panic!("three entries");
     };
-    assert!(volume.open_file(&directory).is_err());
-    assert!(volume.open_file(&label).is_err());
-    let mut reader = volume.open_file(&file).unwrap();
+    assert!(volume.open_file_reader(&directory).is_err());
+    assert!(volume.open_file_reader(&label).is_err());
+    let mut reader = volume.open_file_reader(&file).unwrap();
     let mut buffer = [0u8; 200];
     assert_eq!(reader.read(&mut buffer), Ok(100));
     assert_eq!(buffer[0], pattern(5, 0));

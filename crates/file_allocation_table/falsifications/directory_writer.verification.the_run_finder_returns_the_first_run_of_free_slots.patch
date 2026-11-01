@@ -1,0 +1,21 @@
+Falsifies `file_allocation_table::directory_writer::verification::the_run_finder_returns_the_first_run_of_free_slots`.
+
+The defect: a used slot no longer ends the run, so the finder reports a run that spans a live entry and the writer overwrites it.
+
+Expected to fail: the harness's `assert_ne!(kinds[i], SlotKind::Used)`.
+
+diff --git a/crates/file_allocation_table/src/directory_writer.rs b/crates/file_allocation_table/src/directory_writer.rs
+--- a/crates/file_allocation_table/src/directory_writer.rs
++++ b/crates/file_allocation_table/src/directory_writer.rs
+@@ -61,10 +61,7 @@ impl RunFinder {
+         let index = self.at;
+         self.at += 1;
+         match kind {
+-            SlotKind::Used => {
+-                self.len = 0;
+-                None
+-            }
++            SlotKind::Used => None,
+             SlotKind::Free | SlotKind::End => {
+                 if self.len == 0 {
+                     self.start = index;

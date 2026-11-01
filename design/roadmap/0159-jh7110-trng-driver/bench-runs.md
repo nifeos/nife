@@ -91,7 +91,7 @@ alive" costs every secret derived from it.
 It stops at bring-up, deliberately. A source that answers once and degrades, or whose register file
 latches and repeats a nonzero answer, still passes. That is continuous health testing, which
 [§137 (a hardware TRNG with no published health-test
-claim)](../../decisions/0137-trng-health-tests.md) owns as `PROPOSED`. Its hard half is the failure
+claim)](../../decisions/0137-trng-health-tests.md) rules `DECIDED` (2026-10-28 UTC). Its hard half is the failure
 action for a *running* service, since refusing to serve is a denial of service that can brick a
 boot. A readiness handshake does not have that problem, because nothing depends on the service at
 the moment it reports. That is why this could ship without 137 and does not pre-empt it.

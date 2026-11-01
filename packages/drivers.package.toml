@@ -20,14 +20,12 @@ crates = ["virtio"]
 # queue and IDENTIFY), and by the EL0 server of the same name, which drives the I/O rings, so it is
 # an interface for the reason `e1000e` is. What each pair agrees on, the windows and the spawn
 # handoff, is `driver_process_contract`'s, in `contracts`.
-# `jh7110_entropy` names the TRNG's compatible strings and decodes its properties; the kernel's
-# discovery in `machine_discovery` reads the device tree with them, and the EL0 server
-# `jh7110_entropy` drives the device. Three packages link it, so it is an interface.
+# The crate `jh7110_entropy` lives in the repository `nifeos/jh7110_entropy` and is not listed here;
+# the EL0 server of the same name drives the device and stays a program below.
 interfaces = [
     "e1000e",
     "designware_ethernet",
     "designware_mobile_storage",
-    "jh7110_entropy",
     "non_volatile_memory_express",
 ]
 programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage"]

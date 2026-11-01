@@ -1,0 +1,13 @@
+# production-shell rows, aarch64 under QEMU TCG (no -icount), swish-check boot of the default kernel
+# boot log, beside the ticks:
+timer            : 100 Hz tick, counter at 62 MHz, interrupts ON
+
+  reading the command is reading its whole authority.
+$ null_syscall; sink_producer | sink_consumer; map_el0 --mem 10
+  bench-production: null_syscall 4440153 20000
+  bench-production: sink_throughput 50360309 80000
+  bench-production: map_el0 1813482 500
+$ sink_producer | sink_consumer
+  bench-production: sink_throughput 52602468 80000
+$ map_el0 --mem 10
+  bench-production: map_el0 1873005 500

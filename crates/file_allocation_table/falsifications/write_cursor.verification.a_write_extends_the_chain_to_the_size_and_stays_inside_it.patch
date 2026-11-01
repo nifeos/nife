@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::write_cursor::verification::a_write_extends_the_chain_to_the_size_and_stays_inside_it`.
+
+The defect: a write that ends before the file does shrinks the size to where it stopped, so overwriting the head of a file loses the bytes after it from every reader that trusts the entry.
+
+Expected to fail: the harness's `assert_eq!(state.size as usize, size)`.
+
+diff --git a/crates/file_allocation_table/src/write_cursor.rs b/crates/file_allocation_table/src/write_cursor.rs
+--- a/crates/file_allocation_table/src/write_cursor.rs
++++ b/crates/file_allocation_table/src/write_cursor.rs
+@@ -234,7 +234,7 @@ impl WriteState {
+             }
+             self.position += len as u32;
+             done += len;
+-            self.size = self.size.max(self.position);
++            self.size = self.position;
+         }
+         Ok(done)
+     }

@@ -4,9 +4,11 @@
 //! userspace, trap included, so this program self-times loops of real `svc` syscalls at EL0.
 //! Spawned by the bench boot, it times each primitive with `user_mode_runtime::now` (the virtual
 //! counter, EL0-readable since milestone 19e (run a real workload)) and SENDs `[ticks, iters]` on
-//! slot 0, so the icount baseline gates it and `--real` gives its magnitude. Five primitives: null
-//! syscall, context switch, IPC round trip, page map, and spawn, which reclaims each child's region
-//! (`MemoryRegion::DESTROY`). See notes/benchmarks/cross-os-primitives.md.
+//! slot 0, so the icount baseline gates it and `--real` gives its magnitude. Four primitives: context
+//! switch, IPC round trip and spawn, which reclaims each child's region
+//! (`MemoryRegion::DESTROY`). The null syscall, the pipe throughput and the page map are programs of
+//! their own (`null_syscall`, `sink_producer`, `sink_consumer`, `map_el0`), because a person can type them at the
+//! production shell; they need no peer this program would have to build. See notes/benchmarks/cross-os-primitives.md.
 //!
 
 //! Name: ratified 2026-08-01 (calef, milestone 63), replacing `elbench`, and it is the name that
@@ -36,27 +38,11 @@ const REPORT: u64 = 0;
 
 // Which primitive to measure, chosen by `x0` at `START` (the bench boot picks). A benchmark program
 // is exactly the place a role selector still earns its keep: one binary, one micro-measurement each.
-const ROLE_NULL_SYSCALL: u64 = 0;
 const ROLE_YIELDER: u64 = 1;
 const ROLE_CTX_SWITCH: u64 = 2;
 const ROLE_IPC_SERVER: u64 = 3;
 const ROLE_IPC_CLIENT: u64 = 4;
-const ROLE_MAP: u64 = 5;
 const ROLE_SPAWN: u64 = 6;
-const ROLE_SINK_PRODUCER: u64 = 7;
-const ROLE_SINK_CONSUMER: u64 = 8;
-
-// Sink-throughput slots. The producer holds only the pipe it writes into; the consumer holds the
-// report first, so slot 0 stays "the endpoint I report on" across every reporting role.
-const SINK_PIPE_OUT: u64 = 0; // the producer SENDs sink messages here
-const SINK_PIPE_IN: u64 = 1; // the consumer receives them here (slot 0 is REPORT)
-
-/// Messages in the sink-throughput loop, each carrying [`byte_sink_contract::INLINE_MAXIMUM`]
-/// bytes. 5 000 is the same order as [`IPC_ITERS`] so the two are comparable under TCG, and it is
-/// 80 000 bytes, which is past the 64 KiB a Unix pipe buffers: a producer that could run ahead
-/// would have had to stop at least once, which is what makes the comparison about back pressure
-/// rather than about buffer size.
-const SINK_MSGS: u64 = 5_000;
 
 // Spawn-benchmark slots. slot 0 REPORT (the final result home to the bench boot), slot 1 MEMORY_REGION
 // (the spawner's whole budget), slot 2 CHILD_DONE (children SEND here, the spawner receives; it also
@@ -65,11 +51,6 @@ const SINK_MSGS: u64 = 5_000;
 const SP_REPORT: u64 = 0;
 const SP_UNTYPED: u64 = 1;
 const SP_CHILD_DONE: u64 = 2;
-
-// Map-benchmark slots (slot 0 is always REPORT). The bench boot grants a WRITE cap on a target
-// address space and a READ cap on one frame; we map that frame at a fresh VA each iteration.
-const MAP_ADDRESS_SPACE: u64 = 1;
-const MAP_PAGE_FRAME: u64 = 2;
 
 // IPC round-trip slots. The server holds two endpoints; the client holds three (report first, so
 // slot 0 stays "the endpoint I report on" across every reporting role).
@@ -89,104 +70,22 @@ const IPC_CLIENT_READS_CYCLES: u64 = 1;
 /// `lat_pipe` shape, over our endpoints.
 const IPC_ITERS: u64 = 5_000;
 
-/// Iterations for the null-syscall loop. Big enough that the two `now()` reads are noise and the
-/// per-call cost averages cleanly; small enough that the loop is bearable under TCG (each `svc` is a
-/// full emulated exception there). Self-timed, so the count is deterministic under icount and real
-/// under HVF either way.
-const NULL_ITERS: u64 = 20_000;
-
 /// Iterations for the context-switch loop. Each is one `SYS_YIELD` that hands the CPU to the peer
 /// and gets it back: a round trip of two switches (each an address-space change, since the peer is a
 /// separate process). Fewer than the null loop: a switch is much heavier under TCG.
 const CTX_ITERS: u64 = 5_000;
 
-/// Iterations for the map loop. Unlike the loops above, each `MAP_INTO` **consumes** budget: a fresh
-/// leaf VA needs a page-table entry (and, cold, an intermediate table) plus a revocation record, all
-/// paid from the target space's region. So the count is bounded by that region, not free to grow, and
-/// the bench boot sizes the region for `MAP_WARMUP + MAP_ITERS` (it must be kept in step with the
-/// `MAP_EL0_ITERS` mirror there). 500 fits inside a single L3 table (512 entries from the timed base),
-/// so the loop stays one table's worth of walks, and it is enough samples for the HVF median to
-/// settle (64 was too few: the per-map counter delta was in the noise). Under icount it is exact.
-const MAP_ITERS: u64 = 500;
-/// Untimed warmup maps, so the first cold page-table allocation lands outside the window. They use a
-/// disjoint VA range from the timed maps; both are paid from the same region (which is sized for the
-/// sum). The page size is fixed (aarch64 4 KiB), and the VA bases are arbitrary aligned user pages.
-const MAP_WARMUP: u64 = 8;
-const PAGE: u64 = 4096;
-const MAP_WARM_BASE: u64 = address_space_map::pair_page(0x20_0000);
-const MAP_TIMED_BASE: u64 = address_space_map::pair_page(0x40_0000);
-
 user_mode_runtime::program_entry!(start);
 
 fn start(role: u64, x1: u64, _x2: u64) -> ! {
     match role {
-        ROLE_NULL_SYSCALL => null_syscall_bench(),
         ROLE_YIELDER => yielder(),
         ROLE_CTX_SWITCH => ctx_switch_bench(),
         ROLE_IPC_SERVER => ipc_server(),
         ROLE_IPC_CLIENT => ipc_client(x1 == IPC_CLIENT_READS_CYCLES),
-        ROLE_MAP => map_bench(),
         ROLE_SPAWN => spawn_bench(),
-        ROLE_SINK_PRODUCER => sink_producer(),
-        ROLE_SINK_CONSUMER => sink_consumer(),
         _ => exit(),
     }
-}
-
-/// **The writing half of `a | b`**, and it is the whole of what a program on the left of a pipe
-/// does: pack sixteen bytes into the sink contract's three words and `SEND`. No buffer, no flush, no
-/// knowledge of who is reading.
-///
-/// The warmup messages are part of the contract with [`sink_consumer`], which discards exactly that
-/// many before it starts timing, so the first rendezvous and the consumer's own spawn land outside
-/// the window.
-fn sink_producer() -> ! {
-    let payload = [b'x'; byte_sink_contract::INLINE_MAXIMUM];
-    for _ in 0..(SINK_MSGS + 64) {
-        let (w0, w1, w2, _) = byte_sink_contract::pack(&payload);
-        send(SINK_PIPE_OUT, w0, w1, w2);
-    }
-    send(SINK_PIPE_OUT, byte_sink_contract::eof(), 0, 0);
-    exit();
-}
-
-/// **The reading half of `a | b`, self-timed**: how long it takes for [`SINK_MSGS`] messages to
-/// cross a pipe that is an endpoint and nothing else.
-///
-/// It reports **bytes**, not iterations, because that is the number a Unix pipe can be compared
-/// against: `bench/host/pipe_throughput.rs` moves the same bytes through a real `pipe(2)`. What the
-/// comparison is *for* is the cost of full lockstep (notes/pipes.md): there is no buffer here, so
-/// every sixteen bytes is a rendezvous and the producer can never run ahead.
-fn sink_consumer() -> ! {
-    for _ in 0..64 {
-        receive(SINK_PIPE_IN);
-    }
-    let start = now();
-    for _ in 0..SINK_MSGS {
-        receive(SINK_PIPE_IN);
-    }
-    let ticks = now().wrapping_sub(start);
-    send(
-        REPORT,
-        ticks,
-        SINK_MSGS * byte_sink_contract::INLINE_MAXIMUM as u64,
-        0,
-    );
-    exit();
-}
-
-/// **Null syscall latency.** The cheapest possible boundary crossing: an unrecognized syscall
-/// number, which the kernel rejects immediately (`Err(BadSyscall)`, no scheduler, no object lookup).
-/// That isolates trap + dispatch + return, exactly what "null syscall" is meant to measure, the way
-/// lmbench's `lat_syscall null` uses a syscall that does almost nothing.
-fn null_syscall_bench() -> ! {
-    let start = now();
-    for _ in 0..NULL_ITERS {
-        null_syscall();
-    }
-    let ticks = now().wrapping_sub(start);
-    send(REPORT, ticks, NULL_ITERS, 0);
-    exit();
 }
 
 /// **The peer for the context-switch benchmark.** Yields so the timer process always has exactly
@@ -262,40 +161,6 @@ fn ipc_client(reads_cycles: bool) -> ! {
         );
     }
     exit();
-}
-
-/// **Map latency, measured from EL0 (the primitive suite).** lmbench's `lat_mmap`, in the shape our
-/// surface allows: `invoke(address space, MAP_INTO, va, frame_slot, MAP_RO)` maps the one granted frame at a
-/// fresh VA. We alias a single frame across every VA, so no data memory is consumed per iteration,
-/// only the page-table entry and the revocation record the map path must write anyway, which is
-/// exactly what we are timing. There is no unmap in the surface yet, so the loop is bounded (each VA
-/// is used once); the bench boot provisions the target region for the warmup plus timed counts. The
-/// gap between this and the kernel-side `map_new` is roughly the EL0<->EL1 trap on each `svc`.
-fn map_bench() -> ! {
-    // Warm the cold page-table allocations at a disjoint VA range, untimed.
-    for i in 0..MAP_WARMUP {
-        map_one(MAP_WARM_BASE + i * PAGE);
-    }
-    let start = now();
-    for i in 0..MAP_ITERS {
-        map_one(MAP_TIMED_BASE + i * PAGE);
-    }
-    let ticks = now().wrapping_sub(start);
-    send(REPORT, ticks, MAP_ITERS, 0);
-    exit();
-}
-
-/// One `MAP_INTO`: map the granted frame (slot `MAP_PAGE_FRAME`) read-only into the granted space (slot
-/// `MAP_ADDRESS_SPACE`) at `va`. Read-only needs only READ on the frame cap, which is all we were granted.
-/// Returns the syscall result: 0 on success, a negative error otherwise.
-#[inline(never)]
-fn map_one(va: u64) -> i64 {
-    address_space_map_into(
-        MAP_ADDRESS_SPACE,
-        va,
-        MAP_PAGE_FRAME,
-        abi::address_space::MAP_RO,
-    )
 }
 
 /// Spawn benchmark tuning. Each iteration builds a whole child from EL0 and reclaims it, so the
@@ -393,66 +258,6 @@ fn spawn_one(code_frame: u64) {
     // does not fill over the loop.
     capability_delete(tcb);
     capability_delete(child_ut);
-}
-
-/// One null syscall: a trap with an unrecognized number. The kernel returns an error, which we
-/// discard; we are timing the crossing, not the result. aarch64 `svc` + `x8`, RISC-V `ecall` + `a7`,
-/// `x86_64` `syscall` + `rax`.
-#[inline(never)]
-fn null_syscall() {
-    // SAFETY: the trap is rejected (unknown number) with an error and no side effect.
-    #[cfg(target_arch = "aarch64")]
-    unsafe {
-        core::arch::asm!(
-            "svc #0",
-            in("x8") 0xFFFFu64, // no defined syscall has this number
-            lateout("x0") _,    // the kernel writes an error here; discard it
-            // It writes nothing else for an unknown number today, but the ABI lets it answer in
-            // six registers, and helpers/syscall_asm.py holds every trap to that. This function
-            // is `#[inline(never)]` and these are caller-saved, so the measured code is unchanged.
-            lateout("x1") _,
-            lateout("x2") _,
-            lateout("x3") _,
-            lateout("x4") _,
-            lateout("x5") _,
-            options(nostack, nomem),
-        );
-    }
-    #[cfg(target_arch = "riscv64")]
-    // SAFETY: `ecall` with the benchmark's null-syscall number: it traps to the kernel, which returns immediately. This is the measurement, and the options promise it touches neither memory nor the stack.
-    unsafe {
-        core::arch::asm!(
-            "ecall",
-            in("a7") 0xFFFFu64,
-            lateout("a0") _,
-            lateout("a1") _, // the other five ABI words, for the aarch64 arm's reason
-            lateout("a2") _,
-            lateout("a3") _,
-            lateout("a4") _,
-            lateout("a5") _,
-            options(nostack, nomem),
-        );
-    }
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: `syscall` with the benchmark's null-syscall number: it traps to the kernel, which
-    // returns immediately. This is the measurement, and the options promise it touches neither
-    // memory nor the stack. `rcx` and `r11` are the instruction's own clobbers, declared here for
-    // the same reason every other `syscall` site declares them (crates/user_mode_runtime).
-    unsafe {
-        core::arch::asm!(
-            "syscall",
-            in("rax") 0xFFFFu64,
-            lateout("rdi") _,
-            lateout("rsi") _, // the other five ABI words, for the aarch64 arm's reason
-            lateout("rdx") _,
-            lateout("r10") _,
-            lateout("r8") _,
-            lateout("r9") _,
-            lateout("rcx") _,
-            lateout("r11") _,
-            options(nostack, nomem),
-        );
-    }
 }
 
 user_mode_runtime::panic_handler!();

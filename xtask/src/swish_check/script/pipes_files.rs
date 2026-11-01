@@ -127,4 +127,16 @@ pub(super) const LINES: &[Line] = &[
         "caps wc doc/kernel/ipc-naming.md",
         &["input    ipc-naming.md"],
     ),
+    // **The bench rows a production shell can run** (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1). None builds a peer
+    // process, so none needs more than the stream the shell grants every program (and, for
+    // `map_el0`, a ten-page budget it builds its own target from). Each prints
+    // one row under the production prefix, which the gate reads and never compares to a baseline.
+    line(1, "null_syscall", &["bench-production: null_syscall"]),
+    // A real pipe between two processes in lockstep, and the consumer times it.
+    line(
+        2,
+        "sink_producer | sink_consumer",
+        &["bench-production: sink_throughput"],
+    ),
+    line(1, "map_el0 --mem 10", &["bench-production: map_el0"]),
 ];

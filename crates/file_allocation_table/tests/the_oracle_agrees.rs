@@ -16,8 +16,8 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    LookupError, MasterBootRecord, NamedEntry, SECTOR_BYTES, SectorDevice, SectorSize, ShortEntry,
-    TableEntry, Volume, VolumeLayout,
+    LookupError, MasterBootRecord, NamedEntry, NoClock, SECTOR_BYTES, SectorDevice, SectorSize,
+    ShortEntry, TableEntry, Volume, VolumeLayout,
 };
 use lamfat::{Read, Write};
 
@@ -210,7 +210,7 @@ fn our_records(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32) -> Vec
     // The specification caps a directory at 65,536 slots; a reader that stops advancing then fails
     // the comparison rather than hanging the suite.
     let entries: Vec<NamedEntry> = volume
-        .entries(first)
+        .named_entries(first)
         .take(65_536)
         .map(|e| e.expect("the directory reads"))
         .collect();
@@ -239,7 +239,7 @@ fn our_records(volume: &mut Volume<Memory<'_>>, image: &[u8], first: u32) -> Vec
             record.children = our_records(volume, image, short.first_cluster());
         } else {
             let raw = read_file(volume, image, short.first_cluster(), record.size);
-            let mut file = volume.open_file(&entry).expect("a file opens");
+            let mut file = volume.open_file_reader(&entry).expect("a file opens");
             let mut bytes = vec![0u8; record.size as usize];
             assert_eq!(file.read(&mut bytes).expect("the file reads"), bytes.len());
             assert!(matches!(file.read(&mut [0u8; 1]), Ok(0)));
@@ -400,22 +400,23 @@ fn agree(label: &str, mebibytes: usize, fat_type: lamfat::FatType, sector: u16) 
         let mut device = Memory { bytes: &disk, size };
         let table = MasterBootRecord::read(&mut device).expect("the table parses");
         let partition = table.partition(0).expect("one partition");
-        assert!(partition.holds_file_allocation_table());
+        assert!(partition.has_file_allocation_table_type());
         assert_eq!(partition.first_sector(), 2048);
-        let mut inside = Volume::open(partition.device(device)).expect("the partition opens");
+        let mut inside =
+            Volume::open(partition.restrict_device(device)).expect("the partition opens");
         let mut whole = Vec::new();
-        for entry in inside.root_entries() {
+        for entry in inside.root_named_entries() {
             whole.push(entry.unwrap().short_name());
         }
         let mut bare = Vec::new();
-        for entry in volume.root_entries() {
+        for entry in volume.root_named_entries() {
             bare.push(entry.unwrap().short_name());
         }
         assert_eq!(whole, bare, "{label}: the partition lists a different root");
         let file = inside
             .lookup("A Long Directory Name/nested two/third level deep/Spans Many Clusters.bin")
             .expect("the large file is found inside the partition");
-        let mut reader = inside.open_file(&file).unwrap();
+        let mut reader = inside.open_file_reader(&file).unwrap();
         let mut bytes = vec![0u8; file.size_bytes() as usize];
         assert_eq!(reader.read(&mut bytes).unwrap(), bytes.len());
         assert_eq!(
@@ -450,8 +451,15 @@ fn this_crate_reads_what_rust_fatfs_wrote_on_fat32() {
 fn rust_fatfs_reads_what_this_crate_wrote() {
     const FILE_LEN: usize = 100_000;
     let total = 70_000 * 8 + 2_000;
-    let layout = VolumeLayout::new(total, 0, FILE_LEN as u64, 0x1234_5678, "BOOTRISCV64.EFI")
-        .expect("a FAT32 volume");
+    let layout = VolumeLayout::new(
+        total,
+        0,
+        FILE_LEN as u64,
+        0x1234_5678,
+        "BOOTRISCV64.EFI",
+        &mut NoClock,
+    )
+    .expect("a FAT32 volume");
     let mut image = vec![0u8; total as usize * SECTOR_BYTES];
     for index in 0..layout.metadata_sectors() {
         let at = index as usize * SECTOR_BYTES;
@@ -497,7 +505,7 @@ fn rust_fatfs_reads_what_this_crate_wrote() {
         .lookup("/efi/boot/bootriscv64.efi")
         .expect("the long name is found");
     assert_eq!(entry.size_bytes() as usize, FILE_LEN);
-    let mut reader = volume.open_file(&entry).unwrap();
+    let mut reader = volume.open_file_reader(&entry).unwrap();
     let mut read_back = vec![0u8; FILE_LEN];
     assert_eq!(reader.read(&mut read_back).unwrap(), FILE_LEN);
     assert_eq!(read_back, body);

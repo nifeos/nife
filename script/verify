@@ -454,7 +454,7 @@ direct_memory_access_validator	140	the DMA-confinement validator, no descriptor 
 network_time_protocol	19	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	44	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
 globally_unique_identifier_partition_table	69	the partition table's CRC-32, its round trips, and partitions that overlap
-file_allocation_table	84	the long-name writer, a boot sector parse that is total on hostile bytes, and table entries, chain walks and directory reads that stay inside the volume and end
+file_allocation_table	600	the long-name writer, a boot sector parse that is total on hostile bytes, and table entries, chain walks and directory reads that stay inside the volume and end
 calendar	296	the civil-date arithmetic, and the parser on hostile text
 glob	621	matching is total, and a hostile pattern cannot be made to blow up
 filesystem_contract	2	a directory capability's child never exceeds its parent, at any depth
@@ -463,7 +463,6 @@ credential_contract	2	no request word reads outside the page; nothing but MATCH 
 capability_plan	14	no wiring grants a right its declaration did not ask for
 periodic_deadline	5	the next deadline on a beat: strictly forward, minimal, and a stall costs one fire
 timetable	44	the scheduler's calendar arithmetic: a time of day, a month day and a range
-jh7110_entropy	5	the board TRNG's status decode, and that a lockup bit is never overridden
 designware_mobile_storage	4	the SD write test never lands in a partition, the FIFO is never overrun, no admitted block wraps its address
 driver_process_contract::designware_mobile_storage	1	no block the SD card server translates leaves the window the kernel chose
 driver_process_contract::e1000e	3	the e1000e spawn handoff round-trips, and accepts only a page-aligned base and a unicast MAC

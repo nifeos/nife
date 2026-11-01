@@ -47,7 +47,9 @@ pub(super) fn address_space_invoke(
 /// `DeviceFrame`. The other half of [`page_frame_map`].
 ///
 /// Needs `WRITE` on the space and the shape's right on the frame. All or none: `BadPointer` for a
-/// run outside the user half or an unresolved space, `OutOfMemory` when page tables run out.
+/// run outside the user half or an unresolved space, `OutOfMemory` when page tables run out, and
+/// `NotPermitted` for a page the space already maps so that this shape would leave it writable
+/// through one mapping and executable through another ([`map_refusal`]).
 ///
 /// Context: takes `USER_SPACES` (rank `ADDRESS_SPACES`), then the mapping hold (`MAPPINGS`), and
 /// keeps both to the end of the run; beneath them, the caller's capability table for the frame
@@ -144,11 +146,7 @@ fn address_space_map_into(
                 // All or nothing: undo what this run mapped before it failed.
                 Err(e) => {
                     unmap_run_prefix(&mut hold, root, phys, va, k);
-                    return Err(match e {
-                        paging::MapError::OutOfPageFrames => Error::OutOfMemory,
-                        // misaligned, already mapped, unknown space
-                        _ => Error::BadPointer,
-                    });
+                    return Err(map_refusal(e));
                 }
             }
         }
@@ -192,6 +190,19 @@ fn address_space_unmap(name: u64, va: u64) -> Result<i64, Error> {
 /// paths guard on it, and `syscall::proofs` proves it exact.
 pub(super) fn run_end_va(va: u64, count: u64) -> Option<u64> {
     va.checked_add(count.checked_sub(1)?.checked_mul(paging::PAGE_SIZE)?)
+}
+
+/// The error a mapping method answers for a page it could not map: `NotPermitted` when the space
+/// already maps the page so that this mapping would make it writable here and executable there
+/// (claim 11; `abi::Error::NotPermitted`'s second case), `OutOfMemory` when page tables or the
+/// record could not be paid for, and `BadPointer` for a misaligned, already mapped or wrong-half
+/// address or an unknown space. `MAP_INTO` and `PageFrame::MAP` both answer through it.
+pub(super) fn map_refusal(e: paging::MapError) -> Error {
+    match e {
+        paging::MapError::WritableAndExecutable => Error::NotPermitted,
+        paging::MapError::OutOfPageFrames => Error::OutOfMemory,
+        _ => Error::BadPointer,
+    }
 }
 
 /// Undo the first `mapped` pages of a failed run-map in the space rooted at `root`: unmap each

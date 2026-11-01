@@ -6,7 +6,7 @@
 //! `dwqe_mii_writereg` (`sys/dev/ic/dwqe.c`, ISC license, notice in the crate root): the data
 //! first on a write, then the address with the busy bit set, then wait for the controller to clear
 //! it. The clause 22 register numbers and bits are the standard's, named as Linux's
-//! `include/uapi/linux/mii.h` names them. Each constant keeps its source's name without the
+//! `include/uapi/linux/mii.h` or OpenBSD's `sys/dev/mii/mii.h` names them, as each constant says. Each constant keeps its source's name without the
 //! family prefix, `GMAC_MAC_MDIO_ADDR_` or `MII_`, and its documentation opens with its full name
 //! and its source's spelling.
 //!
@@ -21,7 +21,7 @@ use crate::{Hardware, registers};
 pub const CR_SHIFT: u32 = 8;
 /// **MDIO clock range for a 500 to 800 MHz CSR clock** (`GMAC_MAC_MDIO_ADDR_CR_500_800`,
 /// `dwqereg.h`), the range this driver always programs: `0b0111`, which divides the CSR clock by
-/// 324.
+/// 324 (Linux's `include/linux/stmmac.h`, `STMMAC_CSR_500_800M`).
 ///
 /// OpenBSD reads the `stmmaceth` clock's rate and picks the matching range. This kernel has no
 /// clock framework to ask, and the choice only has to keep MDC at or under the standard's 2.5 MHz:
@@ -134,7 +134,7 @@ pub(crate) const GTSR_LP_1000TFDX: u16 = 0x0800;
 pub(crate) const GTSR_LP_1000THDX: u16 = 0x0400;
 /// **Autonegotiation complete** (`BMSR_ANEGCOMPLETE`, `mii.h`).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
 /// replacing `BMSR_ANEG_COMPLETE`.
 #[doc(alias = "autonegotiation complete")]
 pub const BMSR_ANEGCOMPLETE: u16 = 1 << 5;
@@ -155,7 +155,7 @@ pub enum Error {
     Timeout {
         /// The PHY (physical layer device) addressed, by its bus address.
         ///
-        /// Name: ratified 2026-10-26 (#2762), Decision 50: a `u8` PHY bus address is
+        /// Name: ratified 2026-10-26 (#2762 Decision 50): a `u8` PHY bus address is
         /// `physical_layer_device_address`, replacing `phy`.
         #[doc(alias = "phy")]
         physical_layer_device_address: u8,

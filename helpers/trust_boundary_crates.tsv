@@ -55,6 +55,7 @@ current_cpu_protocol	shared	retired
 designware_ethernet	shared	components,kernel,uefi_loader
 designware_mobile_storage	shared	components,kernel,uefi_loader
 device_tree_blob	shared	components,kernel,uefi_loader
+device_tree_patch	boot_chain	uefi_loader
 direct_memory_access_validator	kernel	kernel
 disk_tree	userspace	components
 dma_validator	kernel	retired
@@ -104,7 +105,7 @@ ipc	kernel	retired
 isa	kernel	retired
 jh7110_clock_and_reset	shared	components,kernel,uefi_loader
 jh7110_crg	kernel	retired
-jh7110_entropy	shared	components,kernel,uefi_loader
+jh7110_entropy	shared	retired
 jh7110_entropy_source	shared	retired
 jh7110_trng	shared	retired
 jh7110_watchdog	kernel	kernel
@@ -143,6 +144,7 @@ periodic_deadline	shared	components,fixtures,kernel
 pgrep	userspace	components
 pmap	userspace	components
 portable_executable	host	retired
+primitive_benchmark_contract	shared	fixtures,kernel
 process_builder	userspace	components,fixtures
 program_argument_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std,std_exerciser
 program_asks	userspace	components,fixtures

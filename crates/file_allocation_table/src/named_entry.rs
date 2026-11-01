@@ -1,40 +1,65 @@
 //! **A directory read as files**: each short entry with the long name its pieces spell, checked
 //! against the entry's checksum.
 //!
-//! [`Directory`] reports slots as stored. [`Entries`] wraps it and joins every run of long-name
+//! [`Directory`] reports slots as stored. [`NamedEntries`] wraps it and joins every run of long-name
 //! pieces to the short entry after it, through [`LongNameAssembler`]. A run the assembler refuses
 //! does not stop the listing: the short entry is still yielded, with no long name and the reason
 //! the run was refused, because a stranger's volume may hold a stale piece and its files remain
 //! reachable by their short names.
 //!
-//! Name: provisional. The entries of a directory, with their names.
+//! Name: ratified 2026-11-01 (UTC), the entries of a directory, with their names.
 
 use crate::directory::{Directory, DirectoryEntry, ShortEntry};
-use crate::long_name_assembly::{LongFileName, LongNameAssembler, LongNameError};
+use crate::long_name_assembly::{LongFileName, LongFileNameError, LongNameAssembler};
 use crate::reader::ChainError;
 use crate::sector::SectorDevice;
 
 /// **A directory entry with its names**: the short entry, and the long name when the entry has one
 /// that passed its checks.
 ///
-/// Name: provisional. A short entry that carries its long name.
+/// Name: ratified 2026-11-01 (UTC), a short entry that carries its long name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NamedEntry {
     short: ShortEntry,
-    long_name: Result<Option<LongFileName>, LongNameError>,
+    long_name: Result<Option<LongFileName>, LongFileNameError>,
+    place: EntryPlace,
+}
+
+/// **Where an entry sits**: its directory's first cluster (0 for the root), the index of the
+/// first slot of its long-name run, and the index of its short slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct EntryPlace {
+    pub(crate) directory: u32,
+    pub(crate) first_slot: u32,
+    pub(crate) short_slot: u32,
 }
 
 impl NamedEntry {
+    /// An entry at `place` with no long name, for the writer's tests.
+    #[cfg(test)]
+    pub(crate) const fn created(short: ShortEntry, place: EntryPlace) -> NamedEntry {
+        NamedEntry {
+            short,
+            long_name: Ok(None),
+            place,
+        }
+    }
+
+    /// Where the entry sits in its directory.
+    pub(crate) const fn place(&self) -> EntryPlace {
+        self.place
+    }
+
     /// The short entry as stored.
     ///
-    /// Name: provisional. The `ShortEntry` inside.
+    /// Name: ratified 2026-11-01 (UTC), the `ShortEntry` inside.
     pub const fn short_entry(&self) -> &ShortEntry {
         &self.short
     }
 
     /// The eleven short-name bytes as stored: eight of base and three of extension, space padded.
     ///
-    /// Name: provisional. Matches `ShortEntry::name`.
+    /// Name: ratified 2026-11-01 (UTC), matches `ShortEntry::name`.
     pub const fn short_name(&self) -> [u8; 11] {
         self.short.name()
     }
@@ -42,7 +67,7 @@ impl NamedEntry {
     /// The long name, when the entry has one and its run was whole, ordered and bound to this
     /// entry by its checksum.
     ///
-    /// Name: provisional. The assembled name.
+    /// Name: ratified 2026-11-01 (UTC), the assembled name.
     pub const fn long_name(&self) -> Option<&LongFileName> {
         match &self.long_name {
             Ok(Some(name)) => Some(name),
@@ -53,17 +78,19 @@ impl NamedEntry {
     /// Why the long-name pieces ahead of this entry were refused, or `None` when there were none
     /// or they were accepted.
     ///
-    /// Name: provisional. The refusal, kept so a caller can tell a stale run from no run.
-    pub const fn long_name_refusal(&self) -> Option<LongNameError> {
+    /// Name: ratified 2026-11-01 (UTC), the refusal, kept so a caller can tell a stale run from no
+    /// run.
+    pub const fn long_name_refusal(&self) -> Option<LongFileNameError> {
         match &self.long_name {
             Err(error) => Some(*error),
             Ok(_) => None,
         }
     }
 
-    /// `DIR_Attr`, every bit as stored.
+    /// `DIR_Attr`, every bit as stored. [`NamedEntry::user_attributes`] is the four bits a caller
+    /// may set, as a set.
     ///
-    /// Name: provisional. Matches `ShortEntry::attributes`.
+    /// Name: ratified 2026-11-01 (UTC), matches `ShortEntry::attributes`.
     pub const fn attributes(&self) -> u8 {
         self.short.attributes()
     }
@@ -71,78 +98,93 @@ impl NamedEntry {
     /// The first cluster of the entry's chain, or 0 for an empty file. Not checked against the
     /// volume.
     ///
-    /// Name: provisional. Matches `ShortEntry::first_cluster`.
+    /// Name: ratified 2026-11-01 (UTC), matches `ShortEntry::first_cluster`.
     pub const fn first_cluster(&self) -> u32 {
         self.short.first_cluster()
     }
 
     /// The file's length in bytes; 0 for a directory.
     ///
-    /// Name: provisional. Matches `ShortEntry::size_bytes`.
+    /// Name: ratified 2026-11-01 (UTC), matches `ShortEntry::size_bytes`.
     pub const fn size_bytes(&self) -> u32 {
         self.short.size_bytes()
     }
 
     /// Whether the entry is a directory.
     ///
-    /// Name: provisional. Matches `ShortEntry::is_directory`.
+    /// Name: ratified 2026-11-01 (UTC), matches `ShortEntry::is_directory`.
     pub const fn is_directory(&self) -> bool {
         self.short.is_directory()
     }
 
     /// Whether the entry is the volume label, which names no file.
     ///
-    /// Name: provisional. Matches `ShortEntry::is_volume_label`.
+    /// Name: ratified 2026-11-01 (UTC), matches `ShortEntry::is_volume_label`.
     pub const fn is_volume_label(&self) -> bool {
         self.short.is_volume_label()
     }
 
     /// Whether the entry is `.` or `..`, the links a subdirectory begins with.
     ///
-    /// Name: provisional. The specification's "dot" and "dotdot" entries.
+    /// Name: ratified 2026-11-01 (UTC), the specification's "dot" and "dotdot" entries.
     pub fn is_dot_entry(&self) -> bool {
         let name = self.short.name();
         self.short.is_directory() && (name == *b".          " || name == *b"..         ")
     }
 }
 
-/// **A directory, read as named entries**: what [`Volume::root_entries`] and [`Volume::entries`]
+/// **A directory, read as named entries**: what [`Volume::root_named_entries`] and [`Volume::named_entries`]
 /// return.
 ///
 /// It yields every used short entry in order, `.`, `..` and the volume label included, each with
 /// its long name. It ends where [`Directory`] ends, and after an error it yields nothing more.
 ///
-/// Name: provisional. The iterator over `NamedEntry`.
+/// Name: ratified 2026-11-01 (UTC), renamed from `Entries`: the iterator over `NamedEntry`.
 ///
-/// [`Volume::root_entries`]: crate::Volume::root_entries
-/// [`Volume::entries`]: crate::Volume::entries
+/// [`Volume::root_named_entries`]: crate::Volume::root_named_entries
+/// [`Volume::named_entries`]: crate::Volume::named_entries
 #[derive(Debug)]
-pub struct Entries<'v, D> {
+pub struct NamedEntries<'v, D> {
     directory: Directory<'v, D>,
     assembler: LongNameAssembler,
+    /// The index of the first long-name piece since the last short entry.
+    run_start: Option<u32>,
 }
 
-impl<'v, D> Entries<'v, D> {
+impl<'v, D> NamedEntries<'v, D> {
     /// Read `directory` as named entries.
-    pub(crate) const fn new(directory: Directory<'v, D>) -> Entries<'v, D> {
-        Entries {
+    pub(crate) const fn new(directory: Directory<'v, D>) -> NamedEntries<'v, D> {
+        NamedEntries {
             directory,
             assembler: LongNameAssembler::new(),
+            run_start: None,
         }
     }
 }
 
-impl<D: SectorDevice> Iterator for Entries<'_, D> {
+impl<D: SectorDevice> Iterator for NamedEntries<'_, D> {
     type Item = Result<NamedEntry, ChainError<D::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            match self.directory.next()? {
+            match self.directory.advance_indexed()? {
                 Err(error) => return Some(Err(error)),
-                Ok(DirectoryEntry::LongName(piece)) => self.assembler.push(&piece),
-                Ok(DirectoryEntry::Short(short)) => {
+                Ok((index, DirectoryEntry::LongName(piece))) => {
+                    self.run_start.get_or_insert(index);
+                    self.assembler.push(&piece);
+                }
+                Ok((index, DirectoryEntry::Short(short))) => {
                     let long_name = self.assembler.finish(&short.name());
-                    return Some(Ok(NamedEntry { short, long_name }));
+                    let place = EntryPlace {
+                        directory: self.directory.first_cluster(),
+                        first_slot: self.run_start.take().unwrap_or(index),
+                        short_slot: index,
+                    };
+                    return Some(Ok(NamedEntry {
+                        short,
+                        long_name,
+                        place,
+                    }));
                 }
             }
         }

@@ -56,6 +56,7 @@ ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 
 exec python3 - "$ROOT" "${1:-}" <<'PY'
 import glob
+import datetime
 import json
 import os
 import re
@@ -268,10 +269,88 @@ def patched_files(pin):
     return sorted({m.group(1) for m in re.finditer(r"^\+\+\+ b/(.+)$", open(path).read(), re.M)})
 
 
+def requirement_allows(requirement, version):
+    """Whether a Cargo requirement string such as `0.4`, `^0.5.1` or `>=0.4, <0.6` allows
+    `version`. Only the forms crates use for a held dependency: a bare or caret version (0.y.z
+    pins its minor, 1.y.z and later pin the major) and the comparison operators."""
+    want = version_key(version)
+    for part in requirement.split(","):
+        part = part.strip()
+        match = re.match(r"(\^|~|=|>=|<=|>|<)?\s*(\d+(?:\.\d+){0,2})", part)
+        if not match:
+            return False
+        op, text = match.group(1) or "^", match.group(2)
+        have = version_key(text)
+        padded = have + (0,) * (3 - len(have))
+        if op in ("^", "~"):
+            width = 1 if padded[0] else (2 if padded[1] else 3)
+            if op == "~":
+                width = 2 if len(have) >= 2 else 1
+            if want[:width] != padded[:width] or want < padded:
+                return False
+        elif op == "=" and want != padded:
+            return False
+        elif op == ">=" and want < padded:
+            return False
+        elif op == ">" and want <= padded:
+            return False
+        elif op == "<=" and want > padded:
+            return False
+        elif op == "<" and want >= padded:
+            return False
+    return True
+
+
+def held_dependency(pin, releases):
+    """The pin's held dependency (`held_dependency = <name> <version>`) and whether it can be
+    released: the newest newer release whose requirement allows the version, or None. Dependabot is
+    told to ignore the bump because the pinned package asks for an older range, and nothing else
+    would say the day that stops being true."""
+    held = pin.get("held_dependency", "")
+    if not held:
+        return None
+    name, _, version = held.partition(" ")
+    out = {"name": name, "version": version.strip(), "release": None}
+    out["lag"] = lag_note(pin, out)
+    for r in releases or []:
+        data = get_json(
+            f"https://crates.io/api/v1/crates/{pin['name']}/{r['version']}/dependencies",
+            f"crates.io/{pin['name']}/{r['version']}/dependencies")
+        asks = [d["req"] for d in data.get("dependencies", [])
+                if d["crate_name"] == name and d.get("kind") == "normal"]
+        if any(requirement_allows(req, out["version"]) for req in asks):
+            out["release"] = r["version"]
+            break
+    return out
+
+
+def lag_note(pin, held):
+    """One line of lag: how long the held dependency's release has been out against the age of the
+    package's newest release. A package that stops taking its own dependencies' releases is a
+    reliability signal the architect weighs (keep, replace or fork); this reports it and fails
+    nothing. Offline, or on any error, it says so and the report goes on."""
+    try:
+        def published(crate, version=None):
+            data = get_json(f"https://crates.io/api/v1/crates/{crate}", f"crates.io/{crate}")
+            rows = [v for v in data.get("versions", []) if not v.get("yanked")
+                    and (v["num"] == version if version else not is_prerelease(v["num"]))]
+            rows.sort(key=lambda v: v.get("created_at", ""), reverse=True)
+            return rows[0]["num"], datetime.date.fromisoformat(rows[0]["created_at"][:10])
+        today = datetime.datetime.now(datetime.timezone.utc).date()
+        _, held_date = published(held["name"], held["version"])
+        newest, newest_date = published(pin["name"])
+        return (f"**Lag (a signal, not a failure):** {held['name']} {held['version']} was published "
+                f"{held_date}, {(today - held_date).days} days ago; {pin['name']} has not released "
+                f"to take it, and its newest release, {newest}, is {(today - newest_date).days} "
+                f"days old ({newest_date}).\n")
+    except (Unreachable, KeyError, IndexError, ValueError) as e:
+        return f"**Lag: not checked** ({e}).\n"
+
+
 # --- the report -----------------------------------------------------------------------------------
 
 
-def render(pin, releases, git, overlap, fix=None):
+def render(pin, releases, git, overlap, fix=None, held=None):
     """One pin's section of the status file, in markdown.
 
     **Nothing in here is a timestamp, and that is load-bearing.** The file is regenerated on every
@@ -282,7 +361,11 @@ def render(pin, releases, git, overlap, fix=None):
     """
     out = [f"## {pin['name']}\n"]
 
-    out.append(f"Pinned at **{pin['version']}**, upstream git sha `{pin['vcs'][:12]}`.\n")
+    if pin.get("source") == "git":
+        out.append(f"Pinned at upstream git commit `{pin['vcs'][:12]}`, which no release carries; "
+                   f"its manifest says **{pin['version']}**.\n")
+    else:
+        out.append(f"Pinned at **{pin['version']}**, upstream git sha `{pin['vcs'][:12]}`.\n")
 
     if releases is None:
         out.append("**Releases: could not be checked.** See the run log.\n")
@@ -343,6 +426,18 @@ def render(pin, releases, git, overlap, fix=None):
                        "needs a decision.\n")
         else:
             out.append(f"**Upstream fix: still open**: {fix['url']} ({fix['title']}).\n")
+
+    if held is not None:
+        if held["release"]:
+            out.append(f"**Held dependency: lifts.** {pin['name']} {held['release']} allows "
+                       f"{held['name']} {held['version']}. Remove the `{held['name']}` entries "
+                       f"from `ignore` in .github/dependabot.yml, re-vendor {pin['name']} at "
+                       f"{held['release']} and take the {held['name']} bump; vendor/README.md "
+                       "\"Taking a held bump\" lists the steps.\n")
+        else:
+            out.append(f"**Held dependency: stays held.** No published {pin['name']} newer than "
+                       f"{pin['version']} allows {held['name']} {held['version']}, so the "
+                       f"`{held['name']}` ignore in .github/dependabot.yml stays.\n")
 
     return "\n".join(out).rstrip() + "\n"
 
@@ -416,7 +511,22 @@ for pin_path in pins:
         behind = True
         print(f"  behind: the upstream fix is {fix['state']}", file=sys.stderr)
 
-    sections.append(render(pin, releases, git, patched_files(pin), fix))
+    try:
+        held = held_dependency(pin, releases)
+    except Unreachable as e:
+        print(f"  {e.kind}: {e}", file=sys.stderr)
+        failures.append(e)
+        held = None
+    if held:
+        # On stderr, not in the status file: day counts change daily, and the file carries no
+        # timestamp on purpose so an unchanged upstream regenerates it byte for byte.
+        print("  " + held["lag"].strip().replace("**", ""), file=sys.stderr)
+    if held and held["release"]:
+        behind = True
+        print(f"  behind: {pin['name']} {held['release']} allows the held {held['name']} "
+              f"{held['version']}; the dependabot ignore can lift", file=sys.stderr)
+
+    sections.append(render(pin, releases, git, patched_files(pin), fix, held))
 
 report = HEADER + "\n" + "\n".join(sections)
 
@@ -437,6 +547,7 @@ if write:
             continue
         text = open(pin_path).read()
         text = re.sub(r"^version = .*$", f"version = {newest['version']}", text, flags=re.M)
+        text = re.sub(r"^source = .*\n\n?", "", text, flags=re.M)  # a release is a crates.io pin
         text = re.sub(r"^url = .*$",
                       f"url = https://static.crates.io/crates/{pin['name']}/"
                       f"{pin['name']}-{newest['version']}.crate", text, flags=re.M)

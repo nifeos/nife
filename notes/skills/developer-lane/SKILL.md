@@ -44,9 +44,26 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
   2026-10-10 UTC). `--debt-paydown` is for work that meets the definition in
   [notes/debt-paydown.md](../../debt-paydown.md), and it puts the `debt-paydown` label on the draft.
   Everything else is `--new-work`. A brief says which one, so the lane doesn't have to guess.
+- **Push the real commits, confirm the remote head, and only then mark the pull request ready.**
+  Push with `script/push`, which reads the branch back from origin. Then confirm the head is the
+  commit you mean: `git ls-remote origin refs/heads/<branch>` prints the same commit as
+  `git rev-parse HEAD`, and `gh pr view <number> --json headRefOid --jq .headRefOid` agrees. Run
+  `gh pr ready <number>` and `gh pr merge <number> --auto` after that and not before. The
+  `empty diff` check has no draft skip, so marking ready before the commits arrive makes it run on
+  the claim-only head and fail. The failure is accurate and clears on the next push, but a pull
+  request that is already waiting loses minutes to hours before the check passes again.
 - A developer works in a lane, and the lane is the isolation rather than the person: its own
   worktree, its own branch, one milestone, no visibility into the others. Two developers in one lane
   is forbidden; it is the merge problem this vocabulary exists to prevent.
+- **Run `script/lint --quick` before the full lint, and again before each push.** It runs the
+  cheap sections that fail a lane's first run most often (citations and their glosses, roadmap
+  status, the prose, module-block and parent-index ratchets, em-dashes, package boundaries;
+  `script/lint --quick --list` names them) in a fraction of the full run's time, so a missing gloss
+  costs seconds and not a rerun. Commit first: the citations sections judge the committed tip and
+  refuse uncommitted edits. It covers fewer sections than the full run, which still gates the push
+  and CI, so it never replaces `script/lint`. Run the full lint once when the work is done, read
+  every failure it names (it runs all sections and lists them all at the end), and fix them
+  together.
 
 A developer's final report ends by handing off: what its work unblocked, and what it found that
 wants a lane of its own.
@@ -75,6 +92,18 @@ The merge checklist grows one line: every piece of identified work in the lane's
 [`briefs/merge-and-cleanup.md`](../../../briefs/merge-and-cleanup.md) has that checklist whole, with the
 prune and the relink. Two things this deliberately does not do: it does not gate, because no check
 can tell an intention from an observation in prose, and it does not touch the `BUGS` convention.
+
+## What drives the work
+
+Ruled 2026-10-31 (UTC). A lane brief answers one question before a lane starts, and the review of
+the lane's pull request asks it again: what drives this work now, and what does it save? The answer
+is a sentence, such as "the updater in milestone 976 (an OS update is a set of packages that lands through a slot) calls it" or "it cuts a kernel download by under
+1 MB per update". "Nothing drives it yet" is an allowed answer. It is a reason to hold the work for
+its driver, not a failure, because a program that waits for its users is not waste. There is no
+field for it and no lint check. `helpers/consumer_census.py` counts delivered work nothing uses,
+report-only, and the maintainer runs it monthly; its counts cannot tell work not yet consumed from
+work built with no reason, so a person asks. The reasoning is in
+[the proposal](../../../design/roadmap/proposals/delivered-work-names-its-consumer.md).
 
 ## Shared state: the tree's, and the machine's
 
