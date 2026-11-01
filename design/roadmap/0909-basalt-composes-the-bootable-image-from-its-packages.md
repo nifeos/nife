@@ -95,13 +95,13 @@ and basalt's existing repository, source-archive and publish path.
      `compose` reads each carried program's asks with `program_asks`, the reading the progenitor's
      install uses. It tests them against the package's entry with `approval_file::File::check`, and
      refuses the composition naming every extra grant of the package.
-   - **The composer reads a note from an ELF of any machine, and refuses a note it cannot read.**
-     Ruled 2026-11-01 (UTC). `compose` reads each program's note through the program headers
-     alone (`program_asks::checked_asked_grants_of`), which checks no machine, so an image for
-     another machine than the host's is checked the same way. A program whose bytes are not an
-     ELF, or whose note or manifest is malformed, refuses the composition and is named; a program
-     with no note at all still asks for nothing. The parser's machine check stays on the paths
-     that run code.
+   - The composer reads a note from an ELF of any machine, and refuses a note it cannot read
+     (the architect ruled so on 2026-11-01 UTC). `compose` finds each program's note through the program headers alone
+     (`program_asks::checked_asked_grants_of`), which check no machine, so an image for another
+     machine than the host's gets the same check. A program that is not an ELF, or whose note or
+     manifest does not parse, refuses the composition and the refusal names it. A program with no
+     note at all still asks for nothing. The parser's machine check stays on the paths that run
+     code.
    - **The base image names no approval file** until a base program carries a note that asks.
      The check reads manifest notes, and the base's programs take their grants from the
      progenitor's compiled table (see `BUGS`). Ruled 2026-11-01 (UTC) on #2981: the check and the

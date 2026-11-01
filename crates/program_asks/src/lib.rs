@@ -49,8 +49,10 @@
 
 use installed_programs::{Grant, Granted};
 
-/// **Why a program's note could not be read**, as opposed to the program having none. Provisional
-/// name.
+/// **Why a program's note could not be read**, as opposed to the program having none.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane
+/// milestone/909-composer-reads-any-machines-note. calef names public items.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnreadableNote {
     /// The bytes are not a little-endian ELF64 file, or a `PT_NOTE` in them is malformed.
