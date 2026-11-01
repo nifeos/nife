@@ -89,7 +89,7 @@ A repository host or a mirror operator writes the index, and a signed index must
 to point `jig` at the owner's own network (Q1 of milestone 801 (packages over the internet)). `crates/package_index` has no Kani
 harness, so nothing else runs `Index::parse`, `Location::parse` or `Location::check` on text nobody
 here wrote. The sixth outsider pass booted an escape through `Location`
-(notes/confinement-outsider-pass-6.md). The address check is the property the target is built around.
+(notes/confinement-outsider-pass-6.md). The target exists chiefly for the address check.
 
 The input is text, then optionally one NUL and a list of resolved addresses, five bytes each. The
 fuzzer chooses what a host resolved to as well as what the index says. For every location in the
