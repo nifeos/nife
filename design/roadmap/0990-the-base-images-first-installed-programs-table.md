@@ -182,8 +182,8 @@ the ruling changes where the records go and not how the composition checks them.
     progenitor would vouch for no image spawn and the installer could not read the generation
     it succeeds. Item 2 cannot keep its read path unchanged. Ruled 2026-11-01 (UTC) by the architect:
     every reader takes as many pages as the generation holds, up to a named bound of 64 KiB (16
-    pages), and refuses a generation past it by name, never truncating; the installer writes within
-    the same bound. Home: the proposal
+    pages). A reader refuses a generation past the bound by name and never truncates. The installer
+    writes within the same bound. Home: the proposal
     [a-generation-grows-past-one-page](proposals/a-generation-grows-past-one-page.md).
   - **A base row claims no name at the prompt.** Ruled 2026-11-01 (UTC) by calef, on #3023: a base
     row carries the program name and digest and no pointer. So the shell's `Bare::Both` refusal
