@@ -232,26 +232,23 @@ fn zero(region: u64) {
     }
 }
 
-/// Empty the descriptor rings before the reset if the hardware says it must, FreeBSD's
-/// `em_flush_desc_rings`, which calls `em_flush_tx_ring` and `em_flush_rx_ring`
-/// (`freebsd/freebsd-src@9da2c05a748f`, `sys/dev/e1000/if_em.c`, fetched 2026-11-01 UTC). Skipped
-/// when the device's transmit ring is not in `region`, since the dummy descriptor must go where
-/// both the device may read and this kernel owns.
-///
-/// This sequence is adapted from `if_em.c`, whose notice is: Copyright (c) 2001-2024, Intel
-/// Corporation; (c) 2016 Nicole Graziano <nicole@nextbsd.org>; (c) 2024 Kevin Bowling
-/// <kbowling@FreeBSD.org>. SPDX-License-Identifier: BSD-2-Clause. Redistribution and use in source
-/// and binary forms, with or without modification, are permitted provided that the following
-/// conditions are met: 1. Redistributions of source code must retain the above copyright notice,
-/// this list of conditions and the following disclaimer. 2. Redistributions in binary form must
-/// reproduce the above copyright notice, this list of conditions and the following disclaimer in
-/// the documentation and/or other materials provided with the distribution. THIS SOFTWARE IS
-/// PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-/// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-/// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR
-/// ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-/// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-/// BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+/// Empty the descriptor rings before the reset if the hardware says it must: FreeBSD's
+/// `em_flush_tx_ring` and `em_flush_rx_ring` (`freebsd/freebsd-src@9da2c05a748f`,
+/// `sys/dev/e1000/if_em.c`, fetched 2026-11-01 UTC). Skipped when the transmit ring is not in
+/// `region`, since the dummy descriptor must go where the device reads and this kernel owns.
+/// Notice of `if_em.c`: Copyright (c) 2001-2024, Intel Corporation; (c) 2016 Nicole Graziano
+/// <nicole@nextbsd.org>; (c) 2024 Kevin Bowling <kbowling@FreeBSD.org>. BSD-2-Clause. Redistribution
+/// and use in source and binary forms, with or without modification, are permitted provided that
+/// the following conditions are met: 1. Redistributions of source code must retain the above
+/// copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in
+/// binary form must reproduce the above copyright notice, this list of conditions and the following
+/// disclaimer in the documentation and/or other materials provided with the distribution. THIS
+/// SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED
+/// WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+/// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+/// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+/// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+/// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
 /// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 /// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, region: u64) {
