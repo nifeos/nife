@@ -143,6 +143,15 @@ slot. Every new name here is provisional.
   TCG, and it builds the install image and the composed image one after the other. A CI leg would
   roughly double `confirm-boot`'s cost for a path that parts 4 and 5 replace. It stays a manual
   gate until part 5's updater supplies the real staging.
+- **Done.** Part 4a: `crates/boot_slot` reads and writes the version 2 header (`boot_slot::members`,
+  provisional). `parse` reads versions 1 and 2. It refuses each of these with a typed `Refusal` and a fixed
+  phrase: an unknown version, an unknown, duplicate or missing tag, a layout break, nonzero
+  reserved or padding bytes, and a CRC-32 mismatch. Two more reasons, `NoHeader` and `Truncated`,
+  cover an empty partition and a short buffer. `MemberHeader::encode` writes only version 2. Host tests
+  cover the round trip, every refusal, version 1 as before, and a flip of every byte of the 188
+  and of the padding. A fuzz target is not added, because the fuzz job is at its eighteen-target
+  budget; the crate's `BUGS` records that. The ruling leaves two points open, and both are refused
+  strictly for now. A zero-length member is a layout break. So is a member inside the header block.
 - **Done.** Part 4b: the archive writer is `crates/initial_ramdisk_writer` (provisional name), which
   the host composer and the device updater share. It is `no_std` with `alloc`; it takes the
   programs, the catalog and the index sources and returns the image, and it refuses an archive
@@ -150,7 +159,9 @@ slot. Every new name here is provisional.
   programs in and writes the file out. Checked: `cargo xtask base-image x86_64` wrote a
   9,391,104-byte archive with the same SHA-256 before and after the move, and a fixture archive in
   the crate's tests holds the digest the old packer gave it.
-- **Outstanding.** Part 4, less 4b: the slot becomes a version 2 header naming members, the kernel, the
+- **Outstanding.** Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
+  load the members and print each refusal's phrase, and teaches xtask to write version 2.
+- **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself. Basalt
   publishes the kernel as a package, which is interim. Milestones 695 (the kernel takes two digests
