@@ -225,8 +225,8 @@ byte-for-byte comparison first proposed.
 
 - The hardware bytes are served as the instruction returns them: unmixed, and not health-tested
   after the first draw. That is DECISIONS §137 (a hardware TRNG with no published health-test claim)'s option A, which every other backend here already
-  does; B or C is calef's (§137 is `PROPOSED`). Until it is decided nothing may claim
-  cryptographic-quality randomness on x86_64 either.
+  does. §137 is `DECIDED` (2026-10-28 UTC): continuous SP 800-90B health tests in the driver.
+  They are unbuilt here, so nothing may claim cryptographic-quality randomness on x86_64.
 - aarch64 takes the same path on a CPU with `FEAT_RNG` and no virtio-rng, since the function is
   arch-neutral. That arm has not run at the prompt. Every aarch64 swish-check boot has a
   virtio-rng, and the default TCG CPU (`cortex-a72`) has no `RNDRRS`.

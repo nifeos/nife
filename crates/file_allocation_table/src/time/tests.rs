@@ -4,8 +4,8 @@
 
 use super::*;
 
-fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Timestamp {
-    Timestamp {
+fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> CivilDateTime {
+    CivilDateTime {
         year,
         month,
         day,
@@ -16,7 +16,7 @@ fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Timest
 }
 
 /// The packed fields of a time that must be legal.
-fn pack(time: Timestamp) -> Stamp {
+fn pack(time: CivilDateTime) -> Stamp {
     Stamp::pack(Some(time)).expect("a legal time")
 }
 
@@ -49,7 +49,7 @@ fn no_time_packs_to_the_zero_timestamp() {
 
 #[test]
 fn the_first_and_last_moments_are_accepted_and_the_ones_beside_them_are_refused() {
-    let legal = |t: Timestamp| Stamp::pack(Some(t)).is_ok();
+    let legal = |t: CivilDateTime| Stamp::pack(Some(t)).is_ok();
     assert!(!legal(at(1979, 12, 31, 23, 59, 58)));
     assert!(legal(at(1980, 1, 1, 0, 0, 0)));
     assert!(legal(at(2107, 12, 31, 23, 59, 58)));
@@ -62,7 +62,7 @@ fn the_first_and_last_moments_are_accepted_and_the_ones_beside_them_are_refused(
 
 #[test]
 fn each_field_just_outside_its_range_is_refused_and_just_inside_is_accepted() {
-    let legal = |t: Timestamp| Stamp::pack(Some(t)).is_ok();
+    let legal = |t: CivilDateTime| Stamp::pack(Some(t)).is_ok();
     assert!(!legal(at(2000, 0, 1, 0, 0, 0)) && legal(at(2000, 1, 1, 0, 0, 0)));
     assert!(!legal(at(2000, 13, 1, 0, 0, 0)) && legal(at(2000, 12, 1, 0, 0, 0)));
     assert!(!legal(at(2000, 1, 0, 0, 0, 0)) && legal(at(2000, 1, 1, 0, 0, 0)));
@@ -123,15 +123,15 @@ fn a_moved_entry_copies_every_time_field_and_nothing_else() {
 
 #[test]
 fn a_clock_lent_by_reference_reports_what_the_clock_reports() {
-    struct Fixed(Option<Timestamp>);
+    struct Fixed(Option<CivilDateTime>);
     impl Clock for Fixed {
-        fn now(&mut self) -> Option<Timestamp> {
+        fn now(&mut self) -> Option<CivilDateTime> {
             self.0
         }
     }
     let mut clock = Fixed(Some(at(2026, 11, 1, 12, 34, 56)));
     // A generic caller takes the clock by value, which is how a `&mut` clock reaches the crate.
-    fn read<C: Clock>(mut clock: C) -> Option<Timestamp> {
+    fn read<C: Clock>(mut clock: C) -> Option<CivilDateTime> {
         clock.now()
     }
     assert_eq!(read(&mut clock), Some(at(2026, 11, 1, 12, 34, 56)));
