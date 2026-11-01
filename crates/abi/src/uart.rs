@@ -1,5 +1,4 @@
-//! **The console UART's register shape, carried as one start word** (milestone 890 (riscv64 and
-//! `x86_64` join the shared boot path)).
+//! **The console UART's register shape, carried as one start word**.
 //!
 //! The NS16550's register stride is the machine's: one byte on QEMU `virt`, four with 32-bit
 //! access on the JH7110 (`reg-shift = <2>`, `reg-io-width = <4>`), where a driver assuming QEMU's
