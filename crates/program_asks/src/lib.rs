@@ -96,7 +96,9 @@ pub fn checked_asked_grants_of<'b>(
     let decoded = match note {
         None => None,
         Some(d) => Some((
-            capability_manifest_note::decode(d).map_err(UnreadableNote::Manifest)?,
+            capability_manifest_note::decode(d)
+                .map_err(UnreadableNote::Manifest)?
+                .network,
             capability_manifest_note::zones(d).map_err(UnreadableNote::Manifest)?,
             capability_manifest_note::service(d).map_err(UnreadableNote::Manifest)?,
         )),
@@ -106,8 +108,16 @@ pub fn checked_asked_grants_of<'b>(
     {
         return Err(UnreadableNote::ZoneNotText);
     }
+    Ok(grants_of_decoded(decoded))
+}
+
+/// The grants a decoded note asks for, in the record's order. Shared by the spawn-path reading and
+/// the checked one, so the two cannot disagree about what a note says.
+fn grants_of_decoded<'b>(
+    decoded: Option<(bool, capability_manifest_note::Zones<'b>, bool)>,
+) -> impl Iterator<Item = Granted<'b>> + use<'b> {
     let network = decoded
-        .is_some_and(|(m, _, _)| m.network)
+        .is_some_and(|(n, _, _)| n)
         .then_some(Granted::Network);
     let service = decoded
         .is_some_and(|(_, _, s)| s)
@@ -117,7 +127,7 @@ pub fn checked_asked_grants_of<'b>(
             .iter()
             .filter_map(|z| Some(Granted::Zone(core::str::from_utf8(z).ok()?)))
     });
-    Ok(network.into_iter().chain(service).chain(zones))
+    network.into_iter().chain(service).chain(zones)
 }
 
 /// **What one packaged program's note asks for**, as the grants the owner's yes covers: the
@@ -133,7 +143,21 @@ pub fn checked_asked_grants_of<'b>(
 pub fn asked_grants_of<'b>(
     p: &package_archive::Program<'b>,
 ) -> impl Iterator<Item = Granted<'b>> + use<'b> {
-    checked_asked_grants_of(p).ok().into_iter().flatten()
+    let note = elf::Elf::parse(p.bytes).ok().and_then(|elf| {
+        elf.note(
+            capability_manifest_note::OWNER,
+            capability_manifest_note::MANIFEST,
+        )
+        .ok()
+        .flatten()
+    });
+    grants_of_decoded(note.and_then(|d| {
+        Some((
+            capability_manifest_note::decode(d).ok()?.network,
+            capability_manifest_note::zones(d).ok()?,
+            capability_manifest_note::service(d).ok()?,
+        ))
+    }))
 }
 
 /// [`asked_grants_of`], keyed on the program's digest: what an install writes into the grant
