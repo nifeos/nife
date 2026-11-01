@@ -100,6 +100,10 @@ grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for
 # `script/swish-check`'s malformed-note line.
 capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
+# **The archive writer** (milestone 976 (an OS update through a slot), part 4): every initial ramdisk
+# this tool packs is packed by the crate the device updater links, so the host composer and the
+# device write identical bytes (AGENTS.md rule 7). This tool reads the programs in and the file out.
+initial_ramdisk_writer = { version = "0.1.0", path = "../crates/initial_ramdisk_writer" }
 # The package format (milestone 198 (a package manager, and the trivial install that makes a second
 # customer possible), rung 3a). `cargo xtask package` writes a package with the same crate a target
 # reads one with, and reads its own output back before writing it to disk, so a producer that
@@ -108,6 +112,9 @@ package_archive = { version = "0.1.0", path = "../crates/package_archive" }
 # The image's index sources (milestone 801 (packages over the internet)): the entry's name and the
 # reader the archive build checks its own text with.
 package_index = { version = "0.1.0", path = "../crates/package_index" }
+# The system manifest basalt writes beside the packages (milestone 976 (an OS update is a set of packages that lands through a slot), part 6): the composer's
+# writer and the check that reads it back are this crate's, which the device updater links too.
+system_manifest = { version = "0.1.0", path = "../crates/system_manifest" }
 # The approval file and the grant records it compiles to (milestone 911 (scripted installs grant
 # only what the owner's approval file allows)). `cargo xtask base-image` checks each package's asks
 # against the image's approval file with the same reader `jig install --approved` uses, so the

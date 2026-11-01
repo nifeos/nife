@@ -39,7 +39,8 @@ teardown and respawn by the progenitor, with no signals and no `kill`.
   thread death becomes a message a supervisor holds) already delivers.
 - Reload and graceful stop. A service may declare a control endpoint that accepts those
   messages over IPC, the Fuchsia component lifecycle model. A service without one can only be
-  restarted. The command that sends them is unnamed.
+  restarted. The command that sends them is `service_control`, with the verbs `start`, `stop` and
+  `reload` (the 2026-11-01 UTC ruling; reasons under Open questions).
 - Configuration. The package ships a read-only default, and the owner's configuration lives in
   a writable directory granted to the service.
 - Update. A package update is a new installed-programs version, and the progenitor restarts the
@@ -93,7 +94,8 @@ them at install. So it is built here, once, for every grant:
 4. Teardown and respawn on a crash, by policy, and on an update, for each service whose package
    changed; `jig` prints the list before it asks.
 5. `remove` stops and drops; `rollback` restores the previous set and restarts what changed.
-6. The control endpoint's two messages, reload and stop, and a stop that falls back to teardown.
+6. The `service_control` command and the control endpoint's messages: `reload` and `stop`, a stop
+   that falls back to teardown, and `start` for a service that `--no-start` did not start.
 
 ## Done when
 
@@ -114,8 +116,31 @@ that reports its version:
 
 ## Open questions
 
-The command that sends reload and stop, and its name, are calef's. The restart policy's spellings
-and limits are drafts for the lane to propose.
+Name: ratified 2026-11-01 (calef, ruling on this block). `service_control`, with the verbs `start`,
+`stop` and `reload`. The name is a software name, so the BSD-first rule for hardware register,
+field and constant names does not apply; it says what the command does and follows the tree's own
+pattern. `jig install --no-start` leaves a service stopped and the block named no way to start it
+later. `start` goes to the progenitor, which holds the supervision endpoint (§270 keeps spawning
+out of `jig`). A stop that falls back to teardown also goes to the progenitor. So the command is a
+progenitor client in any case, and `start` adds no new kind of authority. `restart` is not a
+verb: restart is the progenitor's teardown and respawn on a crash or an update. `enable` and
+`disable` are not verbs: boot persistence belongs to the installed-programs table under §208.
+
+The 2026-11-01 (UTC) ruling: `service_control` is nife's own small program, not a port. It holds only
+the progenitor's service-control endpoint. Its model is `s6-svc` (ISC) and runit's `sv`
+(BSD-3-Clause): a client that sends a request and reports the answer, with exit codes that say
+whether the service was already in the wanted state. Those clients talk to supervisors built on
+fork and SIGCHLD, which nife refuses (§264 (`fork` is declined for good, and spawn is the supported way to start a program)).
+The client part is a few verbs and one request. A port
+would wait on the C library's stage 3 and `posix_spawn`, and a new program holds less authority.
+Systemd's `systemctl` (LGPL) and monit (AGPL) did not qualify. This account comes from memory of
+those projects, and nobody re-checked it. The lane copies no code.
+
+The restart policy's spellings and limits are drafts for the lane to propose.
+
+BUGS. Whether `jig install --no-start` also clears the enabled flag for boot stays open in this
+block. The lane that builds 910 asks before choosing: a service that sits stopped now but enabled
+would start again at the next boot.
 
 Reuse: the policy takes `sub_server_supervisor`'s restart loop, from milestone 22 (trusted init:
 verify it, and shrink what a broken one can do). The set and its generations are §208's, and the

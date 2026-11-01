@@ -211,7 +211,7 @@ tree's build, so nothing about it can work on one target and not another.
       is not yet set.
 6. crates.io trusted publishing from that workflow, owned by a `nifeos` team, with no stored token.
 7. calef approves this publication, as he does every one.
-8. nife then consumes the crates.io release, pinned with its checksum in `Cargo.lock`, and the
+8. nife then consumes the crates.io release by semantic version, and `Cargo.lock` records its checksum, and the
    soak's git dependency goes.
 
 ## Standalone, measured 2026-10-11 (UTC)
