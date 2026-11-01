@@ -14,6 +14,10 @@ what order the 22 crates that the first cut's programs link could leave this rep
 policy makes frequent breaking change safe across repositories. It moves no crate and changes no
 code. Every new name below is provisional.
 
+Reuse: the measurements reuse `cargo metadata`, git's rename detection and milestone 610's
+per-crate series; the policy reuses milestone 956's constants, the crate template and basalt's gate.
+No new code and no dependency.
+
 Two directions from the architect, both dated 2026-11-01 (UTC), frame it:
 
 - Crossing repositories is the goal of the split (§151 (the goal of the repository split is
@@ -39,7 +43,7 @@ architect](the-contract-crates-leave-in-this-order/questions.md).
 
 Measured at `nifeos/nife@a8b7524d7` with one script, reproduced in the measurements appendix.
 
-- The 22 are closed under their normal dependencies: no 23rd crate has to leave with them. Fifteen
+- The 22 link nothing outside themselves: no 23rd crate has to leave with them. Fifteen
   are leaves, four sit one layer up and three sit two up.
 - 39 crates that stay link at least one of the 22. `abi` alone has 12, the kernel among them.
 - In 30 days 348 focused commits touched the 22. 244 of them (70%) also changed code outside the
@@ -47,7 +51,7 @@ Measured at `nifeos/nife@a8b7524d7` with one script, reproduced in the measureme
   and stayed inside them. Grouping the 22 into one repository would save almost no crossings.
 - `grant_plan` dominates: 151 commits in 30 days, 120 crossing, 227 breaking API items in four
   weeks. `filesystem_contract` follows with 263 breaking items, mostly the fixture extraction.
-- Identity values (a `MAGIC`, a `VERSION`) changed five times in 90 days. Two were reverted within a
+- Identity values (a `MAGIC`, a `VERSION`) changed five times in 90 days. Two reverts followed within a
   day, `current_cpu_contract` on 2026-10-21 and `program_argument_contract` on 2026-10-30, because
   basalt's published programs, built from an older nife, still compared the old value. The tree
   already pays cross-repository breaks, without a policy.
@@ -60,7 +64,7 @@ Measured at `nifeos/nife@a8b7524d7` with one script, reproduced in the measureme
 
 All 22 inherit `license` and `lints` from nife's workspace manifest; each move writes them as
 literals, as `jh7110_entropy` did. `system_tests` is a dev-dependency of 17 of them; that edge
-points from nife to the crate, and is allowed. Beyond those, six references would block:
+points from nife to the crate, which the direction permits. Beyond those, six references would block:
 
 | crate | reference back | resolution |
 |---|---|---|
@@ -128,14 +132,14 @@ proposal decides no wire format the rulings leave open; the bind-time check for 
 stays with its own proposal.
 
 One rule is new: one revision per contract per image. Every component in a composed image resolves
-a contract to the same commit, so the image is the coherent set that §235 (the OS is built and
-updated from packages, and the tree divides by what releases together) names.
+a contract to the same commit, so the image is the coherent set that §235 (the tree divides by what
+releases together) names.
 
 Two checks move with each crate. nife's diff check, which fails a moved magic without its version
 constant (milestone 956's step 4), joins the crate template. The template already runs
 `cargo-semver-checks` on each pull request against the last published release. These crates stay
-unpublished while nife pins them by `rev` (§305 (git dependencies are allowed on `nifeos/*` only,
-pinned to a landed commit)), so that rule has no baseline and never fires. `jh7110_entropy`'s pull
+unpublished while nife pins them by `rev` (§305 (git dependencies on `nifeos/*` only, pinned to a
+landed commit)), so that rule has no baseline and never fires. `jh7110_entropy`'s pull
 request #5 renamed five public constants and drew no hold. The fix: compare against the commit
 whose manifest last changed version (`--baseline-rev`), so a break without a minor bump fails. Inside
 nife, `cargo-semver-checks` stays refused.
@@ -146,7 +150,7 @@ basalt's gate (milestone 755 (basalt v0 pins nife and runs its gate)) does this 
 component, nife, by commit. Its `gate` workflow runs that commit's `script/ci-build test` on three
 architectures. Its `packages` workflow builds basalt's recipes at nife's pin twice and requires
 byte-identical output. It installs them with `jig` and composes and boots an image from basalt's own
-base packages. Seven checks are required on its `main`.
+base packages. Its `main` requires seven checks.
 
 It does not hold a second first-party pin. It cannot see two components pinning different revisions
 of one contract. It reads no program's `INTERFACES` note against what the image serves. And it can
@@ -189,8 +193,8 @@ step 1 names nothing.
 ## How nife consumes a crate that left
 
 By `rev`, as §305 allows. A root `[workspace.dependencies]` entry would pin each contract once for
-every nife crate; `jh7110_entropy` is pinned in three manifests that pull request #2979 had to move
-together. Working on both sides at once uses a local `[patch]`, which never reaches `main`.
+every nife crate. nife pins `jh7110_entropy` in three manifests, which pull request #2979 had to
+move together. Working on both sides at once uses a local `[patch]`, which never reaches `main`.
 
 The CI cost is small per build and real per change. The fetch is one git checkout, cached. The real
 cost is the second pull request: 53 minutes for the example above. Had all 22 lived elsewhere for
@@ -227,23 +231,23 @@ the pin. Fuchsia's 2019 fold-back of its layers is the precedent. Other parties 
 and those make the door narrow: a repository name, a published crate version (crates.io never deletes
 one), an `INTERFACE_ID` value and a release binary that compares a magic. The two reverts above came
 from the fourth. So the moved crates stay unpublished under §305 until their own release milestone.
-The `INTERFACE_ID` values, still unratified per milestone 979, are ratified before the first contract
-leaves. §201 already asks for a name ratified before anything moves.
+The architect ratifies the `INTERFACE_ID` values, still open per milestone 979, before the first
+contract leaves. §201 already asks for a name ratified before anything moves.
 
 ## The seven questions
 
 1. Considered: the options above, each with its reason.
-2. The tree: `jh7110_entropy` left on 2026-10-31 and is pinned by `rev`; the crate template exists;
+2. The tree: `jh7110_entropy` left on 2026-10-31 and nife pins it by `rev`; the crate template exists;
    basalt pins nife; milestone 956 carries the constants.
-3. Prior art, in the appendix: Fuchsia's layers and petals, Android's stable AIDL, Cargo's semver
-   guide, `cargo-semver-checks` and the Linux kernel's stable API document were read. Rust's crater
-   is recalled.
+3. Prior art, in the appendix. This lane read Fuchsia's layers and petals, Android's stable AIDL,
+   Cargo's semver guide, `cargo-semver-checks` and the Linux kernel's stable API document. It
+   recalls Rust's crater.
 4. The premise holds with one correction: the first cut's 15 programs do not need all 22 at once.
    `disk-tools` needs 12.
 5. Cost: the measurements appendix, by command.
 6. Reversibility: above.
 7. At equal effort the choice stands. The order follows the graph and the second direction, not
-   effort. Within a layer, cheapest first is a choice about learning cost, and that is said here.
+   effort. Within a layer, cheapest first is a choice about learning cost, and this sentence says so.
 
 ## Questions for the architect
 

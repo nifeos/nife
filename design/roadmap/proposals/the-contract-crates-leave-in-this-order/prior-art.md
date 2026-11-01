@@ -22,8 +22,8 @@ Read: https://fuchsia.dev/fuchsia-src/development/source_code/working_across_pet
 Fuchsia kept separate repositories, called petals, for code outside the platform, and an
 integration repository rolls each to a pinned revision. A change across petals takes a soft
 transition in five steps. Land the new interface in the dependency beside the old one. Wait for it
-to roll into integration. Migrate the dependent. Wait for that to roll. Remove the old interface. A
-hard transition, a break plus a manual update of the dependent, is allowed where a soft one is
+to roll into integration. Migrate the dependent. Wait for that to roll. Remove the old interface. The
+page allows a hard transition, a break plus a manual update of the dependent, where a soft one is
 impossible. The page calls it "more stressful" and limits it to Google developers.
 
 Lesson for nife. The fold back came from boundaries that were not real: layers whose edges nobody
@@ -38,13 +38,14 @@ basalt.
 Read: https://source.android.com/docs/core/architecture/aidl/stable-aidl.
 
 An owner freezes an AIDL interface into a numbered version under `aidl_api/`, with a `.hash` file,
-and the build checks each frozen version against the next. Only additive changes are allowed: new
+and the build checks each frozen version against the next. The owner may only add: new
 methods at the end, new parcelable fields with defaults, new constants and enumerators. The page
 states: "No other actions are permitted, and no one else can modify an interface." At run time a
 client may ask a server for `getInterfaceVersion()` and `getInterfaceHash()`. A call to a method an
 older server lacks fails with `UNKNOWN_TRANSACTION`.
 
-Lesson for nife. The frozen dump and the build-time comparison are what this proposal asks of the
+Lesson for nife (milestone 956 (the linked interfaces carry checkable versions) supplies the
+constants). The frozen dump and the build-time comparison are what this proposal asks of the
 crate template's semver rule, with the baseline at the last version-bumping commit. Android forbids
 breaks outright; milestone 979's ruling of 2026-10-29 (UTC) permits them with a version bump and,
 for message contracts, a one-generation dual path. The `UNKNOWN_TRANSACTION` refusal matches 979's

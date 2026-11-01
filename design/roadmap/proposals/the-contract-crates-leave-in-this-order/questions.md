@@ -28,7 +28,8 @@ first, then `process-tools`, then `core-tools`. The note's type moves to a leaf 
 - (c) The packages leave now and pin nife for the crates they link. Refused by the direction of
   2026-11-01: it is a reference back.
 
-If the answer is no, milestone 756's single cut stands and waits for all 18 crates.
+If the answer is no, milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the first
+code to leave this repository)'s single cut stands and waits for all 18 crates.
 
 ## 2. One repository per contract crate, or a few grouped repositories?
 
@@ -56,13 +57,13 @@ Recommendation: (a), one repository per crate, named after the crate, on the cra
 ## 3. Does the architect hold on a semver break apply to contract crates?
 
 The crate template labels a pull request `needs-architect` when `cargo-semver-checks` reports a break
-against the last published version, and the hold keeps it red until a ruling. That rule was kept for
-released crates. Contract crates break often: `grant_plan` changed 227 public items in four weeks,
+against the last published version, and the hold keeps it red until a ruling. The architect kept that rule
+for released crates. Contract crates break often: `grant_plan` changed 227 public items in four weeks,
 and the direction of 2026-11-01 expects that to continue.
 
 A hold on each break would put every such change in the architect's queue. The wire identity
-(`INTERFACE_ID`, `VERSION`, a magic) is what other repositories and binaries act on; a Rust-API
-break is caught by the compiler at every consumer's next pin bump.
+(`INTERFACE_ID`, `VERSION`, a magic) is what other repositories and binaries act on; the compiler
+catches a Rust-API break at every consumer's next pin bump.
 
 Recommendation: (a). For contract crates, a Rust-API break must bump the Cargo minor, checked
 mechanically with no hold, and a change to a wire identity value keeps the hold. This is the less
@@ -91,8 +92,8 @@ and the pull request that moves one contract moves every pin of it.
 
 ## 5. May basalt run a trial on commits that have not merged?
 
-The workspace rule says a pin never names an unmerged commit, and basalt refuses one. That is why a
-breaking pair can be proven only after both halves merge. A trial run would be a manual workflow
+The workspace rule says a pin never names an unmerged commit, and basalt refuses one. So basalt can
+prove a breaking pair only after both halves merge. A trial run would be a manual workflow
 that takes candidate commits, merged or not, builds and checks them as one image, and writes no pin
 and no file.
 
@@ -100,4 +101,4 @@ Recommendation: (a), allow the trial, since it writes no pin. It proves a pair b
 merges.
 
 - (a) Recommended, as above.
-- (b) No trial. The pair is proven only at the basalt bump, after both halves merge, as today.
+- (b) No trial. basalt proves the pair only at its bump, after both halves merge, as today.
