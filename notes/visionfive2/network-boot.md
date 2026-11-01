@@ -35,7 +35,7 @@ archive falls all the way back, and takes *both* from the card. Half a pair halt
 - **The script carries the card's archive's two digests.** Both scripts set `bootargs` to the
   words `script/board-image` copied beside the archive (milestone 695 (the kernel trusts two
   digests handed to it by the loader)), and the kernel holds the progenitor and its table to them.
-  An archive served over the network must therefore be the one the card's script was written for.
+  The network must therefore serve the archive the card's script names.
   After a rebuild, rewrite the card with `script/board-image --tftp --card <dir>`, or the boot
   halts at `MEASURED BOOT REFUSED` naming the progenitor. Fetching the words beside the archive
   would remove this, and needs a U-Boot verb (`env import`) the bench has not run.

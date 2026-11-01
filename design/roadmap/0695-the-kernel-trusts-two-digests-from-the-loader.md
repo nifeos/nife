@@ -53,8 +53,8 @@ Question 1 of
 [`how-the-loader-hands-the-kernel-two-digests.md`](proposals/how-the-loader-hands-the-kernel-two-digests.md),
 the bytes of the handoff, is open. The code here builds its recommended option A, two command-line
 words, which the 2026-11-01 (UTC) ruling's word `nife.base` implies; it merges only once the
-architect confirms A. Question 2 was decided 2026-11-01 (UTC): option A, the composer records the
-digests and every loader copies them.
+architect confirms A. The architect decided question 2 on 2026-11-01 (UTC): option A, the composer
+records the digests and every loader copies them.
 
 A third question follows and stays separate. Once the kernel can update apart from the base, the
 syscall surface becomes a versioned ABI that installed programs rely on.
@@ -64,7 +64,7 @@ syscall surface becomes a versioned ABI that installed programs rely on.
 The first caller is milestone 976 (an OS update is a set of packages that lands through a slot),
 part 4, the updater. The architect directed on 2026-11-01 (UTC) that this lane and 697's launch
 before part 4 shows what a kernel download costs per update; that direction lifts the earlier hold.
-The measurement is not taken, so nothing here depends on it, and each piece reverts on its own. A
+Nobody has taken that measurement, so nothing here depends on it, and each piece reverts on its own. A
 milestone names its consumer. It is not BUILT until a record cites its first use.
 
 ## The plan in parts
