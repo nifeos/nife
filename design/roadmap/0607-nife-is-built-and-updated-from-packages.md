@@ -36,7 +36,7 @@ The forks are in [§235 (the OS is built and updated from packages)](../decision
 calef ruled on every fork on 2026-09-27 (UTC), relayed by the maintainer on pull request #1389.
 §235 records them with his words.
 
-- The trust root is T4 with T2: the loader hands over the progenitor and manifest digests, the
+- The trust root is T4 with T2: the loader hands over the progenitor digest and the digest of the archive's `program_measurements` table (ruled 2026-11-01 UTC), the
   kernel checks the progenitor, and the progenitor checks the base set.
 - Packages are the update unit, and each slot holds a full copy (U4), ruled 2026-09-27. The shared
   store (U2) is refused: calef judged its disk saving not worth the risk of a brick.

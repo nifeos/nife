@@ -15,7 +15,7 @@ needs_person: no
 Item 6 of milestone 607 (nife is built and updated from packages), with milestone 695 (the kernel
 trusts two digests handed to it by the loader). §235 (the OS is built and updated from packages)
 ruled the shape on 2026-09-27 (UTC): T4 with T2. The loader hands the kernel the progenitor's digest
-and the base manifest's digest. The kernel checks only the progenitor, and the progenitor checks
+and the digest of the archive's `program_measurements` table. The kernel checks only the progenitor, and the progenitor checks
 the base set. This block is the build half: the kernel binary stops depending on the base set. 695
 is the boot-path half.
 

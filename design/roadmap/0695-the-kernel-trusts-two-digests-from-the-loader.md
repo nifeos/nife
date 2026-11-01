@@ -26,7 +26,7 @@ The progenitor checks every program it loads against the table (milestone 104 (t
 continues past init)).
 
 Under T4 with T2, the loader hands the kernel two digests on all three architectures: the
-progenitor's, and the base manifest's. The kernel checks only the progenitor before entering it. It
+progenitor's, and the digest of the archive's `program_measurements` table. The kernel checks only the progenitor before entering it. It
 passes the base digest on, and the progenitor checks the table against it before reading it. Trust
 moves to the loader. Only Secure Boot (milestone 500 (a stick that boots with Secure Boot on)) or
 the slot header's CRC-32 protects the loader, and §235 accepted that cost. Signatures stay where
@@ -66,6 +66,6 @@ Part 1 needs no ruling and is safe behind the QEMU suites; it still waits on the
 
 ## Index row
 
-The loader hands the kernel the progenitor's digest and the base manifest's digest, on all three
+The loader hands the kernel the progenitor's digest and the `program_measurements` table's digest, on all three
 architectures, and the progenitor checks the base set (§235, T4 with T2). The boot-path half of
 607's item 6; its first consumer is 976 part 4, and two handoff questions are calef's.
