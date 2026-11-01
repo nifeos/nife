@@ -217,8 +217,8 @@ Each waits its turn:
 2. How the kernel hands the base digest to the progenitor: a start word, or a page. The kernel and
    the progenitor release together, so this is a contract crate, reversible, and the lane decides
    it. Listed so nobody mistakes it for a third wire format.
-3. Decided 2026-11-01 UTC: the six test child builders are measured through the archive's
-   `program_measurements` table, as `trust::require_program` does for the benchmark boots.
+3. Decided 2026-11-01 UTC: the kernel measures the six test child builders through the
+   archive's `program_measurements` table, as `trust::require_program` does for the benchmark boots.
    `BOOT_PROGRAMS` shrinks to `progenitor`. The production kernel carries no test-program digests,
    and tests have no second trust mechanism.
 
