@@ -253,11 +253,11 @@ impl<D: WritableSectorDevice> Volume<D> {
     }
 }
 
-/// **A file open for writing**: what [`Volume::open_file_writer`] returns.
+/// **A file open for writing**: what [`crate::WritableVolume::open_file_writer`] returns.
 ///
 /// It writes at a position, extends the file as it writes, and sets its length. After every call
 /// that changes the size or the first cluster it rewrites the directory entry, so the entry is
-/// true between calls; [`Volume::sync`] writes the volume's own hints and clears the dirty bit.
+/// true between calls; [`crate::WritableVolume::sync`] writes the volume's own hints and clears the dirty bit.
 ///
 /// Name: provisional. A file being written; named for what it does, as `FileReader`.
 #[derive(Debug)]

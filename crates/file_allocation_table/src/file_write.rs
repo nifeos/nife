@@ -66,7 +66,7 @@ pub enum WriteError<E> {
     /// Name: provisional. The condition.
     NotADirectory,
     /// The file carries the read-only attribute, so it cannot be written, resized or removed until
-    /// [`crate::Volume::set_attributes`] clears the bit.
+    /// [`crate::WritableVolume::set_attributes`] clears the bit.
     ///
     /// Name: provisional. The condition, as DOS's "access denied".
     ReadOnly,

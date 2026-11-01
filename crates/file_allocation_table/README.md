@@ -10,7 +10,8 @@ checked by a model checker.
 - **Read.** `Volume::open` checks the boot sector, types the volume by its cluster count as the
   specification does, and reads directories, long names, paths and file bytes. `MasterBootRecord`
   opens the volume inside a partitioned disk.
-- **Write.** Create, write, extend, truncate, rename and remove files; make and remove directories;
+- **Write.** Open a `WritableVolume` with a `Clock` (a read-only `Volume` has no write methods and
+  takes none). Create, write, extend, truncate, rename and remove files; make and remove directories;
   set attributes (read-only, hidden, system, archive); read and change the volume label. A name that
   is not 8.3 gets long-name slots and an alias numbered against its directory. The first change clears
   the clean-shutdown bit and `Volume::sync` sets it again, with the FAT32 `FSInfo` hints.
@@ -22,7 +23,8 @@ checked by a model checker.
 
 ```rust
 use file_allocation_table::{
-    Attributes, Format, FormatOptions, SectorDevice, SectorSize, Volume, WritableSectorDevice,
+    Attributes, Format, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
+    WritableVolume,
 };
 
 /// A volume held in memory. A real caller wraps a block device the same way.
@@ -45,7 +47,10 @@ impl SectorDevice for Memory {
 impl WritableSectorDevice for Memory {
     fn write_sector(&mut self, index: u64, buffer: &[u8]) -> Result<(), ()> {
         let start = usize::try_from(index).map_err(|_| ())? * 512;
-        self.0.get_mut(start..start + 512).ok_or(())?.copy_from_slice(buffer);
+        self.0
+            .get_mut(start..start + 512)
+            .ok_or(())?
+            .copy_from_slice(buffer);
         Ok(())
     }
 }
@@ -53,16 +58,24 @@ impl WritableSectorDevice for Memory {
 fn main() {
     // Format 8 MiB. The size makes it FAT12; a bigger device makes FAT16 or FAT32.
     let sectors = 16 * 1024;
-    let options = FormatOptions::new(SectorSize::Bytes512, sectors).with_label("EXAMPLE").unwrap();
-    let format = Format::new(options).expect("a legal size");
+    let options = FormatOptions::new(SectorSize::Bytes512, sectors)
+        .with_label("EXAMPLE")
+        .unwrap();
+    let format = Format::new(options, &mut NoClock).expect("a legal size");
     let mut device = Memory(vec![0; sectors as usize * 512]);
     format.write_to(&mut device).unwrap();
 
     // Open it, make a directory and a file with a long name, and write some bytes.
-    let mut volume = Volume::open(device).unwrap();
+    let mut volume = WritableVolume::open(device, NoClock).unwrap();
     let docs = volume.make_directory(0, "Documents").unwrap();
-    let file = volume.create_file(docs.first_cluster(), "A long file name.txt").unwrap();
-    volume.open_file_writer(&file).unwrap().write(b"hello, volume").unwrap();
+    let file = volume
+        .create_file(docs.first_cluster(), "A long file name.txt")
+        .unwrap();
+    volume
+        .open_file_writer(&file)
+        .unwrap()
+        .write(b"hello, volume")
+        .unwrap();
     let stored = volume.lookup("Documents/A long file name.txt").unwrap();
     let hidden = Attributes::ARCHIVE.union(Attributes::HIDDEN);
     volume.set_attributes(&stored, hidden).unwrap();
@@ -73,11 +86,16 @@ fn main() {
     let mut bytes = [0u8; 32];
     let read = volume.open_file(&entry).unwrap().read(&mut bytes).unwrap();
     assert_eq!(&bytes[..read], b"hello, volume");
-    assert_eq!(volume.volume_label().unwrap().unwrap().trimmed(), b"EXAMPLE");
+    assert_eq!(
+        volume.volume_label().unwrap().unwrap().trimmed(),
+        b"EXAMPLE"
+    );
 }
 ```
 
-`tests/the_readme_example.rs` compiles and runs this example. For an EFI system partition:
+`tests/the_readme_example.rs` compiles and runs this example. Every write goes through a
+`WritableVolume`, which needs a `Clock`; `NoClock` is the explicit "no time", and the entries it
+stamps carry the zero timestamp. For an EFI system partition:
 `VolumeLayout::new(total_sectors, hidden_sectors, file_len, volume_id, "BOOTX64.EFI")` tells you what
 every metadata sector holds, and you write those sectors and then the file's bytes.
 
@@ -118,7 +136,11 @@ own driver read an image (`cargo test -- --ignored`, on macOS).
 - Not crash-atomic, and there is no journal, since FAT has none. The crate orders its writes so a
   crash leaks a cluster and never shares one, and a write has no barrier: the device decides when a
   write reaches the medium.
-- Every timestamp is zero. A caller that needs real times sets them itself; none is invented.
+- Time. The clock is required of every writer. FAT stores no time zone and a host shows the stored
+  time as local time, so a caller chooses whether its clock reports local time or UTC. The crate
+  stores exactly what the clock reports, clamps a time outside 1980 to 2107 and any field outside
+  its range, and never fails a write over a time. A write sets the write and access times, a new
+  entry its creation time, a rename keeps the times, and a read stamps nothing.
 - A name with a character outside the Basic Multilingual Plane is refused, and a lower-case 8.3 name
   is stored as a long name, since the crate writes no lower-case flag.
 - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table.

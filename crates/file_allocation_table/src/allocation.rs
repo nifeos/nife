@@ -12,7 +12,7 @@
 //! - A chain is freed from its first cluster on, one entry at a time.
 //!
 //! The FAT32 `FSInfo` hints are kept in memory as the operations change them and written by
-//! [`Volume::sync`]. A volume that is dropped without a sync leaves hints the specification
+//! [`crate::WritableVolume::sync`]. A volume that is dropped without a sync leaves hints the specification
 //! already calls untrustworthy.
 //!
 //! Name: provisional. The module that finds free clusters and owns the table's writes.
@@ -281,7 +281,7 @@ impl<D: WritableSectorDevice> Volume<D> {
 
     /// **Whether the volume was shut down cleanly**, from the bit in table entry 1: `Ok(None)` on
     /// FAT12, which keeps no such bit. A volume this crate is changing reads as not clean until
-    /// [`Volume::sync`].
+    /// [`crate::WritableVolume::sync`].
     ///
     /// Name: provisional. The specification's `ClnShutBitMask`, asked as a question.
     pub fn is_clean(&mut self) -> Result<Option<bool>, ChainError<D::Error>> {

@@ -1,0 +1,345 @@
+//! **rust-fatfs and `fsck` agree with the times this crate stamps.**
+//!
+//! A fixed clock stamps files and directories on FAT12, FAT16 and FAT32 volumes rust-fatfs
+//! formatted; rust-fatfs must read the creation, write and access times back as the clock gave
+//! them, the odd second included, and `fsck -n` must accept every volume, including the ones a
+//! clock with invalid fields stamped (those clamp). The format's label entry and the EFI volume's
+//! directories carry the clock's time, and a volume made with `NoClock` carries none.
+
+use std::cell::Cell;
+use std::io::Cursor;
+use std::path::Path;
+use std::process::Command;
+
+use file_allocation_table::{
+    Clock, Format, FormatOptions, NoClock, SectorDevice, SectorSize, Timestamp, VolumeLayout,
+    WritableSectorDevice, WritableVolume,
+};
+use lamfat::FatType;
+
+/// A clock the test sets between operations.
+struct Shared<'a>(&'a Cell<Option<Timestamp>>);
+
+impl Clock for Shared<'_> {
+    fn now(&mut self) -> Option<Timestamp> {
+        self.0.get()
+    }
+}
+
+fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Option<Timestamp> {
+    Some(Timestamp {
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+    })
+}
+
+/// A volume held in memory, read and written one sector at a time.
+struct Memory {
+    bytes: Vec<u8>,
+    size: SectorSize,
+}
+
+impl SectorDevice for Memory {
+    type Error = u64;
+
+    fn sector_size(&self) -> SectorSize {
+        self.size
+    }
+
+    fn read_sector(&mut self, index: u64, buffer: &mut [u8]) -> Result<(), u64> {
+        let start = usize::try_from(index).map_err(|_| index)? * buffer.len();
+        let bytes = self.bytes.get(start..start + buffer.len()).ok_or(index)?;
+        buffer.copy_from_slice(bytes);
+        Ok(())
+    }
+}
+
+impl WritableSectorDevice for Memory {
+    fn write_sector(&mut self, index: u64, buffer: &[u8]) -> Result<(), u64> {
+        let start = usize::try_from(index).map_err(|_| index)? * buffer.len();
+        let bytes = self
+            .bytes
+            .get_mut(start..start + buffer.len())
+            .ok_or(index)?;
+        bytes.copy_from_slice(buffer);
+        Ok(())
+    }
+}
+
+/// An empty volume of `mebibytes` that rust-fatfs formatted as `fat_type`.
+fn formatted(mebibytes: usize, fat_type: lamfat::FatType, sector: u16) -> Memory {
+    let mut image = vec![0u8; mebibytes << 20];
+    lamfat::format_volume(
+        &mut lamfat::StdIoWrapper::from(Cursor::new(&mut image)),
+        lamfat::FormatVolumeOptions::new()
+            .fat_type(fat_type)
+            .bytes_per_sector(sector),
+    )
+    .expect("rust-fatfs formats the volume");
+    Memory {
+        bytes: image,
+        size: SectorSize::from_bytes(sector).expect("a permitted sector size"),
+    }
+}
+
+/// The `fsck` this host has, if any, and its name.
+fn fsck() -> Option<&'static str> {
+    [
+        "fsck.fat",
+        "/usr/sbin/fsck.fat",
+        "/sbin/fsck.fat",
+        "fsck_msdos",
+    ]
+    .into_iter()
+    .find(|tool| Command::new(tool).arg("--help").output().is_ok())
+}
+
+/// Run the host's `fsck -n` on `image`, which must exit 0; report and skip when there is none.
+fn check_with_fsck(image: &[u8], label: &str) {
+    let Some(tool) = fsck() else {
+        eprintln!("{label}: no fsck.fat or fsck_msdos on this host; the fsck check is skipped");
+        return;
+    };
+    let path = std::env::temp_dir().join(format!(
+        "file-allocation-table-{label}-{}.img",
+        std::process::id()
+    ));
+    std::fs::write(&path, image).expect("write the image for fsck");
+    let output = Command::new(tool)
+        .arg("-n")
+        .arg(&path)
+        .output()
+        .expect("run fsck");
+    let _ = std::fs::remove_file(Path::new(&path));
+    assert!(
+        output.status.success(),
+        "{label}: {tool} -n refused the image:\n{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// What rust-fatfs counts as free clusters on `image`.
+fn oracle_free_clusters(image: &[u8]) -> u32 {
+    let fs = lamfat::FileSystem::new(
+        lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
+        lamfat::FsOptions::new(),
+    )
+    .expect("rust-fatfs mounts the volume");
+    fs.stats().unwrap().free_clusters()
+}
+
+/// (year, month, day, hour, minute, second as milliseconds) as rust-fatfs reads a creation time.
+type Read = (u16, u16, u16, u16, u16, u32);
+
+fn creation(image: &[u8], name: &str) -> Read {
+    let fs = lamfat::FileSystem::new(
+        lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
+        lamfat::FsOptions::new(),
+    )
+    .unwrap();
+    let entry = fs
+        .root_dir()
+        .iter()
+        .map(|e| e.unwrap())
+        .find(|e| e.file_name() == name)
+        .unwrap();
+    let t = entry.created();
+    (
+        t.date.year,
+        t.date.month,
+        t.date.day,
+        t.time.hour,
+        t.time.min,
+        u32::from(t.time.sec) * 1000 + u32::from(t.time.millis),
+    )
+}
+
+fn modified(image: &[u8], name: &str) -> Read {
+    let fs = lamfat::FileSystem::new(
+        lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
+        lamfat::FsOptions::new(),
+    )
+    .unwrap();
+    let entry = fs
+        .root_dir()
+        .iter()
+        .map(|e| e.unwrap())
+        .find(|e| e.file_name() == name)
+        .unwrap();
+    let t = entry.modified();
+    (
+        t.date.year,
+        t.date.month,
+        t.date.day,
+        t.time.hour,
+        t.time.min,
+        u32::from(t.time.sec) * 1000 + u32::from(t.time.millis),
+    )
+}
+
+fn accessed(image: &[u8], name: &str) -> (u16, u16, u16) {
+    let fs = lamfat::FileSystem::new(
+        lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
+        lamfat::FsOptions::new(),
+    )
+    .unwrap();
+    let entry = fs
+        .root_dir()
+        .iter()
+        .map(|e| e.unwrap())
+        .find(|e| e.file_name() == name)
+        .unwrap();
+    let d = entry.accessed();
+    (d.year, d.month, d.day)
+}
+
+fn times_agree(label: &str, mebibytes: usize, fat_type: FatType) {
+    let now = Cell::new(at(2026, 11, 1, 12, 34, 57));
+    let mut volume =
+        WritableVolume::open(formatted(mebibytes, fat_type, 512), Shared(&now)).unwrap();
+    volume
+        .create_file(0, "Stamped File With A Long Name.txt")
+        .unwrap();
+    volume.make_directory(0, "Stamped Dir").unwrap();
+    // A later write: the write and access times move, the creation time stays.
+    now.set(at(2027, 2, 3, 4, 5, 6));
+    let entry = volume.lookup("Stamped File With A Long Name.txt").unwrap();
+    volume
+        .open_file_writer(&entry)
+        .unwrap()
+        .write(b"later")
+        .unwrap();
+    volume.sync().unwrap();
+    let image = volume.into_device();
+    let file = "Stamped File With A Long Name.txt";
+    assert_eq!(
+        creation(&image.bytes, file),
+        (2026, 11, 1, 12, 34, 57_000),
+        "{label}"
+    );
+    assert_eq!(
+        modified(&image.bytes, file),
+        (2027, 2, 3, 4, 5, 6_000),
+        "{label}"
+    );
+    assert_eq!(accessed(&image.bytes, file), (2027, 2, 3), "{label}");
+    assert_eq!(
+        creation(&image.bytes, "Stamped Dir"),
+        (2026, 11, 1, 12, 34, 57_000),
+        "{label}"
+    );
+    assert_eq!(
+        accessed(&image.bytes, "Stamped Dir"),
+        (2026, 11, 1),
+        "{label}"
+    );
+    check_with_fsck(&image.bytes, &format!("{label}-stamped"));
+}
+
+#[test]
+fn times_agree_on_fat12() {
+    times_agree("time-fat12", 4, FatType::Fat12);
+}
+
+#[test]
+fn times_agree_on_fat16() {
+    times_agree("time-fat16", 32, FatType::Fat16);
+}
+
+#[test]
+fn times_agree_on_fat32() {
+    times_agree("time-fat32", 64, FatType::Fat32);
+}
+
+#[test]
+fn a_clock_with_invalid_fields_clamps_and_fsck_accepts_the_volume() {
+    for (label, time, expected) in [
+        (
+            "before-1980",
+            at(1970, 6, 15, 12, 0, 0),
+            (1980, 1, 1, 0, 0, 0),
+        ),
+        (
+            "after-2107",
+            at(3000, 6, 15, 12, 0, 0),
+            (2107, 12, 31, 23, 59, 58_000),
+        ),
+        (
+            "wild-fields",
+            at(2000, 0, 0, 99, 99, 99),
+            (2000, 1, 1, 23, 59, 59_000),
+        ),
+    ] {
+        let now = Cell::new(time);
+        let mut volume =
+            WritableVolume::open(formatted(4, FatType::Fat12, 512), Shared(&now)).unwrap();
+        volume.create_file(0, "CLAMPED.TXT").unwrap();
+        let image = volume.into_device();
+        let (y, mo, d, h, mi, ms) = expected;
+        let want: Read = (y, mo, d, h, mi, ms);
+        assert_eq!(creation(&image.bytes, "CLAMPED.TXT"), want, "{label}");
+        check_with_fsck(&image.bytes, &format!("clamped-{label}"));
+    }
+}
+
+#[test]
+fn no_clock_and_a_clock_with_no_time_write_the_zero_timestamp() {
+    let none = Cell::new(None);
+    let mut with_empty =
+        WritableVolume::open(formatted(4, FatType::Fat12, 512), Shared(&none)).unwrap();
+    with_empty.create_file(0, "ZERO.TXT").unwrap();
+    let mut with_no_clock =
+        WritableVolume::open(formatted(4, FatType::Fat12, 512), NoClock).unwrap();
+    with_no_clock.create_file(0, "ZERO.TXT").unwrap();
+    let (a, b) = (with_empty.into_device(), with_no_clock.into_device());
+    assert_eq!(a.bytes, b.bytes, "a clock with no time is NoClock");
+    check_with_fsck(&a.bytes, "zero-timestamp");
+}
+
+#[test]
+fn the_formats_label_and_the_efi_volumes_directories_carry_the_clocks_time() {
+    let now = Cell::new(at(2026, 11, 1, 12, 34, 57));
+    let options = FormatOptions::new(SectorSize::Bytes512, 16 * 1024)
+        .with_label("STAMPED")
+        .unwrap();
+    let format = Format::new(options, &mut Shared(&now)).unwrap();
+    let mut image = Memory {
+        bytes: vec![0u8; 16 * 1024 * 512],
+        size: SectorSize::Bytes512,
+    };
+    format.write_to(&mut image).unwrap();
+    let root = (1 + 2 * format.table_sectors() as usize) * 512;
+    let word = |at: usize| u16::from_le_bytes([image.bytes[root + at], image.bytes[root + at + 1]]);
+    assert_eq!(image.bytes[root + 11], 0x08);
+    assert_eq!(
+        word(24),
+        (46 << 9) + (11 << 5) + 1,
+        "the label's write date"
+    );
+    assert_eq!(
+        word(22),
+        (12 << 11) + (34 << 5) + 28,
+        "the label's write time"
+    );
+    check_with_fsck(&image.bytes, "stamped-label");
+
+    // The EFI volume: the label, EFI, BOOT and the file all carry the time.
+    let efi = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI", &mut Shared(&now)).unwrap();
+    let mut sector = [0u8; 512];
+    assert!(efi.fill_sector(efi.cluster_first_sector(2), &mut sector));
+    for slot in 0..2 {
+        let at = slot * 32;
+        assert_eq!(
+            u16::from_le_bytes([sector[at + 24], sector[at + 25]]),
+            (46 << 9) + (11 << 5) + 1
+        );
+    }
+    let zero = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI", &mut NoClock).unwrap();
+    assert!(zero.fill_sector(zero.cluster_first_sector(2), &mut sector));
+    assert_eq!(sector[22..26], [0, 0, 0, 0]);
+}

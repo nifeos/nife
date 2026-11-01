@@ -1,7 +1,7 @@
 //! **A file's attribute bits** the user sets: read-only, hidden, system and archive.
 //!
 //! `DIR_Attr` holds six bits. Two of them say what the entry is (a directory, the volume label) and
-//! the writer owns them; the other four are the user's, and [`Volume::set_attributes`] changes only
+//! the writer owns them; the other four are the user's, and [`WritableVolume::set_attributes`] changes only
 //! those. The result can never read as a long-name piece, whose attribute is all four low bits
 //! together with the label bit, because the label bit is never set by this module and an entry
 //! that already carries it is refused.

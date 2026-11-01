@@ -85,8 +85,17 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
         Builder::from_random_bytes(random[16..32].try_into().expect("16 bytes")).into_uuid();
     let volume_id = u32::from_le_bytes(random[32..].try_into().expect("4 bytes"));
 
-    let volume = fat::VolumeLayout::new(ESP_SECTORS, ALIGN, file.len() as u64, volume_id, name)
-        .map_err(|e| format!("the FAT32 volume: {e:?}"))?;
+    // No time source: the image must be the same bytes every run, so every entry carries the zero
+    // timestamp, which is what `NoClock` writes.
+    let volume = fat::VolumeLayout::new(
+        ESP_SECTORS,
+        ALIGN,
+        file.len() as u64,
+        volume_id,
+        name,
+        &mut fat::NoClock,
+    )
+    .map_err(|e| format!("the FAT32 volume: {e:?}"))?;
     let blocks = ALIGN + ESP_SECTORS + ALIGN;
     let esp = Entry::new(types::EFI_SYSTEM, part_guid, ALIGN, ALIGN + ESP_SECTORS - 1)
         .with_name("EFI system partition")

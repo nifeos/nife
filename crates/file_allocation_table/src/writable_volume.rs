@@ -234,3 +234,6 @@ impl<D, C> DerefMut for WritableVolume<D, C> {
         &mut self.volume
     }
 }
+
+#[cfg(test)]
+mod tests;
