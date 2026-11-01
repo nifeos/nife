@@ -35,9 +35,11 @@ calef ruled all eight forks on 2026-10-07 (UTC), between 13:46 and 14:16, in the
 session, relayed in comments on pull request #1806. Each fork below keeps its options as the
 record of what was weighed, and its heading says how it was ruled.
 
-- Fork 1, replacing the recommendation: one repository per crate under `nifeos`, created when that
-  crate is first published. Until then it stays in this tree, and milestone 610's co-change
-  measurement still decides which crates are ready (§235). Every crate repository uses one shared
+- Fork 1, replacing the recommendation: one repository per crate under `nifeos`. Ruled 2026-11-01
+  (UTC), replacing "created when that crate is first published": the repository is created when
+  the crate moves, and each creation still waits for calef's approval. Publication is a later step
+  that only some crates take. Until it moves, a crate stays in this tree, and milestone 610's
+  co-change measurement still decides which crates are ready (§235). Every crate repository uses one shared
   CI template (Kani, lint, release) through reusable workflows. calef: *"I lean one repo per
   crate."* then *"Yes a"*.
 - Fork 2: a crate that has left is consumed as a crates.io release pinned with its checksum in
@@ -145,7 +147,7 @@ reversible order, and each contribution waits on the ruling above.
    `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`.
 5. `calendar`, revisited under fork 8, since `time` wants a person's words.
 6. `non_volatile_memory_express`, `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
-7. The internal set, closing as one sitting. Withdrawn 2026-11-01 (UTC): no crate stays by default.
+7. The internal set, closing as one sitting. Withdrawn 2026-11-01 (UTC).
 
 ## What is already on the record
 
@@ -157,8 +159,8 @@ The survey shrank the question. Of the 31 candidates, eight are "publish ours": 
 device-logic crates (NVMe, e1000e, two DesignWare controllers, two JH7110 blocks), and xHCI. nife
 makes rust-osdev no offer for xHCI, since nife does not depend on its `xhci` (milestone 820). `portable_executable` is not published: milestone 821 (`portable_executable`:
 an ELF-to-PE converter, proven, then released on its own) is refused. Eleven outside projects are
-candidates for our proofs. The survey classed the rest internal, which the 2026-11-01 ruling
-makes no default.
+candidates for our proofs. The survey classed the rest internal, no default since
+2026-11-01.
 
 ## Fork 1. Where a released crate lives (ruled: one repository per crate)
 
@@ -202,9 +204,7 @@ Recommendation as raised, and ruled:
 - A release ships its Kani harnesses (behind `#[cfg(kani)]`, as now) and its `falsifications/`
   patches. A proof a stranger cannot rerun is a claim, and the patches show the proofs can fail.
 - `publish = false` becomes the workspace default, and a lint check allows publishing only for
-  crates on a list calef ratifies. Today 9 of 116 manifests say `publish = false`, so a stray
-  `cargo publish` with a token would succeed for the rest. That is rung 2 of the ladder in place of
-  rung zero.
+  crates on a list calef ratifies: rung 2 of the ladder in place of rung zero.
 
 ## Fork 4. How proofs run where the crate lives (ruled as recommended)
 
