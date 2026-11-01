@@ -903,6 +903,23 @@ mod tests {
         );
     }
 
+    /// **`pad_to` writes zeros up to the next multiple, and nothing on one.** The rewriter only
+    /// pads at a multiple already, so this is the test that sees it pad; a tree built from nothing
+    /// pads after every node name.
+    #[test]
+    fn out_pads_with_zeros_to_the_next_multiple() {
+        let mut buf = [0xffu8; 8];
+        let mut o = Out { buf: &mut buf, at: 0 };
+        o.bytes(&[1]).unwrap();
+        o.pad_to(4).unwrap();
+        assert_eq!(o.at, 4);
+        o.pad_to(4).unwrap();
+        assert_eq!(o.at, 4, "already aligned");
+        o.u32(0x0203_0405).unwrap();
+        assert_eq!(o.pad_to(16), Err(Error::OutputTooSmall));
+        assert_eq!(buf, [1, 0, 0, 0, 2, 3, 4, 5]);
+    }
+
     /// **Every refusal has its own sentence for the firmware console**, since it is the only thing
     /// a person at a machine with no other output will see.
     #[test]
