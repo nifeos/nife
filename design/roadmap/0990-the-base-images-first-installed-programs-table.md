@@ -32,12 +32,14 @@ not exist yet, and the `BUGS` below say what blocks them.
 Generation 1 holds one base row per carried program: the program name and the program member's
 digest, in the owner's vouch shape (no version, `owner` as package and manager) and with no default
 pointer. Ruled 2026-11-01 (UTC) by calef, on #3023: a base row carries the program name and digest
-and no pointer. Section 229's refusal of base names applies to installed rows as before and does not
-apply to a base row. The row names no pointer target and does not tie to milestone 976's system
-manifest. An installed row always has a pointer and a base row never does, and
+and no pointer. Section 229 (how a bare name at the prompt reaches an installed program) refuses
+base names for installed rows as before, and does not refuse them for a base row. The row names no
+pointer target. It does not tie to the system manifest of milestone 976 (an OS update is a set of
+packages that lands through a slot).
+
+An installed row always has a pointer and a base row never does.
 `a_base_row_has_no_pointer_and_an_installed_row_has_one` in `xtask/src/base_image.rs` holds both.
-`first_generation` in
-`xtask/src/base_image.rs` writes it with `installed_programs::with_entries_granting`, the writer
+`first_generation` in `xtask/src/base_image.rs` writes it with `installed_programs::with_entries_granting`, the writer
 an interactive install calls, and reads the grants with `program_asks::asked_grants` over the bytes
 the archive carries. The `answered` line names the image's approval file and its SHA-256, and a
 generation with no approval file records no answer. A carried program that asks for a grant when
