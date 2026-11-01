@@ -179,6 +179,7 @@ system_initializer	userspace	components,fixtures
 system_log	userspace	components
 system_log_contract	shared	components,kernel
 system_log_protocol	shared	retired
+system_manifest	host	-
 test_times	kernel	kernel
 thread_wake_handshake	kernel	kernel
 timebase_proto	shared	retired
