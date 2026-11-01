@@ -23,7 +23,8 @@
 //! [`Volume::open`] opens the volume inside it.
 //!
 //! Writes go through [`WritableVolume`], a [`Volume`] with the [`Clock`] its writes stamp with;
-//! [`NoClock`] is the explicit "no time". A read stamps nothing and takes no clock. It orders every
+//! [`NoClock`] is the explicit "no time". A clock supplies UTC, since FAT stores no time zone (see
+//! [`Clock`]). A read stamps nothing and takes no clock. It orders every
 //! write so a crash leaks a cluster and never shares one ([`WritableVolume::sync`] writes the FAT32
 //! `FSInfo` hints and sets the clean-shutdown bit again, [`Volume::is_clean`]). It makes and
 //! writes files and directories (a name that is not 8.3 gets long-name slots and a numbered alias),
@@ -48,8 +49,9 @@
 //!   name is stored as a long name, since the crate writes no lower-case flag.
 //! - A directory slot is found by walking from the directory's first cluster each time, so creating
 //!   in a directory of n clusters costs n chain steps per slot read.
-//! - FAT stores no time zone; the crate stores what its clock reports, and refuses a time outside
-//!   1980 to 2107.
+//! - FAT stores no time zone. In nife the clock supplies UTC (ruled 2026-11-01 UTC); the crate stores
+//!   what its clock reports, cannot check that it is UTC, and refuses a time outside 1980 to 2107.
+//!   A reader that treats FAT times as local time, such as Windows, shows UTC values as local.
 //! - The 65,536-entry ceiling of a directory (`grow_directory`'s limit) is untested: reaching it
 //!   needs a volume and a test of that size.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a

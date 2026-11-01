@@ -7,9 +7,10 @@
 //!
 //! FAT stores a date as 16 bits (year from 1980, month, day), a time as 16 bits (hour, minute and
 //! seconds in units of two), and a creation time's odd second as a tenths-of-a-second byte of 0 or
-//! 100. It stores no time zone. This crate stores exactly what its clock reports, and a host that
-//! reads the volume shows the stored time as local time, so a caller chooses whether its clock
-//! reports local time or UTC.
+//! 100. It stores no time zone. In nife the time a clock supplies is UTC (ruled 2026-11-01 UTC). The
+//! crate stores exactly the fields its clock reports and converts nothing, so it cannot check that a
+//! clock gives UTC; that is the caller's duty. A reader that treats FAT times as local time, such as
+//! Windows, shows a stored UTC value as local time. A read takes no clock and never writes.
 //!
 //! A time FAT cannot store is refused, not adjusted: the operation fails with `TimeOutOfRange`
 //! before it writes a byte. A clock whose time is not trustworthy reports `None` and gets the zero
@@ -18,6 +19,11 @@
 //! Name: provisional. The clock half of a writer, ruled required on 2026-11-01 (UTC).
 
 /// **A calendar date and time of day**, as plain numbers with no time zone.
+///
+/// FAT stores a date and a time of day with no time zone. In nife the value is UTC (ruled 2026-11-01
+/// UTC). The crate stores these fields as given and converts nothing, so it cannot check that they
+/// are UTC. A reader that treats FAT times as local time, such as Windows, shows a UTC value as
+/// local time.
 ///
 /// The fields need not be valid. A writer refuses a time FAT cannot store (see [`Clock`]) with
 /// `TimeOutOfRange`, and writes nothing.
@@ -41,6 +47,11 @@ pub struct Timestamp {
 }
 
 /// **Where a writer gets the time.** A volume that writes holds one.
+///
+/// The time a clock supplies must be UTC (ruled 2026-11-01 UTC). FAT stores a date and a time of
+/// day with no time zone, the crate writes the fields it is given and converts nothing, and it
+/// cannot check that a clock gives UTC. A reader that treats FAT times as local time, such as
+/// Windows, shows a UTC value as local time. A read takes no clock and never writes.
 ///
 /// [`Clock::now`] returns `None` when there is no time to report, and the entry then carries the
 /// zero timestamp. A clock whose time is not trustworthy (one that has not been set, or has lost
@@ -76,7 +87,9 @@ pub trait Clock {
 }
 
 /// **The explicit "no time"**: a clock that always reports none. A volume written with it carries
-/// the zero timestamp in every entry it stamps, so an image built with it is reproducible.
+/// the zero timestamp in every entry it stamps, so an image built with it is reproducible. It
+/// reports no time, so the question of a time zone does not arise (a clock that does report a time
+/// must report UTC; see [`Clock`]).
 ///
 /// Name: provisional. The ruling's name for the caller that has no time source.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
