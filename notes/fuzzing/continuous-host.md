@@ -46,9 +46,20 @@ private directory and stays there. The next window for that slot starts one seed
 
 `helpers/fuzz-daily-publish.sh` runs from a daily timer and writes counter totals and a table of
 clean seed ranges. It reports held findings by count and age only. It never opens a held log, and it
-leaves the held window's own range out of the table, so nothing published reproduces a held finding.
-A finding stays private until its fix merges, and starts as a private security advisory. A finding
-sorted as public at triage is the exception.
+leaves the held window's own range out of the table. The next clean range still locates the held
+seed, which the BUGS list below records. A finding starts as a private security advisory and stays
+private until its fix is on main and a rerun of its input passes against that build, or until 90
+days after the report. A finding sorted as public at triage is the exception.
+
+## Who reads a held finding
+
+No lane opens, copies, prints or moves anything under the held directory. A plain service on the
+host, not an agent, files each held finding as a private security advisory on nifeos/nife, holding
+the finding class and the reproducer, and a fix lane reads that advisory and nothing else. Crash
+inputs, seeds and reproducers stay out of every public text until the fix is on main. An architect
+ruled this on 2026-11-01 (UTC) in
+[`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md),
+which also lists the milestones that build it. Until they land, nothing files an advisory.
 
 With `--publish` it creates one GitHub release per day on nifeos/nife, tagged `fuzz-YYYY-MM-DD` (the
 UTC date), with `report.md` and `clean-ranges.tsv` as its assets: `gh release create fuzz-YYYY-MM-DD
@@ -85,3 +96,8 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 - Only x86_64 runs. aarch64 and riscv64 need emulation and a larger machine.
 - Nobody has run the daily publish end to end against a real credential, because a person installs
   the credential.
+- After a held window with a replay line, the slot's next window starts one seed past the failing
+  one, so the first seed of the next published clean range, less one, is the held seed. The daily
+  publish must not run until the proposed fix in
+  [`the-clean-range-table-does-not-locate-a-held-seed`](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md)
+  lands.
