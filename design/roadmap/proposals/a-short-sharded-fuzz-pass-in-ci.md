@@ -9,12 +9,12 @@ needs_person: yes
 ---
 # A short sharded in-guest fuzz pass in CI
 
-Raised by lane/a-short-sharded-fuzz-pass-in-ci on 2026-11-01 (UTC), asked to add a bounded fuzz job
-to CI that runs the harness the continuous fuzzing host runs. No roadmap block describes that job.
-Milestones 42 (supply chain and fuzzing) and 779 (fuzz the surface a confined process can
+Raised by lane/a-short-sharded-fuzz-pass-in-ci on 2026-11-01 (UTC). The lane was asked to add a bounded fuzz job
+to CI. The job runs the harness the continuous fuzzing host runs. No roadmap block describes that job.
+Milestone 42 (supply chain and fuzzing) and milestone 779 (fuzz the surface a confined process can
 reach) cover the cargo-fuzz `fuzz` job, which does not run the in-guest drivers.
 `notes/fuzzing/continuous-host.md` covers the host only. This proposal states the smallest useful
-design and waits for a decision before any workflow is written.
+design and waits for a decision before any workflow exists.
 
 Reuse: the job calls the window logic of `helpers/continuous-fuzz.sh` (build the x86_64 archive and
 the system test image with a baked seed range, run one KVM guest through the PVH runner). It writes
@@ -39,7 +39,7 @@ waits for the host.
   bound of 5 minutes, inside the 20-minute job budget (milestone 721 (each merge-group CI job has a
   20-minute budget)). Shards run in parallel, so wall time is one shard's build plus about 2 minutes.
 - Where: a GitHub-hosted runner with `/dev/kvm`, never a self-hosted one. The job refuses, by name,
-  when KVM is absent (`--check-kvm`) and never falls back to TCG, which sweeps a tenth of the seeds.
+  when KVM is missing (`--check-kvm`) and never falls back to TCG, which sweeps a tenth of the seeds.
   A fork pull request therefore never reaches owned hardware. Nobody has verified that hosted Linux runners expose
   KVM to this repository; the build lane measures that first.
 - When: `merge_group` and `workflow_dispatch`. Running on every `pull_request` push is a cost
