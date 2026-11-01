@@ -1,7 +1,7 @@
 # Images a macOS host formatted and wrote
 
 `fat32.img.zst` and `fat32-mbr.img.zst` are the two FAT32 images that
-`notes/filesystem-crates-2026-10-07/make-images.sh` builds, compressed with `zstd -19`. Each
+the probe's `make-images.sh` builds, compressed with `zstd -19`. Each
 expands to 64 MiB.
 
 - `fat32.img`: an unpartitioned volume, formatted by `newfs_msdos -F 32` and written through
@@ -22,5 +22,5 @@ not regenerate these; the compressed files are the fixtures.
 | `fat32.img` | `4a14232f2b74848396b7857eef50865a8361d27e3c4b47f1ee66c5444345f613` |
 | `fat32-mbr.img` | `75d76b76d7653c1196e7007efb87dcdb1dc7310b8d3889659bad1bfc3b987865` |
 
-The hash of each file inside is in `notes/filesystem-crates-2026-10-07/expected.sha256`;
+The hash of each file inside is in the probe's `expected.sha256`;
 `tests/the_macos_images_read.rs` checks every file against it.

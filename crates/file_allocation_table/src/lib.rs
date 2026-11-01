@@ -31,14 +31,13 @@
 //! [`Volume::create_file`] makes an empty file (a name that is not 8.3 gets long-name slots and a
 //! numbered alias), [`Volume::open_file_writer`] opens a [`FileWriter`] that writes, extends and
 //! sets a length, and [`Volume::remove_file`] deletes. [`Volume::make_directory`],
-//! [`Volume::remove_directory`] and [`Volume::rename`] change the tree. A full directory grows by a
+//! [`Volume::remove_directory`], [`Volume::rename`], [`Volume::set_attributes`] and
+//! [`Volume::set_volume_label`] change the tree. A full directory grows by a
 //! cluster, except the fixed root of FAT12 and FAT16. Each returns a [`WriteError`].
 //!
-//! [`Format`] lays out an empty FAT12, FAT16 or FAT32 volume of any size, as sectors a caller
-//! writes. [`VolumeLayout`] lays out one shape through the same sizing and boot sector: a FAT32
-//! EFI system partition holding one boot file at `\EFI\BOOT\<name>`, with VFAT long-name entries
-//! ahead of a `~1` alias when the name is not 8.3. A volume below [`FAT32_MINIMUM_CLUSTERS`] is
-//! refused, because the specification types a volume by its data clusters.
+//! [`Format`] lays out an empty volume of any size, as sectors a caller writes. [`VolumeLayout`]
+//! lays out one shape through the same sizing and boot sector: a FAT32 EFI system partition holding
+//! one boot file at `\EFI\BOOT\<name>`. A volume below [`FAT32_MINIMUM_CLUSTERS`] is refused.
 
 //! # BUGS
 //!
@@ -55,8 +54,7 @@
 //!   name is stored as a long name, since the crate writes no lower-case flag.
 //! - A directory slot is found by walking from the directory's first cluster each time, so creating
 //!   in a directory of n clusters costs n chain steps per slot read.
-//! - Timestamps are zero and a writer sets only the archive attribute, and a writer does not refuse a
-//!   read-only file.
+//! - Timestamps are zero and a writer sets only the archive attribute.
 //! - The 65,536-entry ceiling of a directory (`grow_directory`'s limit) is untested: reaching it
 //!   needs a volume and a test of that size.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
@@ -81,6 +79,7 @@
 //! published.
 
 mod allocation;
+mod attributes;
 mod boot_sector;
 mod directory;
 mod directory_write;
@@ -91,6 +90,7 @@ mod file_write;
 mod file_writer;
 mod format;
 mod fs_info;
+mod label;
 mod long_name;
 mod long_name_assembly;
 mod lookup;
@@ -102,6 +102,7 @@ mod table;
 mod volume;
 
 pub use allocation::AllocationError;
+pub use attributes::Attributes;
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
 pub use file::{FileReadError, FileReader, NotAFile};
@@ -109,6 +110,7 @@ pub use file_write::WriteError;
 pub use file_writer::FileWriter;
 pub use format::{Format, FormatError, FormatOptions};
 pub use fs_info::{FsInfo, FsInfoError};
+pub use label::VolumeLabel;
 pub use long_name_assembly::{LongFileName, LongNameError};
 pub use lookup::LookupError;
 pub use master_boot_record::{

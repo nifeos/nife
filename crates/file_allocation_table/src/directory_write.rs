@@ -104,7 +104,7 @@ impl<D: WritableSectorDevice> Volume<D> {
 
     /// The first slot of a run of `count` free slots in `directory`, and whether the run reaches
     /// the directory's end marker.
-    fn find_run(
+    pub(crate) fn find_run(
         &mut self,
         directory: u32,
         count: u32,
@@ -175,7 +175,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     }
 
     /// The entry whose short slot is `short_slot` in `directory`.
-    fn entry_at(
+    pub(crate) fn entry_at(
         &mut self,
         directory: u32,
         short_slot: u32,
@@ -333,7 +333,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     }
 
     /// Check the slots `entry` names still hold it, and return its short slot's bytes.
-    fn verify(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
+    pub(crate) fn verify(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
         let place = entry.place();
         let slot = self
             .read_slot(place.directory, place.short_slot)?
