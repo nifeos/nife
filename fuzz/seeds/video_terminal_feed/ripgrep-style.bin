@@ -1,0 +1,4 @@
+xÈ[0m[1m[35msrc/main.rs[0m
+[0m[32m12[0m:    let [0m[1m[31mneedle[0m = haystack.find("x");
+[0m[32m40[0m-[0m[1m[31mneedle[0m
+

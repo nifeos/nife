@@ -67,13 +67,14 @@ implies coverage the project does not have.
 | `http_response_feed` | a package server, over plain HTTP | network bytes, read in the progenitor **before** the digest check. Asserts read splits never change the answer. |
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
+| `video_terminal_feed` | any program whose output reaches the display, packaged and foreign `std` programs included | 3,055 lines of escape handling with no proofs; a panic takes the screen console down for every program on it. Asserts the cursor and the damage rectangle stay in the grid, and that cutting the input anywhere (inside a UTF-8 sequence or an escape sequence too) gives the same screen. |
 
 ### And the ones deliberately not fuzzed
 
 Naming these matters as much as naming the targets, because "we have fuzzers" quietly grows to cover
 everything. `Fs::parse` on raw bytes is proved total, so a target there could find nothing. The IPC
 protocols are total by construction, and their real hazard, a double fetch, is a concurrent mutation
-no byte-string fuzzer can express. `video_terminal` and `grant_plan` were left for stated reasons.
+no byte-string fuzzer can express. `grant_plan` was left for a stated reason.
 Each is argued in [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md).
 
 ## Why cargo-fuzz

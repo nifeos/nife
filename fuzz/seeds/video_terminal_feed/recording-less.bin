@@ -1,0 +1,73 @@
+Z�[?1049h[24;1H[?1h=你好 é 😀 (the census's wide, combining and emoji line)[m
+//! The engine: the parser's state and `Vt`, the grid it maintains.[m
+//![m
+//! Name: provisional (the lane of milestone 874 (the terminal engine moves its [m palette and its[m
+//! tests out), 2026-10-12 UTC), named for `Vt`, the central type, as §282 (when[m  a file is split,[m
+//! the parent becomes an index) asks; calef names things.[m
+[m
+use super::cell::{[m
+    BOLD, DIM, INVISIBLE, ITALIC, REVERSE, STRIKETHROUGH, STRIKETHROUGH_ROW, UND[m ERLINE_CURLY,[m
+    UNDERLINE_DASHED, UNDERLINE_DOTTED, UNDERLINE_DOUBLE, UNDERLINE_NONE, UNDERL[m INE_ROW,[m
+    UNDERLINE_SINGLE,[m
+};[m
+use super::*;[m
+use crate::handoff::{[m
+    CELL_WORDS, CELL_WORDS_1, FLAG_CURSOR_VISIBLE, FLAG_IGNORE, FLAG_WRAP_PENDIN[m G, HEADER_WORDS,[m
+    HEADER_WORDS_1, LAYOUT, MAGIC, Refusal, cell_words, color_word, put_word, un[m derline_word,[m
+    word_at, words_attr, words_attr_1, words_cell, words_cell_1,[m
+[7m/folders/k8/vfxgc_cs5l52g36064xt6n8r0000gn/T/vt-replay-record-56321/vt_sample.rs[27m[K[K};[m
+[m
+/// The parser's state. Deliberately few: most of a full VT's dozen states disti[m nguish sequences[m
+/// this engine swallows anyway. See notes/video-terminal.md, "Parsing".[m
+#[derive(Debug, Clone, Copy, PartialEq, Eq)][m
+enum State {[m
+    /// Printing.[m
+    Ground,[m
+    /// `ESC` has been seen.[m
+    Esc,[m
+    /// Inside `ESC [`, accumulating parameters.[m
+    Csi,[m
+    /// Inside a **string** sequence (`ESC ]`, the operating-system command, and[m  its relatives),[m
+    /// whose arbitrary text a parser without this state would print, a window t[m itle included.[m
+    Str,[m
+    /// Inside a string sequence, having just seen `ESC`: a `\` ends the string [m (ST), anything else[m
+    /// is part of it.[m
+    StrEsc,[m
+}[m
+:[K[K[m
+/// How many numeric parameters a CSI sequence may carry: a foreground and a bac[m kground in 24-bit[m
+/// color are ten, with room for a reset and a rendition or two. A seventeenth m[m arks the sequence[m
+/// ignored rather than growing the array.[m
+pub(crate) const MAXIMUM_PARAMS: usize = 16;[m
+[m
+/// **A terminal's live grid, plus its off-screen history.**[m
+///[m
+/// Construct with [`Vt::new`], push bytes with [`Vt::feed`], read pixels with [[m `Vt::pixel`], ask[m
+/// what changed with [`Vt::take_damage`], and scroll with [`Vt::scroll_up`]/[`V[m t::scroll_down`].[m
+///[m
+/// **A `Vt` is several hundred KiB and must never be a runtime-constructed loca[m l or return[m
+/// value.** Build it in a `static` with constant geometry and retarget it with [m [`Vt::reset_to`];[m
+/// `script/stack-frame-check` catches a violation. See notes/video-terminal.md,[m  "The grid's[m
+/// capacity".[m
+pub struct Vt {[m
+:[K[K    cells: [Cell; MAXIMUM_CELLS],[m
+    /// Off-screen history: a ring of whole rows, oldest overwritten first. See[m
+    /// [`Vt::scroll_up`]/[`Vt::scroll_down`] for the read side and [`Vt::line_f[m eed`] for the write[m
+    /// side (a row scrolled off the live grid's top is pushed here before being[m  discarded).[m
+    scrollback: [Cell; SCROLLBACK_CELLS],[m
+    /// The ring index (in rows) the **next** pushed row will occupy. Rows alrea[m dy stored occupy the[m
+    /// `sb_len` slots immediately before this one, wrapping.[m
+    sb_tail: u32,[m
+    /// How many scrollback rows are populated, capped at [`SCROLLBACK_ROWS`].[m
+    sb_len: u32,[m
+    /// How many rows scrolled back from the live view, `0..=sb_len`. `0` is the[m  ordinary live view;[m
+    /// nonzero means [`Vt::cell`] (and therefore [`Vt::pixel`]/[`Vt::row_bytes`[m ]) reads from[m
+    /// [`scrollback`](Self::scrollback) for the topmost `view_offset` display r[m ows.[m
+    view_offset: u32,[m
+    cols: u32,[m
+    rows: u32,[m
+    col: u32,[m
+:[K[K[HMpub struct Vt {[m
+[HM/// capacity".[m
+[HM "The grid's[m
+[HM/// `script/stack-frame-check` catches a viol
