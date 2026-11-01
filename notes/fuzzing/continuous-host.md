@@ -28,6 +28,15 @@ the window. It never falls back to TCG, which sweeps about a tenth of the seeds 
 `NIFE_FUZZ_BUILD_BOUND` (default 1800 seconds) covers the build, and `NIFE_FUZZ_BOUND` (default 300)
 covers the guest, so a window that reaches the second is a hung guest, and the supervisor holds it.
 
+Before it starts any slot, the supervisor installs, or confirms, the toolchain that
+`rust-toolchain.toml` pins, once and serially, through `helpers/rustup-retry.sh show active-toolchain`
+with the same `PATH` it uses for everything else. On the host's first start the repository pinned a
+newer nightly than the `lane` account had, all four slots downloaded it at once and collided, and the
+first windows failed as infrastructure within seconds. If the install fails, the supervisor stops
+with a message that names it, starts no slot and writes no row to `windows.tsv`.
+`helpers/continuous-fuzz-selftest.sh`, run by `script/lint`, holds this against a stub `rustup`.
+Decided by the maintainer 2026-11-01 (UTC), provisional; reversing costs one pull request.
+
 `helpers/systemd/nife-fuzz.service` starts the supervisor at boot and restarts it on failure. The
 supervisor exits non-zero after five windows in a row fail without a finding. A broken build reaches
 systemd that way instead of looping silently.
