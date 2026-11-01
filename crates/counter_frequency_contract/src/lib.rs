@@ -110,11 +110,11 @@ pub const PAGE_VA: u64 = 0x0000_0038_0000_0000;
 /// # Examples
 ///
 /// ```
-/// use counter_frequency_contract::{TimebasePage, build_page};
+/// use counter_frequency_contract::{CounterFrequencyPage, build_page};
 ///
 /// let bytes = build_page(1_000_000_000);
 /// // SAFETY: `bytes` is a live, aligned buffer of exactly `PAGE_BYTES` for this block.
-/// let page = unsafe { TimebasePage::new(bytes.as_ptr() as u64) };
+/// let page = unsafe { CounterFrequencyPage::new(bytes.as_ptr() as u64) };
 /// assert_eq!(page.hz(), Some(1_000_000_000));
 /// ```
 pub fn build_page(hz: u64) -> [u8; PAGE_BYTES] {
@@ -125,8 +125,10 @@ pub fn build_page(hz: u64) -> [u8; PAGE_BYTES] {
 }
 
 /// **The counter frequency page**, as seen through one process's read-only mapping of it at [`PAGE_VA`].
+///
+/// Name: ratified 2026-11-01 (decided by the architect), renamed from `TimebasePage`.
 #[derive(Debug, Clone, Copy)]
-pub struct TimebasePage {
+pub struct CounterFrequencyPage {
     base: *const u8,
 }
 
@@ -134,11 +136,11 @@ pub struct TimebasePage {
 // address space) and every reader after that sees only immutable bytes, so there is no mutable
 // aliasing across the `Send`/`Sync` boundary to protect against. Same reasoning as
 // `environment_contract::ConfigPage`.
-unsafe impl Send for TimebasePage {}
+unsafe impl Send for CounterFrequencyPage {}
 // SAFETY: as `Send` above.
-unsafe impl Sync for TimebasePage {}
+unsafe impl Sync for CounterFrequencyPage {}
 
-impl TimebasePage {
+impl CounterFrequencyPage {
     /// Name the counter frequency page mapped at `va`.
     ///
     /// # Safety
@@ -149,7 +151,7 @@ impl TimebasePage {
     /// maps exactly such a page, read-only, at [`PAGE_VA`], into every `x86_64` process; see the
     /// crate's own `BUGS` section for the one spawn path that does not.
     pub const unsafe fn new(va: u64) -> Self {
-        TimebasePage {
+        CounterFrequencyPage {
             base: va as *const u8,
         }
     }
@@ -172,11 +174,11 @@ impl TimebasePage {
     /// A zeroed frame reads as unknown, never as a fabricated rate:
     ///
     /// ```
-    /// use counter_frequency_contract::TimebasePage;
+    /// use counter_frequency_contract::CounterFrequencyPage;
     ///
     /// let zeroed = [0u8; counter_frequency_contract::PAGE_BYTES];
     /// // SAFETY: as above.
-    /// let page = unsafe { TimebasePage::new(zeroed.as_ptr() as u64) };
+    /// let page = unsafe { CounterFrequencyPage::new(zeroed.as_ptr() as u64) };
     /// assert_eq!(page.hz(), None);
     /// ```
     pub fn hz(&self) -> Option<u64> {
@@ -194,13 +196,13 @@ impl TimebasePage {
 mod tests {
     use super::*;
 
-    /// `buffer` read as a mapped [`TimebasePage`] for the length of `f`, and the one place these tests
-    /// argue `TimebasePage::new`'s contract. The page is lent to `f` by reference; a test that copied it
+    /// `buffer` read as a mapped [`CounterFrequencyPage`] for the length of `f`, and the one place these tests
+    /// argue `CounterFrequencyPage::new`'s contract. The page is lent to `f` by reference; a test that copied it
     /// out would break the argument, and none does.
-    fn with_page<R>(buffer: &[u8; PAGE_BYTES], f: impl FnOnce(&TimebasePage) -> R) -> R {
+    fn with_page<R>(buffer: &[u8; PAGE_BYTES], f: impl FnOnce(&CounterFrequencyPage) -> R) -> R {
         // SAFETY: `buffer` is live, sized and aligned for the page by its type, and borrowed for
         // the whole call, so it outlives every use of the page inside `f`.
-        f(&unsafe { TimebasePage::new(buffer.as_ptr() as u64) })
+        f(&unsafe { CounterFrequencyPage::new(buffer.as_ptr() as u64) })
     }
 
     /// The round trip: build a page for a real-looking rate, read it back through a raw pointer

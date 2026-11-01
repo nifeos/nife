@@ -212,7 +212,7 @@ pub struct CurrentCpuPage {
     base: *const u8,
 }
 
-// Deliberately neither `Send` nor `Sync`, unlike `counter_frequency_contract::TimebasePage`: this
+// Deliberately neither `Send` nor `Sync`, unlike `counter_frequency_contract::CounterFrequencyPage`: this
 // is this thread's answer, and carrying it to another thread carries a wrong one. The raw pointer
 // makes the type neither by default. See notes/current-cpu-page.md.
 
