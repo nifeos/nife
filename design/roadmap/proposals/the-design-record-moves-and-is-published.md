@@ -34,12 +34,20 @@ dependency) rules on citations across repositories. Its section 4 says a record 
 
 On 2026-11-01 (UTC) the architect ruled question 1 below. The record moves to one repository named
 `nifeos.org`, and the provisional name `nife-design` is withdrawn. That repository holds the whole
-site published at nifeos.org: the record (roadmap, decisions, journeys, naming, notes), a page for
+site published at nifeos.org: the record (roadmap, decisions, journeys, naming, tenets, cross-cutting notes, `briefs/` and the lane skills), a page for
 each crate, material about nife itself, and the planned tutorial on building a RISC-V operating
 system, a class. The record and the site are one repository, not two. A crate's page pulls from that
 crate's own repository at build time and is not copied in. If the record ever has to split from the
 site, the path-filtered extraction measured in the appendix allows it, with history. The ruling
 creates nothing: the move creates the repository, and creating it needs the architect's approval under the existing ruling. The ruling carries one condition, step 5 below.
+
+On 2026-11-01 (UTC) the architect ruled question 4 below. The record repository takes the
+whole-project material: the roadmap, decisions, journeys, naming, tenets, cross-cutting notes,
+`briefs/` and the lane skills. Each code repository keeps its crate documentation, its `BUGS`
+sections, the notes about that crate alone, its lint baselines and workflow data, and its own
+`AGENTS.md`. When a crate leaves this repository, its notes move with it under §315 (a crate's
+documentation leaves with it): the sort that section orders puts a note about the crate alone into
+the crate's README, rustdoc or `docs/` folder.
 
 Why now. If the record stays in `nifeos/nife`, it stays in a repository whose stated role is
 history. Every other move then lands its record edits in a repository that is winding down.
@@ -50,8 +58,8 @@ Move the record to the `nifeos.org` repository by a path-filtered extraction, so
 record file keeps its message, author and date. The record keeps its numbers, and the numbering
 namespace moves with it. The same repository holds the rest of the site, so one build publishes
 everything. Build the website from it in CI on every merge: a static
-site with one stable address per record number, search, and a link check. Records that describe a
-single crate or carry a tool's data stay with that code.
+site with one stable address per record number, search, and a link check. What describes a single
+crate or carries a tool's data stays with that code, as the Background states.
 
 Most of this can start before the move. Steps 1 to 5 below land in this repository today, and each
 makes the move smaller.
@@ -86,7 +94,7 @@ gains no second list.
 
 Code does not cite records, under §201 section 4. That rule needs no change. The 7,774 milestone
 citations in code convert when each crate moves, under §315 (a crate's documentation leaves with
-it), and not in this move.
+it), and not in this move. The same section sends a note about one crate alone with that crate.
 
 The roadmap blocks already written are the hard part. A finished block's bullets name the files and
 checks that did the work, as bare paths such as `crates/x/src/y.rs`. Rewriting 7,845 of them is the
@@ -182,8 +190,8 @@ change the dependent side in a separate pull request that cites the landed commi
   The record's pull request then flips the block's status and cites `nifeos/<repo>@<sha>`, which
   matches §90 (the claim is a draft pull request; the status flip is a gate).
 - The board is `gh search prs --owner nifeos --draft`, which already spans repositories.
-- The record repository needs `script/claim` and the lane skills. Where those live is part of
-  question 4.
+- The record repository needs `script/claim` and the lane skills. The ruling on question 4 puts the
+  lane skills in the record repository. Where `script/claim` lives stays with the tooling ruling.
 
 ## Order of steps
 
@@ -197,7 +205,12 @@ dependency approval.
 3. Build the site in this repository's CI as an artifact, deployed nowhere. Measure build time,
    search index size and broken citations.
 4. Sort each record into moves or stays in `packages/homes.toml`, which already gives every path a
-   home and counts the notes left undecided.
+   home and counts the notes left undecided. The sort follows the ruling on question 4: whole-project
+   material moves, and crate documentation, `BUGS` sections, lint baselines, workflow data and
+   `AGENTS.md` stay. For each note it decides between cross-cutting and about one crate alone, and
+   it produces the number of the second kind. It also lists every link from a record into a note or
+   a crate path that stays, since the site's link check fails the build on an internal link whose
+   target is not in the record repository.
 5. Measure whether the record's checks can run only on the record's own directories, so a change to the site's other paths does not trigger them. The ruling of 2026-11-01 (UTC) makes this a
    condition of the one-repository shape, and it is not yet verified. Three checks are
    repository-wide today. The `needs-architect` required check of §88 (`needs-architect` as a required check) runs on every pull request and
@@ -252,7 +265,12 @@ feed gates, which the PEPs do not, so the checks move with the text.
 - The traffic the class tutorial would draw, against the 100 GB soft limit.
 - That `git filter-repo` keeps the renames of files moved between `notes/` and `design/`. Not tried.
 - How many notes concern a single crate. Not measured; step 4 produces the number.
-- Where `script/claim` and the skills live once tooling leaves.
+- Where `script/claim` lives once tooling leaves. The lane skills are ruled; the code repositories'
+  `AGENTS.md` files point at them today by relative path, and how they point at skills held in
+  another repository is not worked out.
+- How many links from the record reach a note or crate path that stays. A rough count on
+  2026-11-01 found 168 distinct notes linked from the record, 5 of them named for a crate, and 2
+  links into `crates/`. Step 4 replaces this with a real sort.
 
 ## Open questions for the architect
 
@@ -267,14 +285,15 @@ One decision each, recommendation first. Ask them one at a time.
 3. Ruled 2026-11-01 (UTC): GitHub Pages from Actions in `nifeos.org`, with the nifeos.org custom
    domain. Addresses derive from kind and number alone. The Background states the limits, and
    step 8 names the person-only tasks.
-4. Which records stay with code. Recommended: (a) the record takes roadmap, decisions, journeys,
-   naming, tenets, cross-cutting notes, `briefs/` and the lane skills. Each code repository keeps
-   its crate documentation, its `BUGS` sections, notes about it alone, its lint baselines and
-   workflow data, and its own `AGENTS.md`. Options: (b) everything under `design/` and `notes/`
-   moves and the sort happens later; (c) only roadmap, decisions and journeys move.
+4. Ruled 2026-11-01 (UTC), as recommended: the record repository takes the roadmap, decisions,
+   journeys, naming, tenets, cross-cutting notes, `briefs/` and the lane skills. Each code
+   repository keeps its crate documentation, `BUGS` sections, notes about that crate alone, lint
+   baselines, workflow data and its own `AGENTS.md`. A crate's notes move with the crate under §315
+   (a crate's documentation leaves with it).
 
-5. Where the tutorial's source lives. The planned tutorial on building a RISC-V operating system
-   publishes on the site. Its source could sit in the `nifeos.org` repository or in a repository of
-   its own. Not asked yet; it needs background and a recommendation first.
+5. Raised and not yet put to the architect: where the tutorial's source lives. The planned
+   tutorial on building a RISC-V operating system publishes on the site. Its source could sit in
+   the `nifeos.org` repository or in a repository of its own. It needs background and a recommendation before it is asked.
 
-Steps 6 to 8 wait on question 4. Nothing in flight waits on this.
+Steps 6 to 8 wait on step 5's measurement and the architect's approval of creation. Nothing in
+flight waits on this.
