@@ -35,17 +35,17 @@ number.
 
 ## A job may not leave a child region in its budget when it exits
 
-A program that holds a `--mem N` grant may `SPLIT` it and build in the pieces. It must give every
-piece back before it exits, by `DESTROY` on each sub-region it split. This is a contract for the
-program's author (ruled 2026-11-01 UTC, milestone 933). Nothing enforces it at exit: the kernel
-cannot refuse a thread's exit.
+A program that holds a `--mem N` grant may `SPLIT` it and build in the pieces. Before it exits, it
+must `DESTROY` every sub-region it split. This contract binds the program's author (ruled
+2026-11-01 UTC, milestone 933 (every job is built the way a supervised job is)). Nothing enforces
+it at exit, because the kernel cannot refuse a thread's exit.
 
 When the job exits, the shell gives the grant back with one `DESTROY`. The kernel refuses that for
-good while a child region lives (`HasChildren`, DECISIONS §16), and the job's table is gone, so
-nobody can name the child. The grant's pages stay spent until reboot. The shell reports it: it
-reads `USAGE`'s `CHILDREN` record after the refusal and, when a child is live, prints one sentence
-naming the job and the pages, without waiting out the retry bound. A refusal for a process still
-running in the grant is retried as before.
+good while a child region lives (`HasChildren`, DECISIONS §16 (object revocation)), and the job's
+table goes with the job, so nobody can name the child. The grant's pages stay spent until reboot.
+The shell reports it: after a refusal it reads `USAGE`'s `CHILDREN` record and, when a child lives,
+prints one sentence naming the job and the pages, without waiting out the retry bound. A refusal
+for a process still running in the grant retries as before.
 
-The rule can be relaxed later by a recursive teardown, which breaks no program written to it;
-tightening it later would break programs. No program the shell runs splits its grant today.
+A recursive teardown would relax the rule later without breaking any program written to it.
+Tightening it later would break programs. No program the shell runs splits its grant today.

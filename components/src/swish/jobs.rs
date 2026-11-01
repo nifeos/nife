@@ -441,7 +441,7 @@ pub(super) fn reclaim(job_ut: u64) -> bool {
 /// arms the kill, so this retries as [`reclaim`] does.
 ///
 /// A job may not leave a child region in its budget when it exits (milestone 933, ruled
-/// 2026-11-01 UTC). The kernel refuses that `DESTROY` for good (`HasChildren`, DECISIONS §16), so
+/// 2026-11-01 UTC). The kernel refuses that `DESTROY` for good (`HasChildren`, DECISIONS §16 (object revocation)), so
 /// when `USAGE`'s `CHILDREN` record shows one this prints a sentence naming the job and stops
 /// retrying at once; the pages stay spent until reboot.
 pub(super) fn release_budget(slot: u64, program: grant_plan::Program) {

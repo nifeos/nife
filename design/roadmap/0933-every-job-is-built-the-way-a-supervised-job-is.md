@@ -151,10 +151,10 @@ domain, so it does not change this; a viewer of both domains would need a second
   `--mem` budget when it exits. That is a contract for job authors, written in
   `notes/grant-expression/memory-grant.md`, and nothing enforces it at exit, since the kernel
   cannot refuse a thread's exit. The kernel keeps refusing a `DESTROY` with children (DECISIONS
-  §16, unchanged). Built: `release_budget` reads `USAGE`'s `CHILDREN` record after a refusal, and
-  when a child is live it prints one sentence naming the job and the pages that stay spent, and
-  stops at once instead of waiting out the bound (`swish::reclaim_budget_within`); a refusal for a
-  running resident still retries. Recursive teardown is unbuilt, to build when a real program needs
+  §16 (object revocation), unchanged). Built: `release_budget` reads `USAGE`'s `CHILDREN` record
+  after a refusal. When a child is live it prints one sentence naming the job and the pages that
+  stay spent, and stops at once instead of waiting out the bound (`swish::reclaim_budget_within`).
+  A refusal for a running resident still retries. Recursive teardown is unbuilt, to build when a real program needs
   to split its budget; relaxing the contract then is compatible and tightening it is not.
   `system_tests/src/user/memory_grant_reclaim_tests.rs` shows both refusals and that the shell can
   see the child, and `crates/swish/src/reclaim/tests.rs` the retry and the early stop. No program
