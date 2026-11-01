@@ -102,6 +102,9 @@ milestone names its consumer. It is not BUILT until a record cites its first use
   boot of a rebuilt archive needs the card's script rewritten with it (`script/board-image --tftp
   --card`).
 
+- The composed image becomes the only image when this milestone and 697 land (ruled 2026-11-01
+  UTC); 697's block has the end state.
+
 ## Index row
 
 The loader hands the kernel the progenitor's digest and the `program_measurements` table's digest, on all three

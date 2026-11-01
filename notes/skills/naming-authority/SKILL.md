@@ -35,6 +35,8 @@ rule for naming conventions and this one is the bug; this file keeps only the au
 
 Where a permissively licensed source names a thing, copy its name: OpenBSD first, then FreeBSD, and Linux's only when no BSD source names it (new and provisional names; [the ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117), 2026-11-01 UTC).
 
+This covers hardware register, field and constant names taken from a permissive source (clarified 2026-11-01 UTC). It does not cover a program, crate, command or other software name, which says what the thing does and follows the tree's own pattern (`system_installer`).
+
 A name you mint or rename must pass the mechanical naming checks, which `script/lint` runs as
 "names meet the current naming rules" (`helpers/name_checks.py`). Renaming an unratified name to
 comply leaves it provisional; only calef ratifies.

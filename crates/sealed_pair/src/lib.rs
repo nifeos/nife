@@ -337,7 +337,7 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
 
     let mut disagreements = Vec::new();
     // The table measures every entry in the archive except itself, which cannot contain its own
-    // digest (`xtask::measure::measurement_table`).
+    // digest (`initial_ramdisk_writer::measurement_table`).
     for e in fs.entries() {
         let Some(name) = e.name_str() else { continue };
         if name == measured_boot::PROGRAM_MEASUREMENTS {

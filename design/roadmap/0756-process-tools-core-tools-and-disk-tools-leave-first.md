@@ -36,11 +36,27 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   home's grain, one repository per package (§316 (one repository per package leaves the tree)), and
   the names, ratified the same day on the naming review, now milestone 978 (the first cut's names),
   `design/roadmap/0978-first-cut-names.md` and pull request #2870. Still open, and not blocking
-  until this block starts: the citation identity the first crossing writes (§201), and the SDK's
-  place in milestone 691 (packages move out of this repository, one per pull request)'s order.
+  until this block starts: the citation identity the first crossing writes (§201).
+- Ruled 2026-11-01 (UTC): code that leaves this repository references nothing back in it, so moves
+  go bottom-up in the dependency graph, and the crates a program links leave before it or with it.
+  That settles the SDK's place in milestone 691 (packages move out of this repository, one per pull
+  request)'s order, and recommendation 3 below (programs first, the SDK last of the leaves) no
+  longer holds. It also rules out the third condition's exception, a git dependency on `nife` at a
+  commit. The analysis below stands as written. Pull request #3026 proposes the order the contract
+  crates leave in.
 - Sequenced 2026-10-28 (UTC): the update path goes first, milestones 911 (scripted installs grant
   only what the owner's approval file allows), 909 (basalt composes the bootable image from its
   packages), then milestone 607 item 5. This cut waits for its conditions.
+- calef ruled on 2026-11-01 (UTC) that this cut follows the bottom-up order: nothing that leaves nife
+  may reference back into it. The tools no longer leave first. The leaf pilot `jh7110_entropy` goes
+  first, then the contract crates bottom-up, and this cut comes after the crates it links have moved
+  and carry versions. §247's other conditions and its destination stand. Its condition 4 (`abi`,
+  `address_space_map`, `glob` and `machine_statistics_protocol` stable under 610's rule for four
+  weeks) changes twice. Those crates now move. Four weeks stable is not the right gate, because
+  interfaces may keep breaking. The cut needs mechanisms that accommodate breaking interfaces:
+  versions that consumers can check, the work of milestone 956 and of semantic versions on moved
+  crates. Nobody has chosen a replacement. Open question for the architect: what condition 4 becomes,
+  likely a statement that those mechanisms exist. This block proposes no measure.
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a
 horrible package name for a nife package"), `coreutils` becomes `core-tools` and `procps` becomes

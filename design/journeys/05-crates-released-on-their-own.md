@@ -2,7 +2,7 @@
 status: PARTIAL
 raised: 2026-10-29
 ---
-# 5. Externalize the publish-ours crates, one release at a time
+# 5. Crates leave nife and are consumed back by version
 
 *The slug is this lane's coinage and provisional; calef names things.*
 
@@ -16,23 +16,44 @@ holds the program: each publish-ours crate publishes when ready (proofs passing,
 through its own milestone at its review (calef, 2026-10-07 (UTC)); one repository per crate under
 `nifeos`; and the release order ruled 2026-10-27 (UTC). The story, per crate: nife builds and
 proves it in this tree, moves it to a repository of its own, soaks it there, publishes it to
-crates.io, and consumes it back by checksum in `Cargo.lock`. The program serves
+crates.io, and consumes it back by semantic version, as any outside project does: `Cargo.toml`
+holds a version requirement, not a git revision, and `Cargo.lock` records the checksum. Until a
+moved crate publishes, nife depends on it by a git dependency on a release tag that also states the
+version requirement, such as `{ git = "https://github.com/nifeos/<crate>", tag = "v0.1.0", version
+= "0.1" }`, and at first publication the line becomes a plain version requirement (ruled
+2026-11-01 (UTC)). Publication stays a separate decision per crate, and a contract crate may never
+publish. The program serves
 [risk 8](../fatal-risks/8-nobody-else-builds-on-nife.md): nife shrinks by pushing its mechanisms
 out into the Rust ecosystem (calef, 2026-10-18 (UTC): *"I have no desire to maintain 50 crates.
 Rather I desire 50 crates that I would confidently use to build a nife."*). A lane reads the next
 unbuilt step from the table, the way journey 4 directs the package work.
 
+The journey covers every crate that something outside nife could consume, by the ruling of
+2026-11-01 (UTC) that milestone 857 records; the maintainer confirms this widening of the journey.
+The end state, ruled the same day: this repository breaks up into single-purpose repositories and
+remains, as `nifeos/nife`, only for its history, and the kernel, programs, tooling and crates all leave, bottom-up.
+The kernel leaves last among the code, to `nife-kernel` (provisional), a named part of the system
+as Linux is, while the project name stays with the whole. Likely, as a direction and not a ruling:
+the design record (roadmap, decisions, journeys, naming, notes) moves to a repository of its own
+and is published as a website. This journey tracks the crates.
+Its steps are of two kinds. A publish-ours crate publishes to crates.io, as the table below lays
+out. A contract crate moves to a repository of its own and carries a version whether or not it
+publishes. Every move goes bottom-up: a crate that leaves references nothing back in this tree, so
+the crates a program links leave before it or with it, and step 9's `jh7110_entropy` is the leaf
+pilot of the mechanics. Pull request #3026 proposes the contract-crate steps and their order, and
+they join the table when it lands.
+
 | step | milestone | decision | what this step needs |
 |---|---|---|---|
 | 1 | 887 | | the machinery every crate repository calls from its move onward: the shared template's nine ruled checks, the allowlist lint that keeps `publish = false` the default, the `crate-maintainers` team as the crates.io owner, and trusted publishing, with every release waiting in the `crates-io` environment for calef. The template's two remaining checks (the scoped-token first publish and the semver baseline) wait at step 9 |
-| 2 | 813 | | the first publication in the ruled order: `file_allocation_table` finishes the write half, stages 6 to 9 (allocation and write, directories and rename, the general FAT12/16/32 format, timestamps and the label), then the move, the soak, the 0.1.0 publication, and nife consuming the release by checksum in `Cargo.lock`. Milestone 140 (mount a drive this system did not create) needs it for its FAT32 stratum |
+| 2 | 813 | | the first publication in the ruled order: `file_allocation_table` finishes the write half, stages 6 to 9 (allocation and write, directories and rename, the general FAT12/16/32 format, timestamps and the label), then the move, the soak, the 0.1.0 publication, and nife consuming the release by semantic version. Milestone 140 (mount a drive this system did not create) needs it for its FAT32 stratum |
 | 3 | 820 | | the second publication in the ruled order: `extensible_host_controller_interface`, released with `usb`, once the crate gains the two harnesses its table still marks `none yet` (the event ring, the capability walk), then the move, the soak, the publication and nife consuming the release |
 | 4 | 857 | | the third publication in the ruled order, `generational_table`: no milestone owns it yet, and fork 7 mints one at its review with calef, quoting his ruling and its disposition; before release, the record says whether `slotmap` already covers allocation-free fixed capacity |
 | 5 | 814 | | `non_volatile_memory_express`: class A, so no cut, and its process plan already left for `non_volatile_memory_express_contract` (#2736); its eight harnesses prove, so the step is the move, the soak, the publication and nife consuming the release |
 | 6 | 815 | | `e1000e`: its cut landed 2026-10-25 (#2719) and its four harnesses prove; the step is the move, the soak, the publication and the consumption |
 | 7 | 816 | | `designware_ethernet`: its cut landed 2026-10-25 (#2719), with the walk in `machine_discovery::jh7110`, and its two harnesses prove; the PHY link decode still needs its harness row, then the move, the soak, the publication and the consumption |
 | 8 | 817 | | `designware_mobile_storage`: its cut landed 2026-10-25 (#2719), with `serve` moved to `driver_process_contract`; the MBR parse and the capacity decoders still need their harness rows, then the move, the soak, the publication and the consumption |
-| 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names |
+| 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names. nife links it today by git revision, with `publish = false` in the crate, the same interim form with a revision in place of a tag until the crate is tagged |
 | 10 | 819 | | `jh7110_clock_and_reset`: its cut is done and its name ratified, and it holds no harness yet, so the harnesses and their falsification patches come first; then the move, the soak, the publication and the consumption |
 
 Two orderings govern the program, and they order different events. The soak order sits in the
@@ -48,11 +69,11 @@ publication waits for its own soak's five end conditions and its turn in the rul
 `jh7110_entropy`'s publication sits with the device set (step 9), and the first publication is the
 FAT crate's.
 
-The path holds only publish dispositions. The survey's contribute rows (paging, the GPT parser,
+The publish-ours steps hold only publish dispositions. The survey's contribute rows (paging, the GPT parser,
 `elf`, `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) wait,
 by the ruling of 2026-10-27 (UTC), until a published crate has users who ask for them upstream, so
-nife controls no externalization step for them today. The internal set stays in this tree, and its
-reviews close as one sitting (857's item 7). calef refused milestone 821 (`portable_executable`: an
+nife controls no externalization step for them today. No crate stays in this tree by default
+(ruled 2026-11-01 (UTC); 857's item 7 is withdrawn). calef refused milestone 821 (`portable_executable`: an
 ELF-to-PE converter, proven, then released on its own) on 2026-10-21 (UTC): its input is nife's own
 build product, so a published proof protects no known user. The crate no longer exists, and the
 conversion lives in `xtask` (the survey's corrections, 2026-10-27 (UTC)). No step here expects any
@@ -69,7 +90,9 @@ row names the minting, not a number.
 Every step above at `BUILT`. At that point, every crate the ruled disposition calls ours has
 proved what its block requires, moved to its own `nifeos` repository, cleared its soak's five end
 conditions, and published through trusted publishing with calef's approval; nife consumes each
-release from crates.io, pinned by checksum in `Cargo.lock`. That is the whole completion bar, and
+release from crates.io by semantic version, with its checksum in `Cargo.lock`. Each contract crate's step, once
+pull request #3026 adds them, is done when the crate has moved and carries a version. That is the
+whole completion bar, and
 it holds only work nife controls. Adoption is out of scope on purpose: nife does not control it, so
 no step tracks it and it is no criterion here; [risk 8](../fatal-risks/8-nobody-else-builds-on-nife.md)
 measures it separately, with its five observations and thresholds, and publishing alone counts as
