@@ -4,10 +4,24 @@
 //! A boot keyboard does not send key events. It sends its **state**: eight bytes, the modifier
 //! keys as a bitmap in byte 0, a reserved byte, then up to six usage ids for the other keys held
 //! down, in no promised order. So a keystroke is a *difference* between two reports, and
-//! [`changes`] computes it, in Linux's evdev numbering so that `video_terminal::keymap` (which
-//! already turns the virtio keyboard's evdev codes into terminal bytes) does the rest. The table
-//! from usage id to evdev code is [`evdev_code`]'s, and it is the one in Linux's
-//! `drivers/hid/hid-input.c` (`hid_keyboard[]`) for the range a terminal keyboard uses.
+//! [`changes`] computes it, in the evdev numbering so that `video_terminal::keymap` (which already
+//! turns the virtio keyboard's evdev codes into terminal bytes) does the rest.
+//!
+//! # Where the table comes from
+//!
+//! [`evdev_code`]'s table is read off two documents: each row's usage and name from the HID Usage
+//! Tables 1.12 keyboard page (section 10), and each code's number from the `KEY_*` names in
+//! `include/uapi/linux/input-event-codes.h`, whose names the table spells out. Two rows are
+//! nife's own choices, since the Usage Tables name no evdev key for them: usage 0x32 (Non-US `#`
+//! and `~`) is reported as `KEY_BACKSLASH`, the key the usage sits beside, and usage 0x46 (Print
+//! Screen) is reported as `KEY_SYSRQ`, the key a terminal keyboard labels that way.
+//!
+//! One comparison was run, once, against Linux's `hid_keyboard[]` in `drivers/hid/hid-input.c` at
+//! `torvalds/linux@cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a`, fetched 2026-11-01 (UTC). The two
+//! agree on every usage from 0x04 to 0x63, which is expected: both place one physical key at one
+//! number. The longest run of identical lower-case word tokens between this file and
+//! `hid-input.c` is 6, a row of test report bytes, and between this file and the header it is 4,
+//! the header's own path. No test carries the Linux table.
 
 /// How long a boot report is.
 pub const REPORT_LEN: usize = 8;
