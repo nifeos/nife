@@ -32,7 +32,7 @@ A program the archive carries runs by name, and the progenitor endows it from
 digest, and `endowed_image` endows it from the note in its own bytes. Of the programs
 `packages/base-image.toml` lists, only `jig` carries a note, and that note asks for nothing; the
 compiled table gives the image's `jig` the network, the installer endpoint and the catalog. So
-milestone 909 item 3's approval check passes the base against any approval file (measured
+milestone 909 (basalt composes the bootable image from its packages) item 3's approval check passes the base against any approval file (measured
 2026-10-31 UTC on aarch64), and `packages/base-image.toml` names no approval file.
 
 ## The work
@@ -57,7 +57,7 @@ grant rows equal those asks.
 
 Not ruled. The maintainer brings it to an architect before step 1 reaches `jig`.
 
-**The background.** A manifest note today cannot ask for seven authorities.
+A manifest note today cannot ask for seven authorities.
 `capability_manifest_note::encode` refuses `reboot`, `sync`, `installer`, `catalog`, the index
 store, the activation directory and console input at compile time. The reason in the code is that
 only the owner's console grants them, and only to a program the image names. That refusal is what
@@ -70,8 +70,8 @@ the encoder alone stops nothing at install. The approval file grammar already sp
 `installer = true` for a package entry (milestone 911 (scripted installs grant only what the
 owner's approval file allows)), which a note cannot ask for today.
 
-**The question: when the base's notes ask for these seven, what refuses the same asks from an
-ordinary package?**
+The question: when the base's notes ask for these seven, what refuses the same asks from an
+ordinary package?
 
 - **Recommended, A: the install path.** The progenitor's install refuses any of the seven asks
   from a package that the image's signed base set does not vouch for, whatever the approval file
@@ -84,13 +84,13 @@ ordinary package?**
 - D: the owner. The approval file and the console may grant any of the seven to any package. This
   is the most general and the easiest to misuse: one careless approval hands out the installer.
 
-**Prior art**, from memory and not re-read: Android's `signature|privileged` permissions go only to
+Prior art, from memory and not re-read: Android's `signature|privileged` permissions go only to
 apps signed with the platform key or installed in the system image's privileged directory, and the
 package manager enforces it at install, whatever the app declares. Fuchsia separates base packages,
 resolved from the system image, from universe packages, and routes several system capabilities
 only to components the base names.
 
-**A concrete example.** On a system where `jig`'s note asks for the installer, a package `helper`
+A concrete example. On a system where `jig`'s note asks for the installer, a package `helper`
 arrives whose note asks for the installer too, and the owner's approval file says
 `installer = true` for it. Under A, `jig install helper` refuses with the installer named as an ask
 outside the base. Under D it installs, and `helper` can now install anything the owner's catalog
