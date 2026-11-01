@@ -34,8 +34,8 @@ Nothing here widens what the fuzz account may do. It uses no credential and read
 
 ## How it is checked
 
-A selftest with a stub `git` and a stub API response checks five cases: a green fast-forward moves;
-a non-fast-forward, a red check, a pending check and an unreadable response each stay put; a changed
+A selftest with a stub `git` and a stub API response checks the cases. A green fast-forward moves.
+A non-fast-forward, a red check, a pending check and an unreadable response each stay put. A changed
 unit file writes the journal line and installs nothing.
 
 ## Status

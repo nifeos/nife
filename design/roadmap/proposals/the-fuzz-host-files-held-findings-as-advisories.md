@@ -37,10 +37,9 @@ window that has none yet. It is a program, not an agent or a language model.
 ## How it is checked
 
 A selftest in the style of `helpers/continuous-fuzz-selftest.sh` runs the service in dry-run against
-a stub `curl` and a stub key, with no network. It plants three fake held windows (one of each class)
-and checks that the stub received three create calls with the expected fields, that a second run
-sends none, that nothing it printed contains a planted seed, and that it refuses to run without the
-key file. `script/lint` runs it.
+a stub `curl` and a stub key, with no network. It plants three fake held windows, one of each class,
+and checks that the stub received three create calls with the expected fields. A second run must
+send none, nothing it prints may contain a planted seed, and it must refuse to run without a token. `script/lint` runs it.
 
 ## Status
 

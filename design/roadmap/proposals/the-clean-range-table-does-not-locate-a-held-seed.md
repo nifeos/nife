@@ -27,7 +27,7 @@ leaked, because nobody has switched publishing on.
 ## What it builds
 
 The table leaves out every range of a slot from a held window onward until the held finding turns
-public. The ranges return once the advisory publishes. The table still covers every other slot, and the count of seeds run is unchanged.
+public. The ranges return once the advisory publishes. The table still covers every other slot, and the count of seeds run stays the same.
 
 ## How it is checked
 

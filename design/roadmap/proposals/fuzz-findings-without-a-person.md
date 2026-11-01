@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # Fuzz findings filed, fixed and published with no person in the loop
 
-Raised by lane/fuzz-findings-without-a-person on 2026-11-01 (UTC), to record three architect rulings
+Raised by lane/fuzz-findings-without-a-person on 2026-11-01 (UTC), to record four architect rulings
 of that date and split them into milestones. They amend the mechanics of the disclosure ruling of
 2026-10-31 (UTC) in [the risk 7 proposal](the-fuzz-budget-that-counts-for-risk-7.md), under
 "Disclosure", which #2955 records. That ruling stands. Every finding starts private, in a private
@@ -86,6 +86,19 @@ what any stranger can read, and it runs code that has already passed main's gate
 main's code unattended, and the runbook says so. The code that mints tokens from the root-only key
 therefore stays outside the clone: a person installs it, as with the unit files, and an update never
 replaces it.
+
+## What is in force: noticing a broken loop
+
+Ruled 2026-11-01 (UTC): a daily watchdog workflow on a GitHub-hosted runner detects a broken fuzz
+loop. It notifies by opening an issue with a fixed label, and it repairs nothing. For now a person
+turns each such issue into an action. A lane fixes anything in the tree. A repair of the host itself
+becomes a spec that the architect hands to the agent that maintains the host. Another lane
+builds the workflow and owns its milestone, so this proposal lists no milestone for it.
+
+Two later decisions stay open until the loop has run for about a month:
+
+- a standing channel from the watchdog to the agent that repairs the host, and
+- starting a lane from a watchdog issue automatically.
 
 ## How the lane fills in the mechanics
 

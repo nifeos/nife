@@ -41,7 +41,7 @@ Read this first. It is the exposure you accept by placing the key.
    write. Leave every other permission at No access. Metadata stays Read-only, which GitHub sets on
    every App.
 5. Organization and account permissions: none.
-6. Where can this App be installed: only on this account.
+6. Under "Where can this GitHub App be installed", choose only on this account.
 7. Create the App. Note the App ID shown at the top of its settings page.
 
 Check the permission list once more on the App's settings page. It must show exactly Contents,
@@ -83,8 +83,8 @@ App on nifeos/nife.
 ## BUGS
 
 - Nobody has followed these steps yet. The first person to do so confirms each one or corrects it.
-- The mint helper and the filing service do not exist yet. They are proposed milestones listed in the
-  ruling's proposal.
+- The mint helper and the filing service do not exist yet. The ruling's proposal lists them as proposed
+  milestones.
 - The read-only credential for fix lanes is not covered here. Its form is an open question.
-- Whether an App with the advisory permission alone may create an advisory is unverified. GitHub's
+- Nobody has confirmed that an App with the advisory permission alone may create an advisory. GitHub's
   documentation names "a security manager or administrator" as the caller.

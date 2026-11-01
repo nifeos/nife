@@ -30,9 +30,9 @@ one seed per guest, against the newest green main the host runs.
 
 ## How it is checked
 
-A selftest with a stub replay (pass, fail) and a stub `curl` checks that a pass sends one publish
-call, a fail sends one comment and no publish, an advisory past 90 days publishes on a fail, and no
-call sends a seed in a public field.
+A selftest runs with a stub replay and a stub `curl`. A pass must send one publish call. A fail must
+send one comment and no publish, unless the advisory is past 90 days, when it publishes. No call may
+carry a seed in a public field.
 
 ## Status
 

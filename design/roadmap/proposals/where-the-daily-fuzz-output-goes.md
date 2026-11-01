@@ -33,7 +33,7 @@ assets. It does not publish a branch of artifacts. The reasons:
 3. The newest release's date is the heartbeat.
 4. Moving from a release to a branch later is compatible; moving from a branch to a release is not.
 
-Option B is rejected for the reason given under it: every clone that fetches all branches pays for
+The ruling rejects option B for the reason under it: every clone that fetches all branches pays for
 it, and dropping data needs a force-push, which this project forbids. The implementation is in
 `helpers/fuzz-daily-publish.sh` and [the host note](../../../notes/fuzzing/continuous-host.md).
 
