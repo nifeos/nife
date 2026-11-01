@@ -189,11 +189,24 @@ the ruling changes where the records go and not how the composition checks them.
     row carries the program name and digest and no pointer. So the shell's `Bare::Both` refusal
     (§229 (how a bare name at the prompt reaches an installed program)) never meets a base name in
     the live generation. Done: `base_row` in `xtask/src/base_image.rs`.
-  - **No ruling settles the measurement** (item 3).
+  - **The measurement is ruled, and its read-time check is not built** (item 3). Ruled 2026-11-01
+    (UTC) by the architect: at read time the progenitor refuses any owner-shaped base row whose
+    digest is not in `program_measurements`, which it holds from boot. No code compares a base row
+    with `program_measurements` today, at install or at read. `xtask/src/base_image.rs` writes the
+    base rows, and `with_live_table` and `vouched` in `crates/system_initializer/src/image_request.rs`
+    are the read path. The check extends the plumbing of milestone 992 (a package the base does
+    not vouch for cannot install base-only asks) from install time to read time, and it is
+    outstanding.
     [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md)
-    lists the options: the seed generation by its own digest, the volume until its first write,
-    or the approval file alone. Any of them reaches the kernel's trust root, which milestone 697
-    (the trust root leaves the kernel binary) is changing.
+    lists the options it chose among.
+  - **Installed rows and their grant lines have no anchor off the volume.** Ruled 2026-11-01 (UTC)
+    by the architect: they wait for an anchor held for milestone 917 (basalt's packages build
+    reproducibly) and item 6 of milestone 607 (nife is built and updated from packages).
+    Candidates are a MAC the progenitor makes with a key the volume cannot supply, and a digest
+    of the live generation in a measured or sealed place. Until then an offline writer of the
+    volume can add an installed row and a grant line the approval file did not allow, bounded by
+    what the program's own note asks for. No digest of the whole launch volume is added, and the
+    loader passes no digest of generation 1.
   - **The kernel mounts the second block device.** Its file service serves virtio block slot 1
     (`kernel/src/user/fs_service/wiring.rs`), and the runners put their `nifefs` fixture disk at
     slot 0. A boot that attached the launch volume alone would put it where nothing mounts it.
@@ -216,9 +229,9 @@ the ruling changes where the records go and not how the composition checks them.
 - **Proposed.** A generation larger than a page, ruled 2026-11-01 (UTC) to read up to a 64 KiB
   bound (16 pages) and refuse past it:
   `design/roadmap/proposals/a-generation-grows-past-one-page.md`.
-- **Outstanding.** Item 3, the measurement, waits on a ruling and on milestone 697 (the trust
-  root leaves the kernel binary). Checked 2026-11-01 (UTC): the note names three options and no
-  ruling picks one.
+- **Closed as ruled.** Item 3, the measurement, ruled 2026-11-01 (UTC): the progenitor checks each
+  owner-shaped base row against `program_measurements` at read time. That check is outstanding
+  work, listed under `BUGS`.
 - **Outstanding.** Item 4 closes when item 2 does. Item 5's grant rows fill as the base programs'
   notes ask: `first_generation` already reads the notes, and today they ask for nothing.
 
