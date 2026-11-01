@@ -62,7 +62,7 @@ The publish path refuses unless `NIFE_FUZZ_PUBLISH=1` is set in the host's envir
 timer stays disabled until a person installs the credential and sets it. `--dry-run` prints the tag
 and the asset list and runs nothing else.
 
-The credential needs Contents: write on a fine-grained token (stated from memory of GitHub's
+The credential needs Contents: write on a fine-grained token (from memory of GitHub's
 permission model, not verified). That scope also permits a push, so the guarantee that the host never
 pushes a branch rests on the script, which only calls `gh release create`.
 
