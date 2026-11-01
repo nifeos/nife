@@ -49,8 +49,9 @@ pilot of the mechanics. Before each move the architect reads the crate's code by
 it (§247 (the split begins with basalt holding nife, and `procps` moves first)'s condition 4, ruled 2026-11-01 (UTC)), initially for every crate. A crate also needs a
 tagged release whose commit carries its Cargo version, and no time-based measure remains. The first
 crate reviewed is the pilot, `jh7110_entropy`, which moved before the ruling and has no tag, so
-tagging it comes first (step 9). Pull request #3026 proposes the contract-crate steps and their order, and
-they join the table when it lands.
+tagging it comes first (step 9). Pull request #3026 rules the contract-crate order (2026-11-01 (UTC)): one
+repository per crate, each made with the architect's approval, and a package leaves as soon as its
+own crates have left. Its steps join the table when their lanes are cut.
 
 | step | milestone | decision | what this step needs |
 |---|---|---|---|
@@ -81,7 +82,9 @@ FAT crate's.
 The publish-ours steps hold only publish dispositions. The survey's contribute rows (paging, the GPT parser,
 `elf`, `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) wait,
 by the ruling of 2026-10-27 (UTC), until a published crate has users who ask for them upstream, so
-nife controls no externalization step for them today. No crate stays in this tree by default
+nife controls no upstream step for them today. That wait covers the offer only. Ruled 2026-11-01
+(UTC): the four crates among the 22 move in pull request #3026's order, each to a repository of its
+own, and a later offer comes from that repository. No crate stays in this tree by default
 (ruled 2026-11-01 (UTC); 857's item 7 is withdrawn). calef refused milestone 821 (`portable_executable`: an
 ELF-to-PE converter, proven, then released on its own) on 2026-10-21 (UTC): its input is nife's own
 build product, so a published proof protects no known user. The crate no longer exists, and the
