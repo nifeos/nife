@@ -3807,7 +3807,9 @@ python3 helpers/format_values_check.py --selftest
 python3 helpers/format_values_check.py
 
 # Every program of the first cut declares, in its `carry_interfaces!` list, exactly the versioned
-# interfaces its dependency graph links (milestone 956, condition 4 of milestone 756). The list is
+# interfaces its dependency graph links (milestone 956 (the linked interfaces carry checkable
+# versions), condition 4 of milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the
+# first code to leave this repository)). The list is
 # written by hand, and this is what keeps it from drifting from the graph.
 echo "==> the first cut's programs declare what they link"
 python3 helpers/interface_declarations_check.py --selftest

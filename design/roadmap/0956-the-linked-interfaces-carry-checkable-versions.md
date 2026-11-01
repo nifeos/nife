@@ -97,8 +97,8 @@ above carry an `INTERFACE_ID`. Fourteen do not:
 - With none: `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`,
   `filesystem_fixture`, `grant_plan`, `socket_contract`, `user_mode_runtime`.
 
-Whether condition 4 means all nineteen, the five, or another rule is not ruled. Pull request
-#3022 asks it. The declaration check reads `INTERFACE_ID`, so each crate that gains one joins every
+No ruling yet says whether condition 4 means all nineteen, the five, or another rule. Pull
+request #3022 asks it. The declaration check reads `INTERFACE_ID`, so each crate that gains one joins every
 list that reaches it, and the check names the program that must add it.
 
 ## What this block does not do
@@ -109,10 +109,18 @@ generation and the swap-test invariants are a separate proposal,
 The first cut links no message contract, so condition 4 does not need them. The macro takes its interface list by hand. Deriving the list from the dependency graph at package
 build waits for the first package that leaves the tree.
 
+## Follow-on
+
+- **Outstanding.** Which crates condition 4 covers: the five above, the nineteen the
+  re-derivation finds, or another rule. Checked on 2026-11-01 (UTC) with `cargo metadata` and
+  `helpers/interface_declarations_check.py`; asked on pull request #3022 with `needs-architect`.
+- **Outstanding.** An `INTERFACE_ID` and a version for each crate the ruling adds, then the
+  programs' lists grow as the check names them.
+
 ## BUGS
 
-- Programs spawned from the archive are built with the kernel, and the spawn path does not read
-  their `INTERFACES` note; only the image path checks it.
+- The kernel's own build makes the programs the spawn path takes from the archive, and that path
+  does not read their `INTERFACES` note; only the image path checks it.
 - The declaration check reads source text and the dependency graph, not the linked bytes. A crate
   a program reaches only through another crate's macro counts as that other crate's.
 
