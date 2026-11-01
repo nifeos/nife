@@ -75,8 +75,8 @@ confirmation that keeps it or a failure that reverts to the running one.
 ## What it does not propose
 
 - No shared store (U2, refused by the ruling), and no collection rule.
-- No signed manifest (T3, refused): the loader and the slot checksum carry the trust, as §235
-  records.
+- No signed manifest in the boot path (T3, refused): the loader and the slot checksum carry the
+  trust, as §235 records. An unattended base update checks a signature before it writes (part 7).
 - No third slot and no second rollback path (U3, not taken). `jig rollback` stays the
   installed-programs mechanism; this is the base path beside it.
 - No pinned-root key in the kernel (T3's refusal stands).
@@ -128,10 +128,15 @@ slot. Every new name here is provisional.
   they land. The reasoning and the prior art are in
   `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md`.
 - **Outstanding.** After part 4, part 5 is the device updater, steps 2 and 4 above, writing
-  part 4's version 2 slot. Part 6 is the system manifest's name and format (step 1). Part 7 is who may
-  start a base update, and what bounds an unattended one under the approval file of milestone 911 (scripted installs grant only
-  what the owner's approval file allows). Each
-  comes to an architect after part 4, one at a time. Step 3, the loader's two digests, is milestone
+  part 4's version 2 slot. Part 6 is the system manifest's name and format (step 1; ruled
+  2026-11-01 UTC). Part 7 is the base-update grant under the approval file of milestone 911
+  (scripted installs grant only what the owner's approval file allows), ruled 2026-11-01 UTC. The
+  file gains a base-update section with `allow` and `unattended`, both false unless a person sets
+  them. An unattended update writes only the spare slot, carries a manifest signed by an accepted
+  key, has a strictly greater version than the running one, and starts with no slot on trial. A
+  base version is MAJOR.MINOR.PATCH, three integers. The accepted keys live beside the trust root;
+  the approval file names which the owner accepts and never adds one. The reasoning is in the
+  proposal. Step 3, the loader's two digests, is milestone
   607's item 6 and not this block's.
 
 ## Index row

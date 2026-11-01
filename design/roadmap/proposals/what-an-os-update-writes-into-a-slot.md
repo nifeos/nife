@@ -147,9 +147,17 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
    pins signs its manifest; its version is strictly newer than the running one; and
    no slot is on trial. Not chosen: a per-package `update = true` (it implies one package updates
    alone, which the full-copy slot refuses) and forbidding unattended updates (milestone 858 (lab machines update themselves) needs
-   them). Two points stay open under this ruling, and the part that writes it settles them: what "newer" means
-   for a base version, and whether the pinned key lives in the approval file or beside the
-   repository's trust root.
+   them). The two points that ruling left open have rulings of the same date.
+   A base version is exactly MAJOR.MINOR.PATCH: three whole numbers, compared left to right as
+   integers. The device accepts an update only when its version is strictly greater than the running one,
+   so it refuses an equal version. The manifest writer and the device both refuse pre-release
+   tags and build metadata. Basalt raises the version for every published base. Not chosen: full
+   semver ordering (a grammar in the verification core) and a build date (clock error, and a
+   rebuild has no order). The restricted form can admit more later; the reverse cannot.
+   The keys that may sign a base manifest live beside the trust root that milestone 697 moves out
+   of the kernel binary. The approval file may name which of those keys the owner accepts, and it
+   never adds one. A new key arrives only through a base update the old key signed. Not chosen:
+   the key in the approval file, and the union of both.
 3. What a failed boot does. Milestones 525 and 554 already answer this (tries, then the other
    slot; confirmation once the disk mounts). This proposal changes none of it, so it is not
    open.
@@ -159,5 +167,5 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
 The update's unit is the package, and each slot holds a full copy. A slot holds named members in a
 version 2 header (kernel, archive, system manifest), which a device assembles from packages it
 fetched and packages it already has (ruled 2026-10-31 UTC). The system manifest is a text file: a
-`version 1` line, then one `<stem> sha256:<hex>` line per package, sorted by stem (ruled 2026-11-01 UTC). A base update needs `allow` in a separate base-update section of the approval file. An unattended one also needs `unattended` and four bounds: spare slot only, a pinned key's signature, a strictly newer version, no slot on trial (ruled 2026-11-01 UTC). The interim kernel package goes when
+`version 1` line, then one `<stem> sha256:<hex>` line per package, sorted by stem (ruled 2026-11-01 UTC). A base update needs `allow` in a separate base-update section of the approval file. An unattended one also needs `unattended` and four bounds: spare slot only, a pinned key's signature, a strictly newer version, no slot on trial (ruled 2026-11-01 UTC). A base version is MAJOR.MINOR.PATCH, three integers, and the key lives beside the trust root (ruled 2026-11-01 UTC). The interim kernel package goes when
 milestones 695 and 697 land.
