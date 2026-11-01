@@ -143,6 +143,15 @@ slot. Every new name here is provisional.
   TCG, and it builds the install image and the composed image one after the other. A CI leg would
   roughly double `confirm-boot`'s cost for a path that parts 4 and 5 replace. It stays a manual
   gate until part 5's updater supplies the real staging.
+- **Done.** Part 6: the system manifest (ruled 2026-11-01 UTC; step 1). `crates/system_manifest`
+  (provisional) is the format in code: a `version 1` line, then `<stem> sha256:<hex>` per package,
+  sorted, no blank line, one encoding. `render` writes it, `SystemManifest::parse` refuses anything
+  `render` would not write, and `check` holds a package set to it, with a refusal that names the
+  package (mismatch, missing or unlisted). `cargo xtask base-image` writes `system-manifest`
+  (provisional file name) beside `initrd.img`, reads it back through the parser and refuses a
+  composition whose progenitor package is not listed. The file has no progenitor line, because
+  the ruled line shape has none. Until that is settled the progenitor is the package that carries
+  it, found by its stem (provisional; recorded in the crate's `BUGS`).
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself, and the archive writer moves from
@@ -153,8 +162,7 @@ slot. Every new name here is provisional.
   they land. The reasoning and the prior art are in
   `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md`.
 - **Outstanding.** After part 4, part 5 is the device updater, steps 2 and 4 above, writing
-  part 4's version 2 slot. Part 6 is the system manifest's name and format (step 1; ruled
-  2026-11-01 UTC). Part 7 is the base-update grant under the approval file of milestone 911
+  part 4's version 2 slot. Part 7 is the base-update grant under the approval file of milestone 911
   (scripted installs grant only what the owner's approval file allows), ruled 2026-11-01 UTC. The
   file gains a base-update section with `allow` and `unattended`, both false unless a person sets
   them. An unattended update writes only the spare slot, carries a manifest signed by an accepted

@@ -108,6 +108,9 @@ package_archive = { version = "0.1.0", path = "../crates/package_archive" }
 # The image's index sources (milestone 801 (packages over the internet)): the entry's name and the
 # reader the archive build checks its own text with.
 package_index = { version = "0.1.0", path = "../crates/package_index" }
+# The system manifest basalt writes beside the packages (milestone 976 part 6): the composer's
+# writer and the check that reads it back are this crate's, which the device updater links too.
+system_manifest = { version = "0.1.0", path = "../crates/system_manifest" }
 # The approval file and the grant records it compiles to (milestone 911 (scripted installs grant
 # only what the owner's approval file allows)). `cargo xtask base-image` checks each package's asks
 # against the image's approval file with the same reader `jig install --approved` uses, so the
