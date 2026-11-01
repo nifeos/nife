@@ -136,9 +136,11 @@ own driver read an image (`cargo test -- --ignored`, on macOS).
 - Not crash-atomic, and there is no journal, since FAT has none. The crate orders its writes so a
   crash leaks a cluster and never shares one, and a write has no barrier: the device decides when a
   write reaches the medium.
-- Time. The clock is required of every writer. FAT stores no time zone and a host shows the stored
-  time as local time, so a caller chooses whether its clock reports local time or UTC. The crate
-  stores exactly what the clock reports. A time outside 1980 to 2107, or a field outside its range,
+- Time. The clock is required of every writer. FAT stores a date and a time of day with no time
+  zone. In nife the clock supplies UTC (ruled 2026-11-01 UTC). The crate stores exactly the fields
+  the clock reports and converts nothing, so it cannot check that a clock gives UTC, and a reader
+  that treats FAT times as local time, such as Windows, shows a UTC value as local time. A read
+  takes no clock and never writes. A time outside 1980 to 2107, or a field outside its range,
   is refused with `TimeOutOfRange` before a byte is written; a clock that cannot be trusted reports
   `None` and gets the zero timestamp. A write sets the write and access times, a new
   entry its creation time, a rename keeps the times, and a read stamps nothing.

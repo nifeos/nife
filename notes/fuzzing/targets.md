@@ -83,6 +83,27 @@ a panic in the progenitor takes the prompt with it. The target asserts propertie
 waiting for a panic. notes/fuzzing.md's BUGS section records that three of the older targets assert
 nothing, and that the one with a real property is the one that found a silent bug.
 
+## `video_terminal_feed`
+
+Every program that prints to the display goes through `Vt::feed`, and a foreign `std` program or a
+packaged one (ripgrep) writes escape sequences nobody here chose. Confinement surrounds the components that run it, but a panic in one takes the screen console down for every program on it. The engine is a
+byte-at-a-time state machine over an unbounded stream and has no Kani harness.
+
+The first input byte selects one of twelve grid sizes (1 by 1, a lone row, a lone column, 80 by 24,
+the largest grids, and sizes past the clamps); the next two cut the stream into three pieces. The
+whole stream goes to one terminal and the pieces to another. After each feed the cursor and the
+damage rectangle must lie inside the grid. At the end the two terminals must agree on the handoff
+blob, which carries the grid, the scrollback, the pen and the parser's own state, and on every
+visible cell. The cut points fall inside multi-byte UTF-8 sequences and escape sequences as often as
+anywhere, where a chunked reader goes wrong. Throughput is low (about 400 inputs a
+second) because each input retargets two terminals of several hundred KiB.
+
+`fuzz/seeds/make-video-terminal-seeds.py` writes the seeds in `fuzz/seeds/video_terminal_feed`:
+small hand-written streams (colors, cursor movement, alternate screen, scroll regions, UTF-8, string
+sequences, ripgrep-style colored output), and the output halves of two recordings in
+`crates/video_terminal/recordings`. The tree holds no captured ripgrep output, so that seed copies
+the shape ripgrep prints.
+
 ## `nifefs_roundtrip` and `package_archive_roundtrip`
 
 Fuzzing `Fs::parse` for panics would burn CI time rediscovering a theorem Kani already proves. What

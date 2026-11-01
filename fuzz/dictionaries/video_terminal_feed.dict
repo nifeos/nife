@@ -1,0 +1,34 @@
+# libFuzzer dictionary for the display terminal's escape engine.
+#
+# The parser does nothing past the first byte of a sequence until it has seen ESC and then `[`,
+# `]`, a digit run and a final byte. These are the introducers, the parameter punctuation and the
+# finals the engine acts on, so the fuzzer spends its budget on the arguments.
+
+csi="\x1b["
+osc="\x1b]"
+dcs="\x1bP"
+st="\x1b\\"
+bell="\x07"
+cancel="\x18"
+private="\x1b[?"
+sgr_reset="\x1b[0m"
+sgr_truecolor="\x1b[38;2;1;2;3m"
+sgr_indexed="\x1b[48;5;200m"
+sgr_colon="\x1b[4:3m"
+alternate_on="\x1b[?1049h"
+alternate_off="\x1b[?1049l"
+region="\x1b[2;5r"
+home="\x1b[H"
+erase_all="\x1b[2J"
+erase_line="\x1b[2K"
+insert_line="\x1b[3L"
+delete_line="\x1b[3M"
+scroll_up="\x1b[3S"
+scroll_down="\x1b[3T"
+position="\x1b[99;99H"
+reverse_index="\x1bM"
+index="\x1bD"
+full_reset="\x1bc"
+two_byte="\xc3\xa9"
+three_byte="\xe2\x82\xac"
+four_byte="\xf0\x9f\x98\x80"
