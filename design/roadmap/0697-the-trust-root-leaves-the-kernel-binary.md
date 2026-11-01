@@ -61,7 +61,9 @@ until a record cites its first use. Every part below therefore stays unbuilt unt
 | 3 | `sealed_pair` and `uefi_loader/build.rs` check the loader's copy of the digests against the archive instead of searching the kernel for them. | question 2 | about 250 lines, host tests |
 | 4 | Basalt stops rebuilding the kernel package on a base change, and the interim kernel package's per-base rebuild goes. | no, once 2 and 3 land | a basalt pull request, bumped after the nife commit lands |
 
-Parts 1 and 4 need no ruling; part 1 is safe and gated by the QEMU suite on all three
+Parts 1 and 4 need no ruling; part 1 is ruled (2026-11-01 UTC): the child builders are measured
+through the table, the production kernel carries no test-program digests, and tests have no second
+trust mechanism. Part 1 is safe and gated by the QEMU suite on all three
 architectures. Both still wait on the condition above.
 
 ## Index row
