@@ -7,7 +7,7 @@ constitution, and the note becomes the rule). Where it and `AGENTS.md` disagree,
 rule and `AGENTS.md` is the bug. The headline rule is
 [§39 (a component is named for what it is)](decisions/0039-component-names.md).
 
-The [appendices](#appendices) hold the argument, examples and refusals.
+The [appendices](#appendices) hold the argument.
 
 ## Who names things
 
@@ -17,7 +17,7 @@ a name is often the only thing that says what a program may do.
 
 - A lane ships a provisional name, marks its `Name:` block `provisional`, and says so in its report.
   The integrator surfaces it.
-- Nobody renames on their own initiative. A rename is a naming decision with extra steps.
+- Nobody renames on their own initiative; a rename is a naming decision.
 - A function name is more reversible than a crate's, so the "recommend on reversible forks" latitude
   applies more freely there.
 
@@ -55,9 +55,11 @@ as does a specification's term of art in names this tree authors
 
 ### A permissive source's name is copied, BSD first
 
-Where a permissively licensed source names a thing, copy its name: OpenBSD's first, then FreeBSD's,
-and Linux's only when no BSD source names it. Ruled 2026-11-01 (UTC), amending Decision 37c, for new
-and provisional names only ([the ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117)).
+Where a permissively licensed source names a hardware register, field or constant, copy its name:
+OpenBSD's first, then FreeBSD's, and Linux's only when no BSD source names it. Ruled 2026-11-01
+(UTC), amending Decision 37c, for new and provisional names only ([the
+ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117)). A program, crate or
+command takes the tree's own pattern (`system_installer`), not a BSD name.
 
 ### Nouns, not verbs
 
@@ -87,7 +89,7 @@ A bare adjective, participle or noun (`enabled`, `pending`, `present`, `truncate
 getter, and std spells those `is_enabled`. Exempt: a function that acts and reports whether it
 worked (`insert`, `push`, `claim`, a `take_` that clears a flag). Also exempt: test functions, which are
 sentences here; fields; a trait method or a name another project owns (`eq`, `readonly`); and an
-`extern` symbol. The prior art and the exceptions std keeps are in
+`extern` symbol. The prior art is in
 [functions-that-answer-yes-or-no.md](naming/functions-that-answer-yes-or-no.md), and the pass that applied the rule is
 [functions-that-answer-yes-or-no-worklist.md](naming/functions-that-answer-yes-or-no-worklist.md).
 
@@ -102,7 +104,7 @@ sentences here; fields; a trait method or a name another project owns (`eq`, `re
 | A directory holding a Rust package | exactly the package's name | the directory and the package are one thing |
 | Any other directory | `hyphens` if it needs two words | a directory is a path element |
 
-The splits run across domains on a stable property, and there is no second tier within one. Short
+There is no second tier within a domain. Short
 names for typed programs were refused as a rule ([crates.md](naming/crates.md)).
 
 Every name and every word is spelled American: `color`, `catalog` (calef, 2026-10-06 UTC).
