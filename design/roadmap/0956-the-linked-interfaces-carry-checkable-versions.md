@@ -88,6 +88,20 @@ All of these hold, each checkable by a command:
 
 The first five hold. Milestone 756's condition 4 holds when the sixth does.
 
+## Interface ids
+
+A number belongs to one interface for good: a format change is a new version, never a new number,
+and a retired number stays retired. A new interface takes the next unused number by adding a row
+here; `script/lint` holds every `INTERFACE_ID` in the tree to this table.
+
+| id | interface |
+|---|---|
+| 1 | `abi` |
+| 2 | `address_space_map` |
+| 3 | retired, `glob` |
+| 4 | `machine_statistics_contract` |
+| 5 | `block_roster` |
+
 ## The linked set, re-derived
 
 Measured on 2026-11-01 (UTC): the crates each program names, closed over `cargo metadata`'s normal
@@ -129,8 +143,7 @@ build waits for the first package that leaves the tree.
 
 - **Outstanding.** An `INTERFACE_ID` and a version for each of the fourteen crates in `OWED`,
   then the programs' lists grow as the check names them. Checked on 2026-11-01 (UTC) with
-  `python3 helpers/interface_declarations_check.py`. `filesystem_contract`'s two ids need the check
-  to read an id inside a module, which it does not yet.
+  `python3 helpers/interface_declarations_check.py`.
 - **Outstanding.** The `grant_plan::Manifest` type and the slot constants in a leaf crate, so
   carrying the note links no planner: pull request #3026.
 
