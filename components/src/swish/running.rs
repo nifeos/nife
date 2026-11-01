@@ -1391,7 +1391,7 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
         // it was to spend is still this shell's, and goes back above the region's pages.
         capability_delete(held.region);
         if let Some(slot) = budget {
-            jobs::release_budget(slot);
+            jobs::release_budget(slot, e.program);
         }
         if e.program.manifest().output.is_byte_stream() {
             drain_text_with(&mut || Some((answer, 0, 0)));
@@ -1407,7 +1407,7 @@ fn finish_held(e: &Endowment, held: Minted, budget: Option<u64>, background: Opt
             foreground_held(e, label);
             held::collect(held.region, label);
             if let Some(slot) = budget {
-                jobs::release_budget(slot);
+                jobs::release_budget(slot, e.program);
             }
             process_builder::forget_thread_control_block(tcb);
         }

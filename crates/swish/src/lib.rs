@@ -57,7 +57,7 @@ use grant_plan::{
 };
 pub use number::write_num;
 pub use preview::{Vouched, write_capabilities, write_image_capabilities, write_preview};
-pub use reclaim::is_reclaimed_within;
+pub use reclaim::{BudgetReturn, is_reclaimed_within, reclaim_budget_within, write_budget_left};
 pub use routing::{Route, route};
 pub use say::{HEAP_MAXIMUM_BYTES, Say, write_say};
 pub use sentences::{

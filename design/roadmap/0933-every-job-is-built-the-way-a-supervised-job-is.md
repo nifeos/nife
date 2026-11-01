@@ -147,11 +147,18 @@ domain, so it does not change this; a viewer of both domains would need a second
   which retries the `DESTROY` as `reclaim` does, for up to a second. A job that built a process
   there and exited with it running gets its pages back once the kill lands. A job that split its
   budget leaves a sub-region nobody names, and the `DESTROY` refuses for good (`HasChildren`): the
-  pages stay spent for the boot, and the shell waits out the bound on that job. Curing it needs a
-  recursive teardown or a rule that a job may not leave children in its budget.
-  `system_tests/src/user/memory_grant_reclaim_tests.rs` shows both refusals, and
-  `crates/swish/src/reclaim/tests.rs` the retry. No program the shell runs builds from its budget
-  today, so it is latent for all of them.
+  pages stay spent for the boot. Ruled 2026-11-01 UTC: a job may not leave children in its
+  `--mem` budget when it exits. That is a contract for job authors, written in
+  `notes/grant-expression/memory-grant.md`, and nothing enforces it at exit, since the kernel
+  cannot refuse a thread's exit. The kernel keeps refusing a `DESTROY` with children (DECISIONS
+  §16 (object revocation), unchanged). Built: `release_budget` reads `USAGE`'s `CHILDREN` record
+  after a refusal. When a child is live it prints one sentence naming the job and the pages that
+  stay spent, and stops at once instead of waiting out the bound (`swish::reclaim_budget_within`).
+  A refusal for a running resident still retries. Recursive teardown is unbuilt, to build when a real program needs
+  to split its budget; relaxing the contract then is compatible and tightening it is not.
+  `system_tests/src/user/memory_grant_reclaim_tests.rs` shows both refusals and that the shell can
+  see the child, and `crates/swish/src/reclaim/tests.rs` the retry and the early stop. No program
+  the shell runs builds from its budget today, so it is latent for all of them.
 - Background jobs finishing out of order leave a hole in the shell's budget until the later ones
   go, the carve order's cost (`notes/object-revocation.md`).
 - A held `ps` does not list a pipeline's stages, and the reverse (above).
@@ -176,6 +183,9 @@ domain, so it does not change this; a viewer of both domains would need a second
   `crates/system_initializer/src/layout.rs`, still 672.
 - **Recorded.** The cooperative tier for a `std` program, in `components/src/swish/jobs.rs`.
 - **Recorded.** A `--mem` budget never returned on the pool path, in this block's BUGS.
+- **Outstanding.** Recursive teardown of a job's budget, for a program that splits it. Built when a
+  real program needs to split its budget (ruled 2026-11-01 UTC); the contract in this block's BUGS
+  holds until then.
 
 ## Index row
 
