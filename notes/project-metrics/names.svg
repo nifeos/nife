@@ -90,13 +90,13 @@
 <path class="seg s5" d="M542.8,256.5 V90.6 Q542.8,86.6 546.8,86.6 H577.4 Q581.4,86.6 581.4,90.6 V256.5 Z"><title>2026W43, No provenance block: 6387</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
 <text class="fg val" x="562.1" y="81.6" font-size="10" text-anchor="middle">8924</text>
-<rect class="seg s0" x="601.4" y="282.1" width="38.7" height="41.9"><title>2026W44, Ratified: 1576</title></rect>
-<rect class="seg s2" x="601.4" y="281.0" width="38.7" height="1.1"><title>2026W44, Recorded: 42</title></rect>
-<rect class="seg s3" x="601.4" y="224.0" width="38.7" height="56.9"><title>2026W44, Provisional: 2140</title></rect>
-<rect class="seg s4" x="601.4" y="224.0" width="38.7" height="0.0"><title>2026W44, Unrecorded: 1</title></rect>
-<path class="seg s5" d="M601.4,224.0 V77.2 Q601.4,73.2 605.4,73.2 H636.0 Q640.0,73.2 640.0,77.2 V224.0 Z"><title>2026W44, No provenance block: 5668</title></path>
+<rect class="seg s0" x="601.4" y="283.0" width="38.7" height="41.0"><title>2026W44, Ratified: 1541</title></rect>
+<rect class="seg s2" x="601.4" y="281.9" width="38.7" height="1.1"><title>2026W44, Recorded: 42</title></rect>
+<rect class="seg s3" x="601.4" y="220.7" width="38.7" height="61.2"><title>2026W44, Provisional: 2301</title></rect>
+<rect class="seg s4" x="601.4" y="220.7" width="38.7" height="0.0"><title>2026W44, Unrecorded: 1</title></rect>
+<path class="seg s5" d="M601.4,220.7 V74.0 Q601.4,70.0 605.4,70.0 H636.0 Q640.0,70.0 640.0,74.0 V220.7 Z"><title>2026W44, No provenance block: 5664</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="620.7" y="68.2" font-size="10" text-anchor="middle">9427</text>
+<text class="fg val" x="620.7" y="65.0" font-size="10" text-anchor="middle">9549</text>
 <rect class="s5" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">No provenance block</tspan></text>
 <rect class="s4" x="672" y="83" width="11" height="11" rx="2"/>
