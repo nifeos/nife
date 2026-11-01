@@ -86,8 +86,7 @@ nothing, and that the one with a real property is the one that found a silent bu
 ## `video_terminal_feed`
 
 Every program that prints to the display goes through `Vt::feed`, and a foreign `std` program or a
-packaged one (ripgrep) writes escape sequences nobody here chose. The components that run it are
-confined, but a panic in one takes the screen console down for every program on it. The engine is a
+packaged one (ripgrep) writes escape sequences nobody here chose. Confinement surrounds the components that run it, but a panic in one takes the screen console down for every program on it. The engine is a
 byte-at-a-time state machine over an unbounded stream and has no Kani harness.
 
 The first input byte selects one of twelve grid sizes (1 by 1, a lone row, a lone column, 80 by 24,
