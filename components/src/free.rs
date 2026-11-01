@@ -52,6 +52,50 @@ capability_manifest_note::carry_interfaces!(&[
         id: machine_statistics_contract::INTERFACE_ID,
         version: machine_statistics_contract::VERSION
     },
+    capability_manifest_note::Declared {
+        id: byte_sink_contract::INTERFACE_ID,
+        version: byte_sink_contract::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: capability_manifest_note::INTERFACE_ID,
+        version: capability_manifest_note::NOTE_SET_VERSION
+    },
+    capability_manifest_note::Declared {
+        id: clock_contract::INTERFACE_ID,
+        version: clock_contract::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: counter_frequency_contract::INTERFACE_ID,
+        version: counter_frequency_contract::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: current_cpu_contract::INTERFACE_ID,
+        version: current_cpu_contract::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: domain_name_resolution_contract::INTERFACE_ID,
+        version: domain_name_resolution_contract::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: entropy_contract::INTERFACE_ID,
+        version: entropy_contract::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: grant_plan::INTERFACE_ID,
+        version: grant_plan::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: program_argument_contract::INTERFACE_ID,
+        version: program_argument_contract::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: socket_contract::INTERFACE_ID,
+        version: socket_contract::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: user_mode_runtime::INTERFACE_ID,
+        version: user_mode_runtime::VERSION
+    },
 ]);
 
 user_mode_runtime::program_entry!(start);

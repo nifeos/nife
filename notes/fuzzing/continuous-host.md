@@ -72,6 +72,21 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 `/etc/systemd/system/`, tells systemd to reread its unit files, then `enable --now nife-fuzz.service` and
 `enable --now nife-fuzz-publish.timer`.
 
+That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
+publishes nothing. Phase 2 publishes the release, and takes three more steps as root:
+
+1. Write a credential for the publisher (`GH_TOKEN`, the variable `gh` reads) to a file that only root
+   can read, mode 0600 and owned by root.
+2. Run `systemctl edit nife-fuzz-publish.service` and add a drop-in with `EnvironmentFile=` naming that
+   file, `Environment=NIFE_FUZZ_PUBLISH=1`, and an `ExecStart=` that first clears the shipped one
+   (`ExecStart=` on its own line) and then runs `helpers/fuzz-daily-publish.sh --publish`. The unit as
+   shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag.
+3. Tell systemd to reread its unit files, as for the install above. Without `NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and
+   without the credential `gh` fails; either way the local files are still written.
+
+To check the wiring before the first release, run `helpers/fuzz-daily-publish.sh --dry-run` as the
+unit's user. It prints the tag and the assets and publishes nothing.
+
 ## BUGS
 
 - The windows have been timed one guest at a time, at about 457 seeds per second for the

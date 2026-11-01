@@ -20,8 +20,8 @@ changed lines (the merge base against the tree) and fails in two cases:
 It is the diff-grep the ruling names, not the rustdoc diff, which waits for a consumer outside the
 tree. It sees what a line says: a constant whose value moves through another constant it names is
 read by its text, and a semantic change behind an unchanged number is a break this cannot see (the
-blind spot milestone 610 (the interface's stability is measured weekly) records for the weekly series, too). A third rule keeps the interface identities apart (milestone 956 step 2): no two crates declare the
-same `INTERFACE_ID`, because an id names one interface across renames and is never reused.
+blind spot milestone 610 (the interface's stability is measured weekly) records for the weekly series, too). The interface ids are not a rule here:
+`helpers/interface_declarations_check.py` holds every `INTERFACE_ID` to milestone 956's table.
 
 A test module's constants are not a
 format and are skipped, as is any file under a `tests` path.
@@ -109,39 +109,6 @@ def problems(files):
     return out
 
 
-ID_DECL = re.compile(r'^\s*pub\s+const\s+INTERFACE_ID\s*:\s*u64\s*=\s*([^;]+);', re.M)
-
-
-# Interface ids no crate may take again, each with the crate that held it. `glob` gave up 3 when the
-# ruling of 2026-11-01 (UTC, pull request #3022) scoped the ids to crates that define a run-time
-# format; a matcher with no peer is a Rust API.
-RETIRED_IDS = {'3': 'glob'}
-
-
-def duplicate_ids(sources):
-    """Failure messages for any `INTERFACE_ID` value two crates share, or one in `RETIRED_IDS`;
-    `sources` is {path: text}."""
-    owners = {}
-    for path, text in sorted(sources.items()):
-        for value in ID_DECL.findall(text.split('#[cfg(test)]', 1)[0]):
-            owners.setdefault(' '.join(value.split()), []).append(crate_of(path))
-    return [f'INTERFACE_ID {value} is declared by {", ".join(crates)}'
-            for value, crates in sorted(owners.items()) if len(crates) > 1] + \
-        [f'INTERFACE_ID {value} is declared by {", ".join(crates)}, and it is retired '
-         f'(it named {RETIRED_IDS[value]}); take an unused number'
-         for value, crates in sorted(owners.items()) if value in RETIRED_IDS]
-
-
-def tree_sources(cwd=None):
-    listing = git('ls-files', 'crates/*/src/lib.rs', cwd=cwd) or ''
-    sources = {}
-    for path in listing.split():
-        full = os.path.join(cwd or '.', path)
-        if os.path.exists(full):
-            sources[path] = open(full, errors='replace').read()
-    return sources
-
-
 def git(*args, cwd=None):
     run = subprocess.run(['git', *args], capture_output=True, text=True, cwd=cwd)
     return run.stdout if run.returncode == 0 else None
@@ -212,11 +179,6 @@ def selftest():
     fails('a constant outside abi is not an abi number',
           {'crates/x/src/lib.rs': ('pub const SIZE: u64 = 1;\n', 'pub const SIZE: u64 = 2;\n')}, False)
 
-    ident = 'pub const INTERFACE_ID: u64 = {};\n'
-    assert not duplicate_ids({'crates/a/src/lib.rs': ident.format(1), 'crates/b/src/lib.rs': ident.format(2)})
-    assert duplicate_ids({'crates/a/src/lib.rs': ident.format(1), 'crates/b/src/lib.rs': ident.format(1)})
-    assert not duplicate_ids({'crates/a/src/lib.rs': ident.format(1) + '#[cfg(test)]\n' + ident.format(1)})
-    assert duplicate_ids({'crates/a/src/lib.rs': ident.format(3)})
 
     # The same rules over a scratch repository: a synthetic pull request that moves a value.
     with tempfile.TemporaryDirectory() as scratch:
@@ -245,7 +207,6 @@ def main():
         return 0
     base = merge_base()
     bad = problems(changed_files(base)) if base else []
-    bad += duplicate_ids(tree_sources())
     for message in bad:
         print(f'format values: {message}', file=sys.stderr)
     if bad:
