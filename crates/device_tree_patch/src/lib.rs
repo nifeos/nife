@@ -31,17 +31,29 @@
 use device_tree_blob::{DeviceTreeBlob, Region};
 
 /// The device-tree magic, big-endian at offset 0.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
 pub const MAGIC: u32 = 0xd00d_feed;
 /// The header's length in bytes: ten big-endian words.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
 pub const HEADER_LEN: usize = 40;
 /// The structure-block token that opens a node; its name follows, NUL-terminated and padded to 4.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
 pub const BEGIN_NODE: u32 = 1;
 /// The structure-block token that closes a node.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
 pub const END_NODE: u32 = 2;
 /// The structure-block token for a property: length, name offset, then the value padded to 4.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
 pub const PROP: u32 = 3;
 const NOP: u32 = 4;
 /// The structure-block token that ends the block.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
 pub const END: u32 = 9;
 
 const INITRD_START: &[u8] = b"linux,initrd-start";
@@ -165,6 +177,8 @@ fn find_string(strings: &[u8], name: &[u8]) -> Option<usize> {
 /// **A big-endian writer over a caller's buffer**, refusing with [`Error::OutputTooSmall`] rather
 /// than writing past its end. The rewriter writes through it, and so does a loader that builds a
 /// tree from nothing.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
 pub struct Out<'a> {
     /// The buffer being written.
     pub buf: &'a mut [u8],
@@ -174,6 +188,8 @@ pub struct Out<'a> {
 
 impl Out<'_> {
     /// Append `b`.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
     pub fn bytes(&mut self, b: &[u8]) -> Result<(), Error> {
         let end = self.at + b.len();
         self.buf
@@ -184,10 +200,14 @@ impl Out<'_> {
         Ok(())
     }
     /// Append `v` as a big-endian word.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
     pub fn u32(&mut self, v: u32) -> Result<(), Error> {
         self.bytes(&v.to_be_bytes())
     }
     /// Append zero bytes until the offset is a multiple of `align`.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
     pub fn pad_to(&mut self, align: usize) -> Result<(), Error> {
         while !self.at.is_multiple_of(align) {
             self.bytes(&[0])?;
@@ -909,7 +929,10 @@ mod tests {
     #[test]
     fn out_pads_with_zeros_to_the_next_multiple() {
         let mut buf = [0xffu8; 8];
-        let mut o = Out { buf: &mut buf, at: 0 };
+        let mut o = Out {
+            buf: &mut buf,
+            at: 0,
+        };
         o.bytes(&[1]).unwrap();
         o.pad_to(4).unwrap();
         assert_eq!(o.at, 4);
