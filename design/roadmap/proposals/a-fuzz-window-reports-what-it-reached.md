@@ -87,14 +87,22 @@ A concrete example: window `kernel-thread`, slot 1, 27,400 seeds, clean, `edges_
 `edges_total` 41,882. The report line reads "kernel-thread: 9,310 of 41,882 edges (22.2%), previous
 report 9,128".
 
-## What I need from an architect
+## What is in force
 
-1. Whether condition 2 reads edge counters only (this proposal's recommendation, the decided
-   mechanism) or may start with the syscall-number set as an interim figure.
-2. Confirm the privacy line: bare totals per driver, no bitmap. Relaxing the stricter form later is compatible, and nobody can recall a published bitmap.
+Decided by the maintainer on 2026-11-01 (UTC), provisional; reversing costs one pull request.
 
-The column layout is a two-way choice, so the maintainer decides it as provisional; reversing costs one
-pull request.
+1. Condition 2 reads edge counters only. There is no syscall-number interim figure.
+2. The privacy line holds: bare totals per driver, no bitmap, and no counters at all for a held
+   window. Restrictive first; loosening later is compatible.
+3. The column layout above stands. `windows.tsv` is a host-local log that only scripts in this tree
+   read. Old eight-column rows stay readable. An old reader that ignores extra columns keeps working,
+   and that is true of `helpers/fuzz-daily-publish.sh` today: it takes columns by number with `awk`
+   and `cut -f1`, so a ten-column row gives the same report. A local run with one eight-column row
+   and one ten-column row confirmed it. The change therefore needs no script edit to stay
+   compatible, and the selftest above guards it.
+
+This proposal builds nothing. The kernel counter region and the driver read are a separate lane,
+and the daily report change follows them.
 
 ## Proof
 
