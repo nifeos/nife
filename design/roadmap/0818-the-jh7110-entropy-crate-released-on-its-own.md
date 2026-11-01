@@ -228,6 +228,10 @@ names until the ratification pass, so this section keeps the links it carried.
   `script/apply-settings` could not (the API wants an owner). The release workflow's tag job needs
   it, so a dry run past the gate waits on calef installing the app. The weekly drift job reads the
   organization's `SETTINGS_TOKEN` secret.
+- `nifeos/jh7110_entropy` (id 1441110094) must be added to the selected-repositories lists of
+  `NIFE_SMELTER_APP_ID` and `NIFE_SMELTER_PRIVATE_KEY` before the 0.1.0 release tag job can run;
+  a person with an `admin:org` token does it (ruled 2026-11-01 UTC; the command is in the
+  extraction checklist of milestone 857 (crates released on their own)).
 - Steps 5 and 6 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team,
   and on milestone 610's per-package co-change column.
