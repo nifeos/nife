@@ -152,10 +152,9 @@ Nothing here says the driver is fast, and the block should not be quoted as if i
 - The check stops at bring-up. A source that answers once and degrades, or whose register file
   latches and repeats a nonzero answer, still passes. Continuous health testing is what §137 rules.
 - The ruled health tests of §137 (a hardware TRNG with no published health-test claim) are unbuilt.
-  The driver in `jh7110_entropy/src/lib.rs` still checks only `ISTAT.LFSR_LOCKUP`, so it neither
-  runs the SP 800-90B repetition count and adaptive proportion tests nor records min-entropy as one
-  bit per byte in a named constant, and it has no failure action. Proposed milestone, provisional
-  name: continuous entropy health tests in the TRNG driver and the service above it.
+  The driver in `jh7110_entropy/src/lib.rs` still checks only `ISTAT.LFSR_LOCKUP`. It runs no SP
+  800-90B test, names no min-entropy constant and has no failure action. Proposed milestone,
+  provisional name: continuous entropy health tests in the TRNG driver.
 - `POLL_TRIES` and `LOCKUP_RETRIES` bound loop iterations, not time, so what they bound depends on
   the core and on what the compiler did to the loop. A real timeout needs a clock the driver does
   not hold. Recorded in the driver's `BUGS`.

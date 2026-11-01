@@ -28,8 +28,8 @@ virtio. It is the right way round: a false "dead" costs one boot's entropy, whil
 costs every secret derived from it, silently.
 
 The check is bring-up only. A source that degrades, or latches a nonzero answer, afterwards is not
-caught by it. Continuous health testing is ruled by `design/decisions/0137-trng-health-tests.md`
-(2026-10-28 UTC) and not yet built.
+caught by it. `design/decisions/0137-trng-health-tests.md` rules continuous health testing
+(2026-10-28 UTC); nobody has built it yet.
 
 ## Two fill loops, both deliberate
 
