@@ -35,6 +35,44 @@ fn refuse_an_unsealed_pair(kernel_path: &str, initial_ramdisk_path: &str) {
     );
 }
 
+/// **The two digest words this loader hands the kernel** (`measured_boot::loader_digests`), copied
+/// from `<archive>.loader-digests`, which `cargo xtask` writes beside every archive it packs.
+///
+/// Copied rather than computed here: the handoff proposal's question 2 was decided 2026-11-01 (UTC)
+/// as "the composer records the two digests where it writes the archive, and every loader copies
+/// them". The words are parsed with the kernel's parser and held to the archive's own entries, so a
+/// loader cannot embed words its kernel would refuse, or words for some other archive.
+fn loader_digests(initial_ramdisk_path: &str) -> String {
+    let path = format!("{initial_ramdisk_path}.loader-digests");
+    println!("cargo::rerun-if-changed={path}");
+    let words = fs::read_to_string(&path).unwrap_or_else(|e| {
+        panic!(
+            "cannot read {path}: {e}. `cargo xtask` writes it beside every archive it packs; \
+             build the archive with `cargo xtask uefi-image` or `cargo xtask stick`."
+        )
+    });
+    let read = measured_boot::loader_digests::parse(&words)
+        .unwrap_or_else(|why| panic!("{path} is not the kernel's two words: {why:?}"));
+    let archive = fs::read(initial_ramdisk_path)
+        .unwrap_or_else(|e| panic!("cannot read {initial_ramdisk_path}: {e}"));
+    let fs = nifefs::Fs::parse(&archive)
+        .unwrap_or_else(|e| panic!("{initial_ramdisk_path} is not an archive: {e:?}"));
+    for (name, want) in [
+        (measured_boot::PROGENITOR, read.progenitor),
+        (measured_boot::PROGRAM_MEASUREMENTS, read.base),
+    ] {
+        let bytes = fs
+            .read(name)
+            .unwrap_or_else(|| panic!("{initial_ramdisk_path} has no '{name}' entry"));
+        assert!(
+            measured_boot::sha256(bytes) == want,
+            "{path} names a different '{name}' from the one in {initial_ramdisk_path}; \
+             repack the archive"
+        );
+    }
+    words
+}
+
 fn main() {
     println!("cargo::rerun-if-env-changed=NIFE_UEFI_KERNEL");
     println!("cargo::rerun-if-env-changed=NIFE_UEFI_INITIAL_RAMDISK");
@@ -84,6 +122,17 @@ fn main() {
     if let (Some(kernel), Some(initial_ramdisk)) = (&kernel, &initial_ramdisk) {
         refuse_an_unsealed_pair(kernel, initial_ramdisk);
     }
+
+    // The words travel with the archive: none without one, since the kernel enters no progenitor.
+    let words = initial_ramdisk
+        .as_deref()
+        .map(loader_digests)
+        .unwrap_or_default();
+    generated.push_str(&format!(
+        "/// The loader's two digests for the archive above, as command-line words; empty with no \
+         archive.\n\
+         pub static LOADER_DIGESTS: &str = {words:?};\n"
+    ));
 
     let out = PathBuf::from(env::var("OUT_DIR").expect("cargo sets OUT_DIR")).join("embedded.rs");
     fs::write(&out, generated).expect("the build directory is writable");

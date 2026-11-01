@@ -30,6 +30,16 @@ The kernel and the archive are one measured pair. So a transfer that gets the ke
 archive falls all the way back, and takes *both* from the card. Half a pair halts at
 `MEASURED BOOT REFUSED`. That is the gate working, and it would be working on a fault we built.
 
+## BUGS
+
+- **The script carries the card's archive's two digests.** Both scripts set `bootargs` to the
+  words `script/board-image` copied beside the archive (milestone 695 (the kernel trusts two
+  digests handed to it by the loader)), and the kernel holds the progenitor and its table to them.
+  The network must therefore serve the archive the card's script names.
+  After a rebuild, rewrite the card with `script/board-image --tftp --card <dir>`, or the boot
+  halts at `MEASURED BOOT REFUSED` naming the progenitor. Fetching the words beside the archive
+  would remove this, and needs a U-Boot verb (`env import`) the bench has not run.
+
 ## No server address is written down in this tree
 
 That is on purpose. `192.168.8.216` was true on the evening the path was proved. Nobody checks it

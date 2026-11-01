@@ -1,5 +1,7 @@
 //! **Telling a device-tree kernel where its archive is**: a copy of the firmware's device tree with
-//! `/chosen/linux,initrd-start` and `linux,initrd-end` set.
+//! `/chosen/linux,initrd-start` and `linux,initrd-end` set, and with `/chosen/bootargs` set too
+//! when the loader hands the kernel a command line (its two digests, milestone 695 (the kernel
+//! trusts two digests handed to it by the loader)).
 //!
 //! On aarch64 and riscv64 the kernel finds the userspace archive the way Linux finds an initial
 //! ramdisk, from those two properties (`memory::initialize`, via `DeviceTreeBlob::initial_ramdisk`).
@@ -58,6 +60,7 @@ pub const END: u32 = 9;
 
 const INITRD_START: &[u8] = b"linux,initrd-start";
 const INITRD_END: &[u8] = b"linux,initrd-end";
+const BOOTARGS: &[u8] = b"bootargs";
 
 /// Why a tree could not be rewritten.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,6 +149,19 @@ fn rsvmap_len(src: &[u8], h: &Header) -> Result<usize, Error> {
 /// **An upper bound on the rewritten tree's size**: the original plus a new `/chosen` node, two
 /// eight-byte properties and their two names. The caller allocates this much.
 pub fn output_len(src: &[u8]) -> Result<usize, Error> {
+    output_len_inner(src, None)
+}
+
+/// [`output_len`] for [`with_initial_ramdisk_and_boot_arguments`]: room for a `bootargs` property
+/// holding `boot_arguments` and its NUL, and for its name, as well.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+pub fn output_len_with_boot_arguments(src: &[u8], boot_arguments: &[u8]) -> Result<usize, Error> {
+    output_len_inner(src, Some(boot_arguments))
+}
+
+fn output_len_inner(src: &[u8], boot_arguments: Option<&[u8]>) -> Result<usize, Error> {
     let h = header(src)?;
     let rsv = rsvmap_len(src, &h)?;
     // BEGIN_NODE "chosen" (4 + 8) + END_NODE (4) + two props (12 + 8 each) + two names.
@@ -158,7 +174,9 @@ pub fn output_len(src: &[u8]) -> Result<usize, Error> {
     // and fifteen mutants of its arithmetic survived because a bound with slack cannot be told from
     // a wrong one.
     const _: () = assert!(HEADER_LEN.is_multiple_of(8));
-    Ok(HEADER_LEN + rsv + h.size_struct + h.size_strings + extra)
+    // The command line: one property of the text and its NUL, padded, and its name.
+    let arguments = boot_arguments.map_or(0, |a| 12 + align4(a.len() + 1) + BOOTARGS.len() + 1);
+    Ok(HEADER_LEN + rsv + h.size_struct + h.size_strings + extra + arguments)
 }
 
 /// Offset of `name` in the strings block, if it is already there as a whole string.
@@ -237,10 +255,44 @@ pub fn with_initial_ramdisk(
     end: u64,
     out: &mut [u8],
 ) -> Result<usize, Error> {
+    rewrite(src, start, end, None, out)
+}
+
+/// **[`with_initial_ramdisk`], and `/chosen/bootargs` set to `boot_arguments`**: the kernel's
+/// command line, which carries the loader's two digests (`measured_boot::loader_digests`, milestone
+/// 695). The firmware's own `bootargs` is replaced, since the loader decides the whole line, as
+/// `uefi_loader` does on x86_64. `out` must be at least [`output_len_with_boot_arguments`] bytes.
+/// Text with a NUL in it is [`Error::Malformed`], as is a result that does not read back with both
+/// the range and the text.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+pub fn with_initial_ramdisk_and_boot_arguments(
+    src: &[u8],
+    start: u64,
+    end: u64,
+    boot_arguments: &[u8],
+    out: &mut [u8],
+) -> Result<usize, Error> {
+    if boot_arguments.contains(&0) {
+        return Err(Error::Malformed);
+    }
+    rewrite(src, start, end, Some(boot_arguments), out)
+}
+
+/// The one rewrite both public functions are; `boot_arguments` of `None` leaves the firmware's
+/// `bootargs` as it was.
+fn rewrite(
+    src: &[u8],
+    start: u64,
+    end: u64,
+    boot_arguments: Option<&[u8]>,
+    out: &mut [u8],
+) -> Result<usize, Error> {
     let h = header(src)?;
     let rsv = rsvmap_len(src, &h)?;
     let strings = &src[h.off_strings..h.off_strings + h.size_strings];
-    let names = ramdisk_property_offsets(strings, h.size_strings);
+    let names = ramdisk_property_offsets(strings, h.size_strings, boot_arguments.is_some());
 
     let mut o = Out { buf: out, at: 0 };
     o.bytes(&[0; HEADER_LEN])?; // filled in last
@@ -257,6 +309,8 @@ pub fn with_initial_ramdisk(
         end,
         start_off: names.start_off,
         end_off: names.end_off,
+        boot_arguments,
+        bootargs_off: names.bootargs_off,
         at: h.off_struct,
         depth: 0,
         in_chosen: false,
@@ -295,10 +349,14 @@ pub fn with_initial_ramdisk(
         start,
         size: end - start,
     });
-    let read_back = DeviceTreeBlob::from_bytes(&o.buf[..total])
-        .and_then(|tree| tree.initial_ramdisk())
-        .map_err(|_| Error::Malformed)?;
+    let tree = DeviceTreeBlob::from_bytes(&o.buf[..total]).map_err(|_| Error::Malformed)?;
+    let read_back = tree.initial_ramdisk().map_err(|_| Error::Malformed)?;
     if read_back != expected {
+        return Err(Error::Malformed);
+    }
+    if let Some(arguments) = boot_arguments
+        && tree.boot_arguments().map_err(|_| Error::Malformed)? != Some(arguments)
+    {
         return Err(Error::Malformed);
     }
     Ok(total)
@@ -309,14 +367,19 @@ pub fn with_initial_ramdisk(
 struct NameOffsets {
     start_off: usize,
     end_off: usize,
-    appended: [&'static [u8]; 2],
+    bootargs_off: usize,
+    appended: [&'static [u8]; 3],
     appended_count: usize,
 }
 
 /// Find or place the two `linux,initrd-*` property names in the strings block.
-fn ramdisk_property_offsets(strings: &[u8], size_strings: usize) -> NameOffsets {
+fn ramdisk_property_offsets(
+    strings: &[u8],
+    size_strings: usize,
+    with_bootargs: bool,
+) -> NameOffsets {
     // Name offsets: reuse the firmware's where the names already exist, append otherwise.
-    let mut appended: [&[u8]; 2] = [&[], &[]];
+    let mut appended: [&[u8]; 3] = [&[], &[], &[]];
     let mut appended_count = 0;
     let mut next_off = size_strings;
     let mut name_off = |name: &'static [u8]| -> usize {
@@ -331,9 +394,12 @@ fn ramdisk_property_offsets(strings: &[u8], size_strings: usize) -> NameOffsets 
     };
     let start_off = name_off(INITRD_START);
     let end_off = name_off(INITRD_END);
+    // Zero when unused: nothing writes a `bootargs` property then.
+    let bootargs_off = if with_bootargs { name_off(BOOTARGS) } else { 0 };
     NameOffsets {
         start_off,
         end_off,
+        bootargs_off,
         appended,
         appended_count,
     }
@@ -348,6 +414,8 @@ struct Walk<'a> {
     end: u64,
     start_off: usize,
     end_off: usize,
+    boot_arguments: Option<&'a [u8]>,
+    bootargs_off: usize,
     at: usize,
     depth: usize,
     in_chosen: bool,
@@ -396,10 +464,25 @@ impl Walk<'_> {
         if self.depth == 2 && &src[name_at..name_at + name_len] == b"chosen" {
             self.in_chosen = true;
             self.wrote_chosen = true;
-            o.prop_u64(self.start_off, self.start)?;
-            o.prop_u64(self.end_off, self.end)?;
+            self.write_ours(o)?;
         }
         self.at = next;
+        Ok(())
+    }
+
+    /// The properties this rewrite owns, first thing inside `/chosen`: the archive's range, then the
+    /// command line when there is one.
+    fn write_ours(&self, o: &mut Out<'_>) -> Result<(), Error> {
+        o.prop_u64(self.start_off, self.start)?;
+        o.prop_u64(self.end_off, self.end)?;
+        if let Some(arguments) = self.boot_arguments {
+            o.u32(PROP)?;
+            o.u32((arguments.len() + 1) as u32)?;
+            o.u32(self.bootargs_off as u32)?;
+            o.bytes(arguments)?;
+            o.bytes(&[0])?;
+            o.pad_to(4)?;
+        }
         Ok(())
     }
 
@@ -412,8 +495,7 @@ impl Walk<'_> {
             // The root is closing and there was no /chosen: add one as its last child.
             o.u32(BEGIN_NODE)?;
             o.bytes(b"chosen\0\0")?;
-            o.prop_u64(self.start_off, self.start)?;
-            o.prop_u64(self.end_off, self.end)?;
+            self.write_ours(o)?;
             o.u32(END_NODE)?;
             self.wrote_chosen = true;
         }
@@ -441,9 +523,13 @@ impl Walk<'_> {
             .get(nameoff..)
             .and_then(|s| s.iter().position(|&b| b == 0).map(|n| &s[..n]))
             .ok_or(Error::Truncated)?;
-        // Replace, never duplicate: a stale pair from the firmware is dropped.
-        let ours =
-            self.in_chosen && self.depth == 2 && (name == INITRD_START || name == INITRD_END);
+        // Replace, never duplicate: a stale pair from the firmware is dropped, and so is its
+        // command line when this rewrite writes one.
+        let ours = self.in_chosen
+            && self.depth == 2
+            && (name == INITRD_START
+                || name == INITRD_END
+                || (name == BOOTARGS && self.boot_arguments.is_some()));
         if !ours {
             o.bytes(&src[at..next])?;
         }
@@ -715,6 +801,103 @@ mod tests {
         let mut out = vec![0; output_len(&src).unwrap()];
         let n = with_initial_ramdisk(&src, 0x1000, 0x2000, &mut out).unwrap();
         assert_eq!(n + 19, output_len(&src).unwrap(), "one name reused");
+    }
+
+    fn rewrite_with_arguments(src: &[u8], arguments: &[u8]) -> Vec<u8> {
+        let mut out = vec![0; output_len_with_boot_arguments(src, arguments).unwrap()];
+        let n = with_initial_ramdisk_and_boot_arguments(
+            src,
+            0x4800_0000,
+            0x4849_0000,
+            arguments,
+            &mut out,
+        )
+        .unwrap();
+        out.truncate(n);
+        out
+    }
+
+    /// **The kernel reads back the command line it is handed**, beside the archive, on both QEMU
+    /// trees and the one with a stale pair, and the rest of the machine is untouched.
+    #[test]
+    fn the_kernel_reads_back_the_command_line_it_is_handed() {
+        let words = b"nife.progenitor=sha256:00 nife.base=sha256:11";
+        for src in [PLAIN, WITH_INITIAL_RAMDISK, RISCV] {
+            for arguments in [&words[..], b"", b"odd"] {
+                let out = rewrite_with_arguments(src, arguments);
+                let tree = DeviceTreeBlob::from_bytes(&out).unwrap();
+                assert_eq!(tree.boot_arguments(), Ok(Some(arguments)));
+                assert_eq!(
+                    tree.initial_ramdisk().unwrap(),
+                    Some(Region {
+                        start: 0x4800_0000,
+                        size: 0x49_0000
+                    })
+                );
+                same_machine(src, &out);
+                assert!(out.len() <= output_len_with_boot_arguments(src, arguments).unwrap());
+            }
+        }
+    }
+
+    /// **The firmware's own `bootargs` is replaced, not duplicated**, and left alone by the
+    /// rewrite that writes none.
+    #[test]
+    fn the_firmwares_command_line_is_replaced_only_when_one_is_written() {
+        let first = rewrite_with_arguments(PLAIN, b"console=ttyAMA0 from-the-firmware");
+        let second = rewrite_with_arguments(&first, b"nife.base=sha256:11");
+        let tree = DeviceTreeBlob::from_bytes(&second).unwrap();
+        assert_eq!(tree.boot_arguments(), Ok(Some(&b"nife.base=sha256:11"[..])));
+        let stale = b"from-the-firmware";
+        assert_eq!(
+            second.windows(stale.len()).filter(|w| w == stale).count(),
+            0
+        );
+
+        let kept = rewrite(&first, 0x1000, 0x2000);
+        let tree = DeviceTreeBlob::from_bytes(&kept).unwrap();
+        assert_eq!(
+            tree.boot_arguments(),
+            Ok(Some(&b"console=ttyAMA0 from-the-firmware"[..]))
+        );
+    }
+
+    /// The bound with a command line is exact for a tree with nothing to reuse, for every length
+    /// modulo four, so the padding is counted and not guessed.
+    #[test]
+    fn the_bound_with_a_command_line_is_exact() {
+        let src = tree(&[(0x8000_0000, 0x1000)], &bare_root(), false, 0);
+        let mut plain = src.clone();
+        let at = field(&plain, 3) + 7;
+        plain[at] = b'X';
+        for arguments in [&b""[..], b"a", b"ab", b"abc", b"abcd"] {
+            let want = output_len_with_boot_arguments(&plain, arguments).unwrap();
+            let mut out = vec![0; want];
+            assert_eq!(
+                with_initial_ramdisk_and_boot_arguments(
+                    &plain, 0x1000, 0x2000, arguments, &mut out
+                ),
+                Ok(want),
+                "{arguments:?}"
+            );
+            let mut short = vec![0; want - 1];
+            assert_eq!(
+                with_initial_ramdisk_and_boot_arguments(
+                    &plain, 0x1000, 0x2000, arguments, &mut short
+                ),
+                Err(Error::OutputTooSmall)
+            );
+        }
+    }
+
+    /// A NUL inside the text would end the kernel's reading early, so it is refused.
+    #[test]
+    fn a_command_line_with_a_nul_is_refused() {
+        let mut out = vec![0; output_len_with_boot_arguments(PLAIN, b"a\0b").unwrap()];
+        assert_eq!(
+            with_initial_ramdisk_and_boot_arguments(PLAIN, 0x1000, 0x2000, b"a\0b", &mut out),
+            Err(Error::Malformed)
+        );
     }
 
     /// **The reservation block is carried entry for entry**, terminator included. It is where

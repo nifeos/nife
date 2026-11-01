@@ -122,8 +122,10 @@ pub(crate) fn configuration_table(table: &SystemTable) -> &[ConfigurationTable] 
     unsafe { core::slice::from_raw_parts(table.configuration_table, table.number_of_table_entries) }
 }
 
-/// **Copy the firmware's device tree below the ceiling, naming the archive in `/chosen`.**
-/// aarch64 and riscv64 both do this, identically.
+/// **Copy the firmware's device tree below the ceiling, naming the archive in `/chosen`**, and
+/// putting the loader's two digests in `/chosen/bootargs` beside it (`embedded::LOADER_DIGESTS`,
+/// milestone 695 (the kernel trusts two digests handed to it by the loader)). aarch64 and riscv64
+/// both do this, identically.
 #[cfg(not(target_arch = "x86_64"))]
 pub(crate) fn copy_device_tree(
     services: &BootServices,
@@ -136,7 +138,9 @@ pub(crate) fn copy_device_tree(
     let total = u32::from_be_bytes([header[4], header[5], header[6], header[7]]) as usize;
     // SAFETY: as above, now for the length the header states.
     let src = unsafe { core::slice::from_raw_parts(source, total) };
-    let capacity = device_tree_patch::output_len(src).map_err(device_tree_patch::Error::reason)?;
+    let words = crate::embedded::LOADER_DIGESTS.as_bytes();
+    let capacity = device_tree_patch::output_len_with_boot_arguments(src, words)
+        .map_err(device_tree_patch::Error::reason)?;
     let pages = (capacity as u64).div_ceil(PAGE) as usize;
     let base = allocate_below(services, pages, efi::LOADER_DATA)
         .ok_or("no memory below the kernel's reach for the device tree")?;
@@ -144,8 +148,14 @@ pub(crate) fn copy_device_tree(
     let out = unsafe { core::slice::from_raw_parts_mut(base as *mut u8, pages * PAGE as usize) };
     match module {
         Some((start, len)) => {
-            device_tree_patch::with_initial_ramdisk(src, start, start + len, out)
-                .map_err(device_tree_patch::Error::reason)?;
+            device_tree_patch::with_initial_ramdisk_and_boot_arguments(
+                src,
+                start,
+                start + len,
+                words,
+                out,
+            )
+            .map_err(device_tree_patch::Error::reason)?;
         }
         None => out[..total].copy_from_slice(src),
     }

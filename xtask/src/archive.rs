@@ -664,7 +664,9 @@ pub(crate) fn write_archive_with<N: AsRef<str>>(
         eprintln!("{label}: could not write {path}: {e}");
         return None;
     }
-    write_measure_manifest(arch, &image.bytes).then_some((image.bytes.len(), image.entries))
+    (write_measure_manifest(arch, &image.bytes)
+        && crate::measure::write_loader_digests(path, &image.bytes))
+    .then_some((image.bytes.len(), image.entries))
 }
 
 /// What the packer's refusal says on stderr, each line prefixed with `label`. A missing `std`
