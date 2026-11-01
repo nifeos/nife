@@ -65,7 +65,7 @@ logic was found. Linux's `clk-starfive-jh7110-*` drivers stay the reference and 
 copied. The I2C timing function `standard_mode_100k` takes no text from any driver: its
 counts follow from the I2C specification's standard-mode limits and the `DesignWare` count registers'
 description, and its fill (the whole shortfall to the low count) is nife's own. OpenBSD's `dwiic.c`
-(ISC) was read on 2026-11-01 and states no equations, so no notice is carried. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes only to
+(ISC) states no equations (read 2026-11-01), so no notice rides with the function. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes only to
 projects nife depends on.
 
 ## What is proven
