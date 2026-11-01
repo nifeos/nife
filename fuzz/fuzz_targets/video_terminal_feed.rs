@@ -70,7 +70,10 @@ fn check_inside(vt: &mut Vt) {
                 && r.row.checked_add(r.rows).is_some_and(|y| y <= vt.rows()),
             "the damage rectangle left the grid"
         );
-        assert!(damage.scrolled < vt.rows(), "a scroll report of a whole grid");
+        assert!(
+            damage.scrolled < vt.rows(),
+            "a scroll report of a whole grid"
+        );
     }
 }
 
@@ -96,14 +99,29 @@ fuzz_target!(|data: &[u8]| {
             check_inside(pieces);
         }
 
-        assert_eq!(whole.cursor(), pieces.cursor(), "the cursor depends on the cut");
+        assert_eq!(
+            whole.cursor(),
+            pieces.cursor(),
+            "the cursor depends on the cut"
+        );
         let length = whole.handoff_len();
-        assert_eq!(length, pieces.handoff_len(), "the history depends on the cut");
+        assert_eq!(
+            length,
+            pieces.handoff_len(),
+            "the history depends on the cut"
+        );
         let mut left = vec![0u8; length];
         let mut right = vec![0u8; length];
-        whole.write_handoff(&mut left).expect("the blob fits its own length");
-        pieces.write_handoff(&mut right).expect("the blob fits its own length");
-        assert!(left == right, "the state depends on where the input was cut");
+        whole
+            .write_handoff(&mut left)
+            .expect("the blob fits its own length");
+        pieces
+            .write_handoff(&mut right)
+            .expect("the blob fits its own length");
+        assert!(
+            left == right,
+            "the state depends on where the input was cut"
+        );
         for row in 0..whole.rows() {
             for col in 0..whole.cols() {
                 assert_eq!(whole.cell(col, row), pieces.cell(col, row));
