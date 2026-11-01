@@ -32,3 +32,20 @@ a process's behalf, DECISIONS §10). Grant more and it maps more; grant nothing 
 untyped at slot 1 at all, so its first `MAP` returns `NoSuchSlot` and it maps zero. There is no
 ambient pool behind it. This is the demonstration that `--mem` moves real memory, not a parsed
 number.
+
+## A job may not leave a child region in its budget when it exits
+
+A program that holds a `--mem N` grant may `SPLIT` it and build in the pieces. It must give every
+piece back before it exits, by `DESTROY` on each sub-region it split. This is a contract for the
+program's author (ruled 2026-11-01 UTC, milestone 933). Nothing enforces it at exit: the kernel
+cannot refuse a thread's exit.
+
+When the job exits, the shell gives the grant back with one `DESTROY`. The kernel refuses that for
+good while a child region lives (`HasChildren`, DECISIONS §16), and the job's table is gone, so
+nobody can name the child. The grant's pages stay spent until reboot. The shell reports it: it
+reads `USAGE`'s `CHILDREN` record after the refusal and, when a child is live, prints one sentence
+naming the job and the pages, without waiting out the retry bound. A refusal for a process still
+running in the grant is retried as before.
+
+The rule can be relaxed later by a recursive teardown, which breaks no program written to it;
+tightening it later would break programs. No program the shell runs splits its grant today.

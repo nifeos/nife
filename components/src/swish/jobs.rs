@@ -111,7 +111,7 @@ fn release(h: Held) {
         give_back(job_fr, h.job_ut);
     }
     if h.budget != 0 {
-        release_budget(h.budget);
+        release_budget(h.budget, h.program);
     }
     process_builder::forget_thread_control_block(h.tcb);
 }
@@ -438,10 +438,25 @@ pub(super) fn reclaim(job_ut: u64) -> bool {
 
 /// **Give a held job's `--mem` budget back to this shell's budget, then delete the slot.** The
 /// job may have left a process running in the grant, which the first `DESTROY` refuses while it
-/// arms the kill, so this retries as [`reclaim`] does. A sub-region the job split from its grant
-/// is refused for good and the pages stay spent; the wait for it is the patience bound.
-pub(super) fn release_budget(slot: u64) {
-    reclaim(slot);
+/// arms the kill, so this retries as [`reclaim`] does.
+///
+/// A job may not leave a child region in its budget when it exits (milestone 933, ruled
+/// 2026-11-01 UTC). The kernel refuses that `DESTROY` for good (`HasChildren`, DECISIONS §16), so
+/// when `USAGE`'s `CHILDREN` record shows one this prints a sentence naming the job and stops
+/// retrying at once; the pages stay spent until reboot.
+pub(super) fn release_budget(slot: u64, program: grant_plan::Program) {
+    let verdict = swish::reclaim_budget_within(
+        RECLAIM_PATIENCE_NS,
+        || destroy_memory_region(slot),
+        || user_mode_runtime::memory_region_usage(slot, abi::usage::CHILDREN),
+        monotonic_ns,
+        yield_now,
+    );
+    if verdict == swish::BudgetReturn::LeftChildren {
+        let pages = user_mode_runtime::memory_region_usage(slot, abi::usage::SIZE).max(0) as u64;
+        failed();
+        swish::write_budget_left(program.name().as_bytes(), pages, &mut print);
+    }
     capability_delete(slot);
 }
 

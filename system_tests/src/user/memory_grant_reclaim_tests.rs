@@ -3,8 +3,8 @@
 //! A program the shell starts with `--mem N` holds the grant as `SPEND_ONLY`, and every spending
 //! method asks for `WRITE` alone, so the program may `SPLIT` it and build a process in it. When the
 //! job ends, the shell gives the grant back with `release_budget` in `components/src/swish/jobs.rs`,
-//! which retries the `DESTROY` for up to a second (`swish::is_reclaimed_within`) and then deletes its
-//! slot. These tests take the kernel's side of that sequence: what the `DESTROY` answers when the
+//! which retries the `DESTROY` for up to a second (`swish::reclaim_budget_within`), stops at once on
+//! a live sub-region, and then deletes its slot. These tests take the kernel's side of that sequence: what the `DESTROY` answers when the
 //! job left a sub-region behind, and when it left a process running.
 //!
 //! Each test stands in for the job with kernel calls on a region split from a stand-in for the
@@ -81,6 +81,13 @@ fn a_memory_grant_the_job_split_is_refused_to_the_shell_for_good() {
 
     // The shell's copy carries every right (`delegate(slot, abi::rights::ALL)` keeps one).
     let shell_slot = sched::grant(memory_region_lending_capability(mem)).expect("the shell's copy");
+    // What the shell can see: the refusal is one `NotPermitted`, and `USAGE`'s `CHILDREN` record is
+    // how it tells a sub-region from a resident (`swish::reclaim_budget_within`).
+    assert_eq!(
+        call(shell_slot, abi::memory_region::USAGE, abi::usage::CHILDREN),
+        Ok(SUB_PAGES as i64),
+        "the shell's copy cannot see the sub-region the job left",
+    );
     for attempt in 0..64 {
         assert_eq!(
             call(shell_slot, abi::memory_region::DESTROY, 0),
