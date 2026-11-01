@@ -87,15 +87,12 @@ No per-crate milestone is minted by this block. They come from the reviews below
   crate per driver would add names and make no program link less, since every driver is a binary
   of `components`; revisit if that changes. The name holds for now. The crate breaks up as
   components become programs and crates of their own, and each piece takes its name then.
-- Ruled 2026-11-01 (UTC): a crate that something outside nife could consume leaves this tree,
-  because a crate a stranger can link shows that nife drew its boundaries well. No crate stays in
-  this tree by default; that default was never intended. A crate that leaves references nothing
-  back in this tree, so crates leave bottom-up in the dependency graph: the crates a program links
-  leave before it or with it. Two kinds leave. Publish-ours crates publish to crates.io; contract
-  crates move and carry versions whether or not they publish. `jh7110_entropy`, milestone 818
-  (proven JH7110 TRNG logic, released on its own), pilots the mechanics as a leaf, and a contract
-  crate with a consumer outside nife pilots second. Pull request #3026 proposes that second pilot
-  and the order the contract crates leave in.
+- Ruled 2026-11-01 (UTC): a crate that something outside nife could consume leaves, since that
+  shows good crate boundaries; none stays by default. What leaves references nothing back here, so
+  crates leave bottom-up: the crates a program links leave before it or with it. Publish-ours
+  crates publish; contract crates move and carry versions whether or not they publish. Milestone
+  818 (proven JH7110 TRNG logic, released on its own) is the leaf pilot; pull request #3026
+  proposes the second pilot and the contract crates' order.
 
 ## What every crate clears before it publishes (calef, 2026-10-11)
 
@@ -148,9 +145,7 @@ reversible order, and each contribution waits on the ruling above.
    `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`.
 5. `calendar`, revisited under fork 8, since `time` wants a person's words.
 6. `non_volatile_memory_express`, `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
-7. The internal set, closing as one sitting. Superseded 2026-11-01 (UTC): no crate stays in this
-   tree by default (the rulings above), so the survey's internal class is no longer a set to close
-   as kept.
+7. The internal set, closing as one sitting. Withdrawn 2026-11-01 (UTC): no crate stays by default.
 
 ## What is already on the record
 
@@ -162,9 +157,8 @@ The survey shrank the question. Of the 31 candidates, eight are "publish ours": 
 device-logic crates (NVMe, e1000e, two DesignWare controllers, two JH7110 blocks), and xHCI. nife
 makes rust-osdev no offer for xHCI, since nife does not depend on its `xhci` (milestone 820). `portable_executable` is not published: milestone 821 (`portable_executable`:
 an ELF-to-PE converter, proven, then released on its own) is refused. Eleven outside projects are
-candidates for our proofs. The survey classed the rest internal. Since the ruling of 2026-11-01
-(UTC), that class is not a default: a crate in it that something outside nife could consume
-leaves as that ruling says.
+candidates for our proofs. The survey classed the rest internal, which the 2026-11-01 ruling
+makes no default.
 
 ## Fork 1. Where a released crate lives (ruled: one repository per crate)
 
@@ -255,11 +249,8 @@ approach and every first publication then comes to calef one at a time, with its
 upstream-hardening ruling of 2026-10-06 requires. A security finding in another project goes to
 its maintainers privately first.
 
-Recommendation as raised, replaced by one review per crate: approve the table as it stands. Two rows carry the judgment most worth checking.
-`calendar` goes to `time` rather than out as a rival, although milestone 39 called it a real gap;
-`time` has 951M downloads and no proofs, so ours added there reach more callers. And
-`cryptography_provider` stays internal, although no good alternative exists, because a second
-alpha provider from a project with no security team is worse than none.
+Recommendation as raised, replaced by one review per crate: approve the table whole. The survey
+note keeps each row's reasoning.
 
 ## Fork 8. Who writes an offer to another project (ruled: A-a without calef's hand, bug reports everywhere)
 
@@ -277,11 +268,6 @@ carry no agent branding, where this tree requires an agent's pull request to say
 Recommendation as raised, replaced by the ruling: A-a, with A-c for projects that refuse AI work. A refusal is the owner's call,
 and a bug report is still welcome under every policy read. Each approach is a fact that leaves the
 machine, so the policy is reversible and each use of it is not.
-
-## What is blocked, and what is not
-
-Nothing in the tree waits on these forks. The FAT crate is written in this repository and gets its
-own repository at first publication, under Fork 1's ruling; its name is ratified then.
 
 ## BUGS
 
