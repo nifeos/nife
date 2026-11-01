@@ -206,6 +206,11 @@ names until the ratification pass, so this section keeps the links it carried.
 - The device-tree fixtures are excerpts of the mainline and vendor JH7110 trees. They moved to
   `crates/machine_discovery/tests/fixtures/` with the walk, so the crate ships none; their licenses
   were not checked.
+- `standard_mode_100k` has not run on the board since its rewrite. At the board's input clock of
+  49.5 MHz it programs a high count of 198 and a low count of 297, where the earlier version
+  programmed 208 and 229. Both meet the I2C standard-mode minimums by arithmetic, but a PMIC
+  reset on the board must confirm the new counts before anyone calls them proven. The check is a
+  bench item for the maintainers.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
 
