@@ -133,6 +133,8 @@ pub fn build_page(hz: u64) -> [u8; PAGE_BYTES] {
 }
 
 /// **The counter frequency page**, as seen through one process's read-only mapping of it at [`PAGE_VA`].
+///
+/// Name: ratified 2026-11-01 (decided by the architect), renamed from `TimebasePage`.
 #[derive(Debug, Clone, Copy)]
 pub struct CounterFrequencyPage {
     base: *const u8,
