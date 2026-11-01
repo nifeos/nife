@@ -18,7 +18,11 @@ options and the ruling; this block holds the plan.
 
 The gate the plan serves is condition 4 of milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the first
 code to leave this repository). Each interface the first cut links
-carries a checkable version, and the moved package declares what it links.
+carries a checkable version, and the moved package declares what it links. Ruled 2026-11-01 (UTC)
+on pull request #3022: an interface here is a crate that defines a run-time format exchanged
+between separately released parts. Every other linked crate is a Rust API, which its Cargo version
+and a semver check guard once it is versioned, and nothing declares it. Interfaces need not stop
+breaking; the cut needs the mechanisms that accommodate a break, which are checkable versions.
 
 Reuse: the plan reuses machinery that exists, per AGENTS.md rule 6. It takes the `abi` crate's
 tests, and milestone 597 (a program carries its manifest in an ELF note), the manifest-note encode
@@ -30,7 +34,7 @@ dependency. The weekly series refused `cargo-semver-checks` and `cargo-public-ap
 Each step lands a provable piece. Every new name is provisional.
 
 1. The version constants land beside the wire formats the first cut links. `abi` carries
-   `ABI_VERSION` at the crate root; `address_space_map` and `glob` each carry `VERSION`;
+   `ABI_VERSION` at the crate root; `address_space_map` carries `VERSION`;
    `machine_statistics_contract` carries a version word beside its `MACHSTA1` magic, an index in the
    crate's `word` module; `block_roster` carries `VERSION` in the digits of its magic. One constant
    per wire format, as ruled (question 1). `program_argument_contract`'s `nifeargv` stays
@@ -70,53 +74,65 @@ constants reads as additions, a shape the series already records.
 
 All of these hold, each checkable by a command:
 
-- `abi`, `address_space_map`, `glob`, `machine_statistics_contract` and `block_roster` each export
-  a version constant and an `INTERFACE_ID`, and the id check finds no duplicate.
+- `abi`, `address_space_map`, `machine_statistics_contract` and `block_roster` each export a
+  version constant and an `INTERFACE_ID`, and the id check finds no duplicate and no retired id.
 - `capability_manifest_note`'s tests and its Kani property for the `INTERFACES` note pass.
 - The progenitor's tests refuse a program whose ABI entry differs from `ABI_VERSION` and accept one
   that matches.
 - `script/lint` runs the pinned-values test and the format-values check, and the check's selftest
   passes.
 - Each of the fifteen programs of `process-tools`, `core-tools` and `disk-tools` carries a
-  `carry_interfaces!` list, and `python3 helpers/interface_declarations_check.py` finds each list
-  equal to the versioned interfaces that program's dependency graph reaches.
+  `carry_interfaces!` list, and `python3 helpers/interface_declarations_check.py` finds every
+  linked crate classified and each list equal to the formats with an id that the program links.
+- The check's `OWED` table is empty.
 
-These hold. Milestone 756's condition 4 holds once the set below is ruled and every interface in
-it carries a version and an `INTERFACE_ID`.
+The first five hold. Milestone 756's condition 4 holds when the sixth does.
 
 ## The linked set, re-derived
 
-Milestone 756 lists four interfaces, measured on 2026-10-04; step 1 adds `block_roster`. Measured
-again on 2026-11-01 (UTC): the crates each program names, closed over `cargo metadata`'s normal
-dependencies, less the cut's own crates, the `carry_interfaces!` lists included. The fifteen
-programs reach twenty-two crates. The five above carry an `INTERFACE_ID`. Seventeen do not:
+Measured on 2026-11-01 (UTC): the crates each program names, closed over `cargo metadata`'s normal
+dependencies, less the cut's own crates. The fifteen programs reach twenty-two crates. The check's
+two tables carry each one's reason in a line.
 
-- With a version constant already: `byte_sink_contract`, `calendar`, `capability_manifest_note`
-  (one per descriptor), `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`,
-  `entropy_contract`, `environment_contract`, `filesystem_contract` (block and file),
-  `globally_unique_identifier_partition_table`, `program_argument_contract`, `socket_contract`.
-- With none: `domain_name_resolution_contract`, `domain_name_system`, `filesystem_fixture`,
-  `grant_plan`, `user_mode_runtime`.
+- Formats with an id: `abi`, `address_space_map`, `block_roster`, `machine_statistics_contract`.
+- Formats owed an id (`OWED`): `byte_sink_contract`, `capability_manifest_note`, `clock_contract`,
+  `counter_frequency_contract`, `current_cpu_contract`, `domain_name_resolution_contract`,
+  `entropy_contract`, `environment_contract`, `filesystem_contract` (one id each for block and
+  file), `filesystem_fixture`, `grant_plan`, `program_argument_contract`, `socket_contract`,
+  `user_mode_runtime`.
+- Not a format (`NOT_A_FORMAT`): `calendar`, `domain_name_system`, `glob`,
+  `globally_unique_identifier_partition_table`. `glob`'s interface id, 3, is retired.
 
-No ruling yet says whether condition 4 means all twenty-two, the five, or another rule. Pull
-request #3022 asks it. The declaration check reads `INTERFACE_ID`, so each crate that gains one joins every
-list that reaches it, and the check names the program that must add it.
+Close calls, each placed on the stricter side where unsure: `grant_plan` counts for its slot
+numbers, `user_mode_runtime` for its entry registers and link layout, `filesystem_fixture` for the
+blank disk layout, and `domain_name_resolution_contract` because the manifest note carries its zone
+limits. `domain_name_system` and the partition table stay out, because RFC 1035 and UEFI own those
+formats and the bytes carry their own revisions.
+
+Carrying the note links `capability_manifest_note`, whose `grant_plan::Manifest` type takes each
+program from 9 to 13 linked crates to 15 to 17. No crate it adds carries an id, so the macro raises
+no list today. It reaches `grant_plan` and `program_argument_contract` in five programs that do not
+otherwise link them, and those lists grow when the two gain ids. Moving the type and the slot
+constants into a leaf crate belongs to pull request #3026.
 
 ## What this block does not do
 
 The bind-time check in message contracts, the one-generation dual path, retiring the legacy
 generation and the swap-test invariants are a separate proposal,
 [the message contracts carry bind-time version checks](proposals/message-contracts-carry-bind-time-version-checks.md).
-The first cut links no message contract, so condition 4 does not need them. The macro takes its interface list by hand. Deriving the list from the dependency graph at package
+The first cut links message contracts (`byte_sink_contract`, `entropy_contract`,
+`filesystem_contract`, `socket_contract`, the resolver's); condition 4 asks each for a checkable
+version, which a constant and an id give, and leaves the run-time check at bind to that proposal. The macro takes its interface list by hand. Deriving the list from the dependency graph at package
 build waits for the first package that leaves the tree.
 
 ## Follow-on
 
-- **Outstanding.** Which crates condition 4 covers: the five above, the twenty-two the
-  re-derivation finds, or another rule. Checked on 2026-11-01 (UTC) with `cargo metadata` and
-  `helpers/interface_declarations_check.py`; asked on pull request #3022 with `needs-architect`.
-- **Outstanding.** An `INTERFACE_ID` and a version for each crate the ruling adds, then the
-  programs' lists grow as the check names them.
+- **Outstanding.** An `INTERFACE_ID` and a version for each of the fourteen crates in `OWED`,
+  then the programs' lists grow as the check names them. Checked on 2026-11-01 (UTC) with
+  `python3 helpers/interface_declarations_check.py`. `filesystem_contract`'s two ids need the check
+  to read an id inside a module, which it does not yet.
+- **Outstanding.** The `grant_plan::Manifest` type and the slot constants in a leaf crate, so
+  carrying the note links no planner: pull request #3026.
 
 ## BUGS
 
@@ -127,6 +143,6 @@ build waits for the first package that leaves the tree.
 
 ## Index row
 
-Every interface the first cut links carries a checkable version, and the moved package declares
-what it links through an `INTERFACES` manifest note. That is condition 4 of milestone 756's first
+Every run-time format the first cut links carries a checkable version, and the moved package
+declares what it links through an `INTERFACES` manifest note. That is condition 4 of milestone 756's first
 cut, and the check the weekly series counts.
