@@ -17,7 +17,7 @@ Reuse: `gh api` reads the advisory. No new transport.
 ## What it builds
 
 - A script a fix lane runs to read one advisory: `GET /repos/nifeos/nife/security-advisories/<id>`
-  with the read-only credential a person placed in the lane environment. It prints the advisory to
+  with a one-hour token of the `nife-fuzz-reader` App, handed to the lane at launch. It prints the advisory to
   the lane's terminal and writes nothing to disk inside a worktree. It refuses, by name, when no
   credential is present, and it never searches for one.
 - The rule text in the developer-lane and maintainer skills:
@@ -44,6 +44,6 @@ credential. The gate's selftest feeds it a planted replay line and a clean messa
 
 Not started. Unverified: how long a fix pull request stays public before it merges. That window runs
 from the push to the merge, and it grows whenever a hold applies (`needs-architect` on a fix that
-touches the syscall surface, or a red trunk). The first fix measures it. The read-only credential's
-form is an open question for an architect: a one-hour installation token expires before most lanes
-finish.
+touches the syscall surface, or a red trunk). The first fix measures it. It waits on
+[fix lanes get a one-hour reader token](fix-lanes-get-a-one-hour-reader-token.md) for a real read, not
+for its selftests.

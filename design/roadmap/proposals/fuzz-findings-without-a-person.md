@@ -38,8 +38,8 @@ credential once. Five steps handle findings automatically.
    advisory holds the finding class and the reproducer.
 2. Reading. A fix lane reads the advisory, never the host's held-findings directory. The standing
    rule stays in force: no lane opens the held directory. The advisory is the one narrow exception.
-   A lane reads it through a read-only credential that a person places in the lane environment, and
-   no lane looks for tokens.
+   A lane reads it through a read-only credential that a person places, and no lane looks for
+   tokens.
 3. Fixing. The fix pull request opens only when the fix is ready, with auto-merge armed. The window
    of exposure is then the time the pull request spends in review and the merge queue. Its
    regression test does not carry the reproducer before the fix is on main.
@@ -74,6 +74,16 @@ exists on the repository as "tags: only fuzz-* tags may be made", and nifeos/nif
 it took effect. The App is created and installed on nifeos/nife only: App ID 5571801, installation
 ID 177641059, neither secret. A future nife release that uses a tag outside `fuzz-*` must amend the
 ruleset first, in its own step recorded in a pull request.
+
+## What is in force: the reader App
+
+Ruled 2026-11-01 (UTC): fix lanes read a held finding's advisory through a second GitHub App,
+provisionally named `nife-fuzz-reader`. It holds Repository security advisories read and nothing
+else, installed on nifeos/nife only. A fine-grained personal token is not used, because it expires
+and belongs to a person. The App's key lives in a root-only file on the machine that launches fix
+lanes. It never sits on the fuzz host and never enters a lane's environment. A lane gets a one-hour
+installation token at launch; the milestone
+[fix lanes get a one-hour reader token](fix-lanes-get-a-one-hour-reader-token.md) builds that.
 
 ## What is in force: the host follows main
 
@@ -179,6 +189,7 @@ Each is a proposal in this directory, unnumbered until an integrator promotes it
 
 - [The fuzz host files each held finding as an advisory](the-fuzz-host-files-held-findings-as-advisories.md)
 - [Fix lanes read the advisory](fix-lanes-read-the-advisory.md)
+- [Fix lanes get a one-hour reader token](fix-lanes-get-a-one-hour-reader-token.md)
 - [A held finding turns public after its fix reruns clean](a-held-finding-turns-public-after-its-fix-reruns-clean.md)
 - [The fuzz host mints its tokens from the App key](the-fuzz-host-mints-its-tokens-from-the-app-key.md)
 - [An App with only the advisory permission files an advisory](an-app-with-only-the-advisory-permission-files-an-advisory.md)
