@@ -143,6 +143,12 @@ slot. Every new name here is provisional.
   TCG, and it builds the install image and the composed image one after the other. A CI leg would
   roughly double `confirm-boot`'s cost for a path that parts 4 and 5 replace. It stays a manual
   gate until part 5's updater supplies the real staging.
+- **Ruled 2026-11-01 (UTC).** `update-boot` is interim. When milestones 695 (the kernel takes two
+  digests from the loader) and 697 (the trust root leaves the kernel binary) land, it folds into
+  `confirm-boot`, where staging the slot first becomes a scenario of that gate, and the separate
+  gate is deleted or merged. Nothing changes before then: both images exist and the kernel still
+  depends on the base. The name `update-boot` stays provisional and is not ratified. 697's block
+  records the end state.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself, and the archive writer moves from
