@@ -81,7 +81,7 @@ impl TableEntry {
     /// of [`TableEntry::decode`]. A [`TableEntry::Next`] keeps the low bits its width holds, so a
     /// caller passes only clusters the volume has.
     ///
-    /// Name: provisional. Beside `decode`: the same conversion, the other way.
+    /// Name: ratified 2026-11-01 (UTC), beside `decode`: the same conversion, the other way.
     pub const fn encode(self, file_allocation_table_type: FileAllocationTableType) -> u32 {
         let (mask, bad) = match file_allocation_table_type {
             FileAllocationTableType::Fat12 => (0xFFF, 0xFF7),

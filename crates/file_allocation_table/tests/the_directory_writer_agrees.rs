@@ -186,7 +186,7 @@ fn long_names(label: &str, mebibytes: usize, fat_type: FatType) -> Memory {
         volume.create_file(0, "HELLO world.TXT"),
         Err(WriteError::AlreadyExists)
     );
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     let tree = oracle_tree(&image.bytes);
     for (i, name) in names.iter().enumerate() {
@@ -204,13 +204,15 @@ fn long_names(label: &str, mebibytes: usize, fat_type: FatType) -> Memory {
 /// Directories, a file inside, renames across them, and the refusals.
 fn directories_and_moves(label: &str, image: Memory) -> Memory {
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
-    let docs = volume.make_directory(0, "Documents And Settings").unwrap();
+    let docs = volume
+        .create_directory(0, "Documents And Settings")
+        .unwrap();
     let docs_cluster = docs.first_cluster();
-    let sub = volume.make_directory(docs_cluster, "Sub").unwrap();
+    let sub = volume.create_directory(docs_cluster, "Sub").unwrap();
     put(&mut volume, docs_cluster, "notes.txt", b"notes");
     put(&mut volume, sub.first_cluster(), "deep file.txt", b"deep");
     assert_eq!(
-        volume.make_directory(0, "documents and settings"),
+        volume.create_directory(0, "documents and settings"),
         Err(WriteError::AlreadyExists)
     );
     assert_eq!(
@@ -237,7 +239,7 @@ fn directories_and_moves(label: &str, image: Memory) -> Memory {
         volume.rename(&moved, 0, "Hello World.txt"),
         Err(WriteError::AlreadyExists)
     );
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     let tree = oracle_tree(&image.bytes);
     for (path, directory, bytes) in tree_of(&[
@@ -273,13 +275,13 @@ fn remove_all(label: &str, image: Memory) {
         volume.remove_directory(&entry).unwrap();
     }
     let rest: Vec<String> = volume
-        .root_entries()
+        .root_named_entries()
         .map(|e| e.unwrap())
         .filter(|e| !e.is_volume_label())
         .map(|e| e.long_name().map_or(String::new(), |_| "x".to_string()))
         .collect();
     assert_eq!(rest.len(), ROOT_FILES, "{label}");
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     check_with_fsck(&image.bytes, &format!("{label}-removed"));
     assert_eq!(oracle_tree(&image.bytes).len(), ROOT_FILES, "{label}");
@@ -336,10 +338,12 @@ fn directories_above_cluster_65535_keep_their_high_bits_through_a_move() {
         panic!("FAT32 keeps its root in a chain");
     };
     // The root named by its cluster number is the root.
-    let a = volume.make_directory(root_cluster, "High A").unwrap();
+    let a = volume.create_directory(root_cluster, "High A").unwrap();
     assert!(a.first_cluster() > 65_535);
-    let b = volume.make_directory(a.first_cluster(), "High B").unwrap();
-    let c = volume.make_directory(0, "High C").unwrap();
+    let b = volume
+        .create_directory(a.first_cluster(), "High B")
+        .unwrap();
+    let c = volume.create_directory(0, "High C").unwrap();
     put(&mut volume, b.first_cluster(), "inside b.txt", b"b");
     // A move below itself is refused even when every `..` on the way needs its high half.
     assert_eq!(
@@ -362,7 +366,7 @@ fn directories_above_cluster_65535_keep_their_high_bits_through_a_move() {
         Err(WriteError::MovedIntoItself)
     );
     let _ = c_moved;
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     let tree = oracle_tree(&image.bytes);
     for (path, directory) in [
@@ -407,8 +411,8 @@ fn a_new_directory_in_a_multi_sector_cluster_is_zeroed_past_its_dots() {
     let data = boot.first_data_sector() as usize * 512;
     image.bytes[data + 2048..].fill(0xAA);
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
-    volume.make_directory(0, "Fresh").unwrap();
-    volume.sync().unwrap();
+    volume.create_directory(0, "Fresh").unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     let tree = oracle_tree(&image.bytes);
     assert_eq!(tree, tree_of(&[("/Fresh", true, b"")]));

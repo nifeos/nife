@@ -129,7 +129,7 @@ fn a_release_frees_only_its_own_chain() {
     let before = model.entries;
     let clusters = model.clusters;
     let first: u32 = kani::any();
-    let result = free_chain(&mut model, first);
+    let result = deallocate_chain(&mut model, first);
     let mut changed = 0;
     let mut at = 0;
     while at < clusters as usize {

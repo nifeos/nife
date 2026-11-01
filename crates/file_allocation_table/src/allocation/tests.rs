@@ -75,7 +75,7 @@ fn a_full_volume_is_refused_and_one_freed_cluster_is_found_again() {
         volume.allocate_cluster(None),
         Err(AllocationError::VolumeFull)
     );
-    assert_eq!(volume.free_chain(200), Ok(1));
+    assert_eq!(volume.deallocate_chain(200), Ok(1));
     assert_eq!(volume.allocate_cluster(None), Ok(200));
 }
 
@@ -147,7 +147,7 @@ fn freeing_a_chain_frees_every_cluster_and_counts_them() {
     image.link(&[5, 9, 6, 20]);
     image.link(&[30, 31]);
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
-    assert_eq!(volume.free_chain(5), Ok(4));
+    assert_eq!(volume.deallocate_chain(5), Ok(4));
     for cluster in [5, 9, 6, 20] {
         assert_eq!(volume.table_entry(cluster), Ok(TableEntry::Free));
     }
@@ -189,7 +189,7 @@ fn a_broken_chain_frees_what_precedes_the_break_and_reports_it() {
     image.set(9, 0xFF7);
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
     assert_eq!(
-        volume.free_chain(5),
+        volume.deallocate_chain(5),
         Err(AllocationError::Chain(ChainError::Broken {
             cluster: 9,
             entry: TableEntry::Bad
@@ -198,7 +198,7 @@ fn a_broken_chain_frees_what_precedes_the_break_and_reports_it() {
     assert_eq!(volume.table_entry(5), Ok(TableEntry::Free));
     assert_eq!(volume.table_entry(9), Ok(TableEntry::Bad));
     assert_eq!(
-        volume.free_chain(1),
+        volume.deallocate_chain(1),
         Err(AllocationError::Chain(ChainError::NotADataCluster(1)))
     );
 }
@@ -210,7 +210,7 @@ fn a_looping_chain_is_freed_once_and_ends_at_the_cluster_it_already_freed() {
     image.set(9, 5);
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
     assert_eq!(
-        volume.free_chain(5),
+        volume.deallocate_chain(5),
         Err(AllocationError::Chain(ChainError::Broken {
             cluster: 5,
             entry: TableEntry::Free
@@ -244,10 +244,10 @@ fn the_hints_follow_allocation_and_release() {
     volume.allocate_cluster(None).unwrap();
     assert_eq!(volume.writer.free_clusters, Some(CLUSTERS - 2));
     assert_eq!(volume.writer.next_free, 4);
-    volume.free_chain(2).unwrap();
+    volume.deallocate_chain(2).unwrap();
     assert_eq!(volume.writer.free_clusters, Some(CLUSTERS - 1));
-    // A volume with no FSInfo has nowhere to write them, and a sync is still clean.
-    assert_eq!(volume.sync(), Ok(()));
+    // A volume with no FSInfo has nowhere to write them, and a `mark_clean` is still clean.
+    assert_eq!(volume.mark_clean(), Ok(()));
 }
 
 #[test]
@@ -260,7 +260,7 @@ fn a_chain_that_links_outside_the_volume_is_broken_and_left_alone() {
         cluster: 5,
         entry: TableEntry::Next(400),
     });
-    assert_eq!(volume.free_chain(5), Err(broken));
+    assert_eq!(volume.deallocate_chain(5), Err(broken));
     assert_eq!(volume.truncate_chain(5, 1), Err(broken));
     assert_eq!(volume.table_entry(5), Ok(TableEntry::Next(400)));
 }

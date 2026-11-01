@@ -245,7 +245,7 @@ pub struct BootSector {
     first_data_sector: u32,
     root: RootDirectory,
     active_table: Option<u8>,
-    fs_info_sector: Option<u16>,
+    file_system_information_sector: Option<u16>,
     backup_boot_sector: Option<u16>,
     volume_id: Option<u32>,
 }
@@ -378,7 +378,7 @@ impl BootSector {
                 entries: root_entries,
             },
             active_table: None,
-            fs_info_sector: None,
+            file_system_information_sector: None,
             backup_boot_sector: None,
             volume_id: (sector[38] == 0x29).then(|| get32(sector, 39)),
         };
@@ -408,7 +408,8 @@ impl BootSector {
             }
             self.active_table = Some(active);
         }
-        self.fs_info_sector = reserved_pointer(get16(sector, 48), self.reserved_sectors);
+        self.file_system_information_sector =
+            reserved_pointer(get16(sector, 48), self.reserved_sectors);
         self.backup_boot_sector = reserved_pointer(get16(sector, 50), self.reserved_sectors);
         self.volume_id = (sector[66] == 0x29).then(|| get32(sector, 67));
         Ok(())
@@ -552,10 +553,12 @@ impl BootSector {
     /// 1.03, section 5, FAT32 `FSInfo` Sector Structure and Backup Boot Sector): the sector holding
     /// the free-cluster hints, or `None` when the BPB names none inside the reserved region.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
+    /// Name: ratified 2026-10-25 (#2720), reopened and ratified again 2026-11-01 (UTC): renamed
+    /// from `fs_info_sector`, so the term of art is spelled out as `FileSystemInformation` is.
     #[doc(alias = "file system information sector")]
-    pub const fn fs_info_sector(&self) -> Option<u16> {
-        self.fs_info_sector
+    #[doc(alias = "FSInfo")]
+    pub const fn file_system_information_sector(&self) -> Option<u16> {
+        self.file_system_information_sector
     }
 
     /// FAT32's backup boot sector, or `None` when the BPB names none inside the reserved region.

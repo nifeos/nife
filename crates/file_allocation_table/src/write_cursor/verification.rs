@@ -68,7 +68,7 @@ const SMALL: usize = 16;
 /// of a 16-byte sector, any amount of the file already in the sector, any offset up to that amount and up to
 /// four bytes: the byte at any probe position is the new byte where it landed, the old byte
 /// before the end of the file, and zero everywhere else.
-/// Falsification: replayable `crates/file_allocation_table/falsifications/file_write.verification.a_partial_sector_write_keeps_the_head_and_zeroes_the_slack.patch`
+/// Falsification: replayable `crates/file_allocation_table/falsifications/write_cursor.verification.a_partial_sector_write_keeps_the_head_and_zeroes_the_slack.patch`
 #[kani::proof]
 #[kani::unwind(6)]
 fn a_partial_sector_write_keeps_the_head_and_zeroes_the_slack() {
@@ -100,7 +100,7 @@ fn a_partial_sector_write_keeps_the_head_and_zeroes_the_slack() {
 /// chain, the chain has one cluster per 512 bytes of size and ends there, and no other cluster is
 /// in use. The bytes themselves are `a_partial_sector_write_keeps_the_head_and_zeroes_the_slack`'s
 /// and the oracle tests'.
-/// Falsification: replayable `crates/file_allocation_table/falsifications/file_write.verification.a_write_extends_the_chain_to_the_size_and_stays_inside_it.patch`
+/// Falsification: replayable `crates/file_allocation_table/falsifications/write_cursor.verification.a_write_extends_the_chain_to_the_size_and_stays_inside_it.patch`
 #[kani::proof]
 #[kani::unwind(8)]
 fn a_write_extends_the_chain_to_the_size_and_stays_inside_it() {

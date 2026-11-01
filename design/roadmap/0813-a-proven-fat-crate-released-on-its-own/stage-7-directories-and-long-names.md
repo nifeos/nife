@@ -15,7 +15,7 @@ records what stage 7 built and the evidence.
   marker completes the run. A directory short of slots grows by a cluster; the fixed FAT12 and FAT16
   root cannot. The slot after an end marker gets an end marker of its own, so stale bytes there
   stay invisible.
-- `Volume::make_directory` allocates a cluster, fills it with `.` and `..` and zeros, then writes the
+- `Volume::create_directory` allocates a cluster, fills it with `.` and `..` and zeros, then writes the
   entry; a failure gives the cluster back. A `..` whose parent is the root holds 0, and a FAT32
   root named by its cluster number is the root.
 - `Volume::remove_directory` refuses a file, `.`, `..` and a directory that holds anything else, then
@@ -39,5 +39,5 @@ No nife type appears in a public signature.
 
 ## Names minted
 
-All provisional: `Volume::make_directory`, `remove_directory` and `rename`, the `WriteError`
-variants above, and the module `directory_write`. `create_file` keeps its name and widens its names.
+Ratified 2026-11-01 (UTC): `Volume::create_directory`, `remove_directory` and `rename`, the `WriteError`
+variants above, and the module `directory_writer`. `create_file` keeps its name and widens its names.

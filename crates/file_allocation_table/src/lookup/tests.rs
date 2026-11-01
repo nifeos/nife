@@ -145,13 +145,13 @@ fn paths_walk_into_subdirectories_by_long_or_short_name() {
     assert_eq!(dir.first_cluster(), 20);
     assert_eq!(
         volume
-            .find(20, "inner file.dat")
+            .find_in_directory(20, "inner file.dat")
             .unwrap()
             .unwrap()
             .size_bytes(),
         5
     );
-    assert_eq!(volume.find(0, "inner file.dat"), Ok(None));
+    assert_eq!(volume.find_in_directory(0, "inner file.dat"), Ok(None));
 }
 
 #[test]
@@ -166,9 +166,13 @@ fn what_is_not_there_is_not_found_and_the_label_is_called_nothing() {
         Err(LookupError::NotADirectory)
     );
     for path in ["", "/", "\\", "///"] {
-        assert_eq!(volume.lookup(path), Err(LookupError::NoName), "{path:?}");
+        assert_eq!(
+            volume.lookup(path),
+            Err(LookupError::RootHasNoEntry),
+            "{path:?}"
+        );
     }
-    assert_eq!(volume.find(0, ""), Ok(None));
+    assert_eq!(volume.find_in_directory(0, ""), Ok(None));
 }
 
 #[test]

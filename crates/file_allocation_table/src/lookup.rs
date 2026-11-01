@@ -4,7 +4,7 @@
 //! A path is components joined by `/` or `\`. Empty components (a leading, trailing or doubled
 //! separator) are skipped. `.` and `..` are looked up like any other name: a subdirectory holds
 //! entries for them, the root does not, and a `..` that leads to the root has first cluster 0,
-//! which [`Volume::entries`] reads as the root.
+//! which [`Volume::named_entries`] reads as the root.
 //!
 //! A long name matches when its UTF-16 units equal the query's after each unit is upper-cased by
 //! its simple (one-to-one) Unicode mapping. A short name matches when its dotted form equals the
@@ -12,7 +12,7 @@
 //! The first matching entry in directory order wins, which is the one a deleted-then-recreated
 //! duplicate would hide.
 //!
-//! Name: provisional. The module that finds an entry by name.
+//! Name: ratified 2026-11-01 (UTC), the module that finds an entry by name.
 
 use crate::named_entry::NamedEntry;
 use crate::reader::{ChainError, Volume};
@@ -20,25 +20,26 @@ use crate::sector::SectorDevice;
 
 /// **Why a lookup found nothing.**
 ///
-/// Name: provisional. Beside `ChainError`.
+/// Name: ratified 2026-11-01 (UTC), beside `ChainError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LookupError<E> {
     /// A directory could not be read; its own error, unchanged.
     ///
-    /// Name: provisional. The chain's own error, unchanged.
+    /// Name: ratified 2026-11-01 (UTC), the chain's own error, unchanged.
     Chain(ChainError<E>),
     /// No entry matched a component.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     NotFound,
     /// A component that is not the last names a file, not a directory.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     NotADirectory,
     /// The path has no component, so it names the root, which has no entry.
     ///
-    /// Name: provisional. The root has no entry to return; read it with `root_entries`.
-    NoName,
+    /// Name: ratified 2026-11-01 (UTC), renamed from `NoName`: the root has no directory entry to
+    /// return; read it with `root_named_entries`.
+    RootHasNoEntry,
 }
 
 /// The simple upper-case mapping of one UTF-16 unit: the unit itself unless it is a character
@@ -90,7 +91,7 @@ impl NamedEntry {
     /// **Whether this entry is called `name`**, by its long name or its short name, without regard
     /// to case. The volume label is called nothing.
     ///
-    /// Name: provisional. The question a lookup asks of each entry.
+    /// Name: ratified 2026-11-01 (UTC), the question a lookup asks of each entry.
     pub fn is_called(&self, name: &str) -> bool {
         if self.is_volume_label() || name.is_empty() {
             return false;
@@ -106,14 +107,14 @@ impl<D: SectorDevice> Volume<D> {
     /// **The entry called `name` in the directory whose first cluster is `directory`** (0 for the
     /// root), or `Ok(None)`.
     ///
-    /// Name: provisional. One component of a lookup, by the directory's first cluster as
-    /// `Volume::entries`.
-    pub fn find(
+    /// Name: ratified 2026-11-01 (UTC), renamed from `find`: says where it looks; `lookup` keeps
+    /// its name for a path.
+    pub fn find_in_directory(
         &mut self,
         directory: u32,
         name: &str,
     ) -> Result<Option<NamedEntry>, ChainError<D::Error>> {
-        for entry in self.entries(directory) {
+        for entry in self.named_entries(directory) {
             let entry = entry?;
             if entry.is_called(name) {
                 return Ok(Some(entry));
@@ -125,20 +126,20 @@ impl<D: SectorDevice> Volume<D> {
     /// **The entry at `path`**, from the root.
     ///
     /// Every component but the last must name a directory. A path that names the root itself has
-    /// no entry and is [`LookupError::NoName`]. Each component reads one directory to its end or
+    /// no entry and is [`LookupError::RootHasNoEntry`]. Each component reads one directory to its end or
     /// its match, bounded by the volume's cluster count, and the number of directories read is
     /// the number of components.
     ///
-    /// Name: provisional. A path lookup; `find` for one component.
+    /// Name: ratified 2026-11-01 (UTC), a path lookup; `find_in_directory` for one component.
     pub fn lookup(&mut self, path: &str) -> Result<NamedEntry, LookupError<D::Error>> {
         let mut directory = 0;
         let mut components = path.split(['/', '\\']).filter(|part| !part.is_empty());
         let Some(mut name) = components.next() else {
-            return Err(LookupError::NoName);
+            return Err(LookupError::RootHasNoEntry);
         };
         loop {
             let entry = self
-                .find(directory, name)
+                .find_in_directory(directory, name)
                 .map_err(LookupError::Chain)?
                 .ok_or(LookupError::NotFound)?;
             let Some(next) = components.next() else {

@@ -6,7 +6,7 @@
 //! `Volume` and nothing else. After every kind of read the image is byte for byte what it was.
 
 use file_allocation_table::{
-    Format, FormatOptions, NoClock, SectorDevice, SectorSize, Volume, WritableSectorDevice,
+    FormatOptions, FormatPlan, NoClock, SectorDevice, SectorSize, Volume, WritableSectorDevice,
     WritableVolume,
 };
 
@@ -77,11 +77,11 @@ fn populated(sectors: u32) -> Vec<u8> {
     let options = FormatOptions::new(SectorSize::Bytes512, sectors)
         .with_label("READS")
         .unwrap();
-    let format = Format::new(options, &mut NoClock).unwrap();
+    let format = FormatPlan::new(options, &mut NoClock).unwrap();
     let mut device = Memory(vec![0; sectors as usize * 512]);
     format.write_to(&mut device).unwrap();
     let mut volume = WritableVolume::open(device, NoClock).unwrap();
-    let dir = volume.make_directory(0, "Some Directory").unwrap();
+    let dir = volume.create_directory(0, "Some Directory").unwrap();
     let file = volume
         .create_file(dir.first_cluster(), "A file with a long name.txt")
         .unwrap();
@@ -90,7 +90,7 @@ fn populated(sectors: u32) -> Vec<u8> {
         .unwrap()
         .write(&[7u8; 5000])
         .unwrap();
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     volume.into_device().0
 }
 
@@ -102,17 +102,17 @@ fn read_everything<D: SectorDevice>(device: D) {
         .ok()
         .unwrap();
     let mut bytes = vec![0u8; 6000];
-    let mut reader = volume.open_file(&found).ok().unwrap();
+    let mut reader = volume.open_file_reader(&found).ok().unwrap();
     assert_eq!(reader.read(&mut bytes).ok().unwrap(), 5000);
     assert!(bytes[..5000].iter().all(|b| *b == 7));
-    assert!(volume.root_entries().count() >= 2);
+    assert!(volume.root_named_entries().count() >= 2);
     assert_eq!(
         volume.volume_label().ok().unwrap().unwrap().trimmed(),
         b"READS"
     );
     assert!(volume.count_free_clusters().ok().unwrap() > 0);
     let _ = volume.is_clean();
-    let _ = volume.fs_info();
+    let _ = volume.file_system_information();
     for _ in volume.chain(2) {}
 }
 

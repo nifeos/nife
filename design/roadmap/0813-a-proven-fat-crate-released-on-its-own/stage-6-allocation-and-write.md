@@ -23,15 +23,15 @@ nothing above it, and the second wrote files.
     after `extending` when the caller names the last cluster of a chain. A failed link gives the
     cluster back. The search starts after the last cluster handed out, or at the `FSInfo` hint on
     the first call. It wraps once and takes only an entry that is free.
-  - `Volume::free_chain(first)` frees a chain in order and returns the count. It stops at the first
+  - `Volume::deallocate_chain(first)` frees a chain in order and returns the count. It stops at the first
     entry that is not a link or an end marker without touching it, so a bad or reserved cluster
     keeps its marker.
   - `Volume::truncate_chain(first, keep)` cuts a chain to `keep` clusters. It marks the new last
     cluster end-of-chain before it frees the tail, so a crash leaks the tail and never leaves a
     chain pointing at a free cluster.
-- `FsInfo` and `FsInfoError`. The parse checks the three signatures and reports a free count or a
-  next-free cluster only when it could be true of the volume. `Volume::fs_info` reads the hints,
-  `Volume::sync` writes them back after changes (touching only the two hints, and never a sector
+- `FileSystemInformation` and `FileSystemInformationError`. The parse checks the three signatures and reports a free count or a
+  next-free cluster only when it could be true of the volume. `Volume::file_system_information` reads the hints,
+  `Volume::mark_clean` writes them back after changes (touching only the two hints, and never a sector
   whose signatures are wrong), and `Volume::count_free_clusters` counts them from the table.
 
 No nife type appears in a public signature.
@@ -46,7 +46,7 @@ method they cannot honestly implement.
 Prior art, from memory and not re-read for this page: rust-fatfs takes one `Read + Write + Seek`
 bound for every operation, so a read-only volume needs a wrapper that fails writes; embedded-sdmmc
 puts `read` and `write` on one block-device trait. The cost of a second trait is one more name in
-the public API. The choice is reversible until the first publication, the name is provisional, and
+the public API. The choice is reversible until the first publication, the name is ratified, and
 nothing outside the crate uses it yet.
 
 ## The evidence
@@ -64,15 +64,15 @@ thousands of clusters.
 
 ## Names minted
 
-Every name in this stage is provisional, with a `Name: provisional` block in its source.
+Every name in this stage is ratified, as the `Name:` block in its source records.
 
 - `WritableSectorDevice` and its method `write_sector`.
 - `TableEntry::encode`.
 - `AllocationError` (`Chain`, `VolumeFull`, `NotTheEndOfAChain`).
-- `Volume::allocate_cluster`, `free_chain`, `truncate_chain`, `count_free_clusters`, `fs_info`
-  and `sync`.
-- `FsInfo` (`parse`, `free_clusters`, `next_free`) and `FsInfoError` (`TooShort`, `BadSignature`).
-- The modules `allocation` and `fs_info`.
+- `Volume::allocate_cluster`, `deallocate_chain`, `truncate_chain`, `count_free_clusters`, `file_system_information`
+  and `mark_clean`.
+- `FileSystemInformation` (`parse`, `free_cluster_count`, `next_free_cluster`) and `FileSystemInformationError` (`TooShort`, `NoSignature`).
+- The modules `allocation` and `file_system_information`.
 
 ## The second pull request: files
 
@@ -81,17 +81,17 @@ Every name in this stage is provisional, with a `Name: provisional` block in its
   `NamedEntry`. It refuses an illegal name, a name the directory holds, and a full fixed root. A
   chain directory that fills grows by a zeroed cluster. The slot after an end marker gets an end
   marker of its own, so stale bytes there stay invisible.
-- `Volume::open_file_writer(&entry)` returns a `FileWriter` with `write`, `seek`, `position`,
-  `size_bytes` and `set_len`. A write extends the chain and the size, rewrites a partial sector
+- `Volume::open_file_writer(&entry)` returns a `FileWriter` with `write`, `set_position`, `position`,
+  `size_bytes` and `set_length`. A write extends the chain and the size, rewrites a partial sector
   with the slack past the old end zeroed, and rewrites the directory entry when the size or first
   cluster changed. A volume that fills part way returns the bytes that fit and then `VolumeFull`.
-  `set_len` grows with zeros or shrinks by freeing the clusters past the new end, entry first.
+  `set_length` grows with zeros or shrinks by freeing the clusters past the new end, entry first.
   An error ends the writer.
 - `Volume::remove_file(&entry)` marks every slot of the entry free, then frees its chain. A stale
   entry (the slot no longer holds that name) returns `EntryChanged`.
 - `NamedEntry` now knows its place: the directory, the first slot of its long-name run and its
   short slot. `Volume::is_clean` reads the clean-shutdown bit of table entry 1 (FAT16 and FAT32).
-  The first change after open or sync clears it and `sync` sets it again, but only if it was set
+  The first change after open or `mark_clean` clears it and `mark_clean` sets it again, but only if it was set
   before: a volume found dirty stays dirty.
 - `WriteError` is the one error of create, write, resize and remove.
 
@@ -106,5 +106,5 @@ Every name in this stage is provisional, with a `Name: provisional` block in its
 
 ## Names minted in the second pull request
 
-All provisional: `WriteError`, `FileWriter`, `Volume::create_file`, `open_file_writer`,
-`remove_file` and `is_clean`, and the modules `file_write` and `file_writer`.
+Ratified 2026-11-01 (UTC): `WriteError`, `FileWriter`, `Volume::create_file`, `open_file_writer`,
+`remove_file` and `is_clean`, and the modules `write_cursor` and `file_writer`.

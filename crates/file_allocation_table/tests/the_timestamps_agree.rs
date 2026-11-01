@@ -11,7 +11,7 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    Clock, Format, FormatOptions, NoClock, SectorDevice, SectorSize, Timestamp, VolumeLayout,
+    Clock, FormatOptions, FormatPlan, NoClock, SectorDevice, SectorSize, Timestamp, VolumeLayout,
     WritableSectorDevice, WritableVolume, WriteError,
 };
 use lamfat::FatType;
@@ -187,7 +187,7 @@ fn times_agree(label: &str, mebibytes: usize, fat_type: FatType) {
     volume
         .create_file(0, "Stamped File With A Long Name.txt")
         .unwrap();
-    volume.make_directory(0, "Stamped Dir").unwrap();
+    volume.create_directory(0, "Stamped Dir").unwrap();
     // A later write: the write and access times move, the creation time stays.
     now.set(at(2027, 2, 3, 4, 5, 6));
     let entry = volume.lookup("Stamped File With A Long Name.txt").unwrap();
@@ -196,7 +196,7 @@ fn times_agree(label: &str, mebibytes: usize, fat_type: FatType) {
         .unwrap()
         .write(b"later")
         .unwrap();
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     let file = "Stamped File With A Long Name.txt";
     assert_eq!(
@@ -306,7 +306,7 @@ fn the_formats_label_and_the_efi_volumes_directories_carry_the_clocks_time() {
     let options = FormatOptions::new(SectorSize::Bytes512, 16 * 1024)
         .with_label("STAMPED")
         .unwrap();
-    let format = Format::new(options, &mut Shared(&now)).unwrap();
+    let format = FormatPlan::new(options, &mut Shared(&now)).unwrap();
     let mut image = Memory {
         bytes: vec![0u8; 16 * 1024 * 512],
         size: SectorSize::Bytes512,

@@ -14,8 +14,8 @@ checked by a model checker.
   takes none). Create, write, extend, truncate, rename and remove files; make and remove directories;
   set attributes (read-only, hidden, system, archive); read and change the volume label. A name that
   is not 8.3 gets long-name slots and an alias numbered against its directory. The first change clears
-  the clean-shutdown bit and `Volume::sync` sets it again, with the FAT32 `FSInfo` hints.
-- **Format.** `Format` lays out an empty volume of any size and sector size (512 to 4096 bytes),
+  the clean-shutdown bit and `Volume::mark_clean` sets it again, with the FAT32 `FSInfo` hints.
+- **Format.** `FormatPlan` lays out an empty volume of any size and sector size (512 to 4096 bytes),
   with the cluster size, serial number and label of your choice. `VolumeLayout` lays out the one
   shape a bootloader needs: a FAT32 EFI system partition holding one boot file.
 
@@ -23,7 +23,7 @@ checked by a model checker.
 
 ```rust
 use file_allocation_table::{
-    Attributes, Format, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
+    Attributes, FormatPlan, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
     WritableVolume,
 };
 
@@ -61,13 +61,13 @@ fn main() {
     let options = FormatOptions::new(SectorSize::Bytes512, sectors)
         .with_label("EXAMPLE")
         .unwrap();
-    let format = Format::new(options, &mut NoClock).expect("a legal size");
+    let format = FormatPlan::new(options, &mut NoClock).expect("a legal size");
     let mut device = Memory(vec![0; sectors as usize * 512]);
     format.write_to(&mut device).unwrap();
 
     // Open it, make a directory and a file with a long name, and write some bytes.
     let mut volume = WritableVolume::open(device, NoClock).unwrap();
-    let docs = volume.make_directory(0, "Documents").unwrap();
+    let docs = volume.create_directory(0, "Documents").unwrap();
     let file = volume
         .create_file(docs.first_cluster(), "A long file name.txt")
         .unwrap();
@@ -79,12 +79,12 @@ fn main() {
     let stored = volume.lookup("Documents/A long file name.txt").unwrap();
     let hidden = Attributes::ARCHIVE.union(Attributes::HIDDEN);
     volume.set_attributes(&stored, hidden).unwrap();
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
 
     // Read it back by path, as another program would.
     let entry = volume.lookup("documents/A LONG FILE NAME.TXT").unwrap();
     let mut bytes = [0u8; 32];
-    let read = volume.open_file(&entry).unwrap().read(&mut bytes).unwrap();
+    let read = volume.open_file_reader(&entry).unwrap().read(&mut bytes).unwrap();
     assert_eq!(&bytes[..read], b"hello, volume");
     assert_eq!(
         volume.volume_label().unwrap().unwrap().trimmed(),
