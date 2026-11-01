@@ -61,8 +61,8 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   departure package by package. Each package leaves as soon as its own crates have left, in the
   order `disk-tools`, `process-tools`, `core-tools`. The `INTERFACES` note type moves into a leaf
   crate of its own so `disk-tools` need not wait for `grant_plan`, and `block_roster` stays the
-  first crate a consumer outside nife reads. Each crate gets a repository of its own, made with the
-  architect's approval. The order is in
+  first crate a consumer outside nife reads. Each crate gets a repository of its own once the
+  architect approves that repository. The order is in
   [the proposal](proposals/the-contract-crates-leave-in-this-order.md).
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a

@@ -32,8 +32,14 @@ Ruled 2026-11-01 (UTC): (a). Milestone 756 (`process-tools`, `core-tools` and `d
 first code to leave this repository)'s single cut is replaced by package-by-package departure, each
 package leaving as soon as its own crates have left, in the order `disk-tools`, `process-tools`,
 `core-tools`. The `INTERFACES` note type moves into its own small leaf crate, and `block_roster`
-stays the first consumed crate. The move is checked against the version-declaration lint of pull
-request #3022 in the proposal.
+stays the first consumed crate. 
+
+The move was checked by reading `helpers/interface_declarations_check.py` against it, and not run.
+The lint stays correct but fails until two things move with the crate. The new crate is linked and
+sits in none of the check's three tables, so it needs an `INTERFACE_ID` or an `OWED` line. And
+`named_crates` and the selftest hard-code `capability_manifest_note::` as the macro's crate, so a
+program naming the macro by the new path would read as linking the old crate. Slots such as
+`DOMAIN_SLOT` stay in `grant_plan`.
 
 ## 2. One repository per contract crate, or a few grouped repositories?
 
