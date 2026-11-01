@@ -41,6 +41,15 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
 - Sequenced 2026-10-28 (UTC): the update path goes first, milestones 911 (scripted installs grant
   only what the owner's approval file allows), 909 (basalt composes the bootable image from its
   packages), then milestone 607 item 5. This cut waits for its conditions.
+- Ruled 2026-11-01 (UTC): this cut follows the bottom-up order ruled the same day, in which nothing
+  that leaves nife may reference back into it. The tools are no longer the first code to leave. The
+  leaf pilot `jh7110_entropy` is first, then the contract crates bottom-up, and this cut comes once
+  the crates it links have moved and carry versions. §247's other conditions and its destination
+  stand. §247's condition 4 (`abi`, `address_space_map`, `glob` and `machine_statistics_protocol`
+  settled by 610's rule for four weeks) changes in two ways: those crates now move rather than
+  stay, and four weeks stable is not the right measure. **Open question for the architect:** what
+  measure replaces it. The condition was meant to show that the interface has stopped breaking;
+  no new measure is proposed here.
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a
 horrible package name for a nife package"), `coreutils` becomes `core-tools` and `procps` becomes
