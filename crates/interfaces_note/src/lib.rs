@@ -64,6 +64,15 @@ const fn put4(out: &mut [u8], at: usize, v: [u8; 4]) {
 /// Name: provisional; the number and the placement are calef's ruling of 2026-10-31 (UTC).
 pub const INTERFACES: u32 = 4;
 
+/// **This interface's number**: `21`. It is this interface's for good: no other interface takes
+/// it, and a format change is a new version ([`INTERFACES_VERSION`]), never a new number. Milestone
+/// 956 (the linked interfaces carry checkable versions) holds the table of numbers, and
+/// `script/lint` holds the tree to it. A program declares the pair of this id and
+/// [`INTERFACES_VERSION`].
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane milestone/956-the-interfaces-note-leaves-the-manifest-note-crate.
+pub const INTERFACE_ID: u64 = 21;
+
 /// The version of the [`INTERFACES`] descriptor this crate writes and reads.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.

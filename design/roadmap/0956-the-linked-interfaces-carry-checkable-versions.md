@@ -120,6 +120,7 @@ table. No registry outside it exists.
 | 18 | `program_argument_contract` |
 | 19 | `socket_contract` |
 | 20 | `user_mode_runtime` |
+| 21 | `interfaces_note` |
 
 An interface is the module that holds the id, so `filesystem_contract` carries one in `blk` and
 one in `fs`. The check also classifies every crate the cut links. Four define no run-time format
@@ -128,8 +129,7 @@ and stay Rust APIs: `calendar`, `domain_name_system`, `glob` and
 
 The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so
 carrying the note adds that one crate to a program's linked set and no planner. `disk-tools` does
-not reach `grant_plan`. The check holds `interfaces_note` in `OWED` until it takes a number from the
-table above. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`; moving
+not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`; moving
 them into a leaf crate belongs to pull request #3026.
 
 ## What this block does not do

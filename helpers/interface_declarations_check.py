@@ -59,9 +59,7 @@ TABLE = 'design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md'
 
 # Linked crates that define a run-time format exchanged between separately released parts, still
 # owed an `INTERFACE_ID` and a version. A crate leaves this table in the change that gives it both.
-OWED = {
-    'interfaces_note': 'the INTERFACES note a package carries, which the progenitor reads at spawn',
-}
+OWED = {}
 
 # Linked crates that define no run-time format another released part reads: a Rust API only.
 NOT_A_FORMAT = {
