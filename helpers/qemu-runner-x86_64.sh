@@ -131,6 +131,17 @@ if [ -n "$NIFE_INITIAL_RAMDISK" ]; then
     INITIAL_RAMDISK="-initrd $NIFE_INITIAL_RAMDISK"
 fi
 
+# **The loader's two digests** (`measured_boot::loader_digests`, milestone 695): the progenitor's
+# and the `program_measurements` table's, which `cargo xtask` writes beside every archive it packs
+# as `<archive>.loader-digests`. QEMU's direct boot is the loader here, so this runner copies them
+# into `-append`, which QEMU puts in the PVH start info's command line. The kernel refuses to enter
+# a progenitor without them, so an archive with no such file boots to `MEASURED BOOT REFUSED`, which
+# names the missing word.
+LOADER_DIGESTS=""
+if [ -n "$NIFE_INITIAL_RAMDISK" ] && [ -f "$NIFE_INITIAL_RAMDISK.loader-digests" ]; then
+    LOADER_DIGESTS=$(cat "$NIFE_INITIAL_RAMDISK.loader-digests")
+fi
+
 # isa-debug-exit is x86's answer to the semihosting exit the other two use: a write to this port
 # terminates QEMU with status (value << 1) | 1, so the guest can report pass/fail to the harness.
 # Always present, because a test build that cannot exit leaves an emulator running forever.
@@ -486,6 +497,7 @@ qemu-system-x86_64 \
     $MON \
     -kernel "$ELF" \
     $INITIAL_RAMDISK \
+    ${LOADER_DIGESTS:+-append "$LOADER_DIGESTS"} \
     "$@" <&3 3<&- &
 QEMU=$!
 exec 3<&-

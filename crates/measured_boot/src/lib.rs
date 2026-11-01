@@ -370,6 +370,13 @@ fn parse_digest_bytes(text: &[u8]) -> Result<Digest, DigestTextError> {
 /// spelling the parse reads) reserved for the crate's one block.
 pub const PROGRAM_MEASUREMENTS: &str = "program_measurements";
 
+/// The archive entry the kernel enters as the boot program, whose digest a loader hands over as
+/// `nife.progenitor` ([`loader_digests`]). The kernel, the packer that writes the words for QEMU
+/// and `uefi_loader`'s build all name it, so it lives here (rule 7). Like
+/// [`PROGRAM_MEASUREMENTS`], a string two programs agree on, provisional, and this paragraph is its
+/// record.
+pub const PROGENITOR: &str = "progenitor";
+
 /// A manifest line [`manifest_entries`] could not read, and why.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BadLine<'a> {

@@ -112,3 +112,93 @@ pub(crate) fn write_measure_manifest(arch: &str, image: &[u8]) -> bool {
     }
     true
 }
+
+/// **The two words a loader hands the kernel for this archive**
+/// (`measured_boot::loader_digests`): the progenitor's digest and the `program_measurements`
+/// table's, read back out of the packed `image`. `None` when the archive lacks either entry, which
+/// a boot that enters no progenitor does not need.
+pub(crate) fn loader_digest_words(image: &[u8]) -> Option<String> {
+    let fs = nifefs::Fs::parse(image).ok()?;
+    let digests = measured_boot::loader_digests::LoaderDigests {
+        progenitor: measured_boot::sha256(fs.read(measured_boot::PROGENITOR)?),
+        base: measured_boot::sha256(fs.read(measured_boot::PROGRAM_MEASUREMENTS)?),
+    };
+    let mut out = [0u8; measured_boot::loader_digests::MAXIMUM_BYTES];
+    let n = measured_boot::loader_digests::encode(&digests, &mut out);
+    Some(String::from_utf8_lossy(&out[..n]).into_owned())
+}
+
+/// Where the QEMU runners find the words for the archive at `archive`: beside it, with
+/// `.loader-digests` appended, so a runner given `NIFE_INITIAL_RAMDISK` needs nothing else
+/// (`helpers/qemu-runner-*.sh` pass it as `-append`).
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by milestone 695's lane, with the file suffix.
+pub(crate) fn loader_digests_path(archive: &str) -> String {
+    format!("{archive}.loader-digests")
+}
+
+/// Write [`loader_digest_words`] beside the archive at `archive`, or remove a stale file when the
+/// archive has no progenitor, so a runner never passes words for some other archive. Question 2
+/// of the handoff proposal, decided 2026-11-01 (UTC): the composer records the digests where it
+/// writes the archive, and the loader copies them.
+pub(crate) fn write_loader_digests(archive: &str, image: &[u8]) -> bool {
+    let path = loader_digests_path(archive);
+    let Some(words) = loader_digest_words(image) else {
+        return match std::fs::remove_file(&path) {
+            Ok(()) => true,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => true,
+            Err(e) => {
+                eprintln!("measure: cannot remove the stale {path}: {e}");
+                false
+            }
+        };
+    };
+    if let Err(e) = std::fs::write(&path, words) {
+        eprintln!("measure: cannot write {path}: {e}");
+        return false;
+    }
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pack(files: &[(&str, &[u8])]) -> Vec<u8> {
+        let mut image = vec![0u8; nifefs::image_size(files)];
+        nifefs::write_image(files, &mut image).expect("packs");
+        image
+    }
+
+    /// **The words the runners pass are the kernel's grammar for this archive's two entries**, read
+    /// back with the parser the kernel uses.
+    #[test]
+    fn the_words_name_this_archives_progenitor_and_table() {
+        let image = pack(&[
+            (measured_boot::PROGENITOR, b"a progenitor"),
+            ("swish", b"a shell"),
+            (measured_boot::PROGRAM_MEASUREMENTS, b"swish sha256:..."),
+        ]);
+        let words = loader_digest_words(&image).expect("both entries are there");
+        let read = measured_boot::loader_digests::parse(&words).expect("the kernel reads them");
+        assert_eq!(read.progenitor, measured_boot::sha256(b"a progenitor"));
+        assert_eq!(read.base, measured_boot::sha256(b"swish sha256:..."));
+    }
+
+    /// An archive with no progenitor or no table has no words, and its stale file goes.
+    #[test]
+    fn an_archive_missing_either_entry_has_no_words() {
+        let no_table = pack(&[(measured_boot::PROGENITOR, b"a progenitor")]);
+        assert_eq!(loader_digest_words(&no_table), None);
+        let no_progenitor = pack(&[(measured_boot::PROGRAM_MEASUREMENTS, b"")]);
+        assert_eq!(loader_digest_words(&no_progenitor), None);
+
+        let dir = std::env::temp_dir().join(format!("loader-digests-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let archive = dir.join("archive").to_string_lossy().into_owned();
+        std::fs::write(loader_digests_path(&archive), "stale").unwrap();
+        assert!(write_loader_digests(&archive, &no_table));
+        assert!(!std::path::Path::new(&loader_digests_path(&archive)).exists());
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+}

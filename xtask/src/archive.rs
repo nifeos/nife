@@ -713,7 +713,8 @@ pub(crate) fn write_archive_with<N: AsRef<str>>(
         eprintln!("{label}: could not write {path}: {e}");
         return None;
     }
-    write_measure_manifest(arch, &img).then_some((size, files.len()))
+    (write_measure_manifest(arch, &img) && crate::measure::write_loader_digests(path, &img))
+        .then_some((size, files.len()))
 }
 
 /// **Every program in an archive fits the address-space map's image band** (milestone 206 (a
