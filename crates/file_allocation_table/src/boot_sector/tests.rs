@@ -4,7 +4,7 @@
 //! Name: ratified 2026-10-25 (#2720).
 
 use super::*;
-use crate::{SECTOR_BYTES, VolumeLayout};
+use crate::{NoClock, SECTOR_BYTES, VolumeLayout};
 
 const FAT12_FLOPPY: &[u8; 512] = include_bytes!("../../tests/fixtures/fat12-floppy.boot");
 const FAT16_32M: &[u8; 512] = include_bytes!("../../tests/fixtures/fat16-32m.boot");
@@ -200,8 +200,15 @@ fn a_fat32_layout_under_the_cluster_floor_is_refused() {
 
 #[test]
 fn what_this_crates_mkfs_writes_parses_to_the_same_geometry() {
-    let volume =
-        VolumeLayout::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI").unwrap();
+    let volume = VolumeLayout::new(
+        1024 * 1024,
+        2048,
+        9_000_000,
+        0x1234_5678,
+        "BOOTX64.EFI",
+        &mut NoClock,
+    )
+    .unwrap();
     let mut sector = [0u8; SECTOR_BYTES];
     for index in [0, 6] {
         assert!(volume.fill_sector(index, &mut sector));

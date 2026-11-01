@@ -70,8 +70,9 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
    [stage-8-the-general-format.md](0813-a-proven-fat-crate-released-on-its-own/stage-8-the-general-format.md).
 9. Timestamps, attributes and the label, then `script/crate-standalone` and the README for release.
    Attributes, the label and the README landed
-   ([stage-9-attributes-labels-and-the-release-checks.md](0813-a-proven-fat-crate-released-on-its-own/stage-9-attributes-labels-and-the-release-checks.md)).
-   Timestamps wait on how a clock reaches the crate (#2984).
+   ([stage-9](0813-a-proven-fat-crate-released-on-its-own/stage-9-attributes-labels-and-the-release-checks.md)).
+   Timestamps landed (2026-11-01 UTC): a writer supplies a `Clock`, `NoClock` means no time, the
+   crate refuses an unstorable time, and a read takes no clock.
 
 ## What exists, checked 2026-10-07 (UTC)
 
@@ -215,9 +216,8 @@ tree's build, so nothing about it can work on one target and not another.
 
 ## Standalone, measured 2026-10-11 (UTC)
 
-`script/crate-standalone file_allocation_table` found, at base `ae6b91e79`, a manifest that
-inherits from nife's workspace, no README or license files, 14 lines that cite this tree, and a test
-that reads `../../target/`, which a stranger's checkout lacks.
+`script/crate-standalone file_allocation_table` found, at base `ae6b91e79`, a workspace-inherited
+manifest, no README or license files, and 14 lines that cite this tree.
 
 `script/names` reports the name `file_allocation_table` ratified (checked 2026-10-25).
 
@@ -289,7 +289,7 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** Timestamps, and the crate's names. Checked 2026-11-01 (UTC): it stamps no time.
+- **Outstanding.** The crate's names. Checked 2026-11-01 (UTC): the stages have landed.
 
 ## BUGS
 

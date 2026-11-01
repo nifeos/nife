@@ -10,7 +10,9 @@ use std::io::{Cursor, Read};
 use std::path::Path;
 use std::process::Command;
 
-use file_allocation_table::{SectorDevice, SectorSize, Volume, WritableSectorDevice, WriteError};
+use file_allocation_table::{
+    NoClock, SectorDevice, SectorSize, WritableSectorDevice, WritableVolume, WriteError,
+};
 use lamfat::FatType;
 
 /// A volume held in memory, read and written one sector at a time.
@@ -139,7 +141,12 @@ fn oracle_files(image: &[u8]) -> Vec<(String, Vec<u8>)> {
 }
 
 /// Write `bytes` through `volume` in chunks of `chunk`.
-fn write_in_chunks(volume: &mut Volume<Memory>, name: &str, bytes: &[u8], chunk: usize) {
+fn write_in_chunks(
+    volume: &mut WritableVolume<Memory, NoClock>,
+    name: &str,
+    bytes: &[u8],
+    chunk: usize,
+) {
     let entry = volume.create_file(0, name).expect("create");
     let mut writer = volume.open_file_writer(&entry).unwrap();
     for piece in bytes.chunks(chunk.max(1)) {
@@ -187,7 +194,7 @@ impl Plan {
 }
 
 /// Create ten files of sizes around the sector and cluster boundaries.
-fn create_files(volume: &mut Volume<Memory>, plan: &mut Plan, fat_type: FatType) {
+fn create_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &mut Plan, fat_type: FatType) {
     let c = plan.cluster_bytes;
     let sizes = [0, 1, 511, 512, 513, c - 1, c, c + 1, 3 * c + 17, 100_000];
     for (i, size) in sizes.iter().enumerate() {
@@ -216,7 +223,7 @@ fn create_files(volume: &mut Volume<Memory>, plan: &mut Plan, fat_type: FatType)
 }
 
 /// Overwrite across a cluster boundary, append, shrink, grow, empty and delete.
-fn change_files(volume: &mut Volume<Memory>, plan: &mut Plan) {
+fn change_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &mut Plan) {
     let c = plan.cluster_bytes;
     let entry = volume.lookup("FILE9.BIN").unwrap();
     {
@@ -250,7 +257,7 @@ fn change_files(volume: &mut Volume<Memory>, plan: &mut Plan) {
 }
 
 /// Read every file back through this crate's reader.
-fn read_files(volume: &mut Volume<Memory>, plan: &Plan) {
+fn read_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &Plan) {
     for (name, bytes) in &plan.expected {
         let entry = volume.lookup(name).unwrap();
         let mut reader = volume.open_file(&entry).unwrap();
@@ -261,7 +268,7 @@ fn read_files(volume: &mut Volume<Memory>, plan: &Plan) {
 }
 
 fn the_writer_agrees(label: &str, mebibytes: usize, fat_type: FatType, sector: u16) {
-    let mut volume = Volume::open(formatted(mebibytes, fat_type, sector)).unwrap();
+    let mut volume = WritableVolume::open(formatted(mebibytes, fat_type, sector), NoClock).unwrap();
     let mut plan = Plan {
         label: label.to_string(),
         expected: Vec::new(),
@@ -272,12 +279,12 @@ fn the_writer_agrees(label: &str, mebibytes: usize, fat_type: FatType, sector: u
     let image = volume.into_device();
     plan.check(&image, "created");
 
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     change_files(&mut volume, &mut plan);
     let image = volume.into_device();
     plan.check(&image, "changed");
 
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     read_files(&mut volume, &plan);
     for (name, _) in std::mem::take(&mut plan.expected) {
         let entry = volume.lookup(&name).unwrap();
@@ -309,7 +316,7 @@ fn files_write_and_agree_on_fat32() {
 
 #[test]
 fn a_fat32_root_grows_past_one_cluster_and_a_fat16_root_refuses() {
-    let mut volume = Volume::open(formatted(64, FatType::Fat32, 512)).unwrap();
+    let mut volume = WritableVolume::open(formatted(64, FatType::Fat32, 512), NoClock).unwrap();
     let per_cluster = volume.boot_sector().bytes_per_cluster() as usize / 32;
     for i in 0..per_cluster + 3 {
         volume.create_file(0, &format!("N{i}.TXT")).unwrap();
@@ -319,7 +326,7 @@ fn a_fat32_root_grows_past_one_cluster_and_a_fat16_root_refuses() {
     assert_eq!(oracle_files(&image.bytes).len(), per_cluster + 3);
     check_with_fsck(&image.bytes, "root-grown");
 
-    let mut volume = Volume::open(formatted(32, FatType::Fat16, 512)).unwrap();
+    let mut volume = WritableVolume::open(formatted(32, FatType::Fat16, 512), NoClock).unwrap();
     let mut made = 0;
     let refused = loop {
         match volume.create_file(0, &format!("M{made}.TXT")) {
@@ -333,7 +340,7 @@ fn a_fat32_root_grows_past_one_cluster_and_a_fat16_root_refuses() {
 
 #[test]
 fn names_and_stale_entries_are_refused() {
-    let mut volume = Volume::open(formatted(4, FatType::Fat12, 512)).unwrap();
+    let mut volume = WritableVolume::open(formatted(4, FatType::Fat12, 512), NoClock).unwrap();
     for bad in ["", "a/b", "ends.", "has*star"] {
         assert_eq!(
             volume.create_file(0, bad),
@@ -356,7 +363,7 @@ fn names_and_stale_entries_are_refused() {
 
 #[test]
 fn a_full_volume_writes_what_fits_then_refuses_and_deleting_restores_the_space() {
-    let mut volume = Volume::open(formatted(1, FatType::Fat12, 512)).unwrap();
+    let mut volume = WritableVolume::open(formatted(1, FatType::Fat12, 512), NoClock).unwrap();
     let total = volume.count_free_clusters().unwrap() as usize;
     let cluster = volume.boot_sector().bytes_per_cluster() as usize;
     let entry = volume.create_file(0, "BIG.BIN").unwrap();
@@ -382,15 +389,18 @@ fn a_volume_found_dirty_stays_dirty_after_a_sync() {
     ] {
         let mut image = formatted(mebibytes, fat_type, 512);
         // Table entry 1 is at byte 2 (FAT16) or 4 (FAT32) of the first table; clear its clean bit.
-        let boot = Volume::open(Memory {
-            bytes: image.bytes.clone(),
-            size: image.size,
-        })
+        let boot = WritableVolume::open(
+            Memory {
+                bytes: image.bytes.clone(),
+                size: image.size,
+            },
+            NoClock,
+        )
         .unwrap();
         let table = boot.boot_sector().table_first_sector(0).unwrap() as usize * 512;
         let top = table + at + if fat_type == FatType::Fat16 { 1 } else { 3 };
         image.bytes[top] &= !bit;
-        let mut volume = Volume::open(image).unwrap();
+        let mut volume = WritableVolume::open(image, NoClock).unwrap();
         assert_eq!(volume.is_clean().unwrap(), Some(false));
         volume.create_file(0, "A.TXT").unwrap();
         volume.sync().unwrap();
@@ -416,7 +426,7 @@ fn files_in_a_subdirectory_write_and_the_subdirectory_grows() {
             fs.root_dir().create_dir("Sub Directory").unwrap();
             fs.unmount().unwrap();
         }
-        let mut volume = Volume::open(image).unwrap();
+        let mut volume = WritableVolume::open(image, NoClock).unwrap();
         let dir = volume.lookup("Sub Directory").unwrap().first_cluster();
         let cluster = volume.boot_sector().bytes_per_cluster() as usize;
         // Slot 0 and 1 are `.` and `..`; this many files fill the first cluster and spill over.
@@ -464,7 +474,7 @@ fn files_in_a_subdirectory_write_and_the_subdirectory_grows() {
 /// A FAT16 root filled to its 512 entries holds every one of them, in the sectors the region has.
 #[test]
 fn a_full_fixed_root_reads_back_every_entry() {
-    let mut volume = Volume::open(formatted(32, FatType::Fat16, 512)).unwrap();
+    let mut volume = WritableVolume::open(formatted(32, FatType::Fat16, 512), NoClock).unwrap();
     for i in 0..512 {
         let entry = volume.create_file(0, &format!("R{i}.TXT")).unwrap();
         volume
@@ -502,17 +512,20 @@ fn a_directory_that_grows_into_a_multi_sector_cluster_zeroes_all_of_it() {
             .bytes_per_cluster(2048),
     )
     .unwrap();
-    let probe = Volume::open(Memory {
-        bytes: image.bytes.clone(),
-        size: image.size,
-    })
+    let probe = WritableVolume::open(
+        Memory {
+            bytes: image.bytes.clone(),
+            size: image.size,
+        },
+        NoClock,
+    )
     .unwrap();
     let boot = *probe.boot_sector();
     assert_eq!(boot.sectors_per_cluster(), 4);
     let data = boot.first_data_sector() as usize * 512;
     // Everything after the root's first cluster is stale.
     image.bytes[data + 2048..].fill(0xAA);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let slots = 2048 / 32;
     for i in 0..slots + 40 {
         volume.create_file(0, &format!("G{i}.TXT")).unwrap();
@@ -536,7 +549,7 @@ fn a_fat32_file_beyond_cluster_65535_keeps_its_high_cluster_bits() {
             .bytes_per_cluster(512),
     )
     .unwrap();
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let filler = vec![0x5Au8; 1 << 20];
     let entry = volume.create_file(0, "FILL.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();

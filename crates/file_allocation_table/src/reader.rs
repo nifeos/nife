@@ -11,6 +11,7 @@ use crate::directory::Directory;
 use crate::named_entry::Entries;
 use crate::sector::{SectorDevice, SectorSize};
 use crate::table::{self, TableEntry};
+use crate::time::Stamp;
 
 /// **Why a table read or a chain walk stopped.**
 ///
@@ -53,10 +54,10 @@ pub enum ChainError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{SECTOR_BYTES, SectorDevice, SectorSize, Volume, VolumeLayout};
+/// use file_allocation_table::{SECTOR_BYTES, SectorDevice, SectorSize, Volume, VolumeLayout, NoClock};
 ///
 /// // A volume this crate's writer lays out, held in memory.
-/// let layout = VolumeLayout::new(70_000 * 8 + 2_000, 0, 5_000, 1, "BOOTX64.EFI").unwrap();
+/// let layout = VolumeLayout::new(70_000 * 8 + 2_000, 0, 5_000, 1, "BOOTX64.EFI", &mut NoClock).unwrap();
 /// struct Image(VolumeLayout);
 /// impl SectorDevice for Image {
 ///     type Error = ();
@@ -87,6 +88,8 @@ pub struct Volume<D> {
     pub(crate) buffer: [u8; SectorSize::MAX],
     /// What the writer keeps between calls; a reader never touches it.
     pub(crate) writer: WriterState,
+    /// The time the operation under way stamps: packed from the clock once per operation.
+    pub(crate) stamp: Stamp,
 }
 
 impl<D: SectorDevice> Volume<D> {
@@ -104,6 +107,7 @@ impl<D: SectorDevice> Volume<D> {
             cached: None,
             buffer: [0; SectorSize::MAX],
             writer: WriterState::new(),
+            stamp: Stamp::ZERO,
         })
     }
 

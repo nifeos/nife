@@ -12,7 +12,7 @@
 //! - A chain is freed from its first cluster on, one entry at a time.
 //!
 //! The FAT32 `FSInfo` hints are kept in memory as the operations change them and written by
-//! [`Volume::sync`]. A volume that is dropped without a sync leaves hints the specification
+//! [`crate::WritableVolume::sync`]. A volume that is dropped without a sync leaves hints the specification
 //! already calls untrustworthy.
 //!
 //! Name: provisional. The module that finds free clusters and owns the table's writes.
@@ -270,27 +270,6 @@ impl<D: WritableSectorDevice> Volume<D> {
         Ok(())
     }
 
-    /// The clean-shutdown bit of table entry 1, or `None` for FAT12, which has none.
-    fn clean_bit(&self) -> Option<u32> {
-        match self.boot.file_allocation_table_type() {
-            FileAllocationTableType::Fat12 => None,
-            FileAllocationTableType::Fat16 => Some(0x8000),
-            FileAllocationTableType::Fat32 => Some(0x0800_0000),
-        }
-    }
-
-    /// **Whether the volume was shut down cleanly**, from the bit in table entry 1: `Ok(None)` on
-    /// FAT12, which keeps no such bit. A volume this crate is changing reads as not clean until
-    /// [`Volume::sync`].
-    ///
-    /// Name: provisional. The specification's `ClnShutBitMask`, asked as a question.
-    pub fn is_clean(&mut self) -> Result<Option<bool>, ChainError<D::Error>> {
-        let Some(bit) = self.clean_bit() else {
-            return Ok(None);
-        };
-        Ok(Some(self.read_raw_entry(1)? & bit != 0))
-    }
-
     /// Clear the clean-shutdown bit before the first change after open or after a sync, and
     /// remember whether it was set. A volume found dirty stays dirty at the next sync, since this
     /// crate cannot know the earlier writer left it consistent.
@@ -336,7 +315,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// entry is not end-of-chain, and a full volume.
     ///
     /// Name: provisional. What a caller asks of a volume that has to grow a file or a directory.
-    pub fn allocate_cluster(
+    pub(crate) fn allocate_cluster(
         &mut self,
         extending: Option<u32>,
     ) -> Result<u32, AllocationError<D::Error>> {
@@ -372,7 +351,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// **Free every cluster of the chain that starts at `first`**, and return how many.
     ///
     /// Name: provisional. Beside `allocate_cluster`.
-    pub fn free_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
+    pub(crate) fn free_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
         self.begin_change()?;
         self.load_hints()?;
         let result = free_chain(self, first);
@@ -384,7 +363,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// clusters it freed. A `keep` of 0 frees the whole chain.
     ///
     /// Name: provisional. Beside `free_chain`.
-    pub fn truncate_chain(
+    pub(crate) fn truncate_chain(
         &mut self,
         first: u32,
         keep: u32,
@@ -418,7 +397,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     ///
     /// Name: provisional. The verb of the standard library's `Write::flush`, for the volume's own
     /// state.
-    pub fn sync(&mut self) -> Result<(), ChainError<D::Error>> {
+    pub(crate) fn sync(&mut self) -> Result<(), ChainError<D::Error>> {
         if self.writer.hints_changed {
             self.write_hints()?;
         }
@@ -449,6 +428,27 @@ impl<D: WritableSectorDevice> Volume<D> {
 }
 
 impl<D: crate::sector::SectorDevice> Volume<D> {
+    /// The clean-shutdown bit of table entry 1, or `None` for FAT12, which has none.
+    fn clean_bit(&self) -> Option<u32> {
+        match self.boot.file_allocation_table_type() {
+            FileAllocationTableType::Fat12 => None,
+            FileAllocationTableType::Fat16 => Some(0x8000),
+            FileAllocationTableType::Fat32 => Some(0x0800_0000),
+        }
+    }
+
+    /// **Whether the volume was shut down cleanly**, from the bit in table entry 1: `Ok(None)` on
+    /// FAT12, which keeps no such bit. A volume this crate is changing reads as not clean until
+    /// [`crate::WritableVolume::sync`].
+    ///
+    /// Name: provisional. The specification's `ClnShutBitMask`, asked as a question.
+    pub fn is_clean(&mut self) -> Result<Option<bool>, ChainError<D::Error>> {
+        let Some(bit) = self.clean_bit() else {
+            return Ok(None);
+        };
+        Ok(Some(self.read_raw_entry(1)? & bit != 0))
+    }
+
     /// **Count the free clusters** by reading the whole table: exact where `FSInfo` is a hint.
     ///
     /// Name: provisional. What `FSI_Free_Count` claims, counted.

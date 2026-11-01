@@ -11,8 +11,8 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    Attributes, Format, FormatOptions, SectorDevice, SectorSize, Volume, WritableSectorDevice,
-    WriteError,
+    Attributes, Format, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
+    WritableVolume, WriteError,
 };
 use lamfat::{FatType, FileAttributes};
 
@@ -127,7 +127,7 @@ fn lamfat_label(image: &[u8]) -> String {
 }
 
 fn attributes_agree(label: &str, mebibytes: usize, fat_type: FatType) {
-    let mut volume = Volume::open(formatted(mebibytes, fat_type, 512)).unwrap();
+    let mut volume = WritableVolume::open(formatted(mebibytes, fat_type, 512), NoClock).unwrap();
     let file = volume.create_file(0, "Attribute Test File.txt").unwrap();
     let dir = volume.make_directory(0, "Attribute Dir").unwrap();
     let sets = [
@@ -165,7 +165,7 @@ fn attributes_agree(label: &str, mebibytes: usize, fat_type: FatType) {
             "{label} directory"
         );
         check_with_fsck(&image.bytes, &format!("{label}-attributes"));
-        volume = Volume::open(image).unwrap();
+        volume = WritableVolume::open(image, NoClock).unwrap();
     }
     // A read-only file refuses until the bit clears.
     let current = volume.lookup("Attribute Test File.txt").unwrap();
@@ -203,7 +203,7 @@ fn attributes_agree_on_fat32() {
 }
 
 fn labels_agree(label: &str, mebibytes: usize, fat_type: FatType) {
-    let mut volume = Volume::open(formatted(mebibytes, fat_type, 512)).unwrap();
+    let mut volume = WritableVolume::open(formatted(mebibytes, fat_type, 512), NoClock).unwrap();
     assert_eq!(
         volume.volume_label().unwrap(),
         None,
@@ -219,7 +219,7 @@ fn labels_agree(label: &str, mebibytes: usize, fat_type: FatType) {
     assert_eq!(lamfat_label(&image.bytes), "ORACLE LBL", "{label}");
     check_with_fsck(&image.bytes, &format!("{label}-label"));
     // Change it: still one entry, and rust-fatfs and fsck agree.
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     volume.set_volume_label("RENAMED").unwrap();
     let labels = volume
         .root_entries()
@@ -232,10 +232,13 @@ fn labels_agree(label: &str, mebibytes: usize, fat_type: FatType) {
     assert_eq!(lamfat_label(&image.bytes), "RENAMED", "{label}");
     check_with_fsck(&image.bytes, &format!("{label}-relabel"));
     // The boot sector's copy follows, and on FAT32 so does the backup boot sector.
-    let mut volume = Volume::open(Memory {
-        bytes: image.bytes.clone(),
-        size: image.size,
-    })
+    let mut volume = WritableVolume::open(
+        Memory {
+            bytes: image.bytes.clone(),
+            size: image.size,
+        },
+        NoClock,
+    )
     .unwrap();
     let boot = *volume.boot_sector();
     let at = if fat_type == FatType::Fat32 { 71 } else { 43 };
@@ -275,14 +278,14 @@ fn a_label_the_format_wrote_reads_back_and_changes() {
         let options = FormatOptions::new(SectorSize::Bytes512, sectors)
             .with_label("FORMATTED")
             .unwrap();
-        let format = Format::new(options).unwrap();
+        let format = Format::new(options, &mut NoClock).unwrap();
         let mut image = Memory {
             bytes: vec![0u8; sectors as usize * 512],
             size: SectorSize::Bytes512,
         };
         format.write_to(&mut image).unwrap();
         assert_eq!(lamfat_label(&image.bytes), "FORMATTED");
-        let mut volume = Volume::open(image).unwrap();
+        let mut volume = WritableVolume::open(image, NoClock).unwrap();
         assert_eq!(
             volume.volume_label().unwrap().unwrap().trimmed(),
             b"FORMATTED"
@@ -317,10 +320,13 @@ fn a_label_mkfs_fat_wrote_reads_back_and_changes() {
     assert!(made.status.success());
     let bytes = std::fs::read(&path).unwrap();
     let _ = std::fs::remove_file(&path);
-    let mut volume = Volume::open(Memory {
-        bytes,
-        size: SectorSize::Bytes512,
-    })
+    let mut volume = WritableVolume::open(
+        Memory {
+            bytes,
+            size: SectorSize::Bytes512,
+        },
+        NoClock,
+    )
     .unwrap();
     assert_eq!(
         volume.volume_label().unwrap().unwrap().trimmed(),

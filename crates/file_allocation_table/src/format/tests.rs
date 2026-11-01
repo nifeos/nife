@@ -3,6 +3,7 @@
 //! Name: provisional.
 
 use super::*;
+use crate::NoClock;
 use crate::boot_sector::BootSector;
 
 fn options(sectors: u32) -> FormatOptions {
@@ -11,18 +12,18 @@ fn options(sectors: u32) -> FormatOptions {
 
 #[test]
 fn the_type_follows_the_cluster_count_from_the_smallest_cluster_that_works() {
-    let small = Format::new(options(2 * 1024)).unwrap();
+    let small = Format::new(options(2 * 1024), &mut NoClock).unwrap();
     assert_eq!(
         small.file_allocation_table_type(),
         FileAllocationTableType::Fat12
     );
     assert_eq!(small.sectors_per_cluster(), 1);
-    let middle = Format::new(options(64 * 1024)).unwrap();
+    let middle = Format::new(options(64 * 1024), &mut NoClock).unwrap();
     assert_eq!(
         middle.file_allocation_table_type(),
         FileAllocationTableType::Fat16
     );
-    let big = Format::new(options(200 * 1024)).unwrap();
+    let big = Format::new(options(200 * 1024), &mut NoClock).unwrap();
     assert_eq!(
         big.file_allocation_table_type(),
         FileAllocationTableType::Fat32
@@ -36,9 +37,11 @@ fn the_fat32_numbers_are_the_efi_volumes_numbers() {
         options(1024 * 1024)
             .with_type(FileAllocationTableType::Fat32)
             .with_cluster_sectors(8),
+        &mut NoClock,
     )
     .unwrap();
-    let layout = crate::VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI").unwrap();
+    let layout =
+        crate::VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI", &mut NoClock).unwrap();
     assert_eq!(format.clusters(), layout.clusters());
     assert_eq!(format.table_sectors(), layout.table_sectors());
     assert_eq!(
@@ -59,6 +62,7 @@ fn the_data_area_starts_on_a_cluster_boundary_for_every_type_and_cluster_size() 
                 options(sectors)
                     .with_type(kind)
                     .with_cluster_sectors(cluster),
+                &mut NoClock,
             ) else {
                 continue;
             };
@@ -73,7 +77,7 @@ fn the_data_area_starts_on_a_cluster_boundary_for_every_type_and_cluster_size() 
 
 #[test]
 fn every_sector_the_format_writes_is_whole_and_the_boot_sector_parses_to_the_same_volume() {
-    let format = Format::new(options(64 * 1024).with_volume_id(0x1234_5678)).unwrap();
+    let format = Format::new(options(64 * 1024).with_volume_id(0x1234_5678), &mut NoClock).unwrap();
     let mut sector = [0u8; 512];
     assert!(format.fill_sector(0, &mut sector));
     let boot = BootSector::parse(&sector).unwrap();
@@ -89,7 +93,7 @@ fn every_sector_the_format_writes_is_whole_and_the_boot_sector_parses_to_the_sam
 
 #[test]
 fn a_fat32_volume_carries_fs_info_its_backups_and_a_root_cluster() {
-    let format = Format::new(options(200 * 1024)).unwrap();
+    let format = Format::new(options(200 * 1024), &mut NoClock).unwrap();
     let (mut zero, mut backup, mut info, mut info_backup) =
         ([0u8; 512], [0u8; 512], [0u8; 512], [0u8; 512]);
     assert!(format.fill_sector(0, &mut zero));
@@ -119,7 +123,11 @@ fn a_fat32_volume_carries_fs_info_its_backups_and_a_root_cluster() {
 
 #[test]
 fn a_label_becomes_the_boot_sectors_label_and_the_roots_first_entry() {
-    let format = Format::new(options(64 * 1024).with_label("MY DISK").unwrap()).unwrap();
+    let format = Format::new(
+        options(64 * 1024).with_label("MY DISK").unwrap(),
+        &mut NoClock,
+    )
+    .unwrap();
     let mut boot = [0u8; 512];
     assert!(format.fill_sector(0, &mut boot));
     assert_eq!(&boot[43..54], b"MY DISK    ");
@@ -129,7 +137,7 @@ fn a_label_becomes_the_boot_sectors_label_and_the_roots_first_entry() {
     assert_eq!(&sector[..11], b"MY DISK    ");
     assert_eq!(sector[11], 0x08);
     // Without a label the root starts empty and the boot sector says NO NAME.
-    let plain = Format::new(options(64 * 1024)).unwrap();
+    let plain = Format::new(options(64 * 1024), &mut NoClock).unwrap();
     assert!(plain.fill_sector(root, &mut sector));
     assert!(sector.iter().all(|b| *b == 0));
 }
@@ -137,8 +145,11 @@ fn a_label_becomes_the_boot_sectors_label_and_the_roots_first_entry() {
 #[test]
 fn a_volume_of_65536_sectors_or_more_uses_the_32_bit_total_and_a_smaller_one_the_16_bit() {
     for (sectors, small) in [(65_535u32, true), (65_536, false)] {
-        let format =
-            Format::new(options(sectors).with_type(FileAllocationTableType::Fat16)).unwrap();
+        let format = Format::new(
+            options(sectors).with_type(FileAllocationTableType::Fat16),
+            &mut NoClock,
+        )
+        .unwrap();
         let mut boot = [0u8; 512];
         assert!(format.fill_sector(0, &mut boot));
         let total16 = u16::from_le_bytes([boot[19], boot[20]]);
@@ -171,7 +182,7 @@ impl crate::WritableSectorDevice for Sink {
 
 #[test]
 fn writing_a_format_stops_at_the_devices_first_error() {
-    let format = Format::new(options(8 * 1024)).unwrap();
+    let format = Format::new(options(8 * 1024), &mut NoClock).unwrap();
     let mut sink = Sink(0);
     assert_eq!(format.write_to(&mut sink), Err(3));
     assert_eq!(sink.0, 3);

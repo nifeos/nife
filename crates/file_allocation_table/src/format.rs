@@ -13,6 +13,7 @@
 use crate::boot_sector::FileAllocationTableType;
 use crate::long_name::is_short_byte;
 use crate::sector::{SectorSize, WritableSectorDevice};
+use crate::time::{Clock, Stamp};
 
 /// Reserved sectors of a FAT32 volume: the boot sector, `FSInfo`, their backups at 6 and 7, and
 /// room left over as every tool leaves it.
@@ -44,6 +45,10 @@ pub enum FormatError {
     ///
     /// Name: provisional. The condition.
     LabelRefused,
+    /// The clock reported a time FAT cannot store (see [`crate::Clock`]).
+    ///
+    /// Name: provisional. As `WriteError::TimeOutOfRange`.
+    TimeOutOfRange,
     /// The cluster size is not a power of two from 1 to 128 sectors.
     ///
     /// Name: provisional. The condition.
@@ -335,10 +340,10 @@ pub(crate) fn put32(out: &mut [u8], at: usize, value: u32) {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{Format, FormatOptions, SectorSize, Volume};
+/// use file_allocation_table::{Format, FormatOptions, SectorSize, NoClock, Volume};
 ///
 /// // 8 MiB of 512-byte sectors: small enough to be FAT12.
-/// let format = Format::new(FormatOptions::new(SectorSize::Bytes512, 16 * 1024)).unwrap();
+/// let format = Format::new(FormatOptions::new(SectorSize::Bytes512, 16 * 1024), &mut NoClock).unwrap();
 /// let mut boot = [0u8; 512];
 /// assert!(format.fill_sector(0, &mut boot));
 /// let parsed = file_allocation_table::BootSector::parse(&boot).unwrap();
@@ -353,13 +358,16 @@ pub struct Format {
     label: [u8; 11],
     has_label: bool,
     hidden_sectors: u32,
+    stamp: Stamp,
 }
 
 impl Format {
-    /// **Lay out the volume `options` describe**, or say why none exists.
+    /// **Lay out the volume `options` describe**, or say why none exists. The label entry, when
+    /// there is one, carries the time `clock` reports now (read once); `NoClock` gives the zero
+    /// timestamp and a byte-for-byte reproducible image.
     ///
     /// Name: provisional. The constructor, as `VolumeLayout::new`.
-    pub fn new(options: FormatOptions) -> Result<Format, FormatError> {
+    pub fn new(options: FormatOptions, clock: &mut impl Clock) -> Result<Format, FormatError> {
         const KINDS: [FileAllocationTableType; 3] = [
             FileAllocationTableType::Fat12,
             FileAllocationTableType::Fat16,
@@ -371,6 +379,7 @@ impl Format {
         {
             return Err(FormatError::ClusterSizeRefused);
         }
+        let stamp = Stamp::pack(clock.now()).map_err(|_| FormatError::TimeOutOfRange)?;
         let mut seen_small = false;
         let mut found = None;
         'search: for sectors in CLUSTERS {
@@ -405,6 +414,7 @@ impl Format {
             label: options.label,
             has_label: options.has_label,
             hidden_sectors: options.hidden_sectors,
+            stamp,
         })
     }
 
@@ -476,6 +486,7 @@ impl Format {
             // The first sector of the root directory, FAT12 and FAT16's region or FAT32's cluster.
             out[..11].copy_from_slice(&self.label);
             out[11] = ATTR_VOLUME_ID;
+            self.stamp.write_new(&mut out[..32]);
         }
         true
     }

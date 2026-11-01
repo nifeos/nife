@@ -13,7 +13,8 @@
 #![no_main]
 
 use file_allocation_table::{
-    Format, FormatOptions, NamedEntry, SectorDevice, SectorSize, Volume, WritableSectorDevice,
+    Clock, Format, FormatOptions, NamedEntry, NoClock, SectorDevice, SectorSize, Timestamp,
+    WritableSectorDevice, WritableVolume,
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -76,6 +77,41 @@ fn name(bytes: &[u8]) -> String {
         .collect()
 }
 
+/// A clock fed from the input: each reading takes seven bytes, any of which may make an invalid
+/// time (a month 200, a year 65000), and a first byte below 32 reports no time. When the input runs
+/// out the clock reports no time. The crate must refuse every out-of-range one with an error and never panic.
+struct Fed {
+    bytes: Vec<u8>,
+    at: usize,
+}
+
+impl Fed {
+    fn new(input: &[u8]) -> Fed {
+        Fed {
+            bytes: input.iter().rev().take(256).copied().collect(),
+            at: 0,
+        }
+    }
+}
+
+impl Clock for Fed {
+    fn now(&mut self) -> Option<Timestamp> {
+        let next = self.bytes.get(self.at..self.at + 7)?;
+        self.at += 7;
+        if next[0] < 32 {
+            return None;
+        }
+        Some(Timestamp {
+            year: u16::from_le_bytes([next[0], next[1]]),
+            month: next[2],
+            day: next[3],
+            hour: next[4],
+            minute: next[5],
+            second: next[6],
+        })
+    }
+}
+
 fuzz_target!(|data: &[u8]| {
     let Some((&mode, rest)) = data.split_first() else {
         return;
@@ -86,7 +122,7 @@ fuzz_target!(|data: &[u8]| {
     };
     let operations = if formatted {
         let options = FormatOptions::new(SectorSize::Bytes512, (IMAGE / 512) as u32);
-        let Ok(format) = Format::new(options) else {
+        let Ok(format) = Format::new(options, &mut NoClock) else {
             return;
         };
         format
@@ -98,13 +134,13 @@ fuzz_target!(|data: &[u8]| {
         image.bytes[..kept].copy_from_slice(&rest[..kept]);
         &rest[kept..]
     };
-    let Ok(mut volume) = Volume::open(image) else {
+    let Ok(mut volume) = WritableVolume::open(image, Fed::new(operations)) else {
         return;
     };
     let mut made: Vec<String> = Vec::new();
     for op in operations.chunks(4).take(64) {
         let picked = name(op);
-        let found = |volume: &mut Volume<Image>, path: &str| -> Option<NamedEntry> {
+        let found = |volume: &mut WritableVolume<Image, Fed>, path: &str| -> Option<NamedEntry> {
             volume.lookup(path).ok()
         };
         match op[0] % 8 {

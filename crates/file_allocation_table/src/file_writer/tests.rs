@@ -8,6 +8,7 @@ use super::*;
 use crate::directory::ShortEntry;
 use crate::named_entry::NamedEntry;
 use crate::reader::tests::Image;
+use crate::{NoClock, WritableVolume};
 
 /// A byte that tells its file offset.
 fn pattern(offset: usize) -> u8 {
@@ -15,7 +16,7 @@ fn pattern(offset: usize) -> u8 {
 }
 
 /// Read the whole file `name` from the root of `volume`.
-fn read_back(volume: &mut Volume<Image>, name: &str, out: &mut [u8]) -> usize {
+fn read_back(volume: &mut WritableVolume<Image, NoClock>, name: &str, out: &mut [u8]) -> usize {
     let entry = volume.lookup(name).expect("the file is listed");
     let mut reader = volume.open_file(&entry).unwrap();
     let mut total = 0;
@@ -31,7 +32,7 @@ fn read_back(volume: &mut Volume<Image>, name: &str, out: &mut [u8]) -> usize {
 #[test]
 fn a_file_written_in_odd_chunks_reads_back_and_its_entry_is_true() {
     for chunk in [1usize, 7, 100, 511, 512, 513, 1500] {
-        let mut volume = Volume::open(Image::fat12()).unwrap();
+        let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
         let entry = volume.create_file(0, "DATA.BIN").unwrap();
         let mut writer = volume.open_file_writer(&entry).unwrap();
         let bytes: [u8; 1500] = core::array::from_fn(pattern);
@@ -58,7 +59,7 @@ fn an_overwrite_keeps_the_rest_and_a_partial_sector_zeroes_the_slack() {
     let mut image = Image::fat12();
     // Stale bytes where the new file's first cluster will be.
     image.bytes[6 * 512..7 * 512].fill(0xEE);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let entry = volume.create_file(0, "A.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     writer.write(&[1; 10]).unwrap();
@@ -74,7 +75,7 @@ fn an_overwrite_keeps_the_rest_and_a_partial_sector_zeroes_the_slack() {
 
 #[test]
 fn a_seek_past_the_end_stops_at_the_end() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "S.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     writer.seek(99);
@@ -86,7 +87,7 @@ fn a_seek_past_the_end_stops_at_the_end() {
 
 #[test]
 fn set_len_grows_with_zeros_and_shrinks_by_freeing_clusters() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "L.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     writer.write(&[9; 600]).unwrap();
@@ -114,7 +115,7 @@ fn set_len_grows_with_zeros_and_shrinks_by_freeing_clusters() {
 
 #[test]
 fn a_removed_file_frees_its_slots_and_clusters_and_a_new_file_takes_the_slot() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let free = volume.count_free_clusters().unwrap();
     let entry = volume.create_file(0, "GONE.BIN").unwrap();
     volume
@@ -132,7 +133,7 @@ fn a_removed_file_frees_its_slots_and_clusters_and_a_new_file_takes_the_slot() {
 
 #[test]
 fn a_directory_or_label_is_not_a_file_to_write_or_remove() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "X.BIN").unwrap();
     let dir = NamedEntry::created(ShortEntry::new(*b"DIR        ", 0x10, 0, 0), entry.place());
     assert_eq!(volume.open_file_writer(&dir).err(), Some(NotAFile));
@@ -141,7 +142,7 @@ fn a_directory_or_label_is_not_a_file_to_write_or_remove() {
 
 #[test]
 fn the_fixed_root_fills_and_a_refused_write_is_the_devices_error() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     for i in 0..16 {
         volume.create_file(0, &format_name(i)).unwrap();
     }
@@ -152,7 +153,7 @@ fn the_fixed_root_fills_and_a_refused_write_is_the_devices_error() {
 
     let mut image = Image::fat12();
     image.refuse_write = Some(6);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let entry = volume.create_file(0, "E.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     assert_eq!(
@@ -204,7 +205,7 @@ fn a_damaged_chain_is_reported_not_extended() {
     let mut image = Image::fat12();
     // A file claiming 1000 bytes with a one-cluster chain.
     image.set(5, 0xFFF);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let entry = volume.create_file(0, "D.BIN").unwrap();
     let damaged = NamedEntry::created(
         ShortEntry::new(entry.short_name(), 0x20, 5, 1000),
@@ -219,7 +220,7 @@ fn a_damaged_chain_is_reported_not_extended() {
 
 #[test]
 fn the_dirty_bit_is_set_by_the_first_change_and_the_sync_restores_it() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     // FAT12 keeps no bit.
     assert_eq!(volume.is_clean(), Ok(None));
     volume.allocate_cluster(None).unwrap();
@@ -228,7 +229,7 @@ fn the_dirty_bit_is_set_by_the_first_change_and_the_sync_restores_it() {
 
 #[test]
 fn a_write_after_seeking_back_and_forth_lands_where_it_says() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "SEEK.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     writer.write(&[0; 1400]).unwrap();
@@ -271,7 +272,7 @@ fn a_chain_that_loops_or_leaves_the_volume_is_an_error_not_a_hang() {
     image.set(5, 9);
     image.set(9, 5);
     image.set(20, 400);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let entry = volume.create_file(0, "L.BIN").unwrap();
     for (first, error) in [
         (5, ChainError::TooLong),
@@ -295,21 +296,21 @@ fn a_chain_that_loops_or_leaves_the_volume_is_an_error_not_a_hang() {
 
 #[test]
 fn a_write_at_the_four_gibibyte_limit_is_refused_and_nothing_is_written() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let boot = *volume.boot_sector();
     let mut state = WriteState::new(5, u32::MAX);
     state.seek(u32::MAX);
     let mut scratch = [0u8; 512];
     assert_eq!(
-        state.write(&mut volume, &boot, b"x", &mut scratch),
+        state.write(&mut *volume, &boot, b"x", &mut scratch),
         Err(WriteError::FileTooLarge)
     );
-    assert_eq!(state.write(&mut volume, &boot, b"", &mut scratch), Ok(0));
+    assert_eq!(state.write(&mut *volume, &boot, b"", &mut scratch), Ok(0));
 }
 
 #[test]
 fn the_longest_and_shortest_short_names_are_legal_and_the_next_longer_is_not() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     for good in ["A", "ABCDEFGH", "A.B", "ABCDEFGH.XYZ", "$A-B_C~1.!#&"] {
         volume.create_file(0, good).expect(good);
     }
@@ -333,7 +334,7 @@ fn the_longest_and_shortest_short_names_are_legal_and_the_next_longer_is_not() {
 
 #[test]
 fn setting_the_length_it_already_has_changes_nothing() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "SAME.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     writer.write(&[3; 700]).unwrap();
@@ -347,7 +348,7 @@ fn setting_the_length_it_already_has_changes_nothing() {
 
 #[test]
 fn an_entry_that_no_longer_matches_its_slot_is_stale_for_every_operation() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "OLD.BIN").unwrap();
     volume.remove_file(&entry).unwrap();
     let other = volume.create_file(0, "NEW.BIN").unwrap();
@@ -363,7 +364,7 @@ fn an_entry_that_no_longer_matches_its_slot_is_stale_for_every_operation() {
 fn a_shrink_to_a_cluster_boundary_forgets_the_cluster_a_cursor_had_reached() {
     // Image clusters are one sector. The writer reached chain index 2; shrinking to two sectors
     // frees that cluster, and the next write at the new end needs a fresh one.
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "CUT.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     writer.write(&[1; 1025]).unwrap();
@@ -381,7 +382,7 @@ fn a_shrink_to_a_cluster_boundary_forgets_the_cluster_a_cursor_had_reached() {
 
 #[test]
 fn a_partial_overwrite_inside_the_last_sector_keeps_the_bytes_around_it() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "MID.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     let bytes: [u8; 300] = core::array::from_fn(pattern);
@@ -401,7 +402,7 @@ fn a_root_whose_entry_count_ends_inside_a_sector_stops_there() {
     let mut image = Image::fat12();
     // Eight entries: half of the one sector the region occupies.
     image.bytes[17..19].copy_from_slice(&8u16.to_le_bytes());
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     for i in 0..8 {
         volume.create_file(0, &format_name(i)).unwrap();
     }
@@ -413,12 +414,12 @@ fn a_root_whose_entry_count_ends_inside_a_sector_stops_there() {
 
 #[test]
 fn a_slot_that_became_a_long_name_piece_is_stale_for_a_write_and_a_remove() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "LFN.BIN").unwrap();
     let mut image = volume.into_device();
     // The root's first slot starts at sector 5; byte 11 is the attribute.
     image.bytes[5 * 512 + 11] = 0x0F;
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     assert_eq!(writer.write(b"x"), Err(WriteError::EntryChanged));
     assert_eq!(volume.remove_file(&entry), Err(WriteError::EntryChanged));
@@ -426,11 +427,11 @@ fn a_slot_that_became_a_long_name_piece_is_stale_for_a_write_and_a_remove() {
 
 #[test]
 fn a_write_keeps_the_attributes_the_entry_already_has() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "RO.BIN").unwrap();
     let mut image = volume.into_device();
     image.bytes[5 * 512 + 11] = 0x02;
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let readonly = NamedEntry::created(
         ShortEntry::new(entry.short_name(), 0x02, 0, 0),
         entry.place(),
@@ -445,7 +446,7 @@ fn a_write_keeps_the_attributes_the_entry_already_has() {
 
 #[test]
 fn a_reused_free_slot_does_not_end_the_directory_and_stale_bytes_after_the_end_are_ended() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let first = volume.create_file(0, "A.TXT").unwrap();
     volume.create_file(0, "B.TXT").unwrap();
     volume.create_file(0, "C.TXT").unwrap();
@@ -458,7 +459,7 @@ fn a_reused_free_slot_does_not_end_the_directory_and_stale_bytes_after_the_end_a
     // A stale entry sits in the slot after the end marker of an empty directory.
     let mut image = Image::fat12();
     image.bytes[5 * 512 + 32..5 * 512 + 43].copy_from_slice(b"GHOST   TXT");
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let made = volume.create_file(0, "REAL.TXT").unwrap();
     assert_eq!(made.place().short_slot, 0);
     assert!(volume.lookup("REAL.TXT").is_ok());
@@ -470,7 +471,7 @@ fn a_reused_free_slot_does_not_end_the_directory_and_stale_bytes_after_the_end_a
 
 #[test]
 fn an_overwrite_in_a_later_sector_zeroes_stale_bytes_past_the_end_of_the_file() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "TAIL.BIN").unwrap();
     volume
         .open_file_writer(&entry)
@@ -482,7 +483,7 @@ fn an_overwrite_in_a_later_sector_zeroes_stale_bytes_past_the_end_of_the_file() 
     let mut image = volume.into_device();
     // Cluster `second`'s sector holds file bytes 512 to 599; byte 200 of it is past the end.
     image.bytes[(6 + second as usize - 2) * 512 + 200] = 0xEE;
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let entry = volume.lookup("TAIL.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
     writer.seek(520);
@@ -493,7 +494,7 @@ fn an_overwrite_in_a_later_sector_zeroes_stale_bytes_past_the_end_of_the_file() 
 
 #[test]
 fn growing_by_several_buffers_from_empty_and_by_exactly_two_works() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let entry = volume.create_file(0, "GROW.BIN").unwrap();
     volume
         .open_file_writer(&entry)

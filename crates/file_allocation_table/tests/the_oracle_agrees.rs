@@ -16,8 +16,8 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    LookupError, MasterBootRecord, NamedEntry, SECTOR_BYTES, SectorDevice, SectorSize, ShortEntry,
-    TableEntry, Volume, VolumeLayout,
+    LookupError, MasterBootRecord, NamedEntry, NoClock, SECTOR_BYTES, SectorDevice, SectorSize,
+    ShortEntry, TableEntry, Volume, VolumeLayout,
 };
 use lamfat::{Read, Write};
 
@@ -450,8 +450,15 @@ fn this_crate_reads_what_rust_fatfs_wrote_on_fat32() {
 fn rust_fatfs_reads_what_this_crate_wrote() {
     const FILE_LEN: usize = 100_000;
     let total = 70_000 * 8 + 2_000;
-    let layout = VolumeLayout::new(total, 0, FILE_LEN as u64, 0x1234_5678, "BOOTRISCV64.EFI")
-        .expect("a FAT32 volume");
+    let layout = VolumeLayout::new(
+        total,
+        0,
+        FILE_LEN as u64,
+        0x1234_5678,
+        "BOOTRISCV64.EFI",
+        &mut NoClock,
+    )
+    .expect("a FAT32 volume");
     let mut image = vec![0u8; total as usize * SECTOR_BYTES];
     for index in 0..layout.metadata_sectors() {
         let at = index as usize * SECTOR_BYTES;

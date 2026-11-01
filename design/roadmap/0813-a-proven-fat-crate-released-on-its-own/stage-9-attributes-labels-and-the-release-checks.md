@@ -1,8 +1,8 @@
 # Stage 9, the part that needs no clock: attributes, labels and the release checks
 
 Appendix to [813. `file_allocation_table`](../0813-a-proven-fat-crate-released-on-its-own.md). It
-records what the clock-free part of stage 9 built. Timestamps are the rest of stage 9; they wait on
-the question of how a crate with no clock gets the time, which pull request #2984 carries.
+records what stage 9 built: the clock-free part (attributes, labels, the release checks) and
+timestamps, which follow a ruling of 2026-11-01 (UTC) that the clock is required.
 
 ## What this part built
 
@@ -22,7 +22,6 @@ the question of how a crate with no clock gets the time, which pull request #298
   bare-metal targets. What remains is names: 191 provisional names await ratification, which the
   architect does with `python3 helpers/name_release.py --draft file_allocation_table`.
 
-No clock and no time appear in any signature this part adds.
 
 ## The evidence
 
@@ -39,3 +38,53 @@ All provisional: `Attributes` (`NONE`, `READ_ONLY`, `HIDDEN`, `SYSTEM`, `ARCHIVE
 `without`, `contains`, `bits`), `Volume::set_attributes`, `NamedEntry::file_attributes`,
 `WriteError::ReadOnly`, `VolumeLabel` (`as_bytes`, `trimmed`), `Volume::volume_label`,
 `Volume::set_volume_label`, and the modules `attributes` and `label`.
+
+## Timestamps and the required clock
+
+The architect ruled on 2026-11-01 (UTC): any caller that writes to a volume supplies a clock, and "no time" is
+an explicit value the caller writes. The clock's method may report no time yet, so a real clock with
+no time set stamps the zero timestamp. The ruling refuses an optional clock, the time on every call, and documented
+zero timestamps. A required clock can later relax to optional without breaking semver; the reverse
+cannot.
+
+- `Clock` (`now(&mut self) -> Option<Timestamp>`), `Timestamp` (year, month, day, hour, minute and
+  second as plain numbers, no nife type), and `NoClock`, which always reports none.
+- `WritableVolume<D, C: Clock>` holds a `Volume` and its clock and derefs to the `Volume`. Every
+  write method lives there; a read-only `Volume` has none, so a write without a clock does not
+  compile. The clock is a type parameter and not a trait object, so the crate keeps `no_std`
+  without an allocator and a caller's clock is a plain value. `Format::new` and
+  `VolumeLayout::new` take a clock too, and read it once.
+- Each operation reads the clock once. A new file or directory (and its `.` and `..`, and a new
+  label entry) takes that time as its creation, write and access time, with the odd second in the
+  creation tenths byte. A write or a resize sets the write time, the write date and the access date, and an
+  empty write stamps nothing. A rename keeps the entry's times; an attribute change, a removal and
+  every read use no clock.
+- The installer and the cloud image pass `NoClock`. `tests/the_zero_timestamp_images_do_not_change.rs`
+  holds digests taken before the change over every metadata sector of the EFI volumes and the
+  formatted volumes, and they still match.
+
+The architect also ruled detail (b) on 2026-11-01 (UTC). The crate refuses a time FAT cannot store
+(a year before 1980 or after 2107, or a field outside its range) with `TimeOutOfRange` on `WriteError`,
+`FormatError` and `LayoutError`, before it writes a byte. Relaxing a refusal to a clamp later is
+compatible; tightening a clamp is not. `None` is unchanged. The architect ruled detail (a) the same day: reading takes no clock and never writes. A read-only
+open is a `Volume` with no clock parameter, and only `WritableVolume<D, C: Clock>` stamps. A read
+leaves the last-accessed date alone, because a read must work on a read-only device or image. A
+clock-stamping read, if ever wanted, arrives as a new method. One recommendation stays open. The
+code follows it, and it is easy to change before release.
+
+- Ruled (a): `tests/a_read_never_writes.rs` reads every way the crate reads, over a device with no
+  write method and over one whose write method panics, on FAT12, FAT16 and FAT32. The reads are
+  lookup, listing, file bytes, the label, the free count, the clean bit, `FSInfo` and a chain. The
+  image stays byte for byte as it was. The test found that `Volume::is_clean` needed a writable
+  device; it now needs only a readable one.
+- Recommended, not yet ruled (c): the crate stores exactly what the clock reports. FAT carries no
+  time zone and a host shows the stored time as local time, so a caller chooses local time or UTC.
+
+| check | result |
+|---|---|
+| Kani | `any_time_packs_to_legal_fields` covers every year, month, day, hour, minute and second, valid or not: the pack refuses exactly when the time is out of range, and otherwise the packed fields are legal, the tenths byte is 0 or 100, and the time comes back exactly |
+| falsification | a month check that lets 13 through turns the harness red at its range assertion |
+| unit tests | packing, clamping, the two stamp shapes, and a counting clock that proves one reading per operation, none for a rename, an attribute change, a removal or a read, and every stamped field on create, directory, `.`, `..`, write, resize and label |
+| refusal | for create, make directory, label, write (of bytes and of none) and resize (up and down), an out-of-range time returns `TimeOutOfRange` and leaves the image byte for byte as it was; a refused writer works again once the clock is right; tests through a volume pin the exact edges (1979-12-31 23:59:58 refuses, 1980-01-01 00:00:00 and 2107-12-31 23:59:58 pass, 2108-01-01 refuses); `Format` and `VolumeLayout` refuse the same way |
+| oracle tests | on FAT12, FAT16 and FAT32 volumes rust-fatfs formatted, rust-fatfs reads the creation, write and access times back as the clock gave them, the odd second included; `fsck.fat -n` accepts every volume, the first and last moments FAT stores included; a clock with no time equals `NoClock`; the format's label entry and the EFI volume's directories carry the time |
+| fuzz | the writer target now feeds the volume a clock built from its input, including invalid times, which the crate refuses without a panic; 127,000 runs in 61 seconds, no crash |

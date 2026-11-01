@@ -10,7 +10,8 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    RootDirectory, SectorDevice, SectorSize, Volume, WritableSectorDevice, WriteError,
+    NoClock, RootDirectory, SectorDevice, SectorSize, WritableSectorDevice, WritableVolume,
+    WriteError,
 };
 use lamfat::FatType;
 
@@ -141,7 +142,7 @@ fn oracle_tree(image: &[u8]) -> Vec<(String, bool, Vec<u8>)> {
     out
 }
 
-fn put(volume: &mut Volume<Memory>, directory: u32, name: &str, bytes: &[u8]) {
+fn put(volume: &mut WritableVolume<Memory, NoClock>, directory: u32, name: &str, bytes: &[u8]) {
     let entry = volume.create_file(directory, name).expect(name);
     volume
         .open_file_writer(&entry)
@@ -164,7 +165,7 @@ fn tree_of(entries: &[(&str, bool, &[u8])]) -> Vec<(String, bool, Vec<u8>)> {
 const ROOT_FILES: usize = 6 + 15;
 
 fn long_names(label: &str, mebibytes: usize, fat_type: FatType) -> Memory {
-    let mut volume = Volume::open(formatted(mebibytes, fat_type, 512)).unwrap();
+    let mut volume = WritableVolume::open(formatted(mebibytes, fat_type, 512), NoClock).unwrap();
     let long_255 = "x".repeat(251) + ".txt";
     let names = [
         "Hello World.txt",
@@ -202,7 +203,7 @@ fn long_names(label: &str, mebibytes: usize, fat_type: FatType) -> Memory {
 
 /// Directories, a file inside, renames across them, and the refusals.
 fn directories_and_moves(label: &str, image: Memory) -> Memory {
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let docs = volume.make_directory(0, "Documents And Settings").unwrap();
     let docs_cluster = docs.first_cluster();
     let sub = volume.make_directory(docs_cluster, "Sub").unwrap();
@@ -262,7 +263,7 @@ fn directories_and_moves(label: &str, image: Memory) -> Memory {
 
 /// Remove everything the stage made, directories last.
 fn remove_all(label: &str, image: Memory) {
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     for path in ["Sub Moved/deep file.txt", "Renamed Notes.txt"] {
         let entry = volume.lookup(path).unwrap();
         volume.remove_file(&entry).unwrap();
@@ -308,7 +309,7 @@ fn directories_long_names_and_renames_agree_on_fat32() {
 /// A FAT32 volume with 512-byte clusters and enough fill that every new cluster number is above
 /// 65535: directories made there need the high half of the cluster number in their entry, in
 /// their `.`, and in a child's `..`.
-fn high_volume() -> Volume<Memory> {
+fn high_volume() -> WritableVolume<Memory, NoClock> {
     let mut image = formatted(64, FatType::Fat32, 512);
     let mut cursor = Cursor::new(&mut image.bytes);
     lamfat::format_volume(
@@ -318,7 +319,7 @@ fn high_volume() -> Volume<Memory> {
             .bytes_per_cluster(512),
     )
     .unwrap();
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let filler = vec![0x5Au8; 1 << 20];
     let entry = volume.create_file(0, "FILL.BIN").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
@@ -394,15 +395,18 @@ fn a_new_directory_in_a_multi_sector_cluster_is_zeroed_past_its_dots() {
             .bytes_per_cluster(2048),
     )
     .unwrap();
-    let boot = *Volume::open(Memory {
-        bytes: image.bytes.clone(),
-        size: image.size,
-    })
+    let boot = *WritableVolume::open(
+        Memory {
+            bytes: image.bytes.clone(),
+            size: image.size,
+        },
+        NoClock,
+    )
     .unwrap()
     .boot_sector();
     let data = boot.first_data_sector() as usize * 512;
     image.bytes[data + 2048..].fill(0xAA);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     volume.make_directory(0, "Fresh").unwrap();
     volume.sync().unwrap();
     let image = volume.into_device();

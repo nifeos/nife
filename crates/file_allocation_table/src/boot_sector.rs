@@ -218,9 +218,9 @@ pub enum ReadError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{BootSector, FileAllocationTableType, SECTOR_BYTES, VolumeLayout};
+/// use file_allocation_table::{BootSector, FileAllocationTableType, SECTOR_BYTES, VolumeLayout, NoClock};
 ///
-/// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI").unwrap();
+/// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI", &mut NoClock).unwrap();
 /// let mut sector = [0u8; SECTOR_BYTES];
 /// volume.fill_sector(0, &mut sector);
 ///
