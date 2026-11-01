@@ -973,6 +973,12 @@ mod tests {
         begin(&mut s, "");
         word(&mut s, END);
         assert_eq!(patched(&tree(&[], &s, false, 0)), Err(Error::Malformed));
+        // Unclosed after `/chosen` exists: the pair is readable, the nesting is still wrong.
+        let mut s = Vec::new();
+        begin(&mut s, "");
+        begin(&mut s, "chosen");
+        word(&mut s, END);
+        assert_eq!(patched(&tree(&[], &s, false, 0)), Err(Error::Malformed));
     }
 
     /// **Success means the kernel reads back what it was given**, for a range, for an empty range
