@@ -15,8 +15,8 @@ the repository supplies to it.
 `NIFE_FUZZ_GUESTS` only after a measurement at the new size comes back clean.
 
 Each guest slot owns a git worktree and a `target/` directory, so two windows never share a build
-directory. A window builds the x86_64 archive and the system test image once, with the seed range
-set at build time, then starts one QEMU process through the PVH runner with `-accel kvm` and sweeps
+directory. A window builds the x86_64 archive and the system test image once, baking the seed
+range in at build time, then starts one QEMU process through the PVH runner with `-accel kvm` and sweeps
 in that guest. It does not call `cargo xtask test`, which clears `NIFE_ACCEL` and also boots the
 OVMF legs under TCG. The driver stops itself after 60 seconds of guest time, so each window costs a
 rebuild, a boot and one minute of seeds. The BUGS list below records that limit.
@@ -26,7 +26,7 @@ and QEMU can start a machine on it. If not, it names the problem on standard err
 the window. It never falls back to TCG, which sweeps about a tenth of the seeds per second.
 `helpers/continuous-fuzz.sh --check-kvm` runs the same check by hand. Two bounds apply:
 `NIFE_FUZZ_BUILD_BOUND` (default 1800 seconds) covers the build, and `NIFE_FUZZ_BOUND` (default 300)
-covers the guest, so a window that reaches the second is a hung guest and is held.
+covers the guest, so a window that reaches the second is a hung guest, and the supervisor holds it.
 
 `helpers/systemd/nife-fuzz.service` starts the supervisor at boot and restarts it on failure. The
 supervisor exits non-zero after five windows in a row fail without a finding. A broken build reaches
