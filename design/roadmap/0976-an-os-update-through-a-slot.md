@@ -112,13 +112,22 @@ slot. Every new name here is provisional.
   program that file names. Checked: the test fails with the program removed and passes with it,
   and `cargo xtask base-image x86_64 --test --boot` composes it from its package and reaches the
   prompt.
-- **Outstanding.** Part 2: the composer writes the file a slot holds. On x86_64, `base-image`
-  wraps the composed kernel and archive in `uefi_loader`, as `uefi_stage` does for the tree's own
-  image. Check: `script/boot-file-size-check` on the composed file, and an OVMF boot of it. Part 3
-  is a gate that updates through a slot, provisionally `cargo xtask update-boot`. It installs the
+- **Done.** Part 2: the composer writes the file a slot holds. On x86_64, `base-image` wraps the
+  composed kernel and archive in `uefi_loader` through `uefi_stage_archive`, which `uefi_stage`
+  now calls with the tree's own archive, and writes `<out>/esp/EFI/BOOT/BOOTX64.EFI`. With
+  `--release` the kernel is stripped of its DWARF by the routine the tree's own image uses, and
+  the run ends by holding the file to `script/boot-file-size-check --composed <out>`. A debug run
+  wraps the file and skips the check, and says so. The base-image test
+  `the_composed_boot_file_is_held_to_the_size_check` holds the script's `--composed` mode to a
+  passing file, an over-budget file and a missing one. Checked: `cargo xtask base-image x86_64
+  --release` composed a 6,463,488-byte file (50,736 loader, 1,032,656 kernel, 5,380,096 archive)
+  that passed the size check, and one bounded OVMF boot of it reached the shell prompt. That
+  image carries no `--test` fixtures, so the kernel's `userspace` and `budget` self-tests report
+  FAILED for the missing fixture programs; the boot continued to the progenitor and the shell.
+- **Outstanding.** Part 3 is a gate that updates through a slot, provisionally `cargo xtask update-boot`. It installs the
   tree's image, stages part 2's file into slot 1 with `rollback::stage_an_upgrade`, and boots three
   times. Boot 2 must confirm slot 1, boot 3 must choose it with no tries left, as `confirm-boot`
-  asserts, and the transcript must show the composed catalog. Both parts are mechanical and add no
+  asserts, and the transcript must show the composed catalog. Parts 2 and 3 are mechanical and add no
   format; part 3 is host-staged, so it proves the slot path and not a device updater.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays

@@ -121,6 +121,13 @@ pub(crate) fn uefi_kernel(features: Option<&str>) -> Option<String> {
     // it, so the seal (`refuse_an_unsealed_pair`, digests in `.rodata`, which `--strip-debug`
     // leaves alone) covers the bytes that ship.
     let stripped = built.with_file_name("kernel.stripped");
+    strip_kernel(&built, &stripped)?;
+    Some(stripped.display().to_string())
+}
+
+/// **Write `built` to `stripped` without its DWARF**, or say why not. Shared by the tree's own
+/// image and `base-image`, so the kernel a slot holds is stripped by one routine.
+pub(crate) fn strip_kernel(built: &std::path::Path, stripped: &std::path::Path) -> Option<()> {
     let bytes = match crate::inspect::read_stripped(&built.display().to_string()) {
         Ok(b) => b,
         Err(e) => {
@@ -128,11 +135,11 @@ pub(crate) fn uefi_kernel(features: Option<&str>) -> Option<String> {
             return None;
         }
     };
-    if let Err(e) = std::fs::write(&stripped, &bytes) {
+    if let Err(e) = std::fs::write(stripped, &bytes) {
         eprintln!("uefi-image: cannot write {}: {e}", stripped.display());
         return None;
     }
-    Some(stripped.display().to_string())
+    Some(())
 }
 
 /// **Where the screen gate's EFI system partition is staged**
@@ -171,6 +178,18 @@ pub(crate) fn uefi_stage(
     what: &str,
     screen_hold: bool,
 ) -> bool {
+    uefi_stage_archive(kernel, &x86_initial_ramdisk_path(), esp, what, screen_hold)
+}
+
+/// [`uefi_stage`] around a named archive instead of the tree's own: `base-image` wraps the archive
+/// it composed from packages, so the file a boot slot holds carries the composed catalog.
+pub(crate) fn uefi_stage_archive(
+    kernel: &str,
+    archive: &str,
+    esp: &std::path::Path,
+    what: &str,
+    screen_hold: bool,
+) -> bool {
     // `screen_hold` is milestone 445's: it makes the loader write one more word on the kernel's
     // boot command line, and only `uefi_boot` passes it. See [`uefi_screen_esp_dir`].
     let features = if screen_hold {
@@ -197,7 +216,7 @@ pub(crate) fn uefi_stage(
     let built = Command::new("cargo")
         .args(&args)
         .env("NIFE_UEFI_KERNEL", kernel)
-        .env("NIFE_UEFI_INITIAL_RAMDISK", x86_initial_ramdisk_path())
+        .env("NIFE_UEFI_INITIAL_RAMDISK", archive)
         .status()
         .map(|s| s.success())
         .unwrap_or_else(|e| {
@@ -234,7 +253,7 @@ pub(crate) fn uefi_stage(
     // are embedded whole (`include_bytes!`, no compression), so the loader is what remains.
     // `script/boot-file-size-check` budgets the total; this says where it went.
     let part = |p: &str| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0);
-    let (kernel_bytes, archive_bytes) = (part(kernel), part(&x86_initial_ramdisk_path()));
+    let (kernel_bytes, archive_bytes) = (part(kernel), part(archive));
     eprintln!(
         "size: {} loader, {kernel_bytes} kernel, {archive_bytes} archive = {size} bytes ({} profile)",
         size.saturating_sub(kernel_bytes + archive_bytes),
