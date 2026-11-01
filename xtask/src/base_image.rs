@@ -80,6 +80,9 @@ struct Arguments {
     catalog: Option<String>,
     out: Option<String>,
     boot: bool,
+    /// Build the release profile and strip the kernel, which is what a boot slot holds. Without it
+    /// the x86_64 file is a debug build that the size check refuses.
+    release: bool,
     /// Carry the `fixtures` package's programs too: the image a test boots, not the image a
     /// release ships.
     test: bool,
@@ -166,10 +169,13 @@ pub(crate) fn base_image() -> bool {
     };
     let Some(arch) = arguments.arch.as_deref() else {
         eprintln!(
-            "usage: cargo xtask base-image <aarch64|riscv64|x86_64> [--from <dir>] [--catalog <path>] [--out <dir>] [--test] [--boot]"
+            "usage: cargo xtask base-image <aarch64|riscv64|x86_64> [--from <dir>] [--catalog <path>] [--out <dir>] [--test] [--release] [--boot]"
         );
         return false;
     };
+    if arguments.release {
+        crate::RELEASE.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
     let root = workspace_root();
     let Some(plan) = plan(&arguments, arch, &root) else {
         return false;
@@ -239,6 +245,10 @@ pub(crate) fn base_image() -> bool {
         return false;
     };
     println!("wrote {}", kernel.display());
+
+    if arch == "x86_64" && !stage_boot_file(&kernel, &archive, &out, arguments.release) {
+        return false;
+    }
 
     if arguments.boot {
         let Some(runner) = runner(arch) else {
@@ -324,6 +334,7 @@ fn parse_arguments(args: Vec<String>) -> Result<Arguments, String> {
     while let Some(word) = rest.next() {
         match word.as_str() {
             "--boot" => parsed.boot = true,
+            "--release" => parsed.release = true,
             "--test" => parsed.test = true,
             "--arch" | "--from" | "--catalog" | "--out" => {
                 let value = rest.next().ok_or_else(|| format!("{word} needs a value"))?;
@@ -857,15 +868,52 @@ fn build_packages(root: &Path, arch: &str, definition: &Definition, test: bool) 
     true
 }
 
-/// Where the composed kernel is written, and the copy made there.
+/// **Wrap the composed kernel and archive in `uefi_loader`**: the one file a boot slot holds, as
+/// `cargo xtask uefi-image` stages it for the tree's own image, written to `<out>/esp`. A release
+/// file is then held to `script/boot-file-size-check`; a debug one is not (it carries DWARF the
+/// check refuses), and the run says so. Part 2 of milestone 976 (an OS update is a set of packages
+/// that lands through a slot).
+fn stage_boot_file(kernel: &Path, archive: &Path, out: &Path, release: bool) -> bool {
+    let esp = out.join("esp");
+    if !crate::uefi::uefi_stage_archive(
+        &kernel.display().to_string(),
+        &archive.display().to_string(),
+        &esp,
+        "the loader, the composed kernel and the composed archive",
+        false,
+    ) {
+        return false;
+    }
+    if !release {
+        eprintln!("base-image: debug profile, so the boot file is not held to the size check");
+        return true;
+    }
+    std::process::Command::new(root_script("boot-file-size-check"))
+        .arg("--composed")
+        .arg(out)
+        .status()
+        .is_ok_and(|status| status.success())
+}
+
+/// A script under the tree's `script/` directory.
+fn root_script(name: &str) -> PathBuf {
+    workspace_root().join("script").join(name)
+}
+
+/// Where the composed kernel is written, and the copy made there. A release kernel is written
+/// stripped of its DWARF, as the tree's own release image embeds it.
 fn build_kernel(arch: &str, out: &Path) -> Option<PathBuf> {
     let triple = crate::package::triple(arch).ok()?;
-    if !crate::cargo(&["build", "-p", "kernel", "--target", triple]) {
+    if !crate::cargo_profiled(&["build", "-p", "kernel", "--target", triple]) {
         eprintln!("base-image ({arch}): the kernel build failed");
         return None;
     }
     let built = workspace_root().join(format!("target/{triple}/{}/kernel", crate::profile_dir()));
     let kernel = out.join("kernel");
+    if crate::RELEASE.load(std::sync::atomic::Ordering::Relaxed) {
+        crate::uefi::strip_kernel(&built, &kernel)?;
+        return Some(kernel);
+    }
     if let Err(e) = std::fs::copy(&built, &kernel) {
         eprintln!(
             "base-image ({arch}): could not copy {} to {}: {e}",
@@ -1091,6 +1139,7 @@ programs = ["progenitor", "swish", "jig"]
                 catalog: Some("/tmp/i".into()),
                 out: Some("/tmp/o".into()),
                 boot: false,
+                release: false,
                 test: false,
             }
         );
@@ -1159,5 +1208,60 @@ programs = ["progenitor", "swish", "jig"]
             test.get("kernel_test_subject").map(String::as_str),
             Some("fixtures")
         );
+    }
+
+    /// A directory laid out as `base-image x86_64` leaves it, with a boot file of `efi_bytes`.
+    /// The kernel and archive are small text files: the script's `.debug_` probe finds nothing in
+    /// bytes `llvm-objdump` cannot read, which leaves the size as the only thing under test.
+    fn composed_directory(name: &str, efi_bytes: u64) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("nife-{name}-{}", std::process::id()));
+        let boot = dir.join("esp/EFI/BOOT");
+        std::fs::create_dir_all(&boot).unwrap();
+        std::fs::File::create(boot.join("BOOTX64.EFI"))
+            .unwrap()
+            .set_len(efi_bytes)
+            .unwrap();
+        std::fs::write(dir.join("kernel"), "kernel").unwrap();
+        std::fs::write(dir.join("initrd.img"), "archive").unwrap();
+        dir
+    }
+
+    fn size_check(dir: &Path) -> (bool, String) {
+        let output = std::process::Command::new(root_script("boot-file-size-check"))
+            .arg("--composed")
+            .arg(dir)
+            .output()
+            .unwrap();
+        let text = String::from_utf8_lossy(&output.stdout).into_owned()
+            + &String::from_utf8_lossy(&output.stderr);
+        (output.status.success(), text)
+    }
+
+    #[test]
+    fn the_composed_boot_file_is_held_to_the_size_check() {
+        let small = composed_directory("composed-small", 1 << 20);
+        let (passed, text) = size_check(&small);
+        assert!(passed, "a 1 MiB boot file passes: {text}");
+        assert!(text.contains("boot-file-size-check: PASS"), "{text}");
+
+        let large = composed_directory("composed-large", 17 << 20);
+        let (passed, text) = size_check(&large);
+        assert!(!passed, "a 17 MiB boot file is over the budget: {text}");
+        assert!(text.contains("over the"), "{text}");
+
+        let missing =
+            std::env::temp_dir().join(format!("nife-composed-none-{}", std::process::id()));
+        let (passed, text) = size_check(&missing);
+        assert!(!passed && text.contains("is missing"), "{text}");
+        for dir in [small, large] {
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    }
+
+    #[test]
+    fn release_is_a_flag_of_the_composer() {
+        let parsed = parse_arguments(vec!["x86_64".into(), "--release".into()]).unwrap();
+        assert!(parsed.release);
+        assert!(!parse_arguments(vec!["x86_64".into()]).unwrap().release);
     }
 }

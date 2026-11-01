@@ -11,7 +11,9 @@
 # a limit that is only found by hitting it, on somebody's disk, after the first upgrade.
 #
 # **What it checks, in order.**
-#   1. Builds the image with `cargo xtask uefi-image --release` (unless `--no-build`).
+#   1. Builds the image with `cargo xtask uefi-image --release` (unless `--no-build`). With
+#      `--composed <dir>` it builds nothing and holds the file `cargo xtask base-image x86_64
+#      --release` wrote into <dir> to the same checks, the composed file a slot would hold.
 #   2. The embedded kernel has no `.debug_*` section. A debug kernel reaching an install image is
 #      the failure the first fix exists to prevent, and this is the CI half of it.
 #   3. The image is at most BUDGET bytes. WARN at 12 MiB, FAIL over 16 MiB.
@@ -67,11 +69,16 @@ cd "$(dirname "$0")/.."
 . helpers/qemu-path.sh
 
 build=1
-for arg in "$@"; do
-    case "$arg" in
+composed=""
+while [ $# -gt 0 ]; do
+    case "$1" in
         --no-build) build="" ;;
-        *) echo "usage: script/boot-file-size-check [--no-build]" >&2; exit 2 ;;
+        --composed)
+            [ $# -ge 2 ] || { echo "boot-file-size-check: --composed needs a directory" >&2; exit 2; }
+            composed="$2"; build=""; shift ;;
+        *) echo "usage: script/boot-file-size-check [--no-build | --composed <base-image out dir>]" >&2; exit 2 ;;
     esac
+    shift
 done
 
 MIB=1048576
@@ -121,6 +128,13 @@ fi
 efi=target/esp/EFI/BOOT/BOOTX64.EFI
 kernel=target/x86_64-unknown-none/release/kernel.stripped
 archive=target/initial-ramdisk-x86_64.img
+if [ -n "$composed" ]; then
+    # `cargo xtask base-image x86_64 --release` leaves the file a slot would hold, with its kernel
+    # and archive, in one directory (milestone 976 (an OS update is a set of packages that lands through a slot), part 2).
+    efi=$composed/esp/EFI/BOOT/BOOTX64.EFI
+    kernel=$composed/kernel
+    archive=$composed/initrd.img
+fi
 for f in "$efi" "$kernel" "$archive"; do
     if [ ! -f "$f" ]; then
         echo "boot-file-size-check: $f is missing; run without --no-build" >&2
