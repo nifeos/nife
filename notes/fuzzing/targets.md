@@ -93,3 +93,32 @@ bug in an archive format is worse than a panic, and much quieter.
 The package target applies the same shape to `package_archive`. Its digest check matters most: a
 package that fails its own digest would be refused for no reason a user could act on. That is the
 quietest way for a trust mechanism to become noise.
+
+## `acpi_firmware_tables`
+
+Kani proves the RSDP, the root table, the SDT header, the MCFG, the MADT walk and the DMAR walk, and
+stops short of the IVRS, the GTDT, the SPCR and the FADT's two readers. The IVRS matters most.
+`IvrsUnits::parse` walks IVHD blocks and the device entries inside them, each sized by a byte the
+table chose, and its IVMD output becomes IOMMU identity mappings. A region that is not page aligned,
+is empty or wraps the address space would be a hole in DMA confinement. The target
+asserts those three for every recorded region and keeps the recorded counts inside their
+arrays. The first input byte picks the reader and the rest is the table body, so one corpus serves all
+five. The seeds are bodies shaped like the ones the unit tests build. `fuzz/seeds/make-acpi-tables.py`
+regenerates them, and `crates/machine_discovery/tests/fuzz_seed.rs` holds each to decoding.
+
+## `machine_description_from_device_tree`
+
+`device_tree_blob_walk` shows the blob reader five fixed needles. The kernel and the loader read
+far more from the same blob. It reads the CPU list with its cell counts, the RISC-V ISA record and the
+PLIC context map, which follows `interrupts-extended` and phandles. It reads a node's interrupt
+identifier too. The JH7110 finders add the clock and reset blocks, the Ethernet controller, the
+storage slots and the entropy source. Each walks the tree with numbers the tree chose. The seeds are the `.dtb` fixtures of
+`device_tree_blob` and `machine_discovery`, which `script/fuzz` passes as read-only corpora.
+
+## BUGS
+
+Nothing fuzzes the UEFI loader's device-tree rewriter (`uefi_loader::device_tree_patch`), which has
+its own struct walker. Linking `uefi_loader` into the `fuzz` crate crosses a package boundary:
+`script/lint` reports that `fuzz` links `uefi_loader`, an internal crate of `boot`. Settling that is
+a package-design call between an interface, a `depends boot` declaration and a dated exception. A
+target for it exists and waits on that call.

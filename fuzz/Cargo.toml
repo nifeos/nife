@@ -70,6 +70,9 @@ globally_unique_identifier_partition_table = { path = "../crates/globally_unique
 http_response = { path = "../crates/http_response" }
 package_archive = { path = "../crates/package_archive" }
 
+# **The firmware-byte readers** (`acpi_firmware_tables` and `machine_description_from_device_tree`).
+machine_discovery = { path = "../crates/machine_discovery" }
+
 # **The services' request handlers** (proposal #1592 part a, `lane/fuzz-service-handlers`). Path
 # dependencies on servers rather than parsers: each target replays a session of requests against the
 # server built on the host. `redoxfs_server`'s default feature is `hosttest`, which brings std RedoxFS
@@ -181,6 +184,20 @@ bench = false
 [[bin]]
 name = "redoxfs_server_session"
 path = "fuzz_targets/redoxfs_server_session.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "acpi_firmware_tables"
+path = "fuzz_targets/acpi_firmware_tables.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "machine_description_from_device_tree"
+path = "fuzz_targets/machine_description_from_device_tree.rs"
 test = false
 doc = false
 bench = false
