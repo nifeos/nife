@@ -63,7 +63,7 @@ name, and the fuzz target holds whole images.
 
 ## Names minted
 
-Every name in this stage is ratified, as the `Name:` block in its source records.
+Every name in this stage has a ratified `Name:` block in its source.
 
 - `LongFileName`, with `code_units` and `characters`.
 - `LongFileNameError`, with `BadStart`, `OutOfOrder`, `PiecesDisagree`, `Incomplete`,

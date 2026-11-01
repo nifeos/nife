@@ -46,7 +46,7 @@ method they cannot honestly implement.
 Prior art, from memory and not re-read for this page: rust-fatfs takes one `Read + Write + Seek`
 bound for every operation, so a read-only volume needs a wrapper that fails writes; embedded-sdmmc
 puts `read` and `write` on one block-device trait. The cost of a second trait is one more name in
-the public API. The choice is reversible until the first publication, the name is ratified, and
+the public API. The choice is reversible until the first publication, the name has a ratified block, and
 nothing outside the crate uses it yet.
 
 ## The evidence
@@ -64,7 +64,7 @@ thousands of clusters.
 
 ## Names minted
 
-Every name in this stage is ratified, as the `Name:` block in its source records.
+Every name in this stage has a ratified `Name:` block in its source.
 
 - `WritableSectorDevice` and its method `write_sector`.
 - `TableEntry::encode`.

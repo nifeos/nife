@@ -46,7 +46,7 @@ bound is the cluster count, and the fuzz target holds whole images.
 
 ## Names minted
 
-Every name in this stage is ratified, as the `Name:` block in its source records.
+Every name in this stage has a ratified `Name:` block in its source.
 
 - `FileReader`, `FileReadError` (`Chain`, `ShorterThanItsSize`, `Failed`), `FileOpenError`,
   `Volume::open_file_reader`, and the methods `size_bytes`, `position`, `set_position` and `read`.

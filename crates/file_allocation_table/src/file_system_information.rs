@@ -10,7 +10,7 @@
 //! `FSInfo` Sector Structure and Backup Boot Sector".
 //!
 //! Name: ratified 2026-11-01 (UTC), renamed from `fs_info`: the full name of the structure, as the
-//! acronym test asks; the specification's heading is "FSInfo Sector Structure".
+//! acronym test asks; the specification's heading is "`FSInfo` Sector Structure".
 
 /// `FSI_LeadSig`, "`RRaA`", at byte 0.
 const LEAD_SIGNATURE: u32 = 0x4161_5252;
