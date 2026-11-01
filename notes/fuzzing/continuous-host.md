@@ -14,11 +14,19 @@ the repository supplies to it.
 [`rates-on-x86-64-under-kvm.md`](rates-on-x86-64-under-kvm.md) support four. Raise
 `NIFE_FUZZ_GUESTS` only after a measurement at the new size comes back clean.
 
-Each guest slot owns a git worktree and a `target/` directory, because `cargo xtask test` writes its
-disk image under the workspace root and QEMU refuses one image to two writers. A window is one
-`cargo xtask test --arch x86_64 --test <driver>` with the seed range set at build time. The driver
-stops itself after 60 seconds of guest time, so each window costs a rebuild, a boot and one minute of
-seeds. The BUGS list below records that limit.
+Each guest slot owns a git worktree and a `target/` directory, so two windows never share a build
+directory. A window builds the x86_64 archive and the system test image once, with the seed range
+set at build time, then starts one QEMU process through the PVH runner with `-accel kvm` and sweeps
+in that guest. It does not call `cargo xtask test`, which clears `NIFE_ACCEL` and also boots the
+OVMF legs under TCG. The driver stops itself after 60 seconds of guest time, so each window costs a
+rebuild, a boot and one minute of seeds. The BUGS list below records that limit.
+
+Before each window the supervisor checks that KVM is usable: the device exists, the user may open it,
+and QEMU can start a machine on it. If not, it names the problem on standard error and does not run
+the window. It never falls back to TCG, which sweeps about a tenth of the seeds per second.
+`helpers/continuous-fuzz.sh --check-kvm` runs the same check by hand. Two bounds apply:
+`NIFE_FUZZ_BUILD_BOUND` (default 1800 seconds) covers the build, and `NIFE_FUZZ_BOUND` (default 300)
+covers the guest, so a window that reaches the second is a hung guest and is held.
 
 `helpers/systemd/nife-fuzz.service` starts the supervisor at boot and restarts it on failure. The
 supervisor exits non-zero after five windows in a row fail without a finding. A broken build reaches
@@ -54,19 +62,14 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 
 ## BUGS
 
-- Today a window runs under TCG, not KVM. `cargo xtask test --arch x86_64 --test <driver>` clears
-  `NIFE_ACCEL` and boots the PVH leg and then the OVMF legs, so one window sweeps the same seed
-  range on two machines, at 18 and 34 seeds per second. That is about a tenth of the KVM rate the
-  rates note measured. A smoke window took 226 seconds. The fix is a window that builds once and runs the PVH
-  runner directly with `-accel kvm` from a copy of the image, as the rates note's measurement did.
-  The 1, 4 and 8 guest measurements decide whether that is enough.
+- The windows have been timed one guest at a time, at about 457 seeds per second for the
+  kernel-thread driver and 205 for the confined driver. Nobody has measured four windows at once
+  through this path, so the rates note's four-guest figures stand in for them.
 - The build fixes the seed range, so each 60-second window pays a rebuild. A runtime seed (for
   example a kernel command line word) would let one image sweep forever. That change belongs to the
   drivers' milestones.
 - Coverage counters do not exist yet, so the report has no coverage figure. The heartbeat reads seeds
   run.
-- The bound cannot tell a hung guest from a slow rebuild. It is 30 minutes, and a window that reaches
-  it is held.
 - Only x86_64 runs. aarch64 and riscv64 need emulation and a larger machine.
 - Nobody has run the daily publish end to end against a real credential, because a person installs
   the credential.
