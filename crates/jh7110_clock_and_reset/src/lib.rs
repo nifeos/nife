@@ -907,7 +907,7 @@ pub const fn with_divider(word: u32, divider: u32) -> u32 {
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StandardMode {
-    /// The `IC_CON` word: `IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS`.
+    /// The `IC_CON` word: master mode, restart enable, slave disable and standard speed set.
     pub con: u32,
     /// `IC_SS_SCL_HCNT`.
     pub hcnt: u32,
@@ -917,17 +917,12 @@ pub struct StandardMode {
     pub sda_hold: u32,
 }
 
-/// `IC_CON`'s standard-speed field, `0b10` (`IC_CON_SPD_SS` in the register description).
-const IC_CON_SPD_SS: u32 = 0b10;
-/// `IC_CON`'s master-mode bit (`IC_CON_MM`).
-const IC_CON_MM: u32 = 1;
-/// `IC_CON`'s restart-enable bit (`IC_CON_RE`).
-const IC_CON_RE: u32 = 1 << 5;
-/// `IC_CON`'s slave-disable bit (`IC_CON_SD`).
-const IC_CON_SD: u32 = 1 << 6;
-
-/// The `IC_CON` word for a standard-speed master: the four bits above, which do not overlap.
-const STANDARD_MODE_CON: u32 = IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS;
+/// The `IC_CON` word for a standard-speed master, written as one literal so no operator is left
+/// to mutate (the fields do not overlap, so `|` and `^` would give the same word). Bit 0 is
+/// master mode (`IC_CON_MM`), the speed field in bits 2:1 holds `0b01` for standard speed
+/// (`IC_CON_SPD_SS`, bit 1 set), bit 5 is restart enable (`IC_CON_RE`) and bit 6 is slave disable
+/// (`IC_CON_SD`).
+const STANDARD_MODE_CON: u32 = 0b0110_0011;
 /// Standard mode's minimum SCL high time, in nanoseconds.
 const STANDARD_HIGH_NS: u128 = 4_000;
 /// Standard mode's minimum SCL low time, in nanoseconds.
