@@ -17,6 +17,7 @@ tree**, committed for their own reasons and tested by their own tests:
 | `elf_parse` | here | the three files below, because nothing else in the tree is a small ELF |
 | `domain_name_system_reply` | `crates/domain_name_system/tests/fixtures/` | three real replies captured from 1.1.1.1: two A records, a CNAME chain with compression, and NXDOMAIN |
 | `http_response_feed` | here | two responses, a `200` with a body and a bare `404`; the first byte of each is the read size the target splits at |
+| `package_index_text` | here | seven small files: valid stand-in indexes (`<stem> sha256:<hex>`, with and without locations and a root name), the rebinding case from the sixth outsider pass with a public and a private resolution after a NUL, private and non-canonical hosts, an image's sources text, and a row of versions |
 | `nifefs_roundtrip` | nothing | the input is a *structure*, not bytes; the fuzzer builds file sets from scratch and reaches the interesting shapes immediately |
 
 `script/fuzz` passes those fixture directories to libFuzzer as read-only corpora. Copying them here

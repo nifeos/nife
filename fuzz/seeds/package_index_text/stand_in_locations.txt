@@ -1,0 +1,3 @@
+greeting-0.1.0-aarch64 sha256:abababababababababababababababababababababababababababababababab https://mirror.example/g.nifepkg
+uptime-1.10-aarch64 sha256:abababababababababababababababababababababababababababababababab
+uptime-1.9-aarch64 sha256:abababababababababababababababababababababababababababababababab sectigo-root-e46=https://github.com:8443/o/r/releases/download/v1/u.nifepkg?sig=abc

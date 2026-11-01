@@ -83,6 +83,23 @@ a panic in the progenitor takes the prompt with it. The target asserts propertie
 waiting for a panic. notes/fuzzing.md's BUGS section records that three of the older targets assert
 nothing, and that the one with a real property is the one that found a silent bug.
 
+## `package_index_text`
+
+A repository host or a mirror operator writes the index, and a signed index must still not be able
+to point `jig` at the owner's own network (Q1 of milestone 801). `crates/package_index` has no Kani
+harness, so nothing else runs `Index::parse`, `Location::parse` or `Location::check` on text nobody
+here wrote. The sixth outsider pass booted an escape through `Location` (notes/confinement-outsider-pass-6.md),
+and the address check is the property the target is built around.
+
+The input is text, then optionally one NUL and a list of resolved addresses, five bytes each, so the
+fuzzer chooses what a host "resolved to" as well as what the index says. For every location any part
+of the text yields, `Location::check` must admit the list exactly when it is non-empty and holds only
+IPv4 addresses `public_address` admits; `public_address` is also held against a second statement of
+its ranges, at the edge of each. `version::compare` is held to being an order (reverse, reflexive,
+transitive, agreeing with `check` and `newest`), and an accepted index to reading back through
+`entries`, `find` and `sources` as the crate documents. `Sources::parse` runs on the same bytes.
+`fuzz/seeds/package_index_text/` carries valid indexes in the stand-in format and the rebinding case.
+
 ## `nifefs_roundtrip` and `package_archive_roundtrip`
 
 Fuzzing `Fs::parse` for panics would burn CI time rediscovering a theorem Kani already proves. What

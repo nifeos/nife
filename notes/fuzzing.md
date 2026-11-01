@@ -67,6 +67,7 @@ implies coverage the project does not have.
 | `http_response_feed` | a package server, over plain HTTP | network bytes, read in the progenitor **before** the digest check. Asserts read splits never change the answer. |
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
+| `package_index_text` | a repository host or mirror operator, over pinned TLS | read by `jig` whole and by the progenitor as a copy of up to 4095 bytes, with no Kani harness in the crate. Asserts the address check never admits an address `public_address` refuses (the sixth outsider pass's escape ran through it), that `version::compare` is an order, and that what `Index::parse` accepts reads back the same way. |
 
 ### And the ones deliberately not fuzzed
 
