@@ -14,10 +14,10 @@
 //! image vouches for and the composed one does not. A slot that held the install image again would
 //! pass `confirm-boot` and fail here.
 
-//! Name: `update-boot` is provisional, minted 2026-11-01 (UTC) by lane
-//! lane/976-part-3-the-update-boot-gate. It follows `confirm-boot` and `rollback-boot`, the gates
-//! it shares its boots with, and says what the slot receives. calef has not ruled on it.
-//!
+//! Name: provisional, minted 2026-11-01 (UTC) by lane/976-part-3-the-update-boot-gate. The verb
+//! `update-boot` follows `confirm-boot` and `rollback-boot`, the gates it shares its boots with.
+//! calef has not ruled on it.
+
 //! # BUGS
 //!
 //! - **Version 1 slot staging by the host.** The composed file goes into slot 1 through
