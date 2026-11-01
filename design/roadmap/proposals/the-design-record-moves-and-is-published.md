@@ -46,6 +46,10 @@ single crate or carry a tool's data stay with that code.
 Most of this can start before the move. Steps 1 to 4 below land in this repository today, and each
 makes the move smaller.
 
+Reuse: the site generator is the only new code, and it reuses an existing one (mdBook, Zola,
+Sphinx or Hugo, compared below) plus this tree's own parsers in `script/roadmap` and
+`script/citations`. The extraction reuses `git filter-repo`.
+
 ## The measurements, in brief
 
 Taken 2026-11-01 at `origin/main` `295782808`. The appendix has the commands and their limits.
@@ -87,8 +91,8 @@ source text stays as written.
 
 ## Where the record's code paths already go stale
 
-On 2026-10-31 (UTC) milestone 818's lane moved `jh7110_entropy` out of this tree, in commit
-`aabf387eb`. Milestone 159 (a real hardware entropy source: the JH7110's TRNG) is BUILT, and its
+On 2026-10-31 (UTC) the lane for milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,
+released on its own) moved `jh7110_entropy` out of this tree, in commit `aabf387eb`. Milestone 159 (a real hardware entropy source: the JH7110's TRNG) is BUILT, and its
 block still names `crates/jh7110_entropy` as the crate that holds the register layout. That
 directory no longer exists. `script/roadmap --check` passed on 2026-11-01, because it reads paths
 only in follow-on bullets.
@@ -226,7 +230,8 @@ One decision each, recommendation first. Ask them one at a time.
    now means a history-only repository. Recommended: (a) the number stays the identity and the
    namespace moves with the record repository. Bare code paths mean the anchor commit, and new ones
    use `nifeos/<repo>:<path>` at basalt's pin. Options: (b) a repository-qualified number; (c) the
-   slug, milestone 533's option C; (d) the website address. This amends §201 section 4.
+   slug, option C of milestone 533 (whether the roadmap should become issues, and what a citation
+   means after the repository split); (d) the website address. This amends §201 section 4.
 3. Hosting and address. Publication cannot be undone once strangers quote a page, so the address
    matters more than the host. Recommended: (a) GitHub Pages at the organization's `github.io`
    address, with number-based paths so a later domain changes only the host. Options: (b) a domain
