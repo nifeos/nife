@@ -185,17 +185,17 @@ from the name.
 
 ## In `file_allocation_table`, tests and proofs live in `tests` and `verification`
 
-Ruled 2026-11-01 (UTC), as a class rule: in the `file_allocation_table` crate
+The architect ruled on 2026-11-01 (UTC), as a class rule, that in the `file_allocation_table` crate
 (`crates/file_allocation_table`) every module keeps its host tests in `<module>/tests.rs` as the
 module `tests`, and its Kani proofs in `<module>/verification.rs` as the module `verification`.
-The ratified modules `boot_sector`, `directory`, `reader` and `table` already do, by the rulings of
-2026-10-25 and 2026-10-26 (UTC), and the rule extends their layout to the rest of the crate.
+The ratified modules `boot_sector`, `directory`, `reader` and `table` already follow it (rulings of
+2026-10-25 and 2026-10-26 (UTC)), and the rule extends their layout to the rest of the crate.
 
 What it covers. A module named `tests` or `verification` in a file at exactly that path under its
 parent module's directory. Each such module carries `Name: ratified 2026-11-01 (UTC)` in its own
-block. A module that does not follow the layout is not covered and keeps its own status.
+block. A module that breaks the layout falls outside the rule and keeps its own status.
 
-What it does not cover. No other name in the crate is ruled by this, including the parent modules
+What it does not cover. The rule says nothing of any other name in the crate, including the parent modules
 themselves, which stay provisional until a ruling reaches them.
 
 ## A ruled name is not asked again, and its rename has a deadline
