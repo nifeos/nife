@@ -15,7 +15,7 @@ needs_person: no
 Item 6 of milestone 607 (nife is built and updated from packages), with milestone 695 (the kernel
 trusts two digests handed to it by the loader). §235 (the OS is built and updated from packages)
 ruled the shape on 2026-09-27 (UTC): T4 with T2. The loader hands the kernel the progenitor's digest
-and the base manifest's digest. The kernel checks only the progenitor, and the progenitor checks
+and the digest of the archive's `program_measurements` table. The kernel checks only the progenitor, and the progenitor checks
 the base set. This block is the build half: the kernel binary stops depending on the base set. 695
 is the boot-path half.
 
@@ -61,7 +61,9 @@ until a record cites its first use. Every part below therefore stays unbuilt unt
 | 3 | `sealed_pair` and `uefi_loader/build.rs` check the loader's copy of the digests against the archive instead of searching the kernel for them. | question 2 | about 250 lines, host tests |
 | 4 | Basalt stops rebuilding the kernel package on a base change, and the interim kernel package's per-base rebuild goes. | no, once 2 and 3 land | a basalt pull request, bumped after the nife commit lands |
 
-Parts 1 and 4 need no ruling; part 1 is safe and gated by the QEMU suite on all three
+Parts 1 and 4 need no ruling; part 1 has its ruling (2026-11-01 UTC): the table measures the child
+builders, the production kernel carries no test-program digests, and tests have no second
+trust mechanism. Part 1 is safe and gated by the QEMU suite on all three
 architectures. Both still wait on the condition above.
 
 ## Index row

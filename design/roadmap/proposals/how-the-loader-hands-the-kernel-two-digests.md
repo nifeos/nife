@@ -75,7 +75,7 @@ medium and the screen, each a word the kernel parses through a shared crate. The
 command line on the device-tree path today.
 
 Under T4 with T2, from §235 (the OS is built and updated from packages), two more facts travel: the progenitor's SHA-256 digest, and the digest of
-the base manifest. The kernel checks the progenitor against the first before entering it, and hands
+the archive's `program_measurements` table. The kernel checks the progenitor against the first before entering it, and hands
 the second to the progenitor, which checks the archive's table against it and every program
 against the table. Three loaders must write the facts: `uefi_loader` on all three architectures,
 QEMU's direct boot that `script/test` uses (`-kernel`, `-initrd`, `-append`), and U-Boot's boot
@@ -206,15 +206,21 @@ question 1 into the command line.
 
 Each waits its turn:
 
-1. Whether `nife.base` names the archive's `program_measurements` table, as this file assumes, or
-   976's system manifest. The table is what the kernel vouches for today and what the progenitor
-   already reads; the system manifest lists packages, and the updater reads it.
+1. Decided 2026-11-01 UTC: `nife.base` names the digest of the archive's `program_measurements`
+   table, not 976's system manifest. The progenitor's per-program check runs against the table, and
+   a check against the manifest needs a package-to-program step with no base package list in the
+   tree. The updater still verifies the system manifest when it writes a slot, and the manifest
+   stays out of the boot path. A third word could carry the manifest digest later without breaking
+   anything; replacing the table digest would break. Section 235 says "manifest digest" for this
+   handoff and reads as the table digest, the second sense of "manifest" (the package list) being
+   unnamed when 235 was ruled.
 2. How the kernel hands the base digest to the progenitor: a start word, or a page. The kernel and
    the progenitor release together, so this is a contract crate, reversible, and the lane decides
    it. Listed so nobody mistakes it for a third wire format.
-3. What the six test child builders become once the kernel trusts only the progenitor. They are test
-   programs the system-test kernel enters directly; the plan in 697 measures them through the table,
-   as `trust::require_program` already does for the benchmark boots.
+3. Decided 2026-11-01 UTC: the kernel measures the six test child builders through the
+   archive's `program_measurements` table, as `trust::require_program` does for the benchmark boots.
+   `BOOT_PROGRAMS` shrinks to `progenitor`. The production kernel carries no test-program digests,
+   and tests have no second trust mechanism.
 
 ## Index row
 
