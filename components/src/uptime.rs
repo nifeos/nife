@@ -85,6 +85,10 @@ interfaces_note::carry_interfaces!(&[
         id: user_mode_runtime::INTERFACE_ID,
         version: user_mode_runtime::VERSION
     },
+    interfaces_note::Declared {
+        id: interfaces_note::INTERFACE_ID,
+        version: interfaces_note::INTERFACES_VERSION
+    },
 ]);
 
 user_mode_runtime::program_entry!(start);
