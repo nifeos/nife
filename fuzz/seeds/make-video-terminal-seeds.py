@@ -2,7 +2,7 @@
 """Write the seeds for the `video_terminal_feed` fuzz target.
 
 Every seed starts with the target's three header bytes (grid size, first cut, second cut), then the
-stream. The hand-written ones are small and name one family of sequences each. Three more are the
+stream. The hand-written ones are small and name one family of sequences each. Two more are the
 output halves of recordings in crates/video_terminal/recordings (the NVTR format their README
 describes), so the fuzzer starts from what real full-screen programs write. Run from the repository
 root: python3 fuzz/seeds/make-video-terminal-seeds.py
@@ -57,6 +57,6 @@ def output_events(path):
     return b"".join(chunks)
 
 
-for name, limit in (("less", 4096), ("tmux", 4096), ("vttest-1", 6144)):
+for name, limit in (("tmux", 4096), ("vttest-1", 6144)):
     body = output_events(f"crates/video_terminal/recordings/{name}.rec")[:limit]
     (out / f"recording-{name}.bin").write_bytes(bytes([5, 90, 200]) + body)

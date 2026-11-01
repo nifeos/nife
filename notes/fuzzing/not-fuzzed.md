@@ -15,8 +15,6 @@ quietly grows to cover everything.
   shared page and then reads the page again, and the client changed it in between. A byte-string
   fuzzer cannot express a concurrent mutation. That is milestone 43's lens, and it needs a different
   tool.
-- `video_terminal` is fuzzed now (`video_terminal_feed`). It was held back while its input came
-  only from programs this system built, one rung inside the boundary the other targets sit on. The
-  terminal now serves output from packaged software and foreign `std` programs, so the reason
-  lapsed.
+- `video_terminal` has a target now, `video_terminal_feed`. The terminal serves output from
+  packaged software and foreign `std` programs, so the old reason no longer holds.
 - `grant_plan`. Its parser was being rewritten in a concurrent lane while this was built.
