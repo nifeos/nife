@@ -162,23 +162,22 @@ the format differs. The decoding lives in this crate because a parser proved onl
 kernel is proved by nothing that runs in milliseconds
 ([x86-port/acpi-and-pci.md](x86-port/acpi-and-pci.md)).
 
-The structure, from Xen's `start_info.h`:
+The structure is Xen's `struct hvm_start_info`, in `xen/include/public/arch-x86/hvm/start_info.h`
+of `xen-project/xen` at commit `8803b82ab2c9`, fetched 2026-11-01 (UTC). Its fields, with the
+offsets and sizes they take on a 64-bit target, in bytes:
 
-```text
-struct hvm_start_info {          offset  size
-    uint32_t magic;                   0     4   0x336ec578, "xEn3" little-endian
-    uint32_t version;                 4     4
-    uint32_t flags;                   8     4
-    uint32_t nr_modules;             12     4
-    uint64_t modlist_paddr;          16     8
-    uint64_t cmdline_paddr;          24     8
-    uint64_t rsdp_paddr;             32     8   the ACPI root pointer
-    /* version >= 1 only: */
-    uint64_t memmap_paddr;           40     8
-    uint32_t memmap_entries;         48     4
-    uint32_t reserved;               52     4
-};
-```
+| field | offset | size | meaning |
+|---|---|---|---|
+| `magic` | 0 | 4 | the value `0x336ec578`, which reads `xEn3` with the high bit of the `E` set |
+| `version` | 4 | 4 | the structure's version |
+| `flags` | 8 | 4 | boot flags |
+| `nr_modules` | 12 | 4 | how many modules were loaded |
+| `modlist_paddr` | 16 | 8 | physical address of the module list |
+| `cmdline_paddr` | 24 | 8 | physical address of the command line |
+| `rsdp_paddr` | 32 | 8 | physical address of the ACPI root pointer |
+| `memmap_paddr` | 40 | 8 | physical address of the memory map (version 1 and later) |
+| `memmap_entries` | 48 | 4 | how many memory-map entries; zero when none is given (version 1 and later) |
+| `reserved` | 52 | 4 | must be zero (version 1 and later) |
 
 Version 0 stops at offset 40, so the decoder reads the memory-map fields only when the version
 says they are there and reports zero entries otherwise. A caller that finds no entries would have

@@ -865,7 +865,7 @@ pub fn supervisor_mode_claim(value: &[u8]) -> Option<bool> {
 }
 
 /// What `sbi_pmu_counter_get_info` said about one counter (milestone 74 (cycle counters)), decoded
-/// from one XLEN-wide word (SBI v3.0, `src/ext-pmu.adoc`, "Get details of a counter (FID #1)"):
+/// from one XLEN-wide word (SBI v3.0 (CC-BY-4.0), `src/ext-pmu.adoc`, "Get details of a counter (FID #1)"):
 /// ```text
 ///     counter_info[11:0] = CSR (12bit CSR number)
 ///     counter_info[17:12] = Width (One less than number of bits in CSR)
@@ -924,7 +924,7 @@ impl CounterInfo {
 /// `cycle` CSR counts, which may vary in frequency and stop while the clock is halted.
 pub const EVENT_HW_CPU_CYCLES: usize = pmu_event(0, 1);
 
-/// Assemble an `event_idx` from its type and code, per SBI v3.0 `src/ext-pmu.adoc`:
+/// Assemble an `event_idx` from its type and code, per SBI v3.0 (CC-BY-4.0) `src/ext-pmu.adoc`:
 /// `event_idx[19:16] = type`, `event_idx[15:0] = code`.
 pub const fn pmu_event(event_type: usize, code: usize) -> usize {
     (event_type << 16) | code
