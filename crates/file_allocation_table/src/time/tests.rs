@@ -43,8 +43,6 @@ fn a_time_packs_into_the_specifications_fields() {
 fn no_time_packs_to_the_zero_timestamp() {
     assert_eq!(Stamp::pack(None), Stamp::ZERO);
     assert_eq!(NoClock.now(), None);
-    let mut clock = NoClock;
-    assert_eq!((&mut clock).now(), None);
 }
 
 #[test]
@@ -125,9 +123,13 @@ fn a_clock_lent_by_reference_reports_what_the_clock_reports() {
         }
     }
     let mut clock = Fixed(Some(at(2026, 11, 1, 12, 34, 56)));
-    assert_eq!((&mut clock).now(), Some(at(2026, 11, 1, 12, 34, 56)));
+    // A generic caller takes the clock by value, which is how a `&mut` clock reaches the crate.
+    fn read<C: Clock>(mut clock: C) -> Option<Timestamp> {
+        clock.now()
+    }
+    assert_eq!(read(&mut clock), Some(at(2026, 11, 1, 12, 34, 56)));
     clock.0 = None;
-    assert_eq!((&mut clock).now(), None);
+    assert_eq!(read(&mut clock), None);
 }
 
 #[test]
