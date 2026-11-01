@@ -165,7 +165,7 @@ the read-only checks of that day:
   and the `std-nife` heap overlay and the `xtask` farm generator name it. When `redoxfs` leaves,
   the other users stay on `vendor/talc` in nife until they leave.
 - Upstream: no `CONTRIBUTING` file, and no README line about AI submissions or generated code, so
-  the repository states no policy; issues and discussions are unverified. Its manifest requires
+  the repository states no policy; I did not check issues and discussions. Its manifest requires
   `allocator-api2` 0.4, the newest, and `lock_api` 0.4, while 0.5.0 appeared on 2026-10-21, 11 days
   earlier. The newest release is 5.1.1 of 2026-09-09 and master holds one later documentation
   commit.
