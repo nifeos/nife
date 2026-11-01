@@ -66,7 +66,7 @@ const PROGRAM_PACKAGES: [&str; 2] = ["components", "fixtures"];
 /// in `components/Cargo.toml` and `fixtures/Cargo.toml`, less the programs a package lists as
 /// [`packaged_only`] (milestone 150 (adding a program should not need eight hand-maintained lists);
 /// name provisional). All three archives pack exactly this list, in `Cargo.toml` order, which
-/// nothing depends on: the progenitor looks entries up by name and [`measurement_table`] is sorted.
+/// nothing depends on: the progenitor looks entries up by name and [`initial_ramdisk_writer::measurement_table`] is sorted.
 /// It is deliberately not filtered per architecture.
 ///
 /// Refuses, rather than packing a partial archive, when a `[[bin]]` block has a shape
@@ -494,7 +494,7 @@ pub(crate) fn has_initial_ramdisk_aarch64() -> bool {
 
 /// **The `std` programs the patched farm builds for `triple`.** `jig` is built here for `triple`
 /// ([`crate::farm::build_jig`]), and [`write_archive`] refuses an archive without it
-/// ([`SHIPPED_STD_PROGRAMS`]). The rest are exercisers, each packed iff it was built: an
+/// ([`initial_ramdisk_writer::SHIPPED_STD_PROGRAMS`]). The rest are exercisers, each packed iff it was built: an
 /// interactive `run` that never built them simply ships an archive without them, and nothing loads
 /// them there. Every archive packs them in this order.
 fn std_program_blobs(triple: &str) -> Vec<(&'static str, Vec<u8>)> {
