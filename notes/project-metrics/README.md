@@ -11,9 +11,5 @@ undrawn since 2026-10-11. So is
 2026-10-11). So is `ci-builds.csv`: one row per green merge-group build and one per job in it,
 written by `helpers/ci_job_times.py update` (name provisional, 2026-10-11).
 
-Both `ci-builds.csv` and `ci-job-times.csv` keep per-job rows for the latest 13 weeks only (2026-11-01
-UTC). `update` folds each older week into one row per job as it appends. The raw rows stay in git
-history.
-
 *Name: provisional, minted 2026-09-02 with `script/metrics` (`175a2409b`), for the directory and
 `ledger.md`; `notes/project-metrics.md` records the same. Naming is an architect's.*
