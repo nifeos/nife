@@ -63,6 +63,8 @@ cannot.
   holds digests taken before the change over every metadata sector of the EFI volumes and the
   formatted volumes, and they still match.
 
+The architect ruled on 2026-11-01 (UTC) that timestamps are UTC: the required clock supplies UTC, the crate stores the fields it is given and converts nothing, and it cannot check the zone. `times_agree_on_fat12`, `_fat16` and `_fat32` in `tests/the_timestamps_agree.rs` already show an independent reader getting back exactly the clock's fields, with no offset.
+
 The architect also ruled detail (b) on 2026-11-01 (UTC). The crate refuses a time FAT cannot store
 (a year before 1980 or after 2107, or a field outside its range) with `TimeOutOfRange` on `WriteError`,
 `FormatError` and `LayoutError`, before it writes a byte. Relaxing a refusal to a clamp later is
