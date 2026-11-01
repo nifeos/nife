@@ -49,7 +49,7 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   weeks) changes twice. Those crates now move. Four weeks stable is not the right gate, because
   interfaces may keep breaking. The cut needs mechanisms that accommodate breaking interfaces:
   versions that consumers can check, the work of milestone 956 and of semantic versions on moved
-  crates. No replacement is chosen. Open question for the architect: what condition 4 becomes,
+  crates. Nobody has chosen a replacement. Open question for the architect: what condition 4 becomes,
   likely a statement that those mechanisms exist. This block proposes no measure.
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a
