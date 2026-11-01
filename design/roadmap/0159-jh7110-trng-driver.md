@@ -133,10 +133,10 @@ Nothing here says the driver is fast, and the block should not be quoted as if i
   driver reads it. Neither the datasheet nor the Linux driver documents anything like a NIST SP
   800-90B health test or a compliance claim (no FIPS, no AIS-31) over the raw bitstream. Whether
   this tree needs one before trusting these bytes for anything security-shaped is a real design
-  question, and [§137 (a hardware TRNG with no published health-test
-  claim)](../decisions/0137-trng-health-tests.md) is `DECIDED` (2026-10-28 UTC): continuous SP
-  800-90B health tests in the driver, falling back to another source on failure if one is present
-  and otherwise refusing loudly. The full argument is in `jh7110_entropy/src/lib.rs`'s "Health
+  question. [§137 (a hardware TRNG with no published health-test
+  claim)](../decisions/0137-trng-health-tests.md) is `DECIDED` (2026-10-28 UTC). It rules continuous
+  SP 800-90B health tests in the driver. On failure the driver falls back to another source if one
+  is present, and otherwise refuses loudly. The full argument is in `jh7110_entropy/src/lib.rs`'s "Health
   testing" section.
 - The board's own device tree has never been captured to a file. Milestone 239's fix proves the
   node is there under the vendor spelling; a dump would make it a fixture for the discovery test
