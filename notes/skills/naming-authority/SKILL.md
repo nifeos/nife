@@ -33,6 +33,8 @@ rename, and the refusals that shaped all of it. Read it before you ratify or ren
 inventing a provisional name does not have to. Where it and this file disagree, that file is the
 rule for naming conventions and this one is the bug; this file keeps only the authority above.
 
+Where a permissively licensed source names a thing, copy its name: OpenBSD first, then FreeBSD, and Linux's only when no BSD source names it (new and provisional names; [the ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117), 2026-11-01 UTC).
+
 A name you mint or rename must pass the mechanical naming checks, which `script/lint` runs as
 "names meet the current naming rules" (`helpers/name_checks.py`). Renaming an unratified name to
 comply leaves it provisional; only calef ratifies.
