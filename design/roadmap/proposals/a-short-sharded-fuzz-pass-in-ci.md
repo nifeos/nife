@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # A short sharded in-guest fuzz pass in CI
 
-Raised by lane/a-short-sharded-fuzz-pass-in-ci on 2026-11-01 (UTC). The lane was asked to add a bounded fuzz job
+Raised by lane/a-short-sharded-fuzz-pass-in-ci on 2026-11-01 (UTC). The task was to add a bounded fuzz job
 to CI. The job runs the harness the continuous fuzzing host runs. No roadmap block describes that job.
 Milestone 42 (supply chain and fuzzing) and milestone 779 (fuzz the surface a confined process can
 reach) cover the cargo-fuzz `fuzz` job, which does not run the in-guest drivers.
@@ -46,7 +46,7 @@ waits for the host.
   question for the first decision below.
 - What counts as a failure: a `replay:` line, a panic, or a guest that runs out its run bound. A
   build failure or missing KVM is infrastructure and fails the job with a different message.
-- How a finding is handled: the shard's log goes to a runner temp file, mode 600, and the
+- A finding: the shard's log goes to a runner temp file, mode 600, and the
   final step deletes it. Nothing from it reaches the job log, a step summary or an artifact. The job prints
   only `N of 4 shards reported a finding; a person must look; rerun the shard privately`, and
   names the shard, the commit and the driver, never a seed. Because a seed replays the same calls,
