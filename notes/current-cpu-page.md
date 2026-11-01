@@ -89,7 +89,7 @@ not mapped in `user::user_address_space_create`, and that function's comment say
 
 ## Why the page type is neither `Send` nor `Sync`
 
-`counter_frequency_contract::TimebasePage` is the same bytes for every thread, so handing one across
+`counter_frequency_contract::CounterFrequencyPage` is the same bytes for every thread, so handing one across
 a thread boundary means something. `CurrentCpuPage` is this thread's answer, and carrying it to
 another thread would carry a wrong one. The raw pointer makes the type neither by default. Every
 hand-written `unsafe impl Send` or `Sync` in this tree is a claim that the compiler is wrong, and

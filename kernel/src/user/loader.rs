@@ -119,7 +119,7 @@ pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadErro
 /// none: `CNTFRQ_EL0` is architected and open to EL0.
 ///
 /// `None` only if the frame allocator is out of memory. If the rate has not resolved yet the frame
-/// stays zeroed, which [`counter_frequency_contract::TimebasePage::hz`] reads as unknown.
+/// stays zeroed, which [`counter_frequency_contract::CounterFrequencyPage::hz`] reads as unknown.
 #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
 fn timebase_page_phys() -> Option<u64> {
     use core::sync::atomic::{AtomicU64, Ordering};

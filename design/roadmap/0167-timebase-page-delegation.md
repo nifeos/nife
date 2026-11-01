@@ -36,7 +36,7 @@ to any userspace process.
 
 **Current mitigation, already built and documented (PR #476), so this degrades safely rather than
 faulting.** `build_child_space` retypes a fresh, zeroed placeholder frame instead and maps that at
-`counter_frequency_contract::PAGE_VA`. `counter_frequency_contract::TimebasePage::hz()` reads a zeroed page as `None`
+`counter_frequency_contract::PAGE_VA`. `counter_frequency_contract::CounterFrequencyPage::hz()` reads a zeroed page as `None`
 ("unknown"), never as a fabricated rate. `user_rt::cntfrq()` falls back to its old hardcoded
 `1_000_000_000` in that case. The honest gap is recorded in both crates' own `BUGS` sections:
 `crates/counter_frequency_contract`'s (*"A process built by `supervision_contract::build_child_space` reads a

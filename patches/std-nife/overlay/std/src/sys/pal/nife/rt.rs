@@ -262,7 +262,7 @@ pub fn cntfrq() -> u64 {
         // SAFETY: every path that builds a process on these architectures maps a page (real, or
         // zeroed when the rate was never learned) read-only at `PAGE_VA` before it runs.
         let page = unsafe {
-            super::counterfreqproto::TimebasePage::new(super::counterfreqproto::PAGE_VA)
+            super::counterfreqproto::CounterFrequencyPage::new(super::counterfreqproto::PAGE_VA)
         };
         page.hz().expect(
             "the counter frequency is unknown: this process's timebase page is zeroed or \

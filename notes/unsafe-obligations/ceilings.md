@@ -164,7 +164,7 @@ against. `ClockPage` needs the same two impls despite carrying a seqlock, precis
 all once it is mapped (see `environment_contract`'s own docs on why it needs no seqlock).
 
 Raised from 20 to 22 by milestone 161's x86_64 timebase-page work (2026-08-25):
-`crates/counter_frequency_contract::TimebasePage`'s `unsafe impl Send`/`Sync`, the same pair
+`crates/counter_frequency_contract::CounterFrequencyPage`'s `unsafe impl Send`/`Sync`, the same pair
 `ConfigPage` already carries and for the identical argument. The page is computed once by the
 kernel at boot (`kernel::user::x86_timebase_page_phys`) and mapped read-only into every x86_64
 process; it has no writer once mapped.
