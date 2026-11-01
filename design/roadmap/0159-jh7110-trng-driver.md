@@ -133,10 +133,11 @@ Nothing here says the driver is fast, and the block should not be quoted as if i
   driver reads it. Neither the datasheet nor the Linux driver documents anything like a NIST SP
   800-90B health test or a compliance claim (no FIPS, no AIS-31) over the raw bitstream. Whether
   this tree needs one before trusting these bytes for anything security-shaped is a real design
-  question. It is not decided here (a developer does not edit `design/decisions/`). It is
-  [§137 (a hardware TRNG with no published health-test
-  claim)](../decisions/0137-trng-health-tests.md), `PROPOSED`, and the full argument is in
-  `crates/jh7110_entropy/src/lib.rs`'s "Health testing" section.
+  question. [§137 (a hardware TRNG with no published health-test
+  claim)](../decisions/0137-trng-health-tests.md) is `DECIDED` (2026-10-28 UTC). It rules continuous
+  SP 800-90B health tests in the driver. On failure the driver falls back to another source if one
+  is present, and otherwise refuses loudly. The full argument is in `jh7110_entropy/src/lib.rs`'s "Health
+  testing" section.
 - The board's own device tree has never been captured to a file. Milestone 239's fix proves the
   node is there under the vendor spelling; a dump would make it a fixture for the discovery test
   (step 6 of the [bench procedure](0159-jh7110-trng-driver/bench-procedure.md)).
@@ -149,7 +150,11 @@ Nothing here says the driver is fast, and the block should not be quoted as if i
   recorded as a `BUGS` entry in `entropy_proto`, `components/src/entropy.rs` and
   `components/src/jh7110_entropy.rs`.
 - The check stops at bring-up. A source that answers once and degrades, or whose register file
-  latches and repeats a nonzero answer, still passes. Continuous health testing belongs to §137.
+  latches and repeats a nonzero answer, still passes. Continuous health testing is what §137 rules.
+- The ruled health tests of §137 (a hardware TRNG with no published health-test claim) are unbuilt.
+  The driver in `jh7110_entropy/src/lib.rs` still checks only `ISTAT.LFSR_LOCKUP`. It runs no SP
+  800-90B test, names no min-entropy constant and has no failure action. Proposed milestone,
+  provisional name: continuous entropy health tests in the TRNG driver.
 - `POLL_TRIES` and `LOCKUP_RETRIES` bound loop iterations, not time, so what they bound depends on
   the core and on what the compiler did to the loop. A real timeout needs a clock the driver does
   not hold. Recorded in the driver's `BUGS`.
@@ -169,8 +174,8 @@ Nothing here says the driver is fast, and the block should not be quoted as if i
   bring-up 562 us. The proposal was promoted to milestone 306 then, because a proposal whose work
   is finished is not a proposal.
 - **Decision.** Whether these bytes need a NIST SP 800-90B-class health test before anything
-  security-shaped trusts them: `design/decisions/0137-trng-health-tests.md`, already `PROPOSED`
-  and untouched by this milestone.
+  security-shaped trusts them: `design/decisions/0137-trng-health-tests.md`, `DECIDED` 2026-10-28
+  (UTC) as continuous health tests in the driver, and untouched by this milestone.
 
 ## What this does not decide
 
