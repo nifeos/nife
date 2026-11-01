@@ -2,7 +2,7 @@
 //! cluster from a hint, a wrap, a full volume, a chain freed and cut, every way a chain can break,
 //! entries that straddle a table sector, both table copies, and a device that refuses a write.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::reader::tests::{CLUSTERS, Image};

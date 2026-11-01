@@ -1,7 +1,7 @@
 //! A partition table built byte by byte, every way it can be wrong, and a device that shows one
 //! partition.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 

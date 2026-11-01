@@ -2,7 +2,7 @@
 //! odd chunk sizes across sector boundaries, slack zeroed, a position past the end clamped, a full
 //! root, a stale entry, and a device that refuses a write.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::directory::ShortEntry;
