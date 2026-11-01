@@ -112,14 +112,24 @@ def problems(files):
 ID_DECL = re.compile(r'^\s*pub\s+const\s+INTERFACE_ID\s*:\s*u64\s*=\s*([^;]+);', re.M)
 
 
+# Interface ids no crate may take again, each with the crate that held it. `glob` gave up 3 when the
+# ruling of 2026-11-01 (UTC, pull request #3022) scoped the ids to crates that define a run-time
+# format; a matcher with no peer is a Rust API.
+RETIRED_IDS = {'3': 'glob'}
+
+
 def duplicate_ids(sources):
-    """Failure messages for any `INTERFACE_ID` value two crates share; `sources` is {path: text}."""
+    """Failure messages for any `INTERFACE_ID` value two crates share, or one in `RETIRED_IDS`;
+    `sources` is {path: text}."""
     owners = {}
     for path, text in sorted(sources.items()):
         for value in ID_DECL.findall(text.split('#[cfg(test)]', 1)[0]):
             owners.setdefault(' '.join(value.split()), []).append(crate_of(path))
     return [f'INTERFACE_ID {value} is declared by {", ".join(crates)}'
-            for value, crates in sorted(owners.items()) if len(crates) > 1]
+            for value, crates in sorted(owners.items()) if len(crates) > 1] + \
+        [f'INTERFACE_ID {value} is declared by {", ".join(crates)}, and it is retired '
+         f'(it named {RETIRED_IDS[value]}); take an unused number'
+         for value, crates in sorted(owners.items()) if value in RETIRED_IDS]
 
 
 def tree_sources(cwd=None):
@@ -206,6 +216,7 @@ def selftest():
     assert not duplicate_ids({'crates/a/src/lib.rs': ident.format(1), 'crates/b/src/lib.rs': ident.format(2)})
     assert duplicate_ids({'crates/a/src/lib.rs': ident.format(1), 'crates/b/src/lib.rs': ident.format(1)})
     assert not duplicate_ids({'crates/a/src/lib.rs': ident.format(1) + '#[cfg(test)]\n' + ident.format(1)})
+    assert duplicate_ids({'crates/a/src/lib.rs': ident.format(3)})
 
     # The same rules over a scratch repository: a synthetic pull request that moves a value.
     with tempfile.TemporaryDirectory() as scratch:

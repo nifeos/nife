@@ -17,12 +17,16 @@ through its own milestone at its review (calef, 2026-10-07 (UTC)); one repositor
 `nifeos`; and the release order ruled 2026-10-27 (UTC). The story, per crate: nife builds and
 proves it in this tree, moves it to a repository of its own, soaks it there, publishes it to
 crates.io, and consumes it back by semantic version, as any outside project does: `Cargo.toml`
-holds a version requirement, not a git revision, and `Cargo.lock` records the checksum. Until a
-moved crate publishes, nife depends on it by a git dependency on a release tag that also states the
-version requirement, such as `{ git = "https://github.com/nifeos/<crate>", tag = "v0.1.0", version
-= "0.1" }`, and at first publication the line becomes a plain version requirement (ruled
-2026-11-01 (UTC)). Publication stays a separate decision per crate, and a contract crate may never
-publish. The program serves
+holds a version requirement, not a git revision, and `Cargo.lock` records the checksum. A crate
+nife does not publish, or has not yet, is a git dependency pinned by revision with its version
+requirement stated, such as `{ git = "https://github.com/nifeos/<crate>", rev = "<commit>", version
+= "0.1" }` (ruled 2026-11-01 (UTC)). The revision is the commit of a tagged release whose manifest
+carries that version; the tag is a label and the semver baseline (`--baseline-rev` against the
+previous tag), never what Cargo follows. At first publication the line becomes a plain version
+requirement. Each publication, and each repository a move creates, waits for the architect's
+review of the exact crate, version and name, and a contract crate may never publish. How a
+consumer's revision follows a producer's release is a
+[proposal](../roadmap/proposals/a-producer-release-moves-each-consumers-pin.md). The program serves
 [risk 8](../fatal-risks/8-nobody-else-builds-on-nife.md): nife shrinks by pushing its mechanisms
 out into the Rust ecosystem (calef, 2026-10-18 (UTC): *"I have no desire to maintain 50 crates.
 Rather I desire 50 crates that I would confidently use to build a nife."*). A lane reads the next
@@ -57,7 +61,7 @@ they join the table when it lands.
 | 6 | 815 | | `e1000e`: its cut landed 2026-10-25 (#2719) and its four harnesses prove; the step is the move, the soak, the publication and the consumption |
 | 7 | 816 | | `designware_ethernet`: its cut landed 2026-10-25 (#2719), with the walk in `machine_discovery::jh7110`, and its two harnesses prove; the PHY link decode still needs its harness row, then the move, the soak, the publication and the consumption |
 | 8 | 817 | | `designware_mobile_storage`: its cut landed 2026-10-25 (#2719), with `serve` moved to `driver_process_contract`; the MBR parse and the capacity decoders still need their harness rows, then the move, the soak, the publication and the consumption |
-| 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names. nife links it today by git revision, with `publish = false` in the crate, the same interim form with a revision in place of a tag until the crate is tagged. Tagging it is a prerequisite of the architect's review, and the first crate reviewed is this one |
+| 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names. nife links it today in this form: its three manifests pin it by revision and already state `version = "0.1.0"`, with `publish = false` in the crate; the crate has no tagged release yet, so the pinned commit becomes a tagged release's commit when it gets one. Tagging it is a prerequisite of the architect's review, and the first crate reviewed is this one |
 | 10 | 819 | | `jh7110_clock_and_reset`: its cut is done and its name ratified, and it holds no harness yet, so the harnesses and their falsification patches come first; then the move, the soak, the publication and the consumption |
 
 Two orderings govern the program, and they order different events. The soak order sits in the

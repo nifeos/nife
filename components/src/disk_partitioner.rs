@@ -96,6 +96,20 @@ static mut PRIMARY: [u8; 5 * blk::BLOCK_SIZE] = [0; 5 * blk::BLOCK_SIZE];
 /// that begins inside a transfer block depends on the disk's size, so six is the worst case.
 static mut BACKUP: [u8; 6 * blk::BLOCK_SIZE] = [0; 6 * blk::BLOCK_SIZE];
 
+// **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
+// checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
+// it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
+capability_manifest_note::carry_interfaces!(&[
+    capability_manifest_note::Declared {
+        id: abi::INTERFACE_ID,
+        version: abi::ABI_VERSION
+    },
+    capability_manifest_note::Declared {
+        id: address_space_map::INTERFACE_ID,
+        version: address_space_map::VERSION
+    },
+]);
+
 user_mode_runtime::program_entry!(start);
 
 fn start(role: u64, _a1: u64, _a2: u64) -> ! {
