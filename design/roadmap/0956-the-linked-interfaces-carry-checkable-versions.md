@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-01
 raised: 2026-10-29
 promoted_from: the-linked-interfaces-carry-checkable-versions
 milestone_dependencies: 597, 610
