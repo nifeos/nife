@@ -20,7 +20,7 @@ governs the pin. Nothing moves that pin today when a producer tags a new release
 falls behind until someone edits it by hand.
 
 Reuse: the tree's dependency bot (`.github/dependabot.yml`, three `cargo` entries) and the shared
-crate template in `nifeos/crate-workflows`. No new dependency is proposed.
+crate template in `nifeos/crate-workflows`. It proposes no new dependency.
 
 ## The question
 
@@ -36,13 +36,14 @@ log as the evidence.
 
 ## An option, priced and not recommended
 
-A static-file registry: a sparse index served as plain files, which Cargo reads through
-`registry = "<name>"` on the dependency and an index declared in `.cargo/config.toml`. A version
+A static-file registry: a sparse index that a web server hands out as plain files, which Cargo
+reads through `registry = "<name>"` on the dependency and an index that `.cargo/config.toml`
+names. A version
 requirement would then resolve without a git pin. What it would take is unmeasured: where the
 index and the archives live, who signs them, how `deny.toml`'s `allow-registry` admits it, and
-what a crate published to crates.io later does about a dependency on another registry. This file
+what a crate does about a dependency on another registry once it publishes to crates.io. This file
 recommends nothing about it.
 
 ## BUGS
 
-- Nothing here was run. The bot's behavior on git dependencies is the open measurement.
+- This lane ran nothing. The bot's behavior on git dependencies is the open measurement.
