@@ -71,6 +71,31 @@ and the shutdown bit reads clean. `fuzz/seeds/file_allocation_table_writer`
 holds one seed of each kind: the reader's small tree behind the hostile-image byte, and a short
 script of operations behind the formatted byte.
 
+## `capability_manifest_note_decode`
+
+A program's manifest is a note inside its ELF, written by whoever built the program, and the
+progenitor decodes it to decide what the program is endowed with. The progenitor holds all
+userspace authority, so no confinement stands between these bytes and the decoder. Kani proves
+`decode` total and its output encodes back to its bytes, but only at 57 bytes, which ends at the
+zone count byte of versions 2 and 3; the zone walk and the service byte are past it, and
+`decode_subtree_grants` and `decode_verbs` have no harness.
+
+Every input goes to all three decoders. On acceptance the target writes the descriptor back out
+(the crate's `encode` for the first 56 bytes, then the zones and service byte the accessors report,
+or the scope's own note, or the verb records) and requires the input byte for byte, because the
+crate promises one encoding per manifest. It also holds the invariants the crate states: no note
+carries `reboot`, `sync`, `installer`, `catalog`, `indexes`, `activation_directory` or
+`console_input`; zones are canonical and strictly ascending, one to eight in version 2; a refusal
+by `decode` is a refusal by `zones` and `service`; a valid descriptor with a byte cut or added is
+refused; verbs ascend and each is found by `grants_for`.
+
+Mutation alone seldom keeps a zone walk valid, since one flipped length byte shifts every later
+zone. The seeds are encoded valid manifests of every version
+(`fuzz/seeds/capability_manifest_note_decode/`, held to what the crate encodes by
+`crates/capability_manifest_note/tests/fuzz_seed.rs`), and a custom mutator builds more: a fresh
+zoned or serviced descriptor from a pool of canonical zones, or a verb table, optionally with one
+thing broken. A sixty-second smoke run reached versions 2 and 3 past the count byte in the corpus.
+
 ## `domain_name_system_reply`
 
 The real captures in `crates/domain_name_system/tests/fixtures` seed the target unmodified, and

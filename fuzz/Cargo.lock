@@ -232,13 +232,16 @@ name = "fuzz"
 version = "0.0.0"
 dependencies = [
  "byte_sink_contract",
+ "capability_manifest_note",
  "compositor",
  "device_tree_blob",
+ "domain_name_resolution_contract",
  "domain_name_system",
  "elf",
  "file_allocation_table",
  "filesystem_contract",
  "globally_unique_identifier_partition_table",
+ "grant_plan",
  "http_response",
  "libfuzzer-sys",
  "nifefs",
