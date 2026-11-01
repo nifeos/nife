@@ -198,7 +198,7 @@ Recommendation as raised, and ruled:
 
 - Each crate carries its own semver version and starts at 0.1. Nothing moves in lockstep.
 - Each crate states a minimum Rust version. Measured 2026-10-07: all 30 build on stable 1.94.1,
-  for the host and for `riscv64imac-unknown-none-elf`. Nightly is this tree's need, not theirs.
+  for the host and for `riscv64imac-unknown-none-elf`.
 - A release ships its Kani harnesses (behind `#[cfg(kani)]`, as now) and its `falsifications/`
   patches. A proof a stranger cannot rerun is a claim, and the patches show the proofs can fail.
 - `publish = false` becomes the workspace default, and a lint check allows publishing only for
@@ -236,8 +236,7 @@ tree.
 - W-b. calef's own token, by hand.
 
 Recommendation as raised, and ruled: W-a. It is the same reasoning §220 (signed builds) applied to keys: no
-long-lived secret where a workflow can mint one. Nothing is published until calef approves that
-crate's first release.
+long-lived secret where a workflow can mint one.
 
 ## Fork 7. Each crate's disposition (ruled: one crate at a time)
 
@@ -246,6 +245,9 @@ with the evidence for each. The ask is to approve the classes, not to send anyth
 approach and every first publication then comes to calef one at a time, with its text, as the
 upstream-hardening ruling of 2026-10-06 requires. A security finding in another project goes to
 its maintainers privately first.
+
+Ruled 2026-11-01 (UTC): internal means only a crate nothing outside nife could consume, and
+[the survey note](../../notes/releasable-crates-2026-10-07.md) reclassifies the rest.
 
 Recommendation as raised, replaced by one review per crate: approve the table whole. The survey
 note keeps each row's reasoning.
