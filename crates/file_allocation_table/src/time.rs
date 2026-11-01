@@ -16,7 +16,7 @@
 //! before it writes a byte. A clock whose time is not trustworthy reports `None` and gets the zero
 //! timestamp.
 //!
-//! Name: provisional. The clock half of a writer, ruled required on 2026-11-01 (UTC).
+//! Name: ratified 2026-11-01 (UTC), the clock half of a writer, which the ruling of the same day makes required.
 
 /// **A calendar date and time of day**, as plain numbers with no time zone.
 ///
@@ -28,9 +28,9 @@
 /// The fields need not be valid. A writer refuses a time FAT cannot store (see [`Clock`]) with
 /// `TimeOutOfRange`, and writes nothing.
 ///
-/// Name: provisional. Year, month, day, hour, minute and second, with no nife type.
+/// Name: ratified 2026-11-01 (UTC), year, month, day, hour, minute and second, with no nife type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Timestamp {
+pub struct CivilDateTime {
     /// The year, for example 2026. FAT stores 1980 to 2107.
     pub year: u16,
     /// The month, 1 to 12.
@@ -66,24 +66,24 @@ pub struct Timestamp {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{Clock, Timestamp};
+/// use file_allocation_table::{Clock, CivilDateTime};
 ///
 /// /// A clock a test sets by hand.
-/// struct Fixed(Option<Timestamp>);
+/// struct Fixed(Option<CivilDateTime>);
 ///
 /// impl Clock for Fixed {
-///     fn now(&mut self) -> Option<Timestamp> {
+///     fn now(&mut self) -> Option<CivilDateTime> {
 ///         self.0
 ///     }
 /// }
 /// ```
 ///
-/// Name: provisional. The ruling's clock; the method reports `Option` so "no time yet" is a value.
+/// Name: ratified 2026-11-01 (UTC), the ruling's clock; the method reports `Option` so "no time yet" is a value.
 pub trait Clock {
     /// The current time, or `None` when there is none to report.
     ///
-    /// Name: provisional. As `std::time::SystemTime::now`, with the empty case a value.
-    fn now(&mut self) -> Option<Timestamp>;
+    /// Name: ratified 2026-11-01 (UTC), as `std::time::SystemTime::now`, with the empty case a value.
+    fn now(&mut self) -> Option<CivilDateTime>;
 }
 
 /// **The explicit "no time"**: a clock that always reports none. A volume written with it carries
@@ -91,18 +91,18 @@ pub trait Clock {
 /// reports no time, so the question of a time zone does not arise (a clock that does report a time
 /// must report UTC; see [`Clock`]).
 ///
-/// Name: provisional. The ruling's name for the caller that has no time source.
+/// Name: ratified 2026-11-01 (UTC), the ruling's name for the caller that has no time source.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub struct NoClock;
 
 impl Clock for NoClock {
-    fn now(&mut self) -> Option<Timestamp> {
+    fn now(&mut self) -> Option<CivilDateTime> {
         None
     }
 }
 
 impl<C: Clock + ?Sized> Clock for &mut C {
-    fn now(&mut self) -> Option<Timestamp> {
+    fn now(&mut self) -> Option<CivilDateTime> {
         (**self).now()
     }
 }
@@ -147,7 +147,7 @@ impl Stamp {
     /// **Pack `now`**, or refuse it. `None` packs to [`Stamp::ZERO`]. A time FAT cannot store (a
     /// year outside 1980 to 2107, a month outside 1 to 12, a day outside 1 to 31, an hour past 23, a
     /// minute or second past 59) is [`OutOfRange`]. The check runs before any byte is written.
-    pub(crate) fn pack(now: Option<Timestamp>) -> Result<Stamp, OutOfRange> {
+    pub(crate) fn pack(now: Option<CivilDateTime>) -> Result<Stamp, OutOfRange> {
         let Some(now) = now else {
             return Ok(Stamp::ZERO);
         };

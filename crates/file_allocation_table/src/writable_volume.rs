@@ -12,7 +12,7 @@
 //! resize sets the write time, the write date and the access date. A rename keeps the entry's
 //! times. Attribute and label changes stamp nothing except a label's first entry.
 //!
-//! Name: provisional. The writing half of `Volume`, whose clock the ruling of 2026-11-01 (UTC)
+//! Name: ratified 2026-11-01 (UTC), the writing half of `Volume`, whose clock the ruling of 2026-11-01 (UTC)
 //! makes required.
 
 use core::ops::{Deref, DerefMut};
@@ -64,7 +64,7 @@ use crate::write_cursor::WriteError;
 /// volume.create_file(0, "HELLO.TXT").unwrap();
 /// ```
 ///
-/// Name: provisional. A volume plus the clock its writes need.
+/// Name: ratified 2026-11-01 (UTC), a volume plus the clock its writes need.
 #[derive(Debug)]
 pub struct WritableVolume<D, C> {
     volume: Volume<D>,
@@ -74,7 +74,7 @@ pub struct WritableVolume<D, C> {
 impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
     /// **Open the volume on `device` for writing**, stamping with `clock`.
     ///
-    /// Name: provisional. [`Volume::open`] with the clock the writes need.
+    /// Name: ratified 2026-11-01 (UTC), [`Volume::open`] with the clock the writes need.
     pub fn open(device: D, clock: C) -> Result<WritableVolume<D, C>, crate::ReadError<D::Error>> {
         Ok(WritableVolume {
             volume: Volume::open(device)?,
@@ -91,7 +91,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
 
     /// Give the volume back without its clock, for reading.
     ///
-    /// Name: provisional. The `into_` convention for giving back what a value owns.
+    /// Name: ratified 2026-11-01 (UTC), the `into_` convention for giving back what a value owns.
     pub fn into_volume(self) -> Volume<D> {
         self.volume
     }

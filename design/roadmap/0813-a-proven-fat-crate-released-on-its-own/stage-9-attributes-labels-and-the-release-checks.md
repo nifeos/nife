@@ -17,12 +17,10 @@ timestamps, which follow a ruling of 2026-11-01 (UTC) that the clock is required
   root and falls back to the boot sector, and treats `NO NAME` as no label. A change writes both.
 - `README.md` rewritten for release, with an example that `tests/the_readme_example.rs` compiles and
   runs, and a manifest description that says what the crate does now.
-- `script/crate-standalone file_allocation_table` passes on everything but one check. The fixture
-  notes no longer cite the nife tree, and the copy builds on Rust 1.88 for the host and the three
-  bare-metal targets. What remains is names: 10 provisional names await ratification (the `time` module with `Timestamp`,
-  `Clock` and `NoClock`, the `writable_volume` module with `WritableVolume`, `open` and `into_volume`,
-  and `LayoutError::TimeOutOfRange`), which the architect does with
-  `python3 helpers/name_release.py --draft file_allocation_table`.
+- The fixture notes no longer cite the nife tree, and the copy builds on Rust 1.88 for the host and
+  the three bare-metal targets. The architect ratified the last ten provisional names on 2026-11-01 (UTC):
+  the `time` module with `CivilDateTime`, `Clock` and `NoClock`, the `writable_volume` module with
+  `WritableVolume`, `open` and `into_volume`, and `LayoutError::TimeOutOfRange`.
 
 
 ## The evidence
@@ -49,8 +47,8 @@ no time set stamps the zero timestamp. The ruling refuses an optional clock, the
 zero timestamps. A required clock can later relax to optional without breaking semver; the reverse
 cannot.
 
-- `Clock` (`now(&mut self) -> Option<Timestamp>`), `Timestamp` (year, month, day, hour, minute and
-  second as plain numbers, no nife type), and `NoClock`, which always reports none.
+- `Clock` (`now(&mut self) -> Option<CivilDateTime>`), `CivilDateTime` (year, month, day, hour,
+  minute and second as plain numbers, no nife type), and `NoClock`, which always reports none.
 - `WritableVolume<D, C: Clock>` holds a `Volume` and its clock and derefs to the `Volume`. Every
   write method lives there; a read-only `Volume` has none, so a write without a clock does not
   compile. The clock is a type parameter and not a trait object, so the crate keeps `no_std`

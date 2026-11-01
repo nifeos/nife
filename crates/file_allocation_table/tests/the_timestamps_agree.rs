@@ -11,22 +11,22 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    Clock, FormatOptions, FormatPlan, NoClock, SectorDevice, SectorSize, Timestamp, VolumeLayout,
-    WritableSectorDevice, WritableVolume, WriteError,
+    CivilDateTime, Clock, FormatOptions, FormatPlan, NoClock, SectorDevice, SectorSize,
+    VolumeLayout, WritableSectorDevice, WritableVolume, WriteError,
 };
 use lamfat::FatType;
 
 /// A clock the test sets between operations.
-struct Shared<'a>(&'a Cell<Option<Timestamp>>);
+struct Shared<'a>(&'a Cell<Option<CivilDateTime>>);
 
 impl Clock for Shared<'_> {
-    fn now(&mut self) -> Option<Timestamp> {
+    fn now(&mut self) -> Option<CivilDateTime> {
         self.0.get()
     }
 }
 
-fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Option<Timestamp> {
-    Some(Timestamp {
+fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Option<CivilDateTime> {
+    Some(CivilDateTime {
         year,
         month,
         day,

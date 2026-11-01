@@ -7,23 +7,23 @@ use core::cell::Cell;
 
 use super::*;
 use crate::reader::tests::Image;
-use crate::time::{NoClock, Timestamp};
+use crate::time::{CivilDateTime, NoClock};
 
 /// A clock the test sets between operations and reads the count of.
 struct Shared<'a> {
-    time: &'a Cell<Option<Timestamp>>,
+    time: &'a Cell<Option<CivilDateTime>>,
     readings: &'a Cell<u32>,
 }
 
 impl Clock for Shared<'_> {
-    fn now(&mut self) -> Option<Timestamp> {
+    fn now(&mut self) -> Option<CivilDateTime> {
         self.readings.set(self.readings.get() + 1);
         self.time.get()
     }
 }
 
-fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Option<Timestamp> {
-    Some(Timestamp {
+fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Option<CivilDateTime> {
+    Some(CivilDateTime {
         year,
         month,
         day,
@@ -50,7 +50,7 @@ fn fields(bytes: &[u8], start: usize) -> (u8, u16, u16, u16, u16, u16) {
     )
 }
 
-fn packed(time: Option<Timestamp>) -> (u8, u16, u16, u16, u16, u16) {
+fn packed(time: Option<CivilDateTime>) -> (u8, u16, u16, u16, u16, u16) {
     let s = Stamp::pack(time).unwrap();
     (
         s.creation_tenths,
@@ -313,7 +313,7 @@ fn the_volume_without_a_clock_cannot_write_and_the_clock_is_given_back_with_the_
 }
 
 /// The times FAT cannot store that the refusal tests try.
-fn bad_times() -> [Option<Timestamp>; 5] {
+fn bad_times() -> [Option<CivilDateTime>; 5] {
     [
         at(1979, 12, 31, 23, 59, 58),
         at(2108, 1, 1, 0, 0, 0),

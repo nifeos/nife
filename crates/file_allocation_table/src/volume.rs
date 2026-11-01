@@ -102,7 +102,7 @@ pub enum LayoutError {
     NameRefused,
     /// The clock reported a time FAT cannot store (see [`crate::Clock`]).
     ///
-    /// Name: provisional. As `WriteError::TimeOutOfRange`.
+    /// Name: ratified 2026-11-01 (UTC), as `WriteError::TimeOutOfRange`.
     TimeOutOfRange,
     /// The one file the volume holds is over 4 GiB less one byte, or needs more clusters than the
     /// volume has left after its three directories. It is a refusal to lay out a volume, and not

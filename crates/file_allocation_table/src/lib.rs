@@ -119,7 +119,7 @@ pub use named_entry::{NamedEntries, NamedEntry};
 pub use reader::{Chain, ChainError, Volume};
 pub use sector::{SectorDevice, SectorSize, WritableSectorDevice};
 pub use table::TableEntry;
-pub use time::{Clock, NoClock, Timestamp};
+pub use time::{CivilDateTime, Clock, NoClock};
 pub use volume::{
     CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MINIMUM_CLUSTERS, LayoutError, RESERVED_SECTORS,
     ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT, VolumeLayout,

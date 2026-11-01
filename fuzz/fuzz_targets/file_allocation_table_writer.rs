@@ -13,7 +13,7 @@
 #![no_main]
 
 use file_allocation_table::{
-    Clock, FormatOptions, FormatPlan, NamedEntry, NoClock, SectorDevice, SectorSize, Timestamp,
+    CivilDateTime, Clock, FormatOptions, FormatPlan, NamedEntry, NoClock, SectorDevice, SectorSize,
     WritableSectorDevice, WritableVolume,
 };
 use libfuzzer_sys::fuzz_target;
@@ -95,13 +95,13 @@ impl Fed {
 }
 
 impl Clock for Fed {
-    fn now(&mut self) -> Option<Timestamp> {
+    fn now(&mut self) -> Option<CivilDateTime> {
         let next = self.bytes.get(self.at..self.at + 7)?;
         self.at += 7;
         if next[0] < 32 {
             return None;
         }
-        Some(Timestamp {
+        Some(CivilDateTime {
             year: u16::from_le_bytes([next[0], next[1]]),
             month: next[2],
             day: next[3],
