@@ -160,6 +160,6 @@ has users who ask upstream) covers the upstream offer only. The four contribute 
 (`globally_unique_identifier_partition_table` at step 2, `glob` and `domain_name_system` at step 5,
 `calendar` at step 8) move in the order like the other 18. Each gets its own repository, tag and
 version and a consumer pins it by `rev` with the version stated. Each waits for the architect's hand
-review under amended §247. Nothing is offered upstream, published or sent; that stays gated on the
+review under amended §247 (the split begins with basalt holding nife, and `procps` moves first). Nothing is offered upstream, published or sent; that stays gated on the
 2026-10-27 ruling, approval of each upstream submission and the AI-policy ruling (milestone 857,
 fork 8). A crate later contributed has its repository as the source of the offer.
