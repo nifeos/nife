@@ -62,7 +62,10 @@ and none is taken, because calef ruled this crate "publish ours". The only Rust 
 weathered-steel's `jh71xx-pac` 0.11.1 and `jh71xx-hal` 0.7.2 (Codeberg, 2025-03), are register maps
 under GPL-3.0-only, which nife cannot take under its license. No Rust crate for the clock and reset
 logic was found. Linux's `clk-starfive-jh7110-*` drivers stay the reference and are read, never
-copied. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes only to
+copied. The I2C timing function `standard_mode_100k` takes no text from any driver: its
+counts follow from the I2C specification's standard-mode limits and the `DesignWare` count registers'
+description, and its fill (the whole shortfall to the low count) is nife's own. OpenBSD's `dwiic.c`
+(ISC) was read on 2026-11-01 and states no equations, so no notice is carried. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes only to
 projects nife depends on.
 
 ## What is proven

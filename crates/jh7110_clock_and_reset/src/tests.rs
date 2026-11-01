@@ -427,28 +427,68 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
     assert_eq!(i2c5_clock_frequency(&frac), PLL2_DEFAULT_HZ);
 }
 
+/// Whether `count` input-clock periods at `clock_frequency` last at least `minimum_ns`.
+fn covers(clock_frequency: u64, count: u32, minimum_ns: u128) -> bool {
+    u128::from(count) * 1_000_000_000 >= u128::from(clock_frequency) * minimum_ns
+}
+
 #[test]
-fn the_standard_mode_timing_is_the_vendor_formula_worked_by_hand() {
-    // 50 MHz in, the formula's own numbers: rise = ceil(50e6 * 1000ns / 1e9) = 50 counts,
-    // fall = 15, thigh = 200, tlow = 235, period = 500. Then
-    // hcnt = 200 - 15 - 7 = 178, lcnt = 235 - 50 + 15 - 1 = 199, tot = 178 + 199 + 7 + 50 + 1
-    // = 435 < 500, so diff = 32 and lcnt takes the remainder 1: (210, 232). sda_hold is
-    // ceil(300ns / 20ns) = 15.
-    let t = standard_mode_100k(50_000_000);
-    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (210, 232, 15));
-    assert_eq!(t.con, 0b0110_0011);
-    // Every count legal and the mode word exactly the vendor's four init bits.
-    assert!(t.hcnt > 0 && t.lcnt > 0);
+fn the_standard_mode_timing_meets_the_specification_minimums_at_every_clock() {
+    // The board's 49.5 MHz, 24 MHz (the oscillator), 48 MHz, 50 MHz, 100 MHz, 198 MHz and a
+    // clock that is not a whole number of kilohertz.
+    for clock in [
+        49_500_000u64,
+        24_000_000,
+        48_000_000,
+        50_000_000,
+        100_000_000,
+        198_000_000,
+        1_000_000_000,
+        33_333_333,
+        1_000_001,
+        1_000_000,
+    ] {
+        let t = standard_mode_100k(clock);
+        assert!(covers(clock, t.hcnt, 4_000), "high time at {clock}");
+        assert!(covers(clock, t.lcnt, 4_700), "low time at {clock}");
+        assert!(covers(clock, t.sda_hold, 300), "SDA hold at {clock}");
+        // Never faster than 100 kHz: the two counts alone span at least 10 microseconds.
+        assert!(
+            (u128::from(t.hcnt) + u128::from(t.lcnt)) * 100_000 >= u128::from(clock),
+            "period at {clock}"
+        );
+        assert_eq!(t.con, 0b0110_0011);
+    }
+}
+
+#[test]
+fn the_standard_mode_fill_is_one_stretched_low_count() {
+    // 24 MHz: high ceil(96) = 96, low ceil(112.8) = 113, hold ceil(7.2) = 8, period 240, so the
+    // low count takes the shortfall 240 - 96 = 144.
+    let t = standard_mode_100k(24_000_000);
+    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (96, 144, 8));
+    // 49.5 MHz, the board: high 198, low minimum 233 (232.65), hold 15 (14.85), period 495, so
+    // the low count is 495 - 198 = 297.
+    let t = standard_mode_100k(49_500_000);
+    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (198, 297, 15));
+    // 48 MHz: high 192, low minimum 226 (225.6), period 480, so low 480 - 192 = 288; hold 15 (14.4).
+    let t = standard_mode_100k(48_000_000);
+    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (192, 288, 15));
 }
 
 #[test]
 fn a_slow_input_clock_still_produces_legal_counts() {
-    // 1 MHz: every minimum-time count is 1, the period is 10, and the formula must not wrap.
+    // 1 MHz: high 4, low minimum 5, period 10, so low 6; the counts are all nonzero.
     let t = standard_mode_100k(1_000_000);
-    assert!(t.hcnt > 0 && t.lcnt > 0 && t.sda_hold > 0);
-    // Below 100 kHz of input the period clamps to 1 rather than dividing by zero.
-    let t = standard_mode_100k(1_000);
-    assert!(t.hcnt > 0 && t.lcnt > 0);
+    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (4, 6, 1));
+    // Below 100 kHz of input every count is the floor of 1; nothing divides by zero or wraps.
+    for clock in [0u64, 1, 1_000, 99_999] {
+        let t = standard_mode_100k(clock);
+        assert!(t.hcnt > 0 && t.lcnt > 0 && t.sda_hold > 0);
+    }
+    // The widest input saturates instead of wrapping.
+    let t = standard_mode_100k(u64::MAX);
+    assert_eq!(t.hcnt, u32::MAX);
 }
 
 #[test]
