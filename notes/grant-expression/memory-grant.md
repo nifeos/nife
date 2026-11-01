@@ -37,8 +37,7 @@ number.
 
 A program that holds a `--mem N` grant may `SPLIT` it and build in the pieces. Before it exits, it
 must `DESTROY` every sub-region it split. This contract binds the program's author (ruling of
-2026-11-01 UTC, milestone 933 (every job is built the way a supervised job is)). Nothing enforces
-it at exit, because the kernel cannot refuse a thread's exit.
+2026-11-01 UTC). Nothing enforces it at exit, because the kernel cannot refuse a thread's exit.
 
 When the job exits, the shell gives the grant back with one `DESTROY`. The kernel refuses that for
 good while a child region lives (`HasChildren`, DECISIONS §16 (object revocation)), and the job's
