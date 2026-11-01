@@ -96,7 +96,9 @@ No per-crate milestone is minted by this block. They come from the reviews below
   bottom-up: the crates a program links leave before it or with it. Publish-ours
   crates publish; contract crates move and carry versions whether or not they publish. Milestone
   818 (proven JH7110 TRNG logic, released on its own) is the leaf pilot; pull request #3026
-  proposes the second pilot and the contract crates' order.
+  proposes the second pilot and the contract crates' order. Until a moved crate publishes, nife
+  depends on a git release tag stating the version requirement, which becomes a plain version
+  requirement at publication.
 
 ## What every crate clears before it publishes (calef, 2026-10-11)
 
@@ -113,7 +115,7 @@ falsifications for our crates?"* This adds to Forks 3 and 4 and changes neither.
   builds and tests it on stable for the host and its targets. It refuses this tree's citations and
   provenance, requires a README, both license files and a `rust-version`, and replays the
   falsifications. It runs while the crate is still here.
-- Provenance. Ruled 2026-10-25 (UTC): names are ratified before a crate breaks out. Its `Name:`
+- Provenance. A crate's `Name:`
   blocks stay in its source until then, and the breaking-out change strips them (ruled
   2026-10-26 UTC). Each milestone's "What the crate no longer cites" keeps every other link.
 - Gates. Milestone 887 (crate repositories share one CI template) adapts nife's gates row by row.
@@ -200,8 +202,7 @@ first publish.
 Recommendation as raised, and ruled:
 
 - Each crate carries its own semver version and starts at 0.1. Nothing moves in lockstep.
-- Each crate states a minimum Rust version. Measured 2026-10-07: all 30 build on stable 1.94.1,
-  for the host and for `riscv64imac-unknown-none-elf`.
+- Each crate states a minimum Rust version.
 - A release ships its Kani harnesses (behind `#[cfg(kani)]`, as now) and its `falsifications/`
   patches. A proof a stranger cannot rerun is a claim, and the patches show the proofs can fail.
 - `publish = false` becomes the workspace default, and a lint check allows publishing only for
@@ -220,8 +221,7 @@ the evidence, and the evidence is milestone 39's reason to publish at all.
 ## Fork 5. The crates.io names (ruled: names that stand on their own)
 
 Options only, because a crates.io name cannot be taken back: a crate can be yanked but its name
-stays. Each name is ratified under naming-authority and `script/names` before the crate leaves the
-tree.
+stays.
 
 - N-a. This tree's names, prefixed only where taken. Free today: `device_tree_blob`,
   `globally_unique_identifier_partition_table`, `network_time_protocol` and most of the long names.
@@ -277,7 +277,9 @@ machine, so the policy is reversible and each use of it is not.
 - Milestone 39 warned that a published proof is a promise to keep it passing across Kani versions.
   That obligation is real and is not costed here. The falsification workflow is the mechanism that
   notices; no one is assigned to answer it for a stranger.
-- The survey's activity and acceptance figures were looked up, not measured, and age fast.
+- §305 (git dependencies on `nifeos/*` only, pinned to a landed commit) refuses a tag, so the tag
+  form waits on an amendment admitting a tag whose commit has landed on main. `cargo update`
+  follows a moved tag.
 - Whether an outside project's code can be restructured for Kani was not tried. An offer can come
   back as "only if you rewrite our parser", which is §46's first rule seen from the other side.
 
