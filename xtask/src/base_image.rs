@@ -184,6 +184,27 @@ pub(crate) fn compose_release_x86_64() -> Option<PathBuf> {
     run(&arguments).then(|| workspace_root().join("target/base-image-x86_64"))
 }
 
+/// **Write the files that sit beside the archive**: the system manifest and the launch volume's
+/// first generation. False when either could not be written.
+fn write_companions(arch: &str, out: &Path, composed: &Composed) -> bool {
+    match write_system_manifest(out, composed) {
+        Ok(path) => println!("wrote {}", path.display()),
+        Err(complaint) => {
+            eprintln!("base-image ({arch}): {complaint}");
+            return false;
+        }
+    }
+    let Some(volume) = write_launch_volume(arch, out, &composed.first_generation) else {
+        return false;
+    };
+    println!(
+        "wrote {}: generation 1, {} bytes",
+        volume.display(),
+        composed.first_generation.len()
+    );
+    true
+}
+
 /// Compose, wrap and optionally boot what `arguments` asks for.
 fn run(arguments: &Arguments) -> bool {
     let Some(arch) = arguments.arch.as_deref() else {
@@ -258,14 +279,9 @@ fn run(arguments: &Arguments) -> bool {
     for (stem, digest) in &composed.packages {
         println!("  {stem} {digest}");
     }
-    let Some(volume) = write_launch_volume(arch, &out, &composed.first_generation) else {
+    if !write_companions(arch, &out, &composed) {
         return false;
-    };
-    println!(
-        "wrote {}: generation 1, {} bytes",
-        volume.display(),
-        composed.first_generation.len()
-    );
+    }
 
     // The kernel last: it reads the measurement manifest the archive build just wrote.
     let Some(kernel) = build_kernel(arch, &out) else {
@@ -637,9 +653,54 @@ struct Composed {
     catalog: String,
     /// `(stem, digest)` for each package the image used.
     packages: Vec<(String, String)>,
+    /// The stem of the package that carries the progenitor, one of [`Composed::packages`].
+    progenitor: String,
     /// **Generation 1 of the image's installed-programs table**: the text the launch volume holds
     /// as `activation/1` (milestone 990 (the base image's first installed-programs table)).
     first_generation: String,
+}
+
+/// The system manifest's file name beside the composed image (milestone 976 part 6; provisional).
+const SYSTEM_MANIFEST: &str = "system-manifest";
+
+/// The program the kernel enters, and so the package the system manifest must list.
+const PROGENITOR: &str = "progenitor";
+
+/// **Write the system manifest beside the composed image**: each package the image used with its
+/// digest, in the encoding `system_manifest::render` fixes. The text is read back through the
+/// reader the device uses and held to the packages it came from, so a file the updater would refuse
+/// is never left on disk. The file names the progenitor's package on a line of its own, and that
+/// package must be among the package lines.
+fn write_system_manifest(out: &Path, composed: &Composed) -> Result<PathBuf, String> {
+    let text = system_manifest_text(composed)?;
+    let path = out.join(SYSTEM_MANIFEST);
+    std::fs::write(&path, text).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+    Ok(path)
+}
+
+/// The file's text for `composed`, checked against it. Split from the write so a test needs no disk.
+fn system_manifest_text(composed: &Composed) -> Result<String, String> {
+    let mut held: Vec<(&str, measured_boot::Digest)> = Vec::new();
+    for (stem, label) in &composed.packages {
+        let digest = measured_boot::parse_digest(label)
+            .map_err(|why| format!("{stem}: digest {label} is unreadable ({why:?})"))?;
+        held.push((stem.as_str(), digest));
+    }
+    let text = system_manifest::render(&composed.progenitor, &held)
+        .map_err(|e| format!("system manifest: {e}"))?;
+    let manifest = system_manifest::SystemManifest::parse(&text)
+        .map_err(|e| format!("system manifest: wrote a file it cannot read: {e}"))?;
+    manifest
+        .check(&held)
+        .map_err(|e| format!("system manifest: {e}"))?;
+    if manifest.progenitor() != composed.progenitor {
+        return Err(format!(
+            "system manifest: wrote a progenitor line naming {}, not {}",
+            manifest.progenitor(),
+            composed.progenitor
+        ));
+    }
+    Ok(text)
 }
 
 /// **The catalog's word on one package**: it must list the stem, and at exactly these bytes.
@@ -723,6 +784,33 @@ fn test_approval_text<'a>(owners: impl Iterator<Item = &'a String>) -> String {
     text
 }
 
+/// The image's approval file read, with the path it came from; `None` when the image names none.
+fn parse_approval(
+    text: &Option<(PathBuf, String)>,
+) -> Result<Option<(&Path, approval_file::File<'_>)>, String> {
+    match text {
+        Some((path, text)) => Ok(Some((
+            path.as_path(),
+            approval_file::File::parse(text).map_err(|e| format!("{}: {e:?}", path.display()))?,
+        ))),
+        None => Ok(None),
+    }
+}
+
+/// How the approval answered the first generation: its name and the digest of its text.
+fn answered_by<'a>(
+    approval: &'a Option<(&Path, approval_file::File)>,
+    text: &Option<(PathBuf, String)>,
+) -> Option<installed_programs::Answered<'a>> {
+    match (approval, text) {
+        (Some((_, file)), Some((_, text))) => Some(installed_programs::Answered::Approval(
+            file.name(),
+            measured_boot::sha256(text.as_bytes()),
+        )),
+        _ => None,
+    }
+}
+
 /// **Compose the archive's entries from packages**: for every program the definition names, the
 /// member `bin/<program>` of the package that owns it, checked against the catalog.
 /// **Compose one architecture's archive from the packages the definition names.** Each program
@@ -749,13 +837,7 @@ fn compose(
     // taken from an archive, so a file that does not parse refuses the composition rather than
     // leaving the check half-done.
     let approval_text = image_approval_text(root, definition, &owners, test)?;
-    let approval = match &approval_text {
-        Some((path, text)) => Some((
-            path.as_path(),
-            approval_file::File::parse(text).map_err(|e| format!("{}: {e:?}", path.display()))?,
-        )),
-        None => None,
-    };
+    let approval = parse_approval(&approval_text)?;
 
     let mut blobs = Vec::new();
     // One per entry of `blobs`, in its order: the owning package and the member's digest and index,
@@ -764,6 +846,7 @@ fn compose(
     let mut extras: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut used: BTreeMap<String, String> = BTreeMap::new();
     let mut order: Vec<String> = Vec::new();
+    let mut progenitor: Option<String> = None;
     for program in &definition.programs {
         let owner = owners.get(program).ok_or_else(|| {
             format!(
@@ -810,6 +893,9 @@ fn compose(
         }
         rows.push((owner.clone(), carried.digest, carried.member));
         blobs.push((program.clone(), carried.bytes.to_vec()));
+        if program == PROGENITOR {
+            progenitor = Some(stem.clone());
+        }
         if used.insert(stem.clone(), archive.digest.clone()).is_none() {
             order.push(stem);
         }
@@ -819,20 +905,19 @@ fn compose(
         check_approval(path, &extras)?;
     }
 
-    let answered = match (&approval, &approval_text) {
-        (Some((_, file)), Some((_, text))) => Some(installed_programs::Answered::Approval(
-            file.name(),
-            measured_boot::sha256(text.as_bytes()),
-        )),
-        _ => None,
-    };
-    let first_generation = first_generation_of(&blobs, &rows, answered)?;
+    let progenitor = progenitor.ok_or_else(|| {
+        format!("the image carries no `{PROGENITOR}`, so there is nothing to enter")
+    })?;
+
+    let first_generation =
+        first_generation_of(&blobs, &rows, answered_by(&approval, &approval_text))?;
 
     let mut text = String::new();
     for stem in &order {
         text.push_str(&format!("{stem} {}\n", used[stem]));
     }
     Ok(Composed {
+        progenitor,
         blobs,
         catalog: text,
         packages: order
@@ -1584,6 +1669,51 @@ programs = ["progenitor", "swish", "jig"]
         assert_eq!(
             parse_catalog(&format!("{line}\n{line}")).unwrap_err(),
             "line 2: `uptime-0.1.0-aarch64` is listed twice"
+        );
+    }
+
+    fn composed_of(packages: &[(&str, &str)], progenitor: &str) -> Composed {
+        Composed {
+            blobs: Vec::new(),
+            catalog: String::new(),
+            packages: packages
+                .iter()
+                .map(|(stem, digest)| (stem.to_string(), digest.to_string()))
+                .collect(),
+            progenitor: progenitor.to_string(),
+            first_generation: String::new(),
+        }
+    }
+
+    #[test]
+    fn the_system_manifest_lists_each_package_and_the_progenitors() {
+        let init = format!("sha256:{}", "1".repeat(64));
+        let shell = format!("sha256:{}", "2".repeat(64));
+        let composed = composed_of(
+            &[("shell-0.1.0-x86_64", &shell), ("init-0.1.0-x86_64", &init)],
+            "init-0.1.0-x86_64",
+        );
+        assert_eq!(
+            system_manifest_text(&composed).unwrap(),
+            format!(
+                "version 1\nprogenitor init-0.1.0-x86_64\ninit-0.1.0-x86_64 {init}\nshell-0.1.0-x86_64 {shell}\n"
+            )
+        );
+    }
+
+    #[test]
+    fn the_system_manifest_refuses_a_missing_progenitor_and_a_bad_digest() {
+        let init = format!("sha256:{}", "1".repeat(64));
+        let composed = composed_of(&[("init-0.1.0-x86_64", &init)], "absent-0.1.0-x86_64");
+        assert_eq!(
+            system_manifest_text(&composed).unwrap_err(),
+            "system manifest: the progenitor `absent-0.1.0-x86_64` is not among the packages"
+        );
+        let composed = composed_of(&[("init-0.1.0-x86_64", "sha256:zz")], "init-0.1.0-x86_64");
+        assert!(
+            system_manifest_text(&composed)
+                .unwrap_err()
+                .starts_with("init-0.1.0-x86_64: digest sha256:zz is unreadable")
         );
     }
 
