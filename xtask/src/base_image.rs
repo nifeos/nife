@@ -32,6 +32,7 @@
 //!   archive entry, and the `kernel` package declares crates and no programs, so this builds it
 //!   from those crates. The binary claim is about the ramdisk, which is 909's "Done when".
 //! - **The base image names no approval file** until a base program's note asks (909's `BUGS`).
+//! - **`--boot` attaches no launch volume** (`launch.img`); milestone 990's `BUGS` says why.
 //! - **The catalog lists only the packages the image used.** `jig` needs the fetched index for
 //!   anything else, which is what `SOURCES_ENTRY` is for.
 //! - **A package's digest is checked against the catalog it was handed.** That catalog's trust is
@@ -264,6 +265,14 @@ fn run(arguments: &Arguments) -> bool {
             return false;
         }
     }
+    let Some(volume) = write_launch_volume(arch, &out, &composed.first_generation) else {
+        return false;
+    };
+    println!(
+        "wrote {}: generation 1, {} bytes",
+        volume.display(),
+        composed.first_generation.len()
+    );
 
     // The kernel last: it reads the measurement manifest the archive build just wrote.
     let Some(kernel) = build_kernel(arch, &out) else {
@@ -637,6 +646,9 @@ struct Composed {
     packages: Vec<(String, String)>,
     /// The stem of the package that carries the progenitor, one of [`Composed::packages`].
     progenitor: String,
+    /// **Generation 1 of the image's installed-programs table**: the text the launch volume holds
+    /// as `activation/1` (milestone 990 (the base image's first installed-programs table)).
+    first_generation: String,
 }
 
 /// The system manifest's file name beside the composed image (milestone 976 part 6; provisional).
@@ -724,6 +736,45 @@ fn read_approval_text(
     }
 }
 
+/// **The approval text a composition checks against**: the file the definition names, or for a
+/// test image that names none, [`test_approval_text`] over the packages it carries.
+fn image_approval_text(
+    root: &Path,
+    definition: &Definition,
+    owners: &BTreeMap<String, String>,
+    test: bool,
+) -> Result<Option<(PathBuf, String)>, String> {
+    Ok(match read_approval_text(root, definition)? {
+        None if test => Some((
+            PathBuf::from("the test image's approval"),
+            test_approval_text(definition.programs.iter().filter_map(|p| owners.get(p))),
+        )),
+        named => named,
+    })
+}
+
+/// **The approval a test image is composed against** when its definition names none: one entry per
+/// package it carries, which allows nothing, except that the `fixtures` package may hold the network.
+/// The fixtures overreach on purpose (`unreachable_network_witness` asks for the network, entropy
+/// and the process domain, and is never given them), so the grant record would otherwise refuse
+/// every test image for asking past an approval nobody wrote. A release image has no `fixtures`
+/// package, so this never applies to one.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane
+/// milestone/990-the-base-images-first-installed-programs-table.
+fn test_approval_text<'a>(owners: impl Iterator<Item = &'a String>) -> String {
+    let packages: BTreeSet<&String> = owners.collect();
+    let mut text = String::from("approval = \"test-image\"\n");
+    for package in packages {
+        text.push_str(&format!("\n[package.{package}]\n"));
+        if package == "fixtures" {
+            text.push_str("network = true\n");
+        }
+        text.push_str("update = false\nremove = false\n");
+    }
+    text
+}
+
 /// **Compose the archive's entries from packages**: for every program the definition names, the
 /// member `bin/<program>` of the package that owns it, checked against the catalog.
 /// **Compose one architecture's archive from the packages the definition names.** Each program
@@ -749,7 +800,7 @@ fn compose(
     // The image's approval file, when the definition names one. Read and parsed before anything is
     // taken from an archive, so a file that does not parse refuses the composition rather than
     // leaving the check half-done.
-    let approval_text = read_approval_text(root, definition)?;
+    let approval_text = image_approval_text(root, definition, &owners, test)?;
     let approval = match &approval_text {
         Some((path, text)) => Some((
             path.as_path(),
@@ -759,6 +810,9 @@ fn compose(
     };
 
     let mut blobs = Vec::new();
+    // One per entry of `blobs`, in its order: the owning package and the member's digest and index,
+    // which the first generation's rows and grants are read from after the loop.
+    let mut rows: Vec<(String, installed_programs::Digest, usize)> = Vec::new();
     let mut extras: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut used: BTreeMap<String, String> = BTreeMap::new();
     let mut order: Vec<String> = Vec::new();
@@ -808,6 +862,7 @@ fn compose(
                 .or_default()
                 .extend(extra_asks(path, approval, owner, &asks)?);
         }
+        rows.push((owner.clone(), carried.digest, carried.member));
         blobs.push((program.clone(), carried.bytes.to_vec()));
         if program == PROGENITOR {
             progenitor = Some(stem.clone());
@@ -824,6 +879,16 @@ fn compose(
     let progenitor = progenitor.ok_or_else(|| {
         format!("the image carries no `{PROGENITOR}`, so there is nothing to enter")
     })?;
+
+    let answered = match (&approval, &approval_text) {
+        (Some((_, file)), Some((_, text))) => Some(installed_programs::Answered::Approval(
+            file.name(),
+            measured_boot::sha256(text.as_bytes()),
+        )),
+        _ => None,
+    };
+    let first_generation = first_generation_of(&blobs, &rows, answered)?;
+
     let mut text = String::new();
     for stem in &order {
         text.push_str(&format!("{stem} {}\n", used[stem]));
@@ -839,7 +904,160 @@ fn compose(
                 (stem, digest)
             })
             .collect(),
+        first_generation,
     })
+}
+
+/// **The first generation of the programs [`compose`] took**: `blobs` and `rows` in one order, and how
+/// the approval answered. Each program's note is read again from the
+/// bytes the archive carries, with the reading the approval check used, and [`first_generation`]
+/// writes the table.
+fn first_generation_of(
+    blobs: &[(String, Vec<u8>)],
+    rows: &[(String, installed_programs::Digest, usize)],
+    answered: Option<installed_programs::Answered<'_>>,
+) -> Result<String, String> {
+    let carried: Vec<package_archive::Program<'_>> = blobs
+        .iter()
+        .zip(rows)
+        .map(
+            |((name, bytes), (_, digest, member))| package_archive::Program {
+                name,
+                bytes,
+                digest: *digest,
+                member: *member,
+            },
+        )
+        .collect();
+    let grants: Vec<installed_programs::Grant<'_>> = carried
+        .iter()
+        .flat_map(program_asks::asked_grants)
+        .collect();
+    let entries: Vec<installed_programs::Entry<'_>> = carried
+        .iter()
+        .zip(rows)
+        .map(|(program, (_, digest, _))| base_row(program.name, *digest))
+        .collect();
+    first_generation(&entries, &grants, answered.as_ref())
+}
+
+/// **A base program's row** (milestone 990 (the base image's first installed-programs table);
+/// ruled 2026-11-01 (UTC)): the program's name and digest, the owner's vouch shape, and no
+/// pointer. The image already holds a base program's name, so the row claims no bare word and
+/// section 229's refusal of base names, which governs installed rows, does not govern it. The
+/// pointer is what tells the two apart: an installed row has one, written by the install, and a
+/// base row never does. No version and no package are recorded, and the row ties to no
+/// system manifest (milestone 976).
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane
+/// milestone/990-the-base-images-first-installed-programs-table.
+fn base_row(program: &str, digest: installed_programs::Digest) -> installed_programs::Entry<'_> {
+    installed_programs::Entry {
+        program,
+        version: installed_programs::NO_VERSION,
+        package: installed_programs::OWNER,
+        digest,
+        manager: installed_programs::OWNER,
+    }
+}
+
+/// **Generation 1 of the composed image's installed-programs table** (milestone 990 (the base
+/// image's first installed-programs table)): one [`base_row`] per carried program, with the grants
+/// its note asks for, written by [`installed_programs::with_entries_granting`], the writer an interactive install
+/// calls. `answered` is the image's approval file by name and digest, or `None` when the image names
+/// none.
+///
+/// A grant nobody answered is refused: when a carried program asks for anything and the image
+/// names no approval file, no file allowed it, so no table is written. The base asks for nothing
+/// today (909's `BUGS`), so this refuses no image built from this tree.
+///
+/// The rows are the image's own, so no row is refused as taking a name the image carries
+/// (`image_carries` answers no), and a base row writes no pointer.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane
+/// milestone/990-the-base-images-first-installed-programs-table.
+fn first_generation(
+    entries: &[installed_programs::Entry<'_>],
+    grants: &[installed_programs::Grant<'_>],
+    answered: Option<&installed_programs::Answered<'_>>,
+) -> Result<String, String> {
+    if answered.is_none()
+        && let Some(grant) = grants.first()
+    {
+        let program = entries
+            .iter()
+            .find(|e| e.digest == grant.digest)
+            .map_or("a program", |e| e.program);
+        return Err(format!(
+            "`{program}` asks for {}, and the image names no approval file to allow it",
+            granted_name(&grant.what)
+        ));
+    }
+    // About 110 bytes a row, and a few hundred rows at the most.
+    let mut out = vec![0u8; 1 << 20];
+    let n = installed_programs::with_entries_granting(
+        "",
+        || entries.iter().copied(),
+        |_| false,
+        || grants.iter().copied(),
+        answered,
+        &mut out,
+    )
+    .map_err(|refused| format!("the first installed-programs table: {refused:?}"))?;
+    out.truncate(n);
+    String::from_utf8(out).map_err(|_| "the first installed-programs table is not text".to_string())
+}
+
+/// **The launch volume's file in the output directory** (milestone 990): a RedoxFS volume holding
+/// generation 1 as `activation/1` and `activation/current` naming it, the store decision 34 makes
+/// the image boot into and `jig` install onto.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane
+/// milestone/990-the-base-images-first-installed-programs-table.
+const LAUNCH_VOLUME: &str = "launch.img";
+
+/// **How large the launch volume is**, in MiB: the size of the RedoxFS fixture the kernel tests
+/// mount. Provisional: nothing yet installs onto a composed image's volume (milestone 990's `BUGS`).
+const LAUNCH_VOLUME_MIB: &str = "16";
+
+/// **Write the launch volume** to `<out>/launch.img`: stage `activation/1` and `activation/current`
+/// in `<out>/launch-tree`, make an empty RedoxFS image with the host tool the swish-check seed uses,
+/// and import the tree into it. `None` after saying what failed.
+fn write_launch_volume(arch: &str, out: &Path, first_generation: &str) -> Option<PathBuf> {
+    let tree = out.join("launch-tree");
+    let activation = tree.join(installed_programs::DIRECTORY);
+    let _ = std::fs::remove_dir_all(&tree);
+    let mut current = [0u8; 16];
+    let staged = installed_programs::format_current(1, &mut current)
+        .map_err(|e| format!("{e:?}"))
+        .and_then(|n| {
+            let mut name = [0u8; 10];
+            std::fs::create_dir_all(&activation)
+                .and_then(|()| {
+                    std::fs::write(
+                        activation.join(installed_programs::generation_name(1, &mut name)),
+                        first_generation,
+                    )
+                })
+                .and_then(|()| {
+                    std::fs::write(activation.join(installed_programs::CURRENT), &current[..n])
+                })
+                .map_err(|e| format!("{}: {e}", activation.display()))
+        });
+    if let Err(complaint) = staged {
+        eprintln!("base-image ({arch}): cannot stage the launch volume: {complaint}");
+        return None;
+    }
+    let volume = out.join(LAUNCH_VOLUME);
+    let volume_text = volume.display().to_string();
+    let tree_text = tree.display().to_string();
+    if !(crate::disk::redoxfs_host(&["mkfs", &volume_text, LAUNCH_VOLUME_MIB])
+        && crate::disk::redoxfs_host(&["import", &volume_text, &tree_text]))
+    {
+        eprintln!("base-image ({arch}): cannot write the launch volume {volume_text}");
+        return None;
+    }
+    Some(volume)
 }
 
 /// **The grants one program asks for that its package's entry in the image's approval file does
@@ -1082,6 +1300,151 @@ programs = ["progenitor", "swish", "jig"]
         );
     }
 
+    /// Two rows of a composed image, one program each from two packages.
+    fn two_rows() -> [installed_programs::Entry<'static>; 2] {
+        let row = |program, package, byte| installed_programs::Entry {
+            program,
+            version: "0.1.0",
+            package,
+            digest: [byte; 32],
+            manager: installed_programs::OWNER,
+        };
+        [row("swish", "swish", 1), row("jig", "jig", 2)]
+    }
+
+    /// The lines of `table` that are default pointers, by program.
+    fn pointers(table: &str) -> Vec<&str> {
+        table
+            .lines()
+            .filter_map(|l| l.strip_prefix("default "))
+            .filter_map(|l| l.split(' ').next())
+            .collect()
+    }
+
+    #[test]
+    fn a_base_row_has_no_pointer_and_an_installed_row_has_one() {
+        let rows = two_rows().map(|r| base_row(r.program, r.digest));
+        let base = first_generation(&rows, &[], None).unwrap();
+        // The base names no bare word: the image already holds its names (section 229).
+        assert_eq!(pointers(&base), Vec::<&str>::new());
+        for row in &rows {
+            assert_eq!(installed_programs::lookup(&base, row.program), Ok(None));
+        }
+        // An installed program on top of the base gains its pointer, and the base rows stay without.
+        let installed = installed_programs::Entry {
+            program: "ripgrep",
+            version: "14.1.0",
+            package: "ripgrep",
+            digest: [7; 32],
+            manager: installed_programs::OWNER,
+        };
+        let mut out = vec![0u8; 4096];
+        let n = installed_programs::with_entry(&base, &installed, false, &mut out).unwrap();
+        let table = std::str::from_utf8(&out[..n]).unwrap();
+        assert_eq!(pointers(table), ["ripgrep"]);
+        // Every row has a pointer exactly when it is an installed row, not a base one.
+        for entry in installed_programs::entries(table).flatten() {
+            let installed_row = entry.package != installed_programs::OWNER;
+            assert_eq!(
+                pointers(table).contains(&entry.program),
+                installed_row,
+                "{}",
+                entry.program
+            );
+            assert_eq!(
+                installed_programs::lookup(table, entry.program)
+                    .unwrap()
+                    .is_some(),
+                installed_row
+            );
+        }
+        // The base rows still vouch by digest.
+        for row in &rows {
+            assert!(
+                installed_programs::lookup_digest(table, &row.digest)
+                    .unwrap()
+                    .is_some()
+            );
+        }
+    }
+
+    #[test]
+    fn a_test_image_is_answered_by_an_approval_that_lets_only_the_fixtures_ask_for_the_network() {
+        let owners = [
+            "swish".to_string(),
+            "fixtures".to_string(),
+            "swish".to_string(),
+        ];
+        let text = test_approval_text(owners.iter());
+        let file = approval_file::File::parse(&text).unwrap();
+        let path = Path::new("test");
+        let network = [installed_programs::Granted::Network];
+        assert!(
+            extra_asks(path, &file, "fixtures", &network)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            extra_asks(path, &file, "swish", &network).unwrap(),
+            ["network"]
+        );
+    }
+
+    #[test]
+    fn the_first_generation_vouches_for_every_carried_program() {
+        let rows = two_rows().map(|r| base_row(r.program, r.digest));
+        let table = first_generation(&rows, &[], None).unwrap();
+        for row in &rows {
+            let found = installed_programs::lookup_digest(&table, &row.digest)
+                .unwrap()
+                .unwrap();
+            assert_eq!(
+                (found.program, found.version, found.package, found.manager),
+                (
+                    row.program,
+                    installed_programs::NO_VERSION,
+                    installed_programs::OWNER,
+                    installed_programs::OWNER
+                )
+            );
+        }
+        // No approval file answered it, so the generation records no answer.
+        assert_eq!(installed_programs::answered(&table), Ok(None));
+    }
+
+    #[test]
+    fn the_first_generation_names_the_approval_that_answered_it() {
+        let rows = two_rows();
+        let grants = [installed_programs::Grant {
+            digest: [2; 32],
+            what: installed_programs::Granted::Network,
+        }];
+        let answered = installed_programs::Answered::Approval("base-image", [9; 32]);
+        let table = first_generation(&rows, &grants, Some(&answered)).unwrap();
+        assert_eq!(installed_programs::answered(&table), Ok(Some(answered)));
+        assert_eq!(
+            installed_programs::network_granted(&table, &[2; 32]),
+            Ok(true)
+        );
+        assert_eq!(
+            installed_programs::network_granted(&table, &[1; 32]),
+            Ok(false)
+        );
+    }
+
+    #[test]
+    fn a_grant_no_approval_file_answered_is_refused() {
+        let rows = two_rows();
+        let grants = [installed_programs::Grant {
+            digest: [2; 32],
+            what: installed_programs::Granted::Network,
+        }];
+        assert_eq!(
+            first_generation(&rows, &grants, None),
+            Err("`jig` asks for network, and the image names no approval file to allow it".into())
+        );
+    }
+
     #[test]
     fn a_package_asking_past_its_entry_is_refused() {
         use installed_programs::Granted;
@@ -1199,6 +1562,7 @@ programs = ["progenitor", "swish", "jig"]
                 .map(|(stem, digest)| (stem.to_string(), digest.to_string()))
                 .collect(),
             progenitor: progenitor.to_string(),
+            first_generation: String::new(),
         }
     }
 

@@ -108,7 +108,7 @@ first candidate for a fifth row.
       is not yet set.
 7. crates.io trusted publishing from that workflow, owned by a `nifeos` team, with no stored token.
 8. calef approves this publication, as he does every one.
-9. nife consumes the crates.io release, pinned with its checksum in `Cargo.lock`. A `[patch]` to
+9. nife consumes the crates.io release by semantic version, and `Cargo.lock` records its checksum. A `[patch]` to
    a checkout is allowed only during development, and a lint fails one that reaches `main`. The
    soak's git dependency goes.
 

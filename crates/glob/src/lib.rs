@@ -25,22 +25,6 @@
 
 #![no_std]
 
-/// The library's version: the pattern language's generation, as the matcher's behavior defines it.
-/// A library with no peer and no wire (calef's ruling of 2026-10-29 UTC, PR #2852, question 1):
-/// nothing checks it at run time; the declaration of milestone 956 (the linked interfaces carry
-/// checkable versions) names it, and assembly checks the record after the split.
-///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
-pub const VERSION: u32 = 1;
-
-/// This interface's identity in a program's `INTERFACES` note: 3, naming the glob library. The number
-/// is the crate's to keep across a rename and no other interface ever reuses it; `script/lint`
-/// holds the ids of every crate apart. A program declares the pair of this id and [`VERSION`]
-/// (milestone 956 (the linked interfaces carry checkable versions)).
-///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
-pub const INTERFACE_ID: u64 = 3;
-
 /// Whether a leading `.` in the name is special.
 ///
 /// This is `fnmatch(3)`'s `FNM_PERIOD` as a two-valued type rather than a flag bit, because there

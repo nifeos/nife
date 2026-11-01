@@ -111,7 +111,7 @@ and port decoders (`context`, `port`). The report words left with the handoff fo
       is not yet set.
 6. crates.io trusted publishing from that workflow, owned by a `nifeos` team, with no stored token.
 7. calef approves this publication, as he does every one.
-8. nife consumes the crates.io release, pinned with its checksum in `Cargo.lock`. A `[patch]` to
+8. nife consumes the crates.io release by semantic version, and `Cargo.lock` records its checksum. A `[patch]` to
    a checkout is allowed only during development, and a lint fails one that reaches `main`. The
    soak's git dependency goes.
 
