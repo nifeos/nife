@@ -102,15 +102,6 @@ TCG_THREAD=""
 if [ -n "$NIFE_TCG_THREAD" ]; then
     TCG_THREAD="-accel tcg,thread=$NIFE_TCG_THREAD"
 fi
-# **NIFE_ACCEL=kvm runs the guest on the host's own cores**, as qemu-uefi-x86_64.sh's knob of the same
-# name does, for the continuous fuzzing host (notes/fuzzing/continuous-host.md): the in-guest drivers
-# run about 24 times faster than under TCG (notes/fuzzing/rates-on-x86-64-under-kvm.md). Only an x86_64
-# Linux host with a usable /dev/kvm can honor it; QEMU refuses to start otherwise, which is the right
-# failure for a run that asked for KVM. Any other value leaves TCG, as before. It wins over
-# NIFE_TCG_THREAD, which names a TCG mode.
-if [ "${NIFE_ACCEL:-}" = "kvm" ]; then
-    TCG_THREAD="-accel kvm"
-fi
 
 # `q35` rather than the older `pc` because it is what the physical target looks like: a PCIe root
 # complex with an ECAM window, an AHCI controller, and the legacy 16550 COM1 at port 0x3f8 that

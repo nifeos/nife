@@ -54,8 +54,6 @@ stride=1000000000
 
 # Put the pinned QEMU and rustup's cargo on PATH, as script/bootstrap's own callers do.
 PATH="$HOME/.cargo/bin:$PATH"
-# The guests run under KVM (helpers/qemu-runner-x86_64.sh); under TCG a seed costs about 24 times more.
-export NIFE_ACCEL="${NIFE_ACCEL:-kvm}"
 . "$root/helpers/qemu-path.sh"
 
 driver_test() {
