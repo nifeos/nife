@@ -57,10 +57,6 @@ capability_manifest_note::carry_interfaces!(&[
         version: address_space_map::VERSION
     },
     capability_manifest_note::Declared {
-        id: glob::INTERFACE_ID,
-        version: glob::VERSION
-    },
-    capability_manifest_note::Declared {
         id: machine_statistics_contract::INTERFACE_ID,
         version: machine_statistics_contract::VERSION
     },

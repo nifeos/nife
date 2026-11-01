@@ -65,10 +65,6 @@ capability_manifest_note::carry_interfaces!(&[
         id: address_space_map::INTERFACE_ID,
         version: address_space_map::VERSION
     },
-    capability_manifest_note::Declared {
-        id: glob::INTERFACE_ID,
-        version: glob::VERSION
-    },
 ]);
 
 user_mode_runtime::program_entry!(start);

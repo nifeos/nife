@@ -141,10 +141,6 @@ capability_manifest_note::carry_interfaces!(&[
         version: address_space_map::VERSION
     },
     capability_manifest_note::Declared {
-        id: glob::INTERFACE_ID,
-        version: glob::VERSION
-    },
-    capability_manifest_note::Declared {
         id: block_roster::INTERFACE_ID,
         version: block_roster::VERSION
     },
