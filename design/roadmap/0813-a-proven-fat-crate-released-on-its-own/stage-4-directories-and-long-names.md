@@ -5,7 +5,7 @@ records what stage 4 built, what the macOS fixtures hold and the evidence.
 
 ## What stage 4 built
 
-- `LongFileName` and `LongNameError`: the assembled name (up to 255 UTF-16 code units, with
+- `LongFileName` and `LongFileNameError`: the assembled name (up to 255 UTF-16 code units, with
   `characters()` to decode them) and the reason a run failed its checks. The assembler behind them
   stays inside the crate, in `src/long_name_assembly.rs`, beside the writer it mirrors.
 - The assembler takes pieces in directory order and then a short entry's name. It accepts a run
@@ -17,7 +17,7 @@ records what stage 4 built, what the macOS fixtures hold and the evidence.
   - the last piece holds at least one unit, and the name has at most 255 units.
 
   It refuses anything else whole.
-- `NamedEntry` and `Entries`, from `Volume::root_entries` and `Volume::entries`, yield every used
+- `NamedEntry` and `NamedEntries`, from `Volume::root_named_entries` and `Volume::named_entries`, yield every used
   short entry in order with its short name, attributes, first cluster, size and long name. They
   yield `.`, `..` and the volume label too, and flag them (`is_dot_entry`, `is_volume_label`).
 - A refused run does not stop the listing. The entry still comes out with no long name and the
@@ -53,9 +53,9 @@ only, beside `lamfat`.
 | Kani, one new harness | `a_run_is_accepted_only_when_it_is_well_formed`. For up to three pieces and any short name, an accepted run has the last-piece bit on its first piece and ordinals that fall by one to 1. Every piece carries the short name's checksum. The name equals the pieces' units up to the first terminator, with only padding after it |
 | falsification | the harness's patch removes the checksum comparison, and the harness fails at its checksum assertion |
 | unit tests | writer-to-assembler round trips, and each refusal. The refusals cover another entry's checksum, a missing nearest piece, a missing first piece, pieces out of order or repeated, disagreeing checksums, a bad first ordinal, bad padding, an empty last piece and an over-long name. A 255-unit name passes |
-| oracle tests | this crate lists the trees rust-fatfs writes on FAT12, FAT16 and FAT32 through `Entries`, long names included, and accepts every run; rust-fatfs reads the volume this crate's writer lays out |
+| oracle tests | this crate lists the trees rust-fatfs writes on FAT12, FAT16 and FAT32 through `NamedEntries`, long names included, and accepts every run; rust-fatfs reads the volume this crate's writer lays out |
 | #1803's images | both read to their recorded hashes, with the long name in each |
-| fuzz target `file_allocation_table_boot_sector` | walks through `Entries` and holds an accepted name to 255 units with no terminator |
+| fuzz target `file_allocation_table_boot_sector` | walks through `NamedEntries` and holds an accepted name to 255 units with no terminator |
 
 Kani bounds what it unrolls. The assembly harness covers runs of up to three pieces (39 units)
 with a first ordinal of at most three. The unit tests hold the twentieth piece and the longest
@@ -63,12 +63,12 @@ name, and the fuzz target holds whole images.
 
 ## Names minted
 
-Every name in this stage is provisional, with a `Name: provisional` block in its source.
+Every name in this stage has a ratified `Name:` block in its source.
 
 - `LongFileName`, with `code_units` and `characters`.
-- `LongNameError`, with `BadStart`, `OutOfOrder`, `PiecesDisagree`, `Incomplete`,
+- `LongFileNameError`, with `BadStart`, `OutOfOrder`, `PiecesDisagree`, `Incomplete`,
   `ChecksumMismatch` and `BadPadding`.
 - `NamedEntry`, with `short_entry`, `short_name`, `long_name`, `long_name_refusal`, `attributes`,
   `first_cluster`, `size_bytes`, `is_directory`, `is_volume_label` and `is_dot_entry`.
-- `Entries`, `Volume::root_entries` and `Volume::entries`.
+- `NamedEntries`, `Volume::root_named_entries` and `Volume::named_entries`.
 - The modules `named_entry` and `long_name_assembly`.

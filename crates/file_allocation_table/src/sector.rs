@@ -145,8 +145,8 @@ impl<D: SectorDevice + ?Sized> SectorDevice for &mut D {
 /// promise beyond the order of the calls: the device decides when a write reaches the medium, and
 /// a caller that needs a barrier makes it when the crate returns.
 ///
-/// Name: provisional. The write half of the sector interface, named for what it adds to
-/// `SectorDevice`; a device that cannot write simply does not implement it.
+/// Name: ratified 2026-11-01 (UTC), the write half of the sector interface, named for what it adds
+/// to `SectorDevice`; a device that cannot write simply does not implement it.
 pub trait WritableSectorDevice: SectorDevice {
     /// Write `buffer` to sector `index`.
     ///

@@ -8,17 +8,18 @@
 //! the short entry last, so a crash leaves orphan pieces that no reader joins and never a short
 //! entry with a wrong name. [`RunFinder`] picks the slots; `verification.rs` proves it first-fit.
 //!
-//! Name: provisional. The write half of `directory` and `named_entry`.
+//! Name: ratified 2026-11-01 (UTC), renamed from `directory_write`: the module names a thing that
+//! writes, as `file_writer` does.
 
 use crate::boot_sector::FileAllocationTableType;
 use crate::directory::SLOT_BYTES;
-use crate::file_write::WriteError;
 use crate::file_writer::{ARCHIVE, FREE, MOST_SLOTS, short_name_bytes};
 use crate::long_name::{self, LongName};
 use crate::lookup::LookupError;
 use crate::named_entry::{EntryPlace, NamedEntry};
 use crate::reader::{ChainError, Volume};
 use crate::sector::{SectorSize, WritableSectorDevice};
+use crate::write_cursor::WriteError;
 
 /// `DIR_Attr`'s directory bit.
 const DIRECTORY: u8 = 0x10;
@@ -159,7 +160,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         short: [u8; 11],
         except: Option<EntryPlace>,
     ) -> Result<bool, WriteError<D::Error>> {
-        for entry in self.entries(directory) {
+        for entry in self.named_entries(directory) {
             let entry = entry?;
             if entry.short_name() == short && Some(entry.place()) != except {
                 return Ok(true);
@@ -176,9 +177,9 @@ impl<D: WritableSectorDevice> Volume<D> {
         except: Option<EntryPlace>,
     ) -> Result<(), WriteError<D::Error>> {
         if short_name_bytes(name).is_none() && LongName::new(name).is_none() {
-            return Err(WriteError::InvalidName);
+            return Err(WriteError::NameRefused);
         }
-        for entry in self.entries(directory) {
+        for entry in self.named_entries(directory) {
             let entry = entry?;
             if entry.is_called(name) && Some(entry.place()) != except {
                 return Err(WriteError::AlreadyExists);
@@ -193,7 +194,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         directory: u32,
         short_slot: u32,
     ) -> Result<NamedEntry, WriteError<D::Error>> {
-        for entry in self.entries(directory) {
+        for entry in self.named_entries(directory) {
             let entry = entry?;
             if entry.place().short_slot == short_slot {
                 return Ok(entry);
@@ -220,12 +221,12 @@ impl<D: WritableSectorDevice> Volume<D> {
         self.check_new_name(directory, name, except)?;
         let long = match short_name_bytes(name) {
             Some(_) => None,
-            None => Some(LongName::new(name).ok_or(WriteError::InvalidName)?),
+            None => Some(LongName::new(name).ok_or(WriteError::NameRefused)?),
         };
         let short = match (&long, short_name_bytes(name)) {
             (_, Some(short)) => short,
             (Some(long), None) => self.unused_alias(directory, long, except)?,
-            (None, None) => return Err(WriteError::InvalidName),
+            (None, None) => return Err(WriteError::NameRefused),
         };
         let pieces = long.as_ref().map_or(0, LongName::entries) as u32;
         let (start, reached_end) = self.find_run(directory, pieces + 1)?;
@@ -273,7 +274,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         except: Option<EntryPlace>,
     ) -> Result<[u8; 11], WriteError<D::Error>> {
         for number in 1..=999_999 {
-            let alias = long.alias_numbered(number).ok_or(WriteError::InvalidName)?;
+            let alias = long.alias_numbered(number).ok_or(WriteError::NameRefused)?;
             if !self.short_name_taken(directory, alias, except)? {
                 return Ok(alias);
             }
@@ -290,7 +291,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// attribute, no clusters, size 0 and zero timestamps. A full directory grows by a cluster
     /// unless it is the fixed root of a FAT12 or FAT16 volume.
     ///
-    /// Name: provisional. What a caller asks of a volume to make a file.
+    /// Name: ratified 2026-11-01 (UTC), what a caller asks of a volume to make a file.
     pub(crate) fn create_file(
         &mut self,
         directory: u32,
@@ -309,11 +310,11 @@ impl<D: WritableSectorDevice> Volume<D> {
         )
     }
 
-    /// **Make an empty directory called `name`** in `directory` (0 for the root), and return its
+    /// **Create an empty directory called `name`** in `directory` (0 for the root), and return its
     /// entry. The new directory holds `.` and `..` in a cluster of its own, zeroed past them.
     ///
-    /// Name: provisional. The `mkdir` of the directory tree.
-    pub(crate) fn make_directory(
+    /// Name: ratified 2026-11-01 (UTC), renamed from `make_directory`, beside `create_file`.
+    pub(crate) fn create_directory(
         &mut self,
         directory: u32,
         name: &str,
@@ -336,7 +337,7 @@ impl<D: WritableSectorDevice> Volume<D> {
             )
         });
         if made.is_err() {
-            let _ = self.free_chain(cluster);
+            let _ = self.deallocate_chain(cluster);
         }
         made
     }
@@ -367,10 +368,10 @@ impl<D: WritableSectorDevice> Volume<D> {
             slot[26..28].copy_from_slice(&(*target as u16).to_le_bytes());
             self.stamp.write_new(slot);
         }
-        crate::file_write::Medium::write_data(self, first, &sector[..size])?;
+        crate::write_cursor::Medium::write_data(self, first, &sector[..size])?;
         let zeros = [0u8; SectorSize::MAX];
         for later in 1..boot.sectors_per_cluster() {
-            crate::file_write::Medium::write_data(self, first + later, &zeros[..size])?;
+            crate::write_cursor::Medium::write_data(self, first + later, &zeros[..size])?;
         }
         Ok(())
     }
@@ -403,7 +404,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// **Remove the empty directory `entry` names**: mark its slots free, then free its cluster.
     /// Refuses a file, `.` and `..`, and a directory that holds anything else.
     ///
-    /// Name: provisional. The `rmdir` of the directory tree.
+    /// Name: ratified 2026-11-01 (UTC), the `rmdir` of the directory tree.
     pub(crate) fn remove_directory(
         &mut self,
         entry: &NamedEntry,
@@ -412,14 +413,14 @@ impl<D: WritableSectorDevice> Volume<D> {
             return Err(WriteError::NotADirectory);
         }
         self.verify(entry)?;
-        for inner in self.entries(entry.first_cluster()) {
+        for inner in self.named_entries(entry.first_cluster()) {
             if !inner?.is_dot_entry() {
                 return Err(WriteError::DirectoryNotEmpty);
             }
         }
         self.begin_change()?;
         self.free_slots(entry)?;
-        self.free_chain(entry.first_cluster())
+        self.deallocate_chain(entry.first_cluster())
             .map_err(|_| WriteError::EntryChanged)?;
         Ok(())
     }
@@ -455,7 +456,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// has its `..` updated. Refuses a name another entry holds, a file or directory moved into
     /// itself or below itself, and `.` and `..`.
     ///
-    /// Name: provisional. The `rename` of the directory tree.
+    /// Name: ratified 2026-11-01 (UTC), the `rename` of the directory tree.
     pub(crate) fn rename(
         &mut self,
         entry: &NamedEntry,
@@ -503,7 +504,7 @@ impl<E> From<LookupError<E>> for WriteError<E> {
     fn from(error: LookupError<E>) -> Self {
         match error {
             LookupError::Chain(error) => WriteError::Chain(error),
-            LookupError::NotFound | LookupError::NoName => WriteError::EntryChanged,
+            LookupError::NotFound | LookupError::RootHasNoEntry => WriteError::EntryChanged,
             LookupError::NotADirectory => WriteError::NotADirectory,
         }
     }

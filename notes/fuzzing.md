@@ -5,7 +5,7 @@ integrity) ask whether code we did not write is what we think; this one asks whe
 write survives bytes it did not write.
 
 `script/fuzz` runs coverage-guided fuzz targets over the parsers that read data from outside this
-system: twelve parser targets, plus three service targets that
+system: thirteen parser targets, plus three service targets that
 [fuzzing-the-services.md](fuzzing-the-services.md) covers. It found two bugs on its first day, and a
 third came out of reading the code while designing a target. All three are fixed and pinned by host
 tests.
@@ -52,13 +52,15 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Twelve parser targets, deliberately fewer than one per crate; the table holds eleven, and notes/fuzzing/targets.md covers the FAT writer. A fuzz target that finds nothing
+Thirteen parser targets, deliberately fewer than one per crate; the table holds twelve, and
+[fuzzing/targets.md](fuzzing/targets.md) covers the FAT writer. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
 | Target | Input comes from | Why it earns a target |
 |---|---|---|
 | `device_tree_blob_walk` | firmware (QEMU, OpenSBI, a board's ROM) | parsed before anything else exists, on both ISAs, from a pointer in a register; a panic here is a kernel that cannot boot and cannot say why. Kani reaches the leaf readers and not the walkers. |
+| `device_tree_patch_initial_ramdisk` | UEFI firmware's device tree | the loader's own walker; a wrong `Ok` boots a kernel without its archive. |
 | `elf_parse` | any binary a user asks to run | the only parser that loads what it parses: its output becomes page-table entries. The whole-parse totality proof is recorded as intractable. |
 | `globally_unique_identifier_partition_table` | a disk somebody else formatted | decides which LBA range is a filesystem. Heavily checked already, which is the point: the gap is *combinations* of hostile fields, which neither the proofs nor the single-byte mutation tests can build. |
 | `file_allocation_table_boot_sector` | a USB stick somebody else formatted | every later FAT read indexes by what it says |
@@ -140,16 +142,13 @@ gets.
 Three kinds of input, and they are kept apart because they have different reasons to exist.
 
 Seeds are committed, and they are read-only. A fuzzer starting from `[]` spends its first
-minutes rediscovering that a device tree begins `d0 0d fe ed`. With a sixty-second budget it would
-never get past the magic check. But `fuzz/seeds/` holds one small ELF per machine and nothing else,
-because the seeds this project needs already exist in the tree.
-`crates/device_tree_blob/tests/fixtures/` holds three real device trees dumped from the boards we
-boot, and `crates/globally_unique_identifier_partition_table/tests/fixtures/` holds two real disks
-formatted by `sgdisk` and by Apple's Disk Utility. `script/fuzz` passes those directories to
-libFuzzer as extra corpus arguments. Copying them under `fuzz/` would create a second copy that can
-drift from the first.
+minutes rediscovering that a device tree begins `d0 0d fe ed`, and with a sixty-second budget never
+gets past the magic check. Where the tree already holds real inputs, such as the three device trees
+in `crates/device_tree_blob/tests/fixtures/`, `script/fuzz` passes that directory to libFuzzer as an
+extra corpus; a copy under `fuzz/` would drift from it. [fuzz/seeds/README.md](../fuzz/seeds/README.md)
+lists each target's seeds.
 
-The exception is `fuzz/seeds/elf_parse/minimal_rx_<machine>.elf`, 120 bytes each, because nothing
+The ELF seeds, `fuzz/seeds/elf_parse/minimal_rx_<machine>.elf`, are 120 bytes each, because nothing
 else in the tree is a small ELF (our real binaries are over a megabyte). They are hand-assembled,
 and [fuzz/seeds/README.md](../fuzz/seeds/README.md) carries the generator that produces them.
 

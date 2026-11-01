@@ -3,21 +3,21 @@
 //! writes bytes, sets a length and keeps the entry's size and first cluster true.
 //!
 //! Names here are 8.3 short names; a long name arrives with stage 7. The order of every change is
-//! the one `file_write.rs` states and `allocation.rs` guarantees: a crash leaks clusters and never
+//! the one `write_cursor.rs` states and `allocation.rs` guarantees: a crash leaks clusters and never
 //! shares one, and a deleted entry is marked free before its chain is.
 //!
-//! Name: provisional. The writer's module, beside `file`, which reads.
+//! Name: ratified 2026-11-01 (UTC), the writer's module, beside `file`, which reads.
 
 use crate::allocation::{AllocationError, LinksMut};
 use crate::boot_sector::RootDirectory;
 use crate::directory::SLOT_BYTES;
-use crate::file::NotAFile;
-use crate::file_write::{Medium, WriteError, WriteState};
+use crate::file::FileOpenError;
 use crate::long_name::is_short_byte;
 use crate::named_entry::{EntryPlace, NamedEntry};
 use crate::reader::{ChainError, Volume, Walk};
 use crate::sector::{SectorSize, WritableSectorDevice};
 use crate::time::{Clock, Stamp};
+use crate::write_cursor::{Medium, WriteError, WriteState};
 
 /// `DIR_Attr`'s archive bit: set on a file a writer has changed.
 pub(crate) const ARCHIVE: u8 = 0x20;
@@ -215,13 +215,13 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// **Delete the file `entry` names**: mark its slots free, then free its clusters. Refuses a
     /// directory and the volume label.
     ///
-    /// Name: provisional. The verb of `std::fs::remove_file`.
+    /// Name: ratified 2026-11-01 (UTC), the verb of `std::fs::remove_file`.
     pub(crate) fn remove_file(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
         if entry.is_directory() || entry.is_volume_label() {
             return Err(WriteError::NotAFile);
         }
         if entry
-            .file_attributes()
+            .user_attributes()
             .contains(crate::Attributes::READ_ONLY)
         {
             return Err(WriteError::ReadOnly);
@@ -241,7 +241,7 @@ impl<D: WritableSectorDevice> Volume<D> {
             self.write_slot(place.directory, index, &slot)?;
         }
         if entry.first_cluster() != 0 {
-            self.free_chain(entry.first_cluster())
+            self.deallocate_chain(entry.first_cluster())
                 .map_err(|error| match error {
                     AllocationError::Chain(error) => WriteError::Chain(error),
                     AllocationError::VolumeFull | AllocationError::NotTheEndOfAChain(_) => {
@@ -257,9 +257,9 @@ impl<D: WritableSectorDevice> Volume<D> {
 ///
 /// It writes at a position, extends the file as it writes, and sets its length. After every call
 /// that changes the size or the first cluster it rewrites the directory entry, so the entry is
-/// true between calls; [`crate::WritableVolume::sync`] writes the volume's own hints and clears the dirty bit.
+/// true between calls; [`crate::WritableVolume::mark_clean`] writes the volume's own hints and clears the dirty bit.
 ///
-/// Name: provisional. A file being written; named for what it does, as `FileReader`.
+/// Name: ratified 2026-11-01 (UTC), a file being written; named for what it does, as `FileReader`.
 #[derive(Debug)]
 pub struct FileWriter<'v, D, C> {
     volume: &'v mut Volume<D>,
@@ -278,9 +278,9 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
         volume: &'v mut Volume<D>,
         clock: &'v mut C,
         entry: &NamedEntry,
-    ) -> Result<FileWriter<'v, D, C>, NotAFile> {
+    ) -> Result<FileWriter<'v, D, C>, FileOpenError> {
         if entry.is_directory() || entry.is_volume_label() {
-            return Err(NotAFile);
+            return Err(FileOpenError);
         }
         Ok(FileWriter {
             volume,
@@ -288,7 +288,7 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
             place: entry.place(),
             name: entry.short_name(),
             read_only: entry
-                .file_attributes()
+                .user_attributes()
                 .contains(crate::Attributes::READ_ONLY),
             state: WriteState::new(entry.first_cluster(), entry.size_bytes()),
             failed: false,
@@ -307,28 +307,29 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
 
     /// The file's length in bytes.
     ///
-    /// Name: provisional. As `FileReader::size_bytes`.
+    /// Name: ratified 2026-11-01 (UTC), as `FileReader::size_bytes`.
     pub const fn size_bytes(&self) -> u32 {
         self.state.size
     }
 
     /// The position of the next byte written.
     ///
-    /// Name: provisional. As `FileReader::position`.
+    /// Name: ratified 2026-11-01 (UTC), as `FileReader::position`.
     pub const fn position(&self) -> u32 {
         self.state.position
     }
 
     /// Move to byte `position`, or to the end of the file when it is past it.
     ///
-    /// Name: provisional. As `FileReader::seek`.
-    pub fn seek(&mut self, position: u32) {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `seek`: the position it sets, as
+    /// `FileReader::set_position`.
+    pub fn set_position(&mut self, position: u32) {
         self.state.seek(position);
     }
 
     fn check(&self) -> Result<(), WriteError<D::Error>> {
         if self.failed {
-            Err(WriteError::AfterAFailure)
+            Err(WriteError::Failed)
         } else if self.read_only {
             Err(WriteError::ReadOnly)
         } else {
@@ -355,7 +356,10 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
     /// many bytes were written. It writes fewer than `data.len()` only when the volume fills; the
     /// next call then returns `VolumeFull`. An error ends the writer.
     ///
-    /// Name: provisional. The `Write` verb of the standard library's trait.
+    /// This is not `std::io::Write::write`: the crate is `no_std` and implements no `std::io`
+    /// trait, and the error type is [`WriteError`].
+    ///
+    /// Name: ratified 2026-11-01 (UTC), the `Write` verb of the standard library's trait.
     pub fn write(&mut self, data: &[u8]) -> Result<usize, WriteError<D::Error>> {
         self.check()?;
         self.tick()?;
@@ -374,12 +378,14 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
         Ok(written)
     }
 
-    /// **Set the file's length.** A longer length reads as zeros between the old end and the new;
+    /// **Set the file's length**, as `std::fs::File::set_len` does. A longer length reads as zeros between the old end and the new;
     /// a shorter one frees the clusters past it. The position moves to the new end if it was
     /// past it.
     ///
-    /// Name: provisional. The verb of `File::set_len`.
-    pub fn set_len(&mut self, length: u32) -> Result<(), WriteError<D::Error>> {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `set_len`: the length spelled out, with
+    /// `set_len` kept as the alias a reader of `File::set_len` searches for.
+    #[doc(alias = "set_len")]
+    pub fn set_length(&mut self, length: u32) -> Result<(), WriteError<D::Error>> {
         self.check()?;
         self.tick()?;
         let result = self.resize(length);

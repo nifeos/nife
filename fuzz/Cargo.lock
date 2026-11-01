@@ -155,6 +155,13 @@ name = "device_tree_blob"
 version = "0.1.0"
 
 [[package]]
+name = "device_tree_patch"
+version = "0.1.0"
+dependencies = [
+ "device_tree_blob",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -235,6 +242,7 @@ dependencies = [
  "capability_manifest_note",
  "compositor",
  "device_tree_blob",
+ "device_tree_patch",
  "domain_name_resolution_contract",
  "domain_name_system",
  "elf",

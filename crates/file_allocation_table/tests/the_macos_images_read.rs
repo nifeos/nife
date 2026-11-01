@@ -3,7 +3,7 @@
 //! `fixtures/macos/` holds a bare FAT32 volume and the same files inside an MBR partition, both
 //! compressed (see its README for provenance). The bare volume opens as a volume. The other image
 //! opens through its partition table, the way a whole-disk image does. Every file is then found by
-//! walking the directories with this crate, read through `open_file`, and hashed with a SHA-256
+//! walking the directories with this crate, read through `open_file_reader`, and hashed with a SHA-256
 //! written here, so the hashes come from nothing this crate computed. Each expected hash is the
 //! line of the probe's `expected.sha256` for that file. Path lookup finds
 //! each file too, by its long name and its short name.
@@ -52,7 +52,7 @@ fn read<D: SectorDevice>(volume: &mut Volume<D>, entry: &NamedEntry) -> Vec<u8>
 where
     D::Error: std::fmt::Debug,
 {
-    let mut file = volume.open_file(entry).expect("a file");
+    let mut file = volume.open_file_reader(entry).expect("a file");
     let mut out = vec![0u8; entry.size_bytes() as usize];
     assert_eq!(file.read(&mut out).expect("the file reads"), out.len());
     let mut more = [0u8; 1];
@@ -73,7 +73,7 @@ fn files<D: SectorDevice>(
     D::Error: std::fmt::Debug,
 {
     let entries: Vec<NamedEntry> = volume
-        .entries(first)
+        .named_entries(first)
         .map(|e| e.expect("the directory reads"))
         .collect();
     for entry in entries {
@@ -175,10 +175,14 @@ fn the_volume_inside_the_partition_table_reads_to_its_recorded_hashes() {
     let table = MasterBootRecord::read(&mut Memory(&image)).expect("a partition table");
     let partition = table
         .partitions()
-        .find(|p| p.holds_file_allocation_table())
+        .find(|p| p.has_file_allocation_table_type())
         .expect("a FAT partition");
-    assert_eq!((partition.kind(), partition.first_sector()), (0x0B, 63));
-    let mut volume = Volume::open(partition.device(Memory(&image))).expect("the partition opens");
+    assert_eq!(
+        (partition.partition_type(), partition.first_sector()),
+        (0x0B, 63)
+    );
+    let mut volume =
+        Volume::open(partition.restrict_device(Memory(&image))).expect("the partition opens");
     check(&mut volume);
 }
 

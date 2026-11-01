@@ -1,12 +1,12 @@
-Falsifies `file_allocation_table::fs_info::verification::a_store_changes_only_the_two_hints`.
+Falsifies `file_allocation_table::file_system_information::verification::a_store_changes_only_the_two_hints`.
 
 The defect: the next-free hint is stored four bytes late, over the reserved bytes that follow it.
 
 Expected to fail: the harness's check that every byte outside 488 to 495 is as it was.
 
-diff --git a/crates/file_allocation_table/src/fs_info.rs b/crates/file_allocation_table/src/fs_info.rs
---- a/crates/file_allocation_table/src/fs_info.rs
-+++ b/crates/file_allocation_table/src/fs_info.rs
+diff --git a/crates/file_allocation_table/src/file_system_information.rs b/crates/file_allocation_table/src/file_system_information.rs
+--- a/crates/file_allocation_table/src/file_system_information.rs
++++ b/crates/file_allocation_table/src/file_system_information.rs
 @@ -19,7 +19,7 @@ const TRAIL_SIGNATURE: u32 = 0xAA55_0000;
  /// Where `FSI_Free_Count` starts.
  const FREE_COUNT_AT: usize = 488;

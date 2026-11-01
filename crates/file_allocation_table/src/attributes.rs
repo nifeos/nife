@@ -6,12 +6,12 @@
 //! together with the label bit, because the label bit is never set by this module and an entry
 //! that already carries it is refused.
 //!
-//! Name: provisional. The attribute half of `directory_write`, with no clock in it.
+//! Name: ratified 2026-11-01 (UTC), the attribute half of `directory_writer`, with no clock in it.
 
-use crate::file_write::WriteError;
 use crate::named_entry::NamedEntry;
 use crate::reader::Volume;
 use crate::sector::WritableSectorDevice;
+use crate::write_cursor::WriteError;
 
 /// The four bits a user sets: read-only, hidden, system, archive.
 const USER_BITS: u8 = 0x27;
@@ -26,38 +26,40 @@ const USER_BITS: u8 = 0x27;
 /// let hidden_log = Attributes::HIDDEN.union(Attributes::ARCHIVE);
 /// assert!(hidden_log.contains(Attributes::HIDDEN));
 /// assert!(!hidden_log.contains(Attributes::READ_ONLY));
-/// assert_eq!(hidden_log.without(Attributes::HIDDEN), Attributes::ARCHIVE);
+/// assert_eq!(hidden_log.difference(Attributes::HIDDEN), Attributes::ARCHIVE);
 /// ```
 ///
-/// Name: provisional. A set of `ATTR_READ_ONLY`, `ATTR_HIDDEN`, `ATTR_SYSTEM` and `ATTR_ARCHIVE`.
+/// Name: ratified 2026-11-01 (UTC), a set of `ATTR_READ_ONLY`, `ATTR_HIDDEN`, `ATTR_SYSTEM` and
+/// `ATTR_ARCHIVE`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct Attributes(u8);
 
 impl Attributes {
     /// No bit set.
     ///
-    /// Name: provisional. The empty set.
-    pub const NONE: Attributes = Attributes(0);
+    /// Name: ratified 2026-11-01 (UTC), renamed from `NONE`: the set holding no bit, named as a
+    /// collection is named when it holds nothing, and not as an absent value.
+    pub const EMPTY: Attributes = Attributes(0);
     /// `ATTR_READ_ONLY`: the file may not be written or removed.
     ///
-    /// Name: provisional. The specification's bit.
+    /// Name: ratified 2026-11-01 (UTC), the specification's bit.
     pub const READ_ONLY: Attributes = Attributes(0x01);
     /// `ATTR_HIDDEN`: a listing leaves the file out unless asked.
     ///
-    /// Name: provisional. The specification's bit.
+    /// Name: ratified 2026-11-01 (UTC), the specification's bit.
     pub const HIDDEN: Attributes = Attributes(0x02);
     /// `ATTR_SYSTEM`: the file belongs to the operating system.
     ///
-    /// Name: provisional. The specification's bit.
+    /// Name: ratified 2026-11-01 (UTC), the specification's bit.
     pub const SYSTEM: Attributes = Attributes(0x04);
     /// `ATTR_ARCHIVE`: the file changed since a backup last cleared the bit.
     ///
-    /// Name: provisional. The specification's bit.
+    /// Name: ratified 2026-11-01 (UTC), the specification's bit.
     pub const ARCHIVE: Attributes = Attributes(0x20);
 
     /// The set with every bit of `self` and of `other`.
     ///
-    /// Name: provisional. Set union.
+    /// Name: ratified 2026-11-01 (UTC), set union.
     #[must_use]
     pub const fn union(self, other: Attributes) -> Attributes {
         Attributes(self.0 | other.0)
@@ -65,22 +67,22 @@ impl Attributes {
 
     /// The set without the bits of `other`.
     ///
-    /// Name: provisional. Set difference.
+    /// Name: ratified 2026-11-01 (UTC), renamed from `without`: the set operation, beside `union`.
     #[must_use]
-    pub const fn without(self, other: Attributes) -> Attributes {
+    pub const fn difference(self, other: Attributes) -> Attributes {
         Attributes(self.0 & !other.0)
     }
 
     /// Whether every bit of `other` is in the set.
     ///
-    /// Name: provisional. Set containment.
+    /// Name: ratified 2026-11-01 (UTC), set containment.
     pub const fn contains(self, other: Attributes) -> bool {
         self.0 & other.0 == other.0
     }
 
     /// The bits as `DIR_Attr` stores them.
     ///
-    /// Name: provisional. The raw byte.
+    /// Name: ratified 2026-11-01 (UTC), the raw byte.
     pub const fn bits(self) -> u8 {
         self.0
     }
@@ -100,8 +102,9 @@ pub(crate) const fn apply(stored: u8, new: Attributes) -> u8 {
 impl NamedEntry {
     /// The user-settable attribute bits of the entry.
     ///
-    /// Name: provisional. The four bits of `attributes`, as a set.
-    pub const fn file_attributes(&self) -> Attributes {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `file_attributes`: the user-settable four-bit
+    /// set, apart from `attributes`, the raw `DIR_Attr` byte.
+    pub const fn user_attributes(&self) -> Attributes {
         Attributes::of_stored(self.attributes())
     }
 }
@@ -111,7 +114,8 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// return the entry as stored. The directory bit and every other bit stay. Refuses the volume
     /// label, `.` and `..`.
     ///
-    /// Name: provisional. The `chmod` and `attrib` of the directory tree; it takes no time.
+    /// Name: ratified 2026-11-01 (UTC), the `chmod` and `attrib` of the directory tree; it takes no
+    /// time.
     pub(crate) fn set_attributes(
         &mut self,
         entry: &NamedEntry,

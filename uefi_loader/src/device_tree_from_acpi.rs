@@ -32,10 +32,9 @@
 //! [`Uart`], [`build`] and the root node's `compatible` string all name things a reader meets, and
 //! naming is an architect's call.
 
+use device_tree_patch::{BEGIN_NODE, END, END_NODE, Error, HEADER_LEN, MAGIC, Out, PROP};
 use machine_discovery::acpi::{GTDT_ACTIVE_LOW, GTDT_EDGE_TRIGGERED, Gtdt};
 use machine_discovery::gic::Gic;
-
-use crate::device_tree_patch::{BEGIN_NODE, END, END_NODE, Error, HEADER_LEN, MAGIC, Out, PROP};
 
 /// The most cores this writes a `cpu@` node for. Sixteen, matching
 /// `machine_discovery::cpu_list::MAXIMUM_CPU_NODES`, which is what would read them back.
@@ -704,11 +703,10 @@ mod tests {
     #[test]
     fn the_written_tree_takes_an_initial_ramdisk_like_any_other() {
         let (len, out) = built(&qemu_virt());
-        let capacity =
-            crate::device_tree_patch::output_len(&out[..len]).expect("the tree is well formed");
+        let capacity = device_tree_patch::output_len(&out[..len]).expect("the tree is well formed");
         let mut patched = [0u8; 8192];
         assert!(capacity <= patched.len());
-        crate::device_tree_patch::with_initial_ramdisk(
+        device_tree_patch::with_initial_ramdisk(
             &out[..len],
             0x4ac6_0000,
             0x4b70_0000,

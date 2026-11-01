@@ -63,6 +63,8 @@ libfuzzer-sys = "0.4"
 # this repository, which git pins harder than semver would (see deny.toml's `allow-wildcard-paths`).
 nifefs = { path = "../crates/nifefs" }
 device_tree_blob = { path = "../crates/device_tree_blob" }
+# An interface of the `boot` package, which is what lets this crate link it (packages/boot.package.toml).
+device_tree_patch = { path = "../crates/device_tree_patch" }
 domain_name_system = { path = "../crates/domain_name_system" }
 elf = { path = "../crates/elf" }
 file_allocation_table = { path = "../crates/file_allocation_table" }
@@ -109,6 +111,13 @@ overflow-checks = true
 [[bin]]
 name = "device_tree_blob_walk"
 path = "fuzz_targets/device_tree_blob_walk.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "device_tree_patch_initial_ramdisk"
+path = "fuzz_targets/device_tree_patch_initial_ramdisk.rs"
 test = false
 doc = false
 bench = false

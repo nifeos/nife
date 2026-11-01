@@ -398,6 +398,13 @@ name = "device_tree_blob"
 version = "0.1.0"
 
 [[package]]
+name = "device_tree_patch"
+version = "0.1.0"
+dependencies = [
+ "device_tree_blob",
+]
+
+[[package]]
 name = "digest"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1662,6 +1669,7 @@ version = "0.1.0"
 dependencies = [
  "boot_slot",
  "device_tree_blob",
+ "device_tree_patch",
  "elf",
  "globally_unique_identifier_partition_table",
  "machine_discovery",

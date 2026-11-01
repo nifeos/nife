@@ -132,7 +132,7 @@ fn metadata(image: &Memory) -> Vec<u8> {
     let sector = image.size.bytes();
     let end = boot.first_data_sector() as usize * sector;
     let mut bytes = image.bytes[..end].to_vec();
-    if let Some(info) = boot.fs_info_sector() {
+    if let Some(info) = boot.file_system_information_sector() {
         let at = usize::from(info) * sector;
         bytes[at..at + sector].fill(0);
     }
@@ -175,7 +175,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
             last = Some(cluster);
         }
     }
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(oracle_free_clusters(&image.bytes), total - 47, "{label}");
 
@@ -186,7 +186,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     lengths[0] = 12;
     assert_eq!(volume.chain(first[0]).count() as u32, lengths[0]);
     assert_eq!(volume.chain(first[1]).count() as u32, lengths[1]);
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(oracle_free_clusters(&image.bytes), total - 19, "{label}");
     let hints = WritableVolume::open(
@@ -198,7 +198,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
         NoClock,
     )
     .unwrap()
-    .fs_info()
+    .file_system_information()
     .unwrap();
     // Only FAT32 has an FSInfo sector, and the count it holds is the true one.
     assert_eq!(
@@ -208,16 +208,16 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     );
     if let Some(hints) = hints {
         assert_eq!(
-            hints.free_clusters(),
+            hints.free_cluster_count(),
             Some(total - 19),
             "{label}: FSInfo count"
         );
     }
 
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
-    assert_eq!(volume.free_chain(first[0]).unwrap(), 12);
-    assert_eq!(volume.free_chain(first[1]).unwrap(), 7);
-    volume.sync().unwrap();
+    assert_eq!(volume.deallocate_chain(first[0]).unwrap(), 12);
+    assert_eq!(volume.deallocate_chain(first[1]).unwrap(), 7);
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(oracle_free_clusters(&image.bytes), total, "{label}");
     assert_eq!(
@@ -305,15 +305,15 @@ fn scrambled(label: &str, mebibytes: usize, fat_type: FatType) {
     for (first, length) in &chains {
         assert_eq!(volume.chain(*first).count() as u32, *length, "{label}");
     }
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     assert_eq!(volume.count_free_clusters().unwrap(), total - used);
     let image = volume.into_device();
     assert_eq!(oracle_free_clusters(&image.bytes), total - used, "{label}");
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
     for (first, _) in chains {
-        volume.free_chain(first).unwrap();
+        volume.deallocate_chain(first).unwrap();
     }
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(metadata(&image), original, "{label}");
     check_with_fsck(&image.bytes, label);
@@ -355,8 +355,8 @@ fn a_full_volume_is_refused_and_every_cluster_comes_back() {
     );
     assert_eq!(volume.count_free_clusters().unwrap(), 0);
     assert_eq!(volume.table_entry(last), Ok(TableEntry::EndOfChain));
-    assert_eq!(volume.free_chain(first).unwrap(), total);
-    volume.sync().unwrap();
+    assert_eq!(volume.deallocate_chain(first).unwrap(), total);
+    volume.mark_clean().unwrap();
     assert_eq!(metadata(&volume.into_device()), original);
 }
 
@@ -387,9 +387,9 @@ fn freeing_a_cluster_whose_entry_straddles_sectors_keeps_its_neighbors_link() {
     let walked: Vec<u32> = volume.chain(second).map(Result::unwrap).collect();
     assert_eq!(walked, [683, 684, 685, 686, 687]);
     assert_eq!(volume.chain(first).count(), 400);
-    volume.free_chain(first).unwrap();
-    volume.free_chain(second).unwrap();
-    volume.sync().unwrap();
+    volume.deallocate_chain(first).unwrap();
+    volume.deallocate_chain(second).unwrap();
+    volume.mark_clean().unwrap();
     assert_eq!(metadata(&volume.into_device()), original);
 }
 
@@ -427,7 +427,7 @@ fn only_the_live_table_is_written_when_mirroring_is_off() {
         assert_eq!(raw_fat32_entry(&image, live, cluster), 0x0FFF_FFFF);
         assert_eq!(raw_fat32_entry(&image, 1 - live, cluster), 0);
         let mut volume = WritableVolume::open(image, NoClock).unwrap();
-        assert_eq!(volume.free_chain(cluster).unwrap(), 1);
+        assert_eq!(volume.deallocate_chain(cluster).unwrap(), 1);
         let image = volume.into_device();
         assert_eq!(raw_fat32_entry(&image, live, cluster), 0);
     }

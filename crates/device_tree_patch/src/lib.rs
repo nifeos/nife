@@ -18,17 +18,43 @@
 //!   (`/memreserve/` entries or `/reserved-memory` children) first.
 //! - **Nothing is removed**: a stale `linux,initrd-*` pair the firmware left is replaced, and every
 //!   other property is copied as it was.
+//!
+//! See notes/boot-stick/device-tree-handover.md.
+//!
+//! Name: provisional. The crate is named for what it does to a tree. Considered
+//! `device_tree_rewrite` (says the same, but "patch" is the word the loader's callers and notes
+//! use) and `initial_ramdisk_handover` (names the one property pair, which the token writer below
+//! is not about). The public token constants and [`Out`] are provisional too.
+
+#![cfg_attr(not(test), no_std)]
 
 use device_tree_blob::{DeviceTreeBlob, Region};
 
 /// The device-tree magic, big-endian at offset 0.
-pub(crate) const MAGIC: u32 = 0xd00d_feed;
-pub(crate) const HEADER_LEN: usize = 40;
-pub(crate) const BEGIN_NODE: u32 = 1;
-pub(crate) const END_NODE: u32 = 2;
-pub(crate) const PROP: u32 = 3;
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+pub const MAGIC: u32 = 0xd00d_feed;
+/// The header's length in bytes: ten big-endian words.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+pub const HEADER_LEN: usize = 40;
+/// The structure-block token that opens a node; its name follows, NUL-terminated and padded to 4.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+pub const BEGIN_NODE: u32 = 1;
+/// The structure-block token that closes a node.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+pub const END_NODE: u32 = 2;
+/// The structure-block token for a property: length, name offset, then the value padded to 4.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+pub const PROP: u32 = 3;
 const NOP: u32 = 4;
-pub(crate) const END: u32 = 9;
+/// The structure-block token that ends the block.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+pub const END: u32 = 9;
 
 const INITRD_START: &[u8] = b"linux,initrd-start";
 const INITRD_END: &[u8] = b"linux,initrd-end";
@@ -148,13 +174,23 @@ fn find_string(strings: &[u8], name: &[u8]) -> Option<usize> {
     None
 }
 
-pub(crate) struct Out<'a> {
-    pub(crate) buf: &'a mut [u8],
-    pub(crate) at: usize,
+/// **A big-endian writer over a caller's buffer**, refusing with [`Error::OutputTooSmall`] rather
+/// than writing past its end. The rewriter writes through it, and so does a loader that builds a
+/// tree from nothing.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+pub struct Out<'a> {
+    /// The buffer being written.
+    pub buf: &'a mut [u8],
+    /// The offset of the next byte to write, which is also the length written so far.
+    pub at: usize,
 }
 
 impl Out<'_> {
-    pub(crate) fn bytes(&mut self, b: &[u8]) -> Result<(), Error> {
+    /// Append `b`.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+    pub fn bytes(&mut self, b: &[u8]) -> Result<(), Error> {
         let end = self.at + b.len();
         self.buf
             .get_mut(self.at..end)
@@ -163,10 +199,16 @@ impl Out<'_> {
         self.at = end;
         Ok(())
     }
-    pub(crate) fn u32(&mut self, v: u32) -> Result<(), Error> {
+    /// Append `v` as a big-endian word.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+    pub fn u32(&mut self, v: u32) -> Result<(), Error> {
         self.bytes(&v.to_be_bytes())
     }
-    pub(crate) fn pad_to(&mut self, align: usize) -> Result<(), Error> {
+    /// Append zero bytes until the offset is a multiple of `align`.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by lane/device-tree-patch-crate.
+    pub fn pad_to(&mut self, align: usize) -> Result<(), Error> {
         while !self.at.is_multiple_of(align) {
             self.bytes(&[0])?;
         }
@@ -415,12 +457,12 @@ mod tests {
     use super::*;
 
     const PLAIN: &[u8] =
-        include_bytes!("../../crates/device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb");
+        include_bytes!("../../device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb");
     const WITH_INITIAL_RAMDISK: &[u8] = include_bytes!(
-        "../../crates/device_tree_blob/tests/fixtures/qemu-aarch64-virt-initial-ramdisk.dtb"
+        "../../device_tree_blob/tests/fixtures/qemu-aarch64-virt-initial-ramdisk.dtb"
     );
     const RISCV: &[u8] =
-        include_bytes!("../../crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+        include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
 
     fn rewrite(src: &[u8], start: u64, end: u64) -> Vec<u8> {
         let mut out = vec![0; output_len(src).unwrap()];
@@ -879,6 +921,26 @@ mod tests {
             with_initial_ramdisk(&tree(&[], &s, false, 0), 0, 1, &mut out),
             Err(Error::Truncated)
         );
+    }
+
+    /// **`pad_to` writes zeros up to the next multiple, and nothing on one.** The rewriter only
+    /// pads at a multiple already, so this is the test that sees it pad; a tree built from nothing
+    /// pads after every node name.
+    #[test]
+    fn out_pads_with_zeros_to_the_next_multiple() {
+        let mut buf = [0xffu8; 8];
+        let mut o = Out {
+            buf: &mut buf,
+            at: 0,
+        };
+        o.bytes(&[1]).unwrap();
+        o.pad_to(4).unwrap();
+        assert_eq!(o.at, 4);
+        o.pad_to(4).unwrap();
+        assert_eq!(o.at, 4, "already aligned");
+        o.u32(0x0203_0405).unwrap();
+        assert_eq!(o.pad_to(16), Err(Error::OutputTooSmall));
+        assert_eq!(buf, [1, 0, 0, 0, 2, 3, 4, 5]);
     }
 
     /// **Every refusal has its own sentence for the firmware console**, since it is the only thing

@@ -1,7 +1,7 @@
 //! The example in `README.md`, compiled and run, so the example cannot stop compiling unnoticed.
 
 use file_allocation_table::{
-    Attributes, Format, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
+    Attributes, FormatOptions, FormatPlan, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
     WritableVolume,
 };
 
@@ -40,13 +40,13 @@ fn the_readme_example_runs() {
     let options = FormatOptions::new(SectorSize::Bytes512, sectors)
         .with_label("EXAMPLE")
         .unwrap();
-    let format = Format::new(options, &mut NoClock).expect("a legal size");
+    let format = FormatPlan::new(options, &mut NoClock).expect("a legal size");
     let mut device = Memory(vec![0; sectors as usize * 512]);
     format.write_to(&mut device).unwrap();
 
     // Open it, make a directory and a file with a long name, and write some bytes.
     let mut volume = WritableVolume::open(device, NoClock).unwrap();
-    let docs = volume.make_directory(0, "Documents").unwrap();
+    let docs = volume.create_directory(0, "Documents").unwrap();
     let file = volume
         .create_file(docs.first_cluster(), "A long file name.txt")
         .unwrap();
@@ -58,12 +58,16 @@ fn the_readme_example_runs() {
     let stored = volume.lookup("Documents/A long file name.txt").unwrap();
     let hidden = Attributes::ARCHIVE.union(Attributes::HIDDEN);
     volume.set_attributes(&stored, hidden).unwrap();
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
 
     // Read it back by path, as another program would.
     let entry = volume.lookup("documents/A LONG FILE NAME.TXT").unwrap();
     let mut bytes = [0u8; 32];
-    let read = volume.open_file(&entry).unwrap().read(&mut bytes).unwrap();
+    let read = volume
+        .open_file_reader(&entry)
+        .unwrap()
+        .read(&mut bytes)
+        .unwrap();
     assert_eq!(&bytes[..read], b"hello, volume");
     assert_eq!(
         volume.volume_label().unwrap().unwrap().trimmed(),

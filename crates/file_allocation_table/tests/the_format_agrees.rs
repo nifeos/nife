@@ -10,8 +10,8 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    BootSector, FileAllocationTableType, Format, FormatError, FormatOptions, NoClock, SectorDevice,
-    SectorSize, WritableSectorDevice, WritableVolume,
+    BootSector, FileAllocationTableType, FormatError, FormatOptions, FormatPlan, NoClock,
+    SectorDevice, SectorSize, WritableSectorDevice, WritableVolume,
 };
 
 /// A volume held in memory, read and written one sector at a time.
@@ -99,9 +99,9 @@ fn formatted_by_this_crate(
     size: SectorSize,
     sectors: u32,
     build: impl Fn(FormatOptions) -> FormatOptions,
-) -> (Format, Memory) {
+) -> (FormatPlan, Memory) {
     let options = build(FormatOptions::new(size, sectors));
-    let format = Format::new(options, &mut NoClock).expect("a legal format");
+    let format = FormatPlan::new(options, &mut NoClock).expect("a legal format");
     let mut image = Memory {
         bytes: vec![0xEEu8; sectors as usize * size.bytes()],
         size,
@@ -112,7 +112,7 @@ fn formatted_by_this_crate(
 
 /// The volume parses, rust-fatfs mounts it with our cluster count, `fsck` accepts it, and this
 /// crate's writer fills it and rust-fatfs reads the files back.
-fn check(label: &str, format: &Format, image: Memory) {
+fn check(label: &str, format: &FormatPlan, image: Memory) {
     let boot =
         BootSector::parse(&image.bytes[..image.size.bytes()]).expect("our boot sector parses");
     assert_eq!(
@@ -140,7 +140,7 @@ fn check(label: &str, format: &Format, image: Memory) {
             - u32::from(format.file_allocation_table_type() == FileAllocationTableType::Fat32)
     );
     let bytes: Vec<u8> = (0..20_000u32).map(|i| (i * 7) as u8).collect();
-    let entry = volume.make_directory(0, "Made By Us").unwrap();
+    let entry = volume.create_directory(0, "Made By Us").unwrap();
     let file = volume
         .create_file(entry.first_cluster(), "payload.bin")
         .unwrap();
@@ -149,7 +149,7 @@ fn check(label: &str, format: &Format, image: Memory) {
         .unwrap()
         .write(&bytes)
         .unwrap();
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     let fs = lamfat::FileSystem::new(
         lamfat::StdIoWrapper::from(Cursor::new(image.bytes.clone())),
@@ -228,8 +228,8 @@ fn every_type_at_every_sector_size_formats_to_a_volume_the_oracles_accept() {
     ];
     for (label, size, sectors, kind, cluster) in cases {
         let (format, image) = formatted_by_this_crate(size, sectors, |o| {
-            let o = kind.map_or(o, |k| o.with_type(k));
-            let o = cluster.map_or(o, |c| o.with_cluster_sectors(c));
+            let o = kind.map_or(o, |k| o.with_file_allocation_table_type(k));
+            let o = cluster.map_or(o, |c| o.with_sectors_per_cluster(c));
             o.with_volume_id(0xC0FF_EE11)
                 .with_label("TEST VOLUME")
                 .unwrap()
@@ -244,19 +244,22 @@ fn every_type_at_every_sector_size_formats_to_a_volume_the_oracles_accept() {
 #[test]
 fn a_size_no_cluster_size_makes_legal_is_refused_with_the_reason() {
     // 100 sectors cannot hold the reserved sectors, a root, two tables and a cluster as FAT16.
-    let tiny =
-        FormatOptions::new(SectorSize::Bytes512, 40).with_type(FileAllocationTableType::Fat16);
-    assert_eq!(Format::new(tiny, &mut NoClock), Err(FormatError::TooSmall));
+    let tiny = FormatOptions::new(SectorSize::Bytes512, 40)
+        .with_file_allocation_table_type(FileAllocationTableType::Fat16);
+    assert_eq!(
+        FormatPlan::new(tiny, &mut NoClock),
+        Err(FormatError::TooSmall)
+    );
     // A 20 MiB volume cannot be FAT32: even single-sector clusters give 40,000 clusters.
     let small = FormatOptions::new(SectorSize::Bytes512, 40 * 1024)
-        .with_type(FileAllocationTableType::Fat32);
+        .with_file_allocation_table_type(FileAllocationTableType::Fat32);
     assert_eq!(
-        Format::new(small, &mut NoClock),
+        FormatPlan::new(small, &mut NoClock),
         Err(FormatError::NoSuchGeometry)
     );
-    let odd = FormatOptions::new(SectorSize::Bytes512, 64 * 1024).with_cluster_sectors(3);
+    let odd = FormatOptions::new(SectorSize::Bytes512, 64 * 1024).with_sectors_per_cluster(3);
     assert_eq!(
-        Format::new(odd, &mut NoClock),
+        FormatPlan::new(odd, &mut NoClock),
         Err(FormatError::ClusterSizeRefused)
     );
     for label in ["", "lower case", "TWELVE CHARS", "A*B"] {
@@ -308,10 +311,10 @@ fn volumes_mkfs_fat_made_take_this_crates_writer() {
         let _ = std::fs::remove_file(&path);
         // Their geometry is a valid one for the type; ours for the same size is another valid one.
         let boot = BootSector::parse(&bytes[..512]).unwrap();
-        let ours = Format::new(
+        let ours = FormatPlan::new(
             FormatOptions::new(SectorSize::Bytes512, (mebibytes << 11) as u32)
-                .with_type(boot.file_allocation_table_type())
-                .with_cluster_sectors(boot.sectors_per_cluster()),
+                .with_file_allocation_table_type(boot.file_allocation_table_type())
+                .with_sectors_per_cluster(boot.sectors_per_cluster()),
             &mut NoClock,
         )
         .unwrap();
@@ -331,7 +334,7 @@ fn volumes_mkfs_fat_made_take_this_crates_writer() {
             size: SectorSize::Bytes512,
         };
         let mut volume = WritableVolume::open(image, NoClock).unwrap();
-        let entry = volume.make_directory(0, "Written By Us").unwrap();
+        let entry = volume.create_directory(0, "Written By Us").unwrap();
         let file = volume
             .create_file(entry.first_cluster(), "a rather long file name.txt")
             .unwrap();
@@ -340,7 +343,7 @@ fn volumes_mkfs_fat_made_take_this_crates_writer() {
             .unwrap()
             .write(&[9u8; 50_000])
             .unwrap();
-        volume.sync().unwrap();
+        volume.mark_clean().unwrap();
         let image = volume.into_device();
         let fs = lamfat::FileSystem::new(
             lamfat::StdIoWrapper::from(Cursor::new(image.bytes.clone())),

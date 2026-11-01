@@ -14,7 +14,7 @@ use super::*;
 fn setting_attributes_changes_the_user_bits_and_nothing_else() {
     let stored: u8 = kani::any();
     let pick: u8 = kani::any();
-    let mut set = Attributes::NONE;
+    let mut set = Attributes::EMPTY;
     if pick & 1 != 0 {
         set = set.union(Attributes::READ_ONLY);
     }

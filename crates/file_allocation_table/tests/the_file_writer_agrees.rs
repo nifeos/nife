@@ -4,7 +4,7 @@
 //! in odd chunks across clusters, overwrites and appends, sets lengths both ways and deletes. After
 //! each stage rust-fatfs must list the same names and read the same bytes, count the same free
 //! clusters, and the host's `fsck -n` must accept the volume. The dirty bit is set while the crate
-//! changes the volume and clear after `sync`.
+//! changes the volume and clear after `mark_clean`.
 
 use std::io::{Cursor, Read};
 use std::path::Path;
@@ -211,7 +211,7 @@ fn create_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &mut Plan, f
             plan.label
         );
     }
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     if fat_type != FatType::Fat12 {
         assert_eq!(
             volume.is_clean().unwrap(),
@@ -228,9 +228,9 @@ fn change_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &mut Plan) {
     let entry = volume.lookup("FILE9.BIN").unwrap();
     {
         let mut writer = volume.open_file_writer(&entry).unwrap();
-        writer.seek(c as u32 - 3);
+        writer.set_position(c as u32 - 3);
         writer.write(b"SEAM-OVER-BOUNDARY").unwrap();
-        writer.seek(u32::MAX);
+        writer.set_position(u32::MAX);
         writer.write(b"appended").unwrap();
     }
     let nine = plan.bytes_of("FILE9.BIN");
@@ -245,7 +245,7 @@ fn change_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &mut Plan) {
         volume
             .open_file_writer(&entry)
             .unwrap()
-            .set_len(length as u32)
+            .set_length(length as u32)
             .unwrap();
         plan.bytes_of(name).resize(length, 0);
     }
@@ -253,14 +253,14 @@ fn change_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &mut Plan) {
     volume.remove_file(&entry).unwrap();
     plan.expected.retain(|(n, _)| n != "FILE7.BIN");
     assert!(volume.lookup("FILE7.BIN").is_err());
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
 }
 
 /// Read every file back through this crate's reader.
 fn read_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &Plan) {
     for (name, bytes) in &plan.expected {
         let entry = volume.lookup(name).unwrap();
-        let mut reader = volume.open_file(&entry).unwrap();
+        let mut reader = volume.open_file_reader(&entry).unwrap();
         let mut read = vec![0u8; bytes.len() + 1];
         assert_eq!(reader.read(&mut read).unwrap(), bytes.len(), "{name}");
         assert_eq!(&read[..bytes.len()], &bytes[..], "{name}");
@@ -290,7 +290,7 @@ fn the_writer_agrees(label: &str, mebibytes: usize, fat_type: FatType, sector: u
         let entry = volume.lookup(&name).unwrap();
         volume.remove_file(&entry).unwrap();
     }
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     plan.check(&volume.into_device(), "emptied");
 }
 
@@ -321,7 +321,7 @@ fn a_fat32_root_grows_past_one_cluster_and_a_fat16_root_refuses() {
     for i in 0..per_cluster + 3 {
         volume.create_file(0, &format!("N{i}.TXT")).unwrap();
     }
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(oracle_files(&image.bytes).len(), per_cluster + 3);
     check_with_fsck(&image.bytes, "root-grown");
@@ -344,7 +344,7 @@ fn names_and_stale_entries_are_refused() {
     for bad in ["", "a/b", "ends.", "has*star"] {
         assert_eq!(
             volume.create_file(0, bad),
-            Err(WriteError::InvalidName),
+            Err(WriteError::NameRefused),
             "{bad}"
         );
     }
@@ -372,12 +372,12 @@ fn a_full_volume_writes_what_fits_then_refuses_and_deleting_restores_the_space()
     let written = writer.write(&data).unwrap();
     assert_eq!(written, total * cluster);
     assert_eq!(writer.write(&data[written..]), Err(WriteError::VolumeFull));
-    assert_eq!(writer.write(b"x"), Err(WriteError::AfterAFailure));
+    assert_eq!(writer.write(b"x"), Err(WriteError::Failed));
     let entry = volume.lookup("BIG.BIN").unwrap();
     assert_eq!(entry.size_bytes() as usize, total * cluster);
     volume.remove_file(&entry).unwrap();
     assert_eq!(volume.count_free_clusters().unwrap() as usize, total);
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     check_with_fsck(&volume.into_device().bytes, "full");
 }
 
@@ -403,7 +403,7 @@ fn a_volume_found_dirty_stays_dirty_after_a_sync() {
         let mut volume = WritableVolume::open(image, NoClock).unwrap();
         assert_eq!(volume.is_clean().unwrap(), Some(false));
         volume.create_file(0, "A.TXT").unwrap();
-        volume.sync().unwrap();
+        volume.mark_clean().unwrap();
         assert_eq!(volume.is_clean().unwrap(), Some(false), "{fat_type:?}");
     }
 }
@@ -438,10 +438,14 @@ fn files_in_a_subdirectory_write_and_the_subdirectory_grows() {
         }
         // Entries found by path carry their directory: shrink one, delete another.
         let found = volume.lookup("Sub Directory/F3.DAT").unwrap();
-        volume.open_file_writer(&found).unwrap().set_len(4).unwrap();
+        volume
+            .open_file_writer(&found)
+            .unwrap()
+            .set_length(4)
+            .unwrap();
         let doomed = volume.lookup("Sub Directory/F4.DAT").unwrap();
         volume.remove_file(&doomed).unwrap();
-        volume.sync().unwrap();
+        volume.mark_clean().unwrap();
         let image = volume.into_device();
         let fs = lamfat::FileSystem::new(
             lamfat::StdIoWrapper::from(Cursor::new(image.bytes.clone())),
@@ -483,7 +487,7 @@ fn a_full_fixed_root_reads_back_every_entry() {
             .write(format!("{i}").as_bytes())
             .unwrap();
     }
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     let files = oracle_files(&image.bytes);
     assert_eq!(files.len(), 512);
@@ -530,7 +534,7 @@ fn a_directory_that_grows_into_a_multi_sector_cluster_zeroes_all_of_it() {
     for i in 0..slots + 40 {
         volume.create_file(0, &format!("G{i}.TXT")).unwrap();
     }
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(oracle_files(&image.bytes).len(), slots + 40);
     check_with_fsck(&image.bytes, "multi-sector-cluster");
@@ -563,7 +567,7 @@ fn a_fat32_file_beyond_cluster_65535_keeps_its_high_cluster_bits() {
         .write(b"late")
         .unwrap();
     assert!(volume.lookup("LATE.TXT").unwrap().first_cluster() > 65_535);
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     let files = oracle_files(&image.bytes);
     assert_eq!(

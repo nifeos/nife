@@ -8,7 +8,8 @@
 //! gives is the number every other tool gives; the data area is then rounded up to start on a
 //! cluster boundary.
 //!
-//! Name: provisional. The `mkfs` of the crate, beside `volume`, which keeps the EFI volume's shape.
+//! Name: ratified 2026-11-01 (UTC), the `mkfs` of the crate, beside `volume`, which keeps the EFI
+//! volume's shape.
 
 use crate::boot_sector::FileAllocationTableType;
 use crate::long_name::is_short_byte;
@@ -29,29 +30,31 @@ const ATTR_VOLUME_ID: u8 = 0x08;
 
 /// **Why a volume cannot be laid out.** Each is a refusal before any byte is written.
 ///
-/// Name: provisional. Beside `LayoutError`, which says the same of the one-file volume.
+/// Name: ratified 2026-11-01 (UTC), beside `LayoutError`, which says the same of the one-file
+/// volume.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FormatError {
     /// The device is too small for the reserved sectors, a table and one cluster.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     TooSmall,
     /// No cluster size gives the requested type a legal cluster count: the volume is too small or
     /// too large for it. A FAT32 volume needs 65,525 clusters and a FAT16 volume 4,085.
     ///
-    /// Name: provisional. The condition, in the specification's terms: the type follows the count.
+    /// Name: ratified 2026-11-01 (UTC), the condition, in the specification's terms: the type
+    /// follows the count.
     NoSuchGeometry,
     /// The label is longer than eleven bytes or holds a byte a short name refuses.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     LabelRefused,
     /// The clock reported a time FAT cannot store (see [`crate::Clock`]).
     ///
-    /// Name: provisional. As `WriteError::TimeOutOfRange`.
+    /// Name: ratified 2026-11-01 (UTC), as `WriteError::TimeOutOfRange`.
     TimeOutOfRange,
     /// The cluster size is not a power of two from 1 to 128 sectors.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     ClusterSizeRefused,
 }
 
@@ -61,7 +64,7 @@ pub enum FormatError {
 /// Without a type or a cluster size the smallest cluster that gives a legal count wins, and the
 /// type follows from the count, as the specification has it.
 ///
-/// Name: provisional. The `newfs_msdos` and `mkfs.fat` options this crate takes.
+/// Name: ratified 2026-11-01 (UTC), the `newfs_msdos` and `mkfs.fat` options this crate takes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FormatOptions {
     sector_size: SectorSize,
@@ -78,7 +81,7 @@ impl FormatOptions {
     /// Options for a device of `total_sectors` sectors of `sector_size`, with every choice left to
     /// the format: serial number 0, the label `NO NAME`, no hidden sectors.
     ///
-    /// Name: provisional. The two things every format needs.
+    /// Name: ratified 2026-11-01 (UTC), the two things every format needs.
     pub const fn new(sector_size: SectorSize, total_sectors: u32) -> FormatOptions {
         FormatOptions {
             sector_size,
@@ -94,25 +97,33 @@ impl FormatOptions {
 
     /// Require this type, or a refusal.
     ///
-    /// Name: provisional. A builder method, as the standard library's own.
+    /// Name: ratified 2026-11-01 (UTC), renamed from `with_type`: a `with_` builder method is the
+    /// ecosystem pattern for options. The standard library's `with_` prefix is for constructors
+    /// (`Vec::with_capacity`) and its builders use bare names; this crate follows the ecosystem
+    /// pattern and spells the type out.
     #[must_use]
-    pub const fn with_type(mut self, kind: FileAllocationTableType) -> FormatOptions {
+    pub const fn with_file_allocation_table_type(
+        mut self,
+        kind: FileAllocationTableType,
+    ) -> FormatOptions {
         self.file_allocation_table_type = Some(kind);
         self
     }
 
     /// Require this many sectors to the cluster: a power of two from 1 to 128.
     ///
-    /// Name: provisional. As `with_type`.
+    /// Name: ratified 2026-11-01 (UTC), renamed from `with_cluster_sectors`: as
+    /// `with_file_allocation_table_type`, and the specification's `BPB_SecPerClus` spelled out.
     #[must_use]
-    pub const fn with_cluster_sectors(mut self, sectors: u32) -> FormatOptions {
+    pub const fn with_sectors_per_cluster(mut self, sectors: u32) -> FormatOptions {
         self.cluster_sectors = Some(sectors);
         self
     }
 
     /// The serial number; a caller with an entropy capability draws it, and nothing here invents one.
     ///
-    /// Name: provisional. As `with_type`.
+    /// Name: ratified 2026-11-01 (UTC), as `with_file_allocation_table_type`: the ecosystem builder
+    /// pattern for options.
     #[must_use]
     pub const fn with_volume_id(mut self, volume_id: u32) -> FormatOptions {
         self.volume_id = volume_id;
@@ -121,7 +132,8 @@ impl FormatOptions {
 
     /// The sectors ahead of the volume on its disk, which only `BPB_HiddSec` records.
     ///
-    /// Name: provisional. As `with_type`.
+    /// Name: ratified 2026-11-01 (UTC), as `with_file_allocation_table_type`: the ecosystem builder
+    /// pattern for options.
     #[must_use]
     pub const fn with_hidden_sectors(mut self, hidden_sectors: u32) -> FormatOptions {
         self.hidden_sectors = hidden_sectors;
@@ -131,7 +143,8 @@ impl FormatOptions {
     /// The volume label: up to eleven upper-case letters, digits, spaces and the punctuation a
     /// short name admits. A label also becomes the volume-label entry of the root directory.
     ///
-    /// Name: provisional. As `with_type`.
+    /// Name: ratified 2026-11-01 (UTC), as `with_file_allocation_table_type`: the ecosystem builder
+    /// pattern.
     pub fn with_label(mut self, label: &str) -> Result<FormatOptions, FormatError> {
         self.label = label_bytes(label).ok_or(FormatError::LabelRefused)?;
         self.has_label = true;
@@ -335,24 +348,25 @@ pub(crate) fn put32(out: &mut [u8], at: usize, value: u32) {
 }
 
 /// **An empty volume, laid out but not written.** Every method is arithmetic; nothing here touches
-/// a device until [`Format::write_to`].
+/// a device until [`FormatPlan::write_to`].
 ///
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{Format, FormatOptions, SectorSize, NoClock, Volume};
+/// use file_allocation_table::{FormatPlan, FormatOptions, SectorSize, NoClock, Volume};
 ///
 /// // 8 MiB of 512-byte sectors: small enough to be FAT12.
-/// let format = Format::new(FormatOptions::new(SectorSize::Bytes512, 16 * 1024), &mut NoClock).unwrap();
+/// let format = FormatPlan::new(FormatOptions::new(SectorSize::Bytes512, 16 * 1024), &mut NoClock).unwrap();
 /// let mut boot = [0u8; 512];
 /// assert!(format.fill_sector(0, &mut boot));
 /// let parsed = file_allocation_table::BootSector::parse(&boot).unwrap();
 /// assert_eq!(parsed.file_allocation_table_type(), format.file_allocation_table_type());
 /// ```
 ///
-/// Name: provisional. The general format beside `VolumeLayout`, which lays out one shape.
+/// Name: ratified 2026-11-01 (UTC), renamed from `Format`: the plan of a volume's layout before any
+/// sector is written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Format {
+pub struct FormatPlan {
     geometry: Geometry,
     volume_id: u32,
     label: [u8; 11],
@@ -361,13 +375,13 @@ pub struct Format {
     stamp: Stamp,
 }
 
-impl Format {
+impl FormatPlan {
     /// **Lay out the volume `options` describe**, or say why none exists. The label entry, when
     /// there is one, carries the time `clock` reports now (read once); `NoClock` gives the zero
     /// timestamp and a byte-for-byte reproducible image.
     ///
-    /// Name: provisional. The constructor, as `VolumeLayout::new`.
-    pub fn new(options: FormatOptions, clock: &mut impl Clock) -> Result<Format, FormatError> {
+    /// Name: ratified 2026-11-01 (UTC), the constructor, as `VolumeLayout::new`.
+    pub fn new(options: FormatOptions, clock: &mut impl Clock) -> Result<FormatPlan, FormatError> {
         const KINDS: [FileAllocationTableType; 3] = [
             FileAllocationTableType::Fat12,
             FileAllocationTableType::Fat16,
@@ -408,7 +422,7 @@ impl Format {
         } else {
             FormatError::NoSuchGeometry
         })?;
-        Ok(Format {
+        Ok(FormatPlan {
             geometry,
             volume_id: options.volume_id,
             label: options.label,
@@ -420,36 +434,36 @@ impl Format {
 
     /// The type the volume is.
     ///
-    /// Name: provisional. As `BootSector::file_allocation_table_type`.
+    /// Name: ratified 2026-11-01 (UTC), as `BootSector::file_allocation_table_type`.
     pub const fn file_allocation_table_type(&self) -> FileAllocationTableType {
         self.geometry.kind
     }
 
     /// The data clusters the volume has.
     ///
-    /// Name: provisional. As `BootSector::clusters`.
+    /// Name: ratified 2026-11-01 (UTC), as `BootSector::clusters`.
     pub const fn clusters(&self) -> u32 {
         self.geometry.clusters
     }
 
     /// Sectors to the cluster.
     ///
-    /// Name: provisional. As `BootSector::sectors_per_cluster`.
+    /// Name: ratified 2026-11-01 (UTC), as `BootSector::sectors_per_cluster`.
     pub const fn sectors_per_cluster(&self) -> u32 {
         self.geometry.cluster_sectors
     }
 
     /// Sectors in one copy of the table.
     ///
-    /// Name: provisional. As `BootSector::table_sectors`.
+    /// Name: ratified 2026-11-01 (UTC), as `BootSector::table_sectors`.
     pub const fn table_sectors(&self) -> u32 {
         self.geometry.table_sectors
     }
 
-    /// How many leading sectors [`Format::fill_sector`] answers for: the reserved sectors, both
+    /// How many leading sectors [`FormatPlan::fill_sector`] answers for: the reserved sectors, both
     /// tables, the fixed root of FAT12 and FAT16, and FAT32's root cluster.
     ///
-    /// Name: provisional. As `VolumeLayout::metadata_sectors`.
+    /// Name: ratified 2026-11-01 (UTC), as `VolumeLayout::metadata_sectors`.
     pub const fn metadata_sectors(&self) -> u32 {
         let first = self.geometry.first_data_sector();
         match self.geometry.kind {
@@ -459,13 +473,13 @@ impl Format {
     }
 
     /// **Fill `out` with volume-relative sector `index`.** `false`, with `out` untouched, when
-    /// `index` is at or past [`Format::metadata_sectors`] or `out` is not one sector long.
+    /// `index` is at or past [`FormatPlan::metadata_sectors`] or `out` is not one sector long.
     ///
     /// Every sector this answers for is written whole, zeros included, so a volume laid over a
     /// disk that held something before inherits no stale table word or directory entry. The data
     /// clusters beyond are not touched.
     ///
-    /// Name: provisional. As `VolumeLayout::fill_sector`.
+    /// Name: ratified 2026-11-01 (UTC), as `VolumeLayout::fill_sector`.
     pub fn fill_sector(&self, index: u32, out: &mut [u8]) -> bool {
         let g = &self.geometry;
         if out.len() != g.sector_size.bytes() || index >= self.metadata_sectors() {
@@ -508,7 +522,7 @@ impl Format {
     /// **Write the whole format to `device`**, sector by sector, and return the device's first
     /// error. The device must have the sector size the options named.
     ///
-    /// Name: provisional. The verb of `Volume::sync`, for a whole volume.
+    /// Name: ratified 2026-11-01 (UTC), the verb of `Volume::mark_clean`, for a whole volume.
     pub fn write_to<D: WritableSectorDevice>(&self, device: &mut D) -> Result<(), D::Error> {
         let mut sector = [0u8; SectorSize::MAX];
         let size = self.geometry.sector_size.bytes();

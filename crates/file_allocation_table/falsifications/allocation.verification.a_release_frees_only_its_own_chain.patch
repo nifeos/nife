@@ -7,7 +7,7 @@ Expected to fail: the harness's `assert!(matches!(before[at], TableEntry::Next(_
 diff --git a/crates/file_allocation_table/src/allocation.rs b/crates/file_allocation_table/src/allocation.rs
 --- a/crates/file_allocation_table/src/allocation.rs
 +++ b/crates/file_allocation_table/src/allocation.rs
-@@ -95,12 +95,12 @@ pub(crate) fn free_chain<L: LinksMut>(
+@@ -95,12 +95,12 @@ pub(crate) fn deallocate_chain<L: LinksMut>(
      let mut freed = 0;
      loop {
          let entry = links.table_entry(cluster)?;
