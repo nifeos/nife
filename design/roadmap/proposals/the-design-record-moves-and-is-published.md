@@ -157,8 +157,7 @@ approval.
 Hosting, ruled 2026-11-01 (UTC): GitHub Pages, deployed from Actions in the `nifeos.org`
 repository, with nifeos.org as the custom domain. The domain dates from 2026-10-03, sits with its registrar's name servers, expires 2027-10-03 and has no web address set. Milestone 565 once denied any domain, and its text now carries the date. The domain is ours, so the host
 stays reversible: a later move changes DNS only. Page addresses derive from the record's kind and
-number alone, and nothing in an address names the host. The ruling creates nothing. Enabling Pages,
-setting the custom domain and changing DNS each wait for the architect's approval.
+number alone, and no address names the host. Enabling Pages, setting the custom domain and changing DNS each wait for the architect's approval.
 
 The host's known limits: no server-side redirects, which number-based addresses avoid needing; no
 built-in pull-request preview; and a soft bandwidth limit of 100 GB a month.
