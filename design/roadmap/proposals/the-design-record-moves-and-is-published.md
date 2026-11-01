@@ -149,10 +149,17 @@ with a preprocessor that generates the summary and links citations, measured in 
 anyone commits to it. Any of them is a new host-tool dependency, which needs the architect's
 approval.
 
-Hosting options, with no account created: GitHub Pages deployed from Actions in the record
-repository; Cloudflare Pages; Netlify; Read the Docs, which the PEPs use for previews; Codeberg
-Pages. The address choice is separate: the organization's `github.io` address or a domain, and
-milestone 565 says this project has no domain registered.
+Hosting, ruled 2026-11-01 (UTC): GitHub Pages, deployed from Actions in the `nifeos.org`
+repository, with nifeos.org as the custom domain. The domain was registered 2026-10-03 at its
+registrar, with name servers there, expires 2027-10-03 and has no web address set. Milestone 565
+once said no domain was registered, and that statement is corrected. The domain is ours, so the host
+stays reversible: a later move changes DNS only. Page addresses derive from the record's kind and
+number alone, and nothing in an address names the host. The ruling creates nothing. Enabling Pages,
+setting the custom domain and changing DNS each wait for the architect's approval.
+
+The host's known limits: no server-side redirects, which number-based addresses avoid needing; no
+built-in pull-request preview, though a workflow can attach the built site as an artifact; and a
+soft bandwidth limit of 100 GB a month.
 
 ## The checks, in a repository with no code to build
 
@@ -213,7 +220,11 @@ dependency approval.
    with the anchor, and leaves a pointer in the README.
 7. Turn on the new repository's CI: the record checks, limited to the record's directories, the site
    build and the link check.
-8. After the hosting ruling: deploy.
+8. Deploy from Actions to GitHub Pages. Three tasks belong to a person, because no lane holds the
+   registrar's credentials: setting the DNS records that point nifeos.org at Pages, setting
+   auto-renew on the registration or a longer term, and confirming the organization's settings
+   allow a custom domain on Pages. A lane prepares the workflow and the exact record values and
+   stops there.
 
 ## Prior art
 
@@ -239,6 +250,10 @@ feed gates, which the PEPs do not, so the checks move with the text.
   both.
 - That GitHub Pages redirects a project site from `github.io` to a custom domain once configured.
   Recalled.
+- Whether the registration renews automatically. The term is one year, and a lapse would break
+  every quoted link.
+- Whether the organization's settings allow a custom domain on Pages.
+- The traffic the class tutorial would draw, against the 100 GB soft limit.
 - That `git filter-repo` keeps the renames of files moved between `notes/` and `design/`. Not tried.
 - How many notes concern a single crate. Not measured; step 4 produces the number.
 - Where `script/claim` and the skills live once tooling leaves.
@@ -253,11 +268,9 @@ One decision each, recommendation first. Ask them one at a time.
    with the record to `nifeos.org`. Bare code paths mean the anchor commit, and new ones use
    `nifeos/<repo>:<path>` at basalt's pin. The site gives each number a stable address derived from
    the number alone. §201 section 4 is amended, and its revisit condition stays armed.
-3. Hosting and address. Publication cannot be undone once strangers quote a page, so the address
-   matters more than the host. Recommended: (a) GitHub Pages at the organization's `github.io`
-   address, with number-based paths so a later domain changes only the host. The architect named the
-   domain nifeos.org on 2026-11-01 (UTC); its registration and host are unverified. Options: (b) a
-   domain from day one, which needs a registration; (c) Cloudflare Pages, Netlify or Read the Docs.
+3. Ruled 2026-11-01 (UTC): GitHub Pages from Actions in `nifeos.org`, with the nifeos.org custom
+   domain. Addresses derive from kind and number alone. The Background states the limits, and
+   step 8 names the person-only tasks.
 4. Which records stay with code. Recommended: (a) the record takes roadmap, decisions, journeys,
    naming, tenets, cross-cutting notes, `briefs/` and the lane skills. Each code repository keeps
    its crate documentation, its `BUGS` sections, notes about it alone, its lint baselines and
@@ -268,4 +281,4 @@ One decision each, recommendation first. Ask them one at a time.
    publishes on the site. Its source could sit in the `nifeos.org` repository or in a repository of
    its own. Not asked yet; it needs background and a recommendation first.
 
-Blocked until questions 3 and 4 are answered: steps 6 to 8. Nothing in flight waits on this.
+Blocked until question 4 is answered: steps 6 to 8. Nothing in flight waits on this.
