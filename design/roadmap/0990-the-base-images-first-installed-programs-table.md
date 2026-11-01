@@ -200,8 +200,8 @@ the ruling changes where the records go and not how the composition checks them.
   turns that refusal into "asks for nothing". `cargo xtask base-image aarch64` on an x86_64 host
   therefore skips the approval check and writes no grant lines, where the same command on an
   aarch64 host refuses an image whose fixtures ask for the network. The composition cannot tell
-  "asks nothing" from "unreadable". Home: a proposed milestone, to make the composer read a
-  foreign-architecture note or refuse when it cannot.
+  "asks nothing" from "unreadable". Build image checks on a host of the image's architecture
+  until the composer reads a foreign note or refuses when it cannot.
 - **The volume is 16 MiB**, the size of the RedoxFS fixture the kernel tests mount. Nothing yet
   installs onto a composed image's volume, so nothing has measured what it needs.
 
