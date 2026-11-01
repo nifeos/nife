@@ -156,8 +156,7 @@ pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 8, naming the clock page and its
 /// propose call. The number is this interface's for good: no other interface takes it, and a format
-/// change is a new version, never a new number. Milestone 956 (the linked interfaces carry
-/// checkable versions) holds the table of numbers, and `script/lint` holds the tree to it. A
+/// change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
 /// program declares the pair of this id and [`VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
