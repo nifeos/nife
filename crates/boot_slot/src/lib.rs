@@ -497,14 +497,14 @@ pub mod medium {
 /// | offset | size | |
 /// |---|---|---|
 /// | 0 | 8 | [`SLOT_MAGIC`] |
-/// | 8 | 4 | [`MEMBERS_VERSION`], little-endian |
+/// | 8 | 4 | [`members::MEMBERS_VERSION`], little-endian |
 /// | 12 | 4 | reserved, zero |
 /// | 16 | 56 each | three entries: tag 8, offset 8, length 8, SHA-256 digest 32 |
 /// | 184 | 4 | CRC-32 of bytes 0 to 183, little-endian |
 /// | 188 | 3908 | zero, to the end of the [`SLOT_IMAGE_OFFSET`] block |
 ///
 /// Members start at multiples of [`SLOT_IMAGE_OFFSET`], in table order, without overlap, inside
-/// the partition. Every refusal is a [`Refusal`] with a fixed phrase for the chooser to print.
+/// the partition. Every refusal is a [`members::Refusal`] with a fixed phrase for the chooser to print.
 ///
 /// # BUGS
 ///
@@ -514,15 +514,15 @@ pub mod medium {
 ///   stricter reading, and allowing one later is compatible.
 /// - A member may not start inside the header block (offset below 4096). The ruling's "without
 ///   overlap" covers it; it is stated here because the header is the first thing in the table.
-/// - [`Refusal::MissingTag`] cannot occur for a three-entry table: with no unknown tag and no
+/// - [`members::Refusal::MissingTag`] cannot occur for a three-entry table: with no unknown tag and no
 ///   duplicate, all three tags are present. The check stays so that a fourth tag, added behind a
 ///   new version, cannot silently pass a table without it.
-/// - A fuzz target for [`parse`] is not added: `.github/ci-job-budgets` holds the fuzz job at
+/// - A fuzz target for [`members::parse`] is not added: `.github/ci-job-budgets` holds the fuzz job at
 ///   eighteen targets, and a nineteenth means splitting the job into shards. The byte-flip tests
 ///   in this crate cover every byte of the 188 and a sample of the padding on the host.
 ///
-/// Name: provisional. The module, [`parse`], [`ParsedHeader`], [`MemberHeader`], [`Member`],
-/// [`MemberTag`], [`Refusal`] and the tag spellings are all unratified.
+/// Name: provisional. The module, [`members::parse`], [`members::ParsedHeader`], [`members::MemberHeader`], [`members::Member`],
+/// [`members::MemberTag`], [`members::Refusal`] and the tag spellings are all unratified.
 pub mod members {
     use globally_unique_identifier_partition_table::crc;
 
