@@ -30,10 +30,9 @@ aarch64, 684,536 on riscv64 and 877,528 on x86_64 (about 230 KB each under `gzip
 
 - `kernel/build.rs` compiles two digests from `target/init-measure-<arch>.txt` into `TRUST_ROOT`:
   the progenitor's (`sealed_pair::BOOT_PROGRAMS`) and the archive's `program_measurements`
-  table's. That is 64 bytes of `.rodata`. The six test child builders that
-  `spawn_elf_child_builder` enters are measured through the table (`trust::require_program_in`),
-  and the system test `the_trust_root_names_only_the_progenitor_and_the_table` holds the root to
-  those two names.
+  table's. That is 64 bytes of `.rodata`. The kernel checks the six test child builders that
+  `spawn_elf_child_builder` enters against the table (`trust::require_program_in`). The system test
+  `the_trust_root_names_only_the_progenitor_and_the_table` holds the root to those two names.
 - A one-byte change to one digest changes one byte of the stripped kernel on all three
   architectures, and nothing else. So a base update changes at most 64 bytes of the kernel: the
   progenitor's digest and the table's.
@@ -51,12 +50,12 @@ part 4: the updater that writes the inactive slot. calef ruled on 2026-10-31 (UT
 takes option B, a version 2 slot of named members. While the kernel vouches for the base, basalt
 publishes an interim kernel package, rebuilt on every base change; this block deletes it.
 
-The wait on that measurement, ruled 2026-10-31 (UTC), was lifted on 2026-11-01 (UTC): the
-architect directed that the lanes for this block and 695 start before 976 part 4 shows what a
-kernel download costs per update. The measurement is still not taken. Part 1 does not depend on it;
-parts 2 to 4 do, in the sense that the measurement is what justifies them, so each stays reversible
-until it is in 976's block. A milestone names its consumer, and is not BUILT until a record cites
-its first use.
+A ruling of 2026-10-31 (UTC) held this block's code until 976 part 4 shows what a kernel download
+costs per update. On 2026-11-01 (UTC) the architect lifted that wait and directed that the lanes for
+this block and 695 start. Nobody has taken the measurement yet. Part 1 does not depend on it. Parts
+2 to 4 do, because the measurement is what justifies them, so each stays reversible until the figure
+is in 976's block. A milestone names its consumer, and is not BUILT until a record cites its first
+use.
 
 ## The plan in parts
 
@@ -68,11 +67,26 @@ its first use.
 | 4 | Basalt stops rebuilding the kernel package on a base change, and the interim kernel package's per-base rebuild goes. | no, once 2 and 3 land | a basalt pull request, bumped after the nife commit lands |
 
 Part 1's ruling (2026-11-01 UTC): the table measures the child builders, the production kernel
-carries no test-program digests, and tests have no second trust mechanism. On the same day the
-architect ruled that `nife.base` is the second digest the loader hands the kernel and names the
-table's digest, and that the composed image is the one image: the tree's own image goes away when
-695 and this block land, and the boot gates (`confirm-boot`, and the interim `update-boot`, which
-then folds into `confirm-boot`) run on the composed image. Part 4 needs no ruling of its own.
+carries no test-program digests, and tests have no second trust mechanism. Two more rulings of that
+day shape parts 2 and 3. `nife.base` is the second digest the loader hands the kernel, and it names
+the table's digest. And the composed image is the one image. The tree's own image goes away when 695
+and this block land. The boot gates then run on the composed image: `confirm-boot`, and the interim
+`update-boot`, which folds into `confirm-boot` at that point. Part 4 needs no ruling of its own.
+
+## Follow-on
+
+- **Done.** Part 1, by `milestone/697-part-1-the-kernel-keeps-only-the-progenitor`: the trust
+  root names the progenitor and the table, and the system test
+  `the_trust_root_names_only_the_progenitor_and_the_table` checks it on all three architectures.
+- **Outstanding.** Part 2, the kernel checks the digests 695 delivers in place of `TRUST_ROOT`.
+  It lands with 695's part 3, and question 1 of the proposal (the bytes of the handoff) is still
+  open; checked against the proposal file on 2026-11-01 (UTC).
+- **Outstanding.** Part 3, `sealed_pair` and `uefi_loader/build.rs` check the loader's copy of
+  the digests. Question 2 is decided (option A); the code waits on part 2's format.
+- **Outstanding.** Part 4, basalt stops rebuilding the kernel package on a base change, after parts
+  2 and 3 land.
+- **Outstanding.** 976 part 4's measured kernel download cost, which justifies parts 2 to 4; not in
+  976's block as of 2026-11-01 (UTC).
 
 ## Index row
 
