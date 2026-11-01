@@ -23,15 +23,17 @@ Reuse: `gh api` reads the advisory. No new transport.
 - The rule text in the developer-lane and maintainer skills:
   - No lane opens, copies, prints or moves anything under the fuzz host's held directory. The
     advisory is the only way a lane learns a finding.
-  - A fix lane for a held finding claims with `script/claim --no-claim`, keeps its commits local,
-    and pushes only when the fix is ready, then opens the pull request ready for review with
-    auto-merge armed. This departs from §90 (the claim is a draft pull request) for this kind of
-    lane only.
+  - A fix lane for a held finding claims with `script/claim --no-claim`, as §90 (the claim is a
+    draft pull request) allows for this kind of lane. It commits locally and often, pushes nothing
+    until the fix is ready, then opens the pull request ready for review with auto-merge armed and a
+    neutral title. Local commits survive a dead session in the worktree; the machine's loss before
+    the push loses them.
   - The fix pull request carries the fix and a regression test of the broken invariant that names no
     seed, input or replay line. Its title, body, commit messages and comments name no seed or input
     either. The seed joins the fixed-seed regression list in a second pull request opened after
     the advisory turns public.
-  - The maintainer raises at most one lane per open advisory.
+  - The maintainer raises at most one lane per open advisory and records on the advisory which lane
+    holds it.
 - A gate: `script/lint` fails a commit message or pull request body that carries a `replay:` line or
   a `NIFE_*_SEEDS=` assignment, the two forms a reproducer takes in this tree.
 

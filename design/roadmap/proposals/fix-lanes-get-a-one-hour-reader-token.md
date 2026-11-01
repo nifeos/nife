@@ -22,8 +22,8 @@ for the other App, and the two should share one signing routine.
 - A helper that runs as root on the machine that launches fix lanes. It reads the
   `nife-fuzz-reader` key from its root-only file and mints an installation token narrowed to
   nifeos/nife and Repository security advisories read.
-- A lane's launch asks the helper for one token and passes it to the advisory-reading script alone,
-  as `GH_TOKEN` in that one command. The token never enters the lane's general environment and never
+- A lane's launch asks the helper for one token. It passes the token to the advisory-reading script
+  alone, as `GH_TOKEN` in that one command. The token never enters the lane's general environment and never
   lands in a worktree, a log or a pull request.
 - The key never leaves the helper's memory. A lane cannot ask for the key, only for a token.
 - A token lives one hour. A lane that needs the advisory again asks again.

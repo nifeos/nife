@@ -85,6 +85,18 @@ lanes. It never sits on the fuzz host and never enters a lane's environment. A l
 installation token at launch; the milestone
 [fix lanes get a one-hour reader token](fix-lanes-get-a-one-hour-reader-token.md) builds that.
 
+## What is in force: how a fix lane claims
+
+Ruled 2026-11-01 (UTC), amending §90 (the claim is a draft pull request): a fix lane for a held
+finding claims with `script/claim --no-claim`. It works in a worktree, commits locally and often,
+and pushes nothing until the fix is ready. Its pull request then opens ready for review, with
+auto-merge armed, a neutral title and no reproducer. The advisory records who holds the work, and
+the host files one advisory per finding, so the advisory is the claim board for this kind of lane.
+
+Local commits survive a dead session in the worktree, so a lane resumes where it stopped. Nothing
+protects them against the loss of the machine or the worktree before the push, which is the cost of
+keeping the fix off GitHub until it is ready.
+
 ## What is in force: the host follows main
 
 Ruled 2026-11-01 (UTC): the fuzz host updates itself from main with no person pulling. Between
@@ -128,11 +140,6 @@ request.
   public. The ruling would allow the seed in the fix's own commit. That form puts the seed in the
   public diff and in public CI logs for the whole merge-queue window, so the stricter form comes
   first.
-- A fix lane claims without a draft. The ruling opens the fix pull request only when the fix is
-  ready, so the lane runs `script/claim --no-claim` and keeps its commits local until then. The
-  maintainer raises at most one lane per advisory, so two lanes cannot take the same one. This departs
-  from §90 (the claim is a draft pull request) for this one kind of lane; the integrator records the
-  amendment.
 - The rerun replays every open advisory. Once a day the host replays each open advisory's seed
   against the newest green main it runs, one seed per guest. No commit trailer links a fix to its
   advisory, so no agreement between two programs needs keeping in step.
