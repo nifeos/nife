@@ -977,6 +977,9 @@ crates/device_tree_blob/src/lib.rs::phandle_prop
 crates/device_tree_blob/src/lib.rs::reserved_memory_regions
 crates/device_tree_blob/src/lib.rs::reserved_regions
 crates/device_tree_blob/src/lib.rs::total_size
+crates/device_tree_patch/src/lib.rs::Error
+crates/device_tree_patch/src/lib.rs::output_len
+crates/device_tree_patch/src/lib.rs::reason
 crates/direct_memory_access_validator/src/lib.rs::AVAIL_OFF
 crates/direct_memory_access_validator/src/lib.rs::DESC_OFF
 crates/direct_memory_access_validator/src/lib.rs::Desc
@@ -5600,10 +5603,6 @@ uefi_loader/src/device_tree_from_acpi.rs::Ram
 uefi_loader/src/device_tree_from_acpi.rs::Uart
 uefi_loader/src/device_tree_from_acpi.rs::build
 uefi_loader/src/device_tree_from_acpi.rs::output_len
-uefi_loader/src/device_tree_patch.rs
-uefi_loader/src/device_tree_patch.rs::Error
-uefi_loader/src/device_tree_patch.rs::output_len
-uefi_loader/src/device_tree_patch.rs::reason
 uefi_loader/src/handoff.rs
 uefi_loader/src/handoff.rs::CMDLINE_LEN
 uefi_loader/src/handoff.rs::MAGIC

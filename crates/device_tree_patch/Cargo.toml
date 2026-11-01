@@ -1,0 +1,20 @@
+[package]
+name = "device_tree_patch"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# The device-tree rewriter a UEFI loader runs on the firmware's tree before it hands the tree to a
+# device-tree kernel: a copy with `/chosen/linux,initrd-{start,end}` set. Its own crate so the fuzz
+# workspace can link it without reaching into the loader, and declared an interface of the `boot`
+# package (packages/boot.package.toml). Pure, `no_std`, host-tested.
+
+[lints]
+workspace = true
+
+[dependencies]
+# **The reader the kernel decodes with**, used to read the rewritten tree back before reporting
+# success, so a tree this accepts is a tree the kernel finds its archive in. Ours, in this
+# workspace, no dependencies of its own; not a §46 (thin primitives or whole subsystems) decision.
+device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }

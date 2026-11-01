@@ -4,7 +4,7 @@
 //! which `kernel/src/arch/aarch64/boot.s` cites): entered at the image's first byte with **the MMU
 //! off**, `x0` = the device tree's physical address and `x1`..`x3` zero, at EL2 or EL1 (the kernel
 //! drops itself from EL2). UEFI hands over MMU and caches on, identity-mapped. So the loader copies
-//! the firmware's device tree adding `/chosen/linux,initrd-*` (`uefi_loader::device_tree_patch`);
+//! the firmware's device tree adding `/chosen/linux,initrd-*` (`device_tree_patch`);
 //! exits boot services; cleans and invalidates the data cache to the point of coherency over all
 //! the kernel reads with its caches off; and turns the MMU and data cache off at its exception
 //! level and branches (`leave_uefi.s`). See notes/x86-uefi-boot/loader-design.md.
@@ -25,7 +25,7 @@ use device_tree_blob::Region;
 use machine_discovery::acpi;
 use machine_discovery::gic::Gic;
 use r_efi::efi::{self, BootServices, Handle, SystemTable};
-use uefi_loader::{device_tree_from_acpi, device_tree_patch};
+use uefi_loader::device_tree_from_acpi;
 
 use crate::{
     MAP_SLACK_DESCRIPTORS, PAGE, Placed, allocate_below, boot_services, configuration_table,
