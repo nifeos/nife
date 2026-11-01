@@ -229,7 +229,7 @@ impl Iterator for MadtEntries<'_> {
             2 if len >= 10 => interrupt_source_override(e),
             5 if len >= 12 => MadtEntry::LocalApicAddressOverride(u64(e, 4)),
             // The three aarch64 kinds. Their lengths have grown across ACPI revisions (a GICC
-            // entry was 40 bytes in 5.0, 76 in 5.1, 80 in 6.0 and 82 in 6.3), so every field is
+            // entry was 40 bytes in 5.0, 76 in 5.1, 80 in 6.0 and 82 in 6.5), so every field is
             // taken behind a length check for the offset it sits at rather than behind one check
             // of the whole entry: a firmware writing an older, shorter revision still yields the
             // fields it does carry instead of falling off the list as `Other`.
@@ -562,7 +562,7 @@ mod tests {
 
     /// **QEMU's own `GICv2m` frame entry, byte for byte**, as `virt` writes it with
     /// `gic-version=3,msi=gicv2m`: the last 24 bytes of QEMU's checked-in
-    /// `tests/data/acpi/aarch64/virt/APIC.msi_gicv2m` (QEMU 3f0043f9, read 2026-10-19 UTC), which
+    /// `tests/data/acpi/aarch64/virt/APIC.msi_gicv2m` (added in QEMU 5f52ba1f341c, read 2026-10-19 UTC), which
     /// `hw/arm/virt-acpi-build.c` builds as frame 0 at `VIRT_GIC_V2M`, flag 1, 64 SPIs from 80.
     /// Written from the specification alone, the count and base fields are the easy pair to swap,
     /// and both are plausible INTIDs.

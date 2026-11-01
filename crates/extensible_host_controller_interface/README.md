@@ -47,7 +47,7 @@ The caller writes each placed TRB (and the link, when `link` is `Some`) to DMA m
 - No streams, isochronous or bulk transfers: the crate builds the TRBs a boot keyboard needs and
   nothing more.
 
-The reference is the xHCI 1.2 specification, chapters 4 and 6.
+The reference is the xHCI 1.2 specification, chapters 4 to 7.
 
 ## Minimum Rust version
 

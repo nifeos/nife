@@ -3,8 +3,8 @@
 //! [`read_mdic`] and [`write_mdic`] are the MDIO primitive the 82574L shares. Of the rest, only
 //! [`id_at`] applies to an 82574L, which has no pages and no semaphore. [`read()`] and [`write()`]
 //! are the paged access every PCH PHY register above page 0 needs, and each takes a [`Swflag`],
-//! which only [`Swflag::acquire`] makes. That type stands where FreeBSD writes "assumes the
-//! semaphore is already acquired" comments. The FreeBSD sources are `e1000_phy.c` (the MDIC and
+//! which only [`Swflag::acquire`] makes. That type stands where FreeBSD writes "Assumes
+//! semaphore already acquired" comments. The FreeBSD sources are `e1000_phy.c` (the MDIC and
 //! paged access) and `e1000_ich8lan.c` (the semaphore and the reset block).
 //!
 //! Two divergences are deliberate. There is no MDIC retry: FreeBSD retries only from Meteor Lake

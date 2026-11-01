@@ -5,8 +5,8 @@
 //! the controller, reads its MAC address and programs the ring bases; a network-stack half fills
 //! descriptors and moves the tails. A ring's base and tail share a page ([`registers`]), so the
 //! IOMMU is the whole DMA confinement; the process holds only [`RECEIVE_QUEUE_PAGE`] and
-//! [`TRANSMIT_QUEUE_PAGE`]. The register facts come from Linux's `regs.h` and `hw.h` for the 82574L
-//! and from FreeBSD's Intel shared code for the I219 ([`pch`]).
+//! [`TRANSMIT_QUEUE_PAGE`]. The register facts come from Linux's `regs.h`, `defines.h` and `hw.h`
+//! for the 82574L and from FreeBSD's Intel shared code for the I219 ([`pch`]).
 //!
 //! Name: ratified 2026-10-07 (calef, #1806), permanent on first publication: the family name QEMU's
 //! `-device e1000e` and Linux's driver directory use, kept across their interface
