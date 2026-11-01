@@ -40,28 +40,30 @@ use core::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 use libfuzzer_sys::fuzz_target;
 use package_index::version::{BadVersion, check, compare, newest};
 use package_index::{
-    AddressRefusal, Index, Location, PATH_MAXIMUM, REDIRECT_PATH_MAXIMUM, Repository, Root,
-    Source, Sources, accept, public_address,
+    AddressRefusal, Index, Location, PATH_MAXIMUM, REDIRECT_PATH_MAXIMUM, Repository, Root, Source,
+    Sources, accept, public_address,
 };
 
 /// The ranges `public_address` documents, written a second way: by the integer a range spans.
 fn public_by_range(ip: [u8; 4]) -> bool {
     let n = u32::from_be_bytes(ip);
     let refused = [
-        (0x0000_0000, 0x00ff_ffff),  // this host and the unspecified address
-        (0x0a00_0000, 0x0aff_ffff),  // 10/8
-        (0x6440_0000, 0x647f_ffff),  // 100.64/10, shared address space
-        (0x7f00_0000, 0x7fff_ffff),  // loopback
-        (0xa9fe_0000, 0xa9fe_ffff),  // 169.254/16, link-local
-        (0xac10_0000, 0xac1f_ffff),  // 172.16/12
-        (0xc0a8_0000, 0xc0a8_ffff),  // 192.168/16
-        (0xe000_0000, 0xffff_ffff),  // multicast and above
+        (0x0000_0000, 0x00ff_ffff), // this host and the unspecified address
+        (0x0a00_0000, 0x0aff_ffff), // 10/8
+        (0x6440_0000, 0x647f_ffff), // 100.64/10, shared address space
+        (0x7f00_0000, 0x7fff_ffff), // loopback
+        (0xa9fe_0000, 0xa9fe_ffff), // 169.254/16, link-local
+        (0xac10_0000, 0xac1f_ffff), // 172.16/12
+        (0xc0a8_0000, 0xc0a8_ffff), // 192.168/16
+        (0xe000_0000, 0xffff_ffff), // multicast and above
     ];
     !refused.iter().any(|&(low, high)| (low..=high).contains(&n))
 }
 
 fn addresses(tail: &[u8]) -> Vec<SocketAddr> {
-    tail.chunks_exact(5)
+    tail.as_chunks::<5>()
+        .0
+        .iter()
         .take(8)
         .map(|c| {
             let octets = [c[1], c[2], c[3], c[4]];
@@ -92,7 +94,10 @@ fn hold_location(location: &Location<'_>, redirect: bool, resolved: &[SocketAddr
         location.path.bytes().all(|b| b.is_ascii_graphic()) && !location.path.contains('#'),
         "a path with a space, a control byte or a fragment"
     );
-    assert!(!redirect || location.root.is_none(), "a redirect named a root");
+    assert!(
+        !redirect || location.root.is_none(),
+        "a redirect named a root"
+    );
     if let Ok(literal) = location.host.parse::<Ipv4Addr>() {
         assert!(
             public_address(literal.octets()),
@@ -106,7 +111,11 @@ fn hold_location(location: &Location<'_>, redirect: bool, resolved: &[SocketAddr
             .all(|a| matches!(a, SocketAddr::V4(v4) if public_address(v4.ip().octets())));
     match location.check(resolved) {
         Ok(checked) => {
-            assert!(expected_ok, "check admitted {resolved:?} for {}", location.host);
+            assert!(
+                expected_ok,
+                "check admitted {resolved:?} for {}",
+                location.host
+            );
             assert_eq!(checked.addresses(), resolved);
             assert_eq!(checked.host(), location.host);
             assert_eq!(checked.path(), location.path);
@@ -134,7 +143,11 @@ fn hold_location(location: &Location<'_>, redirect: bool, resolved: &[SocketAddr
 /// Property 3, for text `Index::parse` accepted.
 fn hold_index(text: &str, index: &Index<'_>, resolved: &[SocketAddr], spare: &[u8]) {
     let lines = text.split('\n').filter(|l| !l.is_empty()).count();
-    assert_eq!(index.entries().count(), lines, "an accepted line is not an entry");
+    assert_eq!(
+        index.entries().count(),
+        lines,
+        "an accepted line is not an entry"
+    );
 
     let basalt = Repository::new("basalt.nifeos.org", 443, "rolling").unwrap();
     let mirror = Repository::new("mirror.example", 8443, "rolling").unwrap();
@@ -146,7 +159,11 @@ fn hold_index(text: &str, index: &Index<'_>, resolved: &[SocketAddr], spare: &[u
             parts.next().unwrap(),
             parts.next().unwrap(),
         );
-        assert_eq!(check(version), Ok(()), "a stem with a version check refuses");
+        assert_eq!(
+            check(version),
+            Ok(()),
+            "a stem with a version check refuses"
+        );
 
         let listed: Vec<_> = entry.locations().collect();
         for location in &listed {
@@ -227,7 +244,11 @@ fn hold_versions(versions: &[&str]) {
             assert!(versions.contains(&best));
             let mut first_of_best = None;
             for &v in versions {
-                assert_ne!(compare(v, best), Ok(Ordering::Greater), "{v} beats the newest");
+                assert_ne!(
+                    compare(v, best),
+                    Ok(Ordering::Greater),
+                    "{v} beats the newest"
+                );
                 if compare(v, best) == Ok(Ordering::Equal) && first_of_best.is_none() {
                     first_of_best = Some(v);
                 }
@@ -258,16 +279,41 @@ fuzz_target!(|data: &[u8]| {
     let resolved = addresses(tail);
 
     // 2. The address list, on the tail's octets and on both sides of every range's edge.
-    for c in tail.chunks_exact(4).take(8) {
+    for c in tail.as_chunks::<4>().0.iter().take(8) {
         let ip = [c[0], c[1], c[2], c[3]];
         assert_eq!(public_address(ip), public_by_range(ip), "{ip:?}");
     }
     for edge in [
-        0x0000_0000u32, 0x00ff_ffff, 0x0100_0000, 0x09ff_ffff, 0x0a00_0000, 0x0aff_ffff,
-        0x0b00_0000, 0x643f_ffff, 0x6440_0000, 0x647f_ffff, 0x6480_0000, 0x7eff_ffff,
-        0x7f00_0000, 0x7fff_ffff, 0x8000_0000, 0xa9fd_ffff, 0xa9fe_0000, 0xa9fe_ffff,
-        0xa9ff_0000, 0xac0f_ffff, 0xac10_0000, 0xac1f_ffff, 0xac20_0000, 0xc0a7_ffff,
-        0xc0a8_0000, 0xc0a8_ffff, 0xc0a9_0000, 0xdfff_ffff, 0xe000_0000, 0xffff_ffff,
+        0x0000_0000u32,
+        0x00ff_ffff,
+        0x0100_0000,
+        0x09ff_ffff,
+        0x0a00_0000,
+        0x0aff_ffff,
+        0x0b00_0000,
+        0x643f_ffff,
+        0x6440_0000,
+        0x647f_ffff,
+        0x6480_0000,
+        0x7eff_ffff,
+        0x7f00_0000,
+        0x7fff_ffff,
+        0x8000_0000,
+        0xa9fd_ffff,
+        0xa9fe_0000,
+        0xa9fe_ffff,
+        0xa9ff_0000,
+        0xac0f_ffff,
+        0xac10_0000,
+        0xac1f_ffff,
+        0xac20_0000,
+        0xc0a7_ffff,
+        0xc0a8_0000,
+        0xc0a8_ffff,
+        0xc0a9_0000,
+        0xdfff_ffff,
+        0xe000_0000,
+        0xffff_ffff,
     ] {
         let ip = edge.to_be_bytes();
         assert_eq!(public_address(ip), public_by_range(ip), "{ip:?}");
@@ -298,7 +344,7 @@ fuzz_target!(|data: &[u8]| {
     let mut versions: Vec<&str> = Vec::new();
     for word in text.split(['\n', ' ']).filter(|w| !w.is_empty()).take(6) {
         versions.push(word);
-        if let Some(version) = word.rsplitn(3, '-').nth(1) {
+        if let Some(version) = word.rsplit('-').nth(1) {
             versions.push(version);
         }
     }
