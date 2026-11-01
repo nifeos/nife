@@ -56,20 +56,24 @@ rows say nothing about a hosted runner, which has its own figures in the proposa
 
 ## False reds when guests run side by side
 
-Each guest ran 60 seconds of seeds. A red here is a run that failed and whose seed passed alone.
-The first and third columns are a two-second deadline on the counter; the second and fourth are
-`testing::wait_on_every_core`, two seconds of ticks on every core (notes/kernel-test-harness.md).
-Every figure is from 2026-10-31 (UTC).
+Each guest ran 60 seconds of seeds, every guest the same seeds from 900,000,000. The first and
+third columns are a two-second deadline on the counter, measured 2026-10-31 (UTC); the second and
+fourth are `testing::wait_on_every_core`, two seconds of ticks on every core
+(notes/kernel-test-harness.md), measured 2026-10-31 at 4 guests and 2026-11-01 at 8 and 16.
 
 | guests | kernel-thread, counter | kernel-thread, every core | user-mode, counter | user-mode, every core |
 |---:|---|---|---|---|
 | 1 | 0 of 1 | not run | 0 of 1 | not run |
 | 2 | 0 of 2 | not run | 0 of 2 | not run |
 | 4 | 1 of 4 | 0 of 16 | 0 of 4 | 0 of 16 |
-| 8 | 4 of 8 | not run | 1 of 8 | not run |
-| 16 | 6 of 16 | not run | 6 of 16 | not run |
+| 8 | 4 of 8 | 1 of 136 | 1 of 8 | 0 of 16 |
+| 16 | 6 of 16 | 0 of 400 | 6 of 16 | 0 of 32 |
 
-The every-core column at 4 is four runs of four guests, two of them beside 40 busy loops at the
-same priority, which cut the rate by a third. At 4 guests the counter deadline rarely fails either,
-so that row does not tell the two apart. 8 and 16 guests would, and nobody has run them yet; until
-someone does, size a concurrent run at 4 guests or fewer.
+The every-core column at 4 includes two runs beside 40 busy loops at the same priority, which cut
+the rate by a third. At 8 and 16 the host was otherwise quiet. The kernel-thread runs at 8 and 16
+covered about 13.2 million seeds; the user-mode runs covered about 535,000.
+
+The one red at 8 is milestone 752's: an actor neither finished nor parked although both cores had
+taken their two seconds of ticks. Its `BUGS` has the rest. A concurrent run of either driver can
+therefore still go red, once in about 600 guest-minutes here, so size one at 16 guests or fewer
+and treat a red as a lead to replay, not yet as a verdict.
