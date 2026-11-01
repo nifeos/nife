@@ -11,8 +11,8 @@
 //! the progenitor's), and [`SystemManifest::check`] the refusal both run against the packages they
 //! hold: it names the package.
 //!
-//! This is not the program manifest of milestone 597 (a program carries its manifest in an ELF
-//! note), and it is not the kernel's `program_measurements` table, which is per program.
+//! This is neither the program manifest of milestone 597 (an ELF note) nor the kernel's per-program
+//! `program_measurements` table.
 //!
 //! # EXAMPLES
 //!
@@ -37,8 +37,7 @@
 //!   beside `version 1` and `<stem> sha256:<hex>`. The word is reserved, so no package stem is it.
 //!   The format version stays 1, since no manifest has shipped.
 //! - **A stem is held only to a character set and a length**, not to the `name-version-architecture`
-//!   shape `package_index` checks. The manifest is read beside the packages, so a stem that no
-//!   package carries is refused by [`SystemManifest::check`] and not by the parse.
+//!   shape `package_index` checks; a stem no package carries is refused by [`SystemManifest::check`].
 //!
 //! Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane, with every public item here.
 
