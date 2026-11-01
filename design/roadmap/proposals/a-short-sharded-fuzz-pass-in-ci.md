@@ -13,8 +13,8 @@ Raised by lane/a-short-sharded-fuzz-pass-in-ci on 2026-11-01 (UTC). The integrat
 at promotion.
 
 Reuse: the job calls the window logic of `helpers/continuous-fuzz.sh` (build the x86_64 archive and
-the system test image with a baked seed range, run one KVM guest through the PVH runner) and the KVM
-recipe `swish-check-x86_64` already uses on hosted runners. It writes no new harness.
+the system test image with a baked seed range, then run one KVM guest through the PVH runner). It
+also uses the KVM recipe `swish-check-x86_64` already uses on hosted runners. It writes no new harness.
 
 ## What is in force
 
@@ -46,8 +46,7 @@ breaks a driver invariant merges and waits for the host.
   the host's own range, so a CI shard never repeats a seed the host sweeps.
   `helpers/continuous-fuzz.sh --ci-range SHARD` prints the driver and first seed for the commit at
   HEAD.
-- Time bound: 60 seconds of guest time, a build bound of 10 minutes for each of two builds and a run
-  bound of 5 minutes, inside the 20-minute job budget (milestone 721 (each merge-group CI job has a
+- Time bound: 60 seconds of guest time. Two builds get 10 minutes each and the run gets 5, inside the 20-minute job budget (milestone 721 (each merge-group CI job has a
   20-minute budget)). The four shards run in parallel.
 - Failure: a `replay:` line, a panic, or a guest that outruns its run bound. A build failure or a
   missing KVM device fails with a different message and the exit code 3.
@@ -58,9 +57,9 @@ breaks a driver invariant merges and waits for the host.
   asserts that `ci.yml` has the job, that the job runs `--ci`, runs on `merge_group` and
   `workflow_dispatch` and never names `pull_request` or a self-hosted runner, and has no upload,
   `tee`, `cat` or step summary that could carry guest output. It then runs the shard against a
-  stand-in guest that prints a `replay:` line and a panic, and asserts exit 1, the count, the shard,
-  the commit and the replay line in the output, no guest text and no seed, and no private directory
-  left behind. It also asserts that a clean guest exits 0, a missing KVM device exits 3, and the
+  stand-in guest that prints a `replay:` line and a panic. The output must hold exit 1, the count,
+  the shard, the commit and the replay line, with no guest text and no seed, and no private
+  directory may remain. It also asserts that a clean guest exits 0, a missing KVM device exits 3, and the
   same commit and shard give the same seed range.
 
 ## What the fuzz host must do (a follow-on, not built here)
