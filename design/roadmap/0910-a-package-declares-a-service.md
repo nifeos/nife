@@ -126,18 +126,18 @@ progenitor client in any case, and `start` adds no new kind of authority. `resta
 verb: restart is the progenitor's teardown and respawn on a crash or an update. `enable` and
 `disable` are not verbs: boot persistence belongs to the installed-programs table under §208.
 
-Ruled 2026-11-01 (UTC): `service_control` is nife's own small program, not a port. It holds only
+The 2026-11-01 (UTC) ruling: `service_control` is nife's own small program, not a port. It holds only
 the progenitor's service-control endpoint. Its model is `s6-svc` (ISC) and runit's `sv`
 (BSD-3-Clause): a client that sends a request and reports the answer, with exit codes that say
 whether the service was already in the wanted state. Those clients talk to supervisors built on
-fork and SIGCHLD, which nife refuses (§264). The client part is a few verbs and one request. A port
+fork and SIGCHLD, which nife refuses (§264 (`fork` is declined for good, and spawn is the supported way to start a program)). The client part is a few verbs and one request. A port
 would wait on the C library's stage 3 and `posix_spawn`, and a new program holds less authority.
-Systemd's `systemctl` (LGPL) and monit (AGPL) were not candidates. This is read from memory of
-those projects and was not re-checked. No code is copied.
+Systemd's `systemctl` (LGPL) and monit (AGPL) did not qualify. This account comes from memory of
+those projects, and nobody re-checked it. The lane copies no code.
 
 The restart policy's spellings and limits are drafts for the lane to propose.
 
-BUGS. Whether `jig install --no-start` also clears the enabled flag for boot is not settled by this
+BUGS. Whether `jig install --no-start` also clears the enabled flag for boot stays open in this
 block. The lane that builds 910 asks before choosing: a service that is stopped now but enabled
 would start again at the next boot.
 
