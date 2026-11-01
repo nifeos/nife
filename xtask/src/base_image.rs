@@ -184,6 +184,27 @@ pub(crate) fn compose_release_x86_64() -> Option<PathBuf> {
     run(&arguments).then(|| workspace_root().join("target/base-image-x86_64"))
 }
 
+/// **Write the files that sit beside the archive**: the system manifest and the launch volume's
+/// first generation. False when either could not be written.
+fn write_companions(arch: &str, out: &Path, composed: &Composed) -> bool {
+    match write_system_manifest(out, composed) {
+        Ok(path) => println!("wrote {}", path.display()),
+        Err(complaint) => {
+            eprintln!("base-image ({arch}): {complaint}");
+            return false;
+        }
+    }
+    let Some(volume) = write_launch_volume(arch, out, &composed.first_generation) else {
+        return false;
+    };
+    println!(
+        "wrote {}: generation 1, {} bytes",
+        volume.display(),
+        composed.first_generation.len()
+    );
+    true
+}
+
 /// Compose, wrap and optionally boot what `arguments` asks for.
 fn run(arguments: &Arguments) -> bool {
     let Some(arch) = arguments.arch.as_deref() else {
@@ -258,21 +279,9 @@ fn run(arguments: &Arguments) -> bool {
     for (stem, digest) in &composed.packages {
         println!("  {stem} {digest}");
     }
-    match write_system_manifest(&out, &composed) {
-        Ok(path) => println!("wrote {}", path.display()),
-        Err(complaint) => {
-            eprintln!("base-image ({arch}): {complaint}");
-            return false;
-        }
-    }
-    let Some(volume) = write_launch_volume(arch, &out, &composed.first_generation) else {
+    if !write_companions(arch, &out, &composed) {
         return false;
-    };
-    println!(
-        "wrote {}: generation 1, {} bytes",
-        volume.display(),
-        composed.first_generation.len()
-    );
+    }
 
     // The kernel last: it reads the measurement manifest the archive build just wrote.
     let Some(kernel) = build_kernel(arch, &out) else {
@@ -775,6 +784,33 @@ fn test_approval_text<'a>(owners: impl Iterator<Item = &'a String>) -> String {
     text
 }
 
+/// The image's approval file read, with the path it came from; `None` when the image names none.
+fn parse_approval<'a>(
+    text: &'a Option<(PathBuf, String)>,
+) -> Result<Option<(&'a Path, approval_file::File)>, String> {
+    match text {
+        Some((path, text)) => Ok(Some((
+            path.as_path(),
+            approval_file::File::parse(text).map_err(|e| format!("{}: {e:?}", path.display()))?,
+        ))),
+        None => Ok(None),
+    }
+}
+
+/// How the approval answered the first generation: its name and the digest of its text.
+fn answered_by<'a>(
+    approval: &'a Option<(&Path, approval_file::File)>,
+    text: &Option<(PathBuf, String)>,
+) -> Option<installed_programs::Answered<'a>> {
+    match (approval, text) {
+        (Some((_, file)), Some((_, text))) => Some(installed_programs::Answered::Approval(
+            file.name(),
+            measured_boot::sha256(text.as_bytes()),
+        )),
+        _ => None,
+    }
+}
+
 /// **Compose the archive's entries from packages**: for every program the definition names, the
 /// member `bin/<program>` of the package that owns it, checked against the catalog.
 /// **Compose one architecture's archive from the packages the definition names.** Each program
@@ -801,13 +837,7 @@ fn compose(
     // taken from an archive, so a file that does not parse refuses the composition rather than
     // leaving the check half-done.
     let approval_text = image_approval_text(root, definition, &owners, test)?;
-    let approval = match &approval_text {
-        Some((path, text)) => Some((
-            path.as_path(),
-            approval_file::File::parse(text).map_err(|e| format!("{}: {e:?}", path.display()))?,
-        )),
-        None => None,
-    };
+    let approval = parse_approval(&approval_text)?;
 
     let mut blobs = Vec::new();
     // One per entry of `blobs`, in its order: the owning package and the member's digest and index,
@@ -880,14 +910,8 @@ fn compose(
         format!("the image carries no `{PROGENITOR}`, so there is nothing to enter")
     })?;
 
-    let answered = match (&approval, &approval_text) {
-        (Some((_, file)), Some((_, text))) => Some(installed_programs::Answered::Approval(
-            file.name(),
-            measured_boot::sha256(text.as_bytes()),
-        )),
-        _ => None,
-    };
-    let first_generation = first_generation_of(&blobs, &rows, answered)?;
+    let first_generation =
+        first_generation_of(&blobs, &rows, answered_by(&approval, &approval_text))?;
 
     let mut text = String::new();
     for stem in &order {
