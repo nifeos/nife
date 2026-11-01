@@ -98,9 +98,7 @@ and basalt's existing repository, source-archive and publish path.
    - **The base image names no approval file** until a base program carries a note that asks.
      The check reads manifest notes, and the base's programs take their grants from the
      progenitor's compiled table (see `BUGS`). Ruled 2026-11-01 (UTC) on #2981: the check and the
-     first table read the base programs' own notes, which a later milestone gives them (the
-     proposal
-     [the-base-programs-carry-their-manifests-in-notes](proposals/the-base-programs-carry-their-manifests-in-notes.md)).
+     first table read the base programs' own notes, which a later milestone gives them (milestone 992 (the base programs carry their manifests in notes)).
    - **The table waits on milestone 990** (the base image's first installed-programs table). The
      first table lives as files under `activation/` on the RedoxFS launch volume, with no
      separate seed image (ruled 2026-10-30 UTC on #2894). What the first generation holds, and what
@@ -168,8 +166,7 @@ than replaced.
   line passed, because the fixtures whose notes ask (`dialer`, `servant`, `seeker`) are
   `packaged_only` and no archive carries them. Ruled 2026-11-01 (UTC) on #2981: the base programs
   carry their real manifests in notes, the progenitor endows archive programs from the note, and
-  the compiled table retires a few programs at a time. Home: the proposal
-  [the-base-programs-carry-their-manifests-in-notes](proposals/the-base-programs-carry-their-manifests-in-notes.md),
+  the compiled table retires a few programs at a time. Home: milestone 992 (the base programs carry their manifests in notes),
   which follows milestone 697 (the trust root leaves the kernel binary) and holds the open
   question of what stops an ordinary package asking for a base-only authority.
 

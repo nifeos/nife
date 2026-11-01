@@ -120,7 +120,7 @@ milestone no longer waits on a filesystem server that does not exist.
 4. Milestone 909's item 3 closes on this: the composed image's first table holds the records its
    approval file allowed.
 5. Its grant rows read the base programs' own manifest notes (ruled 2026-11-01 UTC on #2981), so they
-   wait on the proposal the-base-programs-carry-their-manifests-in-notes, which follows milestone 697
+   wait on milestone 992 (the base programs carry their manifests in notes), which follows milestone 697
    (the trust root leaves the kernel binary).
 
 ## Done when
