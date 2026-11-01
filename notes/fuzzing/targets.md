@@ -88,7 +88,7 @@ or the scope's own note, or the verb records. It also holds the invariants the c
   `console_input`.
 - Zones are canonical and strictly ascending, and version 2 has at least one.
 - A refusal by `decode` is a refusal by `zones` and `service`.
-- A valid descriptor with a byte cut or added is refused.
+- The decoder refuses a valid descriptor with a byte cut or added.
 - Verbs ascend, and `grants_for` finds each.
 
 Mutation alone seldom keeps a zone walk valid, since one flipped length byte shifts every later
