@@ -143,7 +143,7 @@ harness.
   `crates-io` environment with calef as reviewer, the labels and the team. The manifest keeps
   `publish = false`; the caller sets `allow-unpublished` for the soak.
 - `crates/jh7110_entropy` no longer exists here. `kernel`, `components` and `machine_discovery`
-  depend on `nifeos/jh7110_entropy` by `rev` `1827d43` (§305), the first commit on its `main`. The
+  depend on `nifeos/jh7110_entropy` by `rev` `9b8769f` (§305), the commit of its tag `v0.1.0`. The
   verify table, the Kani reach list and the trust-boundary table no longer list it; the repository's
   own `proofs / kani` and `proofs / falsify` jobs prove the four harnesses.
 - End condition 1 holds once this pull request merges and the repository's `main` is green. The
@@ -246,7 +246,7 @@ names until the ratification pass, so this section keeps the links it carried.
   (UTC): `nifeos/jh7110_entropy` has no weekly run, no dry run, no recorded stranger run and no
   semver period yet, and `crates/jh7110_entropy` is gone from this tree.
 - **Recorded.** Ruled 2026-10-31 UTC: until `jh7110_entropy` reaches crates.io, nife depends on
-  `nifeos/jh7110_entropy` at one git commit (`rev = "1827d439237b1708a6236f68fc0b807388755949"`).
+  `nifeos/jh7110_entropy` at the commit of its tag `v0.1.0` (`rev = "9b8769fc79a4d3f934598dd48841b886baa7ccd5"`, with `version = "0.1.0"`).
   A crates.io version replaces the pin after the soak release dry run.
 - **Recorded.** An organization owner installs the `nife-smelter` app; see *BUGS* above.
 
