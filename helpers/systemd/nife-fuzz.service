@@ -1,0 +1,28 @@
+# The continuous fuzz run: both x86_64 in-guest drivers (milestones 752 and 779), four guests at a
+# time, from boot, restarted on failure. See notes/fuzzing/continuous-host.md for the install steps.
+#
+# Four guests is the size the false-red measurements support (notes/fuzzing/rates-on-x86-64-under-kvm.md);
+# raise NIFE_FUZZ_GUESTS only after a measurement at the new size comes back clean.
+[Unit]
+Description=nife continuous fuzzing (x86_64 in-guest drivers)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lane
+Group=lane
+SupplementaryGroups=kvm
+WorkingDirectory=/home/lane/nife
+Environment=NIFE_FUZZ_GUESTS=4
+Environment=NIFE_FUZZ_HOME=/home/lane/fuzz
+ExecStart=/home/lane/nife/helpers/continuous-fuzz.sh
+Restart=on-failure
+RestartSec=30
+# A stop kills the supervisor, which kills its workers; the workers' bounded QEMU runs end with them.
+KillMode=control-group
+TimeoutStopSec=60
+Nice=5
+
+[Install]
+WantedBy=multi-user.target
