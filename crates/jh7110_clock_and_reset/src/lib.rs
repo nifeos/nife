@@ -21,16 +21,21 @@
 //! [`PowerManagementChipBus::from_nodes`] and [`DevicePlan::from_specifiers`] turn a node's
 //! `clocks` and `resets` into steps, asking the caller to look each phandle up.
 //!
-//! [mainline-dts]: https://github.com/torvalds/linux/blob/master/arch/riscv/boot/dts/starfive/jh7110.dtsi
-//! [mainline-trng]: https://github.com/torvalds/linux/blob/master/drivers/char/hw_random/jh7110-trng.c
-//! [mainline-ids]: https://github.com/torvalds/linux/blob/master/include/dt-bindings/reset/starfive%2Cjh7110-crg.h
-//! [mainline-clock-ids]: https://github.com/torvalds/linux/blob/master/include/dt-bindings/clock/starfive%2Cjh7110-crg.h
-//! [mainline-clk]: https://github.com/torvalds/linux/blob/master/drivers/clk/starfive/clk-starfive-jh71x0.c
-//! [mainline-clk-header]: https://github.com/torvalds/linux/blob/master/drivers/clk/starfive/clk-starfive-jh71x0.h
-//! [mainline-rst]: https://github.com/torvalds/linux/blob/master/drivers/reset/starfive/reset-starfive-jh7110.c
-//! [mainline-rst-common]: https://github.com/torvalds/linux/blob/master/drivers/reset/starfive/reset-starfive-jh71x0.c
-//! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
-//! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/include/dt-bindings/clock/starfive-jh7110-clkgen.h
+//! Mainline links are pinned to `torvalds/linux` commit `cbbddb6b08cc`; vendor links to
+//! `starfive-tech/u-boot` tag `VF2_v2.10.4`, commit `1ae835c25e3d`. All were fetched 2026-11-01
+//! (UTC). The vendor branch `JH7110_VisionFive2_devel` was also read at commit `c4c67bb66ae6`, and
+//! where the two differ the item says so.
+//!
+//! [mainline-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110.dtsi
+//! [mainline-trng]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/char/hw_random/jh7110-trng.c
+//! [mainline-ids]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/include/dt-bindings/reset/starfive%2Cjh7110-crg.h
+//! [mainline-clock-ids]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/include/dt-bindings/clock/starfive%2Cjh7110-crg.h
+//! [mainline-clk]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/clk/starfive/clk-starfive-jh71x0.c
+//! [mainline-clk-header]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/clk/starfive/clk-starfive-jh71x0.h
+//! [mainline-rst]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/reset/starfive/reset-starfive-jh7110.c
+//! [mainline-rst-common]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/reset/starfive/reset-starfive-jh71x0.c
+//! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/jh7110.dtsi
+//! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/include/dt-bindings/clock/starfive-jh7110-clkgen.h
 //!
 //! Name: ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806).
 
@@ -267,7 +272,7 @@ pub struct ResetBit {
 /// as far as a device in this tree needs it. The arithmetic is general, so another domain is a
 /// table entry rather than a rewrite.
 ///
-/// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
+/// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/jh7110.dtsi
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -346,10 +351,12 @@ pub(crate) const SYSTEM_SIZE: u64 = 0x1_0000;
 /// both **143**: the vendor numbers the SYS group first, so no rebase is needed. Word `0x23c`.
 ///
 /// **This is I2C5's only gate.** Radon's U-Boot also names a `u5_dw_i2c_clk_core` (vendor id 298)
-/// and prints it at `Starting kernel`, but its own clock driver registers that as
-/// `starfive_clk_fix_factor(..., "u5_dw_i2c_clk_core", "u5_dw_i2c_clk_apb", 1, 1)`, a
-/// divide-by-one child of this gate with no register of its own, and mainline's `DesignWare` node
-/// names this clock alone. So there is no second gate to turn on, and 298 is not a word to write.
+/// and prints it at `Starting kernel`. At `VF2_v2.10.4` the clock driver
+/// (`drivers/clk/starfive/clk-jh7110.c`) registers it as a gate on `osc` at `SYS_OFFSET(298)`,
+/// byte `0x4a8`, past the last SYS word (id 190, `JH7110_CLK_SYS_REG_END`), so no register backs
+/// it. At the vendor branch head (`c4c67bb66ae6`) that driver registers no clock by this name.
+/// Mainline's `DesignWare` node names this clock alone. So there is no second gate to turn on, and
+/// 298 is not a word to write.
 pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 
 /// `JH7110_SYSRST_I2C5_APB` \[mainline-ids\], and `RSTN_U5_DW_I2C_APB` in the vendor header, both
@@ -378,7 +385,8 @@ pub(crate) const SYSCLK_SDIO0_AHB: u32 = 91;
 /// controller's bus clock. Word `0x170`.
 pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
 /// `JH7110_SYSCLK_SDIO0_SDCARD`, vendor `JH7110_SDIO0_CLK_SDCARD`, both **93**: the eMMC
-/// controller's card clock source, `ciu`, a gated divider both trees assign 50 MHz. Word `0x174`.
+/// controller's card clock source, `ciu`, a gated divider that mainline (`jh7110-common.dtsi`) and the vendor branch head
+/// (`starfive_visionfive2.dts`) assign 50 MHz; `VF2_v2.10.4` assigns none. Word `0x174`.
 pub(crate) const SYSCLK_SDIO0_SDCARD: u32 = 93;
 /// `JH7110_SYSCLK_SDIO1_SDCARD`, vendor `JH7110_SDIO1_CLK_SDCARD`, both **94**: the microSD
 /// controller's `ciu`. Word `0x178`.
