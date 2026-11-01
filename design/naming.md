@@ -20,7 +20,6 @@ a name is often the only thing that says what a program may do.
 - Nobody renames on their own initiative. A rename is a naming decision with extra steps.
 - A function name is more reversible than a crate's, so the "recommend on reversible forks" latitude
   applies more freely there.
-- A lane minting a provisional name need not read this; `script/lint` names a broken rule.
 
 ## A name is a claim
 
@@ -104,8 +103,7 @@ sentences here; fields; a trait method or a name another project owns (`eq`, `re
 | Any other directory | `hyphens` if it needs two words | a directory is a path element |
 
 The splits run across domains on a stable property, and there is no second tier within one. Short
-names for programs a person types were refused as a rule, because `wc` went from plumbing to a typed
-pipeline stage in a day. A short name is its author's choice.
+names for typed programs were refused as a rule ([crates.md](naming/crates.md)).
 
 Every name and every word is spelled American: `color`, `catalog` (calef, 2026-10-06 UTC).
 `helpers/house_style.py`, in `script/lint`, refuses new British forms.
