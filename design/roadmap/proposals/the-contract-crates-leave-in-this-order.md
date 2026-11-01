@@ -245,6 +245,13 @@ contract leaves. §201 already asks for a name ratified before anything moves.
 7. At equal effort the choice stands. The order follows the graph and the second direction, not
    effort. Within a layer, cheapest first is a choice about learning cost, and this sentence says so.
 
+## The review packet
+
+`script/crate-review-packet <crate>...` writes one packet per crate to
+`target/crate-review-packets/<crate>.md`, never committed: the facts a reading needs, and a checklist
+for the judgments. The API comes from rustdoc JSON, since `cargo public-api` is not installed. The
+name is a provisional maintainer decision.
+
 ## BUGS
 
 - Proposed milestone, provisional and unnumbered: the crate template, which holds every
@@ -255,12 +262,7 @@ contract leaves. §201 already asks for a name ratified before anything moves.
 - The leaf crate is a 23rd contract crate. Its repository waits for the architect's approval.
 - Proposed milestone, provisional and unnumbered: the QEMU runners start `redoxfs_server` from a
   pinned image, not a tree path. It blocks step 9, as does the open placement of `vendor/talc`.
-
-- Nothing prepares the architect's reading of a crate. A lane may assemble a review packet per
-  crate without reviewing for the architect: the path list, the public items, the tests, the
-  license notices, the dependency list and the `cargo-semver-checks --baseline-rev` output.
-  Proposed milestone, provisional: `script/crate-review-packet <crate>` prints it. Until then the
-  architect asks a lane for each packet by hand.
+- The packet omits the test list, the license notices and the `cargo-semver-checks` output.
 
 ## Index row
 
