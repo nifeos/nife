@@ -9,7 +9,8 @@ the bench step.
 
 ## How the block counts
 
-The block is an Arm SP805 with `StarFive`'s layout. Software loads a count of core-clock ticks and
+The block is SP805-like: its registers follow the layout of Arm's SP805 watchdog (Arm DDI 0270),
+which it resembles and is not shown to be. Software loads a count of core-clock ticks and
 the counter runs down. At zero it raises its interrupt and reloads. At zero again with the interrupt
 still raised, it asserts reset. Clearing the interrupt reloads the counter, and that is the pet.
 
@@ -44,6 +45,7 @@ All were read on 2026-10-20 (UTC).
 - No evidence of a watchdog reset survives it that this crate knows of. The x86_64 TCO has
   `SECOND_TO_STS`, but no JH7110 source read here names a reset-cause register. So a second boot
   cannot say the watchdog ended the first, only that it came back in the expected window.
-- The core clock's rate is the oscillator's, taken from the clock driver and not from the tree. A
+- The vendor node also states `clock-frequency = <2000000>`; nothing here reads it. The core
+  clock's rate is the oscillator's, taken from the clock driver and not from the tree. A
   gate's rate is its parent's, and the tree names only the gate. The kernel measures the counter
   against its own timer before it trusts this number (`rate_agrees`).

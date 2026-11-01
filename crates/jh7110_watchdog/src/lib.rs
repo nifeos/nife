@@ -4,8 +4,9 @@
 //! timing arithmetic, and the device-tree query that finds it and its clocks. The volatile shell is
 //! `kernel/src/drivers/jh7110_watchdog.rs`, which walks these sequences and does nothing else.
 //!
-//! The block is an Arm SP805 that counts down twice before it resets, so [`load_for`] halves the
-//! time asked for. Writes are refused until [`UNLOCK_KEY`] is in [`LOCK`], so each sequence
+//! The block is SP805-like: its registers follow the layout of Arm's SP805 watchdog (Arm DDI 0270),
+//! which it resembles and is not shown to be. It counts down twice before it resets, so
+//! [`load_for`] halves the time asked for. Writes are refused until [`UNLOCK_KEY`] is in [`LOCK`], so each sequence
 //! unlocks first and locks last. Sources: Linux's `drivers/watchdog/starfive-wdt.c` and
 //! `StarFive`'s U-Boot `jh7110.dtsi`, read 2026-10-20 (UTC). See notes/jh7110-watchdog.md, which
 //! lists every source and what it gave.
@@ -37,15 +38,23 @@ pub const CONTROL: usize = 0x008;
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 pub const INTERRUPT_CLEAR: usize = 0x00c;
-/// `WDOGIMS`: nonzero while the first expiry's interrupt is raised, so the next zero resets.
+/// `WDOGIMS`: nonzero while the first expiry's interrupt is raised, so the next zero resets. The
+/// name is `StarFive`'s vendor driver's (`JH7110_WDOGIMS`, `drivers/watchdog/starfive-wdt.c` in
+/// `starfive-tech/linux` at commit `54b09736222d`, branch `JH7110_VisionFive2_6.1.y_devel`, fetched
+/// 2026-11-01 UTC; its `JH7110_VisionFive2_devel` branch agrees); OpenBSD and
+/// FreeBSD define no register here. Arm's SP805 manual calls offset `0x014` `WDOGMIS`, and
+/// mainline Linux's `starfive-wdt.c` calls it `STARFIVE_WDT_JH7110_IMS`.
 ///
-/// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
-pub const INTERRUPT_STATUS: usize = 0x014;
+/// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog; renamed 2026-11-01
+/// (UTC) by `lane/citation-fixes-from-the-audit` from `INTERRUPT_STATUS`. Ruled 2026-11-01 (UTC):
+/// the register takes its name from the first source that confirms it.
+#[doc(alias = "interrupt status")]
+pub const WDOGIMS: usize = 0x014;
 /// `WDOGLOCK`: [`UNLOCK_KEY`] opens every other register to writes; anything else closes them.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 pub const LOCK: usize = 0xc00;
-/// The SP805's own unlock key.
+/// The unlock key of the SP805 layout (Arm DDI 0270), which this block shares.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 pub const UNLOCK_KEY: u32 = 0x1acc_e551;
