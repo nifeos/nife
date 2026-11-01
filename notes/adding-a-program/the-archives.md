@@ -43,8 +43,8 @@ not vouch for. The packer writes the measurement manifest before the kernel is b
 kernel refuses every boot program as `Unmeasured`.
 
 The packing itself, from those entries to the image bytes, is `crates/initial_ramdisk_writer`:
-`compose` appends the catalog, the sources and the table, refuses an archive without `jig` or
-`mdr` and any program outside the address-space map's image band, and returns the image. It is
+`compose` appends the catalog, the sources and the table, and returns the image. It refuses an
+archive without `jig` or `mdr`, and any program outside the address-space map's image band. It is
 `no_std` with `alloc` and does no file I/O. The host composer and the device updater (milestone 976
 (an OS update through a slot), part 4) write the same bytes from the same entries. `xtask/src/archive.rs` reads the programs
 in and writes the file and the measurement manifest out.
