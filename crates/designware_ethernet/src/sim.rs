@@ -191,10 +191,10 @@ impl PhysicalLayerDevice {
         extended.insert(motorcomm::EXT_CHIP_CONFIG, 0x2 << 4 | motorcomm::RXC_DLY_EN);
         extended.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::EN_SYNC_E);
         extended.insert(
-            motorcomm::EXTREG_SLEEP_CONTROL1_REG,
+            motorcomm::EXT_SLEEP_CTRL,
             motorcomm::ESC1R_SLEEP_SW | 1 << 14,
         );
-        extended.insert(motorcomm::CLOCK_GATING_REG, motorcomm::CGR_RX_CLK_EN);
+        extended.insert(motorcomm::EXT_CLK_GATE, motorcomm::CGR_RX_CLK_EN);
         extended.insert(motorcomm::EXT_PAD_DRIVE_STRENGTH, 0xffff);
         registers[management_data_input_output::BMCR as usize] =
             management_data_input_output::BMCR_ANENABLE;

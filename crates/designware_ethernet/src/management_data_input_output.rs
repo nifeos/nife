@@ -134,7 +134,7 @@ pub(crate) const GTSR_LP_1000TFDX: u16 = 0x0800;
 pub(crate) const GTSR_LP_1000THDX: u16 = 0x0400;
 /// **Autonegotiation complete** (`BMSR_ANEGCOMPLETE`, `mii.h`).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
 /// replacing `BMSR_ANEG_COMPLETE`.
 #[doc(alias = "autonegotiation complete")]
 pub const BMSR_ANEGCOMPLETE: u16 = 1 << 5;
@@ -155,7 +155,7 @@ pub enum Error {
     Timeout {
         /// The PHY (physical layer device) addressed, by its bus address.
         ///
-        /// Name: ratified 2026-10-26 (#2762), Decision 50: a `u8` PHY bus address is
+        /// Name: ratified 2026-10-26 (#2762 Decision 50): a `u8` PHY bus address is
         /// `physical_layer_device_address`, replacing `phy`.
         #[doc(alias = "phy")]
         physical_layer_device_address: u8,

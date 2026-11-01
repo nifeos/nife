@@ -45,7 +45,7 @@ pub const RDES3_OWN: u32 = 1 << 31;
 /// format: interrupt on completion. Interrupts are masked at the channel; set anyway so the channel
 /// status's receive bit reports completions, which the coherence probe reads.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
 /// replacing `RDES3_IOC`.
 #[doc(alias = "receive descriptor word 3, interrupt on completion")]
 pub const RDES3_IC: u32 = 1 << 30;

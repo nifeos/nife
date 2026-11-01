@@ -32,7 +32,7 @@ pub const MAC_CONF_DCRS: u32 = 1 << 9;
 /// receive path. The coherence probe uses it so the measurement does not depend on a cable or a
 /// link partner.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
 /// replacing `MAC_CONF_LM`.
 #[doc(alias = "loopback mode")]
 pub const CONFIG_LM: u32 = 1 << 12;
@@ -89,7 +89,7 @@ pub(crate) const INT_EN: u32 = 0x00b4;
 /// **Synopsys version register** (`GMAC_VERSION`, `dwqereg.h`); the low byte is the core version
 /// (`0x52` for 5.20).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
 /// replacing `MAC_VERSION`.
 #[doc(alias = "synopsys version register")]
 pub const VERSION: u32 = 0x0110;
@@ -280,14 +280,14 @@ pub(crate) const CHAN_RX_BASE_ADDR: u32 = 0x111c;
 /// **Transmit descriptor tail pointer** (`GMAC_CHAN_TX_END_ADDR(0)`, `dwqereg.h`): the address
 /// one past the last descriptor handed to the device.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
 /// replacing `CHAN_TX_TAIL`.
 #[doc(alias = "transmit descriptor tail pointer")]
 pub const CHAN_TX_END_ADDR: u32 = 0x1120;
 /// **Receive descriptor tail pointer** (`GMAC_CHAN_RX_END_ADDR(0)`, `dwqereg.h`), the same for
 /// the receive ring.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
 /// replacing `CHAN_RX_TAIL`.
 #[doc(alias = "receive descriptor tail pointer")]
 pub const CHAN_RX_END_ADDR: u32 = 0x1128;
