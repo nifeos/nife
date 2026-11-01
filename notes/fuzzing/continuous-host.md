@@ -70,12 +70,12 @@ pushes a branch rests on the script, which only calls `gh release create`.
 
 `.github/workflows/fuzz-heartbeat.yml` runs daily at 17:00 UTC on a GitHub-hosted runner and runs
 `helpers/fuzz-heartbeat.py`. It reads the releases of the last two UTC days and opens one issue
-labelled `fuzz-loop-broken` when no release exists, when the report shows no `ok` window, or when
+with the label `fuzz-loop-broken` when no release exists, when the report shows no `ok` window, or when
 `infrastructure` windows are half or more of all windows. The issue names the check and the day, and
 no second one opens while one is open. It repairs nothing. A lane fixes anything in the tree; a repair
 of the host is a written spec the architect hands to the homelab agent. While no `fuzz-*` release has
 ever existed the workflow passes quietly, and it switches on by itself at the first release. The
-bound, the label and the two-day window are decided by the maintainer, provisional; reversing costs
+maintainer decides the bound, the label and the two-day window, provisionally; reversing costs
 one pull request. See [the proposal](../../design/roadmap/proposals/the-fuzz-loop-dead-mans-switch.md).
 
 ## Install, for a person with root
