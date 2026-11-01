@@ -145,7 +145,7 @@ it. Under QEMU, `script/test` passes the same two words through `-append`.
 
 ## Question 2: where the loader's own copy comes from
 
-Asked once question 1 has its answer.
+Decided 2026-11-01 (UTC): option A. Options B, C and D are not taken.
 
 ### Background
 
@@ -163,7 +163,7 @@ the slot checksum.
 
 ### The question
 
-**Recommendation: A.** The composer records the two digests where it writes the archive, and every
+**Decided: A** (2026-11-01 UTC). The composer records the two digests where it writes the archive, and every
 loader copies them without computing them. In a version 2 slot they are two fixed header fields,
 written by the updater from the system manifest and covered by the header's CRC. In a boot file
 that embeds its archive, the build embeds them beside it, as `uefi_loader/build.rs` embeds the
@@ -172,7 +172,7 @@ the card writer puts them in the boot script's `bootargs`.
 
 | option | where the digests live | what it costs |
 |---|---|---|
-| A. Recorded by the composer, copied by the loader (recommended) | slot header v2 fields; beside the embedded archive; the QEMU command; the boot script | Four writers, each beside code that already writes the archive. The v2 header grows by 64 bytes inside its existing reserve. |
+| A. Recorded by the composer, copied by the loader (decided) | slot header v2 fields; beside the embedded archive; the QEMU command; the boot script | Four writers, each beside code that already writes the archive. The v2 header grows by 64 bytes inside its existing reserve. |
 | B. Read from the system manifest member | the loader hashes the slot's system manifest and reads the progenitor's digest out of it | No new header fields, but the chooser parses the manifest's format, which is still unnamed (976's next question), and gains a SHA-256 over it. |
 | C. Measured by the loader at boot | the loader hashes the archive's two entries | Catches nothing a swap would not also change. Refused: it makes the check vacuous. |
 | D. Compiled into the chooser | the chooser binary | The chooser on the EFI system partition serves both slots, so it cannot hold per-slot digests. It moves the coupling one stage earlier. |
@@ -181,10 +181,6 @@ Why A. The digest sits beside the bytes it describes, written by the code that w
 so no stage computes a reference from the thing it checks. Would I still choose A if B cost the
 same? Yes: B puts a manifest parser into the chooser, the component that must never brick a
 machine.
-
-If the answer is B, the chooser waits on the system manifest's format, and question 1's words carry
-the manifest's digest computed by the chooser. If the answer is that the slot header should carry
-more than two digests, the v2 header question in 976 widens to match.
 
 ### How others solved it
 
