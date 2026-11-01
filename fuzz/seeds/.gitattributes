@@ -1,0 +1,2 @@
+# Seeds are raw bytes, some not UTF-8: keep them out of text diffs, which lint decodes as UTF-8.
+video_terminal_feed/* binary
