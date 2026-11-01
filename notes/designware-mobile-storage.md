@@ -35,7 +35,7 @@ node-by-node evidence.
 Reuse: adapted from OpenBSD's `sys/dev/fdt/dwmmc.c` (revision 1.33, 2026-03-11, ISC), which matches
 both compatibles above and so already drives this part on this board. Its register map, reset, clock
 and bus-width sequences, command flags and polled FIFO transfer are the crate's `registers`,
-`command` and `host` modules; the identification order follows its `sdmmc_mem.c`. The ISC notice is
+`command` and `host` modules; the identification order is adapted from its `sdmmc_mem.c`. Both ISC notices are
 in the crate root.
 
 The crates.io candidate, `starfive-jh7110-dwmmc` 0.1.8 (Apache-2.0, from `rcore-os/tgoskits`), was
