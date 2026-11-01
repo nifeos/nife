@@ -672,23 +672,43 @@ fn stage_words(board: &'static serial_console::board::Profile) -> String {
 // ===========================================================================================
 
 /// The script the board runs, verbatim: the manual sequence of notes/visionfive2.md, every line
-/// proven on silicon, with two edits that each remove a dependency. The load device comes from the
-/// variables `boot_a_script` sets before sourcing it (`devtype`, `devnum`, `distro_bootpart`), and
-/// the archive's length is stashed under our own name as soon as `load` reports it, so a later
-/// command that sets `filesize` cannot change what `booti` is told.
+/// proven on silicon, with three edits. The load device comes from the variables `boot_a_script`
+/// sets before sourcing it (`devtype`, `devnum`, `distro_bootpart`), and the archive's length is
+/// stashed under our own name as soon as `load` reports it, so a later command that sets `filesize`
+/// cannot change what `booti` is told. And `bootargs` carries `words`, the loader's two digests for
+/// the card's archive (`measured_boot::loader_digests`, milestone 695), which `booti` writes into
+/// `/chosen/bootargs` for the kernel.
 ///
 /// The device tree's `0x8600_0000` and the archive's `0x9000_0000` are choices; the note has the
 /// arithmetic. No `#` comment lines: U-Boot's parser is a cut-down hush, so the script uses only
 /// verbs the bench transcript shows working.
-const BOARD_BOOT_SCRIPT: &str = "\
+fn board_boot_script(words: &str) -> String {
+    format!(
+        "\
 echo nife: boot.scr is driving this boot, milestone 218
-load ${devtype} ${devnum}:${distro_bootpart} ${kernel_addr_r} /nife-vf2.img
-load ${devtype} ${devnum}:${distro_bootpart} 0x90000000 /nife-initial-ramdisk.img
-setenv nife_archive_size ${filesize}
-fdt addr ${fdtcontroladdr}
-fdt move ${fdtcontroladdr} 0x86000000
-booti ${kernel_addr_r} 0x90000000:${nife_archive_size} 0x86000000
-";
+load ${{devtype}} ${{devnum}}:${{distro_bootpart}} ${{kernel_addr_r}} /nife-vf2.img
+load ${{devtype}} ${{devnum}}:${{distro_bootpart}} 0x90000000 /nife-initial-ramdisk.img
+setenv nife_archive_size ${{filesize}}
+setenv bootargs {words}
+fdt addr ${{fdtcontroladdr}}
+fdt move ${{fdtcontroladdr}} 0x86000000
+booti ${{kernel_addr_r}} 0x90000000:${{nife_archive_size}} 0x86000000
+"
+    )
+}
+
+/// The card's archive's two digest words, which `script/board-image` copies beside it. Read here
+/// rather than computed, as every loader copies them (the handoff proposal's question 2, decided
+/// 2026-11-01 UTC), and parsed with the kernel's parser so a script never carries words the kernel
+/// would refuse.
+fn board_loader_digests() -> Result<String, String> {
+    let path = crate::measure::loader_digests_path("target/board/nife-initial-ramdisk.img");
+    let words = std::fs::read_to_string(&path)
+        .map_err(|e| format!("cannot read {path}: {e}; script/board-image copies it there"))?;
+    measured_boot::loader_digests::parse(&words)
+        .map_err(|why| format!("{path} is not the kernel's two words: {why:?}"))?;
+    Ok(words.trim().to_string())
+}
 
 /// The name in the image header. `iminfo` prints it and nothing else reads it.
 const BOARD_BOOT_SCRIPT_NAME: &str = "nife board boot";
@@ -778,16 +798,16 @@ fn parse_ip_addr_addresses(text: &str) -> Vec<(String, std::net::Ipv4Addr)> {
 }
 
 /// **The network-first script, with the card underneath it** (milestone 257 (boot radon over the
-/// network)). The two `load` lines of [`BOARD_BOOT_SCRIPT`] become `dhcp` plus two `tftpboot`
-/// lines, with the card's copy as the fallback; `fdt addr`, `fdt move` and `booti` are byte for
-/// byte milestone 218's.
+/// network)). The two `load` lines of [`board_boot_script`] become `dhcp` plus two `tftpboot`
+/// lines, with the card's copy as the fallback; `setenv bootargs`, `fdt addr`, `fdt move` and
+/// `booti` are byte for byte the card script's.
 ///
 /// The kernel and archive are one measured pair, so a transfer that loses either takes both from
 /// the card. `autoload no` stops bare `dhcp` from fetching the bootfile DHCP names, and `netretry
 /// no` makes a missing network fail in seconds rather than hang. The shape is deliberately dull
 /// (one state variable, `if cmd; then` and `fi`, nesting at most two, no `else`) because U-Boot's
 /// hush has not been watched running it. See notes/visionfive2/network-boot.md.
-fn board_network_boot_script(server: &str) -> String {
+fn board_network_boot_script(server: &str, words: &str) -> String {
     let archive = BOARD_ARCHIVE_ADDR;
     format!(
         "\
@@ -836,6 +856,7 @@ fi
 fi
 echo nife: payload came from ${{nife_source}}
 if test x${{nife_source}} != xnone; then
+setenv bootargs {words}
 fdt addr ${{fdtcontroladdr}}
 fdt move ${{fdtcontroladdr}} 0x86000000
 booti ${{kernel_addr_r}} {archive}:${{nife_archive_size}} 0x86000000
@@ -958,6 +979,13 @@ pub(crate) fn board_script() -> bool {
     // nothing announces. Either the operator names it, or this machine reads it off its own
     // interfaces here and now, or the script is not written at all. There is no built-in default,
     // on purpose; see `host_private_addresses`.
+    let words = match board_loader_digests() {
+        Ok(words) => words,
+        Err(complaint) => {
+            eprintln!("board-script: {complaint}");
+            return false;
+        }
+    };
     let script = if tftp {
         let address = match server {
             Some(given) => {
@@ -982,9 +1010,9 @@ pub(crate) fn board_script() -> bool {
                 first.to_string()
             }
         };
-        board_network_boot_script(&address)
+        board_network_boot_script(&address, &words)
     } else {
-        BOARD_BOOT_SCRIPT.to_string()
+        board_boot_script(&words)
     };
     let script = script.as_str();
 
@@ -1016,6 +1044,31 @@ pub(crate) fn board_script() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Two digest words of the shape `measured_boot::loader_digests::encode` writes.
+    const WORDS: &str = "nife.progenitor=sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad \
+                         nife.base=sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
+    /// **Both scripts hand the kernel the card's two digests before `booti`**, as one `setenv
+    /// bootargs` whose value the kernel's own parser reads back.
+    #[test]
+    fn both_scripts_set_the_loader_digests_before_booting() {
+        for script in [
+            board_boot_script(WORDS),
+            board_network_boot_script("10.1.2.3", WORDS),
+        ] {
+            let line = script
+                .lines()
+                .find(|l| l.starts_with("setenv bootargs "))
+                .expect("the script sets bootargs");
+            let value = &line["setenv bootargs ".len()..];
+            assert!(
+                measured_boot::loader_digests::parse(value).is_ok(),
+                "{value}"
+            );
+            assert!(script.find(line).unwrap() < script.find("booti").unwrap());
+        }
+    }
 
     /// **The card's boot script is a legacy U-Boot image or it is nothing**, and this reads the
     /// bytes back the way `source` does rather than trusting the writer that just produced them:
@@ -1073,7 +1126,8 @@ mod tests {
     /// also pins the two addresses whose arithmetic notes/visionfive2.md carries.
     #[test]
     fn the_board_script_stays_inside_the_proven_vocabulary() {
-        let script = BOARD_BOOT_SCRIPT;
+        let script = board_boot_script(WORDS);
+        let script = script.as_str();
         assert!(script.ends_with('\n'), "every line is terminated");
         assert!(
             !script.contains('#'),
@@ -1155,7 +1209,7 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
     /// card script's test is.
     #[test]
     fn the_network_script_stays_inside_a_deliberately_dull_shape() {
-        let script = board_network_boot_script("10.1.2.3");
+        let script = board_network_boot_script("10.1.2.3", WORDS);
         assert!(script.ends_with('\n'), "every line is terminated");
         assert!(!script.contains('#'), "no comments");
         for forbidden in ['(', ')', '`', '\'', '&', '|', '<', '>'] {
@@ -1218,9 +1272,10 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
         assert!(script.contains("echo nife: tftp server is ${nife_boot_server}"));
         // And the card script is untouched by any of this: the default is still the default, and
         // it still has no network verb in it at all.
-        assert!(!BOARD_BOOT_SCRIPT.contains("tftpboot"));
-        assert!(!BOARD_BOOT_SCRIPT.contains("dhcp"));
-        assert!(!BOARD_BOOT_SCRIPT.contains("if "));
+        let card = board_boot_script(WORDS);
+        assert!(!card.contains("tftpboot"));
+        assert!(!card.contains("dhcp"));
+        assert!(!card.contains("if "));
     }
 
     /// **The fallback, actually taken**: the generated script under `/bin/sh`, with the six U-Boot
@@ -1272,7 +1327,7 @@ booti() {{ echo CALL booti $*; }}
 
     #[test]
     fn the_network_script_falls_back_to_the_card_when_the_network_is_not_there() {
-        let script = board_network_boot_script("10.1.2.3");
+        let script = board_network_boot_script("10.1.2.3", WORDS);
 
         // Everything works: two TFTP transfers, no card read at all, and the archive length is the
         // one TFTP reported.
