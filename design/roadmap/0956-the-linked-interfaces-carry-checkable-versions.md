@@ -101,7 +101,7 @@ two tables carry each one's reason in a line.
   file), `filesystem_fixture`, `grant_plan`, `program_argument_contract`, `socket_contract`,
   `user_mode_runtime`.
 - Not a format (`NOT_A_FORMAT`): `calendar`, `domain_name_system`, `glob`,
-  `globally_unique_identifier_partition_table`. `glob`'s interface id, 3, is retired.
+  `globally_unique_identifier_partition_table`. No crate may take `glob`'s old interface id, 3.
 
 Close calls, each placed on the stricter side where unsure: `grant_plan` counts for its slot
 numbers, `user_mode_runtime` for its entry registers and link layout, `filesystem_fixture` for the
