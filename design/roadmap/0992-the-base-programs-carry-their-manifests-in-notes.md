@@ -1,13 +1,14 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
 raised: 2026-11-01
+promoted_from: the-base-programs-carry-their-manifests-in-notes
 milestone_dependencies: 697, 976, 909
 decision_dependencies: 208, 235
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The base programs carry their manifests in notes, and the progenitor endows them from the note
+# 992. The base programs carry their manifests in notes, and the progenitor endows them from the note
 
 Raised 2026-11-01 (UTC) by lane `milestone/909-item-3-composition-checks-the-approval`, from the
 ruling on #2981. Every name below is provisional.
