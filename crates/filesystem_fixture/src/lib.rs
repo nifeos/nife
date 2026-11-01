@@ -6,6 +6,13 @@
 //! protocol: test data and test hooks only, and nothing that boots depends on it. Its one
 //! dependency is `filesystem_contract`.
 //!
+//! # BUGS
+//!
+//! - The dependency on `filesystem_contract` is a path today, so this crate stands alone only once
+//!   that crate has left and this one pins it by revision. The two leave together.
+//! - Much of the crate describes nife's own QEMU test runs (the witnesses, the benchmark phases), not
+//!   a filesystem in general. A third party gets the file names and the shapes as examples.
+//!
 //! Name: provisional (proposed by block 886, its crate-root name lifted; considered and refused
 //! `filesystem_test_image`, which names the shipped files but not the verdict words or the
 //! benchmark shapes). Calef names crates.

@@ -8,6 +8,11 @@
 //! written, so a clock step cannot perturb `Instant`. Every time is nanoseconds since the Unix
 //! epoch in a `u64`, which runs out in 2554.
 //!
+//! # BUGS
+//!
+//! - `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_ns`, kept for
+//!   nife's standard-library overlay, which reads them by those names. Use the newer spellings.
+//!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `clock`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
 
