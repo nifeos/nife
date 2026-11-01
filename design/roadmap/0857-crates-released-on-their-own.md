@@ -150,6 +150,9 @@ reversible order, and each contribution waits on the ruling above.
 6. `non_volatile_memory_express`, `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
 7. The internal set, closing as one sitting. Withdrawn 2026-11-01 (UTC).
 
+Ruled 2026-11-01 (UTC): items 4 and 5 move in pull request #3026's bottom-up order, and the wait
+above decides only whether each also publishes or goes upstream.
+
 ## What is already on the record
 
 Milestone 39 (repository structure for a loosely-coupled OS) and three decisions framed this

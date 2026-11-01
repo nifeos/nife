@@ -116,9 +116,14 @@ drops `non_volatile_memory_express` from the first attempts.
 
 ## The dispositions in force, 2026-11-01 (UTC)
 
-A ruling of 2026-11-01 (UTC) changes the dispositions above, and this section holds. Pull request
+Two rulings of 2026-11-01 (UTC) change the dispositions above, and this section holds. Pull request
 #3026 proposes the bottom-up order every move below joins.
 
+- The eight contribute crates (`paging`, `globally_unique_identifier_partition_table`, `elf`,
+  `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) move to
+  repositories of their own. Moving is separate from publishing. The 2026-10-27 ruling still holds
+  every contribution until a published crate has users who ask for it upstream, and it now decides
+  only whether each crate also publishes as ours or goes upstream as an offer.
 - "Internal" means only a crate that nothing outside nife could consume. A row keeps it only with a
   reason about the crate itself; its size, a rival crate or the effort of a move is no such reason.
   No row keeps it. Two rows are close calls for the architect, and the recommendation for each is
