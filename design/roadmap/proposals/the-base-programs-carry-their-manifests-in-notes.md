@@ -60,46 +60,46 @@ check.
 
 ## The rule: the install path refuses base-only asks from a package the base does not vouch for
 
-Ruled 2026-11-01 (UTC), option A. The progenitor's install refuses any of seven asks (`reboot`,
-`sync`, `installer`, `catalog`, the index store, the activation directory and console input) from a
-package that the image's base does not vouch for, whatever the approval file or the console
-answers. The encoder keeps a second, shorter constant set for third-party builds, so an honest
-builder still learns at compile time. One check, at the one place every package passes. The format
-(a separate note type), the updater and the owner's approval were not taken.
+Ruled 2026-11-01 (UTC), option A. The progenitor's install refuses seven asks from a package the
+image's base does not vouch for: `reboot`, `sync`, `installer`, `catalog`, the index store, the
+activation directory and console input. Neither the approval file nor the console changes that. The
+encoder keeps a second, shorter constant set for third-party builds, so an honest builder still
+learns at compile time. One check sits at the one place every package passes. A separate note type,
+the updater and the owner's approval did not win.
 
-Why it is needed. `capability_manifest_note::encode` refuses the seven at compile time today, and
-the base needs them once its notes are real: `jig` holds the installer, the catalog, the index
-store and the activation directory, `reboot` holds the reboot object, and the shell reads the
-console. The compile-time refusal binds an honest builder only, since anyone can write a note's
-bytes by hand, and the approval file grammar already spells `installer = true` for a package entry
-(milestone 911 (scripted installs grant only what the owner's approval file allows)). The check at
-install is what holds against a hand-written note.
+Why it matters. `capability_manifest_note::encode` refuses the seven at compile time today. The
+base needs them once its notes are real: `jig` holds the installer, the catalog, the index store
+and the activation directory, `reboot` holds the reboot object, and the shell reads the console.
+The compile-time refusal binds an honest builder only, since anyone can write a note's bytes by
+hand. The approval file grammar already spells `installer = true` for a package entry (milestone
+911 (scripted installs grant only what the owner's approval file allows)). The check at install
+holds against a hand-written note.
 
 ### What "the base vouches for" means in code, measured 2026-11-01 UTC
 
-- The install runs in the progenitor: `install` in `crates/system_initializer/src/activation.rs`,
+- The install runs in the progenitor, in `install` in `crates/system_initializer/src/activation.rs`,
   after `approval_gate`. It reads the staged package, the image's catalog
   (`package_archive::CATALOG`, the `package_catalog` archive entry), the installed-programs table,
-  the approval document and the answer's trailer. Its only test of base membership is
-  `Program::from_name`, the compiled name list of `grant_plan`, which refuses a package program
+  the approval document and the answer's trailer. Its one test of base membership is
+  `Program::from_name`, the compiled name list of `grant_plan`. That test refuses a package program
   whose bare name a base program holds.
-- The progenitor holds the `program_measurements` table at boot: `open_archive` in
-  `boot_steps.rs` reads it from the archive, and `measure_spawnable` measures each compiled
-  program against it. The table is not passed on: the `Activating` and `EditContext` structs the
-  install reads carry the catalog, the manager, the approval and the table of installed programs,
-  and no measurements. So the install path cannot see the table today.
+- The progenitor holds the `program_measurements` table at boot. `open_archive` in `boot_steps.rs`
+  reads it from the archive, and `measure_spawnable` measures each compiled program against it. The
+  boot does not pass it on. The `Activating` and `EditContext` structs the install reads carry the
+  catalog, the manager, the approval and the installed-programs table, and no measurements. The
+  install path cannot see the table today.
 - The kernel hashes the table and checks it against its trust root (`require_program_measurements`
-  in `kernel/src/trust.rs`). The handoff of its digest as `nife.base` is proposed in
-  `how-the-loader-hands-the-kernel-two-digests.md` and has no code in the tree.
-- No list of base packages exists. The catalog lists the packages the image vouches for to
-  install, and whether it also holds the base's own packages is not determined here. The
+  in `kernel/src/trust.rs`). The proposal `how-the-loader-hands-the-kernel-two-digests.md` hands
+  its digest over as `nife.base`. The tree holds no code for that handoff.
+- No list of base packages exists. The catalog lists the packages the image vouches for to install.
+  This measurement did not determine whether the catalog also holds the base's own packages. The
   measurements table lists programs by archive name and digest, not packages.
 
-The step therefore needs one small piece of plumbing: the progenitor passes the measured
+The step needs one small piece of plumbing. The progenitor passes the measured
 `program_measurements` text (or the set of base program digests parsed from it) from `boot` to
-`Activating`, and `install` tests each program of the staged package against it. Whether a package
-is "vouched for by the base" by program digest in that table, or by package stem in a base package
-list, is not determined here; milestone 976's system manifest would supply the second.
+`Activating`, and `install` tests each program of the staged package against it. Whether the base
+vouches for a package by program digest in that table or by package stem in a base package list
+is open. Milestone 976's system manifest would supply the list.
 
 Prior art, from memory and not re-read: Android's `signature|privileged` permissions go only to
 apps signed with the platform key or installed in the system image's privileged directory, and the
