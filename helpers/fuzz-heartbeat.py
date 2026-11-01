@@ -97,7 +97,7 @@ def run(today, backend):
     if kind != "fail":
         return 0
     if backend.open_issue_count() > 0:
-        print("fuzz-heartbeat: an issue labelled %s is already open; not opening another" % ISSUE_LABEL)
+        print("fuzz-heartbeat: an issue labeled %s is already open; not opening another" % ISSUE_LABEL)
         return 0
     title = "Fuzz loop check failed for %s" % day
     body = ("The daily fuzz heartbeat (.github/workflows/fuzz-heartbeat.yml) found a problem.\n\n"

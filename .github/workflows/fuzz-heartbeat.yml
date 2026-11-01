@@ -1,9 +1,16 @@
 name: fuzz heartbeat
 
+# Observed failing: 2026-11-01, by script: helpers/fuzz-heartbeat.py --selftest drives the failing
+#   arms (no release, no ok window, infrastructure share above the bound) over fixture reports and
+#   checks that each opens one issue and that an open issue stops a second. A real run was not
+#   possible: no fuzz-* release exists yet, and a dispatched run that opened a real issue would be an
+#   external action nobody asked for. The first real failure after the first release is the record
+#   to add.
+
 # **Is the continuous fuzz loop still producing?** Asked daily, answered by an issue.
 #
 # The continuous fuzzing host publishes one release per day (tag fuzz-YYYY-MM-DD). This is the dead-man's
-# switch: it looks at the releases of the last two UTC days and opens one issue, labelled
+# switch: it looks at the releases of the last two UTC days and opens one issue, labeled
 # fuzz-loop-broken, when none exists, when the report shows no ok window, or when infrastructure
 # windows are too large a share. The checks and their bound are in helpers/fuzz-heartbeat.py. It
 # repairs nothing; a person turns the issue into an action (notes/fuzzing/continuous-host.md).
