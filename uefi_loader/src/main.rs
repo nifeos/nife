@@ -50,7 +50,6 @@ use r_efi::efi::{
 };
 #[cfg(target_arch = "x86_64")]
 use r_efi::protocols::{file, loaded_image, simple_file_system};
-#[cfg(not(target_arch = "x86_64"))]
 use uefi_loader::image;
 
 mod arch;
