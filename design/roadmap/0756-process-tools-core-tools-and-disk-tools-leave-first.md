@@ -99,7 +99,7 @@ a two-repo change.
 |---|---|---|---|
 | A. basalt v0 | nothing; basalt pins `nife` at a commit and runs its image build and system test | zero cross-repository changes; one scheduled basalt run per pin bump | recommended now |
 | B. `procps` with `coreutils` and `util-linux` | 8 crates and 15 programs | 32 commits in thirty days, 26 crossing; 21 of those were sweeps; 1 Cargo dependent; 0 path references | recommended as the first code cut, once its preconditions hold |
-| C. `redoxfs` | the vendored engine, server and host tool | 31 commits, 26 crossing, 12 of 17 focused ones crossing; 0 Cargo dependents; 254 path references; links the least settled interfaces (`filesystem_contract` 10 breaking in four weeks, the partition table 27) | second; cheapest to move today, which is an effort argument |
+| C. `redoxfs` | the vendored engine, server and host tool | 31 commits, 26 crossing, 12 of 17 focused ones crossing; 0 Cargo dependents; 254 path references; links the least settled interfaces (`filesystem_contract` 10 breaking in four weeks, the partition table 27) | second; cheapest to move today, which is an effort argument. Ruled 2026-11-01 (UTC): it leaves as one repository holding all three, after the crates it links, in step 9 of [the proposal](proposals/the-contract-crates-leave-in-this-order.md) |
 | D. `contracts` and `runtime` (milestone 691 (packages move out of this repository, one per pull request)'s order) | 42 crates | 298 commits, 187 crossing; 35 dependents | refused for the first cut |
 | E. `host-tools` | `xtask` and friends | 227 commits, 139 crossing; 276 references in 152 files | refused |
 | F. Wait for every precondition before doing anything | nothing | the integration gate is still unbuilt when the first cut arrives | refused |

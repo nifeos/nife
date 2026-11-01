@@ -12,11 +12,10 @@ needs_person: yes
 Raised 2026-11-01 (UTC) by the lane `lane/contract-crates-move-order`. It answers two questions: in
 what order the 22 crates that the first cut's programs link could leave this repository, and what
 policy makes frequent breaking change safe across repositories. It moves no crate and changes no
-code. Every new name below is provisional. The architect ruled its five questions on 2026-11-01 (UTC); the text states each ruling.
+code. Every new name below is provisional. The text states each ruling of 2026-11-01 (UTC).
 
 Reuse: the measurements reuse `cargo metadata`, git's rename detection and milestone 610's
-per-crate series; the policy reuses milestone 956's constants, the crate template and basalt's gate.
-No new code and no dependency.
+series; the policy reuses milestone 956's constants, the crate template and basalt's gate.
 
 Two directions from the architect, both dated 2026-11-01 (UTC), frame it:
 
@@ -102,6 +101,7 @@ one. A repository per package or per layer is refused.
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |
 | 7, second package | `process-tools` | leaves as soon as its own crates have left |
 | 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates only `core-tools` reaches; the third package leaves as soon as they have |
+| 9, `redoxfs` | `subtree_scope`, `memory_region_heap`, then `redoxfs` as one repository | after the 10 contract crates it links; ruled 2026-11-01 (UTC) in the questions appendix |
 
 `jh7110_entropy` stays the leaf pilot (milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,
 released on its own)). It proves that a leaf crate builds and proves from its own repository and
@@ -199,8 +199,7 @@ By `rev`, as §305 allows. A root `[workspace.dependencies]` entry would pin eac
 every nife crate. nife pins `jh7110_entropy` in three manifests, which pull request #2979 had to
 move together. Working on both sides at once uses a local `[patch]`, which never reaches `main`.
 
-The CI cost is small per build and real per change. The fetch is one git checkout, cached. The real
-cost is the second pull request: 53 minutes for the example above. Had all 22 lived elsewhere for
+The CI cost is small per build and real per change. The real cost is the second pull request: 53 minutes for the example above. Had all 22 lived elsewhere for
 the last 30 days, up to 244 changes would have needed one. nife's tools that walk `crates/` also
 lose each crate: the Kani reach list, the verify table, milestone 610 (the interface's stability is
 measured weekly)'s series and the declaration check. Each must read the pinned checkout or the
@@ -243,8 +242,7 @@ contract leaves. §201 already asks for a name ratified before anything moves.
 2. The tree: `jh7110_entropy` left on 2026-10-31 and nife pins it by `rev`; the crate template exists;
    basalt pins nife; milestone 956 carries the constants.
 3. Prior art, in the appendix. This lane read Fuchsia's layers and petals, Android's stable AIDL,
-   Cargo's semver guide, `cargo-semver-checks` and the Linux kernel's stable API document. It
-   recalls Rust's crater.
+   Cargo's semver guide, `cargo-semver-checks` and the Linux stable API document, and recalls crater.
 4. The premise holds with one correction: the first cut's 15 programs do not need all 22 at once.
    `disk-tools` needs 12.
 5. Cost: the measurements appendix, by command.
@@ -254,17 +252,18 @@ contract leaves. §201 already asks for a name ratified before anything moves.
 
 ## The questions, ruled
 
-The questions appendix holds five questions, all ruled as recommended on 2026-11-01 (UTC) and
-stated above.
+The appendix's questions are ruled (2026-11-01 UTC), as stated above.
 
 ## BUGS
 
-- The crate template holds every `cargo-semver-checks` break. Proposed milestone, provisional and
-  unnumbered: it labels only a moved `INTERFACE_ID`, `VERSION` or magic, and fails a Rust-API break
+- Proposed milestone, provisional and unnumbered: the crate template, which holds every
+  `cargo-semver-checks` break, labels only a moved `INTERFACE_ID`, `VERSION` or magic, and fails a Rust-API break
   that leaves the Cargo minor alone. It waits on the 14 crates getting an `INTERFACE_ID`.
-- The leaf crate needs a lane. Proposed milestone, provisional and unnumbered, a follow-on to
-  milestone 756: move the note type, and update the declaration check and the 15 programs.
+- Proposed milestone, provisional and unnumbered, following milestone 756: move the note type and
+  update the declaration check and the 15 programs.
 - The leaf crate is a 23rd contract crate. Its repository waits for the architect's approval.
+- Proposed milestone, provisional and unnumbered: the QEMU runners start `redoxfs_server` from a
+  pinned image, not a tree path. It blocks step 9, as does the open placement of `vendor/talc`.
 
 ## Index row
 

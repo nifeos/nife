@@ -127,3 +127,28 @@ merges.
 Ruled 2026-11-01 (UTC): (a). basalt may run a manual trial workflow on unmerged commits of
 repositories in the organization, never on a fork's pull request and never on a self-hosted runner
 for a fork. It writes no pin and no file. The pin rule stands: a pin never names an unmerged commit.
+
+## 6. Where does `redoxfs` go?
+
+Ruled 2026-11-01 (UTC), after the five above. The vendored engine (`vendor/redoxfs` with its pin
+file, divergence patch series and upstream-status record), `redoxfs_server` and the host tool
+`tools/redoxfs_host` leave as one repository holding all three. They leave after the contract crates
+they link, and they consume those by a `rev` pin with the version stated, like every consumer. The
+`script/vendor-verify` and `vendor-watch` checks move with them. Splitting the engine out later
+stays possible. The architect refused the engine alone in its own repository, and refused staying
+in nife until the end. Step 9 of the order places it.
+
+Linked set, read from `cargo metadata` on 2026-11-01 (UTC): the server and the host tool reach 10 of
+the 22 through normal dependencies (`address_space_map`, `capability_manifest_note`,
+`domain_name_resolution_contract`, `domain_name_system`, `filesystem_contract`, `filesystem_fixture`,
+`glob`, `globally_unique_identifier_partition_table`, `grant_plan`, `program_argument_contract`).
+They also reach two crates outside the 22, `subtree_scope` and `memory_region_heap`, which leave
+first (`memory_region_heap` only for the target build's `el0` feature, with `user_mode_runtime`
+and `abi` behind it). `entropy_contract` is named in `mkfs.rs` prose and is not a dependency, so it
+need not have left. Both manifests also patch `talc` to `vendor/talc`, a reference back into nife
+that the ruling does not place. Unverified, not decided:
+
+- Whether upstream `redoxfs` accepts AI submissions.
+- Whether the QEMU runners (254 path references in 64 files) can start the server from a pinned
+  image and not from a path in the tree.
+- Where `vendor/talc` goes.
