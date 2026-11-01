@@ -25,10 +25,8 @@
 //! assert_eq!(manifest.progenitor(), "swish-0.1.0-x86_64");
 //! assert_eq!(manifest.digest_of("swish-0.1.0-x86_64"), Some(digest));
 //! let other = measured_boot::sha256(b"not swish");
-//! assert_eq!(
-//!     manifest.check(&[("swish-0.1.0-x86_64", other)]),
-//!     Err(Refusal::Mismatch { stem: "swish-0.1.0-x86_64" }),
-//! );
+//! let refusal = manifest.check(&[("swish-0.1.0-x86_64", other)]);
+//! assert_eq!(refusal, Err(Refusal::Mismatch { stem: "swish-0.1.0-x86_64" }));
 //! ```
 //!
 //! # BUGS
