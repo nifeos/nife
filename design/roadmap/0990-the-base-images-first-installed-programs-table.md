@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-29
 promoted_from: the-base-images-first-installed-programs-table
 milestone_dependencies: 911
@@ -23,6 +23,26 @@ image is not a separate artifact. The options below are the fork that ruling ans
 store (decision 34). The same day, decision 34 refused UFS2, which the ruling had named. In force
 now: the first table is files `activation/1` and `activation/current` on the RedoxFS launch volume.
 
+## Where it stands
+
+Partial. Item 1 is built: `cargo xtask base-image` writes `launch.img` beside the kernel and
+`initrd.img`, a RedoxFS volume holding `activation/1` and `activation/current`. Items 2 and 3 are
+not, and the `BUGS` below say what blocks them.
+
+Generation 1 holds one row per carried program: the program, the image's version, the owning
+package, the program member's digest and `owner` as the manager. `first_generation` in
+`xtask/src/base_image.rs` writes it with `installed_programs::with_entries_granting`, the writer
+an interactive install calls, and reads the grants with `program_asks::asked_grants` over the bytes
+the archive carries. The `answered` line names the image's approval file and its SHA-256, and a
+generation with no approval file records no answer. A carried program that asks for a grant when
+the image names no approval file refuses the composition, because nobody allowed it.
+`write_launch_volume` stages the two files and drives `tools/redoxfs_host`'s `mkfs` and `import`,
+the tool the swish-check seed uses.
+
+Measured 2026-11-01 (UTC) on aarch64: the base image's generation 1 is 58 rows and 58 default
+pointers, 11,426 bytes, with no grant lines and no `answered` line, and it reads back
+byte-identical from the volume.
+
 Reuse: the table and its grammar (`crates/installed_programs`), the approval file and its check
 (`crates/approval_file`), and the launch filesystem the table lives on, RedoxFS, which nife already builds and runs.
 `seed_installed` in `xtask/src/disk.rs` already seeds a RedoxFS disk for the swish-check gate, so
@@ -44,7 +64,7 @@ disk answers every table read with `None`, and the installer writes nothing. `se
 (`xtask/src/disk.rs`) seeds a RedoxFS disk for the swish-check gate, and says plainly that it
 writes no table.
 
-So there is no generation in a composed image. Putting one there is a choice about the image's
+So no boot of a composed image reads a generation. Putting one there is a choice about the image's
 shape and the boot path, not a line of code inside `compose`.
 
 ## The options the ruling weighed
@@ -141,9 +161,37 @@ volume.
 - No new filesystem server. RedoxFS is the launch store (decision 34), and this milestone uses the
   server and the host tool that already exist. It starts once milestone 911 (scripted installs grant only what the owner's approval file allows) lands.
 
-The launch volume's attach point, its measurement and the step that writes `activation/1`
-are provisional names until the implementing lane names them. `compose` keeps the check seam, so
+Name: provisional. `launch.img`, `first_generation`, `write_launch_volume` and the volume's
+16 MiB size. The attach point and the measurement are unnamed until items 2 and 3 are built. `compose` keeps the check seam, so
 the ruling changes where the records go and not how the composition checks them.
+
+## BUGS
+
+- **Nothing attaches the launch volume.** `--boot` boots the kernel and the archive alone, so no
+  boot reads generation 1 yet. Four things stand between it and item 2:
+  - **The progenitor reads one page of a generation.** It reads the live generation into 4,096
+    bytes, and the base's generation 1 is 11,426. On a boot with this volume attached, the
+    progenitor would vouch for no image spawn and the installer could not read the generation
+    it succeeds. Item 2 cannot keep its read path unchanged. Home: the proposal
+    [a-generation-grows-past-one-page](proposals/a-generation-grows-past-one-page.md).
+  - **Every row takes a base program's name at the prompt.** `with_entries_granting` writes a
+    default pointer for every row whose package is not `owner`, and the shell refuses a bare word
+    that both the image and the live generation name (`swish::bare::resolve`, `Bare::Both`, §229
+    (how a bare name at the prompt reaches an installed program)). With this generation live,
+    `ps` and every other base program would be refused at the prompt. The row also names
+    `packages/<package>/<version>/<program>`, which the volume does not hold. What shape a base
+    program's row takes is an architect's call, asked on this milestone's pull request.
+  - **The measurement is not ruled** (item 3).
+    [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md)
+    lists the options: the seed generation by its own digest, the volume until its first write,
+    or the approval file alone. Any of them reaches the kernel's trust root, which milestone 697
+    (the trust root leaves the kernel binary) is changing.
+  - **The kernel mounts the second block device.** Its file service serves virtio block slot 1
+    (`kernel/src/user/fs_service/wiring.rs`), and the runners put their `nifefs` fixture disk at
+    slot 0. A boot that attached the launch volume alone would put it where nothing mounts it.
+    Item 2 chooses the slot on all three runners.
+- **The volume is 16 MiB**, the size of the RedoxFS fixture the kernel tests mount. Nothing yet
+  installs onto a composed image's volume, so nothing has measured what it needs.
 
 ## Index row
 
