@@ -59,6 +59,7 @@ mod swish_check;
 mod time_record;
 mod uefi;
 mod uefi_screen_modes;
+mod update;
 mod usage;
 mod vt_replay;
 

@@ -167,6 +167,24 @@ pub(crate) fn base_image() -> bool {
             return false;
         }
     };
+    run(&arguments)
+}
+
+/// **The x86_64 release image `cargo xtask base-image x86_64 --release` composes**, for a gate that
+/// stages its boot file into a slot (`cargo xtask update-boot`). The directory it wrote, or `None`
+/// after saying why not. The boot file is `<dir>/esp/EFI/BOOT/BOOTX64.EFI` and the archive
+/// `<dir>/initrd.img`.
+pub(crate) fn compose_release_x86_64() -> Option<PathBuf> {
+    let arguments = Arguments {
+        arch: Some("x86_64".into()),
+        release: true,
+        ..Arguments::default()
+    };
+    run(&arguments).then(|| workspace_root().join("target/base-image-x86_64"))
+}
+
+/// Compose, wrap and optionally boot what `arguments` asks for.
+fn run(arguments: &Arguments) -> bool {
     let Some(arch) = arguments.arch.as_deref() else {
         eprintln!(
             "usage: cargo xtask base-image <aarch64|riscv64|x86_64> [--from <dir>] [--catalog <path>] [--out <dir>] [--test] [--release] [--boot]"
@@ -177,7 +195,7 @@ pub(crate) fn base_image() -> bool {
         crate::RELEASE.store(true, std::sync::atomic::Ordering::Relaxed);
     }
     let root = workspace_root();
-    let Some(plan) = plan(&arguments, arch, &root) else {
+    let Some(plan) = plan(arguments, arch, &root) else {
         return false;
     };
     let Plan {
