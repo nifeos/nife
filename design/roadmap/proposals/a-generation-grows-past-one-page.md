@@ -28,8 +28,8 @@ succeed. `jig` reads the file through std and holds no such limit.
 A row with its default pointer takes about 170 bytes, so a page holds about two dozen programs.
 `crates/installed_programs` records that limit in its `BUGS`. Milestone 990 (the base image's
 first installed-programs table) measured the base image's generation 1 on aarch64 on 2026-11-01
-(UTC): 58 rows and 58 default pointers, 11,426 bytes. A test image adds the `fixtures` package's
-programs on top of that.
+(UTC): 58 rows and 58 default pointers, 11,426 bytes. The test image, which adds the `fixtures`
+package's programs, holds 121 rows in 24,619 bytes.
 
 ## The work
 
