@@ -9,8 +9,10 @@ acts as one GitHub App, `nife-fuzz`, and holds that App's private key. An archit
 2026-11-01 (UTC) in
 [`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md).
 
-A person does every step here, once. No lane creates the App, handles the key, reads it or looks
-for it.
+The App exists. A person created it on 2026-11-01 (UTC) and installed it on nifeos/nife only. Its
+App ID is 5571801 and its installation ID is 177641059; neither is secret. The steps below stay as
+the procedure for replacing it or its key. A person does every step here. No lane creates the App,
+handles the key, reads it or looks for it.
 
 ## Before you start: what the key can do
 
@@ -22,13 +24,15 @@ Read this first. It is the exposure you accept by placing the key.
 - The key stays root-only, and the code that reads it does not update itself. The fuzz account can
   still read the current installation token, which lives one hour, and the host mints a new one every
   hour. Code on main can therefore act as the App for as long as it runs.
-- With Contents write, a token can create, move or delete any tag and any release on nifeos/nife.
-  nifeos/nife has no tag ruleset to stop it. It cannot push to main: main's ruleset requires a pull
-  request and has no bypass actor.
+- With Contents write, a token can create, move or delete any `fuzz-*` tag and any release on
+  nifeos/nife. The ruleset "tags: only fuzz-* tags may be made" refuses creating, updating or
+  deleting any other tag, and it has no bypass actor. An architect accepted the remaining exposure on
+  2026-11-01 (UTC) on that condition.
+- It cannot push to main: main's ruleset requires a pull request and has no bypass actor.
 - With Repository security advisories write, a token can create, edit and publish any advisory on
   nifeos/nife, including a held finding before its fix.
-- The App reaches no other repository, and it holds no Workflows, Administration or other
-  permission.
+- The App reaches no other repository. It holds no Workflows, Administration or other permission,
+  and neither ruleset lists it as a bypass actor.
 - The key does not expire, so nothing rotates it on a schedule. Revoke it when you suspect a leak.
 
 ## Create the App
@@ -55,13 +59,16 @@ Repository security advisories and Metadata.
 
 ## Generate the key and place it on the host
 
-1. On the App's settings page, under Private keys, generate a private key. The browser downloads one
+1. Before any key exists, run the throwaway-repository test that the ruling's proposal lists. It
+   confirms that an App with the advisory permission alone can create an advisory.
+2. On the App's settings page, under Private keys, generate a private key. The browser downloads one
    `.pem` file.
-2. Copy it to the fuzz host over a channel you already trust, straight into a directory only root
+3. Copy it to the fuzz host over a channel you already trust, straight into a directory only root
    can enter. Make the file owned by root with mode 0400.
-3. Delete every other copy: the download, any temporary copy, the trash.
-4. Write the App ID and the installation ID into the host's fuzz configuration. Neither is secret.
-5. Install the mint helper and enable its timer, then enable the services that read its token.
+4. Delete every other copy: the download, any temporary copy, the trash.
+5. Write the App ID (5571801) and the installation ID (177641059) into the host's fuzz
+   configuration. Neither is secret.
+6. Install the mint helper and enable its timer, then enable the services that read its token.
    [`continuous-host.md`](continuous-host.md) lists the units.
 
 Never paste the key anywhere else. That covers a chat, a pull request, an issue, a comment, a lane's
@@ -82,9 +89,12 @@ App on nifeos/nife.
 
 ## BUGS
 
-- Nobody has followed these steps yet. The first person to do so confirms each one or corrects it.
+- Nobody has followed the key steps yet. The first person to do so confirms each one or corrects it.
 - The mint helper and the filing service do not exist yet. The ruling's proposal lists them as proposed
   milestones.
 - The read-only credential for fix lanes is not covered here. Its form is an open question.
 - Nobody has confirmed that an App with the advisory permission alone may create an advisory. GitHub's
-  documentation names "a security manager or administrator" as the caller.
+  documentation names "a security manager or administrator" as the caller. The throwaway-repository
+  test answers it before any key exists.
+- A nife release that uses a tag outside `fuzz-*` needs the tag ruleset amended first, as its own
+  step recorded in a pull request.

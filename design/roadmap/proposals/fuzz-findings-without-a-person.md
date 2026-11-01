@@ -64,9 +64,16 @@ schedule rotates it. [`notes/fuzzing/the-fuzz-app.md`](../../../notes/fuzzing/th
 person's runbook.
 
 What the key can do is the exposure. The main ruleset of nifeos/nife has no bypass actor and
-requires a pull request, so Contents write cannot push to main. nifeos/nife has no tag ruleset, so a
-token minted from the key can create, move or delete any tag and any release. Advisories write lets
+requires a pull request, so Contents write cannot push to main. A token minted from the key can
+create, move or delete any `fuzz-*` tag and any release. Advisories write lets
 it publish any draft advisory, a held finding's included.
+
+Ruled 2026-11-01 (UTC): the architect accepts that exposure, with a tag ruleset on nifeos/nife that
+refuses creating, updating and deleting any tag outside `fuzz-*`, with no bypass actor. The ruleset
+exists on the repository as "tags: only fuzz-* tags may be made", and nifeos/nife had no tags when
+it took effect. The App is created and installed on nifeos/nife only: App ID 5571801, installation
+ID 177641059, neither secret. A future nife release that uses a tag outside `fuzz-*` must amend the
+ruleset first, in its own step recorded in a pull request.
 
 ## What is in force: the host follows main
 
@@ -147,7 +154,8 @@ Read on 2026-11-01 (UTC):
 
 - The create endpoint says the caller "must be a security manager or administrator" of the
   repository. The documentation does not say whether an App with the advisory permission alone
-  qualifies, and nobody has tried. The first real filing settles it.
+  qualifies, and nobody has tried. A test on a throwaway repository settles it before any key
+  reaches the host.
 - How long a fix pull request stays public is unmeasured. The window runs from the push of the fix
   branch to the merge. It grows whenever a hold applies: `needs-architect` on a fix that touches the
   syscall surface, or a red trunk. The first fix measures it.
@@ -173,5 +181,6 @@ Each is a proposal in this directory, unnumbered until an integrator promotes it
 - [Fix lanes read the advisory](fix-lanes-read-the-advisory.md)
 - [A held finding turns public after its fix reruns clean](a-held-finding-turns-public-after-its-fix-reruns-clean.md)
 - [The fuzz host mints its tokens from the App key](the-fuzz-host-mints-its-tokens-from-the-app-key.md)
+- [An App with only the advisory permission files an advisory](an-app-with-only-the-advisory-permission-files-an-advisory.md)
 - [The clean-range table does not locate a held seed](the-clean-range-table-does-not-locate-a-held-seed.md)
 - [The fuzz host follows main](the-fuzz-host-follows-main.md)
