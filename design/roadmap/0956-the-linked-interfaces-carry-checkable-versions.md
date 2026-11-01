@@ -106,11 +106,9 @@ numbers, `user_mode_runtime` for its entry registers and link layout, `filesyste
 blank disk layout, and `interfaces_note` for the `INTERFACES` note the progenitor reads. The
 partition table stays out, because UEFI owns that format and the bytes carry their own revision.
 
-The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing. It
-was in `capability_manifest_note` until 2026-11-01 (UTC), and carrying it linked that crate, its
-`grant_plan::Manifest` type, `domain_name_resolution_contract` and `domain_name_system` into every
-program. A program that carries the note now links one crate more, and `disk-tools` still does not
-reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`;
+The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so
+carrying the note adds that one crate to a program's linked set and no planner. `disk-tools` does
+not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`;
 moving them into a leaf crate belongs to pull request #3026.
 
 ## What this block does not do

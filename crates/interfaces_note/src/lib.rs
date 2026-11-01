@@ -33,7 +33,9 @@ const NAME_FIELD: usize = 8;
 /// The note's three header words.
 const HEADER_LEN: usize = 12;
 
-/// Why a descriptor was refused. Provisional names.
+/// Why a descriptor was refused.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane milestone/956-the-interfaces-note-leaves-the-manifest-note-crate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Error {
     /// Fewer than four bytes, so not even a version.

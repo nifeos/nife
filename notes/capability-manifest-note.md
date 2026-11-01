@@ -47,9 +47,9 @@ encoding, because the records are sorted ascending by their words' bytes and eac
 
 `INTERFACES` (milestone 956 (the linked interfaces carry checkable versions), step 2) declares the
 interface versions a program links against. It is a note of its own, as the verb table is (ruled
-2026-10-31 (UTC)), and its type lives in the leaf crate `crates/interfaces_note` and not in this
-one, so a package that declares what it links does not link the planner (moved 2026-11-01 (UTC)).
-It shares this crate's note header; a test here holds the two equal. It is not a descriptor version, so versions 1 to 3 of `MANIFEST`
+2026-10-31 (UTC)). Its type lives in the leaf crate `crates/interfaces_note`, so a package that
+declares what it links does not link the planner. It shares this crate's note header, and a test
+here holds the two equal. It is not a descriptor version, so versions 1 to 3 of `MANIFEST`
 stay as they are. A program with no list declares nothing.
 
 The descriptor is a version word, a count word and that many records. Each record holds an

@@ -46,6 +46,7 @@ interfaces = [
     "grant_plan",
     "capability_plan",
     "capability_manifest_note",
+    "interfaces_note",
     "glob",
     "documentation",
     "device_tree_blob",
