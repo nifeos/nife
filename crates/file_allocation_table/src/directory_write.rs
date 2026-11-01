@@ -76,6 +76,19 @@ impl RunFinder {
     }
 }
 
+/// **What a new directory entry holds**: its name and attributes, where its data starts and how
+/// long it is, the entry (if any) it replaces under a rename so its own name does not collide, and
+/// the times to copy from it. `None` for the times means a new entry, stamped now.
+#[derive(Clone, Copy)]
+struct NewEntry<'a> {
+    name: &'a str,
+    attributes: u8,
+    first_cluster: u32,
+    size: u32,
+    except: Option<EntryPlace>,
+    times: Option<[u8; SLOT_BYTES]>,
+}
+
 impl<D: WritableSectorDevice> Volume<D> {
     /// The root as 0 for the one place a FAT32 root may be named two ways.
     fn directory_number(&self, directory: u32) -> u32 {
@@ -189,17 +202,20 @@ impl<D: WritableSectorDevice> Volume<D> {
         Err(WriteError::EntryChanged)
     }
 
-    /// Write an entry called `name` into `directory` and return it as stored.
+    /// Write the entry `new` describes into `directory` and return it as stored.
     fn write_entry(
         &mut self,
         directory: u32,
-        name: &str,
-        attributes: u8,
-        first_cluster: u32,
-        size: u32,
-        except: Option<EntryPlace>,
-        times: Option<[u8; SLOT_BYTES]>,
+        new: &NewEntry,
     ) -> Result<NamedEntry, WriteError<D::Error>> {
+        let NewEntry {
+            name,
+            attributes,
+            first_cluster,
+            size,
+            except,
+            times,
+        } = *new;
         let directory = self.directory_number(directory);
         self.check_new_name(directory, name, except)?;
         let long = match short_name_bytes(name) {
@@ -280,7 +296,17 @@ impl<D: WritableSectorDevice> Volume<D> {
         directory: u32,
         name: &str,
     ) -> Result<NamedEntry, WriteError<D::Error>> {
-        self.write_entry(directory, name, ARCHIVE, 0, 0, None, None)
+        self.write_entry(
+            directory,
+            &NewEntry {
+                name,
+                attributes: ARCHIVE,
+                first_cluster: 0,
+                size: 0,
+                except: None,
+                times: None,
+            },
+        )
     }
 
     /// **Make an empty directory called `name`** in `directory` (0 for the root), and return its
@@ -296,9 +322,19 @@ impl<D: WritableSectorDevice> Volume<D> {
         self.check_new_name(parent, name, None)?;
         self.begin_change()?;
         let cluster = self.append_cluster()?.ok_or(WriteError::VolumeFull)?;
-        let made = self
-            .write_dot_entries(cluster, parent)
-            .and_then(|()| self.write_entry(parent, name, DIRECTORY, cluster, 0, None, None));
+        let made = self.write_dot_entries(cluster, parent).and_then(|()| {
+            self.write_entry(
+                parent,
+                &NewEntry {
+                    name,
+                    attributes: DIRECTORY,
+                    first_cluster: cluster,
+                    size: 0,
+                    except: None,
+                    times: None,
+                },
+            )
+        });
         if made.is_err() {
             let _ = self.free_chain(cluster);
         }
@@ -439,12 +475,14 @@ impl<D: WritableSectorDevice> Volume<D> {
             .ok_or(WriteError::EntryChanged)?;
         let moved = self.write_entry(
             target,
-            new_name,
-            entry.attributes(),
-            entry.first_cluster(),
-            entry.size_bytes(),
-            Some(entry.place()),
-            Some(old_slot),
+            &NewEntry {
+                name: new_name,
+                attributes: entry.attributes(),
+                first_cluster: entry.first_cluster(),
+                size: entry.size_bytes(),
+                except: Some(entry.place()),
+                times: Some(old_slot),
+            },
         )?;
         if entry.is_directory() && entry.place().directory != target {
             let first = entry.first_cluster();

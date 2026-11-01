@@ -123,20 +123,20 @@ fn check_with_fsck(image: &[u8], label: &str) {
     );
 }
 
-/// What rust-fatfs counts as free clusters on `image`.
-fn oracle_free_clusters(image: &[u8]) -> u32 {
-    let fs = lamfat::FileSystem::new(
-        lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
-        lamfat::FsOptions::new(),
-    )
-    .expect("rust-fatfs mounts the volume");
-    fs.stats().unwrap().free_clusters()
-}
-
 /// (year, month, day, hour, minute, second as milliseconds) as rust-fatfs reads a creation time.
 type Read = (u16, u16, u16, u16, u16, u32);
 
-fn creation(image: &[u8], name: &str) -> Read {
+/// The numbers in rust-fatfs's `Debug` text of a time, in field order. Its time type names its
+/// seconds and milliseconds fields with unit symbols this tree's naming ruling does not allow in
+/// our own code, so the test reads the values from the text and not by field name.
+fn numbers(text: String) -> Vec<u32> {
+    text.split(|c: char| !c.is_ascii_digit())
+        .filter(|part| !part.is_empty())
+        .map(|part| part.parse().unwrap())
+        .collect()
+}
+
+fn entry_of(image: &[u8], name: &str) -> (String, String, String) {
     let fs = lamfat::FileSystem::new(
         lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
         lamfat::FsOptions::new(),
@@ -148,54 +148,37 @@ fn creation(image: &[u8], name: &str) -> Read {
         .map(|e| e.unwrap())
         .find(|e| e.file_name() == name)
         .unwrap();
-    let t = entry.created();
     (
-        t.date.year,
-        t.date.month,
-        t.date.day,
-        t.time.hour,
-        t.time.min,
-        u32::from(t.time.sec) * 1000 + u32::from(t.time.millis),
+        format!("{:?}", entry.created()),
+        format!("{:?}", entry.modified()),
+        format!("{:?}", entry.accessed()),
     )
+}
+
+/// (year, month, day, hour, minute, second as milliseconds) as rust-fatfs reads a date and time.
+fn read_time(text: String) -> Read {
+    let n = numbers(text);
+    (
+        n[0] as u16,
+        n[1] as u16,
+        n[2] as u16,
+        n[3] as u16,
+        n[4] as u16,
+        n[5] * 1000 + n[6],
+    )
+}
+
+fn creation(image: &[u8], name: &str) -> Read {
+    read_time(entry_of(image, name).0)
 }
 
 fn modified(image: &[u8], name: &str) -> Read {
-    let fs = lamfat::FileSystem::new(
-        lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
-        lamfat::FsOptions::new(),
-    )
-    .unwrap();
-    let entry = fs
-        .root_dir()
-        .iter()
-        .map(|e| e.unwrap())
-        .find(|e| e.file_name() == name)
-        .unwrap();
-    let t = entry.modified();
-    (
-        t.date.year,
-        t.date.month,
-        t.date.day,
-        t.time.hour,
-        t.time.min,
-        u32::from(t.time.sec) * 1000 + u32::from(t.time.millis),
-    )
+    read_time(entry_of(image, name).1)
 }
 
 fn accessed(image: &[u8], name: &str) -> (u16, u16, u16) {
-    let fs = lamfat::FileSystem::new(
-        lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
-        lamfat::FsOptions::new(),
-    )
-    .unwrap();
-    let entry = fs
-        .root_dir()
-        .iter()
-        .map(|e| e.unwrap())
-        .find(|e| e.file_name() == name)
-        .unwrap();
-    let d = entry.accessed();
-    (d.year, d.month, d.day)
+    let n = numbers(entry_of(image, name).2);
+    (n[0] as u16, n[1] as u16, n[2] as u16)
 }
 
 fn times_agree(label: &str, mebibytes: usize, fat_type: FatType) {
