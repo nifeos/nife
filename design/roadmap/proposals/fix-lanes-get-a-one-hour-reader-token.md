@@ -30,10 +30,9 @@ for the other App, and the two should share one signing routine.
 
 ## How it is checked
 
-A selftest runs the helper against a throwaway key and a stub `curl`, with no network. It checks
-that the exchange asks for exactly the read permission and the one repository, that the output holds
-a token and never the key, and that it refuses when the key file is missing or readable by anyone
-but root.
+A selftest runs the helper against a throwaway key and a stub `curl`, with no network. The exchange must ask
+for exactly the read permission and the one repository. The output must hold a token and never the
+key. The helper must refuse when the key file is missing or readable by anyone but root.
 
 ## Status
 
