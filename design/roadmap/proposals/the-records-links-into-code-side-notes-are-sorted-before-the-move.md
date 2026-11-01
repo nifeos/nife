@@ -15,7 +15,7 @@ keeps its crate documentation, `BUGS` sections and notes about that crate alone.
 provisional.
 
 Reuse: `script/citations` and the markdown link check already walk every link in the record. The
-sort is a filter over their output, not a new parser.
+sort filters their output.
 
 ## The failure
 
@@ -25,12 +25,11 @@ repository points at nothing in the record repository, and the site build fails 
 A rough count on 2026-11-01 (UTC), by name match and not by reading each note:
 
 - 296 links from `design/` and `briefs/` reach 168 distinct files under `notes/`. Five of those
-  files are named for a crate (`abi`, `address-space-map`, `e1000e`, `job-mix`, `nifefs`), so they
-  are probably about that crate alone. The rest were not read.
+  files carry a crate's name (`abi`, `address-space-map`, `e1000e`, `job-mix`, `nifefs`), so they
+  probably concern that crate alone. The rest were not read.
 - Two links reach a crate directory: `design/decisions/0148-reap-and-thread-identity.md` and
-  `design/roadmap/0060-isa-discovery.md`. A decision is edited only through
-  `script/record-ruling`, so the first needs a ruling or a bookkeeping exception.
-- Roadmap blocks cite a crate's `BUGS` section by bare path, such as milestone 74 and milestone 230.
+  `design/roadmap/0060-isa-discovery.md`. Only `script/record-ruling` edits a decision, so the first waits for a ruling or counts as bookkeeping.
+- Roadmap blocks cite a crate's `BUGS` section by bare path, such as milestone 74 (cycle counters) and milestone 230 (`script/shell-check` is red on `main`).
   The anchor in the main proposal keeps those true as written, so they need no change.
 - Journey 3 cites `notes/bench-runbook.md` in its table. Whether that note is workflow data that
   stays or a cross-cutting note that moves is not decided.

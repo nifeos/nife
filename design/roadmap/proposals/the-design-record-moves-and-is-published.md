@@ -34,7 +34,7 @@ dependency) rules on citations across repositories. Its section 4 says a record 
 
 On 2026-11-01 (UTC) the architect ruled question 1 below. The record moves to one repository named
 `nifeos.org`, and the provisional name `nife-design` is withdrawn. That repository holds the whole
-site published at nifeos.org: the record (roadmap, decisions, journeys, naming, tenets, cross-cutting notes, `briefs/` and the lane skills), a page for
+site published at nifeos.org: the record, a page for
 each crate, material about nife itself, and the planned tutorial on building a RISC-V operating
 system, a class. The record and the site are one repository, not two. A crate's page pulls from that
 crate's own repository at build time and is not copied in. If the record ever has to split from the
@@ -64,9 +64,9 @@ crate or carries a tool's data stays with that code, as the Background states.
 Most of this can start before the move. Steps 1 to 5 below land in this repository today, and each
 makes the move smaller.
 
-Reuse: the site generator is the only new code, and it reuses an existing one (mdBook, Zola,
-Sphinx or Hugo, compared below) plus this tree's own parsers in `script/roadmap` and
-`script/citations`. The extraction reuses `git filter-repo`.
+Reuse: the site generator is the only new code, and it reuses an existing one (compared below)
+plus this tree's own parsers in `script/roadmap` and `script/citations`. The extraction reuses
+`git filter-repo`.
 
 ## The measurements, in brief
 
@@ -115,10 +115,8 @@ block still names `crates/jh7110_entropy` as the crate that holds the register l
 directory no longer exists. `script/roadmap --check` passed on 2026-11-01, because it reads paths
 only in follow-on bullets.
 
-Under this proposal the anchor makes that bullet true as written: the path existed at the anchor
-commit. A new bullet would read `nifeos/jh7110_entropy:src/lib.rs`, and the check resolves it at
-basalt's pin. On the website, the bare path links to the anchor commit and the qualified one to the
-pin. Any page that says `milestone 159` links to that block's address.
+Under this proposal the anchor makes that bullet true as written, since the path existed at the
+anchor commit. A new bullet would read `nifeos/jh7110_entropy:src/lib.rs`, resolved at basalt's pin.
 
 ## History: blame and the numbering survive
 
@@ -141,7 +139,7 @@ working.
   and H1s, as `script/roadmap` does. The index this tree retired on 2026-09-21 stays retired as a
   file.
 - One stable address per record number, such as `/roadmap/533/`, `/decisions/201/` and
-  `/journeys/5/`. Titles are drafts, so the slug never forms part of the address.
+  `/journeys/5/`. Titles are drafts, so no slug forms part of an address.
 - Each `milestone N` and `§N` in prose becomes a link to that address. `script/citations` already
   parses them.
 - Search across 3.6 million words, built at generation time with no server.
@@ -163,8 +161,7 @@ number alone, and nothing in an address names the host. The ruling creates nothi
 setting the custom domain and changing DNS each wait for the architect's approval.
 
 The host's known limits: no server-side redirects, which number-based addresses avoid needing; no
-built-in pull-request preview, though a workflow can attach the built site as an artifact; and a
-soft bandwidth limit of 100 GB a month.
+built-in pull-request preview; and a soft bandwidth limit of 100 GB a month.
 
 ## The checks, in a repository with no code to build
 
@@ -195,8 +192,7 @@ change the dependent side in a separate pull request that cites the landed commi
 
 ## Order of steps
 
-Each step lands alone. Steps 1 to 5 can start now, with no move and no ruling beyond step 3's
-dependency approval.
+Each step lands alone. Steps 1 to 5 can start now, needing only step 3's dependency approval.
 
 1. Tag each `script/lint` section as record or code, the way `lint-quick` tags sections. No
    behavior changes; the record repository's lint then becomes a selection.
@@ -208,9 +204,8 @@ dependency approval.
    home and counts the notes left undecided. The sort follows the ruling on question 4: whole-project
    material moves, and crate documentation, `BUGS` sections, lint baselines, workflow data and
    `AGENTS.md` stay. For each note it decides between cross-cutting and about one crate alone, and
-   it produces the number of the second kind. It also lists every link from a record into a note or
-   a crate path that stays, since the site's link check fails the build on an internal link whose
-   target is not in the record repository.
+   it produces the number of the second kind. It also lists every link from a record into a path that
+   stays, since the site's link check fails the build on such a link.
 5. Measure whether the record's checks can run only on the record's own directories, so a change to the site's other paths does not trigger them. The ruling of 2026-11-01 (UTC) makes this a
    condition of the one-repository shape, and it is not yet verified. Three checks are
    repository-wide today. The `needs-architect` required check of §88 (`needs-architect` as a required check) runs on every pull request and
@@ -241,11 +236,8 @@ dependency approval.
   `peps.python.org`, with a render workflow in Actions and Read the Docs previews per pull request.
 - Rust's RFCs, read 2026-11-01: `rust-lang/rfcs`, where an RFC's number is its pull request's
   number, rendered as a book at `rust-lang.github.io/rfcs`.
-- FreeBSD, recalled: the documentation tree lives in its own repository apart from `src`, and Hugo
-  builds the website and Handbook from it.
-- Go, recalled: design documents in `golang/proposal`, citing code by change number, rendered only
-  by GitHub.
-- Kubernetes, recalled: KEPs in `kubernetes/enhancements`, numbered by issue.
+- FreeBSD, Go and Kubernetes, recalled: each keeps its documentation or design records apart from
+  the source (the Handbook, `golang/proposal`, `kubernetes/enhancements`).
 
 Where nife differs: an integrator mints the number at merge. That is why the namespace can move as
 a whole. A pull-request number, as Rust uses, would collide across repositories. And nife's records
@@ -268,9 +260,8 @@ feed gates, which the PEPs do not, so the checks move with the text.
 - Where `script/claim` lives once tooling leaves. The lane skills are ruled; the code repositories'
   `AGENTS.md` files point at them today by relative path, and how they point at skills held in
   another repository is not worked out.
-- How many links from the record reach a note or crate path that stays. A rough count on
-  2026-11-01 found 168 distinct notes linked from the record, 5 of them named for a crate, and 2
-  links into `crates/`. Step 4 replaces this with a real sort.
+- How many links from the record reach a note or crate path that stays. A rough count found 168
+  notes linked from the record, 5 named for a crate. Step 4 replaces it with a real sort.
 
 ## Open questions for the architect
 
@@ -285,11 +276,8 @@ One decision each, recommendation first. Ask them one at a time.
 3. Ruled 2026-11-01 (UTC): GitHub Pages from Actions in `nifeos.org`, with the nifeos.org custom
    domain. Addresses derive from kind and number alone. The Background states the limits, and
    step 8 names the person-only tasks.
-4. Ruled 2026-11-01 (UTC), as recommended: the record repository takes the roadmap, decisions,
-   journeys, naming, tenets, cross-cutting notes, `briefs/` and the lane skills. Each code
-   repository keeps its crate documentation, `BUGS` sections, notes about that crate alone, lint
-   baselines, workflow data and its own `AGENTS.md`. A crate's notes move with the crate under §315
-   (a crate's documentation leaves with it).
+4. Ruled 2026-11-01 (UTC), as recommended: the division the Background states, with a crate's
+   notes moving with the crate under §315 (a crate's documentation leaves with it).
 
 5. Raised and not yet put to the architect: where the tutorial's source lives. The planned
    tutorial on building a RISC-V operating system publishes on the site. Its source could sit in
