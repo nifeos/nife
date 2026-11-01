@@ -37,15 +37,12 @@ carry.
 
 Each item gives the recommendation first.
 
-1. `jh7110_clock_and_reset::standard_mode_100k` translates GPL-2.0+ code. Recommendation:
-   rewrite it from the I2C bus specification's standard-mode minimums and the DesignWare count
-   equations, with a period fill nife chooses and states. If no public statement of the equations
-   exists, record the function as GPL-derived and move it out of the published crate. It follows the
-   vendor U-Boot `designware_i2c.c` functions `dw_i2c_calc_timing` and `calc_counts` step for step:
-   the same back-solve, the same "split the difference and bias to lcnt" fill, and the same
-   rounding division. The SCL equations describe the hardware. The fill is U-Boot's own choice.
-   Milestone 819 (JH7110 clock and reset logic, proven)'s `Reuse:` line says the lane read its sources and copied
-   none.
+1. Ruled 2026-11-01 UTC and done by #2987: `jh7110_clock_and_reset::standard_mode_100k` is
+   rewritten from a permissively licensed source or the I2C specification, with a fill nife chooses
+   and states. The same pull request records a bench check of the PMIC reset path in milestone 819
+   (JH7110 clock and reset logic, proven)'s BUGS section, because the fill branch runs at the
+   board's input clock and the programmed counts change. It had translated GPL-2.0+ code from the
+   vendor U-Boot `designware_i2c.c` functions `dw_i2c_calc_timing` and `calc_counts`.
 2. `usb::boot_keyboard::TABLE` and `MODIFIER_CODES` copy Linux's `hid_keyboard[]` (GPL-2.0 or
    later). Recommendation: derive both from the HID Usage Tables names mapped to the `KEY_*` codes in
    `include/uapi/linux/input-event-codes.h` (GPL-2.0 WITH Linux-syscall-note), and keep
