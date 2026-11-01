@@ -119,7 +119,7 @@ to the boot, which is the opposite of what item 3 asks: the host composes the im
 
 ## The ruling
 
-**A**, with the container changed to the RedoxFS launch volume. The table lives on that volume as files
+A, with the container changed to the RedoxFS launch volume. The table lives on that volume as files
 under `activation/`, and a seed image is not a separate artifact: generation 1 is present on the
 volume at build time. Three facts follow.
 
@@ -194,8 +194,8 @@ the ruling changes where the records go and not how the composition checks them.
     digest is not in `program_measurements`, which it holds from boot. No code compares a base row
     with `program_measurements` today, at install or at read. `xtask/src/base_image.rs` writes the
     base rows, and `with_live_table` and `vouched` in `crates/system_initializer/src/image_request.rs`
-    are the read path. The check extends the plumbing of milestone 992 (a package the base does
-    not vouch for cannot install base-only asks) from install time to read time, and it is
+    are the read path. The check extends the plumbing of milestone 992 (the base programs carry
+    their manifests in notes) from install time to read time, and it is
     outstanding.
     [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md)
     lists the options it chose among.
@@ -229,7 +229,7 @@ the ruling changes where the records go and not how the composition checks them.
 - **Proposed.** A generation larger than a page, ruled 2026-11-01 (UTC) to read up to a 64 KiB
   bound (16 pages) and refuse past it:
   `design/roadmap/proposals/a-generation-grows-past-one-page.md`.
-- **Closed as ruled.** Item 3, the measurement, ruled 2026-11-01 (UTC): the progenitor checks each
+- **Recorded.** Item 3, the measurement, ruled 2026-11-01 (UTC): the progenitor checks each
   owner-shaped base row against `program_measurements` at read time. That check is outstanding
   work, listed under `BUGS`.
 - **Outstanding.** Item 4 closes when item 2 does. Item 5's grant rows fill as the base programs'
