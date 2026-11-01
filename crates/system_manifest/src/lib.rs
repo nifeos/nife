@@ -267,10 +267,8 @@ impl<'a> SystemManifest<'a> {
     ///
     /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
     pub fn entries(&self) -> impl Iterator<Item = Entry<'a>> + 'a {
-        self.text
-            .lines()
-            .enumerate()
-            .filter_map(|(index, line)| read_line(line, index + 2).ok())
+        // `parse` read every line already, so none is refused here; the line number is unused.
+        self.text.lines().filter_map(|line| read_line(line, 0).ok())
     }
 
     /// The digest the manifest lists for `stem`, if it lists it.
