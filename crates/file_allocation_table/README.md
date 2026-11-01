@@ -1,121 +1,131 @@
 # file_allocation_table
 
-A FAT12, FAT16 and FAT32 filesystem as pure computation, growing in stages. It does no I/O and
-needs no allocator (`no_std`). Three parts exist.
+FAT12, FAT16 and FAT32 as pure computation: read, write and format volumes through a sector
+interface you implement. It does no I/O, needs no allocator (`no_std`), and names no device. Long
+file names (VFAT) work both ways, and every parser that meets bytes off a stranger's stick is
+checked by a model checker.
 
-The reader opens a volume through `SectorDevice`, a trait you implement over anything that reads
-whole sectors. It checks the boot sector, decodes the file allocation table, walks cluster chains
-and reads directories slot by slot. Every byte it reads is hostile: it never panics, never reads
-outside the volume, and no table contents can make a chain walk loop. It does not yet assemble long
-names or read a file's bytes.
+## What it does
 
-The writer creates an EFI system partition holding one boot file. You give it a partition size, a
-file length and a file name; it tells you what every metadata sector must contain, and you write
-those sectors and then the file's bytes. It writes VFAT long-name entries for a name that is not
-8.3, such as `BOOTRISCV64.EFI`. 
-The table is writable through `WritableSectorDevice`. `Volume::allocate_cluster` takes a free
-cluster and links it after a chain's last, `Volume::truncate_chain` and `Volume::free_chain` give
-clusters back, and each writes every live copy of the table in an order that leaves a crash at
-worst a leaked cluster. `Volume::sync` writes the FAT32 `FSInfo` hints those calls maintain.
-`Volume::create_file`, `open_file_writer` and `remove_file` make, write, resize and delete files. A name that is not 8.3 gets long-name slots and a numbered alias. `make_directory`,
-`remove_directory` and `rename` change the tree, and the first change clears the clean-shutdown
-bit until `sync`. `Format` lays out an empty FAT12, FAT16 or FAT32 volume of any size and sector size:
-`Format::new(FormatOptions::new(size, sectors))`, then `write_to` your device.
+- **Read.** `Volume::open` checks the boot sector, types the volume by its cluster count as the
+  specification does, and reads directories, long names, paths and file bytes. `MasterBootRecord`
+  opens the volume inside a partitioned disk.
+- **Write.** Create, write, extend, truncate, rename and remove files; make and remove directories;
+  set attributes (read-only, hidden, system, archive); read and change the volume label. A name that
+  is not 8.3 gets long-name slots and an alias numbered against its directory. The first change clears
+  the clean-shutdown bit and `Volume::sync` sets it again, with the FAT32 `FSInfo` hints.
+- **Format.** `Format` lays out an empty volume of any size and sector size (512 to 4096 bytes),
+  with the cluster size, serial number and label of your choice. `VolumeLayout` lays out the one
+  shape a bootloader needs: a FAT32 EFI system partition holding one boot file.
+
+## Example
+
+```rust
+use file_allocation_table::{
+    Attributes, Format, FormatOptions, SectorDevice, SectorSize, Volume, WritableSectorDevice,
+};
+
+/// A volume held in memory. A real caller wraps a block device the same way.
+struct Memory(Vec<u8>);
+
+impl SectorDevice for Memory {
+    type Error = ();
+
+    fn sector_size(&self) -> SectorSize {
+        SectorSize::Bytes512
+    }
+
+    fn read_sector(&mut self, index: u64, buffer: &mut [u8]) -> Result<(), ()> {
+        let start = usize::try_from(index).map_err(|_| ())? * 512;
+        buffer.copy_from_slice(self.0.get(start..start + 512).ok_or(())?);
+        Ok(())
+    }
+}
+
+impl WritableSectorDevice for Memory {
+    fn write_sector(&mut self, index: u64, buffer: &[u8]) -> Result<(), ()> {
+        let start = usize::try_from(index).map_err(|_| ())? * 512;
+        self.0.get_mut(start..start + 512).ok_or(())?.copy_from_slice(buffer);
+        Ok(())
+    }
+}
+
+fn main() {
+    // Format 8 MiB. The size makes it FAT12; a bigger device makes FAT16 or FAT32.
+    let sectors = 16 * 1024;
+    let options = FormatOptions::new(SectorSize::Bytes512, sectors).with_label("EXAMPLE").unwrap();
+    let format = Format::new(options).expect("a legal size");
+    let mut device = Memory(vec![0; sectors as usize * 512]);
+    format.write_to(&mut device).unwrap();
+
+    // Open it, make a directory and a file with a long name, and write some bytes.
+    let mut volume = Volume::open(device).unwrap();
+    let docs = volume.make_directory(0, "Documents").unwrap();
+    let file = volume.create_file(docs.first_cluster(), "A long file name.txt").unwrap();
+    volume.open_file_writer(&file).unwrap().write(b"hello, volume").unwrap();
+    let stored = volume.lookup("Documents/A long file name.txt").unwrap();
+    let hidden = Attributes::ARCHIVE.union(Attributes::HIDDEN);
+    volume.set_attributes(&stored, hidden).unwrap();
+    volume.sync().unwrap();
+
+    // Read it back by path, as another program would.
+    let entry = volume.lookup("documents/A LONG FILE NAME.TXT").unwrap();
+    let mut bytes = [0u8; 32];
+    let read = volume.open_file(&entry).unwrap().read(&mut bytes).unwrap();
+    assert_eq!(&bytes[..read], b"hello, volume");
+    assert_eq!(volume.volume_label().unwrap().unwrap().trimmed(), b"EXAMPLE");
+}
+```
+
+`tests/the_readme_example.rs` compiles and runs this example. For an EFI system partition:
+`VolumeLayout::new(total_sectors, hidden_sectors, file_len, volume_id, "BOOTX64.EFI")` tells you what
+every metadata sector holds, and you write those sectors and then the file's bytes.
 
 ## What is proven
 
-Nine Kani harnesses cover the reader. The four on the boot sector cover every 512-byte sector:
-what the parse accepts lies inside the volume, the FAT type is the cluster count's, the table has
-an entry for every cluster, and only a data cluster has sectors. Five more cover the rest:
+Kani harnesses (`cargo kani`) prove, over every input they can unroll:
 
-- `every_entry_lies_inside_the_table` and `an_entry_decodes_by_its_markers`: for every boot
-  sector and cluster number, a table entry lies inside the table, and every raw value decodes by
-  the specification's markers.
-- `no_chain_walk_outlasts_the_volume`: over a table whose entries change on every read, a walk
-  yields only data clusters, at most as many as the volume holds, then ends. Volumes of one to
-  eight clusters.
-- `every_slot_parses_as_its_bytes_say` and `a_directory_reads_only_its_own_sectors`: every
-  32-byte slot parses as its first byte and attributes say, and a directory read visits only its
-  region's or its clusters' sectors.
+- **Hostile input.** No parse step panics or reads outside the volume: the boot sector and BPB (every
+  512-byte sector), FAT entries, directory slots, long-name runs, the partition table and `FSInfo`.
+  A cluster chain walk cannot loop: it ends within the volume's cluster count.
+- **Writes.** A stored table entry reads back and disturbs nothing else; allocation takes one free
+  cluster and changes nothing else; a release frees only the chain it was given and never a bad
+  cluster; a cut keeps exactly the head of the chain; a partial sector write keeps the head, zeroes
+  the slack and lands the bytes; a write extends the chain to the size it needs.
+- **Names.** The long-name checksum equals the specification's loop for every short name; every
+  long-name run is well formed; every alias is a legal short name that carries its number; the
+  finder takes the first run of free slots.
+- **Format.** A geometry the format computes parses back as the same type, clusters, table size
+  and data start.
+- **Attributes and labels.** Setting attributes changes the four user bits and nothing else, and
+  never makes a long-name piece; an accepted label is legal bytes then spaces.
 
-Three cover the long-name writer:
+Each harness has a falsification record at `falsifications/<module.path>.<harness>.patch`. Applying
+it with `patch -p3` from the crate root makes that harness fail at its own assertion, which shows
+the proof checks something. Kani bounds what it unrolls (the model volumes are a few clusters, the
+format proof covers clusters of 1 to 8 sectors), so the fuzz targets and the oracle tests cover
+whole images.
 
-- `the_checksum_is_the_specifications_loop`: the checksum that binds a long name to its short
-  alias equals the specification's shift-and-add loop for every one of the 2^88 short names.
-- `every_long_name_run_is_well_formed`: for every name up to 255 UCS-2 units, the run of long-name
-  entries has the right count, ordinals, attribute, checksum and padding, and reads back as the
-  name.
-- `every_alias_is_a_legal_short_name`: every generated `~1` alias is either refused or a legal
-  11-byte short name.
-
-Seven cover the table writes and allocation:
-
-- `a_stored_entry_reads_back_and_disturbs_nothing_else` and `encoding_inverts_decoding`: a stored
-  entry reads back for every type and cluster, keeps its neighbor's nibble and FAT32's reserved
-  bits, and encoding is decoding's inverse.
-- `allocation_takes_one_free_cluster_and_nothing_else`, `a_release_frees_only_its_own_chain` and
-  `a_cut_keeps_exactly_the_head_of_the_chain`: over a model table of one to four clusters with
-  every entry chosen by the solver, allocation changes one free entry to end-of-chain, a release
-  frees only links and end markers and never a bad or reserved cluster, and a cut leaves exactly
-  the head of the chain.
-- `every_sector_parses_to_hints_inside_the_volume` and `a_store_changes_only_the_two_hints`: the
-  `FSInfo` parse believes only hints that could be true, and a store changes only the two hints.
-
-Two more cover directories: `every_numbered_alias_carries_its_number` (every alias from `~1` to
-`~999999` is a legal short name that reads back as its number) and
-`the_run_finder_returns_the_first_run_of_free_slots` (the slots a new entry takes are the first run
-of free ones).
-
-`a_geometry_parses_back_to_itself` proves the format: for every device size, type and cluster
-size, the boot sector it writes parses to the same type, clusters, table size and data start.
-
-Rerun them with `cargo kani`. Each harness has a falsification record at
-`falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
-makes that harness fail at its own assertion, which shows the proof checks something.
-
-Unit tests cover the volume layout (boot sector, `FSInfo`, both FATs, directory entries, cluster
-alignment), and an ignored test has the host's own FAT driver check and read an image
-(`cargo test -- --ignored`, on macOS).
-
-`tests/the_oracle_agrees.rs` checks the crate against rust-fatfs (the `lamfat` dev-dependency):
-rust-fatfs writes a tree on FAT12, FAT16 and FAT32 and this crate must read the same names, sizes,
-bytes and free clusters, and rust-fatfs must read the writer's volume. Where `fsck.fat` or
-`fsck_msdos` is installed, every image must pass it too.
-
-## Usage
-
-A 512 MiB EFI system partition at LBA 2048 holding a 9 MB boot file:
-
-```rust
-use file_allocation_table::{SECTOR_BYTES, VolumeLayout};
-
-let volume = VolumeLayout::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI")
-    .expect("512 MiB is a FAT32 volume");
-
-let mut sector = [0u8; SECTOR_BYTES];
-for index in 0..volume.metadata_sectors() {
-    assert!(volume.fill_sector(index, &mut sector));
-    // write `sector` at partition-relative LBA `index`
-}
-// then the file's own bytes, contiguous, at this LBA:
-assert_eq!(volume.file_first_sector(), volume.metadata_sectors());
-```
-
-`VolumeLayout::new` refuses a partition below 65,525 data clusters (about 256 MiB, since the cluster
-count decides the FAT type), one too large for FAT32, a name no VFAT entry may carry, and a file
-that does not fit.
+The oracle is rust-fatfs (the `lamfat` dev-dependency): the tests write trees on FAT12, FAT16 and
+FAT32 volumes with each, and each must read what the other wrote, name for name and byte for byte.
+Where `fsck.fat` or `fsck_msdos` is installed every image must pass `fsck -n`, and where
+`mkfs.fat` is installed its FAT12 and FAT16 volumes take this crate's writer. Two FAT32 images a
+macOS host formatted and wrote are read to their recorded hashes. An ignored test has the host's
+own driver read an image (`cargo test -- --ignored`, on macOS).
 
 ## Limitations
 
-- The `mkfs` writes one file, with a `~1` alias.
-- The writer writes 512-byte sectors and 4096-byte clusters, and nothing else.
-- Every timestamp is zero.
-- The `mkfs` writes the `FSInfo` free-cluster count once; only `Volume::sync` keeps it after that.
-- A write has no barrier. Every timestamp is zero, and a name outside the Basic Multilingual Plane is refused.
-- Not crash-atomic, and there is no journal, since FAT has none.
-- The reader stops at directory slots: it reports long-name pieces as stored, without assembling
-  them or checking their checksum, and reads no file's bytes.
-- A loop in a hostile table stops a chain walk only at the volume's cluster count.
+- Not crash-atomic, and there is no journal, since FAT has none. The crate orders its writes so a
+  crash leaks a cluster and never shares one, and a write has no barrier: the device decides when a
+  write reaches the medium.
+- Every timestamp is zero. A caller that needs real times sets them itself; none is invented.
+- A name with a character outside the Basic Multilingual Plane is refused, and a lower-case 8.3 name
+  is stored as a long name, since the crate writes no lower-case flag.
+- Names compare by simple Unicode upper-casing, not the volume's code page or upcase table.
+- A directory slot is found by walking from the directory's first cluster each time, so a directory
+  of thousands of clusters is slow. The 65,536-entry ceiling is not tested.
+- The reader does not follow extended partitions and reads no GUID partition table.
+- exFAT is not covered; it is a sibling crate's job.
 
 ## Minimum Rust version
 

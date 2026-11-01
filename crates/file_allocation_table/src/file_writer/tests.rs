@@ -429,10 +429,10 @@ fn a_write_keeps_the_attributes_the_entry_already_has() {
     let mut volume = Volume::open(Image::fat12()).unwrap();
     let entry = volume.create_file(0, "RO.BIN").unwrap();
     let mut image = volume.into_device();
-    image.bytes[5 * 512 + 11] = 0x01;
+    image.bytes[5 * 512 + 11] = 0x02;
     let mut volume = Volume::open(image).unwrap();
     let readonly = NamedEntry::created(
-        ShortEntry::new(entry.short_name(), 0x01, 0, 0),
+        ShortEntry::new(entry.short_name(), 0x02, 0, 0),
         entry.place(),
     );
     volume
@@ -440,7 +440,7 @@ fn a_write_keeps_the_attributes_the_entry_already_has() {
         .unwrap()
         .write(b"x")
         .unwrap();
-    assert_eq!(volume.into_device().bytes[5 * 512 + 11], 0x21);
+    assert_eq!(volume.into_device().bytes[5 * 512 + 11], 0x22);
 }
 
 #[test]
