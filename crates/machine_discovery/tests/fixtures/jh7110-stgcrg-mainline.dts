@@ -2,15 +2,11 @@
 
 /*
  * The JH7110's STG clock-and-reset generator **as mainline Linux describes it**. NOT a dump from
- * any board: transcribed 2026-09-04 from arch/riscv/boot/dts/starfive/jh7110.dtsi, mainline,
- * fetched via raw.githubusercontent.com/torvalds/linux/master/...
- *
- *     stgcrg: clock-controller@10230000 {
- *         compatible = "starfive,jh7110-stgcrg";
- *         reg = <0x0 0x10230000 0x0 0x10000>;
- *         #clock-cells = <1>;
- *         #reset-cells = <1>;
- *     };
+ * any board and not a copy of the upstream file. Source: `arch/riscv/boot/dts/starfive/jh7110.dtsi`
+ * in torvalds/linux at commit cbbddb6b08cc, fetched 2026-11-01 (UTC). The `stgcrg` node carries
+ * the compatible string `starfive,jh7110-stgcrg`, one `reg` window of 0x10000 bytes at 0x10230000,
+ * and one cell each for clocks and resets; this fixture keeps those and drops the node's clocks
+ * and resets lists.
  *
  * One window, so `reg-names` is absent and `discover` takes the node's only `reg`. The soc
  * wrapper and its two-cell addressing are the real tree's; a four-cell `reg` only decodes

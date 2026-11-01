@@ -2,12 +2,12 @@
 
 /*
  * A hand-written device tree MODELED ON the T-Head TH1520 (the SoC in Scaleway's Elastic Metal
- * RV1 and the Lichee Pi 4A), NOT a dump from a machine. Prep for milestone 89
- * (Scaleway EM-RV1: a second RISC-V implementation, rented), 2026-09-25 (UTC).
- * Every node below is copied from Linux `arch/riscv/boot/dts/thead/th1520.dtsi` at commit
- * 165768bb7 (master, 2026-09-24), trimmed to what the tests read, plus the Lichee Module 4A's
- * `memory@0` and the Lichee Pi 4A's `/chosen`. The RV1's own tree comes from its firmware and is
- * read off the machine in the first rented hour; this fixture stands in for it until then.
+ * RV1 and the Lichee Pi 4A), NOT a dump from a machine and not a copy of any upstream file. Prep
+ * for milestone 89 (Scaleway EM-RV1: a second RISC-V implementation, rented), 2026-09-25 (UTC).
+ * The values below were read from `arch/riscv/boot/dts/thead/th1520.dtsi` in torvalds/linux at
+ * commit cbbddb6b08cc, fetched 2026-11-01 (UTC), and only the properties the tests in
+ * `riscv64_th1520.rs` read are kept. The RV1's own tree comes from its firmware and is read off
+ * the machine in the first rented hour; this fixture stands in for it until then.
  *
  * What makes it different from both machines this tree already boots:
  *
@@ -15,13 +15,9 @@
  *              `riscv,plic0`. At 0xff_d800_0000, 40 bits up, far past the 256 GiB the Sv39 direct
  *              map reaches. `#interrupt-cells = <2>` (number and trigger), not QEMU's 1.
  *   contexts   M then S per hart, so hart h's S context is 2h+1, QEMU's layout.
- *   serial     uart0 at 0xff_e701_4000, a DesignWare 16550 like the JH7110's (reg-shift 2,
- *              reg-io-width 4), interrupt 36. The dtsi states the clock as phandles; the
- *              `clock-frequency` here is U-Boot's 100 MHz `CFG_SYS_NS16550_CLK`, the shape
- *              vendor trees carry. `status` is "okay" as the Lichee Pi 4A's board file sets it.
- *   memory     DRAM from physical 0, not 0x8000_0000 (QEMU) or 0x4000_0000 (JH7110).
- *   cpus       four C910s, Sv39, 3 MHz timebase; no sstc, svpbmt or zicbom, and `xtheadvector`
- *              (RVV 0.7.1), which this tree does not know and must ignore.
+ *   serial     uart0 at 0xff_e701_4000, interrupt 36.
+ *   cpus       four C910s, Sv39; no sstc, svpbmt or zicbom, and `xtheadvector` (RVV 0.7.1), which
+ *              this tree does not know and must ignore.
  *
  * Rebuild with:
  *     dtc -I dts -O dtb -o crates/machine_discovery/tests/fixtures/th1520.dtb \
@@ -33,35 +29,15 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
-	chosen {
-		stdout-path = "serial0:115200n8";
-	};
-
-	aliases {
-		serial0 = &uart0;
-	};
-
-	memory@0 {
-		device_type = "memory";
-		reg = <0x0 0x00000000 0x2 0x00000000>;
-	};
-
 	cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		timebase-frequency = <3000000>;
 
 		cpu@0 {
-			compatible = "thead,c910", "riscv";
 			device_type = "cpu";
-			riscv,isa = "rv64imafdc";
-			riscv,isa-base = "rv64i";
-			riscv,isa-extensions = "i", "m", "a", "f", "d", "c",
-					       "ziccrse", "zicntr", "zicsr",
-					       "zifencei", "zihpm", "zfh",
-					       "xtheadvector";
-			thead,vlenb = <16>;
 			reg = <0>;
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "f", "d", "c", "xtheadvector";
 			mmu-type = "riscv,sv39";
 
 			cpu0_intc: interrupt-controller {
@@ -72,16 +48,10 @@
 		};
 
 		cpu@1 {
-			compatible = "thead,c910", "riscv";
 			device_type = "cpu";
-			riscv,isa = "rv64imafdc";
-			riscv,isa-base = "rv64i";
-			riscv,isa-extensions = "i", "m", "a", "f", "d", "c",
-					       "ziccrse", "zicntr", "zicsr",
-					       "zifencei", "zihpm", "zfh",
-					       "xtheadvector";
-			thead,vlenb = <16>;
 			reg = <1>;
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "f", "d", "c", "xtheadvector";
 			mmu-type = "riscv,sv39";
 
 			cpu1_intc: interrupt-controller {
@@ -92,16 +62,10 @@
 		};
 
 		cpu@2 {
-			compatible = "thead,c910", "riscv";
 			device_type = "cpu";
-			riscv,isa = "rv64imafdc";
-			riscv,isa-base = "rv64i";
-			riscv,isa-extensions = "i", "m", "a", "f", "d", "c",
-					       "ziccrse", "zicntr", "zicsr",
-					       "zifencei", "zihpm", "zfh",
-					       "xtheadvector";
-			thead,vlenb = <16>;
 			reg = <2>;
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "f", "d", "c", "xtheadvector";
 			mmu-type = "riscv,sv39";
 
 			cpu2_intc: interrupt-controller {
@@ -112,16 +76,10 @@
 		};
 
 		cpu@3 {
-			compatible = "thead,c910", "riscv";
 			device_type = "cpu";
-			riscv,isa = "rv64imafdc";
-			riscv,isa-base = "rv64i";
-			riscv,isa-extensions = "i", "m", "a", "f", "d", "c",
-					       "ziccrse", "zicntr", "zicsr",
-					       "zifencei", "zihpm", "zfh",
-					       "xtheadvector";
-			thead,vlenb = <16>;
 			reg = <3>;
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "f", "d", "c", "xtheadvector";
 			mmu-type = "riscv,sv39";
 
 			cpu3_intc: interrupt-controller {
@@ -137,39 +95,22 @@
 		interrupt-parent = <&plic>;
 		#address-cells = <2>;
 		#size-cells = <2>;
-		dma-noncoherent;
 		ranges;
 
 		plic: interrupt-controller@ffd8000000 {
-			compatible = "thead,th1520-plic", "thead,c900-plic";
+			#interrupt-cells = <2>;
+			interrupt-controller;
 			reg = <0xff 0xd8000000 0x0 0x01000000>;
+			compatible = "thead,th1520-plic", "thead,c900-plic";
 			interrupts-extended = <&cpu0_intc 11>, <&cpu0_intc 9>,
 					      <&cpu1_intc 11>, <&cpu1_intc 9>,
 					      <&cpu2_intc 11>, <&cpu2_intc 9>,
 					      <&cpu3_intc 11>, <&cpu3_intc 9>;
-			interrupt-controller;
-			#address-cells = <0>;
-			#interrupt-cells = <2>;
-			riscv,ndev = <240>;
-		};
-
-		clint: timer@ffdc000000 {
-			compatible = "thead,th1520-clint", "thead,c900-clint";
-			reg = <0xff 0xdc000000 0x0 0x00010000>;
-			interrupts-extended = <&cpu0_intc 3>, <&cpu0_intc 7>,
-					      <&cpu1_intc 3>, <&cpu1_intc 7>,
-					      <&cpu2_intc 3>, <&cpu2_intc 7>,
-					      <&cpu3_intc 3>, <&cpu3_intc 7>;
 		};
 
 		uart0: serial@ffe7014000 {
-			compatible = "snps,dw-apb-uart";
 			reg = <0xff 0xe7014000 0x0 0x100>;
 			interrupts = <36 4>;
-			clock-frequency = <100000000>;
-			reg-shift = <2>;
-			reg-io-width = <4>;
-			status = "okay";
 		};
 	};
 };

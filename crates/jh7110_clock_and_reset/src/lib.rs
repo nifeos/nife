@@ -421,17 +421,19 @@ pub const fn clock_divider(word: u32) -> u32 {
     word & 0x00ff_ffff
 }
 
-/// The PMIC (power management integrated circuit) as radon's vendor tree spells it (U-Boot SDK
-/// `VF2_v2.10.4`, `starfive_visionfive2.dts`:
-/// `pmic: axp15060_reg@36 { compatible = "stf,axp15060-regulator"; reg = <0x36>; }` under
-/// `&i2c5`). This is also the string radon's OpenSBI matches to find its reset device.
+/// The PMIC (power management integrated circuit) as radon's vendor tree spells it: the
+/// `axp15060_reg@36` node under `&i2c5` in `arch/riscv/dts/starfive_visionfive2.dts` of
+/// `starfive-tech/u-boot` at tag `VF2_v2.10.4` (commit `1ae835c25e3d`, fetched 2026-11-01 UTC). The
+/// node gives this string as its `compatible` and `0x36` as its `reg`. This is also the string
+/// radon's OpenSBI matches to find its reset device.
 ///
 /// Name: provisional. The same reason as `COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE`.
 #[doc(alias = "pmic")]
 pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR: &[u8] = b"stf,axp15060-regulator";
 
-/// The same PMIC in mainline's `jh7110-common.dtsi`: `axp15060: pmic@36 { compatible =
-/// "x-powers,axp15060"; }` under `&i2c5`.
+/// The same PMIC in mainline: the `pmic@36` node under `&i2c5` in
+/// `arch/riscv/boot/dts/starfive/jh7110-common.dtsi` of `torvalds/linux` at commit
+/// `cbbddb6b08cc`, fetched 2026-11-01 (UTC), whose `compatible` is this string.
 ///
 /// Name: provisional. PMIC spelled out as the 2026-10-26 (UTC) ruling spells it for
 /// `POWER_MANAGEMENT_CHIP_COMPATIBLES`; the ruling did not name this constant.
