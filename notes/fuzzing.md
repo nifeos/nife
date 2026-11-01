@@ -5,7 +5,7 @@ integrity) ask whether code we did not write is what we think; this one asks whe
 write survives bytes it did not write.
 
 `script/fuzz` runs coverage-guided fuzz targets over the parsers that read data from outside this
-system: eight parsers, plus three service targets that
+system: eleven parser targets, plus three service targets that
 [fuzzing-the-services.md](fuzzing-the-services.md) covers. It found two bugs on its first day, and a
 third came out of reading the code while designing a target. All three are fixed and pinned by host
 tests.
@@ -53,7 +53,7 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Eight parser targets, deliberately fewer than one per crate. A fuzz target that finds nothing
+Eleven parser targets, deliberately fewer than one per crate. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
@@ -64,18 +64,19 @@ implies coverage the project does not have.
 | `globally_unique_identifier_partition_table` | a disk somebody else formatted | decides which LBA range is a filesystem. Heavily checked already, which is the point: the gap is *combinations* of hostile fields, which neither the proofs nor the single-byte mutation tests can build. |
 | `file_allocation_table_boot_sector` | a USB stick somebody else formatted | every later FAT read indexes by what it says |
 | `domain_name_system_reply` | a name server, or anyone who can forge its reply | a reply that panics takes name resolution down, and one that slips past `Query::accept` sends a client to the wrong host. Kani covers the name decoder, not `accept`; see notes/name-resolution.md. |
+| `file_allocation_table_writer` | the volume the writer formats, and the operations asked of it | any operations on any volume must leave a formatted volume a tree; see notes/fuzzing/targets.md. |
 | `http_response_feed` | a package server, over plain HTTP | network bytes, read in the progenitor **before** the digest check. Asserts read splits never change the answer. |
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
 | `package_index_text` | package host | address check |
+| `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
 
 ### And the ones deliberately not fuzzed
 
-Naming these matters as much as naming the targets, because "we have fuzzers" quietly grows to cover
+Naming these matters as much as naming the targets: "we have fuzzers" quietly grows to cover
 everything. `Fs::parse` on raw bytes is proved total, so a target there could find nothing. The IPC
 protocols are total by construction, and their real hazard, a double fetch, is a concurrent mutation
-no byte-string fuzzer can express. `video_terminal` and `grant_plan` were left for stated reasons.
-Each is argued in [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md).
+no byte-string fuzzer can express. [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md) argues each, and `grant_plan` too.
 
 ## Why cargo-fuzz
 
