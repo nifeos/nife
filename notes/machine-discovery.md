@@ -3,8 +3,8 @@
 *Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.*
 
 `crates/machine_discovery` reads what the machine is rather than what the target triple implies.
-Its per-architecture records, the tiers of discovery and why there is no trait are in
-[isa-discovery.md](isa-discovery.md). This note covers the rest: the aarch64 decoder's traps, and
+[isa-discovery.md](isa-discovery.md) covers its per-architecture records, the tiers of discovery
+and why there is no trait. This note covers the rest: the aarch64 decoder's traps, and
 the readers every architecture shares or that x86 alone needs. Each module's limits are in the
 `BUGS` section of its own doc comment. The note name is provisional.
 
@@ -12,13 +12,13 @@ the readers every architecture shares or that x86 alone needs. Each module's lim
 
 The aarch64 record decodes `MIDR_EL1`, `ID_AA64MMFR0_EL1`, `ID_AA64MMFR2_EL1` and
 `ID_AA64ISAR0_EL1`, read by the kernel and passed in as raw words. It is much shorter than the
-RISC-V half, and that asymmetry is the finding: the part describes itself, so there is nothing to
+RISC-V half, which is the finding: the part describes itself, so there is nothing to
 parse and nothing to disbelieve.
 
 The three granule fields need care. `TGran4` and `TGran64` spell "supported" as `0b0000` and "not
 supported" as `0b1111`. `TGran16` spells them `0b0001` and `0b0000`, so a decoder that treats the
 three alike reports 16 KiB backwards on every part. `TGran4` also has a second yes, `0b0001`, which
-Arm defines as support for 52-bit addresses with `FEAT_LPA2`. It is a stronger yes, and reading it
+Arm defines as support for 52-bit addresses with `FEAT_LPA2`. It is a stronger yes; reading it
 as reserved refuses the boot on QEMU's `-cpu max` and on any part with `FEAT_LPA2`. `TGran64` has no
 LPA2 value at all. Tidying the three decode lines into one would bring one of these bugs back.
 
