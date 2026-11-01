@@ -5,7 +5,7 @@ integrity) ask whether code we did not write is what we think; this one asks whe
 write survives bytes it did not write.
 
 `script/fuzz` runs coverage-guided fuzz targets over the parsers that read data from outside this
-system: eleven parser targets, plus three service targets that
+system: twelve parser targets, plus three service targets that
 [fuzzing-the-services.md](fuzzing-the-services.md) covers. It found two bugs on its first day, and a
 third came out of reading the code while designing a target. All three are fixed and pinned by host
 tests.
@@ -19,7 +19,7 @@ cannot.
 
 Kani is exhaustive inside a bound. `kani::any()` is every value at once, the program becomes a
 formula, and `UNSATISFIABLE` means no input breaks the property. That is a stronger claim than any
-fuzzer can make, for the inputs it covers. Its limit is structural rather than incidental. A solver
+fuzzer can make, for the inputs it covers. A solver
 reasons completely about *fixed-size* things, so an unbounded loop over an arbitrarily long input
 has to be unrolled to a limit, and past a certain unrolling the formula stops being solvable in
 useful time. notes/verification.md records those bounds and their justifications.
@@ -43,7 +43,7 @@ The place where they meet is the bound. In this tree the proved leaf and the unp
 `crates/nifefs`'s writer and reader agreeing (a property nobody had written down) are the three
 worked examples, in [fuzzing/kani-and-fuzzing.md](fuzzing/kani-and-fuzzing.md).
 
-The honest summary: a proof says the property holds where it looked, and a fuzzer looks where the
+A proof says the property holds where it looked, and a fuzzer looks where the
 proof could not. Neither subsumes the other.
 
 ## Which parsers, and why those
@@ -52,7 +52,7 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Eleven parser targets, deliberately fewer than one per crate; the table holds ten, and notes/fuzzing/targets.md covers the FAT writer. A fuzz target that finds nothing
+Twelve parser targets, deliberately fewer than one per crate; the table holds eleven, and notes/fuzzing/targets.md covers the FAT writer. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
@@ -67,6 +67,7 @@ implies coverage the project does not have.
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
 | `capability_manifest_note_decode` | an ELF note | sets authority |
+| `package_index_text` | package host | address check |
 | `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
 
 ### And the ones deliberately not fuzzed

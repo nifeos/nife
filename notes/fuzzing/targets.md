@@ -110,6 +110,23 @@ a panic in the progenitor takes the prompt with it. The target asserts propertie
 waiting for a panic. notes/fuzzing.md's BUGS section records that three of the older targets assert
 nothing, and that the one with a real property is the one that found a silent bug.
 
+## `package_index_text`
+
+A repository host or a mirror operator writes the index, and a signed index must still not be able
+to point `jig` at the owner's own network (Q1 of milestone 801 (packages over the internet)). `crates/package_index` has no Kani
+harness, so nothing else runs `Index::parse`, `Location::parse` or `Location::check` on text nobody
+here wrote. The sixth outsider pass booted an escape through `Location`
+(notes/confinement-outsider-pass-6.md). The target exists chiefly for the address check.
+
+The input is text, then optionally one NUL and a list of resolved addresses, five bytes each. The
+fuzzer chooses what a host resolved to as well as what the index says. For every location in the
+text, `Location::check` admits the list exactly when it is non-empty and holds only IPv4 addresses
+`public_address` admits. A second statement of the ranges checks `public_address` at the edge of each.
+`version::compare` must be an order: reverse, reflexive, transitive, and agreeing with `check` and
+`newest`. An accepted index must read back through `entries`, `find` and `sources` as the crate
+documents. `Sources::parse` runs on the same bytes. `fuzz/seeds/package_index_text/` carries valid
+indexes in the stand-in format and the rebinding case.
+
 ## `video_terminal_feed`
 
 Every program that prints to the display goes through `Vt::feed`, and a foreign `std` program or a

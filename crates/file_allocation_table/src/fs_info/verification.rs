@@ -4,7 +4,7 @@
 //! Both are straight-line code over fixed offsets, so each harness covers every sector and every
 //! cluster count, not a bounded family.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 

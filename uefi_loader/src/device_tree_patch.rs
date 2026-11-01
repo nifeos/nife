@@ -19,6 +19,8 @@
 //! - **Nothing is removed**: a stale `linux,initrd-*` pair the firmware left is replaced, and every
 //!   other property is copied as it was.
 
+use device_tree_blob::{DeviceTreeBlob, Region};
+
 /// The device-tree magic, big-endian at offset 0.
 pub(crate) const MAGIC: u32 = 0xd00d_feed;
 pub(crate) const HEADER_LEN: usize = 40;
@@ -181,7 +183,8 @@ impl Out<'_> {
 /// **Rewrite `src` into `out` with `/chosen/linux,initrd-{start,end}` set to `[start, end)`**, and
 /// return the new tree's length. `out` must be at least [`output_len`] bytes.
 ///
-/// `/chosen` is created as the root's last child if the firmware's tree has none.
+/// `/chosen` is created as the root's last child if the firmware's tree has none. A tree with no
+/// root node, or one that does not read back with the given range, is [`Error::Malformed`].
 ///
 /// Name: ratified 2026-10-12 (calef, #1998, milestone 139 (drive the unsafe count down) round 11).
 /// His words: "B for #1998." Refused `with_initrd` (the foreign spelling, which stops at the
@@ -242,6 +245,19 @@ pub fn with_initial_ramdisk(
     ];
     for (i, field) in fields.iter().enumerate() {
         o.buf[i * 4..i * 4 + 4].copy_from_slice(&field.to_be_bytes());
+    }
+    // Success means the kernel will find the archive: read the result back with the reader the
+    // kernel uses and refuse a tree that does not report what it was given. An empty range reads
+    // back as no archive, so that is what an empty range has to report.
+    let expected = (end > start).then(|| Region {
+        start,
+        size: end - start,
+    });
+    let read_back = DeviceTreeBlob::from_bytes(&o.buf[..total])
+        .and_then(|tree| tree.initial_ramdisk())
+        .map_err(|_| Error::Malformed)?;
+    if read_back != expected {
+        return Err(Error::Malformed);
     }
     Ok(total)
 }
@@ -310,7 +326,8 @@ impl Walk<'_> {
                 PROP => self.prop(o)?,
                 NOP => self.at += 4,
                 END => {
-                    if self.depth != 0 {
+                    // A tree with no root node has nowhere to put `/chosen`.
+                    if self.depth != 0 || !self.wrote_chosen {
                         return Err(Error::Malformed);
                     }
                     o.u32(END)?;
@@ -395,8 +412,6 @@ impl Walk<'_> {
 
 #[cfg(test)]
 mod tests {
-    use device_tree_blob::{DeviceTreeBlob, Region};
-
     use super::*;
 
     const PLAIN: &[u8] =
@@ -882,5 +897,118 @@ mod tests {
                 assert_ne!(a.reason(), b.reason());
             }
         }
+    }
+
+    // --- A tree the walker accepts must also hand the kernel its archive. The crash that found this
+    // --- was a structure block whose first token was END: no root, so no place for /chosen.
+
+    /// The start and end `initial_ramdisk` reports for `src` rewritten to `[0x1000, 0x3000)`.
+    fn patched(src: &[u8]) -> Result<Vec<u8>, Error> {
+        let mut out = vec![0; output_len(src)? + 64];
+        let n = with_initial_ramdisk(src, 0x1000, 0x3000, &mut out)?;
+        out.truncate(n);
+        Ok(out)
+    }
+
+    /// **No root node is refused**: a structure block that is only `END` gave the old walker
+    /// nothing to put `/chosen` in, and it returned `Ok` for a tree without the properties.
+    #[test]
+    fn a_tree_with_no_root_node_is_refused() {
+        let mut s = Vec::new();
+        word(&mut s, END);
+        assert_eq!(
+            patched(&tree(&[], &s, false, 0)),
+            Err(Error::Malformed),
+            "END as the first token"
+        );
+        // The shape of the fuzzer's input: a declared structure block much larger than its
+        // contents, which begins with END and is followed by zero padding.
+        let mut s = Vec::new();
+        word(&mut s, END);
+        s.resize(1024, 0);
+        assert_eq!(patched(&tree(&[], &s, false, 0)), Err(Error::Malformed));
+    }
+
+    /// **Tokens before the root and nothing else are refused**: NOPs and a stray property at depth
+    /// zero are copied, but without a root node there is still no `/chosen`.
+    #[test]
+    fn a_tree_of_only_nops_and_properties_is_refused() {
+        let mut s = Vec::new();
+        word(&mut s, NOP);
+        prop(&mut s, 0, &[0, 0, 0, 1]);
+        word(&mut s, END);
+        assert_eq!(patched(&tree(&[], &s, false, 0)), Err(Error::Malformed));
+    }
+
+    /// **An empty structure block is refused**: there is not even an `END`.
+    #[test]
+    fn an_empty_structure_block_is_refused() {
+        assert_eq!(patched(&tree(&[], &[], false, 0)), Err(Error::Truncated));
+    }
+
+    /// **A structure block cut at any token boundary is refused**, never reported as success: the
+    /// header says the block ends there, and `END` is missing.
+    #[test]
+    fn a_structure_block_cut_at_each_token_boundary_is_refused() {
+        let mut s = Vec::new();
+        begin(&mut s, "");
+        prop(&mut s, 0, &[0, 0, 0, 0x2a]);
+        begin(&mut s, "chosen");
+        word(&mut s, END_NODE);
+        word(&mut s, END_NODE);
+        word(&mut s, END);
+        patched(&tree(&[], &s, false, 0)).unwrap();
+        for cut in (0..s.len()).step_by(4) {
+            let mut t = tree(&[], &s, false, 0);
+            // size_dt_struct sits at header word 9.
+            t[36..40].copy_from_slice(&(cut as u32).to_be_bytes());
+            assert_eq!(patched(&t), Err(Error::Truncated), "cut at {cut}");
+        }
+    }
+
+    /// **An unclosed node is refused**: `END` at depth one is not the end of a tree.
+    #[test]
+    fn an_unclosed_root_is_refused() {
+        let mut s = Vec::new();
+        begin(&mut s, "");
+        word(&mut s, END);
+        assert_eq!(patched(&tree(&[], &s, false, 0)), Err(Error::Malformed));
+        // Unclosed after `/chosen` exists: the pair is readable, the nesting is still wrong.
+        let mut s = Vec::new();
+        begin(&mut s, "");
+        begin(&mut s, "chosen");
+        word(&mut s, END);
+        assert_eq!(patched(&tree(&[], &s, false, 0)), Err(Error::Malformed));
+    }
+
+    /// **Success means the kernel reads back what it was given**, for a range, for an empty range
+    /// (which reads back as no archive, like the reader says), and for the maximum address.
+    #[test]
+    fn success_reports_the_given_start_and_end() {
+        let region = |out: &[u8]| {
+            DeviceTreeBlob::from_bytes(out)
+                .unwrap()
+                .initial_ramdisk()
+                .unwrap()
+        };
+        let src = tree(&[], &bare_root(), false, 0);
+        assert_eq!(
+            region(&patched(&src).unwrap()),
+            Some(Region {
+                start: 0x1000,
+                size: 0x2000
+            })
+        );
+        let mut out = vec![0; output_len(&src).unwrap()];
+        let n = with_initial_ramdisk(&src, 0x2000, 0x2000, &mut out).unwrap();
+        assert_eq!(region(&out[..n]), None, "an empty range is no archive");
+        let n = with_initial_ramdisk(&src, 5, u64::MAX, &mut out).unwrap();
+        assert_eq!(
+            region(&out[..n]),
+            Some(Region {
+                start: 5,
+                size: u64::MAX - 5
+            })
+        );
     }
 }

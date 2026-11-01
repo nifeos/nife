@@ -1,7 +1,7 @@
 //! Every stamped field, and every operation that stamps or does not, on the small FAT12 volume
 //! `reader::tests` builds, with a clock the test sets and counts.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use core::cell::Cell;
 

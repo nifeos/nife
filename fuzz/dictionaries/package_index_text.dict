@@ -1,0 +1,18 @@
+# libFuzzer dictionary for the package index reader.
+#
+# A line is `<stem> sha256:<hex> [locations]`; a location is `https://` after an optional root name
+# and `=`. Without these the fuzzer spends its budget rediscovering the label and the scheme.
+
+digest="sha256:"
+scheme="https://"
+plain="http://"
+root="sectigo-root-e46="
+repository="repository "
+root_line="root isrg-root-x1"
+location_root="location-root "
+architecture="-aarch64 "
+version_rc="-1.0~rc1-"
+private_ten="10.0.0.1"
+private_link="169.254.169.254"
+shared="100.64.0.1"
+hex_host="0x0a.0.0.1"

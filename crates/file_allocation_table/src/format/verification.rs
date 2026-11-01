@@ -6,7 +6,7 @@
 //! The sector size is 512 bytes, the one the boot-sector parse proofs also fix; the format's
 //! arithmetic takes the sector size as a number, and the oracle tests cross 1024 and 4096.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::boot_sector::BootSector;

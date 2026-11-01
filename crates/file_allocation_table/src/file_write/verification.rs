@@ -8,7 +8,7 @@
 //! under symbolic offsets are what Kani cannot afford. What neither shows is the device's sector
 //! reads and writes, which the oracle tests check on real volumes of every FAT type.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::allocation::verification::{Model, free_model};
