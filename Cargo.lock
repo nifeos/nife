@@ -153,6 +153,7 @@ version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
  "grant_plan",
+ "interfaces_note",
 ]
 
 [[package]]
@@ -234,6 +235,7 @@ dependencies = [
  "hot_swap_contract",
  "http_response",
  "installed_programs",
+ "interfaces_note",
  "jh7110_entropy",
  "line_editor",
  "login_contract",
@@ -726,6 +728,10 @@ version = "0.1.0"
 dependencies = [
  "intrusive_queue",
 ]
+
+[[package]]
+name = "interfaces_note"
+version = "0.1.0"
 
 [[package]]
 name = "intrusive_queue"
@@ -1416,6 +1422,7 @@ dependencies = [
  "grant_plan",
  "graphics_contract",
  "installed_programs",
+ "interfaces_note",
  "line_editor",
  "login_contract",
  "machine_statistics_contract",

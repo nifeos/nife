@@ -60,12 +60,12 @@ const FMT_UNIX: u64 = 4;
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
-capability_manifest_note::carry_interfaces!(&[
-    capability_manifest_note::Declared {
+interfaces_note::carry_interfaces!(&[
+    interfaces_note::Declared {
         id: abi::INTERFACE_ID,
         version: abi::ABI_VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: address_space_map::INTERFACE_ID,
         version: address_space_map::VERSION
     },

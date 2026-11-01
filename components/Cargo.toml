@@ -665,6 +665,8 @@ grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # ELF note), provisional): the shell reads it out of a file it is asked to run, and a program
 # carries one with `capability_manifest_note::carry!`.
 capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
+# The `INTERFACES` note each program carries with `interfaces_note::carry_interfaces!`.
+interfaces_note = { version = "0.1.0", path = "../crates/interfaces_note" }
 # The system log service's logic and its wire contracts (milestone 613, provisional names).
 system_log = { version = "0.1.0", path = "../crates/system_log" }
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }

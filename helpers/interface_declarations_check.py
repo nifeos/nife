@@ -11,7 +11,7 @@ condition covers only the crates that define a run-time format exchanged between
 released parts. Every other linked crate is a Rust API, which its Cargo version and a semver check
 guard, and it is declared nowhere.
 
-A program declares its formats with `capability_manifest_note::carry_interfaces!`, a list written
+A program declares its formats with `interfaces_note::carry_interfaces!`, a list written
 by hand (the ruling of 2026-10-31 UTC leaves deriving it at package build to the first package that
 leaves the tree). What a program links is the workspace crates its source names (`crate::` paths,
 the list's own entries aside), closed over their normal dependencies in `cargo metadata`, less the
@@ -47,17 +47,15 @@ CUT = ('process-tools', 'core-tools', 'disk-tools')
 # owed an `INTERFACE_ID` and a version. A crate leaves this table in the change that gives it both.
 OWED = {
     'byte_sink_contract': 'the write framing between a writer and whatever sink it holds',
-    'capability_manifest_note': 'the ELF note the progenitor and the shell read from the bytes',
     'clock_contract': 'the clock page the kernel and the clock service write, and the propose call',
     'counter_frequency_contract': 'the counter-frequency page the kernel writes for every process',
     'current_cpu_contract': 'the current-CPU page the kernel writes',
-    'domain_name_resolution_contract':
-        'the resolver protocol; the cut reaches it only through the manifest note\'s zone limits',
     'entropy_contract': 'the request and reply of the entropy service',
     'environment_contract': 'the inert-configuration page init assembles',
     'filesystem_contract': 'the block and the file protocols, one id each (one per wire format)',
     'filesystem_fixture': 'the blank disk layout the host build writes and disk_partitioner fills',
     'grant_plan': 'the slot numbers the progenitor grants into and a program reads from',
+    'interfaces_note': 'the INTERFACES note a package carries, which the progenitor reads at spawn',
     'program_argument_contract': 'the argument page the shell assembles',
     'socket_contract': 'the socket protocol and frame between net_stack and its clients',
     'user_mode_runtime': 'the entry registers and the link layout the loader starts a program with',
@@ -66,7 +64,6 @@ OWED = {
 # Linked crates that define no run-time format another released part reads: a Rust API only.
 NOT_A_FORMAT = {
     'calendar': 'arithmetic on seconds and dates, with no peer',
-    'domain_name_system': 'RFC 1035, a format nife does not own, exchanged with name servers',
     'glob': 'a pattern matcher on two byte strings, with no peer',
     'globally_unique_identifier_partition_table':
         'UEFI\'s on-disk table, whose revision the header carries; nife does not own the format',
@@ -89,7 +86,7 @@ def named_crates(source, candidates):
     """The crates among `candidates` that `source` names by a `name::` path. The
     `carry_interfaces!` list's own entries do not count, or a declaration would justify itself;
     the macro's crate does, since the note's encoder is a dependency of the program."""
-    code = CARRY.sub('capability_manifest_note::', strip_comments(source))
+    code = CARRY.sub('interfaces_note::', strip_comments(source))
     return {c for c in candidates if re.search(r'(?<![A-Za-z0-9_:])' + re.escape(c) + r'::', code)}
 
 
@@ -196,11 +193,11 @@ def selftest():
     versions = {'abi': {'ABI_VERSION'}, 'glob': {'VERSION'}}
 
     def entry(crate, vcrate=None, vconst='VERSION'):
-        return (f'capability_manifest_note::Declared {{ id: {crate}::INTERFACE_ID, '
+        return (f'interfaces_note::Declared {{ id: {crate}::INTERFACE_ID, '
                 f'version: {vcrate or crate}::{vconst} }},')
 
     def carry(*entries):
-        return 'capability_manifest_note::carry_interfaces!(&[\n' + '\n'.join(entries) + '\n]);\n'
+        return 'interfaces_note::carry_interfaces!(&[\n' + '\n'.join(entries) + '\n]);\n'
 
     good = carry(entry('abi', vconst='ABI_VERSION'), entry('glob'))
     cases = [
@@ -228,8 +225,8 @@ def selftest():
     assert named_crates('use abi::x;\n// glob::y\nlet z = grant_plan::P;', {'abi', 'glob', 'grant_plan'}) \
         == {'abi', 'grant_plan'}
     assert named_crates('foo_abi::x; self::abi::y', {'abi'}) == set()
-    assert named_crates(good, {'abi', 'glob', 'capability_manifest_note'}) \
-        == {'capability_manifest_note'}
+    assert named_crates(good, {'abi', 'glob', 'interfaces_note'}) \
+        == {'interfaces_note'}
     assert classification_problems({'abi', 'calendar', 'grant_plan'}, {'abi'}) == []
     assert 'not classified' in classification_problems({'unknown_crate'}, set())[0]
     assert 'classified twice' in classification_problems({'calendar'}, {'calendar'})[0]

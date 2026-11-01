@@ -14,8 +14,10 @@ cannot leave while a crate it links is still here.
 
 The packages do not need the same crates. Measured on 2026-11-01, `disk-tools` reaches 12 of the 22,
 `process-tools` 13 and `core-tools` 15. Only `disk-tools` avoids `grant_plan`, the crate with the
-most churn and the most crossings of all 22. The version-declaring note that pull request #3022 adds
-pulls `grant_plan` into every program, because the note's type lives there.
+most churn and the most crossings of all 22. The version-declaring note that pull request #3022 added
+pulled `grant_plan` into every program, because the note's type lived there; on 2026-11-01 (UTC) the
+note's type moved to the leaf crate `interfaces_note`, so the sentence now holds for the measurement
+only.
 
 Recommendation: (a). The cut waits for its crates and leaves package by package, `disk-tools`
 first, then `process-tools`, then `core-tools`. The note's type moves to a leaf crate of its own, so
