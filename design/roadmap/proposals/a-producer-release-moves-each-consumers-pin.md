@@ -12,10 +12,9 @@ needs_person: no
 *The title and slug are provisional.*
 
 Raised by the lane `lane/unpublished-crates-pin-by-revision-and-version` on 2026-11-01 (UTC),
-recording the ruling of that day on how nife consumes a crate it does not publish. Journey 5 (crates
-leave nife and are consumed back by version) states the form: a git dependency on
-`https://github.com/nifeos/<crate>`, pinned by `rev` to the commit of a tagged release, with the
-version requirement stated. §305 (git dependencies on `nifeos/*` only, pinned to a landed commit)
+recording the ruling of that day on how nife consumes a crate it does not publish. Journey 5 states
+the form: a git dependency on `https://github.com/nifeos/<crate>` whose `rev` names the commit of
+a tagged release, with the version requirement stated. §305 (git dependencies on `nifeos/*` only, pinned to a landed commit)
 governs the pin. Nothing moves that pin today when a producer tags a new release, so every consumer
 falls behind until someone edits it by hand.
 
@@ -38,8 +37,7 @@ log as the evidence.
 
 A static-file registry: a sparse index that a web server hands out as plain files, which Cargo
 reads through `registry = "<name>"` on the dependency and an index that `.cargo/config.toml`
-names. A version
-requirement would then resolve without a git pin. What it would take is unmeasured: where the
+names. A version requirement would then resolve without a git pin. What it would take is unmeasured: where the
 index and the archives live, who signs them, how `deny.toml`'s `allow-registry` admits it, and
 what a crate does about a dependency on another registry once it publishes to crates.io. This file
 recommends nothing about it.
