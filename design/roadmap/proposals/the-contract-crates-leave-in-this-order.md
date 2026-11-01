@@ -272,16 +272,14 @@ Asked one at a time, in this order, with the background in the questions appendi
 
 ## The review packet
 
-`script/crate-review-packet <crate>...` writes one markdown packet per crate to
-`target/crate-review-packets/<crate>.md`, never committed. It holds the facts a reading needs and a
-checklist for the judgments. The API comes from rustdoc JSON, since `cargo public-api` is not
-installed; `--no-rustdoc` forces the grep listing, and `--out DIR` moves the files. The name is a
-provisional maintainer decision.
+`script/crate-review-packet <crate>...` writes one packet per crate to
+`target/crate-review-packets/<crate>.md`, never committed: the facts a reading needs, and a checklist
+for the judgments. The API comes from rustdoc JSON, since `cargo public-api` is not installed. The
+name is a provisional maintainer decision.
 
 ## BUGS
 
-- The packet omits the test list, the license notices and the `cargo-semver-checks` output, which
-  needs the tag that milestone 818 cuts first.
+- The packet omits the test list, the license notices and the `cargo-semver-checks` output.
 
 ## Index row
 
