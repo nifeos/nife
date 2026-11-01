@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-29
 promoted_from: the-linked-interfaces-carry-checkable-versions
 milestone_dependencies: 597, 610
@@ -77,8 +77,29 @@ All of these hold, each checkable by a command:
   that matches.
 - `script/lint` runs the pinned-values test and the format-values check, and the check's selftest
   passes.
+- Each of the fifteen programs of `process-tools`, `core-tools` and `disk-tools` carries a
+  `carry_interfaces!` list, and `python3 helpers/interface_declarations_check.py` finds each list
+  equal to the versioned interfaces that program's dependency graph reaches.
 
-Milestone 756's condition 4 then holds.
+These hold. Milestone 756's condition 4 holds once the set below is ruled and every interface in
+it carries a version and an `INTERFACE_ID`.
+
+## The linked set, re-derived
+
+Milestone 756 lists four interfaces, measured on 2026-10-04; step 1 adds `block_roster`. Measured
+again on 2026-11-01 (UTC): the crates each program names, closed over `cargo metadata`'s normal
+dependencies, less the cut's own crates. The fifteen programs reach nineteen crates. The five
+above carry an `INTERFACE_ID`. Fourteen do not:
+
+- With a version constant already: `byte_sink_contract`, `calendar`, `clock_contract`,
+  `environment_contract`, `filesystem_contract` (block and file),
+  `globally_unique_identifier_partition_table`, `program_argument_contract`.
+- With none: `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`,
+  `filesystem_fixture`, `grant_plan`, `socket_contract`, `user_mode_runtime`.
+
+Whether condition 4 means all nineteen, the five, or another rule is not ruled. Pull request
+#3022 asks it. The declaration check reads `INTERFACE_ID`, so each crate that gains one joins every
+list that reaches it, and the check names the program that must add it.
 
 ## What this block does not do
 
@@ -87,6 +108,13 @@ generation and the swap-test invariants are a separate proposal,
 [the message contracts carry bind-time version checks](proposals/message-contracts-carry-bind-time-version-checks.md).
 The first cut links no message contract, so condition 4 does not need them. The macro takes its interface list by hand. Deriving the list from the dependency graph at package
 build waits for the first package that leaves the tree.
+
+## BUGS
+
+- Programs spawned from the archive are built with the kernel, and the spawn path does not read
+  their `INTERFACES` note; only the image path checks it.
+- The declaration check reads source text and the dependency graph, not the linked bytes. A crate
+  a program reaches only through another crate's macro counts as that other crate's.
 
 ## Index row
 
