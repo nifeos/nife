@@ -15,7 +15,9 @@ independent release and third-party programs), rewritten in place so that §151 
 ruled on 2026-11-01 (UTC). A lane may not write `design/decisions/`. The architect reads this text
 before anyone edits §151.
 
-Reuse: none needed. The proposal changes no code; it quotes §151 and the records of #3027.
+Reuse: the replacement text reuses the wording of milestone 857's 2026-11-01 ruling bullet and
+journey 5. The checks on it reuse `helpers/prose_ratchet.py` and `helpers/history_ratchet.py`. No
+code changes.
 
 ## Background
 
