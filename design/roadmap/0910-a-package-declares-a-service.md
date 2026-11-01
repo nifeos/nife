@@ -121,8 +121,8 @@ Name: ratified 2026-11-01 (calef, ruling on this block). `service_control`, with
 field and constant names does not apply; it says what the command does and follows the tree's own
 pattern. `jig install --no-start` leaves a service stopped and the block named no way to start it
 later. `start` goes to the progenitor, which holds the supervision endpoint (§270 keeps spawning
-out of `jig`), and a stop that falls back to teardown also goes to the progenitor, so the command
-is a progenitor client in any case and `start` adds no new kind of authority. `restart` is not a
+out of `jig`). A stop that falls back to teardown also goes to the progenitor. So the command is a
+progenitor client in any case, and `start` adds no new kind of authority. `restart` is not a
 verb: restart is the progenitor's teardown and respawn on a crash or an update. `enable` and
 `disable` are not verbs: boot persistence belongs to the installed-programs table under §208.
 
