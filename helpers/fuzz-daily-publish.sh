@@ -1,7 +1,7 @@
 #!/bin/sh
 # helpers/fuzz-daily-publish.sh: write the daily report of the continuous fuzz run.
 #
-#     helpers/fuzz-daily-publish.sh [--publish]
+#     helpers/fuzz-daily-publish.sh [--publish | --dry-run]
 #
 # Reads `$NIFE_FUZZ_HOME/state/windows.tsv` (helpers/continuous-fuzz.sh) and writes, under
 # `$NIFE_FUZZ_HOME/out/<utc date>/`:
@@ -17,10 +17,15 @@
 # names no seed, driver or commit of a held window. The ranges around a held window are published;
 # the held window's own range is not, so nothing published reproduces it.
 #
-# **Where it goes is not decided.** Without `--publish` the script stops at the local files. With it,
-# the script calls `publish_output`, which is a stub until an architect rules between a branch of
-# artifacts and a release (design/roadmap/proposals/where-the-daily-fuzz-output-goes.md). Findings
-# start as private security advisories, filed by a person or by a later change, not by this script.
+# **Where it goes.** Ruled 2026-11-01 (UTC): one GitHub release per day on nifeos/nife, tagged
+# `fuzz-YYYY-MM-DD`, with report.md and clean-ranges.tsv as assets
+# (design/roadmap/proposals/where-the-daily-fuzz-output-goes.md). Without a flag the script stops at
+# the local files. `--dry-run` also prints the tag and the asset list. `--publish` runs
+# `gh release create` and refuses unless NIFE_FUZZ_PUBLISH=1 is set. The credential needs Contents:
+# write on a fine-grained token (from memory of GitHub's permission model, not verified), which also
+# permits a push, so the guarantee that this host never pushes a branch rests on this script: it
+# never calls `git push`. Findings start as private security advisories, filed by a person or by a
+# later change, not by this script.
 #
 # Name: provisional, minted 2026-11-01 (UTC) by lane/continuous-fuzzing-host. calef has not ruled on it.
 
@@ -71,11 +76,23 @@ fi
 
 echo "fuzz-daily-publish: wrote $out"
 
+tag="fuzz-$today"
+repo=nifeos/nife
+
 publish_output() {
-    echo "fuzz-daily-publish: the destination is not ruled; nothing published" >&2
-    return 1
+    if [ "${NIFE_FUZZ_PUBLISH:-}" != 1 ]; then
+        echo "fuzz-daily-publish: NIFE_FUZZ_PUBLISH=1 is not set; nothing published" >&2
+        return 1
+    fi
+    gh release create "$tag" --repo "$repo" --title "Continuous fuzzing, $today (UTC)" \
+        --notes-file "$out/report.md" "$out/report.md" "$out/clean-ranges.tsv"
 }
 
-if [ "${1:-}" = --publish ]; then
-    publish_output
-fi
+case "${1:-}" in
+    --publish) publish_output ;;
+    --dry-run)
+        echo "fuzz-daily-publish: would create release $tag on $repo with assets:"
+        echo "  $out/report.md"
+        echo "  $out/clean-ranges.tsv"
+        ;;
+esac
