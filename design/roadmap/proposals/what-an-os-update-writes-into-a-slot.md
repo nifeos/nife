@@ -136,16 +136,17 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
    The line shape is the one basalt's stand-in index already uses. A later column goes in behind a
    new version line. Not chosen: the kernel's program-measurement table (it is per program, so it
    cannot map a changed program to its package), TOML (a larger parser and several encodings of one
-   content), and waiting for the update framework (milestone 858).
+   content), and waiting for the update framework (milestone 858, lab machines update themselves).
 2. Who may start a base update, and what bounds an unattended one. **Ruled 2026-11-01 (UTC): a
    separate base-update section in the approval file.** `packages/base-image.approval.toml` gains a
    section with two switches, `allow` and `unattended`, both false unless a person sets them. The
-   per-package `update = false` lines stay, because a slot replaces the base whole (milestone 911, scripted installs that grant only what the approval file allows).
+   per-package `update = false` lines stay, because a slot replaces the base whole. Milestone 911 (scripted installs grant only what the
+   owner's approval file allows) set them.
    An update a person starts needs `allow`. An update with nobody present needs `unattended` as
    well. It must also meet four bounds before it writes: it writes only the spare slot; a key the approval file
    pins signs its manifest; its version is strictly newer than the running one; and
    no slot is on trial. Not chosen: a per-package `update = true` (it implies one package updates
-   alone, which the full-copy slot refuses) and forbidding unattended updates (milestone 858, lab machines that update themselves, needs
+   alone, which the full-copy slot refuses) and forbidding unattended updates (milestone 858 (lab machines update themselves) needs
    them). Two points stay open under this ruling, and the part that writes it settles them: what "newer" means
    for a base version, and whether the pinned key lives in the approval file or beside the
    repository's trust root.
