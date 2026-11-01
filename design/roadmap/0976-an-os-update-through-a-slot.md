@@ -168,6 +168,17 @@ slot. Every new name here is provisional.
 - **Outstanding.** Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
   load the members and print each refusal's phrase, and teaches xtask to write version 2. It also widens `boot_slot::members` from the 188 bytes part 4a
   wrote to the 252 bytes ruled below: the two digest fields, the CRC range and the padding check.
+- **Done.** Part 6: the system manifest (ruled 2026-11-01 UTC; step 1). `crates/system_manifest`
+  (provisional) is the format in code: a `version 1` line, a `progenitor <stem>` line naming the
+  package that carries the progenitor, then `<stem> sha256:<hex>` per package, sorted, no blank
+  line, one encoding. The ruling of 2026-11-01 UTC gives the progenitor a line of its own and
+  refuses a manifest with no such line, with two or more, or whose named stem is not among the
+  package lines. The spelling of that line is provisional, and the format version stays 1 because
+  no manifest has shipped. `render` writes it, `SystemManifest::parse` refuses anything `render`
+  would not write, and `check` holds a package set to it, with a refusal that names the package
+  (mismatch, missing or unlisted). `cargo xtask base-image` writes `system-manifest` (provisional
+  file name) beside `initrd.img`, reads it back through the parser and refuses a composition whose
+  progenitor package is not listed.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself. Basalt
@@ -177,8 +188,7 @@ slot. Every new name here is provisional.
   they land. The reasoning and the prior art are in
   `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md`.
 - **Outstanding.** After part 4, part 5 is the device updater, steps 2 and 4 above, writing
-  part 4's version 2 slot. Part 6 is the system manifest's name and format (step 1; ruled
-  2026-11-01 UTC). Part 7 is the base-update grant under the approval file of milestone 911
+  part 4's version 2 slot. Part 7 is the base-update grant under the approval file of milestone 911
   (scripted installs grant only what the owner's approval file allows), ruled 2026-11-01 UTC. The
   file gains a base-update section with `allow` and `unattended`, both false unless a person sets
   them. An unattended update writes only the spare slot, carries a manifest signed by an accepted
