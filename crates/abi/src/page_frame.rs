@@ -12,24 +12,19 @@
 pub const MAP: u64 = 0;
 
 /// `invoke(capability, REVOKE, _, _, _)` -> 0. **Un-share this page**: unmap it from every address space
-/// and delete every capability to it, the caller's own included (milestone 13 (capability
-/// revocation), §13 (untyped reclamation)). Needs `GRANT`: a holder trusted to lend the frame may
-/// take it back. It does **not** reclaim the page; a region's `DESTROY` does. See
-/// notes/capability-lifecycle.md.
+/// and delete every capability to it, the caller's own included. Needs `GRANT`: a holder trusted to lend the frame may
+/// take it back. It does **not** reclaim the page; a region's `DESTROY` does.
 ///
-/// **On a device capability it means take-back** (milestone 23 (live replacement), §41 (a device is
-/// revoked by taking it back)): every `DeviceFrame` capability to the page goes and it is unmapped
+/// **On a device capability it means take-back** (a device is revoked by taking it back): every `DeviceFrame` capability to the page goes and it is unmapped
 /// everywhere **except the caller's own**, so only the asker still reaches the registers. A device
 /// capability is minted once, at boot, so a symmetric revoke would strand the device.
 pub const REVOKE: u64 = 1;
 
 /// `invoke(capability, SLICE, first, count, _)` -> the slot of a new capability in x0, or a negative
-/// [`crate::Error`]. **Derive a capability naming a sub-run of this one** (milestone 599 (a frame
-/// per filesystem client channel), calef's ruling of 2026-09-27 on option 4; name and number
-/// provisional): `count` pages starting `first` pages in, with this capability's rights, so a
-/// pool's holder hands a client exactly its window, as §102 (a Frame names a run of pages) foresaw.
+/// [`crate::Error`]. **Derive a capability naming a sub-run of this one**: `count` pages starting `first` pages in, with this capability's rights, so a
+/// pool's holder hands a client exactly its window, as a run-naming Frame foresaw.
 ///
-/// - Needs `GRANT`: §132 (what `PageFrame::REVOKE` owes an overlapping run) scopes a revoke to the
-///   exact run, so a slice escapes its source's revoke, a delegation-class power.
+/// - Needs `GRANT`: a revoke is scoped to the exact run (what `PageFrame::REVOKE` owes an
+///   overlapping run), so a slice escapes its source's revoke, so a slice escapes its source's revoke, a delegation-class power.
 /// - [`crate::Error::BadPointer`] for `count` of 0 or a range past the run's end.
 pub const SLICE: u64 = 2;

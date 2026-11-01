@@ -294,9 +294,6 @@ version = "0.1.0"
 [[package]]
 name = "counter_frequency_contract"
 version = "0.1.0"
-dependencies = [
- "address_space_map",
-]
 
 [[package]]
 name = "cpu_set"
@@ -496,10 +493,6 @@ dependencies = [
 [[package]]
 name = "filesystem_contract"
 version = "0.1.0"
-dependencies = [
- "filesystem_fixture",
- "glob",
-]
 
 [[package]]
 name = "filesystem_fixture"
@@ -602,6 +595,10 @@ dependencies = [
 [[package]]
 name = "glob"
 version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "filesystem_fixture",
+]
 
 [[package]]
 name = "globally_unique_identifier_partition_table"

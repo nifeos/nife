@@ -206,7 +206,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         dir::REMOVE,
     ),
     row(fs::RMDIR, "RMDIR", Operand::Name, false, false, dir::REMOVE),
-    // The extended-attribute verbs (milestone 57). Their operand is a **payload**, not a name:
+    // The extended-attribute verbs. Their operand is a **payload**, not a name:
     // an attribute name is not a name in the directory, so a name-set capability must not filter
     // it and a per-file capability must not compare it against the granted name. Getting that
     // wrong would have been the natural mistake here, which is why the distinction is a variant
@@ -250,7 +250,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     row(fs::STATFS, "STATFS", Operand::None, false, false, 0),
     // SYNC: any handle qualifies, and it needs `dir::WRITE`, for the reason `fs::SYNC` gives.
     row(fs::SYNC, "SYNC", Operand::None, false, false, dir::WRITE),
-    // **The mtime verbs** (milestone 47's `touch`; DECISIONS §112). All three are name-taking,
+    // **The mtime verbs**. All three are name-taking,
     // resolved directly under a directory handle rather than against an open file handle,
     // because `touch` never opens what it acts on: `fs::CREATE` and `fs::UNLINK` already take
     // this shape for the same reason.
@@ -283,7 +283,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         false,
         dir::WRITE | dir::SETTIME,
     ),
-    // NARROW (§173 (narrowing the root of the shell's namespace)): a held directory handle and a rights mask in the second word, a second
+    // NARROW: a held directory handle and a rights mask in the second word, a second
     // handle back, and no name. It demands no right, since attenuation cannot widen, and it is
     // not `Operand::Name`: nothing in it is a name in the namespace a filter narrows.
     row(fs::NARROW, "NARROW", Operand::None, true, true, 0),
@@ -327,7 +327,7 @@ pub(crate) const fn in_opcode_order(table: &[Verb]) -> bool {
     true
 }
 
-/// **What a per-file grant answers for each verb** (`components/src/fs_file_caretaker.rs`).
+/// **What a per-file grant answers for each verb**.
 ///
 /// This one caretaker needs a policy and the other two do not, and the asymmetry is the design
 /// rather than an accident. `fs_subtree_caretaker` and `fs_nameset_caretaker` serve the
@@ -403,7 +403,7 @@ pub mod file_grant {
         // the device) and refused with EROFS through a read-only grant by `Policy::Forward`'s
         // own rule, matching SYNC's own doc ("Rights: dir::WRITE").
         Policy::Forward, // SYNC
-        // The mtime verbs (milestone 47, DECISIONS §112) are all name-taking, resolved under a
+        // The mtime verbs are all name-taking, resolved under a
         // *directory* handle, exactly like CREATE/OPENDIR/UNLINK/RENAME above: a file
         // capability has no directory to resolve a name under. (`dir::SETTIME` never applies to a
         // file handle anyway: a file entry is attenuated to `READ | WRITE` when it is opened.)

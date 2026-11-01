@@ -5,8 +5,7 @@
 //! specifies it by reference to "the 32-bit CRC algorithm". Four CRCs guard a GPT: each header's,
 //! over the size it declares (92 bytes in practice), and each copy of the entry array's. [`crc32`]
 //! is table-driven for the exhaustive tests; `crc32_bitwise` keeps the definition, and
-//! `verification::crc32_matches_its_bitwise_definition` proves the two agree up to a bound. See
-//! notes/globally-unique-identifier-partition-table/the-modules.md, "CRC-32".
+//! `verification::crc32_matches_its_bitwise_definition` proves the two agree up to a bound.
 
 /// The reversed CRC-32 polynomial. `0x04C11DB7` with its bits in the other order, which is what a
 /// right-shifting (reflected) implementation uses.

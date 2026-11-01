@@ -7,11 +7,10 @@ pub const WRITE: u64 = 1 << 1;
 
 /// **The longest granted name, in bytes**: what the shell lets a line name as one file, what a
 /// name set ([`super::nameset`]) carries per name, and what a caretaker compares against. 252, which
-/// is §307 (how long a name may be)'s bound for a program, a package and the files they travel in:
+/// is the bound for a program, a package and the files they travel in:
 /// RedoxFS's `DIR_ENTRY_MAX_LENGTH`, the smallest name limit of a filesystem nife installs onto.
-/// calef ruled it on 2026-10-24 (UTC), on milestone 946 (a granted file name can be longer than
-/// sixteen bytes): *"B"*, over 255, Linux's `NAME_MAX`, which would make a 253-byte name grantable
-/// and unstorable on nife's own disk.
+/// Chosen over 255, Linux's `NAME_MAX`, which would make a 253-byte name grantable and unstorable
+/// on nife's own disk.
 ///
 /// A name this long does not fit in a caretaker's `START` words. Those carry at most
 /// [`WORDS_NAME`], and a name over that travels on a page: a name set's frame, or the bytes the

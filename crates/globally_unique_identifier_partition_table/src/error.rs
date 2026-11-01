@@ -19,7 +19,7 @@ pub enum Error {
     HeaderSize(u32),
     /// The reserved `u32` at offset 20 is not zero.
     ReservedNotZero,
-    /// A non-zero byte after the header in its block, which UEFI 2.10 §5.3.2 forbids.
+    /// A non-zero byte after the header in its block, which UEFI 2.10 section 5.3.2 forbids.
     BlockTailNotZero,
     /// The header's own CRC does not match its bytes. Something rewrote part of the header.
     HeaderCrc { stored: u32, computed: u32 },
