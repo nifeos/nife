@@ -31,7 +31,7 @@
 //! - **The kernel is built here, not taken from a package.** It is firmware's entry, never an
 //!   archive entry, and the `kernel` package declares crates and no programs, so this builds it
 //!   from those crates. The binary claim is about the ramdisk, which is 909's "Done when".
-//! - **The base image names no approval file yet**: one would pass any base (909's `BUGS`).
+//! - **The base image names no approval file** until a base program's note asks (909's `BUGS`).
 //! - **The catalog lists only the packages the image used.** `jig` needs the fetched index for
 //!   anything else, which is what `SOURCES_ENTRY` is for.
 //! - **A package's digest is checked against the catalog it was handed.** That catalog's trust is

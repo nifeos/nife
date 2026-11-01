@@ -26,8 +26,11 @@ The build settled the generation's contents, and none of it depends on the conta
   progenitor's install uses, so the composed table and an installed one cannot disagree about what a
   program asked for. For the base this reads almost nothing: an archive program's grants come
   from `grant_plan`'s compiled table. Of the base programs only `jig` carries a note, and it asks
-  for nothing while the table gives `jig` the network and the installer endpoint. Which
-  reading the first table records waits on an architect, on #2981 (milestone 909's `BUGS`).
+  for nothing while the table gives `jig` the network and the installer endpoint. Ruled
+  2026-11-01 (UTC) on #2981: the first table reads the base programs' own notes, which carry their
+  real manifests once the proposal
+  [the-base-programs-carry-their-manifests-in-notes](../design/roadmap/proposals/the-base-programs-carry-their-manifests-in-notes.md)
+  lands, so milestone 990's grant rows wait on that work.
 - The `answered` line is `Answered::Approval` with the approval file's name and the SHA-256 of its
   bytes, and the image carries those bytes too. The build never settled the entry's name, and its
   last uncommitted state referred to one no crate defines. A later update is then checked against
