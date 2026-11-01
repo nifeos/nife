@@ -58,8 +58,8 @@ old release without touching history, and no clone carries it. An architect rule
 [`where-the-daily-fuzz-output-goes`](../../design/roadmap/proposals/where-the-daily-fuzz-output-goes.md),
 which also records the rejected branch of artifacts.
 
-The publish path refuses unless `NIFE_FUZZ_PUBLISH=1` is set in the host's environment, and the
-timer stays disabled until a person installs the credential and sets it. `--dry-run` prints the tag
+The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=1`, and the timer
+stays disabled until a person installs the credential and sets that variable. `--dry-run` prints the tag
 and the asset list and runs nothing else.
 
 The credential needs Contents: write on a fine-grained token (from memory of GitHub's
