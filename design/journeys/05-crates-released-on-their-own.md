@@ -2,7 +2,7 @@
 status: PARTIAL
 raised: 2026-10-29
 ---
-# 5. Externalize the publish-ours crates, one release at a time
+# 5. Crates leave nife and are consumed back by version
 
 *The slug is this lane's coinage and provisional; calef names things.*
 
