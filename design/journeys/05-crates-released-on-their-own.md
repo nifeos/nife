@@ -37,14 +37,19 @@ The journey covers every crate that something outside nife could consume, by the
 The end state, ruled the same day: this repository breaks up into single-purpose repositories and
 remains, as `nifeos/nife`, only for its history, and the kernel, programs, tooling and crates all leave, bottom-up.
 The kernel leaves last among the code, to `nife-kernel` (provisional), a named part of the system
-as Linux is, while the project name stays with the whole. Likely, as a direction and not a ruling:
-the design record (roadmap, decisions, journeys, naming, notes) moves to a repository of its own
-and is published as a website. This journey tracks the crates.
+as Linux is, while the project name stays with the whole. The design record (roadmap, decisions,
+journeys, naming, notes) moves to one repository named `nifeos.org`, ruled 2026-11-01 (UTC), which
+holds the whole site published at nifeos.org. Its creation still needs the architect's approval.
+This journey tracks the crates.
 Its steps are of two kinds. A publish-ours crate publishes to crates.io, as the table below lays
 out. A contract crate moves to a repository of its own and carries a version whether or not it
 publishes. Every move goes bottom-up: a crate that leaves references nothing back in this tree, so
 the crates a program links leave before it or with it, and step 9's `jh7110_entropy` is the leaf
-pilot of the mechanics. Pull request #3026 rules the contract-crate order (2026-11-01 (UTC)): one
+pilot of the mechanics. Before each move the architect reads the crate's code by hand and reviews
+it (§247 (the split begins with basalt holding nife, and `procps` moves first)'s condition 4, ruled 2026-11-01 (UTC)), initially for every crate. A crate also needs a
+tagged release whose commit carries its Cargo version, and no time-based measure remains. The first
+crate reviewed is the pilot, `jh7110_entropy`, which moved before the ruling and has no tag, so
+tagging it comes first (step 9). Pull request #3026 rules the contract-crate order (2026-11-01 (UTC)): one
 repository per crate, each made with the architect's approval, and a package leaves as soon as its
 own crates have left. Its steps join the table when their lanes are cut.
 
@@ -58,7 +63,7 @@ own crates have left. Its steps join the table when their lanes are cut.
 | 6 | 815 | | `e1000e`: its cut landed 2026-10-25 (#2719) and its four harnesses prove; the step is the move, the soak, the publication and the consumption |
 | 7 | 816 | | `designware_ethernet`: its cut landed 2026-10-25 (#2719), with the walk in `machine_discovery::jh7110`, and its two harnesses prove; the PHY link decode still needs its harness row, then the move, the soak, the publication and the consumption |
 | 8 | 817 | | `designware_mobile_storage`: its cut landed 2026-10-25 (#2719), with `serve` moved to `driver_process_contract`; the MBR parse and the capacity decoders still need their harness rows, then the move, the soak, the publication and the consumption |
-| 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names. nife links it today in this form: its three manifests pin it by revision and already state `version = "0.1.0"`, with `publish = false` in the crate; the crate has no tagged release yet, so the pinned commit becomes a tagged release's commit when it gets one |
+| 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names. nife links it today in this form: its three manifests pin it by revision and already state `version = "0.1.0"`, with `publish = false` in the crate; the crate has no tagged release yet, so the pinned commit becomes a tagged release's commit when it gets one. Tagging it is a prerequisite of the architect's review, and the first crate reviewed is this one |
 | 10 | 819 | | `jh7110_clock_and_reset`: its cut is done and its name ratified, and it holds no harness yet, so the harnesses and their falsification patches come first; then the move, the soak, the publication and the consumption |
 
 Two orderings govern the program, and they order different events. The soak order sits in the

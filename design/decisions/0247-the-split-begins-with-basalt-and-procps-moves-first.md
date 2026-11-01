@@ -30,8 +30,16 @@ its order "should be ruled on its own". This is that ruling. calef answered both
      move out of this repository, one per pull request));
    - the cut builds without a clone of nife, through §235's S2 archive or a dated, recorded
      exception;
-   - `abi`, `address_space_map`, `glob` and `machine_statistics_protocol` are measured by 610 and
-     settled by its rule for four weeks;
+   - a crate may leave only when all of these hold (see the 2026-11-01 amendment below):
+     1. it is classified under milestone 956 (the linked interfaces carry checkable versions): it
+        carries an `INTERFACE_ID` and a version, or the record says it is not a format;
+     2. it has a tagged release whose commit carries the Cargo version, and
+        `cargo-semver-checks --baseline-rev` against that tag passes;
+     3. nife consumes it as a git dependency pinned by revision with the version requirement
+        stated, the form ruled for crates not yet published;
+     4. a producer release can move each consumer's pin, by the mechanism of the proposal
+        `a-producer-release-moves-each-consumers-pin.md` or an agreed manual step until it exists;
+     5. the architect reads the crate's code by hand and reviews it before it leaves;
    - basalt takes a component's output as a package by digest (§235's P1, milestone 607 (nife is
      built and updated from packages) item 1);
    - the home and its repository name are ratified, and §201 (one roadmap until a citation has to
@@ -63,6 +71,16 @@ names above are the ones ruled on 2026-10-04 and stay as written. Milestone 756 
 `core-tools` and `disk-tools` are the first code to leave this repository) carries the new ones.
 The reasons are in each package's manifest and in
 [notes/package-boundaries.md](../../notes/package-boundaries.md).
+
+## Amended 2026-11-01: condition 4 is a mechanism gate and a review
+
+calef replaced condition 4 on 2026-11-01 (UTC), relayed on pull request #3033. No time-based
+measure remains: a crate whose interface still breaks may leave, and each break makes a new version
+and a new tagged release. The review in item 5 covers every crate at first, the first crate in
+particular. The architect generalizes feedback from those reviews into automated gates over time as
+patterns appear; the ruling does not say when, or whether, the manual review ends. The other five
+conditions and the destination stand. The crates now move bottom-up (milestone 756), so the four
+the original wording named are among those that move.
 
 ## BUGS
 
