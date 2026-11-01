@@ -189,12 +189,12 @@ slot. Every new name here is provisional.
   607's item 6 and not this block's.
 
 - **Outstanding.** Ruled 2026-11-01 (UTC), part 4's header. Version 2 is 252 bytes in a 4096-byte block, the rest
-  zero. The fields are magic 8, version 4, reserved zero 4, three 56-byte entries (tag 8, offset 8, length 8,
-  SHA-256 digest 32), the progenitor's SHA-256 digest 32, the base digest 32 (the digest of the
-  archive's `program_measurements` table), then a CRC-32 of bytes 0 to 248 at bytes 248 to 252. The
+  zero. The fields are magic 8, version 4, reserved zero 4 and three 56-byte entries (tag 8, offset 8,
+  length 8, SHA-256 digest 32). Then come the progenitor's SHA-256 digest 32 and the base digest 32
+  (the digest of the archive's `program_measurements` table). A CRC-32 of bytes 0 to 248 sits at bytes 248 to 252. The
   updater writes the two digests from the system manifest and the progenitor. The chooser copies them
-  into the kernel command line words and never computes them (milestone 695's proposal, option A of
-  its question 2). The base word is `nife.base`; the progenitor word's spelling is open. The tags are KERNEL, ARCHIVE and MANIFEST
+  into the kernel command line words and never computes them (option A of question 2 in the proposal
+  for milestone 695, the kernel trusts two digests from the loader). The base word is `nife.base`; the progenitor word's spelling is open. The tags are KERNEL, ARCHIVE and MANIFEST
   (provisional spellings), exactly three, with no count field. Members start at multiples of 4096 in
   table order, without overlap, inside the partition. The chooser refuses an unknown, duplicate or
   missing tag, a layout break, nonzero reserved or padding bytes (padding is after byte 252), and an unknown header version

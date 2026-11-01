@@ -172,7 +172,8 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
       archive's `program_measurements` table) and the CRC-32 (4). That is 252 bytes, and the rest
       of the 4096-byte block is zero. The chooser refuses nonzero reserved or padding bytes, the
       padding being everything after byte 252. The updater writes the two digests from the system
-      manifest and the progenitor. The chooser copies them into the kernel command line words and
+      manifest and the progenitor.
+      The chooser copies them into the kernel command line words and
       never computes them. The base word is `nife.base`; the progenitor word's spelling is open.
    5. The CRC-32 is the field after the two digests (bytes 248 to 252) and covers bytes 0 to 248,
       as in version 1.
