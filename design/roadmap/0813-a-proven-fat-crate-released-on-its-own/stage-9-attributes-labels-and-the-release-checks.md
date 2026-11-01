@@ -18,7 +18,7 @@ timestamps, which follow a ruling of 2026-11-01 (UTC) that the clock is required
 - `README.md` rewritten for release, with an example that `tests/the_readme_example.rs` compiles and
   runs, and a manifest description that says what the crate does now.
 - The fixture notes no longer cite the nife tree, and the copy builds on Rust 1.88 for the host and
-  the three bare-metal targets. The last ten provisional names were ratified on 2026-11-01 (UTC):
+  the three bare-metal targets. The architect ratified the last ten provisional names on 2026-11-01 (UTC):
   the `time` module with `CivilDateTime`, `Clock` and `NoClock`, the `writable_volume` module with
   `WritableVolume`, `open` and `into_volume`, and `LayoutError::TimeOutOfRange`.
 
