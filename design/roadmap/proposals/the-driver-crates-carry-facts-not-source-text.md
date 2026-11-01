@@ -12,12 +12,12 @@ needs_person: yes
 A read-and-report lane raised this on 2026-11-01 (UTC) after it audited the outside-driver citations
 of eight crates: `e1000e`, `designware_ethernet`, `designware_mobile_storage`,
 `jh7110_clock_and_reset`, `jh7110_watchdog`, `extensible_host_controller_interface`, `usb` and
-`machine_discovery`. The audit used the method of the `jh7110_entropy` licence audit
+`machine_discovery`. The audit used the method of the `jh7110_entropy` license audit
 (nifeos/jh7110_entropy#3). For each citation it fetched the cited file at a pinned revision, read
-its licence header, and compared it with the crate as runs of identical lower-case word tokens,
+its license header, and compared it with the crate as runs of identical lower-case word tokens,
 with hexadecimal normalized and identifiers split at underscores. The pull request that adds this
 file also fixes the citations that were only wrong about a path, a function name or what a source
-says. What remains here touches a licence, a notice or a design claim, and each item needs an
+says. What remains here touches a license, a notice or a design claim, and each item needs an
 architect's ruling. This is an engineering audit, not legal advice.
 
 Reuse: none exists. The work rewrites or annotates nife's own text, and the method is the one
@@ -55,7 +55,7 @@ Each item gives the recommendation first.
 3. `e1000e::pch` adapts FreeBSD's `if_em.c` and `if_em.h` without their notice. Recommendation:
    add their BSD-2-Clause notice and its three copyright lines (Intel 2001-2024, Nicole Graziano
    2016, Kevin Bowling 2024) beside the Intel shared-code notice in `pch/mod.rs`. Then name the file
-   correctly where the crate README, `pch/mod.rs`, `notes/e1000e/the-i219-port.md` and the licence
+   correctly where the crate README, `pch/mod.rs`, `notes/e1000e/the-i219-port.md` and the license
    column of milestone 494 (the I219 driver)'s Reuse table describe it as BSD-3-Clause shared code.
    The module takes the descriptor-ring flush, the transmit errata and `em_reset`'s buffer split from
    those files, and it quotes a 25-token comment and an 11-token comment.
@@ -89,7 +89,7 @@ Each item gives the recommendation first.
 
    Fixture bodies cut to the properties a test reads (up to 40-token runs in the gmac and pmic-bus
    fixtures) are facts under that precedent, and need a ruling only if it does not cover them.
-8. Attributed quotations of text under a licence that asks for a notice.
+8. Attributed quotations of text under a license that asks for a notice.
    Recommendation: add "(CC-BY-4.0)" beside the 36-token SBI v3.0 quotation in
    `machine_discovery/src/riscv64.rs`, and keep the short attributed quotations of the VT-d, AMD
    IOMMU and ACPI specifications under the five-word rule the `jh7110_entropy` audit used. The Xen
