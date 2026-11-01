@@ -18,9 +18,18 @@ path.
 | 1 | 911 | | the approval-file gate: a scripted install grants only what the owner's approval file allows, so composition and unattended updates run with nobody at a prompt |
 | 2 | 909 | | basalt builds the base packages from the pinned nife commit and composes each architecture's image by digest, 607's item 1 with basalt as the composer, as §297 (software reaches a nife system as a package) says; it waits on the dependencies 909's block names |
 | 3 | 607 | | item 5 only: an OS update is a set of packages that lands through a boot slot, each slot a full copy, as U4 in §235 (the OS is built and updated from packages) rules; the block's other items are outside this story |
-| 4 | 756 | | the first cut: `process-tools`, `core-tools` and `disk-tools` leave for `nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools`. Condition 4 gates it: every interface the cut links carries a checkable version, and the moved package declares what it links |
+| 4 | 756 | | BLOCKED by journey 5 moves, not merely not started: each package leaves only after the contract crates it links have left, bottom-up, `disk-tools` first (12 of the 22 crates, not `grant_plan`), then `process-tools`, then `core-tools`. The first cut: `process-tools`, `core-tools` and `disk-tools` leave for `nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools`. Condition 4 gates it: every interface the cut links carries a checkable version, and the moved package declares what it links |
 
-The steps run in order. Step 2's composition tests each package's asks against step 1's approval
+Ruled 2026-11-01 (UTC): journeys 4 and 5 run in parallel and are not ordered as wholes. Steps 1 to 3
+do not depend on journey 5. Step 4 waits on the journey 5 moves of the crates its packages link, in
+the bottom-up order proposed in `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`
+(pull request #3026): `disk-tools` needs 12 of the 22 contract crates, not `grant_plan`, and leaves
+first, then `process-tools`, then `core-tools`. A package leaves when its whole linked set has left.
+The dependency is recorded here only, on the blocked side (§201 (one roadmap until a citation has to
+cross)). `script/journeys` prints the milestone block's status, so step 4 reads NOT-STARTED in the
+status column and states the block in its need text.
+
+The other steps run in order. Step 2's composition tests each package's asks against step 1's approval
 file, step 3's update lands in the slot the composed image boots from, and step 4's conditions
 include basalt taking a component's output as a package by digest, which step 2 builds.
 
