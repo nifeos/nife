@@ -35,7 +35,7 @@
 //! ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //! OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //! ```
-//!
+
 //! `ukphy_subr.c` (`openbsd/src@21ea132db7eac1d478645cd6150c5787dc366ebc`, fetched 2026-11-01 UTC)
 //! adds the NetBSD Foundation's BSD-2-Clause notice, which the ISC notice does not cover:
 //!

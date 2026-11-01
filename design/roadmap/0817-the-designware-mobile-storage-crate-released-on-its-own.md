@@ -59,8 +59,8 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 `dwmmc-host` 0.4.2 (Apache-2.0, 1.7k downloads) and `starfive-jh7110-dwmmc` 0.1.8 (911) live in the
 `tgoskits` monorepo with no proofs found. drivercraft's `sdmmc` 0.1.0 (11k) is a general SD/MMC
 crate with no proofs found. `embedded-sdmmc` is SD over SPI plus FAT, another scope, and its project
-bans AI-generated contributions. The crate adapts OpenBSD's `dwmmc.c` and `sdmmc_mem.c` (ISC, notices kept). Linux's `dw_mmc`
-(GPL-2.0) is read and never copied. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes
+bans AI-generated contributions. The crate adapts OpenBSD's `dwmmc.c` and `sdmmc_mem.c` (ISC; it keeps both notices). It reads
+Linux's `dw_mmc` (GPL-2.0) and never copies it. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes
 only to projects nife depends on.
 
 ## What is proven

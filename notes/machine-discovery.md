@@ -162,49 +162,43 @@ the format differs. The decoding lives in this crate because a parser proved onl
 kernel is proved by nothing that runs in milliseconds
 ([x86-port/acpi-and-pci.md](x86-port/acpi-and-pci.md)).
 
-The structure is Xen's `struct hvm_start_info`, in `xen/include/public/arch-x86/hvm/start_info.h`
-of `xen-project/xen` at commit `8803b82ab2c9`, fetched 2026-11-01 (UTC). Its fields, with the
-offsets and sizes they take on a 64-bit target, in bytes:
+The structure is Xen's `hvm_start_info`, in `xen/include/public/arch-x86/hvm/start_info.h` of
+`xen-project/xen` at `8803b82ab2c9`, fetched 2026-11-01 (UTC). Offsets and sizes are bytes:
 
 | field | offset | size | meaning |
 |---|---|---|---|
-| `magic` | 0 | 4 | the value `0x336ec578`, which reads `xEn3` with the high bit of the `E` set |
-| `version` | 4 | 4 | the structure's version |
-| `flags` | 8 | 4 | boot flags |
-| `nr_modules` | 12 | 4 | how many modules were loaded |
-| `modlist_paddr` | 16 | 8 | physical address of the module list |
-| `cmdline_paddr` | 24 | 8 | physical address of the command line |
-| `rsdp_paddr` | 32 | 8 | physical address of the ACPI root pointer |
-| `memmap_paddr` | 40 | 8 | physical address of the memory map (version 1 and later) |
-| `memmap_entries` | 48 | 4 | how many memory-map entries; zero when none is given (version 1 and later) |
-| `reserved` | 52 | 4 | must be zero (version 1 and later) |
+| `magic` | 0 | 4 | `0x336ec578`, `xEn3` with the `E` high bit set |
+| `version` | 4 | 4 | structure version |
+| `flags` | 8 | 4 | flags |
+| `nr_modules` | 12 | 4 | module count |
+| `modlist_paddr` | 16 | 8 | module list address |
+| `cmdline_paddr` | 24 | 8 | command line address |
+| `rsdp_paddr` | 32 | 8 | ACPI root pointer address |
+| `memmap_paddr` | 40 | 8 | memory map address (version 1 on) |
+| `memmap_entries` | 48 | 4 | memory map entries, zero when none (version 1 on) |
+| `reserved` | 52 | 4 | zero (version 1 on) |
 
 Version 0 stops at offset 40, so the decoder reads the memory-map fields only when the version
-says they are there and reports zero entries otherwise. A caller that finds no entries would have
-to fall back to the legacy E820 call, which this kernel cannot make because it needs real mode. In
-practice a version-0 handoff means the kernel cannot find its RAM, and the caller decides what to
-say.
+says they are there and reports zero entries otherwise. The legacy E820 call needs real mode, which
+this kernel cannot enter, so a version-0 handoff means the kernel cannot find its RAM, and the
+caller decides what to say.
 
-A module is x86's answer to `/chosen/linux,initrd-start`. On the other two architectures the loader
-writes the archive's bounds into the device tree and `memory::initialize` reads them out. Here it
-writes them into a module list.
+A module is x86's answer to `/chosen/linux,initrd-start`: the other two architectures write the
+archive's bounds into the device tree for `memory::initialize`; here the loader writes a module list.
 
-The `CPUID` half looked as though it held nothing for a host test, since asking takes one
-instruction and there is no format to parse. Reading the answer is trivial and deciding what it
-means is not. `CPUID` cannot say "I do not implement that leaf" except by answering with another
-leaf's bits, and the rule for telling those apart is the thing that can be wrong. A read above the
-maximum leaf answers with some other leaf's data, and the standard and extended maxima are
-different numbers in different spaces.
+The `CPUID` half looked as though a host test had nothing to check, since asking takes one
+instruction. Deciding what the answer means is the hard part. `CPUID` cannot say "I do not
+implement that leaf" except by answering with another leaf's bits, so the rule for telling those
+apart can be wrong. A read above the maximum leaf answers with some other leaf's data, and the
+standard and extended maxima are different numbers in different spaces.
 
 `Gate` has a third value because of the hypervisor case. Calling the invariant TSC optional would
-file a load-bearing assumption next to `RDSEED`, an optional convenience. Calling it required
-would refuse every boot under QEMU's TCG, which never reports it. So the row names the machine it
-refuses on.
+file a load-bearing assumption next to `RDSEED`; calling it required would refuse every boot under
+QEMU's TCG, which never reports it. So the row names the machine it refuses on.
 
-Silence means different things on the two sides. A device tree that does not mention an extension
-is firmware being terse about a machine that is nonetheless running the kernel, so the RISC-V
-check treats it as unknown. A part that does not answer leaf `0x80000001` is a part from before
-these features existed, with nobody in between to be terse.
+Silence means different things on the two sides. A device tree that omits an extension is firmware
+being terse about a machine that runs the kernel, so the RISC-V check treats it as unknown. A part
+that does not answer leaf `0x80000001` predates these features.
 
 ## ACPI
 
