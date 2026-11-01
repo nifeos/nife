@@ -23,23 +23,21 @@ as reserved refuses the boot on QEMU's `-cpu max` and on any part with `FEAT_LPA
 LPA2 value at all. Tidying the three decode lines into one would bring one of these bugs back.
 
 `Psci` is the one parser on this side. Whether a firmware call leaves at `hvc` or `smc` depends on
-what runs above EL1, which is a property of the boot arrangement rather than of the part. A tree
-with no `/psci` node is a legitimate machine (spin-table bring-up, or a uniprocessor) on which
-starting a second core is impossible. A node the decoder cannot make sense of is a different
-answer, and a caller wants to say different things about the two.
+what runs above EL1, a property of the boot arrangement rather than the part. A tree with no
+`/psci` node is a legitimate machine (spin-table bring-up, or a uniprocessor) on which starting a
+second core is impossible. A node the decoder cannot read is a different answer, and a caller says
+different things about the two.
 
 ## The core list
 
 Both architectures describe their cores the same way, so `cpu_list` sits beside the records rather
 than in either: a `cpu@` node per core under `/cpus`, with the hardware id in `reg`. The id is an
 `MPIDR_EL1` affinity value on aarch64 and a hart id on RISC-V. Neither this module nor its caller
-needs to know which, because the only thing done with it is handing it back to the firmware call
-that starts the core.
+needs to know which: the id only goes back to the firmware call that starts the core.
 
 The `#address-cells` of `/cpus` is the whole decode. One cell is the usual case and the only one
 QEMU produces. Two is not exotic: the Arm CPU binding requires two the moment any core's
-`MPIDR_EL1.Aff3` is nonzero. A decoder that assumed one cell would read a 64-bit id as its high
-half and start nothing.
+`MPIDR_EL1.Aff3` is nonzero. A one-cell decoder would read a 64-bit id as its high half and start nothing.
 
 `Cpu::is_startable` is the kernel's decision, kept in this crate so the board fixtures can hold it.
 The VisionFive 2 tests assert which harts it admits (the four U74s) and which it refuses (the S7,
@@ -155,7 +153,7 @@ so a reader of the kernel meets the number and its reason in one place.
 ## x86_64
 
 The other two architectures learn where RAM is from the device tree, handed over as one pointer.
-x86 has no device tree. It has a boot protocol, PVH (see `kernel/src/arch/x86_64/boot.s` for why
+x86 has a boot protocol instead, PVH (see `kernel/src/arch/x86_64/boot.s` for why
 not multiboot), which hands over one pointer to a structure carrying the memory map, the ACPI root
 pointer, the command line and any loaded modules. The shape is the device-tree handoff's and only
 the format differs. The decoding lives in this crate because a parser proved only inside a booting

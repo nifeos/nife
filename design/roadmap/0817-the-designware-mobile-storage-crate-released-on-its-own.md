@@ -249,7 +249,7 @@ names until the ratification pass, so this section keeps the links it carried.
   and on milestone 610's per-package co-change column.
 - Milestone 53 (the board's own peripherals: network and storage on real silicon) is PARTIAL, so the
   API is still moving.
-- The device-tree fixtures this crate's decoder is tested with are `jh7110-mmc-mainline.dts`,
+- The device-tree fixtures behind this crate's decoder are `jh7110-mmc-mainline.dts`,
   `jh7110-mmc-vendor.dts` and `jh7110-mmc-odd.dts` in `crates/machine_discovery/tests/fixtures/`,
   outside this package. They are excerpts of the mainline and vendor JH7110 trees.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
