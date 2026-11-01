@@ -54,6 +54,10 @@ name's doc comment opens with its full name and the source's heading, and carrie
 as does a specification's term of art in names this tree authors
 ([precedents](naming/precedents-set-by-example.md)).
 
+### A permissive source's name is copied, BSD first
+
+Where a permissively licensed source names a thing, copy its name, looking in OpenBSD first and then FreeBSD, and use Linux's name only when no BSD source names it; ruled 2026-11-01 (UTC) as an amendment to Decision 37c, for new and provisional names only ([the ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117)).
+
 ### Nouns, not verbs
 
 A crate, a program or a module is a thing, so it takes a thing's name (calef, 2026-08-01).
