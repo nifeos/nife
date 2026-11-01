@@ -5,6 +5,7 @@
 #     helpers/continuous-fuzz.sh              run forever, 4 guests (NIFE_FUZZ_GUESTS)
 #     helpers/continuous-fuzz.sh --once DRIVER SLOT   one sweep window, then print the verdict
 #     helpers/continuous-fuzz.sh --check-kvm  say whether a window could start, and why not
+#     helpers/continuous-fuzz.sh --ci SHARD   one bounded CI window of shard SHARD (0 to 3), then exit
 #
 # DRIVER is `kernel-thread` (milestone 752 (a seeded syscall driver with a shadow model)) or
 # `confined` (milestone 779 (fuzz the surface a confined process can reach)). Guests alternate
@@ -42,6 +43,18 @@
 # A window that fails to build, or fails without any of those signs, is infrastructure: it backs off,
 # and after five in a row the supervisor exits non-zero so systemd restarts it.
 #
+# **One CI shard (`--ci SHARD`).** A pull request's merge-queue entry runs four shards, two per
+# driver (even shards `kernel-thread`, odd shards `confined`), each one window on the checkout it
+# stands in. The first seed derives from the commit and the shard alone (`ci_first_seed`), below the
+# supervisor's `base` so the two never repeat a seed, which makes a shard deterministic: the fuzz
+# host replays a shard from a commit and a shard number and needs nothing else (`--ci-range SHARD`
+# prints the driver and first seed it would sweep). **The CI log is public, so the guest's output
+# never reaches it.** Its builds print as usual; the guest's output goes to a mode-700 directory that
+# an exit trap removes, and a finding prints only a count, the shard, the commit and the line
+# `the fuzz host replays this shard`. A clean shard prints its seed range, which the host publishes
+# anyway. Exit codes: 0 clean, 1 a finding, 3 infrastructure (no KVM, a failed build, a guest that
+# ended with no sign of a finding). See notes/fuzzing/continuous-host.md.
+#
 # State, all under `$NIFE_FUZZ_HOME` (default `$HOME/fuzz`):
 #   work/<slot>/            the slot's worktree
 #   state/next-<slot>       the next first seed for the slot
@@ -59,6 +72,8 @@ state="$home/state"
 guests="${NIFE_FUZZ_GUESTS:-4}"
 # One window asks for more seeds than 60 s of guest time can run, so the guest's own cap ends it.
 ask=1000000
+# A CI shard asks for less than its 100,000-seed block, so two shards never overlap.
+ci_ask=100000
 # Two bounds, so a hung guest is not mistaken for a slow build. The build bound covers the archive and
 # the test image; a cold per-slot build is slower, so the first window of a slot gets the long one.
 # The run bound covers the boot and the 60 s sweep of one guest.
@@ -141,6 +156,37 @@ prepare_slot() {
     [ -f "$state/next-$slot" ] || echo $((base + slot * stride)) > "$state/next-$slot"
 }
 
+# Read a window's verdict from its log and exit status, and set `status`, `ran` and `next`. The
+# supervisor and the CI shard (`--ci`) share it, so a finding means one thing in both places.
+classify() {
+    log="$1"
+    rc="$2"
+    first="$3"
+    ran=0
+    status=ok
+    next=$((first + 1))
+    # The driver's own end line: `<n> seeds, <ms> ms (...)`.
+    line="$(grep -E '(syscall|confined) fuzzer: [0-9]+ seeds, ' "$log" | tail -1 || true)"
+    replay="$(sed -n 's/.*replay: NIFE_[A-Z_]*=\([0-9][0-9]*\):1.*/\1/p' "$log" | head -1)"
+    if [ -n "$replay" ]; then
+        status=held-finding
+        next=$((replay + 1))
+        ran=$((replay - first))
+    elif [ "$rc" -eq 0 ] && [ -n "$line" ]; then
+        ran="$(echo "$line" | sed 's/.*: \([0-9][0-9]*\) seeds, .*/\1/')"
+        next=$((first + ran))
+        [ "$ran" -gt 0 ] || next=$((first + 1))
+    elif [ "$rc" -eq 125 ]; then
+        status=infrastructure
+    elif [ "$rc" -eq 143 ] || [ "$rc" -eq 137 ]; then
+        status=held-hang
+    elif grep -q -E 'panicked|PANIC' "$log"; then
+        status=held-crash
+    else
+        status=infrastructure
+    fi
+}
+
 # One window. Prints the status word on stdout; everything else goes to the log.
 window() {
     driver="$1"
@@ -180,29 +226,7 @@ window() {
     set -e
     ms=$((($(date +%s) - start) * 1000))
 
-    ran=0
-    status=ok
-    next=$((first + 1))
-    # The driver's own end line: `<n> seeds, <ms> ms (...)`.
-    line="$(grep -E '(syscall|confined) fuzzer: [0-9]+ seeds, ' "$log" | tail -1 || true)"
-    replay="$(sed -n 's/.*replay: NIFE_[A-Z_]*=\([0-9][0-9]*\):1.*/\1/p' "$log" | head -1)"
-    if [ -n "$replay" ]; then
-        status=held-finding
-        next=$((replay + 1))
-        ran=$((replay - first))
-    elif [ "$rc" -eq 0 ] && [ -n "$line" ]; then
-        ran="$(echo "$line" | sed 's/.*: \([0-9][0-9]*\) seeds, .*/\1/')"
-        next=$((first + ran))
-        [ "$ran" -gt 0 ] || next=$((first + 1))
-    elif [ "$rc" -eq 125 ]; then
-        status=infrastructure
-    elif [ "$rc" -eq 143 ] || [ "$rc" -eq 137 ]; then
-        status=held-hang
-    elif grep -q -E 'panicked|PANIC' "$log"; then
-        status=held-crash
-    else
-        status=infrastructure
-    fi
+    classify "$log" "$rc" "$first"
 
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$driver" "$slot" "$first" "$ran" "$ms" "$status" "$commit" \
@@ -232,9 +256,88 @@ worker() {
     done
 }
 
+# The first seed of CI shard $1 on the commit at HEAD: 100,000 seeds per shard (a 60 s window runs
+# about 27,000 at the measured rates), the commit's first 20 bits choosing among 20,000 blocks of four
+# shards. The largest value is below 8.2e9, under the supervisor's `base`.
+ci_first_seed() {
+    head20="$(git -C "$root" rev-parse HEAD | cut -c1-5)"
+    echo $((100000000 + (0x$head20 % 20000) * 400000 + $1 * 100000))
+}
+
+ci_shard_valid() {
+    case "$1" in
+        0|1|2|3) ;;
+        *) echo "usage: $0 --ci SHARD (0 to 3)" >&2; return 2 ;;
+    esac
+}
+
+# One CI shard. See the header. Every line printed to standard output is safe to publish.
+ci_shard() {
+    shard="$1"
+    driver="$(slot_driver "$shard")"
+    # shellcheck disable=SC2046  # two words, split on purpose
+    set -- $(driver_test "$driver")
+    filter="$1"
+    var="$2"
+    refuse_without_kvm || { echo "continuous-fuzz: shard $shard: infrastructure failure, no KVM" ; exit 3; }
+    first="$(ci_first_seed "$shard")"
+    commit="$(git -C "$root" rev-parse HEAD)"
+    private="$(mktemp -d)"
+    chmod 700 "$private"
+    trap 'rm -rf "$private"' EXIT
+    cd "$root"
+    # The builds print compiler output only; no guest has run yet.
+    "$root/helpers/qemu-bounded.sh" "$build_bound" cargo xtask initial-ramdisk-x86 \
+        || { echo "continuous-fuzz: shard $shard: infrastructure failure, the archive did not build"; exit 3; }
+    NIFE_INITIAL_RAMDISK="$PWD/target/initial-ramdisk-x86_64.img"
+    NIFE_TEST_FILTER="$filter"
+    NIFE_TEST_FILTER_ACROSS_IMAGES=1
+    export NIFE_INITIAL_RAMDISK NIFE_TEST_FILTER NIFE_TEST_FILTER_ACROSS_IMAGES
+    export "$var=$first:$ci_ask"
+    "$root/helpers/qemu-bounded.sh" "$build_bound" cargo test -p system_tests --target x86_64-unknown-none \
+        --no-run --message-format=json-render-diagnostics > "$private/build.json" \
+        || { echo "continuous-fuzz: shard $shard: infrastructure failure, the test image did not build"; exit 3; }
+    elf="$(sed -n '/"reason":"compiler-artifact"/{/"name":"system_tests"/s/.*"executable":"\([^"]*\)".*/\1/p;}' "$private/build.json" | tail -1)"
+    [ -n "$elf" ] || { echo "continuous-fuzz: shard $shard: infrastructure failure, no test executable"; exit 3; }
+    # From here the guest speaks, and only the private file hears it.
+    set +e
+    "$root/helpers/qemu-bounded.sh" "$bound" ./helpers/qemu-runner-x86_64.sh "$elf" -accel kvm \
+        > "$private/guest.log" 2>&1
+    rc=$?
+    set -e
+    classify "$private/guest.log" "$rc" "$first"
+    case "$status" in
+        ok)
+            echo "continuous-fuzz: shard $shard ($driver) clean at $commit: $ran seeds from $first"
+            ;;
+        held-*)
+            echo "continuous-fuzz: 1 finding in shard $shard at commit $commit; the fuzz host replays this shard"
+            exit 1
+            ;;
+        *)
+            echo "continuous-fuzz: shard $shard: infrastructure failure, the guest ended without a verdict (its output is withheld)"
+            exit 3
+            ;;
+    esac
+}
+
 if [ "${1:-}" = --check-kvm ]; then
     require_kvm && echo "continuous-fuzz: KVM is usable"
     exit
+fi
+
+if [ "${1:-}" = --ci-range ]; then
+    [ $# -eq 2 ] || { echo "usage: $0 --ci-range SHARD" >&2; exit 2; }
+    ci_shard_valid "$2" || exit 2
+    echo "$(slot_driver "$2") $(ci_first_seed "$2")"
+    exit 0
+fi
+
+if [ "${1:-}" = --ci ]; then
+    [ $# -eq 2 ] || { echo "usage: $0 --ci SHARD" >&2; exit 2; }
+    ci_shard_valid "$2" || exit 2
+    ci_shard "$2"
+    exit 0
 fi
 
 if [ "${1:-}" = --once ]; then
