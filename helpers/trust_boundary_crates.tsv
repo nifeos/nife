@@ -55,6 +55,7 @@ current_cpu_protocol	shared	retired
 designware_ethernet	shared	components,kernel,uefi_loader
 designware_mobile_storage	shared	components,kernel,uefi_loader
 device_tree_blob	shared	components,kernel,uefi_loader
+device_tree_patch	boot_chain	uefi_loader
 direct_memory_access_validator	kernel	kernel
 disk_tree	userspace	components
 dma_validator	kernel	retired
