@@ -14,6 +14,9 @@ what order the 22 crates that the first cut's programs link could leave this rep
 policy makes frequent breaking change safe across repositories. It moves no crate and changes no
 code. Every new name below is provisional. The text states each ruling (2026-11-01 UTC).
 
+Reuse: `cargo metadata`, git's rename detection, milestone 610's series, milestone 956's constants and
+the crate template.
+
 Two directions from the architect, both dated 2026-11-01 (UTC), frame it:
 
 - Crossing repositories is the goal of the split (§151 (the goal of the repository split is
