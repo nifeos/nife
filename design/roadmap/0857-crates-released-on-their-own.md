@@ -38,8 +38,9 @@ record of what was weighed, and its heading says how it was ruled.
 - Fork 1, replacing the recommendation: one repository per crate under `nifeos`. Ruled 2026-11-01
   (UTC), replacing "created when that crate is first published": the repository is created when
   the crate moves, and each creation still waits for calef's approval. Publication is a later step
-  that only some crates take. Until it moves, a crate stays in this tree, and milestone 610's
-  co-change measurement still decides which crates are ready (§235). Every crate repository uses one shared
+  that only some crates take. Until it moves, a crate stays in this tree, and milestone 610 (the
+  interface's stability is measured weekly) still decides which crates are ready (§235 (the OS is
+  built and updated from packages)). Every crate repository uses one shared
   CI template (Kani, lint, release) through reusable workflows. calef: *"I lean one repo per
   crate."* then *"Yes a"*.
 - Fork 2: a crate that has left is consumed as a crates.io release pinned with its checksum in
@@ -171,10 +172,7 @@ candidates for our proofs. The survey classed the rest internal, no default sinc
 | R-c. One repository per crate | `nifeos/<crate>` each | rust-osdev (`x86_64`, `uefi-rs`), rust-embedded-community | Nine repositories, each with its own CI, and two pull requests whenever a driver and its crate move together |
 | R-d. One repository per family | Two today: device logic (seven crates) and formats (FAT, PE) | RustCrypto: `hashes` holds 23 crates | A move before 610's column exists; the family lines are a guess until it does |
 
-Recommendation as raised, replaced by the ruling: R-a now, R-d as the destination once 610 measures co-change. The reason is
-§235's rule, not effort. R-d is the shape I would pick at equal cost, since a family is what
-changes together, and R-c multiplies the two-pull-request cost §235 already refused. Reversible
-until a stranger depends on the repository URL.
+Recommendation as raised, replaced by the ruling: R-a now, R-d once 610 measures co-change.
 
 Prior art beyond the table. seL4 keeps its proofs in a repository apart from the kernel (`l4v`,
 recalled rather than re-read), and its Rust crates are consumed by git, not from crates.io. The
