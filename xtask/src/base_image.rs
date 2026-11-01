@@ -785,9 +785,9 @@ fn test_approval_text<'a>(owners: impl Iterator<Item = &'a String>) -> String {
 }
 
 /// The image's approval file read, with the path it came from; `None` when the image names none.
-fn parse_approval<'a>(
-    text: &'a Option<(PathBuf, String)>,
-) -> Result<Option<(&'a Path, approval_file::File)>, String> {
+fn parse_approval(
+    text: &Option<(PathBuf, String)>,
+) -> Result<Option<(&Path, approval_file::File<'_>)>, String> {
     match text {
         Some((path, text)) => Ok(Some((
             path.as_path(),
