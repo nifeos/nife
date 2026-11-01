@@ -124,11 +124,25 @@ slot. Every new name here is provisional.
   that passed the size check, and one bounded OVMF boot of it reached the shell prompt. That
   image carries no `--test` fixtures, so the kernel's `userspace` and `budget` self-tests report
   FAILED for the missing fixture programs; the boot continued to the progenitor and the shell.
-- **Outstanding.** Part 3 is a gate that updates through a slot, provisionally `cargo xtask update-boot`. It installs the
-  tree's image, stages part 2's file into slot 1 with `rollback::stage_an_upgrade`, and boots three
-  times. Boot 2 must confirm slot 1, boot 3 must choose it with no tries left, as `confirm-boot`
-  asserts, and the transcript must show the composed catalog. Parts 2 and 3 are mechanical and add no
-  format; part 3 is host-staged, so it proves the slot path and not a device updater.
+- **Done.** Part 3: a gate that updates through a slot, `cargo xtask update-boot` (provisional name).
+  It builds and installs the tree's image, composes the x86_64 release image
+  (`cargo xtask base-image x86_64 --release`), stages part 2's `BOOTX64.EFI` into slot 1 with
+  `rollback::stage_an_upgrade`, and boots three times. It runs `confirm-boot`'s three boots through
+  one function the two gates share (`confirm::confirm_an_upgrade`), which now takes the file to
+  stage and what boot 2 must show of the catalog. Boot 2 must choose slot 1, confirm it and read
+  the file `mkfs` wrote; boot 3 must choose slot 1 with no tries left and write nothing. Boot 2
+  also types `jig list`, and the transcript must show every package of the composed archive's own
+  catalog (15 lines) and none of the 13 packages that only the installing image's catalog has. A
+  slot that held the install image again passes `confirm-boot` and fails here. This is version 1
+  slot staging by the host, so it proves the slot path takes a composed image and a boot confirms
+  it; it does not prove a device updater, which part 5 builds. It adds no format and no
+  dependency. Checked: one run under OVMF on x86_64 ended `update-boot: PASS`, with boot 2
+  printing `slot 1 confirmed. This upgrade will not roll back.`, boot 3 `slot 1 was already
+  confirmed; nothing written.`, and the disk at slot 1 priority 3, 0 tries, successful. Not wired
+  into `script/test` or a workflow: like `confirm-boot` it takes several minutes under TCG and
+  builds the install image and the composed image, one after the other, so a CI leg would roughly
+  double `confirm-boot`'s cost for a path that parts 4 and 5 replace. It stays a manual gate until
+  part 5's updater supplies the real staging.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself, and the archive writer moves from
