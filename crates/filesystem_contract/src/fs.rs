@@ -12,6 +12,15 @@ pub const ROOT: u64 = 0;
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
+/// This interface's identity in a program's `INTERFACES` note: 15, naming the file protocol. The
+/// number is this interface's for good: no other interface takes it, and a format change is a new
+/// version, never a new number. Milestone 956 (the linked interfaces carry checkable versions)
+/// holds the table of numbers, and `script/lint` holds the tree to it. A program declares the pair
+/// of this id and [`VERSION`].
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const INTERFACE_ID: u64 = 15;
+
 /// Open the name in the shared page ([`req_len`] bytes) under the directory handle in
 /// [`req_handle`] ([`ROOT`] for the bound directory). Reply `r0` = a handle or an error, and `r1` =
 /// the file's size at the open, or 0 for "not given": a hint for sizing a buffer, never an answer

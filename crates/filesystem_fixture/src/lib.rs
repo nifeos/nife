@@ -19,6 +19,22 @@
 
 #![no_std]
 
+/// The version of the test disk layouts the host build writes and the programs read: 1. A break
+/// bumps it, with the dated ledger entry the interface-stability discipline owes; an addition an
+/// older peer ignores does not.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const VERSION: u32 = 1;
+
+/// This interface's identity in a program's `INTERFACES` note: 16, naming the test disk layouts the
+/// host build writes and the programs read. The number is this interface's for good: no other
+/// interface takes it, and a format change is a new version, never a new number. Milestone 956 (the
+/// linked interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds
+/// the tree to it. A program declares the pair of this id and [`VERSION`].
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const INTERFACE_ID: u64 = 16;
+
 /// A file the image ships with; the client reads it back through a granted directory capability.
 pub const MOTD_NAME: &str = "motd";
 /// Its exact contents. Longer than eight bytes so the report's head word is a real prefix.

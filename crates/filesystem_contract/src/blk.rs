@@ -8,6 +8,15 @@ use super::PAGE;
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
+/// This interface's identity in a program's `INTERFACES` note: 14, naming the block protocol. The
+/// number is this interface's for good: no other interface takes it, and a format change is a new
+/// version, never a new number. Milestone 956 (the linked interfaces carry checkable versions)
+/// holds the table of numbers, and `script/lint` holds the tree to it. A program declares the pair
+/// of this id and [`VERSION`].
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const INTERFACE_ID: u64 = 14;
+
 /// Read [`req_blocks`] filesystem blocks starting at `w1` from the disk into the shared
 /// region. Reply `r0` = 0 on success, or [`super::reply_err`] on failure; the bytes land at the
 /// start of the shared region, block `w1` first.
