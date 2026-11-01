@@ -137,7 +137,11 @@ impl FormatOptions {
 /// The eleven bytes of `BS_VolLab` for `label`, or `None` when it is empty, over eleven bytes, or
 /// holds a byte a short name refuses. The text is padded with spaces.
 pub(crate) fn label_bytes(label: &str) -> Option<[u8; 11]> {
-    let bytes = label.as_bytes();
+    label_from_bytes(label.as_bytes())
+}
+
+/// [`label_bytes`] over the text's bytes, which the proof reaches without a text to validate.
+pub(crate) fn label_from_bytes(bytes: &[u8]) -> Option<[u8; 11]> {
     if bytes.is_empty() || bytes.len() > 11 || !bytes.iter().all(|b| is_short_byte(*b)) {
         return None;
     }
