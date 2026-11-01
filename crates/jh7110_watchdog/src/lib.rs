@@ -17,6 +17,9 @@
 //!   card boot is unseen. QEMU has no model of this block, so only a board tests the reset.
 //! - No reset-cause register is known, so a second boot cannot say the watchdog ended the first.
 //! - The core clock's rate is the clock driver's, not the tree's; [`rate_agrees`] checks it.
+//! - `StarFive`'s vendor driver comments `WDOGCONTROL` bit 0 as reset enable and bit 1 as interrupt
+//!   and counter enable, the reverse of [`CONTROL_ENABLE`] and [`CONTROL_RESET_ENABLE`], which follow
+//!   mainline Linux and the bench. The bench ran only the order given here; nothing reconciles the two.
 //!
 //! Name: provisional (milestone 593's lane, 2026-10-20 UTC). calef names crates.
 
