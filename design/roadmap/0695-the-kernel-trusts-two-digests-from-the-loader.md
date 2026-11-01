@@ -64,6 +64,9 @@ until a record cites its first use. 697's block has the measured figures.
 
 Part 1 needs no ruling and is safe behind the QEMU suites; it still waits on the condition above.
 
+- The composed image becomes the only image when this milestone and 697 land (ruled 2026-11-01
+  UTC); 697's block has the end state.
+
 ## Index row
 
 The loader hands the kernel the progenitor's digest and the `program_measurements` table's digest, on all three
