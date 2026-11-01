@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 use capability_manifest_note::{
     Scope, SubtreeGrantsNote, decode, decode_subtree_grants, decode_verbs, encode, encode_serviced,
-    encode_verbs, encode_zoned, serviced_len, service, verbs_len, zoned_len, zones,
+    encode_verbs, encode_zoned, service, serviced_len, verbs_len, zoned_len, zones,
 };
 use grant_plan::{
     ManifestAuthorities, NO_NOTE_MANIFEST, Program, UNVOUCHED_STD_MANIFEST, VerbGrant,
@@ -26,7 +26,14 @@ const LONGEST: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     ddddddddddddddddddddddddddddddddddddddddddddddddddddd";
 
 const EIGHT: &[&str] = &[
-    "", "a", "ab", "example.com", "nifeos.org", "org", "x.org", "zz.example.com",
+    "",
+    "a",
+    "ab",
+    "example.com",
+    "nifeos.org",
+    "org",
+    "x.org",
+    "zz.example.com",
 ];
 const ONE: &[&str] = &["basalt.nifeos.org"];
 const TWO: &[&str] = &["", "basalt.nifeos.org"];
@@ -56,7 +63,10 @@ fn seeds() -> Vec<(&'static str, Vec<u8>)> {
     let m = Program::Uptime.manifest();
     vec![
         ("manifest_v1_uptime", encode(&m).to_vec()),
-        ("manifest_v1_unvouched_std", encode(&UNVOUCHED_STD_MANIFEST).to_vec()),
+        (
+            "manifest_v1_unvouched_std",
+            encode(&UNVOUCHED_STD_MANIFEST).to_vec(),
+        ),
         (
             "manifest_v2_one_zone",
             encode_zoned::<{ zoned_len(ONE) }>(&m, ONE).to_vec(),
@@ -89,10 +99,7 @@ fn seeds() -> Vec<(&'static str, Vec<u8>)> {
             "manifest_v3_eight_zones",
             encode_serviced::<{ serviced_len(EIGHT) }>(&m, EIGHT, false).to_vec(),
         ),
-        (
-            "subtree_grants",
-            subtree_descriptor(),
-        ),
+        ("subtree_grants", subtree_descriptor()),
         (
             "verbs_three",
             encode_verbs::<{ verbs_len(3) }>(VERBS).to_vec(),
@@ -111,7 +118,8 @@ fn subtree_descriptor() -> Vec<u8> {
 }
 
 fn directory() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fuzz/seeds/capability_manifest_note_decode")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fuzz/seeds/capability_manifest_note_decode")
 }
 
 #[test]
@@ -124,14 +132,20 @@ fn the_committed_seeds_are_what_the_crate_encodes_and_each_decodes() {
     files.sort();
     let mut names: Vec<String> = want.iter().map(|(n, _)| format!("{n}.bin")).collect();
     names.sort();
-    assert_eq!(files, names, "the directory holds exactly the seeds listed here");
+    assert_eq!(
+        files, names,
+        "the directory holds exactly the seeds listed here"
+    );
     for (name, bytes) in want {
         let on_disk = std::fs::read(directory().join(format!("{name}.bin"))).unwrap();
         assert_eq!(on_disk, bytes, "{name}.bin is stale: regenerate the seeds");
         let accepted = decode(&bytes).is_ok()
             || decode_subtree_grants(&bytes).is_ok()
             || decode_verbs(&bytes).is_ok();
-        assert!(accepted, "{name}.bin must decode, or the fuzzer starts from nothing");
+        assert!(
+            accepted,
+            "{name}.bin must decode, or the fuzzer starts from nothing"
+        );
     }
 }
 
@@ -142,7 +156,10 @@ fn the_seeds_reach_the_zone_walk_past_the_count_byte() {
         .filter(|(n, _)| n.starts_with("manifest_v2") || n.starts_with("manifest_v3"))
         .filter(|(_, b)| b.len() > 57)
         .count();
-    assert!(zoned >= 6, "Kani stops at 57 bytes; the seeds must go past it");
+    assert!(
+        zoned >= 6,
+        "Kani stops at 57 bytes; the seeds must go past it"
+    );
     for (name, bytes) in seeds() {
         if name.starts_with("manifest_v3") {
             decode(&bytes).unwrap();

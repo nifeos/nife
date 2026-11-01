@@ -301,4 +301,3 @@ fuzz_mutator!(|data: &mut [u8], size: usize, max_size: usize, seed: u32| {
     data[..next.len()].copy_from_slice(&next);
     next.len()
 });
-
