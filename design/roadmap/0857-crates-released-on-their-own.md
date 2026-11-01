@@ -90,8 +90,10 @@ No per-crate milestone is minted by this block. They come from the reviews below
   crate per driver would add names and make no program link less, since every driver is a binary
   of `components`; revisit if that changes. The name holds for now. The crate breaks up as
   components become programs and crates of their own, and each piece takes its name then.
-- Ruled 2026-11-01 (UTC): this repository breaks up into single-purpose repositories and remains
-  only for its history. The kernel, programs, tooling and crates all leave, and a crate consumable
+- Ruled 2026-11-01 (UTC): this repository breaks up into single-purpose repositories and remains,
+  as `nifeos/nife`, only for its history. Likely, as a direction and not a ruling: the design
+  record (roadmap, decisions, journeys, naming, notes) moves to a repository of its own and is
+  published as a website. The kernel, programs, tooling and crates all leave, and a crate consumable
   outside nife shows good crate boundaries. What leaves references nothing back here, so moves go
   bottom-up: the crates a program links leave before it or with it. The kernel leaves last among
   the code, to `nife-kernel` (provisional): like Linux, a named part of the system, while the
@@ -256,10 +258,8 @@ note keeps each row's reasoning.
 
 ## Fork 8. Who writes an offer to another project (ruled: A-a without calef's hand, bug reports everywhere)
 
-The survey found contribution policies, not licenses, to be the binding constraint. Redox and
-embedded-sdmmc refuse AI-generated contributions. `time` takes AI-written code, disclosed, but wants
-every message written by a person and no LLM as co-author. rcore-os's `tgoskits` asks commits to
-carry no agent branding, where this tree requires an agent's pull request to say so.
+The survey found contribution policies, not licenses, to be the binding constraint, and its note
+lists each project's.
 
 - A-a. Approach only projects whose policy admits agent-written code with disclosure. calef writes
   the message where a project asks for a person's words, and the commit carries no co-author
