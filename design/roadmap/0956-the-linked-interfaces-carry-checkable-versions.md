@@ -88,16 +88,17 @@ it carries a version and an `INTERFACE_ID`.
 
 Milestone 756 lists four interfaces, measured on 2026-10-04; step 1 adds `block_roster`. Measured
 again on 2026-11-01 (UTC): the crates each program names, closed over `cargo metadata`'s normal
-dependencies, less the cut's own crates. The fifteen programs reach nineteen crates. The five
-above carry an `INTERFACE_ID`. Fourteen do not:
+dependencies, less the cut's own crates, the `carry_interfaces!` lists included. The fifteen
+programs reach twenty-two crates. The five above carry an `INTERFACE_ID`. Seventeen do not:
 
-- With a version constant already: `byte_sink_contract`, `calendar`, `clock_contract`,
-  `environment_contract`, `filesystem_contract` (block and file),
-  `globally_unique_identifier_partition_table`, `program_argument_contract`.
-- With none: `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`,
-  `filesystem_fixture`, `grant_plan`, `socket_contract`, `user_mode_runtime`.
+- With a version constant already: `byte_sink_contract`, `calendar`, `capability_manifest_note`
+  (one per descriptor), `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`,
+  `entropy_contract`, `environment_contract`, `filesystem_contract` (block and file),
+  `globally_unique_identifier_partition_table`, `program_argument_contract`, `socket_contract`.
+- With none: `domain_name_resolution_contract`, `domain_name_system`, `filesystem_fixture`,
+  `grant_plan`, `user_mode_runtime`.
 
-No ruling yet says whether condition 4 means all nineteen, the five, or another rule. Pull
+No ruling yet says whether condition 4 means all twenty-two, the five, or another rule. Pull
 request #3022 asks it. The declaration check reads `INTERFACE_ID`, so each crate that gains one joins every
 list that reaches it, and the check names the program that must add it.
 
@@ -111,7 +112,7 @@ build waits for the first package that leaves the tree.
 
 ## Follow-on
 
-- **Outstanding.** Which crates condition 4 covers: the five above, the nineteen the
+- **Outstanding.** Which crates condition 4 covers: the five above, the twenty-two the
   re-derivation finds, or another rule. Checked on 2026-11-01 (UTC) with `cargo metadata` and
   `helpers/interface_declarations_check.py`; asked on pull request #3022 with `needs-architect`.
 - **Outstanding.** An `INTERFACE_ID` and a version for each crate the ruling adds, then the
