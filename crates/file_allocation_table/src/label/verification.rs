@@ -3,7 +3,6 @@
 //!
 //! Name: provisional.
 
-use super::*;
 use crate::format::label_from_bytes;
 use crate::long_name::is_short_byte;
 
