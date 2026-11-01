@@ -18,6 +18,8 @@ These files carry the evidence its prose budget has no room for.
   as measured, and its `BUGS` in full.
 - [`rates-on-aarch64-and-riscv64-under-emulation.md`](rates-on-aarch64-and-riscv64-under-emulation.md):
   the two in-guest drivers' rates at 1 to 16 guests under full emulation, and a host target's rate.
+- [`continuous-host.md`](continuous-host.md): the always-on x86_64 host, what it keeps and what it
+  publishes.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*

@@ -1,0 +1,10 @@
+# Once a day at 14:00 UTC, after the Pacific night's heavy window has closed.
+[Unit]
+Description=nife continuous fuzzing, daily report timer
+
+[Timer]
+OnCalendar=*-*-* 14:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,81 @@
+#!/bin/sh
+# helpers/fuzz-daily-publish.sh: write the daily report of the continuous fuzz run.
+#
+#     helpers/fuzz-daily-publish.sh [--publish]
+#
+# Reads `$NIFE_FUZZ_HOME/state/windows.tsv` (helpers/continuous-fuzz.sh) and writes, under
+# `$NIFE_FUZZ_HOME/out/<utc date>/`:
+#
+#   report.md      counter totals: windows, seeds run by driver, windows by status, the newest
+#                  window's time, and the count and age in days of held findings
+#   clean-ranges.tsv   driver, first seed, seeds run, commit, for every clean window. A seed replays
+#                  the same calls, so a clean range is its own corpus
+#
+# **What never leaves.** A held finding is an escape, a crash or hang reached from user mode, or
+# anything untriaged, and every window that is not clean is one. This script reads the held directory
+# only to count its files and take their ages. It never opens one, never copies one, and the report
+# names no seed, driver or commit of a held window. The ranges around a held window are published;
+# the held window's own range is not, so nothing published reproduces it.
+#
+# **Where it goes is not decided.** Without `--publish` the script stops at the local files. With it,
+# the script calls `publish_output`, which is a stub until an architect rules between a branch of
+# artifacts and a release (design/roadmap/proposals/where-the-daily-fuzz-output-goes.md). Findings
+# start as private security advisories, filed by a person or by a later change, not by this script.
+#
+# Name: provisional, minted 2026-11-01 (UTC) by lane/continuous-fuzzing-host. calef has not ruled on it.
+
+set -eu
+
+home="${NIFE_FUZZ_HOME:-$HOME/fuzz}"
+state="$home/state"
+today="$(date -u +%Y-%m-%d)"
+out="$home/out/$today"
+windows="$state/windows.tsv"
+
+mkdir -p "$out"
+[ -f "$windows" ] || : > "$windows"
+
+# Columns: utc, driver, slot, first, ran, ms, status, commit.
+awk -F'\t' '$7 == "ok" { print $2 "\t" $4 "\t" $5 "\t" $8 }' "$windows" > "$out/clean-ranges.tsv"
+
+held_count=0
+oldest_days=0
+if [ -d "$state/held" ]; then
+    # Count and age only; the files stay closed.
+    held_count="$(find "$state/held" -type f | wc -l | tr -d ' ')"
+    if [ "$held_count" -gt 0 ]; then
+        oldest="$(find "$state/held" -type f -printf '%T@\n' | sort -n | head -1 | cut -d. -f1)"
+        oldest_days=$((($(date +%s) - oldest) / 86400))
+    fi
+fi
+
+{
+    echo "# Continuous fuzzing, daily report for $today (UTC)"
+    echo
+    echo "| driver | windows | seeds run |"
+    echo "|---|---:|---:|"
+    for d in kernel-thread confined; do
+        awk -F'\t' -v d="$d" '$2 == d && $7 == "ok" { w++; s += $5 } END { printf "| %s | %d | %d |\n", d, w, s }' "$windows"
+    done
+    echo
+    echo "Windows by status:"
+    echo
+    echo '```'
+    awk -F'\t' '{ n[$7]++ } END { for (k in n) printf "%s %d\n", k, n[k] }' "$windows" | sort
+    echo '```'
+    echo
+    echo "Newest window: $(tail -1 "$windows" | cut -f1)"
+    echo
+    echo "Held findings: $held_count, oldest $oldest_days days. Their inputs are not published until the fix merges."
+} > "$out/report.md"
+
+echo "fuzz-daily-publish: wrote $out"
+
+publish_output() {
+    echo "fuzz-daily-publish: the destination is not ruled; nothing published" >&2
+    return 1
+}
+
+if [ "${1:-}" = --publish ]; then
+    publish_output
+fi

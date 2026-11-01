@@ -1,0 +1,14 @@
+# The daily publish: counter totals and clean seed ranges, from the state the fuzz run keeps.
+# Triggered by nife-fuzz-publish.timer. It runs as the same user and never touches the held findings'
+# contents (notes/fuzzing/continuous-host.md). Where the output goes is an open proposal
+# (design/roadmap/proposals/where-the-daily-fuzz-output-goes.md); until that is ruled the script
+# writes the report to its output directory and publishes nothing.
+[Unit]
+Description=nife continuous fuzzing, daily report
+
+[Service]
+Type=oneshot
+User=lane
+Group=lane
+Environment=NIFE_FUZZ_HOME=/home/lane/fuzz
+ExecStart=/home/lane/nife/helpers/fuzz-daily-publish.sh
