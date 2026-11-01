@@ -50,7 +50,7 @@ that a decoded list encodes back to its bytes and that decoding never panics.
 Every interface owns a number for good. The one table is the "Interface ids" section of the
 milestone's block: `abi` is 1, `address_space_map` 2, `machine_statistics_contract` 4,
 `byte_sink_contract` 6, `capability_manifest_note` 7, `clock_contract` 8, and so on to
-`user_mode_runtime` at 20; 3 stays retired (it named `glob`). An interface is the module that holds
+`user_mode_runtime` at 20 and `interfaces_note` at 21; 3 stays retired (it named `glob`). An interface is the module that holds
 `INTERFACE_ID`, so `filesystem_contract` holds two, `blk` at 14 and `fs` at 15. A new interface
 takes the next unused number by adding a row there, and a number is never reused.
 
@@ -99,9 +99,11 @@ program of `process-tools`, `core-tools` and `disk-tools` and works out the crat
 its source and `cargo metadata`. It fails when a list misses an interface the program links or
 names one it does not. It fails when an entry reads its version from a module other than its
 id's, when an `INTERFACE_ID` disagrees with the table, and when the check finds a linked crate in
-none of its tables. It reads source text, not the linked bytes. The crate `interfaces_note` itself has no id: the check lists it as
-owed one, so no list declares it, and the note does not declare its own format. Its descriptor's
-first word is its own version.
+none of its tables. It reads source text, not the linked bytes.
+
+The note lists itself. `interfaces_note` is an interface like the others, id 21 at
+`INTERFACES_VERSION` 1, and every program links it to carry the note, so the check makes every
+list end with that record. The check's table of formats still owed an id is empty.
 
 ## Which programs carry it
 
@@ -118,22 +120,23 @@ which names exactly the `programs` of `packages/process-tools.package.toml`,
 
 ## A worked example: `uptime`
 
-`components/src/uptime.rs` declares nine interfaces, each at version 1: `abi` (1),
+`components/src/uptime.rs` declares ten interfaces, each at version 1: `abi` (1),
 `address_space_map` (2), `byte_sink_contract` (6), `clock_contract` (8),
 `counter_frequency_contract` (9), `current_cpu_contract` (10), `entropy_contract` (12),
-`socket_contract` (19) and `user_mode_runtime` (20). It carries no manifest note of its own, so this
-is the only note in its `.note.nife` section: 136 bytes, the 20-byte header and owner, then a
-descriptor of `8 + 9 * 12` = 116 bytes. Built for `aarch64-unknown-none-softfloat` and dumped with
+`socket_contract` (19), `user_mode_runtime` (20) and `interfaces_note` (21). It carries no manifest note of its own, so this
+is the only note in its `.note.nife` section: 148 bytes, the 20-byte header and owner, then a
+descriptor of `8 + 10 * 12` = 128 bytes. Built for `aarch64-unknown-none-softfloat` and dumped with
 `readelf -x .note.nife`, the section begins
 
 ```text
-05000000 74000000 04000000 6e696665 00000000   name size 5, descriptor 0x74, type 4, "nife"
-01000000 09000000                              version 1, count 9
+05000000 80000000 04000000 6e696665 00000000   name size 5, descriptor 0x80, type 4, "nife"
+01000000 0a000000                              version 1, count 10
 01000000 00000000 01000000                     id 1 (abi), version 1
 02000000 00000000 01000000                     id 2 (address_space_map), version 1
 ```
 
-and the seven records after run 6, 8, 9, 10, 12, 19 (`0x13`) and 20 (`0x14`), each at version 1.
+and the eight records after run 6, 8, 9, 10, 12, 19 (`0x13`), 20 (`0x14`) and 21 (`0x15`), each at
+version 1.
 Sent to the progenitor as a file, those bytes pass while `abi::ABI_VERSION` is 1. A progenitor
 built with any other value answers `SPAWN_REFUSED_BY_MANIFEST`.
 
