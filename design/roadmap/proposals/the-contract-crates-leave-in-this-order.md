@@ -43,16 +43,17 @@ architect](the-contract-crates-leave-in-this-order/questions.md).
 
 Measured at `nifeos/nife@a8b7524d7` with one script, reproduced in the measurements appendix.
 
-- The 22 link nothing outside themselves: no 23rd crate has to leave with them. Fifteen
-  are leaves, four sit one layer up and three sit two up.
+- Through normal dependencies the 22 link no other nife crate, so no 23rd crate has to leave with
+  them. Fifteen are leaves, four sit one layer up and three sit two up.
 - 39 crates that stay link at least one of the 22. `abi` alone has 12, the kernel among them.
 - In 30 days 348 focused commits touched the 22. 244 of them (70%) also changed code outside the
   22, mostly `components` (80), `kernel` (72) and `system_tests` (51). Only 5 spanned two of the 22
   and stayed inside them. Grouping the 22 into one repository would save almost no crossings.
 - `grant_plan` dominates: 151 commits in 30 days, 120 crossing, 227 breaking API items in four
-  weeks. `filesystem_contract` follows with 263 breaking items, mostly the fixture extraction.
-- Identity values (a `MAGIC`, a `VERSION`) changed five times in 90 days. Two reverts followed within a
-  day, `current_cpu_contract` on 2026-10-21 and `program_argument_contract` on 2026-10-30, because
+  weeks. `filesystem_contract` follows with 263, item-level churn that milestone 610's note
+  attributes to the fixture extraction and the file splits.
+- Identity values (a `MAGIC`, a `VERSION`) changed five times in 90 days. Two reverts followed
+  within a day, `current_cpu_contract` on 2026-10-21 and `program_argument_contract` on 2026-10-30, because
   basalt's published programs, built from an older nife, still compared the old value. The tree
   already pays cross-repository breaks, without a policy.
 - The packages differ. `disk-tools` reaches 12 of the 22 and not `grant_plan`. `process-tools`
@@ -92,7 +93,7 @@ whole linked set has left.
 | 1, the contract pilot | `block_roster` | a leaf with no blocking reference; one writer in the kernel, one reader in `disk_surveyor`; its magic carries its version, so a reader refuses a mismatch today |
 | 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `filesystem_contract` with `filesystem_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
 | 3 | `address_space_map`, then `current_cpu_contract`, then `user_mode_runtime` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2 |
-| 4, first package | `disk-tools` | its 12 crates are gone; it waits for step 6 only if it carries the `INTERFACES` macro while the note links `grant_plan` |
+| 4, first package | `disk-tools` | its 12 crates are gone; milestone 756's condition 4 has it carry the `INTERFACES` macro, so it also waits for step 6 unless the note's type first moves to a leaf crate (below) |
 | 5, leaves for `process-tools` | `byte_sink_contract`, `glob`, `program_argument_contract`, `domain_name_system` | leaves; `program_argument_contract` after the pair test moves to basalt (the proposal the cross-repository pair is tested where the pin is) |
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |
 | 7, second package | `process-tools` | |
@@ -162,6 +163,8 @@ contract and a consumer to land together it needs four things:
    contract.
 3. An interface agreement check: each program's `INTERFACES` entries against the versions the
    image's kernel and servers serve. That is the spawn check, run before boot over the whole image.
+   A server's served versions can come from its own note; the kernel carries no note today, so it
+   needs a list of its own.
 4. A trial run: a manual dispatch that takes candidate commits, merged or not, runs checks 2 and 3
    and the system test, and writes no pin. It proves a pair before either half merges.
 
@@ -231,7 +234,7 @@ the pin. Fuchsia's 2019 fold-back of its layers is the precedent. Other parties 
 and those make the door narrow: a repository name, a published crate version (crates.io never deletes
 one), an `INTERFACE_ID` value and a release binary that compares a magic. The two reverts above came
 from the fourth. So the moved crates stay unpublished under §305 until their own release milestone.
-The architect ratifies the `INTERFACE_ID` values, still open per milestone 979, before the first
+Ratifying the `INTERFACE_ID` values, still open per milestone 979, comes before the first
 contract leaves. §201 already asks for a name ratified before anything moves.
 
 ## The seven questions
