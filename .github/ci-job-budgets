@@ -13,3 +13,4 @@
 # `test` reached 17.4 to 18.4 on 2026-10-12 and was split the same way, into two `test-shard`
 # jobs by architecture (#1930; ci.yml, above that job, has the measurement).
 falsify-shard 25 a shard planned at 17 minutes of replay must outlive one record that runs to its own 15-minute limit, so it can report it (verify.yml, above that job)
+fuzz 22 eighteen targets at 60 seconds each are 18.5 minutes of fuzzing and about a minute of build and install, which measured 20.1 minutes on #2991 with no crash found; a nineteenth target means splitting the job into shards (ci.yml, above the fuzz job)

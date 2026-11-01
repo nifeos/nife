@@ -52,7 +52,7 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Thirteen parser targets, deliberately fewer than one per crate; the table holds twelve, and
+Fifteen parser targets, deliberately fewer than one per crate; the table holds fourteen, and
 [fuzzing/targets.md](fuzzing/targets.md) covers the FAT writer. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
@@ -70,11 +70,13 @@ implies coverage the project does not have.
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
 | `capability_manifest_note_decode` | an ELF note | sets authority |
 | `package_index_text` | package host | address check |
+| `acpi_firmware_tables` | firmware (ACPI) | IOMMU identity mappings stay whole pages |
+| `machine_description_from_device_tree` | firmware (device tree) | readers no proof reaches |
 | `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
 
 ### And the ones deliberately not fuzzed
 
-Naming these matters as much as naming the targets: "we have fuzzers" quietly grows to cover
+"We have fuzzers" quietly grows to cover
 everything. `Fs::parse` on raw bytes is proved total, so a target there could find nothing. The IPC
 protocols are total by construction, and their real hazard, a double fetch, is a concurrent mutation
 no byte-string fuzzer can express. [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md) argues each, and `grant_plan` too.
