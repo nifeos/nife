@@ -210,8 +210,10 @@ dependencies = [
  "capability_plan",
  "clock_contract",
  "compositor",
+ "counter_frequency_contract",
  "credential_contract",
  "credentialer",
+ "current_cpu_contract",
  "designware_ethernet",
  "designware_mobile_storage",
  "disk_tree",
@@ -246,6 +248,7 @@ dependencies = [
  "pgrep",
  "pmap",
  "process_builder",
+ "program_argument_contract",
  "ps",
  "screen_console",
  "slabtop",
@@ -1445,6 +1448,14 @@ name = "system_log_contract"
 version = "0.1.0"
 
 [[package]]
+name = "system_manifest"
+version = "0.1.0"
+dependencies = [
+ "measured_boot",
+ "package_archive",
+]
+
+[[package]]
 name = "system_tests"
 version = "0.1.0"
 dependencies = [
@@ -1858,6 +1869,7 @@ dependencies = [
  "screen_console",
  "sealed_pair",
  "serial_console",
+ "system_manifest",
  "test_times",
  "toml",
  "uuid",
