@@ -56,8 +56,8 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 
 - Today a window runs under TCG, not KVM. `cargo xtask test --arch x86_64 --test <driver>` clears
   `NIFE_ACCEL` and boots the PVH leg and then the OVMF legs, so one window sweeps the same seed
-  range on two machines at 18 and 34 seeds per second, about a tenth of the KVM rate the rates note
-  measured. A smoke window took 226 seconds. The fix is a window that builds once and runs the PVH
+  range on two machines, at 18 and 34 seeds per second. That is about a tenth of the KVM rate the
+  rates note measured. A smoke window took 226 seconds. The fix is a window that builds once and runs the PVH
   runner directly with `-accel kvm` from a copy of the image, as the rates note's measurement did.
   The 1, 4 and 8 guest measurements decide whether that is enough.
 - The build fixes the seed range, so each 60-second window pays a rebuild. A runtime seed (for
