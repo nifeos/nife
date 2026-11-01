@@ -79,7 +79,7 @@ fn name(bytes: &[u8]) -> String {
 
 /// A clock fed from the input: each reading takes seven bytes, any of which may make an invalid
 /// time (a month 200, a year 65000), and a first byte below 32 reports no time. When the input runs
-/// out the clock reports no time. The crate must clamp every one and never fail a write over it.
+/// out the clock reports no time. The crate must refuse every out-of-range one with an error and never panic.
 struct Fed {
     bytes: Vec<u8>,
     at: usize,

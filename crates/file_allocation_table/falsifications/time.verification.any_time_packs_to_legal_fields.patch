@@ -1,0 +1,18 @@
+Falsifies `file_allocation_table::time::verification::any_time_packs_to_legal_fields`.
+
+The defect: a month of 13 is let through, so a clock that reports one writes a date no driver reads, and fsck refuses the volume.
+
+Expected to fail: the harness's `assert!(in_range)` after a successful pack.
+
+diff --git a/crates/file_allocation_table/src/time.rs b/crates/file_allocation_table/src/time.rs
+--- a/crates/file_allocation_table/src/time.rs
++++ b/crates/file_allocation_table/src/time.rs
+@@ -140,7 +140,7 @@ impl Stamp {
+         };
+         let legal = now.year >= FIRST_YEAR
+             && now.year <= LAST_YEAR
+-            && (1..=12).contains(&now.month)
++            && (1..=13).contains(&now.month)
+             && (1..=31).contains(&now.day)
+             && now.hour <= 23
+             && now.minute <= 59

@@ -63,21 +63,28 @@ cannot.
   holds digests taken before the change over every metadata sector of the EFI volumes and the
   formatted volumes, and they still match.
 
-The ruling leaves three recommendations open. The code follows them, and each is easy to change
-before release.
+The architect also ruled detail (b) on 2026-11-01 (UTC). The crate refuses a time FAT cannot store
+(a year before 1980 or after 2107, or a field outside its range) with `TimeOutOfRange` on `WriteError`,
+`FormatError` and `LayoutError`, before it writes a byte. Relaxing a refusal to a clamp later is
+compatible; tightening a clamp is not. `None` is unchanged. The architect ruled detail (a) the same day: reading takes no clock and never writes. A read-only
+open is a `Volume` with no clock parameter, and only `WritableVolume<D, C: Clock>` stamps. A read
+leaves the last-accessed date alone, because a read must work on a read-only device or image. A
+clock-stamping read, if ever wanted, arrives as a new method. One recommendation stays open. The
+code follows it, and it is easy to change before release.
 
-- Recommended, not yet ruled (a): a read-only open takes no clock, and no read stamps an access
-  date. Nothing in the crate stamps on a read: a read changes no byte.
-- Recommended, not yet ruled (b): a time outside 1980 to 2107 clamps to the range, and a field
-  outside its range clamps, and the write does not fail. Before 1980 stores 1980-01-01 00:00:00;
-  after 2107 stores 2107-12-31 23:59:58.
+- Ruled (a): `tests/a_read_never_writes.rs` reads every way the crate reads, over a device with no
+  write method and over one whose write method panics, on FAT12, FAT16 and FAT32. The reads are
+  lookup, listing, file bytes, the label, the free count, the clean bit, `FSInfo` and a chain. The
+  image stays byte for byte as it was. The test found that `Volume::is_clean` needed a writable
+  device; it now needs only a readable one.
 - Recommended, not yet ruled (c): the crate stores exactly what the clock reports. FAT carries no
   time zone and a host shows the stored time as local time, so a caller chooses local time or UTC.
 
 | check | result |
 |---|---|
-| Kani | `any_time_packs_to_legal_fields` covers every year, month, day, hour, minute and second, valid or not: the packed date and time fields are legal, the tenths byte is 0 or 100, and an in-range time comes back exactly |
-| falsification | a month clamp that lets 13 through turns the harness red at its legality assertion |
+| Kani | `any_time_packs_to_legal_fields` covers every year, month, day, hour, minute and second, valid or not: the pack refuses exactly when the time is out of range, and otherwise the packed fields are legal, the tenths byte is 0 or 100, and the time comes back exactly |
+| falsification | a month check that lets 13 through turns the harness red at its range assertion |
 | unit tests | packing, clamping, the two stamp shapes, and a counting clock that proves one reading per operation, none for a rename, an attribute change, a removal or a read, and every stamped field on create, directory, `.`, `..`, write, resize and label |
-| oracle tests | on FAT12, FAT16 and FAT32 volumes rust-fatfs formatted, rust-fatfs reads the creation, write and access times back as the clock gave them, the odd second included; clamped times read as clamped; `fsck.fat -n` accepts every volume; a clock with no time equals `NoClock`; the format's label entry and the EFI volume's directories carry the time |
-| fuzz | the writer target now feeds the volume a clock built from its input, including invalid times; 127,000 runs in 61 seconds, no crash |
+| refusal | for create, make directory, label, write (of bytes and of none) and resize (up and down), an out-of-range time returns `TimeOutOfRange` and leaves the image byte for byte as it was; a refused writer works again once the clock is right; tests through a volume pin the exact edges (1979-12-31 23:59:58 refuses, 1980-01-01 00:00:00 and 2107-12-31 23:59:58 pass, 2108-01-01 refuses); `Format` and `VolumeLayout` refuse the same way |
+| oracle tests | on FAT12, FAT16 and FAT32 volumes rust-fatfs formatted, rust-fatfs reads the creation, write and access times back as the clock gave them, the odd second included; `fsck.fat -n` accepts every volume, the first and last moments FAT stores included; a clock with no time equals `NoClock`; the format's label entry and the EFI volume's directories carry the time |
+| fuzz | the writer target now feeds the volume a clock built from its input, including invalid times, which the crate refuses without a panic; 127,000 runs in 61 seconds, no crash |

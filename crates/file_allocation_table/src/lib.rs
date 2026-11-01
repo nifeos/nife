@@ -48,7 +48,8 @@
 //!   name is stored as a long name, since the crate writes no lower-case flag.
 //! - A directory slot is found by walking from the directory's first cluster each time, so creating
 //!   in a directory of n clusters costs n chain steps per slot read.
-//! - FAT stores no time zone; the crate stores what its clock reports, clamped to 1980 to 2107.
+//! - FAT stores no time zone; the crate stores what its clock reports, and refuses a time outside
+//!   1980 to 2107.
 //! - The 65,536-entry ceiling of a directory (`grow_directory`'s limit) is untested: reaching it
 //!   needs a volume and a test of that size.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a

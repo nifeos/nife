@@ -270,27 +270,6 @@ impl<D: WritableSectorDevice> Volume<D> {
         Ok(())
     }
 
-    /// The clean-shutdown bit of table entry 1, or `None` for FAT12, which has none.
-    fn clean_bit(&self) -> Option<u32> {
-        match self.boot.file_allocation_table_type() {
-            FileAllocationTableType::Fat12 => None,
-            FileAllocationTableType::Fat16 => Some(0x8000),
-            FileAllocationTableType::Fat32 => Some(0x0800_0000),
-        }
-    }
-
-    /// **Whether the volume was shut down cleanly**, from the bit in table entry 1: `Ok(None)` on
-    /// FAT12, which keeps no such bit. A volume this crate is changing reads as not clean until
-    /// [`crate::WritableVolume::sync`].
-    ///
-    /// Name: provisional. The specification's `ClnShutBitMask`, asked as a question.
-    pub fn is_clean(&mut self) -> Result<Option<bool>, ChainError<D::Error>> {
-        let Some(bit) = self.clean_bit() else {
-            return Ok(None);
-        };
-        Ok(Some(self.read_raw_entry(1)? & bit != 0))
-    }
-
     /// Clear the clean-shutdown bit before the first change after open or after a sync, and
     /// remember whether it was set. A volume found dirty stays dirty at the next sync, since this
     /// crate cannot know the earlier writer left it consistent.
@@ -449,6 +428,27 @@ impl<D: WritableSectorDevice> Volume<D> {
 }
 
 impl<D: crate::sector::SectorDevice> Volume<D> {
+    /// The clean-shutdown bit of table entry 1, or `None` for FAT12, which has none.
+    fn clean_bit(&self) -> Option<u32> {
+        match self.boot.file_allocation_table_type() {
+            FileAllocationTableType::Fat12 => None,
+            FileAllocationTableType::Fat16 => Some(0x8000),
+            FileAllocationTableType::Fat32 => Some(0x0800_0000),
+        }
+    }
+
+    /// **Whether the volume was shut down cleanly**, from the bit in table entry 1: `Ok(None)` on
+    /// FAT12, which keeps no such bit. A volume this crate is changing reads as not clean until
+    /// [`crate::WritableVolume::sync`].
+    ///
+    /// Name: provisional. The specification's `ClnShutBitMask`, asked as a question.
+    pub fn is_clean(&mut self) -> Result<Option<bool>, ChainError<D::Error>> {
+        let Some(bit) = self.clean_bit() else {
+            return Ok(None);
+        };
+        Ok(Some(self.read_raw_entry(1)? & bit != 0))
+    }
+
     /// **Count the free clusters** by reading the whole table: exact where `FSInfo` is a hint.
     ///
     /// Name: provisional. What `FSI_Free_Count` claims, counted.

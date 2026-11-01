@@ -138,8 +138,9 @@ own driver read an image (`cargo test -- --ignored`, on macOS).
   write reaches the medium.
 - Time. The clock is required of every writer. FAT stores no time zone and a host shows the stored
   time as local time, so a caller chooses whether its clock reports local time or UTC. The crate
-  stores exactly what the clock reports, clamps a time outside 1980 to 2107 and any field outside
-  its range, and never fails a write over a time. A write sets the write and access times, a new
+  stores exactly what the clock reports. A time outside 1980 to 2107, or a field outside its range,
+  is refused with `TimeOutOfRange` before a byte is written; a clock that cannot be trusted reports
+  `None` and gets the zero timestamp. A write sets the write and access times, a new
   entry its creation time, a rename keeps the times, and a read stamps nothing.
 - A name with a character outside the Basic Multilingual Plane is refused, and a lower-case 8.3 name
   is stored as a long name, since the crate writes no lower-case flag.
