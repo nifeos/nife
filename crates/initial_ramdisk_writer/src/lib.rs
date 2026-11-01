@@ -403,4 +403,36 @@ mod tests {
         assert_eq!(error, nifefs::Error::NameHasNul);
         assert_eq!(files, 8);
     }
+
+    /// Each refusal reads as one line per program, in file order, with nothing before the first
+    /// and nothing after the last: the stderr text `xtask` prefixes line by line.
+    #[test]
+    fn a_refusal_reads_one_line_per_misfit() {
+        let low = elf_at(0x20_0000);
+        let Err(refusal) = programs_fit_the_address_space_map(&[("mkfs", &low), ("other", &low)])
+        else {
+            panic!("programs at 0x200000 fit the band");
+        };
+        let placement = address_space_map::check_image(0x20_0000, 0x20_2000).unwrap_err();
+        let line = |name: &str| format!("`{name}` does not fit the address-space map: {placement}");
+        assert_eq!(
+            refusal.to_string(),
+            format!("{}\n{}", line("mkfs"), line("other"))
+        );
+        let Error::OutsideImageBand(misfits) = &refusal else {
+            panic!("not a band refusal");
+        };
+        assert_eq!(misfits[0].to_string(), line("mkfs"));
+        let one = Error::OutsideImageBand(misfits[..1].to_vec());
+        assert_eq!(one.to_string(), line("mkfs"));
+    }
+
+    /// An ELF whose only `PT_LOAD` segment is empty has no span, so it is never judged against
+    /// the band.
+    #[test]
+    fn an_empty_loadable_segment_has_no_span() {
+        let mut empty = elf_at(0);
+        empty[64 + 40..64 + 48].copy_from_slice(&0u64.to_le_bytes());
+        assert_eq!(image_span(&empty), None);
+    }
 }
