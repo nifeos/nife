@@ -112,7 +112,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// label, `.` and `..`.
     ///
     /// Name: provisional. The `chmod` and `attrib` of the directory tree; it takes no time.
-    pub fn set_attributes(
+    pub(crate) fn set_attributes(
         &mut self,
         entry: &NamedEntry,
         attributes: Attributes,

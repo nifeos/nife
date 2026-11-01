@@ -4,6 +4,7 @@
 
 use super::*;
 use crate::reader::tests::Image;
+use crate::{NoClock, WritableVolume};
 
 #[test]
 fn a_set_is_a_union_a_difference_and_a_containment() {
@@ -33,7 +34,7 @@ fn setting_changes_the_user_bits_and_keeps_the_directory_bit() {
 
 #[test]
 fn a_file_and_a_directory_take_attributes_and_the_entry_reads_them_back() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let file = volume.create_file(0, "F.TXT").unwrap();
     assert_eq!(file.file_attributes(), Attributes::ARCHIVE);
     let hidden = volume
@@ -53,7 +54,7 @@ fn a_file_and_a_directory_take_attributes_and_the_entry_reads_them_back() {
 
 #[test]
 fn a_read_only_file_refuses_a_write_a_resize_and_a_remove_until_the_bit_clears() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let file = volume.create_file(0, "RO.TXT").unwrap();
     volume
         .open_file_writer(&file)
@@ -74,7 +75,7 @@ fn a_read_only_file_refuses_a_write_a_resize_and_a_remove_until_the_bit_clears()
 
 #[test]
 fn the_label_dots_and_a_stale_entry_are_refused() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let dir = volume.make_directory(0, "D").unwrap();
     let dot = volume
         .entries(dir.first_cluster())

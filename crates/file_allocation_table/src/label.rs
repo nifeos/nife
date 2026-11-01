@@ -81,7 +81,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// slot, and then the boot sector's copy (and FAT32's backup boot sector) follows.
     ///
     /// Name: provisional. The `fatlabel` of the directory tree.
-    pub fn set_volume_label(&mut self, label: &str) -> Result<(), WriteError<D::Error>> {
+    pub(crate) fn set_volume_label(&mut self, label: &str) -> Result<(), WriteError<D::Error>> {
         let bytes = label_bytes(label).ok_or(WriteError::InvalidName)?;
         self.begin_change()?;
         let mut existing = None;
@@ -99,6 +99,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         let mut slot = [0u8; 32];
         slot[..11].copy_from_slice(&bytes);
         slot[11] = LABEL_ENTRY;
+        self.stamp.write_new(&mut slot);
         self.write_slot(0, index, &slot)?;
         let mut copies = [Some(0), None];
         if let Some(backup) = self.boot.backup_boot_sector() {

@@ -17,6 +17,7 @@ use crate::long_name::is_short_byte;
 use crate::named_entry::{EntryPlace, NamedEntry};
 use crate::reader::{ChainError, Volume, Walk};
 use crate::sector::{SectorSize, WritableSectorDevice};
+use crate::time::{Clock, Stamp};
 
 /// `DIR_Attr`'s archive bit: set on a file a writer has changed.
 pub(crate) const ARCHIVE: u8 = 0x20;
@@ -190,6 +191,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         name: [u8; 11],
         first_cluster: u32,
         size: u32,
+        stamped: bool,
     ) -> Result<(), WriteError<D::Error>> {
         let mut slot = self
             .read_slot(place.directory, place.short_slot)?
@@ -203,35 +205,18 @@ impl<D: WritableSectorDevice> Volume<D> {
         }
         slot[26..28].copy_from_slice(&(first_cluster as u16).to_le_bytes());
         slot[28..32].copy_from_slice(&size.to_le_bytes());
+        if stamped {
+            self.stamp.write_modified(&mut slot);
+        }
         self.write_slot(place.directory, place.short_slot, &slot)?;
         Ok(())
-    }
-
-    /// **Open the file `entry` names for writing**, at its start. Refuses a directory and the
-    /// volume label.
-    ///
-    /// Name: provisional. Beside `open_file`, which reads.
-    pub fn open_file_writer(&mut self, entry: &NamedEntry) -> Result<FileWriter<'_, D>, NotAFile> {
-        if entry.is_directory() || entry.is_volume_label() {
-            return Err(NotAFile);
-        }
-        Ok(FileWriter {
-            volume: self,
-            place: entry.place(),
-            name: entry.short_name(),
-            read_only: entry
-                .file_attributes()
-                .contains(crate::Attributes::READ_ONLY),
-            state: WriteState::new(entry.first_cluster(), entry.size_bytes()),
-            failed: false,
-        })
     }
 
     /// **Delete the file `entry` names**: mark its slots free, then free its clusters. Refuses a
     /// directory and the volume label.
     ///
     /// Name: provisional. The verb of `std::fs::remove_file`.
-    pub fn remove_file(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
+    pub(crate) fn remove_file(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
         if entry.is_directory() || entry.is_volume_label() {
             return Err(WriteError::NotAFile);
         }
@@ -276,8 +261,9 @@ impl<D: WritableSectorDevice> Volume<D> {
 ///
 /// Name: provisional. A file being written; named for what it does, as `FileReader`.
 #[derive(Debug)]
-pub struct FileWriter<'v, D> {
+pub struct FileWriter<'v, D, C> {
     volume: &'v mut Volume<D>,
+    clock: &'v mut C,
     place: EntryPlace,
     name: [u8; 11],
     read_only: bool,
@@ -285,7 +271,35 @@ pub struct FileWriter<'v, D> {
     failed: bool,
 }
 
-impl<D: WritableSectorDevice> FileWriter<'_, D> {
+impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
+    /// Open `entry` for writing at its start, stamping with `clock`. Refuses a directory and the
+    /// volume label.
+    pub(crate) fn new(
+        volume: &'v mut Volume<D>,
+        clock: &'v mut C,
+        entry: &NamedEntry,
+    ) -> Result<FileWriter<'v, D, C>, NotAFile> {
+        if entry.is_directory() || entry.is_volume_label() {
+            return Err(NotAFile);
+        }
+        Ok(FileWriter {
+            volume,
+            clock,
+            place: entry.place(),
+            name: entry.short_name(),
+            read_only: entry
+                .file_attributes()
+                .contains(crate::Attributes::READ_ONLY),
+            state: WriteState::new(entry.first_cluster(), entry.size_bytes()),
+            failed: false,
+        })
+    }
+
+    /// Read the clock once for the operation about to run.
+    fn tick(&mut self) {
+        self.volume.stamp = Stamp::pack(self.clock.now());
+    }
+
     /// The file's length in bytes.
     ///
     /// Name: provisional. As `FileReader::size_bytes`.
@@ -317,14 +331,16 @@ impl<D: WritableSectorDevice> FileWriter<'_, D> {
         }
     }
 
-    /// Rewrite the entry when the size or the first cluster differs from `before`.
-    fn settle(&mut self, before: (u32, u32)) -> Result<(), WriteError<D::Error>> {
-        if (self.state.first_cluster, self.state.size) != before {
+    /// Rewrite the entry, stamped, when bytes were written or the size or the first cluster
+    /// differs from `before`.
+    fn settle(&mut self, before: (u32, u32), wrote: bool) -> Result<(), WriteError<D::Error>> {
+        if wrote || (self.state.first_cluster, self.state.size) != before {
             self.volume.update_entry(
                 self.place,
                 self.name,
                 self.state.first_cluster,
                 self.state.size,
+                true,
             )?;
         }
         Ok(())
@@ -337,6 +353,7 @@ impl<D: WritableSectorDevice> FileWriter<'_, D> {
     /// Name: provisional. The `Write` verb of the standard library's trait.
     pub fn write(&mut self, data: &[u8]) -> Result<usize, WriteError<D::Error>> {
         self.check()?;
+        self.tick();
         let before = (self.state.first_cluster, self.state.size);
         let boot = self.volume.boot;
         let mut scratch = [0u8; SectorSize::MAX];
@@ -346,7 +363,7 @@ impl<D: WritableSectorDevice> FileWriter<'_, D> {
             .write(self.volume, &boot, data, &mut scratch)
             .inspect_err(|_| self.failed = true);
         // The entry is brought up to date even when the write stopped part way.
-        let settled = self.settle(before);
+        let settled = self.settle(before, !data.is_empty());
         let written = written?;
         settled.inspect_err(|_| self.failed = true)?;
         Ok(written)
@@ -359,6 +376,7 @@ impl<D: WritableSectorDevice> FileWriter<'_, D> {
     /// Name: provisional. The verb of `File::set_len`.
     pub fn set_len(&mut self, length: u32) -> Result<(), WriteError<D::Error>> {
         self.check()?;
+        self.tick();
         let result = self.resize(length);
         if result.is_err() {
             self.failed = true;
@@ -395,7 +413,7 @@ impl<D: WritableSectorDevice> FileWriter<'_, D> {
                     }
                 }
             }
-            let settled = self.settle(before);
+            let settled = self.settle(before, true);
             outcome?;
             settled?;
             self.state.seek(resume);
@@ -411,7 +429,7 @@ impl<D: WritableSectorDevice> FileWriter<'_, D> {
             self.state.forget_cursor();
             // The entry shrinks first, so a crash leaks the tail and never shortens the chain
             // under a size that still claims it.
-            self.settle(before)?;
+            self.settle(before, false)?;
             if first != 0 {
                 self.volume
                     .truncate_chain(first, keep)

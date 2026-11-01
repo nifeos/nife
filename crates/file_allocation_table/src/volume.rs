@@ -8,6 +8,7 @@ use crate::efi_system_partition::{BOOT_CLUSTER, EFI_CLUSTER, FILE_CLUSTER};
 use crate::format::{Geometry, GeometryError, put16, put32, write_fs_info};
 use crate::long_name::{self, LongName};
 use crate::sector::SectorSize;
+use crate::time::{Clock, Stamp};
 
 /// A FAT sector, and the unit every one of this crate's outputs is measured in.
 ///
@@ -113,9 +114,9 @@ pub enum LayoutError {
 /// that can put 512 bytes at an LBA:
 ///
 /// ```
-/// use file_allocation_table::{SECTOR_BYTES, VolumeLayout};
+/// use file_allocation_table::{SECTOR_BYTES, VolumeLayout, NoClock};
 ///
-/// let volume = VolumeLayout::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI")
+/// let volume = VolumeLayout::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI", &mut NoClock)
 ///     .expect("512 MiB is a FAT32 volume");
 ///
 /// let mut sector = [0u8; SECTOR_BYTES];
@@ -137,6 +138,7 @@ pub struct VolumeLayout {
     file_len: u32,
     file_clusters: u32,
     geometry: Geometry,
+    stamp: Stamp,
     volume_id: u32,
     name: [u8; 11],
     /// The long name written ahead of `name`, which is then its alias; `None` for an 8.3 name.
@@ -162,6 +164,7 @@ impl VolumeLayout {
         file_len: u64,
         volume_id: u32,
         file_name: &str,
+        clock: &mut impl Clock,
     ) -> Result<VolumeLayout, LayoutError> {
         if total_sectors > u32::MAX as u64 || hidden_sectors > u32::MAX as u64 {
             return Err(LayoutError::TooLarge);
@@ -207,6 +210,7 @@ impl VolumeLayout {
             file_len,
             file_clusters,
             geometry,
+            stamp: Stamp::pack(clock.now()),
             volume_id,
             name,
             long_name,
@@ -366,18 +370,42 @@ impl VolumeLayout {
 
     /// The root directory: the volume label, then `EFI`.
     fn root_cluster(&self, out: &mut [u8]) {
-        dir_entry(out, 0, b"NIFE       ", ATTR_VOLUME_ID, 0, 0);
-        dir_entry(out, 1, b"EFI        ", ATTR_DIRECTORY, EFI_CLUSTER, 0);
+        dir_entry(out, 0, b"NIFE       ", ATTR_VOLUME_ID, 0, 0, &self.stamp);
+        dir_entry(
+            out,
+            1,
+            b"EFI        ",
+            ATTR_DIRECTORY,
+            EFI_CLUSTER,
+            0,
+            &self.stamp,
+        );
     }
 
     /// `EFI`: the two dot entries the specification requires of every non-root directory, then
     /// `BOOT`.
     fn efi_cluster(&self, out: &mut [u8]) {
-        dir_entry(out, 0, b".          ", ATTR_DIRECTORY, EFI_CLUSTER, 0);
+        dir_entry(
+            out,
+            0,
+            b".          ",
+            ATTR_DIRECTORY,
+            EFI_CLUSTER,
+            0,
+            &self.stamp,
+        );
         // `..` of a directory whose parent is the root names cluster **zero**, not the root's own
         // cluster number. The specification is explicit and drivers check it.
-        dir_entry(out, 1, b"..         ", ATTR_DIRECTORY, 0, 0);
-        dir_entry(out, 2, b"BOOT       ", ATTR_DIRECTORY, BOOT_CLUSTER, 0);
+        dir_entry(out, 1, b"..         ", ATTR_DIRECTORY, 0, 0, &self.stamp);
+        dir_entry(
+            out,
+            2,
+            b"BOOT       ",
+            ATTR_DIRECTORY,
+            BOOT_CLUSTER,
+            0,
+            &self.stamp,
+        );
     }
 
     /// Sector `within` of `EFI\BOOT`: the dot entries, the long-name run if the file has one,
@@ -392,8 +420,24 @@ impl VolumeLayout {
         let run = self.long_name.map_or(0, |n| n.entries());
         for at in 0..per_sector {
             match first + at {
-                0 => dir_entry(out, at, b".          ", ATTR_DIRECTORY, BOOT_CLUSTER, 0),
-                1 => dir_entry(out, at, b"..         ", ATTR_DIRECTORY, EFI_CLUSTER, 0),
+                0 => dir_entry(
+                    out,
+                    at,
+                    b".          ",
+                    ATTR_DIRECTORY,
+                    BOOT_CLUSTER,
+                    0,
+                    &self.stamp,
+                ),
+                1 => dir_entry(
+                    out,
+                    at,
+                    b"..         ",
+                    ATTR_DIRECTORY,
+                    EFI_CLUSTER,
+                    0,
+                    &self.stamp,
+                ),
                 slot if slot < 2 + run => {
                     if let Some(long) = &self.long_name {
                         let entry = &mut out[at * DIR_ENTRY..(at + 1) * DIR_ENTRY];
@@ -407,6 +451,7 @@ impl VolumeLayout {
                     ATTR_ARCHIVE,
                     FILE_CLUSTER,
                     self.file_len,
+                    &self.stamp,
                 ),
                 _ => {}
             }
@@ -415,7 +460,15 @@ impl VolumeLayout {
 }
 
 /// Write one 32-byte directory entry at slot `slot` of a directory cluster's first sector.
-fn dir_entry(out: &mut [u8], slot: usize, name: &[u8; 11], attr: u8, cluster: u32, size: u32) {
+fn dir_entry(
+    out: &mut [u8],
+    slot: usize,
+    name: &[u8; 11],
+    attr: u8,
+    cluster: u32,
+    size: u32,
+    stamp: &Stamp,
+) {
     let at = slot * DIR_ENTRY;
     out[at..at + 11].copy_from_slice(name);
     out[at + 11] = attr;
@@ -424,6 +477,7 @@ fn dir_entry(out: &mut [u8], slot: usize, name: &[u8; 11], attr: u8, cluster: u3
     // 22..26: write time and date, zero.
     put16(out, at + 26, cluster as u16); // DIR_FstClusLO
     put32(out, at + 28, size); // DIR_FileSize, zero for a directory
+    stamp.write_new(&mut out[at..at + DIR_ENTRY]);
 }
 
 /// **Turn `name` into the eleven-byte short form**, or `None` when it needs a long name.
@@ -454,13 +508,21 @@ fn short_name(name: &str) -> Option<[u8; 11]> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::NoClock;
 
     /// 512 MiB in 512-byte sectors, the size the installer lays out.
     const ESP_SECTORS: u64 = 1024 * 1024;
 
     fn volume() -> VolumeLayout {
-        VolumeLayout::new(ESP_SECTORS, 2048, 9_000_000, 0xDEAD_BEEF, "BOOTX64.EFI")
-            .expect("a FAT32 volume")
+        VolumeLayout::new(
+            ESP_SECTORS,
+            2048,
+            9_000_000,
+            0xDEAD_BEEF,
+            "BOOTX64.EFI",
+            &mut NoClock,
+        )
+        .expect("a FAT32 volume")
     }
 
     fn sector(v: &VolumeLayout, index: u64) -> [u8; SECTOR_BYTES] {
@@ -487,11 +549,12 @@ mod tests {
     #[test]
     fn a_volume_too_small_to_be_fat32_is_refused_rather_than_mislabelled() {
         assert_eq!(
-            VolumeLayout::new(200 * 1024 * 2, 2048, 1024, 1, "BOOTX64.EFI"),
+            VolumeLayout::new(200 * 1024 * 2, 2048, 1024, 1, "BOOTX64.EFI", &mut NoClock),
             Err(LayoutError::NotFat32)
         );
-        let just_enough = VolumeLayout::new(600 * 1024 * 2, 2048, 1024, 1, "BOOTX64.EFI")
-            .expect("300 MiB clears the cluster floor");
+        let just_enough =
+            VolumeLayout::new(600 * 1024 * 2, 2048, 1024, 1, "BOOTX64.EFI", &mut NoClock)
+                .expect("300 MiB clears the cluster floor");
         assert!(just_enough.clusters() >= FAT32_MINIMUM_CLUSTERS);
     }
 
@@ -645,7 +708,7 @@ mod tests {
         // length depends on the size.
         for mib in [300u64, 301, 400, 512, 700, 1024, 4096] {
             let sectors = mib * 1024 * 2;
-            let v = VolumeLayout::new(sectors, 2048, 9_000_000, 1, "BOOTX64.EFI")
+            let v = VolumeLayout::new(sectors, 2048, 9_000_000, 1, "BOOTX64.EFI", &mut NoClock)
                 .unwrap_or_else(|e| panic!("{mib} MiB: {e:?}"));
             assert_eq!(
                 v.first_data_sector() % u64::from(CLUSTER_SECTORS),
@@ -685,11 +748,11 @@ mod tests {
             assert_eq!(short_name(long), None, "{long}");
         }
         assert_eq!(
-            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, "a:b"),
+            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, "a:b", &mut NoClock),
             Err(LayoutError::NameRefused)
         );
         assert_eq!(
-            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, ""),
+            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, "", &mut NoClock),
             Err(LayoutError::NameRefused)
         );
     }
@@ -711,8 +774,15 @@ mod tests {
     /// bytes as they sit on disk, which is the binding a driver checks.
     #[test]
     fn bootriscv64_efi_is_written_as_a_long_name_run_ahead_of_its_alias() {
-        let v = VolumeLayout::new(ESP_SECTORS, 2048, 9_000_000, 1, "BOOTRISCV64.EFI")
-            .expect("a volume");
+        let v = VolumeLayout::new(
+            ESP_SECTORS,
+            2048,
+            9_000_000,
+            1,
+            "BOOTRISCV64.EFI",
+            &mut NoClock,
+        )
+        .expect("a volume");
         let slots = boot_dir_slots(&v);
         assert_eq!(&slots[0][..11], b".          ");
         assert_eq!(&slots[1][..11], b"..         ");
@@ -740,7 +810,8 @@ mod tests {
     #[test]
     fn the_longest_name_reaches_the_second_sector_of_the_boot_directory() {
         let name = "n".repeat(251) + ".efi";
-        let v = VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, &name).expect("a volume");
+        let v =
+            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, &name, &mut NoClock).expect("a volume");
         let slots = boot_dir_slots(&v);
         assert_eq!(slots[2][0], 0x40 | 20);
         assert_eq!(slots[21][0], 1);
@@ -753,7 +824,14 @@ mod tests {
     #[test]
     fn a_file_larger_than_the_volume_is_refused() {
         assert_eq!(
-            VolumeLayout::new(ESP_SECTORS, 2048, 600 * 1024 * 1024, 1, "BOOTX64.EFI"),
+            VolumeLayout::new(
+                ESP_SECTORS,
+                2048,
+                600 * 1024 * 1024,
+                1,
+                "BOOTX64.EFI",
+                &mut NoClock
+            ),
             Err(LayoutError::FileTooBig)
         );
     }
@@ -807,7 +885,15 @@ mod tests {
     #[test]
     fn a_directory_entry_splits_its_first_cluster_into_halves() {
         let mut out = [0u8; SECTOR_BYTES];
-        dir_entry(&mut out, 1, b"NAME       ", ATTR_ARCHIVE, 0x0001_0002, 77);
+        dir_entry(
+            &mut out,
+            1,
+            b"NAME       ",
+            ATTR_ARCHIVE,
+            0x0001_0002,
+            77,
+            &Stamp::ZERO,
+        );
         assert_eq!(&out[32..43], b"NAME       ");
         assert_eq!(u16::from_le_bytes([out[32 + 20], out[32 + 21]]), 1);
         assert_eq!(u16::from_le_bytes([out[32 + 26], out[32 + 27]]), 2);

@@ -11,7 +11,8 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    AllocationError, SectorDevice, SectorSize, TableEntry, Volume, WritableSectorDevice,
+    AllocationError, NoClock, SectorDevice, SectorSize, TableEntry, WritableSectorDevice,
+    WritableVolume,
 };
 use lamfat::FatType;
 
@@ -118,11 +119,14 @@ fn oracle_free_clusters(image: &[u8]) -> u32 {
 /// The bytes of `image` that hold the boot sectors and the tables, with the `FSInfo` sector
 /// blanked: what freeing every chain must put back.
 fn metadata(image: &Memory) -> Vec<u8> {
-    let volume = Volume::open(Memory {
-        bytes: image.bytes.clone(),
-        size: image.size,
-        writes: 0,
-    })
+    let volume = WritableVolume::open(
+        Memory {
+            bytes: image.bytes.clone(),
+            size: image.size,
+            writes: 0,
+        },
+        NoClock,
+    )
     .unwrap();
     let boot = *volume.boot_sector();
     let sector = image.size.bytes();
@@ -152,11 +156,11 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     let image = formatted(mebibytes, fat_type, sector);
     let original = metadata(&image);
     check_with_fsck(&image.bytes, &format!("{label}-empty"));
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let total = volume.count_free_clusters().unwrap();
     assert_eq!(total, oracle_free_clusters(&volume.into_device().bytes));
     let image = formatted(mebibytes, fat_type, sector);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
 
     // A chain of 40 clusters, then a second of 7, then the first cut to 12.
     let mut first = [0u32; 2];
@@ -175,7 +179,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     let image = volume.into_device();
     assert_eq!(oracle_free_clusters(&image.bytes), total - 47, "{label}");
 
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     assert_eq!(volume.count_free_clusters().unwrap(), total - 47);
     let freed = volume.truncate_chain(first[0], 12).unwrap();
     assert_eq!(freed, 28);
@@ -185,11 +189,14 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     volume.sync().unwrap();
     let image = volume.into_device();
     assert_eq!(oracle_free_clusters(&image.bytes), total - 19, "{label}");
-    let hints = Volume::open(Memory {
-        bytes: image.bytes.clone(),
-        size: image.size,
-        writes: 0,
-    })
+    let hints = WritableVolume::open(
+        Memory {
+            bytes: image.bytes.clone(),
+            size: image.size,
+            writes: 0,
+        },
+        NoClock,
+    )
     .unwrap()
     .fs_info()
     .unwrap();
@@ -207,7 +214,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
         );
     }
 
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     assert_eq!(volume.free_chain(first[0]).unwrap(), 12);
     assert_eq!(volume.free_chain(first[1]).unwrap(), 7);
     volume.sync().unwrap();
@@ -246,7 +253,7 @@ fn chains_allocate_extend_cut_and_free_on_fat32() {
 fn scrambled(label: &str, mebibytes: usize, fat_type: FatType) {
     let image = formatted(mebibytes, fat_type, 512);
     let original = metadata(&image);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let total = volume.count_free_clusters().unwrap();
     let mut chains: Vec<(u32, u32)> = Vec::new(); // (first cluster, length)
     let mut last: Vec<u32> = Vec::new();
@@ -302,7 +309,7 @@ fn scrambled(label: &str, mebibytes: usize, fat_type: FatType) {
     assert_eq!(volume.count_free_clusters().unwrap(), total - used);
     let image = volume.into_device();
     assert_eq!(oracle_free_clusters(&image.bytes), total - used, "{label}");
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     for (first, _) in chains {
         volume.free_chain(first).unwrap();
     }
@@ -331,7 +338,7 @@ fn a_scrambled_run_keeps_the_count_and_the_chains_on_fat32() {
 fn a_full_volume_is_refused_and_every_cluster_comes_back() {
     let image = formatted(1, FatType::Fat12, 512);
     let original = metadata(&image);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let total = volume.count_free_clusters().unwrap();
     let first = volume.allocate_cluster(None).unwrap();
     let mut last = first;
@@ -360,7 +367,7 @@ fn a_full_volume_is_refused_and_every_cluster_comes_back() {
 fn freeing_a_cluster_whose_entry_straddles_sectors_keeps_its_neighbors_link() {
     let image = formatted(2, FatType::Fat12, 1024);
     let original = metadata(&image);
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     // Cluster 682's entry starts at byte 1023 of the first table sector.
     let mut last = None;
     let mut first = 0;
@@ -388,11 +395,14 @@ fn freeing_a_cluster_whose_entry_straddles_sectors_keeps_its_neighbors_link() {
 
 /// The raw 32-bit entry of `cluster` in table copy `copy` of `image`.
 fn raw_fat32_entry(image: &Memory, copy: u8, cluster: u32) -> u32 {
-    let boot = Volume::open(Memory {
-        bytes: image.bytes.clone(),
-        size: image.size,
-        writes: 0,
-    })
+    let boot = WritableVolume::open(
+        Memory {
+            bytes: image.bytes.clone(),
+            size: image.size,
+            writes: 0,
+        },
+        NoClock,
+    )
     .unwrap()
     .boot_sector()
     .to_owned();
@@ -410,13 +420,13 @@ fn only_the_live_table_is_written_when_mirroring_is_off() {
         let mut image = formatted(64, FatType::Fat32, 512);
         image.bytes[40] = 0x80 | live;
         image.bytes[41] = 0;
-        let mut volume = Volume::open(image).unwrap();
+        let mut volume = WritableVolume::open(image, NoClock).unwrap();
         assert_eq!(volume.boot_sector().active_table(), Some(live));
         let cluster = volume.allocate_cluster(None).unwrap();
         let image = volume.into_device();
         assert_eq!(raw_fat32_entry(&image, live, cluster), 0x0FFF_FFFF);
         assert_eq!(raw_fat32_entry(&image, 1 - live, cluster), 0);
-        let mut volume = Volume::open(image).unwrap();
+        let mut volume = WritableVolume::open(image, NoClock).unwrap();
         assert_eq!(volume.free_chain(cluster).unwrap(), 1);
         let image = volume.into_device();
         assert_eq!(raw_fat32_entry(&image, live, cluster), 0);

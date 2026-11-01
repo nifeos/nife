@@ -5,6 +5,7 @@
 
 use super::*;
 use crate::reader::tests::Image;
+use crate::{NoClock, WritableVolume};
 
 fn feed(count: u32, kinds: &[SlotKind]) -> Option<u32> {
     let mut finder = RunFinder::new(count);
@@ -37,7 +38,7 @@ fn aliases_count_up_and_give_the_base_room_for_the_tail() {
 
 #[test]
 fn colliding_long_names_take_successive_aliases_and_a_freed_alias_is_reused() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let first = volume.create_file(0, "Long File One.txt").unwrap();
     let second = volume.create_file(0, "Long File Two.txt").unwrap();
     assert_eq!(first.short_name(), *b"LONGFI~1TXT");
@@ -54,7 +55,7 @@ fn colliding_long_names_take_successive_aliases_and_a_freed_alias_is_reused() {
 
 #[test]
 fn a_long_run_fits_a_gap_of_deleted_slots_and_not_a_shorter_one() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let a = volume.create_file(0, "A.TXT").unwrap();
     volume.create_file(0, "B.TXT").unwrap();
     let c = volume.create_file(0, "C.TXT").unwrap();
@@ -76,7 +77,7 @@ fn a_long_run_fits_a_gap_of_deleted_slots_and_not_a_shorter_one() {
 
 #[test]
 fn a_directory_holds_dot_entries_and_is_removed_only_when_empty() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let free = volume.count_free_clusters().unwrap();
     let dir = volume.make_directory(0, "Sub Directory").unwrap();
     assert!(dir.is_directory());
@@ -107,7 +108,7 @@ fn a_directory_holds_dot_entries_and_is_removed_only_when_empty() {
 
 #[test]
 fn a_failed_make_directory_gives_its_cluster_back() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     volume.make_directory(0, "D").unwrap();
     let free = volume.count_free_clusters().unwrap();
     assert_eq!(
@@ -123,7 +124,7 @@ fn a_failed_make_directory_gives_its_cluster_back() {
 
 #[test]
 fn a_rename_keeps_the_data_and_a_moved_directory_gets_a_new_dotdot() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let a = volume.make_directory(0, "A").unwrap();
     let b = volume.make_directory(0, "B").unwrap();
     let file = volume.create_file(a.first_cluster(), "data.bin").unwrap();
@@ -165,7 +166,7 @@ fn a_rename_keeps_the_data_and_a_moved_directory_gets_a_new_dotdot() {
 
 #[test]
 fn a_directory_cannot_move_into_itself_or_below_and_dots_cannot_be_renamed() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let a = volume.make_directory(0, "A").unwrap();
     let inner = volume.make_directory(a.first_cluster(), "Inner").unwrap();
     let innermost = volume
@@ -196,7 +197,7 @@ fn a_directory_cannot_move_into_itself_or_below_and_dots_cannot_be_renamed() {
 
 #[test]
 fn a_rename_that_only_changes_case_keeps_one_entry() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let file = volume.create_file(0, "Mixed Case Name.txt").unwrap();
     let again = volume.rename(&file, 0, "MIXED case NAME.txt").unwrap();
     assert_ne!(again.place().short_slot, file.place().short_slot);
@@ -210,7 +211,7 @@ fn a_rename_that_only_changes_case_keeps_one_entry() {
 
 #[test]
 fn a_stale_entry_is_refused_by_a_directory_remove_and_a_rename() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let dir = volume.make_directory(0, "D").unwrap();
     let file = volume.create_file(0, "F.TXT").unwrap();
     // The directory's slot becomes a long-name piece; the file's slot is freed and reused.
@@ -222,18 +223,18 @@ fn a_stale_entry_is_refused_by_a_directory_remove_and_a_rename() {
     );
     let mut image = volume.into_device();
     image.bytes[5 * 512 + slot * 32 + 11] = 0x0F;
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     assert_eq!(volume.remove_directory(&dir), Err(WriteError::EntryChanged));
     assert_eq!(volume.rename(&dir, 0, "E"), Err(WriteError::EntryChanged));
 }
 
 #[test]
 fn a_volume_label_cannot_be_renamed() {
-    let mut volume = Volume::open(Image::fat12()).unwrap();
+    let mut volume = WritableVolume::open(Image::fat12(), NoClock).unwrap();
     let file = volume.create_file(0, "L.TXT").unwrap();
     let mut image = volume.into_device();
     image.bytes[5 * 512 + 11] = 0x08;
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let label = volume.root_entries().map(|e| e.unwrap()).next().unwrap();
     assert!(label.is_volume_label());
     assert_eq!(volume.rename(&label, 0, "NEW"), Err(WriteError::NotAFile));

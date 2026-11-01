@@ -10,8 +10,8 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    BootSector, FileAllocationTableType, Format, FormatError, FormatOptions, SectorDevice,
-    SectorSize, Volume, WritableSectorDevice,
+    BootSector, FileAllocationTableType, Format, FormatError, FormatOptions, NoClock, SectorDevice,
+    SectorSize, WritableSectorDevice, WritableVolume,
 };
 
 /// A volume held in memory, read and written one sector at a time.
@@ -101,7 +101,7 @@ fn formatted_by_this_crate(
     build: impl Fn(FormatOptions) -> FormatOptions,
 ) -> (Format, Memory) {
     let options = build(FormatOptions::new(size, sectors));
-    let format = Format::new(options).expect("a legal format");
+    let format = Format::new(options, &mut NoClock).expect("a legal format");
     let mut image = Memory {
         bytes: vec![0xEEu8; sectors as usize * size.bytes()],
         size,
@@ -133,7 +133,7 @@ fn check(label: &str, format: &Format, image: Memory) {
         "{label}"
     );
     check_with_fsck(&image.bytes, &format!("{label}-empty"));
-    let mut volume = Volume::open(image).unwrap();
+    let mut volume = WritableVolume::open(image, NoClock).unwrap();
     assert_eq!(
         volume.count_free_clusters().unwrap(),
         format.clusters()
@@ -246,13 +246,19 @@ fn a_size_no_cluster_size_makes_legal_is_refused_with_the_reason() {
     // 100 sectors cannot hold the reserved sectors, a root, two tables and a cluster as FAT16.
     let tiny =
         FormatOptions::new(SectorSize::Bytes512, 40).with_type(FileAllocationTableType::Fat16);
-    assert_eq!(Format::new(tiny), Err(FormatError::TooSmall));
+    assert_eq!(Format::new(tiny, &mut NoClock), Err(FormatError::TooSmall));
     // A 20 MiB volume cannot be FAT32: even single-sector clusters give 40,000 clusters.
     let small = FormatOptions::new(SectorSize::Bytes512, 40 * 1024)
         .with_type(FileAllocationTableType::Fat32);
-    assert_eq!(Format::new(small), Err(FormatError::NoSuchGeometry));
+    assert_eq!(
+        Format::new(small, &mut NoClock),
+        Err(FormatError::NoSuchGeometry)
+    );
     let odd = FormatOptions::new(SectorSize::Bytes512, 64 * 1024).with_cluster_sectors(3);
-    assert_eq!(Format::new(odd), Err(FormatError::ClusterSizeRefused));
+    assert_eq!(
+        Format::new(odd, &mut NoClock),
+        Err(FormatError::ClusterSizeRefused)
+    );
     for label in ["", "lower case", "TWELVE CHARS", "A*B"] {
         assert_eq!(
             FormatOptions::new(SectorSize::Bytes512, 64 * 1024)
@@ -306,6 +312,7 @@ fn volumes_mkfs_fat_made_take_this_crates_writer() {
             FormatOptions::new(SectorSize::Bytes512, (mebibytes << 11) as u32)
                 .with_type(boot.file_allocation_table_type())
                 .with_cluster_sectors(boot.sectors_per_cluster()),
+            &mut NoClock,
         )
         .unwrap();
         assert_eq!(
@@ -323,7 +330,7 @@ fn volumes_mkfs_fat_made_take_this_crates_writer() {
             bytes,
             size: SectorSize::Bytes512,
         };
-        let mut volume = Volume::open(image).unwrap();
+        let mut volume = WritableVolume::open(image, NoClock).unwrap();
         let entry = volume.make_directory(0, "Written By Us").unwrap();
         let file = volume
             .create_file(entry.first_cluster(), "a rather long file name.txt")

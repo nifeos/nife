@@ -198,6 +198,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         first_cluster: u32,
         size: u32,
         except: Option<EntryPlace>,
+        times: Option<[u8; SLOT_BYTES]>,
     ) -> Result<NamedEntry, WriteError<D::Error>> {
         let directory = self.directory_number(directory);
         self.check_new_name(directory, name, except)?;
@@ -229,6 +230,11 @@ impl<D: WritableSectorDevice> Volume<D> {
         }
         slot[26..28].copy_from_slice(&(first_cluster as u16).to_le_bytes());
         slot[28..32].copy_from_slice(&size.to_le_bytes());
+        // A new entry is created, written and accessed now; a moved one keeps its times.
+        match times {
+            None => self.stamp.write_new(&mut slot),
+            Some(old) => crate::time::copy_times(&old, &mut slot),
+        }
         let short_slot = start + pieces;
         self.write_slot(directory, short_slot, &slot)?;
         if reached_end
@@ -269,19 +275,19 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// unless it is the fixed root of a FAT12 or FAT16 volume.
     ///
     /// Name: provisional. What a caller asks of a volume to make a file.
-    pub fn create_file(
+    pub(crate) fn create_file(
         &mut self,
         directory: u32,
         name: &str,
     ) -> Result<NamedEntry, WriteError<D::Error>> {
-        self.write_entry(directory, name, ARCHIVE, 0, 0, None)
+        self.write_entry(directory, name, ARCHIVE, 0, 0, None, None)
     }
 
     /// **Make an empty directory called `name`** in `directory` (0 for the root), and return its
     /// entry. The new directory holds `.` and `..` in a cluster of its own, zeroed past them.
     ///
     /// Name: provisional. The `mkdir` of the directory tree.
-    pub fn make_directory(
+    pub(crate) fn make_directory(
         &mut self,
         directory: u32,
         name: &str,
@@ -292,7 +298,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         let cluster = self.append_cluster()?.ok_or(WriteError::VolumeFull)?;
         let made = self
             .write_dot_entries(cluster, parent)
-            .and_then(|()| self.write_entry(parent, name, DIRECTORY, cluster, 0, None));
+            .and_then(|()| self.write_entry(parent, name, DIRECTORY, cluster, 0, None, None));
         if made.is_err() {
             let _ = self.free_chain(cluster);
         }
@@ -323,6 +329,7 @@ impl<D: WritableSectorDevice> Volume<D> {
                 slot[20..22].copy_from_slice(&((*target >> 16) as u16).to_le_bytes());
             }
             slot[26..28].copy_from_slice(&(*target as u16).to_le_bytes());
+            self.stamp.write_new(slot);
         }
         crate::file_write::Medium::write_data(self, first, &sector[..size])?;
         let zeros = [0u8; SectorSize::MAX];
@@ -361,7 +368,10 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// Refuses a file, `.` and `..`, and a directory that holds anything else.
     ///
     /// Name: provisional. The `rmdir` of the directory tree.
-    pub fn remove_directory(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
+    pub(crate) fn remove_directory(
+        &mut self,
+        entry: &NamedEntry,
+    ) -> Result<(), WriteError<D::Error>> {
         if !entry.is_directory() || entry.is_dot_entry() {
             return Err(WriteError::NotADirectory);
         }
@@ -410,7 +420,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// itself or below itself, and `.` and `..`.
     ///
     /// Name: provisional. The `rename` of the directory tree.
-    pub fn rename(
+    pub(crate) fn rename(
         &mut self,
         entry: &NamedEntry,
         directory: u32,
@@ -424,6 +434,9 @@ impl<D: WritableSectorDevice> Volume<D> {
         if entry.is_directory() && self.is_inside(entry.first_cluster(), target)? {
             return Err(WriteError::MovedIntoItself);
         }
+        let old_slot = self
+            .read_slot(entry.place().directory, entry.place().short_slot)?
+            .ok_or(WriteError::EntryChanged)?;
         let moved = self.write_entry(
             target,
             new_name,
@@ -431,6 +444,7 @@ impl<D: WritableSectorDevice> Volume<D> {
             entry.first_cluster(),
             entry.size_bytes(),
             Some(entry.place()),
+            Some(old_slot),
         )?;
         if entry.is_directory() && entry.place().directory != target {
             let first = entry.first_cluster();

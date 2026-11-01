@@ -336,7 +336,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// entry is not end-of-chain, and a full volume.
     ///
     /// Name: provisional. What a caller asks of a volume that has to grow a file or a directory.
-    pub fn allocate_cluster(
+    pub(crate) fn allocate_cluster(
         &mut self,
         extending: Option<u32>,
     ) -> Result<u32, AllocationError<D::Error>> {
@@ -372,7 +372,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// **Free every cluster of the chain that starts at `first`**, and return how many.
     ///
     /// Name: provisional. Beside `allocate_cluster`.
-    pub fn free_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
+    pub(crate) fn free_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
         self.begin_change()?;
         self.load_hints()?;
         let result = free_chain(self, first);
@@ -384,7 +384,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// clusters it freed. A `keep` of 0 frees the whole chain.
     ///
     /// Name: provisional. Beside `free_chain`.
-    pub fn truncate_chain(
+    pub(crate) fn truncate_chain(
         &mut self,
         first: u32,
         keep: u32,
@@ -418,7 +418,7 @@ impl<D: WritableSectorDevice> Volume<D> {
     ///
     /// Name: provisional. The verb of the standard library's `Write::flush`, for the volume's own
     /// state.
-    pub fn sync(&mut self) -> Result<(), ChainError<D::Error>> {
+    pub(crate) fn sync(&mut self) -> Result<(), ChainError<D::Error>> {
         if self.writer.hints_changed {
             self.write_hints()?;
         }
