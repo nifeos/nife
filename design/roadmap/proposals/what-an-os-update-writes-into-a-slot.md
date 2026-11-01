@@ -154,7 +154,7 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
    tags and build metadata. Basalt raises the version for every published base. Not chosen: full
    semver ordering (a grammar in the verification core) and a build date (clock error, and a
    rebuild has no order). The restricted form can admit more later; the reverse cannot.
-   The keys that may sign a base manifest live beside the trust root that milestone 697 moves out
+   The keys that may sign a base manifest live beside the trust root that milestone 697 (the trust root leaves the kernel binary) moves out
    of the kernel binary. The approval file may name which of those keys the owner accepts, and it
    never adds one. A new key arrives only through a base update the old key signed. Not chosen:
    the key in the approval file, and the union of both.
