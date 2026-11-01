@@ -114,7 +114,7 @@ fn a_clean_budget_is_asked_once() {
 fn the_leak_sentence_names_the_job_and_the_pages() {
     let mut text = std::string::String::new();
     write_budget_left(b"job_splitter", 4, &mut |b| {
-        text.push_str(core::str::from_utf8(b).unwrap())
+        text.push_str(core::str::from_utf8(b).unwrap());
     });
     assert_eq!(
         text,
