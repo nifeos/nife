@@ -1,0 +1,29 @@
+[package]
+name = "initial_ramdisk_writer"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# The packer behind every initial ramdisk archive: the host composer (`cargo xtask`) links it today,
+# and the device updater links it when it writes a slot (milestone 976, part 4). `no_std` with
+# `alloc`, host-tested.
+
+[lints]
+workspace = true
+
+[dependencies]
+# The archive format: the packer writes exactly the image the kernel's reader parses. Ours, in this
+# workspace, `no_std`, no dependencies of its own; not a §46 (thin primitives or whole subsystems)
+# decision.
+nifefs = { version = "0.1.0", path = "../nifefs" }
+# The image band every packed program is checked against (milestone 206 (a program image has under
+# 896 KiB)). Ours, `no_std`, no dependencies.
+address_space_map = { version = "0.1.0", path = "../address_space_map" }
+# The digest and the entry name of the measurement table, so the table is written in the kernel
+# manifest's own format. Ours, `no_std`.
+measured_boot = { version = "0.1.0", path = "../measured_boot" }
+# The name of the catalog entry every archive carries.
+package_archive = { version = "0.1.0", path = "../package_archive" }
+# The name of the index-sources entry every archive carries.
+package_index = { version = "0.1.0", path = "../package_index" }
