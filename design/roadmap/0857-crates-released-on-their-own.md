@@ -100,7 +100,7 @@ No per-crate milestone is minted by this block. They come from the reviews below
   project name stays with the whole. Publish-ours
   crates publish; contract crates move and carry versions whether or not they publish. Milestone
   818 (proven JH7110 TRNG logic, released on its own) is the leaf pilot; pull request #3026
-  proposes the second pilot and the contract crates' order. A crate nife does not publish, or
+  rules the contract crates' order: bottom-up, one repository each. A crate nife does not publish, or
   has not yet, is a git dependency pinned by `rev` with its version requirement stated. The
   revision is the commit of a tagged release whose manifest carries that version; the tag is a
   label and the semver baseline, never what Cargo follows. At first publication the line becomes a

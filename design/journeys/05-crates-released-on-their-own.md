@@ -44,8 +44,9 @@ Its steps are of two kinds. A publish-ours crate publishes to crates.io, as the 
 out. A contract crate moves to a repository of its own and carries a version whether or not it
 publishes. Every move goes bottom-up: a crate that leaves references nothing back in this tree, so
 the crates a program links leave before it or with it, and step 9's `jh7110_entropy` is the leaf
-pilot of the mechanics. Pull request #3026 proposes the contract-crate steps and their order, and
-they join the table when it lands.
+pilot of the mechanics. Pull request #3026 rules the contract-crate order (2026-11-01 (UTC)): one
+repository per crate, each made with the architect's approval, and a package leaves as soon as its
+own crates have left. Its steps join the table when their lanes are cut.
 
 | step | milestone | decision | what this step needs |
 |---|---|---|---|

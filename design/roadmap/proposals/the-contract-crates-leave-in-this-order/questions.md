@@ -1,9 +1,9 @@
 # The contract crates leave in this order: the questions for the architect
 
 [The proposal](../the-contract-crates-leave-in-this-order.md) holds the order and the policy. These
-are the decisions the rulings do not settle. Each goes to the architect alone, in this order, and
-the next waits for the answer to the one before. Each opens with its background, then the
-recommendation, then the options.
+were the decisions the earlier rulings did not settle. Each went to the architect alone, in this
+order. All five are ruled as recommended, on 2026-11-01 (UTC); each section ends with its ruling.
+Each opens with its background, then the recommendation, then the options.
 
 ## 1. Does the first cut wait for the crates it links, and leave one package at a time?
 
@@ -28,8 +28,12 @@ first, then `process-tools`, then `core-tools`. The note's type moves to a leaf 
 - (c) The packages leave now and pin nife for the crates they link. Refused by the direction of
   2026-11-01: it is a reference back.
 
-If the answer is no, milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the first
-code to leave this repository)'s single cut stands and waits for all 18 crates.
+Ruled 2026-11-01 (UTC): (a). Milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the
+first code to leave this repository)'s single cut is replaced by package-by-package departure, each
+package leaving as soon as its own crates have left, in the order `disk-tools`, `process-tools`,
+`core-tools`. The `INTERFACES` note type moves into its own small leaf crate, and `block_roster`
+stays the first consumed crate. The move is checked against the version-declaration lint of pull
+request #3022 in the proposal.
 
 ## 2. One repository per contract crate, or a few grouped repositories?
 
@@ -54,6 +58,9 @@ Recommendation: (a), one repository per crate, named after the crate, on the cra
   line for 17 unrelated contracts.
 - (c) A repository per layer. Fuchsia tried layers and folded them back in 2019.
 
+Ruled 2026-11-01 (UTC): (a), 22 repositories. Each is created when its crate moves and only with the
+architect's approval of that exact repository; no lane creates one. (b) and (c) are refused.
+
 ## 3. Does the architect hold on a semver break apply to contract crates?
 
 The crate template labels a pull request `needs-architect` when `cargo-semver-checks` reports a break
@@ -75,6 +82,11 @@ five identity changes in 90 days is a workable queue, and hundreds of API breaks
   to relax later, at the cost of the architect's queue.
 - (c) No hold at all; the version checks alone.
 
+Ruled 2026-11-01 (UTC): (a). The hold on a `cargo-semver-checks` break applies to wire-identity
+changes only (`INTERFACE_ID`, `VERSION`, a magic); a Rust-API break must bump the Cargo minor,
+checked mechanically with no hold. Telling the two apart mechanically needs the 14 crates that lack
+an `INTERFACE_ID` to get one first. The crate template change is a follow-on.
+
 ## 4. Does basalt refuse an image whose components pin different revisions of one contract?
 
 Once a contract lives in its own repository, nife and a program repository each pin it by commit.
@@ -90,6 +102,9 @@ and the pull request that moves one contract moves every pin of it.
 - (c) Build each as pinned. Two copies of a contract may then link into one image, and a shared
   page's two sides may disagree.
 
+Ruled 2026-11-01 (UTC): (a). basalt refuses the image, and the bump pull request that moves a
+contract moves every pin of it together. (b) and (c) are refused.
+
 ## 5. May basalt run a trial on commits that have not merged?
 
 The workspace rule says a pin never names an unmerged commit, and basalt refuses one. So basalt can
@@ -102,3 +117,7 @@ merges.
 
 - (a) Recommended, as above.
 - (b) No trial. basalt proves the pair only at its bump, after both halves merge, as today.
+
+Ruled 2026-11-01 (UTC): (a). basalt may run a manual trial workflow on unmerged commits of
+repositories in the organization, never on a fork's pull request and never on a self-hosted runner
+for a fork. It writes no pin and no file. The pin rule stands: a pin never names an unmerged commit.

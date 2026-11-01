@@ -12,7 +12,8 @@ needs_person: yes
 Raised 2026-11-01 (UTC) by the lane `lane/contract-crates-move-order`. It answers two questions: in
 what order the 22 crates that the first cut's programs link could leave this repository, and what
 policy makes frequent breaking change safe across repositories. It moves no crate and changes no
-code. Every new name below is provisional.
+code. Every new name below is provisional. The architect ruled all five questions at its end on
+2026-11-01 (UTC), and the text below states each ruling as the rule in force.
 
 Reuse: the measurements reuse `cargo metadata`, git's rename detection and milestone 610's
 per-crate series; the policy reuses milestone 956's constants, the crate template and basalt's gate.
@@ -85,19 +86,24 @@ nife.
 
 The rule: a crate leaves when every crate it links (normal, build and dev) has left or leaves with
 it, and no file in it names a nife path. Within a layer, the cheapest coordination goes first, so
-the project learns the landing on crates where a mistake costs little. A package leaves when its
-whole linked set has left.
+the project learns the landing on crates where a mistake costs little. Ruled 2026-11-01 (UTC): each
+package leaves as soon as its own crates have left, in the order `disk-tools`, `process-tools`,
+`core-tools`. Milestone 756's single cut is replaced by this departure package by package, and
+`block_roster` stays the first crate a consumer outside nife reads. Ruled the same day: one
+repository per contract crate, named after the crate, created when the crate moves and only with
+the architect's approval of that exact repository. No lane creates one. A repository per package
+and a repository per layer are refused.
 
 | step | crates | why here |
 |---|---|---|
 | 1, the contract pilot | `block_roster` | a leaf with no blocking reference; one writer in the kernel, one reader in `disk_surveyor`; its magic carries its version, so a reader refuses a mismatch today |
 | 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `filesystem_contract` with `filesystem_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
-| 3 | `address_space_map`, then `current_cpu_contract`, then `user_mode_runtime` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2 |
-| 4, first package | `disk-tools` | its 12 crates are gone; milestone 756's condition 4 has it carry the `INTERFACES` macro, so it also waits for step 6 unless the note's type first moves to a leaf crate (below) |
+| 3 | `address_space_map`, then `current_cpu_contract`, then `user_mode_runtime`, then the `INTERFACES` leaf crate | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2. The leaf crate (`interfaces_note`, provisional) first takes the note type out of `capability_manifest_note` inside nife, then leaves like any leaf (below) |
+| 4, first package | `disk-tools` | leaves as soon as its 12 crates and the leaf crate have left; milestone 756's condition 4 has it carry the `INTERFACES` macro, and with the leaf crate it never waits for `grant_plan` |
 | 5, leaves for `process-tools` | `byte_sink_contract`, `glob`, `program_argument_contract`, `domain_name_system` | leaves; `program_argument_contract` after the pair test moves to basalt (the proposal the cross-repository pair is tested where the pin is) |
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |
-| 7, second package | `process-tools` | |
-| 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates only `core-tools` reaches |
+| 7, second package | `process-tools` | leaves as soon as its own crates have left |
+| 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates only `core-tools` reaches; the third package leaves as soon as they have |
 
 `jh7110_entropy` stays the leaf pilot (milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,
 released on its own)). It proves that a leaf crate builds and proves from its own repository and
@@ -109,9 +115,17 @@ pins must agree. And no version check has refused a real mismatch across the bou
 
 Two findings want lanes of their own, proposed as follow-on work:
 
-- The `INTERFACES` note type is `grant_plan::Manifest`, and the slot constants programs use
-  (`DOMAIN_SLOT`) live in `grant_plan` too. A leaf crate holding the manifest type and the slots
-  would let a package declare what it links without linking the shell's planner.
+- Ruled 2026-11-01 (UTC): the `INTERFACES` note type (its constant, descriptor, `Declared` record
+  and `carry_interfaces!` macro) moves into a leaf crate of its own, so that `disk-tools` need not
+  wait for `grant_plan`. It is a step of the order, at step 3, and a lane for it is owed. Checked
+  by reading `helpers/interface_declarations_check.py` against the change, and not run: the
+  version-declaration lint of pull request #3022 does not break in a way that hides a mismatch, but
+  it fails until two things move with the crate. The new crate is linked and in none of the check's
+  three tables, so it needs an `INTERFACE_ID` or an `OWED` line. And the check names
+  `capability_manifest_note::` in two places as the macro's crate (`named_crates` and the
+  selftest), which become the leaf crate's name. A program that names the macro by the new path
+  would otherwise read as linking the old crate. Both go in the lane's change, with the recorded
+  entry in the BUGS section below. Slots such as `DOMAIN_SLOT` stay in `grant_plan`.
 - A contract crate's tests that drive nife's own implementation live in `system_tests`. A third
   party needs tests in the contract crate that drive any implementation.
 
@@ -122,6 +136,7 @@ Two numbers, two checkers, already separate in this tree:
 - The Cargo version covers the Rust API. A move starts each crate at `0.1.0`. A break bumps the
   minor number and an addition bumps the patch, per Cargo's rule that the left-most nonzero number
   marks an incompatible change. Cargo's resolver then refuses to unify two incompatible versions.
+  Ruled 2026-11-01 (UTC): a Rust-API break that bumps the minor needs no architect.
 - The wire identity covers what a peer checks: `INTERFACE_ID` and the crate's `VERSION` constant
   (milestone 956 (the linked interfaces carry checkable versions)). A wire break bumps both the
   constant and the Cargo minor. A Rust-only break bumps only the Cargo minor.
@@ -132,9 +147,13 @@ single-version and its reader refuses another magic. A message contract serves N
 proposal decides no wire format the rulings leave open; the bind-time check for message contracts
 stays with its own proposal.
 
-One rule is new: one revision per contract per image. Every component in a composed image resolves
-a contract to the same commit, so the image is the coherent set that §235 (the tree divides by what
-releases together) names.
+One rule is new, and ruled 2026-11-01 (UTC): one revision per contract per image. Every component in
+a composed image resolves a contract to the same commit, so the image is the coherent set that
+§235 (the tree divides by what releases together) names. basalt refuses an image whose components
+pin different revisions of one contract, and the bump pull request that moves a contract moves
+every pin of it together. Overriding each pin with basalt's and building each as pinned are
+refused. The pin form is the one ruled the same day for a crate nife does not publish: a
+git dependency on `nifeos/<crate>` by `rev`, with the version requirement stated.
 
 Two checks move with each crate. nife's diff check, which fails a moved magic without its version
 constant (milestone 956's step 4), joins the crate template. The template already runs
@@ -144,6 +163,15 @@ landed commit)), so that rule has no baseline and never fires. `jh7110_entropy`'
 request #5 renamed five public constants and drew no hold. The fix: compare against the commit
 whose manifest last changed version (`--baseline-rev`), so a break without a minor bump fails. Inside
 nife, `cargo-semver-checks` stays refused.
+
+The hold changes for contract crates. Ruled 2026-11-01 (UTC): the `needs-architect` label on a
+`cargo-semver-checks` break applies there to a wire-identity change only (`INTERFACE_ID`,
+`VERSION` or a magic). A Rust-API break must bump the Cargo minor, checked mechanically, and draws
+no hold. Crates that are not contract crates, `jh7110_entropy` among them (milestone 818), keep the
+hold on every break. Telling the two apart mechanically needs an identity to compare, and 14 of the
+22 have no `INTERFACE_ID` yet (the `OWED` table of milestone 956 (the linked interfaces carry
+checkable versions)), so those 14 get one before the split rule can apply to them. Until a crate
+has one, its breaks keep the hold. The template change is owed, and recorded in the BUGS section.
 
 ## What the integration gate must test
 
@@ -160,13 +188,16 @@ contract and a consumer to land together it needs four things:
 
 1. A `pins.toml` table for each contract and each program repository.
 2. A coherence check that refuses an image whose components' lock files name two revisions of one
-   contract.
+   contract (ruled 2026-11-01 (UTC)).
 3. An interface agreement check: each program's `INTERFACES` entries against the versions the
    image's kernel and servers serve. That is the spawn check, run before boot over the whole image.
    A server's served versions can come from its own note; the kernel carries no note today, so it
    needs a list of its own.
-4. A trial run: a manual dispatch that takes candidate commits, merged or not, runs checks 2 and 3
-   and the system test, and writes no pin. It proves a pair before either half merges.
+4. A trial run, ruled 2026-11-01 (UTC): a manual dispatch that takes candidate commits, merged or
+   not, of repositories in the `nifeos` organization, runs checks 2 and 3 and the system test, and
+   writes no pin and no file. It never runs a fork's pull request, and never on a self-hosted runner
+   for a fork. It proves a pair before either half merges. The pin rule stands: a pin never names an
+   unmerged commit (§305 (git dependencies on `nifeos/*` only, pinned to a landed commit)).
 
 ## How a breaking change lands across two repositories
 
@@ -218,7 +249,7 @@ crate's own repository instead.
 
 ## Options considered
 
-- A. Bottom-up, one repository per crate, the order above: recommended.
+- A. Bottom-up, one repository per crate, the order above: ruled 2026-11-01 (UTC).
 - B. Programs first and the SDK last, the 2026-10-04 order: refused by the second direction. Each
   of the three program repositories would pin nife for 12 to 15 crates.
 - C. All 22 into one repository in one move: it saves 5 crossing commits in 348. It makes the
@@ -252,15 +283,34 @@ contract leaves. §201 already asks for a name ratified before anything moves.
 7. At equal effort the choice stands. The order follows the graph and the second direction, not
    effort. Within a layer, cheapest first is a choice about learning cost, and this sentence says so.
 
-## Questions for the architect
+## The questions, ruled
 
-Asked one at a time, in this order, with the background in the questions appendix:
+All five went to the architect one at a time, with the background in the questions appendix. Each
+was ruled on 2026-11-01 (UTC) as recommended:
 
-1. The first cut waits for its linked crates and leaves package by package, `disk-tools` first.
-2. One repository per contract crate.
-3. The architect hold on a semver break applies to wire identity changes only.
-4. basalt refuses an image with two revisions of one contract.
-5. basalt may run a trial on unmerged commits, writing no pin.
+1. Ruled: each package leaves as soon as its own crates have left, `disk-tools` first, then
+   `process-tools`, then `core-tools`, and the `INTERFACES` note type moves into its own leaf crate.
+2. Ruled: one repository per contract crate (22), made only with the architect's approval of each
+   exact repository. A repository per package or per layer is refused.
+3. Ruled: for contract crates the architect hold applies to wire-identity changes only.
+4. Ruled: basalt refuses an image with two revisions of one contract.
+5. Ruled: basalt may run a manual trial on unmerged commits of the organization's repositories,
+   writing no pin and no file.
+
+## BUGS
+
+- The crate template still holds every `cargo-semver-checks` break for `needs-architect`. Proposed
+  follow-on milestone (provisional, no number): the template labels only a moved `INTERFACE_ID`,
+  `VERSION` or magic, and fails a Rust-API break that leaves the Cargo minor alone. It waits on the
+  14 crates of milestone 956's `OWED` table getting an `INTERFACE_ID`, and until then keeps the
+  hold for a crate without one.
+- The `INTERFACES` leaf crate needs a lane: move the note type, update
+  `helpers/interface_declarations_check.py` (its two `capability_manifest_note::` strings and the
+  new crate's classification) and the 15 programs' paths. Proposed follow-on milestone to
+  milestone 756, provisional, no number.
+- The leaf crate makes a 23rd crate that is itself a format. Whether it takes a repository of its
+  own under ruling 2 is not decided here; it is a repository, so it waits for the architect's
+  approval of its exact name like the other 22.
 
 ## Index row
 

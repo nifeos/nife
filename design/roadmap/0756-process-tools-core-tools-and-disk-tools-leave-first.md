@@ -57,6 +57,13 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   versions that consumers can check, the work of milestone 956 and of semantic versions on moved
   crates. Nobody has chosen a replacement. Open question for the architect: what condition 4 becomes,
   likely a statement that those mechanisms exist. This block proposes no measure.
+- Ruled 2026-11-01 (UTC) on pull request #3026's questions: the single cut is replaced by
+  departure package by package. Each package leaves as soon as its own crates have left, in the
+  order `disk-tools`, `process-tools`, `core-tools`. The `INTERFACES` note type moves into a leaf
+  crate of its own so `disk-tools` need not wait for `grant_plan`, and `block_roster` stays the
+  first crate a consumer outside nife reads. Each crate gets a repository of its own, made with the
+  architect's approval. The order is in
+  [the proposal](proposals/the-contract-crates-leave-in-this-order.md).
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a
 horrible package name for a nife package"), `coreutils` becomes `core-tools` and `procps` becomes
