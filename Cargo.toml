@@ -46,6 +46,7 @@ members = [
     "crates/direct_memory_access_validator",
     "crates/device_tree_blob",
     "crates/device_tree_patch",
+    "crates/initial_ramdisk_writer",
     "crates/elf",
     "crates/entropy_contract",
     "crates/page_frames",

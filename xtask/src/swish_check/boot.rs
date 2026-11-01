@@ -593,7 +593,7 @@ impl OptionalPrograms {
         // it first: a missing image there means the build broke, and skipping would hide exactly that.
         let std_built = crate::farm::std_exerciser_elf(&format!("{arch}-unknown-nife")).exists();
         // `jig` is not optional: every archive builds it for its own target and refuses to pack
-        // without it (`crate::archive`'s `SHIPPED_STD_PROGRAMS`), so its lines are never skipped.
+        // without it (`initial_ramdisk_writer::SHIPPED_STD_PROGRAMS`), so its lines are never skipped.
         // Said once per leg, on the first boot: the second boot types no `std` line.
         if fresh && !std_built {
             if std::env::var_os("CI").is_some() {

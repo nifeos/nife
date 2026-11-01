@@ -100,6 +100,10 @@ grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # (milestone 597 (a program carries its manifest in an ELF note), provisional), for
 # `script/swish-check`'s malformed-note line.
 capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
+# **The archive writer** (milestone 976 (an OS update through a slot), part 4): every initial ramdisk
+# this tool packs is packed by the crate the device updater links, so the host composer and the
+# device write identical bytes (AGENTS.md rule 7). This tool reads the programs in and the file out.
+initial_ramdisk_writer = { version = "0.1.0", path = "../crates/initial_ramdisk_writer" }
 # The package format (milestone 198 (a package manager, and the trivial install that makes a second
 # customer possible), rung 3a). `cargo xtask package` writes a package with the same crate a target
 # reads one with, and reads its own output back before writing it to disk, so a producer that

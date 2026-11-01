@@ -97,6 +97,7 @@ heap	kernel	retired
 hot_swap_contract	userspace	components,fixtures
 hot_swap_server	userspace	fixtures
 http_response	userspace	components,jig,pinned_tls_client
+initial_ramdisk_writer	host	-
 installed_programs	shared	components,fixtures,jig,kernel
 inter_process_communication	kernel	kernel
 intrusive	kernel	retired
