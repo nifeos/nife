@@ -291,9 +291,6 @@ version = "0.1.0"
 [[package]]
 name = "counter_frequency_contract"
 version = "0.1.0"
-dependencies = [
- "address_space_map",
-]
 
 [[package]]
 name = "cpu_set"
