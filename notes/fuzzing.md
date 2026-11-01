@@ -67,7 +67,7 @@ implies coverage the project does not have.
 | `http_response_feed` | a package server, over plain HTTP | network bytes, read in the progenitor **before** the digest check. Asserts read splits never change the answer. |
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
-| `capability_manifest_note_decode` | a program's ELF note | sets its authority |
+| `capability_manifest_note_decode` | an ELF note | sets authority |
 
 ### And the ones deliberately not fuzzed
 
