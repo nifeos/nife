@@ -46,9 +46,8 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   first, then the contract crates bottom-up, and this cut comes after the crates it links have moved
   and carry versions. §247's other conditions and its destination stand. Its condition 4 (`abi`,
   `address_space_map`, `glob` and `machine_statistics_protocol` stable under 610's rule for four
-  weeks) changes twice:
-  those crates now move, and four weeks stable is not the right gate, because interfaces are not
-  required to stop breaking. The cut needs mechanisms that accommodate breaking interfaces: versions
+  weeks) changes twice: those
+  crates now move, and four weeks stable is not the right gate, because interfaces may keep breaking. The cut needs mechanisms that accommodate breaking interfaces: versions
   that consumers can check, the work of milestone 956 and of semantic versions on moved crates. No
   replacement is chosen. Open question for the architect: what condition 4 becomes, likely a
   statement that those mechanisms are in place. This block proposes no measure.
