@@ -114,6 +114,36 @@ The architect ruled the first three releases; see milestone 857's release order 
 every "contribute" row above until a published crate has users who ask for it upstream, and
 drops `non_volatile_memory_express` from the first attempts.
 
+## The dispositions in force, 2026-11-01 (UTC)
+
+Three rulings of 2026-11-01 (UTC) change the dispositions above, and this section holds. Pull request
+#3026 proposes the bottom-up order every move below joins.
+
+- The eight contribute crates (`paging`, `globally_unique_identifier_partition_table`, `elf`,
+  `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) move to
+  repositories of their own. Moving is separate from publishing. The 2026-10-27 ruling still holds
+  every contribution until a published crate has users who ask for it upstream, and it now decides
+  only whether each crate also publishes as ours or goes upstream as an offer.
+- This repository breaks up into single-purpose repositories and remains only for its history, so
+  "internal" is at most a short-lived state, a crate not yet moved, and not a standing class. No
+  row keeps it. Two rows are close calls for the architect, and the recommendation for each is the
+  move.
+
+| crate | was | now | why |
+|---|---|---|---|
+| `pci` | internal for now | moves | ECAM, BAR and capability decoding over caller closures; `pci_types` fitting is a rival, not a bar |
+| `usb` | internal | moves with `extensible_host_controller_interface` | 857's release order already releases them together |
+| `page_frames` | internal | moves | A bitmap frame allocator with no dependencies; any kernel can link it |
+| `generational_table` | internal | moves | 857's release order publishes it third |
+| `intrusive_queue` | internal | moves | An intrusive FIFO with no dependencies |
+| `http_response` | internal | moves | A sans-IO HTTP/1.x `GET` over `httparse`; no proofs is a reason not to publish, not to stay |
+| `address_space_identifier`, `cpu_set` | internal | moves | An ASID allocator and a hart-mask set, both pure logic with no dependencies |
+| `bitmap_font` | internal | moves | A glyph table and a pure function, with no dependencies |
+| `coremark` | internal | moves; close call | A `no_std` CoreMark-derived benchmark any Rust target can run. Close: the name is EEMBC's and taken on crates.io, so it may leave only under a new one |
+| `video_terminal`, `line_editor` | internal | moves after a cut; close call | The VT engine and the line discipline are sans-IO. Close: each `component.rs` links nife's `address_space_map` or `capability_plan`, so the cut leaves those modules here first |
+| `cryptography_provider` | internal | moves | A `rustls` provider is consumable outside nife; its alpha state bears on publishing, not on moving |
+| `redoxfs` | fork 8: internal | open | Redox's crate, vendored here with two patches; where the copy goes when its programs leave is open |
+
 ## Two records this overtakes
 
 - Milestone 39 (repository structure) judged a `no_std`, I/O-free GPT parser a real gap, because

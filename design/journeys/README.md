@@ -74,7 +74,7 @@ they can afford not to is that nothing there needs a second copy of a number.
 | 2 | [Run a Time Machine backup host](02-time-machine-backup-host.md) |
 | 3 | [The same story, on real silicon, on all three architectures](03-login-to-kilo-on-silicon.md) |
 | 4 | [Install a system composed from packages, and update it from packages](04-install-and-update-from-packages.md) |
-| 5 | [Externalize the publish-ours crates, one release at a time](05-crates-released-on-their-own.md) |
+| 5 | [Crates leave nife and are consumed back by version](05-crates-released-on-their-own.md) |
 
 ## The format
 
