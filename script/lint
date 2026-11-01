@@ -3272,6 +3272,25 @@ echo "==> every workflow file parses"
 python3 "$(dirname "$0")/../helpers/workflow_parses.py" --selftest
 python3 "$(dirname "$0")/../helpers/workflow_parses.py"
 
+# 12c2. **The fuzz heartbeat** (helpers/fuzz-heartbeat.py, name provisional). Its selftest runs the
+#     checks over fixture reports with no network: missing release, no ok window, infrastructure
+#     share above the bound, a late release tolerated, an open issue not duplicated, and the quiet
+#     pass before the first release. The workflow that calls it keeps to what was ruled 2026-11-01
+#     (UTC): GitHub-hosted runner, `contents: read` and `issues: write`, no secrets, and only the
+#     schedule and manual triggers.
+echo "==> the fuzz heartbeat (selftest, and the workflow keeps to its limits)"
+python3 "$(dirname "$0")/../helpers/fuzz-heartbeat.py" --selftest >/dev/null
+hb=.github/workflows/fuzz-heartbeat.yml
+if grep -nE 'self-hosted|secrets\.|pull_request|push:|contents:[[:space:]]*write' "$hb" \
+    | grep -vE '^[0-9]+:[[:space:]]*#'; then
+    echo "lint: $hb breaks a limit: no self-hosted runner, no secrets, no trigger beyond schedule and workflow_dispatch, no contents: write" >&2
+    exit 1
+fi
+if [ "$(awk '/^permissions:/{f=1;next} f&&/^[^ ]/{f=0} f' "$hb" | tr -d ' ' | grep -v '^$' | sort | tr '\n' ,)" != "contents:read,issues:write," ]; then
+    echo "lint: $hb permissions must be exactly contents: read and issues: write" >&2
+    exit 1
+fi
+
 # 12d. **Every issue form under .github/ISSUE_TEMPLATE/ is one GitHub will render** (milestone 207
 #     (the four things GitHub asks for); helpers/issue_forms.py, name provisional). GitHub
 #     validates a form only once it is on the default branch, and a form it rejects leaves the
