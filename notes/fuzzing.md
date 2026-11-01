@@ -5,7 +5,7 @@ integrity) ask whether code we did not write is what we think; this one asks whe
 write survives bytes it did not write.
 
 `script/fuzz` runs coverage-guided fuzz targets over the parsers that read data from outside this
-system: eight parsers, plus three service targets that
+system: eleven parser targets, plus three service targets that
 [fuzzing-the-services.md](fuzzing-the-services.md) covers. It found two bugs on its first day, and a
 third came out of reading the code while designing a target. All three are fixed and pinned by host
 tests.
@@ -53,13 +53,15 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Eight parser targets, deliberately fewer than one per crate. A fuzz target that finds nothing
+Eleven parser targets, deliberately fewer than one per crate; the table holds ten, and
+[fuzzing/targets.md](fuzzing/targets.md) covers the FAT writer. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
 | Target | Input comes from | Why it earns a target |
 |---|---|---|
 | `device_tree_blob_walk` | firmware (QEMU, OpenSBI, a board's ROM) | parsed before anything else exists, on both ISAs, from a pointer in a register; a panic here is a kernel that cannot boot and cannot say why. Kani reaches the leaf readers and not the walkers. |
+| `device_tree_patch_initial_ramdisk` | UEFI firmware's device tree, rewritten by the loader | the loader's own walker, separate from `device_tree_blob`. A wrong `Ok` is a kernel that boots without its archive, so it asserts the kernel's reader finds the range it was given. |
 | `elf_parse` | any binary a user asks to run | the only parser that loads what it parses: its output becomes page-table entries. The whole-parse totality proof is recorded as intractable. |
 | `globally_unique_identifier_partition_table` | a disk somebody else formatted | decides which LBA range is a filesystem. Heavily checked already, which is the point: the gap is *combinations* of hostile fields, which neither the proofs nor the single-byte mutation tests can build. |
 | `file_allocation_table_boot_sector` | a USB stick somebody else formatted | every later FAT read indexes by what it says |
