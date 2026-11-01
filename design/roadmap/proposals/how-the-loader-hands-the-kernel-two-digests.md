@@ -12,8 +12,8 @@ needs_person: no
 Raised 2026-10-31 (UTC) by the lane `milestone/697-the-trust-root-leaves-the-kernel-binary`. It
 serves item 6 of milestone 607 (nife is built and updated from packages), which is milestones 695
 and 697 (the kernel's half and the build's half).
-Two questions come to an architect before any of that code can finish. This file asks them in
-order, one at a time, and asks the second only after the first is answered.
+Two questions came to an architect before any of that code could finish. This file asked them in
+order, one at a time. Both were decided on 2026-11-01 (UTC).
 
 Reuse: `crates/measured_boot`'s digest text (`sha256:<hex>`, the grammar of the measurement table),
 `crates/device_tree_blob`'s `/chosen` reader, `uefi_loader`'s device-tree patch and command-line
@@ -63,6 +63,9 @@ binary delta of the kernel would cost at most 64 bytes of payload, so the saving
 
 ## Question 1: the bytes of the handoff
 
+Decided 2026-11-01 (UTC): option A, two command-line words spelled `nife.progenitor=sha256:<64 hex
+digits>` and `nife.base=sha256:<64 hex digits>`. Options B, C and D are not taken.
+
 ### Background
 
 When the loader starts the kernel it already hands over a small set of facts. On aarch64 and
@@ -88,7 +91,7 @@ with `MEASURED BOOT REFUSED`, as today's empty trust root does.
 
 ### The question
 
-**Recommendation: A.** Two words on the kernel's command line, on all three architectures:
+**Decided: A** (2026-11-01 UTC). Two words on the kernel's command line, on all three architectures:
 `nife.progenitor=sha256:<64 hex digits>` and `nife.base=sha256:<64 hex digits>`, in
 `measured_boot`'s existing digest text. On a device tree they sit in `/chosen/bootargs`; on x86_64
 in the PVH command line, beside `boot-slot=`. One parser, in a crate, serves all three paths.
@@ -224,6 +227,7 @@ Each waits its turn:
 
 ## Index row
 
-The two questions item 6 of milestone 607 waits on. First, the exact bytes the loader hands the
-kernel on three architectures (recommended: two command-line words). Second, where the loader's own
-copy comes from (recommended: written by whoever composes the boot, copied by the loader).
+The two questions item 6 of milestone 607 waited on. First, the exact bytes the loader hands the
+kernel on three architectures (decided 2026-11-01: two command-line words). Second, where the
+loader's own copy comes from (decided 2026-11-01: written by whoever composes the boot, copied by
+the loader).

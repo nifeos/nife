@@ -519,9 +519,9 @@ pub fn verdict<'a>(table: &str, name: &str, bytes: Option<&'a [u8]>) -> Verdict<
 /// [`encode`], and the kernel calls [`parse`], so the two sides read one grammar (rule 7). See
 /// notes/trusted-init/measured-boot.md.
 ///
-/// The words, their keys and the choice of the command line over binary `/chosen` properties are
-/// question 1 of `design/roadmap/proposals/how-the-loader-hands-the-kernel-two-digests.md`, and
-/// remain the architect's to confirm.
+/// The words, their keys and the choice of the command line over binary `/chosen` properties were
+/// ruled 2026-11-01 (UTC), question 1 of
+/// `design/roadmap/proposals/how-the-loader-hands-the-kernel-two-digests.md`.
 ///
 /// # Examples
 ///
@@ -553,7 +553,7 @@ pub fn verdict<'a>(table: &str, name: &str, bytes: Option<&'a [u8]>) -> Verdict<
 pub mod loader_digests {
     use super::{DIGEST_TEXT_LEN, Digest, DigestTextError, digest_text, parse_digest};
 
-    /// The progenitor's word's key, `=` included. Provisional; the proposal's spelling.
+    /// The progenitor's word's key, `=` included, as ruled 2026-11-01 (UTC).
     ///
     /// Name: provisional, minted 2026-11-01 (UTC) by
     /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.

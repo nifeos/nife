@@ -25,8 +25,8 @@ three QEMU runners. No new crate and no new dependency.
 
 The loader hands the kernel two digests on all three architectures, as two words on the kernel's
 command line: `nife.progenitor=sha256:<hex>`, the progenitor's, and `nife.base=sha256:<hex>`, the
-digest of the archive's `program_measurements` table (ruled 2026-11-01 UTC; §235's "manifest
-digest" reads as this table digest). On a device tree they sit in `/chosen/bootargs`; on x86_64 in
+digest of the archive's `program_measurements` table. The architect ruled on both words and their
+spelling on 2026-11-01 (UTC), and §235's "manifest digest" reads as this table digest. On a device tree they sit in `/chosen/bootargs`; on x86_64 in
 the PVH command line. `measured_boot::loader_digests` is the one grammar every writer and the
 kernel use.
 
@@ -49,12 +49,11 @@ userspace rather than in the kernel.
 
 ## What is calef's
 
-Question 1 of
-[`how-the-loader-hands-the-kernel-two-digests.md`](proposals/how-the-loader-hands-the-kernel-two-digests.md),
-the bytes of the handoff, is open. The code here builds its recommended option A, two command-line
-words, which the 2026-11-01 (UTC) ruling's word `nife.base` implies; it merges only once the
-architect confirms A. The architect decided question 2 on 2026-11-01 (UTC): option A, the composer
-records the digests and every loader copies them.
+Both questions of
+[`how-the-loader-hands-the-kernel-two-digests.md`](proposals/how-the-loader-hands-the-kernel-two-digests.md)
+have answers from the architect, given 2026-11-01 (UTC). Question 1, the bytes of the handoff: option A, the two
+command-line words `nife.progenitor=` and `nife.base=`, which the code here builds. Question 2:
+option A, the composer records the digests and every loader copies them.
 
 A third question follows and stays separate. Once the kernel can update apart from the base, the
 syscall surface becomes a versioned ABI that installed programs rely on.
@@ -72,9 +71,9 @@ milestone names its consumer. It is not BUILT until a record cites its first use
 | part | what | needs a ruling? | size |
 |---|---|---|---|
 | 1 | A contract crate for how the kernel hands the base digest to the progenitor, and the progenitor's check of the table against it, host-tested. The two release together, so the lane picks the form. | no | about 200 lines and host tests in `crates/` and `crates/system_initializer` |
-| 2 | The parser and writer for the handoff's two words, `measured_boot::loader_digests`. | question 1 | about 150 lines and host tests |
-| 3 | The kernel reads the two words on each path and holds the progenitor and the table to them. | question 1 | about 150 lines, one QEMU suite per architecture |
-| 4 | The writers: `xtask` and the QEMU runners, `uefi_loader`, the board's U-Boot scripts, and 976's slot writer. | question 2 | about 300 lines; the board half needs a bench boot |
+| 2 | The parser and writer for the handoff's two words, `measured_boot::loader_digests`. | question 1, decided | about 150 lines and host tests |
+| 3 | The kernel reads the two words on each path and holds the progenitor and the table to them. | question 1, decided | about 150 lines, one QEMU suite per architecture |
+| 4 | The writers: `xtask` and the QEMU runners, `uefi_loader`, the board's U-Boot scripts, and 976's slot writer. | question 2, decided | about 300 lines; the board half needs a bench boot |
 
 ## Follow-on
 
@@ -93,10 +92,11 @@ milestone names its consumer. It is not BUILT until a record cites its first use
 - **Outstanding.** Part 1: the kernel still checks the table itself, against both the words and
   `TRUST_ROOT`. Moving the check into the progenitor needs the contract crate part 1 names; checked
   against `kernel/src/trust.rs`, which still calls `require_program_measurements`.
-- **Outstanding.** Part 4's fourth writer, 976's version 2 slot. The header ruled 2026-11-01 (UTC)
-  holds three member entries and no field for the two digests, while question 2's answer puts them
-  in the header. Which way it goes is the architect's; checked against
-  `design/roadmap/0976-an-os-update-through-a-slot.md`.
+- **Outstanding.** Part 4's fourth writer, 976's version 2 slot, which 976's part 4c lane owns.
+  Ruled 2026-11-01 (UTC): the header grows from 188 to 252 bytes, with the progenitor digest and
+  the base digest after the three member entries and the CRC-32 last. The updater writes the two
+  digests and the chooser copies them into the two words. Checked against draft PR #3032, which
+  records the ruling; `crates/boot_slot` does not hold the fields yet.
 - **Outstanding.** A bench boot of the board scripts. No bench boot ran; the scripts use only
   `setenv`, which the proven vocabulary already holds. They carry the card's words, so a network
   boot of a rebuilt archive needs the card's script rewritten with it (`script/board-image --tftp
@@ -109,4 +109,4 @@ milestone names its consumer. It is not BUILT until a record cites its first use
 
 The loader hands the kernel the progenitor's digest and the `program_measurements` table's digest, on all three
 architectures, and the progenitor checks the base set (§235, T4 with T2). The boot-path half of
-607's item 6; its first consumer is 976 part 4, and question 1 of the handoff is calef's.
+607's item 6; its first consumer is 976 part 4. The architect answered both handoff questions on 2026-11-01.
