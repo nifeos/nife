@@ -7,7 +7,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# The design record moves to its own repository and is published as a website
+# The design record moves to `nifeos.org` and is published as a website
 
 The lane `lane/the-design-record-moves-and-is-published` wrote this on 2026-11-01 (UTC), on that
 day's rulings. Its measurements are in
@@ -32,18 +32,29 @@ direction. §201 (one roadmap until a citation has to cross, and the blocked sid
 dependency) rules on citations across repositories. Its section 4 says a record points at code as
 `nifeos/<repo>@<sha>`, code does not cite records, and the numbering namespace stays with nife.
 
+On 2026-11-01 (UTC) the architect ruled question 1 below. The record moves to one repository named
+`nifeos.org`, and the provisional name `nife-design` is withdrawn. That repository holds the whole
+site published at nifeos.org: the record (roadmap, decisions, journeys, naming, notes), a page for
+each crate, material about nife itself, and the planned tutorial on building a RISC-V operating
+system, a class. The record and the site are one repository, not two. A crate's page pulls from that
+crate's own repository at build time and is not copied in. If the record ever has to split from the
+site, the path-filtered extraction measured in the appendix allows it, with history. The ruling
+creates nothing: the repository is created when the move happens, and its creation needs the
+architect's approval under the existing ruling. The ruling carries one condition, step 5 below.
+
 Why now. If the record stays in `nifeos/nife`, it stays in a repository whose stated role is
 history. Every other move then lands its record edits in a repository that is winding down.
 
 ## Recommendation
 
-Move the record to a new repository by a path-filtered extraction, so every commit that touched a
+Move the record to the `nifeos.org` repository by a path-filtered extraction, so every commit that touched a
 record file keeps its message, author and date. The record keeps its numbers, and the numbering
-namespace moves with it. Build the website from that repository in CI on every merge: a static
+namespace moves with it. The same repository holds the rest of the site, so one build publishes
+everything. Build the website from it in CI on every merge: a static
 site with one stable address per record number, search, and a link check. Records that describe a
 single crate or carry a tool's data stay with that code.
 
-Most of this can start before the move. Steps 1 to 4 below land in this repository today, and each
+Most of this can start before the move. Steps 1 to 5 below land in this repository today, and each
 makes the move smaller.
 
 Reuse: the site generator is the only new code, and it reuses an existing one (mdBook, Zola,
@@ -143,7 +154,7 @@ repository; Cloudflare Pages; Netlify; Read the Docs, which the PEPs use for pre
 Pages. The address choice is separate: the organization's `github.io` address or a domain, and
 milestone 565 says this project has no domain registered.
 
-## The checks, in a repository with no code
+## The checks, in a repository with no code to build
 
 - Unchanged: block frontmatter and status (`script/roadmap --check`), decision files, journeys
   (`script/journeys` reads only the record), citations and their glosses, the prose ratchet,
@@ -172,7 +183,7 @@ change the dependent side in a separate pull request that cites the landed commi
 
 ## Order of steps
 
-Each step lands alone. Steps 1 to 4 can start now, with no move and no ruling beyond step 3's
+Each step lands alone. Steps 1 to 5 can start now, with no move and no ruling beyond step 3's
 dependency approval.
 
 1. Tag each `script/lint` section as record or code, the way `lint-quick` tags sections. No
@@ -183,11 +194,25 @@ dependency approval.
    search index size and broken citations.
 4. Sort each record into moves or stays in `packages/homes.toml`, which already gives every path a
    home and counts the notes left undecided.
-5. After the name ruling and the architect's approval of creation: extract by path, then remove the
+5. Measure whether the record's checks can be limited to the record's own directories, so a change
+   to the site's other paths does not run them. The ruling of 2026-11-01 (UTC) makes this a
+   condition of the one-repository shape, and it is not yet verified. Three checks are
+   repository-wide today. The `needs-architect` required check of §88 runs on every pull request and
+   merge group (`.github/workflows/architect-hold.yml`) with no path condition. `script/lint` runs
+   every section, and `ci.yml` never skips its `lint` job. The merge queue tests a group against the
+   union of its queued changes, so one record change in a group runs every check for the others.
+   The constraint found so far: `ci.yml` records that a workflow skipped by a path filter leaves its
+   required checks Pending and blocks the merge, so the limit has to be a job-level condition that
+   reports Success when skipped, as `ci.yml` does for code. Whether that holds for `architect-hold`,
+   whether the `script/lint` sections tagged in step 1 can be selected by directory, and what a
+   mixed queue group runs are the three things to measure. If the limit proves impossible, the
+   ruling's condition fails and the shape returns to the architect.
+6. After step 5's measurement and the architect's approval of creation: extract by path, then remove the
    paths from this repository in one pull request. That pull request writes `packages/moved.toml`
    with the anchor, and leaves a pointer in the README.
-6. Turn on the record repository's CI: the record checks, the site build and the link check.
-7. After the hosting ruling: deploy.
+7. Turn on the new repository's CI: the record checks, limited to the record's directories, the site
+   build and the link check.
+8. After the hosting ruling: deploy.
 
 ## Prior art
 
@@ -221,11 +246,8 @@ feed gates, which the PEPs do not, so the checks move with the text.
 
 One decision each, recommendation first. Ask them one at a time.
 
-1. The new repository's name. The record is mostly design decisions and the plan, read by people
-   deciding whether to use or contribute to nife. The kernel's provisional name sets a
-   `nife-` prefix. Recommended, provisional: (a) `nife-design`, after the `design/` directory it
-   carries. Options: (b) `nife-record`; (c) `nife-plan`; (d) `nifeos.github.io`, which also makes it
-   the organization's root site.
+1. Ruled 2026-11-01 (UTC): the repository is `nifeos.org`, one repository for the record and the
+   whole site, as the Background states. Its condition is step 5's measurement.
 2. The citation identity once the record leaves code. §201 keeps the namespace with nife, and nife
    now means a history-only repository. Recommended: (a) the number stays the identity and the
    namespace moves with the record repository. Bare code paths mean the anchor commit, and new ones
@@ -242,4 +264,8 @@ One decision each, recommendation first. Ask them one at a time.
    workflow data, and its own `AGENTS.md`. Options: (b) everything under `design/` and `notes/`
    moves and the sort happens later; (c) only roadmap, decisions and journeys move.
 
-Blocked until answered: steps 5 to 7. Nothing in flight waits on this.
+5. Where the tutorial's source lives. The planned tutorial on building a RISC-V operating system
+   publishes on the site. Its source could sit in the `nifeos.org` repository or in a repository of
+   its own. Not asked yet; it needs background and a recommendation first.
+
+Blocked until questions 2 to 4 are answered: steps 6 to 8. Nothing in flight waits on this.
