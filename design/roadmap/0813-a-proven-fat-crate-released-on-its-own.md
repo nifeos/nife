@@ -69,6 +69,9 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
    oracle images. Built:
    [stage-8-the-general-format.md](0813-a-proven-fat-crate-released-on-its-own/stage-8-the-general-format.md).
 9. Timestamps, attributes and the label, then `script/crate-standalone` and the README for release.
+   Attributes, the label and the README landed
+   ([stage-9-attributes-labels-and-the-release-checks.md](0813-a-proven-fat-crate-released-on-its-own/stage-9-attributes-labels-and-the-release-checks.md)).
+   Timestamps wait on how a clock reaches the crate (#2984).
 
 ## What exists, checked 2026-10-07 (UTC)
 
@@ -213,9 +216,8 @@ tree's build, so nothing about it can work on one target and not another.
 ## Standalone, measured 2026-10-11 (UTC)
 
 `script/crate-standalone file_allocation_table` found, at base `ae6b91e79`, a manifest that
-inherits `license` and `lints` from nife's workspace, with no `rust-version`, README or license
-files. It found 14 lines that cite this tree, and a test that reads `../../target/` through
-`CARGO_MANIFEST_DIR`, which a stranger's checkout lacks.
+inherits from nife's workspace, no README or license files, 14 lines that cite this tree, and a test
+that reads `../../target/`, which a stranger's checkout lacks.
 
 `script/names` reports the name `file_allocation_table` ratified (checked 2026-10-25).
 
@@ -287,8 +289,7 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** Stage 9. Checked 2026-10-31 (UTC): the crate reads, writes and formats; it
-  stamps no time and sets no attribute.
+- **Outstanding.** Timestamps, and the crate's names. Checked 2026-11-01 (UTC): it stamps no time.
 
 ## BUGS
 
