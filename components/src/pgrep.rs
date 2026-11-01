@@ -54,6 +54,24 @@ const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 /// Whether this process was granted a second stream, decided once in [`_start`].
 static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 
+// **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
+// checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
+// it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
+capability_manifest_note::carry_interfaces!(&[
+    capability_manifest_note::Declared {
+        id: abi::INTERFACE_ID,
+        version: abi::ABI_VERSION
+    },
+    capability_manifest_note::Declared {
+        id: address_space_map::INTERFACE_ID,
+        version: address_space_map::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: glob::INTERFACE_ID,
+        version: glob::VERSION
+    },
+]);
+
 user_mode_runtime::program_entry!(start);
 
 /// `a1` is the state mask, in `grant_plan::spawnproto`'s integer-argument position: the progenitor starts every

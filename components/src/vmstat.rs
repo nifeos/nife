@@ -44,6 +44,28 @@ const REPORT: u64 = 0;
 const DIAG_SLOT: u64 = grant_plan::DIAGNOSTICS_SLOT;
 const MACHINE_SLOT: u64 = grant_plan::MACHINE_SLOT;
 
+// **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
+// checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
+// it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
+capability_manifest_note::carry_interfaces!(&[
+    capability_manifest_note::Declared {
+        id: abi::INTERFACE_ID,
+        version: abi::ABI_VERSION
+    },
+    capability_manifest_note::Declared {
+        id: address_space_map::INTERFACE_ID,
+        version: address_space_map::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: glob::INTERFACE_ID,
+        version: glob::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: machine_statistics_contract::INTERFACE_ID,
+        version: machine_statistics_contract::VERSION
+    },
+]);
+
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {

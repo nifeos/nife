@@ -630,6 +630,10 @@ designware_mobile_storage = { version = "0.1.0", path = "../crates/designware_mo
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
 abi = { version = "0.1.0", path = "../crates/abi" }
+# Named here only so a program's `carry_interfaces!` list can read `glob::INTERFACE_ID` and its
+# version (milestone 956 (the linked interfaces carry checkable versions)): `grant_plan` links it
+# into every program that plans a grant.
+glob = { version = "0.1.0", path = "../crates/glob" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
 process_builder = { version = "0.1.0", path = "../crates/process_builder" }
 # The interactive system, built once (milestone 96). Both inits are a table of the slot numbers

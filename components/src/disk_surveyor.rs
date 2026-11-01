@@ -128,6 +128,28 @@ pub const P_RW_REFUSED: u64 = 1 << 0;
 /// ASCII `HOLDG`. Must match `system_tests/src/user/disk_tests.rs`.
 pub const R_HOLDING: u64 = 0x_48_4F_4C_44_47;
 
+// **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
+// checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
+// it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
+capability_manifest_note::carry_interfaces!(&[
+    capability_manifest_note::Declared {
+        id: abi::INTERFACE_ID,
+        version: abi::ABI_VERSION
+    },
+    capability_manifest_note::Declared {
+        id: address_space_map::INTERFACE_ID,
+        version: address_space_map::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: glob::INTERFACE_ID,
+        version: glob::VERSION
+    },
+    capability_manifest_note::Declared {
+        id: block_roster::INTERFACE_ID,
+        version: block_roster::VERSION
+    },
+]);
+
 user_mode_runtime::program_entry!(start);
 
 fn start(role: u64, _a1: u64, _a2: u64) -> ! {

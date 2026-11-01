@@ -228,6 +228,7 @@ dependencies = [
  "filesystem_contract",
  "filesystem_fixture",
  "free",
+ "glob",
  "globally_unique_identifier_partition_table",
  "grant_plan",
  "graphics_contract",
