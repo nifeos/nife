@@ -130,10 +130,10 @@ slot. Every new name here is provisional.
   asserts, and the transcript must show the composed catalog. Parts 2 and 3 are mechanical and add no
   format; part 3 is host-staged, so it proves the slot path and not a device updater.
 - **Done.** Part 4a: `crates/boot_slot` reads and writes the version 2 header (`boot_slot::members`,
-  provisional). `parse` reads versions 1 and 2 and refuses with a typed `Refusal` and a fixed
-  phrase each of: unknown version, unknown, duplicate or missing tag, layout break, nonzero
-  reserved or padding bytes, and a CRC-32 mismatch; it adds `NoHeader` and `Truncated` for an
-  empty partition and a short buffer. `MemberHeader::encode` writes only version 2. Host tests
+  provisional). `parse` reads versions 1 and 2. It refuses each of these with a typed `Refusal` and a fixed
+  phrase: an unknown version, an unknown, duplicate or missing tag, a layout break, nonzero
+  reserved or padding bytes, and a CRC-32 mismatch. Two more reasons, `NoHeader` and `Truncated`,
+  cover an empty partition and a short buffer. `MemberHeader::encode` writes only version 2. Host tests
   cover the round trip, every refusal, version 1 as before, and a flip of every byte of the 188
   and of the padding. A fuzz target is not added, because the fuzz job is at its eighteen-target
   budget; the crate's `BUGS` records that. The ruling leaves two points open, and both are refused

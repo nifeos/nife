@@ -1016,31 +1016,28 @@ pub mod members {
 
         #[test]
         fn every_layout_break_is_refused() {
-            type Edit = fn(&mut MemberHeader);
-            let breaks: [(&str, Edit); 9] = [
-                ("unaligned offset", |h| h.members[0].offset = 4097),
-                ("inside the header block", |h| h.members[0].offset = 0),
-                ("overlap", |h| h.members[1].offset = 8192),
-                ("out of table order", |h| h.members[1].offset = 4096 * 100),
-                ("past the partition", |h| h.members[2].length = PARTITION),
-                ("offset past the partition", |h| {
-                    h.members[2].offset = PARTITION
-                }),
-                ("length overflows", |h| h.members[2].length = u64::MAX),
-                ("zero length", |h| h.members[1].length = 0),
-                ("offset overflows", |h| {
-                    h.members[2].offset = u64::MAX - 4095
-                }),
+            // (name, member index, offset, length) replacing that member of `sample()`.
+            let breaks: [(&str, usize, u64, u64); 10] = [
+                ("unaligned offset", 0, 4097, 5000),
+                ("inside the header block", 0, 0, 5000),
+                ("overlap", 1, 8192, 4096),
+                ("out of table order", 1, 4096, 4096),
+                ("past the partition", 2, 16384, PARTITION),
+                ("offset past the partition", 2, PARTITION, 1),
+                ("length overflows", 2, 16384, u64::MAX),
+                ("zero length", 1, 12288, 0),
+                ("offset overflows", 2, u64::MAX - 4095, 1),
+                (
+                    "ends one byte past the partition",
+                    2,
+                    16384,
+                    PARTITION - 16383,
+                ),
             ];
-            for (name, edit) in breaks {
+            for (name, index, offset, length) in breaks {
                 let mut header = sample();
-                if name == "out of table order" {
-                    // Swap the first two offsets: member 1 now starts before member 0 ends.
-                    header.members[1].offset = 4096;
-                    header.members[0].offset = 12288;
-                } else {
-                    edit(&mut header);
-                }
+                header.members[index].offset = offset;
+                header.members[index].length = length;
                 // The writer refuses it ...
                 let mut out = [0u8; BLOCK];
                 assert_eq!(
