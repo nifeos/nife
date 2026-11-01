@@ -6,9 +6,10 @@
 //! `progenitor <stem>`, naming the package that carries the progenitor; there is exactly one, and
 //! its stem is one of the package lines. Every later line is `<stem> sha256:<64 lowercase hex>`,
 //! one package per line, sorted by stem, with no blank line and one newline ending the last, so one
-//! content has exactly one encoding. A later column goes in behind a new version line. [`render`] is the writer (basalt's side), [`SystemManifest::parse`]
-//! the reader (the device updater's and the progenitor's), and [`SystemManifest::check`] the
-//! refusal both run against the packages they hold: it names the package.
+//! content has exactly one encoding. A later column goes in behind a new version line. [`render`]
+//! is the writer (basalt's side), [`SystemManifest::parse`] the reader (the device updater's and
+//! the progenitor's), and [`SystemManifest::check`] the refusal both run against the packages they
+//! hold: it names the package.
 //!
 //! This is not the program manifest of milestone 597 (a program carries its manifest in an ELF
 //! note), and it is not the kernel's `program_measurements` table, which is per program.
@@ -32,10 +33,9 @@
 //!
 //! # BUGS
 //!
-//! - **The progenitor line's spelling is provisional.** The ruling of 2026-11-01 (UTC) gives the
-//!   manifest a progenitor line of its own; `progenitor <stem>` as line 2 is this lane's spelling,
-//!   chosen to sit beside `version 1` and `<stem> sha256:<hex>`. The word `progenitor` is reserved:
-//!   no package stem is the bare word. The format version stays 1, since no manifest has shipped.
+//! - **The progenitor line's spelling is provisional**: `progenitor <stem>` as line 2, chosen to sit
+//!   beside `version 1` and `<stem> sha256:<hex>`. The word is reserved, so no package stem is it.
+//!   The format version stays 1, since no manifest has shipped.
 //! - **A stem is held only to a character set and a length**, not to the `name-version-architecture`
 //!   shape `package_index` checks. The manifest is read beside the packages, so a stem that no
 //!   package carries is refused by [`SystemManifest::check`] and not by the parse.
