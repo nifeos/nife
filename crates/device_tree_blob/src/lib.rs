@@ -1081,6 +1081,70 @@ impl<'a> DeviceTreeBlob<'a> {
         })
     }
 
+    /// **The kernel's command line**: `/chosen/bootargs`, without its terminating NUL, or
+    /// `Ok(None)` when the tree has no `/chosen` or no such property.
+    ///
+    /// QEMU writes it from `-append`, U-Boot from its `bootargs` variable, and `uefi_loader` from
+    /// its device-tree patch. It carries the loader's two digests
+    /// (`measured_boot::loader_digests`). Only the root's own `chosen` child counts, as for
+    /// [`Self::initial_ramdisk`]. A value with no NUL is returned whole, since the property's
+    /// length bounds it either way.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by milestone 695's lane. Spelled out rather
+    /// than `bootargs`, the binding's spelling, for the reason the ramdisk's accessor refused
+    /// `initrd`.
+    pub fn boot_arguments(&self) -> Result<Option<&'a [u8]>, Error> {
+        let mut depth = 0i32;
+        let mut in_chosen = false;
+        let mut at = self.off_struct;
+
+        loop {
+            let token = be32(self.bytes, at)?;
+            at += 4;
+
+            match token {
+                FDT_BEGIN_NODE => {
+                    let name = self.cstr(at)?;
+                    at += align4(name.len() + 1);
+                    depth += 1;
+                    if depth == 2 && name == b"chosen" {
+                        in_chosen = true;
+                    }
+                }
+
+                FDT_END_NODE => {
+                    if in_chosen && depth == 2 {
+                        return Ok(None);
+                    }
+                    depth -= 1;
+                }
+
+                FDT_PROP => {
+                    let len = be32(self.bytes, at)? as usize;
+                    let name_off = be32(self.bytes, at + 4)? as usize;
+                    let value_at = at + 8;
+                    at = value_at + align4(len);
+
+                    if in_chosen
+                        && depth == 2
+                        && self.cstr(self.off_strings + name_off)? == b"bootargs"
+                    {
+                        let value = self
+                            .bytes
+                            .get(value_at..value_at + len)
+                            .ok_or(Error::Truncated)?;
+                        let end = value.iter().position(|&b| b == 0).unwrap_or(value.len());
+                        return Ok(Some(&value[..end]));
+                    }
+                }
+
+                FDT_NOP => {}
+                FDT_END => return Ok(None),
+                other => return Err(Error::BadToken(other)),
+            }
+        }
+    }
+
     /// An integer property.
     ///
     /// The device tree spec lets these be either 32 or 64 bits wide, and **the only way

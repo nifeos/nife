@@ -597,6 +597,53 @@ fn initial_ramdisk_reads_widths_and_refuses_the_empty_and_the_misnamed() {
     );
 }
 
+/// The command line, boundary by boundary: the NUL comes off, a value with no NUL is returned
+/// whole, a `bootargs` under any node but the root's own `chosen` is not the command line (even a
+/// `chosen` child of `chosen`), and a tree with no `/chosen` has none.
+#[test]
+fn boot_arguments_are_the_root_chosen_bootargs_and_nothing_else() {
+    let build = |outer: &[u8], inner: Option<&[u8]>, value: &[u8]| {
+        let mut b = Blob::new();
+        b.begin_node(b"");
+        b.begin_node(outer);
+        b.prop(b"stdout-path", b"/pl011@9000000\0");
+        if let Some(inner) = inner {
+            b.begin_node(inner);
+            b.prop(b"bootargs", value);
+            b.end_node();
+        } else {
+            b.prop(b"bootargs", value);
+        }
+        b.end_node();
+        b.end_node();
+        b.finish()
+    };
+
+    let blob = build(b"chosen", None, b"nife.base=sha256:00\0");
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.boot_arguments(), Ok(Some(&b"nife.base=sha256:00"[..])));
+
+    let blob = build(b"chosen", None, b"no terminator");
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.boot_arguments(), Ok(Some(&b"no terminator"[..])));
+
+    let blob = build(b"chosen", None, b"\0");
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.boot_arguments(), Ok(Some(&b""[..])));
+
+    let blob = build(b"notchosen", None, b"forged\0");
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.boot_arguments(), Ok(None));
+
+    let blob = build(b"chosen", Some(b"chosen"), b"forged\0");
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.boot_arguments(), Ok(None), "only the root's own chosen");
+
+    let blob = minimal_tree();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.boot_arguments(), Ok(None));
+}
+
 // The tests above came from the baseline run's survivor list; the ones below close the gaps that
 // list still had after them. Several survivors dodge the earlier tests by coincidence of shape
 // (a device that is a direct child of the root never reads the inherited cell slots; a matched
