@@ -3806,6 +3806,13 @@ echo "==> format values move with their version constants"
 python3 helpers/format_values_check.py --selftest
 python3 helpers/format_values_check.py
 
+# Every program of the first cut declares, in its `carry_interfaces!` list, exactly the versioned
+# interfaces its dependency graph links (milestone 956, condition 4 of milestone 756). The list is
+# written by hand, and this is what keeps it from drifting from the graph.
+echo "==> the first cut's programs declare what they link"
+python3 helpers/interface_declarations_check.py --selftest
+python3 helpers/interface_declarations_check.py
+
 echo "==> em-dashes"
 # lint-quick
 # calef's standing style rule (CLAUDE.md): no em-dashes, use commas, periods, semicolons or
