@@ -1,6 +1,6 @@
 //! The sector merge at its edges, and a write that crosses from a full volume into a refusal.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 

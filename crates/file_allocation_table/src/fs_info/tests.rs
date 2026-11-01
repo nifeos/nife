@@ -1,7 +1,7 @@
 //! The `FSInfo` sector: each signature, each hint at its edges, and a store that touches only the
 //! two hints.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 
