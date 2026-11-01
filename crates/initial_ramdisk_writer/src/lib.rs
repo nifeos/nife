@@ -131,8 +131,8 @@ impl fmt::Display for Error {
 /// kernel's trust root vouches for the entry. `arch` only names the architecture in a refusal.
 ///
 /// Refuses, before packing, an archive missing a [`SHIPPED_STD_PROGRAMS`] entry and one holding a
-/// program that does not fit the image band (milestone 206); the band check names every
-/// program that fails.
+/// program that does not fit the image band (milestone 206 (a program image has under
+/// 896 KiB)); the band check names every program that fails.
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane/976-part-4b-the-archive-writer-becomes-a-crate.
 pub fn compose<N: AsRef<str>>(
@@ -216,7 +216,8 @@ fn shipped_std_programs_present(arch: &str, files: &[(&str, &[u8])]) -> Result<(
     }
 }
 
-/// **Every program in an archive fits the address-space map's image band** (milestone 206),
+/// **Every program in an archive fits the address-space map's image band** (milestone 206
+/// (a program image has under 896 KiB)),
 /// checked at packing because the kernel's loader only judges the programs a boot loads. Entries
 /// that are not ELF (the catalog, the measurement table) are skipped.
 fn programs_fit_the_address_space_map(files: &[(&str, &[u8])]) -> Result<(), Error> {

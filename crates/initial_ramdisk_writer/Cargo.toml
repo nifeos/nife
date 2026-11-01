@@ -6,7 +6,7 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 license.workspace = true
 
 # The packer behind every initial ramdisk archive: the host composer (`cargo xtask`) links it today,
-# and the device updater links it when it writes a slot (milestone 976, part 4). `no_std` with
+# and the device updater links it when it writes a slot (milestone 976 (an OS update through a slot), part 4). `no_std` with
 # `alloc`, host-tested.
 
 [lints]
