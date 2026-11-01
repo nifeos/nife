@@ -5,7 +5,7 @@
 //! opens through its partition table, the way a whole-disk image does. Every file is then found by
 //! walking the directories with this crate, read through `open_file`, and hashed with a SHA-256
 //! written here, so the hashes come from nothing this crate computed. Each expected hash is the
-//! line of `notes/filesystem-crates-2026-10-07/expected.sha256` for that file. Path lookup finds
+//! line of the probe's `expected.sha256` for that file. Path lookup finds
 //! each file too, by its long name and its short name.
 
 use file_allocation_table::{MasterBootRecord, NamedEntry, SectorDevice, SectorSize, Volume};
