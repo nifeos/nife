@@ -194,7 +194,7 @@ slot. Every new name here is provisional.
   (the digest of the archive's `program_measurements` table). A CRC-32 of bytes 0 to 248 sits at bytes 248 to 252. The
   updater writes the two digests from the system manifest and the progenitor. The chooser copies them
   into the kernel command line words and never computes them (option A of question 2 in the proposal
-  for milestone 695, the kernel trusts two digests from the loader). The base word is `nife.base`; the progenitor word's spelling is open. The tags are KERNEL, ARCHIVE and MANIFEST
+  for milestone 695 (the kernel trusts two digests from the loader)). The base word is `nife.base`; the progenitor word's spelling is open. The tags are KERNEL, ARCHIVE and MANIFEST
   (provisional spellings), exactly three, with no count field. Members start at multiples of 4096 in
   table order, without overlap, inside the partition. The chooser refuses an unknown, duplicate or
   missing tag, a layout break, nonzero reserved or padding bytes (padding is after byte 252), and an unknown header version

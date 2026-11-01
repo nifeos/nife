@@ -168,8 +168,9 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
       nothing past the partition end. The chooser refuses a slot that breaks any of these.
    4. The header holds exactly three entries and no count field. The layout is the magic (8
       bytes), the version (4), reserved zero (4), three 56-byte entries (tag 8, offset 8, length
-      8, digest 32), the progenitor's SHA-256 digest (32), the base digest (32, the digest of the
-      archive's `program_measurements` table) and the CRC-32 (4). That is 252 bytes, and the rest
+      8, digest 32) and the CRC-32 (4). Between the table and the CRC-32 sit the progenitor's
+      SHA-256 digest (32) and the base digest (32, the digest of the archive's
+      `program_measurements` table). That is 252 bytes, and the rest
       of the 4096-byte block is zero. The chooser refuses nonzero reserved or padding bytes, the
       padding being everything after byte 252. The updater writes the two digests from the system
       manifest and the progenitor.
