@@ -23,6 +23,8 @@ the template carries it. Each crate repository then moves to that release. The v
 same "selected repositories" scoping as the key, for the same reason, and the extraction checklist
 in milestone 857 (crates released on their own) loses one grant per new repository.
 
+Reuse: the variables feature of GitHub organizations and the existing reusable release workflow; no new dependency.
+
 Not done in this lane; it is a milestone for a lane in `nifeos/crate-workflows`.
 
 ## BUGS
