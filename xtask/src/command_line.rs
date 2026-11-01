@@ -70,8 +70,8 @@ pub(crate) fn main() -> ExitCode {
         // and the one that proves the rollback is a policy rather than an accident. Name
         // provisional (2026-09-21): `stick-boot` was already the boot stick's gate.
         "confirm-boot" => confirm::confirm_boot(),
-        // Milestone 976 part 3: the same three boots with the composed image in slot 1. Name
-        // provisional (2026-11-01).
+        // Milestone 976 (an OS update is a set of packages that lands through a slot), part 3: the
+        // same three boots with the composed image in slot 1. Name provisional (2026-11-01).
         "update-boot" => update::update_boot(),
         // Milestone 195: the same firmware, the kernel's test binary instead of its tour.
         "uefi-test" => uefi_test_command(),

@@ -136,13 +136,13 @@ slot. Every new name here is provisional.
   slot that held the install image again passes `confirm-boot` and fails here. This is version 1
   slot staging by the host, so it proves the slot path takes a composed image and a boot confirms
   it; it does not prove a device updater, which part 5 builds. It adds no format and no
-  dependency. Checked: one run under OVMF on x86_64 ended `update-boot: PASS`, with boot 2
-  printing `slot 1 confirmed. This upgrade will not roll back.`, boot 3 `slot 1 was already
-  confirmed; nothing written.`, and the disk at slot 1 priority 3, 0 tries, successful. Not wired
-  into `script/test` or a workflow: like `confirm-boot` it takes several minutes under TCG and
-  builds the install image and the composed image, one after the other, so a CI leg would roughly
-  double `confirm-boot`'s cost for a path that parts 4 and 5 replace. It stays a manual gate until
-  part 5's updater supplies the real staging.
+  dependency. Checked: one run under OVMF on x86_64 ended `update-boot: PASS`. Boot 2 printed
+  `slot 1 confirmed. This upgrade will not roll back.` Boot 3 printed `slot 1 was already
+  confirmed; nothing written.` The disk ended at slot 1 priority 3, 0 tries, successful. The gate
+  is not wired into `script/test` or a workflow. Like `confirm-boot` it takes several minutes under
+  TCG, and it builds the install image and the composed image one after the other. A CI leg would
+  roughly double `confirm-boot`'s cost for a path that parts 4 and 5 replace. It stays a manual
+  gate until part 5's updater supplies the real staging.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself, and the archive writer moves from
