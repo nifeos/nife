@@ -35,7 +35,7 @@ Per window, per driver, two numbers and nothing else:
 
 Both are integers. The window does not record which counters, which seeds, which inputs or which
 findings produced them. A bitmap of hit edges would let a reader work backward toward an input, so
-it is not kept; the sum of the bitmap is.
+the window keeps the sum and drops the bitmap.
 
 The kernel supplies the counter region and a way for the driver to read it after each seed, so the
 driver can add the counters it saw to the window's union and print one line at the end, next to the
@@ -49,7 +49,7 @@ counts of what the driver did, not of which kernel code ran, and the confined dr
 census. A count of distinct syscall numbers hit would need a small change in each driver, because
 neither tracks the set. It would be cheap and dependency free, but it measures the driver's
 alphabet, not the kernel's reach, and it saturates within the first few seeds. It is a weaker stand-in
-for condition 2, not the same measure. This lane did not build it, because that would choose a
+for condition 2, not the same measure. This lane did not build it, because building it would choose a
 measure for condition 2 on the architect's behalf.
 
 ## Cost per window
@@ -75,7 +75,7 @@ eight-column, ten-column and `-` rows, and checks three things: old rows still p
 totals, the coverage line appears and is correct, and no seed, commit or held-window field appears
 in the report outside what it already carried. It joins `script/lint`.
 
-A held window reports no coverage at all. Its counters would be a fact about a finding.
+A held window reports no coverage at all, because its counters would say something about a finding.
 
 ## Prior art
 
@@ -91,10 +91,9 @@ report 9,128".
 
 1. Whether condition 2 reads edge counters only (this proposal's recommendation, the decided
    mechanism) or may start with the syscall-number set as an interim figure.
-2. Confirm the privacy line: bare totals per driver, no bitmap. Recommended because the stricter
-   form can be relaxed later and a published bitmap cannot be recalled.
+2. Confirm the privacy line: bare totals per driver, no bitmap. The stricter form can be relaxed later, and nobody can recall a published bitmap.
 
-The column layout is a two-way choice, so the maintainer decides it, provisional; reversing costs one
+The column layout is a two-way choice, so the maintainer decides it as provisional; reversing costs one
 pull request.
 
 ## Proof
