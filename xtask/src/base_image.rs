@@ -32,8 +32,7 @@
 //!   archive entry, and the `kernel` package declares crates and no programs, so this builds it
 //!   from those crates. The binary claim is about the ramdisk, which is 909's "Done when".
 //! - **The base image names no approval file** until a base program's note asks (909's `BUGS`).
-//! - **`--boot` attaches no launch volume.** `launch.img` holds generation 1 of the table, and no
-//!   boot reads it yet (milestone 990's `BUGS`).
+//! - **`--boot` attaches no launch volume** (`launch.img`); milestone 990's `BUGS` says why.
 //! - **The catalog lists only the packages the image used.** `jig` needs the fetched index for
 //!   anything else, which is what `SOURCES_ENTRY` is for.
 //! - **A package's digest is checked against the catalog it was handed.** That catalog's trust is
