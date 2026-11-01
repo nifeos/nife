@@ -83,13 +83,12 @@ nife.
 
 ## The recommended order
 
-Every move below is preceded by the architect's review (§247 (the split begins with basalt holding nife, and `procps` moves first)'s condition 4, ruled 2026-11-01
-(UTC)): the architect reads the crate's code by hand before it leaves, initially for every crate. A
-crate also needs a tagged release whose commit carries its Cargo version, so that
-`cargo-semver-checks --baseline-rev` has a baseline. The first crate reviewed is the pilot,
-`jh7110_entropy`: it moved on 2026-10-31 (UTC), has no tag, and so must be tagged first (milestone
-818). No time-based measure remains, and a crate whose interface still breaks may leave, each break
-a new version and a new tagged release.
+The architect reads each crate's code by hand before it leaves, at first every crate (condition 4
+of §247 (the split begins with basalt holding nife, and `procps` moves first), ruled 2026-11-01
+(UTC)). A crate also needs a tagged release whose commit carries its Cargo version, the baseline
+for `cargo-semver-checks --baseline-rev`. The first crate reviewed is the pilot, `jh7110_entropy`.
+It moved on 2026-10-31 (UTC) and has no tag, so milestone 818 tags it first. No time-based measure
+remains: a crate whose interface still breaks may leave, each break a new tagged release.
 
 The rule: a crate leaves when every crate it links (normal, build and dev) has left or leaves with
 it, and no file in it names a nife path. Within a layer, the cheapest coordination goes first, so
@@ -276,9 +275,8 @@ Asked one at a time, in this order, with the background in the questions appendi
 - Nothing prepares the architect's reading of a crate. A lane may assemble a review packet per
   crate without reviewing for the architect: the path list, the public items, the tests, the
   licence notices, the dependency list and the `cargo-semver-checks --baseline-rev` output.
-  Proposed milestone, provisional: `script/crate-review-packet <crate>` prints it. Until it
-  exists, the architect asks a lane for each packet by hand. The review's feedback becomes automated
-  gates over time, and the packet's contents are the first candidates.
+  Proposed milestone, provisional: `script/crate-review-packet <crate>` prints it. Until then the
+  architect asks a lane for each packet by hand.
 
 ## Index row
 

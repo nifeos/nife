@@ -56,7 +56,7 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   whose interface still breaks may leave, each break a new version and a new tagged release. A
   crate leaves when it falls under milestone 956, has a tagged release whose commit carries the
   Cargo version and passes `cargo-semver-checks --baseline-rev` against that tag, nife consumes it
-  as a git dependency pinned by revision with the version requirement stated, and a producer
+  as a git dependency pinned by revision with the version requirement stated. A producer
   release can move each consumer's pin (the proposal `a-producer-release-moves-each-consumers-pin.md`,
   or an agreed manual step until it exists). Last, the architect reads the crate's code by hand
   before it leaves, initially for every crate, the first in particular. Feedback from those reviews

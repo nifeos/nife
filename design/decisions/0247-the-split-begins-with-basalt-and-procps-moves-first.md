@@ -30,9 +30,9 @@ its order "should be ruled on its own". This is that ruling. calef answered both
      move out of this repository, one per pull request));
    - the cut builds without a clone of nife, through §235's S2 archive or a dated, recorded
      exception;
-   - a crate may leave only when all of these hold (amended 2026-11-01, below):
+   - a crate may leave only when all of these hold (see the 2026-11-01 amendment below):
      1. it is classified under milestone 956 (the linked interfaces carry checkable versions): it
-        carries an `INTERFACE_ID` and a version, or it is recorded as not a format;
+        carries an `INTERFACE_ID` and a version, or the record says it is not a format;
      2. it has a tagged release whose commit carries the Cargo version, and
         `cargo-semver-checks --baseline-rev` against that tag passes;
      3. nife consumes it as a git dependency pinned by revision with the version requirement
