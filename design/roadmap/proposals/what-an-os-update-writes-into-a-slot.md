@@ -137,11 +137,18 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
    new version line. Not chosen: the kernel's program-measurement table (it is per program, so it
    cannot map a changed program to its package), TOML (a larger parser and several encodings of one
    content), and waiting for the update framework (milestone 858).
-2. Who may start a base update, and what bounds an unattended one. Milestone 911 (scripted installs
-   grant only what an approval file allows) gives every base package `update = false` in
-   `packages/base-image.approval.toml`, because a slot replaces the base whole. Milestone 858 (lab
-   machines update themselves) wants an unattended trigger, so the approval file needs a
-   base-update entry or a separate grant.
+2. Who may start a base update, and what bounds an unattended one. **Ruled 2026-11-01 (UTC): a
+   separate base-update section in the approval file.** `packages/base-image.approval.toml` gains a
+   section with two switches, `allow` and `unattended`, both false unless a person sets them. The
+   per-package `update = false` lines stay, because a slot replaces the base whole (milestone 911).
+   An update a person starts needs `allow`. An update with nobody present needs `unattended` as
+   well, and must meet four bounds before it writes: it writes only the spare slot; its manifest is
+   signed by a key the approval file pins; its version is strictly newer than the running one; and
+   no slot is on trial. Not chosen: a per-package `update = true` (it implies one package updates
+   alone, which the full-copy slot refuses) and forbidding unattended updates (milestone 858 needs
+   them). Open under this ruling, settled when the part that writes it lands: what "newer" means
+   for a base version, and whether the pinned key lives in the approval file or beside the
+   repository's trust root.
 3. What a failed boot does. Milestones 525 and 554 already answer this (tries, then the other
    slot; confirmation once the disk mounts). This proposal changes none of it, so it is not
    open.
@@ -151,5 +158,5 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
 The update's unit is the package, and each slot holds a full copy. A slot holds named members in a
 version 2 header (kernel, archive, system manifest), which a device assembles from packages it
 fetched and packages it already has (ruled 2026-10-31 UTC). The system manifest is a text file: a
-`version 1` line, then one `<stem> sha256:<hex>` line per package, sorted by stem (ruled 2026-11-01 UTC). The interim kernel package goes when
+`version 1` line, then one `<stem> sha256:<hex>` line per package, sorted by stem (ruled 2026-11-01 UTC). A base update needs `allow` in a separate base-update section of the approval file, and an unattended one also needs `unattended` and four bounds: spare slot only, a signature by a pinned key, a strictly newer version, no slot on trial (ruled 2026-11-01 UTC). The interim kernel package goes when
 milestones 695 and 697 land.
