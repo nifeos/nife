@@ -37,7 +37,7 @@ today="$(date -u +%Y-%m-%d)"
 out="$home/out/$today"
 windows="$state/windows.tsv"
 
-mkdir -p "$out"
+mkdir -p "$out" "$state"
 [ -f "$windows" ] || : > "$windows"
 
 # Columns: utc, driver, slot, first, ran, ms, status, commit.
