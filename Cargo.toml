@@ -38,6 +38,7 @@ members = [
     "crates/nifefs",
     "crates/package_archive",
     "crates/package_index",
+    "crates/system_manifest",
     "crates/http_response",
     "crates/installed_programs",
     "crates/approval_file",

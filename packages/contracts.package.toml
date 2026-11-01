@@ -34,6 +34,7 @@ interfaces = [
     "measured_boot",
     "package_archive",
     "package_index",
+    "system_manifest",
     "installed_programs",
     "approval_file",
     "program_asks",
