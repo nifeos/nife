@@ -13,7 +13,7 @@ pub(crate) fn print_usage(other: &str) {
         eprintln!("unknown command: {other}\n");
     }
     eprintln!(
-        "usage: cargo xtask <build|run|shell|swish-check|boot-check|initial-ramdisk-aarch64|initial-ramdisk-riscv|initial-ramdisk-x86|uefi-image|uefi-boot|uefi-test|package|base-image|base-packages|install-boot|rollback-boot|confirm-boot|stick|stick-boot|acpi-boot|screen-boot|manual|apropos|std-src|std-stamp|std-exerciser|std-aborts|foreign-note|basalt-fetch|test|coverage|time-summary|undefined-behavior-check|bench|icount|gdb|objdump|image|board-console|soak-test|board-script|card-check> [--hvf]"
+        "usage: cargo xtask <build|run|shell|swish-check|boot-check|initial-ramdisk-aarch64|initial-ramdisk-riscv|initial-ramdisk-x86|uefi-image|uefi-boot|uefi-test|package|base-image|base-packages|install-boot|rollback-boot|confirm-boot|update-boot|stick|stick-boot|acpi-boot|screen-boot|manual|apropos|std-src|std-stamp|std-exerciser|std-aborts|foreign-note|basalt-fetch|test|coverage|time-summary|undefined-behavior-check|bench|icount|gdb|objdump|image|board-console|soak-test|board-script|card-check> [--hvf]"
     );
     eprintln!("       cargo xtask swish-check [--arch aarch64|riscv64]");
     eprintln!(
@@ -24,6 +24,9 @@ pub(crate) fn print_usage(other: &str) {
     );
     eprintln!(
         "       cargo xtask confirm-boot   (x86_64/OVMF: a good upgrade is tried, confirms itself, and is still chosen with no tries left)"
+    );
+    eprintln!(
+        "       cargo xtask update-boot    (x86_64/OVMF: the composed image is staged into slot 1 by the host, confirms itself, and is still chosen with no tries left)"
     );
     eprintln!(
         "       cargo xtask card-check [<mounted card>|<stick dir>|<boot file>]   (default: target/board)"
