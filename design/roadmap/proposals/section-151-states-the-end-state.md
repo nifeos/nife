@@ -15,9 +15,11 @@ independent release and third-party programs), rewritten in place so that §151 
 ruled on 2026-11-01 (UTC). A lane may not write `design/decisions/`. The architect reads this text
 before anyone edits §151.
 
+Reuse: none needed. The proposal changes no code; it quotes §151 and the records of #3027.
+
 ## Background
 
-§151 was decided on 2026-09-15. It names what the split is for: independent release and
+The architect decided §151 on 2026-09-15. It names what the split is for: independent release and
 third-party programs. It also says how a piece earns a repository of its own, and it leaves the
 order of the split to a later ruling.
 
@@ -98,20 +100,21 @@ Replacement, the whole section:
 Nothing that leaves this repository refers back into it. So the split goes bottom-up in the
 dependency graph: the crates a program links leave before it or with it, and nothing that has left
 depends on a path or a pin into this repository. This repository may depend on what has left. The
-leaf pilot `jh7110_entropy` (milestone 818) leaves first, then the contract crates, then the
-programs and tooling once the crates they link have left. The kernel leaves last among the code, to
-`nife-kernel` (provisional). Once everything has left, `nifeos/nife` holds only the history.
+leaf pilot `jh7110_entropy` (milestone 818 (proven JH7110 TRNG logic, released on its own)) leaves
+first, then the contract crates, then the programs and tooling once the crates they link have left.
+The kernel leaves last among the code, to `nife-kernel` (provisional). Once everything has left,
+`nifeos/nife` holds only the history.
 
-Churn does not hold a move. A contract crate leaves and carries a version while its interface
-still changes, and each consumer checks that version (milestone 956). The single-command,
-all-architecture `script/test` proves the whole system today, and the split has to keep that proof
-running (see BUGS).
+Churn does not hold a move. A contract crate leaves and carries a version while its interface still
+changes, and each consumer checks that version (milestone 956 (the linked interfaces carry checkable
+versions)). The single-command, all-architecture `script/test` proves the whole system today, and
+the split has to keep that proof running (see BUGS).
 ```
 
 ### 4. Two sentences on the near-term path
 
 The tension #3027 named sits in the model section. The same idea appears once more, in the paragraph
-after the "What this settles" bullets, so both are shown.
+after the "What this settles" bullets, so this shows both.
 
 Current, in the paragraph after the bullets:
 
@@ -158,7 +161,7 @@ reader meets it as a dated note.
   paragraph after the bullets.
 - The Linux-distribution model and its three consequences. A kernel that leaves to a repository of
   its own makes the first consequence literal.
-- "What is unblocked", and the integration-gate item in BUGS. The end state makes that gate more
+- The section on what this unblocks, and the integration-gate item in BUGS. The end state makes that gate more
   pressing, and nothing ruled on 2026-11-01 builds it.
 
 ## Why each replacement reads as it does
@@ -168,7 +171,7 @@ reader meets it as a dated note.
   day's correction on #3027 says interfaces may break, provided consumers can check versions.
 - Replacement 2 deletes rather than rewords. A BUGS item records a limitation, and the grain is no
   longer one.
-- Replacement 3 drops the package-format precondition along with the rest. Milestone 198 built the
+- Replacement 3 drops the package-format precondition along with the rest. Milestone 198 (a package manager) built the
   package format on 2026-09-26, so the precondition already holds, and no ruling makes it a gate on
   a crate's move. `jh7110_entropy` moved without depending on it.
 - Replacement 4 keeps the sentences' real point: the target model does not by itself move the
@@ -176,10 +179,11 @@ reader meets it as a dated note.
 
 I applied all five pairs to a scratch copy of §151, and each current text matched exactly. The
 result has 956 words against 971 today. The prose ratchet passes it with 1 passive against a
-baseline row of 5, and the history ratchet finds nothing in it. The mid-paragraph replacement in 4
-is rewrapped to 100 columns with its paragraph when pasted.
+baseline row of 5, and the history ratchet finds nothing in it. The lane that pastes the mid-paragraph
+replacement in 4 rewraps its paragraph to 100 columns.
 
-§235's amendment and milestone 607 also conflict with the end state, as #3027 lists. They are a
+§235 (the OS is built and updated from packages)'s amendment and milestone 607 (nife is built
+and updated from packages) also conflict with the end state, as #3027 lists. They are a
 separate question, and this proposal does not touch them.
 
 ## Found while writing this
@@ -188,7 +192,7 @@ separate question, and this proposal does not touch them.
   and not a ruling". Journey 5 and §201 (one roadmap until a citation has to cross) state it as
   ruled, to a repository named `nifeos.org`. The replacements above say nothing about the design
   record, so they are correct either way. Milestone 857's bullet wants a record fix.
-- Two records ask whether "§151's preconditions" are met: `notes/the-first-split.md` section 1 and
+- Two records ask whether §151's preconditions hold: `notes/the-first-split.md` section 1 and
   milestone 756 (process-tools, core-tools and disk-tools leave first). Once replacement 3 lands,
   §151 names no preconditions, and both want a sentence pointing at the bottom-up order.
 
