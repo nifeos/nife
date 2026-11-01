@@ -1090,9 +1090,9 @@ impl<'a> DeviceTreeBlob<'a> {
     /// [`Self::initial_ramdisk`]. A value with no NUL is returned whole, since the property's
     /// length bounds it either way.
     ///
-    /// Name: provisional, minted 2026-11-01 (UTC) by milestone 695's lane. Spelled out rather
-    /// than `bootargs`, the binding's spelling, for the reason the ramdisk's accessor refused
-    /// `initrd`.
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader. Spelled out rather than
+    /// `bootargs`, the binding's spelling, for the reason the ramdisk's accessor refused `initrd`.
     pub fn boot_arguments(&self) -> Result<Option<&'a [u8]>, Error> {
         let mut depth = 0i32;
         let mut in_chosen = false;

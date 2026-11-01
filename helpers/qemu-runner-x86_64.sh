@@ -131,12 +131,12 @@ if [ -n "$NIFE_INITIAL_RAMDISK" ]; then
     INITIAL_RAMDISK="-initrd $NIFE_INITIAL_RAMDISK"
 fi
 
-# **The loader's two digests** (`measured_boot::loader_digests`, milestone 695): the progenitor's
-# and the `program_measurements` table's, which `cargo xtask` writes beside every archive it packs
-# as `<archive>.loader-digests`. QEMU's direct boot is the loader here, so this runner copies them
-# into `-append`, which QEMU puts in the PVH start info's command line. The kernel refuses to enter
-# a progenitor without them, so an archive with no such file boots to `MEASURED BOOT REFUSED`, which
-# names the missing word.
+# **The loader's two digests** (`measured_boot::loader_digests`, milestone 695 (the kernel trusts
+# two digests handed to it by the loader)): the progenitor's and the `program_measurements` table's,
+# which `cargo xtask` writes beside every archive it packs as `<archive>.loader-digests`. QEMU's
+# direct boot is the loader here, so this runner copies them into `-append`, which QEMU puts in the
+# PVH start info's command line. The kernel refuses to enter a progenitor without them, so an
+# archive with no such file boots to `MEASURED BOOT REFUSED`, which names the missing word.
 LOADER_DIGESTS=""
 if [ -n "$NIFE_INITIAL_RAMDISK" ] && [ -f "$NIFE_INITIAL_RAMDISK.loader-digests" ]; then
     LOADER_DIGESTS=$(cat "$NIFE_INITIAL_RAMDISK.loader-digests")

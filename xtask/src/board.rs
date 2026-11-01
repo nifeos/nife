@@ -676,8 +676,9 @@ fn stage_words(board: &'static serial_console::board::Profile) -> String {
 /// sets before sourcing it (`devtype`, `devnum`, `distro_bootpart`), and the archive's length is
 /// stashed under our own name as soon as `load` reports it, so a later command that sets `filesize`
 /// cannot change what `booti` is told. And `bootargs` carries `words`, the loader's two digests for
-/// the card's archive (`measured_boot::loader_digests`, milestone 695), which `booti` writes into
-/// `/chosen/bootargs` for the kernel.
+/// the card's archive (`measured_boot::loader_digests`, milestone 695 (the kernel trusts two
+/// digests handed to it by the loader)), which `booti` writes into `/chosen/bootargs` for the
+/// kernel.
 ///
 /// The device tree's `0x8600_0000` and the archive's `0x9000_0000` are choices; the note has the
 /// arithmetic. No `#` comment lines: U-Boot's parser is a cut-down hush, so the script uses only

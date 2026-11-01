@@ -185,8 +185,9 @@ pub const CMDLINE_LEN: usize = machine_discovery::framebuffer::Framebuffer::MAXI
 /// the slot key `boot_slot::cmdline::KEY` and a digit, **only** when a chooser started this image;
 /// `boot_slot::medium::NVME` when this boot came from the NVMe disk; `SCREEN_HOLD` under the
 /// `screen_hold` feature; and `loader_digests`, the two digest words the build embedded beside the
-/// archive (`measured_boot::loader_digests`, milestone 695), empty with no archive. Written here so a host test reads it back with the kernel's own parsers;
-/// notes/x86-uefi-boot/loader-design.md has each word's contract.
+/// archive (`measured_boot::loader_digests`, milestone 695 (the kernel trusts two digests handed to
+/// it by the loader)), empty with no archive. Written here so a host test reads it back with the
+/// kernel's own parsers; notes/x86-uefi-boot/loader-design.md has each word's contract.
 ///
 /// # Panics
 /// If `out` is shorter than [`CMDLINE_LEN`], or `loader_digests` is longer than the two words.

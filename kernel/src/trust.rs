@@ -165,8 +165,8 @@ static LOADER_DIGESTS: crate::sync::InterruptSafeMutex<Option<Result<LoaderDiges
 /// decides nothing; [`require`] refuses at the moment a digest is needed, so a boot that enters no
 /// progenitor (a kernel-only test image) never asks.
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by milestone 695's lane, beside
-/// `memory::record_boot_slot`.
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader, beside `memory::record_boot_slot`.
 pub(crate) fn record_loader_digests(cmdline: Option<&[u8]>) {
     let read = match cmdline {
         None => Err(Refusal::Missing(Word::Progenitor)),

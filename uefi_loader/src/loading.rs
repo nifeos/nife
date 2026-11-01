@@ -124,7 +124,8 @@ pub(crate) fn configuration_table(table: &SystemTable) -> &[ConfigurationTable] 
 
 /// **Copy the firmware's device tree below the ceiling, naming the archive in `/chosen`**, and
 /// putting the loader's two digests in `/chosen/bootargs` beside it (`embedded::LOADER_DIGESTS`,
-/// milestone 695). aarch64 and riscv64 both do this, identically.
+/// milestone 695 (the kernel trusts two digests handed to it by the loader)). aarch64 and riscv64
+/// both do this, identically.
 #[cfg(not(target_arch = "x86_64"))]
 pub(crate) fn copy_device_tree(
     services: &BootServices,

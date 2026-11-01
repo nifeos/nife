@@ -132,7 +132,8 @@ pub(crate) fn loader_digest_words(image: &[u8]) -> Option<String> {
 /// `.loader-digests` appended, so a runner given `NIFE_INITIAL_RAMDISK` needs nothing else
 /// (`helpers/qemu-runner-*.sh` pass it as `-append`).
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by milestone 695's lane, with the file suffix.
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader, with the file suffix.
 pub(crate) fn loader_digests_path(archive: &str) -> String {
     format!("{archive}.loader-digests")
 }

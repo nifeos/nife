@@ -375,6 +375,9 @@ pub const PROGRAM_MEASUREMENTS: &str = "program_measurements";
 /// and `uefi_loader`'s build all name it, so it lives here (rule 7). Like
 /// [`PROGRAM_MEASUREMENTS`], a string two programs agree on, provisional, and this paragraph is its
 /// record.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
 pub const PROGENITOR: &str = "progenitor";
 
 /// A manifest line [`manifest_entries`] could not read, and why.
@@ -540,35 +543,40 @@ pub fn verdict<'a>(table: &str, name: &str, bytes: Option<&'a [u8]>) -> Verdict<
 /// assert_eq!(loader_digests::parse("boot-slot=1"), Err(Refusal::Missing(Word::Progenitor)));
 /// ```
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by milestone 695's lane, with [`LoaderDigests`],
-/// [`Refusal`], [`Word`], [`encode`], [`parse`], [`MAXIMUM_BYTES`], [`PROGENITOR_KEY`] and
-/// [`BASE_KEY`]. The key `nife.base` was ruled 2026-11-01 (UTC); `nife.progenitor` is the
-/// proposal's. Considered a crate of its own (one more name for 80 lines that only reuse this
-/// crate's digest text) and `boot_slot` (which holds the chooser's words but not digests).
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader. Considered a crate of its own (one
+/// more name for 80 lines that only reuse this crate's digest text) and `boot_slot` (which holds the
+/// chooser's words but not digests).
 ///
 /// [`encode`]: loader_digests::encode
 /// [`parse`]: loader_digests::parse
-/// [`LoaderDigests`]: loader_digests::LoaderDigests
-/// [`Refusal`]: loader_digests::Refusal
-/// [`Word`]: loader_digests::Word
-/// [`MAXIMUM_BYTES`]: loader_digests::MAXIMUM_BYTES
-/// [`PROGENITOR_KEY`]: loader_digests::PROGENITOR_KEY
-/// [`BASE_KEY`]: loader_digests::BASE_KEY
 pub mod loader_digests {
     use super::{DIGEST_TEXT_LEN, Digest, DigestTextError, digest_text, parse_digest};
 
-    /// The progenitor's word's key, `=` included.
+    /// The progenitor's word's key, `=` included. Provisional; the proposal's spelling.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
     pub const PROGENITOR_KEY: &str = "nife.progenitor=";
 
-    /// The table's word's key, `=` included.
+    /// The table's word's key, `=` included. The word `nife.base` was ruled 2026-11-01 (UTC).
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
     pub const BASE_KEY: &str = "nife.base=";
 
     /// The length of both words and the one space between them: what [`encode`] writes, and what a
     /// loader adds to the command line it already writes.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
     pub const MAXIMUM_BYTES: usize =
         PROGENITOR_KEY.len() + DIGEST_TEXT_LEN + 1 + BASE_KEY.len() + DIGEST_TEXT_LEN;
 
     /// The two facts, decoded.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub struct LoaderDigests {
         /// The SHA-256 of the archive's progenitor entry.
@@ -578,6 +586,9 @@ pub mod loader_digests {
     }
 
     /// Which of the two words a [`Refusal`] is about.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum Word {
         /// `nife.progenitor=`.
@@ -588,6 +599,9 @@ pub mod loader_digests {
 
     impl Word {
         /// The word's key without its `=`, for a diagnostic.
+        ///
+        /// Name: provisional, minted 2026-11-01 (UTC) by
+        /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
         #[must_use]
         pub fn key(self) -> &'static str {
             let key = match self {
@@ -600,6 +614,9 @@ pub mod loader_digests {
 
     /// Why a command line does not carry the two digests. Every one halts the boot: the kernel has
     /// no second source for either fact.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum Refusal {
         /// No word with this key: a loader that does not write it, or a boot with no line at all.
@@ -615,6 +632,9 @@ pub mod loader_digests {
     /// `out` is shorter**. Zero rather than a panic for `boot_slot::cmdline::encode`'s reason: the
     /// caller may be a loader with no console left, and a line without the words is a boot the
     /// kernel refuses by name.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
     #[must_use]
     pub fn encode(digests: &LoaderDigests, out: &mut [u8]) -> usize {
         if out.len() < MAXIMUM_BYTES {
@@ -636,6 +656,9 @@ pub mod loader_digests {
 
     /// Read both words out of a whole command line. Other words are ignored, in any order; each
     /// key must appear exactly once and carry a digest in [`parse_digest`]'s grammar.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
     pub fn parse(cmdline: &str) -> Result<LoaderDigests, Refusal> {
         Ok(LoaderDigests {
             progenitor: one(cmdline, Word::Progenitor)?,

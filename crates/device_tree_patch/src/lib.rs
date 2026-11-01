@@ -1,6 +1,7 @@
 //! **Telling a device-tree kernel where its archive is**: a copy of the firmware's device tree with
 //! `/chosen/linux,initrd-start` and `linux,initrd-end` set, and with `/chosen/bootargs` set too
-//! when the loader hands the kernel a command line (its two digests, milestone 695).
+//! when the loader hands the kernel a command line (its two digests, milestone 695 (the kernel
+//! trusts two digests handed to it by the loader)).
 //!
 //! On aarch64 and riscv64 the kernel finds the userspace archive the way Linux finds an initial
 //! ramdisk, from those two properties (`memory::initialize`, via `DeviceTreeBlob::initial_ramdisk`).
@@ -154,7 +155,8 @@ pub fn output_len(src: &[u8]) -> Result<usize, Error> {
 /// [`output_len`] for [`with_initial_ramdisk_and_boot_arguments`]: room for a `bootargs` property
 /// holding `boot_arguments` and its NUL, and for its name, as well.
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by milestone 695's lane.
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
 pub fn output_len_with_boot_arguments(src: &[u8], boot_arguments: &[u8]) -> Result<usize, Error> {
     output_len_inner(src, Some(boot_arguments))
 }
@@ -263,7 +265,8 @@ pub fn with_initial_ramdisk(
 /// Text with a NUL in it is [`Error::Malformed`], as is a result that does not read back with both
 /// the range and the text.
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by milestone 695's lane.
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
 pub fn with_initial_ramdisk_and_boot_arguments(
     src: &[u8],
     start: u64,
