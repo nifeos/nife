@@ -30,7 +30,7 @@ Two older records already hold the question. Milestone 565 (a website for the pr
 milestone 684 (a documentation site, and documentation that ships in packages) each wait on a
 direction. §201 (one roadmap until a citation has to cross, and the blocked side declares the
 dependency) rules on citations across repositories. Its section 4 says a record points at code as
-`nifeos/<repo>@<sha>`, code does not cite records, and the numbering namespace stays with nife.
+`nifeos/<repo>@<sha>`, code does not cite records, and the numbering namespace stayed with nife until the ruling of 2026-11-01 (UTC) below.
 
 On 2026-11-01 (UTC) the architect ruled question 1 below. The record moves to one repository named
 `nifeos.org`, and the provisional name `nife-design` is withdrawn. That repository holds the whole
@@ -197,12 +197,13 @@ dependency approval.
 5. Measure whether the record's checks can be limited to the record's own directories, so a change
    to the site's other paths does not run them. The ruling of 2026-11-01 (UTC) makes this a
    condition of the one-repository shape, and it is not yet verified. Three checks are
-   repository-wide today. The `needs-architect` required check of §88 runs on every pull request and
+   repository-wide today. The `needs-architect` required check of §88 (`needs-architect` as a required check) runs on every pull request and
    merge group (`.github/workflows/architect-hold.yml`) with no path condition. `script/lint` runs
    every section, and `ci.yml` never skips its `lint` job. The merge queue tests a group against the
-   union of its queued changes, so one record change in a group runs every check for the others.
+   union of its queued changes. One record change in a group therefore runs every check for the
+   others.
    The constraint found so far: `ci.yml` records that a workflow skipped by a path filter leaves its
-   required checks Pending and blocks the merge, so the limit has to be a job-level condition that
+   required checks Pending and blocks the merge. So the limit has to be a job-level condition that
    reports Success when skipped, as `ci.yml` does for code. Whether that holds for `architect-hold`,
    whether the `script/lint` sections tagged in step 1 can be selected by directory, and what a
    mixed queue group runs are the three things to measure. If the limit proves impossible, the
@@ -248,16 +249,15 @@ One decision each, recommendation first. Ask them one at a time.
 
 1. Ruled 2026-11-01 (UTC): the repository is `nifeos.org`, one repository for the record and the
    whole site, as the Background states. Its condition is step 5's measurement.
-2. The citation identity once the record leaves code. §201 keeps the namespace with nife, and nife
-   now means a history-only repository. Recommended: (a) the number stays the identity and the
-   namespace moves with the record repository. Bare code paths mean the anchor commit, and new ones
-   use `nifeos/<repo>:<path>` at basalt's pin. Options: (b) a repository-qualified number; (c) the
-   slug, option C of milestone 533 (whether the roadmap should become issues, and what a citation
-   means after the repository split); (d) the website address. This amends §201 section 4.
+2. Ruled 2026-11-01 (UTC), as recommended: the number stays the identity and the namespace moves
+   with the record to `nifeos.org`. Bare code paths mean the anchor commit, and new ones use
+   `nifeos/<repo>:<path>` at basalt's pin. The site gives each number a stable address derived from
+   the number alone. §201 section 4 is amended, and its revisit condition stays armed.
 3. Hosting and address. Publication cannot be undone once strangers quote a page, so the address
    matters more than the host. Recommended: (a) GitHub Pages at the organization's `github.io`
-   address, with number-based paths so a later domain changes only the host. Options: (b) a domain
-   from day one, which needs a registration; (c) Cloudflare Pages, Netlify or Read the Docs.
+   address, with number-based paths so a later domain changes only the host. The architect named the
+   domain nifeos.org on 2026-11-01 (UTC); its registration and host are unverified. Options: (b) a
+   domain from day one, which needs a registration; (c) Cloudflare Pages, Netlify or Read the Docs.
 4. Which records stay with code. Recommended: (a) the record takes roadmap, decisions, journeys,
    naming, tenets, cross-cutting notes, `briefs/` and the lane skills. Each code repository keeps
    its crate documentation, its `BUGS` sections, notes about it alone, its lint baselines and
@@ -268,4 +268,4 @@ One decision each, recommendation first. Ask them one at a time.
    publishes on the site. Its source could sit in the `nifeos.org` repository or in a repository of
    its own. Not asked yet; it needs background and a recommendation first.
 
-Blocked until questions 2 to 4 are answered: steps 6 to 8. Nothing in flight waits on this.
+Blocked until questions 3 and 4 are answered: steps 6 to 8. Nothing in flight waits on this.
