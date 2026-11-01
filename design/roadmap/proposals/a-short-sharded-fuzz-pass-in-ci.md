@@ -54,15 +54,15 @@ waits for the host.
   existing path: private until its fix merges, a private security advisory first.
 - Check that fails without the change: a lint section asserts that `ci.yml` has a job running
   `helpers/continuous-fuzz.sh --ci`, that no step in it echoes, `cat`s, tees or uploads the shard
-  log, and that its `runs-on` is not self-hosted. A second test runs `--ci` against a stub guest
+  log, and that it never runs on a self-hosted runner. A second test runs `--ci` against a stub guest
   that prints a `replay:` line and asserts that the output holds the count and no seed.
 
 ## What I need from you
 
 1. Does it need to run on `pull_request`, or is `merge_group` enough? The
-   recommendation is `merge_group` only: a fork pull request on a public repository writes its log
-   where anyone can read it, and the private-finding rule holds more easily when the job runs only
-   on the queue entry of a pull request a maintainer already admitted. Loosening later is compatible.
+   recommendation is `merge_group` only. A fork pull request on a public repository writes its log
+   where anyone can read it. The private-finding rule holds more easily when the job runs only
+   on the queue entry of a pull request a maintainer already let in. Loosening later is compatible.
 2. May a finding found at queue time fail the entry and block the merge? Nobody has fixed the harness false reds yet
    (guests that fail on a deadline under load, where the seed replays green); the continuous fuzzing
    proposal records them. The recommendation is to land the job as non-required until
