@@ -166,7 +166,8 @@ slot. Every new name here is provisional.
   9,391,104-byte archive with the same SHA-256 before and after the move, and a fixture archive in
   the crate's tests holds the digest the old packer gave it.
 - **Outstanding.** Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
-  load the members and print each refusal's phrase, and teaches xtask to write version 2.
+  load the members and print each refusal's phrase, and teaches xtask to write version 2. It also widens `boot_slot::members` from the 188 bytes part 4a
+  wrote to the 252 bytes ruled below: the two digest fields, the CRC range and the padding check.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself. Basalt
@@ -187,12 +188,16 @@ slot. Every new name here is provisional.
   proposal. Step 3, the loader's two digests, is milestone
   607's item 6 and not this block's.
 
-- **Outstanding.** Ruled 2026-11-01 (UTC), part 4's header. Version 2 is 188 bytes in a 4096-byte block, the rest
+- **Outstanding.** Ruled 2026-11-01 (UTC), part 4's header. Version 2 is 252 bytes in a 4096-byte block, the rest
   zero. The fields are magic 8, version 4, reserved zero 4, three 56-byte entries (tag 8, offset 8, length 8,
-  SHA-256 digest 32), then a CRC-32 of bytes 0 to 184. The tags are KERNEL, ARCHIVE and MANIFEST
+  SHA-256 digest 32), the progenitor's SHA-256 digest 32, the base digest 32 (the digest of the
+  archive's `program_measurements` table), then a CRC-32 of bytes 0 to 248 at bytes 248 to 252. The
+  updater writes the two digests from the system manifest and the progenitor. The chooser copies them
+  into the kernel command line words and never computes them (milestone 695's proposal, option A of
+  its question 2). The base word is `nife.base`; the progenitor word's spelling is open. The tags are KERNEL, ARCHIVE and MANIFEST
   (provisional spellings), exactly three, with no count field. Members start at multiples of 4096 in
   table order, without overlap, inside the partition. The chooser refuses an unknown, duplicate or
-  missing tag, a layout break, nonzero reserved or padding bytes, and an unknown header version
+  missing tag, a layout break, nonzero reserved or padding bytes (padding is after byte 252), and an unknown header version
   (it reads 1 and 2). It skips a refused slot for that boot, writes nothing to the partition-table
   bits and prints a fixed reason phrase per check. The updater writes only version 2. When
   both slots are refused, the chooser prints each slot's reason and then boots its own embedded
