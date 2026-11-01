@@ -166,7 +166,8 @@ pub fn encode_module(addr: u64, size: u64) -> [u8; MODULE_ENTRY_LEN] {
 /// milestone 445 (the screen check stops sampling and starts asking), counted whether or not that
 /// feature is on so a caller's buffer has one length rather than two; then
 /// `boot_slot::cmdline::MAXIMUM_BYTES`, the slot token an installed machine's chooser writes and
-/// every other boot leaves off.
+/// every other boot leaves off; then the loader's two digests,
+/// `measured_boot::loader_digests::MAXIMUM_BYTES`, which every boot with an archive carries.
 pub const CMDLINE_LEN: usize = machine_discovery::framebuffer::Framebuffer::MAXIMUM_BYTES
     + 1
     + machine_discovery::framebuffer::SCREEN_HOLD.len()
@@ -174,26 +175,34 @@ pub const CMDLINE_LEN: usize = machine_discovery::framebuffer::Framebuffer::MAXI
     + boot_slot::cmdline::MAXIMUM_BYTES
     + 1
     + boot_slot::medium::MAXIMUM_BYTES
+    + 1
+    + measured_boot::loader_digests::MAXIMUM_BYTES
     + 1;
 
 /// **Write the kernel's boot command line**, NUL-terminated; returns its length without the NUL,
-/// or 0 when there is nothing to say (no screen, no chooser) and the caller writes none. Up to four
-/// words, in order: the screen (milestone 243; `None` with no graphics output); the slot key
-/// `boot_slot::cmdline::KEY` and a digit, **only** when a chooser started this image;
-/// `boot_slot::medium::NVME` when this boot came from the NVMe disk; and `SCREEN_HOLD` under the
-/// `screen_hold` feature. Written here so a host test reads it back with the kernel's own parsers;
+/// or 0 when there is nothing to say (no screen, no chooser, no archive) and the caller writes
+/// none. Up to five words, in order: the screen (milestone 243; `None` with no graphics output);
+/// the slot key `boot_slot::cmdline::KEY` and a digit, **only** when a chooser started this image;
+/// `boot_slot::medium::NVME` when this boot came from the NVMe disk; `SCREEN_HOLD` under the
+/// `screen_hold` feature; and `loader_digests`, the two digest words the build embedded beside the
+/// archive (`measured_boot::loader_digests`, milestone 695), empty with no archive. Written here so a host test reads it back with the kernel's own parsers;
 /// notes/x86-uefi-boot/loader-design.md has each word's contract.
 ///
 /// # Panics
-/// If `out` is shorter than [`CMDLINE_LEN`].
+/// If `out` is shorter than [`CMDLINE_LEN`], or `loader_digests` is longer than the two words.
 #[must_use]
 pub fn cmdline(
     screen: Option<&machine_discovery::framebuffer::Framebuffer>,
     from_slot: Option<u8>,
     on_nvme: bool,
+    loader_digests: &str,
     out: &mut [u8],
 ) -> usize {
     assert!(out.len() >= CMDLINE_LEN, "cmdline needs CMDLINE_LEN bytes");
+    assert!(
+        loader_digests.len() <= measured_boot::loader_digests::MAXIMUM_BYTES,
+        "the digest words are longer than the two words"
+    );
     #[allow(unused_mut)]
     let mut n = 0usize;
 
@@ -236,6 +245,15 @@ pub fn cmdline(
         n += word.len();
     }
 
+    if !loader_digests.is_empty() {
+        if n > 0 {
+            out[n] = b' ';
+            n += 1;
+        }
+        out[n..n + loader_digests.len()].copy_from_slice(loader_digests.as_bytes());
+        n += loader_digests.len();
+    }
+
     if n == 0 {
         return 0;
     }
@@ -275,7 +293,7 @@ mod tests {
             order: PixelOrder::Bgrx,
         };
         let mut out = [0u8; CMDLINE_LEN];
-        let n = cmdline(Some(&screen), None, false, &mut out);
+        let n = cmdline(Some(&screen), None, false, "", &mut out);
         assert_eq!(
             out[n], 0,
             "the line is NUL-terminated at the length returned"
@@ -375,7 +393,7 @@ mod tests {
         for with_screen in [None, Some(&screen)] {
             for slot in [0u8, 1] {
                 let mut out = [0u8; CMDLINE_LEN];
-                let n = cmdline(with_screen, Some(slot), true, &mut out);
+                let n = cmdline(with_screen, Some(slot), true, "", &mut out);
                 assert_eq!(out[n], 0, "NUL-terminated at the length returned");
                 let line = core::str::from_utf8(&out[..n]).expect("ASCII");
                 assert_eq!(
@@ -408,7 +426,7 @@ mod tests {
         };
         let line = |screen: Option<&Framebuffer>, slot: Option<u8>| {
             let mut out = [0u8; CMDLINE_LEN];
-            let n = cmdline(screen, slot, false, &mut out);
+            let n = cmdline(screen, slot, false, "", &mut out);
             String::from_utf8(out[..n].to_vec()).unwrap()
         };
         let hold = if cfg!(feature = "screen_hold") {
@@ -439,7 +457,7 @@ mod tests {
     #[cfg(not(feature = "screen_hold"))]
     fn no_screen_and_no_chooser_is_an_empty_line_rather_than_a_blank_one() {
         let mut out = [0xAAu8; CMDLINE_LEN];
-        assert_eq!(cmdline(None, None, false, &mut out), 0);
+        assert_eq!(cmdline(None, None, false, "", &mut out), 0);
         assert_eq!(out[0], 0xAA, "nothing was written, not even a terminator");
     }
 
@@ -450,13 +468,68 @@ mod tests {
     fn the_boot_medium_is_on_the_line_only_for_a_boot_from_the_nvme_disk() {
         for (slot, on_nvme) in [(None, true), (Some(0), true), (None, false)] {
             let mut out = [0u8; CMDLINE_LEN];
-            let n = cmdline(None, slot, on_nvme, &mut out);
+            let n = cmdline(None, slot, on_nvme, "", &mut out);
             let line = core::str::from_utf8(&out[..n]).expect("ASCII");
             assert_eq!(boot_slot::medium::is_nvme(line), on_nvme, "{line:?}");
             assert_eq!(boot_slot::cmdline::parse(line), slot, "{line:?}");
             // No separator before the first token or after the last.
             assert_eq!(line.trim(), line, "{line:?}");
         }
+    }
+
+    /// The two digest words for an archive, as the build embeds them.
+    fn the_two_words() -> std::string::String {
+        let digests = measured_boot::loader_digests::LoaderDigests {
+            progenitor: measured_boot::sha256(b"progenitor"),
+            base: measured_boot::sha256(b"program_measurements"),
+        };
+        let mut out = [0u8; measured_boot::loader_digests::MAXIMUM_BYTES];
+        let n = measured_boot::loader_digests::encode(&digests, &mut out);
+        std::string::String::from_utf8(out[..n].to_vec()).expect("ASCII")
+    }
+
+    /// **The kernel reads the loader's two digests back out of the line this writes**, alone and
+    /// beside every other word, with the kernel's own parsers, and the other words still read.
+    #[test]
+    fn the_kernel_reads_back_the_two_digests_this_writes() {
+        use machine_discovery::framebuffer::{Framebuffer, PixelOrder};
+
+        let words = the_two_words();
+        let want = measured_boot::loader_digests::parse(&words).expect("the words parse");
+        let screen = Framebuffer {
+            base: 0x8000_0000,
+            width: 800,
+            height: 600,
+            stride: 3200,
+            order: PixelOrder::Bgrx,
+        };
+        for (with_screen, slot, on_nvme) in [
+            (None, None, false),
+            (Some(&screen), None, false),
+            (Some(&screen), Some(1), true),
+            (None, Some(0), true),
+        ] {
+            let mut out = [0u8; CMDLINE_LEN];
+            let n = cmdline(with_screen, slot, on_nvme, &words, &mut out);
+            assert!(n > 0);
+            let line = core::str::from_utf8(&out[..n]).expect("ASCII");
+            assert_eq!(
+                measured_boot::loader_digests::parse(line),
+                Ok(want),
+                "{line:?}"
+            );
+            assert_eq!(boot_slot::cmdline::parse(line), slot, "{line:?}");
+            assert_eq!(boot_slot::medium::is_nvme(line), on_nvme, "{line:?}");
+            assert_eq!(line.trim(), line, "{line:?}");
+        }
+    }
+
+    /// **The kernel reads the whole of the longest line**: its bound, `MAXIMUM_CMDLINE` in
+    /// `kernel/src/arch/x86_64/machine.rs`, is 512 bytes, and a line cut short there would lose the
+    /// digests, which come last.
+    #[test]
+    fn the_longest_line_fits_what_the_kernel_reads() {
+        assert!(CMDLINE_LEN <= 512, "{CMDLINE_LEN}");
     }
 
     /// **Every token this writer can emit fits [`CMDLINE_LEN`]**, asserted rather than added up by
@@ -476,7 +549,7 @@ mod tests {
             order: PixelOrder::Bgrx,
         };
         let mut out = [0u8; CMDLINE_LEN];
-        let n = cmdline(Some(&screen), Some(9), true, &mut out);
+        let n = cmdline(Some(&screen), Some(9), true, &the_two_words(), &mut out);
         assert!(
             n < CMDLINE_LEN,
             "{n} bytes and a NUL must fit {CMDLINE_LEN}"

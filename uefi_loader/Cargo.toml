@@ -114,6 +114,13 @@ uuid = { version = "1.28.0", default-features = false }
 # and not a new edge in the graph either, since `machine_discovery` above already depends on it.
 device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
 
+# **The grammar of the two digests this loader hands the kernel** (`measured_boot::loader_digests`,
+# milestone 695): `handoff::cmdline` sizes the x86_64 line by it, and the host tests read the line
+# back with the kernel's parser. Ours, in this workspace, and already in this loader's build graph
+# through `sealed_pair`; its one dependency is `elf`, also ours. Not a §46 (thin primitives or whole
+# subsystems) decision.
+measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
+
 # **The rewriter that tells a device-tree kernel where its archive is**: the firmware's tree copied
 # with `/chosen/linux,initrd-{start,end}` set (`src/loading.rs`), and the token writer
 # `src/device_tree_from_acpi.rs` builds a tree with. Ours, in this workspace; its one dependency is
@@ -147,3 +154,10 @@ uefi_loader = { version = "0.1.0", path = ".", features = ["screen_hold"] }
 # checker. Ours, in this workspace; its own two dependencies are `nifefs` and `measured_boot`, both
 # ours and neither with dependencies of its own. Not a §46 (thin primitives or whole subsystems) decision.
 sealed_pair = { version = "0.1.0", path = "../crates/sealed_pair" }
+# **The words the build embeds beside the archive** (`build.rs`'s `loader_digests`): read from the
+# file `cargo xtask` wrote beside the archive and checked with the kernel's own parser, so a loader
+# never embeds words the kernel would refuse. Ours; see the dependency of the same name above.
+measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }
+# And the archive reader that holds those words to the archive's own entries. Ours, no
+# dependencies, and already `sealed_pair`'s.
+nifefs = { version = "0.1.0", path = "../crates/nifefs" }

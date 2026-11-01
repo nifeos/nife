@@ -1673,6 +1673,8 @@ dependencies = [
  "elf",
  "globally_unique_identifier_partition_table",
  "machine_discovery",
+ "measured_boot",
+ "nifefs",
  "r-efi",
  "screen_console",
  "sealed_pair",
