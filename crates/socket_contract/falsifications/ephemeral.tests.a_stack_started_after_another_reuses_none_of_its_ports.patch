@@ -1,6 +1,6 @@
 Falsifies `socket_contract::ephemeral::tests::a_stack_started_after_another_reuses_none_of_its_ports`.
 
-The defect: the cursor is seeded once from the counter, as milestone 801 (packages over the internet) seeded it
+The defect: the cursor is seeded once from the counter, as an earlier version seeded it
 (the riscv64 counter's 10 MHz), instead of following the boot clock. Each stack's start is then
 a point unrelated to the last stack's ports, and some gap lands it on them.
 
@@ -10,7 +10,7 @@ diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.
 index 6fbaed8b1..43a9374fb 100644
 --- a/crates/socket_contract/src/lib.rs
 +++ b/crates/socket_contract/src/lib.rs
-@@ -340,7 +340,9 @@ pub mod ephemeral {
+@@ -313,7 +313,9 @@ pub mod ephemeral {
          /// holds. Bounded by the range, so it always returns; a stack holds far fewer sockets than
          /// the range has ports, so in practice the first or second candidate is free.
          pub fn next(&mut self, ms: u64, held: impl Fn(u16) -> bool) -> u16 {

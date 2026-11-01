@@ -1,28 +1,28 @@
 #![cfg_attr(not(test), no_std)]
-//! The socket contract wire format, shared by `net_stack` and its clients. Each socket is its own
-//! capability (§255 (each socket is its own capability)): a process holds a front door that can
+//! The socket contract wire format, shared by a network stack and its clients. Each socket is its
+//! own capability: a process holds a front door that can
 //! only make sockets, and one capability per open socket. Opening and `LISTEN` are `CALL`s on the
 //! front door answered with the socket's capability; every other operation is a `CALL` on the
 //! socket, with an opcode, one argument and one reply word. The stack names a socket only by its
 //! kernel-stamped [`SOCKET_BADGE`], so a closed socket's copies reach nothing. A port claim is
-//! granted at spawn ([`listen_grant`], [`udp_bind_grant`]), never assumed. See notes/net.md and
-//! notes/net/the-socket-contract.md.
+//! granted at spawn ([`listen_grant`], [`udp_bind_grant`]), never assumed.
 
 //! # BUGS
 //!
 //! - A grant is the stack's, shared by every holder of its front door; a per-client grant would
 //!   ride on a badged front door, which nothing builds yet.
 //! - A listener's backlog is one connection: a second arriving before `ACCEPT` is refused by TCP.
+//! - The [`fixture`] module holds the fixed addresses and messages of nife's own QEMU test
+//!   runners. They are a test harness's facts, not part of this contract, and belong with that
+//!   harness.
 //!
 //! Name: ratified 2026-08-01 (calef, the naming tenet); `_contract` per calef's 2026-10-18 ruling.
 
 // Operations. The opcode is the whole request word.
 
-/// The protocol's version, one for the operation set and the reply shapes together (calef's
-/// ruling of 2026-10-29 UTC, PR #2852, question 1: one constant per wire format). A break bumps
-/// this and owes the dated ledger entry the interface-stability discipline records; an addition
-/// (a new opcode, an optional field) owes no bump. The check lives at bind (milestone 956 (the
-/// linked interfaces carry checkable versions)): a client `CALL`s `OPERATION_VERSION` on the
+/// The protocol's version, one for the operation set and the reply shapes together: one constant
+/// per wire format. A break bumps this and owes a dated ledger entry; an addition (a new opcode, an
+/// optional field) owes no bump. The check lives at bind: a client `CALL`s `OPERATION_VERSION` on the
 /// front door and binds only when its own version is in the served set.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
@@ -47,7 +47,7 @@ pub const OPERATION_SEND: u64 = 7;
 pub const OPERATION_CLOSE: u64 = 8;
 /// `CALL(front door, OPERATION_LISTEN, port)`: start listening on `port`. Replies one of the
 /// [`LISTEN_GRANTED`] outcomes, and a granted one carries the listener's capability. Names
-/// provisional (milestone 107 (the socket contract learns to accept)).
+/// provisional.
 pub const OPERATION_LISTEN: u64 = 9;
 /// `CALL(listener, OPERATION_ACCEPT, 0)`: block until a connection arrives on this listener, then
 /// answer [`REP_OK`] carrying the connection's capability, or [`REP_ERR`]. The listener keeps
@@ -56,13 +56,12 @@ pub const OPERATION_ACCEPT: u64 = 10;
 /// `CALL(front door, OPERATION_BIND_UDP, port)`: create a UDP socket bound to the fixed
 /// `port`, subject to the stack's [`udp_bind_grant`]. Replies the [`LISTEN_GRANTED`] vocabulary,
 /// which is the port-claim vocabulary rather than a TCP one, and a granted one carries the socket's
-/// capability. Name provisional (milestone 55 (Time Machine: SMB3 with Apple's extensions, and
-/// mDNS)'s mDNS stack half).
+/// capability. Name provisional.
 pub const OPERATION_BIND_UDP: u64 = 11;
 
-/// The badge bit that marks a socket's capability (§255 (each socket is its own capability);
-/// name provisional). The stack mints every socket's badge with this bit set, so a request whose
-/// badge has it names a socket and any other badge is a front door. A closed socket's badge stays
+/// The badge bit that marks a socket's capability (name provisional). The stack mints every
+/// socket's badge with this bit set, so a request whose badge has it names a socket and any other
+/// badge is a front door. A closed socket's badge stays
 /// in the socket range and leaves the stack's table, so it reaches nothing at all.
 pub const SOCKET_BADGE: u64 = 1 << 63;
 
@@ -142,9 +141,8 @@ pub const fn grant_allows(grant: u64, port: u16) -> bool {
     lo != 0 && port >= lo && port <= hi
 }
 
-/// Pack an inclusive UDP bind port range into the high half of the spawn word (milestone 55's
-/// mDNS stack half; the [`listen_grant`] holds the low half, and the two compose with `|`). The
-/// same degenerate cases as the listen grant, for the same reasons: `lo == 0` grants nothing, and
+/// Pack an inclusive UDP bind port range into the high half of the spawn word (the
+/// [`listen_grant`] holds the low half, and the two compose with `|`). The same degenerate cases as the listen grant, for the same reasons: `lo == 0` grants nothing, and
 /// an inverted range is a spawn-site mistake whose safe reading is "grants nothing".
 ///
 /// # Examples
@@ -192,13 +190,12 @@ pub const fn udp_grant_allows(grant: u64, port: u16) -> bool {
 }
 
 pub mod polled_wait {
-    //! Whether `net_stack` may sleep while it waits on a NIC that raises no interrupt (the
-    //! `e1000e` and radon's `DesignWare` port; `components/src/nic_wait.rs`). For one scheduler
+    //! Whether the network stack may sleep while it waits on a NIC that raises no interrupt (the
+    //! `e1000e` and a `DesignWare` port). For one scheduler
     //! tick after the last frame the stack yields and looks at the ring again, and it sleeps only
     //! once a whole tick has passed with nothing, because a timed wait ends at a tick and a sleep
     //! would add up to a tick to every round trip. Here so its claim is a host test; only
-    //! `net_stack` uses it. The module's name is provisional (milestone 53 (the board's own
-    //! peripherals)). See notes/net/the-socket-contract.md.
+    //! the network stack uses it. The module's name is provisional.
 
     //! # BUGS
     //!
@@ -273,12 +270,11 @@ pub mod polled_wait {
 }
 
 pub mod ephemeral {
-    //! Which local port `net_stack` gives an outbound socket: the private ephemeral range, walked
+    //! Which local port the network stack gives an outbound socket: the private ephemeral range, walked
     //! by a cursor that never falls behind the boot clock. An allocation takes the later of the
     //! cursor and a clock advancing [`PER_SECOND`] ports a second, so a fresh stack starts past the
     //! ports an earlier one used, which a peer may still hold in `TIME_WAIT`. Here so its claim is
-    //! a host test; only `net_stack` uses it. The module's name is provisional. See
-    //! notes/net/the-socket-contract.md and notes/net/the-outbound-gates.md.
+    //! a host test; only the network stack uses it. The module's name is provisional.
 
     //! # BUGS
     //!
@@ -420,10 +416,9 @@ pub mod ephemeral {
     }
 }
 
-/// Where a network stack finds the two capabilities §255 (each socket is its own capability)
-/// added to its spawn, which its spawners (the progenitor, and the kernel's test harness) and the
-/// stack itself must agree on, so they are here under rule 7 rather than spelled per program. Names
-/// provisional.
+/// Where a network stack finds the two capabilities that per-socket capabilities added to its
+/// spawn, which its spawners and the stack itself must agree on, so they are here rather than
+/// spelled per program. Names provisional.
 pub mod stack_slots {
     /// The stack's own endpoint again, `WRITE | GRANT`: what each socket's capability is minted
     /// from with `BADGE`, which keeps the source's rights. Not the `READ` copy the stack serves on,
@@ -456,10 +451,9 @@ pub const OFF_PAYLOAD: u64 = 0x008;
 /// Name: ratified 2026-10-27 (#2797).
 pub const DATA_MAXIMUM: usize = 4096 - OFF_PAYLOAD as usize;
 
-/// The inbound gate's shared facts, for the four programs that must agree on them (rule 7). The
-/// host's copy is deliberately not here: `xtask`'s prober and `helpers/qemu-runner-*.sh` spell
-/// them again, so the gate proves two independently written sides agree. See
-/// notes/net/the-socket-contract.md.
+/// The inbound gate's shared facts, for the programs that must agree on them. The host's copy is
+/// deliberately not here: the host side spells them again, so the gate proves two independently
+/// written sides agree. These are nife's test harness's facts, not part of the contract.
 pub mod fixture {
     /// The port the inbound gate listens on, and the guest side of the runners' `hostfwd`. Both
     /// ISA legs use the same number because they run one after the other and never hold it at once.
@@ -482,17 +476,15 @@ pub mod fixture {
     pub const ROUNDS: usize = 2;
 
     /// The runners' TCP echo peer: a `guestfwd` inside QEMU's user-mode network that pipes every
-    /// connection to `10.0.2.9:7777` into a fresh `/bin/cat` (`helpers/qemu-runner-aarch64.sh`,
-    /// and its riscv64 twin). Two binaries dial it, so it is here; the runners spell it a third
+    /// connection to `10.0.2.9:7777` into a fresh `/bin/cat`. Two binaries dial it, so it is here; the runners spell it a third
     /// time for [`LISTEN_PORT`]'s reason.
     pub const ECHO_PEER_IP: [u8; 4] = [10, 0, 2, 9];
     /// The echo peer's port; see [`ECHO_PEER_IP`].
     pub const ECHO_PEER_PORT: u16 = 7777;
 
-    /// The runners' package source: a `guestfwd` that runs `helpers/package-http-peer` once per
-    /// connection to `10.0.2.9:8080`, serving packages over HTTP/1.0 (milestone 198 (a package
-    /// manager) rung 3a). `socket_test_client` and `jig install <name>` dial it (rule 7). Only
-    /// reachable inside a QEMU runner (notes/packages.md's BUGS).
+    /// The runners' package source: a `guestfwd` that runs a package server once per
+    /// connection to `10.0.2.9:8080`, serving packages over HTTP/1.0. Two programs dial it. Only
+    /// reachable inside a QEMU runner.
     pub const PACKAGE_PEER_IP: [u8; 4] = [10, 0, 2, 9];
     /// The package source's port; see [`PACKAGE_PEER_IP`]. The same number as [`DENIED_PORT`], and
     /// unrelated to it: that is a port a *guest* may not listen on, this is one on a *host* the
@@ -502,11 +494,11 @@ pub mod fixture {
     pub const PACKAGE_PEER_HOST: &str = "10.0.2.9";
 }
 
-/// The lease report `net_stack` sends its spawner once DHCP completes, provisional, as is the name
-/// (milestone 384 (in a capability system the resolver is a grant)). Word 0 is the leased IPv4
+/// The lease report the network stack sends its spawner once DHCP completes, provisional, as is the
+/// name. Word 0 is the leased IPv4
 /// address, big-endian in the low 32 bits; word 1 the first DNS server the lease named, for the
-/// resolver's spawner (§248 (the name resolver is its own confined program)), the same encoding or
-/// [`lease::NO_NAMESERVER`]; word 2 is zero and reserved. See notes/net/the-socket-contract.md.
+/// resolver's spawner (the name resolver is its own confined program), the same encoding or
+/// [`lease::NO_NAMESERVER`]; word 2 is zero and reserved.
 ///
 /// ```
 /// use socket_contract::lease;
@@ -713,7 +705,7 @@ mod tests {
             "one above the range was allowed"
         );
 
-        // The single-port grant is the one milestone 55 actually spawns (mDNS's 5353).
+        // The single-port grant is the one the multicast name service actually spawns with (5353).
         let one = udp_bind_grant(5353, 5353);
         assert!(udp_grant_allows(one, 5353));
         assert!(!udp_grant_allows(one, 5354));
