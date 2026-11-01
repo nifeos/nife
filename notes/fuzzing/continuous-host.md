@@ -81,7 +81,7 @@ publishes nothing. Phase 2 publishes the release, and takes three more steps as 
    file, `Environment=NIFE_FUZZ_PUBLISH=1`, and an `ExecStart=` that first clears the shipped one
    (`ExecStart=` on its own line) and then runs `helpers/fuzz-daily-publish.sh --publish`. The unit as
    shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag.
-3. Run `systemctl daemon-reload`. Without `NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and
+3. Tell systemd to reread its unit files, as for the install above. Without `NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and
    without the credential `gh` fails; either way the local files are still written.
 
 To check the wiring before the first release, run `helpers/fuzz-daily-publish.sh --dry-run` as the
