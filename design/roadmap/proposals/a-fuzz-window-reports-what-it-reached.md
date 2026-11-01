@@ -12,7 +12,7 @@ needs_person: no
 Lane/fuzz-window-coverage-counters raised this on 2026-11-01 (UTC) while looking for the milestone
 that names fuzz coverage counters for the continuous host. None exists. The only text is a decision
 of 2026-10-31 (UTC) in [the fuzz budget proposal](the-fuzz-budget-that-counts-for-risk-7.md)
-that the compiler inserts inline 8-bit counters into both in-guest drivers. The other is a line in the BUGS list of
+that the compiler inserts inline 8-bit counters into the kernel code that both in-guest drivers exercise. The other is a line in the BUGS list of
 [the host note](../../../notes/fuzzing/continuous-host.md). Neither has a scope, so
 this lane wrote none of the code and stops here.
 
