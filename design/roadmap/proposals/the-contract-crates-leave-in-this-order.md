@@ -12,7 +12,7 @@ needs_person: yes
 Raised 2026-11-01 (UTC) by the lane `lane/contract-crates-move-order`. It answers two questions: in
 what order the 22 crates that the first cut's programs link could leave this repository, and what
 policy makes frequent breaking change safe across repositories. It moves no crate and changes no
-code. Every new name below is provisional. The text states each ruling of 2026-11-01 (UTC).
+code. Every new name below is provisional. The text states each ruling (2026-11-01 UTC).
 
 Reuse: the measurements reuse `cargo metadata`, git's rename detection and milestone 610's
 series; the policy reuses milestone 956's constants, the crate template and basalt's gate.
@@ -89,7 +89,9 @@ package leaves as soon as its own crates have left, in the order `disk-tools`, `
 `core-tools`, replacing milestone 756's single cut, and `block_roster` stays the first crate a
 consumer outside nife reads. Ruled the same day: one repository per contract crate, created when
 the crate moves and only with the architect's approval of that exact repository. No lane creates
-one. A repository per package or per layer is refused.
+one. A repository per package or per layer is refused. The four crates whose disposition is contribute
+(`globally_unique_identifier_partition_table`, `glob`, `domain_name_system`, `calendar`) move in this
+order too (ruled 2026-11-01 UTC); only the offer waits.
 
 | step | crates | why here |
 |---|---|---|
@@ -220,16 +222,15 @@ crate's own repository instead.
 - A. Bottom-up, one repository per crate, the order above: ruled 2026-11-01 (UTC).
 - B. Programs first and the SDK last, the 2026-10-04 order: refused by the second direction. Each
   of the three program repositories would pin nife for 12 to 15 crates.
-- C. All 22 into one repository in one move: it saves 5 crossing commits in 348. It makes the
+- C. All 22 into one repository in one move: it saves 5 crossing commits in 348, takes the
   largest one-way step at once and gives no contract its own version.
-- D. Highest churn first, to practice where it hurts: `grant_plan` sits a layer up and needs three
-  crates first, so bottom-up already fixes its place.
-- E. Wait for crates to settle: refused by the first direction.
+- D. Highest churn first: `grant_plan` sits a layer up and needs three crates first, so bottom-up
+  already fixes its place.
+- E. Wait for crates to settle: refused.
 
 ## Reversibility
 
-A move is cheap to undo while nife and basalt are its only consumers: copy the crate back and drop
-the pin. Fuchsia's 2019 fold-back of its layers is the precedent. Other parties act on four things,
+A move is cheap to undo while only nife and basalt consume it: copy the crate back. Other parties act on four things,
 and those make the door narrow: a repository name, a published crate version (crates.io never deletes
 one), an `INTERFACE_ID` value and a release binary that compares a magic. The two reverts above came
 from the fourth. So the moved crates stay unpublished under §305 until their own release milestone.

@@ -77,7 +77,9 @@ FAT crate's.
 The publish-ours steps hold only publish dispositions. The survey's contribute rows (paging, the GPT parser,
 `elf`, `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) wait,
 by the ruling of 2026-10-27 (UTC), until a published crate has users who ask for them upstream, so
-nife controls no externalization step for them today. No crate stays in this tree by default
+nife controls no upstream step for them today. That wait covers the offer only. Ruled 2026-11-01
+(UTC): the four crates among the 22 move in pull request #3026's order, each to a repository of its
+own, and a later offer comes from that repository. No crate stays in this tree by default
 (ruled 2026-11-01 (UTC); 857's item 7 is withdrawn). calef refused milestone 821 (`portable_executable`: an
 ELF-to-PE converter, proven, then released on its own) on 2026-10-21 (UTC): its input is nife's own
 build product, so a published proof protects no known user. The crate no longer exists, and the

@@ -152,3 +152,14 @@ that the ruling does not place. Unverified, not decided:
 - Whether the QEMU runners (254 path references in 64 files) can start the server from a pinned
   image and not from a path in the tree.
 - Where `vendor/talc` goes.
+
+## 7. Do the contribute-disposition crates wait to move?
+
+Ruled 2026-11-01 (UTC): no. The ruling of 2026-10-27 (contribute rows wait until a published crate
+has users who ask upstream) covers the upstream offer only. The four contribute crates among the 22
+(`globally_unique_identifier_partition_table` at step 2, `glob` and `domain_name_system` at step 5,
+`calendar` at step 8) move in the order like the other 18. Each gets its own repository, tag and
+version and a consumer pins it by `rev` with the version stated. Each waits for the architect's hand
+review under amended §247. Nothing is offered upstream, published or sent; that stays gated on the
+2026-10-27 ruling, approval of each upstream submission and the AI-policy ruling (milestone 857,
+fork 8). A crate later contributed has its repository as the source of the offer.
