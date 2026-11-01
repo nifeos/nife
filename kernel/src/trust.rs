@@ -110,9 +110,33 @@ pub(crate) fn require_program_measurements(fs: &nifefs::Fs<'_>) {
 )]
 pub fn require_program(name: &str) -> Option<&'static [u8]> {
     let fs = nifefs::Fs::parse(crate::user::initial_ramdisk()?).ok()?;
+    require_program_in(&fs, name)
+}
+
+/// [`require_program`] for an archive the caller has already parsed: the table against this kernel
+/// image, then `name` against the table. `spawn_elf_child_builder` enters the six test child
+/// builders through it, so a test kernel's trust root is the production kernel's, the progenitor
+/// and the table, and the builders are vouched for the way every other program is (milestone 697
+/// (the trust root leaves the kernel binary), part 1, ruled 2026-11-01 UTC).
+///
+/// Name: provisional, minted by milestone 697's lane to sit beside [`require_program`]. calef names
+/// public functions.
+#[cfg_attr(
+    not(any(
+        feature = "system_tests",
+        feature = "bench",
+        feature = "soak_test",
+        feature = "job_mix",
+        feature = "disk_throughput",
+        feature = "network_bench",
+        feature = "storage_bench"
+    )),
+    allow(dead_code)
+)]
+pub(crate) fn require_program_in<'a>(fs: &nifefs::Fs<'a>, name: &str) -> Option<&'a [u8]> {
     // Halts unless the table is the one this kernel image was built against, so past this line the
     // table's word on `name` is the kernel's word.
-    require_program_measurements(&fs);
+    require_program_measurements(fs);
     let bytes = fs.read(name)?;
     let table = fs
         .read(measured_boot::PROGRAM_MEASUREMENTS)
