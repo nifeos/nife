@@ -270,13 +270,23 @@ Asked one at a time, in this order, with the background in the questions appendi
 4. basalt refuses an image with two revisions of one contract.
 5. basalt may run a trial on unmerged commits, writing no pin.
 
+## The review packet
+
+`script/crate-review-packet <crate>...` writes one markdown packet per crate to
+`target/crate-review-packets/<crate>.md` (`--out DIR` changes the directory; `--no-rustdoc` forces the
+grep listing). Packets live under `target/` and are never committed. Each holds the crate's path,
+version, tag and `src` line counts; its public API from rustdoc JSON on the pinned toolchain, and
+the types from other crates in public signatures (`cargo public-api` is not installed, so it is not
+used; the fallback is a grep listing); every `unsafe` site with file and line; every dependency and
+where it points; the references back into nife that `script/crate-standalone` reports without
+building; its Kani harnesses and falsification patches; the nife packages that depend on it; its
+`INTERFACE_ID`, `VERSION` and `MAGIC` values; and the reviewer's checklist. The name is a provisional
+maintainer decision.
+
 ## BUGS
 
-- Nothing prepares the architect's reading of a crate. A lane may assemble a review packet per
-  crate without reviewing for the architect: the path list, the public items, the tests, the
-  license notices, the dependency list and the `cargo-semver-checks --baseline-rev` output.
-  Proposed milestone, provisional: `script/crate-review-packet <crate>` prints it. Until then the
-  architect asks a lane for each packet by hand.
+- The packet leaves out the test list, the license notices and the `cargo-semver-checks
+  --baseline-rev` output. The last needs the tagged baseline that milestone 818 cuts first.
 
 ## Index row
 

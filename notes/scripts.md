@@ -115,6 +115,7 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/mutation-census` | One committed row per crate, per mutation census. |
 | `script/falsifications` | Can each Kani harness be made to fail? |
 | `script/crate-standalone <crate>` | Would this crate stand on its own outside nife? Provisional name. |
+| `script/crate-review-packet <crate>...` | Write the architect's review packet for each crate under `target/`. Provisional name. |
 
 `fmt`, `lint`, `coverage`, `supply-chain`, `fuzz`, `miri`, and `mutants` are not part of the canonical
 set; they exist so the CI format, clippy, coverage, supply-chain, fuzz, miri, and weekly mutation
