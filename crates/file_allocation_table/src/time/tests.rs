@@ -115,3 +115,26 @@ fn a_moved_entry_copies_every_time_field_and_nothing_else() {
     assert_eq!(to[20..22], [0xEE; 2]);
     assert_eq!(to[26..32], [0xEE; 6]);
 }
+
+#[test]
+fn a_clock_lent_by_reference_reports_what_the_clock_reports() {
+    struct Fixed(Option<Timestamp>);
+    impl Clock for Fixed {
+        fn now(&mut self) -> Option<Timestamp> {
+            self.0
+        }
+    }
+    let mut clock = Fixed(Some(at(2026, 11, 1, 12, 34, 56)));
+    assert_eq!((&mut clock).now(), Some(at(2026, 11, 1, 12, 34, 56)));
+    clock.0 = None;
+    assert_eq!((&mut clock).now(), None);
+}
+
+#[test]
+fn the_last_year_stores_as_itself_and_only_later_years_clamp() {
+    let mid = Stamp::pack(Some(at(2107, 6, 15, 12, 0, 0)));
+    assert_eq!(mid.creation_date, (127 << 9) + (6 << 5) + 15);
+    assert_eq!(mid.creation_time, 12 << 11);
+    let early = Stamp::pack(Some(at(1980, 6, 15, 12, 0, 0)));
+    assert_eq!(early.creation_date, (6 << 5) + 15);
+}

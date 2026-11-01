@@ -70,8 +70,8 @@ Built in this order, by the #2580 ruling. Each lands on its own and leaves the i
    [stage-8-the-general-format.md](0813-a-proven-fat-crate-released-on-its-own/stage-8-the-general-format.md).
 9. Timestamps, attributes and the label, then `script/crate-standalone` and the README for release.
    Attributes, the label and the README landed
-   ([stage-9-attributes-labels-and-the-release-checks.md](0813-a-proven-fat-crate-released-on-its-own/stage-9-attributes-labels-and-the-release-checks.md)).
-   Timestamps wait on how a clock reaches the crate (#2984).
+   ([stage-9](0813-a-proven-fat-crate-released-on-its-own/stage-9-attributes-labels-and-the-release-checks.md)).
+   Timestamps landed: every writer supplies a `Clock` (2026-11-01 UTC), and `NoClock` means no time.
 
 ## What exists, checked 2026-10-07 (UTC)
 
@@ -289,7 +289,7 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** Timestamps, and the crate's names. Checked 2026-11-01 (UTC): it stamps no time.
+- **Outstanding.** The crate's names. Checked 2026-11-01 (UTC): every stage has landed.
 
 ## BUGS
 
