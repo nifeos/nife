@@ -131,6 +131,7 @@ falsifications for our crates?"* This adds to Forks 3 and 4 and changes neither.
 
 What nife does at each extraction is a checklist, built with the first (813):
 [what-nife-does-at-each-extraction.md](0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md).
+Its first step is the architect's clearance of the crate, which is also the approval to create its repository (ruled 2026-11-01 UTC).
 
 Adoption is measured once the first crate publishes or the first offer goes out, and not before.
 The measures: crates.io downloads over 90 days, reverse dependencies, and issues and pull requests
