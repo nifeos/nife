@@ -90,7 +90,7 @@ and this block land. The boot gates then run on the composed image: `confirm-boo
 - **Outstanding.** 976 part 4's measured kernel download cost, which justifies parts 2 to 4; not in
   976's block as of 2026-11-01 (UTC).
 
-- **End state, ruled 2026-11-01 (UTC).** The composed image, the one basalt builds from packages, is
+- **Decision.** End state, ruled 2026-11-01 (UTC): the composed image, the one basalt builds from packages, is
   the only image, not one of many. The tree's own image goes away when this milestone and 695 land,
   because the kernel then no longer compiles every base program's digest into its trust root. The
   boot gates then run on the composed image, and `update-boot` folds into `confirm-boot` (976's
