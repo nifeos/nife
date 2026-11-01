@@ -5,7 +5,7 @@ integrity) ask whether code we did not write is what we think; this one asks whe
 write survives bytes it did not write.
 
 `script/fuzz` runs coverage-guided fuzz targets over the parsers that read data from outside this
-system: eight parsers, plus three service targets that
+system: eleven parser targets, plus three service targets that
 [fuzzing-the-services.md](fuzzing-the-services.md) covers. It found two bugs on its first day, and a
 third came out of reading the code while designing a target. All three are fixed and pinned by host
 tests.
@@ -44,8 +44,7 @@ The place where they meet is the bound. In this tree the proved leaf and the unp
 worked examples, in [fuzzing/kani-and-fuzzing.md](fuzzing/kani-and-fuzzing.md).
 
 The honest summary: a proof says the property holds where it looked, and a fuzzer looks where the
-proof could not. Neither subsumes the other, and the third worked example shows the boundary is not
-even always "bounded versus unbounded": sometimes it is that nobody wrote the property down.
+proof could not. Neither subsumes the other.
 
 ## Which parsers, and why those
 
@@ -53,7 +52,7 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Eight parser targets, deliberately fewer than one per crate. A fuzz target that finds nothing
+Eleven parser targets, deliberately fewer than one per crate; the table holds ten, and notes/fuzzing/targets.md covers the FAT writer. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
@@ -68,14 +67,14 @@ implies coverage the project does not have.
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
 | `capability_manifest_note_decode` | an ELF note | sets authority |
+| `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
 
 ### And the ones deliberately not fuzzed
 
-Naming these matters as much as naming the targets, because "we have fuzzers" quietly grows to cover
+Naming these matters as much as naming the targets: "we have fuzzers" quietly grows to cover
 everything. `Fs::parse` on raw bytes is proved total, so a target there could find nothing. The IPC
 protocols are total by construction, and their real hazard, a double fetch, is a concurrent mutation
-no byte-string fuzzer can express. `video_terminal` and `grant_plan` were left for stated reasons.
-Each is argued in [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md).
+no byte-string fuzzer can express. [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md) argues each, and `grant_plan` too.
 
 ## Why cargo-fuzz
 

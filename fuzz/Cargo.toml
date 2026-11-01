@@ -72,6 +72,7 @@ package_archive = { path = "../crates/package_archive" }
 capability_manifest_note = { path = "../crates/capability_manifest_note" }
 grant_plan = { path = "../crates/grant_plan" }
 domain_name_resolution_contract = { path = "../crates/domain_name_resolution_contract" }
+video_terminal = { path = "../crates/video_terminal" }
 
 # **The services' request handlers** (proposal #1592 part a, `lane/fuzz-service-handlers`). Path
 # dependencies on servers rather than parsers: each target replays a session of requests against the
@@ -191,6 +192,13 @@ bench = false
 [[bin]]
 name = "redoxfs_server_session"
 path = "fuzz_targets/redoxfs_server_session.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "video_terminal_feed"
+path = "fuzz_targets/video_terminal_feed.rs"
 test = false
 doc = false
 bench = false
