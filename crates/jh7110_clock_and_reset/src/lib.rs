@@ -926,6 +926,8 @@ const IC_CON_RE: u32 = 1 << 5;
 /// `IC_CON`'s slave-disable bit (`IC_CON_SD`).
 const IC_CON_SD: u32 = 1 << 6;
 
+/// The `IC_CON` word for a standard-speed master: the four bits above, which do not overlap.
+const STANDARD_MODE_CON: u32 = IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS;
 /// Standard mode's minimum SCL high time, in nanoseconds.
 const STANDARD_HIGH_NS: u128 = 4_000;
 /// Standard mode's minimum SCL low time, in nanoseconds.
@@ -939,13 +941,10 @@ const STANDARD_BUS_HZ: u128 = 100_000;
 /// not a count a controller can be programmed with) and never above `u32::MAX`.
 const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
     let ticks = (clock_frequency as u128 * period_ns).div_ceil(1_000_000_000);
-    if ticks == 0 {
-        1
-    } else if ticks > u32::MAX as u128 {
-        u32::MAX
-    } else {
-        ticks as u32
-    }
+    // The saturation subtracts the excess instead of comparing, so no boundary is left to
+    // mutate: `ticks` minus whatever lies above `u32::MAX` is `min(ticks, u32::MAX)`.
+    let ticks = ticks - ticks.saturating_sub(u32::MAX as u128);
+    if ticks == 0 { 1 } else { ticks as u32 }
 }
 
 /// The counts for a 100 kHz standard-mode bus. `clock_frequency` is the controller's input clock
@@ -970,13 +969,10 @@ pub const fn standard_mode_100k(clock_frequency: u64) -> StandardMode {
     let minimum_lcnt = counts(clock_frequency, STANDARD_LOW_NS);
     let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HZ);
     let shortfall = period.saturating_sub(hcnt);
-    let lcnt = if shortfall > minimum_lcnt {
-        shortfall
-    } else {
-        minimum_lcnt
-    };
+    // The larger of the two, written as the minimum plus whatever the shortfall exceeds it by.
+    let lcnt = minimum_lcnt + shortfall.saturating_sub(minimum_lcnt);
     StandardMode {
-        con: IC_CON_MM | IC_CON_RE | IC_CON_SD | IC_CON_SPD_SS,
+        con: STANDARD_MODE_CON,
         hcnt,
         lcnt,
         sda_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NS),
