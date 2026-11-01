@@ -143,6 +143,18 @@ slot. Every new name here is provisional.
   TCG, and it builds the install image and the composed image one after the other. A CI leg would
   roughly double `confirm-boot`'s cost for a path that parts 4 and 5 replace. It stays a manual
   gate until part 5's updater supplies the real staging.
+- **Done.** Part 4a: `crates/boot_slot` reads and writes the version 2 header (`boot_slot::members`,
+  provisional). `parse` reads versions 1 and 2. It refuses each of these with a typed `Refusal` and a fixed
+  phrase: an unknown version, an unknown, duplicate or missing tag, a layout break, nonzero
+  reserved or padding bytes, and a CRC-32 mismatch. Two more reasons, `NoHeader` and `Truncated`,
+  cover an empty partition and a short buffer. `MemberHeader::encode` writes only version 2. Host tests
+  cover the round trip, every refusal, version 1 as before, and a flip of every byte of the 188
+  and of the padding. A fuzz target is not added, because the fuzz job is at its eighteen-target
+  budget; the crate's `BUGS` records that. The ruling leaves two points open, and both are refused
+  strictly for now. A zero-length member is a layout break. So is a member inside the header block.
+- **Outstanding.** Parts 4b and 4c. Part 4b moves the archive writer from `xtask/src/archive.rs`
+  into a crate. Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
+  load the members and print each refusal's phrase, and teaches xtask to write version 2.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself, and the archive writer moves from
