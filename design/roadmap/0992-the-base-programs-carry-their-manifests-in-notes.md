@@ -102,6 +102,12 @@ The step needs one small piece of plumbing. The progenitor passes the measured
 vouches for a program by its digest in that table, not by package stem, because the loader's
 `nife.base` names the table and no base package list exists in the tree (ruled 2026-11-01 UTC).
 
+Ruled 2026-11-01 (UTC) by the architect: the same table also serves at read time. The progenitor
+refuses any owner-shaped base row of the live generation whose digest is not in
+`program_measurements`. That extends the plumbing above from install time to read time. It is
+new work and outstanding: no code compares a base row with the table today, at install or at
+read. Milestone 990 (the base image's first installed-programs table) holds the read path.
+
 Prior art, from memory and not re-read: Android's `signature|privileged` permissions go only to
 apps signed with the platform key or installed in the system image's privileged directory, and the
 package manager enforces it at install, whatever the app declares. Fuchsia separates base packages,
