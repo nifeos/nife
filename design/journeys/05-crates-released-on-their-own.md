@@ -22,6 +22,15 @@ out into the Rust ecosystem (calef, 2026-10-18 (UTC): *"I have no desire to main
 Rather I desire 50 crates that I would confidently use to build a nife."*). A lane reads the next
 unbuilt step from the table, the way journey 4 directs the package work.
 
+The journey covers every crate that something outside nife could consume, by the ruling of
+2026-11-01 (UTC) that milestone 857 records; the maintainer confirms this widening of the journey.
+Its steps are of two kinds. A publish-ours crate publishes to crates.io, as the table below lays
+out. A contract crate moves to a repository of its own and carries a version whether or not it
+publishes. Every move goes bottom-up: a crate that leaves references nothing back in this tree, so
+the crates a program links leave before it or with it, and step 9's `jh7110_entropy` is the leaf
+pilot of the mechanics. Pull request #3026 proposes the contract-crate steps and their order, and
+they join the table when it lands.
+
 | step | milestone | decision | what this step needs |
 |---|---|---|---|
 | 1 | 887 | | the machinery every crate repository calls from its move onward: the shared template's nine ruled checks, the allowlist lint that keeps `publish = false` the default, the `crate-maintainers` team as the crates.io owner, and trusted publishing, with every release waiting in the `crates-io` environment for calef. The template's two remaining checks (the scoped-token first publish and the semver baseline) wait at step 9 |
@@ -48,11 +57,11 @@ publication waits for its own soak's five end conditions and its turn in the rul
 `jh7110_entropy`'s publication sits with the device set (step 9), and the first publication is the
 FAT crate's.
 
-The path holds only publish dispositions. The survey's contribute rows (paging, the GPT parser,
+The publish-ours steps hold only publish dispositions. The survey's contribute rows (paging, the GPT parser,
 `elf`, `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) wait,
 by the ruling of 2026-10-27 (UTC), until a published crate has users who ask for them upstream, so
-nife controls no externalization step for them today. The internal set stays in this tree, and its
-reviews close as one sitting (857's item 7). calef refused milestone 821 (`portable_executable`: an
+nife controls no externalization step for them today. No crate stays in this tree by default
+(ruled 2026-11-01 (UTC), superseding 857's item 7). calef refused milestone 821 (`portable_executable`: an
 ELF-to-PE converter, proven, then released on its own) on 2026-10-21 (UTC): its input is nife's own
 build product, so a published proof protects no known user. The crate no longer exists, and the
 conversion lives in `xtask` (the survey's corrections, 2026-10-27 (UTC)). No step here expects any
@@ -69,7 +78,9 @@ row names the minting, not a number.
 Every step above at `BUILT`. At that point, every crate the ruled disposition calls ours has
 proved what its block requires, moved to its own `nifeos` repository, cleared its soak's five end
 conditions, and published through trusted publishing with calef's approval; nife consumes each
-release from crates.io, pinned by checksum in `Cargo.lock`. That is the whole completion bar, and
+release from crates.io, pinned by checksum in `Cargo.lock`. Each contract crate's step, once
+pull request #3026 adds them, is done when the crate has moved and carries a version. That is the
+whole completion bar, and
 it holds only work nife controls. Adoption is out of scope on purpose: nife does not control it, so
 no step tracks it and it is no criterion here; [risk 8](../fatal-risks/8-nobody-else-builds-on-nife.md)
 measures it separately, with its five observations and thresholds, and publishing alone counts as

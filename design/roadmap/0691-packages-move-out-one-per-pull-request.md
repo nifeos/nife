@@ -28,6 +28,12 @@ is proposed to go. It needs calef first: a move is only possible once a package'
   page's "moved out" band grows by one.
 - Leaves first. `contracts` and `runtime` move before the programs that link them, and `kernel`
   and `init` move last, because they carry most of the recorded exceptions.
+- Ruled 2026-11-01 (UTC): what leaves this repository references nothing back in it, so moves go
+  bottom-up in the dependency graph, and the crates a program links leave before it or with it.
+  That keeps the leaves-first rule above and supersedes milestone 756 (`process-tools`,
+  `core-tools` and `disk-tools` are the first code to leave this repository)'s amendment, which
+  moved programs first and the SDK last. Pull request #3026 proposes the order the contract crates
+  leave in.
 
 ## Before the first move
 
