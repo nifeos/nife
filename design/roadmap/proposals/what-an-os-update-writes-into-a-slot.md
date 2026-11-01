@@ -168,10 +168,16 @@ The ruling above does not answer these. Each not marked ruled stays open and wil
       nothing past the partition end. The chooser refuses a slot that breaks any of these.
    4. The header holds exactly three entries and no count field. The layout is the magic (8
       bytes), the version (4), reserved zero (4), three 56-byte entries (tag 8, offset 8, length
-      8, digest 32) and the CRC-32 (4). That is 188 bytes, and the rest of the 4096-byte block is
-      zero. The chooser refuses nonzero reserved or padding bytes.
-   5. The CRC-32 is the field after the table (bytes 184 to 188) and covers bytes 0 to 184, as in
-      version 1.
+      8, digest 32) and the CRC-32 (4). Between the table and the CRC-32 sit the progenitor's
+      SHA-256 digest (32) and the base digest (32, the digest of the archive's
+      `program_measurements` table). That is 252 bytes, and the rest
+      of the 4096-byte block is zero. The chooser refuses nonzero reserved or padding bytes, the
+      padding being everything after byte 252. The updater writes the two digests from the system
+      manifest and the progenitor.
+      The chooser copies them into the kernel command line words and
+      never computes them. The base word is `nife.base`; the progenitor word's spelling is open.
+   5. The CRC-32 is the field after the two digests (bytes 248 to 252) and covers bytes 0 to 248,
+      as in version 1.
    6. The chooser skips a slot it refuses for that boot, writes nothing to the partition-table
       bits, and prints a fixed reason phrase for each check (the both-refused case follows).
    7. The version field alone picks the layout. The chooser reads versions 1 and 2 and refuses any

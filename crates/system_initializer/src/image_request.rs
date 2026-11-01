@@ -679,6 +679,26 @@ fn with_live_table<R>(
     answer
 }
 
+/// **Whether this kernel serves the syscall ABI the bytes were built against** (milestone 956 (the
+/// linked interfaces carry checkable versions)). Bytes whose `INTERFACES` note declares an ABI
+/// version other than [`abi::ABI_VERSION`] are refused, and so is a note that does not decode, as a
+/// manifest is. The ABI never dual-serves, so the comparison is equality. Bytes with no note
+/// declare nothing and pass. The refusal's two numbers (`Refusal`) stop here: the spawn reply
+/// carries a status and no text, so the person sees the refusal and not the versions.
+fn serves_declared_abi(elf: &elf::Elf<'_>) -> bool {
+    match elf.note(
+        capability_manifest_note::OWNER,
+        capability_manifest_note::INTERFACES,
+    ) {
+        Ok(None) => true,
+        Ok(Some(d)) => capability_manifest_note::decode_interfaces(d).is_ok_and(|list| {
+            list.check_served(abi::INTERFACE_ID, abi::ABI_VERSION)
+                .is_ok()
+        }),
+        Err(_) => false,
+    }
+}
+
 /// **The manifest a file's bytes are endowed with, or `None` to refuse them.** Their note is read
 /// with `elf::Elf::note` and decoded by `capability_manifest_note`; a note
 /// that is there and unreadable refuses the bytes, since running them as if they carried none would
@@ -700,23 +720,8 @@ pub(super) fn endowed_image(
         Ok(Some(d)) => Some(capability_manifest_note::decode(d).ok()?),
         Err(_) => return None,
     };
-    // **The syscall ABI the bytes were built against** (milestone 956 (the linked interfaces carry
-    // checkable versions), step 3): a program that declares an ABI version other than the one this
-    // kernel serves is refused, and so is a list that does not decode, as a manifest is. The ABI
-    // never dual-serves, so the comparison is equality. Bytes with no list declare nothing and run
-    // as before. The refusal's two numbers (`Refusal`) stop here: the spawn reply carries a status
-    // and no text, so the person sees the refusal and not the versions.
-    match elf.note(
-        capability_manifest_note::OWNER,
-        capability_manifest_note::INTERFACES,
-    ) {
-        Ok(None) => {}
-        Ok(Some(d)) => {
-            let list = capability_manifest_note::decode_interfaces(d).ok()?;
-            list.check_served(abi::INTERFACE_ID, abi::ABI_VERSION)
-                .ok()?;
-        }
-        Err(_) => return None,
+    if !serves_declared_abi(elf) {
+        return None;
     }
     // Installed bytes carrying a verb table are refused: endowing from the manifest alone would
     // hand every line every verb's grants. The image's own `jig` narrows by `grant_plan`'s table.
@@ -731,4 +736,91 @@ pub(super) fn endowed_image(
     }
     let m = grant_plan::image_manifest(declared, vouch).ok()?;
     grant_plan::image_request_fits(&m, arg, mem_pages, words).then_some(m)
+}
+
+#[cfg(test)]
+mod tests {
+    use capability_manifest_note::{Declared, InterfacesNote, interfaces_len, interfaces_note_len};
+
+    use super::serves_declared_abi;
+    extern crate std;
+    use std::vec;
+    use std::vec::Vec;
+
+    /// A one-`PT_LOAD` ELF plus one `PT_NOTE` holding `note`, the shape the loader accepts.
+    fn image(note: &[u8]) -> Vec<u8> {
+        let body = 64 + 2 * 56;
+        let mut v = vec![0u8; 64];
+        v[0..4].copy_from_slice(&[0x7f, b'E', b'L', b'F']);
+        v[4] = 2;
+        v[5] = 1;
+        v[6] = 1;
+        v[16..18].copy_from_slice(&2u16.to_le_bytes());
+        v[18..20].copy_from_slice(&elf::NATIVE_MACHINE.to_le_bytes());
+        v[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
+        v[32..40].copy_from_slice(&64u64.to_le_bytes());
+        v[54..56].copy_from_slice(&56u16.to_le_bytes());
+        v[56..58].copy_from_slice(&2u16.to_le_bytes());
+        let mut load = vec![0u8; 56];
+        load[0..4].copy_from_slice(&1u32.to_le_bytes());
+        load[4..8].copy_from_slice(&(elf::PF_R | elf::PF_X).to_le_bytes());
+        load[8..16].copy_from_slice(&(body as u64).to_le_bytes());
+        load[16..24].copy_from_slice(&0x40_0000u64.to_le_bytes());
+        load[24..32].copy_from_slice(&0x40_0000u64.to_le_bytes());
+        load[32..40].copy_from_slice(&16u64.to_le_bytes());
+        load[40..48].copy_from_slice(&16u64.to_le_bytes());
+        v.extend_from_slice(&load);
+        let mut ph = vec![0u8; 56];
+        ph[0..4].copy_from_slice(&4u32.to_le_bytes());
+        ph[4..8].copy_from_slice(&elf::PF_R.to_le_bytes());
+        ph[8..16].copy_from_slice(&((body + 16) as u64).to_le_bytes());
+        ph[32..40].copy_from_slice(&(note.len() as u64).to_le_bytes());
+        ph[40..48].copy_from_slice(&(note.len() as u64).to_le_bytes());
+        ph[48..56].copy_from_slice(&4u64.to_le_bytes());
+        v.extend_from_slice(&ph);
+        v.extend_from_slice(&[0xaa; 16]);
+        v.extend_from_slice(note);
+        v
+    }
+
+    /// The note a program built against `version` of the ABI carries.
+    fn declaring(version: u32) -> Vec<u8> {
+        let list = [Declared {
+            id: abi::INTERFACE_ID,
+            version,
+        }];
+        InterfacesNote::<{ interfaces_note_len(1) }>::of::<{ interfaces_len(1) }>(&list)
+            .0
+            .to_vec()
+    }
+
+    fn judged(bytes: &[u8]) -> bool {
+        serves_declared_abi(&elf::Elf::parse(bytes).expect("the fixture parses"))
+    }
+
+    #[test]
+    fn bytes_built_against_the_served_abi_run() {
+        assert!(judged(&image(&declaring(abi::ABI_VERSION))));
+    }
+
+    #[test]
+    fn bytes_built_against_another_abi_are_refused() {
+        assert!(!judged(&image(&declaring(abi::ABI_VERSION + 1))));
+        assert!(!judged(&image(&declaring(abi::ABI_VERSION - 1))));
+    }
+
+    #[test]
+    fn bytes_with_no_interfaces_note_run() {
+        let mut other = declaring(abi::ABI_VERSION);
+        other[8..12].copy_from_slice(&capability_manifest_note::VERBS.to_le_bytes());
+        assert!(judged(&image(&other)));
+    }
+
+    #[test]
+    fn an_interfaces_note_that_does_not_decode_is_refused() {
+        let mut note = declaring(abi::ABI_VERSION);
+        let count = note.len() - 16;
+        note[count..count + 4].copy_from_slice(&7u32.to_le_bytes());
+        assert!(!judged(&image(&note)));
+    }
 }

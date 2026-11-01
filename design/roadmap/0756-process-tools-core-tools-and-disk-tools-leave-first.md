@@ -52,11 +52,15 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   first, then the contract crates bottom-up, and this cut comes after the crates it links have moved
   and carry versions. §247's other conditions and its destination stand. Its condition 4 (`abi`,
   `address_space_map`, `glob` and `machine_statistics_protocol` stable under 610's rule for four
-  weeks) changes twice. Those crates now move. Four weeks stable is not the right gate, because
-  interfaces may keep breaking. The cut needs mechanisms that accommodate breaking interfaces:
-  versions that consumers can check, the work of milestone 956 and of semantic versions on moved
-  crates. Nobody has chosen a replacement. Open question for the architect: what condition 4 becomes,
-  likely a statement that those mechanisms exist. This block proposes no measure.
+  weeks) gives way to a new gate (ruled 2026-11-01 (UTC)). No time-based measure remains, and a crate
+  whose interface still breaks may leave, each break a new version and a new tagged release. A
+  crate leaves when it falls under milestone 956, has a tagged release whose commit carries the
+  Cargo version and passes `cargo-semver-checks --baseline-rev` against that tag, nife consumes it
+  as a git dependency pinned by revision with the version requirement stated. A producer
+  release can move each consumer's pin (the proposal `a-producer-release-moves-each-consumers-pin.md`,
+  or an agreed manual step until it exists). Last, the architect reads the crate's code by hand
+  before it leaves, initially for every crate, the first in particular. Feedback from those reviews
+  becomes automated gates over time. §247 states the gate in full.
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a
 horrible package name for a nife package"), `coreutils` becomes `core-tools` and `procps` becomes

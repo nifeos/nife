@@ -13,7 +13,10 @@ in flight on another branch.)*
 
 *Amended 2026-10-28 (UTC) on #2851: section 4 states the citation identity across repositories,
 answering the deferral in section 1. The moved-things registry lives at `packages/moved.toml`, not
-at `design/roadmap/MOVED`, and the numbering namespace stays with nife.*
+at `design/roadmap/MOVED`.*
+
+*Amended 2026-11-01 (UTC) on #3034: the numbering namespace in section 4 moves with the record to the
+`nifeos.org` repository, and `nifeos/nife` remains for history only.*
 
 The ruling, in one line. Keep option E, one roadmap in `basalt`, until the split makes a
 citation cross a repository boundary. Record the deferral rather than letting it happen by default.
@@ -116,11 +119,16 @@ revisit event section 1 defines. The rule, in force now:
   location `design/roadmap/MOVED` (milestone 533 (whether the roadmap should become issues, and
   what a citation means after the repository split)'s mechanism) gives way to it; the substance
   holds: the FreeBSD four-field form, append-only, written at the split.
-- The numbering namespace stays with nife. The revisit condition stays armed: when a component
+- The numbering namespace stays with the record repository, `nifeos.org` from 2026-11-01 (UTC), and
+  moves with the record when it leaves `nifeos/nife`, which remains for history only. A record's
+  number stays its identity. A bare code path in an existing record means that path at the last
+  `nifeos/nife` commit before the move, the anchor, which `packages/moved.toml` records in one line.
+  New text uses `nifeos/<repo>:<path>`, resolved at basalt's pin. The site gives each number a stable
+  address derived from the number alone. The revisit condition stays armed: when a component
   repository first needs numbered records of its own, milestone 533's options A and C re-open on
   evidence.
 
 ## What is not decided here
 
 Whether a component repository ever needs numbered records of its own. Section 4 arms that
-trigger; until it fires, one numbering namespace, nife's, covers every record.
+trigger; until it fires, one numbering namespace, the record repository's, covers every record.

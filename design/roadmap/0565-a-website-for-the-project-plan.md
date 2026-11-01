@@ -38,8 +38,8 @@ command in a checkout:
 ## What this tree does not have today
 
 There is no publishing story of any kind, and that is the honest size of the work. Nothing
-renders markdown for a browser, nothing is deployed anywhere, no domain is registered to this
-project, and no gate would notice a published page going stale. `crates/documentation` renders
+renders markdown for a browser, nothing is deployed anywhere, the project's domain (nifeos.org,
+registered 2026-10-03) has no web address set, and no gate would notice a published page going stale. `crates/documentation` renders
 markdown to a terminal, for `man`, which is the opposite end of the problem.
 
 So a website is not a page: it is a renderer, a place to put the output, a trigger that runs it, and

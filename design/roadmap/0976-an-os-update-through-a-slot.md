@@ -115,7 +115,7 @@ slot. Every new name here is provisional.
 - **Done.** Part 2: the composer writes the file a slot holds. On x86_64, `base-image` wraps the
   composed kernel and archive in `uefi_loader` through `uefi_stage_archive`, which `uefi_stage`
   now calls with the tree's own archive, and writes `<out>/esp/EFI/BOOT/BOOTX64.EFI`. With
-  `--release` the kernel is stripped of its DWARF by the routine the tree's own image uses, and
+  `--release` the routine the tree's own image uses strips the kernel of its DWARF, and
   the run ends by holding the file to `script/boot-file-size-check --composed <out>`. A debug run
   wraps the file and skips the check, and says so. The base-image test
   `the_composed_boot_file_is_held_to_the_size_check` holds the script's `--composed` mode to a
@@ -145,8 +145,8 @@ slot. Every new name here is provisional.
   gate until part 5's updater supplies the real staging.
 - **Recorded.** Ruled 2026-11-01 (UTC): `update-boot` is interim. When milestones 695 (the kernel takes two
   digests from the loader) and 697 (the trust root leaves the kernel binary) land, it folds into
-  `confirm-boot`. Staging the slot first becomes a scenario of that gate, and the separate gate is
-  deleted or merged. Nothing changes before then: both images exist and the kernel still
+  `confirm-boot`. Staging the slot first becomes a scenario of that gate, and the separate gate goes
+  away or merges. Nothing changes before then: both images exist and the kernel still
   depends on the base. The name `update-boot` stays provisional and is not ratified. 697's block
   records the end state.
 - **Done.** Part 4a: `crates/boot_slot` reads and writes the version 2 header (`boot_slot::members`,
@@ -156,8 +156,8 @@ slot. Every new name here is provisional.
   cover an empty partition and a short buffer. `MemberHeader::encode` writes only version 2. Host tests
   cover the round trip, every refusal, version 1 as before, and a flip of every byte of the 188
   and of the padding. A fuzz target is not added, because the fuzz job is at its eighteen-target
-  budget; the crate's `BUGS` records that. The ruling leaves two points open, and both are refused
-  strictly for now. A zero-length member is a layout break. So is a member inside the header block.
+  budget; the crate's `BUGS` records that. The ruling leaves two points open, and the chooser refuses
+  both strictly for now. A zero-length member is a layout break. So is a member inside the header block.
 - **Done.** Part 4b: the archive writer is `crates/initial_ramdisk_writer` (provisional name), which
   the host composer and the device updater share. It is `no_std` with `alloc`; it takes the
   programs, the catalog and the index sources and returns the image, and it refuses an archive
@@ -166,7 +166,8 @@ slot. Every new name here is provisional.
   9,391,104-byte archive with the same SHA-256 before and after the move, and a fixture archive in
   the crate's tests holds the digest the old packer gave it.
 - **Outstanding.** Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
-  load the members and print each refusal's phrase, and teaches xtask to write version 2.
+  load the members and print each refusal's phrase, and teaches xtask to write version 2. It also widens `boot_slot::members` from the 188 bytes part 4a
+  wrote to the 252 bytes ruled below: the two digest fields, the CRC range and the padding check.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself. Basalt
@@ -184,18 +185,25 @@ slot. Every new name here is provisional.
   key, has a strictly greater version than the running one, and starts with no slot on trial. A
   base version is MAJOR.MINOR.PATCH, three integers. The accepted keys live beside the trust root;
   the approval file names which the owner accepts and never adds one. The reasoning is in the
-  proposal. Step 3, the loader's two digests, is milestone
+  proposal. The host-callable check is built in `crates/approval_file` (`base_update`): a pure
+  function over facts the caller establishes, each refusal naming its failed condition, with no
+  device updater calling it until part 5. Key identifiers and leading-zero version parts are
+  provisional (restrictive first). Step 3, the loader's two digests, is milestone
   607's item 6 and not this block's.
 
-- **Outstanding.** Ruled 2026-11-01 (UTC), part 4's header. Version 2 is 188 bytes in a 4096-byte block, the rest
-  zero. The fields are magic 8, version 4, reserved zero 4, three 56-byte entries (tag 8, offset 8, length 8,
-  SHA-256 digest 32), then a CRC-32 of bytes 0 to 184. The tags are KERNEL, ARCHIVE and MANIFEST
+- **Outstanding.** Ruled 2026-11-01 (UTC), part 4's header. Version 2 is 252 bytes in a 4096-byte block, the rest
+  zero. The fields are magic 8, version 4, reserved zero 4 and three 56-byte entries (tag 8, offset 8,
+  length 8, SHA-256 digest 32). Then come the progenitor's SHA-256 digest 32 and the base digest 32
+  (the digest of the archive's `program_measurements` table). A CRC-32 of bytes 0 to 248 sits at bytes 248 to 252. The
+  updater writes the two digests from the system manifest and the progenitor. The chooser copies them
+  into the kernel command line words and never computes them (option A of question 2 in the proposal
+  for milestone 695 (the kernel trusts two digests from the loader)). The base word is `nife.base`; the progenitor word's spelling is open. The tags are KERNEL, ARCHIVE and MANIFEST
   (provisional spellings), exactly three, with no count field. Members start at multiples of 4096 in
   table order, without overlap, inside the partition. The chooser refuses an unknown, duplicate or
-  missing tag, a layout break, nonzero reserved or padding bytes, and an unknown header version
+  missing tag, a layout break, nonzero reserved or padding bytes (padding is after byte 252), and an unknown header version
   (it reads 1 and 2). It skips a refused slot for that boot, writes nothing to the partition-table
   bits and prints a fixed reason phrase per check. The updater writes only version 2. When
-  both slots are refused, the chooser prints each slot's reason and then boots its own embedded
+  the chooser refuses both slots, it prints each slot's reason and then boots its own embedded
   image, as milestone 525 (a bad upgrade cannot brick the machine) rules for two bad slots. The
   proposal has the full list.
 - **Proposed.** `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md` holds it (provisional milestone, ruled 2026-11-01 UTC): the updater replaces the chooser
