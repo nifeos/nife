@@ -136,8 +136,8 @@ slot. Every new name here is provisional.
   empty partition and a short buffer. `MemberHeader::encode` writes only version 2. Host tests
   cover the round trip, every refusal, version 1 as before, and a flip of every byte of the 188
   and of the padding. A fuzz target is not added, because the fuzz job is at its eighteen-target
-  budget; the crate's `BUGS` records that. Open points the ruling leaves, refused strictly for now:
-  a zero-length member and a member inside the header block are layout breaks.
+  budget; the crate's `BUGS` records that. The ruling leaves two points open, and both are refused
+  strictly for now. A zero-length member is a layout break. So is a member inside the header block.
 - **Outstanding.** Parts 4b and 4c. Part 4b moves the archive writer from `xtask/src/archive.rs`
   into a crate. Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
   load the members and print each refusal's phrase, and teaches xtask to write version 2.
