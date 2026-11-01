@@ -220,7 +220,7 @@ crate's own repository instead.
   of the three program repositories would pin nife for 12 to 15 crates.
 - C. All 22 into one repository in one move: it saves 5 crossing commits in 348. It makes the
   largest one-way step at once and gives no contract its own version.
-- D. Highest churn first, to practise where it hurts: `grant_plan` sits a layer up and needs three
+- D. Highest churn first, to practice where it hurts: `grant_plan` sits a layer up and needs three
   crates first, so bottom-up already fixes its place.
 - E. Wait for crates to settle: refused by the first direction.
 
