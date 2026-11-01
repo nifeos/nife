@@ -71,6 +71,9 @@ file_allocation_table = { path = "../crates/file_allocation_table" }
 globally_unique_identifier_partition_table = { path = "../crates/globally_unique_identifier_partition_table" }
 http_response = { path = "../crates/http_response" }
 package_archive = { path = "../crates/package_archive" }
+capability_manifest_note = { path = "../crates/capability_manifest_note" }
+grant_plan = { path = "../crates/grant_plan" }
+domain_name_resolution_contract = { path = "../crates/domain_name_resolution_contract" }
 package_index = { path = "../crates/package_index" }
 video_terminal = { path = "../crates/video_terminal" }
 
@@ -171,6 +174,13 @@ bench = false
 [[bin]]
 name = "package_archive_roundtrip"
 path = "fuzz_targets/package_archive_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "capability_manifest_note_decode"
+path = "fuzz_targets/capability_manifest_note_decode.rs"
 test = false
 doc = false
 bench = false
