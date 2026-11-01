@@ -8,12 +8,12 @@
 //! input's. The target holds the writer to what it promises on any volume: no panic, no write
 //! outside the image, no read or write past the sector count the device has, and, on a volume it
 //! formatted, every name it created listed once with the size it was last given, a clean
-//! shutdown bit after `sync`, and a directory tree that still walks.
+//! shutdown bit after `mark_clean`, and a directory tree that still walks.
 
 #![no_main]
 
 use file_allocation_table::{
-    Clock, Format, FormatOptions, NamedEntry, NoClock, SectorDevice, SectorSize, Timestamp,
+    CivilDateTime, Clock, FormatOptions, FormatPlan, NamedEntry, NoClock, SectorDevice, SectorSize,
     WritableSectorDevice, WritableVolume,
 };
 use libfuzzer_sys::fuzz_target;
@@ -95,13 +95,13 @@ impl Fed {
 }
 
 impl Clock for Fed {
-    fn now(&mut self) -> Option<Timestamp> {
+    fn now(&mut self) -> Option<CivilDateTime> {
         let next = self.bytes.get(self.at..self.at + 7)?;
         self.at += 7;
         if next[0] < 32 {
             return None;
         }
-        Some(Timestamp {
+        Some(CivilDateTime {
             year: u16::from_le_bytes([next[0], next[1]]),
             month: next[2],
             day: next[3],
@@ -122,7 +122,7 @@ fuzz_target!(|data: &[u8]| {
     };
     let operations = if formatted {
         let options = FormatOptions::new(SectorSize::Bytes512, (IMAGE / 512) as u32);
-        let Ok(format) = Format::new(options, &mut NoClock) else {
+        let Ok(format) = FormatPlan::new(options, &mut NoClock) else {
             return;
         };
         format
@@ -161,14 +161,14 @@ fuzz_target!(|data: &[u8]| {
                 if let Some(entry) = found(&mut volume, &picked)
                     && let Ok(mut writer) = volume.open_file_writer(&entry)
                 {
-                    let _ = writer.set_len(u32::from(op.get(1).copied().unwrap_or(0)) * 600);
+                    let _ = writer.set_length(u32::from(op.get(1).copied().unwrap_or(0)) * 600);
                 }
             }
             3 => {
                 if let Some(entry) = found(&mut volume, &picked)
                     && let Ok(mut writer) = volume.open_file_writer(&entry)
                 {
-                    writer.seek(u32::from(op.get(1).copied().unwrap_or(0)) * 11);
+                    writer.set_position(u32::from(op.get(1).copied().unwrap_or(0)) * 11);
                     let _ = writer.write(&[op.get(2).copied().unwrap_or(0); 700]);
                 }
             }
@@ -178,7 +178,7 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
             5 => {
-                if volume.make_directory(0, &picked).is_ok() {
+                if volume.create_directory(0, &picked).is_ok() {
                     made.push(picked);
                 }
             }
@@ -195,11 +195,11 @@ fuzz_target!(|data: &[u8]| {
             }
         }
     }
-    let synced = volume.sync().is_ok();
+    let synced = volume.mark_clean().is_ok();
     // On a volume this crate formatted, the tree still walks and the shutdown bit is clean.
     if formatted && synced {
         let mut listed = 0;
-        for entry in volume.root_entries() {
+        for entry in volume.root_named_entries() {
             entry.expect("a volume the writer changed still lists");
             listed += 1;
         }
@@ -207,7 +207,7 @@ fuzz_target!(|data: &[u8]| {
             listed <= made.len() + 1,
             "more entries than the writer made"
         );
-        // FAT12 keeps no such bit; FAT16 and FAT32 must read clean after the sync.
+        // FAT12 keeps no such bit; FAT16 and FAT32 must read clean after `mark_clean`.
         assert_ne!(volume.is_clean().expect("the table reads"), Some(false));
     }
 });

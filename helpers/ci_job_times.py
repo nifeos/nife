@@ -3,6 +3,7 @@
 
     python3 helpers/ci_job_times.py update [--since YYYY-MM-DD]   # the daily record
     python3 helpers/ci_job_times.py update --repo <owner/name>     # the same record for one crate repository
+    python3 helpers/ci_job_times.py fold [--today YYYY-MM-DD]      # fold the files' old weeks, no API
     python3 helpers/ci_job_times.py sync [--dry-run]               # open, update or close issues
     python3 helpers/ci_job_times.py --selftest
 
@@ -60,6 +61,29 @@ wall time is first job start to last job end across them (`build_wall`):
 `kind` is `build` (one row, `seconds` the wall time) or `job` (start and end in seconds from the
 build's first job start; a matrix job is one row, `seconds` its slowest variant).
 
+# The fold: per-job rows for the latest 13 weeks, one row per week before that
+
+Ruled 2026-11-01 (UTC): `CSV` and `BUILDS_CSV` keep per-job rows for the latest `FOLD_AFTER_WEEKS`
+ISO weeks (this week and the twelve before it) and nothing finer, so the files stop growing without
+a person trimming them. `update` folds every older week into one row per week and job as it appends
+(`fold_times`, `fold_builds`), and a week once folded is never read from the API again (`update`
+starts no earlier than `fold_cutoff`). The fold is lossy by design. The raw rows stay in git
+history, one `git log -p` away.
+
+A folded row is told by its `date`, which is the ISO week (`2026W33`) and not a day. Folded rows
+keep their file's header, with these meanings:
+
+- `CSV`: one row per week, workflow, job, variant, kind and name. `runs` is the sum of the days'
+  runs, `median_seconds` the days' medians weighted by their runs, `max_seconds` the largest.
+- `BUILDS_CSV`: one `build` row per week (`builds` is how many green builds it had, `seconds` and
+  `end_seconds` their median wall time, `p90_seconds` the 90th percentile) and one `job` row per
+  week and job (`start_seconds`, `end_seconds` and `seconds` are medians over the builds that ran
+  it, `builds` how many did). The columns `builds` and `p90_seconds` are empty on a per-build row.
+
+These are the figures `script/metrics` charts: a week's build count, median and p90 wall time, and
+each job's weekly median. A week folded keeps all of them to the digit; nothing it draws needs a
+per-build row. The fold is idempotent, since a row that is already folded passes through unchanged.
+
 # `sync`: the tracking issue (§254, Fork 2)
 
 For each job, the newest `HISTORY` merge-group runs that ran it. When the newest is at or past
@@ -105,6 +129,7 @@ helpers/needs-maintainer.jq), as calef ruled on 2026-10-06 (UTC).
 import concurrent.futures
 import csv
 import datetime
+import glob
 import importlib.util
 import io
 import json
@@ -144,7 +169,11 @@ RECORDED = [".github/workflows/ci.yml", ".github/workflows/verify.yml"]
 # and `ci-critical-path.svg`. File name provisional, minted 2026-10-11 (UTC) by
 # maintainer/build-time-chart.
 BUILDS_CSV = "notes/project-metrics/ci-builds.csv"
-BUILD_COLUMNS = ["date", "build", "kind", "workflow", "job", "start_seconds", "end_seconds", "seconds"]
+BUILD_COLUMNS = ["date", "build", "kind", "workflow", "job", "start_seconds", "end_seconds", "seconds",
+                 "builds", "p90_seconds"]
+# Weeks of per-job rows kept (this one and the twelve before it); older weeks fold to one row per
+# week and job (the docstring's fold section). Ruled 2026-11-01 (UTC).
+FOLD_AFTER_WEEKS = 13
 # The workflow every build has. A merge group without it was never built.
 ANCHOR = "ci.yml"
 
@@ -361,8 +390,111 @@ def merge_days(existing, fresh):
     """Every row of a day `fresh` covers is replaced by `fresh`'s; other days are kept."""
     days = {(r["date"], r["workflow"]) for r in fresh}
     kept = [r for r in existing if (r["date"], r["workflow"]) not in days]
-    return sorted(kept + list(fresh), key=lambda r: (r["date"], r["workflow"], r["job"], r["variant"],
-                                                     KIND_ORDER.get(r["kind"], 2), r["kind"], r["name"]))
+    return sorted(kept + list(fresh), key=_times_order)
+
+
+# ---------------------------------------------------------------------------------------------
+# The fold: weeks older than FOLD_AFTER_WEEKS become one row per week and job.
+
+FOLDED = re.compile(r"^\d{4}W\d{2}$")
+
+
+def fold_cutoff(today):
+    """The Monday of the oldest week that keeps per-job rows: a day before it is folded."""
+    monday = today - datetime.timedelta(days=today.weekday())
+    return monday - datetime.timedelta(weeks=FOLD_AFTER_WEEKS - 1)
+
+
+def _when(date):
+    """A row's `date` as a sortable ISO day: a folded week sorts at its Monday."""
+    if FOLDED.match(date):
+        return datetime.date.fromisocalendar(int(date[:4]), int(date[5:]), 1).isoformat()
+    return date
+
+
+def _needs_fold(date, cutoff):
+    return not FOLDED.match(date) and _when(date) < cutoff.isoformat()
+
+
+def weighted_median(pairs):
+    """The lowest value at which the weights of the values at or under it reach half the total."""
+    pairs = sorted(pairs)
+    half = sum(w for _v, w in pairs) / 2.0
+    seen = 0
+    for v, w in pairs:
+        seen += w
+        if seen >= half:
+            return v
+
+
+def fold_times(rows, today):
+    """`rows` with every day before `fold_cutoff(today)` replaced by one row per week, workflow,
+    job, variant, kind and name: runs summed, the days' medians weighted by their runs, the largest
+    maximum. A row already folded, and every row of a kept week, passes through."""
+    cutoff = fold_cutoff(today)
+    keep, held = [], {}
+    for r in rows:
+        if _needs_fold(r["date"], cutoff):
+            key = (week_of(datetime.date.fromisoformat(r["date"])), r["workflow"], r["job"],
+                   r["variant"], r["kind"], r["name"])
+            held.setdefault(key, []).append(r)
+        else:
+            keep.append(r)
+    for (week, workflow, job, variant, kind, name), days in held.items():
+        fmt = "%.1f" if any("." in d["median_seconds"] + d["max_seconds"] for d in days) else "%.0f"
+        keep.append({"date": week, "workflow": workflow, "job": job, "variant": variant, "kind": kind,
+                     "name": name, "runs": sum(int(d["runs"]) for d in days),
+                     "median_seconds": fmt % weighted_median([(float(d["median_seconds"]), int(d["runs"]))
+                                                              for d in days]),
+                     "max_seconds": fmt % max(float(d["max_seconds"]) for d in days)})
+    return sorted(keep, key=_times_order)
+
+
+def _times_order(r):
+    return (_when(r["date"]), r["workflow"], r["job"], r["variant"], KIND_ORDER.get(r["kind"], 2),
+            r["kind"], r["name"])
+
+
+def p90(values):
+    """The 90th percentile by linear interpolation between closest ranks, so one build is its own
+    p90 and the figure never leaves the range measured. `script/metrics` draws the same figure."""
+    if len(values) < 2:
+        return values[0]
+    return statistics.quantiles(values, n=10, method="inclusive")[8]
+
+
+def fold_builds(rows, today):
+    """`rows` with every build before `fold_cutoff(today)` replaced by, per week, one `build` row
+    (count, median and p90 wall time) and one `job` row per workflow and job (median start, end and
+    length over the builds that ran it). Rows already folded, and every build of a kept week, pass
+    through."""
+    cutoff = fold_cutoff(today)
+    keep, weeks = [], {}
+    for r in rows:
+        if not _needs_fold(r["date"], cutoff):
+            keep.append(r)
+            continue
+        week = weeks.setdefault(week_of(datetime.date.fromisoformat(r["date"])), {"walls": {}, "jobs": {}})
+        build = (r["date"], r["build"])
+        if r["kind"] == "build":
+            week["walls"][build] = float(r["seconds"])
+        else:
+            week["jobs"].setdefault((r["workflow"], r["job"]), []).append(
+                (float(r["start_seconds"]), float(r["end_seconds"]), float(r["seconds"])))
+    for week, held in weeks.items():
+        walls = list(held["walls"].values())
+        if walls:
+            keep.append({"date": week, "build": "", "kind": "build", "workflow": "", "job": "",
+                         "start_seconds": 0, "end_seconds": "%.2f" % statistics.median(walls),
+                         "seconds": "%.2f" % statistics.median(walls), "builds": len(walls),
+                         "p90_seconds": "%.2f" % p90(walls)})
+        for (workflow, job), v in held["jobs"].items():
+            keep.append({"date": week, "build": "", "kind": "job", "workflow": workflow, "job": job,
+                         "start_seconds": "%.2f" % statistics.median(x[0] for x in v),
+                         "end_seconds": "%.2f" % statistics.median(x[1] for x in v),
+                         "seconds": "%.2f" % statistics.median(x[2] for x in v), "builds": len(v),
+                         "p90_seconds": ""})
+    return sorted(keep, key=_build_order)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -432,15 +564,18 @@ def build_rows(date, runs, patterns):
 
 
 def _build_order(r):
-    return (r["date"], r["build"], r["kind"] != "build", r["workflow"], r["job"])
+    return (_when(r["date"]), r["build"], r["kind"] != "build", r["workflow"], r["job"])
 
 
 def builds_to_csv(rows):
+    # The two columns a folded week needs are written only once a week is folded, so a file with
+    # nothing folded keeps the eight columns it always had.
+    columns = BUILD_COLUMNS if any(FOLDED.match(r["date"]) for r in rows) else BUILD_COLUMNS[:8]
     buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=BUILD_COLUMNS, lineterminator="\n")
+    w = csv.DictWriter(buf, fieldnames=columns, lineterminator="\n")
     w.writeheader()
     for r in rows:
-        w.writerow({c: r.get(c, "") for c in BUILD_COLUMNS})
+        w.writerow({c: r.get(c, "") for c in columns})
     return buf.getvalue()
 
 
@@ -640,7 +775,11 @@ def update(argv):
     since = datetime.date.fromisoformat(
         arg_value(argv, "--since", (today - datetime.timedelta(days=DEFAULT_WINDOW_DAYS)).isoformat()))
     patterns = {os.path.basename(w): patterns_across(workflow_versions(w)) for w in RECORDED}
-    day = since
+    # A week that has folded is not read again: its rows are one per job already, and a day re-read
+    # into it would put a per-day row beside the week's.
+    day = max(since, fold_cutoff(today))
+    if day > since:
+        print("ci_job_times: starting at %s, the oldest day not yet folded" % day, file=sys.stderr)
     while day <= today:
         # Each run's jobs are read once, for both records: the per-job day rows and the builds.
         runs = {}
@@ -660,16 +799,35 @@ def update(argv):
             existing = from_csv(open(CSV).read()) if os.path.exists(CSV) else []
             # Written a day at a time, so a failure part way keeps every day before it.
             with open(CSV, "w") as f:
-                f.write(to_csv(merge_days(existing, fresh)))
+                f.write(to_csv(fold_times(merge_days(existing, fresh), today)))
             print("ci_job_times: %s %s: %d run(s)" % (name, day, len(runs[name])), file=sys.stderr)
         if BUILDS_CSV:
             builds = build_rows(day.isoformat(), runs, patterns)
             existing = from_csv(open(BUILDS_CSV).read()) if os.path.exists(BUILDS_CSV) else []
             with open(BUILDS_CSV, "w") as f:
-                f.write(builds_to_csv(merge_build_days(existing, {day.isoformat()}, builds)))
+                f.write(builds_to_csv(fold_builds(merge_build_days(existing, {day.isoformat()}, builds), today)))
             print("ci_job_times: %s: %d green build(s)" % (day, sum(r["kind"] == "build" for r in builds)),
                   file=sys.stderr)
         day += datetime.timedelta(days=1)
+    return 0
+
+
+def fold(argv):
+    """Fold the record files in place: `CSV`, `BUILDS_CSV` and each crate repository's
+    `ci-job-times-<crate>.csv`. `update` does this as it appends; this is for the files as they stood
+    when the fold was ruled, and does nothing to a file with no week to fold."""
+    today = datetime.date.fromisoformat(
+        arg_value(argv, "--today", datetime.datetime.now(datetime.timezone.utc).date().isoformat()))
+    pattern = os.path.join(os.path.dirname(CSV), "ci-job-times-*.csv")
+    for path, folder, writer in ([(CSV, fold_times, to_csv), (BUILDS_CSV, fold_builds, builds_to_csv)]
+                                 + [(p, fold_times, to_csv) for p in sorted(glob.glob(pattern))]):
+        if os.path.exists(path):
+            with open(path) as f:
+                rows = from_csv(f.read())
+            with open(path, "w") as f:
+                f.write(writer(folder(rows, today)))
+            print("ci_job_times: %s: %d row(s) before, %d after" % (path, len(rows), len(folder(rows, today))),
+                  file=sys.stderr)
     return 0
 
 
@@ -895,6 +1053,88 @@ def selftest():
     merged = merge_build_days(rows, {"2026-10-07"}, [])
     expect("a re-read day with no green build clears", merged, [])
 
+    # The fold (ruled 2026-11-01 UTC): per-job rows for the latest 13 weeks, one row per week and
+    # job before that. Built from the recorded run, copied across 15 weeks of Mondays.
+    today = datetime.date(2026, 11, 1)   # a Sunday, in 2026W44; the oldest kept week is W32
+    expect("the oldest kept week starts on its Monday", fold_cutoff(today), datetime.date(2026, 8, 3))
+    expect("a Monday is its own week", fold_cutoff(datetime.date(2026, 11, 2)), datetime.date(2026, 8, 10))
+    days = [datetime.date(2026, 7, 6) + datetime.timedelta(days=i) for i in range(0, 119)]
+    fold_rows = []
+    for i, d in enumerate(days):
+        slower = json.loads(json.dumps(recorded["jobs"]))
+        for j in slower:
+            if j["name"].startswith("test "):
+                j["completed_at"] = (_ts(j["completed_at"]) + datetime.timedelta(seconds=10 * (i % 7))
+                                     ).strftime("%Y-%m-%dT%H:%M:%SZ")
+        fold_rows += day_rows(d.isoformat(), "ci.yml", [run_durations(slower, pats)])
+    week_of_row = lambda r: r["date"] if "W" in r["date"] else week_of(datetime.date.fromisoformat(r["date"]))
+    folded = fold_times(fold_rows, today)
+    old = [r for r in folded if "W" in r["date"]]
+    expect("every day before the cutoff is gone", any("-" in r["date"] and r["date"] < "2026-08-03"
+                                                      for r in folded), False)
+    expect("a kept week keeps its day rows",
+           [r for r in folded if "-" in r["date"]] == sorted(
+               (r for r in fold_rows if r["date"] >= "2026-08-03"), key=_times_order), True)
+    expect("the folded weeks are the four before W32", sorted({r["date"] for r in old}),
+           ["2026W28", "2026W29", "2026W30", "2026W31"])
+    first = lambda rows, w: next(r for r in rows if r["date"] == w and r["kind"] == "job"
+                                 and r["job"] == "test")
+    daily_test = [r for r in fold_rows if r["kind"] == "job" and r["job"] == "test"
+                  and week_of_row(r) == "2026W28"]
+    expect("a week is one row per job", sum(1 for r in old if r["date"] == "2026W28" and r["kind"] == "job"
+                                           and r["job"] == "test"), 1)
+    expect("a week sums its runs", first(old, "2026W28")["runs"], sum(int(r["runs"]) for r in daily_test))
+    expect("a week keeps its largest maximum", first(old, "2026W28")["max_seconds"],
+           "%.0f" % max(float(r["max_seconds"]) for r in daily_test))
+    expect("the fold is smaller", len(folded) < len(fold_rows), True)
+    expect("folding twice changes nothing", fold_times(folded, today) == folded, True)
+    expect("a later fold keeps what an earlier one made",
+           [r for r in fold_times(folded, today + datetime.timedelta(weeks=1)) if r["date"] == "2026W28"]
+           == [r for r in folded if r["date"] == "2026W28"], True)
+    expect("a folded file round trips", from_csv(to_csv(folded)) == [
+        {k: str(v) for k, v in r.items()} for r in folded], True)
+    expect("a re-read day inside a folded week is not merged into it",
+           len([r for r in merge_days(folded, []) if r["date"] == "2026W28"]),
+           len([r for r in folded if r["date"] == "2026W28"]))
+    expect("a weighted median follows the runs", weighted_median([(10.0, 1), (20.0, 5), (90.0, 1)]), 20.0)
+
+    build_pats = {"ci.yml": pats}
+    build_days = {}
+    brows = []
+    for i, d in enumerate(days):
+        for n in range(1 + i % 3):
+            run_n = {"head_sha": "%02d%02d" % (i, n) + "a" * 36, "conclusion": "success", "id": 1}
+            slower = json.loads(json.dumps(recorded["jobs"]))
+            for j in slower:
+                if j["name"].startswith("test "):
+                    j["completed_at"] = (_ts(j["completed_at"]) + datetime.timedelta(seconds=30 * n + i)
+                                         ).strftime("%Y-%m-%dT%H:%M:%SZ")
+            brows += build_rows(d.isoformat(), {"ci.yml": [(run_n, slower)]}, build_pats)
+    expect("the recorded run makes builds", len([r for r in brows if r["kind"] == "build"]) > 100, True)
+    fb = fold_builds(brows, today)
+    fb_old = [r for r in fb if "W" in r["date"]]
+    walls28 = [float(r["seconds"]) for r in brows if r["kind"] == "build"
+               and week_of(datetime.date.fromisoformat(r["date"])) == "2026W28"]
+    week_build = next(r for r in fb_old if r["date"] == "2026W28" and r["kind"] == "build")
+    expect("a week counts its builds", week_build["builds"], len(walls28))
+    expect("a week keeps the median wall", float(week_build["seconds"]), statistics.median(walls28))
+    expect("a week keeps the p90 wall", float(week_build["p90_seconds"]), p90(walls28))
+    expect("a week has one row per job", sorted(r["job"] for r in fb_old if r["date"] == "2026W28"
+                                                and r["kind"] == "job"),
+           sorted({r["job"] for r in brows if r["kind"] == "job"}))
+    expect("no per-build row is left before the cutoff",
+           [r for r in fb if "-" in r["date"] and r["date"] < "2026-08-03"], [])
+    expect("a kept week keeps its builds", [r for r in fb if "-" in r["date"]] == sorted(
+        (r for r in brows if r["date"] >= "2026-08-03"), key=_build_order), True)
+    expect("folding builds twice changes nothing", fold_builds(fb, today) == fb, True)
+    expect("a file with nothing folded keeps its eight columns",
+           builds_to_csv(brows).splitlines()[0], ",".join(BUILD_COLUMNS[:8]))
+    expect("a folded file has all ten", builds_to_csv(fb).splitlines()[0], ",".join(BUILD_COLUMNS))
+    expect("a folded builds file round trips", from_csv(builds_to_csv(fb)) == [
+        {c: str(r.get(c, "")) for c in BUILD_COLUMNS} for r in fb], True)
+    expect("a re-read day outside the fold still replaces its own rows",
+           merge_build_days(fb, {"2026-10-30"}, []) == [r for r in fb if r["date"] != "2026-10-30"], True)
+
     print("ci_job_times selftest: %s" % ("ok" if ok else "FAILED"))
     return 0 if ok else 1
 
@@ -905,6 +1145,8 @@ def main(argv):
     cmd = argv[1] if len(argv) > 1 else ""
     if cmd == "update":
         return update(argv[2:])
+    if cmd == "fold":
+        return fold(argv[2:])
     if cmd == "sync":
         return sync(argv[2:])
     print(__doc__, file=sys.stderr)

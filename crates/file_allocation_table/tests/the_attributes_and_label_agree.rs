@@ -11,7 +11,7 @@ use std::path::Path;
 use std::process::Command;
 
 use file_allocation_table::{
-    Attributes, Format, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
+    Attributes, FormatOptions, FormatPlan, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
     WritableVolume, WriteError,
 };
 use lamfat::{FatType, FileAttributes};
@@ -129,9 +129,9 @@ fn lamfat_label(image: &[u8]) -> String {
 fn attributes_agree(label: &str, mebibytes: usize, fat_type: FatType) {
     let mut volume = WritableVolume::open(formatted(mebibytes, fat_type, 512), NoClock).unwrap();
     let file = volume.create_file(0, "Attribute Test File.txt").unwrap();
-    let dir = volume.make_directory(0, "Attribute Dir").unwrap();
+    let dir = volume.create_directory(0, "Attribute Dir").unwrap();
     let sets = [
-        (Attributes::NONE, FileAttributes::empty()),
+        (Attributes::EMPTY, FileAttributes::empty()),
         (Attributes::READ_ONLY, FileAttributes::READ_ONLY),
         (Attributes::HIDDEN, FileAttributes::HIDDEN),
         (Attributes::SYSTEM, FileAttributes::SYSTEM),
@@ -149,10 +149,10 @@ fn attributes_agree(label: &str, mebibytes: usize, fat_type: FatType) {
     ];
     for (ours, theirs) in sets {
         let file = volume.set_attributes(&file, ours).unwrap();
-        assert_eq!(file.file_attributes(), ours, "{label}");
+        assert_eq!(file.user_attributes(), ours, "{label}");
         let dir = volume.set_attributes(&dir, ours).unwrap();
         assert!(dir.is_directory(), "{label}");
-        volume.sync().unwrap();
+        volume.mark_clean().unwrap();
         let image = volume.into_device();
         assert_eq!(
             lamfat_attributes(&image.bytes, "Attribute Test File.txt"),
@@ -177,13 +177,13 @@ fn attributes_agree(label: &str, mebibytes: usize, fat_type: FatType) {
         Err(WriteError::ReadOnly)
     );
     assert_eq!(volume.remove_file(&locked), Err(WriteError::ReadOnly));
-    let open = volume.set_attributes(&locked, Attributes::NONE).unwrap();
+    let open = volume.set_attributes(&locked, Attributes::EMPTY).unwrap();
     volume
         .open_file_writer(&open)
         .unwrap()
         .write(b"written")
         .unwrap();
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     check_with_fsck(&volume.into_device().bytes, &format!("{label}-unlocked"));
 }
 
@@ -214,7 +214,7 @@ fn labels_agree(label: &str, mebibytes: usize, fat_type: FatType) {
         volume.volume_label().unwrap().unwrap().trimmed(),
         b"ORACLE LBL"
     );
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(lamfat_label(&image.bytes), "ORACLE LBL", "{label}");
     check_with_fsck(&image.bytes, &format!("{label}-label"));
@@ -222,12 +222,12 @@ fn labels_agree(label: &str, mebibytes: usize, fat_type: FatType) {
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
     volume.set_volume_label("RENAMED").unwrap();
     let labels = volume
-        .root_entries()
+        .root_named_entries()
         .map(|e| e.unwrap())
         .filter(|e| e.is_volume_label())
         .count();
     assert_eq!(labels, 1, "{label}");
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(lamfat_label(&image.bytes), "RENAMED", "{label}");
     check_with_fsck(&image.bytes, &format!("{label}-relabel"));
@@ -253,7 +253,7 @@ fn labels_agree(label: &str, mebibytes: usize, fat_type: FatType) {
     }
     assert_eq!(
         volume.set_volume_label("lower"),
-        Err(WriteError::InvalidName)
+        Err(WriteError::LabelRefused)
     );
 }
 
@@ -278,7 +278,7 @@ fn a_label_the_format_wrote_reads_back_and_changes() {
         let options = FormatOptions::new(SectorSize::Bytes512, sectors)
             .with_label("FORMATTED")
             .unwrap();
-        let format = Format::new(options, &mut NoClock).unwrap();
+        let format = FormatPlan::new(options, &mut NoClock).unwrap();
         let mut image = Memory {
             bytes: vec![0u8; sectors as usize * 512],
             size: SectorSize::Bytes512,
@@ -291,7 +291,7 @@ fn a_label_the_format_wrote_reads_back_and_changes() {
             b"FORMATTED"
         );
         volume.set_volume_label("CHANGED").unwrap();
-        volume.sync().unwrap();
+        volume.mark_clean().unwrap();
         let image = volume.into_device();
         assert_eq!(lamfat_label(&image.bytes), "CHANGED");
         check_with_fsck(&image.bytes, "formatted-label");
@@ -333,7 +333,7 @@ fn a_label_mkfs_fat_wrote_reads_back_and_changes() {
         b"MKFSLABEL"
     );
     volume.set_volume_label("AFTER").unwrap();
-    volume.sync().unwrap();
+    volume.mark_clean().unwrap();
     let image = volume.into_device();
     assert_eq!(lamfat_label(&image.bytes), "AFTER");
     check_with_fsck(&image.bytes, "mkfs-label");

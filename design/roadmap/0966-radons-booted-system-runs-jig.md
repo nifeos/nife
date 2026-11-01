@@ -42,7 +42,7 @@ From `bench/radon-2026-10-22/53-ordinary-and-reboot.log`, `script/board-image --
    comment. Grant slot 16 from the TRNG's service when the tree names one, and make the
    progenitor's announcement name the source instead of "the CPU's seed instruction". With entropy,
    the lease's name server gives the resolver too. §137 (a hardware TRNG with no published
-   health-test claim) is `PROPOSED`; it blocks a claim about these bytes, not their use.
+   health-test claim) is `DECIDED` (2026-10-28 UTC) as continuous health tests in the driver, and they are unbuilt; that blocks a claim about these bytes, not their use.
 2. A disk the file server can mount. §260 (radon's block server serves a USB drive) puts radon's
    persistent filesystem behind milestones 163, 242 and 859. Until then, a bench image can carry a
    blank RedoxFS image in its archive, made host-side by `tools/redoxfs_host` as every fixture is.

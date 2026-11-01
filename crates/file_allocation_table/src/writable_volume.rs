@@ -12,20 +12,20 @@
 //! resize sets the write time, the write date and the access date. A rename keeps the entry's
 //! times. Attribute and label changes stamp nothing except a label's first entry.
 //!
-//! Name: provisional. The writing half of `Volume`, whose clock the ruling of 2026-11-01 (UTC)
+//! Name: ratified 2026-11-01 (UTC), the writing half of `Volume`, whose clock the ruling of 2026-11-01 (UTC)
 //! makes required.
 
 use core::ops::{Deref, DerefMut};
 
 use crate::allocation::AllocationError;
 use crate::attributes::Attributes;
-use crate::file::NotAFile;
-use crate::file_write::WriteError;
+use crate::file::FileOpenError;
 use crate::file_writer::FileWriter;
 use crate::named_entry::NamedEntry;
 use crate::reader::{ChainError, Volume};
 use crate::sector::WritableSectorDevice;
 use crate::time::{Clock, Stamp};
+use crate::write_cursor::WriteError;
 
 /// **A volume open for writing.**
 ///
@@ -33,7 +33,7 @@ use crate::time::{Clock, Stamp};
 ///
 /// ```
 /// use file_allocation_table::{
-///     Format, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
+///     FormatPlan, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
 ///     WritableVolume,
 /// };
 ///
@@ -56,7 +56,7 @@ use crate::time::{Clock, Stamp};
 /// }
 ///
 /// let sectors = 16 * 1024;
-/// let format = Format::new(FormatOptions::new(SectorSize::Bytes512, sectors), &mut NoClock).unwrap();
+/// let format = FormatPlan::new(FormatOptions::new(SectorSize::Bytes512, sectors), &mut NoClock).unwrap();
 /// let mut device = Memory(vec![0; sectors as usize * 512]);
 /// format.write_to(&mut device).unwrap();
 /// // No time source here, so the caller says so.
@@ -64,7 +64,7 @@ use crate::time::{Clock, Stamp};
 /// volume.create_file(0, "HELLO.TXT").unwrap();
 /// ```
 ///
-/// Name: provisional. A volume plus the clock its writes need.
+/// Name: ratified 2026-11-01 (UTC), a volume plus the clock its writes need.
 #[derive(Debug)]
 pub struct WritableVolume<D, C> {
     volume: Volume<D>,
@@ -74,7 +74,7 @@ pub struct WritableVolume<D, C> {
 impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
     /// **Open the volume on `device` for writing**, stamping with `clock`.
     ///
-    /// Name: provisional. [`Volume::open`] with the clock the writes need.
+    /// Name: ratified 2026-11-01 (UTC), [`Volume::open`] with the clock the writes need.
     pub fn open(device: D, clock: C) -> Result<WritableVolume<D, C>, crate::ReadError<D::Error>> {
         Ok(WritableVolume {
             volume: Volume::open(device)?,
@@ -84,14 +84,14 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
 
     /// Give the device back.
     ///
-    /// Name: provisional. As `Volume::into_device`.
+    /// Name: ratified 2026-11-01 (UTC), as `Volume::into_device`.
     pub fn into_device(self) -> D {
         self.volume.into_device()
     }
 
     /// Give the volume back without its clock, for reading.
     ///
-    /// Name: provisional. The `into_` convention for giving back what a value owns.
+    /// Name: ratified 2026-11-01 (UTC), the `into_` convention for giving back what a value owns.
     pub fn into_volume(self) -> Volume<D> {
         self.volume
     }
@@ -107,7 +107,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
 
     /// **Take one free cluster** for the end of a chain: linked after `extending` when given.
     ///
-    /// Name: provisional. As the former `Volume::allocate_cluster`.
+    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::allocate_cluster`.
     pub fn allocate_cluster(
         &mut self,
         extending: Option<u32>,
@@ -117,15 +117,15 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
 
     /// **Free every cluster of the chain that starts at `first`**, and return how many.
     ///
-    /// Name: provisional. As the former `Volume::free_chain`.
-    pub fn free_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
-        self.volume.free_chain(first)
+    /// Name: ratified 2026-11-01 (UTC), renamed from `free_chain`, as `Volume::deallocate_chain`.
+    pub fn deallocate_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
+        self.volume.deallocate_chain(first)
     }
 
     /// **Cut the chain that starts at `first` to its first `keep` clusters**, and return how many
     /// clusters it freed.
     ///
-    /// Name: provisional. As the former `Volume::truncate_chain`.
+    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::truncate_chain`.
     pub fn truncate_chain(
         &mut self,
         first: u32,
@@ -136,15 +136,15 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
 
     /// **Write the `FSInfo` hints and set the clean-shutdown bit again.**
     ///
-    /// Name: provisional. As the former `Volume::sync`.
-    pub fn sync(&mut self) -> Result<(), ChainError<D::Error>> {
-        self.volume.sync()
+    /// Name: ratified 2026-11-01 (UTC), renamed from `sync`, as `Volume::mark_clean`.
+    pub fn mark_clean(&mut self) -> Result<(), ChainError<D::Error>> {
+        self.volume.mark_clean()
     }
 
     /// **Create an empty file called `name`** in `directory` (0 for the root), created, written
     /// and accessed now.
     ///
-    /// Name: provisional. As the former `Volume::create_file`.
+    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::create_file`.
     pub fn create_file(
         &mut self,
         directory: u32,
@@ -154,29 +154,29 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
         self.volume.create_file(directory, name)
     }
 
-    /// **Make an empty directory called `name`** in `directory` (0 for the root), created,
+    /// **Create an empty directory called `name`** in `directory` (0 for the root), created,
     /// written and accessed now, with the same times on its `.` and `..`.
     ///
-    /// Name: provisional. As the former `Volume::make_directory`.
-    pub fn make_directory(
+    /// Name: ratified 2026-11-01 (UTC), renamed from `make_directory`, beside `create_file`.
+    pub fn create_directory(
         &mut self,
         directory: u32,
         name: &str,
     ) -> Result<NamedEntry, WriteError<D::Error>> {
         self.tick()?;
-        self.volume.make_directory(directory, name)
+        self.volume.create_directory(directory, name)
     }
 
     /// **Remove the empty directory `entry` names.**
     ///
-    /// Name: provisional. As the former `Volume::remove_directory`.
+    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::remove_directory`.
     pub fn remove_directory(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
         self.volume.remove_directory(entry)
     }
 
     /// **Rename `entry`, and move it to `directory`**; the entry keeps its times.
     ///
-    /// Name: provisional. As the former `Volume::rename`.
+    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::rename`.
     pub fn rename(
         &mut self,
         entry: &NamedEntry,
@@ -188,7 +188,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
 
     /// **Delete the file `entry` names.**
     ///
-    /// Name: provisional. As the former `Volume::remove_file`.
+    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::remove_file`.
     pub fn remove_file(&mut self, entry: &NamedEntry) -> Result<(), WriteError<D::Error>> {
         self.volume.remove_file(entry)
     }
@@ -196,7 +196,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
     /// **Set `entry`'s read-only, hidden, system and archive bits to exactly `attributes`.** The
     /// entry's times do not change.
     ///
-    /// Name: provisional. As the former `Volume::set_attributes`.
+    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::set_attributes`.
     pub fn set_attributes(
         &mut self,
         entry: &NamedEntry,
@@ -207,7 +207,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
 
     /// **Set the volume label.**
     ///
-    /// Name: provisional. As the former `Volume::set_volume_label`.
+    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::set_volume_label`.
     pub fn set_volume_label(&mut self, label: &str) -> Result<(), WriteError<D::Error>> {
         self.tick()?;
         self.volume.set_volume_label(label)
@@ -216,11 +216,12 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
     /// **Open the file `entry` names for writing**, at its start. The writer reads this volume's
     /// clock on each write. Refuses a directory and the volume label.
     ///
-    /// Name: provisional. Beside `Volume::open_file`, which reads and takes no clock.
+    /// Name: ratified 2026-11-01 (UTC), beside `Volume::open_file_reader`, which reads and takes no
+    /// clock.
     pub fn open_file_writer(
         &mut self,
         entry: &NamedEntry,
-    ) -> Result<FileWriter<'_, D, C>, NotAFile> {
+    ) -> Result<FileWriter<'_, D, C>, FileOpenError> {
         FileWriter::new(&mut self.volume, &mut self.clock, entry)
     }
 }

@@ -8,7 +8,8 @@
 //! linked, bytes written, then the size. A crash in between leaves clusters past the size, which
 //! `fsck` reports and no reader follows.
 //!
-//! Name: provisional. The writer's module, beside `file`, which reads.
+//! Name: ratified 2026-11-01 (UTC), renamed from `file_write`: the cursor that turns a position
+//! into a sector, beside `file`, which reads.
 
 use crate::allocation::LinksMut;
 use crate::boot_sector::BootSector;
@@ -17,72 +18,86 @@ use crate::table::TableEntry;
 
 /// **Why a write, a create or a delete stopped.**
 ///
-/// Name: provisional. The one error of every operation that changes a volume above the table.
+/// Name: ratified 2026-11-01 (UTC), the one error of every operation that changes a volume above
+/// the table, beside `AllocationError` and `FileReadError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WriteError<E> {
     /// The chain could not be followed, or a sector could not be read or written.
     ///
-    /// Name: provisional. The chain's own error, unchanged.
+    /// Name: ratified 2026-11-01 (UTC), the chain's own error, unchanged.
     Chain(ChainError<E>),
     /// Every data cluster is in use.
     ///
-    /// Name: provisional. Beside `AllocationError::VolumeFull`.
+    /// Name: ratified 2026-11-01 (UTC), beside `AllocationError::VolumeFull`.
     VolumeFull,
-    /// The write would pass 4 GiB less one byte, the most a FAT file holds.
+    /// The write would take the file past 4 GiB less one byte, the most the 32-bit size field of a
+    /// directory entry holds. The volume may have room; the size field does not. It is not
+    /// [`crate::LayoutError::FileTooBig`], which refuses to lay out a volume whose one file is that
+    /// large or needs more clusters than the volume has left.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition: the 32-bit size field of a directory entry
+    /// cannot hold the result, which `LayoutError::FileTooBig` does not say.
     FileTooLarge,
     /// The chain ends before the size the entry states: the volume is damaged.
     ///
-    /// Name: provisional. As `FileReadError::ShorterThanItsSize`.
+    /// Name: ratified 2026-11-01 (UTC), as `FileReadError::ShorterThanItsSize`.
     ShorterThanItsSize,
     /// The slot the entry names no longer holds that entry.
     ///
-    /// Name: provisional. The entry went stale, because the directory changed under it.
+    /// Name: ratified 2026-11-01 (UTC), the entry went stale, because the directory changed under
+    /// it.
     EntryChanged,
     /// An earlier write failed, so this writer does nothing more rather than skip bytes.
     ///
-    /// Name: provisional. As `FileReadError::AfterAFailure`.
-    AfterAFailure,
+    /// Name: ratified 2026-11-01 (UTC), renamed from `AfterAFailure`: the state after a failure, as
+    /// `FileReadError::Failed`.
+    Failed,
     /// The directory has no free slot and cannot grow: the fixed root of FAT12 and FAT16, or a
     /// directory at 65,536 entries.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     DirectoryFull,
-    /// The name is not a legal short name.
+    /// The name is neither a legal short name nor a long name a VFAT entry may carry.
     ///
-    /// Name: provisional. The condition.
-    InvalidName,
+    /// Name: ratified 2026-11-01 (UTC), renamed from `InvalidName`: as `LayoutError::NameRefused`,
+    /// since a rule refuses the name.
+    NameRefused,
+    /// The volume label is empty, over eleven bytes, or holds a byte a short name refuses.
+    ///
+    /// Name: ratified 2026-11-01 (UTC), new variant, as `FormatError::LabelRefused`: a refused
+    /// label is told apart from a refused file name.
+    LabelRefused,
     /// The directory already holds an entry with that short name.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     AlreadyExists,
     /// The entry is not a file: it is a directory or the volume label.
     ///
-    /// Name: provisional. As `NotAFile`.
+    /// Name: ratified 2026-11-01 (UTC), the condition, as `FileOpenError` says it for an open.
     NotAFile,
     /// The entry is not a directory a caller may remove: a file, `.` or `..`.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     NotADirectory,
     /// The file carries the read-only attribute, so it cannot be written, resized or removed until
     /// [`crate::WritableVolume::set_attributes`] clears the bit.
     ///
-    /// Name: provisional. The condition, as DOS's "access denied".
+    /// Name: ratified 2026-11-01 (UTC), the condition, as DOS's "access denied".
     ReadOnly,
     /// The clock reported a time FAT cannot store: a year before 1980 or after 2107, or a field out
     /// of its range. The operation wrote nothing; a clock that cannot be trusted reports no time
     /// instead.
     ///
-    /// Name: provisional. The ruling of 2026-11-01 (UTC) on detail (b): refuse, do not clamp.
+    /// Name: ratified 2026-11-01 (UTC), the refusal of a time FAT cannot store, where a clamp would
+    /// be silent; as `FormatError::TimeOutOfRange`.
     TimeOutOfRange,
     /// The directory holds entries other than `.` and `..`.
     ///
-    /// Name: provisional. The condition.
+    /// Name: ratified 2026-11-01 (UTC), the condition.
     DirectoryNotEmpty,
     /// A directory cannot move into itself or below itself.
     ///
-    /// Name: provisional. The condition; it would cut the tree off from the root.
+    /// Name: ratified 2026-11-01 (UTC), the condition; it would cut the tree off from the root.
     MovedIntoItself,
 }
 

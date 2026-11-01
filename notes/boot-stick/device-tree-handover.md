@@ -12,8 +12,9 @@ EDK2 on aarch64 hid the tree, and how the loader now writes one from the ACPI ta
    EDK2's `gFdtTableGuid` (`b1b621d5-f19c-41a5-830b-d9152c69aae0`, read from EDK2's `MdePkg.dec`).
 2. It copies the tree below what the kernel's boot page tables reach (2 GiB on aarch64, 3 GiB on
    riscv64), adding `/chosen/linux,initrd-start` and `linux,initrd-end` for the archive it placed.
-   That is `uefi_loader::device_tree_patch`, whose tests decode its output with the crate the kernel
-   decodes with, so the two cannot disagree without a host test failing.
+   That is `crates/device_tree_patch`, whose tests decode its output with the crate the kernel
+   decodes with, so the two cannot disagree without a host test failing. It reads its own output
+   back the same way and refuses a tree that does not report the range its caller asked for.
 3. On riscv64 it also asks which hart it is, through `RISCV_EFI_BOOT_PROTOCOL` (GUID read from
    EDK2's `UefiCpuPkg.dec`), falling back to `/chosen/boot-hartid`, and prints which answered.
 4. It exits boot services and enters the kernel with the tree's address in a register. On aarch64

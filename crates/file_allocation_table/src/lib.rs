@@ -12,34 +12,34 @@
 //! and reads a directory slot by slot ([`Volume::root_directory`], [`Volume::directory`]). A chain
 //! walk yields at most as many clusters as the volume holds, so no table contents can make it
 //! loop, and every read it makes lies inside the volume the boot sector describes.
-//! [`Volume::root_entries`] and [`Volume::entries`] read a directory as files: each short entry
+//! [`Volume::root_named_entries`] and [`Volume::named_entries`] read a directory as files: each short entry
 //! comes with its long name ([`LongFileName`]), assembled from the pieces ahead of it and accepted
 //! only when their ordinals, padding and checksum are the specification's.
 //!
 //! [`Volume::lookup`] finds an entry by path, without regard to case, by long name or short name.
-//! [`Volume::open_file`] opens one for reading as a [`FileReader`], which reads through the chain
+//! [`Volume::open_file_reader`] opens one for reading as a [`FileReader`], which reads through the chain
 //! and never returns a byte past the entry's size. A whole-disk image opens through
-//! [`MasterBootRecord`]: [`Partition::device`] shows one partition as a device of its own, and
+//! [`MasterBootRecord`]: [`Partition::restrict_device`] shows one partition as a device of its own, and
 //! [`Volume::open`] opens the volume inside it.
 //!
 //! Writes go through [`WritableVolume`], a [`Volume`] with the [`Clock`] its writes stamp with;
 //! [`NoClock`] is the explicit "no time". A clock supplies UTC, since FAT stores no time zone (see
 //! [`Clock`]). A read stamps nothing and takes no clock. It orders every
-//! write so a crash leaks a cluster and never shares one ([`WritableVolume::sync`] writes the FAT32
+//! write so a crash leaks a cluster and never shares one ([`WritableVolume::mark_clean`] writes the FAT32
 //! `FSInfo` hints and sets the clean-shutdown bit again, [`Volume::is_clean`]). It makes and
 //! writes files and directories (a name that is not 8.3 gets long-name slots and a numbered alias),
 //! renames, sets attributes and the label, and grows a full directory except FAT12's and FAT16's
 //! fixed root. Each returns a [`WriteError`].
 //!
-//! [`Format`] lays out an empty volume of any size, as sectors a caller writes. [`VolumeLayout`]
+//! [`FormatPlan`] lays out an empty volume of any size, as sectors a caller writes. [`VolumeLayout`]
 //! lays out one shape through the same sizing and boot sector: a FAT32 EFI system partition holding
 //! one boot file at `\EFI\BOOT\<name>`. A volume below [`FAT32_MINIMUM_CLUSTERS`] is refused.
 
 //! # BUGS
 //!
 //! - The `mkfs` numbers its alias `~1`, right only while the volume holds one file.
-//! - The `mkfs` writes the `FSInfo` free-cluster count once. After that only [`WritableVolume::sync`] keeps
-//!   it; a volume dropped without a sync leaves a stale hint, which the specification lets a driver
+//! - The `mkfs` writes the `FSInfo` free-cluster count once. After that only [`WritableVolume::mark_clean`] keeps
+//!   it; a volume dropped without `mark_clean` leaves a stale hint, which the specification lets a driver
 //!   tolerate and `fsck.fat` reports.
 //! - The backup `FSInfo` copy in the backup boot area is never updated, as with Linux's driver.
 //! - A newly allocated cluster holds whatever the device held; a caller that needs zeros writes them.
@@ -79,14 +79,13 @@ mod allocation;
 mod attributes;
 mod boot_sector;
 mod directory;
-mod directory_write;
+mod directory_writer;
 #[doc(alias = "extensible firmware interface system partition")]
 pub mod efi_system_partition;
 mod file;
-mod file_write;
+mod file_system_information;
 mod file_writer;
 mod format;
-mod fs_info;
 mod label;
 mod long_name;
 mod long_name_assembly;
@@ -99,30 +98,31 @@ mod table;
 mod time;
 mod volume;
 mod writable_volume;
+mod write_cursor;
 
 pub use allocation::AllocationError;
 pub use attributes::Attributes;
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
-pub use file::{FileReadError, FileReader, NotAFile};
-pub use file_write::WriteError;
+pub use file::{FileOpenError, FileReadError, FileReader};
+pub use file_system_information::{FileSystemInformation, FileSystemInformationError};
 pub use file_writer::FileWriter;
-pub use format::{Format, FormatError, FormatOptions};
-pub use fs_info::{FsInfo, FsInfoError};
+pub use format::{FormatError, FormatOptions, FormatPlan};
 pub use label::VolumeLabel;
-pub use long_name_assembly::{LongFileName, LongNameError};
+pub use long_name_assembly::{LongFileName, LongFileNameError};
 pub use lookup::LookupError;
 pub use master_boot_record::{
     MasterBootRecord, MasterBootRecordError, MasterBootRecordReadError, PARTITION_COUNT, Partition,
     PartitionDevice, PartitionError,
 };
-pub use named_entry::{Entries, NamedEntry};
+pub use named_entry::{NamedEntries, NamedEntry};
 pub use reader::{Chain, ChainError, Volume};
 pub use sector::{SectorDevice, SectorSize, WritableSectorDevice};
 pub use table::TableEntry;
-pub use time::{Clock, NoClock, Timestamp};
+pub use time::{CivilDateTime, Clock, NoClock};
 pub use volume::{
     CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MINIMUM_CLUSTERS, LayoutError, RESERVED_SECTORS,
     ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT, VolumeLayout,
 };
 pub use writable_volume::WritableVolume;
+pub use write_cursor::WriteError;

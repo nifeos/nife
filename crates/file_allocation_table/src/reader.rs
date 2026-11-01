@@ -8,7 +8,7 @@
 use crate::allocation::WriterState;
 use crate::boot_sector::{BootSector, ReadError};
 use crate::directory::Directory;
-use crate::named_entry::Entries;
+use crate::named_entry::NamedEntries;
 use crate::sector::{SectorDevice, SectorSize};
 use crate::table::{self, TableEntry};
 use crate::time::Stamp;
@@ -218,16 +218,18 @@ impl<D: SectorDevice> Volume<D> {
 
     /// **The root directory as named entries**: each short entry with its checked long name.
     ///
-    /// Name: provisional. [`Volume::root_directory`] with the names joined.
-    pub fn root_entries(&mut self) -> Entries<'_, D> {
-        Entries::new(self.root_directory())
+    /// Name: ratified 2026-11-01 (UTC), renamed from `root_entries`: `Volume::root_directory` with
+    /// the names joined.
+    pub fn root_named_entries(&mut self) -> NamedEntries<'_, D> {
+        NamedEntries::new(self.root_directory())
     }
 
     /// **The directory whose first cluster is `first`, as named entries.** Cluster 0 is the root.
     ///
-    /// Name: provisional. [`Volume::directory`] with the names joined.
-    pub fn entries(&mut self, first: u32) -> Entries<'_, D> {
-        Entries::new(self.directory(first))
+    /// Name: ratified 2026-11-01 (UTC), renamed from `entries`: `Volume::directory` with the names
+    /// joined.
+    pub fn named_entries(&mut self, first: u32) -> NamedEntries<'_, D> {
+        NamedEntries::new(self.directory(first))
     }
 
     /// **The directory whose first cluster is `first`**, as a short entry's

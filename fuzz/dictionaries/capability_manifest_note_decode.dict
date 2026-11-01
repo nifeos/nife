@@ -1,0 +1,15 @@
+# libFuzzer dictionary for the manifest note decoders.
+#
+# Each decoder starts by comparing a little-endian version word, and the manifest decoder accepts
+# three. Without these the fuzzer spends its first inputs guessing that `\x02\x00\x00\x00` is a
+# known version. The zone and verb texts are the spellings the checks above them care about.
+
+version1="\x01\x00\x00\x00"
+version2="\x02\x00\x00\x00"
+version3="\x03\x00\x00\x00"
+one_scope="\x01\x00\x00\x00\x01\x00\x00\x00"
+root_zone="\x00"
+zone_org="\x03org"
+zone_nifeos="\x0anifeos.org"
+verb_list="list -u"
+dot="."

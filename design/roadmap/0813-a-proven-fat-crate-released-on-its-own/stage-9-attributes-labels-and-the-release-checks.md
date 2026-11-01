@@ -8,7 +8,7 @@ timestamps, which follow a ruling of 2026-11-01 (UTC) that the clock is required
 
 - `Attributes`, a set of the four bits a user sets (read-only, hidden, system, archive), and
   `Volume::set_attributes(entry, attributes)`, which sets exactly those bits and keeps the
-  directory bit and every other. It refuses the volume label, `.` and `..`. `NamedEntry::file_attributes`
+  directory bit and every other. It refuses the volume label, `.` and `..`. `NamedEntry::user_attributes`
   reads them. A file with the read-only bit refuses a write, a resize and a remove with
   `WriteError::ReadOnly` until the bit clears.
 - `VolumeLabel`, `Volume::volume_label` and `Volume::set_volume_label`. A label is up to eleven
@@ -17,10 +17,10 @@ timestamps, which follow a ruling of 2026-11-01 (UTC) that the clock is required
   root and falls back to the boot sector, and treats `NO NAME` as no label. A change writes both.
 - `README.md` rewritten for release, with an example that `tests/the_readme_example.rs` compiles and
   runs, and a manifest description that says what the crate does now.
-- `script/crate-standalone file_allocation_table` passes on everything but one check. The fixture
-  notes no longer cite the nife tree, and the copy builds on Rust 1.88 for the host and the three
-  bare-metal targets. What remains is names: 191 provisional names await ratification, which the
-  architect does with `python3 helpers/name_release.py --draft file_allocation_table`.
+- The fixture notes no longer cite the nife tree, and the copy builds on Rust 1.88 for the host and
+  the three bare-metal targets. The architect ratified the last ten provisional names on 2026-11-01 (UTC):
+  the `time` module with `CivilDateTime`, `Clock` and `NoClock`, the `writable_volume` module with
+  `WritableVolume`, `open` and `into_volume`, and `LayoutError::TimeOutOfRange`.
 
 
 ## The evidence
@@ -34,8 +34,8 @@ timestamps, which follow a ruling of 2026-11-01 (UTC) that the clock is required
 
 ## Names minted
 
-All provisional: `Attributes` (`NONE`, `READ_ONLY`, `HIDDEN`, `SYSTEM`, `ARCHIVE`, `union`,
-`without`, `contains`, `bits`), `Volume::set_attributes`, `NamedEntry::file_attributes`,
+Ratified 2026-11-01 (UTC): `Attributes` (`EMPTY`, `READ_ONLY`, `HIDDEN`, `SYSTEM`, `ARCHIVE`, `union`,
+`difference`, `contains`, `bits`), `Volume::set_attributes`, `NamedEntry::user_attributes`,
 `WriteError::ReadOnly`, `VolumeLabel` (`as_bytes`, `trimmed`), `Volume::volume_label`,
 `Volume::set_volume_label`, and the modules `attributes` and `label`.
 
@@ -47,12 +47,12 @@ no time set stamps the zero timestamp. The ruling refuses an optional clock, the
 zero timestamps. A required clock can later relax to optional without breaking semver; the reverse
 cannot.
 
-- `Clock` (`now(&mut self) -> Option<Timestamp>`), `Timestamp` (year, month, day, hour, minute and
-  second as plain numbers, no nife type), and `NoClock`, which always reports none.
+- `Clock` (`now(&mut self) -> Option<CivilDateTime>`), `CivilDateTime` (year, month, day, hour,
+  minute and second as plain numbers, no nife type), and `NoClock`, which always reports none.
 - `WritableVolume<D, C: Clock>` holds a `Volume` and its clock and derefs to the `Volume`. Every
   write method lives there; a read-only `Volume` has none, so a write without a clock does not
   compile. The clock is a type parameter and not a trait object, so the crate keeps `no_std`
-  without an allocator and a caller's clock is a plain value. `Format::new` and
+  without an allocator and a caller's clock is a plain value. `FormatPlan::new` and
   `VolumeLayout::new` take a clock too, and read it once.
 - Each operation reads the clock once. A new file or directory (and its `.` and `..`, and a new
   label entry) takes that time as its creation, write and access time, with the odd second in the
@@ -87,6 +87,6 @@ code follows it, and it is easy to change before release.
 | Kani | `any_time_packs_to_legal_fields` covers every year, month, day, hour, minute and second, valid or not: the pack refuses exactly when the time is out of range, and otherwise the packed fields are legal, the tenths byte is 0 or 100, and the time comes back exactly |
 | falsification | a month check that lets 13 through turns the harness red at its range assertion |
 | unit tests | packing, clamping, the two stamp shapes, and a counting clock that proves one reading per operation, none for a rename, an attribute change, a removal or a read, and every stamped field on create, directory, `.`, `..`, write, resize and label |
-| refusal | for create, make directory, label, write (of bytes and of none) and resize (up and down), an out-of-range time returns `TimeOutOfRange` and leaves the image byte for byte as it was; a refused writer works again once the clock is right; tests through a volume pin the exact edges (1979-12-31 23:59:58 refuses, 1980-01-01 00:00:00 and 2107-12-31 23:59:58 pass, 2108-01-01 refuses); `Format` and `VolumeLayout` refuse the same way |
+| refusal | for create, make directory, label, write (of bytes and of none) and resize (up and down), an out-of-range time returns `TimeOutOfRange` and leaves the image byte for byte as it was; a refused writer works again once the clock is right; tests through a volume pin the exact edges (1979-12-31 23:59:58 refuses, 1980-01-01 00:00:00 and 2107-12-31 23:59:58 pass, 2108-01-01 refuses); `FormatPlan` and `VolumeLayout` refuse the same way |
 | oracle tests | on FAT12, FAT16 and FAT32 volumes rust-fatfs formatted, rust-fatfs reads the creation, write and access times back as the clock gave them, the odd second included; `fsck.fat -n` accepts every volume, the first and last moments FAT stores included; a clock with no time equals `NoClock`; the format's label entry and the EFI volume's directories carry the time |
 | fuzz | the writer target now feeds the volume a clock built from its input, including invalid times, which the crate refuses without a panic; 127,000 runs in 61 seconds, no crash |

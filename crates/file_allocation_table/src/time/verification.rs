@@ -14,7 +14,7 @@ use super::*;
 /// Falsification: replayable `crates/file_allocation_table/falsifications/time.verification.any_time_packs_to_legal_fields.patch`
 #[kani::proof]
 fn any_time_packs_to_legal_fields() {
-    let now = Timestamp {
+    let now = CivilDateTime {
         year: kani::any(),
         month: kani::any(),
         day: kani::any(),

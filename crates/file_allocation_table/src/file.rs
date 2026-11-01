@@ -8,7 +8,7 @@
 //! than the size is read only as far as the size, and a chain that loops ends at the volume's
 //! cluster count with `TooLong`.
 //!
-//! Name: provisional. The reader's module, beside `directory`.
+//! Name: ratified 2026-11-01 (UTC), the reader's module, beside `directory`.
 
 use crate::boot_sector::BootSector;
 use crate::named_entry::NamedEntry;
@@ -17,28 +17,30 @@ use crate::sector::{SectorDevice, SectorSize};
 
 /// **Why a file could not be opened for reading.**
 ///
-/// Name: provisional. The entry is not a file.
+/// Name: ratified 2026-11-01 (UTC), renamed from `NotAFile`: named for the failed operation, one
+/// name for `open_file_reader` and `open_file_writer`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct NotAFile;
+pub struct FileOpenError;
 
 /// **Why a file read stopped.**
 ///
-/// Name: provisional. Beside `ChainError`, which it wraps.
+/// Name: ratified 2026-11-01 (UTC), beside `ChainError`, which it wraps.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FileReadError<E> {
     /// The chain could not be followed, or a sector could not be read.
     ///
-    /// Name: provisional. The chain's own error, unchanged.
+    /// Name: ratified 2026-11-01 (UTC), the chain's own error, unchanged.
     Chain(ChainError<E>),
     /// The chain ends before the file's size is covered: the entry promises more bytes than the
     /// volume has clusters for.
     ///
-    /// Name: provisional. The condition, in the directory entry's terms.
+    /// Name: ratified 2026-11-01 (UTC), the condition, in the directory entry's terms.
     ShorterThanItsSize,
     /// An earlier read failed, so this reader returns nothing more rather than skip bytes.
     ///
-    /// Name: provisional. Why a reader that failed stays failed.
-    AfterAFailure,
+    /// Name: ratified 2026-11-01 (UTC), renamed from `AfterAFailure`: the state after a failure, as
+    /// `WriteError::Failed`.
+    Failed,
 }
 
 /// **A run of bytes inside one sector** that holds the next bytes of a file.
@@ -100,7 +102,7 @@ impl FileCursor {
 
     /// **The next span of at most `want` bytes**, `Ok(None)` at the end of the file or when `want`
     /// is 0, and an error when the chain cannot supply the bytes the size promises. After an error
-    /// every call returns `AfterAFailure`.
+    /// every call returns `Failed`.
     pub(crate) fn next_span<L: Links>(
         &mut self,
         links: &mut L,
@@ -108,7 +110,7 @@ impl FileCursor {
         want: usize,
     ) -> Result<Option<Span>, FileReadError<L::Error>> {
         if self.failed {
-            return Err(FileReadError::AfterAFailure);
+            return Err(FileReadError::Failed);
         }
         match self.span(links, boot, want) {
             Ok(span) => Ok(span),
@@ -163,13 +165,14 @@ impl FileCursor {
     }
 }
 
-/// **A file open for reading**: what [`Volume::open_file`] returns.
+/// **A file open for reading**: what [`Volume::open_file_reader`] returns.
 ///
 /// It reads forward from a position and seeks to any position in the file. A read costs one
 /// device read per sector it touches, plus the table reads the chain walk needs. A seek backwards
 /// walks the chain again from its start, bounded by the volume's cluster count.
 ///
-/// Name: provisional. A file being read; it reads, so it is named for what it reads, as `Directory`.
+/// Name: ratified 2026-11-01 (UTC), a file being read; it reads, so it is named for what it reads,
+/// as `Directory`.
 #[derive(Debug)]
 pub struct FileReader<'v, D> {
     volume: &'v mut Volume<D>,
@@ -192,22 +195,23 @@ impl<'v, D: SectorDevice> FileReader<'v, D> {
 
     /// The file's length in bytes, as its directory entry states.
     ///
-    /// Name: provisional. Matches `ShortEntry::size_bytes`.
+    /// Name: ratified 2026-11-01 (UTC), matches `ShortEntry::size_bytes`.
     pub const fn size_bytes(&self) -> u32 {
         self.cursor.size
     }
 
     /// The position of the next byte read.
     ///
-    /// Name: provisional. A byte offset from the file's start.
+    /// Name: ratified 2026-11-01 (UTC), a byte offset from the file's start.
     pub const fn position(&self) -> u32 {
         self.cursor.position()
     }
 
     /// **Move to byte `position`**, or to the end of the file when `position` is past it.
     ///
-    /// Name: provisional. The position, set.
-    pub fn seek(&mut self, position: u32) {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `seek`: the position it sets;
+    /// `std::io::Seek::seek` takes an offset from a base, and this takes a position.
+    pub fn set_position(&mut self, position: u32) {
         let boot = *self.volume.boot_sector();
         self.cursor.seek(&boot, position);
     }
@@ -216,9 +220,12 @@ impl<'v, D: SectorDevice> FileReader<'v, D> {
     /// reads fewer only at the end of the file, so a return of 0 for a nonempty buffer is the end.
     ///
     /// Never returns bytes past the file's size. An error ends the reader, and bytes copied earlier
-    /// in the same call are not reported: later calls return [`FileReadError::AfterAFailure`].
+    /// in the same call are not reported: later calls return [`FileReadError::Failed`].
     ///
-    /// Name: provisional. The `Read` verb of the standard library's trait.
+    /// This is not `std::io::Read::read`: the crate is `no_std` and implements no `std::io` trait,
+    /// and the error type is [`FileReadError`].
+    ///
+    /// Name: ratified 2026-11-01 (UTC), the `Read` verb of the standard library's trait.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize, FileReadError<D::Error>> {
         let boot = *self.volume.boot_sector();
         let sector_bytes = boot.sector_size().bytes();
@@ -262,10 +269,14 @@ impl<D: SectorDevice> Volume<D> {
     /// size, which came off the volume: a first cluster that is not a data cluster, and a size the
     /// chain cannot cover, surface as errors on the first read that needs them.
     ///
-    /// Name: provisional. What a caller does with an entry to read it.
-    pub fn open_file(&mut self, entry: &NamedEntry) -> Result<FileReader<'_, D>, NotAFile> {
+    /// Name: ratified 2026-11-01 (UTC), renamed from `open_file`: pairs with `open_file_writer`;
+    /// its error is `FileOpenError`.
+    pub fn open_file_reader(
+        &mut self,
+        entry: &NamedEntry,
+    ) -> Result<FileReader<'_, D>, FileOpenError> {
         if entry.is_directory() || entry.is_volume_label() {
-            return Err(NotAFile);
+            return Err(FileOpenError);
         }
         Ok(FileReader::new(
             self,

@@ -39,13 +39,13 @@ fn used_entries_read_their_fields_in_table_order() {
     let table = MasterBootRecord::parse(&sector).unwrap();
     assert_eq!(table.partition(0), None);
     let fat = table.partition(1).unwrap();
-    assert!(fat.is_bootable() && fat.holds_file_allocation_table());
+    assert!(fat.is_bootable() && fat.has_file_allocation_table_type());
     assert_eq!(
-        (fat.kind(), fat.first_sector(), fat.sector_count()),
+        (fat.partition_type(), fat.first_sector(), fat.sector_count()),
         (0x0B, 63, 0x1FFA1)
     );
     let linux = table.partition(3).unwrap();
-    assert!(!linux.is_bootable() && !linux.holds_file_allocation_table());
+    assert!(!linux.is_bootable() && !linux.has_file_allocation_table_type());
     let mut all = table.partitions();
     assert_eq!(all.next(), Some(fat));
     assert_eq!(all.next(), Some(linux));
@@ -62,7 +62,7 @@ fn every_fat_type_byte_is_recognized_and_others_are_not() {
         assert_eq!(
             table
                 .partition(0)
-                .is_some_and(|p| p.holds_file_allocation_table()),
+                .is_some_and(|p| p.has_file_allocation_table_type()),
             expected,
             "{kind:#x}"
         );
@@ -161,7 +161,7 @@ fn a_partition_device_adds_the_first_sector_and_stops_at_the_end() {
         .unwrap()
         .partition(0)
         .unwrap();
-    let mut device = partition.device(Numbered {
+    let mut device = partition.restrict_device(Numbered {
         last: None,
         fail: false,
     });
@@ -185,7 +185,7 @@ fn a_partition_device_adds_the_first_sector_and_stops_at_the_end() {
         "a refused read never reached the device"
     );
     inner.fail = true;
-    let mut again = partition.device(inner);
+    let mut again = partition.restrict_device(inner);
     assert_eq!(
         again.read_sector(0, &mut buffer),
         Err(PartitionError::Device(7))

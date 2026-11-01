@@ -59,7 +59,7 @@ fn a_file_read_stays_inside_its_size_and_its_clusters() {
             }
             Err(error) => {
                 if failed {
-                    assert_eq!(error, FileReadError::AfterAFailure);
+                    assert_eq!(error, FileReadError::Failed);
                 }
                 failed = true;
             }

@@ -49,7 +49,7 @@ fn a_short_entry_carries_the_long_name_ahead_of_it() {
     all[count + 1] = short(b"SUB        ", 0x10, 14, 0);
     put(&mut image, &all[..count + 2]);
     let mut volume = Volume::open(image).unwrap();
-    let mut entries = volume.root_entries();
+    let mut entries = volume.root_named_entries();
 
     let first = entries.next().unwrap().unwrap();
     assert_eq!(&first.short_name(), b"ALONGF~1TXT");
@@ -79,12 +79,12 @@ fn a_run_for_another_entry_is_refused_and_the_entry_is_still_listed() {
     slots[count - 1][..11].copy_from_slice(b"RENAMED TXT");
     put(&mut image, &slots[..count]);
     let mut volume = Volume::open(image).unwrap();
-    let entry = volume.root_entries().next().unwrap().unwrap();
+    let entry = volume.root_named_entries().next().unwrap().unwrap();
     assert_eq!(&entry.short_name(), b"RENAMED TXT");
     assert_eq!(entry.long_name(), None);
     assert_eq!(
         entry.long_name_refusal(),
-        Some(LongNameError::ChecksumMismatch)
+        Some(LongFileNameError::ChecksumMismatch)
     );
 }
 
@@ -97,7 +97,7 @@ fn a_run_does_not_leak_into_the_entry_after_its_own() {
     all[count] = short(b"SECOND  TXT", 0x20, 10, 1);
     put(&mut image, &all[..count + 1]);
     let mut volume = Volume::open(image).unwrap();
-    let mut entries = volume.root_entries();
+    let mut entries = volume.root_named_entries();
     assert!(entries.next().unwrap().unwrap().long_name().is_some());
     let second = entries.next().unwrap().unwrap();
     assert_eq!(second.long_name(), None);
@@ -116,7 +116,7 @@ fn a_deleted_files_pieces_are_skipped_with_it() {
     all[count] = short(b"LIVE    TXT", 0x20, 10, 1);
     put(&mut image, &all[..count + 1]);
     let mut volume = Volume::open(image).unwrap();
-    let mut entries = volume.root_entries();
+    let mut entries = volume.root_named_entries();
     let live = entries.next().unwrap().unwrap();
     assert_eq!(&live.short_name(), b"LIVE    TXT");
     assert_eq!(live.long_name_refusal(), None);
@@ -136,7 +136,7 @@ fn the_dot_entries_and_the_label_are_flagged() {
         ],
     );
     let mut volume = Volume::open(image).unwrap();
-    let mut entries = volume.root_entries();
+    let mut entries = volume.root_named_entries();
     assert!(entries.next().unwrap().unwrap().is_dot_entry());
     assert!(entries.next().unwrap().unwrap().is_dot_entry());
     assert!(entries.next().unwrap().unwrap().is_volume_label());
@@ -149,7 +149,7 @@ fn a_device_error_ends_the_listing() {
     let mut image = Image::fat12();
     image.refuse = Some(5);
     let mut volume = Volume::open(image).unwrap();
-    let mut entries = volume.root_entries();
+    let mut entries = volume.root_named_entries();
     assert_eq!(entries.next(), Some(Err(ChainError::Device(5))));
     assert_eq!(entries.next(), None);
 }
@@ -161,9 +161,9 @@ fn a_subdirectory_lists_by_its_cluster() {
     let at = (crate::reader::tests::FIRST_DATA + 18) * 512;
     image.bytes[at..at + 32].copy_from_slice(&short(b"CHILD   TXT", 0x20, 30, 3));
     let mut volume = Volume::open(image).unwrap();
-    let child = volume.entries(20).next().unwrap().unwrap();
+    let child = volume.named_entries(20).next().unwrap().unwrap();
     assert_eq!(&child.short_name(), b"CHILD   TXT");
-    assert_eq!(volume.entries(0).count(), 0);
+    assert_eq!(volume.named_entries(0).count(), 0);
 }
 
 #[test]
@@ -176,7 +176,7 @@ fn a_listing_yields_nothing_after_an_error_however_often_it_is_asked() {
     image.bytes[(6 + 40 - 2) * 512..(6 + 41 - 2) * 512].fill(0xE5);
     image.refuse = Some(6 + 41 - 2);
     let mut volume = crate::Volume::open(image).unwrap();
-    let mut entries = volume.entries(40);
+    let mut entries = volume.named_entries(40);
     let mut errors = 0;
     for _ in 0..20 {
         if let Some(Err(_)) = entries.next() {

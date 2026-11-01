@@ -1169,6 +1169,8 @@ def _builds(path=None):
         return []
     held = {}
     for row in csv.DictReader(path.read_text().splitlines()):
+        if FOLDED_WEEK.match(row['date']):
+            continue
         build = held.setdefault((row['date'], row['build']), [None, {}])
         if row['kind'] == 'build':
             build[0] = float(row['seconds'])
@@ -1176,6 +1178,33 @@ def _builds(path=None):
             build[1][(row['workflow'], row['job'])] = (float(row['start_seconds']),
                                                       float(row['end_seconds']), float(row['seconds']))
     return [(d, jobs, wall) for (d, _b), (wall, jobs) in sorted(held.items()) if wall is not None]
+
+
+# A week older than 13 weeks is folded into one row per job and a `build` row (ruled 2026-11-01
+# UTC; `helpers/ci_job_times.py`'s fold section), dated by its ISO week and not a day.
+FOLDED_WEEK = re.compile(r'^\d{4}W\d{2}$')
+
+
+def _folded_weeks(path=None):
+    """{ISO week: {'builds': n, 'median': seconds, 'p90': seconds, 'jobs': {(workflow, job): (builds
+    that ran it, median start, median end, median seconds)}}} for the weeks `ci-builds.csv` holds
+    folded, or {} without the file or a folded row. A folded week has the figures every chart reads
+    from a week, to the digit, and no per-build row."""
+    path = path or CI_BUILDS_PATH
+    if not path.exists():
+        return {}
+    weeks = {}
+    for row in csv.DictReader(path.read_text().splitlines()):
+        if not FOLDED_WEEK.match(row['date']):
+            continue
+        held = weeks.setdefault(row['date'], {'builds': 0, 'median': None, 'p90': None, 'jobs': {}})
+        if row['kind'] == 'build':
+            held.update(builds=int(row['builds']), median=float(row['seconds']),
+                        p90=float(row['p90_seconds']))
+        else:
+            held['jobs'][(row['workflow'], row['job'])] = (int(row['builds']), float(row['start_seconds']),
+                                                            float(row['end_seconds']), float(row['seconds']))
+    return {w: h for w, h in weeks.items() if h['median'] is not None}
 
 
 def p90(values):
@@ -1193,8 +1222,12 @@ def builds_by_week(path=None):
     weeks = {}
     for d, _jobs, wall in _builds(path):
         weeks.setdefault(week_of_date(d), []).append(wall / 60.0)
-    return {w: {'ci_builds': len(v), 'ci_build_median_minutes': '%.1f' % statistics.median(v),
-                'ci_build_p90_minutes': '%.1f' % p90(v)} for w, v in weeks.items()}
+    out = {w: {'ci_builds': len(v), 'ci_build_median_minutes': '%.1f' % statistics.median(v),
+               'ci_build_p90_minutes': '%.1f' % p90(v)} for w, v in weeks.items()}
+    for w, held in _folded_weeks(path).items():
+        out[w] = {'ci_builds': held['builds'], 'ci_build_median_minutes': '%.1f' % (held['median'] / 60.0),
+                  'ci_build_p90_minutes': '%.1f' % (held['p90'] / 60.0)}
+    return out
 
 
 def job_label(workflow, job):
@@ -1222,7 +1255,17 @@ def build_job_weeks(path=None):
             per_build[bar_key(key)] = max(per_build.get(bar_key(key), 0.0), t / 60.0)
         for key, minutes in per_build.items():
             week.setdefault(key, []).append(minutes)
-    return {w: {k: statistics.median(v) for k, v in jobs.items()} for w, jobs in held.items()}
+    out = {w: {k: statistics.median(v) for k, v in jobs.items()} for w, jobs in held.items()}
+    for w, folded in _folded_weeks(path).items():
+        # A folded week holds each job's median over the builds that ran it. The jobs that share a
+        # bar (`x-shard` and the `x` that waits for it, in one build) give the bar the larger of
+        # their medians, where a per-build week takes the median of each build's larger. The two
+        # agree when one job dominates, as a shard does the job waiting for it.
+        best = {}
+        for key, (_n, _s, _e, t) in folded['jobs'].items():
+            best[bar_key(key)] = max(best.get(bar_key(key), 0.0), t / 60.0)
+        out[w] = best
+    return out
 
 
 def build_job_series(weeks, path=None):
@@ -1255,6 +1298,11 @@ def critical_path(week, path=None):
     median wall, builds) for the week's green builds, latest median end first, so the job that
     sets the build time heads the list. Each figure is the median over the builds that ran the job,
     so a bar is a typical run of it and not any one build."""
+    folded = _folded_weeks(path).get(week)
+    if folded:
+        rows = [(job_label(*k), k, s / 60.0, t / 60.0, e / 60.0, n) for k, (n, s, e, t) in folded['jobs'].items()]
+        rows.sort(key=lambda r: (-r[4], r[0]))
+        return rows, folded['median'] / 60.0, folded['builds']
     starts, secs, ends, walls = {}, {}, {}, []
     for d, jobs, wall in _builds(path):
         if week_of_date(d) != week:
@@ -3756,6 +3804,22 @@ def selftest():
             '2026-10-12,ccc,build,,,0,600,600\n'
             '2026-10-12,ccc,job,ci.yml,test,30,600,570\n')
         build_weeks = builds_by_week(builds_csv)
+        # The same W41, folded (ruled 2026-11-01 UTC): its two builds are one `build` row and one
+        # row per job, with W42's build kept per build. Every figure a chart reads must come out the same.
+        folded_csv = pathlib.Path(tmp) / 'ci-builds-folded.csv'
+        folded_csv.write_text(
+            'date,build,kind,workflow,job,start_seconds,end_seconds,seconds,builds,p90_seconds\n'
+            '2026W41,,build,,,0,1080.00,1080.00,2,1176.00\n'
+            '2026W41,,job,ci.yml,test,30.00,930.00,900.00,2,\n'
+            '2026W41,,job,ci.yml,gate,0.00,15.00,15.00,2,\n'
+            '2026W41,,job,verify.yml,prove,60.00,1200.00,1080.00,1,\n'
+            '2026W41,,job,ci.yml,cpu-matrix-shard,30.00,750.00,720.00,1,\n'
+            '2026W41,,job,ci.yml,cpu-matrix,750.00,756.00,6.00,1,\n'
+            '2026-10-12,ccc,build,,,0,600,600,,\n'
+            '2026-10-12,ccc,job,ci.yml,test,30,600,570,,\n')
+        folded_weeks = builds_by_week(folded_csv)
+        folded_series, _folded_note = build_job_series(['2026W41', '2026W42'], folded_csv)
+        folded_path = critical_path('2026W41', folded_csv)
         build_absent = builds_by_week(pathlib.Path(tmp) / 'absent.csv')
         build_series, build_note = build_job_series(['2026W41', '2026W42'], builds_csv)
         path_rows, path_wall, path_builds = critical_path('2026W41', builds_csv)
@@ -3802,6 +3866,12 @@ def selftest():
          build_weeks.get('2026W41'),
          {'ci_builds': 2, 'ci_build_median_minutes': '18.0', 'ci_build_p90_minutes': '19.6'}),
         ('ci-jobs: no record is no weeks, not zeros', build_absent, {}),
+        ('ci-jobs: a folded week draws the same figures as its per-build rows',
+         (folded_weeks, [(l, v) for l, v, _h in folded_series]),
+         (build_weeks, [(l, v) for l, v, _h in build_series])),
+        ('ci-jobs: a folded week still gives the critical path its median wall and build count',
+         (folded_path[1], folded_path[2], [r[0] for r in folded_path[0]]),
+         (18.0, 2, ['prove (verify)', 'test', 'cpu-matrix', 'cpu-matrix-shard', 'gate'])),
         ('ci-jobs: a skipped verify job is not a zero in its median, and a short job is a note',
          [(label, values) for label, values, _h in build_series],
          [('prove (verify)', [18.0, 0.0]), ('test', [15.0, 9.5]), ('cpu-matrix', [12.0, 0.0])]),

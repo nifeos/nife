@@ -32,7 +32,7 @@ fn pieces(name: &str, checksum: u8) -> ([LongNameEntry; MOST], usize) {
 fn assemble(
     run: &[LongNameEntry],
     short: &[u8; 11],
-) -> Result<Option<LongFileName>, LongNameError> {
+) -> Result<Option<LongFileName>, LongFileNameError> {
     let mut assembler = LongNameAssembler::new();
     for piece in run {
         assembler.push(piece);
@@ -40,7 +40,7 @@ fn assemble(
     assembler.finish(short)
 }
 
-fn name_of(result: Result<Option<LongFileName>, LongNameError>) -> [char; 40] {
+fn name_of(result: Result<Option<LongFileName>, LongFileNameError>) -> [char; 40] {
     let mut out = ['\0'; 40];
     let name = result
         .expect("the run is accepted")
@@ -99,7 +99,7 @@ fn a_checksum_for_another_name_is_refused() {
     let (run, count) = pieces("Long File Name.txt", checksum(b"LONGFI~1TXT"));
     assert_eq!(
         assemble(&run[..count], b"LONGFI~2TXT"),
-        Err(LongNameError::ChecksumMismatch)
+        Err(LongFileNameError::ChecksumMismatch)
     );
 }
 
@@ -108,7 +108,10 @@ fn a_run_missing_its_nearest_piece_is_incomplete() {
     let short = b"LONGFI~1TXT";
     let (run, count) = pieces("Long File Name With Spaces.txt", checksum(short));
     assert_eq!(count, 3);
-    assert_eq!(assemble(&run[..2], short), Err(LongNameError::Incomplete));
+    assert_eq!(
+        assemble(&run[..2], short),
+        Err(LongFileNameError::Incomplete)
+    );
 }
 
 #[test]
@@ -117,7 +120,7 @@ fn a_run_missing_its_first_piece_has_no_start() {
     let (run, count) = pieces("Long File Name With Spaces.txt", checksum(short));
     assert_eq!(
         assemble(&run[1..count], short),
-        Err(LongNameError::BadStart)
+        Err(LongFileNameError::BadStart)
     );
 }
 
@@ -126,9 +129,15 @@ fn pieces_out_of_sequence_are_refused() {
     let short = b"LONGFI~1TXT";
     let (run, _) = pieces("Long File Name With Spaces.txt", checksum(short));
     let swapped = [run[0], run[2], run[1]];
-    assert_eq!(assemble(&swapped, short), Err(LongNameError::OutOfOrder));
+    assert_eq!(
+        assemble(&swapped, short),
+        Err(LongFileNameError::OutOfOrder)
+    );
     let repeated = [run[0], run[1], run[1]];
-    assert_eq!(assemble(&repeated, short), Err(LongNameError::OutOfOrder));
+    assert_eq!(
+        assemble(&repeated, short),
+        Err(LongFileNameError::OutOfOrder)
+    );
 }
 
 #[test]
@@ -139,7 +148,7 @@ fn pieces_that_disagree_about_the_checksum_are_refused() {
     let odd = LongNameEntry::from_parts(1, sum ^ 1, run[1].code_units());
     assert_eq!(
         assemble(&[run[0], odd], short),
-        Err(LongNameError::PiecesDisagree)
+        Err(LongFileNameError::PiecesDisagree)
     );
 }
 
@@ -150,7 +159,7 @@ fn a_first_piece_with_a_bad_ordinal_is_refused() {
         let piece = LongNameEntry::from_parts(ordinal, 0, units);
         assert_eq!(
             assemble(&[piece], b"A          "),
-            Err(LongNameError::BadStart)
+            Err(LongFileNameError::BadStart)
         );
     }
 }
@@ -166,11 +175,11 @@ fn padding_that_is_not_the_specifications_is_refused() {
     assert!(matches!(one(units), Ok(Some(_))));
     // A unit after the terminator that is not padding.
     units[5] = 0x42;
-    assert_eq!(one(units), Err(LongNameError::BadPadding));
+    assert_eq!(one(units), Err(LongFileNameError::BadPadding));
     // An empty name.
     let mut empty = [0xFFFFu16; 13];
     empty[0] = 0;
-    assert_eq!(one(empty), Err(LongNameError::BadPadding));
+    assert_eq!(one(empty), Err(LongFileNameError::BadPadding));
     // No terminator is fine when the name fills the piece.
     assert!(matches!(one([0x41; 13]), Ok(Some(_))));
 }
@@ -185,7 +194,7 @@ fn a_last_piece_with_no_name_in_it_is_refused() {
         LongNameEntry::from_parts(0x42, sum, second),
         LongNameEntry::from_parts(1, sum, [0x41; 13]),
     ];
-    assert_eq!(assemble(&run, short), Err(LongNameError::BadPadding));
+    assert_eq!(assemble(&run, short), Err(LongFileNameError::BadPadding));
 }
 
 #[test]
@@ -240,7 +249,7 @@ fn an_over_long_name_is_refused() {
         let flag = if ordinal == 20 { 0x40 } else { 0 };
         assembler.push(&LongNameEntry::from_parts(ordinal | flag, sum, [0x61; 13]));
     }
-    assert_eq!(assembler.finish(short), Err(LongNameError::BadPadding));
+    assert_eq!(assembler.finish(short), Err(LongFileNameError::BadPadding));
 }
 
 #[test]

@@ -15,12 +15,12 @@ fn a_volume_with_no_label_reads_as_none_and_a_set_label_reads_back() {
     assert_eq!(label.as_bytes(), b"MY DISK    ");
     assert_eq!(label.trimmed(), b"MY DISK");
     // The entry is the first in the root and the root still lists it as the label.
-    let first = volume.root_entries().next().unwrap().unwrap();
+    let first = volume.root_named_entries().next().unwrap().unwrap();
     assert!(first.is_volume_label());
     volume.set_volume_label("OTHER").unwrap();
     assert_eq!(volume.volume_label().unwrap().unwrap().trimmed(), b"OTHER");
     let labels = volume
-        .root_entries()
+        .root_named_entries()
         .map(|e| e.unwrap())
         .filter(|e| e.is_volume_label())
         .count();
@@ -33,7 +33,7 @@ fn an_illegal_label_is_refused_and_changes_nothing() {
     for bad in ["", "lower", "TWELVE CHARS", "A*B"] {
         assert_eq!(
             volume.set_volume_label(bad),
-            Err(WriteError::InvalidName),
+            Err(WriteError::LabelRefused),
             "{bad}"
         );
     }

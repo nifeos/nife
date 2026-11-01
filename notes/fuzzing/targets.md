@@ -15,6 +15,25 @@ A blob that parses is not a blob that is safe to walk, and the kernel calls ever
 same blob during boot. So the target calls them all. The count grows with the parser; the rule is
 that the target tracks the parser's public surface.
 
+## `device_tree_patch_initial_ramdisk`
+
+On aarch64 and riscv64 UEFI the loader rewrites the firmware's device tree before the kernel sees
+it, adding `/chosen/linux,initrd-start` and `linux,initrd-end` for the archive it placed
+(`crates/device_tree_patch`). The rewriter walks the structure block with its own walker, not
+`device_tree_blob`'s, so the parser target above says nothing about it. A panic stops the machine
+before the kernel exists. A wrong `Ok` is quieter: the kernel boots and finds no archive.
+
+So the target checks the answer, not only the absence of a panic. Each input gets five ranges:
+typical, hashed from the input, the top of the address space, empty and reversed. For each, the
+rewrite either refuses, or its output parses with the kernel's reader and `initial_ramdisk` reports
+exactly that range. Empty and reversed ranges read back as no archive. It also holds `output_len` to its
+word: a tree it refuses, the rewrite refuses, and the rewrite never writes past it or into a buffer
+one byte short.
+
+The seeds are `device_tree_blob`'s three fixtures and `no_root_node.dtb`: a valid header over a
+structure block that begins with `END`. The rewrite once accepted that tree without writing
+`/chosen`, and `crates/device_tree_patch/tests/fuzz_seed.rs` keeps it refused.
+
 ## `elf_parse`
 
 "Run this binary" is something a user asks for by name, so this parse has the widest supply of
@@ -66,10 +85,37 @@ what it promises on any volume. Operations decoded from the input (create a file
 length, seek and write, remove, make and remove a directory, rename) run against either a hostile
 128 KiB image or an empty volume the crate formats. Names come from a small alphabet, so they
 collide, nest and need long-name slots. Nothing may panic or write outside the image. On the
-formatted volume, after `sync`, the root still lists, holds no more entries than the writer made,
+formatted volume, after `mark_clean`, the root still lists, holds no more entries than the writer made,
 and the shutdown bit reads clean. `fuzz/seeds/file_allocation_table_writer`
 holds one seed of each kind: the reader's small tree behind the hostile-image byte, and a short
 script of operations behind the formatted byte.
+
+## `capability_manifest_note_decode`
+
+Whoever built a program wrote the manifest note inside its ELF, and the progenitor decodes it to
+decide what the program holds. The progenitor holds all userspace authority, so nothing confines it
+from these bytes. Kani proves `decode` total and proves its output encodes back, but only to 57
+bytes, which end at the zone count byte of versions 2 and 3. The zone walk and the service byte lie
+past that bound, and `decode_subtree_grants` and `decode_verbs` have no harness.
+
+Every input goes to all three decoders. On acceptance the target writes the descriptor back out and
+requires the input byte for byte, because the crate promises one encoding per manifest. It writes
+the first 56 bytes with the crate's `encode`, then the zones and service byte the accessors report,
+or the scope's own note, or the verb records. It also holds the invariants the crate states:
+
+- No note carries `reboot`, `sync`, `installer`, `catalog`, `indexes`, `activation_directory` or
+  `console_input`.
+- Zones are canonical and strictly ascending, and version 2 has at least one.
+- A refusal by `decode` is a refusal by `zones` and `service`.
+- The decoder refuses a valid descriptor with a byte cut or added.
+- Verbs ascend, and `grants_for` finds each.
+
+Mutation alone seldom keeps a zone walk valid, since one flipped length byte shifts every later
+zone. So the seeds are valid manifests of every version that the crate encodes
+(`fuzz/seeds/capability_manifest_note_decode/`, which `crates/capability_manifest_note/tests/
+fuzz_seed.rs` holds to the encoders), and a custom mutator builds more. It makes a fresh zoned
+descriptor from a pool of canonical zones, or a verb table, and sometimes breaks one thing. A
+sixty-second smoke run left versions 2 and 3 past the count byte in its corpus.
 
 ## `domain_name_system_reply`
 

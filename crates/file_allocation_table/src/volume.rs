@@ -102,9 +102,12 @@ pub enum LayoutError {
     NameRefused,
     /// The clock reported a time FAT cannot store (see [`crate::Clock`]).
     ///
-    /// Name: provisional. As `WriteError::TimeOutOfRange`.
+    /// Name: ratified 2026-11-01 (UTC), as `WriteError::TimeOutOfRange`.
     TimeOutOfRange,
-    /// The file does not fit in the clusters the volume has left after its directories.
+    /// The one file the volume holds is over 4 GiB less one byte, or needs more clusters than the
+    /// volume has left after its three directories. It is a refusal to lay out a volume, and not
+    /// [`crate::WriteError::FileTooLarge`], which stops a write whose result would pass the 32-bit
+    /// size field of a directory entry.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     FileTooBig,
@@ -304,11 +307,11 @@ impl VolumeLayout {
         let fat_end = fat_start + (TABLE_COUNT * self.fat_sectors) as u64;
         match index {
             0 => self.boot_sector(out),
-            1 => self.fs_info(out),
+            1 => self.file_system_information(out),
             // The backup pair, which the specification puts at `BPB_BkBootSec` and the sector
             // after it. A firmware that finds the primary damaged reads these.
             6 => self.boot_sector(out),
-            7 => self.fs_info(out),
+            7 => self.file_system_information(out),
             i if (fat_start..fat_end).contains(&i) => {
                 // Both copies are the same bytes, so the offset inside one copy is all that matters.
                 let within = (i - fat_start) % self.fat_sectors as u64;
@@ -336,7 +339,7 @@ impl VolumeLayout {
     }
 
     /// `FSInfo`, whose two counts are hints a driver is allowed to ignore or disbelieve.
-    fn fs_info(&self, out: &mut [u8]) {
+    fn file_system_information(&self, out: &mut [u8]) {
         // Three directories and the file. Written once; see this crate's BUGS.
         let used = (FILE_CLUSTER - ROOT_CLUSTER) + self.file_clusters;
         write_fs_info(self.clusters - used, FILE_CLUSTER + self.file_clusters, out);

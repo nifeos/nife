@@ -7,23 +7,23 @@ use core::cell::Cell;
 
 use super::*;
 use crate::reader::tests::Image;
-use crate::time::{NoClock, Timestamp};
+use crate::time::{CivilDateTime, NoClock};
 
 /// A clock the test sets between operations and reads the count of.
 struct Shared<'a> {
-    time: &'a Cell<Option<Timestamp>>,
+    time: &'a Cell<Option<CivilDateTime>>,
     readings: &'a Cell<u32>,
 }
 
 impl Clock for Shared<'_> {
-    fn now(&mut self) -> Option<Timestamp> {
+    fn now(&mut self) -> Option<CivilDateTime> {
         self.readings.set(self.readings.get() + 1);
         self.time.get()
     }
 }
 
-fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Option<Timestamp> {
-    Some(Timestamp {
+fn at(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Option<CivilDateTime> {
+    Some(CivilDateTime {
         year,
         month,
         day,
@@ -50,7 +50,7 @@ fn fields(bytes: &[u8], start: usize) -> (u8, u16, u16, u16, u16, u16) {
     )
 }
 
-fn packed(time: Option<Timestamp>) -> (u8, u16, u16, u16, u16, u16) {
+fn packed(time: Option<CivilDateTime>) -> (u8, u16, u16, u16, u16, u16) {
     let s = Stamp::pack(time).unwrap();
     (
         s.creation_tenths,
@@ -101,7 +101,7 @@ fn a_write_and_a_resize_set_the_write_and_access_times_and_keep_the_creation_tim
     time.set(at(2028, 3, 4, 5, 6, 8));
     let entry = volume.lookup("W.TXT").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
-    writer.set_len(0).unwrap();
+    writer.set_length(0).unwrap();
     let image = volume.into_device();
     let (tenths, created_time, created_date, access, write_time, write_date) =
         fields(&image.bytes, ROOT);
@@ -140,7 +140,7 @@ fn a_write_of_no_bytes_and_a_resize_to_the_same_length_stamp_nothing() {
     time.set(at(2030, 1, 1, 1, 1, 2));
     let mut writer = volume.open_file_writer(&entry2).unwrap();
     writer.write(b"").unwrap();
-    writer.set_len(0).unwrap();
+    writer.set_length(0).unwrap();
     assert_eq!(fields(&volume.into_device().bytes, ROOT), before);
 }
 
@@ -191,7 +191,7 @@ fn a_directory_and_its_dot_entries_carry_the_creation_time() {
         },
     )
     .unwrap();
-    let dir = volume.make_directory(0, "D").unwrap();
+    let dir = volume.create_directory(0, "D").unwrap();
     assert_eq!(readings.get(), 1);
     let cluster = dir.first_cluster() as usize;
     let image = volume.into_device();
@@ -257,8 +257,15 @@ fn reads_and_removals_read_no_clock_and_leave_the_bytes_alone() {
     let after_writes = readings.get();
     let found = volume.lookup("R.TXT").unwrap();
     let mut out = [0u8; 8];
-    assert_eq!(volume.open_file(&found).unwrap().read(&mut out).unwrap(), 4);
-    for _ in volume.root_entries() {}
+    assert_eq!(
+        volume
+            .open_file_reader(&found)
+            .unwrap()
+            .read(&mut out)
+            .unwrap(),
+        4
+    );
+    for _ in volume.root_named_entries() {}
     assert_eq!(volume.volume_label(), Ok(None));
     assert_eq!(readings.get(), after_writes, "reading takes no clock");
     let image = volume.into_volume().into_device();
@@ -272,7 +279,11 @@ fn reads_and_removals_read_no_clock_and_leave_the_bytes_alone() {
     )
     .unwrap();
     let found = volume.lookup("R.TXT").unwrap();
-    volume.open_file(&found).unwrap().read(&mut out).unwrap();
+    volume
+        .open_file_reader(&found)
+        .unwrap()
+        .read(&mut out)
+        .unwrap();
     assert_eq!(
         fields(&volume.into_device().bytes, ROOT),
         before,
@@ -302,7 +313,7 @@ fn the_volume_without_a_clock_cannot_write_and_the_clock_is_given_back_with_the_
 }
 
 /// The times FAT cannot store that the refusal tests try.
-fn bad_times() -> [Option<Timestamp>; 5] {
+fn bad_times() -> [Option<CivilDateTime>; 5] {
     [
         at(1979, 12, 31, 23, 59, 58),
         at(2108, 1, 1, 0, 0, 0),
@@ -334,7 +345,7 @@ fn refused_and_untouched(
             .unwrap()
             .write(b"keep")
             .unwrap();
-        volume.sync().unwrap();
+        volume.mark_clean().unwrap();
         let image = volume.into_device();
         let before = image.bytes;
         let mut volume = WritableVolume::open(
@@ -370,7 +381,7 @@ fn creating_a_file_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
 
 #[test]
 fn making_a_directory_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
-    refused_and_untouched(|volume| volume.make_directory(0, "NEWDIR").map(|_| ()));
+    refused_and_untouched(|volume| volume.create_directory(0, "NEWDIR").map(|_| ()));
 }
 
 #[test]
@@ -403,11 +414,11 @@ fn writing_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
 fn resizing_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
     refused_and_untouched(|volume| {
         let entry = volume.lookup("KEEP.TXT").unwrap();
-        volume.open_file_writer(&entry).unwrap().set_len(2000)
+        volume.open_file_writer(&entry).unwrap().set_length(2000)
     });
     refused_and_untouched(|volume| {
         let entry = volume.lookup("KEEP.TXT").unwrap();
-        volume.open_file_writer(&entry).unwrap().set_len(0)
+        volume.open_file_writer(&entry).unwrap().set_length(0)
     });
 }
 
@@ -426,7 +437,7 @@ fn a_refused_writer_stays_usable_once_the_clock_is_right() {
     let mut writer = volume.open_file_writer(&file).unwrap();
     time.set(at(2108, 1, 1, 0, 0, 0));
     assert_eq!(writer.write(b"x"), Err(WriteError::TimeOutOfRange));
-    assert_eq!(writer.set_len(5), Err(WriteError::TimeOutOfRange));
+    assert_eq!(writer.set_length(5), Err(WriteError::TimeOutOfRange));
     time.set(at(2026, 11, 2, 0, 0, 0));
     assert_eq!(writer.write(b"x"), Ok(1));
 }
@@ -458,7 +469,7 @@ fn the_boundaries_through_a_volume_refuse_one_second_outside_and_accept_the_edge
 
 #[test]
 fn the_format_and_the_efi_volume_refuse_a_time_fat_cannot_store() {
-    use crate::{Format, FormatError, FormatOptions, LayoutError, SectorSize, VolumeLayout};
+    use crate::{FormatError, FormatOptions, FormatPlan, LayoutError, SectorSize, VolumeLayout};
     let (time, readings) = (Cell::new(at(2108, 1, 1, 0, 0, 0)), Cell::new(0));
     let mut clock = Shared {
         time: &time,
@@ -466,7 +477,7 @@ fn the_format_and_the_efi_volume_refuse_a_time_fat_cannot_store() {
     };
     let options = FormatOptions::new(SectorSize::Bytes512, 16 * 1024);
     assert_eq!(
-        Format::new(options, &mut clock).err(),
+        FormatPlan::new(options, &mut clock).err(),
         Some(FormatError::TimeOutOfRange)
     );
     assert_eq!(
@@ -474,5 +485,5 @@ fn the_format_and_the_efi_volume_refuse_a_time_fat_cannot_store() {
         Some(LayoutError::TimeOutOfRange)
     );
     time.set(at(2107, 12, 31, 23, 59, 58));
-    assert!(Format::new(options, &mut clock).is_ok());
+    assert!(FormatPlan::new(options, &mut clock).is_ok());
 }
