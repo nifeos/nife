@@ -127,10 +127,16 @@ lands, it downloads one.
 
 ## The questions behind this one
 
-The ruling above does not answer these. Each stays open and will come as its own question:
+The ruling above does not answer these. Each not marked ruled stays open and will come as its own question:
 
-1. The system manifest's name and format. 976 calls it the system manifest, provisionally; basalt
-   writes it and the updater and the progenitor read it.
+1. The system manifest's name and format. **Ruled 2026-11-01 (UTC): a plain text file.** The first
+   line is `version 1`. Every later line is `<stem> sha256:<64 lowercase hex>`, one package per
+   line, sorted by stem, with no blank lines, so one content has one encoding. The name stays
+   "system manifest", provisional. Basalt writes it; the device updater and the progenitor read it.
+   The line shape is the one basalt's stand-in index already uses. A later column goes in behind a
+   new version line. Not chosen: the kernel's program-measurement table (it is per program, so it
+   cannot map a changed program to its package), TOML (a larger parser and several encodings of one
+   content), and waiting for the update framework (milestone 858).
 2. Who may start a base update, and what bounds an unattended one. Milestone 911 (scripted installs
    grant only what an approval file allows) gives every base package `update = false` in
    `packages/base-image.approval.toml`, because a slot replaces the base whole. Milestone 858 (lab
@@ -144,5 +150,6 @@ The ruling above does not answer these. Each stays open and will come as its own
 
 The update's unit is the package, and each slot holds a full copy. A slot holds named members in a
 version 2 header (kernel, archive, system manifest), which a device assembles from packages it
-fetched and packages it already has (ruled 2026-10-31 UTC). The interim kernel package goes when
+fetched and packages it already has (ruled 2026-10-31 UTC). The system manifest is a text file: a
+`version 1` line, then one `<stem> sha256:<hex>` line per package, sorted by stem (ruled 2026-11-01 UTC). The interim kernel package goes when
 milestones 695 and 697 land.
