@@ -11,7 +11,7 @@
 //!
 //! [`evdev_code`]'s table is read off two documents: each row's usage and name from the HID Usage
 //! Tables 1.12 keyboard page (section 10), and each code's number from the `KEY_*` names in
-//! `include/uapi/linux/input-event-codes.h`, whose names the table spells out. Two rows are
+//! `include/uapi/linux/input-event-codes.h`, whose name each row carries in a comment. Two rows are
 //! nife's own choices, since the Usage Tables name no evdev key for them: usage 0x32 (Non-US `#`
 //! and `~`) is reported as `KEY_BACKSLASH`, the key the usage sits beside, and usage 0x46 (Print
 //! Screen) is reported as `KEY_SYSRQ`, the key a terminal keyboard labels that way.
@@ -33,124 +33,15 @@ pub const ERROR_ROLL_OVER: u8 = 0x01;
 /// The evdev codes of the eight modifier keys, in the bit order of byte 0: left control, shift,
 /// alt, GUI, then the right-hand four.
 pub const MODIFIER_CODES: [u16; 8] = [
-    evdev::KEY_LEFTCTRL,
-    evdev::KEY_LEFTSHIFT,
-    evdev::KEY_LEFTALT,
-    evdev::KEY_LEFTMETA,
-    evdev::KEY_RIGHTCTRL,
-    evdev::KEY_RIGHTSHIFT,
-    evdev::KEY_RIGHTALT,
-    evdev::KEY_RIGHTMETA,
+    29,  // KEY_LEFTCTRL
+    42,  // KEY_LEFTSHIFT
+    56,  // KEY_LEFTALT
+    125, // KEY_LEFTMETA
+    97,  // KEY_RIGHTCTRL
+    54,  // KEY_RIGHTSHIFT
+    100, // KEY_RIGHTALT
+    126, // KEY_RIGHTMETA
 ];
-
-/// The evdev key codes this module reports, under the names of
-/// `include/uapi/linux/input-event-codes.h`.
-#[allow(non_upper_case_globals)]
-mod evdev {
-    pub const KEY_ESC: u16 = 1;
-    pub const KEY_1: u16 = 2;
-    pub const KEY_2: u16 = 3;
-    pub const KEY_3: u16 = 4;
-    pub const KEY_4: u16 = 5;
-    pub const KEY_5: u16 = 6;
-    pub const KEY_6: u16 = 7;
-    pub const KEY_7: u16 = 8;
-    pub const KEY_8: u16 = 9;
-    pub const KEY_9: u16 = 10;
-    pub const KEY_0: u16 = 11;
-    pub const KEY_MINUS: u16 = 12;
-    pub const KEY_EQUAL: u16 = 13;
-    pub const KEY_BACKSPACE: u16 = 14;
-    pub const KEY_TAB: u16 = 15;
-    pub const KEY_Q: u16 = 16;
-    pub const KEY_W: u16 = 17;
-    pub const KEY_E: u16 = 18;
-    pub const KEY_R: u16 = 19;
-    pub const KEY_T: u16 = 20;
-    pub const KEY_Y: u16 = 21;
-    pub const KEY_U: u16 = 22;
-    pub const KEY_I: u16 = 23;
-    pub const KEY_O: u16 = 24;
-    pub const KEY_P: u16 = 25;
-    pub const KEY_LEFTBRACE: u16 = 26;
-    pub const KEY_RIGHTBRACE: u16 = 27;
-    pub const KEY_ENTER: u16 = 28;
-    pub const KEY_LEFTCTRL: u16 = 29;
-    pub const KEY_A: u16 = 30;
-    pub const KEY_S: u16 = 31;
-    pub const KEY_D: u16 = 32;
-    pub const KEY_F: u16 = 33;
-    pub const KEY_G: u16 = 34;
-    pub const KEY_H: u16 = 35;
-    pub const KEY_J: u16 = 36;
-    pub const KEY_K: u16 = 37;
-    pub const KEY_L: u16 = 38;
-    pub const KEY_SEMICOLON: u16 = 39;
-    pub const KEY_APOSTROPHE: u16 = 40;
-    pub const KEY_GRAVE: u16 = 41;
-    pub const KEY_LEFTSHIFT: u16 = 42;
-    pub const KEY_BACKSLASH: u16 = 43;
-    pub const KEY_Z: u16 = 44;
-    pub const KEY_X: u16 = 45;
-    pub const KEY_C: u16 = 46;
-    pub const KEY_V: u16 = 47;
-    pub const KEY_B: u16 = 48;
-    pub const KEY_N: u16 = 49;
-    pub const KEY_M: u16 = 50;
-    pub const KEY_COMMA: u16 = 51;
-    pub const KEY_DOT: u16 = 52;
-    pub const KEY_SLASH: u16 = 53;
-    pub const KEY_RIGHTSHIFT: u16 = 54;
-    pub const KEY_KPASTERISK: u16 = 55;
-    pub const KEY_LEFTALT: u16 = 56;
-    pub const KEY_SPACE: u16 = 57;
-    pub const KEY_CAPSLOCK: u16 = 58;
-    pub const KEY_F1: u16 = 59;
-    pub const KEY_F2: u16 = 60;
-    pub const KEY_F3: u16 = 61;
-    pub const KEY_F4: u16 = 62;
-    pub const KEY_F5: u16 = 63;
-    pub const KEY_F6: u16 = 64;
-    pub const KEY_F7: u16 = 65;
-    pub const KEY_F8: u16 = 66;
-    pub const KEY_F9: u16 = 67;
-    pub const KEY_F10: u16 = 68;
-    pub const KEY_NUMLOCK: u16 = 69;
-    pub const KEY_SCROLLLOCK: u16 = 70;
-    pub const KEY_KP7: u16 = 71;
-    pub const KEY_KP8: u16 = 72;
-    pub const KEY_KP9: u16 = 73;
-    pub const KEY_KPMINUS: u16 = 74;
-    pub const KEY_KP4: u16 = 75;
-    pub const KEY_KP5: u16 = 76;
-    pub const KEY_KP6: u16 = 77;
-    pub const KEY_KPPLUS: u16 = 78;
-    pub const KEY_KP1: u16 = 79;
-    pub const KEY_KP2: u16 = 80;
-    pub const KEY_KP3: u16 = 81;
-    pub const KEY_KP0: u16 = 82;
-    pub const KEY_KPDOT: u16 = 83;
-    pub const KEY_F11: u16 = 87;
-    pub const KEY_F12: u16 = 88;
-    pub const KEY_KPENTER: u16 = 96;
-    pub const KEY_RIGHTCTRL: u16 = 97;
-    pub const KEY_KPSLASH: u16 = 98;
-    pub const KEY_SYSRQ: u16 = 99;
-    pub const KEY_RIGHTALT: u16 = 100;
-    pub const KEY_HOME: u16 = 102;
-    pub const KEY_UP: u16 = 103;
-    pub const KEY_PAGEUP: u16 = 104;
-    pub const KEY_LEFT: u16 = 105;
-    pub const KEY_RIGHT: u16 = 106;
-    pub const KEY_END: u16 = 107;
-    pub const KEY_DOWN: u16 = 108;
-    pub const KEY_PAGEDOWN: u16 = 109;
-    pub const KEY_INSERT: u16 = 110;
-    pub const KEY_DELETE: u16 = 111;
-    pub const KEY_PAUSE: u16 = 119;
-    pub const KEY_LEFTMETA: u16 = 125;
-    pub const KEY_RIGHTMETA: u16 = 126;
-}
 
 /// **One boot report**: the modifier bitmap and the six key slots.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -197,107 +88,104 @@ impl BootReport {
 /// comes from.
 pub fn evdev_code(usage: u8) -> Option<u16> {
     /// Indexed by usage id from 0x04. Every usage in the range has a code.
-    const TABLE: [u16; 0x60] = {
-        use self::evdev::*;
-        [
-            KEY_A,
-            KEY_B,
-            KEY_C,
-            KEY_D,
-            KEY_E,
-            KEY_F,
-            KEY_G,
-            KEY_H,
-            KEY_I,
-            KEY_J,
-            KEY_K,
-            KEY_L,
-            KEY_M,
-            KEY_N,
-            KEY_O,
-            KEY_P,
-            KEY_Q,
-            KEY_R,
-            KEY_S,
-            KEY_T,
-            KEY_U,
-            KEY_V,
-            KEY_W,
-            KEY_X,
-            KEY_Y,
-            KEY_Z, // 0x04 Keyboard a and A .. 0x1d z and Z
-            KEY_1,
-            KEY_2,
-            KEY_3,
-            KEY_4,
-            KEY_5,
-            KEY_6,
-            KEY_7,
-            KEY_8,
-            KEY_9,
-            KEY_0, // 0x1e 1 .. 0x27 0
-            KEY_ENTER,
-            KEY_ESC,
-            KEY_BACKSPACE,
-            KEY_TAB,
-            KEY_SPACE, // 0x28 Return, Escape, Delete (Backspace), Tab, Spacebar
-            KEY_MINUS,
-            KEY_EQUAL,
-            KEY_LEFTBRACE,
-            KEY_RIGHTBRACE,
-            KEY_BACKSLASH,
-            KEY_BACKSLASH, // 0x2d - _, = +, [ {, ] }, \ |, Non-US # ~ (0x32 is nife's choice, see above)
-            KEY_SEMICOLON,
-            KEY_APOSTROPHE,
-            KEY_GRAVE,
-            KEY_COMMA,
-            KEY_DOT,
-            KEY_SLASH,    // 0x33 ; :, ' ", ` ~, comma, period, slash
-            KEY_CAPSLOCK, // 0x39 Caps Lock
-            KEY_F1,
-            KEY_F2,
-            KEY_F3,
-            KEY_F4,
-            KEY_F5,
-            KEY_F6,
-            KEY_F7,
-            KEY_F8,
-            KEY_F9,
-            KEY_F10,
-            KEY_F11,
-            KEY_F12, // 0x3a F1 .. 0x45 F12
-            KEY_SYSRQ,
-            KEY_SCROLLLOCK,
-            KEY_PAUSE, // 0x46 Print Screen (nife's choice), Scroll Lock, Pause
-            KEY_INSERT,
-            KEY_HOME,
-            KEY_PAGEUP,
-            KEY_DELETE,
-            KEY_END,
-            KEY_PAGEDOWN, // 0x49 Insert, Home, Page Up, Delete Forward, End, Page Down
-            KEY_RIGHT,
-            KEY_LEFT,
-            KEY_DOWN,
-            KEY_UP, // 0x4f Right, Left, Down, Up arrow
-            KEY_NUMLOCK,
-            KEY_KPSLASH,
-            KEY_KPASTERISK,
-            KEY_KPMINUS,
-            KEY_KPPLUS,
-            KEY_KPENTER, // 0x53 Num Lock, keypad / * - + Enter
-            KEY_KP1,
-            KEY_KP2,
-            KEY_KP3,
-            KEY_KP4,
-            KEY_KP5,
-            KEY_KP6,
-            KEY_KP7,
-            KEY_KP8,
-            KEY_KP9,
-            KEY_KP0,
-            KEY_KPDOT, // 0x59 keypad 1 .. 9, 0, period
-        ]
-    };
+    const TABLE: [u16; 0x60] = [
+        30,  // 0x04 a and A: KEY_A
+        48,  // 0x05 b and B: KEY_B
+        46,  // 0x06 c and C: KEY_C
+        32,  // 0x07 d and D: KEY_D
+        18,  // 0x08 e and E: KEY_E
+        33,  // 0x09 f and F: KEY_F
+        34,  // 0x0a g and G: KEY_G
+        35,  // 0x0b h and H: KEY_H
+        23,  // 0x0c i and I: KEY_I
+        36,  // 0x0d j and J: KEY_J
+        37,  // 0x0e k and K: KEY_K
+        38,  // 0x0f l and L: KEY_L
+        50,  // 0x10 m and M: KEY_M
+        49,  // 0x11 n and N: KEY_N
+        24,  // 0x12 o and O: KEY_O
+        25,  // 0x13 p and P: KEY_P
+        16,  // 0x14 q and Q: KEY_Q
+        19,  // 0x15 r and R: KEY_R
+        31,  // 0x16 s and S: KEY_S
+        20,  // 0x17 t and T: KEY_T
+        22,  // 0x18 u and U: KEY_U
+        47,  // 0x19 v and V: KEY_V
+        17,  // 0x1a w and W: KEY_W
+        45,  // 0x1b x and X: KEY_X
+        21,  // 0x1c y and Y: KEY_Y
+        44,  // 0x1d z and Z: KEY_Z
+        2,   // 0x1e 1: KEY_1
+        3,   // 0x1f 2: KEY_2
+        4,   // 0x20 3: KEY_3
+        5,   // 0x21 4: KEY_4
+        6,   // 0x22 5: KEY_5
+        7,   // 0x23 6: KEY_6
+        8,   // 0x24 7: KEY_7
+        9,   // 0x25 8: KEY_8
+        10,  // 0x26 9: KEY_9
+        11,  // 0x27 0: KEY_0
+        28,  // 0x28 Return: KEY_ENTER
+        1,   // 0x29 Escape: KEY_ESC
+        14,  // 0x2a Delete (Backspace): KEY_BACKSPACE
+        15,  // 0x2b Tab: KEY_TAB
+        57,  // 0x2c Spacebar: KEY_SPACE
+        12,  // 0x2d - and _: KEY_MINUS
+        13,  // 0x2e = and +: KEY_EQUAL
+        26,  // 0x2f [ and {: KEY_LEFTBRACE
+        27,  // 0x30 ] and }: KEY_RIGHTBRACE
+        43,  // 0x31 \ and |: KEY_BACKSLASH
+        43,  // 0x32 Non-US # and ~: KEY_BACKSLASH
+        39,  // 0x33 ; and :: KEY_SEMICOLON
+        40,  // 0x34 ' and ": KEY_APOSTROPHE
+        41,  // 0x35 Grave Accent and Tilde: KEY_GRAVE
+        51,  // 0x36 , and <: KEY_COMMA
+        52,  // 0x37 . and >: KEY_DOT
+        53,  // 0x38 / and ?: KEY_SLASH
+        58,  // 0x39 Caps Lock: KEY_CAPSLOCK
+        59,  // 0x3a F1: KEY_F1
+        60,  // 0x3b F2: KEY_F2
+        61,  // 0x3c F3: KEY_F3
+        62,  // 0x3d F4: KEY_F4
+        63,  // 0x3e F5: KEY_F5
+        64,  // 0x3f F6: KEY_F6
+        65,  // 0x40 F7: KEY_F7
+        66,  // 0x41 F8: KEY_F8
+        67,  // 0x42 F9: KEY_F9
+        68,  // 0x43 F10: KEY_F10
+        87,  // 0x44 F11: KEY_F11
+        88,  // 0x45 F12: KEY_F12
+        99,  // 0x46 Print Screen: KEY_SYSRQ
+        70,  // 0x47 Scroll Lock: KEY_SCROLLLOCK
+        119, // 0x48 Pause: KEY_PAUSE
+        110, // 0x49 Insert: KEY_INSERT
+        102, // 0x4a Home: KEY_HOME
+        104, // 0x4b Page Up: KEY_PAGEUP
+        111, // 0x4c Delete Forward: KEY_DELETE
+        107, // 0x4d End: KEY_END
+        109, // 0x4e Page Down: KEY_PAGEDOWN
+        106, // 0x4f Right Arrow: KEY_RIGHT
+        105, // 0x50 Left Arrow: KEY_LEFT
+        108, // 0x51 Down Arrow: KEY_DOWN
+        103, // 0x52 Up Arrow: KEY_UP
+        69,  // 0x53 Num Lock: KEY_NUMLOCK
+        98,  // 0x54 Keypad /: KEY_KPSLASH
+        55,  // 0x55 Keypad *: KEY_KPASTERISK
+        74,  // 0x56 Keypad -: KEY_KPMINUS
+        78,  // 0x57 Keypad +: KEY_KPPLUS
+        96,  // 0x58 Keypad Enter: KEY_KPENTER
+        79,  // 0x59 Keypad 1: KEY_KP1
+        80,  // 0x5a Keypad 2: KEY_KP2
+        81,  // 0x5b Keypad 3: KEY_KP3
+        75,  // 0x5c Keypad 4: KEY_KP4
+        76,  // 0x5d Keypad 5: KEY_KP5
+        77,  // 0x5e Keypad 6: KEY_KP6
+        71,  // 0x5f Keypad 7: KEY_KP7
+        72,  // 0x60 Keypad 8: KEY_KP8
+        73,  // 0x61 Keypad 9: KEY_KP9
+        82,  // 0x62 Keypad 0: KEY_KP0
+        83,  // 0x63 Keypad .: KEY_KPDOT
+    ];
     TABLE.get(usize::from(usage).checked_sub(4)?).copied()
 }
 
