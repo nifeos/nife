@@ -77,7 +77,10 @@ fn budget_run(refusals: u32, children: i64, patience_ns: u64) -> (BudgetReturn, 
 #[test]
 fn a_budget_with_a_child_stops_at_the_first_refusal() {
     // One ask, no wait: the full one-second bound would be a hundred waits.
-    assert_eq!(budget_run(u32::MAX, 4, 1_000_000_000), (BudgetReturn::LeftChildren, 1, 0));
+    assert_eq!(
+        budget_run(u32::MAX, 4, 1_000_000_000),
+        (BudgetReturn::LeftChildren, 1, 0)
+    );
 }
 
 #[test]
@@ -85,23 +88,34 @@ fn a_budget_with_no_child_still_retries_a_resident_to_the_bound() {
     let (verdict, asks, _) = budget_run(u32::MAX, 0, 1_000_000_000);
     assert_eq!(verdict, BudgetReturn::Refused);
     assert_eq!(asks, 102);
-    assert_eq!(budget_run(5, 0, 1_000_000_000), (BudgetReturn::Reclaimed, 6, 5));
+    assert_eq!(
+        budget_run(5, 0, 1_000_000_000),
+        (BudgetReturn::Reclaimed, 6, 5)
+    );
 }
 
 #[test]
 fn an_unreadable_children_record_retries_as_before() {
-    assert_eq!(budget_run(3, -3, 1_000_000_000), (BudgetReturn::Reclaimed, 4, 3));
+    assert_eq!(
+        budget_run(3, -3, 1_000_000_000),
+        (BudgetReturn::Reclaimed, 4, 3)
+    );
 }
 
 #[test]
 fn a_clean_budget_is_asked_once() {
-    assert_eq!(budget_run(0, 0, 1_000_000_000), (BudgetReturn::Reclaimed, 1, 0));
+    assert_eq!(
+        budget_run(0, 0, 1_000_000_000),
+        (BudgetReturn::Reclaimed, 1, 0)
+    );
 }
 
 #[test]
 fn the_leak_sentence_names_the_job_and_the_pages() {
     let mut text = std::string::String::new();
-    write_budget_left(b"job_splitter", 4, &mut |b| text.push_str(core::str::from_utf8(b).unwrap()));
+    write_budget_left(b"job_splitter", 4, &mut |b| {
+        text.push_str(core::str::from_utf8(b).unwrap())
+    });
     assert_eq!(
         text,
         "  job_splitter left a child region in its --mem budget; its 4 pages stay spent until reboot.\n"
