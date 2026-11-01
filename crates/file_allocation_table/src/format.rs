@@ -128,15 +128,22 @@ impl FormatOptions {
     ///
     /// Name: provisional. As `with_type`.
     pub fn with_label(mut self, label: &str) -> Result<FormatOptions, FormatError> {
-        let bytes = label.as_bytes();
-        if bytes.is_empty() || bytes.len() > 11 || !bytes.iter().all(|b| is_short_byte(*b)) {
-            return Err(FormatError::LabelRefused);
-        }
-        self.label = [b' '; 11];
-        self.label[..bytes.len()].copy_from_slice(bytes);
+        self.label = label_bytes(label).ok_or(FormatError::LabelRefused)?;
         self.has_label = true;
         Ok(self)
     }
+}
+
+/// The eleven bytes of `BS_VolLab` for `label`, or `None` when it is empty, over eleven bytes, or
+/// holds a byte a short name refuses. The text is padded with spaces.
+pub(crate) fn label_bytes(label: &str) -> Option<[u8; 11]> {
+    let bytes = label.as_bytes();
+    if bytes.is_empty() || bytes.len() > 11 || !bytes.iter().all(|b| is_short_byte(*b)) {
+        return None;
+    }
+    let mut out = [b' '; 11];
+    out[..bytes.len()].copy_from_slice(bytes);
+    Some(out)
 }
 
 /// **A volume's measurements**, from its size alone. Every field is derived by [`Geometry::new`].

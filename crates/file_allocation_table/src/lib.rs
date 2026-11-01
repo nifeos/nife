@@ -81,6 +81,7 @@
 //! published.
 
 mod allocation;
+mod attributes;
 mod boot_sector;
 mod directory;
 mod directory_write;
@@ -91,6 +92,7 @@ mod file_write;
 mod file_writer;
 mod format;
 mod fs_info;
+mod label;
 mod long_name;
 mod long_name_assembly;
 mod lookup;
@@ -102,6 +104,7 @@ mod table;
 mod volume;
 
 pub use allocation::AllocationError;
+pub use attributes::Attributes;
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
 pub use file::{FileReadError, FileReader, NotAFile};
@@ -109,6 +112,7 @@ pub use file_write::WriteError;
 pub use file_writer::FileWriter;
 pub use format::{Format, FormatError, FormatOptions};
 pub use fs_info::{FsInfo, FsInfoError};
+pub use label::VolumeLabel;
 pub use long_name_assembly::{LongFileName, LongNameError};
 pub use lookup::LookupError;
 pub use master_boot_record::{
