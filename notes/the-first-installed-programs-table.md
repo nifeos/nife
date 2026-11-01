@@ -28,8 +28,7 @@ The build settled the generation's contents, and none of it depends on the conta
   from `grant_plan`'s compiled table. Of the base programs only `jig` carries a note, and it asks
   for nothing while the table gives `jig` the network and the installer endpoint. Ruled
   2026-11-01 (UTC) on #2981: the first table reads the base programs' own notes, which carry their
-  real manifests once milestone 992
-  ([the base programs carry their manifests in notes](../design/roadmap/0992-the-base-programs-carry-their-manifests-in-notes.md))
+  real manifests once milestone 992 (the base programs carry their manifests in notes)
   lands, so milestone 990's grant rows wait on that work.
 - The `answered` line is `Answered::Approval` with the approval file's name and the SHA-256 of its
   bytes, and the image carries those bytes too. The build never settled the entry's name, and its
