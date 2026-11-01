@@ -56,7 +56,7 @@ assert_eq!(policy::decide(state::UNKNOWN, 0, now), status::ACCEPTED);
 let offset = offset_for(now, monotonic);
 assert_eq!(wall_ns(offset, monotonic), now);
 
-// A proposal a day ahead of a synchronised clock is refused.
+// A proposal a day ahead of a synchronized clock is refused.
 assert_eq!(
     policy::decide(state::SYNCED, now, now + 86_400 * NS_PER_SECOND),
     status::REFUSED_TOO_FAR_FORWARD,

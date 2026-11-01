@@ -27,7 +27,7 @@ defined). The opcode sits in bits 63:56 of the first word (`OPERATION_SHIFT`, `r
   `UNBIND` and `BIND_SYNC` outside the table's range so no caretaker forwards them. A transfer is up
   to `fs::TRANSFER_PAGES` (16) pages. `fs::VERSION` is its version.
 - `dir` (what a directory capability carries): a rights set of `ENUMERATE`, `READ`, `WRITE`,
-  `CREATE`, `REMOVE`, `DESCEND` and `SETTIME`. A child's rights are the parent's rights ANDed with
+  `CREATE`, `REMOVE`, `DESCEND` and `SETTIME`. A child's rights are the parent's rights combined by bitwise AND with
   the request (`Rights::attenuate`), so no child carries more than its parent. A missing right
   answers an errno chosen for what the holder learns: a naming right is `ENOENT`, a mutating right
   is `EROFS`, and `ENUMERATE` is `EPERM`. `explain` gives a fact-only sentence for each errno.
