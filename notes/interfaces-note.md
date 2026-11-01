@@ -6,15 +6,15 @@ A one-page account, for a reader who has not followed milestone 956 (the linked 
 checkable versions), of what the `INTERFACES` note is and what `crates/interfaces_note` does. The
 plan, the id table and the rulings are in
 [the milestone's block](../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md);
-the byte layout is in the crate's module documentation. This page was read against that code.
+the byte layout is in the crate's module documentation. This page states what that code does.
 
 ## What it is for
 
-A program is built against shared crates that define formats another, separately released part
+A program links shared crates that define formats another, separately released part
 reads at run time: the syscall numbers (`abi`), the clock page (`clock_contract`), the sink framing
 (`byte_sink_contract`) and so on. Once a package leaves this repository, a program and the system
-that runs it can be built from different commits. The note is how a program says, inside its own
-bytes, which version of each such format it was built against, so the other side can check.
+that runs it may come from different commits. The note is how a program says, inside its own
+bytes, which version of each such format it expects, so the other side can check.
 
 ## What a program writes
 
@@ -23,8 +23,8 @@ given a list of `interfaces_note::Declared { id, version }` with each id read fr
 crate's `INTERFACE_ID` and each version from that crate's version constant. The macro places one
 static, `InterfacesNote`, in the section `.note.nife.manifest`, which the link script
 (`crates/user_mode_runtime/link.ld`) gathers into the output section `.note.nife` and its
-`PT_NOTE` segment, beside any manifest note the program carries. The note is computed by a `const
-fn`, so a list whose ids do not strictly ascend, or that holds more than 64 entries, is a compile
+`PT_NOTE` segment, beside any manifest note the program carries. A `const fn` computes the
+note, so a list whose ids do not strictly ascend, or that holds more than 64 entries, is a compile
 error.
 
 The bytes, all little-endian words:
@@ -50,7 +50,7 @@ that a decoded list encodes back to its bytes and that decoding never panics.
 Every interface owns a number for good. The one table is the "Interface ids" section of the
 milestone's block: `abi` is 1, `address_space_map` 2, `machine_statistics_contract` 4,
 `byte_sink_contract` 6, `capability_manifest_note` 7, `clock_contract` 8, and so on to
-`user_mode_runtime` at 20; 3 is retired (it was `glob`). An interface is the module that holds
+`user_mode_runtime` at 20; 3 stays retired (it named `glob`). An interface is the module that holds
 `INTERFACE_ID`, so `filesystem_contract` holds two, `blk` at 14 and `fs` at 15. A new interface
 takes the next unused number by adding a row there, and a number is never reused.
 
@@ -58,19 +58,19 @@ takes the next unused number by adding a row there, and a number is never reused
 
 A format change is a new version under the same id, never a new id. Every interface is at version 1
 today. The check at load compares by equality: the syscall ABI is never served in two versions at
-once, so a program built against `ABI_VERSION` 1 is refused by a system serving 2, and a program
-built against 2 is refused by one serving 1. For every other interface, a bump today changes the
+once, so a system serving `ABI_VERSION` 2 refuses a program that declares 1, and a system
+serving 1 refuses one that declares 2. For every other interface, a bump today changes the
 recorded bytes and nothing refuses on it; a check at bind time for message contracts is a separate
 proposal, [the message contracts carry bind-time version checks](../design/roadmap/proposals/message-contracts-carry-bind-time-version-checks.md).
 
-## What is checked at load, and where
+## What the loader checks, and where
 
 The kernel does not read this note; nothing under `kernel/` names it. The progenitor does, in
 `crates/system_initializer/src/image_request.rs`, function `serves_declared_abi`, which
 `endowed_image` in the same file calls after decoding the manifest note. It finds the note by owner
-`nife` and type 4. No note passes. A note that does not decode refuses. A note that decodes is
-asked `check_served(abi::INTERFACE_ID, abi::ABI_VERSION)`: an entry for id 1 that is not the
-served version refuses, and a list with no entry for id 1 passes. Only the ABI entry is compared.
+`nife` and type 4. No note passes. A note that does not decode refuses. For a note that decodes, the
+progenitor calls `check_served(abi::INTERFACE_ID, abi::ABI_VERSION)`: an entry for id 1 that is not the
+served version refuses, and a list with no entry for id 1 passes. The progenitor compares only the ABI entry.
 
 A refusal makes `endowed_image` return `None`. The spawn loop
 (`crates/system_initializer/src/spawn_loop.rs`) answers the request with
@@ -94,12 +94,12 @@ headers equal.
 
 ## What keeps a list honest
 
-`helpers/interface_declarations_check.py`, which `script/lint` runs with its selftest, reads each
-program of `process-tools`, `core-tools` and `disk-tools`, works out the crates it links from its
-source and `cargo metadata`, and fails when a list misses an interface the program links or names
-one it does not, when a version is read from a module other than its id's, when an `INTERFACE_ID`
-in the tree disagrees with the table, or when a linked crate is not classified. It reads source
-text, not the linked bytes. The crate `interfaces_note` itself has no id: the check lists it as
+`script/lint` runs `helpers/interface_declarations_check.py` and its selftest. The check reads each
+program of `process-tools`, `core-tools` and `disk-tools` and works out the crates it links from
+its source and `cargo metadata`. It fails when a list misses an interface the program links or
+names one it does not. It fails when an entry reads its version from a module other than its
+id's, when an `INTERFACE_ID` disagrees with the table, and when the check finds a linked crate in
+none of its tables. It reads source text, not the linked bytes. The crate `interfaces_note` itself has no id: the check lists it as
 owed one, so no list declares it, and the note does not declare its own format. Its descriptor's
 first word is its own version.
 
@@ -134,11 +134,11 @@ descriptor of `8 + 9 * 12` = 116 bytes. Built for `aarch64-unknown-none-softfloa
 ```
 
 and the seven records after run 6, 8, 9, 10, 12, 19 (`0x13`) and 20 (`0x14`), each at version 1.
-Sent to the progenitor as a file, those bytes are accepted while `abi::ABI_VERSION` is 1, and
-refused with `SPAWN_REFUSED_BY_MANIFEST` by a progenitor built with any other value.
+Sent to the progenitor as a file, those bytes pass while `abi::ABI_VERSION` is 1. A progenitor
+built with any other value answers `SPAWN_REFUSED_BY_MANIFEST`.
 
 ## Not verified here
 
 - The Kani harnesses were not run for this page; `script/verify` runs them.
-- The refusal was read in code and its host tests (`image_request.rs`'s tests module), not
-  observed on a booted system.
+- This page reads the refusal from the code and its host tests (`image_request.rs`'s tests
+  module); it did not observe one on a booted system.
