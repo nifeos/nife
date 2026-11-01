@@ -40,7 +40,7 @@ teardown and respawn by the progenitor, with no signals and no `kill`.
 - Reload and graceful stop. A service may declare a control endpoint that accepts those
   messages over IPC, the Fuchsia component lifecycle model. A service without one can only be
   restarted. The command that sends them is `service_control`, with the verbs `start`, `stop` and
-  `reload` (ruled 2026-11-01 UTC; see Open questions for the reasons).
+  `reload` (the 2026-11-01 UTC ruling; reasons under Open questions).
 - Configuration. The package ships a read-only default, and the owner's configuration lives in
   a writable directory granted to the service.
 - Update. A package update is a new installed-programs version, and the progenitor restarts the
@@ -95,7 +95,7 @@ them at install. So it is built here, once, for every grant:
    changed; `jig` prints the list before it asks.
 5. `remove` stops and drops; `rollback` restores the previous set and restarts what changed.
 6. The `service_control` command and the control endpoint's messages: `reload` and `stop`, a stop
-   that falls back to teardown, and `start` for a service that `--no-start` left stopped.
+   that falls back to teardown, and `start` for a service that `--no-start` did not start.
 
 ## Done when
 
