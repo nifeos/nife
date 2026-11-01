@@ -543,7 +543,10 @@ mod tests {
         let seal = inspect(&kernel, &archive).expect("readable");
         assert!(seal.kernel_refuses());
         assert_eq!(seal.entries[0].vouch, Vouch::No);
-        assert!(seal.entries[1..].iter().all(|e| e.vouch == Vouch::Yes), "{seal:?}");
+        assert!(
+            seal.entries[1..].iter().all(|e| e.vouch == Vouch::Yes),
+            "{seal:?}"
+        );
     }
 
     #[test]
