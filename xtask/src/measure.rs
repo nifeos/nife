@@ -15,12 +15,12 @@ use crate::host::workspace_root;
 /// `sealed_pair::BOOT_PROGRAMS` so `uefi_loader/build.rs` and the card checker read one copy.
 /// Everything else is loaded by the progenitor, outside the kernel's trust root.
 ///
-/// `progenitor` is on it (milestone 266 (one progenitor, on all three architectures)). So are the
-/// six ELF child builders, milestone 19d (run a real workload)'s and 19e's userspace parents:
-/// `spawn_elf_child_builder` enters each directly and `trust::require` refuses an entry the trust
-/// root does not name, since a kernel entering a program it never measured is the hole measured
-/// boot closes. The list is the same on every architecture; `write_measure_manifest` still writes a
-/// manifest per architecture.
+/// It holds `progenitor` alone (milestone 266 (one progenitor, on all three architectures)). The
+/// six ELF child builders that `spawn_elf_child_builder` enters for the system tests are measured
+/// through the archive's table, which [`measurement_table`] writes, so the test kernel's trust root
+/// is the production kernel's (milestone 697 (the trust root leaves the kernel binary), part 1). The
+/// list is the same on every architecture; `write_measure_manifest` still writes a manifest per
+/// architecture.
 pub(crate) fn boot_programs() -> &'static [&'static str] {
     &sealed_pair::BOOT_PROGRAMS
 }

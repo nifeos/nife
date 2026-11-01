@@ -95,6 +95,31 @@ fn the_measurement_table_measures_to_the_compiled_in_trust_root() {
     );
 }
 
+/// **The trust root names the progenitor and the table, and nothing else.** A test kernel carries
+/// the production kernel's trust root, so the child builders the tests enter are vouched for by the
+/// table, never by the kernel image (milestone 697 (the trust root leaves the kernel binary) part
+/// 1, ruled 2026-11-01 UTC). A test program whose digest crept back into `.rodata` would make every
+/// base change relink the kernel again, and pass every other test while doing it.
+///
+/// Falsification: putting `report_child_builder` back on `sealed_pair::BOOT_PROGRAMS` makes the
+/// trust root three entries long, and this fails; not run red by the lane that wrote it.
+#[test_case]
+fn the_trust_root_names_only_the_progenitor_and_the_table() {
+    let allowed = [BOOT_PROGRAM, measured_boot::PROGRAM_MEASUREMENTS];
+    for measurement in crate::trust::TRUST_ROOT {
+        assert!(
+            allowed.contains(&measurement.name),
+            "the kernel image's trust root names '{}'; only the progenitor and the table belong there",
+            measurement.name,
+        );
+    }
+    assert_eq!(
+        crate::trust::TRUST_ROOT.len(),
+        allowed.len(),
+        "the trust root does not name exactly the progenitor and the table",
+    );
+}
+
 /// **Every program the progenitor loads is named in the table, and the bytes agree.** The
 /// end-to-end proof of the chain's second link, and the one that would catch the failure that
 /// actually threatens it: a program packed into the archive and left out of the table boots fine
