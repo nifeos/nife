@@ -65,8 +65,8 @@ binary delta of the kernel would cost at most 64 bytes of payload, so the saving
 
 Decided 2026-11-01 (UTC): option A, two command-line words spelled `nife.progenitor=sha256:<64 hex
 digits>` and `nife.base=sha256:<64 hex digits>`. Options B, C and D are not taken.
-The progenitor word's spelling, `nife.progenitor`, is provisional (decided by the maintainer the same day): it is used
-only inside the tree, and reversing it costs one pull request. `nife.base` names the table digest.
+The maintainer made the progenitor word's spelling, `nife.progenitor`, provisional the same day: only the tree reads
+it, and reversing it costs one pull request. `nife.base` names the table digest.
 
 ### Background
 

@@ -51,9 +51,9 @@ userspace rather than in the kernel.
 
 Both questions of
 [`how-the-loader-hands-the-kernel-two-digests.md`](proposals/how-the-loader-hands-the-kernel-two-digests.md)
-have answers from the architect, given 2026-11-01 (UTC). Question 1, the bytes of the handoff, is ruled: option A, the two
-command-line words `nife.progenitor=` and `nife.base=`, which the code here builds. The spelling `nife.progenitor` is provisional,
-decided by the maintainer on the same date: the word is used only inside the tree, and reversing it costs one pull request. Question 2:
+have answers from the architect, given 2026-11-01 (UTC). Question 1, the bytes of the handoff: the architect ruled option A, the two
+command-line words `nife.progenitor=` and `nife.base=`, which the code here builds. The maintainer made the spelling `nife.progenitor` provisional
+on the same date: only the tree reads the word, and reversing it costs one pull request. Question 2:
 option A, the composer records the digests and every loader copies them.
 
 A third question follows and stays separate. Once the kernel can update apart from the base, the
