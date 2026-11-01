@@ -26,6 +26,8 @@
 
 extern crate alloc;
 
+pub mod base_update;
+
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
@@ -127,6 +129,7 @@ pub struct Section<'a> {
 pub struct File<'a> {
     name: &'a str,
     sections: Vec<Section<'a>>,
+    base_update: base_update::Grant<'a>,
 }
 
 impl<'a> File<'a> {
@@ -138,13 +141,37 @@ impl<'a> File<'a> {
         let mut name: Option<&'a str> = None;
         let mut sections: Vec<Section<'a>> = Vec::new();
         let mut building: Option<Building<'a>> = None;
+        let mut base: Option<base_update::Grant<'a>> = None;
+        let mut in_base = false;
+        let mut base_seen: Vec<&'a str> = Vec::new();
         for (number, raw) in text.lines().enumerate() {
             let at = number + 1;
             let line = raw.trim();
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
+            if line == "[base-update]" {
+                if name.is_none() {
+                    return Err(Error {
+                        at,
+                        why: Why::NoHeader,
+                    });
+                }
+                if base.is_some() {
+                    return Err(Error {
+                        at,
+                        why: Why::DuplicateKey,
+                    });
+                }
+                if let Some(built) = building.take() {
+                    sections.push(built.finish(at)?);
+                }
+                base = Some(base_update::Grant::default());
+                in_base = true;
+                continue;
+            }
             if let Some(got) = section_name(line) {
+                in_base = false;
                 if name.is_none() {
                     return Err(Error {
                         at,
@@ -175,6 +202,12 @@ impl<'a> File<'a> {
                     why: Why::NotTOML,
                 });
             };
+            if in_base {
+                if let Some(grant) = base.as_mut() {
+                    take_base_update(grant, &mut base_seen, key, value, at)?;
+                }
+                continue;
+            }
             let Some(built) = building.as_mut() else {
                 // The one top-level entry is the header's, before any section.
                 if key == "approval" {
@@ -204,7 +237,11 @@ impl<'a> File<'a> {
             at: 1,
             why: Why::NoHeader,
         })?;
-        Ok(File { name, sections })
+        Ok(File {
+            name,
+            sections,
+            base_update: base.unwrap_or_default(),
+        })
     }
 
     /// The approval's name, from the header.
@@ -219,6 +256,14 @@ impl<'a> File<'a> {
     /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
     pub fn sections(&self) -> &[Section<'a>] {
         &self.sections
+    }
+
+    /// **The base-update section**: all switches false and no key accepted when the file has no
+    /// `[base-update]` section. See [`base_update`].
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by lane/976-part-7-the-base-update-grant.
+    pub fn base_update(&self) -> &base_update::Grant<'a> {
+        &self.base_update
     }
 
     /// **The entry for `package`**, or `None` when the file does not bound it: a package no
@@ -384,6 +429,39 @@ impl<'a> Building<'a> {
     }
 }
 
+/// Take one `key = value` line of the `[base-update]` section, or the refusal at `at`.
+fn take_base_update<'a>(
+    grant: &mut base_update::Grant<'a>,
+    seen: &mut Vec<&'a str>,
+    key: &'a str,
+    value: &'a str,
+    at: usize,
+) -> Result<(), Error> {
+    let err = |why| Error { at, why };
+    if seen.contains(&key) {
+        return Err(err(Why::DuplicateKey));
+    }
+    seen.push(key);
+    match key {
+        "allow" => grant.allow = boolean(value).ok_or_else(|| err(Why::BadValue))?,
+        "unattended" => grant.unattended = boolean(value).ok_or_else(|| err(Why::BadValue))?,
+        "accepts" => {
+            for item in string_array(value).ok_or_else(|| err(Why::BadValue))? {
+                let id = basic_string(item).ok_or_else(|| err(Why::BadValue))?;
+                if !name_fits(id) {
+                    return Err(err(Why::BadName));
+                }
+                if grant.accepts.contains(&id) {
+                    return Err(err(Why::DuplicateKey));
+                }
+                grant.accepts.push(id);
+            }
+        }
+        _ => return Err(err(Why::UnknownKey(key.to_string()))),
+    }
+    Ok(())
+}
+
 /// Whether `name` is one word a line and a file-system component can hold: the same test the
 /// compiled records' reader holds its names to.
 ///
@@ -494,3 +572,6 @@ fn zone_is_canonical(zone: &str) -> bool {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod base_update_tests;

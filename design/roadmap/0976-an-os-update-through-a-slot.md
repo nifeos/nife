@@ -161,7 +161,10 @@ slot. Every new name here is provisional.
   key, has a strictly greater version than the running one, and starts with no slot on trial. A
   base version is MAJOR.MINOR.PATCH, three integers. The accepted keys live beside the trust root;
   the approval file names which the owner accepts and never adds one. The reasoning is in the
-  proposal. Step 3, the loader's two digests, is milestone
+  proposal. The host-callable check is built in `crates/approval_file` (`base_update`): a pure
+  function over facts the caller establishes, each refusal naming its failed condition, with no
+  device updater calling it until part 5. Key identifiers and leading-zero version parts are
+  provisional (restrictive first). Step 3, the loader's two digests, is milestone
   607's item 6 and not this block's.
 
 - **Outstanding.** Ruled 2026-11-01 (UTC), part 4's header. Version 2 is 188 bytes in a 4096-byte block, the rest
