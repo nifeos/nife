@@ -52,16 +52,22 @@ use measured_boot::{DIGEST_TEXT_LEN, Digest, digest_text, parse_digest};
 use package_archive::STEM_LEN;
 
 /// The first line of a version 1 file.
+///
+/// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
 pub const VERSION_LINE: &str = "version 1";
 
 /// **A system manifest read from text**, every line already checked. Borrowed, so a reader holds the
 /// file and no copy.
+///
+/// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SystemManifest<'a> {
     text: &'a str,
 }
 
 /// **One package the manifest lists**: its stem and the digest its whole `.nifepkg` file must hash to.
+///
+/// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Entry<'a> {
     /// `name-version-architecture`, the file name without `.nifepkg`.
@@ -71,6 +77,8 @@ pub struct Entry<'a> {
 }
 
 /// Why a text is not a version 1 system manifest. `line` counts from 1; the version line is line 1.
+///
+/// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ParseError {
     /// The first line is not [`VERSION_LINE`], or the text is empty. A newer version is refused
@@ -131,6 +139,8 @@ impl fmt::Display for ParseError {
 
 /// Why a package set does not match a manifest. Each names the package, so a person reading the
 /// refusal knows which file to look at.
+///
+/// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Refusal<'a> {
     /// The package is held, and its digest is not the one the manifest lists.
@@ -171,6 +181,8 @@ impl fmt::Display for Refusal<'_> {
 }
 
 /// Why [`render`] refused its input.
+///
+/// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RenderError {
     /// No packages.
@@ -219,6 +231,8 @@ fn read_line(text: &str, line: usize) -> Result<Entry<'_>, ParseError> {
 impl<'a> SystemManifest<'a> {
     /// **Read `text`, refusing it whole at the first thing wrong**, so a file that parses has
     /// exactly the encoding [`render`] writes.
+    ///
+    /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
     pub fn parse(text: &'a str) -> Result<SystemManifest<'a>, ParseError> {
         let body = text
             .strip_prefix(VERSION_LINE)
@@ -250,6 +264,8 @@ impl<'a> SystemManifest<'a> {
     }
 
     /// Every package, in file order, which is sorted by stem.
+    ///
+    /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
     pub fn entries(&self) -> impl Iterator<Item = Entry<'a>> + 'a {
         self.text
             .lines()
@@ -258,6 +274,8 @@ impl<'a> SystemManifest<'a> {
     }
 
     /// The digest the manifest lists for `stem`, if it lists it.
+    ///
+    /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
     pub fn digest_of(&self, stem: &str) -> Option<Digest> {
         self.entries().find(|e| e.stem == stem).map(|e| e.digest)
     }
@@ -265,6 +283,8 @@ impl<'a> SystemManifest<'a> {
     /// **Hold a set of packages to the manifest**: every listed package present at its listed
     /// digest, and nothing else. The first failure in manifest order names its package; a held
     /// package the manifest omits is named after every listed one is satisfied.
+    ///
+    /// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
     pub fn check<'b>(&self, held: &[(&'b str, Digest)]) -> Result<(), Refusal<'b>>
     where
         'a: 'b,
@@ -287,6 +307,8 @@ impl<'a> SystemManifest<'a> {
 
 /// **The file for a set of packages**, sorted by stem whatever order they come in, so the same set
 /// is always the same bytes.
+///
+/// Name: provisional 2026-11-01 (UTC), milestone 976 part 6's lane.
 pub fn render(packages: &[(&str, Digest)]) -> Result<String, RenderError> {
     if packages.is_empty() {
         return Err(RenderError::Empty);
