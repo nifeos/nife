@@ -23,7 +23,7 @@ released on its own), and every later extraction runs the same list.
 - The architect clears the crate: condition 4 of §247 (the split begins with basalt holding nife), the
   hand code review, passes. That clearance also approves creating the crate's repository under nifeos
   (the architect ruled it on 2026-11-01 UTC). No standing approval covers the order table, so a lane
-  creates a crate repository only after the architect says the crate is cleared.
+  creates a crate repository only after the architect clears that crate.
 - A person grants the crate's repository the organization secrets `NIFE_SMELTER_APP_ID` and
   `NIFE_SMELTER_PRIVATE_KEY`, using an `admin:org` token. A lane never takes this step.
 - The path dependency becomes a crates.io release, pinned with its checksum in `Cargo.lock`
