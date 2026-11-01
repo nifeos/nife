@@ -12,10 +12,9 @@ needs_person: yes
 Raised 2026-11-01 (UTC) by the lane `lane/contract-crates-move-order`. It answers two questions: in
 what order the 22 crates that the first cut's programs link could leave this repository, and what
 policy makes frequent breaking change safe across repositories. It moves no crate and changes no
-code. Every new name below is provisional. The text states each ruling (2026-11-01 UTC).
+code. Every new name is provisional. The text states each ruling (2026-11-01 UTC).
 
-Reuse: `cargo metadata`, git's rename detection, milestone 610's series, milestone 956's constants and
-the crate template.
+Reuse: `cargo metadata`, git's rename detection, milestone 610's series and the crate template.
 
 Two directions from the architect, both dated 2026-11-01 (UTC), frame it:
 
@@ -23,7 +22,7 @@ Two directions from the architect, both dated 2026-11-01 (UTC), frame it:
   independent release)), not a cost to avoid, and the project should become good at changes that
   span two repositories. Contract crates should carry versions and may leave `nifeos/nife`, to ease
   that change and to let others write alternative implementations against them. Waiting for a crate to settle is not a criterion.
-- Anything that leaves must not reference back into nife. So a crate leaves bottom-up in the
+- Anything that leaves must not reference back into nife. A crate leaves bottom-up in the
   dependency graph, before or with every program that links it, and nothing that has left depends
   on a path or a pin into nife. nife may depend on what left.
 
@@ -150,7 +149,7 @@ Two checks move with each crate. nife's diff check, which fails a moved magic wi
 constant (milestone 956's step 4), joins the crate template. The template already runs
 `cargo-semver-checks` on each pull request against the last published release. These crates stay
 unpublished while nife pins them by `rev` (§305 (git dependencies on `nifeos/*` only, pinned to a
-landed commit)), so that rule has no baseline and never fires. The fix: compare against the commit
+landed commit)), so that rule has no baseline and never fires. Compare against the commit
 whose manifest last changed version (`--baseline-rev`), so a break without a minor bump fails. Inside
 nife, `cargo-semver-checks` stays refused.
 
@@ -235,13 +234,13 @@ contract leaves. §201 already asks for a name ratified before anything moves.
 
 ## The seven questions
 
-1. Considered: the options above, each with its reason.
+1. Considered: the options above.
 2. The tree: `jh7110_entropy` left on 2026-10-31 and nife pins it by `rev`; the crate template exists;
    basalt pins nife; milestone 956 carries the constants.
 3. Prior art, in the appendix.
 4. The premise holds with one correction: the first cut's 15 programs do not need all 22 at once.
    `disk-tools` needs 12.
-5. Cost: the measurements appendix, by command.
+5. Cost: the measurements appendix.
 6. Reversibility: above.
 7. At equal effort the choice stands. The order follows the graph and the second direction, not
    effort. Within a layer, cheapest first is a choice about learning cost, and this sentence says so.
