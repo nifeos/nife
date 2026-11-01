@@ -62,6 +62,42 @@ interfaces_note::carry_interfaces!(&[
         id: machine_statistics_contract::INTERFACE_ID,
         version: machine_statistics_contract::VERSION
     },
+    interfaces_note::Declared {
+        id: byte_sink_contract::INTERFACE_ID,
+        version: byte_sink_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: clock_contract::INTERFACE_ID,
+        version: clock_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: counter_frequency_contract::INTERFACE_ID,
+        version: counter_frequency_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: current_cpu_contract::INTERFACE_ID,
+        version: current_cpu_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: entropy_contract::INTERFACE_ID,
+        version: entropy_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: grant_plan::INTERFACE_ID,
+        version: grant_plan::VERSION
+    },
+    interfaces_note::Declared {
+        id: program_argument_contract::INTERFACE_ID,
+        version: program_argument_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: socket_contract::INTERFACE_ID,
+        version: socket_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: user_mode_runtime::INTERFACE_ID,
+        version: user_mode_runtime::VERSION
+    },
 ]);
 
 user_mode_runtime::program_entry!(start);

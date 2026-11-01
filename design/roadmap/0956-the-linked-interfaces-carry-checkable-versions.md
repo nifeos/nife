@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-01
 raised: 2026-10-29
 promoted_from: the-linked-interfaces-carry-checkable-versions
 milestone_dependencies: 597, 610
@@ -74,42 +75,62 @@ constants reads as additions, a shape the series already records.
 
 All of these hold, each checkable by a command:
 
-- `abi`, `address_space_map`, `machine_statistics_contract` and `block_roster` each export a
-  version constant and an `INTERFACE_ID`, and the id check finds no duplicate and no retired id.
+- Every interface in the table below exports a version constant and its `INTERFACE_ID`, and
+  `python3 helpers/interface_declarations_check.py` finds each number where the table puts it,
+  none twice and none retired.
 - `interfaces_note`'s tests and its Kani property for the `INTERFACES` note pass.
 - The progenitor's tests refuse a program whose ABI entry differs from `ABI_VERSION` and accept one
   that matches.
 - `script/lint` runs the pinned-values test and the format-values check, and the check's selftest
   passes.
 - Each of the fifteen programs of `process-tools`, `core-tools` and `disk-tools` carries a
-  `carry_interfaces!` list, and `python3 helpers/interface_declarations_check.py` finds every
-  linked crate classified and each list equal to the formats with an id that the program links.
+  `carry_interfaces!` list, and the same check finds every linked crate classified and each list
+  equal to the interfaces the program links.
 - The check's `OWED` table is empty.
 
-The first five hold. Milestone 756's condition 4 holds when the sixth does.
+With them, milestone 756's condition 4 holds.
 
-## The linked set, re-derived
+## Interface ids
 
-Measured on 2026-11-01 (UTC): the crates each program names, closed over `cargo metadata`'s normal
-dependencies, less the cut's own crates. The fifteen programs reach twenty crates. The check's
-two tables carry each one's reason in a line.
+Each run-time format the first cut links carries the number below, at version 1 when assigned
+(ruled 2026-11-01 UTC). A number belongs to one interface for good: a format change is a new
+version, never a new number, and a retired number stays retired. A new interface takes the next
+unused number by adding a row here; `script/lint` holds every `INTERFACE_ID` in the tree to this
+table. No registry outside it exists.
 
-- Formats with an id: `abi`, `address_space_map`, `block_roster`, `machine_statistics_contract`.
-- Formats owed an id (`OWED`): `byte_sink_contract`, `clock_contract`,
-  `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `environment_contract`,
-  `filesystem_contract` (one id each for block and file), `filesystem_fixture`, `grant_plan`,
-  `interfaces_note`, `program_argument_contract`, `socket_contract`, `user_mode_runtime`.
-- Not a format (`NOT_A_FORMAT`): `calendar`, `glob`, `globally_unique_identifier_partition_table`. No crate may take `glob`'s old interface id, 3.
+| id | interface |
+|---|---|
+| 1 | `abi` |
+| 2 | `address_space_map` |
+| 3 | retired, `glob` |
+| 4 | `machine_statistics_contract` |
+| 5 | `block_roster` |
+| 6 | `byte_sink_contract` |
+| 7 | `capability_manifest_note` |
+| 8 | `clock_contract` |
+| 9 | `counter_frequency_contract` |
+| 10 | `current_cpu_contract` |
+| 11 | `domain_name_resolution_contract` |
+| 12 | `entropy_contract` |
+| 13 | `environment_contract` |
+| 14 | `filesystem_contract::blk` |
+| 15 | `filesystem_contract::fs` |
+| 16 | `filesystem_fixture` |
+| 17 | `grant_plan` |
+| 18 | `program_argument_contract` |
+| 19 | `socket_contract` |
+| 20 | `user_mode_runtime` |
 
-Close calls, each placed on the stricter side where unsure: `grant_plan` counts for its slot
-numbers, `user_mode_runtime` for its entry registers and link layout, `filesystem_fixture` for the
-blank disk layout, and `interfaces_note` for the `INTERFACES` note the progenitor reads. The
-partition table stays out, because UEFI owns that format and the bytes carry their own revision.
+An interface is the module that holds the id, so `filesystem_contract` carries one in `blk` and
+one in `fs`. The check also classifies every crate the cut links. Four define no run-time format
+and stay Rust APIs: `calendar`, `domain_name_system`, `glob` and
+`globally_unique_identifier_partition_table`. Its `NOT_A_FORMAT` table gives each reason.
 
 The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so
 carrying the note adds that one crate to a program's linked set and no planner. `disk-tools` does
-not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`;
-moving them into a leaf crate belongs to pull request #3026.
+not reach `grant_plan`. The check holds `interfaces_note` in `OWED` until it takes a number from the
+table above. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`; moving
+them into a leaf crate belongs to pull request #3026.
 
 ## What this block does not do
 
@@ -123,12 +144,11 @@ build waits for the first package that leaves the tree.
 
 ## Follow-on
 
-- **Outstanding.** An `INTERFACE_ID` and a version for each of the thirteen crates in `OWED`, `interfaces_note` among them,
-  then the programs' lists grow as the check names them. Checked on 2026-11-01 (UTC) with
-  `python3 helpers/interface_declarations_check.py`. `filesystem_contract`'s two ids need the check
-  to read an id inside a module, which it does not yet.
-- **Outstanding.** The `grant_plan::Manifest` type and the slot constants in a leaf crate, so
-  `process-tools` and `core-tools` link no planner: pull request #3026.
+- **Done.** The interface ids for the fourteen formats owed one, and the programs' lists, carried
+  by this block's own `Interface ids` table and the declaration check.
+- **Proposed.** The `grant_plan::Manifest` type and the slot constants in a leaf crate, so that
+  carrying the note links no planner:
+  `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`.
 
 ## BUGS
 
@@ -136,6 +156,9 @@ build waits for the first package that leaves the tree.
   does not read their `INTERFACES` note; only the image path checks it.
 - The declaration check reads source text and the dependency graph, not the linked bytes. A crate
   a program reaches only through another crate's macro counts as that other crate's.
+- In a crate with an interface per module, a program declares the modules its source names. A
+  program that names only a module without an id, such as `filesystem_contract::dir`, declares
+  every interface of the crate.
 
 ## Index row
 

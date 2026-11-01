@@ -108,6 +108,38 @@ interfaces_note::carry_interfaces!(&[
         id: address_space_map::INTERFACE_ID,
         version: address_space_map::VERSION
     },
+    interfaces_note::Declared {
+        id: clock_contract::INTERFACE_ID,
+        version: clock_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: counter_frequency_contract::INTERFACE_ID,
+        version: counter_frequency_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: current_cpu_contract::INTERFACE_ID,
+        version: current_cpu_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: entropy_contract::INTERFACE_ID,
+        version: entropy_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: filesystem_contract::blk::INTERFACE_ID,
+        version: filesystem_contract::blk::VERSION
+    },
+    interfaces_note::Declared {
+        id: filesystem_fixture::INTERFACE_ID,
+        version: filesystem_fixture::VERSION
+    },
+    interfaces_note::Declared {
+        id: socket_contract::INTERFACE_ID,
+        version: socket_contract::VERSION
+    },
+    interfaces_note::Declared {
+        id: user_mode_runtime::INTERFACE_ID,
+        version: user_mode_runtime::VERSION
+    },
 ]);
 
 user_mode_runtime::program_entry!(start);

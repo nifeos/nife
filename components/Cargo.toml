@@ -630,6 +630,12 @@ designware_mobile_storage = { version = "0.1.0", path = "../crates/designware_mo
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
 abi = { version = "0.1.0", path = "../crates/abi" }
+# Named here so the first cut's `carry_interfaces!` lists can read these interfaces' ids and
+# versions (milestone 956 (the linked interfaces carry checkable versions)); each program already
+# links them through `user_mode_runtime` or `grant_plan`.
+counter_frequency_contract = { version = "0.1.0", path = "../crates/counter_frequency_contract" }
+current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
+program_argument_contract = { version = "0.1.0", path = "../crates/program_argument_contract" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
 process_builder = { version = "0.1.0", path = "../crates/process_builder" }
 # The interactive system, built once (milestone 96). Both inits are a table of the slot numbers
