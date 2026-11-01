@@ -12,6 +12,8 @@
 //! # BUGS
 //!
 //! - The layout and [`SlotHeader`] are ratified; change them through the header's version field.
+//!   Version 2 is [`members`]; the chooser still reads only version 1 until it adopts
+//!   [`members::parse`].
 //! - Confirmation proves nothing off the boot path, and a machine that never confirms rolls back a
 //!   working upgrade, which fails safe. See notes/boot-slots.md, "What marks a trial boot
 //!   successful".
@@ -24,6 +26,8 @@
 //! capability system.
 
 #![no_std]
+
+pub mod members;
 
 use globally_unique_identifier_partition_table::crc;
 
@@ -265,7 +269,9 @@ pub fn select_excluding(slots: &[State], tried: u64) -> Option<usize> {
 /// The magic at the start of a slot partition: eight bytes a reader can find with `strings`.
 pub const SLOT_MAGIC: [u8; 8] = *b"NIFESLOT";
 
-/// The layout version this crate writes and the only one it reads.
+/// The version 1 layout: one image behind [`SlotHeader`]. [`SlotHeader::decode`] reads only this
+/// one; [`members::parse`] reads it and version 2 ([`members::MEMBERS_VERSION`]), and the updater
+/// writes only version 2.
 pub const SLOT_VERSION: u32 = 1;
 
 /// **Bytes of a slot partition reserved for [`SlotHeader`] before the image begins**: 4096, one

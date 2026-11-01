@@ -129,6 +129,18 @@ slot. Every new name here is provisional.
   times. Boot 2 must confirm slot 1, boot 3 must choose it with no tries left, as `confirm-boot`
   asserts, and the transcript must show the composed catalog. Parts 2 and 3 are mechanical and add no
   format; part 3 is host-staged, so it proves the slot path and not a device updater.
+- **Done.** Part 4a: `crates/boot_slot` reads and writes the version 2 header (`boot_slot::members`,
+  provisional). `parse` reads versions 1 and 2 and refuses with a typed `Refusal` and a fixed
+  phrase each of: unknown version, unknown, duplicate or missing tag, layout break, nonzero
+  reserved or padding bytes, and a CRC-32 mismatch; it adds `NoHeader` and `Truncated` for an
+  empty partition and a short buffer. `MemberHeader::encode` writes only version 2. Host tests
+  cover the round trip, every refusal, version 1 as before, and a flip of every byte of the 188
+  and of the padding. A fuzz target is not added, because the fuzz job is at its eighteen-target
+  budget; the crate's `BUGS` records that. Open points the ruling leaves, refused strictly for now:
+  a zero-length member and a member inside the header block are layout breaks.
+- **Outstanding.** Parts 4b and 4c. Part 4b moves the archive writer from `xtask/src/archive.rs`
+  into a crate. Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
+  load the members and print each refusal's phrase, and teaches xtask to write version 2.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
   readable). The chooser loads the kernel and archive itself, and the archive writer moves from
