@@ -93,7 +93,9 @@ No per-crate milestone is minted by this block. They come from the reviews below
 - Ruled 2026-11-01 (UTC): this repository breaks up into single-purpose repositories and remains
   only for its history. The kernel, programs, tooling and crates all leave, and a crate consumable
   outside nife shows good crate boundaries. What leaves references nothing back here, so moves go
-  bottom-up: the crates a program links leave before it or with it. Publish-ours
+  bottom-up: the crates a program links leave before it or with it. The kernel leaves last among
+  the code, to `nife-kernel` (provisional): like Linux, a named part of the system, while the
+  project name stays with the whole. Publish-ours
   crates publish; contract crates move and carry versions whether or not they publish. Milestone
   818 (proven JH7110 TRNG logic, released on its own) is the leaf pilot; pull request #3026
   proposes the second pilot and the contract crates' order. Until a moved crate publishes, nife
@@ -163,9 +165,8 @@ question first; [what-was-already-on-the-record.md](0857-crates-released-on-thei
 says what each settled and what has moved since.
 
 The survey shrank the question. Of the 31 candidates, eight are "publish ours": the FAT crate, six
-device-logic crates (NVMe, e1000e, two DesignWare controllers, two JH7110 blocks), and xHCI. nife
-makes rust-osdev no offer for xHCI, since nife does not depend on its `xhci` (milestone 820). Eleven outside projects are
-candidates for our proofs. The survey classed the rest internal, no standing class since
+device-logic crates (NVMe, e1000e, two DesignWare controllers, two JH7110 blocks), and xHCI. Eleven
+outside projects are candidates for our proofs. The survey classed the rest internal, no standing class since
 2026-11-01.
 
 ## Fork 1. Where a released crate lives (ruled: one repository per crate)
@@ -223,9 +224,7 @@ the evidence, and the evidence is milestone 39's reason to publish at all.
 Options only, because a crates.io name cannot be taken back: a crate can be yanked but its name
 stays.
 
-- N-a. This tree's names, prefixed only where taken. Free today: `device_tree_blob`,
-  `globally_unique_identifier_partition_table`, `network_time_protocol` and most of the long names.
-  Taken: `calendar`, `elf`, `glob`, `paging`, `pci`, `usb`, `http_response`.
+- N-a. This tree's names, prefixed only where taken.
 - N-b. One prefix for all, as `sel4-*`, `cranelift-*` and `embassy-*` do. It says who stands behind
   the proofs. It also says "nife" to a reader who wanted a GPT parser.
 - N-c. A short name chosen per crate, as RustCrypto does (`sha2`, `aes-gcm`). Readable, and every
