@@ -123,7 +123,7 @@ manifest_note	userspace	retired
 manual	userspace	retired
 mdns_config	userspace	retired
 mdns_proto	userspace	retired
-measured_boot	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser
+measured_boot	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 memory_corruption_canary_gate	kernel	kernel
 memory_region_heap	userspace	components,fixtures,redoxfs_server
 memory_regions	kernel	kernel

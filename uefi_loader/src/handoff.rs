@@ -530,7 +530,7 @@ mod tests {
     /// digests, which come last.
     #[test]
     fn the_longest_line_fits_what_the_kernel_reads() {
-        assert!(CMDLINE_LEN <= 512, "{CMDLINE_LEN}");
+        const { assert!(CMDLINE_LEN <= 512) }
     }
 
     /// **Every token this writer can emit fits [`CMDLINE_LEN`]**, asserted rather than added up by
