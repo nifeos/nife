@@ -116,6 +116,22 @@ pub const MANIFEST: u32 = 1;
 /// field order of version 1 is milestone 597's lane's design, in the module documentation.
 pub const VERSION: u32 = 1;
 
+/// The version of the set of manifest note types and their descriptors: 1. A break bumps it, with
+/// the dated ledger entry the interface-stability discipline owes; an addition an older peer
+/// ignores does not.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const NOTE_SET_VERSION: u32 = 1;
+
+/// This interface's identity in a program's `INTERFACES` note: 7, naming the set of manifest note
+/// types and their descriptors. The number is this interface's for good: no other interface takes
+/// it, and a format change is a new version, never a new number. Milestone 956 (the linked
+/// interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds the
+/// tree to it. A program declares the pair of this id and [`NOTE_SET_VERSION`].
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const INTERFACE_ID: u64 = 7;
+
 /// How long a version 1 descriptor is, exactly; the module documentation has the layout.
 pub const DESCRIPTOR_LEN: usize = 56;
 

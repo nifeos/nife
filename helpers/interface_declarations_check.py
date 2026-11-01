@@ -59,23 +59,7 @@ TABLE = 'design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md'
 
 # Linked crates that define a run-time format exchanged between separately released parts, still
 # owed an `INTERFACE_ID` and a version. A crate leaves this table in the change that gives it both.
-OWED = {
-    'byte_sink_contract': 'the write framing between a writer and whatever sink it holds',
-    'capability_manifest_note': 'the ELF note the progenitor and the shell read from the bytes',
-    'clock_contract': 'the clock page the kernel and the clock service write, and the propose call',
-    'counter_frequency_contract': 'the counter-frequency page the kernel writes for every process',
-    'current_cpu_contract': 'the current-CPU page the kernel writes',
-    'domain_name_resolution_contract':
-        'the resolver protocol; the cut reaches it only through the manifest note\'s zone limits',
-    'entropy_contract': 'the request and reply of the entropy service',
-    'environment_contract': 'the inert-configuration page init assembles',
-    'filesystem_contract': 'the block and the file protocols, one id each (one per wire format)',
-    'filesystem_fixture': 'the blank disk layout the host build writes and disk_partitioner fills',
-    'grant_plan': 'the slot numbers the progenitor grants into and a program reads from',
-    'program_argument_contract': 'the argument page the shell assembles',
-    'socket_contract': 'the socket protocol and frame between net_stack and its clients',
-    'user_mode_runtime': 'the entry registers and the link layout the loader starts a program with',
-}
+OWED = {}
 
 # Linked crates that define no run-time format another released part reads: a Rust API only.
 NOT_A_FORMAT = {
