@@ -100,6 +100,10 @@ pub enum LayoutError {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     NameRefused,
+    /// The clock reported a time FAT cannot store (see [`crate::Clock`]).
+    ///
+    /// Name: provisional. As `WriteError::TimeOutOfRange`.
+    TimeOutOfRange,
     /// The file does not fit in the clusters the volume has left after its directories.
     ///
     /// Name: ratified 2026-10-25 (#2720).
@@ -178,6 +182,7 @@ impl VolumeLayout {
         };
         let total_sectors = total_sectors as u32;
 
+        let stamp = Stamp::pack(clock.now()).map_err(|_| LayoutError::TimeOutOfRange)?;
         let geometry = Geometry::new(
             FileAllocationTableType::Fat32,
             SectorSize::Bytes512,
@@ -210,7 +215,7 @@ impl VolumeLayout {
             file_len,
             file_clusters,
             geometry,
-            stamp: Stamp::pack(clock.now()),
+            stamp,
             volume_id,
             name,
             long_name,

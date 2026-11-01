@@ -97,8 +97,12 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
     }
 
     /// Read the clock once for the operation about to run.
-    fn tick(&mut self) {
-        self.volume.stamp = Stamp::pack(self.clock.now());
+    ///
+    /// A time FAT cannot store is refused here, ahead of every byte the operation would write.
+    fn tick(&mut self) -> Result<(), WriteError<D::Error>> {
+        self.volume.stamp =
+            Stamp::pack(self.clock.now()).map_err(|_| WriteError::TimeOutOfRange)?;
+        Ok(())
     }
 
     /// **Take one free cluster** for the end of a chain: linked after `extending` when given.
@@ -146,7 +150,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
         directory: u32,
         name: &str,
     ) -> Result<NamedEntry, WriteError<D::Error>> {
-        self.tick();
+        self.tick()?;
         self.volume.create_file(directory, name)
     }
 
@@ -159,7 +163,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
         directory: u32,
         name: &str,
     ) -> Result<NamedEntry, WriteError<D::Error>> {
-        self.tick();
+        self.tick()?;
         self.volume.make_directory(directory, name)
     }
 
@@ -205,7 +209,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
     ///
     /// Name: provisional. As the former `Volume::set_volume_label`.
     pub fn set_volume_label(&mut self, label: &str) -> Result<(), WriteError<D::Error>> {
-        self.tick();
+        self.tick()?;
         self.volume.set_volume_label(label)
     }
 

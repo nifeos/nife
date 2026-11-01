@@ -70,6 +70,12 @@ pub enum WriteError<E> {
     ///
     /// Name: provisional. The condition, as DOS's "access denied".
     ReadOnly,
+    /// The clock reported a time FAT cannot store: a year before 1980 or after 2107, or a field out
+    /// of its range. The operation wrote nothing; a clock that cannot be trusted reports no time
+    /// instead.
+    ///
+    /// Name: provisional. The ruling of 2026-11-01 (UTC) on detail (b): refuse, do not clamp.
+    TimeOutOfRange,
     /// The directory holds entries other than `.` and `..`.
     ///
     /// Name: provisional. The condition.

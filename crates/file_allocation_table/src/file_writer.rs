@@ -296,8 +296,13 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
     }
 
     /// Read the clock once for the operation about to run.
-    fn tick(&mut self) {
-        self.volume.stamp = Stamp::pack(self.clock.now());
+    ///
+    /// A time FAT cannot store is refused here, before the writer touches the device, and the
+    /// writer stays usable.
+    fn tick(&mut self) -> Result<(), WriteError<D::Error>> {
+        self.volume.stamp =
+            Stamp::pack(self.clock.now()).map_err(|_| WriteError::TimeOutOfRange)?;
+        Ok(())
     }
 
     /// The file's length in bytes.
@@ -353,7 +358,7 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
     /// Name: provisional. The `Write` verb of the standard library's trait.
     pub fn write(&mut self, data: &[u8]) -> Result<usize, WriteError<D::Error>> {
         self.check()?;
-        self.tick();
+        self.tick()?;
         let before = (self.state.first_cluster, self.state.size);
         let boot = self.volume.boot;
         let mut scratch = [0u8; SectorSize::MAX];
@@ -376,7 +381,7 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
     /// Name: provisional. The verb of `File::set_len`.
     pub fn set_len(&mut self, length: u32) -> Result<(), WriteError<D::Error>> {
         self.check()?;
-        self.tick();
+        self.tick()?;
         let result = self.resize(length);
         if result.is_err() {
             self.failed = true;

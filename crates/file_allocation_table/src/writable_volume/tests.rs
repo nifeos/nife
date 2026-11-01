@@ -51,7 +51,7 @@ fn fields(bytes: &[u8], start: usize) -> (u8, u16, u16, u16, u16, u16) {
 }
 
 fn packed(time: Option<Timestamp>) -> (u8, u16, u16, u16, u16, u16) {
-    let s = Stamp::pack(time);
+    let s = Stamp::pack(time).unwrap();
     (
         s.creation_tenths,
         s.creation_time,
@@ -299,4 +299,180 @@ fn the_volume_without_a_clock_cannot_write_and_the_clock_is_given_back_with_the_
     let writable = WritableVolume::open(volume.into_device(), NoClock).unwrap();
     let mut read_only = writable.into_volume();
     assert_eq!(read_only.count_free_clusters(), Ok(350));
+}
+
+/// The times FAT cannot store that the refusal tests try.
+fn bad_times() -> [Option<Timestamp>; 5] {
+    [
+        at(1979, 12, 31, 23, 59, 58),
+        at(2108, 1, 1, 0, 0, 0),
+        at(2026, 13, 1, 0, 0, 0),
+        at(2026, 1, 1, 24, 0, 0),
+        at(2026, 1, 1, 0, 60, 0),
+    ]
+}
+
+/// Run `operation` on a volume holding one file, with a clock that reports a time FAT cannot
+/// store, and check it is refused and left every byte of the image as it was.
+fn refused_and_untouched(
+    operation: impl Fn(&mut WritableVolume<Image, Shared<'_>>) -> Result<(), WriteError<u64>>,
+) {
+    let (time, readings) = (Cell::new(at(2026, 11, 1, 12, 34, 56)), Cell::new(0));
+    for bad in bad_times() {
+        time.set(at(2026, 11, 1, 12, 34, 56));
+        let mut volume = WritableVolume::open(
+            Image::fat12(),
+            Shared {
+                time: &time,
+                readings: &readings,
+            },
+        )
+        .unwrap();
+        let file = volume.create_file(0, "KEEP.TXT").unwrap();
+        volume
+            .open_file_writer(&file)
+            .unwrap()
+            .write(b"keep")
+            .unwrap();
+        volume.sync().unwrap();
+        let image = volume.into_device();
+        let before = image.bytes;
+        let mut volume = WritableVolume::open(
+            image,
+            Shared {
+                time: &time,
+                readings: &readings,
+            },
+        )
+        .unwrap();
+        time.set(bad);
+        assert_eq!(
+            operation(&mut volume),
+            Err(WriteError::TimeOutOfRange),
+            "{bad:?}"
+        );
+        assert!(
+            volume.into_device().bytes == before,
+            "an out-of-range time wrote bytes ({bad:?})"
+        );
+    }
+}
+
+#[test]
+fn creating_a_file_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
+    refused_and_untouched(|volume| volume.create_file(0, "NEW.TXT").map(|_| ()));
+    refused_and_untouched(|volume| {
+        volume
+            .create_file(0, "A long new file name.txt")
+            .map(|_| ())
+    });
+}
+
+#[test]
+fn making_a_directory_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
+    refused_and_untouched(|volume| volume.make_directory(0, "NEWDIR").map(|_| ()));
+}
+
+#[test]
+fn setting_the_label_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
+    refused_and_untouched(|volume| volume.set_volume_label("LABEL"));
+}
+
+#[test]
+fn writing_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
+    refused_and_untouched(|volume| {
+        let entry = volume.lookup("KEEP.TXT").unwrap();
+        volume
+            .open_file_writer(&entry)
+            .unwrap()
+            .write(b"more bytes")
+            .map(|_| ())
+    });
+    // Even a write of no bytes reads the clock first, and is refused the same way.
+    refused_and_untouched(|volume| {
+        let entry = volume.lookup("KEEP.TXT").unwrap();
+        volume
+            .open_file_writer(&entry)
+            .unwrap()
+            .write(b"")
+            .map(|_| ())
+    });
+}
+
+#[test]
+fn resizing_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
+    refused_and_untouched(|volume| {
+        let entry = volume.lookup("KEEP.TXT").unwrap();
+        volume.open_file_writer(&entry).unwrap().set_len(2000)
+    });
+    refused_and_untouched(|volume| {
+        let entry = volume.lookup("KEEP.TXT").unwrap();
+        volume.open_file_writer(&entry).unwrap().set_len(0)
+    });
+}
+
+#[test]
+fn a_refused_writer_stays_usable_once_the_clock_is_right() {
+    let (time, readings) = (Cell::new(at(2026, 11, 1, 12, 34, 56)), Cell::new(0));
+    let mut volume = WritableVolume::open(
+        Image::fat12(),
+        Shared {
+            time: &time,
+            readings: &readings,
+        },
+    )
+    .unwrap();
+    let file = volume.create_file(0, "W.TXT").unwrap();
+    let mut writer = volume.open_file_writer(&file).unwrap();
+    time.set(at(2108, 1, 1, 0, 0, 0));
+    assert_eq!(writer.write(b"x"), Err(WriteError::TimeOutOfRange));
+    assert_eq!(writer.set_len(5), Err(WriteError::TimeOutOfRange));
+    time.set(at(2026, 11, 2, 0, 0, 0));
+    assert_eq!(writer.write(b"x"), Ok(1));
+}
+
+#[test]
+fn the_boundaries_through_a_volume_refuse_one_second_outside_and_accept_the_edge() {
+    let (time, readings) = (Cell::new(None), Cell::new(0));
+    let mut volume = WritableVolume::open(
+        Image::fat12(),
+        Shared {
+            time: &time,
+            readings: &readings,
+        },
+    )
+    .unwrap();
+    for (moment, ok, name) in [
+        (at(1979, 12, 31, 23, 59, 58), false, "A.TXT"),
+        (at(1980, 1, 1, 0, 0, 0), true, "B.TXT"),
+        (at(2107, 12, 31, 23, 59, 58), true, "C.TXT"),
+        (at(2108, 1, 1, 0, 0, 0), false, "D.TXT"),
+    ] {
+        time.set(moment);
+        assert_eq!(volume.create_file(0, name).is_ok(), ok, "{moment:?}");
+    }
+    // A clock with no time is never out of range.
+    time.set(None);
+    assert!(volume.create_file(0, "E.TXT").is_ok());
+}
+
+#[test]
+fn the_format_and_the_efi_volume_refuse_a_time_fat_cannot_store() {
+    use crate::{Format, FormatError, FormatOptions, LayoutError, SectorSize, VolumeLayout};
+    let (time, readings) = (Cell::new(at(2108, 1, 1, 0, 0, 0)), Cell::new(0));
+    let mut clock = Shared {
+        time: &time,
+        readings: &readings,
+    };
+    let options = FormatOptions::new(SectorSize::Bytes512, 16 * 1024);
+    assert_eq!(
+        Format::new(options, &mut clock).err(),
+        Some(FormatError::TimeOutOfRange)
+    );
+    assert_eq!(
+        VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI", &mut clock).err(),
+        Some(LayoutError::TimeOutOfRange)
+    );
+    time.set(at(2107, 12, 31, 23, 59, 58));
+    assert!(Format::new(options, &mut clock).is_ok());
 }

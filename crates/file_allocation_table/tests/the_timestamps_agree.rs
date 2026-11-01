@@ -2,8 +2,7 @@
 //!
 //! A fixed clock stamps files and directories on FAT12, FAT16 and FAT32 volumes rust-fatfs
 //! formatted; rust-fatfs must read the creation, write and access times back as the clock gave
-//! them, the odd second included, and `fsck -n` must accept every volume, including the ones a
-//! clock with invalid fields stamped (those clamp). The format's label entry and the EFI volume's
+//! them, the odd second included, and `fsck -n` must accept every volume, including the edges. The format's label entry and the EFI volume's
 //! directories carry the clock's time, and a volume made with `NoClock` carries none.
 
 use std::cell::Cell;
@@ -13,7 +12,7 @@ use std::process::Command;
 
 use file_allocation_table::{
     Clock, Format, FormatOptions, NoClock, SectorDevice, SectorSize, Timestamp, VolumeLayout,
-    WritableSectorDevice, WritableVolume,
+    WritableSectorDevice, WritableVolume, WriteError,
 };
 use lamfat::FatType;
 
@@ -240,33 +239,51 @@ fn times_agree_on_fat32() {
 }
 
 #[test]
-fn a_clock_with_invalid_fields_clamps_and_fsck_accepts_the_volume() {
+fn a_time_fat_cannot_store_is_refused_and_the_edges_pass_fsck() {
+    for (label, time) in [
+        ("before-1980", at(1979, 12, 31, 23, 59, 58)),
+        ("after-2107", at(2108, 1, 1, 0, 0, 0)),
+        ("month-13", at(2000, 13, 1, 0, 0, 0)),
+        ("hour-99", at(2000, 1, 1, 99, 0, 0)),
+    ] {
+        let now = Cell::new(time);
+        let mut volume =
+            WritableVolume::open(formatted(4, FatType::Fat12, 512), Shared(&now)).unwrap();
+        let before = volume.into_device();
+        let mut volume = WritableVolume::open(
+            Memory {
+                bytes: before.bytes.clone(),
+                size: before.size,
+            },
+            Shared(&now),
+        )
+        .unwrap();
+        assert_eq!(
+            volume.create_file(0, "REFUSED.TXT"),
+            Err(WriteError::TimeOutOfRange),
+            "{label}"
+        );
+        assert!(
+            volume.into_device().bytes == before.bytes,
+            "{label}: bytes were written"
+        );
+    }
+    // The first and last moments FAT stores are written, read back and accepted by fsck.
     for (label, time, expected) in [
+        ("first", at(1980, 1, 1, 0, 0, 0), (1980, 1, 1, 0, 0, 0)),
         (
-            "before-1980",
-            at(1970, 6, 15, 12, 0, 0),
-            (1980, 1, 1, 0, 0, 0),
-        ),
-        (
-            "after-2107",
-            at(3000, 6, 15, 12, 0, 0),
+            "last",
+            at(2107, 12, 31, 23, 59, 58),
             (2107, 12, 31, 23, 59, 58_000),
-        ),
-        (
-            "wild-fields",
-            at(2000, 0, 0, 99, 99, 99),
-            (2000, 1, 1, 23, 59, 59_000),
         ),
     ] {
         let now = Cell::new(time);
         let mut volume =
             WritableVolume::open(formatted(4, FatType::Fat12, 512), Shared(&now)).unwrap();
-        volume.create_file(0, "CLAMPED.TXT").unwrap();
+        volume.create_file(0, "EDGE.TXT").unwrap();
         let image = volume.into_device();
-        let (y, mo, d, h, mi, ms) = expected;
-        let want: Read = (y, mo, d, h, mi, ms);
-        assert_eq!(creation(&image.bytes, "CLAMPED.TXT"), want, "{label}");
-        check_with_fsck(&image.bytes, &format!("clamped-{label}"));
+        assert_eq!(creation(&image.bytes, "EDGE.TXT"), expected, "{label}");
+        check_with_fsck(&image.bytes, &format!("edge-{label}"));
     }
 }
 

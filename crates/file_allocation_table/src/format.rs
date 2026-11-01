@@ -45,6 +45,10 @@ pub enum FormatError {
     ///
     /// Name: provisional. The condition.
     LabelRefused,
+    /// The clock reported a time FAT cannot store (see [`crate::Clock`]).
+    ///
+    /// Name: provisional. As `WriteError::TimeOutOfRange`.
+    TimeOutOfRange,
     /// The cluster size is not a power of two from 1 to 128 sectors.
     ///
     /// Name: provisional. The condition.
@@ -375,6 +379,7 @@ impl Format {
         {
             return Err(FormatError::ClusterSizeRefused);
         }
+        let stamp = Stamp::pack(clock.now()).map_err(|_| FormatError::TimeOutOfRange)?;
         let mut seen_small = false;
         let mut found = None;
         'search: for sectors in CLUSTERS {
@@ -409,7 +414,7 @@ impl Format {
             label: options.label,
             has_label: options.has_label,
             hidden_sectors: options.hidden_sectors,
-            stamp: Stamp::pack(clock.now()),
+            stamp,
         })
     }
 

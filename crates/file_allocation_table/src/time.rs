@@ -11,12 +11,16 @@
 //! reads the volume shows the stored time as local time, so a caller chooses whether its clock
 //! reports local time or UTC.
 //!
+//! A time FAT cannot store is refused, not adjusted: the operation fails with `TimeOutOfRange`
+//! before it writes a byte. A clock whose time is not trustworthy reports `None` and gets the zero
+//! timestamp.
+//!
 //! Name: provisional. The clock half of a writer, ruled required on 2026-11-01 (UTC).
 
 /// **A calendar date and time of day**, as plain numbers with no time zone.
 ///
-/// The fields need not be valid: a writer clamps an out-of-range value to the nearest time FAT can
-/// store (see [`Clock`]), and never fails a write over it.
+/// The fields need not be valid. A writer refuses a time FAT cannot store (see [`Clock`]) with
+/// `TimeOutOfRange`, and writes nothing.
 ///
 /// Name: provisional. Year, month, day, hour, minute and second, with no nife type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -38,10 +42,12 @@ pub struct Timestamp {
 
 /// **Where a writer gets the time.** A volume that writes holds one.
 ///
-/// [`Clock::now`] returns `None` when there is no time to report (a real clock that has not been
-/// set), and the entry then carries the zero timestamp. A time before 1980 is stored as
-/// 1980-01-01 00:00:00 and one after 2107-12-31 23:59:58 as that moment, and any other field
-/// outside its range is clamped to it. No write fails over a time.
+/// [`Clock::now`] returns `None` when there is no time to report, and the entry then carries the
+/// zero timestamp. A clock whose time is not trustworthy (one that has not been set, or has lost
+/// power) returns `None`; it does not guess. A time FAT cannot store is refused: a year before 1980
+/// or after 2107, or a field outside its range (month 1 to 12, day 1 to 31, hour 0 to 23, minute
+/// and second 0 to 59). The operation then fails with `TimeOutOfRange` before it writes a byte,
+/// and the writer stays usable. The crate does not check a day against its month.
 ///
 /// The crate takes the clock as a type parameter and not as a trait object, so it needs no
 /// allocator and no `dyn` indirection, and a caller's clock is a plain value.
@@ -93,6 +99,10 @@ const FIRST_YEAR: u16 = 1980;
 /// The last year FAT stores.
 const LAST_YEAR: u16 = 2107;
 
+/// **A time FAT cannot store**: what a clock reported was out of range.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct OutOfRange;
+
 /// **The six time fields of a directory entry, packed**: what a stamp writes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Stamp {
@@ -121,35 +131,35 @@ impl Stamp {
         write_date: 0,
     };
 
-    /// **Pack `now`**, clamping what FAT cannot store. `None` packs to [`Stamp::ZERO`].
-    pub(crate) fn pack(now: Option<Timestamp>) -> Stamp {
+    /// **Pack `now`**, or refuse it. `None` packs to [`Stamp::ZERO`]. A time FAT cannot store (a
+    /// year outside 1980 to 2107, a month outside 1 to 12, a day outside 1 to 31, an hour past 23, a
+    /// minute or second past 59) is [`OutOfRange`]. The check runs before any byte is written.
+    pub(crate) fn pack(now: Option<Timestamp>) -> Result<Stamp, OutOfRange> {
         let Some(now) = now else {
-            return Stamp::ZERO;
+            return Ok(Stamp::ZERO);
         };
-        let (year, month, day, hour, minute, second) = if now.year < FIRST_YEAR {
-            (FIRST_YEAR, 1, 1, 0, 0, 0)
-        } else if now.year > LAST_YEAR {
-            (LAST_YEAR, 12, 31, 23, 59, 58)
-        } else {
-            (
-                now.year,
-                now.month.clamp(1, 12),
-                now.day.clamp(1, 31),
-                now.hour.min(23),
-                now.minute.min(59),
-                now.second.min(59),
-            )
-        };
-        let date = ((year - FIRST_YEAR) << 9) + (u16::from(month) << 5) + u16::from(day);
-        let time = (u16::from(hour) << 11) + (u16::from(minute) << 5) + u16::from(second / 2);
-        Stamp {
-            creation_tenths: (second % 2) * 100,
+        let legal = now.year >= FIRST_YEAR
+            && now.year <= LAST_YEAR
+            && (1..=12).contains(&now.month)
+            && (1..=31).contains(&now.day)
+            && now.hour <= 23
+            && now.minute <= 59
+            && now.second <= 59;
+        if !legal {
+            return Err(OutOfRange);
+        }
+        let date =
+            ((now.year - FIRST_YEAR) << 9) + (u16::from(now.month) << 5) + u16::from(now.day);
+        let time =
+            (u16::from(now.hour) << 11) + (u16::from(now.minute) << 5) + u16::from(now.second / 2);
+        Ok(Stamp {
+            creation_tenths: (now.second % 2) * 100,
             creation_time: time,
             creation_date: date,
             access_date: date,
             write_time: time,
             write_date: date,
-        }
+        })
     }
 
     /// Write all six fields into the 32-byte short entry `slot`: a new entry, created, written and
