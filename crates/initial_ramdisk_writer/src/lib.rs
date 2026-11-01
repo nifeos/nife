@@ -133,6 +133,8 @@ impl fmt::Display for Error {
 /// Refuses, before packing, an archive missing a [`SHIPPED_STD_PROGRAMS`] entry and one holding a
 /// program that does not fit the image band (milestone 206); the band check names every
 /// program that fails.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/976-part-4b-the-archive-writer-becomes-a-crate.
 pub fn compose<N: AsRef<str>>(
     arch: &str,
     blobs: &[(N, Vec<u8>)],
@@ -177,6 +179,8 @@ pub fn compose<N: AsRef<str>>(
 /// kernel. An archive entry and not compiled into the progenitor, because the progenitor is in the
 /// archive it measures: the kernel's trust root names the table instead, which keeps the build one
 /// pass.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane/976-part-4b-the-archive-writer-becomes-a-crate.
 pub fn measurement_table(files: &[(&str, &[u8])]) -> String {
     let mut lines: Vec<String> = files
         .iter()

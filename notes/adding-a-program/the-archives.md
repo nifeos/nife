@@ -42,6 +42,13 @@ not vouch for. The packer writes the measurement manifest before the kernel is b
 `kernel/build.rs` reads it to generate `TRUST_ROOT`. With no manifest that root is empty, and the
 kernel refuses every boot program as `Unmeasured`.
 
+The packing itself, from those entries to the image bytes, is `crates/initial_ramdisk_writer`:
+`compose` appends the catalog, the sources and the table, refuses an archive without `jig` or
+`mdr` and any program outside the address-space map's image band, and returns the image. It is
+`no_std` with `alloc` and does no file I/O, so the host composer and the device updater (milestone
+976, part 4) write the same bytes from the same entries. `xtask/src/archive.rs` reads the programs
+in and writes the file and the measurement manifest out.
+
 ## Why the archive is a nifefs image
 
 The initial ramdisk is in the same nifefs format the virtio disk uses, so one parser serves both.

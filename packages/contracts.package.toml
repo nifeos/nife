@@ -39,6 +39,8 @@ interfaces = [
     "program_asks",
     "boot_slot",
     "nifefs",
+    # The archive writer: the host composer and the device updater pack the same bytes (milestone 976 part 4).
+    "initial_ramdisk_writer",
     "globally_unique_identifier_partition_table",
     "file_allocation_table",
     "grant_plan",
