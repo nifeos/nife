@@ -61,7 +61,8 @@ const _: () = assert!(
 );
 
 /// **Transmit Control** (`E1000_TCTL`, Linux's `regs.h`) as the kernel programs it: enabled, short
-/// frames padded, collision threshold 15 and distance 63 (Linux's full-duplex values, `defines.h`).
+/// frames padded, collision threshold 15 and distance 63 (Linux's `E1000_COLLISION_THRESHOLD` and
+/// `E1000_COLLISION_DISTANCE`, `defines.h`).
 #[doc(alias = "transmit control")]
 pub const fn tctl() -> u32 {
     TCTL_EN | TCTL_PSP | 15 << 4 | 63 << 12

@@ -5,9 +5,10 @@
 //!
 //! This never dereferences a pointer, so it is host-testable and Kani-reachable; the volatile
 //! stores are the caller's. Every number is transcribed from Linux mainline ([mainline-dts],
-//! [mainline-trng], [mainline-ids], [mainline-clk], [mainline-rst]) and the vendor U-Boot
-//! ([vendor-dts], [vendor-ids]), which agree. One word per clock at `base + 4 * idx` with enable
-//! bit 31; a set reset-status bit means out of reset ([`is_deasserted`]).
+//! [mainline-trng], [mainline-ids], [mainline-clock-ids], [mainline-clk], [mainline-clk-header],
+//! [mainline-rst], [mainline-rst-common]) and the vendor U-Boot ([vendor-dts], [vendor-ids]), which
+//! agree. One word per clock at `base + 4 * idx` with enable bit 31; a set reset-status bit means
+//! out of reset ([`is_deasserted`]).
 //!
 //! # The two device trees
 //!
@@ -23,15 +24,18 @@
 //! [mainline-dts]: https://github.com/torvalds/linux/blob/master/arch/riscv/boot/dts/starfive/jh7110.dtsi
 //! [mainline-trng]: https://github.com/torvalds/linux/blob/master/drivers/char/hw_random/jh7110-trng.c
 //! [mainline-ids]: https://github.com/torvalds/linux/blob/master/include/dt-bindings/reset/starfive%2Cjh7110-crg.h
+//! [mainline-clock-ids]: https://github.com/torvalds/linux/blob/master/include/dt-bindings/clock/starfive%2Cjh7110-crg.h
 //! [mainline-clk]: https://github.com/torvalds/linux/blob/master/drivers/clk/starfive/clk-starfive-jh71x0.c
+//! [mainline-clk-header]: https://github.com/torvalds/linux/blob/master/drivers/clk/starfive/clk-starfive-jh71x0.h
 //! [mainline-rst]: https://github.com/torvalds/linux/blob/master/drivers/reset/starfive/reset-starfive-jh7110.c
+//! [mainline-rst-common]: https://github.com/torvalds/linux/blob/master/drivers/reset/starfive/reset-starfive-jh71x0.c
 //! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/arch/riscv/dts/jh7110.dtsi
 //! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/JH7110_VisionFive2_devel/include/dt-bindings/clock/starfive-jh7110-clkgen.h
 //!
 //! Name: ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806).
 
 /// The bit that turns a clock on, in every one of this controller's per-clock words
-/// (\[mainline-clk\], `#define JH71X0_CLK_ENABLE BIT(31)`).
+/// (\[mainline-clk-header\], `#define JH71X0_CLK_ENABLE BIT(31)`).
 ///
 /// Name: ratified 2026-10-26 (UTC).
 pub const CLOCK_ENABLE: u32 = 1 << 31;
@@ -39,10 +43,11 @@ pub const CLOCK_ENABLE: u32 = 1 << 31;
 /// A single step of a device's bring-up sequence, in the order it must be taken.
 ///
 /// Deliberately a plan rather than a pair of methods on a driver: the order is the load-bearing
-/// part (\[mainline-trng\] enables both clocks *before* deasserting, and \[mainline-rst\]'s own
-/// comment says why: *"if the associated clock is gated, deasserting might otherwise hang
-/// forever"*), and a plan is the only shape that lets a host test assert on the order without a
-/// device. The kernel driver walks this slice; it does not know which device it is bringing up.
+/// part (\[mainline-trng\] enables both clocks *before* deasserting, and
+/// \[mainline-rst-common\]'s comment says why: *"if the associated clock is gated, deasserting
+/// might otherwise hang forever"*), and a plan is the only shape that lets a host test assert on
+/// the order without a device. The kernel driver walks this slice; it does not know which device
+/// it is bringing up.
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,7 +70,7 @@ pub enum Step {
     },
 }
 
-/// A multiplexed clock's parent field, bits 27:24 of its word (\[mainline-clk\]'s
+/// A multiplexed clock's parent field, bits 27:24 of its word (\[mainline-clk-header\]'s
 /// `JH71X0_CLK_MUX_MASK`, `GENMASK(27, 24)`).
 ///
 /// Name: recorded (mainline's `JH71X0_CLK_MUX_MASK`).
@@ -222,10 +227,11 @@ pub const GMAC0_SYSTEM_BRING_UP: &[Step] = &[
 ];
 
 /// **`gmac0`'s AON-domain clocks, its transmit clock's parent, and both its resets**, in Linux's
-/// probe order: OpenBSD's `dwqe_fdt_attach` and mainline's `dwmac-starfive.c`
-/// both enable every clock before deasserting either reset. The transmit clock's inverted twin
+/// probe order: mainline's `dwmac-starfive.c` and the stmmac platform code enable every clock
+/// before deasserting either reset. OpenBSD's `dwqe_fdt_attach` differs: it enables `stmmaceth` and
+/// `pclk`, deasserts both resets, then enables `tx` and `gtx`. The transmit clock's inverted twin
 /// (`gmac0_tx_inv`, index 6) and both receive clocks (7, 8) have no gate to enable (they are
-/// \[mainline-clk\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
+/// \[mainline-clk-header\] `JH71X0__INV` and `JH71X0__MUX` clocks), so they are not steps.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `GMAC0_AON_BRING_UP` (the domain spelled
 /// out).
@@ -404,7 +410,8 @@ pub const SDIO_BRING_UP: [&[Step]; 2] = [
     ],
 ];
 
-/// The divider field of a JH7110 clock word, bits 23:0 (\[mainline-clk\]'s `JH71X0_CLK_DIV_MASK`).
+/// The divider field of a JH7110 clock word, bits 23:0 (\[mainline-clk-header\]'s
+/// `JH71X0_CLK_DIV_MASK`).
 /// A transcript prints it beside the enable bit so the card clock's source rate is read off the
 /// silicon rather than assumed from `assigned-clock-rates`.
 ///

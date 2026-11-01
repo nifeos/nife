@@ -62,8 +62,8 @@ impl SetupPacket {
         }
     }
 
-    /// HID `SET_PROTOCOL` to the boot protocol, on `interface`. Required by HID 1.11 section 7.2.6 of a
-    /// host that wants boot reports, because a device may come up in report protocol; some
+    /// HID `SET_PROTOCOL` to the boot protocol, on `interface`. HID 1.11 section 7.2.6 says a host should
+    /// send it rather than assume the protocol, because every device starts in report protocol; some
     /// keyboards stall it and report boot anyway, which is why the driver tolerates a stall here.
     pub const fn set_boot_protocol(interface: u8) -> SetupPacket {
         SetupPacket {

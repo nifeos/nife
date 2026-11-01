@@ -480,8 +480,8 @@ mod tests {
     }
 
     /// A firmware block on PHY resets is polled 31 times, 10 ms apart, with no wait after the
-    /// last: 300 ms in all, as FreeBSD's `e1000_check_reset_block_ich8lan`. An unblocked one
-    /// answers at once.
+    /// last: 300 ms in all. FreeBSD's `e1000_check_reset_block_ich8lan` also waits after the last
+    /// read, 310 ms in all. An unblocked one answers at once.
     #[test]
     fn a_reset_block_is_polled_for_three_hundred_milliseconds() {
         let mut s = Sim::new(Start::Healthy, true);
