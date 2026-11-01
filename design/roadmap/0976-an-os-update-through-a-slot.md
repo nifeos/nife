@@ -139,8 +139,8 @@ slot. Every new name here is provisional.
   proposal. Step 3, the loader's two digests, is milestone
   607's item 6 and not this block's.
 
-- **Decision.** Ruled 2026-11-01 (UTC), part 4's header: Version 2 is 188 bytes in a 4096-byte block, the rest
-  zero: magic 8, version 4, reserved zero 4, three 56-byte entries (tag 8, offset 8, length 8,
+- **Outstanding.** Ruled 2026-11-01 (UTC), part 4's header. Version 2 is 188 bytes in a 4096-byte block, the rest
+  zero. The fields are magic 8, version 4, reserved zero 4, three 56-byte entries (tag 8, offset 8, length 8,
   SHA-256 digest 32), then a CRC-32 of bytes 0 to 184. The tags are KERNEL, ARCHIVE and MANIFEST
   (provisional spellings), exactly three, with no count field. Members start at multiples of 4096 in
   table order, without overlap, inside the partition. The chooser refuses an unknown, duplicate or
@@ -150,7 +150,7 @@ slot. Every new name here is provisional.
   both slots are refused, the chooser prints each slot's reason and then boots its own embedded
   image, as milestone 525 (a bad upgrade cannot brick the machine) rules for two bad slots. The
   proposal has the full list.
-- **Proposed.** Milestone (provisional), ruled 2026-11-01 (UTC): The updater replaces the chooser
+- **Proposed.** `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md` holds it (provisional milestone, ruled 2026-11-01 UTC): the updater replaces the chooser
   file on the EFI system partition before it writes the first version 2 slot, and only if the new
   chooser reads version 2. It writes the new chooser under a second name, verifies it by digest,
   then renames it over the old name; the rename is the commit. The chooser is also the install-time
