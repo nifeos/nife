@@ -2,7 +2,7 @@
 
 [The proposal](../the-contract-crates-leave-in-this-order.md) holds the order and the policy. These
 were the decisions the earlier rulings did not settle. Each went to the architect alone, in this
-order. All five are ruled as recommended, on 2026-11-01 (UTC); each section ends with its ruling.
+order. The architect ruled all five as recommended on 2026-11-01 (UTC); each section ends with its ruling.
 Each opens with its background, then the recommendation, then the options.
 
 ## 1. Does the first cut wait for the crates it links, and leave one package at a time?
@@ -29,14 +29,14 @@ first, then `process-tools`, then `core-tools`. The note's type moves to a leaf 
   2026-11-01: it is a reference back.
 
 Ruled 2026-11-01 (UTC): (a). Milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the
-first code to leave this repository)'s single cut is replaced by package-by-package departure, each
+first code to leave this repository)'s single cut gives way to package-by-package departure, each
 package leaving as soon as its own crates have left, in the order `disk-tools`, `process-tools`,
 `core-tools`. The `INTERFACES` note type moves into its own small leaf crate, and `block_roster`
 stays the first consumed crate. 
 
-The move was checked by reading `helpers/interface_declarations_check.py` against it, and not run.
+This lane read `helpers/interface_declarations_check.py` against the move and did not run it.
 The lint stays correct but fails until two things move with the crate. The new crate is linked and
-sits in none of the check's three tables, so it needs an `INTERFACE_ID` or an `OWED` line. And
+in none of the check's three tables, so it needs an `INTERFACE_ID` or an `OWED` line. And
 `named_crates` and the selftest hard-code `capability_manifest_note::` as the macro's crate, so a
 program naming the macro by the new path would read as linking the old crate. Slots such as
 `DOMAIN_SLOT` stay in `grant_plan`.
@@ -64,8 +64,8 @@ Recommendation: (a), one repository per crate, named after the crate, on the cra
   line for 17 unrelated contracts.
 - (c) A repository per layer. Fuchsia tried layers and folded them back in 2019.
 
-Ruled 2026-11-01 (UTC): (a), 22 repositories. Each is created when its crate moves and only with the
-architect's approval of that exact repository; no lane creates one. (b) and (c) are refused.
+Ruled 2026-11-01 (UTC): (a), 22 repositories. A crate's repository appears when the crate moves and only once the
+architect approves that exact repository; no lane creates one. The architect refused (b) and (c).
 
 ## 3. Does the architect hold on a semver break apply to contract crates?
 
@@ -109,7 +109,7 @@ and the pull request that moves one contract moves every pin of it.
   page's two sides may disagree.
 
 Ruled 2026-11-01 (UTC): (a). basalt refuses the image, and the bump pull request that moves a
-contract moves every pin of it together. (b) and (c) are refused.
+contract moves every pin of it together. The architect refused (b) and (c).
 
 ## 5. May basalt run a trial on commits that have not merged?
 
