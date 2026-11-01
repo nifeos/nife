@@ -32,13 +32,27 @@ first installed-programs table) measured the base image's generation 1 on aarch6
 (UTC), after the ruling that a base row carries no pointer: 58 rows, 5,691 bytes. The test image,
 which adds the `fixtures` package's programs, holds 121 rows in 12,256 bytes. Neither fits a page.
 
+## Ruled
+
+Ruled 2026-11-01 (UTC) by the architect. Every reader of a generation takes as many pages as the
+generation holds, up to a named constant bound of 64 KiB (16 pages). A reader refuses a generation
+past the bound with a phrase that names the generation and the bound. It never truncates a
+generation and never reads one as a shorter table. The readers are `with_live_table` in
+`crates/system_initializer/src/image_request.rs`, the installer's read in
+`crates/system_initializer/src/activation.rs`, and `live_generation_listing` in
+`components/src/swish/capabilities.rs`.
+
+Not taken: one 64 KiB buffer, and chunked streaming. Streaming is revisited if a table nears
+64 KiB, about 650 rows.
+
 ## The work
 
-1. Every reader of a generation takes it in as many pages as it holds, up to a bound the table
-   states, and refuses a generation past that bound by name instead of reading it as absent.
-2. The installer writes the next generation into the same bound.
-3. A host test in `crates/installed_programs` holds a generation the size of the composed base
-   image's, and the swish-check gate installs a package over one.
+1. Every reader of a generation takes it in as many pages as it holds, up to the 64 KiB bound, held
+   as one named constant, and refuses a generation past the bound by name and by the bound.
+2. The installer writes within the same bound and refuses to write a generation past it.
+3. A host test in `crates/installed_programs` runs at the composed base image's size (5,691 bytes
+   for generation 1; the test image is 12,256 bytes), and the swish-check gate installs a package
+   over one.
 
 ## Done when
 

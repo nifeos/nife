@@ -180,7 +180,10 @@ the ruling changes where the records go and not how the composition checks them.
   - **The progenitor reads one page of a generation.** It reads the live generation into 4,096
     bytes, and the base's generation 1 is 5,691. On a boot with this volume attached, the
     progenitor would vouch for no image spawn and the installer could not read the generation
-    it succeeds. Item 2 cannot keep its read path unchanged. Home: the proposal
+    it succeeds. Item 2 cannot keep its read path unchanged. Ruled 2026-11-01 (UTC) by the architect:
+    every reader takes as many pages as the generation holds, up to a named bound of 64 KiB (16
+    pages), and refuses a generation past it by name, never truncating; the installer writes within
+    the same bound. Home: the proposal
     [a-generation-grows-past-one-page](proposals/a-generation-grows-past-one-page.md).
   - **A base row claims no name at the prompt.** Ruled 2026-11-01 (UTC) by calef, on #3023: a base
     row carries the program name and digest and no pointer. So the shell's `Bare::Both` refusal
@@ -210,7 +213,8 @@ the ruling changes where the records go and not how the composition checks them.
 - **Outstanding.** Item 2, attaching the volume and reading generation 1 at boot. Checked
   2026-11-01 (UTC) against `xtask/src/boot_check.rs`, which attaches no disk; the `BUGS` above
   list what blocks it.
-- **Proposed.** A generation larger than a page:
+- **Proposed.** A generation larger than a page, ruled 2026-11-01 (UTC) to read up to a 64 KiB
+  bound (16 pages) and refuse past it:
   `design/roadmap/proposals/a-generation-grows-past-one-page.md`.
 - **Outstanding.** Item 3, the measurement, waits on a ruling and on milestone 697 (the trust
   root leaves the kernel binary). Checked 2026-11-01 (UTC): the note names three options and no
