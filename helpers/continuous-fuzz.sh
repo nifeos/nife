@@ -5,8 +5,8 @@
 #     helpers/continuous-fuzz.sh              run forever, 4 guests (NIFE_FUZZ_GUESTS)
 #     helpers/continuous-fuzz.sh --once DRIVER SLOT   one sweep window, then print the verdict
 #
-# DRIVER is `kernel-thread` (milestone 752, a seeded syscall driver with a shadow model) or
-# `confined` (milestone 779, fuzz the surface a confined process can reach). Guests alternate
+# DRIVER is `kernel-thread` (milestone 752 (a seeded syscall driver with a shadow model)) or
+# `confined` (milestone 779 (fuzz the surface a confined process can reach)). Guests alternate
 # between them, so the default four guests are two of each.
 #
 # **What one window is.** Both drivers take their seed range at build time
