@@ -90,9 +90,10 @@ No per-crate milestone is minted by this block. They come from the reviews below
   crate per driver would add names and make no program link less, since every driver is a binary
   of `components`; revisit if that changes. The name holds for now. The crate breaks up as
   components become programs and crates of their own, and each piece takes its name then.
-- Ruled 2026-11-01 (UTC): a crate that something outside nife could consume leaves, since that
-  shows good crate boundaries; none stays by default. What leaves references nothing back here, so
-  crates leave bottom-up: the crates a program links leave before it or with it. Publish-ours
+- Ruled 2026-11-01 (UTC): this repository breaks up into single-purpose repositories and remains
+  only for its history. The kernel, programs, tooling and crates all leave, and a crate consumable
+  outside nife shows good crate boundaries. What leaves references nothing back here, so moves go
+  bottom-up: the crates a program links leave before it or with it. Publish-ours
   crates publish; contract crates move and carry versions whether or not they publish. Milestone
   818 (proven JH7110 TRNG logic, released on its own) is the leaf pilot; pull request #3026
   proposes the second pilot and the contract crates' order.
@@ -161,9 +162,8 @@ says what each settled and what has moved since.
 
 The survey shrank the question. Of the 31 candidates, eight are "publish ours": the FAT crate, six
 device-logic crates (NVMe, e1000e, two DesignWare controllers, two JH7110 blocks), and xHCI. nife
-makes rust-osdev no offer for xHCI, since nife does not depend on its `xhci` (milestone 820). `portable_executable` is not published: milestone 821 (`portable_executable`:
-an ELF-to-PE converter, proven, then released on its own) is refused. Eleven outside projects are
-candidates for our proofs. The survey classed the rest internal, no default since
+makes rust-osdev no offer for xHCI, since nife does not depend on its `xhci` (milestone 820). Eleven outside projects are
+candidates for our proofs. The survey classed the rest internal, no standing class since
 2026-11-01.
 
 ## Fork 1. Where a released crate lives (ruled: one repository per crate)
@@ -249,8 +249,8 @@ approach and every first publication then comes to calef one at a time, with its
 upstream-hardening ruling of 2026-10-06 requires. A security finding in another project goes to
 its maintainers privately first.
 
-Ruled 2026-11-01 (UTC): internal means only a crate nothing outside nife could consume, and
-[the survey note](../../notes/releasable-crates-2026-10-07.md) reclassifies the rest.
+Ruled 2026-11-01 (UTC): internal is at most a short-lived state, not a standing class, and
+[the survey note](../../notes/releasable-crates-2026-10-07.md) reclassifies every row.
 
 Recommendation as raised, replaced by one review per crate: approve the table whole. The survey
 note keeps each row's reasoning.

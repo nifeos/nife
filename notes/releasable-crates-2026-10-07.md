@@ -116,7 +116,7 @@ drops `non_volatile_memory_express` from the first attempts.
 
 ## The dispositions in force, 2026-11-01 (UTC)
 
-Two rulings of 2026-11-01 (UTC) change the dispositions above, and this section holds. Pull request
+Three rulings of 2026-11-01 (UTC) change the dispositions above, and this section holds. Pull request
 #3026 proposes the bottom-up order every move below joins.
 
 - The eight contribute crates (`paging`, `globally_unique_identifier_partition_table`, `elf`,
@@ -124,10 +124,10 @@ Two rulings of 2026-11-01 (UTC) change the dispositions above, and this section 
   repositories of their own. Moving is separate from publishing. The 2026-10-27 ruling still holds
   every contribution until a published crate has users who ask for it upstream, and it now decides
   only whether each crate also publishes as ours or goes upstream as an offer.
-- "Internal" means only a crate that nothing outside nife could consume. A row keeps it only with a
-  reason about the crate itself; its size, a rival crate or the effort of a move is no such reason.
-  No row keeps it. Two rows are close calls for the architect, and the recommendation for each is
-  the move.
+- This repository breaks up into single-purpose repositories and remains only for its history, so
+  "internal" is at most a short-lived state, a crate not yet moved, and not a standing class. No
+  row keeps it. Two rows are close calls for the architect, and the recommendation for each is the
+  move.
 
 | crate | was | now | why |
 |---|---|---|---|
@@ -142,7 +142,7 @@ Two rulings of 2026-11-01 (UTC) change the dispositions above, and this section 
 | `coremark` | internal | moves; close call | A `no_std` CoreMark-derived benchmark any Rust target can run. Close: the name is EEMBC's and taken on crates.io, so it may leave only under a new one |
 | `video_terminal`, `line_editor` | internal | moves after a cut; close call | The VT engine and the line discipline are sans-IO. Close: each `component.rs` links nife's `address_space_map` or `capability_plan`, so the cut leaves those modules here first |
 | `cryptography_provider` | internal | moves | A `rustls` provider is consumable outside nife; its alpha state bears on publishing, not on moving |
-| `redoxfs` | fork 8: internal | not ours to move | Redox's crate, consumed from Redox; nife holds a vendored copy and two patches |
+| `redoxfs` | fork 8: internal | open | Redox's crate, vendored here with two patches; where the copy goes when its programs leave is open |
 
 ## Two records this overtakes
 
