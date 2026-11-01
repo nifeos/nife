@@ -243,6 +243,7 @@ dependencies = [
  "libfuzzer-sys",
  "nifefs",
  "package_archive",
+ "package_index",
  "redoxfs",
  "redoxfs_server",
  "system_log",
@@ -422,6 +423,14 @@ name = "package_archive"
 version = "0.1.0"
 dependencies = [
  "measured_boot",
+]
+
+[[package]]
+name = "package_index"
+version = "0.1.0"
+dependencies = [
+ "measured_boot",
+ "package_archive",
 ]
 
 [[package]]
