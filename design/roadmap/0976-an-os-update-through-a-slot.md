@@ -158,13 +158,18 @@ slot. Every new name here is provisional.
   and of the padding. A fuzz target is not added, because the fuzz job is at its eighteen-target
   budget; the crate's `BUGS` records that. The ruling leaves two points open, and both are refused
   strictly for now. A zero-length member is a layout break. So is a member inside the header block.
-- **Outstanding.** Parts 4b and 4c. Part 4b moves the archive writer from `xtask/src/archive.rs`
-  into a crate. Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
+- **Done.** Part 4b: the archive writer is `crates/initial_ramdisk_writer` (provisional name), which
+  the host composer and the device updater share. It is `no_std` with `alloc`; it takes the
+  programs, the catalog and the index sources and returns the image, and it refuses an archive
+  without `jig` or `mdr` and a program outside the image band. `xtask/src/archive.rs` reads the
+  programs in and writes the file out. Checked: `cargo xtask base-image x86_64` wrote a
+  9,391,104-byte archive with the same SHA-256 before and after the move, and a fixture archive in
+  the crate's tests holds the digest the old packer gave it.
+- **Outstanding.** Part 4c makes the chooser (`uefi_loader/src/chooser.rs`) call `members::parse`,
   load the members and print each refusal's phrase, and teaches xtask to write version 2.
 - **Outstanding.** Part 4: the slot becomes a version 2 header naming members, the kernel, the
   composed archive and the system manifest (ruled 2026-10-31 UTC; the version 1 header stays
-  readable). The chooser loads the kernel and archive itself, and the archive writer moves from
-  `xtask/src/archive.rs` into a crate that the host composer and the device updater share. Basalt
+  readable). The chooser loads the kernel and archive itself. Basalt
   publishes the kernel as a package, which is interim. Milestones 695 (the kernel takes two digests
   from the loader) and 697 (the trust root leaves the kernel binary) are milestone 607 item 6,
   launched in parallel. They end the kernel's dependence on the base, and the package goes when

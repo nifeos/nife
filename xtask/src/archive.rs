@@ -11,7 +11,7 @@ use crate::farm::{
 };
 use crate::host::{bin_elf, workspace_root};
 use crate::inspect::read_stripped;
-use crate::measure::{boot_programs, measurement_table, write_measure_manifest};
+use crate::measure::{boot_programs, write_measure_manifest};
 use crate::{RISCV_TARGET, TARGET, X86_TARGET, profile_dir};
 
 /// **Build the two program packages, `components` and `fixtures`, for `target`**, in the run's
@@ -66,7 +66,7 @@ const PROGRAM_PACKAGES: [&str; 2] = ["components", "fixtures"];
 /// in `components/Cargo.toml` and `fixtures/Cargo.toml`, less the programs a package lists as
 /// [`packaged_only`] (milestone 150 (adding a program should not need eight hand-maintained lists);
 /// name provisional). All three archives pack exactly this list, in `Cargo.toml` order, which
-/// nothing depends on: the progenitor looks entries up by name and [`measurement_table`] is sorted.
+/// nothing depends on: the progenitor looks entries up by name and [`initial_ramdisk_writer::measurement_table`] is sorted.
 /// It is deliberately not filtered per architecture.
 ///
 /// Refuses, rather than packing a partial archive, when a `[[bin]]` block has a shape
@@ -494,7 +494,7 @@ pub(crate) fn has_initial_ramdisk_aarch64() -> bool {
 
 /// **The `std` programs the patched farm builds for `triple`.** `jig` is built here for `triple`
 /// ([`crate::farm::build_jig`]), and [`write_archive`] refuses an archive without it
-/// ([`SHIPPED_STD_PROGRAMS`]). The rest are exercisers, each packed iff it was built: an
+/// ([`initial_ramdisk_writer::SHIPPED_STD_PROGRAMS`]). The rest are exercisers, each packed iff it was built: an
 /// interactive `run` that never built them simply ships an archive without them, and nothing loads
 /// them there. Every archive packs them in this order.
 fn std_program_blobs(triple: &str) -> Vec<(&'static str, Vec<u8>)> {
@@ -602,29 +602,6 @@ fn file_server_blobs(target: &str) -> Vec<(&'static str, Vec<u8>)> {
     blobs
 }
 
-/// **The `std` programs no image ships without**, though they are built outside `components/` and
-/// packed by [`std_program_blobs`] rather than by the `[[bin]]` reader. `jig` is the package
-/// client (milestone 809 (the package client becomes a program)); an image without it boots, and
-/// the shell answers `jig` with a spawn failure, so the archive is refused instead.
-///
-/// Name: provisional, minted 2026-10-18 (UTC) by lane/image-needs-jig.
-const SHIPPED_STD_PROGRAMS: [&str; 2] = ["jig", "mdr"];
-
-/// Refuse `files` if one of [`SHIPPED_STD_PROGRAMS`] is not among them, naming the command that
-/// builds it.
-fn shipped_std_programs_present(arch: &str, files: &[(&str, &[u8])]) -> Result<(), String> {
-    match SHIPPED_STD_PROGRAMS
-        .iter()
-        .find(|p| !files.iter().any(|(name, _)| name == *p))
-    {
-        None => Ok(()),
-        Some(missing) => Err(format!(
-            "the {arch} archive has no `{missing}`, which every image ships; building it failed \
-             (the error is above), and `cargo xtask std-exerciser` builds it on its own"
-        )),
-    }
-}
-
 /// **Pack `blobs` and the entries every archive carries into one nifefs image**, write it to
 /// `path`, and write the measurement manifest the kernel build reads. `Some((bytes, entries))` on
 /// success; `None` after saying why, prefixed with `label`. `what` names the archive in the one
@@ -665,7 +642,8 @@ fn write_archive(
 /// **Pack an image whose catalog and index sources are given** (milestone 909 (basalt composes
 /// the bootable image from its packages)): the one packer both builders reach, so an image composed
 /// from packages carries the same catalog entry, index sources, measurement table and boot-program
-/// checks as one built in this tree.
+/// checks as one built in this tree. The packing is [`initial_ramdisk_writer::compose`]; this
+/// prints its refusals, writes the file and the measurement manifest.
 pub(crate) fn write_archive_with<N: AsRef<str>>(
     label: &str,
     arch: &str,
@@ -675,93 +653,37 @@ pub(crate) fn write_archive_with<N: AsRef<str>>(
     catalog: &str,
     sources: &str,
 ) -> Option<(usize, usize)> {
-    let mut files: Vec<(&str, &[u8])> = blobs
-        .iter()
-        .map(|(name, bytes)| (name.as_ref(), bytes.as_slice()))
-        .collect();
-    files.push((package_archive::CATALOG, catalog.as_bytes()));
-    files.push((package_index::SOURCES_ENTRY, sources.as_bytes()));
-    if let Err(complaint) = shipped_std_programs_present(arch, &files) {
-        eprintln!("{label}: {complaint}");
-        return None;
-    }
-    // **The measurement table, last, so it measures everything above it** (milestone 104). The progenitor
-    // reads this entry out of the archive it already holds and refuses to load a program whose
-    // bytes it does not match, vouched for by the kernel's trust root so its refusals mean
-    // something. Parity is the point (§19): the same table, the same parser, the same policy on
-    // every architecture. See [`measurement_table`] for why it lives here rather than inside the
-    // progenitor's own image.
-    if !programs_fit_the_address_space_map(label, &files) {
-        return None;
-    }
-    let table = measurement_table(&files);
-    files.push((measured_boot::PROGRAM_MEASUREMENTS, table.as_bytes()));
-
-    let size = nifefs::image_size(&files);
-    let mut img = std::vec![0u8; size];
-    // Carry the error: it names which of `MAXIMUM_FILES`, `image_size` and `write_image`'s bounds
-    // check refused, and those are otherwise hunted for by hand.
-    if let Err(e) = nifefs::write_image(&files, &mut img) {
-        eprintln!(
-            "{label}: could not build {what}: {e:?} ({} files, {} bytes)",
-            files.len(),
-            size
-        );
-        return None;
-    }
-    if let Err(e) = std::fs::write(path, &img) {
+    let image = match initial_ramdisk_writer::compose(arch, blobs, catalog, sources) {
+        Ok(image) => image,
+        Err(refusal) => {
+            eprintln!("{}", refusal_text(&refusal, label, what));
+            return None;
+        }
+    };
+    if let Err(e) = std::fs::write(path, &image.bytes) {
         eprintln!("{label}: could not write {path}: {e}");
         return None;
     }
-    write_measure_manifest(arch, &img).then_some((size, files.len()))
+    write_measure_manifest(arch, &image.bytes).then_some((image.bytes.len(), image.entries))
 }
 
-/// **Every program in an archive fits the address-space map's image band** (milestone 206 (a
-/// program image has under 896 KiB)), checked at packing because the kernel's loader only judges
-/// the programs a boot loads.
-///
-/// The program headers are read by hand rather than with `crates/elf`, which refuses a foreign
-/// `e_machine`; this packs riscv64 and `x86_64` archives on an aarch64 host. Entries that are not
-/// ELF (the catalog, the measurement table) are skipped.
-fn programs_fit_the_address_space_map(archive: &str, files: &[(&str, &[u8])]) -> bool {
-    let mut fits = true;
-    for (name, bytes) in files {
-        let Some((lo, hi)) = image_span(bytes) else {
-            continue;
-        };
-        if let Err(e) = address_space_map::check_image(lo, hi) {
-            eprintln!("{archive}: `{name}` does not fit the address-space map: {e}");
-            fits = false;
-        }
+/// What the packer's refusal says on stderr, each line prefixed with `label`. A missing `std`
+/// program gets the command that builds it; every program outside the image band gets a line of its
+/// own.
+fn refusal_text(refusal: &initial_ramdisk_writer::Error, label: &str, what: &str) -> String {
+    use initial_ramdisk_writer::Error;
+    match refusal {
+        Error::MissingShippedProgram { .. } => format!(
+            "{label}: {refusal}; building it failed (the error is above), and `cargo xtask std-exerciser` \
+             builds it on its own"
+        ),
+        Error::OutsideImageBand(misfits) => misfits
+            .iter()
+            .map(|misfit| format!("{label}: {misfit}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        Error::Pack { .. } => format!("{label}: could not build {what}: {refusal}"),
     }
-    fits
-}
-
-/// The page-rounded span of a 64-bit little-endian ELF's `PT_LOAD` segments, or `None` if `bytes`
-/// is not one or has no loadable segment.
-fn image_span(bytes: &[u8]) -> Option<(u64, u64)> {
-    const PAGE: u64 = address_space_map::PAGE;
-    let u16_at = |o: usize| Some(u16::from_le_bytes(bytes.get(o..o + 2)?.try_into().ok()?));
-    let u32_at = |o: usize| Some(u32::from_le_bytes(bytes.get(o..o + 4)?.try_into().ok()?));
-    let u64_at = |o: usize| Some(u64::from_le_bytes(bytes.get(o..o + 8)?.try_into().ok()?));
-    if bytes.get(0..6)? != [0x7f, b'E', b'L', b'F', 2, 1] {
-        return None;
-    }
-    let phoff = usize::try_from(u64_at(32)?).ok()?;
-    let phentsize = usize::from(u16_at(54)?);
-    let phnum = usize::from(u16_at(56)?);
-    let (mut lo, mut hi) = (u64::MAX, 0u64);
-    for i in 0..phnum {
-        let ph = phoff.checked_add(i.checked_mul(phentsize)?)?;
-        if u32_at(ph)? != 1 {
-            continue; // not PT_LOAD
-        }
-        let vaddr = u64_at(ph + 16)?;
-        let end = vaddr.checked_add(u64_at(ph + 40)?)?;
-        lo = lo.min(vaddr / PAGE * PAGE);
-        hi = hi.max(end.div_ceil(PAGE) * PAGE);
-    }
-    (lo < hi).then_some((lo, hi))
 }
 
 #[cfg(test)]
@@ -788,50 +710,21 @@ mod tests {
         assert!(bin_names(nameless).unwrap_err().contains("no `name`"));
     }
 
-    /// An archive without `jig`, or without `mdr`, is refused with the command that builds it,
-    /// rather than packed into an image whose shell answers the name with a spawn failure.
+    /// The packer's refusals reach stderr as they always have: a missing `std` program with the
+    /// command that builds it, and every misfit program on a line of its own.
     #[test]
-    fn an_archive_without_jig_is_refused_naming_the_build() {
-        let e = shipped_std_programs_present("x86_64", &[("progenitor", b"")]).unwrap_err();
-        assert!(e.contains("no `jig`"), "{e}");
-        assert!(e.contains("cargo xtask std-exerciser"), "{e}");
-        let e = shipped_std_programs_present("x86_64", &[("jig", b"")]).unwrap_err();
-        assert!(e.contains("no `mdr`"), "{e}");
-        assert!(shipped_std_programs_present("x86_64", &[("jig", b""), ("mdr", b"")]).is_ok());
-    }
-
-    /// A program linked where the map says passes, and one linked at lld's default base, where
-    /// `mkfs` was, is named.
-    #[test]
-    fn an_archive_program_outside_the_image_band_is_named() {
-        fn elf_at(vaddr: u64) -> Vec<u8> {
-            let mut v = vec![0u8; 64 + 56];
-            v[0..6].copy_from_slice(&[0x7f, b'E', b'L', b'F', 2, 1]);
-            v[32..40].copy_from_slice(&64u64.to_le_bytes());
-            v[54..56].copy_from_slice(&56u16.to_le_bytes());
-            v[56..58].copy_from_slice(&1u16.to_le_bytes());
-            v[64..68].copy_from_slice(&1u32.to_le_bytes());
-            v[64 + 16..64 + 24].copy_from_slice(&vaddr.to_le_bytes());
-            v[64 + 40..64 + 48].copy_from_slice(&0x1800u64.to_le_bytes());
-            v
-        }
-        let good = elf_at(address_space_map::IMAGE_BASE);
-        let mkfs_as_it_was = elf_at(0x20_0000);
-        assert_eq!(
-            image_span(&good),
-            Some((
-                address_space_map::IMAGE_BASE,
-                address_space_map::IMAGE_BASE + 0x2000
-            ))
+    fn the_packers_refusals_keep_their_wording() {
+        let blobs = [("progenitor", Vec::new())];
+        let refusal = initial_ramdisk_writer::compose("x86_64", &blobs, "", "").unwrap_err();
+        let text = refusal_text(&refusal, "base-image", "the image");
+        assert!(
+            text.starts_with("base-image: the x86_64 archive has no `jig`"),
+            "{text}"
         );
-        assert!(programs_fit_the_address_space_map(
-            "t",
-            &[("good", &good), ("catalog", b"text")]
-        ));
-        assert!(!programs_fit_the_address_space_map(
-            "t",
-            &[("mkfs", &mkfs_as_it_was)]
-        ));
+        assert!(
+            text.ends_with("`cargo xtask std-exerciser` builds it on its own"),
+            "{text}"
+        );
     }
 
     /// **`packaged_only` reads its one shape and refuses anything else in its table** (milestone
