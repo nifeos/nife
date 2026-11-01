@@ -101,9 +101,9 @@ milestone names its consumer. It is not BUILT until a record cites its first use
   `setenv`, which the proven vocabulary already holds. They carry the card's words, so a network
   boot of a rebuilt archive needs the card's script rewritten with it (`script/board-image --tftp
   --card`).
-
-- The composed image becomes the only image when this milestone and 697 land (ruled 2026-11-01
-  UTC); 697's block has the end state.
+- **Outstanding.** The composed image becomes the only image when this milestone and 697 land
+  (ruled 2026-11-01 UTC), and the boot gates then run on it; 697's block has the end state.
+  Checked: the tree still builds its own image (`cargo xtask uefi-image`).
 
 ## Index row
 
