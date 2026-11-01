@@ -112,8 +112,8 @@ formats and the bytes carry their own revisions.
 Carrying the note links `capability_manifest_note`, whose `grant_plan::Manifest` type takes each
 program from 9 to 13 linked crates to 15 to 17. No crate it adds carries an id, so the macro raises
 no list today. It reaches `grant_plan` and `program_argument_contract` in five programs that do not
-otherwise link them, and those lists grow when the two gain ids. Moving the type and the slot
-constants into a leaf crate belongs to pull request #3026.
+otherwise link them, and those lists grow when the two gain ids. Moving the note type into a
+leaf crate belongs to pull request #3026, ruled 2026-11-01 (UTC).
 
 ## What this block does not do
 
@@ -131,8 +131,11 @@ build waits for the first package that leaves the tree.
   then the programs' lists grow as the check names them. Checked on 2026-11-01 (UTC) with
   `python3 helpers/interface_declarations_check.py`. `filesystem_contract`'s two ids need the check
   to read an id inside a module, which it does not yet.
-- **Outstanding.** The `grant_plan::Manifest` type and the slot constants in a leaf crate, so
-  carrying the note links no planner: pull request #3026.
+- **Outstanding.** The `INTERFACES` note type in a leaf crate of its own, so carrying the note
+  links no planner (ruled 2026-11-01 (UTC) on pull request #3026). The declaration check names
+  `capability_manifest_note::` as the macro's crate in two places and must classify the new crate;
+  both move with the crate. The 14 crates of `OWED` also gain an `INTERFACE_ID`, which tells a
+  wire-identity change from a Rust-API break for the template's hold.
 
 ## BUGS
 

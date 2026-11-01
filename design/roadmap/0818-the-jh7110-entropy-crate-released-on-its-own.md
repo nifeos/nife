@@ -248,6 +248,9 @@ names until the ratification pass, so this section keeps the links it carried.
 - **Recorded.** Ruled 2026-10-31 UTC: until `jh7110_entropy` reaches crates.io, nife depends on
   `nifeos/jh7110_entropy` at one git commit (`rev = "1827d439237b1708a6236f68fc0b807388755949"`).
   A crates.io version replaces the pin after the soak release dry run.
+- **Recorded.** Ruled 2026-11-01 (UTC): the `needs-architect` hold on a semver break applies on
+  wire-identity changes only for contract crates. `jh7110_entropy` is not one, so its hold on
+  every break stands.
 - **Recorded.** An organization owner installs the `nife-smelter` app; see *BUGS* above.
 
 ## Index row

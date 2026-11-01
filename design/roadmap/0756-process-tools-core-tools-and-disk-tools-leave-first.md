@@ -61,6 +61,13 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   or an agreed manual step until it exists). Last, the architect reads the crate's code by hand
   before it leaves, initially for every crate, the first in particular. Feedback from those reviews
   becomes automated gates over time. §247 states the gate in full.
+- Ruled 2026-11-01 (UTC) on pull request #3026's questions: departure package by package replaces
+  the single cut. Each package leaves as soon as its own crates have left, in the
+  order `disk-tools`, `process-tools`, `core-tools`. The `INTERFACES` note type moves into a leaf
+  crate of its own so `disk-tools` need not wait for `grant_plan`, and `block_roster` stays the
+  first crate a consumer outside nife reads. Each crate gets a repository of its own once the
+  architect approves that repository. The order is in
+  [the proposal](proposals/the-contract-crates-leave-in-this-order.md).
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a
 horrible package name for a nife package"), `coreutils` becomes `core-tools` and `procps` becomes
@@ -96,7 +103,7 @@ a two-repo change.
 |---|---|---|---|
 | A. basalt v0 | nothing; basalt pins `nife` at a commit and runs its image build and system test | zero cross-repository changes; one scheduled basalt run per pin bump | recommended now |
 | B. `procps` with `coreutils` and `util-linux` | 8 crates and 15 programs | 32 commits in thirty days, 26 crossing; 21 of those were sweeps; 1 Cargo dependent; 0 path references | recommended as the first code cut, once its preconditions hold |
-| C. `redoxfs` | the vendored engine, server and host tool | 31 commits, 26 crossing, 12 of 17 focused ones crossing; 0 Cargo dependents; 254 path references; links the least settled interfaces (`filesystem_contract` 10 breaking in four weeks, the partition table 27) | second; cheapest to move today, which is an effort argument |
+| C. `redoxfs` | the vendored engine, server and host tool | 31 commits, 26 crossing, 12 of 17 focused ones crossing; 0 Cargo dependents; 254 path references; links the least settled interfaces (`filesystem_contract` 10 breaking in four weeks, the partition table 27) | second; cheapest to move today, which is an effort argument. Ruled 2026-11-01 (UTC): it leaves as one repository holding all three, after the crates it links, in step 9 of [the proposal](proposals/the-contract-crates-leave-in-this-order.md) |
 | D. `contracts` and `runtime` (milestone 691 (packages move out of this repository, one per pull request)'s order) | 42 crates | 298 commits, 187 crossing; 35 dependents | refused for the first cut |
 | E. `host-tools` | `xtask` and friends | 227 commits, 139 crossing; 276 references in 152 files | refused |
 | F. Wait for every precondition before doing anything | nothing | the integration gate is still unbuilt when the first cut arrives | refused |
