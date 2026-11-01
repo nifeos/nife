@@ -684,6 +684,23 @@ fn read_approval_text(
     }
 }
 
+/// **The approval text a composition checks against**: the file the definition names, or for a
+/// test image that names none, [`test_approval_text`] over the packages it carries.
+fn image_approval_text(
+    root: &Path,
+    definition: &Definition,
+    owners: &BTreeMap<String, String>,
+    test: bool,
+) -> Result<Option<(PathBuf, String)>, String> {
+    Ok(match read_approval_text(root, definition)? {
+        None if test => Some((
+            PathBuf::from("the test image's approval"),
+            test_approval_text(definition.programs.iter().filter_map(|p| owners.get(p))),
+        )),
+        named => named,
+    })
+}
+
 /// **The approval a test image is composed against** when its definition names none: one entry per
 /// package it carries, which allows nothing, except that the `fixtures` package may hold the network.
 /// The fixtures overreach on purpose (`unreachable_network_witness` asks for the network, entropy
@@ -731,13 +748,7 @@ fn compose(
     // The image's approval file, when the definition names one. Read and parsed before anything is
     // taken from an archive, so a file that does not parse refuses the composition rather than
     // leaving the check half-done.
-    let approval_text = match read_approval_text(root, definition)? {
-        None if test => Some((
-            PathBuf::from("the test image's approval"),
-            test_approval_text(definition.programs.iter().filter_map(|p| owners.get(p))),
-        )),
-        named => named,
-    };
+    let approval_text = image_approval_text(root, definition, &owners, test)?;
     let approval = match &approval_text {
         Some((path, text)) => Some((
             path.as_path(),
