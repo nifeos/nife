@@ -5,7 +5,7 @@
 //! The parse is straight-line code over fixed offsets, so its harness covers every 512-byte
 //! sector. The device harness covers every partition and every sector index.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 

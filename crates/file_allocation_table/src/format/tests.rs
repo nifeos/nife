@@ -1,6 +1,6 @@
 //! The general format's sizing at the edges of each type, the sectors it writes, and its refusals.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::NoClock;

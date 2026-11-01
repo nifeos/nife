@@ -1,7 +1,7 @@
 //! Names compared without regard to case, long and short, and paths walked through a root and a
 //! subdirectory of a small FAT12 volume.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::long_name::{LongName, checksum};

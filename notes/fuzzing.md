@@ -5,7 +5,7 @@ integrity) ask whether code we did not write is what we think; this one asks whe
 write survives bytes it did not write.
 
 `script/fuzz` runs coverage-guided fuzz targets over the parsers that read data from outside this
-system: eight parsers, plus three service targets that
+system: thirteen parser targets, plus three service targets that
 [fuzzing-the-services.md](fuzzing-the-services.md) covers. It found two bugs on its first day, and a
 third came out of reading the code while designing a target. All three are fixed and pinned by host
 tests.
@@ -19,7 +19,7 @@ cannot.
 
 Kani is exhaustive inside a bound. `kani::any()` is every value at once, the program becomes a
 formula, and `UNSATISFIABLE` means no input breaks the property. That is a stronger claim than any
-fuzzer can make, for the inputs it covers. Its limit is structural rather than incidental. A solver
+fuzzer can make, for the inputs it covers. A solver
 reasons completely about *fixed-size* things, so an unbounded loop over an arbitrarily long input
 has to be unrolled to a limit, and past a certain unrolling the formula stops being solvable in
 useful time. notes/verification.md records those bounds and their justifications.
@@ -43,9 +43,8 @@ The place where they meet is the bound. In this tree the proved leaf and the unp
 `crates/nifefs`'s writer and reader agreeing (a property nobody had written down) are the three
 worked examples, in [fuzzing/kani-and-fuzzing.md](fuzzing/kani-and-fuzzing.md).
 
-The honest summary: a proof says the property holds where it looked, and a fuzzer looks where the
-proof could not. Neither subsumes the other, and the third worked example shows the boundary is not
-even always "bounded versus unbounded": sometimes it is that nobody wrote the property down.
+A proof says the property holds where it looked, and a fuzzer looks where the
+proof could not.
 
 ## Which parsers, and why those
 
@@ -53,7 +52,7 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Eight parser targets, deliberately fewer than one per crate. A fuzz target that finds nothing
+Thirteen parser targets, deliberately fewer than one per crate; the table holds twelve, and notes/fuzzing/targets.md covers the FAT writer. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
 
@@ -67,11 +66,14 @@ implies coverage the project does not have.
 | `http_response_feed` | a package server, over plain HTTP | network bytes, read in the progenitor **before** the digest check. Asserts read splits never change the answer. |
 | `nifefs_roundtrip` | (structured) the writer's own output | not a panic hunt. Asserts that what goes in comes out, which is the property a truncation bug and a NUL bug in `write_image` each violated. |
 | `package_archive_roundtrip` | (structured) the writer's own output | §197 (a package is one archive file)'s owed target: a written package reads back and verifies. |
+| `package_index_text` | package host | address check |
+| `acpi_firmware_tables` | firmware (ACPI) | IOMMU identity mappings stay whole pages |
+| `machine_description_from_device_tree` | firmware (device tree) | readers no proof reaches |
 | `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
 
 ### And the ones deliberately not fuzzed
 
-Naming these matters as much as naming the targets: "we have fuzzers" quietly grows to cover
+"We have fuzzers" quietly grows to cover
 everything. `Fs::parse` on raw bytes is proved total, so a target there could find nothing. The IPC
 protocols are total by construction, and their real hazard, a double fetch, is a concurrent mutation
 no byte-string fuzzer can express. [fuzzing/not-fuzzed.md](fuzzing/not-fuzzed.md) argues each, and `grant_plan` too.

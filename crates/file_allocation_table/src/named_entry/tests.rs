@@ -1,7 +1,7 @@
 //! A root directory with long names, stale pieces and the entries a listing meets, read as named
 //! entries.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use super::*;
 use crate::long_name::{LongName, checksum};

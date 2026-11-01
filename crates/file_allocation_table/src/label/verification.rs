@@ -1,7 +1,7 @@
 //! **Machine-checked proof (Kani) of the label check**, over every label of up to twelve bytes.
 //! Behind `#[cfg(kani)]`, so only `cargo kani` compiles it.
 //!
-//! Name: provisional.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
 use crate::format::label_from_bytes;
 use crate::long_name::is_short_byte;
