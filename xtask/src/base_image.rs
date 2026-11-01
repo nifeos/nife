@@ -684,6 +684,28 @@ fn read_approval_text(
     }
 }
 
+/// **The approval a test image is composed against** when its definition names none: one entry per
+/// package it carries, which allows nothing, except that the `fixtures` package may hold the network.
+/// The fixtures overreach on purpose (`unreachable_network_witness` asks for the network, entropy
+/// and the process domain, and is never given them), so the grant record would otherwise refuse
+/// every test image for asking past an approval nobody wrote. A release image has no `fixtures`
+/// package, so this never applies to one.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane
+/// milestone/990-the-base-images-first-installed-programs-table.
+fn test_approval_text<'a>(owners: impl Iterator<Item = &'a String>) -> String {
+    let packages: BTreeSet<&String> = owners.collect();
+    let mut text = String::from("approval = \"test-image\"\n");
+    for package in packages {
+        text.push_str(&format!("\n[package.{package}]\n"));
+        if package == "fixtures" {
+            text.push_str("network = true\n");
+        }
+        text.push_str("update = false\nremove = false\n");
+    }
+    text
+}
+
 /// **Compose the archive's entries from packages**: for every program the definition names, the
 /// member `bin/<program>` of the package that owns it, checked against the catalog.
 /// **Compose one architecture's archive from the packages the definition names.** Each program
@@ -709,7 +731,13 @@ fn compose(
     // The image's approval file, when the definition names one. Read and parsed before anything is
     // taken from an archive, so a file that does not parse refuses the composition rather than
     // leaving the check half-done.
-    let approval_text = read_approval_text(root, definition)?;
+    let approval_text = match read_approval_text(root, definition)? {
+        None if test => Some((
+            PathBuf::from("the test image's approval"),
+            test_approval_text(definition.programs.iter().filter_map(|p| owners.get(p))),
+        )),
+        named => named,
+    };
     let approval = match &approval_text {
         Some((path, text)) => Some((
             path.as_path(),
@@ -1266,6 +1294,28 @@ programs = ["progenitor", "swish", "jig"]
                     .is_some()
             );
         }
+    }
+
+    #[test]
+    fn a_test_image_is_answered_by_an_approval_that_lets_only_the_fixtures_ask_for_the_network() {
+        let owners = [
+            "swish".to_string(),
+            "fixtures".to_string(),
+            "swish".to_string(),
+        ];
+        let text = test_approval_text(owners.iter());
+        let file = approval_file::File::parse(&text).unwrap();
+        let path = Path::new("test");
+        let network = [installed_programs::Granted::Network];
+        assert!(
+            extra_asks(path, &file, "fixtures", &network)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            extra_asks(path, &file, "swish", &network).unwrap(),
+            ["network"]
+        );
     }
 
     #[test]

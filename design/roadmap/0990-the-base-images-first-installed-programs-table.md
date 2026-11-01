@@ -169,7 +169,7 @@ volume.
 - No new filesystem server. RedoxFS is the launch store (decision 34), and this milestone uses the
   server and the host tool that already exist. It starts once milestone 911 (scripted installs grant only what the owner's approval file allows) lands.
 
-Name: provisional. `launch.img`, `first_generation`, `base_row`, `write_launch_volume` and the volume's
+Name: provisional. `launch.img`, `first_generation`, `base_row`, `test_approval_text`, `write_launch_volume` and the volume's
 16 MiB size. Items 2 and 3 name the attach point and the measurement. `compose` keeps the check seam, so
 the ruling changes where the records go and not how the composition checks them.
 
@@ -195,6 +195,13 @@ the ruling changes where the records go and not how the composition checks them.
     (`kernel/src/user/fs_service/wiring.rs`), and the runners put their `nifefs` fixture disk at
     slot 0. A boot that attached the launch volume alone would put it where nothing mounts it.
     Item 2 chooses the slot on all three runners.
+- **A host of another architecture reads no manifest notes.** `elf::Elf::parse` refuses an ELF
+  built for a machine other than the host's (`WrongMachine`), and `program_asks::asked_grants_of`
+  turns that refusal into "asks for nothing". `cargo xtask base-image aarch64` on an x86_64 host
+  therefore skips the approval check and writes no grant lines, where the same command on an
+  aarch64 host refuses an image whose fixtures ask for the network. The composition cannot tell
+  "asks nothing" from "unreadable". Home: a proposed milestone, to make the composer read a
+  foreign-architecture note or refuse when it cannot.
 - **The volume is 16 MiB**, the size of the RedoxFS fixture the kernel tests mount. Nothing yet
   installs onto a composed image's volume, so nothing has measured what it needs.
 
