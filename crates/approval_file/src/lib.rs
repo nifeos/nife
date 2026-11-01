@@ -149,22 +149,7 @@ impl<'a> File<'a> {
                 continue;
             }
             if line == "[base-update]" {
-                if name.is_none() {
-                    return Err(Error {
-                        at,
-                        why: Why::NoHeader,
-                    });
-                }
-                if base.is_some() {
-                    return Err(Error {
-                        at,
-                        why: Why::DuplicateKey,
-                    });
-                }
-                if let Some(built) = building.take() {
-                    sections.push(built.finish(at)?);
-                }
-                base = Some(base_update::Grant::default());
+                open_base_update(name.is_some(), &mut base, &mut building, &mut sections, at)?;
                 in_base = true;
                 continue;
             }
@@ -425,6 +410,34 @@ impl<'a> Building<'a> {
                 .ok_or_else(|| err(Why::MissingPolicy("remove")))?,
         })
     }
+}
+
+/// Open the `[base-update]` section: refused before the header or a second time, and it closes
+/// the package section under construction.
+fn open_base_update<'a>(
+    has_header: bool,
+    base: &mut Option<base_update::Grant<'a>>,
+    building: &mut Option<Building<'a>>,
+    sections: &mut Vec<Section<'a>>,
+    at: usize,
+) -> Result<(), Error> {
+    if !has_header {
+        return Err(Error {
+            at,
+            why: Why::NoHeader,
+        });
+    }
+    if base.is_some() {
+        return Err(Error {
+            at,
+            why: Why::DuplicateKey,
+        });
+    }
+    if let Some(built) = building.take() {
+        sections.push(built.finish(at)?);
+    }
+    *base = Some(base_update::Grant::default());
+    Ok(())
 }
 
 /// Take one `key = value` line of the `[base-update]` section, or the refusal at `at`.
@@ -756,14 +769,14 @@ pub mod base_update {
         /// Whether the section sets `allow`.
         ///
         /// Name: provisional, minted 2026-11-01 (UTC) by lane/976-part-7-the-base-update-grant.
-        pub fn allow(&self) -> bool {
+        pub fn is_allowed(&self) -> bool {
             self.allow
         }
 
         /// Whether the section sets `unattended`.
         ///
         /// Name: provisional, minted 2026-11-01 (UTC) by lane/976-part-7-the-base-update-grant.
-        pub fn unattended(&self) -> bool {
+        pub fn is_unattended(&self) -> bool {
             self.unattended
         }
 

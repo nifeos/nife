@@ -270,10 +270,10 @@ fn no_section_grants_nothing() {
     let file =
         File::parse("approval = \"f\"\n[package.a]\nupdate = false\nremove = false\n").unwrap();
     let grant = file.base_update();
-    assert!(!grant.allow() && !grant.unattended() && grant.accepts().is_empty());
+    assert!(!grant.is_allowed() && !grant.is_unattended() && grant.accepts().is_empty());
     assert_eq!(grant.check(&good()), Err(Refusal::NotAllowed));
     let empty = File::parse("approval = \"f\"\n[base-update]\n").unwrap();
-    assert!(!empty.base_update().allow() && !empty.base_update().unattended());
+    assert!(!empty.base_update().is_allowed() && !empty.base_update().is_unattended());
 }
 
 /// **The section parses its three keys**, before or after the package sections.
@@ -281,13 +281,13 @@ fn no_section_grants_nothing() {
 fn the_section_parses() {
     let file = File::parse(ALL_ON).unwrap();
     let grant = file.base_update();
-    assert!(grant.allow() && grant.unattended());
+    assert!(grant.is_allowed() && grant.is_unattended());
     assert_eq!(grant.accepts(), ["release-1"]);
     let mixed = "approval = \"f\"\n[package.a]\nupdate = false\nremove = false\n\
                  [base-update]\nallow = true\nunattended = false\naccepts = [\"k1\", \"k2\"]\n\
                  [package.b]\nupdate = false\nremove = false\n";
     let file = File::parse(mixed).unwrap();
-    assert!(file.base_update().allow() && !file.base_update().unattended());
+    assert!(file.base_update().is_allowed() && !file.base_update().is_unattended());
     assert_eq!(file.base_update().accepts(), ["k1", "k2"]);
     assert_eq!(file.sections().len(), 2);
     assert!(!file.entry("b").unwrap().update);
