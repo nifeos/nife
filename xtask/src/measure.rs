@@ -17,9 +17,9 @@ use crate::host::workspace_root;
 ///
 /// It holds `progenitor` alone (milestone 266 (one progenitor, on all three architectures)). The
 /// six ELF child builders that `spawn_elf_child_builder` enters for the system tests are measured
-/// through the archive's table, which [`measurement_table`] writes, so the test kernel's trust root
-/// is the production kernel's (milestone 697 (the trust root leaves the kernel binary), part 1). The
-/// list is the same on every architecture; `write_measure_manifest` still writes a manifest per
+/// through the archive's table, which [`initial_ramdisk_writer::measurement_table`] writes, so the
+/// test kernel's trust root is the production kernel's (milestone 697 (the trust root leaves the
+/// kernel binary), part 1). The list is the same on every architecture; `write_measure_manifest` still writes a manifest per
 /// architecture.
 pub(crate) fn boot_programs() -> &'static [&'static str] {
     &sealed_pair::BOOT_PROGRAMS
