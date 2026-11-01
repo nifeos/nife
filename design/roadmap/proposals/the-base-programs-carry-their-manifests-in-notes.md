@@ -43,7 +43,11 @@ milestone 909 (basalt composes the bootable image from its packages) item 3's ap
    takes. While a program has both a note and a table row, a gate holds the two equal.
 3. The compiled rows retire a few programs at a time. Each step removes the rows whose notes the
    boot now reads, and the swish-check rows pass on all three architectures at every step.
-4. `packages/base-image.toml` names the base image's approval file once a base program carries a
+4. The progenitor's install refuses any of the seven base-only asks from a package the base does
+   not vouch for, whatever the approval file or the console answers, and the encoder keeps a
+   second, shorter constant set for third-party builds. This lands before step 1 reaches `jig`.
+   It needs the plumbing named under the rule, which hands the install path the base's list.
+5. `packages/base-image.toml` names the base image's approval file once a base program carries a
    note that asks, and milestone 990 (the base image's first installed-programs table) writes the
    grants that check approved.
 
@@ -51,38 +55,51 @@ milestone 909 (basalt composes the bootable image from its packages) item 3's ap
 
 No base program takes its authority from a compiled table, the composer's check refuses a base
 image whose approval file does not allow what the base programs' notes ask, and the first table's
-grant rows equal those asks.
+grant rows equal those asks. No ordinary package can carry any of the seven asks past the install
+check.
 
-## The open question: what stops an ordinary package asking for a base-only authority
+## The rule: the install path refuses base-only asks from a package the base does not vouch for
 
-Not ruled. The maintainer brings it to an architect before step 1 reaches `jig`.
+Ruled 2026-11-01 (UTC), option A. The progenitor's install refuses any of seven asks (`reboot`,
+`sync`, `installer`, `catalog`, the index store, the activation directory and console input) from a
+package that the image's base does not vouch for, whatever the approval file or the console
+answers. The encoder keeps a second, shorter constant set for third-party builds, so an honest
+builder still learns at compile time. One check, at the one place every package passes. The format
+(a separate note type), the updater and the owner's approval were not taken.
 
-A manifest note today cannot ask for seven authorities.
-`capability_manifest_note::encode` refuses `reboot`, `sync`, `installer`, `catalog`, the index
-store, the activation directory and console input at compile time. The reason in the code is that
-only the owner's console grants them, and only to a program the image names. That refusal is what
-keeps a third-party package from asking for the installer endpoint. The base needs these asks once
-its notes are real: `jig` holds the installer, the catalog, the index store and the activation
-directory, `reboot` holds the reboot object, and the shell reads the console.
+Why it is needed. `capability_manifest_note::encode` refuses the seven at compile time today, and
+the base needs them once its notes are real: `jig` holds the installer, the catalog, the index
+store and the activation directory, `reboot` holds the reboot object, and the shell reads the
+console. The compile-time refusal binds an honest builder only, since anyone can write a note's
+bytes by hand, and the approval file grammar already spells `installer = true` for a package entry
+(milestone 911 (scripted installs grant only what the owner's approval file allows)). The check at
+install is what holds against a hand-written note.
 
-The compile-time refusal binds an honest builder only. Anyone can write a note's bytes by hand, so
-the encoder alone stops nothing at install. The approval file grammar already spells
-`installer = true` for a package entry (milestone 911 (scripted installs grant only what the
-owner's approval file allows)), which a note cannot ask for today.
+### What "the base vouches for" means in code, measured 2026-11-01 UTC
 
-The question: when the base's notes ask for these seven, what refuses the same asks from an
-ordinary package?
+- The install runs in the progenitor: `install` in `crates/system_initializer/src/activation.rs`,
+  after `approval_gate`. It reads the staged package, the image's catalog
+  (`package_archive::CATALOG`, the `package_catalog` archive entry), the installed-programs table,
+  the approval document and the answer's trailer. Its only test of base membership is
+  `Program::from_name`, the compiled name list of `grant_plan`, which refuses a package program
+  whose bare name a base program holds.
+- The progenitor holds the `program_measurements` table at boot: `open_archive` in
+  `boot_steps.rs` reads it from the archive, and `measure_spawnable` measures each compiled
+  program against it. The table is not passed on: the `Activating` and `EditContext` structs the
+  install reads carry the catalog, the manager, the approval and the table of installed programs,
+  and no measurements. So the install path cannot see the table today.
+- The kernel hashes the table and checks it against its trust root (`require_program_measurements`
+  in `kernel/src/trust.rs`). The handoff of its digest as `nife.base` is proposed in
+  `how-the-loader-hands-the-kernel-two-digests.md` and has no code in the tree.
+- No list of base packages exists. The catalog lists the packages the image vouches for to
+  install, and whether it also holds the base's own packages is not determined here. The
+  measurements table lists programs by archive name and digest, not packages.
 
-- **Recommended, A: the install path.** The progenitor's install refuses any of the seven asks
-  from a package that the image's signed base set does not vouch for, whatever the approval file
-  or the console answers. The encoder keeps a second constant set for third-party builds, so an
-  honest builder still learns at compile time. One check, at the one place every package passes.
-- B: the format. A separate note type that only the base's build emits. A format cannot tell who
-  wrote the bytes, so this still needs A's check behind it.
-- C: the updater. Milestone 976's updater carries base packages only, and only its path may
-  deliver the seven. `jig install` takes another path, so this also needs A's check there.
-- D: the owner. The approval file and the console may grant any of the seven to any package. This
-  is the most general and the easiest to misuse: one careless approval hands out the installer.
+The step therefore needs one small piece of plumbing: the progenitor passes the measured
+`program_measurements` text (or the set of base program digests parsed from it) from `boot` to
+`Activating`, and `install` tests each program of the staged package against it. Whether a package
+is "vouched for by the base" by program digest in that table, or by package stem in a base package
+list, is not determined here; milestone 976's system manifest would supply the second.
 
 Prior art, from memory and not re-read: Android's `signature|privileged` permissions go only to
 apps signed with the platform key or installed in the system image's privileged directory, and the
@@ -92,9 +109,8 @@ only to components the base names.
 
 A concrete example. On a system where `jig`'s note asks for the installer, a package `helper`
 arrives whose note asks for the installer too, and the owner's approval file says
-`installer = true` for it. Under A, `jig install helper` refuses with the installer named as an ask
-outside the base. Under D it installs, and `helper` can now install anything the owner's catalog
-vouches for.
+`installer = true` for it. `jig install helper` refuses with the installer named as an ask outside
+the base, and the approval file does not change that.
 
 ## Index row
 
