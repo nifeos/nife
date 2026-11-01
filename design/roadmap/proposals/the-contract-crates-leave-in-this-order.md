@@ -58,8 +58,10 @@ Measured at `nifeos/nife@a8b7524d7` with one script, reproduced in the measureme
   already pays cross-repository breaks, without a policy.
 - The packages differ. `disk-tools` reaches 12 of the 22 and not `grant_plan`. `process-tools`
   reaches 13 and `core-tools` 15, both through `grant_plan`. Pull request #3022's `INTERFACES`
-  macro adds `capability_manifest_note`, whose note type is `grant_plan::Manifest`, so with it each
-  package reaches 16 to 18.
+  macro was in `capability_manifest_note`, which reaches `grant_plan`, taking each
+  package to 16 to 18.
+- Since 2026-11-01 (UTC) the `INTERFACES` note type is in `interfaces_note`, a leaf and a 23rd
+  contract crate in this tree. With the macro the packages reach 13, 14 and 16 crates.
 
 ## What a crate references in nife that blocks its move
 
@@ -101,7 +103,7 @@ whole linked set has left.
 | 1, the contract pilot | `block_roster` | a leaf with no blocking reference; one writer in the kernel, one reader in `disk_surveyor`; its magic carries its version, so a reader refuses a mismatch today |
 | 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `filesystem_contract` with `filesystem_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
 | 3 | `address_space_map`, then `current_cpu_contract`, then `user_mode_runtime` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2 |
-| 4, first package | `disk-tools` | its 12 crates are gone; milestone 756's fourth precondition has it carry the `INTERFACES` macro, so it also waits for step 6 unless the note's type first moves to a leaf crate (below) |
+| 4, first package | `disk-tools` | its 12 crates are gone, with `interfaces_note`, the leaf that holds the `INTERFACES` macro (milestone 756's fourth precondition) |
 | 5, leaves for `process-tools` | `byte_sink_contract`, `glob`, `program_argument_contract`, `domain_name_system` | leaves; `program_argument_contract` after the pair test moves to basalt (the proposal the cross-repository pair is tested where the pin is) |
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |
 | 7, second package | `process-tools` | |
@@ -117,9 +119,8 @@ pins must agree. And no version check has refused a real mismatch across the bou
 
 Two findings want lanes of their own, proposed as follow-on work:
 
-- The `INTERFACES` note type is `grant_plan::Manifest`, and the slot constants programs use
-  (`DOMAIN_SLOT`) live in `grant_plan` too. A leaf crate holding the manifest type and the slots
-  would let a package declare what it links without linking the shell's planner.
+- The slot constants programs use (`DOMAIN_SLOT`) and `grant_plan::Manifest` live in `grant_plan`.
+  A leaf crate holding them would let `process-tools` and `core-tools` shed the planner.
 - A contract crate's tests that drive nife's own implementation live in `system_tests`. A third
   party needs tests in the contract crate that drive any implementation.
 

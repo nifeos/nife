@@ -100,6 +100,7 @@ http_response	userspace	components,jig,pinned_tls_client
 initial_ramdisk_writer	host	-
 installed_programs	shared	components,fixtures,jig,kernel
 inter_process_communication	kernel	kernel
+interfaces_note	userspace	components,fixtures
 intrusive	kernel	retired
 intrusive_queue	kernel	kernel
 ipc	kernel	retired

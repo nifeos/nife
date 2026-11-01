@@ -1,0 +1,16 @@
+[package]
+name = "interfaces_note"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# The ELF note that declares which interface versions a program was built against (milestone 956
+# (the linked interfaces carry checkable versions) step 2). A leaf on purpose: a package that
+# declares what it links must not link the shell's planner (`grant_plan`) or the manifest note's
+# encoder to do it, so this crate depends on nothing.
+
+[lints]
+workspace = true
+
+[dependencies]

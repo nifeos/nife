@@ -71,56 +71,48 @@ const ENTROPY_SLOT: u64 = grant_plan::ENTROPY_SLOT;
 // **The interfaces it links, and the version of each** (milestone 956 (the linked interfaces carry
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
-capability_manifest_note::carry_interfaces!(&[
-    capability_manifest_note::Declared {
+interfaces_note::carry_interfaces!(&[
+    interfaces_note::Declared {
         id: abi::INTERFACE_ID,
         version: abi::ABI_VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: address_space_map::INTERFACE_ID,
         version: address_space_map::VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: byte_sink_contract::INTERFACE_ID,
         version: byte_sink_contract::VERSION
     },
-    capability_manifest_note::Declared {
-        id: capability_manifest_note::INTERFACE_ID,
-        version: capability_manifest_note::NOTE_SET_VERSION
-    },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: clock_contract::INTERFACE_ID,
         version: clock_contract::VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: counter_frequency_contract::INTERFACE_ID,
         version: counter_frequency_contract::VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: current_cpu_contract::INTERFACE_ID,
         version: current_cpu_contract::VERSION
     },
-    capability_manifest_note::Declared {
-        id: domain_name_resolution_contract::INTERFACE_ID,
-        version: domain_name_resolution_contract::VERSION
-    },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: entropy_contract::INTERFACE_ID,
         version: entropy_contract::VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: grant_plan::INTERFACE_ID,
         version: grant_plan::VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: program_argument_contract::INTERFACE_ID,
         version: program_argument_contract::VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: socket_contract::INTERFACE_ID,
         version: socket_contract::VERSION
     },
-    capability_manifest_note::Declared {
+    interfaces_note::Declared {
         id: user_mode_runtime::INTERFACE_ID,
         version: user_mode_runtime::VERSION
     },

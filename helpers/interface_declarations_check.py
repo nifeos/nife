@@ -11,7 +11,7 @@ condition covers only the crates that define a run-time format exchanged between
 released parts. Every other linked crate is a Rust API, which its Cargo version and a semver check
 guard, and it is declared nowhere.
 
-A program declares its formats with `capability_manifest_note::carry_interfaces!`, a list written
+A program declares its formats with `interfaces_note::carry_interfaces!`, a list written
 by hand (the ruling of 2026-10-31 UTC leaves deriving it at package build to the first package that
 leaves the tree). What a program links is the workspace crates its source names (`crate::` paths,
 the list's own entries aside), closed over their normal dependencies in `cargo metadata`, less the
@@ -59,7 +59,9 @@ TABLE = 'design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md'
 
 # Linked crates that define a run-time format exchanged between separately released parts, still
 # owed an `INTERFACE_ID` and a version. A crate leaves this table in the change that gives it both.
-OWED = {}
+OWED = {
+    'interfaces_note': 'the INTERFACES note a package carries, which the progenitor reads at spawn',
+}
 
 # Linked crates that define no run-time format another released part reads: a Rust API only.
 NOT_A_FORMAT = {
@@ -88,7 +90,7 @@ def strip_comments(text):
 def code_of(source):
     """The source a link is read from: no comments, and the `carry_interfaces!` list's entries
     replaced by the macro's own crate, or a declaration would justify itself."""
-    return CARRY.sub('capability_manifest_note::', strip_comments(source))
+    return CARRY.sub('interfaces_note::', strip_comments(source))
 
 
 def named_crates(source, candidates):
@@ -285,11 +287,11 @@ def selftest():
                 'fsc::fs': {'VERSION'}}
 
     def entry(path, vpath=None, vconst='VERSION'):
-        return (f'capability_manifest_note::Declared {{ id: {path}::INTERFACE_ID, '
+        return (f'interfaces_note::Declared {{ id: {path}::INTERFACE_ID, '
                 f'version: {vpath or path}::{vconst} }},')
 
     def carry(*entries):
-        return 'capability_manifest_note::carry_interfaces!(&[\n' + '\n'.join(entries) + '\n]);\n'
+        return 'interfaces_note::carry_interfaces!(&[\n' + '\n'.join(entries) + '\n]);\n'
 
     good = carry(entry('abi', vconst='ABI_VERSION'), entry('clock'))
     cases = [
@@ -321,8 +323,8 @@ def selftest():
     assert named_crates('use abi::x;\n// glob::y\nlet z = grant_plan::P;', {'abi', 'glob', 'grant_plan'}) \
         == {'abi', 'grant_plan'}
     assert named_crates('foo_abi::x; self::abi::y', {'abi'}) == set()
-    assert named_crates(good, {'abi', 'clock', 'capability_manifest_note'}) \
-        == {'capability_manifest_note'}
+    assert named_crates(good, {'abi', 'clock', 'interfaces_note'}) \
+        == {'interfaces_note'}
 
     interfaces = {'fsc': {'fsc::blk', 'fsc::fs'}, 'abi': {'abi'}}
     assert required('use fsc::{dir, fs, grant};', {'fsc', 'abi'}, interfaces) == {'fsc::fs', 'abi'}

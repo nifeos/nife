@@ -92,6 +92,9 @@ pull request #3022's `carry_interfaces!` brings into every program.
 | `process-tools` | 13: `abi`, `address_space_map`, `byte_sink_contract`, `clock_contract`, `counter_frequency_contract`, `current_cpu_contract`, `entropy_contract`, `glob`, `grant_plan`, `machine_statistics_contract`, `program_argument_contract`, `socket_contract`, `user_mode_runtime` | 16 |
 | `core-tools` | 15: the 13 of `process-tools` less `machine_statistics_contract`, plus `calendar`, `environment_contract` and `filesystem_contract` | 18 |
 
+The macro has lived in the leaf crate `interfaces_note` since 2026-11-01 (UTC), so "with the note
+macro" now means the column's crates plus that one: 13, 14 and 16.
+
 ## References back into nife
 
 ```sh
