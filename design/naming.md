@@ -25,9 +25,9 @@ a name is often the only thing that says what a program may do.
 ## A name is a claim
 
 A name is a claim, made before a reader sees a line of code. A wrong one is a stale comment nobody
-can skip. `netd` claimed a Unix daemon, a model this OS rejected. `linedisc` claimed a reader who
-does not exist: calef did not recognise it, and he built the system. So name a component for what it
-is, and prefer a word that parses without prior Unix exposure.
+can skip. `netd` and `linedisc` each claimed a model or a reader this OS does not have
+([programs-scripts-and-directories.md](naming/programs-scripts-and-directories.md)). So name a
+component for what it is, and prefer a word that parses without prior Unix exposure.
 
 Name against three failure modes:
 
@@ -56,7 +56,9 @@ as does a specification's term of art in names this tree authors
 
 ### A permissive source's name is copied, BSD first
 
-Where a permissively licensed source names a thing, copy its name, looking in OpenBSD first and then FreeBSD, and use Linux's name only when no BSD source names it; ruled 2026-11-01 (UTC) as an amendment to Decision 37c, for new and provisional names only ([the ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117)).
+Where a permissively licensed source names a thing, copy its name: OpenBSD's first, then FreeBSD's,
+and Linux's only when no BSD source names it. Ruled 2026-11-01 (UTC), amending Decision 37c, for new
+and provisional names only ([the ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117)).
 
 ### Nouns, not verbs
 
