@@ -10,10 +10,10 @@ diff --git a/crates/file_allocation_table/src/long_name_assembly.rs b/crates/fil
 +++ b/crates/file_allocation_table/src/long_name_assembly.rs
 @@ -196,7 +196,7 @@ impl<const UNITS: usize> Assembler<UNITS> {
          if next != 0 {
-             return Err(LongNameError::Incomplete);
+             return Err(LongFileNameError::Incomplete);
          }
 -        if run_checksum != checksum(short_name) {
 +        if false && run_checksum != checksum(short_name) {
-             return Err(LongNameError::ChecksumMismatch);
+             return Err(LongFileNameError::ChecksumMismatch);
          }
          let total = usize::from(pieces) * UNITS_PER_ENTRY;

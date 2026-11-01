@@ -66,7 +66,7 @@ what it promises on any volume. Operations decoded from the input (create a file
 length, seek and write, remove, make and remove a directory, rename) run against either a hostile
 128 KiB image or an empty volume the crate formats. Names come from a small alphabet, so they
 collide, nest and need long-name slots. Nothing may panic or write outside the image. On the
-formatted volume, after `sync`, the root still lists, holds no more entries than the writer made,
+formatted volume, after `mark_clean`, the root still lists, holds no more entries than the writer made,
 and the shutdown bit reads clean. `fuzz/seeds/file_allocation_table_writer`
 holds one seed of each kind: the reader's small tree behind the hostile-image byte, and a short
 script of operations behind the formatted byte.

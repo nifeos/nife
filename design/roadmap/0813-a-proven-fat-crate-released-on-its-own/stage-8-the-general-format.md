@@ -6,7 +6,7 @@ the properties, lands here.
 
 ## What stage 8 built
 
-- `Format` lays out an empty FAT12, FAT16 or FAT32 volume of any size at any of the four sector
+- `FormatPlan` lays out an empty FAT12, FAT16 or FAT32 volume of any size at any of the four sector
   sizes, as sectors a caller writes (`fill_sector`, `write_to`). `FormatOptions` takes the
   device's size and sector size, and optionally the type, the cluster size (a power of two from 1
   to 128 sectors), the serial number, a label and the hidden sectors. With no type and no cluster
@@ -37,5 +37,5 @@ the properties, lands here.
 
 ## Names minted
 
-All provisional: `Format`, `FormatOptions` (`with_type`, `with_cluster_sectors`, `with_volume_id`,
+Ratified 2026-11-01 (UTC): `FormatPlan`, `FormatOptions` (`with_file_allocation_table_type`, `with_sectors_per_cluster`, `with_volume_id`,
 `with_hidden_sectors`, `with_label`), `FormatError`, and the module `format`.

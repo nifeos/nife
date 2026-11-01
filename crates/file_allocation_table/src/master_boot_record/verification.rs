@@ -30,7 +30,7 @@ fn every_sector_parses_to_a_sound_table_or_an_error() {
             assert!(sector[at + 4] != 0);
             assert!(sector[at] == 0x00 || sector[at] == 0x80);
             assert_eq!(partition.is_bootable(), sector[at] == 0x80);
-            assert_eq!(partition.kind(), sector[at + 4]);
+            assert_eq!(partition.partition_type(), sector[at + 4]);
             assert!(partition.sector_count() >= 1);
             assert!(
                 u64::from(partition.first_sector()) + u64::from(partition.sector_count())
@@ -73,7 +73,7 @@ fn a_partition_device_reads_only_its_partition() {
         first_sector,
         sectors,
     };
-    let mut device = partition.device(Recorder { asked: None });
+    let mut device = partition.restrict_device(Recorder { asked: None });
     let index: u64 = kani::any();
     let mut buffer = [0u8; 512];
     match device.read_sector(index, &mut buffer) {

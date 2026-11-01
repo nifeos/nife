@@ -1,12 +1,12 @@
-Falsifies `file_allocation_table::file_write::verification::a_partial_sector_write_keeps_the_head_and_zeroes_the_slack`.
+Falsifies `file_allocation_table::write_cursor::verification::a_partial_sector_write_keeps_the_head_and_zeroes_the_slack`.
 
 The defect: the slack is zeroed one byte late, so the first byte past the end of the file keeps the stale byte a freed cluster held, and a later read of a grown file shows it.
 
 Expected to fail: the harness's `assert_eq!(buffer[probe], 0)` for the probe just past the kept bytes.
 
-diff --git a/crates/file_allocation_table/src/file_write.rs b/crates/file_allocation_table/src/file_write.rs
---- a/crates/file_allocation_table/src/file_write.rs
-+++ b/crates/file_allocation_table/src/file_write.rs
+diff --git a/crates/file_allocation_table/src/write_cursor.rs b/crates/file_allocation_table/src/write_cursor.rs
+--- a/crates/file_allocation_table/src/write_cursor.rs
++++ b/crates/file_allocation_table/src/write_cursor.rs
 @@ -89,7 +89,8 @@ pub(crate) trait Medium: LinksMut {
  /// past the end of the file, so `offset <= kept`.
  pub(crate) fn merge_partial(buffer: &mut [u8], kept: usize, offset: usize, bytes: &[u8]) {

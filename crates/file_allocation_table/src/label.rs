@@ -6,13 +6,14 @@
 //! without a label leaves the boot sector at `NO NAME` and the root without an entry, and that
 //! reads as no label.
 //!
-//! Name: provisional. The label half of the volume's identity, beside the serial number.
+//! Name: ratified 2026-11-01 (UTC), the label half of the volume's identity, beside the serial
+//! number.
 
 use crate::boot_sector::FileAllocationTableType;
-use crate::file_write::{Medium, WriteError};
 use crate::format::label_bytes;
 use crate::reader::{ChainError, Volume};
 use crate::sector::{SectorDevice, SectorSize, WritableSectorDevice};
+use crate::write_cursor::{Medium, WriteError};
 
 /// `ATTR_VOLUME_ID`.
 const LABEL_ENTRY: u8 = 0x08;
@@ -21,21 +22,21 @@ const NO_NAME: [u8; 11] = *b"NO NAME    ";
 
 /// **A volume label**: eleven bytes, the name then spaces.
 ///
-/// Name: provisional. The specification's `BS_VolLab` and label entry as one value.
+/// Name: ratified 2026-11-01 (UTC), the specification's `BS_VolLab` and label entry as one value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VolumeLabel([u8; 11]);
 
 impl VolumeLabel {
     /// The eleven bytes as stored, padded with spaces.
     ///
-    /// Name: provisional. The stored form.
+    /// Name: ratified 2026-11-01 (UTC), the stored form.
     pub const fn as_bytes(&self) -> &[u8; 11] {
         &self.0
     }
 
     /// The name without its trailing spaces.
     ///
-    /// Name: provisional. The form a person reads.
+    /// Name: ratified 2026-11-01 (UTC), the form a person reads.
     pub fn trimmed(&self) -> &[u8] {
         let end = self.0.iter().rposition(|b| *b != b' ').map_or(0, |i| i + 1);
         &self.0[..end]
@@ -54,9 +55,9 @@ impl<D: SectorDevice> Volume<D> {
     /// **The volume's label**, or `None` when it has none: the root's label entry if there is one,
     /// else the boot sector's if it is set and is not `NO NAME`.
     ///
-    /// Name: provisional. The `label` of `fatlabel` and `diskutil info`.
+    /// Name: ratified 2026-11-01 (UTC), the `label` of `fatlabel` and `diskutil info`.
     pub fn volume_label(&mut self) -> Result<Option<VolumeLabel>, ChainError<D::Error>> {
-        for entry in self.root_entries() {
+        for entry in self.root_named_entries() {
             let entry = entry?;
             if entry.is_volume_label() {
                 return Ok(Some(VolumeLabel(entry.short_name())));
@@ -80,12 +81,12 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// punctuation a short name admits. The root's label entry changes, or is made in the first free
     /// slot, and then the boot sector's copy (and FAT32's backup boot sector) follows.
     ///
-    /// Name: provisional. The `fatlabel` of the directory tree.
+    /// Name: ratified 2026-11-01 (UTC), the `fatlabel` of the directory tree.
     pub(crate) fn set_volume_label(&mut self, label: &str) -> Result<(), WriteError<D::Error>> {
-        let bytes = label_bytes(label).ok_or(WriteError::InvalidName)?;
+        let bytes = label_bytes(label).ok_or(WriteError::LabelRefused)?;
         self.begin_change()?;
         let mut existing = None;
-        for entry in self.root_entries() {
+        for entry in self.root_named_entries() {
             let entry = entry?;
             if entry.is_volume_label() {
                 existing = Some(entry.place().short_slot);

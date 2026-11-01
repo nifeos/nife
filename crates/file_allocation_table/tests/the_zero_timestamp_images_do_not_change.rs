@@ -6,7 +6,7 @@
 //! The digest is FNV-1a over the sectors in order; it detects a change and is not a security
 //! claim.
 
-use file_allocation_table::{Format, FormatOptions, NoClock, SectorSize, VolumeLayout};
+use file_allocation_table::{FormatOptions, FormatPlan, NoClock, SectorSize, VolumeLayout};
 
 fn fnv(mut hash: u64, bytes: &[u8]) -> u64 {
     for byte in bytes {
@@ -35,7 +35,7 @@ fn formatted(sectors: u32, label: Option<&str>) -> u64 {
     if let Some(label) = label {
         options = options.with_label(label).unwrap();
     }
-    let format = Format::new(options, &mut NoClock).unwrap();
+    let format = FormatPlan::new(options, &mut NoClock).unwrap();
     let mut sector = [0u8; 512];
     let mut hash = START;
     for index in 0..format.metadata_sectors() {

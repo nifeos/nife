@@ -22,7 +22,7 @@ fn any_kind() -> SlotKind {
 /// from there to the slot that completed it is used, the run is `count` slots or ends at an end
 /// marker, and it begins right after a used slot or at the start. When it returns none, no end marker
 /// came and every window of `count` slots holds a used one.
-/// Falsification: replayable `crates/file_allocation_table/falsifications/directory_write.verification.the_run_finder_returns_the_first_run_of_free_slots.patch`
+/// Falsification: replayable `crates/file_allocation_table/falsifications/directory_writer.verification.the_run_finder_returns_the_first_run_of_free_slots.patch`
 #[kani::proof]
 #[kani::unwind(8)]
 fn the_run_finder_returns_the_first_run_of_free_slots() {
