@@ -25,9 +25,9 @@ now: the first table is files `activation/1` and `activation/current` on the Red
 
 ## Where it stands
 
-Partial. Item 1 is built: `cargo xtask base-image` writes `launch.img` beside the kernel and
-`initrd.img`, a RedoxFS volume holding `activation/1` and `activation/current`. Items 2 and 3 are
-not, and the `BUGS` below say what blocks them.
+Partial. Item 1 ships: `cargo xtask base-image` writes `launch.img` beside the kernel and
+`initrd.img`, a RedoxFS volume holding `activation/1` and `activation/current`. Items 2 and 3 do
+not exist yet, and the `BUGS` below say what blocks them.
 
 Generation 1 holds one row per carried program: the program, the image's version, the owning
 package, the program member's digest and `owner` as the manager. `first_generation` in
@@ -162,7 +162,7 @@ volume.
   server and the host tool that already exist. It starts once milestone 911 (scripted installs grant only what the owner's approval file allows) lands.
 
 Name: provisional. `launch.img`, `first_generation`, `write_launch_volume` and the volume's
-16 MiB size. The attach point and the measurement are unnamed until items 2 and 3 are built. `compose` keeps the check seam, so
+16 MiB size. Items 2 and 3 name the attach point and the measurement. `compose` keeps the check seam, so
 the ruling changes where the records go and not how the composition checks them.
 
 ## BUGS
@@ -175,13 +175,13 @@ the ruling changes where the records go and not how the composition checks them.
     it succeeds. Item 2 cannot keep its read path unchanged. Home: the proposal
     [a-generation-grows-past-one-page](proposals/a-generation-grows-past-one-page.md).
   - **Every row takes a base program's name at the prompt.** `with_entries_granting` writes a
-    default pointer for every row whose package is not `owner`, and the shell refuses a bare word
+    default pointer for every row whose package is not `owner`. The shell refuses a bare word
     that both the image and the live generation name (`swish::bare::resolve`, `Bare::Both`, §229
     (how a bare name at the prompt reaches an installed program)). With this generation live,
     `ps` and every other base program would be refused at the prompt. The row also names
     `packages/<package>/<version>/<program>`, which the volume does not hold. What shape a base
     program's row takes is an architect's call, asked on this milestone's pull request.
-  - **The measurement is not ruled** (item 3).
+  - **No ruling settles the measurement** (item 3).
     [notes/the-first-installed-programs-table.md](../../notes/the-first-installed-programs-table.md)
     lists the options: the seed generation by its own digest, the volume until its first write,
     or the approval file alone. Any of them reaches the kernel's trust root, which milestone 697
@@ -192,6 +192,19 @@ the ruling changes where the records go and not how the composition checks them.
     Item 2 chooses the slot on all three runners.
 - **The volume is 16 MiB**, the size of the RedoxFS fixture the kernel tests mount. Nothing yet
   installs onto a composed image's volume, so nothing has measured what it needs.
+
+## Follow-on
+
+- **Outstanding.** Item 2, attaching the volume and reading generation 1 at boot. Checked
+  2026-11-01 (UTC) against `xtask/src/boot_check.rs`, which attaches no disk; the `BUGS` above
+  list what blocks it.
+- **Proposed.** A generation larger than a page:
+  `design/roadmap/proposals/a-generation-grows-past-one-page.md`.
+- **Outstanding.** Item 3, the measurement, waits on a ruling and on milestone 697 (the trust
+  root leaves the kernel binary). Checked 2026-11-01 (UTC): the note names three options and no
+  ruling picks one.
+- **Outstanding.** Item 4 closes when item 2 does. Item 5's grant rows fill as the base programs'
+  notes ask: `first_generation` already reads the notes, and today they ask for nothing.
 
 ## Index row
 

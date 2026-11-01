@@ -12,6 +12,9 @@ needs_person: no
 Raised 2026-11-01 (UTC) by lane `milestone/990-the-base-images-first-installed-programs-table`.
 Every name below is provisional.
 
+Reuse: the table's own grammar and readers. `crates/installed_programs` already parses a
+generation of any length from a `&str`, so the work is the readers' buffers, not a second format.
+
 ## The failure
 
 The progenitor and the shell read the live generation of the installed-programs table into one
