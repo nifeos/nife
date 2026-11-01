@@ -189,6 +189,10 @@ echo "==> the heavy-job slots (a full machine holds a job back; a killed holder 
 # them. Proved in a scratch tree with a private slot directory and one slot, so it never waits on a
 # real job: helpers/heavy-slot-selftest.sh lists its five stages and what breaks each.
 helpers/heavy-slot-selftest.sh >/dev/null
+# The CI fuzz job (proposal a-short-sharded-fuzz-pass-in-ci): wired for merge_group only, on a hosted
+# runner, and a finding prints no guest output. helpers/fuzz-ci-selftest.sh lists both checks.
+echo "==> the CI fuzz job keeps a finding private"
+helpers/fuzz-ci-selftest.sh >/dev/null
 # The local parallel prove (milestone 957): the whole table forked into shard children that run
 # inside the one slot their parent holds. helpers/verify-parallel-selftest.sh says what it proves,
 # over a stub cargo and a private slot directory, so it costs milliseconds and takes no real slot.
