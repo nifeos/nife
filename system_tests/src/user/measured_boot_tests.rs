@@ -101,8 +101,10 @@ fn the_measurement_table_measures_to_the_compiled_in_trust_root() {
 /// 1, ruled 2026-11-01 UTC). A test program whose digest crept back into `.rodata` would make every
 /// base change relink the kernel again, and pass every other test while doing it.
 ///
-/// Falsification: unfalsified. Milestone 697's lane ran it green on all three architectures and
-/// did not put a builder back on `sealed_pair::BOOT_PROGRAMS` to watch it go red.
+/// Falsification: attested. On 2026-11-01 (UTC) milestone 697's lane put `report_child_builder`
+/// back on `sealed_pair::BOOT_PROGRAMS` and ran `cargo xtask test --arch aarch64 --test
+/// the_trust_root_names_only`: it panicked with "the kernel image's trust root names
+/// 'report_child_builder'", and the leg exited 1. Restored, it passes on all three architectures.
 #[test_case]
 fn the_trust_root_names_only_the_progenitor_and_the_table() {
     let allowed = [BOOT_PROGRAM, measured_boot::PROGRAM_MEASUREMENTS];

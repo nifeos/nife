@@ -78,6 +78,8 @@ and this block land. The boot gates then run on the composed image: `confirm-boo
 - **Done.** Part 1, by `milestone/697-part-1-the-kernel-keeps-only-the-progenitor`: the trust
   root names the progenitor and the table, and the system test
   `the_trust_root_names_only_the_progenitor_and_the_table` checks it on all three architectures.
+  With `report_child_builder` put back on `BOOT_PROGRAMS`, that test fails on aarch64 and names the
+  builder (run 2026-11-01 UTC).
 - **Outstanding.** Part 2, the kernel checks the digests 695 delivers in place of `TRUST_ROOT`.
   It lands with 695's part 3, and question 1 of the proposal (the bytes of the handoff) is still
   open; checked against the proposal file on 2026-11-01 (UTC).
