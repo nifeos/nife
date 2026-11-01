@@ -1,0 +1,204 @@
+---
+status: PROPOSED
+raised: 2026-10-31
+milestone_dependencies: 976
+decision_dependencies: 235, 241, 244
+machine_requirements: none
+specific_machine: none
+needs_person: no
+---
+# What an OS update writes into a boot slot
+
+Raised 2026-10-31 (UTC) by the lane `milestone/976-an-os-update-through-a-slot`, while it broke
+milestone 976 (an OS update is a set of packages that lands through a slot) into parts. Parts 1 to
+3 of that block need no ruling. Part 4, the program on a running machine that writes the spare
+slot, needed one first: what the slot holds. The architect ruled it on 2026-10-31 (UTC): option B.
+This file states the ruling, what it covers, and the questions behind it, which wait their turn.
+
+Reuse: the slot format and chooser of milestone 525 (a bad upgrade cannot brick the machine: two
+boot slots, tries and priority), and the confirmation of milestone 554 (a good upgrade sticks). The
+composer is milestone 909 (basalt composes the bootable image from its packages)'s. No new
+dependency.
+
+## The background, plainly
+
+An installed nife disk has two boot slots, partitions of 64 MiB each (§244 (the installed disk has
+four partitions, and a boot slot is 64 MiB)). A slot holds one file behind a 4096-byte header: a
+complete UEFI program that embeds the kernel and the initial ramdisk, the archive of every base
+program. The chooser on the EFI system partition picks a slot from bits in the partition table,
+spends one of its tries, and starts that file. A boot that comes up confirms the slot; a slot that
+runs out of tries without confirming loses to the other one. All of that exists, and an update
+inherits it unchanged.
+
+§235 (the OS is built and updated from packages) ruled the update's unit as U4: the machine
+downloads packages, and each slot holds its own full copy of the base. Nothing in one slot points
+into the other.
+
+One fact of the tree decides what U4 can mean today. The kernel compiles the digest of every base
+program into its trust root (`kernel/build.rs`). So a new `swish` makes a new kernel, and the
+kernel's bytes depend on the whole base. Item 6 of milestone 607 (the repository divides along
+what releases together) removes that coupling: the loader hands over two digests, and the
+progenitor checks the base set. Until it lands, no device can
+assemble a bootable slot from packages, because only a host that builds the kernel can produce a
+kernel that vouches for the new base. And basalt does not yet publish the kernel as a package at
+all (milestone 909's `BUGS`: the kernel is built, not packaged).
+
+## The decision: what the inactive slot receives
+
+**Ruled 2026-10-31 (UTC): B.** The architect launches milestone 607 item 6 (milestones 695 and 697) in
+parallel, and the interim kernel package goes when it lands. The slot keeps its header and becomes
+a small set of named members: the kernel, the composed archive, and the system manifest that lists each package by digest. The
+chooser loads the kernel and the archive itself, as `uefi_loader` already does for the files it
+embeds. The device fetches packages from basalt's index, checks each digest, takes unchanged
+packages from the running slot, writes the archive with the composer's own code, and writes the
+slot. Basalt publishes the kernel as a package, built against the base it vouches for. That kernel
+package is interim. Milestones 695 (the kernel takes two digests from the loader) and 697 (the
+trust root leaves the kernel binary) end the kernel's dependence on the base. The package goes when
+they land.
+
+| option | what the slot holds | what the device downloads | what it costs |
+|---|---|---|---|
+| A. One boot file (not chosen) | today's format, one UEFI program | basalt's composed boot file, about 4.6 MB, whole | U1 in practice, which §235 did not take; a second migration when item 6 lands |
+| B. Named members (chosen) | header version 2: kernel, archive, system manifest | each changed package, and the kernel package while item 6 is open | a slot format version and a chooser change; the composer's archive writer becomes a crate the device links |
+| C. Hold the device side (not chosen) | today's format | nothing yet | no update on a running machine until item 6, and B's work waits behind it |
+
+Why B. It is the format U4 describes, and it does not depend on item 6: item 6 only stops the
+kernel package changing with every base change. A would ship the refused unit first and migrate
+every installed disk later. C loses nothing in format but serializes two independent lanes. Would
+I still choose B if A cost the same? Yes; A is smaller only because it reuses a file format, which
+makes it an effort argument.
+
+What B touches that two programs agree on, and therefore what the ruling covers:
+
+- The slot header gains a version 2 that names members by offset and length. Version 1 stays
+  readable, because installed disks carry it (§244 ratified version 1's bytes).
+- The archive writer moves from `xtask/src/archive.rs` into a crate, since the host composer and the
+  device updater must write identical bytes (AGENTS.md rule 7).
+- The kernel package: `packages/kernel.package.toml` declares crates and no programs, and gains a
+  member that is the built kernel.
+
+The ruling chooses neither A nor C. Part 4 therefore writes version 2 slots, not basalt's composed
+boot file, and does not wait on item 6.
+
+## How others solved it, and where nife differs
+
+- Android A/B (`update_engine`, the `boot_control` HAL). An update payload carries partition
+  images, often as deltas; the engine writes the inactive slot's partitions, marks it active, and
+  `markBootSuccessful` confirms it from userspace. The unit is a partition image. Nife's
+  confirmation follows this, and its unit does not.
+- ChromeOS (`update_engine`, depthcharge). The same GPT attribute bits nife uses (priority,
+  tries, successful); the payload writes a whole kernel partition and a whole root partition.
+  Firmware selects; on generic UEFI nife's chooser does instead.
+- Fuchsia (`system-updater`, the paver). An update package lists images and packages by
+  Merkle root. The paver writes the kernel image (ZBI) into an A/B/R slot, and the packages go
+  to one shared content store, `blobfs`. That shared store is U2, which §235 refused.
+- OSTree. One content-addressed repository, with each deployment a hard-linked tree. Shared
+  storage again, so a collection error reaches both deployments.
+- RAUC. A signed bundle carries one image per slot class; the installer writes each whole into
+  the inactive slot group. The unit is the image, as in option A.
+- Mender. A/B root file systems, an artifact that is a whole image or a delta, and a commit
+  after the new system boots. Again option A's unit.
+- Nix generations. The store holds every package once; a generation is a profile of links into
+  it, and the bootloader lists one entry per generation. A package is the download unit, and the
+  store is shared.
+
+Nife takes the package as the download unit from Fuchsia and Nix, and the full independent copy per
+slot from Android, ChromeOS, RAUC and Mender. None of the seven does both. The cost is two copies
+of the base on disk, which §244's slot size already pays for: a release image measured 4,640,256
+bytes against a 64 MiB slot.
+
+## A concrete example
+
+A machine runs base 0.1.0 from slot 0. Base 0.1.1 changes only `swish`.
+
+1. Basalt publishes 0.1.1's system manifest, 58 programs from eighteen packages plus the
+   `kernel` package, each by digest. The `swish` package's digest differs, and so does the `kernel` package's, because its
+   trust root names the new `swish`.
+2. The updater reads the manifest and finds seventeen packages whose digests match slot 0's copy. It
+   reads those from slot 0 and fetches two packages from the index, checking each digest.
+3. It wipes slot 1 whole, writes the kernel, the archive and the manifest as version 2 members,
+   and marks slot 1 on trial: priority 3, one try.
+4. On the next boot the chooser picks slot 1 and spends its try. The filesystem server mounts the
+   disk, the kernel confirms the slot, and slot 1 stays chosen. Had the kernel hung, the next boot would have
+   picked slot 0.
+
+Under A the device downloads 4.6 MB in step 2. Under B it downloads two packages. Once item 6
+lands, it downloads one.
+
+## The questions behind this one
+
+The ruling above does not answer these. Each not marked ruled stays open and will come as its own question:
+
+1. The system manifest's name and format. **Ruled 2026-11-01 (UTC): a plain text file.** The first
+   line is `version 1`. Every later line is `<stem> sha256:<64 lowercase hex>`, one package per
+   line, sorted by stem, with no blank lines, so one content has one encoding. The name stays
+   "system manifest", provisional. Basalt writes it; the device updater and the progenitor read it.
+   The line shape is the one basalt's stand-in index already uses. A later column goes in behind a
+   new version line. Not chosen: the kernel's program-measurement table (it is per program, so it
+   cannot map a changed program to its package), TOML (a larger parser and several encodings of one
+   content), and waiting for the update framework (milestone 858).
+2. Who may start a base update, and what bounds an unattended one. **Ruled 2026-11-01 (UTC): a
+   separate base-update section in the approval file.** `packages/base-image.approval.toml` gains a
+   section with two switches, `allow` and `unattended`, both false unless a person sets them. The
+   per-package `update = false` lines stay, because a slot replaces the base whole. Milestone 911 (scripted installs grant only what the
+   owner's approval file allows) set them.
+   An update a person starts needs `allow`. An update with nobody present needs `unattended` as
+   well. It must also meet four bounds before it writes: it writes only the spare slot; a key the approval file
+   pins signs its manifest; its version is strictly newer than the running one; and
+   no slot is on trial. Not chosen: a per-package `update = true` (it implies one package updates
+   alone, which the full-copy slot refuses) and forbidding unattended updates (milestone 858 (lab machines update themselves) needs
+   them). The two points that ruling left open have rulings of the same date.
+   A base version is exactly MAJOR.MINOR.PATCH: three whole numbers, compared left to right as
+   integers. The device accepts an update only when its version is strictly greater than the running one,
+   so it refuses an equal version. The manifest writer and the device both refuse pre-release
+   tags and build metadata. Basalt raises the version for every published base. Not chosen: full
+   semver ordering (a grammar in the verification core) and a build date (clock error, and a
+   rebuild has no order). The restricted form can admit more later; the reverse cannot.
+   The keys that may sign a base manifest live beside the trust root that milestone 697 (the trust root leaves the kernel binary) moves out
+   of the kernel binary. The approval file may name which of those keys the owner accepts, and it
+   never adds one. A new key arrives only through a base update the old key signed. Not chosen:
+   the key in the approval file, and the union of both.
+3. The version 2 slot header's layout. **Ruled 2026-11-01 (UTC): seven points.**
+   1. Each member entry carries an offset, a length and a SHA-256 digest. The header keeps its own
+      CRC-32.
+   2. Each entry starts with an 8-byte ASCII tag from a closed set: KERNEL, ARCHIVE and MANIFEST,
+      zero-padded (the spellings are provisional). The chooser refuses a slot with an unknown, a
+      duplicate or a missing tag.
+   3. Every member starts at a multiple of 4096, in header-table order, with no overlap and
+      nothing past the partition end. The chooser refuses a slot that breaks any of these.
+   4. The header holds exactly three entries and no count field. The layout is the magic (8
+      bytes), the version (4), reserved zero (4), three 56-byte entries (tag 8, offset 8, length
+      8, digest 32) and the CRC-32 (4). That is 188 bytes, and the rest of the 4096-byte block is
+      zero. The chooser refuses nonzero reserved or padding bytes.
+   5. The CRC-32 is the field after the table (bytes 184 to 188) and covers bytes 0 to 184, as in
+      version 1.
+   6. The chooser skips a slot it refuses for that boot, writes nothing to the partition-table
+      bits, and prints a fixed reason phrase for each check (the both-refused case follows).
+   7. The version field alone picks the layout. The chooser reads versions 1 and 2 and refuses any
+      other value, once the magic matches, as an unknown header version. The updater writes only
+      version 2.
+
+   When the chooser refuses both slots, it prints each slot's reason and then boots its own
+   embedded image, as milestone 525 (a bad upgrade cannot brick the machine) rules for two bad
+   slots (ruled 2026-11-01 UTC).
+4. The chooser replaces itself before the first version 2 slot. **Ruled 2026-11-01 (UTC).** The
+   chooser is the same binary as the fallback image in the EFI system partition file, which the
+   installer writes once, so a slot update does not replace it. The updater replaces that file
+   before it writes the first version 2 slot, and only if the new chooser reads version 2. It
+   writes the new chooser under a second name, verifies it by digest, then renames it over the old
+   name, and the rename is the commit. The chooser is also the install-time fallback image, so a
+   torn write never leaves the partition with no file. No milestone covers this work, so the 976
+   block files it as a proposed milestone. Its open questions: room on the EFI system partition
+   for a second copy, whether the FAT rename is atomic enough for a power cut, and the effect on
+   the unattended machines of milestone 858.
+5. What a failed boot does. Milestones 525 and 554 already answer this (tries, then the other
+   slot; confirmation once the disk mounts). This proposal changes none of it, so it is not
+   open.
+
+## Index row
+
+The update's unit is the package, and each slot holds a full copy. A slot holds named members in a
+version 2 header (kernel, archive, system manifest), which a device assembles from packages it
+fetched and packages it already has (ruled 2026-10-31 UTC). The system manifest is a text file: a
+`version 1` line, then one `<stem> sha256:<hex>` line per package, sorted by stem (ruled 2026-11-01 UTC). A base update needs `allow` in a separate base-update section of the approval file. An unattended one also needs `unattended` and four bounds: spare slot only, a pinned key's signature, a strictly newer version, no slot on trial (ruled 2026-11-01 UTC). A base version is MAJOR.MINOR.PATCH, three integers, and the key lives beside the trust root (ruled 2026-11-01 UTC). The interim kernel package goes when
+milestones 695 and 697 land.

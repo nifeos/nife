@@ -84,6 +84,10 @@ remove = false
 update = false
 remove = false
 
+[package.system_installer]
+update = false
+remove = false
+
 [package.terminal]
 update = false
 remove = false
