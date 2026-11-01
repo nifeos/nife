@@ -195,15 +195,15 @@ a second rung. When (A) lands, the driver's model changes in the two receiver-fi
   8 and 16. With the every-core wait, this driver failed 1 of 552 guests at 4 to 16 and the
   confined driver 0 of 64; the table is in `notes/fuzzing/rates-on-x86-64-under-kvm.md`.
 - That one failure is not explained. On 2026-11-01 (UTC), at 8 guests, actor 5 neither finished
-  nor parked after 2732 ms of the counter, in which core 0 took 200 ticks and core 1 took 255: both
-  cores ran, so no stopped vCPU covers it. The message prints no seed. The failure came about
+  nor parked after 2732 ms of the counter. In that time core 0 took 200 ticks and core 1 took 255,
+  so both cores ran and no stopped vCPU covers it. The message prints no seed. The failure came about
   13,300 seeds into the sweep; seeds 900,012,000 to 900,015,000 passed alone 3 of 3 times, and
   every other guest passed the same seeds. A wake the scheduler lost (the class in
   `notes/scheduler/missed-reschedule-poke.md`) would fit; so would a host stall that ticks did not
   show. A recurrence wants the seed and a `sched::dump_threads` in the message.
-- A stopped vCPU is what the wait exists for, and an instrumented run on 2026-11-01 saw one: four
-  guests at once waited about 1.8 s, with 1.54 s between two polls of one loop and 6 or 7 ticks
-  where two running cores take about 360. What stops them is not known; four guests pinned to four
+- A stopped vCPU is what the wait exists for, and an instrumented run on 2026-11-01 saw one. Four
+  guests at once waited about 1.8 s. One loop went 1.54 s between two polls, and its guest took 6
+  or 7 ticks where two running cores take about 360. What stops them is not known; four guests pinned to four
   host CPUs beside eight busy loops saw no stall, so CPU contention alone is not it.
 
 ## Index row
