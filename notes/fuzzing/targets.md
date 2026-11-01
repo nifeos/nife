@@ -23,10 +23,10 @@ it, adding `/chosen/linux,initrd-start` and `linux,initrd-end` for the archive i
 `device_tree_blob`'s, so the parser target above says nothing about it. A panic stops the machine
 before the kernel exists. A wrong `Ok` is quieter: the kernel boots and finds no archive.
 
-So the target checks the answer, not only the absence of a panic. For five ranges per input
-(typical, hashed from the input, the top of the address space, empty and reversed) the rewrite
-either refuses, or its output parses with the kernel's reader and `initial_ramdisk` reports exactly
-that range; empty and reversed ranges read back as no archive. It also holds `output_len` to its
+So the target checks the answer, not only the absence of a panic. Each input gets five ranges:
+typical, hashed from the input, the top of the address space, empty and reversed. For each, the
+rewrite either refuses, or its output parses with the kernel's reader and `initial_ramdisk` reports
+exactly that range. Empty and reversed ranges read back as no archive. It also holds `output_len` to its
 word: a tree it refuses, the rewrite refuses, and the rewrite never writes past it or into a buffer
 one byte short.
 

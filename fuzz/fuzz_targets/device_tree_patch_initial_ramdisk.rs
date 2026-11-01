@@ -54,7 +54,10 @@ fuzz_target!(|data: &[u8]| {
         let Ok(n) = with_initial_ramdisk(data, start, end, &mut out) else {
             continue;
         };
-        assert!(n <= len, "the rewrite wrote {n} bytes, past output_len {len}");
+        assert!(
+            n <= len,
+            "the rewrite wrote {n} bytes, past output_len {len}"
+        );
 
         let tree = DeviceTreeBlob::from_bytes(&out[..n])
             .unwrap_or_else(|e| panic!("the rewritten tree does not parse: {e:?}"));
