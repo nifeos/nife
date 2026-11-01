@@ -3,8 +3,8 @@
 *Name: provisional, minted 2026-10-23 (UTC) by comments/929-crates-03.*
 
 `crates/machine_discovery` reads what the machine is rather than what the target triple implies.
-Its per-architecture records, the tiers of discovery and why there is no trait are in
-[isa-discovery.md](isa-discovery.md). This note covers the rest: the aarch64 decoder's traps, and
+[isa-discovery.md](isa-discovery.md) covers its per-architecture records, the tiers of discovery
+and why there is no trait. This note covers the rest: the aarch64 decoder's traps, and
 the readers every architecture shares or that x86 alone needs. Each module's limits are in the
 `BUGS` section of its own doc comment. The note name is provisional.
 
@@ -12,34 +12,32 @@ the readers every architecture shares or that x86 alone needs. Each module's lim
 
 The aarch64 record decodes `MIDR_EL1`, `ID_AA64MMFR0_EL1`, `ID_AA64MMFR2_EL1` and
 `ID_AA64ISAR0_EL1`, read by the kernel and passed in as raw words. It is much shorter than the
-RISC-V half, and that asymmetry is the finding: the part describes itself, so there is nothing to
+RISC-V half, which is the finding: the part describes itself, so there is nothing to
 parse and nothing to disbelieve.
 
 The three granule fields need care. `TGran4` and `TGran64` spell "supported" as `0b0000` and "not
 supported" as `0b1111`. `TGran16` spells them `0b0001` and `0b0000`, so a decoder that treats the
 three alike reports 16 KiB backwards on every part. `TGran4` also has a second yes, `0b0001`, which
-Arm defines as support for 52-bit addresses with `FEAT_LPA2`. It is a stronger yes, and reading it
+Arm defines as support for 52-bit addresses with `FEAT_LPA2`. It is a stronger yes; reading it
 as reserved refuses the boot on QEMU's `-cpu max` and on any part with `FEAT_LPA2`. `TGran64` has no
 LPA2 value at all. Tidying the three decode lines into one would bring one of these bugs back.
 
 `Psci` is the one parser on this side. Whether a firmware call leaves at `hvc` or `smc` depends on
-what runs above EL1, which is a property of the boot arrangement rather than of the part. A tree
-with no `/psci` node is a legitimate machine (spin-table bring-up, or a uniprocessor) on which
-starting a second core is impossible. A node the decoder cannot make sense of is a different
-answer, and a caller wants to say different things about the two.
+what runs above EL1, a property of the boot arrangement rather than the part. A tree with no
+`/psci` node is a legitimate machine (spin-table bring-up, or a uniprocessor) on which starting a
+second core is impossible. A node the decoder cannot read is a different answer, and a caller says
+different things about the two.
 
 ## The core list
 
 Both architectures describe their cores the same way, so `cpu_list` sits beside the records rather
 than in either: a `cpu@` node per core under `/cpus`, with the hardware id in `reg`. The id is an
 `MPIDR_EL1` affinity value on aarch64 and a hart id on RISC-V. Neither this module nor its caller
-needs to know which, because the only thing done with it is handing it back to the firmware call
-that starts the core.
+needs to know which: the id only goes back to the firmware call that starts the core.
 
 The `#address-cells` of `/cpus` is the whole decode. One cell is the usual case and the only one
 QEMU produces. Two is not exotic: the Arm CPU binding requires two the moment any core's
-`MPIDR_EL1.Aff3` is nonzero. A decoder that assumed one cell would read a 64-bit id as its high
-half and start nothing.
+`MPIDR_EL1.Aff3` is nonzero. A one-cell decoder would read a 64-bit id as its high half and start nothing.
 
 `Cpu::is_startable` is the kernel's decision, kept in this crate so the board fixtures can hold it.
 The VisionFive 2 tests assert which harts it admits (the four U74s) and which it refuses (the S7,
@@ -155,57 +153,50 @@ so a reader of the kernel meets the number and its reason in one place.
 ## x86_64
 
 The other two architectures learn where RAM is from the device tree, handed over as one pointer.
-x86 has no device tree. It has a boot protocol, PVH (see `kernel/src/arch/x86_64/boot.s` for why
+x86 has a boot protocol instead, PVH (see `kernel/src/arch/x86_64/boot.s` for why
 not multiboot), which hands over one pointer to a structure carrying the memory map, the ACPI root
 pointer, the command line and any loaded modules. The shape is the device-tree handoff's and only
 the format differs. The decoding lives in this crate because a parser proved only inside a booting
 kernel is proved by nothing that runs in milliseconds
 ([x86-port/acpi-and-pci.md](x86-port/acpi-and-pci.md)).
 
-The structure, from Xen's `start_info.h`:
+The structure is Xen's `hvm_start_info`, in `xen/include/public/arch-x86/hvm/start_info.h` of
+`xen-project/xen` at `8803b82ab2c9`, fetched 2026-11-01 (UTC). Offsets and sizes are bytes:
 
-```text
-struct hvm_start_info {          offset  size
-    uint32_t magic;                   0     4   0x336ec578, "xEn3" little-endian
-    uint32_t version;                 4     4
-    uint32_t flags;                   8     4
-    uint32_t nr_modules;             12     4
-    uint64_t modlist_paddr;          16     8
-    uint64_t cmdline_paddr;          24     8
-    uint64_t rsdp_paddr;             32     8   the ACPI root pointer
-    /* version >= 1 only: */
-    uint64_t memmap_paddr;           40     8
-    uint32_t memmap_entries;         48     4
-    uint32_t reserved;               52     4
-};
-```
+| field | offset | size | meaning |
+|---|---|---|---|
+| `magic` | 0 | 4 | `0x336ec578`, `xEn3` with the `E` high bit set |
+| `version` | 4 | 4 | structure version |
+| `flags` | 8 | 4 | flags |
+| `nr_modules` | 12 | 4 | module count |
+| `modlist_paddr` | 16 | 8 | module list address |
+| `cmdline_paddr` | 24 | 8 | command line address |
+| `rsdp_paddr` | 32 | 8 | ACPI root pointer address |
+| `memmap_paddr` | 40 | 8 | memory map address (version 1 on) |
+| `memmap_entries` | 48 | 4 | memory map entries, zero when none (version 1 on) |
+| `reserved` | 52 | 4 | zero (version 1 on) |
 
 Version 0 stops at offset 40, so the decoder reads the memory-map fields only when the version
-says they are there and reports zero entries otherwise. A caller that finds no entries would have
-to fall back to the legacy E820 call, which this kernel cannot make because it needs real mode. In
-practice a version-0 handoff means the kernel cannot find its RAM, and the caller decides what to
-say.
+says they are there and reports zero entries otherwise. The legacy E820 call needs real mode, which
+this kernel cannot enter, so a version-0 handoff means the kernel cannot find its RAM, and the
+caller decides what to say.
 
-A module is x86's answer to `/chosen/linux,initrd-start`. On the other two architectures the loader
-writes the archive's bounds into the device tree and `memory::initialize` reads them out. Here it
-writes them into a module list.
+A module is x86's answer to `/chosen/linux,initrd-start`: the other two architectures write the
+archive's bounds into the device tree for `memory::initialize`; here the loader writes a module list.
 
-The `CPUID` half looked as though it held nothing for a host test, since asking takes one
-instruction and there is no format to parse. Reading the answer is trivial and deciding what it
-means is not. `CPUID` cannot say "I do not implement that leaf" except by answering with another
-leaf's bits, and the rule for telling those apart is the thing that can be wrong. A read above the
-maximum leaf answers with some other leaf's data, and the standard and extended maxima are
-different numbers in different spaces.
+The `CPUID` half looked as though a host test had nothing to check, since asking takes one
+instruction. Deciding what the answer means is the hard part. `CPUID` cannot say "I do not
+implement that leaf" except by answering with another leaf's bits, so the rule for telling those
+apart can be wrong. A read above the maximum leaf answers with some other leaf's data, and the
+standard and extended maxima are different numbers in different spaces.
 
 `Gate` has a third value because of the hypervisor case. Calling the invariant TSC optional would
-file a load-bearing assumption next to `RDSEED`, an optional convenience. Calling it required
-would refuse every boot under QEMU's TCG, which never reports it. So the row names the machine it
-refuses on.
+file a load-bearing assumption next to `RDSEED`; calling it required would refuse every boot under
+QEMU's TCG, which never reports it. So the row names the machine it refuses on.
 
-Silence means different things on the two sides. A device tree that does not mention an extension
-is firmware being terse about a machine that is nonetheless running the kernel, so the RISC-V
-check treats it as unknown. A part that does not answer leaf `0x80000001` is a part from before
-these features existed, with nobody in between to be terse.
+Silence means different things on the two sides. A device tree that omits an extension is firmware
+being terse about a machine that runs the kernel, so the RISC-V check treats it as unknown. A part
+that does not answer leaf `0x80000001` predates these features.
 
 ## ACPI
 

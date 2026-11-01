@@ -67,5 +67,5 @@ The minimum supported Rust version is 1.88.
 ## License
 
 Licensed under either of the MIT license (`LICENSE-MIT`) or the Apache License, Version 2.0
-(`LICENSE-APACHE`), at your option. Parts are adapted from OpenBSD's `dwmmc.c` under the ISC
-license; `src/lib.rs` carries its notice.
+(`LICENSE-APACHE`), at your option. Parts are adapted from OpenBSD's `dwmmc.c` and `sdmmc_mem.c`
+under the ISC license; `src/lib.rs` carries both notices.

@@ -97,9 +97,9 @@ holds against a hand-written note.
 
 The step needs one small piece of plumbing. The progenitor passes the measured
 `program_measurements` text (or the set of base program digests parsed from it) from `boot` to
-`Activating`, and `install` tests each program of the staged package against it. Whether the base
-vouches for a package by program digest in that table or by package stem in a base package list
-is open. Milestone 976's system manifest would supply the list.
+`Activating`, and `install` tests each program of the staged package against it. The base
+vouches for a program by its digest in that table, not by package stem, because the loader's
+`nife.base` names the table and no base package list exists in the tree (ruled 2026-11-01 UTC).
 
 Prior art, from memory and not re-read: Android's `signature|privileged` permissions go only to
 apps signed with the platform key or installed in the system image's privileged directory, and the

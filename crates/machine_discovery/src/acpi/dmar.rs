@@ -272,8 +272,8 @@ impl DeviceScope {
 
     /// **Does this entry cover `bus:dev.func`, and how?** An endpoint covers the function it
     /// resolves to; a sub-hierarchy covers its bridge and every bus in the bridge's
-    /// secondary..=subordinate range (VT-d 4.1 section 8.3.1: "the specified bridge device and all
-    /// its downstream devices").
+    /// secondary..=subordinate range (VT-d 4.1 section 8.3.1 says the entry names the bridge and
+    /// every device behind it).
     fn covers(
         &self,
         bus: u8,

@@ -24,11 +24,13 @@ The second port is proposed in pull request #2470 (radon's second Ethernet port,
 | the bench boot | `kernel/src/network_bench.rs`'s `radon` arm | the bring-up's whole account, then a lease and a measured transfer |
 
 Reuse: adapted from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`, `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`
-at `59ec3ab4d107`, 2026-07-31) and `ytphy` (`sys/dev/mii/ytphy.c` at `9d7a05f92003`), ISC licensed,
-with the notice carried in the crate root. FreeBSD's `if_eqos_starfive.c` and `mcommphy.c`
+at `59ec3ab4d107`, 2026-07-31) and `ytphy` (`sys/dev/mii/ytphy.c` at `9d7a05f92003`), ISC licensed, and from `ukphy_status`
+(`sys/dev/mii/ukphy_subr.c`, NetBSD Foundation, BSD-2-Clause), with the notices carried in the crate
+root. FreeBSD's `if_eqos_starfive.c` and `mcommphy.c`
 (BSD-2-Clause) also support this chip and were read as an independent cross-check; OpenBSD's was
 adapted because its glue handles `starfive,tx-use-rgmii-clk`, radon's v1.3B transmit clock
-arrangement, and FreeBSD's does not. Linux's stmmac and `dwmac-starfive.c`, U-Boot's `dwc_eth_qos*.c`, both JH7110 device
+arrangement, and FreeBSD's does not. Linux's stmmac, `dwmac-starfive.c`, `include/uapi/linux/mii.h`, `include/linux/stmmac.h` and
+`drivers/net/phy/motorcomm.c`, U-Boot's `dwc_eth_qos*.c`, both JH7110 device
 trees and the vendor U-Boot's board code are GPL and were read only for facts about the hardware.
 
 ## Is radon's DMA coherent? Yes, by measurement

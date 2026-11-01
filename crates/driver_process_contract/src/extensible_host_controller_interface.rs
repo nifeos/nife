@@ -156,9 +156,9 @@ pub enum WindowRefusal {
 /// use extensible_host_controller_interface::Capabilities;
 /// use driver_process_contract::extensible_host_controller_interface::register_window;
 ///
-/// // qemu-xhci's capability registers: 0x40 bytes of them, 64 slots, 4 ports, runtime at 0x1000,
-/// // doorbells at 0x2000.
-/// let capabilities = Capabilities::decode(0x0100_0040, 0x0400_0840, 0, 0x0000_7000, 0x2000, 0x1000);
+/// // qemu-xhci's capability registers: 0x40 bytes of them, 64 slots, 16 interrupters, 8 ports,
+/// // runtime at 0x1000, doorbells at 0x2000.
+/// let capabilities = Capabilities::decode(0x0100_0040, 0x0800_1040, 0, 0x0000_7000, 0x2000, 0x1000);
 /// let window = register_window(&capabilities, 0x4000, &[(0x3000, 0x3000 + 16 * 16), (0x3800, 0x3808)]);
 /// assert_eq!(window, Ok(0b0111));
 /// ```

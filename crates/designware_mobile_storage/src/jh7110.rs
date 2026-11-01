@@ -2,9 +2,13 @@
 //! Linux's `arch/riscv/boot/dts/starfive/jh7110.dtsi` has `mmc0: mmc@16010000` and
 //! `mmc1: mmc@16020000`, `compatible = "starfive,jh7110-mmc"` (its binding includes
 //! `synopsys-dw-mshc-common.yaml`), `interrupts` 74 and 75 and `fifo-depth = <32>`. The vendor
-//! U-Boot tree radon's firmware hands over (`starfive-tech/u-boot`, `JH7110_VisionFive2_devel`) has
-//! `sdio0@16010000` and `sdio1@16020000`, `compatible = "snps,dw-mshc"`, and no `interrupts`. On a
-//! VisionFive 2 `mmc0` is the 8-bit eMMC socket and `mmc1` the 4-bit microSD slot, both at 50 MHz.
+//! U-Boot tree radon's firmware hands over (`starfive-tech/u-boot`, tag `VF2_v2.10.4` at commit
+//! `1ae835c25e3d`, and branch `JH7110_VisionFive2_devel` at `c4c67bb66ae6`, both fetched 2026-11-01
+//! UTC) has `sdio0@16010000` and `sdio1@16020000`, `compatible = "snps,dw-mshc"`, and no
+//! `interrupts`. Mainline is `torvalds/linux` at `cbbddb6b08cc`. On a
+//! VisionFive 2 `mmc0` is the 8-bit eMMC socket and `mmc1` the 4-bit microSD slot. Mainline's
+//! `jh7110-common.dtsi` and the vendor branch head's `starfive_visionfive2.dts` assign both a 50 MHz
+//! card clock source; the vendor tag `VF2_v2.10.4` assigns none.
 //! The part is `DW_mshc` (Linux's `dw_mmc`), not the SDHCI-compatible `DWC_mshc`
 //! (`sdhci-of-dwcmshc`).
 //!
@@ -22,7 +26,9 @@ pub const SDIO0_BASE: u64 = 0x1601_0000;
 pub const SDIO1_BASE: u64 = 0x1602_0000;
 /// Each controller's window, `0x10000` in both trees.
 pub const WINDOW_SIZE: u64 = 0x1_0000;
-/// The rate both trees assign the `ciu` clock, which the controller divides for the card.
+/// The rate mainline and the vendor branch head assign the `ciu` clock (the module documentation
+/// gives the revisions; the vendor tag `VF2_v2.10.4` assigns none), which the controller divides
+/// for the card.
 ///
 /// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
 pub const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
@@ -90,7 +96,7 @@ impl Slot {
     /// `prop(name)` is the node's property `name`. `None` when the node's `compatible` names
     /// neither binding, since a node at the slot's name under another binding is not this
     /// controller. An absent `bus-width` is 1, and an absent or zero `assigned-clock-rates` is
-    /// the 50 MHz both trees assign.
+    /// the 50 MHz that mainline and the vendor branch head assign.
     ///
     /// # Errors
     ///

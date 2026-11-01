@@ -5,9 +5,11 @@
 //! in the crate root). The link, speed and duplex come from the standard clause 22 registers, as
 //! OpenBSD's `ukphy_status` (`sys/dev/mii/ukphy_subr.c`) reads them, with IEEE 802.3's registers
 //! and OpenBSD's `mii.h` names. The part's vendor status register is not read.
-//! [`EXTREG_SLEEP_CONTROL1_REG`], [`CLOCK_GATING_REG`] and [`PHY_ID_YT8531`] come from Linux's
-//! `drivers/net/phy/motorcomm.c`, which is the only source that names them (Decision 52), read as
-//! facts about the part; why this driver writes them is at each. Each constant keeps its source's
+//! [`EXT_SLEEP_CTRL`] and [`EXT_CLK_GATE`] take OpenBSD's names (`ytphy.c`); FreeBSD's `mcommphy.c`
+//! names the same two registers too, and each constant's documentation gives Linux's spelling.
+//! The bits inside them, and [`PHY_ID_YT8531`] (OpenBSD and FreeBSD match the OUI and model, not
+//! the whole identifier), come from Linux's `drivers/net/phy/motorcomm.c`, read as facts about the
+//! part (#2762 Decision 52's source order); why this driver writes them is at each. Each constant keeps its source's
 //! name without the part prefix (`YT8511_`, `YT8521_` or `YT8531_`), and its documentation opens
 //! with its full name and its source's spelling. The vendor tree states register values and
 //! mainline states physical quantities, and for `gmac0` they agree.
@@ -19,7 +21,7 @@ use crate::management_data_input_output::{self, ManagementDataInputOutput};
 /// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSID1 << 16 | PHYSID2`,
 /// matched exactly there; OpenBSD matches the OUI and model.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): Decision 37c, the source's name copied strictly,
+/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
 /// replacing `YT8531_ID`.
 #[doc(alias = "yt8531 identifier")]
 pub const PHY_ID_YT8531: u32 = 0x4f51_e91b;
@@ -33,11 +35,15 @@ pub(crate) const REG_ADDR: u8 = 0x1e;
 #[doc(alias = "extended register data port")]
 pub(crate) const REG_DATA: u8 = 0x1f;
 
-/// **Clock gating register** (`YT8521_CLOCK_GATING_REG`, `motorcomm.c`).
+/// **Clock gate register** (`YT8511_EXT_CLK_GATE`, `ytphy.c`). Linux calls it
+/// `YT8521_CLOCK_GATING_REG` (`motorcomm.c`) and FreeBSD `PHY_CLOCK_GATING_REG` (`mcommphy.c`).
 ///
-/// Name: recorded (`YT8521_CLOCK_GATING_REG` in `motorcomm.c`).
+/// Name: provisional, minted 2026-11-01 (UTC) by `lane/citation-fixes-from-the-audit`. Ruled
+/// 2026-11-01 (UTC): where a permissively licensed source names a thing, copy its name, OpenBSD's
+/// first, then FreeBSD's, then Linux's. The part prefix is dropped as elsewhere in this module.
+/// Replaces `CLOCK_GATING_REG`.
 #[doc(alias = "clock gating register")]
-pub const CLOCK_GATING_REG: u16 = 0x000c;
+pub const EXT_CLK_GATE: u16 = 0x000c;
 /// **Clock gating register, receive clock enable** (`YT8521_CGR_RX_CLK_EN`, `motorcomm.c`). Clear
 /// it to keep the receive clock running with no cable; Linux clears it for
 /// `motorcomm,keep-pll-enabled`. Cleared here unconditionally, because the controller's
@@ -46,11 +52,16 @@ pub const CLOCK_GATING_REG: u16 = 0x000c;
 /// still reset cleanly rather than refuse.
 #[doc(alias = "receive clock enable")]
 pub(crate) const CGR_RX_CLK_EN: u16 = 1 << 12;
-/// **Extended register, sleep control 1** (`YT8521_EXTREG_SLEEP_CONTROL1_REG`, `motorcomm.c`).
+/// **Extended register, sleep control** (`YT8511_EXT_SLEEP_CTRL`, `ytphy.c`). Linux calls it
+/// `YT8521_EXTREG_SLEEP_CONTROL1_REG` (`motorcomm.c`) and FreeBSD `PHY_SLEEP_CONTROL1_REG`
+/// (`mcommphy.c`).
 ///
-/// Name: recorded (`YT8521_EXTREG_SLEEP_CONTROL1_REG` in `motorcomm.c`).
+/// Name: provisional, minted 2026-11-01 (UTC) by `lane/citation-fixes-from-the-audit`. Ruled
+/// 2026-11-01 (UTC): where a permissively licensed source names a thing, copy its name, OpenBSD's
+/// first, then FreeBSD's, then Linux's. The part prefix is dropped as elsewhere in this module.
+/// Replaces `EXTREG_SLEEP_CONTROL1_REG`.
 #[doc(alias = "extended register, sleep control 1")]
-pub const EXTREG_SLEEP_CONTROL1_REG: u16 = 0x0027;
+pub const EXT_SLEEP_CTRL: u16 = 0x0027;
 /// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
 /// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
 /// `motorcomm,auto-sleep-disabled`; this driver clears it for
@@ -438,14 +449,14 @@ pub fn configure(
     modify_extended(
         bus,
         physical_layer_device_address,
-        CLOCK_GATING_REG,
+        EXT_CLK_GATE,
         CGR_RX_CLK_EN,
         0,
     )?;
     modify_extended(
         bus,
         physical_layer_device_address,
-        EXTREG_SLEEP_CONTROL1_REG,
+        EXT_SLEEP_CTRL,
         ESC1R_SLEEP_SW,
         0,
     )?;
@@ -663,11 +674,11 @@ mod tests {
         );
         assert_eq!(physical_layer_device.extended(EXT_SYNCE_CFG) & EN_SYNC_E, 0);
         assert_eq!(
-            physical_layer_device.extended(EXTREG_SLEEP_CONTROL1_REG) & ESC1R_SLEEP_SW,
+            physical_layer_device.extended(EXT_SLEEP_CTRL) & ESC1R_SLEEP_SW,
             0
         );
         assert_eq!(
-            physical_layer_device.extended(CLOCK_GATING_REG) & CGR_RX_CLK_EN,
+            physical_layer_device.extended(EXT_CLK_GATE) & CGR_RX_CLK_EN,
             0
         );
         assert_eq!(physical_layer_device.raw(REG_ADDR), 0x1234);

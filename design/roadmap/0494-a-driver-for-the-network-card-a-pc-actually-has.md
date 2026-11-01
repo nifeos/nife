@@ -59,11 +59,11 @@ evidence and the confinement finding: [notes/e1000e.md](../../notes/e1000e.md).
 
 ## What was built, 2026-10-05
 
-The I219's PHY half. QEMU's 82574L never takes the PCH path, so xenon is the test.
+The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
 
 - FreeBSD's SPT-class attach and reset path in `crates/e1000e/src/pch/` (Reuse, below): MDIO under
   the semaphore (`physical_layer_device.rs`), the NVM read (`non_volatile_memory.rs`), and FreeBSD's
-  three passes (`sequence.rs`), called by the kernel through a small `Hw` trait.
+  three passes (`sequence.rs`), called through a small `Hw` trait.
 - Fifteen host tests against a simulated I219 (`pch/sim.rs`). The semaphore is a non-`Clone` token,
   so a PHY access without it does not compile. One falsifiable Kani harness; writing it found that
   FreeBSD truncates a page select above `0x7ff`, which this port refuses.
@@ -183,7 +183,7 @@ lines and tests.
 | Redox `e1000d` (`redox-os/drivers`, `net/e1000d`) | MIT | 8254x (`100e`, `100f`, `1004`), 82573L (`109a`), 82579V (`1503`). No 82574L, so not QEMU's `e1000e`; no I219 | a userspace daemon: `pcid` maps BAR0, `common::dma::Dma` allocates its own rings, an IRQ file, a `NetworkScheme` | 364 | register constants and the init order, which `crates/e1000e` already has. Nothing that allocates, maps or waits |
 | `eth-intel` 0.2.4 (crates.io; rcore-os `tgoskits`) | MIT | `100e`, `100f` only | `mmio-api`, `dma-api`, `rdif-eth` traits from the ArceOS stack; owns DMA and IRQ | 412 | the same constants; its four dependencies would be §46 additions for none of the I219 |
 | `e1000-driver` 0.1.0 (crates.io) | GPL-2.0 | 82540EP/EM | a kernel-module shape with its own allocator hooks | not counted | refused: it would be linked into `net_stack`, and §135 (running GPL software is aggregation) draws the GPL's line at the process boundary, where every linked GPL candidate before it was refused |
-| FreeBSD `sys/dev/e1000` (`if_em.c`, `e1000_ich8lan.c`, `e1000_mac.c`, `e1000_phy.c`) | BSD-3-Clause (Intel) | every I219 generation, with field-found workarounds | C over FreeBSD's `iflib` and OS shims | about 16,000 across the four files | the I219's bring-up knowledge, which no Rust candidate has. Ported in part, below |
+| FreeBSD `sys/dev/e1000` (`if_em.c`, `e1000_ich8lan.c`, `e1000_mac.c`, `e1000_phy.c`) | BSD-2-Clause (`if_em.c`; Intel and others), BSD-3-Clause (the rest; Intel) | every I219 generation, with field-found workarounds | C over FreeBSD's `iflib` and OS shims | about 16,000 across the four files | the I219's bring-up knowledge, which no Rust candidate has. Ported in part, below |
 
 No Rust crate covers the 82574L or any I219, and no crate on crates.io names `e1000e` at all
 (searched for `e1000`, `e1000e`, `i219`, `igb`, `intel-ethernet`).
@@ -210,7 +210,7 @@ block's own BUGS list:
 | leave ULP without an ME, the `SMBus` switch and `LANPHYPC`; the semaphore and MDIO; the PHY reset and its NVM-driven configuration; the SPT NVM read; hardware bits, copper link, transmit errata | `e1000_init_phy_workarounds_pchlan` and what it calls, `e1000_acquire_swflag_ich8lan`, `__e1000_read_phy_reg_hv`, `e1000_reset_hw_ich8lan`, `e1000_post_phy_reset_ich8lan`, `e1000_read_nvm_spt`, `e1000_init_hw_ich8lan`, `e1000_setup_copper_link_pch_lpt` | ported 2026-10-05, `pch/physical_layer_device.rs`, `pch/non_volatile_memory.rs`, `pch/sequence.rs`; each function's comment names its source, and the divergences are in `pch`'s `BUGS` |
 | reconfiguration each time link comes up | `e1000_check_for_copper_link_ich8lan` | not ported: it runs from a link-change interrupt this driver does not take (Follow-on) |
 
-Intel's license heads every adapted file. FreeBSD read at `main`, last `e1000_ich8lan.c` change
+Each adapted file carries the license of the FreeBSD file it follows. FreeBSD read at `main`, last `e1000_ich8lan.c` change
 46cf612d (2026-08-30). Linux's GPL `e1000e` was not consulted for any I219 sequence; its headers
 gave register offsets and ids as facts on 2026-10-04, and the ids were checked against FreeBSD's.
 
@@ -233,10 +233,8 @@ meet a known gap). Take no dependency; vendor nothing.
 - Nothing has touched an I219: the PCH path is tested only against a simulation, and the bench
   runbook is its first run.
 - xenon's room has no Ethernet port (calef, 2026-10-04); the runbook in notes/e1000e.md gives
-  the three ways round it and what each proves.
-- Intel's BSD license asks a binary redistribution to reproduce its notice in the
-  documentation. The source carries it (`crates/e1000e/src/pch/`); no image or package this tree
-  ships carries a third-party notices file, and none exists.
+  the three ways round it.
+- The adapted files' BSD licenses ask a binary redistribution to reproduce their notices. The source carries them (`crates/e1000e/src/pch/`); no shipped image or package has a third-party notices file.
 
 ## Follow-on
 

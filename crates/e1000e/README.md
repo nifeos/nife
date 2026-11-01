@@ -84,8 +84,8 @@ item says so.
 
 The I219 needs a port rather than a reading of registers. It is a MAC inside the platform
 controller hub, talking to a separate PHY that it shares with the Management Engine, and it
-carries workarounds that only field exposure finds. FreeBSD's Intel shared code (BSD-3-Clause) is
-the only source read for `pch`; Linux's `e1000e` is GPL and was not consulted for any of it. Each
+carries workarounds that only field exposure finds. FreeBSD's Intel shared code (BSD-3-Clause) and its
+`if_em.c` and `if_em.h` (BSD-2-Clause) are the only sources read for `pch`; Linux's `e1000e` is GPL and was not consulted for any of it. Each
 item in `pch` names the FreeBSD function it follows. Everything was read from `sys/dev/e1000/` on
 FreeBSD's `main`: `ulp`, `flush` and `reset` on 2026-10-04, the rest on 2026-10-05. The last
 commit touching `e1000_ich8lan.c` was then 46cf612d (2026-08-30).
@@ -93,5 +93,6 @@ commit touching `e1000_ich8lan.c` was then 46cf612d (2026-08-30).
 ## License
 
 Licensed under either of MIT (LICENSE-MIT) or Apache-2.0 (LICENSE-APACHE), at your option. The
-files under `src/pch/` adapt FreeBSD's Intel shared code and also carry Intel's BSD-3-Clause
-notice, which a binary redistribution must reproduce.
+files under `src/pch/` adapt FreeBSD's Intel shared code and `if_em.c` and also carry Intel's BSD-3-Clause
+notice and the BSD-2-Clause notice of `if_em.c` and `if_em.h` (Intel, Nicole Graziano, Kevin Bowling),
+which a binary redistribution must reproduce. Their SPDX expression is `BSD-2-Clause AND BSD-3-Clause`.

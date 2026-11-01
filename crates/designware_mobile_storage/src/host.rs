@@ -94,7 +94,7 @@ pub(crate) const DATA_DEADLINE_MICROSECONDS: u64 = 500_000;
 /// ```
 /// use designware_mobile_storage::host::{clock_divider, card_clock};
 ///
-/// // radon's controllers run from 50 MHz (both trees' `assigned-clock-rates`).
+/// // radon's controllers run from 50 MHz (`assigned-clock-rates` in mainline and the vendor branch head).
 /// let d = clock_divider(50_000_000, 400_000).unwrap();
 /// assert_eq!(d, 63);
 /// assert!(card_clock(50_000_000, d) <= 400_000);
