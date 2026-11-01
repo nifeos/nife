@@ -145,7 +145,7 @@ build waits for the first package that leaves the tree.
 
 - **Done.** The interface ids for the fourteen formats owed one, and the programs' lists, carried
   by this block's own `Interface ids` table and the declaration check.
-- **Outstanding.** The `INTERFACES` note type in a leaf crate of its own, so carrying the note
+- **Recorded.** The `INTERFACES` note type in a leaf crate of its own, so carrying the note
   links no planner (ruled 2026-11-01 (UTC) on pull request #3026; the order is in
   `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`). The declaration check
   names `capability_manifest_note::` as the macro's crate in two places and must classify the new
