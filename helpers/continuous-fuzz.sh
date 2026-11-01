@@ -26,6 +26,10 @@
 # silent fallback is how the first version of this supervisor spent its first night at a tenth of the
 # rate.
 #
+# **The toolchain is installed first, once.** Before any slot starts, the supervisor runs
+# `ensure_toolchain` (below), so a newer pin than the account has installed is fetched by one process
+# and not raced by four. A failure there exits before any slot and writes no row to windows.tsv.
+#
 # **One checkout per guest.** `cargo xtask test` writes `target/nifefs.img` under the workspace root,
 # and QEMU refuses one image to two writers, so each guest slot runs in its own git worktree of the
 # clone this script lives in, each with its own `target/`. The worktrees are detached at the clone's
@@ -110,6 +114,19 @@ require_kvm() {
 refuse_without_kvm() {
     require_kvm || {
         echo "continuous-fuzz: refusing to run: a window under TCG sweeps about a tenth of the seeds per second, so this script never falls back to it" >&2
+        return 1
+    }
+}
+
+# Install (or confirm) the toolchain the repository pins, once, before any slot starts. With no
+# argument `rustup toolchain install` reads rust-toolchain.toml, so the pin has one home. Four slots
+# that each found the pin missing downloaded it at the same time and collided; the first windows
+# were recorded as infrastructure failures three seconds after start. This runs serially in the
+# supervisor, writes no window rows, and a failure stops the supervisor with its own message.
+ensure_toolchain() {
+    echo "continuous-fuzz: installing or confirming the pinned toolchain before any slot starts"
+    (cd "$root" && "$root/helpers/rustup-retry.sh" toolchain install) >&2 || {
+        echo "continuous-fuzz: refusing to start: could not install the toolchain that rust-toolchain.toml pins; no slot was started and no window was recorded" >&2
         return 1
     }
 }
@@ -221,6 +238,7 @@ if [ "${1:-}" = --check-kvm ]; then
 fi
 
 if [ "${1:-}" = --once ]; then
+    ensure_toolchain || exit 1
     refuse_without_kvm || exit 1
     [ $# -eq 3 ] || { echo "usage: $0 --once DRIVER SLOT" >&2; exit 2; }
     mkdir -p "$state"
@@ -228,6 +246,7 @@ if [ "${1:-}" = --once ]; then
     exit 0
 fi
 
+ensure_toolchain || exit 1
 refuse_without_kvm || exit 1
 mkdir -p "$state"
 pids=""

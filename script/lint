@@ -215,6 +215,12 @@ echo "==> the rustup retry (a dropped CDN connection retries; a real error does 
 # exercises, so this is the only place its classifier and its bound are ever seen to work.
 helpers/rustup-retry-selftest.sh >/dev/null
 
+echo "==> the continuous fuzz supervisor installs the pinned toolchain once, before any slot"
+# A stub rustup, no network, no KVM. Four slots that each downloaded a newer pin at once collided on
+# the host's first start; this holds the one serial install, its clear failure and its absence of
+# window rows. helpers/continuous-fuzz-selftest.sh says more.
+helpers/continuous-fuzz-selftest.sh >/dev/null
+
 echo "==> clippy: host crates + xtask"
 # lint-lane: host
 # lint-target-dir: host
