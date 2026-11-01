@@ -821,12 +821,14 @@ fn first_generation_of(
     let carried: Vec<package_archive::Program<'_>> = blobs
         .iter()
         .zip(rows)
-        .map(|((name, bytes), (_, digest, member))| package_archive::Program {
-            name,
-            bytes,
-            digest: *digest,
-            member: *member,
-        })
+        .map(
+            |((name, bytes), (_, digest, member))| package_archive::Program {
+                name,
+                bytes,
+                digest: *digest,
+                member: *member,
+            },
+        )
         .collect();
     let grants: Vec<installed_programs::Grant<'_>> = carried
         .iter()
@@ -835,13 +837,15 @@ fn first_generation_of(
     let entries: Vec<installed_programs::Entry<'_>> = carried
         .iter()
         .zip(rows)
-        .map(|(program, (package, digest, _))| installed_programs::Entry {
-            program: program.name,
-            version,
-            package,
-            digest: *digest,
-            manager: installed_programs::OWNER,
-        })
+        .map(
+            |(program, (package, digest, _))| installed_programs::Entry {
+                program: program.name,
+                version,
+                package,
+                digest: *digest,
+                manager: installed_programs::OWNER,
+            },
+        )
         .collect();
     first_generation(&entries, &grants, answered.as_ref())
 }
@@ -891,8 +895,7 @@ fn first_generation(
     )
     .map_err(|refused| format!("the first installed-programs table: {refused:?}"))?;
     out.truncate(n);
-    String::from_utf8(out)
-        .map_err(|_| "the first installed-programs table is not text".to_string())
+    String::from_utf8(out).map_err(|_| "the first installed-programs table is not text".to_string())
 }
 
 /// **The launch volume's file in the output directory** (milestone 990): a RedoxFS volume holding
@@ -1226,8 +1229,14 @@ programs = ["progenitor", "swish", "jig"]
         let answered = installed_programs::Answered::Approval("base-image", [9; 32]);
         let table = first_generation(&rows, &grants, Some(&answered)).unwrap();
         assert_eq!(installed_programs::answered(&table), Ok(Some(answered)));
-        assert_eq!(installed_programs::network_granted(&table, &[2; 32]), Ok(true));
-        assert_eq!(installed_programs::network_granted(&table, &[1; 32]), Ok(false));
+        assert_eq!(
+            installed_programs::network_granted(&table, &[2; 32]),
+            Ok(true)
+        );
+        assert_eq!(
+            installed_programs::network_granted(&table, &[1; 32]),
+            Ok(false)
+        );
     }
 
     #[test]
