@@ -274,7 +274,7 @@ Asked one at a time, in this order, with the background in the questions appendi
 
 - Nothing prepares the architect's reading of a crate. A lane may assemble a review packet per
   crate without reviewing for the architect: the path list, the public items, the tests, the
-  licence notices, the dependency list and the `cargo-semver-checks --baseline-rev` output.
+  license notices, the dependency list and the `cargo-semver-checks --baseline-rev` output.
   Proposed milestone, provisional: `script/crate-review-packet <crate>` prints it. Until then the
   architect asks a lane for each packet by hand.
 
